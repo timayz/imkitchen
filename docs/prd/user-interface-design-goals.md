@@ -1,27 +1,33 @@
 # User Interface Design Goals
 
 ## Overall UX Vision
-A clean, intuitive mobile interface that feels like having a personal cooking assistant. The design emphasizes effortless automation over manual control, with the "Fill My Week" button as the hero action. Visual hierarchy prioritizes the meal calendar view while making recipe management and community features easily accessible but not overwhelming. The overall experience should feel more like using a smart home device than a traditional app - simple, reliable, and invisibly intelligent.
+
+**Effortless Automation Experience:** The interface prioritizes the "Fill My Week" workflow as the primary interaction, making meal planning feel magical rather than manual. Clean, uncluttered design reduces cognitive load while visual indicators provide confidence in automated decisions. The app feels like a trusted kitchen assistant that handles complexity behind the scenes.
 
 ## Key Interaction Paradigms
-- **One-Tap Automation**: Primary interaction is the prominent "Fill My Week" button that generates complete meal plans instantly
-- **Visual Calendar Navigation**: Week-view meal calendar as the central interface with intuitive swipe navigation and drag-drop meal editing
-- **Progressive Disclosure**: Advanced features (recipe editing, community ratings) accessible through contextual actions without cluttering the main experience  
-- **Smart Defaults**: System learns preferences and adapts without requiring explicit user configuration
-- **Emergency Flexibility**: Quick access to meal alternatives and manual overrides when life disrupts automated plans
+
+- **One-Tap Automation:** Primary "Fill My Week" button prominently featured as the central interaction
+- **Visual Calendar Navigation:** Week-view as the primary organizing principle with intuitive tap-to-view recipe details
+- **Progressive Disclosure:** Complex recipe information and settings accessible but not overwhelming the main workflows
+- **Community Integration:** Seamless rating and sharing without disrupting personal meal planning flow
 
 ## Core Screens and Views
-- **Main Dashboard**: Week-view meal calendar with "Fill My Week" button and quick access to shopping list
-- **Recipe Collection**: Grid/list view of user's favorite recipes with import/add functionality and basic categorization
-- **Shopping List**: Organized by grocery store sections with check-off functionality and ingredient consolidation
-- **Recipe Detail**: Individual recipe view with prep time indicators, community ratings, and cooking instructions
-- **Settings/Profile**: User preferences, dietary restrictions, and account management
+
+- **Main Dashboard:** Weekly meal calendar with "Fill My Week" button and current week overview
+- **Recipe Collection Management:** Personal recipe library with import/add/categorize functionality  
+- **Shopping List Screen:** Auto-generated lists organized by grocery store sections
+- **Recipe Detail View:** Complete recipe information with prep indicators and community ratings
+- **Community Hub:** Recipe ratings, reviews, and discovery features
+- **Settings/Profile:** Account management and meal planning preferences
 
 ## Accessibility: WCAG AA
-Full compliance with WCAG AA standards including keyboard navigation, screen reader compatibility, and sufficient color contrast ratios. Particular attention to voice-over functionality for recipe instructions during cooking.
+
+Standard accessibility compliance ensuring usability for users with disabilities, including proper color contrast, keyboard navigation, and screen reader support for meal planning workflows.
 
 ## Branding
-Clean, modern design aesthetic that evokes trust and intelligence without feeling sterile. Color palette emphasizes fresh ingredients (greens, warm oranges) with professional reliability (blues, grays). Typography should feel approachable yet sophisticated, avoiding overly playful elements that might undermine trust in the automation.
 
-## Target Device and Platforms: Web Responsive
-Mobile-first responsive design optimized for iOS/Android phones as primary platform, with tablet and desktop web interfaces supporting the full feature set. Responsive breakpoints ensure optimal meal calendar viewing across all device sizes while maintaining touch-friendly interactions.
+**Warm Kitchen Aesthetic:** Friendly, approachable design reflecting the joy of home cooking with warm color palette (earth tones, soft greens, warm whites). Clean typography emphasizing readability for recipes and ingredient lists. Visual elements suggest organization and automation without feeling cold or robotic.
+
+## Target Device and Platforms: Mobile First, Web Responsive
+
+Primary development for mobile (iOS/Android) with responsive web interface. Mobile-optimized for kitchen use with large touch targets and easy one-handed operation during meal planning and shopping.

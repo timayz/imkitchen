@@ -1,0 +1,118 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-backend:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: imkitchen_password
+          POSTGRES_USER: imkitchen_user
+          POSTGRES_DB: imkitchen
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+          
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 3s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Install dependencies
+      run: |
+        cd apps/backend
+        go mod tidy
+
+    - name: Run backend tests
+      run: |
+        cd apps/backend
+        go test ./...
+      env:
+        REDIS_ADDR: localhost:6379
+        DATABASE_URL: postgres://imkitchen_user:imkitchen_password@localhost:5432/imkitchen?sslmode=disable
+
+    - name: Run backend linting
+      run: |
+        cd apps/backend
+        go vet ./...
+        gofmt -l . | xargs test -z
+
+  test-frontend:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run frontend linting
+      run: npm run lint --if-present
+
+    - name: Run frontend tests
+      run: npm run test --if-present
+
+    - name: Build frontend
+      run: npm run build --if-present
+
+  build-and-deploy:
+    needs: [test-backend, test-frontend]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build backend image
+      run: |
+        docker build -f Dockerfile.backend -t imkitchen-backend:${{ github.sha }} .
+
+    - name: Build frontend image  
+      run: |
+        docker build -f Dockerfile.frontend -t imkitchen-frontend:${{ github.sha }} .
+
+    # TODO: Add deployment to staging environment
+    # - name: Deploy to staging
+    #   run: echo "Deploy to staging environment"

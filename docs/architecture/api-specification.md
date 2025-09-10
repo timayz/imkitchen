@@ -1,7 +1,5 @@
 # API Specification
 
-Based on the REST API choice from Tech Stack, here's the OpenAPI 3.0 specification for imkitchen's backend services:
-
 ## REST API Specification
 
 ```yaml
@@ -9,17 +7,23 @@ openapi: 3.0.0
 info:
   title: imkitchen API
   version: 1.0.0
-  description: Automated meal planning and recipe management API
+  description: Intelligent meal planning automation API supporting cross-platform mobile and web applications
 servers:
-  - url: https://api.imkitchen.app
-    description: Production API server
-  - url: https://staging-api.imkitchen.app
-    description: Staging API server
+  - url: https://api.imkitchen.app/v1
+    description: Production API
+  - url: https://staging-api.imkitchen.app/v1
+    description: Staging API
+  - url: http://localhost:8080/v1
+    description: Local development
+
+security:
+  - BearerAuth: []
 
 paths:
-  # Authentication
+  # Authentication Endpoints
   /auth/login:
     post:
+      tags: [Authentication]
       summary: User login
       requestBody:
         required: true
@@ -27,13 +31,14 @@ paths:
           application/json:
             schema:
               type: object
+              required: [email, password]
               properties:
                 email:
                   type: string
                   format: email
                 password:
                   type: string
-              required: [email, password]
+                  minLength: 8
       responses:
         '200':
           description: Login successful
@@ -42,83 +47,80 @@ paths:
               schema:
                 type: object
                 properties:
-                  token:
+                  accessToken:
+                    type: string
+                  refreshToken:
                     type: string
                   user:
                     $ref: '#/components/schemas/User'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
 
-  /auth/register:
+  # Core Meal Planning - "Fill My Week" Automation
+  /meal-plans/generate:
     post:
-      summary: User registration
+      tags: [Meal Planning]
+      summary: Generate automated weekly meal plan
+      description: Core "Fill My Week" automation endpoint - must complete in <2 seconds
       requestBody:
-        required: true
+        required: false
         content:
           application/json:
             schema:
               type: object
               properties:
-                email:
+                weekStartDate:
                   type: string
-                  format: email
-                password:
-                  type: string
-                  minLength: 8
-                displayName:
-                  type: string
-              required: [email, password, displayName]
+                  format: date
+                  description: Monday of target week, defaults to current week
+                preferences:
+                  type: object
+                  properties:
+                    maxPrepTimePerMeal:
+                      type: integer
+                      description: Maximum prep time in minutes
+                    preferredComplexity:
+                      type: array
+                      items:
+                        type: string
+                        enum: [simple, moderate, complex]
       responses:
-        '201':
-          description: Registration successful
+        '200':
+          description: Meal plan generated successfully
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  token:
-                    type: string
-                  user:
-                    $ref: '#/components/schemas/User'
-        '400':
-          $ref: '#/components/responses/BadRequest'
+                  mealPlan:
+                    $ref: '#/components/schemas/MealPlan'
+                  shoppingList:
+                    $ref: '#/components/schemas/ShoppingList'
+                  generationTime:
+                    type: number
+                    description: Generation time in milliseconds
 
-  # Recipes
+  # Recipe Management
   /recipes:
     get:
-      summary: Get recipes with filtering
-      security:
-        - bearerAuth: []
+      tags: [Recipes]
+      summary: Get user's recipe collection
       parameters:
-        - name: category
+        - name: search
           in: query
           schema:
-            $ref: '#/components/schemas/RecipeCategory'
-        - name: difficulty
+            type: string
+        - name: mealType
           in: query
           schema:
-            $ref: '#/components/schemas/DifficultyLevel'
-        - name: max_time
+            type: string
+            enum: [breakfast, lunch, dinner, snack]
+        - name: complexity
           in: query
           schema:
-            type: integer
-        - name: is_public
-          in: query
-          schema:
-            type: boolean
-        - name: limit
-          in: query
-          schema:
-            type: integer
-            default: 20
-        - name: offset
-          in: query
-          schema:
-            type: integer
-            default: 0
+            type: string
+            enum: [simple, moderate, complex]
       responses:
         '200':
-          description: Recipes retrieved successfully
+          description: Recipe collection
           content:
             application/json:
               schema:
@@ -130,170 +132,62 @@ paths:
                       $ref: '#/components/schemas/Recipe'
                   total:
                     type: integer
+
     post:
+      tags: [Recipes]
       summary: Create new recipe
-      security:
-        - bearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateRecipeRequest'
+              $ref: '#/components/schemas/RecipeCreate'
       responses:
         '201':
-          description: Recipe created successfully
+          description: Recipe created
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Recipe'
 
-  /recipes/{id}:
+  # Community Features
+  /community/recipes:
     get:
-      summary: Get recipe by ID
-      security:
-        - bearerAuth: []
+      tags: [Community]
+      summary: Browse public community recipes
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Recipe retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Recipe'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  # Meal Planning - Core "Fill My Week" functionality
-  /meal-plans/fill-my-week:
-    post:
-      summary: Generate automated weekly meal plan
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                weekStartDate:
-                  type: string
-                  format: date
-                preferences:
-                  type: object
-                  properties:
-                    maxComplexity:
-                      $ref: '#/components/schemas/DifficultyLevel'
-                    excludeRecipes:
-                      type: array
-                      items:
-                        type: string
-                        format: uuid
-              required: [weekStartDate]
-      responses:
-        '201':
-          description: Meal plan generated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MealPlan'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-
-  /meal-plans:
-    get:
-      summary: Get user's meal plans
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: limit
+        - name: sortBy
           in: query
           schema:
-            type: integer
-            default: 10
+            type: string
+            enum: [rating, recent, popular]
+            default: rating
+        - name: minRating
+          in: query
+          schema:
+            type: number
+            minimum: 1
+            maximum: 5
       responses:
         '200':
-          description: Meal plans retrieved successfully
+          description: Community recipes
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/MealPlan'
-
-  /meal-plans/{id}/slots/{slotId}:
-    put:
-      summary: Update individual meal slot
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: slotId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                recipeId:
-                  type: string
-                  format: uuid
-                customMealName:
-                  type: string
-      responses:
-        '200':
-          description: Meal slot updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MealPlanSlot'
-
-  # Shopping Lists
-  /shopping-lists/generate:
-    post:
-      summary: Generate shopping list from meal plan
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                mealPlanId:
-                  type: string
-                  format: uuid
-              required: [mealPlanId]
-      responses:
-        '201':
-          description: Shopping list generated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ShoppingList'
+                  allOf:
+                    - $ref: '#/components/schemas/Recipe'
+                    - type: object
+                      properties:
+                        averageRating:
+                          type: number
+                        ratingCount:
+                          type: integer
 
 components:
   securitySchemes:
-    bearerAuth:
+    BearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
@@ -310,13 +204,16 @@ components:
           format: email
         displayName:
           type: string
-        createdAt:
-          type: string
-          format: date-time
         dietaryRestrictions:
           type: array
           items:
-            $ref: '#/components/schemas/DietaryRestriction'
+            type: string
+        cookingSkillLevel:
+          type: string
+          enum: [beginner, intermediate, advanced]
+        preferredMealComplexity:
+          type: string
+          enum: [simple, moderate, complex]
 
     Recipe:
       type: object
@@ -326,37 +223,30 @@ components:
           format: uuid
         title:
           type: string
-        description:
-          type: string
-        prepTimeMinutes:
-          type: integer
-        cookTimeMinutes:
-          type: integer
-        totalTimeMinutes:
-          type: integer
-        difficultyLevel:
-          $ref: '#/components/schemas/DifficultyLevel'
-        servings:
-          type: integer
-        category:
-          $ref: '#/components/schemas/RecipeCategory'
         ingredients:
           type: array
           items:
-            $ref: '#/components/schemas/RecipeIngredient'
-        instructions:
-          type: array
-          items:
-            $ref: '#/components/schemas/RecipeStep'
-        isPublic:
-          type: boolean
-        imageUrl:
+            type: object
+            properties:
+              name:
+                type: string
+              amount:
+                type: number
+              unit:
+                type: string
+              category:
+                type: string
+                enum: [produce, dairy, pantry, protein, other]
+        prepTime:
+          type: integer
+        cookTime:
+          type: integer
+        complexity:
           type: string
-          format: uri
-        communityRating:
-          type: number
-          minimum: 1
-          maximum: 5
+          enum: [simple, moderate, complex]
+        mealType:
+          type: string
+          enum: [breakfast, lunch, dinner, snack]
 
     MealPlan:
       type: object
@@ -364,113 +254,77 @@ components:
         id:
           type: string
           format: uuid
-        userId:
-          type: string
-          format: uuid
         weekStartDate:
           type: string
           format: date
-        createdAt:
+        generationType:
           type: string
-          format: date-time
-        isCurrent:
-          type: boolean
-        generationMethod:
-          $ref: '#/components/schemas/GenerationMethod'
-        slots:
+          enum: [automated, manual, mixed]
+        entries:
           type: array
           items:
-            $ref: '#/components/schemas/MealPlanSlot'
+            $ref: '#/components/schemas/MealPlanEntry'
 
-    MealPlanSlot:
+    MealPlanEntry:
       type: object
       properties:
         id:
           type: string
           format: uuid
+        recipeId:
+          type: string
+          format: uuid
+        recipe:
+          $ref: '#/components/schemas/Recipe'
         date:
           type: string
           format: date
         mealType:
-          $ref: '#/components/schemas/MealType'
-        recipeId:
           type: string
-          format: uuid
-        customMealName:
-          type: string
-        isCompleted:
+          enum: [breakfast, lunch, dinner]
+        isManualOverride:
           type: boolean
 
     ShoppingList:
       type: object
       properties:
-        id:
-          type: string
-          format: uuid
-        mealPlanId:
-          type: string
-          format: uuid
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/ShoppingListItem'
-        createdAt:
-          type: string
-          format: date-time
-
-    # Enums and smaller objects
-    DifficultyLevel:
-      type: string
-      enum: [easy, medium, hard]
-
-    RecipeCategory:
-      type: string
-      enum: [breakfast, lunch, dinner, snack, dessert]
-
-    MealType:
-      type: string
-      enum: [breakfast, lunch, dinner]
-
-    GenerationMethod:
-      type: string
-      enum: [auto_fill_my_week, manual, partial_auto]
-
-    DietaryRestriction:
-      type: string
-      enum: [vegetarian, vegan, gluten_free, dairy_free, nut_free, keto, paleo]
-
-  responses:
-    BadRequest:
-      description: Invalid request parameters
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-              details:
+        categories:
+          type: object
+          properties:
+            produce:
+              type: array
+              items:
                 type: object
+                properties:
+                  name:
+                    type: string
+                  totalAmount:
+                    type: number
+                  unit:
+                    type: string
+            dairy:
+              type: array
+            pantry:
+              type: array
+            protein:
+              type: array
 
-    Unauthorized:
-      description: Authentication required
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: "Authentication required"
-
-    NotFound:
-      description: Resource not found
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: "Resource not found"
+    RecipeCreate:
+      type: object
+      required: [title, ingredients, prepTime, cookTime, complexity, mealType]
+      properties:
+        title:
+          type: string
+        ingredients:
+          type: array
+        prepTime:
+          type: integer
+        cookTime:
+          type: integer
+        complexity:
+          type: string
+          enum: [simple, moderate, complex]
+        mealType:
+          type: string
+          enum: [breakfast, lunch, dinner, snack]
 ```

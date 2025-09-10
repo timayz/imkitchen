@@ -1,13 +1,13 @@
 # Epic List
 
-## Epic 1: Foundation & Core Recipe Management
-**Goal:** Establish project infrastructure, basic recipe collection functionality, and foundational user experience that allows users to begin building their recipe library.
+**Epic 1: Foundation & Core Recipe Management**  
+Establish project infrastructure (app setup, authentication, database) while delivering immediate functionality through personal recipe collection management and basic meal calendar display.
 
-## Epic 2: Automated Meal Planning Engine  
-**Goal:** Implement the core "Fill My Week" functionality with rotation logic that automatically generates weekly meal plans from user's recipe collection.
+**Epic 2: Automated Meal Planning Engine**  
+Implement the core "Fill My Week" automation with rotation logic and shopping list generation - the primary differentiator that transforms meal planning from manual to automated.
 
-## Epic 3: Visual Meal Calendar & Shopping Lists
-**Goal:** Deliver the visual meal calendar interface and automated shopping list generation that transforms meal planning from abstract concepts into concrete, actionable weekly plans.
+**Epic 3: Community Features & Performance**  
+Add community-driven recipe validation, social engagement features, and comprehensive performance optimization including database queries, caching, and background synchronization.
 
-## Epic 4: Community Features & User Engagement
-**Goal:** Enable recipe rating system and community engagement features that provide content quality validation and drive long-term user retention.
+**Epic 4: UI Polish & User Experience**  
+Deliver production-ready UI polish with smooth animations, consistent design system, and accessibility compliance to create an enjoyable, market-ready user experience.

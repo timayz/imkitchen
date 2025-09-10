@@ -1,32 +1,37 @@
 # Tech Stack
 
-This is the DEFINITIVE technology selection for the entire project. All development must use these exact versions.
-
 ## Technology Stack Table
 
 | Category | Technology | Version | Purpose | Rationale |
 |----------|------------|---------|---------|-----------|
-| Frontend Language | TypeScript | 5.3+ | Type-safe mobile/web development | Strong typing for complex meal planning logic, excellent tooling support |
-| Frontend Framework | Lynx-js | Latest | Cross-platform mobile app | PRD requirement, native performance with cross-platform efficiency |
-| UI Component Library | Tamagui | 1.x | Mobile-optimized components | Performance-focused, kitchen-friendly touch targets (44px min) |
-| State Management | Zustand | 4.x | Lightweight state management | Simple API, excellent TypeScript support, minimal overhead for mobile |
-| Backend Language | Rust | 1.75+ | High-performance API services | PRD requirement, sub-2-second meal planning engine performance |
-| Backend Framework | Axum | 0.7+ | Async web framework | Tokio-based, excellent performance, built-in middleware support |
-| Admin UI Framework | TwinSpark | Latest | Integrated admin interface | PRD requirement, seamless Rust backend integration |
-| API Style | REST | - | HTTP JSON APIs | Simple, cacheable, excellent mobile client support |
-| Database | PostgreSQL | 15+ | Relational data storage | Complex recipe relationships, ACID transactions, JSON support |
-| Cache | Redis | 7+ | High-performance caching | Sub-2-second meal plan generation optimization |
-| File Storage | MinIO | Latest | S3-compatible object storage | Cloud-agnostic, self-hostable, S3 API compatibility |
-| Authentication | JWT + bcrypt | - | Secure user authentication | Stateless tokens for mobile, secure password hashing |
-| Frontend Testing | Vitest | 1.x | Fast unit/integration testing | Native TypeScript support, excellent performance |
-| Backend Testing | cargo test | - | Rust native testing | Built-in test framework, async test support |
-| E2E Testing | Playwright | 1.x | Cross-platform end-to-end | Mobile testing support, reliable automation |
-| Build Tool | Vite | 5.x | Fast frontend builds | Excellent TypeScript support, fast HMR for development |
-| Bundler | Rollup | 4.x | Production bundling | Vite's production bundler, optimal mobile bundle sizes |
-| IaC Tool | Terraform | 1.6+ | Infrastructure as Code | Cloud-agnostic, multi-provider support, mature ecosystem |
-| CI/CD | GitHub Actions | - | Automated deployment | Provider-agnostic workflows, cost-effective, good mobile tooling |
-| Monitoring | Prometheus + Grafana | Latest | Application monitoring | Cloud-agnostic metrics collection and visualization |
-| Logging | OpenTelemetry + tracing | 0.1.x | Distributed tracing/logging | Vendor-neutral observability, structured logging |
-| CSS Framework | Tailwind CSS | 3.x | Utility-first styling | Mobile-first responsive design, consistent spacing system |
-| Container Runtime | Docker | Latest | Application containerization | Platform-agnostic deployment, consistent environments |
-| Container Orchestration | Kubernetes | 1.28+ | Container management | Cloud-agnostic, horizontal scaling, mature ecosystem |
+| Frontend Language | TypeScript | 5.x | Type-safe mobile/web development | Enables shared types across mobile/web, reduces runtime errors in automation workflows |
+| Frontend Framework | Lynx.js | Latest | Cross-platform mobile + web | PRD requirement, single codebase for iOS/Android/Web with native performance |
+| UI Component Library | Custom Design System | - | imkitchen-specific components | Supports unique "Fill My Week" automation UI and warm kitchen aesthetic |
+| State Management | Zustand | 4.x | Lightweight React state | Simple, performant state management for mobile contexts, supports automation workflows |
+| Backend Language | Go | 1.21+ | High-performance API services | Optimal for 2-second meal plan generation requirement and rotation algorithms |
+| Backend Framework | Gin | 1.9+ | Fast HTTP web framework | Proven performance, excellent middleware ecosystem, cloud-agnostic |
+| API Style | REST | - | HTTP-based APIs | Simple, cacheable, excellent mobile network handling, broad tooling support |
+| Database | PostgreSQL | 15+ | Primary relational database | ACID compliance for recipe/user data, excellent Go integration, multi-cloud support |
+| Cache | Redis | 7.x | High-performance caching | Essential for 2-second generation target, session storage, rate limiting |
+| File Storage | MinIO (S3-compatible) | Latest | Recipe images and assets | Self-hosted S3-compatible storage, multi-cloud deployment, cost control |
+| Authentication | Supabase Auth | Latest | User auth and management | Open-source, self-hostable, social login support, excellent mobile SDKs |
+| Frontend Testing | Vitest + Testing Library | Latest | Component and unit testing | Fast, modern testing for Lynx.js components and automation logic |
+| Backend Testing | Go Testing + Testify | Latest | API and service testing | Built-in Go testing with assertions, perfect for algorithm validation |
+| E2E Testing | Playwright | 1.x | Cross-platform automation | Mobile and web testing, critical for "Fill My Week" workflow validation |
+| Build Tool | Nx | 17+ | Monorepo orchestration | Shared code between mobile/API, efficient builds, TypeScript integration |
+| Bundler | Vite | 5.x | Fast frontend builds | Modern bundling for Lynx.js, excellent development experience |
+| IaC Tool | Terraform | 1.6+ | Infrastructure as code | Cloud-agnostic, mature ecosystem, supports multiple providers |
+| CI/CD | GitHub Actions | - | Automated testing and deployment | Free tier, multi-cloud deployment support, excellent community actions |
+| Monitoring | Grafana + Prometheus | Latest | Application monitoring | Open-source, cloud-agnostic, excellent Go metrics, customizable dashboards |
+| Logging | Loki + Promtail | Latest | Centralized logging | Cloud-agnostic log aggregation, integrates with Grafana, cost-effective |
+| CSS Framework | Tailwind CSS | 3.x | Utility-first styling | Rapid UI development, excellent mobile responsiveness, design system support |
+
+## Platform Strategy
+
+**Platform:** Multi-Cloud Strategy (Cloud-Agnostic)
+- **Primary:** Digital Ocean or Hetzner Cloud for cost-effective, developer-friendly hosting
+- **Containerization:** Docker + Kubernetes for maximum portability
+- **CDN:** Cloudflare for provider-agnostic performance and security
+- **Database:** Managed PostgreSQL (provider-agnostic) with automated backups
+
+**Key Benefits:** No vendor lock-in, cost control, deployment flexibility, open-source ecosystem

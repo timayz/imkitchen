@@ -1,38 +1,24 @@
 # Technical Assumptions
 
 ## Repository Structure: Monorepo
-Based on the brief's indication for shared component libraries and the need to support mobile app, web interface, and API services efficiently.
+
+Single repository supporting mobile app, web interface, and API services with shared component libraries. Simplifies development coordination, dependency management, and deployment processes for a small team (2-3 engineers) while supporting cross-platform code sharing between mobile and web interfaces.
 
 ## Service Architecture
-**Microservices within Monorepo** - The brief indicates microservices approach with dedicated services for scheduling engine, notification system, and community features, while maintaining monorepo benefits for shared libraries and coordinated deployment.
+
+**Monolith with Microservice Readiness:** Initial monolithic architecture for rapid MVP development with clear service boundaries designed for future microservice extraction. Core services include: meal planning engine, recipe management, user authentication, and community features. This approach balances development speed with scalability preparation.
 
 ## Testing Requirements
-**Unit + Integration Testing** - Given the complexity of the scheduling algorithms and the critical nature of meal planning automation, comprehensive testing is essential for user trust. Integration testing will be crucial for validating the "Fill My Week" workflow end-to-end.
+
+**Unit + Integration Testing:** Comprehensive unit testing for business logic (rotation algorithms, recipe management) with integration testing for API endpoints and database interactions. Manual testing convenience methods for UI workflows. Automated testing essential for meal plan generation reliability and user trust.
 
 ## Additional Technical Assumptions and Requests
 
-**Frontend Framework:** 
-- Lynx-js for cross-platform mobile development (primary user interface)
-- TwinSpark integrated with Rust backend for admin web UI only
-- Mobile-first responsive design targeting iOS 14+ and Android 8+
-
-**Backend Technology:**
-- Rust-based API services with integrated admin web UI using TwinSpark
-- Sub-2-second meal plan generation requirement drives high-performance backend choice
-
-**Database & Caching:**
-- PostgreSQL for relational recipe and user data storage
-- Redis caching layer for meal plan generation optimization
-
-**Infrastructure & Hosting:**
-- Cloud-native deployment supporting horizontal scaling for community features
-
-**Security & Compliance:**
-- User data privacy compliance and GDPR readiness for international expansion
-- Secure payment processing integration for premium subscriptions
-
-**Push Notification Strategy:** Native platform notifications (iOS UserNotifications framework, Android NotificationManager) for maximum reliability and integration with device notification settings.
-
-**Recipe Data Import:** Dual approach supporting web scraping for popular recipe sites and manual entry for personal recipes. Web scraping will target major recipe platforms (AllRecipes, Food Network, etc.) with fallback to manual entry for unsupported sources.
-
-**Offline Capability:** Sync-when-connected model - users can access downloaded recipes and current meal plans offline, with data synchronization occurring automatically when internet connection is available.
+- **Frontend Framework:** Lynx.js for cross-platform mobile development (as specified in brief)
+- **Backend Technology:** Go-based API services for performance-critical scheduling algorithms and data processing
+- **Database Architecture:** PostgreSQL for relational recipe and user data with Redis caching for meal plan generation performance
+- **Hosting Strategy:** Cloud-native deployment supporting horizontal scaling for community features and user growth
+- **Push Notifications:** Multiple provider integration required for reliable meal prep reminders (critical for post-MVP value)
+- **Security Requirements:** User data privacy compliance and secure payment processing for premium subscriptions
+- **Performance Targets:** Sub-2-second meal plan generation, offline recipe access, reliable notification delivery
+- **Integration Readiness:** API structure designed for future grocery store partnerships and affiliate integrations

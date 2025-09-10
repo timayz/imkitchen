@@ -2,24 +2,26 @@
 
 This document outlines the complete fullstack architecture for **imkitchen**, including backend systems, frontend implementation, and their integration. It serves as the single source of truth for AI-driven development, ensuring consistency across the entire technology stack.
 
-Based on comprehensive analysis of the PRD and frontend specification, imkitchen is a meal planning automation platform with the following key characteristics:
+This unified approach combines what would traditionally be separate backend and frontend architecture documents, streamlining the development process for modern fullstack applications where these concerns are increasingly intertwined.
 
-- **Core Innovation**: "Fill My Week" automation eliminating meal planning cognitive overhead
-- **Performance Critical**: Sub-2-second meal plan generation requirement 
-- **Mobile-First**: Lynx-js cross-platform with responsive design (320px-1440px+ breakpoints)
-- **Community-Driven**: Recipe rating/sharing with content moderation
-- **Kitchen-Optimized UX**: Voice commands, large touch targets (44px min), hands-free cooking mode
+## Starter Template or Existing Project
 
-## Starter Template Analysis
-**N/A - Greenfield project** with pre-defined technology stack:
-- Lynx-js mobile framework (specified for cross-platform development)
-- Rust backend with TwinSpark admin integration (specified)
-- PostgreSQL + Redis data layer (specified)
-- Microservices within monorepo structure (specified)
+Based on the PRD technical assumptions, **imkitchen** is a greenfield project with specific technology preferences:
 
-The unified architecture approach addresses the tight coupling between the intelligent meal planning engine and the kitchen-optimized user experience, ensuring seamless integration across the technology stack.
+- **Frontend Framework:** Lynx.js for cross-platform mobile development (as specified in PRD)
+- **Backend Technology:** Go-based API services for performance-critical scheduling algorithms
+- **Database:** PostgreSQL + Redis for relational data and caching
+- **Mobile-First Approach:** Cross-platform targeting iOS/Android with responsive web interface
+
+**No existing starter template** is prescribed, making this a custom architecture design. However, I recommend evaluating:
+
+1. **Lynx.js Project Templates** - If available, for rapid cross-platform mobile setup
+2. **Go Web API Starters** - Popular frameworks like Gin, Echo, or Fiber with PostgreSQL integration
+3. **Monorepo Templates** - Nx or Turborepo configurations for managing mobile + API + shared packages
+
+**Decision:** Custom architecture without relying on specific starters, allowing optimal technology integration for the unique "Fill My Week" automation requirements.
 
 ## Change Log
 | Date | Version | Description | Author |
-|------|---------|-------------|--------|
-| 2025-09-05 | 1.0 | Initial architecture document creation | Winston (Architect) |
+|------|---------|-------------|---------|
+| 2025-09-06 | 1.0 | Initial fullstack architecture based on PRD and frontend specifications | Winston (Architect) |

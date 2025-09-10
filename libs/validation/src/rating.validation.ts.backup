@@ -1,0 +1,339 @@
+/**
+ * Rating validation rules and functions
+ * Shared between frontend and backend for consistent validation
+ */
+
+import { RatingSubmission, RatingUpdateRequest, ModerationStatus } from '@imkitchen/shared-types';
+
+// Validation constants
+export const RATING_CONSTRAINTS = {
+  RATING_MIN: 1,
+  RATING_MAX: 5,
+  REVIEW_TEXT_MAX_LENGTH: 500,
+  PREP_TIME_MAX: 720, // 12 hours in minutes
+  COOK_TIME_MAX: 1440, // 24 hours in minutes
+} as const;
+
+// Profanity filter word list (basic implementation)
+const PROFANITY_WORDS = [
+  // Basic profanity list - in production, use a more comprehensive service
+  'damn', 'hell', 'crap', 'stupid', 'idiot', 'hate', 'suck', 'terrible', 'awful', 'disgusting'
+];
+
+export interface ValidationResult {
+  isValid: boolean;
+  errors: ValidationError[];
+}
+
+export interface ValidationError {
+  field: string;
+  code: string;
+  message: string;
+}
+
+/**
+ * Validates a rating submission
+ */
+export function validateRatingSubmission(submission: RatingSubmission): ValidationResult {
+  const errors: ValidationError[] = [];
+
+  // Overall rating validation (required)
+  if (!submission.overallRating) {
+    errors.push({
+      field: 'overallRating',
+      code: 'REQUIRED',
+      message: 'Overall rating is required'
+    });
+  } else if (!isValidRatingValue(submission.overallRating)) {
+    errors.push({
+      field: 'overallRating',
+      code: 'INVALID_RANGE',
+      message: `Rating must be between ${RATING_CONSTRAINTS.RATING_MIN} and ${RATING_CONSTRAINTS.RATING_MAX} stars`
+    });
+  }
+
+  // Recipe ID validation
+  if (!submission.recipeId || !isValidUUID(submission.recipeId)) {
+    errors.push({
+      field: 'recipeId',
+      code: 'INVALID_UUID',
+      message: 'Valid recipe ID is required'
+    });
+  }
+
+  // Optional fields validation
+  if (submission.difficultyRating && !isValidRatingValue(submission.difficultyRating)) {
+    errors.push({
+      field: 'difficultyRating',
+      code: 'INVALID_RANGE',
+      message: `Difficulty rating must be between ${RATING_CONSTRAINTS.RATING_MIN} and ${RATING_CONSTRAINTS.RATING_MAX} stars`
+    });
+  }
+
+  if (submission.tasteRating && !isValidRatingValue(submission.tasteRating)) {
+    errors.push({
+      field: 'tasteRating',
+      code: 'INVALID_RANGE',
+      message: `Taste rating must be between ${RATING_CONSTRAINTS.RATING_MIN} and ${RATING_CONSTRAINTS.RATING_MAX} stars`
+    });
+  }
+
+  // Review text validation
+  if (submission.reviewText) {
+    const reviewValidation = validateReviewText(submission.reviewText);
+    if (!reviewValidation.isValid) {
+      errors.push(...reviewValidation.errors);
+    }
+  }
+
+  // Time validations
+  if (submission.actualPrepTime && (submission.actualPrepTime < 0 || submission.actualPrepTime > RATING_CONSTRAINTS.PREP_TIME_MAX)) {
+    errors.push({
+      field: 'actualPrepTime',
+      code: 'INVALID_RANGE',
+      message: `Prep time must be between 0 and ${RATING_CONSTRAINTS.PREP_TIME_MAX} minutes`
+    });
+  }
+
+  if (submission.actualCookTime && (submission.actualCookTime < 0 || submission.actualCookTime > RATING_CONSTRAINTS.COOK_TIME_MAX)) {
+    errors.push({
+      field: 'actualCookTime',
+      code: 'INVALID_RANGE',
+      message: `Cook time must be between 0 and ${RATING_CONSTRAINTS.COOK_TIME_MAX} minutes`
+    });
+  }
+
+  // Cooking context validation
+  if (submission.cookingContext && !isValidCookingContext(submission.cookingContext)) {
+    errors.push({
+      field: 'cookingContext',
+      code: 'INVALID_VALUE',
+      message: 'Invalid cooking context'
+    });
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+}
+
+/**
+ * Validates a rating update request
+ */
+export function validateRatingUpdate(update: RatingUpdateRequest): ValidationResult {
+  const errors: ValidationError[] = [];
+
+  // At least one field must be provided for update
+  const hasFields = update.overallRating || update.reviewText !== undefined || 
+                   update.difficultyRating || update.tasteRating || 
+                   update.wouldMakeAgain !== undefined || update.actualPrepTime || 
+                   update.actualCookTime || update.cookingContext;
+
+  if (!hasFields) {
+    errors.push({
+      field: 'general',
+      code: 'NO_FIELDS',
+      message: 'At least one field must be provided for update'
+    });
+  }
+
+  // Validate fields if provided (same rules as submission)
+  if (update.overallRating && !isValidRatingValue(update.overallRating)) {
+    errors.push({
+      field: 'overallRating',
+      code: 'INVALID_RANGE',
+      message: `Rating must be between ${RATING_CONSTRAINTS.RATING_MIN} and ${RATING_CONSTRAINTS.RATING_MAX} stars`
+    });
+  }
+
+  if (update.difficultyRating && !isValidRatingValue(update.difficultyRating)) {
+    errors.push({
+      field: 'difficultyRating',
+      code: 'INVALID_RANGE',
+      message: `Difficulty rating must be between ${RATING_CONSTRAINTS.RATING_MIN} and ${RATING_CONSTRAINTS.RATING_MAX} stars`
+    });
+  }
+
+  if (update.tasteRating && !isValidRatingValue(update.tasteRating)) {
+    errors.push({
+      field: 'tasteRating',
+      code: 'INVALID_RANGE',
+      message: `Taste rating must be between ${RATING_CONSTRAINTS.RATING_MIN} and ${RATING_CONSTRAINTS.RATING_MAX} stars`
+    });
+  }
+
+  if (update.reviewText !== undefined) {
+    const reviewValidation = validateReviewText(update.reviewText);
+    if (!reviewValidation.isValid) {
+      errors.push(...reviewValidation.errors);
+    }
+  }
+
+  if (update.actualPrepTime && (update.actualPrepTime < 0 || update.actualPrepTime > RATING_CONSTRAINTS.PREP_TIME_MAX)) {
+    errors.push({
+      field: 'actualPrepTime',
+      code: 'INVALID_RANGE',
+      message: `Prep time must be between 0 and ${RATING_CONSTRAINTS.PREP_TIME_MAX} minutes`
+    });
+  }
+
+  if (update.actualCookTime && (update.actualCookTime < 0 || update.actualCookTime > RATING_CONSTRAINTS.COOK_TIME_MAX)) {
+    errors.push({
+      field: 'actualCookTime',
+      code: 'INVALID_RANGE',
+      message: `Cook time must be between 0 and ${RATING_CONSTRAINTS.COOK_TIME_MAX} minutes`
+    });
+  }
+
+  if (update.cookingContext && !isValidCookingContext(update.cookingContext)) {
+    errors.push({
+      field: 'cookingContext',
+      code: 'INVALID_VALUE',
+      message: 'Invalid cooking context'
+    });
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+}
+
+/**
+ * Validates review text for length and content
+ */
+export function validateReviewText(reviewText: string): ValidationResult {
+  const errors: ValidationError[] = [];
+
+  // Length validation
+  if (reviewText.length > RATING_CONSTRAINTS.REVIEW_TEXT_MAX_LENGTH) {
+    errors.push({
+      field: 'reviewText',
+      code: 'MAX_LENGTH',
+      message: `Review text cannot exceed ${RATING_CONSTRAINTS.REVIEW_TEXT_MAX_LENGTH} characters`
+    });
+  }
+
+  // Basic profanity filter (in production, use external service)
+  if (containsProfanity(reviewText)) {
+    errors.push({
+      field: 'reviewText',
+      code: 'INAPPROPRIATE_CONTENT',
+      message: 'Review contains inappropriate content. Please revise.'
+    });
+  }
+
+  // Basic spam detection
+  if (isLikelySpam(reviewText)) {
+    errors.push({
+      field: 'reviewText',
+      code: 'SPAM_DETECTED',
+      message: 'Review appears to be spam'
+    });
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+}
+
+/**
+ * Sanitizes review text for safe storage and display
+ */
+export function sanitizeReviewText(reviewText: string): string {
+  if (!reviewText) return '';
+  
+  return reviewText
+    .trim()
+    .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+    .replace(/<[^>]*>/g, '') // Remove HTML tags
+    .replace(/[^\w\s.,!?'-]/g, ''); // Remove special characters except basic punctuation
+}
+
+/**
+ * Determines moderation status for a review
+ */
+export function getModerationStatus(reviewText?: string): ModerationStatus {
+  if (!reviewText || reviewText.length === 0) {
+    return 'approved'; // No review text, auto-approve
+  }
+
+  const validation = validateReviewText(reviewText);
+  if (!validation.isValid) {
+    const hasInappropriateContent = validation.errors.some(
+      error => error.code === 'INAPPROPRIATE_CONTENT' || error.code === 'SPAM_DETECTED'
+    );
+    
+    if (hasInappropriateContent) {
+      return 'pending'; // Requires manual review
+    }
+  }
+
+  return 'approved';
+}
+
+// Helper functions
+function isValidRatingValue(rating: number): boolean {
+  return Number.isInteger(rating) && 
+         rating >= RATING_CONSTRAINTS.RATING_MIN && 
+         rating <= RATING_CONSTRAINTS.RATING_MAX;
+}
+
+function isValidUUID(id: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(id);
+}
+
+function isValidCookingContext(context: string): boolean {
+  const validContexts = ['weeknight', 'weekend', 'special_occasion'];
+  return validContexts.includes(context);
+}
+
+function containsProfanity(text: string): boolean {
+  const lowercaseText = text.toLowerCase();
+  return PROFANITY_WORDS.some(word => lowercaseText.includes(word));
+}
+
+function isLikelySpam(text: string): boolean {
+  // Basic spam detection
+  const spamIndicators = [
+    /(.)\1{4,}/, // Repeated characters (5+ times)
+    /http[s]?:\/\//, // URLs
+    /\b(buy|sell|cheap|free|money|cash|prize|winner|click)\b/gi, // Spam keywords
+    /(.{1,10})\1{3,}/, // Repeated patterns
+  ];
+  
+  return spamIndicators.some(pattern => pattern.test(text));
+}
+
+// Export validation rules for reference
+export const VALIDATION_RULES = {
+  overallRating: {
+    required: true,
+    min: RATING_CONSTRAINTS.RATING_MIN,
+    max: RATING_CONSTRAINTS.RATING_MAX,
+  },
+  reviewText: {
+    maxLength: RATING_CONSTRAINTS.REVIEW_TEXT_MAX_LENGTH,
+    profanityFilter: true,
+    spamFilter: true,
+  },
+  difficultyRating: {
+    min: RATING_CONSTRAINTS.RATING_MIN,
+    max: RATING_CONSTRAINTS.RATING_MAX,
+  },
+  tasteRating: {
+    min: RATING_CONSTRAINTS.RATING_MIN,
+    max: RATING_CONSTRAINTS.RATING_MAX,
+  },
+  actualPrepTime: {
+    min: 0,
+    max: RATING_CONSTRAINTS.PREP_TIME_MAX,
+  },
+  actualCookTime: {
+    min: 0,
+    max: RATING_CONSTRAINTS.COOK_TIME_MAX,
+  },
+} as const;

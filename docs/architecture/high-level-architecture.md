@@ -2,59 +2,67 @@
 
 ## Technical Summary
 
-imkitchen employs a **traditional server architecture** with a unified Rust backend combining API services and TwinSpark admin interface. The system centers around a high-performance meal planning engine delivering sub-2-second automated weekly meal generation through PostgreSQL recipe storage and Redis caching optimization. Frontend integration emphasizes mobile-first responsive design (320px-1440px+ breakpoints) with kitchen-optimized UX including voice commands, offline shopping capability, and hands-free cooking mode. Infrastructure deployment targets containerized services with horizontal scaling to support community features and recipe sharing.
+**imkitchen** implements a modern hybrid architecture combining mobile-first cross-platform development with high-performance backend services. The Lynx.js frontend delivers native mobile experiences on iOS/Android plus responsive web, while Go-based microservices handle performance-critical meal planning algorithms and recipe management. PostgreSQL provides robust relational data storage with Redis caching to achieve the 2-second "Fill My Week" generation requirement. The system deploys as a cloud-native architecture supporting horizontal scaling for community features, with clear API boundaries enabling independent frontend/backend development and deployment.
 
 ## Platform and Infrastructure Choice
 
-Based on PRD requirements, unified backend approach, and performance demands:
+Based on the PRD's mobile-first requirements, performance targets, and scalability needs, I present three viable platform options:
 
-**Recommendation: AWS Container Stack** for reliable performance, mature services ecosystem, and simplified operations without serverless cold start concerns.
+**Option 1: AWS Full Stack** (Recommended)
+- **Pros:** Mature ecosystem, excellent Go Lambda support, PostgreSQL RDS, Redis ElastiCache, comprehensive mobile app deployment
+- **Cons:** Higher complexity, potential vendor lock-in, learning curve for team
+- **Key Services:** ECS/Lambda, RDS PostgreSQL, ElastiCache Redis, API Gateway, CloudFront CDN
+
+**Option 2: Vercel + Supabase**
+- **Pros:** Rapid development, excellent DX, built-in auth, real-time features
+- **Cons:** Limited Go support, newer platform, potential scaling limitations
+- **Key Services:** Vercel hosting, Supabase PostgreSQL, built-in auth/storage
+
+**Option 3: Google Cloud Platform**
+- **Pros:** Strong mobile analytics, excellent Go support, competitive pricing
+- **Cons:** Smaller ecosystem than AWS, less Lynx.js community examples
+- **Key Services:** Cloud Run, Cloud SQL, Memorystore Redis, Cloud CDN
+
+**Recommendation:** AWS Full Stack for production-grade requirements, mature Go ecosystem, and comprehensive mobile app deployment support.
 
 **Platform:** AWS  
-**Key Services:** ECS Fargate (unified Rust backend), RDS PostgreSQL, ElastiCache Redis, ALB (load balancer), S3 (recipe images), CloudFront CDN  
-**Deployment Host and Regions:** us-east-1 (primary), us-west-2 (failover)
+**Key Services:** ECS (Go services), RDS PostgreSQL, ElastiCache Redis, API Gateway, CloudFront, S3 (recipe images)  
+**Deployment Host and Regions:** us-east-1 (primary), us-west-2 (failover), eu-west-1 (international expansion)
 
 ## Repository Structure
 
-**Structure:** Monorepo with unified backend service  
-**Monorepo Tool:** Cargo workspaces (native Rust) with npm workspaces for frontend  
-**Package Organization:**
-- `apps/mobile` (Lynx-js cross-platform)
-- `services/backend` (unified Rust API + TwinSpark admin)
-- `services/recipe-scraper` (background job service)
-- `shared/types` (TypeScript/Rust type definitions)
-- `shared/ui` (mobile component library)
+**Structure:** Monorepo with clear package boundaries for mobile, API, and shared components  
+**Monorepo Tool:** Nx for comprehensive build orchestration, dependency management, and cross-platform code sharing  
+**Package Organization:** Apps (mobile, web, api), packages (shared-types, ui-components, recipe-utils), tools (build-scripts, deployment-configs)
 
 ## High Level Architecture Diagram
 
 ```mermaid
 graph TD
-    A[Mobile App<br/>Lynx-js] --> B[Load Balancer<br/>AWS ALB]
-    B --> C[Unified Backend<br/>Rust + TwinSpark]
-    B --> D[Unified Backend<br/>Rust + TwinSpark]
-    
-    C --> E[Redis Cache<br/>ElastiCache]
-    D --> E
-    C --> F[PostgreSQL<br/>RDS]
-    D --> F
-    
-    C --> G[S3<br/>Recipe Images]
-    D --> G
-    
-    H[Recipe Scraper<br/>Background Service] --> F
-    H --> G
-    
-    I[CDN<br/>CloudFront] --> G
-    A --> I
-    
-    J[Admin Users] --> B
+    A[Mobile Apps - Lynx.js] --> B[CloudFront CDN]
+    C[Web App - Lynx.js] --> B
+    B --> D[API Gateway]
+    D --> E[Go Microservices - ECS]
+    E --> F[PostgreSQL - RDS]
+    E --> G[Redis Cache - ElastiCache]
+    E --> H[S3 Recipe Images]
+    E --> I[External Recipe APIs]
+    J[Community Features] --> E
+    K[Push Notifications] --> A
+    L[Analytics] --> M[CloudWatch]
+    E --> L
 ```
 
 ## Architectural Patterns
 
-- **Monolithic Service Architecture:** Single Rust service combining API and admin interface - *Rationale:* Simplifies deployment, reduces network latency, and enables tight integration between admin functions and core business logic
-- **Mobile-First Progressive Web App:** Lynx-js framework with offline-first data sync - *Rationale:* Cross-platform development efficiency with native performance for kitchen environments
-- **Command Query Responsibility Segregation (CQRS):** Separate read/write models for recipe management and meal planning - *Rationale:* Optimizes complex meal generation queries while maintaining simple recipe CRUD operations
-- **Repository Pattern:** Abstract data access across PostgreSQL and Redis layers - *Rationale:* Enables testing and future database optimization without business logic changes
-- **Background Job Processing:** Separate service for recipe scraping and heavy operations - *Rationale:* Prevents blocking main API while handling external service dependencies
-- **Layered Architecture:** Clear separation between web layer (API/admin), business logic, and data access - *Rationale:* Maintainable code organization with testable business rules
+- **Microservices Architecture:** Separate services for meal planning, recipe management, user management, and community features - _Rationale:_ Enables independent scaling of performance-critical meal planning algorithms while maintaining development velocity
+
+- **API Gateway Pattern:** Single entry point with authentication, rate limiting, and routing to appropriate microservices - _Rationale:_ Centralizes cross-cutting concerns and provides clean abstraction for mobile clients
+
+- **Repository Pattern:** Abstract data access layer with interface-driven design - _Rationale:_ Enables comprehensive testing and future database optimization without business logic changes
+
+- **CQRS (Command Query Responsibility Segregation):** Separate read/write models for recipe data and meal planning - _Rationale:_ Optimizes read performance for recipe browsing while maintaining write consistency for meal plan generation
+
+- **Event-Driven Architecture:** Asynchronous processing for meal plan generation and community notifications - _Rationale:_ Supports sub-2-second response times by offloading heavy computations
+
+- **Component-Based Frontend:** Lynx.js components with shared design system across mobile and web - _Rationale:_ Maximizes code reuse while maintaining platform-specific optimizations

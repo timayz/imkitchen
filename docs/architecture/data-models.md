@@ -1,180 +1,200 @@
 # Data Models
 
-Based on the PRD requirements and user flows, I've identified the core business entities for imkitchen's meal planning automation system:
-
 ## User
 
-**Purpose:** Represents home cooking enthusiasts using the meal planning automation system
+**Purpose:** Central user entity supporting authentication, preferences, and personalized meal planning automation
 
 **Key Attributes:**
-- id: UUID - Unique user identifier
-- email: String - Authentication and communication
-- password_hash: String - Secure authentication storage
-- display_name: String - User-friendly identification
-- created_at: DateTime - Account tracking
-- dietary_restrictions: Vec<DietaryRestriction> - Meal planning filters
-- preferences: UserPreferences - Personalization settings
+- id: UUID - Primary identifier for cross-service references
+- email: string - Authentication and communication
+- displayName: string - User interface personalization  
+- dietaryRestrictions: string[] - Array of dietary constraints for meal planning
+- cookingSkillLevel: enum - Beginner, Intermediate, Advanced for complexity filtering
+- weeklyAvailability: JSON - Time availability patterns for intelligent scheduling
+- preferredMealComplexity: enum - Simple, Moderate, Complex for automation preferences
+- rotationResetCount: integer - Tracking recipe rotation cycles
 
 ### TypeScript Interface
+
 ```typescript
 interface User {
   id: string;
   email: string;
   displayName: string;
+  dietaryRestrictions: string[];
+  cookingSkillLevel: 'beginner' | 'intermediate' | 'advanced';
+  weeklyAvailability: {
+    [day: string]: {
+      morningEnergy: 'low' | 'medium' | 'high';
+      availableTime: number; // minutes
+    };
+  };
+  preferredMealComplexity: 'simple' | 'moderate' | 'complex';
+  rotationResetCount: number;
   createdAt: Date;
-  dietaryRestrictions: DietaryRestriction[];
-  preferences: UserPreferences;
+  updatedAt: Date;
 }
-
-interface UserPreferences {
-  defaultServings: number;
-  mealComplexityPreference: 'easy' | 'medium' | 'hard';
-  cookingTimePreference: number; // max minutes
-  favoriteCategories: string[];
-}
-
-type DietaryRestriction = 'vegetarian' | 'vegan' | 'gluten_free' | 'dairy_free' | 'nut_free' | 'keto' | 'paleo';
 ```
 
 ### Relationships
-- One-to-many: User → Recipe (user's personal recipes)
-- One-to-many: User → MealPlan (historical meal plans)
-- One-to-many: User → RecipeRating (community ratings)
+- User → many Recipes (recipe collection)
+- User → many MealPlans (generated meal plans)
+- User → many RecipeRatings (community participation)
 
 ## Recipe
 
-**Purpose:** Core entity representing individual recipes with timing, ingredients, and community validation
+**Purpose:** Core recipe entity with metadata essential for intelligent meal planning automation and community features
 
 **Key Attributes:**
-- id: UUID - Unique recipe identifier
-- title: String - Recipe name
-- description: String - Brief recipe overview
-- prep_time_minutes: i32 - Preparation time
-- cook_time_minutes: i32 - Active cooking time
-- total_time_minutes: i32 - Complete recipe duration
-- difficulty_level: DifficultyLevel - Complexity indicator
-- servings: i32 - Default serving size
-- category: RecipeCategory - Meal type classification
-- instructions: Vec<RecipeStep> - Ordered cooking steps
-- created_by: UUID - Recipe creator (user_id)
-- is_public: bool - Community visibility
-- image_url: Option<String> - Recipe photo
-- nutritional_info: Option<NutritionalInfo> - Health information
+- id: UUID - Primary identifier
+- title: string - Recipe display name
+- description: text - Recipe overview for community features
+- ingredients: Ingredient[] - Structured ingredient list for shopping automation
+- instructions: Step[] - Cooking steps with time estimates
+- prepTime: integer - Total preparation time in minutes for scheduling
+- cookTime: integer - Active cooking time for availability matching  
+- complexity: enum - Simple, Moderate, Complex for automation filtering
+- cuisineType: string - Cultural categorization for variety optimization
+- mealType: enum - Breakfast, Lunch, Dinner, Snack for calendar assignment
+- servings: integer - Portion size for ingredient scaling
+- imageUrl: string - Recipe photo URL for visual appeal
 
 ### TypeScript Interface
+
 ```typescript
 interface Recipe {
   id: string;
+  userId: string;
   title: string;
   description: string;
-  prepTimeMinutes: number;
-  cookTimeMinutes: number;
-  totalTimeMinutes: number;
-  difficultyLevel: DifficultyLevel;
+  ingredients: {
+    name: string;
+    amount: number;
+    unit: string;
+    category: 'produce' | 'dairy' | 'pantry' | 'protein' | 'other';
+  }[];
+  instructions: {
+    stepNumber: number;
+    instruction: string;
+    estimatedMinutes?: number;
+  }[];
+  prepTime: number;
+  cookTime: number;
+  complexity: 'simple' | 'moderate' | 'complex';
+  cuisineType: string;
+  mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack';
   servings: number;
-  category: RecipeCategory;
-  ingredients: RecipeIngredient[];
-  instructions: RecipeStep[];
-  createdBy: string;
-  isPublic: boolean;
   imageUrl?: string;
-  nutritionalInfo?: NutritionalInfo;
-  communityRating?: number;
-  personalRating?: number;
-}
-
-type DifficultyLevel = 'easy' | 'medium' | 'hard';
-type RecipeCategory = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'dessert';
-
-interface RecipeStep {
-  order: number;
-  instruction: string;
-  duration?: number; // optional timer
-}
-
-interface RecipeIngredient {
-  ingredientId: string;
-  quantity: number;
-  unit: string;
-  notes?: string;
+  isPublic: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 ```
 
 ### Relationships
-- Many-to-one: Recipe → User (created_by)
-- One-to-many: Recipe → RecipeRating (community feedback)
-- Many-to-many: Recipe ↔ Ingredient (via RecipeIngredient)
-- One-to-many: Recipe → MealPlanSlot (scheduled meals)
+- Recipe → one User (owner)
+- Recipe → many MealPlanEntries (usage in meal plans)
+- Recipe → many RecipeRatings (community feedback)
 
 ## MealPlan
 
-**Purpose:** Weekly meal planning automation with rotation tracking and shopping list generation
+**Purpose:** Weekly meal planning container with automation metadata for user meal organization and rotation tracking
 
 **Key Attributes:**
-- id: UUID - Unique meal plan identifier
-- user_id: UUID - Plan owner
-- week_start_date: Date - Week beginning (Monday)
-- created_at: DateTime - Generation timestamp
-- is_current: bool - Active meal plan flag
-- generation_method: GenerationMethod - How plan was created
+- id: UUID - Primary identifier
+- userId: UUID - Plan owner reference
+- weekStartDate: Date - Monday of the target week for calendar alignment
+- generationType: enum - Automated, Manual, Mixed for generation tracking
+- generatedAt: DateTime - Automation timestamp for performance monitoring
+- totalEstimatedTime: integer - Weekly cooking time for user planning
+- isActive: boolean - Current active plan for user interface
 
 ### TypeScript Interface
+
 ```typescript
 interface MealPlan {
   id: string;
   userId: string;
   weekStartDate: Date;
+  generationType: 'automated' | 'manual' | 'mixed';
+  generatedAt: Date;
+  totalEstimatedTime: number; // minutes
+  isActive: boolean;
+  entries: MealPlanEntry[];
   createdAt: Date;
-  isCurrent: boolean;
-  generationMethod: GenerationMethod;
-  slots: MealPlanSlot[];
+  updatedAt: Date;
 }
-
-type GenerationMethod = 'auto_fill_my_week' | 'manual' | 'partial_auto';
-
-interface MealPlanSlot {
-  id: string;
-  mealPlanId: string;
-  date: Date;
-  mealType: MealType;
-  recipeId?: string;
-  customMealName?: string; // for non-recipe meals
-  isCompleted: boolean;
-}
-
-type MealType = 'breakfast' | 'lunch' | 'dinner';
 ```
 
 ### Relationships
-- Many-to-one: MealPlan → User
-- One-to-many: MealPlan → MealPlanSlot
-- One-to-many: MealPlan → ShoppingList
+- MealPlan → one User (owner)
+- MealPlan → many MealPlanEntries (daily meal assignments)
 
-## RecipeRotation
+## MealPlanEntry
 
-**Purpose:** Tracks recipe usage history to ensure variety in "Fill My Week" automation
+**Purpose:** Individual meal assignment within weekly plan supporting manual overrides and scheduling optimization
 
 **Key Attributes:**
-- id: UUID - Rotation tracking identifier
-- user_id: UUID - Rotation owner
-- recipe_id: UUID - Recipe being tracked
-- last_used_date: Option<Date> - Most recent meal plan usage
-- rotation_cycle: i32 - Current rotation round
-- is_excluded: bool - User preference exclusion
+- id: UUID - Primary identifier
+- mealPlanId: UUID - Parent plan reference
+- recipeId: UUID - Assigned recipe reference  
+- date: Date - Specific day assignment
+- mealType: enum - Breakfast, Lunch, Dinner for calendar positioning
+- isManualOverride: boolean - Track user modifications vs automation
+- scheduledPrepTime: DateTime - Optimal prep timing based on recipe requirements
+- isCompleted: boolean - User cooking completion tracking
 
 ### TypeScript Interface
+
 ```typescript
-interface RecipeRotation {
+interface MealPlanEntry {
   id: string;
-  userId: string;
+  mealPlanId: string;
   recipeId: string;
-  lastUsedDate?: Date;
-  rotationCycle: number;
-  isExcluded: boolean;
-  usageCount: number;
+  date: Date;
+  mealType: 'breakfast' | 'lunch' | 'dinner';
+  isManualOverride: boolean;
+  scheduledPrepTime?: Date;
+  isCompleted: boolean;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 ```
 
 ### Relationships
-- Many-to-one: RecipeRotation → User
-- Many-to-one: RecipeRotation → Recipe
+- MealPlanEntry → one MealPlan (parent plan)
+- MealPlanEntry → one Recipe (assigned recipe)
+
+## RecipeRating
+
+**Purpose:** Community feedback system enabling recipe quality validation and social engagement features
+
+**Key Attributes:**
+- id: UUID - Primary identifier
+- recipeId: UUID - Rated recipe reference
+- userId: UUID - Rating contributor
+- rating: integer - 1-5 star rating scale
+- review: text - Optional written feedback
+- difficulty: enum - Community difficulty assessment vs original recipe rating
+- wouldCookAgain: boolean - Recipe recommendation indicator
+
+### TypeScript Interface
+
+```typescript
+interface RecipeRating {
+  id: string;
+  recipeId: string;
+  userId: string;
+  rating: number; // 1-5
+  review?: string;
+  difficulty: 'easier' | 'as_expected' | 'harder';
+  wouldCookAgain: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
+### Relationships
+- RecipeRating → one Recipe (rated recipe)  
+- RecipeRating → one User (rating author)

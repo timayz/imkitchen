@@ -1,0 +1,9 @@
+{
+  "name": "@imkitchen/shared-types",
+  "version": "0.0.0",
+  "main": "./src/index.ts",
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "~5.3.2"
+  }
+}
