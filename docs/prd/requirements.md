@@ -2,32 +2,40 @@
 
 ## Functional Requirements
 
-**FR1:** The system shall provide a "Fill My Week" button that generates automated weekly meal plans using rotation logic to cycle through the user's recipe collection with no-duplicate constraint until all favorites are cooked.
+**FR1:** The system shall provide "Fill My Week" automated meal selection that generates weekly meal plans from the user's curated recipe collection with no-duplicate rotation until all selected recipes are used.
 
-**FR2:** The system shall display a visual meal calendar interface showing breakfast/lunch/dinner slots with prep requirement indicators, complexity color coding, and advance preparation flags.
+**FR2:** The system shall display a visual meal calendar interface showing breakfast/lunch/dinner slots with color-coded prep indicators and timing requirements.
 
-**FR3:** The system shall maintain a recipe management system allowing users to import/enter favorite recipes, store prep time indicators, and organize recipes with basic categorization.
+**FR3:** The system shall send morning prep reminders with specific task lists and estimated durations for advance preparation requirements (marinades, dough prep, component cooking).
 
-**FR4:** The system shall automatically generate consolidated shopping lists from weekly meal selections with basic grocery store organization (produce, dairy, pantry).
+**FR4:** The system shall auto-generate shopping lists from weekly meal selections with basic ingredient grouping and quantity adjustment for family size.
 
-**FR5:** The system shall provide a community recipe rating system enabling user feedback on recipe quality and difficulty validation.
+**FR5:** The system shall provide a curated recipe database with 100+ professionally tested recipes including detailed timing data across common cuisines and skill levels.
 
-**FR6:** The system shall track which recipes have been used in the rotation to ensure no duplicates until all favorites in collection have been cooked.
+**FR6:** The system shall allow users to create and input personal recipes with timing steps and share them publicly or privately.
 
-**FR7:** The system shall allow users to mark dietary restrictions and allergies that filter available recipes during automated planning.
+**FR7:** The system shall implement a 5-star rating and review system focused on execution success, timing accuracy, and practical modifications.
 
-**FR8:** The system shall provide manual meal slot editing allowing users to swap specific meals while maintaining shopping list synchronization.
+**FR8:** The system shall support multi-language interface and recipe content for global accessibility.
+
+**FR9:** The system shall allow easy meal rescheduling through drag-and-drop calendar interface for life disruptions.
+
+**FR10:** The system shall enable local web browser preview of the application during development and after story completion.
 
 ## Non-Functional Requirements
 
-**NFR1:** The "Fill My Week" meal plan generation must complete within 2 seconds to maintain user engagement and perceived intelligence.
+**NFR1:** The system shall achieve <2 second initial load time and <500ms navigation between screens for optimal mobile experience.
 
-**NFR2:** The system must support offline access to saved recipes and current week meal plans to ensure utility during grocery shopping.
+**NFR2:** The system shall maintain 99.5% notification delivery reliability for timing intelligence features.
 
-**NFR3:** The mobile interface must be optimized for iOS 14+ and Android 8+ with responsive design adapting to tablet and phone screen sizes.
+**NFR3:** The system shall support Progressive Web App (PWA) capabilities including offline functionality via service workers.
 
-**NFR4:** The system must support concurrent users with 99.9% uptime to build trust in automated meal planning reliability.
+**NFR4:** The system shall maintain vendor-neutral architecture avoiding technology lock-in for platform independence.
 
-**NFR5:** User recipe data must be encrypted and privately stored with GDPR compliance for international market expansion.
+**NFR5:** The system shall comply with GDPR requirements for EU users and implement secure API authentication with JWT tokens.
 
-**NFR6:** The community rating system must prevent spam and manipulation through user verification and abuse detection algorithms.
+**NFR6:** The system shall support modern browsers (Chrome 90+, Safari 14+, Firefox 85+) with consistent functionality.
+
+**NFR7:** The system shall implement mobile-first responsive design optimized for smartphone usage patterns.
+
+**NFR8:** The system shall enable containerized deployment with Docker and Kubernetes for scalability.

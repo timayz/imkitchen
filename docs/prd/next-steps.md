@@ -1,7 +1,7 @@
 # Next Steps
 
 ## UX Expert Prompt
-Please review this PRD and create comprehensive UI/UX designs for the imkitchen mobile application, focusing on the visual meal calendar interface, "Fill My Week" automation workflow, and mobile-optimized shopping experience.
+Review the ImKitchen PRD and create comprehensive UI/UX specifications focusing on mobile-first cooking companion experience. Priority areas: timing intelligence interface design, meal calendar visualization, and notification UX patterns. Ensure accessibility compliance and kitchen-context usability.
 
-## Architect Prompt
-Please review this PRD and create detailed technical architecture for imkitchen, including database schema, API design, Rust backend services, Lynx-js mobile implementation, and integration patterns for the meal planning automation engine.
+## Architect Prompt  
+Design technical architecture for ImKitchen based on the PRD requirements. Focus on: Next.js/TypeScript frontend with API routes or microservices backend, notification scheduling engine, timing intelligence algorithms, and Next.js PWA implementation with offline capabilities. Address 99.5% notification reliability requirement and Next.js development environment setup.

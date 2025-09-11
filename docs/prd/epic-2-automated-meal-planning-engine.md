@@ -1,68 +1,78 @@
-# Epic 2: Automated Meal Planning Engine  
+# Epic 2: Automated Meal Planning Engine
 
-**Expanded Goal:** Implement the core "Fill My Week" functionality with intelligent rotation logic that automatically generates weekly meal plans from user's recipe collection. This epic delivers the primary value proposition of eliminating meal planning cognitive overhead while ensuring users experience their full recipe variety through systematic rotation.
+**Epic Goal:** Implement the core "Fill My Week" automation and visual meal calendar that solves the primary user pain point of decision fatigue while providing intelligent meal selection from user's curated recipe collection.
 
-## Story 2.1: Recipe Rotation Algorithm Core
-**As a** user with multiple favorite recipes,  
-**I want** the system to track which recipes I've used recently,  
-**so that** automated meal planning cycles through my full collection without repetition.
+## Story 2.1: Basic Meal Calendar Interface
 
-### Acceptance Criteria
-1. Database schema tracking recipe usage history per user
-2. Rotation algorithm ensuring no recipe repeats until all favorites are used
-3. Reset mechanism when full collection has been cycled through
-4. Manual recipe exclusion option for dietary changes or dislikes
-5. Rotation status visibility showing progress through recipe collection
-6. Algorithm performance under 500ms for collections up to 100 recipes
-
-## Story 2.2: "Fill My Week" Button Implementation
-**As a** busy home cook,  
-**I want** to tap one button and receive a complete weekly meal plan,  
-**so that** I can eliminate meal planning decision fatigue entirely.
+As a home cook,
+I want to see my weekly meals in a visual calendar format,
+so that I can understand my meal plan at a glance and plan my week effectively.
 
 ### Acceptance Criteria
-1. Prominent "Fill My Week" button on main interface
-2. Automatic generation of 7 days of meals (breakfast, lunch, dinner)
-3. Integration with rotation algorithm preventing recipe duplication
-4. Sub-2-second meal plan generation meeting performance requirements
-5. Visual feedback during generation with progress indicators
-6. Generated plan immediately accessible and editable
+1. Weekly calendar view displays 7 days with breakfast/lunch/dinner slots in responsive grid layout
+2. Calendar navigation allows moving between weeks with clear date indicators
+3. Empty meal slots display placeholder content inviting meal assignment
+4. Calendar adapts to mobile screen sizes with touch-friendly interaction areas
+5. Today's date is visually highlighted with distinct styling
+6. Calendar loads quickly (<500ms) and handles week transitions smoothly
+7. Accessibility features support keyboard navigation and screen readers
 
-## Story 2.3: Dietary Restriction and Preference Filtering
-**As a** user with dietary restrictions,  
-**I want** automated meal plans to respect my food allergies and preferences,  
-**so that** generated meals are always safe and appealing to eat.
+## Story 2.2: Manual Meal Assignment
 
-### Acceptance Criteria
-1. User profile settings for common allergies (nuts, dairy, gluten, etc.)
-2. Preference settings for dietary styles (vegetarian, keto, etc.)
-3. Automatic filtering of incompatible recipes during meal generation
-4. Warning system if insufficient compatible recipes exist for full week
-5. Manual override option for specific restriction exceptions
-6. Dietary restriction indicators visible on recipe details
-
-## Story 2.4: Basic Meal Plan Editing and Regeneration
-**As a** user reviewing my generated meal plan,  
-**I want** to swap individual meals or regenerate specific days,  
-**so that** I can customize the automated plan when needed.
+As a home cook,
+I want to assign recipes to specific meal slots in my calendar,
+so that I can manually plan my meals before using automation features.
 
 ### Acceptance Criteria
-1. Individual meal slot editing with recipe substitution
-2. Single day regeneration maintaining weekly rotation logic
-3. Full week regeneration option preserving dietary restrictions
-4. Undo functionality for recent meal plan changes
-5. Change tracking showing modified versus auto-generated meals
-6. Seamless integration with shopping list updates after edits
+1. Recipe selection modal allows browsing user's recipe collection with search functionality
+2. Drag-and-drop interface enables moving recipes to calendar meal slots
+3. Alternative tap-to-assign workflow works on mobile devices without drag capability
+4. Assigned meals display recipe name, prep time, and visual thumbnail in calendar slot
+5. Meal assignments persist in database and reload correctly on page refresh
+6. Validation prevents assigning same recipe multiple times within a week
+7. Clear feedback confirms successful meal assignment with visual updates
 
-## Story 2.5: Meal Plan Persistence and History
-**As a** user who finds successful meal combinations,  
-**I want** to save and review previous meal plans,  
-**so that** I can repeat planning approaches that worked well for my schedule.
+## Story 2.3: "Fill My Week" Automation Algorithm
+
+As a busy home cook,
+I want one-tap automation to fill my weekly meal plan,
+so that I can eliminate decision fatigue while ensuring recipe variety.
 
 ### Acceptance Criteria
-1. Automatic saving of all generated meal plans with timestamps
-2. Meal plan history view with week-by-week navigation
-3. "Repeat This Week" functionality for successful meal combinations
-4. Meal plan favoriting and rating for future reference
-5. Search functionality within meal plan history
-6. Export option for sharing successful meal plans
+1. "Fill My Week" button triggers algorithm that selects from user's recipe collection
+2. Algorithm ensures no duplicate recipes within the same week
+3. Meal selection considers basic constraints like recipe complexity distribution
+4. Algorithm fills only empty meal slots, preserving manually assigned meals
+5. Selection logic rotates through entire recipe collection before repeating recipes
+6. Generated meal plan displays immediately in calendar with clear visual feedback
+7. Algorithm performance completes selection within 2 seconds for collections up to 100 recipes
+
+## Story 2.4: Meal Plan Editing and Rescheduling
+
+As a home cook,
+I want to easily modify my generated meal plan,
+so that I can adapt to schedule changes and personal preferences.
+
+### Acceptance Criteria
+1. Drag-and-drop rescheduling moves meals between calendar slots with visual feedback
+2. Meal removal functionality clears slots and returns recipes to available pool
+3. Replace meal option opens recipe selection for direct substitution
+4. Undo functionality reverses recent meal plan changes
+5. Bulk operations allow clearing entire days or meal types (all lunches, etc.)
+6. Changes save automatically with visual confirmation of successful updates
+7. Mobile-optimized editing workflow accommodates touch interactions and smaller screens
+
+## Story 2.5: Recipe Collection Management
+
+As a home cook,
+I want to curate my recipe collection for meal planning,
+so that automation only selects from recipes I actually want to cook.
+
+### Acceptance Criteria
+1. Recipe collection page displays all user recipes with inclusion toggles for meal planning
+2. Bulk selection tools enable quick inclusion/exclusion of multiple recipes
+3. Collection management includes categories or tags for organizing recipes by meal type
+4. Search and filter functionality helps users find specific recipes to include/exclude
+5. Collection statistics show total included recipes and estimated weeks of variety
+6. Import functionality allows adding recipes from public database to personal collection
+7. Collection changes immediately affect "Fill My Week" algorithm behavior
