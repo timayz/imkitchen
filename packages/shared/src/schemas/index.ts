@@ -14,3 +14,5 @@ export const createUserSchema = z.object({
   email: z.string().email(),
   name: z.string().optional(),
 });
+
+export * from './auth';
