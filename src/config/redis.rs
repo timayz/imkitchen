@@ -19,7 +19,12 @@ impl RedisSession {
         Self { client }
     }
 
-    pub async fn set_session(&self, session_id: &str, data: &str, ttl_seconds: usize) -> Result<(), RedisError> {
+    pub async fn set_session(
+        &self,
+        session_id: &str,
+        data: &str,
+        ttl_seconds: usize,
+    ) -> Result<(), RedisError> {
         let mut conn = self.client.get_multiplexed_async_connection().await?;
         redis::cmd("SETEX")
             .arg(format!("session:{}", session_id))

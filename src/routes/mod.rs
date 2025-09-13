@@ -1,5 +1,5 @@
-pub mod pages;
 pub mod fragments;
+pub mod pages;
 
 use axum::Router;
 

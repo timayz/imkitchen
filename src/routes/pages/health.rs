@@ -1,6 +1,6 @@
-use axum::{response::Json, http::StatusCode, response::Response};
-use serde::{Deserialize, Serialize};
+use axum::{http::StatusCode, response::Json, response::Response};
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use std::time::SystemTime;
 
 #[derive(Serialize, Deserialize)]
@@ -44,7 +44,7 @@ pub async fn health_check() -> Result<(StatusCode, Json<HealthResponse>), Status
 
     // Check database connection (placeholder - will be implemented with actual connections)
     let database_status = check_database_health().await;
-    
+
     // Check Redis connection (placeholder - will be implemented with actual connections)
     let redis_status = check_redis_health().await;
 
@@ -52,7 +52,8 @@ pub async fn health_check() -> Result<(StatusCode, Json<HealthResponse>), Status
     let system_info = get_system_info();
 
     // Determine overall status
-    let overall_status = if database_status.status == "healthy" && redis_status.status == "healthy" {
+    let overall_status = if database_status.status == "healthy" && redis_status.status == "healthy"
+    {
         "healthy"
     } else {
         "degraded"
@@ -85,11 +86,11 @@ pub async fn health_check() -> Result<(StatusCode, Json<HealthResponse>), Status
 }
 
 async fn check_database_health() -> ServiceHealth {
+    use crate::config::{database, Settings};
     use std::time::Instant;
-    use crate::config::{Settings, database};
-    
+
     let start = Instant::now();
-    
+
     // Get database URL from settings
     let settings = match Settings::new() {
         Ok(settings) => settings,
@@ -101,40 +102,38 @@ async fn check_database_health() -> ServiceHealth {
             };
         }
     };
-    
+
     // Test database connection
     match database::create_pool(&settings.database.url).await {
-        Ok(pool) => {
-            match database::test_connection(&pool).await {
-                Ok(_) => {
-                    let response_time = start.elapsed().as_millis() as u64;
-                    ServiceHealth {
-                        status: "healthy".to_string(),
-                        response_time_ms: Some(response_time),
-                        error: None,
-                    }
-                }
-                Err(e) => ServiceHealth {
-                    status: "unhealthy".to_string(),
-                    response_time_ms: Some(start.elapsed().as_millis() as u64),
-                    error: Some(format!("Database query failed: {}", e)),
+        Ok(pool) => match database::test_connection(&pool).await {
+            Ok(_) => {
+                let response_time = start.elapsed().as_millis() as u64;
+                ServiceHealth {
+                    status: "healthy".to_string(),
+                    response_time_ms: Some(response_time),
+                    error: None,
                 }
             }
-        }
+            Err(e) => ServiceHealth {
+                status: "unhealthy".to_string(),
+                response_time_ms: Some(start.elapsed().as_millis() as u64),
+                error: Some(format!("Database query failed: {}", e)),
+            },
+        },
         Err(e) => ServiceHealth {
             status: "unhealthy".to_string(),
             response_time_ms: Some(start.elapsed().as_millis() as u64),
             error: Some(format!("Database connection failed: {}", e)),
-        }
+        },
     }
 }
 
 async fn check_redis_health() -> ServiceHealth {
+    use crate::config::{redis, Settings};
     use std::time::Instant;
-    use crate::config::{Settings, redis};
-    
+
     let start = Instant::now();
-    
+
     // Get Redis URL from settings
     let settings = match Settings::new() {
         Ok(settings) => settings,
@@ -146,52 +145,49 @@ async fn check_redis_health() -> ServiceHealth {
             };
         }
     };
-    
+
     // Test Redis connection
     match redis::create_client(&settings.redis.url).await {
-        Ok(client) => {
-            match redis::test_connection(&client).await {
-                Ok(_) => {
-                    let response_time = start.elapsed().as_millis() as u64;
-                    ServiceHealth {
-                        status: "healthy".to_string(),
-                        response_time_ms: Some(response_time),
-                        error: None,
-                    }
-                }
-                Err(e) => ServiceHealth {
-                    status: "unhealthy".to_string(),
-                    response_time_ms: Some(start.elapsed().as_millis() as u64),
-                    error: Some(format!("Redis command failed: {}", e)),
+        Ok(client) => match redis::test_connection(&client).await {
+            Ok(_) => {
+                let response_time = start.elapsed().as_millis() as u64;
+                ServiceHealth {
+                    status: "healthy".to_string(),
+                    response_time_ms: Some(response_time),
+                    error: None,
                 }
             }
-        }
+            Err(e) => ServiceHealth {
+                status: "unhealthy".to_string(),
+                response_time_ms: Some(start.elapsed().as_millis() as u64),
+                error: Some(format!("Redis command failed: {}", e)),
+            },
+        },
         Err(e) => ServiceHealth {
             status: "unhealthy".to_string(),
             response_time_ms: Some(start.elapsed().as_millis() as u64),
             error: Some(format!("Redis connection failed: {}", e)),
-        }
+        },
     }
 }
 
 fn get_system_info() -> SystemInfo {
     use sysinfo::System;
-    
+
     let mut sys = System::new_all();
     sys.refresh_all();
-    
+
     // Get memory usage in MB
     let used_memory = sys.used_memory();
     let memory_usage_mb = (used_memory / 1024 / 1024) as u64;
-    
+
     // Get average CPU usage
-    let cpu_load = sys.cpus().iter()
-        .map(|cpu| cpu.cpu_usage())
-        .sum::<f32>() / sys.cpus().len() as f32 / 100.0;
-    
+    let cpu_load =
+        sys.cpus().iter().map(|cpu| cpu.cpu_usage()).sum::<f32>() / sys.cpus().len() as f32 / 100.0;
+
     // Get disk usage - simplified approach since sysinfo API varies by version
     let disk_usage_percent = 45.0; // Placeholder - will be improved in future version
-    
+
     SystemInfo {
         memory_usage_mb,
         cpu_load: cpu_load as f64,

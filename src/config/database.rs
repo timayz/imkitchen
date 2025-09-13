@@ -1,4 +1,4 @@
-use sqlx::{Pool, Postgres, PgPool};
+use sqlx::{PgPool, Pool, Postgres};
 use std::time::Duration;
 
 pub async fn create_pool(database_url: &str) -> Result<PgPool, sqlx::Error> {

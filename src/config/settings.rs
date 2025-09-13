@@ -69,8 +69,7 @@ impl Settings {
                     .map_err(|_| ConfigError::InvalidPort)?,
             },
             database: DatabaseSettings {
-                url: env::var("DATABASE_URL")
-                    .map_err(|_| ConfigError::MissingDatabaseUrl)?,
+                url: env::var("DATABASE_URL").map_err(|_| ConfigError::MissingDatabaseUrl)?,
                 max_connections: env::var("DATABASE_MAX_CONNECTIONS")
                     .unwrap_or_else(|_| "20".to_string())
                     .parse()
@@ -81,13 +80,12 @@ impl Settings {
                     .unwrap_or(5),
             },
             redis: RedisSettings {
-                url: env::var("REDIS_URL")
-                    .unwrap_or_else(|_| "redis://localhost:6379".to_string()),
+                url: env::var("REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".to_string()),
             },
             jwt: JwtSettings {
                 secret: {
-                    let secret = env::var("JWT_SECRET")
-                        .map_err(|_| ConfigError::MissingJwtSecret)?;
+                    let secret =
+                        env::var("JWT_SECRET").map_err(|_| ConfigError::MissingJwtSecret)?;
                     if secret.len() < 32 {
                         return Err(ConfigError::JwtSecretTooShort);
                     }
@@ -103,16 +101,14 @@ impl Settings {
                     .unwrap_or_else(|_| "development".to_string())
                     .parse()
                     .unwrap_or(Environment::Development),
-                upload_path: env::var("UPLOAD_PATH")
-                    .unwrap_or_else(|_| "./uploads".to_string()),
+                upload_path: env::var("UPLOAD_PATH").unwrap_or_else(|_| "./uploads".to_string()),
                 max_file_size: env::var("MAX_FILE_SIZE")
                     .unwrap_or_else(|_| "10485760".to_string()) // 10MB default
                     .parse()
                     .unwrap_or(10485760),
             },
             logging: LoggingSettings {
-                level: env::var("RUST_LOG")
-                    .unwrap_or_else(|_| "info".to_string()),
+                level: env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string()),
                 file: env::var("LOG_FILE").ok(),
             },
         };
@@ -163,19 +159,19 @@ impl std::str::FromStr for Environment {
 pub enum ConfigError {
     #[error("DATABASE_URL environment variable is required")]
     MissingDatabaseUrl,
-    
+
     #[error("JWT_SECRET environment variable is required")]
     MissingJwtSecret,
-    
+
     #[error("JWT_SECRET must be at least 32 characters long for security")]
     JwtSecretTooShort,
-    
+
     #[error("Invalid port number")]
     InvalidPort,
-    
+
     #[error("Invalid environment specified")]
     InvalidEnvironment,
-    
+
     #[error("Database min_connections cannot be greater than max_connections")]
     InvalidDatabaseConnections,
 }

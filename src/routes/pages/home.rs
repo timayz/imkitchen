@@ -11,6 +11,6 @@ pub async fn home_page() -> Html<String> {
     let template = HomeTemplate {
         title: "Welcome to ImKitchen".to_string(),
     };
-    
+
     Html(template.render().unwrap())
 }
