@@ -1,0 +1,56 @@
+<!-- Reusable Form Input Component -->
+<div class="form-group {% if error %}has-error{% endif %}">
+    <label for="{{ id }}" class="form-label">
+        {{ label }}
+        {% if required %}<span class="required">*</span>{% endif %}
+    </label>
+    
+    {% match input_type %}
+        {% when "text" %}
+            <input 
+                type="text" 
+                id="{{ id }}" 
+                name="{{ name }}" 
+                class="form-input" 
+                value="{{ value|default('') }}"
+                {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+                {% if required %}required{% endif %}
+            >
+        {% when "email" %}
+            <input 
+                type="email" 
+                id="{{ id }}" 
+                name="{{ name }}" 
+                class="form-input" 
+                value="{{ value|default('') }}"
+                {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+                {% if required %}required{% endif %}
+            >
+        {% when "password" %}
+            <input 
+                type="password" 
+                id="{{ id }}" 
+                name="{{ name }}" 
+                class="form-input"
+                {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+                {% if required %}required{% endif %}
+            >
+        {% when "textarea" %}
+            <textarea 
+                id="{{ id }}" 
+                name="{{ name }}" 
+                class="form-textarea"
+                {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+                {% if required %}required{% endif %}
+                rows="{{ rows|default(3) }}"
+            >{{ value|default('') }}</textarea>
+    {% endmatch %}
+    
+    {% if error %}
+    <div class="form-error">{{ error }}</div>
+    {% endif %}
+    
+    {% if help %}
+    <div class="form-help">{{ help }}</div>
+    {% endif %}
+</div>
