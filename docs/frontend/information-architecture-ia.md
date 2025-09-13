@@ -4,65 +4,52 @@
 
 ```mermaid
 graph TD
-    A[Home Dashboard] --> B[Meal Calendar]
-    A --> C[Recipe Collection]
-    A --> D[Discover Recipes]
-    A --> E[Shopping Lists]
-    A --> F[Prep Tasks]
-    A --> G[Profile & Settings]
+    A[Landing/Login] --> B[Dashboard]
+    B --> C[Recipe Library]
+    B --> D[Meal Planner]
+    B --> E[Shopping List]
+    B --> F[Cook Mode]
+    B --> G[Settings]
     
-    B --> B1[Week View]
-    B --> B2[Day Detail]
-    B --> B3[Fill My Week]
-    B --> B4[Meal Rescheduling]
+    C --> C1[Search/Filter]
+    C --> C2[Recipe Detail]
+    C --> C3[Add Recipe]
+    C --> C4[Import Recipe]
     
-    C --> C1[My Recipes]
-    C --> C2[Favorited Recipes]
-    C --> C3[Recipe Creation]
-    C --> C4[Recipe Detail View]
-    C --> C5[Recipe Editing]
+    D --> D1[Weekly View]
+    D --> D2[AI Suggestions]
+    D --> D3[Manual Planning]
+    D --> D4[Plan History]
     
-    D --> D1[Browse Community]
-    D --> D2[Search & Filter]
-    D --> D3[Trending Recipes]
-    D --> D4[Recipe Preview]
-    D5[Import to Collection]
-    
-    E --> E1[Current Week List]
+    E --> E1[Current List]
     E --> E2[Shopping History]
-    E --> E3[Custom Items]
+    E --> E3[Store Layout]
     
-    F --> F1[Today's Tasks]
-    F --> F2[Upcoming Prep]
-    F3[Task History]
-    F --> F4[Timing Insights]
+    F --> F1[Active Recipe]
+    F --> F2[Timer Central]
+    F --> F3[Multi-dish View]
+    F --> F4[Recipe Notes]
     
-    G --> G1[Account Settings]
-    G --> G2[Notification Preferences]
-    G --> G3[Dietary Preferences]
-    G --> G4[Collection Management]
+    G --> G1[Profile]
+    G --> G2[Dietary Prefs]
+    G --> G3[Notifications]
+    G --> G4[Kitchen Setup]
     
-    C4 --> C4A[Ingredients & Steps]
-    C4 --> C4B[Timing Timeline]
-    C4 --> C4C[Community Reviews]
-    C4 --> C4D[Nutritional Info]
+    C2 --> F
+    D1 --> E
+    D1 --> F
+    E1 --> F
 ```
 
 ## Navigation Structure
 
-**Primary Navigation (Bottom Tab Bar - Mobile):**
-- Home Dashboard (central hub with today's meals and tasks)
-- Calendar (meal planning and weekly overview)
-- Recipes (personal collection and creation)
-- Discover (community recipes and trends)
-- Profile (settings and preferences)
+**Primary Navigation:** Bottom tab bar (mobile) / Left sidebar (desktop) with 5 core sections:
+- Dashboard (home icon) - Central hub and today's focus
+- Recipes (book icon) - Library and recipe management
+- Planning (calendar icon) - Meal planning and scheduling
+- Shopping (cart icon) - Shopping lists and grocery management  
+- Cook (chef hat icon) - Active cooking mode and timers
 
-**Secondary Navigation:**
-- Contextual actions within each primary section (search, filter, add, edit)
-- Quick access floating action buttons for "Fill My Week" and "Add Recipe"
-- Swipe gestures for common actions (mark task complete, reschedule meals)
+**Secondary Navigation:** Context-aware top navigation and floating action buttons based on current task phase
 
-**Breadcrumb Strategy:**
-- Minimal breadcrumbs due to mobile-first design
-- Clear "Back" navigation with contextual labels ("Back to Recipe", "Back to Calendar")
-- Tab state persistence when navigating deep into sections
+**Breadcrumb Strategy:** Minimal breadcrumbs only in Cook Mode to show recipe → step progression; elsewhere rely on clear back/close actions
