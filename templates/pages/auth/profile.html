@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - ImKitchen</title>
+    <link href="/static/css/main.css" rel="stylesheet">
+    <script defer src="/static/js/alpine.min.js"></script>
+    <style>
+        .profile-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .profile-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .profile-avatar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: transform 0.2s ease-in-out;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn-outline {
+            border: 2px solid #667eea;
+            color: #667eea;
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .btn-outline:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-1px);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            color: white;
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .btn-danger:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="profile-container">
+        <!-- Navigation -->
+        <nav class="bg-white shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <h1 class="text-xl font-bold text-gray-900">🍳 ImKitchen</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <a href="/dashboard" class="text-gray-700 hover:text-gray-900">Dashboard</a>
+                        <a href="/recipes" class="text-gray-700 hover:text-gray-900">Recipes</a>
+                        <form method="POST" action="/auth/logout" style="display: inline;">
+                            <button type="submit" class="text-red-600 hover:text-red-800">Logout</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </nav>
+        
+        <div class="py-8 px-4">
+            <div class="max-w-4xl mx-auto">
+                <!-- Profile Header -->
+                <div class="profile-card p-8 mb-8">
+                    <div class="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-6">
+                        <!-- Avatar -->
+                        <div class="profile-avatar w-24 h-24 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                            {{ user.email[0]|upper }}
+                        </div>
+                        
+                        <!-- User Info -->
+                        <div class="flex-1 text-center sm:text-left">
+                            <h2 class="text-3xl font-bold text-gray-900 mb-2">Welcome back!</h2>
+                            <p class="text-lg text-gray-600 mb-4">{{ user.email }}</p>
+                            
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
+                                <div class="stat-card">
+                                    <div class="text-2xl font-bold text-purple-600">{{ user.household_size }}</div>
+                                    <div class="text-sm text-gray-600">Household Size</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="text-2xl font-bold text-purple-600">{{ user.skill_level|title }}</div>
+                                    <div class="text-sm text-gray-600">Skill Level</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="text-2xl font-bold text-purple-600">{{ user.dietary_preferences|length }}</div>
+                                    <div class="text-sm text-gray-600">Dietary Preferences</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="text-2xl font-bold text-purple-600">
+                                        {% if user.email_verified %}✓{% else %}✗{% endif %}
+                                    </div>
+                                    <div class="text-sm text-gray-600">Email Verified</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Profile Details -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Account Information -->
+                    <div class="profile-card p-6">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-4">Account Information</h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Email Address</label>
+                                <p class="mt-1 text-sm text-gray-900">{{ user.email }}</p>
+                                {% if not user.email_verified %}
+                                <p class="mt-1 text-sm text-red-600">
+                                    ⚠️ Email not verified. <a href="#" class="underline">Resend verification email</a>
+                                </p>
+                                {% endif %}
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Member Since</label>
+                                <p class="mt-1 text-sm text-gray-900">{{ user.created_at|date }}</p>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Last Updated</label>
+                                <p class="mt-1 text-sm text-gray-900">{{ user.updated_at|date }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6">
+                            <button class="btn-outline px-4 py-2 rounded-lg font-medium">
+                                Change Password
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Cooking Preferences -->
+                    <div class="profile-card p-6">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-4">Cooking Preferences</h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Skill Level</label>
+                                <p class="mt-1 text-sm text-gray-900 capitalize">{{ user.skill_level }}</p>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Household Size</label>
+                                <p class="mt-1 text-sm text-gray-900">{{ user.household_size }} people</p>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Dietary Preferences</label>
+                                {% if user.dietary_preferences %}
+                                <div class="mt-1 flex flex-wrap gap-2">
+                                    {% for preference in user.dietary_preferences %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                        {{ preference|title }}
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <p class="mt-1 text-sm text-gray-500">No dietary preferences set</p>
+                                {% endif %}
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Kitchen Equipment</label>
+                                {% if user.kitchen_equipment and user.kitchen_equipment != [] %}
+                                <div class="mt-1 text-sm text-gray-900">
+                                    <!-- This would be populated from the JSONB data -->
+                                    <p class="text-gray-500">Kitchen equipment preferences configured</p>
+                                </div>
+                                {% else %}
+                                <p class="mt-1 text-sm text-gray-500">No kitchen equipment preferences set</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6">
+                            <button class="btn-outline px-4 py-2 rounded-lg font-medium">
+                                Update Preferences
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Activity -->
+                <div class="profile-card p-6 mt-8">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Recent Activity</h3>
+                    
+                    <div class="text-center py-8 text-gray-500">
+                        <p>No recent activity to display</p>
+                        <p class="text-sm mt-2">Start by adding some recipes or creating meal plans!</p>
+                        <div class="mt-4 space-x-4">
+                            <a href="/recipes/new" class="btn-outline px-4 py-2 rounded-lg font-medium inline-block">
+                                Add Recipe
+                            </a>
+                            <a href="/meal-plans/new" class="btn-outline px-4 py-2 rounded-lg font-medium inline-block">
+                                Create Meal Plan
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Danger Zone -->
+                <div class="profile-card p-6 mt-8 border-2 border-red-200">
+                    <h3 class="text-xl font-semibold text-red-900 mb-4">Danger Zone</h3>
+                    <p class="text-sm text-gray-600 mb-4">
+                        Once you delete your account, there is no going back. Please be certain.
+                    </p>
+                    <button 
+                        class="btn-danger px-4 py-2 rounded-lg font-medium"
+                        x-data
+                        @click="if(confirm('Are you sure you want to delete your account? This action cannot be undone.')) { alert('Account deletion would be processed here.'); }"
+                    >
+                        Delete Account
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

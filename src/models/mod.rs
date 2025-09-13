@@ -1,1 +1,3 @@
-// Domain models will be implemented here
+pub mod user;
+
+pub use user::*;
