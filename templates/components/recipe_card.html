@@ -1,0 +1,39 @@
+<!-- Recipe Card Component -->
+<div class="recipe-card" data-recipe-id="{{ recipe.id }}">
+    <div class="recipe-image">
+        {% if recipe.image_path %}
+        <img src="{{ recipe.image_path }}" alt="{{ recipe.title }}" loading="lazy">
+        {% else %}
+        <div class="recipe-placeholder">
+            <span>No Image</span>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="recipe-info">
+        <h3 class="recipe-title">{{ recipe.title }}</h3>
+        {% if recipe.description %}
+        <p class="recipe-description">{{ recipe.description }}</p>
+        {% endif %}
+        
+        <div class="recipe-meta">
+            <span class="prep-time">Prep: {{ recipe.prep_time }}m</span>
+            <span class="cook-time">Cook: {{ recipe.cook_time }}m</span>
+            <span class="total-time">Total: {{ recipe.total_time }}m</span>
+        </div>
+        
+        <div class="recipe-tags">
+            <span class="difficulty {{ recipe.difficulty }}">{{ recipe.difficulty|title }}</span>
+            {% if recipe.cuisine_type %}
+            <span class="cuisine">{{ recipe.cuisine_type }}</span>
+            {% endif %}
+        </div>
+        
+        <div class="recipe-actions">
+            <a href="/recipes/{{ recipe.id }}" class="btn btn-sm btn-primary">View Recipe</a>
+            <button class="btn btn-sm btn-secondary" data-action="favorite">
+                ♡ Favorite
+            </button>
+        </div>
+    </div>
+</div>

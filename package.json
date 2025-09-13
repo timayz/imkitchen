@@ -1,5 +1,65 @@
 {
+  "name": "imkitchen",
+  "version": "0.1.0",
+  "description": "ImKitchen - Intelligent Recipe Management and Meal Planning Platform",
+  "private": true,
+  "scripts": {
+    "build": "npm run css:build && npm run js:build",
+    "css:build": "tailwindcss -i ./static/css/input.css -o ./static/css/main.css --minify",
+    "css:watch": "tailwindcss -i ./static/css/input.css -o ./static/css/main.css --watch",
+    "js:build": "npm run js:copy && npm run js:minify",
+    "js:copy": "cp node_modules/alpinejs/dist/cdn.min.js static/js/alpine.min.js",
+    "js:minify": "terser static/js/app.js -o static/js/app.min.js",
+    "dev": "npm run css:watch",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "lint:css": "stylelint \"static/css/**/*.css\"",
+    "lint:js": "eslint static/js/**/*.js",
+    "lint": "npm run lint:css && npm run lint:js",
+    "format:css": "prettier --write \"static/css/**/*.css\"",
+    "format:js": "prettier --write \"static/js/**/*.js\"",
+    "format": "npm run format:css && npm run format:js",
+    "clean": "rm -rf static/css/main.css static/js/app.min.js",
+    "precommit": "npm run lint && npm run build"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "@tailwindcss/forms": "^0.5.7",
+    "@tailwindcss/typography": "^0.5.10",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^8.55.0",
+    "eslint-config-prettier": "^9.1.0",
+    "postcss": "^8.4.32",
+    "prettier": "^3.1.1",
+    "stylelint": "^16.0.2",
+    "stylelint-config-prettier": "^9.0.5",
+    "stylelint-config-standard": "^36.0.0",
+    "tailwindcss": "^3.3.6",
+    "terser": "^5.26.0"
+  },
   "dependencies": {
+    "alpinejs": "^3.13.3",
     "@kayvan/markdown-tree-parser": "^1.6.1"
-  }
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "keywords": [
+    "recipe-management",
+    "meal-planning",
+    "cooking",
+    "rust",
+    "web-application"
+  ],
+  "author": "ImKitchen Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-org/imkitchen.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-org/imkitchen/issues"
+  },
+  "homepage": "https://github.com/your-org/imkitchen#readme"
 }

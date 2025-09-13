@@ -1,0 +1,32 @@
+# Development Dockerfile with hot-reload support
+
+FROM rust:1.70
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    postgresql-client \
+    redis-tools \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install cargo-watch for hot reloading
+RUN cargo install cargo-watch
+
+WORKDIR /app
+
+# Copy dependency files
+COPY Cargo.toml Cargo.lock ./
+
+# Pre-build dependencies for faster rebuilds
+RUN mkdir src && echo "fn main() {}" > src/main.rs
+RUN cargo build
+RUN rm -rf src
+
+# Copy source code
+COPY . .
+
+# Expose port
+EXPOSE 3000
+
+# Development command with hot reload
+CMD ["cargo", "watch", "-x", "run"]

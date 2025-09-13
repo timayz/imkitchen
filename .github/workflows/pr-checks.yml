@@ -1,0 +1,144 @@
+# name: PR Checks
+#
+# on:
+#   pull_request:
+#     types: [opened, synchronize, reopened, ready_for_review]
+#
+# env:
+#   CARGO_TERM_COLOR: always
+#
+# jobs:
+#   pr-validation:
+#     name: PR Validation
+#     runs-on: ubuntu-latest
+#     if: '!github.event.pull_request.draft'
+#
+#     services:
+#       postgres:
+#         image: postgres:17
+#         env:
+#           POSTGRES_USER: postgres
+#           POSTGRES_PASSWORD: postgres
+#           POSTGRES_DB: imkitchen_test
+#         ports:
+#           - 5432:5432
+#         options: >-
+#           --health-cmd pg_isready
+#           --health-interval 10s
+#           --health-timeout 5s
+#           --health-retries 5
+#
+#       redis:
+#         image: redis:8.2-alpine
+#         ports:
+#           - 6379:6379
+#         options: >-
+#           --health-cmd "redis-cli ping"
+#           --health-interval 10s
+#           --health-timeout 5s
+#           --health-retries 5
+#
+#     env:
+#       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/imkitchen_test
+#       REDIS_URL: redis://localhost:6379
+#       JWT_SECRET: test_jwt_secret
+#
+#     steps:
+#     - name: Checkout PR
+#       uses: actions/checkout@v4
+#       with:
+#         ref: ${{ github.event.pull_request.head.sha }}
+#
+#     - name: Install Rust toolchain
+#       uses: dtolnay/rust-toolchain@stable
+#       with:
+#         components: rustfmt, clippy
+#
+#     - name: Cache dependencies
+#       uses: actions/cache@v4
+#       with:
+#         path: |
+#           ~/.cargo/registry
+#           ~/.cargo/git
+#           target
+#         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+#         restore-keys: |
+#           ${{ runner.os }}-cargo-
+#
+#     - name: Install sqlx-cli
+#       run: cargo install sqlx-cli --no-default-features --features postgres
+#
+#     - name: Run migrations
+#       run: sqlx migrate run
+#
+#     - name: Format check
+#       run: cargo fmt --all -- --check
+#
+#     - name: Clippy check
+#       run: cargo clippy --all-targets --all-features -- -D warnings
+#
+#     - name: Compilation check
+#       run: cargo check --all-targets --all-features
+#
+#     - name: Run tests
+#       run: cargo test --all-features --workspace
+#
+#     - name: Check for breaking changes
+#       if: github.event.action == 'synchronize'
+#       run: |
+#         echo "Checking for potential breaking changes..."
+#         # Add logic to detect breaking changes in API
+#         # This could involve comparing with the target branch
+#
+#   dependency-check:
+#     name: Dependency Security Check
+#     runs-on: ubuntu-latest
+#
+#     steps:
+#     - name: Checkout PR
+#       uses: actions/checkout@v4
+#       with:
+#         ref: ${{ github.event.pull_request.head.sha }}
+#
+#     - name: Install Rust toolchain
+#       uses: dtolnay/rust-toolchain@stable
+#
+#     - name: Install cargo-audit
+#       run: cargo install cargo-audit
+#
+#     - name: Check dependencies
+#       run: cargo audit
+#
+#     - name: Check for new dependencies
+#       run: |
+#         echo "Checking for new dependencies added in this PR..."
+#         git fetch origin ${{ github.event.pull_request.base.ref }}
+#         git diff origin/${{ github.event.pull_request.base.ref }} -- Cargo.toml | grep "^+" || echo "No new dependencies"
+#
+#   pr-size-check:
+#     name: PR Size Check
+#     runs-on: ubuntu-latest
+#
+#     steps:
+#     - name: Checkout PR
+#       uses: actions/checkout@v4
+#       with:
+#         fetch-depth: 0
+#
+#     - name: Check PR size
+#       run: |
+#         git fetch origin ${{ github.event.pull_request.base.ref }}
+#         CHANGED_FILES=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }} | wc -l)
+#         CHANGED_LINES=$(git diff --stat origin/${{ github.event.pull_request.base.ref }} | tail -1 | grep -o '[0-9]* insertion\|[0-9]* deletion' | grep -o '[0-9]*' | paste -sd+ | bc)
+#
+#         echo "Changed files: $CHANGED_FILES"
+#         echo "Changed lines: $CHANGED_LINES"
+#
+#         if [ "$CHANGED_FILES" -gt 20 ]; then
+#           echo "::warning::This PR changes $CHANGED_FILES files. Consider breaking it into smaller PRs."
+#         fi
+#
+#         if [ "$CHANGED_LINES" -gt 500 ]; then
+#           echo "::warning::This PR changes $CHANGED_LINES lines. Consider breaking it into smaller PRs."
+#         fi
+
