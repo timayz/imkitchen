@@ -1,25 +1,5 @@
 {
-  "name": "imkitchen",
-  "private": true,
-  "scripts": {
-    "build": "turbo run build",
-    "dev": "turbo run dev --parallel",
-    "lint": "turbo run lint",
-    "test": "turbo run test",
-    "db:push": "cd packages/api && pnpm db:push",
-    "db:migrate": "cd packages/api && pnpm db:migrate",
-    "docker:build": "docker-compose build",
-    "docker:up": "docker-compose up -d"
-  },
-  "devDependencies": {
-    "@types/node": "^20.0.0",
-    "prettier": "^3.0.0",
-    "turbo": "^1.10.0",
-    "typescript": "^5.0.0"
-  },
-  "packageManager": "pnpm@8.6.0",
   "dependencies": {
-    "@kayvan/markdown-tree-parser": "^1.6.1",
-    "@tailwindcss/postcss": "^4.1.13"
+    "@kayvan/markdown-tree-parser": "^1.6.1"
   }
 }

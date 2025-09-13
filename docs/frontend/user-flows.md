@@ -1,157 +1,156 @@
 # User Flows
 
-## Flow 1: "Fill My Week" Automation
+## Recipe Import & Management Flow
 
-**User Goal:** Generate a complete weekly meal plan in under 30 seconds to eliminate decision fatigue
+**User Goal:** Add new recipes to personal collection from various sources
 
-**Entry Points:** 
-- Dashboard "Fill My Week" button
-- Empty calendar state prompt
-- Weekly planning reminder notification
+**Entry Points:** Recipe Library "Add Recipe" button, URL sharing into app, dashboard quick actions
 
-**Success Criteria:** User has 7 days of meals assigned with visible prep timing indicators
+**Success Criteria:** Recipe successfully parsed, stored, and available in searchable library
 
 ### Flow Diagram
 
 ```mermaid
 graph TD
-    A[User taps Fill My Week] --> B{Recipe collection empty?}
-    B -->|Yes| C[Onboard with curated recipes]
-    B -->|No| D[Check current week assignments]
+    A[Start: Add Recipe] --> B{Import Method}
+    B --> C[URL Import]
+    B --> D[Manual Entry]
+    B --> E[Photo Scan]
     
-    C --> C1[Select cuisine preferences]
-    C1 --> C2[Import starter recipes]
-    C2 --> D
+    C --> C1[Parse Recipe URL]
+    C1 --> C2{Parsing Success?}
+    C2 -->|Yes| F[Review & Edit]
+    C2 -->|No| C3[Manual Fallback]
+    C3 --> F
     
-    D --> E{Any meals already assigned?}
-    E -->|Yes| F[Preserve existing assignments]
-    E -->|No| G[Start with empty calendar]
+    D --> D1[Form Entry]
+    D1 --> F
     
-    F --> H[Fill only empty slots]
-    G --> H
-    H --> I[Apply rotation algorithm]
-    I --> J[Consider complexity distribution]
-    J --> K[Generate meal assignments]
-    K --> L[Display populated calendar]
-    L --> M{User satisfied?}
-    M -->|Yes| N[Save meal plan]
-    M -->|No| O[Offer regenerate options]
-    O --> P[Regenerate with constraints]
-    P --> L
-    N --> Q[Show prep timeline preview]
-    Q --> R[Enable notifications]
-    R --> S[Success: Ready to cook!]
+    E --> E1[OCR Processing]
+    E1 --> E2{Text Detected?}
+    E2 -->|Yes| F
+    E2 -->|No| D1
+    
+    F --> G[Save Recipe]
+    G --> H[Add to Library]
+    H --> I[Success Confirmation]
 ```
 
 ### Edge Cases & Error Handling:
-- Recipe collection too small (< 7 recipes): Prompt to add more or accept repeats
-- All recipes too complex for week: Suggest simpler alternatives or spread complexity
-- User dietary restrictions conflict: Filter incompatible recipes automatically
-- Technical failure during generation: Graceful degradation with manual assignment option
-- Network offline: Use cached recipes and sync when reconnected
+- URL parsing failures trigger manual entry mode with pre-filled detected text
+- Duplicate recipe detection offers merge/replace options
+- Network failures during import save partial data locally for retry
+- Image upload failures provide camera retry and skip options
 
-## Flow 2: Timing Intelligence Workflow
+**Notes:** Import flow emphasizes quick success with graceful fallback options for parsing failures
 
-**User Goal:** Successfully coordinate complex recipe preparation through automated notifications and task management
+## Meal Planning Flow
 
-**Entry Points:**
-- Meal calendar showing upcoming complex recipes
-- Notification prompt for advance preparation
-- Recipe detail view timing timeline
+**User Goal:** Generate and customize weekly meal plan based on preferences and constraints
 
-**Success Criteria:** User completes all preparation steps on time and cooks meal successfully
+**Entry Points:** Dashboard meal planning widget, dedicated Planning tab, empty meal plan state
+
+**Success Criteria:** Complete weekly meal plan with balanced nutrition, optimized ingredients, and timing feasibility
 
 ### Flow Diagram
 
 ```mermaid
 graph TD
-    A[Complex meal scheduled] --> B[System calculates prep timeline]
-    B --> C[Schedule advance notifications]
-    C --> D[Send first prep reminder]
-    D --> E[User receives notification]
-    E --> F{User available?}
-    F -->|Yes| G[Open prep task detail]
-    F -->|No| H[Snooze with smart suggestions]
+    A[Start: Plan Meals] --> B[Preferences Check]
+    B --> B1{Preferences Set?}
+    B1 -->|No| C[Quick Setup]
+    B1 -->|Yes| D[Generate Plan]
     
-    G --> I[Review preparation steps]
-    I --> J[Start preparation task]
-    J --> K[Mark steps complete]
-    K --> L{All steps done?}
-    L -->|No| M[Continue with next step]
-    L -->|Yes| N[Mark task complete]
+    C --> C1[Dietary Restrictions]
+    C1 --> C2[Household Size]  
+    C2 --> C3[Cooking Time]
+    C3 --> C4[Cuisine Prefs]
+    C4 --> D
     
-    M --> K
-    N --> O[Update timing intelligence]
-    O --> P[Schedule next prep reminder]
-    P --> Q{More prep needed?}
-    Q -->|Yes| D
-    Q -->|No| R[Ready for cooking day]
+    D --> E[AI Plan Generation]
+    E --> F[Present Plan]
+    F --> G{User Satisfied?}
     
-    H --> H1[Suggest alternative timing]
-    H1 --> H2[Reschedule notifications]
-    H2 --> D
+    G -->|No| H[Customize Plan]
+    G -->|Yes| K[Confirm Plan]
     
-    R --> S[Cooking day arrives]
-    S --> T[Final cooking instructions]
-    T --> U[Success tracking]
+    H --> H1{Change Type}
+    H1 --> H2[Swap Recipe]
+    H1 --> H3[Add Custom Meal]
+    H1 --> H4[Remove Meal]
+    H1 --> H5[Regenerate Day]
+    
+    H2 --> I[Recipe Suggestions]
+    H3 --> J[Recipe Search]
+    H4 --> I
+    H5 --> I
+    I --> F
+    J --> F
+    
+    K --> L[Generate Shopping List]
+    L --> M[Plan Saved]
 ```
 
 ### Edge Cases & Error Handling:
-- User misses critical prep window: Suggest recipe modifications or substitutions
-- Preparation takes longer than estimated: Learn and adjust future timing
-- User reports timing inaccuracy: Collect feedback and update algorithm
-- Notification delivery failure: Use multiple delivery methods and in-app fallbacks
-- Life disrupts schedule: Intelligent rescheduling with minimal user input
+- No suitable recipes found for constraints offers relaxed criteria options
+- Conflicting dietary preferences show trade-off explanations
+- Plan generation failures provide manual planning tools
+- Ingredient conflicts in customization trigger optimization suggestions
 
-## Flow 3: Community Recipe Discovery
+**Notes:** Flow balances AI automation with user control, always allowing manual override
 
-**User Goal:** Find new recipes with confidence in execution success based on community feedback
+## Cook Mode Flow
 
-**Entry Points:**
-- Discover tab exploration
-- Search for specific cuisine or dish
-- Trending recipe notifications
-- Similar recipe suggestions
+**User Goal:** Execute recipe(s) successfully with timing coordination and step-by-step guidance
 
-**Success Criteria:** User adds new recipe to collection and successfully cooks it
+**Entry Points:** Recipe detail "Start Cooking", meal plan "Cook Now", dashboard active cooking widget
+
+**Success Criteria:** All dishes completed within timing targets with successful coordination
 
 ### Flow Diagram
 
 ```mermaid
 graph TD
-    A[Enter Discover section] --> B[Browse trending/featured]
-    B --> C{Specific search intent?}
-    C -->|Yes| D[Use search with filters]
-    C -->|No| E[Explore curated categories]
+    A[Start: Cook Mode] --> B{Single or Multi-dish?}
+    B --> C[Single Recipe]
+    B --> D[Multi-dish Menu]
     
-    D --> F[Apply filters: cuisine, time, difficulty]
-    E --> F
-    F --> G[Browse recipe cards]
-    G --> H[Tap recipe for preview]
-    H --> I[View timing requirements]
-    I --> J[Read execution reviews]
-    J --> K{Recipe looks good?}
-    K -->|No| L[Back to browse]
-    K -->|Yes| M[Preview full recipe]
+    C --> E[Recipe Prep View]
+    D --> F[Timing Coordination]
+    F --> G[Start Times Calculated]
+    G --> H[Begin First Recipe]
     
-    L --> G
-    M --> N[Check ingredient availability]
-    N --> O[View timing timeline]
-    O --> P{Add to collection?}
-    P -->|Yes| Q[Import to personal recipes]
-    P -->|No| R[Save for later consideration]
+    E --> I[Ingredients Check]
+    H --> I
+    I --> J{All Ingredients?}
+    J -->|No| K[Substitution Suggestions]
+    J -->|Yes| L[Start Prep Steps]
+    K --> L
     
-    Q --> S[Choose meal planning inclusion]
-    S --> T[Recipe available for Fill My Week]
-    T --> U[Success: Expanded repertoire]
+    L --> M[Step-by-step Guide]
+    M --> N[Timer Management]
+    N --> O{Step Complete?}
+    O -->|No| P[Continue Step]
+    O -->|Yes| Q{More Steps?}
     
-    R --> V[Add to wishlist]
-    V --> W[Return to discovery]
+    P --> N
+    Q -->|Yes| R[Next Step]
+    Q -->|No| S[Recipe Complete]
+    
+    R --> M
+    S --> T{More Recipes?}
+    T -->|Yes| U[Continue Multi-dish]
+    T -->|No| V[All Complete]
+    
+    U --> M
+    V --> W[Rate & Review]
+    W --> X[Cooking Session End]
 ```
 
 ### Edge Cases & Error Handling:
-- No recipes match search criteria: Suggest broader search or alternative cuisines
-- Recipe has poor timing reviews: Display warnings and alternative suggestions
-- Ingredient unavailability: Suggest substitutions or seasonal alternatives
-- Network issues during import: Queue for later sync with clear status indication
-- User reaches collection limits: Prompt for curation or premium upgrade
+- Timer failures provide manual time tracking and notifications
+- Recipe modifications during cooking recalculate all dependent timings
+- Emergency pause stops all timers and provides restart options
+- Missing ingredients mid-cooking offer substitution or adaptation guidance
+
+**Notes:** Cook Mode prioritizes clear progression and timing accuracy above all other features

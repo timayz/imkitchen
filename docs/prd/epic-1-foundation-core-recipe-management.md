@@ -1,78 +1,79 @@
 # Epic 1: Foundation & Core Recipe Management
 
-**Epic Goal:** Establish a solid technical foundation with containerized development environment, user authentication, and core recipe management capabilities that provide immediate value through browseable recipe database while enabling local browser preview for development workflow.
+**Expanded Goal:** Establish the foundational project infrastructure including development environment, authentication, database setup, and core recipe management functionality. This epic delivers a working application where users can create accounts, import/manage recipes, and access them reliably, providing immediate value while setting up all technical foundations for subsequent features.
 
-## Story 1.1: Project Infrastructure Setup
+## Story 1.1: Project Infrastructure & Development Setup
 
-As a developer,
-I want a containerized development environment with hot reload capabilities,
-so that I can develop and preview the application locally in my web browser with fast feedback loops.
+As a **developer**,
+I want **a fully configured development environment with build pipeline, testing framework, and deployment setup**,
+so that **I can develop features efficiently with confidence in code quality and deployment reliability**.
 
 ### Acceptance Criteria
-1. Next.js project setup with TypeScript, Tailwind CSS, and PWA configuration
-2. Next.js development server supports hot reload and serves application accessible via web browser at localhost:3000
-3. Backend API setup (Next.js API routes or separate microservice) with automatic restart on code changes
-4. PostgreSQL database container initializes with development schema and seed data via Docker Compose
-5. Development environment starts with `npm run dev` (frontend) and `docker-compose up` (database/backend services)
-6. Development environment includes debugging capabilities, TypeScript support, and clear error logging
-7. Documentation provides setup instructions for cross-platform development with Next.js
+
+1. Rust backend project initialized with axum 0.8+ framework and proper folder structure
+2. PostgreSQL 17+ database connection configured with migration system
+3. Redis 8.2+ configured for session management and caching
+4. Frontend setup with Askama 0.14+ templating and twinspark-js integration
+5. Docker configuration for development and production environments
+6. CI/CD pipeline configured with automated testing and deployment
+7. Environment configuration system for development/staging/production
+8. Basic health check endpoint returning system status
+9. Comprehensive README with setup and deployment instructions
+10. Code formatting and linting tools configured with pre-commit hooks
 
 ## Story 1.2: User Authentication System
 
-As a home cook,
-I want to create an account and securely log in,
-so that I can save my personal recipes and meal planning preferences.
+As a **prospective user**,
+I want **to create an account and securely log into the platform**,
+so that **I can access personalized recipe management and meal planning features**.
 
 ### Acceptance Criteria
-1. User registration form collects email, password, and basic profile information with client-side validation
-2. JWT-based authentication system provides secure login/logout functionality
-3. Password requirements enforce minimum security standards with clear user feedback
-4. Email verification workflow confirms account activation before full access
-5. User session persists across browser sessions with secure token refresh mechanism
-6. Account settings page allows password changes and profile updates
-7. Authentication middleware protects API endpoints requiring user context
 
-## Story 1.3: Recipe Database Schema and Models
+1. User registration form with email, password, and basic profile information
+2. Secure password hashing using industry-standard algorithms
+3. Login form with email/password authentication
+4. JWT-based session management with secure token storage
+5. Password reset functionality via email verification
+6. Email verification for new account activation
+7. Logout functionality that invalidates session tokens
+8. Basic user profile page showing account information
+9. Form validation with clear error messages for invalid inputs
+10. Protection against common security vulnerabilities (CSRF, brute force, etc.)
 
-As a system administrator,
-I want a robust database schema for recipes with timing data,
-so that the application can store and query recipe information efficiently.
+## Story 1.3: Recipe Import & Management Foundation
 
-### Acceptance Criteria
-1. PostgreSQL schema defines recipe table with title, description, instructions, and timing metadata
-2. Ingredient table with quantities, units, and preparation notes linked to recipes
-3. User table stores authentication data and profile preferences with proper indexing
-4. Database migration system allows schema updates without data loss
-5. Seed data script populates database with initial 20+ curated recipes for testing
-6. Database indexes optimize common queries for recipe search and user data retrieval
-7. Data models include validation constraints ensuring data integrity
-
-## Story 1.4: Basic Recipe CRUD API
-
-As a home cook,
-I want to view, create, edit, and delete my personal recipes,
-so that I can build my digital recipe collection.
+As a **home cook**,
+I want **to import recipes from URLs and manually enter my own recipes**,
+so that **I can build my personal recipe collection in the platform**.
 
 ### Acceptance Criteria
-1. REST API endpoints support full CRUD operations for recipes with proper HTTP status codes
-2. Recipe creation endpoint accepts title, ingredients, instructions, and basic timing information
-3. Recipe retrieval supports filtering by user ownership and basic search functionality
-4. Recipe updates maintain version history and handle concurrent modification gracefully
-5. Recipe deletion includes soft delete option to preserve meal planning history
-6. API validation ensures required fields and data format consistency
-7. Error responses provide clear messaging for client-side error handling
 
-## Story 1.5: Recipe List and Detail Views
+1. Recipe import form accepting URLs from major recipe sites
+2. Automatic parsing of recipe metadata (title, ingredients, instructions, timing)
+3. Manual recipe entry form with structured ingredient and instruction input
+4. Recipe storage in database with proper data modeling
+5. Basic recipe viewing page with formatted display
+6. Recipe editing capability for imported and manual entries
+7. Recipe deletion with confirmation prompt
+8. Image upload and storage for recipe photos
+9. Error handling for failed imports with user-friendly messages
+10. Recipe parsing accuracy feedback mechanism for continuous improvement
 
-As a home cook,
-I want to browse my recipe collection and view detailed recipe information,
-so that I can access my recipes for meal planning and cooking.
+## Story 1.4: Personal Recipe Library
+
+As a **user with recipe collection**,
+I want **to search, filter, and organize my recipes effectively**,
+so that **I can quickly find recipes that match my current needs and preferences**.
 
 ### Acceptance Criteria
-1. Recipe list page displays user's recipes with thumbnail, title, and basic metadata in responsive grid
-2. Recipe detail page shows complete recipe with ingredients, instructions, and timing information
-3. Search functionality filters recipes by title, ingredients, or cuisine tags
-4. Recipe cards include visual indicators for preparation time and difficulty level
-5. Detail view optimized for mobile reading during cooking with large fonts and clear structure
-6. Navigation allows easy movement between recipe list and detail views
-7. Loading states and error handling provide smooth user experience
+
+1. Recipe library page displaying user's complete recipe collection
+2. Search functionality across recipe titles, ingredients, and tags
+3. Filter options by cooking time, difficulty level, and dietary restrictions
+4. Sort options by date added, alphabetical, cooking time, and user rating
+5. Recipe tagging system for custom organization
+6. Favorite recipes marking and quick access
+7. Recipe scaling feature for different serving sizes
+8. Bulk operations for organizing multiple recipes
+9. Recipe collection statistics and insights
+10. Responsive design optimized for mobile and desktop browsing
