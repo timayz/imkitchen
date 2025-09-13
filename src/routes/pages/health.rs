@@ -1,4 +1,4 @@
-use axum::{response::Json, http::StatusCode};
+use axum::{response::Json, http::StatusCode, response::Response};
 use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
 use std::time::SystemTime;
@@ -19,7 +19,7 @@ pub struct ServiceStatus {
     pub redis: ServiceHealth,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ServiceHealth {
     pub status: String,
     pub response_time_ms: Option<u64>,
@@ -35,7 +35,7 @@ pub struct SystemInfo {
 
 static START_TIME: std::sync::OnceLock<SystemTime> = std::sync::OnceLock::new();
 
-pub async fn health_check() -> Result<Json<HealthResponse>, StatusCode> {
+pub async fn health_check() -> Result<(StatusCode, Json<HealthResponse>), StatusCode> {
     let start_time = START_TIME.get_or_init(|| SystemTime::now());
     let uptime = SystemTime::now()
         .duration_since(*start_time)
@@ -64,18 +64,22 @@ pub async fn health_check() -> Result<Json<HealthResponse>, StatusCode> {
         version: env!("CARGO_PKG_VERSION").to_string(),
         uptime_seconds: uptime,
         services: ServiceStatus {
-            database: database_status,
-            redis: redis_status,
+            database: database_status.clone(),
+            redis: redis_status.clone(),
         },
         system: system_info,
     };
 
     // Return appropriate HTTP status based on health
     match overall_status {
-        "healthy" => Ok(Json(health_response)),
+        "healthy" => Ok((StatusCode::OK, Json(health_response))),
         _ => {
-            tracing::warn!("Health check failed: overall status is {}", overall_status);
-            Err(StatusCode::SERVICE_UNAVAILABLE)
+            tracing::warn!("Health check failed: overall status is {}, database error: {:?}, redis error: {:?}", 
+                          overall_status, 
+                          &database_status.error, 
+                          &redis_status.error);
+            // Return JSON response even when degraded so we can see the errors
+            Ok((StatusCode::SERVICE_UNAVAILABLE, Json(health_response)))
         }
     }
 }
