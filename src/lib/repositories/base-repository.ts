@@ -12,9 +12,9 @@ export interface IRepository<T, TCreate, TUpdate> {
 }
 
 // Base repository implementation
-export abstract class BaseRepository<T, TCreate, TUpdate> 
-  implements IRepository<T, TCreate, TUpdate> {
-  
+export abstract class BaseRepository<T, TCreate, TUpdate>
+  implements IRepository<T, TCreate, TUpdate>
+{
   protected db: PrismaClient;
   protected modelName: string;
 
@@ -47,11 +47,11 @@ export abstract class BaseRepository<T, TCreate, TUpdate>
         const result = await this.getModel().findUnique({
           where: { id },
         });
-        
+
         if (!result) {
           logger.debug(`${this.modelName} not found`, { id });
         }
-        
+
         return result;
       },
       { id }
@@ -72,15 +72,11 @@ export abstract class BaseRepository<T, TCreate, TUpdate>
 
   // Create new record
   async create(data: TCreate): Promise<T> {
-    return logDatabaseOperation(
-      'create',
-      this.modelName,
-      async () => {
-        return this.getModel().create({
-          data,
-        });
-      }
-    );
+    return logDatabaseOperation('create', this.modelName, async () => {
+      return this.getModel().create({
+        data,
+      });
+    });
   }
 
   // Update existing record
@@ -113,7 +109,7 @@ export abstract class BaseRepository<T, TCreate, TUpdate>
   }
 
   // Count records
-  async count(options: any = {}): Promise<number> {
+  async count(options: Record<string, unknown> = {}): Promise<number> {
     return logDatabaseOperation(
       'count',
       this.modelName,
@@ -190,19 +186,23 @@ export abstract class BaseRepository<T, TCreate, TUpdate>
 
   // Transaction support
   async executeInTransaction<R>(
-    operation: (tx: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$extends'>) => Promise<R>
+    operation: (
+      tx: Omit<
+        PrismaClient,
+        '$connect' | '$disconnect' | '$on' | '$transaction' | '$extends'
+      >
+    ) => Promise<R>
   ): Promise<R> {
-    return logDatabaseOperation(
-      'transaction',
-      this.modelName,
-      async () => {
-        return this.db.$transaction(operation);
-      }
-    );
+    return logDatabaseOperation('transaction', this.modelName, async () => {
+      return this.db.$transaction(operation);
+    });
   }
 
   // Bulk update
-  async updateMany(where: Record<string, unknown>, data: Record<string, unknown>): Promise<{ count: number }> {
+  async updateMany(
+    where: Record<string, unknown>,
+    data: Record<string, unknown>
+  ): Promise<{ count: number }> {
     return logDatabaseOperation(
       'updateMany',
       this.modelName,
@@ -259,7 +259,11 @@ export abstract class BaseRepository<T, TCreate, TUpdate>
   }
 
   // Upsert operation
-  async upsert(where: Record<string, unknown>, create: TCreate, update: TUpdate): Promise<T> {
+  async upsert(
+    where: Record<string, unknown>,
+    create: TCreate,
+    update: TUpdate
+  ): Promise<T> {
     return logDatabaseOperation(
       'upsert',
       this.modelName,

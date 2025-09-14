@@ -1,4 +1,10 @@
-import { User, Household, Session, DietaryPreference, Language } from '@prisma/client';
+import {
+  User,
+  Household,
+  Session,
+  DietaryPreference,
+  Language,
+} from '@prisma/client';
 
 // Authentication types
 export interface AuthUser {
@@ -145,12 +151,18 @@ export const DEFAULT_PASSWORD_REQUIREMENTS: PasswordRequirements = {
 
 // Type guards
 export function isAuthUser(obj: unknown): obj is AuthUser {
-  return !!obj && 
+  return (
+    !!obj &&
     typeof obj === 'object' &&
-    'id' in obj && typeof (obj as any).id === 'string' &&
-    'email' in obj && typeof (obj as any).email === 'string' &&
-    'name' in obj && typeof (obj as any).name === 'string' &&
-    'householdId' in obj && typeof (obj as any).householdId === 'string';
+    'id' in obj &&
+    typeof (obj as Record<string, unknown>).id === 'string' &&
+    'email' in obj &&
+    typeof (obj as Record<string, unknown>).email === 'string' &&
+    'name' in obj &&
+    typeof (obj as Record<string, unknown>).name === 'string' &&
+    'householdId' in obj &&
+    typeof (obj as Record<string, unknown>).householdId === 'string'
+  );
 }
 
 export function isValidSession(session: AuthSession): boolean {
@@ -164,7 +176,10 @@ export interface AuthUtils {
   generateToken: (payload: JWTPayload) => string;
   verifyToken: (token: string) => JWTPayload | null;
   generateSessionToken: () => string;
-  validatePassword: (password: string, requirements?: PasswordRequirements) => boolean;
+  validatePassword: (
+    password: string,
+    requirements?: PasswordRequirements
+  ) => boolean;
   sanitizeUser: (user: User) => AuthUser;
 }
 

@@ -9,8 +9,10 @@ global.IntersectionObserver = class IntersectionObserver {
   root = null;
   rootMargin = '';
   thresholds = [];
-  takeRecords() { return []; }
-} as any;
+  takeRecords() {
+    return [];
+  }
+} as unknown as typeof IntersectionObserver;
 
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
@@ -42,7 +44,7 @@ const localStorageMock = {
   length: 0,
   key: jest.fn(),
 };
-global.localStorage = localStorageMock as any;
+global.localStorage = localStorageMock as unknown as Storage;
 
 // Mock Prisma client for all tests
 jest.mock('../src/lib/db', () => ({
