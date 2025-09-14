@@ -29,6 +29,7 @@
             playwright-test
             mkcert
             prisma-engines
+            pnpm
           ];
           shellHook = ''
             export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1

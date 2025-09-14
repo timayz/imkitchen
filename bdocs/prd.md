@@ -3,6 +3,7 @@
 ## Goals and Background Context
 
 ### Goals
+
 - Reduce household food waste by 30% through intelligent inventory tracking and meal planning
 - Simplify meal planning process from 2+ hours weekly to under 30 minutes
 - Create unified kitchen management experience eliminating need for multiple disconnected apps
@@ -13,14 +14,16 @@
 - Achieve 85% user retention at 6 months through measurable value delivery
 
 ### Background Context
+
 Home cooking has increased significantly post-pandemic, yet kitchen management remains fragmented and inefficient. Current solutions like basic recipe apps fail to address the complete workflow, while professional kitchen systems are too complex for home use. imkitchen bridges this gap by providing an intelligent, integrated platform that connects recipe discovery, inventory management, meal planning, and cooking execution.
 
 The platform leverages Next.js full-stack architecture for rapid development and global deployment, with built-in internationalization to support worldwide expansion. The solution addresses measurable pain points: households waste $1,500+ annually on unused food, 73% find meal planning stressful, and disconnected kitchen tools create workflow inefficiencies.
 
 ### Change Log
-| Date | Version | Description | Author |
-|------|---------|-------------|---------|
-| 2025-09-14 | 1.0 | Initial PRD creation from Project Brief | John (PM) |
+
+| Date       | Version | Description                             | Author    |
+| ---------- | ------- | --------------------------------------- | --------- |
+| 2025-09-14 | 1.0     | Initial PRD creation from Project Brief | John (PM) |
 
 ## Requirements
 
@@ -68,9 +71,11 @@ The platform leverages Next.js full-stack architecture for rapid development and
 ## User Interface Design Goals
 
 ### Overall UX Vision
+
 imkitchen provides an intuitive, visually appealing interface that makes complex kitchen management feel simple and enjoyable. The design emphasizes clean, food-focused imagery with warm, inviting colors that reflect the comfort of home cooking. Navigation follows familiar patterns from popular consumer apps while introducing smart shortcuts for power users. The experience should feel personal and adaptive, learning from user behavior to surface relevant content and streamline workflows.
 
 ### Key Interaction Paradigms
+
 - **Drag-and-drop meal planning** with visual calendar interface and instant feedback
 - **Swipe-based inventory management** for quick addition/removal of pantry items
 - **Smart search with predictive suggestions** for recipes, ingredients, and meal plans
@@ -79,6 +84,7 @@ imkitchen provides an intuitive, visually appealing interface that makes complex
 - **Gesture-friendly cooking mode** with large touch targets and hands-free timer controls
 
 ### Core Screens and Views
+
 - **Dashboard/Home Screen** - Overview of upcoming meals, expiring ingredients, and quick actions
 - **Inventory Management** - Pantry and fridge contents with categorization and search capabilities
 - **Recipe Discovery** - Search, browse, and filter recipes with ingredient-based suggestions
@@ -89,26 +95,33 @@ imkitchen provides an intuitive, visually appealing interface that makes complex
 - **Recipe Detail Pages** - Comprehensive recipe information with ratings, reviews, and sharing options
 
 ### Accessibility: WCAG AA
+
 Full compliance with WCAG AA standards including screen reader optimization, keyboard navigation support, high contrast color schemes, and alternative text for all visual content. Focus management during dynamic content updates and clear heading structure for navigation clarity.
 
 ### Branding
+
 Clean, modern design with food-centric imagery and warm color palette emphasizing trust, efficiency, and culinary inspiration. Brand elements should convey expertise without intimidation, appealing to home cooks of all skill levels. Typography should be highly legible across devices with sufficient contrast ratios.
 
 ### Target Device and Platforms: Web Responsive
+
 Progressive Web App optimized for mobile-first experience with full desktop functionality. Installation capabilities on mobile devices provide native app-like experience while maintaining cross-platform compatibility through web technologies.
 
 ## Technical Assumptions
 
 ### Repository Structure: Monorepo
+
 Single Next.js repository with organized folder structure (app/, components/, lib/, locales/) enabling shared code, consistent development practices, and simplified deployment pipeline. This approach supports rapid iteration while maintaining code quality and facilitating team collaboration.
 
 ### Service Architecture
+
 Next.js full-stack application combining frontend and backend in unified deployment. Server-side API routes handle business logic, database interactions, and third-party integrations. Client-side components manage user interactions with hybrid rendering (SSG for public content, SSR for personalized features). Docker containerization enables platform-agnostic deployment across cloud providers.
 
 ### Testing Requirements
+
 Comprehensive testing strategy including unit tests for business logic, integration tests for API endpoints, and end-to-end tests for critical user journeys. Testing infrastructure supports continuous integration with automated test execution on code changes. Manual testing protocols for usability validation and accessibility compliance verification.
 
 ### Additional Technical Assumptions and Requests
+
 - PostgreSQL database with Prisma ORM for type-safe operations and migrations
 - next-intl for internationalization with JSON-based translation files and dynamic locale routing
 - Tailwind CSS for responsive design system with consistent styling across components
@@ -123,21 +136,27 @@ Comprehensive testing strategy including unit tests for business logic, integrat
 ## Epic List
 
 ### Epic 1: Foundation & Authentication Infrastructure
+
 Establish core project infrastructure including Next.js application setup, user authentication system, and database architecture while delivering basic user registration and login functionality.
 
-### Epic 2: Inventory Management System  
+### Epic 2: Inventory Management System
+
 Create comprehensive pantry and refrigerator tracking capabilities allowing users to add, edit, and monitor ingredient inventory with expiration dates and quantity management.
 
 ### Epic 3: Recipe Discovery & Management
+
 Implement recipe search, browsing, and personal collection features with ingredient-based suggestions and integration with external recipe databases.
 
 ### Epic 4: Meal Planning & Calendar
+
 Develop weekly meal planning interface with drag-and-drop calendar functionality, recipe assignment, and family coordination features.
 
 ### Epic 5: Smart Shopping Lists
+
 Build automated shopping list generation based on meal plans and inventory levels with categorization and real-time synchronization capabilities.
 
 ### Epic 6: Cooking Mode & Guidance
+
 Create step-by-step cooking interface with timers, progress tracking, and offline functionality for hands-on recipe execution.
 
 ## Epic 1: Foundation & Authentication Infrastructure
@@ -145,11 +164,13 @@ Create step-by-step cooking interface with timers, progress tracking, and offlin
 Establish the foundational technical infrastructure for imkitchen including Next.js application setup, user authentication system, database configuration, and core architectural patterns. This epic delivers a fully deployable application with user registration, login, and basic profile management while setting up development workflows, testing frameworks, and deployment pipelines that will support all subsequent features.
 
 ### Story 1.1: Project Setup & Development Environment
+
 As a developer,
 I want a fully configured Next.js development environment with all necessary dependencies,
 so that the team can begin building features with consistent tooling and coding standards.
 
 **Acceptance Criteria:**
+
 1. Next.js 14+ application created with App Router configuration
 2. TypeScript, ESLint, and Prettier configured with consistent code formatting rules
 3. Tailwind CSS installed and configured with responsive design utilities
@@ -160,11 +181,13 @@ so that the team can begin building features with consistent tooling and coding 
 8. README.md contains setup instructions and development guidelines
 
 ### Story 1.2: Database Architecture & Core Models
+
 As a developer,
 I want a PostgreSQL database with Prisma ORM and foundational data models,
 so that user data can be securely stored and efficiently queried.
 
 **Acceptance Criteria:**
+
 1. PostgreSQL database configured with connection pooling and environment-specific configurations
 2. Prisma ORM installed with schema definition for User, UserPreferences, and Session models
 3. Database migration system functional with initial schema creation
@@ -175,11 +198,13 @@ so that user data can be securely stored and efficiently queried.
 8. Error handling and logging for database operations
 
 ### Story 1.3: User Authentication System
+
 As a potential user,
 I want to create an account and securely log in to the application,
 so that I can access personalized kitchen management features.
 
 **Acceptance Criteria:**
+
 1. Registration page accepts email, password, and basic preferences with client-side validation
 2. Secure password hashing using bcrypt or equivalent industry-standard library
 3. Login page authenticates users and establishes secure sessions
@@ -192,11 +217,13 @@ so that I can access personalized kitchen management features.
 10. Error handling provides user-friendly messages without exposing security details
 
 ### Story 1.4: Multi-language Foundation
+
 As an international user,
 I want the application interface available in my preferred language,
 so that I can use imkitchen in a familiar linguistic context.
 
 **Acceptance Criteria:**
+
 1. next-intl library integrated with language detection and switching capabilities
 2. Translation files created for English, Spanish, French, and German with authentication-related text
 3. Dynamic locale routing supports /en/, /es/, /fr/, /de/ URL patterns
@@ -207,11 +234,13 @@ so that I can use imkitchen in a familiar linguistic context.
 8. Default language fallback system prevents broken interface for missing translations
 
 ### Story 1.5: Responsive Layout & Navigation
+
 As a user on any device,
 I want a consistent and intuitive navigation experience,
 so that I can easily access all application features regardless of screen size.
 
 **Acceptance Criteria:**
+
 1. Responsive navigation header with mobile hamburger menu and desktop horizontal layout
 2. Main navigation includes Dashboard, Inventory, Recipes, Meal Planning, and Shopping Lists sections
 3. User profile dropdown with settings, language selection, and logout options
@@ -224,11 +253,13 @@ so that I can easily access all application features regardless of screen size.
 10. Basic branding elements (logo, colors, typography) consistently applied
 
 ### Story 1.6: Development Workflows & Deployment Pipeline
+
 As a development team,
 I want automated testing, code quality checks, and deployment processes,
 so that we can maintain high code quality and reliable releases.
 
 **Acceptance Criteria:**
+
 1. Jest testing framework configured with example tests for authentication functions
 2. GitHub Actions or equivalent CI/CD pipeline runs tests on pull requests
 3. Code quality gates prevent merging of failing tests or linting errors
@@ -245,11 +276,13 @@ so that we can maintain high code quality and reliable releases.
 Create comprehensive pantry and refrigerator tracking capabilities that allow users to manage their kitchen inventory with expiration date monitoring, quantity tracking, and categorized organization. This epic establishes the foundation for smart meal planning and shopping list generation by providing accurate, real-time visibility into available ingredients.
 
 ### Story 2.1: Basic Inventory Item Management
+
 As a home cook,
 I want to add, edit, and remove items from my pantry and refrigerator inventory,
 so that I can track what ingredients I have available for cooking.
 
 **Acceptance Criteria:**
+
 1. Inventory page displays separate sections for pantry, refrigerator, and freezer items
 2. Add item form includes fields for name, quantity, unit of measurement, category, and expiration date
 3. Item editing allows updating all fields with proper validation
@@ -262,11 +295,13 @@ so that I can track what ingredients I have available for cooking.
 10. Auto-save functionality prevents data loss during form interactions
 
 ### Story 2.2: Inventory Categories & Organization
+
 As a user managing multiple ingredients,
 I want items organized by logical categories with visual grouping,
 so that I can quickly locate specific ingredients when cooking or planning meals.
 
 **Acceptance Criteria:**
+
 1. Predefined categories include: Proteins, Vegetables, Fruits, Grains, Dairy, Spices, Condiments, Beverages, Baking, Frozen
 2. Category filtering allows viewing inventory subsets with clear visual separation
 3. Drag-and-drop functionality enables moving items between categories
@@ -279,11 +314,13 @@ so that I can quickly locate specific ingredients when cooking or planning meals
 10. Mobile view maintains category organization with collapsible sections
 
 ### Story 2.3: Expiration Date Tracking & Alerts
+
 As a user wanting to reduce food waste,
 I want clear visibility into expiring ingredients with proactive notifications,
 so that I can use items before they spoil and plan meals accordingly.
 
 **Acceptance Criteria:**
+
 1. Visual indicators highlight items expiring within 3 days (red), within 7 days (yellow), and beyond 7 days (green)
 2. Dashboard widget displays upcoming expirations with count and most urgent items
 3. Email notifications (optional, user-configurable) alert users to items expiring within 24-48 hours
@@ -296,11 +333,13 @@ so that I can use items before they spoil and plan meals accordingly.
 10. Recipe suggestions prioritize ingredients nearing expiration to encourage usage
 
 ### Story 2.4: Quantity Management & Low Stock Alerts
+
 As a user tracking ingredient consumption,
 I want to monitor quantities and receive alerts when items run low,
 so that I can replenish essential ingredients before running out completely.
 
 **Acceptance Criteria:**
+
 1. Quantity tracking supports various units (pieces, cups, pounds, ounces, milliliters, etc.)
 2. Unit conversion system handles recipe requirements against available quantities
 3. Low stock thresholds configurable per item with default recommendations
@@ -313,11 +352,13 @@ so that I can replenish essential ingredients before running out completely.
 10. Usage pattern analysis suggests optimal reorder quantities based on consumption history
 
 ### Story 2.5: Inventory Dashboard & Analytics
+
 As a user interested in kitchen efficiency,
 I want an overview dashboard showing inventory statistics and trends,
 so that I can make informed decisions about food purchasing and usage patterns.
 
 **Acceptance Criteria:**
+
 1. Dashboard displays total inventory value, item count, and items expiring this week
 2. Food waste tracking shows expired items over time with cost calculations
 3. Category breakdown shows distribution of inventory across food types
@@ -330,11 +371,13 @@ so that I can make informed decisions about food purchasing and usage patterns.
 10. Comparison metrics show improvement over previous periods
 
 ### Story 2.6: Mobile-Optimized Inventory Management
+
 As a user shopping or cooking away from my computer,
 I want full inventory management capabilities on my mobile device,
 so that I can update inventory in real-time regardless of location.
 
 **Acceptance Criteria:**
+
 1. Mobile interface optimized for one-handed operation with thumb-friendly controls
 2. Quick-add functionality minimizes input required for common inventory updates
 3. Voice input support for hands-free item addition while unpacking groceries
@@ -351,11 +394,13 @@ so that I can update inventory in real-time regardless of location.
 Implement comprehensive recipe search, browsing, and personal collection features with intelligent ingredient-based suggestions. This epic integrates external recipe databases while building personal recipe management capabilities that connect directly with inventory tracking to suggest recipes based on available ingredients.
 
 ### Story 3.1: Recipe Database Integration & Search
+
 As a user looking for cooking inspiration,
 I want to search and browse recipes from a comprehensive database,
 so that I can discover new dishes and find recipes matching my preferences.
 
 **Acceptance Criteria:**
+
 1. Integration with external recipe API (Spoonacular, Edamam, or equivalent) provides access to 100,000+ recipes
 2. Search functionality supports text queries, cuisine types, dietary restrictions, and cooking time filters
 3. Advanced filtering options include difficulty level, ingredient count, meal type (breakfast, lunch, dinner, snack)
@@ -368,11 +413,13 @@ so that I can discover new dishes and find recipes matching my preferences.
 10. Search performance loads results within 2 seconds with loading states for slower queries
 
 ### Story 3.2: Detailed Recipe View & Information
+
 As a user evaluating a recipe,
 I want comprehensive recipe information including ingredients, instructions, and user reviews,
 so that I can make informed decisions about which recipes to save and cook.
 
 **Acceptance Criteria:**
+
 1. Recipe detail page displays high-quality hero image, title, description, and key metadata
 2. Ingredients list shows quantities, units, and ingredient names with clear formatting
 3. Step-by-step instructions numbered and formatted for easy following during cooking
@@ -385,11 +432,13 @@ so that I can make informed decisions about which recipes to save and cook.
 10. SEO optimization with structured data markup for search engine visibility
 
 ### Story 3.3: Personal Recipe Collections & Favorites
+
 As a user building my cooking repertoire,
 I want to save favorite recipes and organize them into custom collections,
 so that I can quickly find recipes I love and build themed meal collections.
 
 **Acceptance Criteria:**
+
 1. Save/unsave button on recipe pages adds recipes to personal favorites with visual feedback
 2. My Recipes page displays saved recipes with search and filter capabilities
 3. Custom collection creation allows organizing recipes by themes (e.g., "Quick Weeknight Meals," "Holiday Desserts")
@@ -402,11 +451,13 @@ so that I can quickly find recipes I love and build themed meal collections.
 10. Duplicate detection prevents saving the same recipe multiple times
 
 ### Story 3.4: Ingredient-Based Recipe Suggestions
+
 As a user with specific ingredients available,
 I want recipe suggestions based on what I have in my inventory,
 so that I can make meals with existing ingredients and reduce food waste.
 
 **Acceptance Criteria:**
+
 1. "Cook with What You Have" feature analyzes inventory and suggests compatible recipes
 2. Recipe results highlight available ingredients in green and missing ingredients in red
 3. Percentage match indicator shows how many required ingredients user already possesses
@@ -419,11 +470,13 @@ so that I can make meals with existing ingredients and reduce food waste.
 10. Integration with meal planning allows directly scheduling suggested recipes
 
 ### Story 3.5: Recipe Rating & Review System
+
 As a user sharing cooking experiences,
 I want to rate recipes and read others' reviews,
 so that the community can help each other find the best recipes and cooking tips.
 
 **Acceptance Criteria:**
+
 1. 5-star rating system allows users to rate recipes they've attempted
 2. Written review functionality with character limits and moderation guidelines
 3. Review filtering by rating level, most recent, most helpful, and verified cooks
@@ -436,11 +489,13 @@ so that the community can help each other find the best recipes and cooking tips
 10. Inappropriate content flagging and moderation workflow maintains community standards
 
 ### Story 3.6: Recipe Import & Custom Recipe Creation
+
 As a user with personal or family recipes,
 I want to add my own recipes to the system alongside discovered recipes,
 so that I can manage all my recipes in one centralized location.
 
 **Acceptance Criteria:**
+
 1. Manual recipe creation form with fields for title, description, ingredients, instructions, and metadata
 2. Recipe import from popular formats (JSON-LD structured data, common recipe websites)
 3. URL import functionality extracts recipe data from supported cooking websites
@@ -457,11 +512,13 @@ so that I can manage all my recipes in one centralized location.
 Develop comprehensive weekly meal planning interface with drag-and-drop calendar functionality, recipe assignment, and family coordination features. This epic transforms recipe discovery into actionable meal schedules that integrate with inventory management and shopping list generation.
 
 ### Story 4.1: Weekly Meal Planning Calendar Interface
+
 As a user planning meals for my household,
 I want a visual calendar interface to assign recipes to specific days and meals,
 so that I can organize weekly meal schedules and ensure variety in our diet.
 
 **Acceptance Criteria:**
+
 1. Calendar view displays 7-day week with breakfast, lunch, dinner, and snack slots for each day
 2. Drag-and-drop functionality allows moving recipes from search results or favorites onto calendar slots
 3. Calendar navigation supports moving between weeks with smooth transitions
@@ -474,11 +531,13 @@ so that I can organize weekly meal schedules and ensure variety in our diet.
 10. Undo/redo functionality prevents accidental meal plan modifications
 
 ### Story 4.2: Recipe Assignment & Meal Scheduling
+
 As a meal planner,
 I want to assign specific recipes to calendar time slots with automatic conflict detection,
 so that I can create realistic meal schedules that account for cooking time and complexity.
 
 **Acceptance Criteria:**
+
 1. Recipe assignment validates cooking time against available meal preparation windows
 2. Conflict detection warns when multiple complex recipes scheduled for same day
 3. Ingredient overlap analysis optimizes meal sequences to use similar ingredients efficiently
@@ -491,11 +550,13 @@ so that I can create realistic meal schedules that account for cooking time and 
 10. Time-based meal suggestions adapt to user's historical cooking patterns and preferences
 
 ### Story 4.3: Family & Household Coordination
+
 As a household member,
 I want to coordinate meal planning with family members and see everyone's preferences,
 so that planned meals accommodate everyone's schedules and dietary needs.
 
 **Acceptance Criteria:**
+
 1. Household member invitation system allows sharing meal plans with family/roommates
 2. Individual dietary preferences and allergies stored per household member
 3. Schedule integration shows when household members are available for meals
@@ -508,11 +569,13 @@ so that planned meals accommodate everyone's schedules and dietary needs.
 10. Communication system for meal plan changes and real-time updates
 
 ### Story 4.4: Meal Plan Templates & Recurring Schedules
+
 As a busy planner,
 I want to save successful meal plans as templates and set up recurring meal patterns,
 so that I can reduce weekly planning time while maintaining meal variety.
 
 **Acceptance Criteria:**
+
 1. Template creation saves entire week's meal plan with all recipes and scheduling
 2. Template library displays saved plans with preview images and success ratings
 3. Template application applies saved meal plan to selected calendar week with modification options
@@ -525,11 +588,13 @@ so that I can reduce weekly planning time while maintaining meal variety.
 10. Template analytics show success rates and family satisfaction scores
 
 ### Story 4.5: Shopping Integration & Meal Cost Tracking
+
 As a budget-conscious meal planner,
 I want meal plans to automatically generate shopping lists with cost estimates,
 so that I can plan meals within budget constraints and optimize grocery spending.
 
 **Acceptance Criteria:**
+
 1. Automatic shopping list generation based on planned meals and current inventory levels
 2. Cost estimation using average ingredient prices with regional adjustment capabilities
 3. Budget setting allows defining weekly/monthly meal spending limits with tracking
@@ -542,11 +607,13 @@ so that I can plan meals within budget constraints and optimize grocery spending
 10. Budget alert system warns when meal plans exceed spending targets
 
 ### Story 4.6: Meal Plan Analytics & Optimization
+
 As a user improving my meal planning efficiency,
 I want insights into meal plan success rates and family satisfaction,
 so that I can optimize future meal planning decisions and reduce food waste.
 
 **Acceptance Criteria:**
+
 1. Meal completion tracking records which planned meals were actually cooked
 2. Family satisfaction ratings collected after meals to improve future recommendations
 3. Ingredient utilization analysis shows efficiency in using purchased ingredients
@@ -563,11 +630,13 @@ so that I can optimize future meal planning decisions and reduce food waste.
 Build automated shopping list generation based on meal plans and inventory levels with categorization, real-time synchronization, and store optimization features. This epic connects meal planning with efficient grocery shopping while maintaining shopping flexibility and household coordination.
 
 ### Story 5.1: Automated Shopping List Generation
+
 As a meal planner,
 I want shopping lists automatically generated from my meal plans and current inventory,
 so that I can efficiently purchase exactly what I need without over-buying or forgetting items.
 
 **Acceptance Criteria:**
+
 1. Shopping list auto-generation analyzes planned meals and compares against current inventory
 2. Quantity calculations aggregate ingredient requirements across multiple recipes
 3. Unit standardization converts recipe measurements to shopping-friendly quantities
@@ -580,11 +649,13 @@ so that I can efficiently purchase exactly what I need without over-buying or fo
 10. Manual override capabilities allow adding non-meal items and adjusting quantities
 
 ### Story 5.2: Store Category Organization & Navigation
+
 As a shopper navigating the grocery store,
 I want shopping lists organized by store sections with optimized routing,
 so that I can shop efficiently and avoid missing items or backtracking through the store.
 
 **Acceptance Criteria:**
+
 1. Category organization groups items by store sections: Produce, Dairy, Meat, Frozen, Pantry, etc.
 2. Store layout customization allows users to define their preferred grocery store's section order
 3. Shopping route optimization orders categories to minimize store navigation distance
@@ -597,11 +668,13 @@ so that I can shop efficiently and avoid missing items or backtracking through t
 10. Multi-store list splitting when items require visits to specialty stores (butcher, bakery, etc.)
 
 ### Story 5.3: Collaborative Shopping & Real-Time Sync
+
 As a household member sharing shopping responsibilities,
 I want real-time shopping list synchronization with other family members,
 so that we can coordinate shopping trips and avoid duplicate purchases.
 
 **Acceptance Criteria:**
+
 1. Real-time synchronization updates shopping lists instantly across all household member devices
 2. Shopping assignment system delegates specific items or categories to different shoppers
 3. Simultaneous shopping support allows multiple family members to shop from same list
@@ -614,11 +687,13 @@ so that we can coordinate shopping trips and avoid duplicate purchases.
 10. Offline functionality maintains shopping capability without internet connection
 
 ### Story 5.4: Shopping List Customization & Preferences
+
 As a shopper with specific preferences and needs,
 I want to customize shopping lists with personal notes, brand preferences, and special requirements,
 so that shopping trips result in the exact products my household prefers.
 
 **Acceptance Criteria:**
+
 1. Brand preference settings automatically suggest preferred brands for common ingredients
 2. Personal notes field allows adding preparation tips, location hints, or special instructions
 3. Quality preferences specify requirements (organic, local, specific cuts of meat, etc.)
@@ -631,11 +706,13 @@ so that shopping trips result in the exact products my household prefers.
 10. Custom category creation allows organizing items by personal shopping patterns
 
 ### Story 5.5: Budget Management & Cost Optimization
+
 As a budget-conscious shopper,
 I want shopping lists with cost estimates and budget tracking,
 so that I can make informed purchasing decisions and stay within spending targets.
 
 **Acceptance Criteria:**
+
 1. Price estimation displays expected costs per item and total shopping trip estimate
 2. Budget setting defines spending limits with real-time tracking during shopping
 3. Cost optimization suggestions recommend generic brands or sale alternatives
@@ -648,11 +725,13 @@ so that I can make informed purchasing decisions and stay within spending target
 10. Historical budget analysis shows spending trends and opportunities for improvement
 
 ### Story 5.6: Smart Replenishment & Inventory Integration
+
 As a user maintaining consistent household inventory,
 I want automatic replenishment suggestions and integration with inventory tracking,
 so that essential items are always available without overstocking or waste.
 
 **Acceptance Criteria:**
+
 1. Low stock monitoring automatically adds depleted inventory items to shopping lists
 2. Usage pattern analysis predicts when items will run out based on consumption history
 3. Staple item management maintains consistent levels of essential pantry ingredients
@@ -669,11 +748,13 @@ so that essential items are always available without overstocking or waste.
 Create step-by-step cooking interface with timers, progress tracking, and offline functionality for hands-on recipe execution. This epic transforms static recipes into interactive cooking experiences that guide users through meal preparation with smart assistance and real-time feedback.
 
 ### Story 6.1: Interactive Step-by-Step Cooking Interface
+
 As a cook preparing a meal,
 I want interactive step-by-step guidance that keeps me on track through recipe execution,
 so that I can successfully complete recipes without confusion or mistakes.
 
 **Acceptance Criteria:**
+
 1. Cooking mode displays one recipe step at a time with large, readable text
 2. Next/previous navigation allows moving through steps with touch, click, or voice commands
 3. Ingredients list overlay shows required items for current step with quantities
@@ -686,11 +767,13 @@ so that I can successfully complete recipes without confusion or mistakes.
 10. Emergency stop safely pauses all timers and saves progress for later continuation
 
 ### Story 6.2: Integrated Timers & Time Management
+
 As a cook managing multiple cooking processes,
 I want integrated timers and time management tools,
 so that I can coordinate different cooking elements and avoid over or under-cooking.
 
 **Acceptance Criteria:**
+
 1. Automatic timer suggestions based on recipe instructions with one-tap activation
 2. Multiple simultaneous timers with distinct labels and notification sounds
 3. Timer alerts include visual, audio, and vibration notifications across devices
@@ -703,11 +786,13 @@ so that I can coordinate different cooking elements and avoid over or under-cook
 10. Timer synchronization across household devices ensures all cooks receive notifications
 
 ### Story 6.3: Hands-Free Voice Controls & Accessibility
+
 As a cook with messy hands or accessibility needs,
 I want voice control functionality throughout cooking mode,
 so that I can navigate recipes and control timers without touching the device.
 
 **Acceptance Criteria:**
+
 1. Voice command recognition for "next step," "previous step," "set timer," and "pause"
 2. Recipe reading aloud capability with clear pronunciation and appropriate pacing
 3. Voice-activated timer setting with natural language processing ("set timer for 20 minutes")
@@ -720,11 +805,13 @@ so that I can navigate recipes and control timers without touching the device.
 10. Accessibility compliance includes screen reader compatibility and high contrast display options
 
 ### Story 6.4: Recipe Progress Tracking & Adaptability
+
 As a cook learning new techniques,
 I want progress tracking and adaptive guidance based on my cooking experience,
 so that recipes adjust to my skill level and provide appropriate support.
 
 **Acceptance Criteria:**
+
 1. Skill level assessment adapts recipe detail and timing based on user experience
 2. Progress photos allow documenting cooking stages for reference and sharing
 3. Cooking notes capture personal observations and modifications during recipe execution
@@ -737,11 +824,13 @@ so that recipes adjust to my skill level and provide appropriate support.
 10. Failure recovery suggestions provide troubleshooting when cooking doesn't go as planned
 
 ### Story 6.5: Offline Cooking & Sync Capabilities
+
 As a cook in areas with unreliable internet,
 I want full cooking functionality offline with synchronization when connectivity returns,
 so that I can cook without worrying about losing connection mid-recipe.
 
 **Acceptance Criteria:**
+
 1. Recipe download functionality caches complete recipes including images for offline access
 2. Offline timer functionality maintains all timing features without internet connectivity
 3. Progress saving stores cooking state locally with sync when connection restored
@@ -754,11 +843,13 @@ so that I can cook without worrying about losing connection mid-recipe.
 10. Connectivity status clearly indicates online/offline mode with appropriate feature limitations
 
 ### Story 6.6: Recipe Completion & Follow-up
+
 As a cook finishing a recipe,
 I want to complete the cooking session with feedback collection and next steps,
 so that the system learns from my experience and helps with meal finishing touches.
 
 **Acceptance Criteria:**
+
 1. Recipe completion celebration acknowledges successful cooking with encouraging feedback
 2. Photo capture prompts allow documenting finished dish for personal records or sharing
 3. Satisfaction rating collection helps improve future recipe recommendations
@@ -772,12 +863,14 @@ so that the system learns from my experience and helps with meal finishing touch
 
 ## Checklist Results Report
 
-*Checklist execution will be performed to validate PRD completeness and quality before finalization.*
+_Checklist execution will be performed to validate PRD completeness and quality before finalization._
 
 ## Next Steps
 
 ### UX Expert Prompt
+
 Review this comprehensive imkitchen PRD and create detailed UX architecture including wireframes, user flows, and design system specifications. Focus on mobile-first responsive design with accessibility compliance and multi-language support. Prioritize intuitive kitchen workflow optimization and hands-free cooking interactions.
 
 ### Architect Prompt
+
 Transform this imkitchen PRD into technical architecture using Next.js full-stack framework with PostgreSQL database, multi-language support via next-intl, and platform-agnostic deployment. Ensure SEO optimization, vendor independence, and scalable architecture supporting the defined epics and user stories. Create comprehensive technical specifications enabling development team execution.

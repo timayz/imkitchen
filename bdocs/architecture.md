@@ -11,6 +11,7 @@ This unified approach combines what would traditionally be separate backend and 
 **Project Type:** Greenfield project with Next.js 14+ full-stack foundation
 
 **Architectural Decisions:**
+
 - Single Next.js application combining frontend and backend
 - App Router architecture for unified routing and API patterns
 - TypeScript-first development with strict type safety
@@ -19,9 +20,9 @@ This unified approach combines what would traditionally be separate backend and 
 
 ### Change Log
 
-| Date | Version | Description | Author |
-|------|---------|-------------|---------|
-| 2025-09-14 | 1.0 | Initial fullstack architecture creation | Winston (Architect) |
+| Date       | Version | Description                             | Author              |
+| ---------- | ------- | --------------------------------------- | ------------------- |
+| 2025-09-14 | 1.0     | Initial fullstack architecture creation | Winston (Architect) |
 
 ## High Level Architecture
 
@@ -32,7 +33,8 @@ imkitchen utilizes a modern Next.js 14+ fullstack architecture with App Router, 
 ### Platform and Infrastructure Choice
 
 **Platform:** Multi-cloud compatible with Docker deployment
-**Key Services:** 
+**Key Services:**
+
 - **Compute:** Docker containers (supports AWS ECS, GCP Cloud Run, Azure Container Instances, DigitalOcean App Platform)
 - **Database:** PostgreSQL (supports AWS RDS, GCP Cloud SQL, Azure Database, managed providers)
 - **Storage:** S3-compatible object storage with abstraction layer
@@ -56,49 +58,49 @@ graph TB
         Mobile[Mobile Browser]
         Desktop[Desktop Browser]
     end
-    
+
     subgraph "CDN/Edge"
         CF[CloudFlare CDN]
         Edge[Edge Functions]
     end
-    
+
     subgraph "Next.js Application"
         SSG[Static Site Generation]
         SSR[Server-Side Rendering]
         API[API Routes]
         Middleware[Next.js Middleware]
     end
-    
+
     subgraph "External Services"
         RecipeAPI[Recipe Database API]
         NutritionAPI[Nutrition API]
         VoiceAPI[Voice Recognition Service]
         EmailSVC[Email Service]
     end
-    
+
     subgraph "Data Layer"
         PG[(PostgreSQL)]
         Redis[(Redis Cache)]
         S3[Object Storage]
     end
-    
+
     PWA --> CF
     Mobile --> CF
     Desktop --> CF
-    
+
     CF --> Edge
     Edge --> SSG
     Edge --> SSR
-    
+
     SSG --> API
     SSR --> API
     API --> Middleware
-    
+
     API --> RecipeAPI
     API --> NutritionAPI
     API --> VoiceAPI
     API --> EmailSVC
-    
+
     API --> PG
     API --> Redis
     API --> S3
@@ -117,29 +119,29 @@ graph TB
 
 ### Technology Stack Table
 
-| Category | Technology | Version | Purpose | Rationale |
-|----------|------------|---------|---------|-----------|
-| Frontend Language | TypeScript | 5.0+ | Type-safe frontend development | Kitchen safety requires predictable interfaces; prevents runtime errors during cooking |
-| Frontend Framework | Next.js | 14+ | Full-stack React framework with App Router | Unified frontend/backend development; excellent SSG/SSR for SEO; built-in internationalization |
-| UI Component Library | Custom + Radix UI | Latest | Accessible component primitives | Kitchen accessibility requirements; voice/keyboard navigation; high customization needs |
-| State Management | React Context + useReducer | Built-in | Client-side state management | Sufficient for app complexity; reduces bundle size; integrates with Server Components |
-| Backend Language | TypeScript | 5.0+ | Type-safe backend development | Shared types between frontend/backend; prevents API contract mismatches |
-| Backend Framework | Next.js API Routes | 14+ | Serverless-style API endpoints | Unified codebase; automatic deployment optimization; edge computing support |
-| API Style | REST + OpenAPI | 3.0 | RESTful APIs with documentation | Standard, cacheable, voice-command compatible; clear contract definitions |
-| Database | PostgreSQL | 15+ | Primary relational database | ACID compliance for inventory tracking; complex recipe relationships; international scaling |
-| Cache | Redis | 7+ | Session and application caching | Fast recipe lookup; voice command response times; shopping list synchronization |
-| File Storage | S3-Compatible Storage | Latest | Recipe images and user uploads | Global CDN distribution; vendor independence; cost optimization |
-| Authentication | NextAuth.js | 4+ | Authentication and session management | Next.js integration; multiple providers; secure session handling |
-| Frontend Testing | Jest + React Testing Library | Latest | Component and integration testing | Kitchen workflow testing; accessibility compliance verification |
-| Backend Testing | Jest + Supertest | Latest | API endpoint and service testing | Critical for food safety features; recipe data integrity |
-| E2E Testing | Playwright | Latest | End-to-end user journey testing | Voice interaction testing; mobile cooking mode validation |
-| Build Tool | Next.js Build | Built-in | Application bundling and optimization | Integrated toolchain; automatic optimization; edge deployment |
-| Bundler | Webpack (via Next.js) | Latest | Module bundling and code splitting | Automatic bundle optimization; dynamic imports for cooking mode |
-| IaC Tool | Docker + Docker Compose | Latest | Infrastructure as code | Platform independence; local development parity; cloud agnostic |
-| CI/CD | GitHub Actions | Latest | Continuous integration and deployment | Free for open source; excellent Next.js integration; multi-environment support |
-| Monitoring | Sentry + Vercel Analytics | Latest | Error tracking and performance monitoring | Real-time cooking session error detection; performance optimization |
-| Logging | Winston + Structured Logging | Latest | Application logging | Kitchen session debugging; voice command analysis; security monitoring |
-| CSS Framework | Tailwind CSS | 3+ | Utility-first styling framework | Kitchen-first responsive design; consistent spacing; dark mode support |
+| Category             | Technology                   | Version  | Purpose                                    | Rationale                                                                                      |
+| -------------------- | ---------------------------- | -------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| Frontend Language    | TypeScript                   | 5.0+     | Type-safe frontend development             | Kitchen safety requires predictable interfaces; prevents runtime errors during cooking         |
+| Frontend Framework   | Next.js                      | 14+      | Full-stack React framework with App Router | Unified frontend/backend development; excellent SSG/SSR for SEO; built-in internationalization |
+| UI Component Library | Custom + Radix UI            | Latest   | Accessible component primitives            | Kitchen accessibility requirements; voice/keyboard navigation; high customization needs        |
+| State Management     | React Context + useReducer   | Built-in | Client-side state management               | Sufficient for app complexity; reduces bundle size; integrates with Server Components          |
+| Backend Language     | TypeScript                   | 5.0+     | Type-safe backend development              | Shared types between frontend/backend; prevents API contract mismatches                        |
+| Backend Framework    | Next.js API Routes           | 14+      | Serverless-style API endpoints             | Unified codebase; automatic deployment optimization; edge computing support                    |
+| API Style            | REST + OpenAPI               | 3.0      | RESTful APIs with documentation            | Standard, cacheable, voice-command compatible; clear contract definitions                      |
+| Database             | PostgreSQL                   | 15+      | Primary relational database                | ACID compliance for inventory tracking; complex recipe relationships; international scaling    |
+| Cache                | Redis                        | 7+       | Session and application caching            | Fast recipe lookup; voice command response times; shopping list synchronization                |
+| File Storage         | S3-Compatible Storage        | Latest   | Recipe images and user uploads             | Global CDN distribution; vendor independence; cost optimization                                |
+| Authentication       | NextAuth.js                  | 4+       | Authentication and session management      | Next.js integration; multiple providers; secure session handling                               |
+| Frontend Testing     | Jest + React Testing Library | Latest   | Component and integration testing          | Kitchen workflow testing; accessibility compliance verification                                |
+| Backend Testing      | Jest + Supertest             | Latest   | API endpoint and service testing           | Critical for food safety features; recipe data integrity                                       |
+| E2E Testing          | Playwright                   | Latest   | End-to-end user journey testing            | Voice interaction testing; mobile cooking mode validation                                      |
+| Build Tool           | Next.js Build                | Built-in | Application bundling and optimization      | Integrated toolchain; automatic optimization; edge deployment                                  |
+| Bundler              | Webpack (via Next.js)        | Latest   | Module bundling and code splitting         | Automatic bundle optimization; dynamic imports for cooking mode                                |
+| IaC Tool             | Docker + Docker Compose      | Latest   | Infrastructure as code                     | Platform independence; local development parity; cloud agnostic                                |
+| CI/CD                | GitHub Actions               | Latest   | Continuous integration and deployment      | Free for open source; excellent Next.js integration; multi-environment support                 |
+| Monitoring           | Sentry + Vercel Analytics    | Latest   | Error tracking and performance monitoring  | Real-time cooking session error detection; performance optimization                            |
+| Logging              | Winston + Structured Logging | Latest   | Application logging                        | Kitchen session debugging; voice command analysis; security monitoring                         |
+| CSS Framework        | Tailwind CSS                 | 3+       | Utility-first styling framework            | Kitchen-first responsive design; consistent spacing; dark mode support                         |
 
 ## Data Models
 
@@ -148,6 +150,7 @@ graph TB
 **Purpose:** Represents individual users with their preferences, dietary restrictions, and household membership
 
 **Key Attributes:**
+
 - id: string (UUID) - Unique user identifier
 - email: string - Primary authentication identifier
 - name: string - Display name for household coordination
@@ -173,7 +176,13 @@ interface User {
   updatedAt: Date;
 }
 
-type DietaryPreference = 'vegetarian' | 'vegan' | 'gluten-free' | 'keto' | 'paleo' | 'dairy-free';
+type DietaryPreference =
+  | 'vegetarian'
+  | 'vegan'
+  | 'gluten-free'
+  | 'keto'
+  | 'paleo'
+  | 'dairy-free';
 type Language = 'en' | 'es' | 'fr' | 'de';
 ```
 
@@ -189,6 +198,7 @@ type Language = 'en' | 'es' | 'fr' | 'de';
 **Purpose:** Shared kitchen space for families/roommates with coordinated meal planning and inventory
 
 **Key Attributes:**
+
 - id: string (UUID) - Unique household identifier
 - name: string - Household display name
 - members: User[] - Array of household members
@@ -224,6 +234,7 @@ interface HouseholdSettings {
 **Purpose:** Individual ingredients and food items tracked in pantry, refrigerator, or freezer
 
 **Key Attributes:**
+
 - id: string (UUID) - Unique item identifier
 - name: string - Ingredient name with i18n support
 - quantity: number - Current quantity available
@@ -253,9 +264,29 @@ interface InventoryItem {
   updatedAt: Date;
 }
 
-type InventoryCategory = 'proteins' | 'vegetables' | 'fruits' | 'grains' | 'dairy' | 'spices' | 'condiments' | 'beverages' | 'baking' | 'frozen';
+type InventoryCategory =
+  | 'proteins'
+  | 'vegetables'
+  | 'fruits'
+  | 'grains'
+  | 'dairy'
+  | 'spices'
+  | 'condiments'
+  | 'beverages'
+  | 'baking'
+  | 'frozen';
 type StorageLocation = 'pantry' | 'refrigerator' | 'freezer';
-type MeasurementUnit = 'grams' | 'kilograms' | 'ounces' | 'pounds' | 'cups' | 'tablespoons' | 'teaspoons' | 'pieces' | 'milliliters' | 'liters';
+type MeasurementUnit =
+  | 'grams'
+  | 'kilograms'
+  | 'ounces'
+  | 'pounds'
+  | 'cups'
+  | 'tablespoons'
+  | 'teaspoons'
+  | 'pieces'
+  | 'milliliters'
+  | 'liters';
 ```
 
 #### Relationships
@@ -270,6 +301,7 @@ type MeasurementUnit = 'grams' | 'kilograms' | 'ounces' | 'pounds' | 'cups' | 't
 **Purpose:** Cooking instructions with ingredients, steps, and metadata for meal planning
 
 **Key Attributes:**
+
 - id: string (UUID) - Unique recipe identifier
 - title: string - Recipe name with i18n support
 - description: string - Brief recipe description
@@ -335,6 +367,7 @@ type RecipeSource = 'user-created' | 'imported' | 'api-external';
 **Purpose:** Weekly or monthly meal scheduling with family coordination
 
 **Key Attributes:**
+
 - id: string (UUID) - Unique meal plan identifier
 - name: string - Meal plan name
 - startDate: Date - Beginning of meal plan period
@@ -384,6 +417,7 @@ type MealStatus = 'planned' | 'in-progress' | 'completed' | 'skipped';
 **Purpose:** Automated and manual shopping lists with store organization and purchase tracking
 
 **Key Attributes:**
+
 - id: string (UUID) - Unique shopping list identifier
 - name: string - Shopping list name
 - items: ShoppingListItem[] - Items to purchase
@@ -420,7 +454,14 @@ interface ShoppingListItem {
 }
 
 type ShoppingListStatus = 'active' | 'completed' | 'archived';
-type StoreCategory = 'produce' | 'dairy' | 'meat' | 'frozen' | 'pantry' | 'bakery' | 'other';
+type StoreCategory =
+  | 'produce'
+  | 'dairy'
+  | 'meat'
+  | 'frozen'
+  | 'pantry'
+  | 'bakery'
+  | 'other';
 ```
 
 #### Relationships
@@ -498,7 +539,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/InventoryItem'
-    
+
     post:
       summary: Add inventory item
       requestBody:
@@ -724,7 +765,7 @@ components:
             type: string
         language:
           type: string
-    
+
     InventoryItem:
       type: object
       properties:
@@ -777,6 +818,7 @@ security:
 **Responsibility:** User authentication, session management, and household access control
 
 **Key Interfaces:**
+
 - POST /api/auth/login - User login with email/password
 - POST /api/auth/register - New user registration
 - GET /api/auth/session - Current session validation
@@ -791,6 +833,7 @@ security:
 **Responsibility:** Pantry and refrigerator tracking, expiration monitoring, quantity management
 
 **Key Interfaces:**
+
 - GET /api/inventory - Retrieve household inventory with filtering
 - POST /api/inventory - Add new inventory items
 - PUT /api/inventory/[id] - Update item quantities and expiration dates
@@ -805,6 +848,7 @@ security:
 **Responsibility:** Recipe search, storage, rating, and ingredient-based suggestions
 
 **Key Interfaces:**
+
 - GET /api/recipes/search - Recipe search with filters and available ingredients
 - GET /api/recipes/[id] - Recipe details with instructions and nutrition
 - POST /api/recipes/rate - User recipe ratings and reviews
@@ -819,6 +863,7 @@ security:
 **Responsibility:** Weekly/monthly meal scheduling, family coordination, calendar management
 
 **Key Interfaces:**
+
 - GET /api/meal-plans - Retrieve meal plans for date range
 - POST /api/meal-plans - Create new meal plan with recipe assignments
 - PUT /api/meal-plans/[id]/entries - Update specific meal assignments
@@ -833,6 +878,7 @@ security:
 **Responsibility:** Automated list generation, store organization, purchase tracking
 
 **Key Interfaces:**
+
 - GET /api/shopping-lists - Retrieve active shopping lists
 - POST /api/shopping-lists/generate - Generate list from meal plans
 - PUT /api/shopping-lists/[id]/items - Mark items as purchased
@@ -847,6 +893,7 @@ security:
 **Responsibility:** Voice command processing, cooking mode assistance, hands-free navigation
 
 **Key Interfaces:**
+
 - POST /api/voice/process - Voice command interpretation
 - POST /api/voice/cooking/next - Advance cooking step via voice
 - POST /api/voice/timer - Voice-activated timer management
@@ -861,6 +908,7 @@ security:
 **Responsibility:** Expiration alerts, meal reminders, cooking timers, family coordination
 
 **Key Interfaces:**
+
 - POST /api/notifications/send - Send immediate notifications
 - GET /api/notifications/settings - User notification preferences
 - POST /api/notifications/schedule - Schedule future notifications
@@ -879,7 +927,7 @@ graph TB
         State[State Management]
         Services[Service Layer]
     end
-    
+
     subgraph "API Layer"
         Auth[Auth Service]
         Inventory[Inventory Service]
@@ -889,20 +937,20 @@ graph TB
         Voice[Voice Service]
         Notifications[Notification Service]
     end
-    
+
     subgraph "Data Layer"
         DB[(PostgreSQL)]
         Cache[(Redis)]
         Storage[Object Storage]
     end
-    
+
     subgraph "External Services"
         RecipeAPI[Recipe APIs]
         VoiceAPI[Speech APIs]
         EmailAPI[Email Service]
         StoreAPI[Store APIs]
     end
-    
+
     UI --> Services
     State --> Services
     Services --> Auth
@@ -912,7 +960,7 @@ graph TB
     Services --> Shopping
     Services --> Voice
     Services --> Notifications
-    
+
     Auth --> DB
     Inventory --> DB
     Inventory --> Cache
@@ -924,7 +972,7 @@ graph TB
     Shopping --> StoreAPI
     Voice --> VoiceAPI
     Notifications --> EmailAPI
-    
+
     Inventory --> Storage
     Recipes --> Storage
 ```
@@ -940,6 +988,7 @@ graph TB
 - **Rate Limits:** 150 requests/day (free), 500+ (paid plans)
 
 **Key Endpoints Used:**
+
 - `GET /recipes/complexSearch` - Recipe search with ingredient filters
 - `GET /recipes/{id}/information` - Detailed recipe information
 - `GET /recipes/findByIngredients` - Recipes based on available ingredients
@@ -948,6 +997,7 @@ graph TB
 **Integration Notes:** Primary recipe source with fallback to user-generated content; caching essential due to rate limits; nutrition data integration for meal planning
 
 **Error Recovery Strategy:**
+
 - **Rate Limit Exceeded:** Switch to cached recipes and user-generated content; display rate limit notice with retry timing
 - **Service Unavailable:** Fallback to OpenFoodFacts data and local recipe database; maintain core search functionality
 - **API Key Invalid:** Graceful degradation to manual recipe entry with clear user messaging about reduced functionality
@@ -962,6 +1012,7 @@ graph TB
 - **Rate Limits:** None specified (reasonable use expected)
 
 **Key Endpoints Used:**
+
 - `GET /product/{barcode}.json` - Product information by barcode
 - `GET /cgi/search.pl` - Product search functionality
 - `GET /api/v0/product/{barcode}` - Detailed product data
@@ -969,6 +1020,7 @@ graph TB
 **Integration Notes:** Used for barcode scanning functionality in inventory management; supplement to manual ingredient entry; multilingual product data available
 
 **Error Recovery Strategy:**
+
 - **Service Unavailable:** Fallback to manual ingredient entry with barcode recognition disabled temporarily
 - **Product Not Found:** Provide manual entry form pre-populated with barcode for future database contribution
 - **Network Issues:** Cache successful barcode scans locally; sync when connectivity restored
@@ -983,6 +1035,7 @@ graph TB
 - **Rate Limits:** Browser-dependent
 
 **Key Endpoints Used:**
+
 - `SpeechRecognition` - Voice command recognition
 - `SpeechSynthesis` - Text-to-speech for cooking instructions
 - `speechSynthesis.speak()` - Read cooking steps aloud
@@ -990,6 +1043,7 @@ graph TB
 **Integration Notes:** Primary voice interface with cloud service fallback; offline capability essential for cooking mode; multiple language support required
 
 **Error Recovery Strategy:**
+
 - **Microphone Permission Denied:** Fallback to touch/click interface with clear instructions for enabling voice
 - **Speech Recognition Failure:** Provide manual text input alternative; retry voice recognition with user feedback
 - **Browser Compatibility:** Progressive enhancement with feature detection; manual controls always available
@@ -1019,7 +1073,7 @@ sequenceDiagram
     RecipeService->>DB: Cache recipe data
     RecipeService-->>UI: Recipes with ingredient match %
     UI-->>User: Display recipes with availability indicators
-    
+
     User->>UI: Select recipe for meal plan
     UI->>MealPlanService: POST /api/meal-plans/entries
     MealPlanService->>DB: Save meal plan entry
@@ -1046,12 +1100,12 @@ sequenceDiagram
     MealPlanService->>DB: Query meal plan entries
     DB-->>MealPlanService: Return planned meals
     MealPlanService-->>ShoppingService: Required ingredients list
-    
+
     ShoppingService->>InventoryService: Check current inventory
     InventoryService->>DB: Query available quantities
     DB-->>InventoryService: Inventory levels
     InventoryService-->>ShoppingService: Available vs needed
-    
+
     ShoppingService->>DB: Create shopping list
     ShoppingService->>StoreAPI: Get pricing estimates
     StoreAPI-->>ShoppingService: Price data
@@ -1081,7 +1135,7 @@ sequenceDiagram
     VoiceService-->>UI: Initialize cooking mode
     UI->>VoiceAPI: Speak first instruction
     VoiceAPI-->>User: Audio: "First, preheat oven to 350°F"
-    
+
     User->>VoiceAPI: "Next step"
     VoiceAPI->>UI: Voice command recognized
     UI->>VoiceService: POST /api/voice/cooking/next
@@ -1090,7 +1144,7 @@ sequenceDiagram
     VoiceService-->>UI: Next instruction
     UI->>VoiceAPI: Speak instruction
     VoiceAPI-->>User: Audio cooking guidance
-    
+
     Note over User,NotificationService: Timer completion
     NotificationService->>WebSocket: Timer alert
     WebSocket->>UI: Show/sound alert
@@ -1311,13 +1365,13 @@ const Component: FC<ComponentProps> = ({
   ...props
 }) => {
   const baseClasses = 'inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50';
-  
+
   const variantClasses = {
     primary: 'bg-orange-500 text-white hover:bg-orange-600',
     secondary: 'bg-gray-200 text-gray-900 hover:bg-gray-300',
     danger: 'bg-red-500 text-white hover:bg-red-600',
   };
-  
+
   const sizeClasses = {
     sm: 'h-9 px-3 text-sm',
     md: 'h-11 px-4 text-base',
@@ -1357,7 +1411,7 @@ interface AppState {
     preferences: UserPreferences;
     isAuthenticated: boolean;
   };
-  
+
   inventory: {
     items: InventoryItem[];
     categories: InventoryCategory[];
@@ -1366,7 +1420,7 @@ interface AppState {
     loading: boolean;
     error: string | null;
   };
-  
+
   recipes: {
     searchResults: Recipe[];
     favorites: Recipe[];
@@ -1375,7 +1429,7 @@ interface AppState {
     suggestions: Recipe[];
     loading: boolean;
   };
-  
+
   mealPlanning: {
     currentPlan: MealPlan | null;
     weeklyPlans: MealPlan[];
@@ -1383,14 +1437,14 @@ interface AppState {
     draggedRecipe: Recipe | null;
     loading: boolean;
   };
-  
+
   shopping: {
     activeLists: ShoppingList[];
     currentList: ShoppingList | null;
     categories: StoreCategory[];
     loading: boolean;
   };
-  
+
   cooking: {
     activeSession: CookingSession | null;
     currentStep: number;
@@ -1398,7 +1452,7 @@ interface AppState {
     voiceActive: boolean;
     progress: CookingProgress;
   };
-  
+
   voice: {
     isListening: boolean;
     isProcessing: boolean;
@@ -1406,7 +1460,7 @@ interface AppState {
     error: string | null;
     supported: boolean;
   };
-  
+
   ui: {
     theme: 'light' | 'dark' | 'system';
     language: Language;
@@ -1483,7 +1537,7 @@ interface ProtectedLayoutProps {
 
 export default async function ProtectedLayout({ children }: ProtectedLayoutProps) {
   const session = await auth();
-  
+
   if (!session?.user) {
     redirect('/login');
   }
@@ -1510,17 +1564,17 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 class ApiClient {
   private baseURL: string;
-  
+
   constructor(baseURL: string = API_BASE_URL) {
     this.baseURL = baseURL;
   }
-  
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
-    
+
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
@@ -1528,36 +1582,36 @@ class ApiClient {
       },
       ...options,
     };
-    
+
     const response = await fetch(url, config);
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new ApiError(error.message, response.status, error);
     }
-    
+
     return response.json();
   }
-  
+
   get<T>(endpoint: string, params?: Record<string, string>): Promise<T> {
     const searchParams = params ? `?${new URLSearchParams(params)}` : '';
     return this.request<T>(`${endpoint}${searchParams}`);
   }
-  
+
   post<T>(endpoint: string, data?: any): Promise<T> {
     return this.request<T>(endpoint, {
       method: 'POST',
       body: data ? JSON.stringify(data) : undefined,
     });
   }
-  
+
   put<T>(endpoint: string, data?: any): Promise<T> {
     return this.request<T>(endpoint, {
       method: 'PUT',
       body: data ? JSON.stringify(data) : undefined,
     });
   }
-  
+
   delete<T>(endpoint: string): Promise<T> {
     return this.request<T>(endpoint, { method: 'DELETE' });
   }
@@ -1581,7 +1635,11 @@ class ApiError extends Error {
 
 ```typescript
 import { apiClient } from '@/lib/api-client';
-import { InventoryItem, InventoryItemCreate, InventoryItemUpdate } from '@/types/inventory';
+import {
+  InventoryItem,
+  InventoryItemCreate,
+  InventoryItemUpdate,
+} from '@/types/inventory';
 
 export class InventoryService {
   static async getItems(filters?: {
@@ -1591,21 +1649,26 @@ export class InventoryService {
   }): Promise<InventoryItem[]> {
     return apiClient.get<InventoryItem[]>('/inventory', filters);
   }
-  
+
   static async createItem(item: InventoryItemCreate): Promise<InventoryItem> {
     return apiClient.post<InventoryItem>('/inventory', item);
   }
-  
-  static async updateItem(id: string, updates: InventoryItemUpdate): Promise<InventoryItem> {
+
+  static async updateItem(
+    id: string,
+    updates: InventoryItemUpdate
+  ): Promise<InventoryItem> {
     return apiClient.put<InventoryItem>(`/inventory/${id}`, updates);
   }
-  
+
   static async deleteItem(id: string): Promise<void> {
     return apiClient.delete<void>(`/inventory/${id}`);
   }
-  
+
   static async getExpiringItems(days: number = 7): Promise<InventoryItem[]> {
-    return apiClient.get<InventoryItem[]>('/inventory/expiring', { days: days.toString() });
+    return apiClient.get<InventoryItem[]>('/inventory/expiring', {
+      days: days.toString(),
+    });
   }
 }
 ```
@@ -1668,9 +1731,23 @@ const CreateInventoryItemSchema = z.object({
   name: z.string().min(1).max(255),
   quantity: z.number().positive(),
   unit: z.string().min(1).max(50),
-  category: z.enum(['proteins', 'vegetables', 'fruits', 'grains', 'dairy', 'spices', 'condiments', 'beverages', 'baking', 'frozen']),
+  category: z.enum([
+    'proteins',
+    'vegetables',
+    'fruits',
+    'grains',
+    'dairy',
+    'spices',
+    'condiments',
+    'beverages',
+    'baking',
+    'frozen',
+  ]),
   location: z.enum(['pantry', 'refrigerator', 'freezer']),
-  expirationDate: z.string().optional().transform(str => str ? new Date(str) : undefined),
+  expirationDate: z
+    .string()
+    .optional()
+    .transform(str => (str ? new Date(str) : undefined)),
   estimatedCost: z.number().optional(),
 });
 
@@ -1702,7 +1779,10 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const validatedData = await validateRequest(CreateInventoryItemSchema, body);
+    const validatedData = await validateRequest(
+      CreateInventoryItemSchema,
+      body
+    );
 
     const item = await InventoryService.createItem({
       ...validatedData,
@@ -1748,15 +1828,15 @@ export class InventoryRepository {
     }
   ) {
     const where: any = { householdId };
-    
+
     if (filters?.location) {
       where.location = filters.location;
     }
-    
+
     if (filters?.category) {
       where.category = filters.category;
     }
-    
+
     if (filters?.expiringSoon) {
       const futureDate = new Date();
       futureDate.setDate(futureDate.getDate() + 7);
@@ -1768,10 +1848,7 @@ export class InventoryRepository {
 
     return prisma.inventoryItem.findMany({
       where,
-      orderBy: [
-        { expirationDate: 'asc' },
-        { name: 'asc' },
-      ],
+      orderBy: [{ expirationDate: 'asc' }, { name: 'asc' }],
       include: {
         addedBy: {
           select: { name: true },
@@ -1801,12 +1878,15 @@ export class InventoryRepository {
     });
   }
 
-  static async update(id: string, data: Partial<{
-    quantity: number;
-    expirationDate: Date;
-    location: string;
-    estimatedCost: number;
-  }>) {
+  static async update(
+    id: string,
+    data: Partial<{
+      quantity: number;
+      expirationDate: Date;
+      location: string;
+      estimatedCost: number;
+    }>
+  ) {
     return prisma.inventoryItem.update({
       where: { id },
       data: {
@@ -1880,26 +1960,26 @@ export async function middleware(request: NextRequest) {
   // Check authentication for API routes
   if (request.nextUrl.pathname.startsWith('/api/')) {
     const token = await getToken({ req: request });
-    
+
     // Public API routes that don't require authentication
     const publicRoutes = ['/api/auth', '/api/health', '/api/recipes/public'];
-    const isPublicRoute = publicRoutes.some(route => 
+    const isPublicRoute = publicRoutes.some(route =>
       request.nextUrl.pathname.startsWith(route)
     );
-    
+
     if (!isPublicRoute && !token) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
       );
     }
-    
+
     // Add user context to headers for API routes
     if (token) {
       const requestHeaders = new Headers(request.headers);
       requestHeaders.set('x-user-id', token.sub!);
       requestHeaders.set('x-household-id', token.householdId as string);
-      
+
       return NextResponse.next({
         request: {
           headers: requestHeaders,
@@ -1907,16 +1987,23 @@ export async function middleware(request: NextRequest) {
       });
     }
   }
-  
+
   // Check authentication for protected pages
-  const protectedPaths = ['/dashboard', '/inventory', '/recipes', '/meal-planning', '/shopping', '/cooking'];
-  const isProtectedPath = protectedPaths.some(path => 
+  const protectedPaths = [
+    '/dashboard',
+    '/inventory',
+    '/recipes',
+    '/meal-planning',
+    '/shopping',
+    '/cooking',
+  ];
+  const isProtectedPath = protectedPaths.some(path =>
     request.nextUrl.pathname.startsWith(path)
   );
-  
+
   if (isProtectedPath) {
     const token = await getToken({ req: request });
-    
+
     if (!token) {
       const url = request.nextUrl.clone();
       url.pathname = '/login';
@@ -1924,12 +2011,20 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url);
     }
   }
-  
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/api/:path*', '/dashboard/:path*', '/inventory/:path*', '/recipes/:path*', '/meal-planning/:path*', '/shopping/:path*', '/cooking/:path*'],
+  matcher: [
+    '/api/:path*',
+    '/dashboard/:path*',
+    '/inventory/:path*',
+    '/recipes/:path*',
+    '/meal-planning/:path*',
+    '/shopping/:path*',
+    '/cooking/:path*',
+  ],
 };
 ```
 
@@ -2251,12 +2346,14 @@ LOG_LEVEL=debug
 ### Deployment Strategy
 
 **Frontend Deployment:**
+
 - **Platform:** Docker containers with platform-agnostic deployment
 - **Build Command:** `pnpm build`
 - **Output Directory:** `.next/`
 - **CDN/Edge:** CloudFlare for global content delivery and edge caching
 
 **Backend Deployment:**
+
 - **Platform:** Same Docker container (Next.js full-stack)
 - **Build Command:** `pnpm build`
 - **Deployment Method:** Blue-green deployment with health checks
@@ -2293,7 +2390,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    
+
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v2
@@ -2303,28 +2400,28 @@ jobs:
         with:
           node-version: '18'
           cache: 'pnpm'
-      
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      
+
       - name: Type check
         run: pnpm type-check
-      
+
       - name: Lint
         run: pnpm lint
-      
+
       - name: Run unit tests
         run: pnpm test
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/imkitchen_test
           REDIS_URL: redis://localhost:6379
-      
+
       - name: Run integration tests
         run: pnpm test:integration
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/imkitchen_test
           REDIS_URL: redis://localhost:6379
-      
+
       - name: Build application
         run: pnpm build
         env:
@@ -2334,13 +2431,13 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/develop'
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Build Docker image
         run: docker build -t imkitchen:staging .
-      
+
       - name: Deploy to staging
         run: |
           # Platform-specific deployment commands
@@ -2351,13 +2448,13 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Build Docker image
         run: docker build -t imkitchen:production .
-      
+
       - name: Deploy to production
         run: |
           # Production deployment with blue-green strategy
@@ -2366,27 +2463,30 @@ jobs:
 
 ### Environments
 
-| Environment | Frontend URL | Backend URL | Purpose |
-|-------------|--------------|-------------|---------|
-| Development | http://localhost:3000 | http://localhost:3000/api | Local development |
-| Staging | https://staging.imkitchen.com | https://staging.imkitchen.com/api | Pre-production testing |
-| Production | https://app.imkitchen.com | https://app.imkitchen.com/api | Live environment |
+| Environment | Frontend URL                  | Backend URL                       | Purpose                |
+| ----------- | ----------------------------- | --------------------------------- | ---------------------- |
+| Development | http://localhost:3000         | http://localhost:3000/api         | Local development      |
+| Staging     | https://staging.imkitchen.com | https://staging.imkitchen.com/api | Pre-production testing |
+| Production  | https://app.imkitchen.com     | https://app.imkitchen.com/api     | Live environment       |
 
 ## Security and Performance
 
 ### Security Requirements
 
 **Frontend Security:**
+
 - CSP Headers: `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.spoonacular.com;`
 - XSS Prevention: Content Security Policy, sanitized user inputs, secure React patterns
 - Secure Storage: Sensitive data in HTTP-only cookies, non-sensitive in sessionStorage with encryption
 
 **Backend Security:**
+
 - Input Validation: Zod schemas for all API inputs, SQL injection prevention via Prisma ORM
 - Rate Limiting: 100 requests/minute per user, 1000 requests/hour per household
 - CORS Policy: Restricted to known frontend domains with credentials support
 
 **Authentication Security:**
+
 - Token Storage: HTTP-only cookies for auth tokens, secure flag enabled
 - Session Management: NextAuth.js with database sessions, 24-hour expiry with refresh
 - Password Policy: Minimum 8 characters, bcrypt hashing with 12 rounds
@@ -2394,11 +2494,13 @@ jobs:
 ### Performance Optimization
 
 **Frontend Performance:**
+
 - Bundle Size Target: <500KB initial load, <200KB per route
 - Loading Strategy: Route-based code splitting, component lazy loading, image optimization
 - Caching Strategy: Service worker for recipes, localStorage for user preferences, CDN for static assets
 
 **Backend Performance:**
+
 - Response Time Target: <200ms for API routes, <100ms for cached responses
 - Database Optimization: Proper indexing, query optimization, connection pooling with Prisma
 - Caching Strategy: Redis for session data, recipe search results, and frequently accessed inventory
@@ -2522,7 +2624,7 @@ const createWrapper = () => {
       queries: { retry: false },
     },
   });
-  
+
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
       {children}
@@ -2562,7 +2664,7 @@ describe('InventoryList', () => {
 
   it('renders inventory items correctly', async () => {
     render(<InventoryList />, { wrapper: createWrapper() });
-    
+
     await waitFor(() => {
       expect(screen.getByText('Tomatoes')).toBeInTheDocument();
       expect(screen.getByText('Milk')).toBeInTheDocument();
@@ -2571,7 +2673,7 @@ describe('InventoryList', () => {
 
   it('highlights items expiring soon', async () => {
     render(<InventoryList />, { wrapper: createWrapper() });
-    
+
     await waitFor(() => {
       const milkItem = screen.getByTestId('inventory-item-2');
       expect(milkItem).toHaveClass('bg-yellow-50'); // Warning background
@@ -2580,10 +2682,10 @@ describe('InventoryList', () => {
 
   it('filters items by location', async () => {
     render(<InventoryList />, { wrapper: createWrapper() });
-    
+
     const fridgeFilter = screen.getByText('Refrigerator');
     fireEvent.click(fridgeFilter);
-    
+
     await waitFor(() => {
       expect(mockInventoryService.getItems).toHaveBeenCalledWith({
         location: 'refrigerator'
@@ -2593,18 +2695,18 @@ describe('InventoryList', () => {
 
   it('handles voice command for adding items', async () => {
     const mockVoiceCommand = jest.fn();
-    render(<InventoryList onVoiceCommand={mockVoiceCommand} />, { 
-      wrapper: createWrapper() 
+    render(<InventoryList onVoiceCommand={mockVoiceCommand} />, {
+      wrapper: createWrapper()
     });
-    
+
     const voiceButton = screen.getByLabelText('Voice add item');
     fireEvent.click(voiceButton);
-    
+
     // Simulate voice recognition result
     fireEvent(window, new CustomEvent('voiceresult', {
       detail: { transcript: 'add 2 pounds of chicken to refrigerator' }
     }));
-    
+
     await waitFor(() => {
       expect(mockVoiceCommand).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -2634,7 +2736,9 @@ import { auth } from '@/lib/auth';
 jest.mock('@/lib/services/inventory-service');
 jest.mock('@/lib/auth');
 
-const mockInventoryService = InventoryService as jest.Mocked<typeof InventoryService>;
+const mockInventoryService = InventoryService as jest.Mocked<
+  typeof InventoryService
+>;
 const mockAuth = auth as jest.MockedFunction<typeof auth>;
 
 describe('/api/inventory', () => {
@@ -2788,106 +2892,137 @@ test.describe('Cooking Mode', () => {
     await expect(page).toHaveURL('/dashboard');
   });
 
-  test('should start cooking mode and navigate through recipe steps', async ({ page }) => {
+  test('should start cooking mode and navigate through recipe steps', async ({
+    page,
+  }) => {
     // Navigate to recipe
     await page.goto('/recipes/classic-spaghetti-carbonara');
-    
+
     // Start cooking mode
     await page.click('[data-testid=start-cooking]');
     await expect(page).toHaveURL('/cooking/classic-spaghetti-carbonara');
-    
+
     // Verify cooking interface
-    await expect(page.locator('[data-testid=cooking-step]')).toContainText('Step 1');
-    await expect(page.locator('[data-testid=step-instruction]')).toContainText('Bring a large pot of salted water to boil');
-    
+    await expect(page.locator('[data-testid=cooking-step]')).toContainText(
+      'Step 1'
+    );
+    await expect(page.locator('[data-testid=step-instruction]')).toContainText(
+      'Bring a large pot of salted water to boil'
+    );
+
     // Check ingredients panel
     await expect(page.locator('[data-testid=ingredients-panel]')).toBeVisible();
     await expect(page.locator('[data-testid=ingredient-item]')).toHaveCount(6);
-    
+
     // Navigate to next step
     await page.click('[data-testid=next-step]');
-    await expect(page.locator('[data-testid=cooking-step]')).toContainText('Step 2');
-    
+    await expect(page.locator('[data-testid=cooking-step]')).toContainText(
+      'Step 2'
+    );
+
     // Test timer functionality
     await page.click('[data-testid=start-timer]');
     await expect(page.locator('[data-testid=active-timer]')).toBeVisible();
-    await expect(page.locator('[data-testid=timer-display]')).toContainText('10:00');
-    
+    await expect(page.locator('[data-testid=timer-display]')).toContainText(
+      '10:00'
+    );
+
     // Test voice commands (if supported)
     const voiceButton = page.locator('[data-testid=voice-button]');
     if (await voiceButton.isVisible()) {
       await voiceButton.click();
-      await expect(page.locator('[data-testid=voice-status]')).toContainText('Listening');
-      
+      await expect(page.locator('[data-testid=voice-status]')).toContainText(
+        'Listening'
+      );
+
       // Simulate voice command (this would be integration with actual voice API in real test)
       await page.evaluate(() => {
-        window.dispatchEvent(new CustomEvent('voicecommand', {
-          detail: { command: 'next step' }
-        }));
+        window.dispatchEvent(
+          new CustomEvent('voicecommand', {
+            detail: { command: 'next step' },
+          })
+        );
       });
-      
-      await expect(page.locator('[data-testid=cooking-step]')).toContainText('Step 3');
+
+      await expect(page.locator('[data-testid=cooking-step]')).toContainText(
+        'Step 3'
+      );
     }
-    
+
     // Complete recipe
     await page.click('[data-testid=next-step]'); // Step 3
     await page.click('[data-testid=next-step]'); // Step 4
     await page.click('[data-testid=next-step]'); // Step 5
     await page.click('[data-testid=complete-recipe]');
-    
+
     // Verify completion screen
-    await expect(page.locator('[data-testid=completion-message]')).toContainText('Recipe completed!');
+    await expect(
+      page.locator('[data-testid=completion-message]')
+    ).toContainText('Recipe completed!');
     await expect(page.locator('[data-testid=rating-prompt]')).toBeVisible();
-    
+
     // Rate recipe
     await page.click('[data-testid=rating-star-5]');
-    await page.fill('[data-testid=review-text]', 'Delicious and easy to follow!');
+    await page.fill(
+      '[data-testid=review-text]',
+      'Delicious and easy to follow!'
+    );
     await page.click('[data-testid=submit-rating]');
-    
+
     // Verify redirect to recipe page
     await expect(page).toHaveURL('/recipes/classic-spaghetti-carbonara');
-    await expect(page.locator('[data-testid=user-rating]')).toContainText('5 stars');
+    await expect(page.locator('[data-testid=user-rating]')).toContainText(
+      '5 stars'
+    );
   });
 
   test('should handle offline cooking mode', async ({ page, context }) => {
     // Start cooking mode while online
     await page.goto('/recipes/classic-spaghetti-carbonara');
     await page.click('[data-testid=start-cooking]');
-    
+
     // Verify recipe data is cached
-    await expect(page.locator('[data-testid=cooking-step]')).toContainText('Step 1');
-    
+    await expect(page.locator('[data-testid=cooking-step]')).toContainText(
+      'Step 1'
+    );
+
     // Go offline
     await context.setOffline(true);
-    
+
     // Verify cooking mode still works
     await page.click('[data-testid=next-step]');
-    await expect(page.locator('[data-testid=cooking-step]')).toContainText('Step 2');
-    
+    await expect(page.locator('[data-testid=cooking-step]')).toContainText(
+      'Step 2'
+    );
+
     // Start timer offline
     await page.click('[data-testid=start-timer]');
     await expect(page.locator('[data-testid=active-timer]')).toBeVisible();
-    
+
     // Verify offline indicator
     await expect(page.locator('[data-testid=offline-indicator]')).toBeVisible();
-    
+
     // Go back online
     await context.setOffline(false);
-    
+
     // Verify sync happens
-    await expect(page.locator('[data-testid=offline-indicator]')).not.toBeVisible();
+    await expect(
+      page.locator('[data-testid=offline-indicator]')
+    ).not.toBeVisible();
   });
 
   test('should support voice commands during cooking', async ({ page }) => {
     // Grant microphone permissions (in real test environment)
     await page.context().grantPermissions(['microphone']);
-    
+
     await page.goto('/cooking/classic-spaghetti-carbonara');
-    
+
     // Test voice activation
     await page.click('[data-testid=voice-button]');
-    await expect(page.locator('[data-testid=voice-status]')).toContainText('Listening');
-    
+    await expect(page.locator('[data-testid=voice-status]')).toContainText(
+      'Listening'
+    );
+
     // Simulate various voice commands
     const commands = [
       { command: 'next step', expectedAction: 'step advancement' },
@@ -2896,17 +3031,21 @@ test.describe('Cooking Mode', () => {
       { command: 'pause timer', expectedAction: 'timer pause' },
       { command: 'repeat instructions', expectedAction: 'instruction repeat' },
     ];
-    
+
     for (const { command, expectedAction } of commands) {
-      await page.evaluate((cmd) => {
-        window.dispatchEvent(new CustomEvent('voicecommand', {
-          detail: { command: cmd }
-        }));
+      await page.evaluate(cmd => {
+        window.dispatchEvent(
+          new CustomEvent('voicecommand', {
+            detail: { command: cmd },
+          })
+        );
       }, command);
-      
+
       // Verify appropriate action was taken
       // (This would be more specific based on actual implementation)
-      await expect(page.locator('[data-testid=voice-feedback]')).toContainText('Command processed');
+      await expect(page.locator('[data-testid=voice-feedback]')).toContainText(
+        'Command processed'
+      );
     }
   });
 });
@@ -2929,16 +3068,16 @@ test.describe('Cooking Mode', () => {
 
 ### Naming Conventions
 
-| Element | Frontend | Backend | Example |
-|---------|----------|---------|---------|
-| Components | PascalCase | - | `InventoryList.tsx` |
-| Hooks | camelCase with 'use' | - | `useInventoryItems.ts` |
-| API Routes | - | kebab-case | `/api/meal-plans` |
-| Database Tables | - | snake_case | `inventory_items` |
-| Services | PascalCase + Service | PascalCase + Service | `InventoryService` |
-| Types/Interfaces | PascalCase | PascalCase | `InventoryItem` |
-| Constants | SCREAMING_SNAKE_CASE | SCREAMING_SNAKE_CASE | `MAX_RECIPE_TITLE_LENGTH` |
-| Environment Variables | SCREAMING_SNAKE_CASE | SCREAMING_SNAKE_CASE | `DATABASE_URL` |
+| Element               | Frontend             | Backend              | Example                   |
+| --------------------- | -------------------- | -------------------- | ------------------------- |
+| Components            | PascalCase           | -                    | `InventoryList.tsx`       |
+| Hooks                 | camelCase with 'use' | -                    | `useInventoryItems.ts`    |
+| API Routes            | -                    | kebab-case           | `/api/meal-plans`         |
+| Database Tables       | -                    | snake_case           | `inventory_items`         |
+| Services              | PascalCase + Service | PascalCase + Service | `InventoryService`        |
+| Types/Interfaces      | PascalCase           | PascalCase           | `InventoryItem`           |
+| Constants             | SCREAMING_SNAKE_CASE | SCREAMING_SNAKE_CASE | `MAX_RECIPE_TITLE_LENGTH` |
+| Environment Variables | SCREAMING_SNAKE_CASE | SCREAMING_SNAKE_CASE | `DATABASE_URL`            |
 
 ## Error Handling Strategy
 
@@ -2988,19 +3127,19 @@ import { ApiError } from '@/types/api';
 export class ErrorHandler {
   static handle(error: unknown, context?: string) {
     console.error(`Error in ${context}:`, error);
-    
+
     if (error instanceof ApiError) {
       return this.handleApiError(error);
     }
-    
+
     if (error instanceof ValidationError) {
       return this.handleValidationError(error);
     }
-    
+
     if (error instanceof NetworkError) {
       return this.handleNetworkError(error);
     }
-    
+
     // Generic error handling
     toast.error('An unexpected error occurred. Please try again.');
     return {
@@ -3009,11 +3148,11 @@ export class ErrorHandler {
       type: 'error' as const,
     };
   }
-  
+
   private static handleApiError(error: ApiError) {
     const userMessage = this.getUserFriendlyMessage(error.code);
     toast.error(userMessage);
-    
+
     return {
       title: 'Error',
       message: userMessage,
@@ -3021,19 +3160,25 @@ export class ErrorHandler {
       code: error.code,
     };
   }
-  
+
   private static getUserFriendlyMessage(errorCode: string): string {
     const messages: Record<string, string> = {
-      'INVENTORY_ITEM_NOT_FOUND': 'The inventory item you\'re looking for doesn\'t exist.',
-      'RECIPE_NOT_FOUND': 'This recipe is no longer available.',
-      'MEAL_PLAN_CONFLICT': 'There\'s a conflict with your meal plan. Please check your scheduled meals.',
-      'VOICE_COMMAND_NOT_RECOGNIZED': 'I didn\'t understand that command. Please try again.',
-      'INSUFFICIENT_INGREDIENTS': 'You don\'t have enough ingredients for this recipe.',
-      'HOUSEHOLD_ACCESS_DENIED': 'You don\'t have permission to access this household\'s data.',
-      'EXPIRED_SESSION': 'Your session has expired. Please log in again.',
-      'RATE_LIMIT_EXCEEDED': 'Too many requests. Please wait a moment and try again.',
+      INVENTORY_ITEM_NOT_FOUND:
+        "The inventory item you're looking for doesn't exist.",
+      RECIPE_NOT_FOUND: 'This recipe is no longer available.',
+      MEAL_PLAN_CONFLICT:
+        "There's a conflict with your meal plan. Please check your scheduled meals.",
+      VOICE_COMMAND_NOT_RECOGNIZED:
+        "I didn't understand that command. Please try again.",
+      INSUFFICIENT_INGREDIENTS:
+        "You don't have enough ingredients for this recipe.",
+      HOUSEHOLD_ACCESS_DENIED:
+        "You don't have permission to access this household's data.",
+      EXPIRED_SESSION: 'Your session has expired. Please log in again.',
+      RATE_LIMIT_EXCEEDED:
+        'Too many requests. Please wait a moment and try again.',
     };
-    
+
     return messages[errorCode] || 'Something went wrong. Please try again.';
   }
 }
@@ -3082,47 +3227,56 @@ export function withErrorHandler<T>(
   return handler().catch((error: unknown) => {
     const requestId = uuidv4();
     const timestamp = new Date().toISOString();
-    
+
     logger.error('API Error', {
       requestId,
       timestamp,
       error: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
     });
-    
+
     if (error instanceof ServiceError) {
-      return NextResponse.json({
-        error: {
-          code: error.code,
-          message: error.message,
-          details: error.details,
-          timestamp,
-          requestId,
+      return NextResponse.json(
+        {
+          error: {
+            code: error.code,
+            message: error.message,
+            details: error.details,
+            timestamp,
+            requestId,
+          },
         },
-      }, { status: error.statusCode });
+        { status: error.statusCode }
+      );
     }
-    
+
     if (error instanceof ValidationError) {
-      return NextResponse.json({
+      return NextResponse.json(
+        {
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: error.message,
+            details: { field: error.field, value: error.value },
+            timestamp,
+            requestId,
+          },
+        },
+        { status: 400 }
+      );
+    }
+
+    // Generic error response
+    return NextResponse.json(
+      {
         error: {
-          code: 'VALIDATION_ERROR',
-          message: error.message,
-          details: { field: error.field, value: error.value },
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'An internal server error occurred',
           timestamp,
           requestId,
         },
-      }, { status: 400 });
-    }
-    
-    // Generic error response
-    return NextResponse.json({
-      error: {
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'An internal server error occurred',
-        timestamp,
-        requestId,
       },
-    }, { status: 500 });
+      { status: 500 }
+    );
   });
 }
 
@@ -3131,11 +3285,11 @@ export async function POST(request: NextRequest) {
   return withErrorHandler(async () => {
     // Your API logic here
     const data = await request.json();
-    
+
     if (!data.name) {
       throw new ValidationError('Name is required', 'name', data.name);
     }
-    
+
     const result = await SomeService.create(data);
     return NextResponse.json(result);
   });
@@ -3154,6 +3308,7 @@ export async function POST(request: NextRequest) {
 ### Key Metrics
 
 **Frontend Metrics:**
+
 - Core Web Vitals (LCP, FID, CLS)
 - JavaScript errors and crash rates
 - API response times from user perspective
@@ -3161,6 +3316,7 @@ export async function POST(request: NextRequest) {
 - Cooking mode session completion rates
 
 **Backend Metrics:**
+
 - Request rate and error rate per endpoint
 - Database query performance and slow query detection
 - External API integration response times and failure rates
@@ -3168,6 +3324,7 @@ export async function POST(request: NextRequest) {
 - User engagement metrics (recipes cooked, meal plans created)
 
 **Kitchen-Specific Performance Metrics:**
+
 - **Cooking Mode Performance:**
   - Step navigation response time (<100ms target)
   - Timer accuracy and synchronization across devices
@@ -3187,6 +3344,7 @@ export async function POST(request: NextRequest) {
   - Conflict resolution success rates for shared meal plans
 
 **Performance Alerting Thresholds:**
+
 - Voice command response time >500ms (kitchen usability impact)
 - Recipe search results >2 seconds (user experience degradation)
 - Shopping list generation >5 seconds (workflow interruption)
@@ -3195,4 +3353,4 @@ export async function POST(request: NextRequest) {
 
 ## Checklist Results Report
 
-*Architecture checklist validation will be performed to ensure comprehensive coverage of all technical requirements and best practices before finalization.*
+_Architecture checklist validation will be performed to ensure comprehensive coverage of all technical requirements and best practices before finalization._

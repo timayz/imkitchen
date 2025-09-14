@@ -9,12 +9,14 @@ This document defines the user experience goals, information architecture, user 
 #### Target User Personas
 
 **Primary User: Organized Home Cooks**
+
 - Tech-comfortable adults (28-45) with moderate to high cooking frequency
 - Value efficiency and organization but need approachable complexity
 - Goal: Reduce food waste while discovering new recipes that work with available ingredients
 - Pain points: Meal planning decision fatigue, forgetting ingredients, disconnected kitchen tools
 
-**Secondary User: Busy Professionals**  
+**Secondary User: Busy Professionals**
+
 - Time-constrained working professionals (25-40) cooking 2-3 times weekly
 - Prioritize speed and convenience over comprehensive features
 - Goal: Maintain healthy eating within limited time constraints
@@ -33,14 +35,14 @@ This document defines the user experience goals, information architecture, user 
 1. **Kitchen-First Design** - Every interaction considers real kitchen environments (wet hands, messy surfaces, time pressure)
 2. **Progressive Intelligence** - System learns from user behavior to surface relevant suggestions without overwhelming
 3. **Multi-Modal Accessibility** - Support voice, touch, and visual interaction patterns throughout the experience
-4. **Cultural Food Inclusivity** - Design accommodates diverse cuisines, measurement systems, and cooking traditions  
+4. **Cultural Food Inclusivity** - Design accommodates diverse cuisines, measurement systems, and cooking traditions
 5. **Graceful Offline Degradation** - Core cooking functionality remains available without internet connectivity
 
 #### Change Log
 
-| Date | Version | Description | Author |
-|------|---------|-------------|---------|
-| 2025-09-14 | 1.0 | Initial UI/UX specification creation | Sally (UX Expert) |
+| Date       | Version | Description                          | Author            |
+| ---------- | ------- | ------------------------------------ | ----------------- |
+| 2025-09-14 | 1.0     | Initial UI/UX specification creation | Sally (UX Expert) |
 
 ## Information Architecture (IA)
 
@@ -53,42 +55,42 @@ graph TD
     C --> C1[Register]
     C --> C2[Login]
     C --> C3[Password Reset]
-    
+
     B --> D[Inventory]
     B --> E[Recipes]
     B --> F[Meal Planning]
     B --> G[Shopping Lists]
     B --> H[Cooking Mode]
     B --> I[Profile & Settings]
-    
+
     D --> D1[Pantry View]
     D --> D2[Refrigerator View]
     D --> D3[Add/Edit Items]
     D --> D4[Expiration Alerts]
     D --> D5[Usage Analytics]
-    
+
     E --> E1[Recipe Search]
     E --> E2[My Favorites]
     E --> E3[Recipe Collections]
     E --> E4[Recipe Details]
     E --> E5[Ingredient-Based Suggestions]
     E --> E6[Create Custom Recipe]
-    
+
     F --> F1[Weekly Calendar]
     F --> F2[Meal Templates]
     F --> F3[Family Coordination]
     F --> F4[Meal History]
-    
+
     G --> G1[Current Shopping List]
     G --> G2[Store Categories]
     G --> G3[Shopping History]
     G --> G4[Budget Tracking]
-    
+
     H --> H1[Step-by-Step Guide]
     H --> H2[Timer Management]
     H --> H3[Voice Controls]
     H --> H4[Progress Tracking]
-    
+
     I --> I1[Account Settings]
     I --> I2[Dietary Preferences]
     I --> I3[Household Management]
@@ -205,14 +207,14 @@ graph TD
     I --> J[Prompt for feedback and photos]
     J --> K[Update inventory quantities]
     K --> L[Success: Meal completed]
-    
+
     E --> M[Voice: "Set timer for X minutes"]
     M --> N[Timer running with alerts]
     N --> F
-    
+
     F --> O[Voice: "Repeat step"]
     O --> H
-    
+
     F --> P[Voice: "Pause cooking"]
     P --> Q[Save progress and pause all timers]
     Q --> R[Resume when ready]
@@ -239,6 +241,7 @@ graph TD
 **Purpose:** Central hub providing overview of kitchen status and quick access to primary functions
 
 **Key Elements:**
+
 - Upcoming meals card with today's planned dishes
 - Expiring ingredients alert with count and quick action
 - Suggested recipes based on available inventory
@@ -254,6 +257,7 @@ graph TD
 **Purpose:** Comprehensive view and management of pantry and refrigerator contents
 
 **Key Elements:**
+
 - Tabbed interface (Pantry, Fridge, Freezer)
 - Category-based organization with collapsible sections
 - Search bar with voice input option
@@ -269,6 +273,7 @@ graph TD
 **Purpose:** Step-by-step recipe guidance optimized for kitchen use
 
 **Key Elements:**
+
 - Large, readable step text with high contrast
 - Timer management panel with multiple simultaneous timers
 - Progress indicator showing completion status
@@ -284,6 +289,7 @@ graph TD
 **Purpose:** Weekly meal organization with drag-and-drop recipe assignment
 
 **Key Elements:**
+
 - 7-day calendar grid with breakfast/lunch/dinner slots
 - Recipe search sidebar with filter options
 - Drag-and-drop recipe assignment
@@ -358,15 +364,15 @@ graph TD
 
 ### Color Palette
 
-| Color Type | Hex Code | Usage |
-|------------|----------|-------|
-| Primary | #FF6B35 | Primary actions, recipe highlights, brand elements |
-| Secondary | #2ECC71 | Fresh ingredient indicators, success states |
-| Accent | #F39C12 | Expiration warnings, attention elements |
-| Success | #27AE60 | Completed tasks, positive feedback |
-| Warning | #F1C40F | Expiration alerts, caution states |
-| Error | #E74C3C | Error states, urgent alerts |
-| Neutral | #34495E, #7F8C8D, #BDC3C7, #ECF0F1 | Text, borders, backgrounds |
+| Color Type | Hex Code                           | Usage                                              |
+| ---------- | ---------------------------------- | -------------------------------------------------- |
+| Primary    | #FF6B35                            | Primary actions, recipe highlights, brand elements |
+| Secondary  | #2ECC71                            | Fresh ingredient indicators, success states        |
+| Accent     | #F39C12                            | Expiration warnings, attention elements            |
+| Success    | #27AE60                            | Completed tasks, positive feedback                 |
+| Warning    | #F1C40F                            | Expiration alerts, caution states                  |
+| Error      | #E74C3C                            | Error states, urgent alerts                        |
+| Neutral    | #34495E, #7F8C8D, #BDC3C7, #ECF0F1 | Text, borders, backgrounds                         |
 
 ### Typography
 
@@ -379,12 +385,12 @@ graph TD
 #### Type Scale
 
 | Element | Size | Weight | Line Height |
-|---------|------|---------|-------------|
-| H1 | 32px | 700 | 1.2 |
-| H2 | 24px | 600 | 1.3 |
-| H3 | 20px | 600 | 1.4 |
-| Body | 16px | 400 | 1.5 |
-| Small | 14px | 400 | 1.4 |
+| ------- | ---- | ------ | ----------- |
+| H1      | 32px | 700    | 1.2         |
+| H2      | 24px | 600    | 1.3         |
+| H3      | 20px | 600    | 1.4         |
+| Body    | 16px | 400    | 1.5         |
+| Small   | 14px | 400    | 1.4         |
 
 ### Iconography
 
@@ -407,17 +413,20 @@ graph TD
 ### Key Requirements
 
 **Visual:**
+
 - Color contrast ratios: 4.5:1 minimum for normal text, 3:1 for large text
 - Focus indicators: 2px solid outline with high contrast
 - Text sizing: Support up to 200% zoom without horizontal scrolling
 
 **Interaction:**
+
 - Keyboard navigation: Full functionality accessible via keyboard alone
 - Screen reader support: Semantic HTML, ARIA labels, descriptive text alternatives
 - Touch targets: Minimum 44px x 44px for all interactive elements
 - Voice interaction: Multi-modal accessibility with voice, touch, and keyboard alternatives for all functions
 
 **Content:**
+
 - Alternative text: Descriptive alt text for all recipe images and cooking illustrations
 - Heading structure: Logical heading hierarchy for screen reader navigation
 - Form labels: Clear, descriptive labels associated with all form controls
@@ -425,18 +434,21 @@ graph TD
 ### Testing Strategy
 
 **Automated Testing:**
+
 - axe-core integration for continuous accessibility validation
 - Lighthouse accessibility audits in CI/CD pipeline
 - Color contrast validation tools
 - Keyboard navigation flow testing
 
 **Manual Testing:**
+
 - Screen reader testing with NVDA (Windows), VoiceOver (macOS), and TalkBack (Android)
 - Keyboard-only navigation testing for all user flows
 - Color blindness simulation validation with multiple simulators
 - Voice interaction testing with various accents and speech patterns
 
 **Kitchen-Specific Accessibility Testing:**
+
 - **Voice Command Testing:**
   - Test voice recognition accuracy in kitchen environments (background noise, running water, sizzling)
   - Validate voice commands work with various accents and speech impediments
@@ -454,6 +466,7 @@ graph TD
   - Verify language localization works for users with limited English proficiency
 
 **Assistive Technology Compatibility:**
+
 - Test compatibility with Dragon NaturallySpeaking for voice control
 - Validate switch navigation for users with severe motor limitations
 - Test eye-tracking device compatibility for hands-free operation
@@ -463,12 +476,12 @@ graph TD
 
 ### Breakpoints
 
-| Breakpoint | Min Width | Max Width | Target Devices |
-|------------|-----------|-----------|----------------|
-| Mobile | 320px | 767px | Smartphones, kitchen tablets |
-| Tablet | 768px | 1023px | iPad, kitchen displays |
-| Desktop | 1024px | 1439px | Laptops, desktop monitors |
-| Wide | 1440px | - | Large desktop screens |
+| Breakpoint | Min Width | Max Width | Target Devices               |
+| ---------- | --------- | --------- | ---------------------------- |
+| Mobile     | 320px     | 767px     | Smartphones, kitchen tablets |
+| Tablet     | 768px     | 1023px    | iPad, kitchen displays       |
+| Desktop    | 1024px    | 1439px    | Laptops, desktop monitors    |
+| Wide       | 1440px    | -         | Large desktop screens        |
 
 ### Adaptation Patterns
 

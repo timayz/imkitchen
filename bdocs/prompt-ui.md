@@ -8,10 +8,10 @@ The following prompt has been optimized for use with AI-powered frontend develop
 
 ## Copy-Pasteable AI Generation Prompt
 
-```
+````
 # FOUNDATIONAL CONTEXT
 
-You are building components for **imkitchen**, a comprehensive kitchen management platform that helps home cooks reduce food waste, streamline meal planning, and optimize cooking workflows. 
+You are building components for **imkitchen**, a comprehensive kitchen management platform that helps home cooks reduce food waste, streamline meal planning, and optimize cooking workflows.
 
 **Tech Stack:**
 - Next.js 14+ with App Router and TypeScript
@@ -21,7 +21,7 @@ You are building components for **imkitchen**, a comprehensive kitchen managemen
 - Multi-language support (English, Spanish, French, German)
 - Voice interaction capabilities
 
-**Target Users:** 
+**Target Users:**
 - Primary: Organized home cooks (ages 28-45) who are tech-comfortable but need approachable complexity
 - Secondary: Busy professionals (ages 25-40) who prioritize speed and convenience
 
@@ -76,26 +76,39 @@ Create a responsive [SPECIFIC COMPONENT NAME] component for the imkitchen platfo
 /* Error States */
 .bg-red-500 { background: #E74C3C }
 .text-red-500 { color: #E74C3C }
-```
+````
 
 **Typography Classes:**
+
 ```css
 /* Headlines */
-.text-2xl.font-bold { /* H1 equivalent */ }
-.text-xl.font-semibold { /* H2 equivalent */ }
-.text-lg.font-semibold { /* H3 equivalent */ }
+.text-2xl.font-bold {
+  /* H1 equivalent */
+}
+.text-xl.font-semibold {
+  /* H2 equivalent */
+}
+.text-lg.font-semibold {
+  /* H3 equivalent */
+}
 
 /* Body Text */
-.text-base.font-normal { /* Standard body text */ }
-.text-sm.font-normal { /* Small text */ }
+.text-base.font-normal {
+  /* Standard body text */
+}
+.text-sm.font-normal {
+  /* Small text */
+}
 ```
 
 **Spacing System (use these classes):**
+
 - `p-1` (4px), `p-2` (8px), `p-4` (16px), `p-6` (24px), `p-8` (32px), `p-12` (48px)
 - `m-1` (4px), `m-2` (8px), `m-4` (16px), `m-6` (24px), `m-8` (32px), `m-12` (48px)
 - `gap-1` through `gap-12` for flexbox/grid spacing
 
 **Required Props Interface Example:**
+
 ```typescript
 interface ComponentProps {
   title: string;
@@ -107,17 +120,21 @@ interface ComponentProps {
 ```
 
 **Voice Interaction Pattern:**
+
 ```jsx
 // Include voice status indicator when applicable
-{isVoiceActive && (
-  <div className="flex items-center gap-2 text-blue-500">
-    <Mic className="w-4 h-4 animate-pulse" />
-    <span className="text-sm">Listening...</span>
-  </div>
-)}
+{
+  isVoiceActive && (
+    <div className="flex items-center gap-2 text-blue-500">
+      <Mic className="w-4 h-4 animate-pulse" />
+      <span className="text-sm">Listening...</span>
+    </div>
+  );
+}
 ```
 
 **DO NOT:**
+
 - Use any CSS-in-JS libraries or styled-components
 - Implement complex state management (use props and simple useState)
 - Add external dependencies beyond what's specified
@@ -126,6 +143,7 @@ interface ComponentProps {
 - Use fixed positioning that might interfere with mobile keyboards
 
 **DO:**
+
 - Use semantic HTML elements (button, nav, main, section, etc.)
 - Include proper alt text for any images
 - Add loading and error states for all data-dependent components
@@ -135,12 +153,14 @@ interface ComponentProps {
 # STRICT SCOPE DEFINITION
 
 **You should ONLY:**
+
 - Create the single requested component file
 - Use standard React hooks (useState, useEffect, useMemo, useCallback)
 - Import icons from a standard icon library like Lucide React
 - Apply Tailwind classes for styling
 
 **You should NOT:**
+
 - Modify any existing components or pages
 - Create or modify API endpoints or server-side code
 - Add new dependencies to package.json
@@ -149,6 +169,7 @@ interface ComponentProps {
 - Implement authentication or complex business logic
 
 **Testing Considerations:**
+
 - Ensure component renders correctly on mobile (320px width minimum)
 - Verify all interactive elements are accessible via keyboard
 - Test with screen reader simulation (proper ARIA labels)
@@ -156,11 +177,13 @@ interface ComponentProps {
 - Check that component works with and without JavaScript enabled
 
 **Output Requirements:**
+
 - Provide complete, production-ready TypeScript React component
 - Include comprehensive prop types and interfaces
 - Add JSDoc comments for complex functions
 - Ensure component is self-contained and reusable
 - Include example usage in comments
+
 ```
 
 ---
@@ -204,3 +227,4 @@ The generated components should be:
 - Performance-tested, especially for mobile devices in kitchen environments
 
 This prompt framework ensures consistency with imkitchen's design system while providing the AI with sufficient context to generate high-quality, kitchen-optimized React components.
+```
