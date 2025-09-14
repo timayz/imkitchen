@@ -1,0 +1,94 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Household model for shared kitchen spaces
+model Household {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String   @db.VarChar(255)
+  settings  Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relationships
+  users User[]
+
+  // Indexes for performance optimization
+  @@index([createdAt], name: "idx_households_created_at")
+  @@map("households")
+}
+
+// Enum for dietary preferences
+enum DietaryPreference {
+  VEGETARIAN
+  VEGAN
+  KETO
+  PALEO
+  GLUTEN_FREE
+  DAIRY_FREE
+
+  @@map("dietary_preference")
+}
+
+// Enum for supported languages
+enum Language {
+  EN
+  ES
+  FR
+  DE
+
+  @@map("language")
+}
+
+// User model for authentication and user management
+model User {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email             String              @unique @db.VarChar(255)
+  name              String              @db.VarChar(255)
+  passwordHash      String              @map("password_hash") @db.VarChar(255)
+  dietaryPreferences DietaryPreference[] @map("dietary_preferences")
+  allergies         String[]
+  householdId       String              @map("household_id") @db.Uuid
+  language          Language            @default(EN)
+  timezone          String              @default("UTC") @db.VarChar(50)
+  createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime            @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relationships
+  household Household @relation(fields: [householdId], references: [id])
+  sessions  Session[]
+
+  // Indexes for performance optimization
+  @@index([householdId], name: "idx_users_household_id")
+  @@index([createdAt], name: "idx_users_created_at")
+  @@map("users")
+}
+
+// Session model for authentication state management
+model Session {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  token       String   @unique @db.VarChar(500)
+  expiresAt   DateTime @map("expires_at") @db.Timestamptz
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relationships
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Indexes for performance optimization
+  @@index([userId], name: "idx_sessions_user_id")
+  @@index([expiresAt], name: "idx_sessions_expires_at")
+  @@map("sessions")
+}
