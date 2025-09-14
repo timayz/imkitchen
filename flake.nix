@@ -28,6 +28,7 @@
             tailwindcss
             playwright-test
             mkcert
+            prisma-engines
           ];
           shellHook = ''
             export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
