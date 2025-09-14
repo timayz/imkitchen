@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  outputFileTracingRoot: __dirname,
   // Experimental features for better performance
   experimental: {
     // Enable optimized imports for better bundle size
