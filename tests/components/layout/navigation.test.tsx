@@ -2,6 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { Language } from '@prisma/client';
 import { Navigation } from '@/components/layout/navigation';
 
 // Mock dependencies
@@ -117,7 +118,7 @@ describe('Navigation', () => {
           name: 'Test User',
           email: 'test@example.com',
           householdId: 'household-1',
-          language: 'EN',
+          language: Language.EN,
           timezone: 'UTC',
         },
         expires: '2024-01-01',

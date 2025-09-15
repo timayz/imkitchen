@@ -168,8 +168,8 @@ describe('/api/auth/register', () => {
     });
 
     it('applies rate limiting when threshold exceeded', async () => {
-      const rateLimitResponse = new NextResponse(
-        JSON.stringify({ error: 'Too many requests' }),
+      const rateLimitResponse = NextResponse.json(
+        { error: 'Too many requests' },
         { status: 429 }
       );
       mockRateLimiter.mockResolvedValue(rateLimitResponse);

@@ -73,7 +73,7 @@ export class AuthService {
             householdId: household.id,
             dietaryPreferences: data.dietaryPreferences || [],
             allergies: data.allergies || [],
-            language: data.language || 'en',
+            language: data.language || 'EN',
             timezone: data.timezone || 'UTC',
           },
         });
