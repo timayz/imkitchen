@@ -56,6 +56,7 @@ class Logger {
       LogLevel.WARN,
       LogLevel.ERROR,
     ];
+
     const currentLevelIndex = levels.indexOf(this.level);
     const targetLevelIndex = levels.indexOf(level);
     return targetLevelIndex >= currentLevelIndex;
@@ -209,6 +210,7 @@ class Logger {
     severity: 'low' | 'medium' | 'high' | 'critical',
     context?: LogContext
   ) {
+
     const level =
       severity === 'critical' || severity === 'high'
         ? LogLevel.ERROR
@@ -311,7 +313,6 @@ export function createRequestLogger() {
 
       originalEnd.apply(this, args);
     };
-
     next();
   };
 }

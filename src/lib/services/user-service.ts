@@ -116,6 +116,7 @@ export class UserService {
         const household = await householdRepository.findWithMembers(
           userData.householdId
         );
+        
         if (!household) {
           throw new Error('Household not found');
         }
@@ -200,6 +201,7 @@ export class UserService {
           currentPassword,
           user.passwordHash
         );
+        
         if (!isValidCurrentPassword) {
           throw new Error('Current password is incorrect');
         }
@@ -270,6 +272,7 @@ export class UserService {
       async () => {
         // Separate user table updates from preferences
         const userUpdates: UpdateUserData = {};
+
         const preferenceUpdates: Partial<{
           dietaryPreferences: DietaryPreference[];
           allergies: string[];

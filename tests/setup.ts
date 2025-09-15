@@ -44,6 +44,7 @@ const localStorageMock = {
   length: 0,
   key: jest.fn(),
 };
+
 global.localStorage = localStorageMock as unknown as Storage;
 
 // Mock Prisma client for all tests

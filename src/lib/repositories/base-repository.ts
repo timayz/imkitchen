@@ -12,6 +12,7 @@ export interface IRepository<T, TCreate, TUpdate> {
 }
 
 // Base repository implementation
+
 export abstract class BaseRepository<T, TCreate, TUpdate>
   implements IRepository<T, TCreate, TUpdate>
 {
@@ -51,6 +52,7 @@ export abstract class BaseRepository<T, TCreate, TUpdate>
         if (!result) {
           logger.debug(`${this.modelName} not found`, { id });
         }
+
 
         return result;
       },
@@ -203,6 +205,7 @@ export abstract class BaseRepository<T, TCreate, TUpdate>
     where: Record<string, unknown>,
     data: Record<string, unknown>
   ): Promise<{ count: number }> {
+
     return logDatabaseOperation(
       'updateMany',
       this.modelName,
@@ -278,3 +281,4 @@ export abstract class BaseRepository<T, TCreate, TUpdate>
     );
   }
 }
+
