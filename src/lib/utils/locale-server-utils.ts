@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers';
-import { type Locale, defaultLocale, isValidLocale } from '@/lib/i18n';
+import { defaultLocale, isValidLocale } from '@/lib/i18n';
 import type { LocaleDetectionResult } from '@/types/i18n';
 
 /**
