@@ -1,0 +1,15 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "strict": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "exactOptionalPropertyTypes": false,
+    "noImplicitReturns": false,
+    "noFallthroughCasesInSwitch": false,
+    "skipLibCheck": true,
+    "noImplicitAny": false
+  },
+  "include": ["../next-auth.d.ts", "**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules"]
+}

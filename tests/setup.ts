@@ -52,6 +52,47 @@ if (typeof window !== 'undefined') {
 
 // Mock Prisma client for all tests
 jest.mock('../src/lib/db', () => ({
+  prisma: {
+    inventoryItem: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+      count: jest.fn(),
+      findFirst: jest.fn(),
+      updateMany: jest.fn(),
+      deleteMany: jest.fn(),
+      upsert: jest.fn(),
+    },
+    user: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+      count: jest.fn(),
+      findFirst: jest.fn(),
+      updateMany: jest.fn(),
+      deleteMany: jest.fn(),
+      upsert: jest.fn(),
+    },
+    household: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+      count: jest.fn(),
+      findFirst: jest.fn(),
+      updateMany: jest.fn(),
+      deleteMany: jest.fn(),
+      upsert: jest.fn(),
+    },
+    $transaction: jest.fn(),
+    $connect: jest.fn(),
+    $disconnect: jest.fn(),
+  },
   db: {
     user: {
       findUnique: jest.fn(),
@@ -78,6 +119,18 @@ jest.mock('../src/lib/db', () => ({
       upsert: jest.fn(),
     },
     session: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+      count: jest.fn(),
+      findFirst: jest.fn(),
+      updateMany: jest.fn(),
+      deleteMany: jest.fn(),
+      upsert: jest.fn(),
+    },
+    inventoryItem: {
       findUnique: jest.fn(),
       findMany: jest.fn(),
       create: jest.fn(),
@@ -177,3 +230,36 @@ jest.mock('next-auth/react', () => ({
   getSession: jest.fn(),
   SessionProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
+
+// Mock next-auth
+jest.mock('next-auth', () => ({
+  __esModule: true,
+  default: jest.fn(),
+  NextAuth: jest.fn(),
+}));
+
+// Mock auth function
+jest.mock('../src/lib/auth', () => ({
+  auth: jest.fn(),
+  signIn: jest.fn(),
+  signOut: jest.fn(),
+}));
+
+// Mock Next.js server components
+jest.mock('next/server', () => {
+  const originalModule = jest.requireActual('next/server');
+  return {
+    ...originalModule,
+    NextResponse: {
+      json: jest.fn().mockImplementation((data, init) => ({
+        json: () => Promise.resolve(data),
+        status: init?.status || 200,
+        headers: new Headers(init?.headers || {}),
+        ok: (init?.status || 200) >= 200 && (init?.status || 200) < 300,
+      })),
+      next: jest.fn(),
+      redirect: jest.fn(),
+      rewrite: jest.fn(),
+    },
+  };
+});

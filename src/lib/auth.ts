@@ -3,6 +3,7 @@ import { PrismaAdapter } from '@auth/prisma-adapter';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcrypt';
 import { z } from 'zod';
+import { Language } from '@prisma/client';
 import { prisma } from '@/lib/db';
 
 const loginSchema = z.object({
@@ -69,7 +70,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (token) {
         session.user.id = token.sub!;
         session.user.householdId = token.householdId as string;
-        session.user.language = token.language as string;
+        session.user.language = token.language as Language;
         session.user.timezone = token.timezone as string;
       }
       return session;

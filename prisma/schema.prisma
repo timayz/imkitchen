@@ -22,7 +22,8 @@ model Household {
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   // Relationships
-  users User[]
+  users           User[]
+  inventoryItems  InventoryItem[]
 
   // Indexes for performance optimization
   @@index([createdAt], name: "idx_households_created_at")
@@ -66,9 +67,10 @@ model User {
   updatedAt         DateTime            @updatedAt @map("updated_at") @db.Timestamptz
 
   // Relationships
-  household          Household          @relation(fields: [householdId], references: [id])
-  sessions           Session[]
+  household           Household           @relation(fields: [householdId], references: [id])
+  sessions            Session[]
   passwordResetTokens PasswordResetToken[]
+  inventoryItems      InventoryItem[]
 
   // Indexes for performance optimization
   @@index([householdId], name: "idx_users_household_id")
@@ -111,4 +113,54 @@ model PasswordResetToken {
   @@index([token], name: "idx_password_reset_tokens_token")
   @@index([expiresAt], name: "idx_password_reset_tokens_expires_at")
   @@map("password_reset_tokens")
+}
+
+// Enums for inventory management
+enum StorageLocation {
+  pantry
+  refrigerator  
+  freezer
+
+  @@map("storage_location")
+}
+
+enum InventoryCategory {
+  proteins
+  vegetables
+  fruits
+  grains
+  dairy
+  spices
+  condiments
+  beverages
+  baking
+  frozen
+
+  @@map("inventory_category")
+}
+
+// Inventory management model
+model InventoryItem {
+  id             String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String            @db.VarChar(255)
+  quantity       Decimal           @db.Decimal(10, 2)
+  unit           String            @db.VarChar(50)
+  category       InventoryCategory
+  location       StorageLocation
+  expirationDate DateTime?         @map("expiration_date") @db.Date
+  purchaseDate   DateTime?         @default(now()) @map("purchase_date") @db.Date
+  estimatedCost  Decimal?          @map("estimated_cost") @db.Decimal(10, 2)
+  householdId    String            @map("household_id") @db.Uuid
+  addedBy        String            @map("added_by") @db.Uuid
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime          @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relationships
+  household Household @relation(fields: [householdId], references: [id])
+  addedByUser User @relation(fields: [addedBy], references: [id])
+
+  // Indexes for performance optimization
+  @@index([householdId, location], name: "idx_inventory_household_location")
+  @@index([expirationDate], name: "idx_inventory_expiration")
+  @@map("inventory_items")
 }

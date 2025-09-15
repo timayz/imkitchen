@@ -30,7 +30,7 @@ const customJestConfig = {
     '<rootDir>/src/**/*.test.{js,jsx,ts,tsx}',
   ],
   transformIgnorePatterns: [
-    'node_modules/(?!(next-intl|next-auth|@next-auth)/)',
+    'node_modules/(?!(next-intl|next-auth|@next-auth|@auth)/)',
   ],
 };
 
