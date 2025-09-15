@@ -4,10 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  registerSchema,
-  type RegisterData,
-} from '@/lib/validators/auth-schemas';
+import { registerSchema } from '@/lib/validators/auth-schemas';
+import { z } from 'zod';
 import { DietaryPreference, Language } from '@prisma/client';
 
 interface RegisterFormProps {
@@ -24,17 +22,17 @@ export function RegisterForm({ onSuccess, className = '' }: RegisterFormProps) {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<RegisterData>({
+  } = useForm<z.input<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
       dietaryPreferences: [],
       allergies: [],
-      language: Language.en,
+      language: Language.EN,
       timezone: 'UTC',
     },
   });
 
-  const onSubmit = async (data: RegisterData) => {
+  const onSubmit = async (data: z.input<typeof registerSchema>) => {
     setIsLoading(true);
     setError(null);
 
@@ -214,10 +212,10 @@ export function RegisterForm({ onSuccess, className = '' }: RegisterFormProps) {
                 id="language"
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500"
               >
-                <option value={Language.en}>English</option>
-                <option value={Language.es}>Spanish</option>
-                <option value={Language.fr}>French</option>
-                <option value={Language.de}>German</option>
+                <option value={Language.EN}>English</option>
+                <option value={Language.ES}>Spanish</option>
+                <option value={Language.FR}>French</option>
+                <option value={Language.DE}>German</option>
               </select>
             </div>
 

@@ -38,7 +38,10 @@ export function withErrorHandler<T extends unknown[]>(
 }
 
 // Main error handling function
-export function handleError(error: unknown, request?: NextRequest): NextResponse {
+export function handleError(
+  error: unknown,
+  request?: NextRequest
+): NextResponse {
   const timestamp = new Date().toISOString();
   const path = request?.url;
 
@@ -144,7 +147,10 @@ function handlePrismaError(
       );
 
     default:
-      logger.error('Unhandled Prisma error code', { code: error.code, error: error.message });
+      logger.error('Unhandled Prisma error code', {
+        code: error.code,
+        error: error.message,
+      });
       return createErrorResponse(
         DatabaseError.UNKNOWN,
         'Database operation failed',
@@ -163,7 +169,7 @@ function handleUnknownPrismaError(
   path?: string
 ): NextResponse {
   logger.error('Unknown Prisma error', { error: error.message });
-  
+
   return createErrorResponse(
     DatabaseError.UNKNOWN,
     'Database operation failed',
@@ -180,7 +186,7 @@ function handlePrismaRustPanic(
   path?: string
 ): NextResponse {
   logger.error('Prisma Rust panic', { error: error.message });
-  
+
   return createErrorResponse(
     DatabaseError.UNKNOWN,
     'Internal database error',
@@ -197,7 +203,7 @@ function handlePrismaInitializationError(
   path?: string
 ): NextResponse {
   logger.error('Prisma initialization error', { error: error.message });
-  
+
   return createErrorResponse(
     DatabaseError.CONNECTION_FAILED,
     'Database initialization failed',
@@ -214,7 +220,7 @@ function handlePrismaValidationError(
   path?: string
 ): NextResponse {
   logger.error('Prisma validation error', { error: error.message });
-  
+
   return createErrorResponse(
     DatabaseError.VALIDATION_ERROR,
     'Invalid data provided',
@@ -254,7 +260,7 @@ function handleGenericError(
   path?: string
 ): NextResponse {
   logger.error('Generic error', { error: error.message, stack: error.stack });
-  
+
   return createErrorResponse(
     DatabaseError.UNKNOWN,
     'Internal server error',
@@ -286,7 +292,9 @@ function createErrorResponse(
 }
 
 // Extract constraint field from Prisma error
-function getConstraintField(error: Prisma.PrismaClientKnownRequestError): string {
+function getConstraintField(
+  error: Prisma.PrismaClientKnownRequestError
+): string {
   if (error.meta?.target) {
     const target = error.meta.target as string | string[];
     return Array.isArray(target) ? target.join(', ') : target;
@@ -303,13 +311,18 @@ export async function safeDbOperation<T>(
     const data = await operation();
     return { data };
   } catch (error) {
-    logger.error(`Database operation failed: ${context}`, { error });
-    
+    logger.error(
+      `Database operation failed: ${context || 'Unknown operation'}`,
+      {
+        error: error instanceof Error ? error.message : String(error),
+      }
+    );
+
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       const response = handlePrismaError(error, new Date().toISOString());
       return { error: await response.json() };
     }
-    
+
     return {
       error: {
         error: DatabaseError.UNKNOWN,
@@ -328,33 +341,33 @@ export async function retryDatabaseOperation<T>(
   baseDelay: number = 1000
 ): Promise<T> {
   let lastError: Error;
-  
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await operation();
     } catch (error) {
       lastError = error instanceof Error ? error : new Error('Unknown error');
-      
+
       if (attempt === maxRetries) {
         throw lastError;
       }
-      
+
       // Check if error is retryable
       if (!isRetryableError(error)) {
         throw lastError;
       }
-      
+
       const delay = Math.min(baseDelay * Math.pow(2, attempt - 1), 10000);
       logger.warn(`Database operation failed, retrying in ${delay}ms`, {
         attempt,
         maxRetries,
         error: lastError.message,
       });
-      
+
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
-  
+
   throw lastError!;
 }
 
@@ -364,10 +377,10 @@ function isRetryableError(error: unknown): boolean {
     // Retry on connection issues and timeouts
     return ['P1001', 'P1002', 'P1008', 'P1017'].includes(error.code);
   }
-  
+
   if (error instanceof Prisma.PrismaClientUnknownRequestError) {
     return true; // Retry unknown request errors
   }
-  
+
   return false;
 }

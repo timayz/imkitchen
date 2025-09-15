@@ -6,6 +6,7 @@ import { signIn } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, type LoginData } from '@/lib/validators/auth-schemas';
+import Link from 'next/link';
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -131,21 +132,21 @@ export function LoginForm({ onSuccess, className = '' }: LoginFormProps) {
         </button>
 
         <div className="text-center">
-          <a
+          <Link
             href="/register"
             className="text-sm text-orange-600 hover:text-orange-500"
           >
             Don&apos;t have an account? Create one
-          </a>
+          </Link>
         </div>
 
         <div className="text-center">
-          <a
+          <Link
             href="/reset-password"
             className="text-sm text-gray-600 hover:text-gray-500"
           >
             Forgot your password?
-          </a>
+          </Link>
         </div>
       </form>
     </div>

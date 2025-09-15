@@ -60,7 +60,7 @@ export interface FindOperation {
 }
 
 // Service response types
-export interface ServiceResponse<T = any> {
+export interface ServiceResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: {
@@ -89,7 +89,7 @@ export interface LogContext {
   operation?: string;
   duration?: number;
   error?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // Configuration types
@@ -166,7 +166,7 @@ export interface PerformanceMetric {
   duration: number;
   timestamp: Timestamp;
   success: boolean;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface HealthCheck {
@@ -195,7 +195,7 @@ export interface FeatureFlag {
   conditions?: {
     userId?: ID[];
     householdId?: ID[];
-    userProperties?: Record<string, any>;
+    userProperties?: Record<string, unknown>;
   };
 }
 
@@ -227,7 +227,7 @@ export interface FileUpload {
 // Search types (for future use)
 export interface SearchQuery {
   query: string;
-  filters?: Record<string, any>;
+  filters?: Record<string, unknown>;
   facets?: string[];
   pagination?: {
     page: number;

@@ -23,7 +23,9 @@ export type CreateUserData = {
   timezone?: string;
 };
 
-export type UpdateUserData = Partial<Omit<CreateUserData, 'email' | 'householdId'>>;
+export type UpdateUserData = Partial<
+  Omit<CreateUserData, 'email' | 'householdId'>
+>;
 
 export interface IUserRepository {
   findByEmail(email: string): Promise<User | null>;
@@ -31,7 +33,7 @@ export interface IUserRepository {
   findWithHousehold(id: string): Promise<UserWithHousehold | null>;
   updatePassword(id: string, passwordHash: string): Promise<User>;
   updatePreferences(
-    id: string, 
+    id: string,
     preferences: {
       dietaryPreferences?: DietaryPreference[];
       allergies?: string[];
@@ -48,10 +50,10 @@ export interface IUserRepository {
 }
 
 // User repository implementation
-export class UserRepository 
-  extends BaseRepository<User, CreateUserData, UpdateUserData> 
-  implements IUserRepository {
-
+export class UserRepository
+  extends BaseRepository<User, CreateUserData, UpdateUserData>
+  implements IUserRepository
+{
   constructor() {
     super(db, 'User');
   }
@@ -156,7 +158,7 @@ export class UserRepository
       'searchUsers',
       this.modelName,
       async () => {
-        const whereClause: any = {
+        const whereClause = {
           OR: [
             { name: { contains: query, mode: 'insensitive' } },
             { email: { contains: query, mode: 'insensitive' } },
@@ -234,36 +236,32 @@ export class UserRepository
 
   // Create user with validation
   async create(data: CreateUserData): Promise<User> {
-    return logDatabaseOperation(
-      'create',
-      this.modelName,
-      async () => {
-        // Validate household exists
-        const household = await this.db.household.findUnique({
-          where: { id: data.householdId },
-        });
+    return logDatabaseOperation('create', this.modelName, async () => {
+      // Validate household exists
+      const household = await this.db.household.findUnique({
+        where: { id: data.householdId },
+      });
 
-        if (!household) {
-          throw new Error('Household not found');
-        }
-
-        // Check if email is already taken
-        const existingUser = await this.findByEmail(data.email);
-        if (existingUser) {
-          throw new Error('Email already registered');
-        }
-
-        return this.getModel().create({
-          data: {
-            ...data,
-            dietaryPreferences: data.dietaryPreferences || [],
-            allergies: data.allergies || [],
-            language: data.language || Language.EN,
-            timezone: data.timezone || 'UTC',
-          },
-        });
+      if (!household) {
+        throw new Error('Household not found');
       }
-    );
+
+      // Check if email is already taken
+      const existingUser = await this.findByEmail(data.email);
+      if (existingUser) {
+        throw new Error('Email already registered');
+      }
+
+      return this.getModel().create({
+        data: {
+          ...data,
+          dietaryPreferences: data.dietaryPreferences || [],
+          allergies: data.allergies || [],
+          language: data.language || Language.EN,
+          timezone: data.timezone || 'UTC',
+        },
+      });
+    });
   }
 
   // Update user with validation
@@ -363,7 +361,10 @@ export class UserRepository
   }
 
   // Get user activity summary
-  async getUserActivity(id: string, days: number = 30): Promise<{
+  async getUserActivity(
+    id: string,
+    days: number = 30
+  ): Promise<{
     recentSessions: number;
     lastLoginAt: Date | null;
   }> {
