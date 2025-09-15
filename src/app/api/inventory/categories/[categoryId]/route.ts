@@ -14,7 +14,7 @@ const updateCategorySchema = z.object({
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { categoryId: string } }
+  { params }: { params: Promise<{ categoryId: string }> }
 ) {
   try {
     const session = await auth();
@@ -22,13 +22,14 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { categoryId } = await params;
     const body = await request.json();
     const validatedData = updateCategorySchema.parse(body);
 
     // Verify category belongs to user's household
     const existingCategory = await prisma.customCategory.findFirst({
       where: {
-        id: params.categoryId,
+        id: categoryId,
         householdId: session.user.householdId,
       },
     });
@@ -46,7 +47,7 @@ export async function PUT(
         where: {
           name: validatedData.name,
           householdId: session.user.householdId,
-          id: { not: params.categoryId },
+          id: { not: categoryId },
         },
       });
 
@@ -66,7 +67,7 @@ export async function PUT(
     if (validatedData.icon !== undefined) updateData.icon = validatedData.icon;
 
     const category = await prisma.customCategory.update({
-      where: { id: params.categoryId },
+      where: { id: categoryId },
       data: updateData,
     });
 
@@ -89,7 +90,7 @@ export async function PUT(
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { categoryId: string } }
+  { params }: { params: Promise<{ categoryId: string }> }
 ) {
   try {
     const session = await auth();
@@ -97,10 +98,12 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { categoryId } = await params;
+
     // Verify category belongs to user's household
     const existingCategory = await prisma.customCategory.findFirst({
       where: {
-        id: params.categoryId,
+        id: categoryId,
         householdId: session.user.householdId,
       },
     });
@@ -115,7 +118,7 @@ export async function DELETE(
     // Check if any items are using this category
     const itemsUsingCategory = await prisma.inventoryItem.count({
       where: {
-        category: params.categoryId,
+        category: categoryId,
         householdId: session.user.householdId,
       },
     });
@@ -132,7 +135,7 @@ export async function DELETE(
     }
 
     await prisma.customCategory.delete({
-      where: { id: params.categoryId },
+      where: { id: categoryId },
     });
 
     return NextResponse.json({ success: true }, { status: 204 });
