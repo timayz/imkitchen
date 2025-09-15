@@ -46,8 +46,8 @@ export function initSentry() {
           const queryString =
             typeof event.request.query_string === 'string'
               ? event.request.query_string
-              : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                new URLSearchParams(
+              : new URLSearchParams(
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   event.request.query_string as any
                 ).toString();
           event.request.query_string = queryString.replace(
