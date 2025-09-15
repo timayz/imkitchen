@@ -25,5 +25,18 @@
     "es": "Spanisch",
     "fr": "Französisch",
     "de": "Deutsch"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "inventory": "Inventar",
+    "recipes": "Rezepte",
+    "mealPlanning": "Essensplanung",
+    "shopping": "Einkaufslisten",
+    "settings": "Einstellungen",
+    "menu": "Menü",
+    "toggleMenu": "Navigationsmenü umschalten",
+    "closeMenu": "Menü schließen",
+    "userMenu": "Benutzermenü",
+    "language": "Sprache"
   }
 }

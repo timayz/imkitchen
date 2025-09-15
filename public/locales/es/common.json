@@ -25,5 +25,36 @@
     "es": "Español",
     "fr": "Francés",
     "de": "Alemán"
+  },
+  "navigation": {
+    "dashboard": "Panel de Control",
+    "inventory": "Inventario",
+    "recipes": "Recetas",
+    "mealPlanning": "Planificación de Comidas",
+    "shopping": "Listas de Compras",
+    "settings": "Configuración",
+    "menu": "Menú",
+    "toggleMenu": "Alternar menú de navegación",
+    "closeMenu": "Cerrar menú",
+    "userMenu": "Menú de usuario",
+    "language": "Idioma"
+  },
+  "footer": {
+    "description": "Tu compañero inteligente de cocina para planificación de comidas, gestión de inventario y descubrimiento de recetas.",
+    "legal": "Legal",
+    "privacy": "Política de Privacidad",
+    "terms": "Términos de Servicio",
+    "cookies": "Política de Cookies",
+    "support": "Soporte",
+    "help": "Centro de Ayuda",
+    "contact": "Contáctanos",
+    "faq": "Preguntas Frecuentes",
+    "connect": "Conectar",
+    "github": "Síguenos en GitHub",
+    "twitter": "Síguenos en Twitter",
+    "email": "Envíanos un correo",
+    "rights": "Todos los derechos reservados.",
+    "madeWith": "Hecho con",
+    "forCooks": "para cocineros caseros en todas partes"
   }
 }
