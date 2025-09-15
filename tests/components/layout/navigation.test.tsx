@@ -74,6 +74,8 @@ describe('Navigation', () => {
     mockUsePathname.mockReturnValue('/en/dashboard');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockUseTranslations.mockReturnValue(mockT as any);
+    // Reset navigation mock state
+    mockNavigation.isMenuOpen = false;
     jest.clearAllMocks();
   });
 
