@@ -16,11 +16,10 @@ describe('UserService', () => {
   const mockUserRepository = userRepository as jest.Mocked<
     typeof userRepository
   >;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _mockHouseholdRepository = householdRepository as jest.Mocked<
-    typeof householdRepository
-  >;
-  const mockDb = db as jest.Mocked<typeof db>;
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  householdRepository as jest.Mocked<typeof householdRepository>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mockDb = db as any;
   const mockBcrypt = bcrypt as jest.Mocked<typeof bcrypt>;
 
   beforeEach(() => {
@@ -42,10 +41,19 @@ describe('UserService', () => {
       const mockUser = {
         id: 'user-1',
         email: 'test@example.com',
+        name: 'Test User',
+        passwordHash: 'hashed-password',
         householdId: 'household-1',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        dietaryPreferences: [],
+        allergies: [],
+        language: 'EN' as const,
+        timezone: 'UTC',
       };
 
-      mockBcrypt.hash.mockResolvedValue(mockHashedPassword);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (mockBcrypt.hash as any).mockResolvedValue(mockHashedPassword);
       mockDb.$transaction.mockResolvedValue({
         user: mockUser,
         household: mockHousehold,
@@ -68,10 +76,17 @@ describe('UserService', () => {
         passwordHash: 'hashed-password',
         name: 'Test User',
         householdId: 'household-1',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        dietaryPreferences: [],
+        allergies: [],
+        language: 'EN' as const,
+        timezone: 'UTC',
       };
 
       mockUserRepository.findByEmail.mockResolvedValue(mockUser);
-      mockBcrypt.compare.mockResolvedValue(true);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (mockBcrypt.compare as any).mockResolvedValue(true);
 
       const result = await userService.authenticateUser(email, password);
 
@@ -99,10 +114,19 @@ describe('UserService', () => {
         id: 'user-1',
         email: 'test@example.com',
         passwordHash: 'hashed-password',
+        name: 'Test User',
+        householdId: 'household-1',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        dietaryPreferences: [],
+        allergies: [],
+        language: 'EN' as const,
+        timezone: 'UTC',
       };
 
       mockUserRepository.findByEmail.mockResolvedValue(mockUser);
-      mockBcrypt.compare.mockResolvedValue(false);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (mockBcrypt.compare as any).mockResolvedValue(false);
 
       const result = await userService.authenticateUser(
         'test@example.com',
@@ -120,12 +144,23 @@ describe('UserService', () => {
       const newPassword = 'new-password';
       const mockUser = {
         id: userId,
+        email: 'test@example.com',
         passwordHash: 'old-hashed-password',
+        name: 'Test User',
+        householdId: 'household-1',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        dietaryPreferences: [],
+        allergies: [],
+        language: 'EN' as const,
+        timezone: 'UTC',
       };
 
       mockUserRepository.findById.mockResolvedValue(mockUser);
-      mockBcrypt.compare.mockResolvedValue(true);
-      mockBcrypt.hash.mockResolvedValue('new-hashed-password');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (mockBcrypt.compare as any).mockResolvedValue(true);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (mockBcrypt.hash as any).mockResolvedValue('new-hashed-password');
       mockUserRepository.updatePassword.mockResolvedValue(mockUser);
 
       await userService.updatePassword(userId, currentPassword, newPassword);
@@ -140,11 +175,21 @@ describe('UserService', () => {
       const userId = 'user-1';
       const mockUser = {
         id: userId,
+        email: 'test@example.com',
         passwordHash: 'hashed-password',
+        name: 'Test User',
+        householdId: 'household-1',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        dietaryPreferences: [],
+        allergies: [],
+        language: 'EN' as const,
+        timezone: 'UTC',
       };
 
       mockUserRepository.findById.mockResolvedValue(mockUser);
-      mockBcrypt.compare.mockResolvedValue(false);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (mockBcrypt.compare as any).mockResolvedValue(false);
 
       await expect(
         userService.updatePassword(userId, 'wrong-password', 'new-password')
@@ -171,6 +216,10 @@ describe('UserService', () => {
         id: userId,
         email: 'test@example.com',
         name: 'Test User',
+        passwordHash: 'hashed-password',
+        householdId: 'household-1',
+        createdAt: new Date(),
+        updatedAt: new Date(),
         dietaryPreferences: [DietaryPreference.VEGETARIAN],
         allergies: ['nuts'],
         language: Language.EN,
@@ -179,6 +228,8 @@ describe('UserService', () => {
           id: 'household-1',
           name: 'Test Household',
           settings: {},
+          createdAt: new Date(),
+          updatedAt: new Date(),
         },
       };
 

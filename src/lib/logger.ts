@@ -105,21 +105,46 @@ winston.addColors(customLevels.colors);
 // Specialized logging functions for different categories
 
 /**
- * Log database operations
+ * Log database operations with automatic timing
  */
-export function logDatabaseOperation(
+export async function logDatabaseOperation<T>(
   operation: string,
   model: string,
-  duration?: number,
+  fn: () => Promise<T> | T,
   metadata?: Record<string, unknown>
-) {
-  logger.info('Database operation', {
-    category: 'database',
-    operation,
-    model,
-    duration,
-    ...metadata,
-  });
+): Promise<T> {
+  const startTime = Date.now();
+
+  try {
+    const result = await fn();
+    const duration = Date.now() - startTime;
+
+    logger.info('Database operation', {
+      category: 'database',
+      operation,
+      model,
+      duration,
+      success: true,
+      ...metadata,
+    });
+
+    return result;
+  } catch (error) {
+    const duration = Date.now() - startTime;
+
+    logger.error('Database operation failed', {
+      category: 'database',
+      operation,
+      model,
+      duration,
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      ...metadata,
+    });
+
+    throw error;
+  }
 }
 
 /**

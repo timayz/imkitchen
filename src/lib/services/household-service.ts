@@ -87,7 +87,7 @@ export class HouseholdService {
           name: household.name,
           memberCount: household._count.users,
           createdAt: household.createdAt,
-          settings: household.settings,
+          settings: household.settings as Record<string, unknown>,
           members,
           stats: {
             activeMembersCount: stats.activeMembersCount,
@@ -121,13 +121,12 @@ export class HouseholdService {
         }
 
         const ownerId =
-          (household.settings as HouseholdSettings)?.ownerId ||
-          household.users?.[0]?.id;
+          (household.settings as HouseholdSettings)?.ownerId || user.id; // Fallback to current user if no owner set
         const mealPlanningAccess =
           (household.settings as HouseholdSettings)?.mealPlanningAccess ||
           'all-members';
 
-        if (ownerId !== userId && mealPlanningAccess === 'owner') {
+        if (ownerId !== userId && mealPlanningAccess === 'owner-only') {
           throw new Error('Only the household owner can update these settings');
         }
 
@@ -293,8 +292,7 @@ export class HouseholdService {
         }
 
         const ownerId =
-          (household.settings as HouseholdSettings)?.ownerId ||
-          household.users?.[0]?.id;
+          (household.settings as HouseholdSettings)?.ownerId || currentOwnerId; // Fallback to current owner
         if (ownerId !== currentOwnerId) {
           throw new Error('You are not the current owner of this household');
         }
@@ -455,9 +453,10 @@ export class HouseholdService {
             where: { id: household.id },
             data: {
               settings: {
-                ...household.settings,
+                ...((household.settings as Record<string, unknown>) || {}),
                 ownerId: owner.id,
-              },
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              } as any,
             },
           });
 

@@ -97,7 +97,7 @@ export class UserRepository
       'findWithHousehold',
       this.modelName,
       async () => {
-        return this.getModel().findUnique({
+        const result = await this.getModel().findUnique({
           where: { id },
           include: {
             household: {
@@ -105,10 +105,22 @@ export class UserRepository
                 id: true,
                 name: true,
                 settings: true,
+                createdAt: true,
+                updatedAt: true,
               },
             },
           },
         });
+
+        if (!result) return null;
+
+        return {
+          ...result,
+          household: {
+            ...result.household,
+            settings: result.household.settings as Record<string, unknown>,
+          },
+        } as UserWithHousehold;
       },
       { id }
     );
@@ -153,12 +165,14 @@ export class UserRepository
   }
 
   // Search users by name or email
-  async searchUsers(query: string, householdId?: string): Promise<User[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async searchUsers(query: string, householdId?: string): Promise<any[]> {
     return logDatabaseOperation(
       'searchUsers',
       this.modelName,
       async () => {
-        const whereClause = {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const whereClause: any = {
           OR: [
             { name: { contains: query, mode: 'insensitive' } },
             { email: { contains: query, mode: 'insensitive' } },

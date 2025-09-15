@@ -67,7 +67,7 @@ export class UserService {
           const household = await tx.household.create({
             data: {
               name: data.householdName,
-              settings: data.householdSettings || {
+              settings: (data.householdSettings || {
                 defaultMeasurementUnit: 'metric',
                 sharedInventory: true,
                 mealPlanningAccess: 'all-members',
@@ -76,7 +76,8 @@ export class UserService {
                   mealReminders: true,
                   shoppingListUpdates: true,
                 },
-              },
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              }) as any,
             },
           });
 
@@ -100,7 +101,13 @@ export class UserService {
             email: data.email,
           });
 
-          return { user, household };
+          return {
+            user: user as User,
+            household: {
+              ...household,
+              settings: household.settings as Record<string, unknown>,
+            },
+          };
         });
       },
       { email: data.email, householdName: data.householdName }
@@ -116,7 +123,7 @@ export class UserService {
         const household = await householdRepository.findWithMembers(
           userData.householdId
         );
-        
+
         if (!household) {
           throw new Error('Household not found');
         }
@@ -201,7 +208,7 @@ export class UserService {
           currentPassword,
           user.passwordHash
         );
-        
+
         if (!isValidCurrentPassword) {
           throw new Error('Current password is incorrect');
         }

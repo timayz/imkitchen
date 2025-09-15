@@ -22,7 +22,10 @@ export interface IHouseholdRepository {
   findWithMembers(id: string): Promise<HouseholdWithMembers | null>;
   addMember(householdId: string, userId: string): Promise<void>;
   removeMember(householdId: string, userId: string): Promise<void>;
-  updateSettings(id: string, settings: Record<string, unknown>): Promise<Household>;
+  updateSettings(
+    id: string,
+    settings: Record<string, unknown>
+  ): Promise<Household>;
   getHouseholdStats(id: string): Promise<{
     memberCount: number;
     createdAt: Date;
@@ -34,10 +37,10 @@ export interface IHouseholdRepository {
 }
 
 // Household repository implementation
-export class HouseholdRepository 
-  extends BaseRepository<Household, CreateHouseholdData, UpdateHouseholdData> 
-  implements IHouseholdRepository {
-
+export class HouseholdRepository
+  extends BaseRepository<Household, CreateHouseholdData, UpdateHouseholdData>
+  implements IHouseholdRepository
+{
   constructor() {
     super(db, 'Household');
   }
@@ -60,11 +63,14 @@ export class HouseholdRepository
                 id: true,
                 email: true,
                 name: true,
+                passwordHash: true,
+                householdId: true,
                 language: true,
                 timezone: true,
                 dietaryPreferences: true,
                 allergies: true,
                 createdAt: true,
+                updatedAt: true,
               },
               orderBy: { createdAt: 'asc' },
             },
@@ -142,7 +148,7 @@ export class HouseholdRepository
 
         if (memberCount === 1) {
           // If removing the last member, delete the household
-          await this.executeInTransaction(async (tx) => {
+          await this.executeInTransaction(async tx => {
             // Delete user sessions first
             await tx.session.deleteMany({
               where: { userId },
@@ -170,7 +176,10 @@ export class HouseholdRepository
   }
 
   // Update household settings
-  async updateSettings(id: string, settings: Record<string, unknown>): Promise<Household> {
+  async updateSettings(
+    id: string,
+    settings: Record<string, unknown>
+  ): Promise<Household> {
     return logDatabaseOperation(
       'updateSettings',
       this.modelName,
@@ -182,13 +191,14 @@ export class HouseholdRepository
         }
 
         const mergedSettings = {
-          ...(household.settings as object || {}),
+          ...((household.settings as Record<string, unknown>) || {}),
           ...settings,
         };
 
         return this.getModel().update({
           where: { id },
-          data: { settings: mergedSettings },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          data: { settings: mergedSettings as any },
         });
       },
       { id, settings }
@@ -300,49 +310,45 @@ export class HouseholdRepository
 
   // Create household with validation
   async create(data: CreateHouseholdData): Promise<Household> {
-    return logDatabaseOperation(
-      'create',
-      this.modelName,
-      async () => {
-        // Validate household name
-        if (!data.name || data.name.trim().length === 0) {
-          throw new Error('Household name is required');
-        }
-
-        // Check for duplicate names (optional - you may want to allow duplicates)
-        const existingHousehold = await this.getModel().findFirst({
-          where: {
-            name: {
-              equals: data.name.trim(),
-              mode: 'insensitive',
-            },
-          },
-        });
-
-        if (existingHousehold) {
-          throw new Error('A household with this name already exists');
-        }
-
-        const defaultSettings = {
-          defaultMeasurementUnit: 'metric',
-          sharedInventory: true,
-          mealPlanningAccess: 'all-members',
-          notificationPreferences: {
-            expirationAlerts: true,
-            mealReminders: true,
-            shoppingListUpdates: true,
-          },
-          ...data.settings,
-        };
-
-        return this.getModel().create({
-          data: {
-            name: data.name.trim(),
-            settings: defaultSettings,
-          },
-        });
+    return logDatabaseOperation('create', this.modelName, async () => {
+      // Validate household name
+      if (!data.name || data.name.trim().length === 0) {
+        throw new Error('Household name is required');
       }
-    );
+
+      // Check for duplicate names (optional - you may want to allow duplicates)
+      const existingHousehold = await this.getModel().findFirst({
+        where: {
+          name: {
+            equals: data.name.trim(),
+            mode: 'insensitive',
+          },
+        },
+      });
+
+      if (existingHousehold) {
+        throw new Error('A household with this name already exists');
+      }
+
+      const defaultSettings = {
+        defaultMeasurementUnit: 'metric',
+        sharedInventory: true,
+        mealPlanningAccess: 'all-members',
+        notificationPreferences: {
+          expirationAlerts: true,
+          mealReminders: true,
+          shoppingListUpdates: true,
+        },
+        ...data.settings,
+      };
+
+      return this.getModel().create({
+        data: {
+          name: data.name.trim(),
+          settings: defaultSettings,
+        },
+      });
+    });
   }
 
   // Transfer household ownership
@@ -366,7 +372,9 @@ export class HouseholdRepository
         ]);
 
         if (!currentOwner || !newOwner) {
-          throw new Error('One or both users are not members of this household');
+          throw new Error(
+            'One or both users are not members of this household'
+          );
         }
 
         // Update household settings to reflect new ownership
@@ -384,12 +392,14 @@ export class HouseholdRepository
   async getMemberActivity(
     householdId: string,
     days: number = 30
-  ): Promise<{
-    memberId: string;
-    memberName: string;
-    sessionCount: number;
-    lastActivityAt: Date | null;
-  }[]> {
+  ): Promise<
+    {
+      memberId: string;
+      memberName: string;
+      sessionCount: number;
+      lastActivityAt: Date | null;
+    }[]
+  > {
     return logDatabaseOperation(
       'getMemberActivity',
       this.modelName,
@@ -421,7 +431,8 @@ export class HouseholdRepository
           memberId: user.id,
           memberName: user.name,
           sessionCount: user.sessions.length,
-          lastActivityAt: user.sessions.length > 0 ? user.sessions[0].createdAt : null,
+          lastActivityAt:
+            user.sessions.length > 0 ? user.sessions[0].createdAt : null,
         }));
       },
       { householdId, days }
@@ -462,7 +473,7 @@ export class HouseholdRepository
         let deletedCount = 0;
 
         for (const household of inactiveHouseholds) {
-          await this.executeInTransaction(async (tx) => {
+          await this.executeInTransaction(async tx => {
             // Delete all sessions for household members
             await tx.session.deleteMany({
               where: {

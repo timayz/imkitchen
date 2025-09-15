@@ -2,10 +2,11 @@
  * @jest-environment node
  */
 
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { POST } from '@/app/api/auth/register/route';
 import { AuthService } from '@/lib/services/auth-service';
 import { registrationRateLimiter } from '@/lib/middleware/rate-limiter';
+import { Language } from '@prisma/client';
 
 // Mock dependencies
 jest.mock('@/lib/services/auth-service');
@@ -40,7 +41,7 @@ describe('/api/auth/register', () => {
         email: userData.email,
         name: userData.name,
         householdId: 'household-456',
-        language: userData.language,
+        language: userData.language as Language,
         timezone: userData.timezone,
       };
 
@@ -167,7 +168,7 @@ describe('/api/auth/register', () => {
     });
 
     it('applies rate limiting when threshold exceeded', async () => {
-      const rateLimitResponse = new Response(
+      const rateLimitResponse = new NextResponse(
         JSON.stringify({ error: 'Too many requests' }),
         { status: 429 }
       );

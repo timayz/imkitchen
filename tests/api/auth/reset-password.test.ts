@@ -2,11 +2,12 @@
  * @jest-environment node
  */
 
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { POST } from '@/app/api/auth/reset-password/route';
 import { AuthService } from '@/lib/services/auth-service';
 import { EmailService } from '@/lib/services/email-service';
 import { passwordResetRateLimiter } from '@/lib/middleware/rate-limiter';
+import { Language } from '@prisma/client';
 
 // Mock dependencies
 jest.mock('@/lib/services/auth-service');
@@ -43,6 +44,9 @@ describe('/api/auth/reset-password', () => {
         id: 'user-123',
         email: resetData.email,
         name: 'Test User',
+        householdId: 'household-456',
+        language: 'EN' as Language,
+        timezone: 'UTC',
       };
 
       mockAuthService.getUserByEmail.mockResolvedValue(
@@ -130,7 +134,7 @@ describe('/api/auth/reset-password', () => {
     });
 
     it('applies rate limiting when threshold exceeded', async () => {
-      const rateLimitResponse = new Response(
+      const rateLimitResponse = new NextResponse(
         JSON.stringify({ error: 'Too many requests' }),
         { status: 429 }
       );
@@ -163,6 +167,10 @@ describe('/api/auth/reset-password', () => {
       const mockUser = {
         id: 'user-123',
         email: resetData.email,
+        name: 'Test User',
+        householdId: 'household-456',
+        language: 'EN' as Language,
+        timezone: 'UTC',
       };
 
       mockAuthService.getUserByEmail.mockResolvedValue(

@@ -43,7 +43,14 @@ export function initSentry() {
 
         // Remove sensitive query parameters
         if (event.request.query_string) {
-          event.request.query_string = event.request.query_string.replace(
+          const queryString =
+            typeof event.request.query_string === 'string'
+              ? event.request.query_string
+              : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                new URLSearchParams(
+                  event.request.query_string as any
+                ).toString();
+          event.request.query_string = queryString.replace(
             /(\?|&)(password|token|secret|key)=[^&]*/gi,
             '$1$2=[REDACTED]'
           );
@@ -93,10 +100,12 @@ export function captureException(
   Sentry.captureException(error, {
     tags: {
       component: 'imkitchen-app',
-      ...context?.tags,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ...((context?.tags as Record<string, any>) || {}),
     },
-    extra: context,
-  });
+    extra: context || {},
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } as any);
 }
 
 /**
@@ -107,14 +116,17 @@ export function captureMessage(
   level: 'fatal' | 'error' | 'warning' | 'log' | 'info' | 'debug' = 'info',
   context?: Record<string, unknown>
 ) {
-  Sentry.captureMessage(message, {
-    level,
-    tags: {
-      component: 'imkitchen-app',
-      ...context?.tags,
-    },
-    extra: context,
-  });
+  Sentry.captureMessage(message, level);
+  if (context) {
+    Sentry.withScope(scope => {
+      scope.setTags({
+        component: 'imkitchen-app',
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ...((context.tags as Record<string, any>) || {}),
+      });
+      scope.setExtras(context);
+    });
+  }
 }
 
 /**
@@ -127,8 +139,8 @@ export function setUserContext(user: {
 }) {
   Sentry.setUser({
     id: user.id,
-    email: user.email,
-    username: user.username,
+    ...(user.email ? { email: user.email } : {}),
+    ...(user.username ? { username: user.username } : {}),
   });
 }
 
@@ -145,7 +157,7 @@ export function addBreadcrumb(
     message,
     category,
     level,
-    data,
+    data: data || {},
     timestamp: Date.now() / 1000,
   });
 }

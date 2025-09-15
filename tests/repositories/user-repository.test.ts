@@ -25,7 +25,8 @@ jest.mock('../../src/lib/db', () => ({
 
 describe('UserRepository', () => {
   let userRepository: UserRepository;
-  const mockDb = db as jest.Mocked<typeof db>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mockDb = db as any;
 
   beforeEach(() => {
     userRepository = new UserRepository();
