@@ -210,7 +210,6 @@ class Logger {
     severity: 'low' | 'medium' | 'high' | 'critical',
     context?: LogContext
   ) {
-
     const level =
       severity === 'critical' || severity === 'high'
         ? LogLevel.ERROR
@@ -298,7 +297,11 @@ export async function logDatabaseOperation<T>(
 
 // Express/Next.js request logger middleware
 export function createRequestLogger() {
-  return (req: unknown, res: unknown, next: unknown) => {
+  return (
+    req: { method?: string; url?: string },
+    res: { end?: (...args: unknown[]) => void; statusCode?: number },
+    next: unknown
+  ) => {
     const startTime = Date.now();
     const { method, url } = req;
 
@@ -307,13 +310,22 @@ export function createRequestLogger() {
 
     // Override res.end to log completion
     const originalEnd = res.end;
-    res.end = function (...args: unknown[]) {
-      const duration = Date.now() - startTime;
-      logger.apiRequest(method, url, res.statusCode, duration);
+    if (originalEnd) {
+      res.end = function (...args: unknown[]) {
+        const duration = Date.now() - startTime;
+        logger.apiRequest(
+          method || 'UNKNOWN',
+          url || '/',
+          res.statusCode || 500,
+          duration
+        );
 
-      originalEnd.apply(this, args);
-    };
-    next();
+        originalEnd.apply(this, args);
+      };
+    }
+    if (typeof next === 'function') {
+      (next as () => void)();
+    }
   };
 }
 

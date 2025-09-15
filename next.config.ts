@@ -1,4 +1,7 @@
 import type { NextConfig } from 'next';
+import createNextIntlPlugin from 'next-intl/plugin';
+
+const withNextIntl = createNextIntlPlugin('./src/lib/i18n.ts');
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: __dirname,
@@ -7,8 +10,6 @@ const nextConfig: NextConfig = {
     // Enable optimized imports for better bundle size
     optimizePackageImports: ['@radix-ui/react-icons'],
   },
-  // Add this when we implement next-intl in future stories
-  // Note: App Router uses next-intl middleware instead of built-in i18n
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

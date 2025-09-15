@@ -13,8 +13,13 @@ jest.mock('bcryptjs');
 
 describe('UserService', () => {
   let userService: UserService;
-  const mockUserRepository = userRepository as jest.Mocked<typeof userRepository>;
-  const mockHouseholdRepository = householdRepository as jest.Mocked<typeof householdRepository>;
+  const mockUserRepository = userRepository as jest.Mocked<
+    typeof userRepository
+  >;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _mockHouseholdRepository = householdRepository as jest.Mocked<
+    typeof householdRepository
+  >;
   const mockDb = db as jest.Mocked<typeof db>;
   const mockBcrypt = bcrypt as jest.Mocked<typeof bcrypt>;
 
@@ -34,10 +39,17 @@ describe('UserService', () => {
 
       const mockHashedPassword = 'hashed-password';
       const mockHousehold = { id: 'household-1', name: 'Test Household' };
-      const mockUser = { id: 'user-1', email: 'test@example.com', householdId: 'household-1' };
+      const mockUser = {
+        id: 'user-1',
+        email: 'test@example.com',
+        householdId: 'household-1',
+      };
 
       mockBcrypt.hash.mockResolvedValue(mockHashedPassword);
-      mockDb.$transaction.mockResolvedValue({ user: mockUser, household: mockHousehold });
+      mockDb.$transaction.mockResolvedValue({
+        user: mockUser,
+        household: mockHousehold,
+      });
 
       const result = await userService.createUserWithHousehold(userData);
 
@@ -65,13 +77,19 @@ describe('UserService', () => {
 
       expect(result).toEqual(mockUser);
       expect(mockUserRepository.findByEmail).toHaveBeenCalledWith(email);
-      expect(mockBcrypt.compare).toHaveBeenCalledWith(password, 'hashed-password');
+      expect(mockBcrypt.compare).toHaveBeenCalledWith(
+        password,
+        'hashed-password'
+      );
     });
 
     it('should return null for invalid email', async () => {
       mockUserRepository.findByEmail.mockResolvedValue(null);
 
-      const result = await userService.authenticateUser('invalid@example.com', 'password');
+      const result = await userService.authenticateUser(
+        'invalid@example.com',
+        'password'
+      );
 
       expect(result).toBeNull();
     });
@@ -86,7 +104,10 @@ describe('UserService', () => {
       mockUserRepository.findByEmail.mockResolvedValue(mockUser);
       mockBcrypt.compare.mockResolvedValue(false);
 
-      const result = await userService.authenticateUser('test@example.com', 'wrong-password');
+      const result = await userService.authenticateUser(
+        'test@example.com',
+        'wrong-password'
+      );
 
       expect(result).toBeNull();
     });
@@ -109,7 +130,10 @@ describe('UserService', () => {
 
       await userService.updatePassword(userId, currentPassword, newPassword);
 
-      expect(mockUserRepository.updatePassword).toHaveBeenCalledWith(userId, 'new-hashed-password');
+      expect(mockUserRepository.updatePassword).toHaveBeenCalledWith(
+        userId,
+        'new-hashed-password'
+      );
     });
 
     it('should throw error for invalid current password', async () => {
@@ -131,7 +155,11 @@ describe('UserService', () => {
       mockUserRepository.findById.mockResolvedValue(null);
 
       await expect(
-        userService.updatePassword('invalid-user', 'old-password', 'new-password')
+        userService.updatePassword(
+          'invalid-user',
+          'old-password',
+          'new-password'
+        )
       ).rejects.toThrow('User not found');
     });
   });
@@ -165,7 +193,9 @@ describe('UserService', () => {
         lastLoginAt: new Date(),
       };
 
-      mockUserRepository.findWithHousehold.mockResolvedValue(mockUserWithHousehold);
+      mockUserRepository.findWithHousehold.mockResolvedValue(
+        mockUserWithHousehold
+      );
       mockUserRepository.getUserStats.mockResolvedValue(mockStats);
       mockUserRepository.getUserActivity.mockResolvedValue(mockActivity);
 
@@ -186,7 +216,9 @@ describe('UserService', () => {
     it('should throw error if user not found', async () => {
       mockUserRepository.findWithHousehold.mockResolvedValue(null);
 
-      await expect(userService.getUserProfile('invalid-user')).rejects.toThrow('User not found');
+      await expect(userService.getUserProfile('invalid-user')).rejects.toThrow(
+        'User not found'
+      );
     });
   });
 });

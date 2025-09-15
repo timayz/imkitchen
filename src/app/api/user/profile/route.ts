@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
+import { auth } from '@/lib/auth';
 import { ZodError } from 'zod';
-import { authOptions } from '@/lib/auth';
 import { updateProfileSchema } from '@/lib/validators/auth-schemas';
 import { AuthService } from '@/lib/services/auth-service';
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session?.user) {
       return NextResponse.json(
@@ -40,7 +39,7 @@ export async function GET() {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session?.user) {
       return NextResponse.json(
@@ -77,7 +76,7 @@ export async function PATCH(request: NextRequest) {
         {
           success: false,
           error: 'Validation failed',
-          details: error.errors.map(err => ({
+          details: error.issues.map(err => ({
             field: err.path.join('.'),
             message: err.message,
           })),

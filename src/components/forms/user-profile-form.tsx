@@ -142,10 +142,10 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
             id="language"
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-orange-500 focus:border-orange-500"
           >
-            <option value={Language.en}>English</option>
-            <option value={Language.es}>Spanish</option>
-            <option value={Language.fr}>French</option>
-            <option value={Language.de}>German</option>
+            <option value={Language.EN}>English</option>
+            <option value={Language.ES}>Spanish</option>
+            <option value={Language.FR}>French</option>
+            <option value={Language.DE}>German</option>
           </select>
         </div>
 

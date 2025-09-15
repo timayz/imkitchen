@@ -39,7 +39,7 @@ export interface PaginationParams {
 
 export interface SearchParams extends PaginationParams {
   query?: string;
-  filters?: Record<string, any>;
+  filters?: Record<string, unknown>;
 }
 
 // HTTP Methods
@@ -59,7 +59,7 @@ export interface RequestConfig {
   method: HttpMethod;
   url: string;
   data?: Record<string, unknown>;
-  params?: Record<string, any>;
+  params?: Record<string, unknown>;
   headers?: Record<string, string>;
   timeout?: number;
   withCredentials?: boolean;
@@ -145,12 +145,12 @@ export interface UserProfileResponse {
 // Household API types
 export interface CreateHouseholdRequest {
   name: string;
-  settings?: Record<string, any>;
+  settings?: Record<string, unknown>;
 }
 
 export interface UpdateHouseholdRequest {
   name?: string;
-  settings?: Record<string, any>;
+  settings?: Record<string, unknown>;
 }
 
 export interface HouseholdResponse {
@@ -158,7 +158,7 @@ export interface HouseholdResponse {
   name: string;
   memberCount: number;
   createdAt: string;
-  settings: Record<string, any>;
+  settings: Record<string, unknown>;
   members: {
     id: string;
     name: string;
@@ -208,30 +208,30 @@ export enum ApiErrorCode {
   FORBIDDEN = 'FORBIDDEN',
   INVALID_CREDENTIALS = 'INVALID_CREDENTIALS',
   TOKEN_EXPIRED = 'TOKEN_EXPIRED',
-  
+
   // Validation errors
   VALIDATION_ERROR = 'VALIDATION_ERROR',
   INVALID_INPUT = 'INVALID_INPUT',
   REQUIRED_FIELD_MISSING = 'REQUIRED_FIELD_MISSING',
-  
+
   // Resource errors
   NOT_FOUND = 'NOT_FOUND',
   ALREADY_EXISTS = 'ALREADY_EXISTS',
   CONFLICT = 'CONFLICT',
-  
+
   // Database errors
   DATABASE_ERROR = 'DATABASE_ERROR',
   CONNECTION_ERROR = 'CONNECTION_ERROR',
   CONSTRAINT_VIOLATION = 'CONSTRAINT_VIOLATION',
-  
+
   // Server errors
   INTERNAL_ERROR = 'INTERNAL_ERROR',
   SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE',
   TIMEOUT = 'TIMEOUT',
-  
+
   // Rate limiting
   RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
-  
+
   // Business logic errors
   INSUFFICIENT_PERMISSIONS = 'INSUFFICIENT_PERMISSIONS',
   OPERATION_NOT_ALLOWED = 'OPERATION_NOT_ALLOWED',
@@ -254,16 +254,30 @@ export interface DetailedApiError extends ApiError {
 
 // API Client types
 export interface ApiClient {
-  get<T = any>(url: string, config?: Partial<RequestConfig>): Promise<T>;
-  post<T = unknown>(url: string, data?: unknown, config?: Partial<RequestConfig>): Promise<T>;
-  put<T = unknown>(url: string, data?: unknown, config?: Partial<RequestConfig>): Promise<T>;
-  patch<T = unknown>(url: string, data?: unknown, config?: Partial<RequestConfig>): Promise<T>;
-  delete<T = any>(url: string, config?: Partial<RequestConfig>): Promise<T>;
+  get<T = unknown>(url: string, config?: Partial<RequestConfig>): Promise<T>;
+  post<T = unknown>(
+    url: string,
+    data?: unknown,
+    config?: Partial<RequestConfig>
+  ): Promise<T>;
+  put<T = unknown>(
+    url: string,
+    data?: unknown,
+    config?: Partial<RequestConfig>
+  ): Promise<T>;
+  patch<T = unknown>(
+    url: string,
+    data?: unknown,
+    config?: Partial<RequestConfig>
+  ): Promise<T>;
+  delete<T = unknown>(url: string, config?: Partial<RequestConfig>): Promise<T>;
 }
 
 // Request interceptor types
 export interface RequestInterceptor {
-  onFulfilled?: (config: RequestConfig) => RequestConfig | Promise<RequestConfig>;
+  onFulfilled?: (
+    config: RequestConfig
+  ) => RequestConfig | Promise<RequestConfig>;
   onRejected?: (error: unknown) => unknown;
 }
 

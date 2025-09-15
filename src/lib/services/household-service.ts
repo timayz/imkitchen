@@ -1,8 +1,19 @@
 import { Household } from '@prisma/client';
-import { householdRepository, CreateHouseholdData } from '../repositories/household-repository';
+import {
+  householdRepository,
+  CreateHouseholdData,
+} from '../repositories/household-repository';
 import { userRepository } from '../repositories/user-repository';
 import { logger, withLogging } from '../logger';
 import { db } from '../db';
+
+// Household settings interface
+interface HouseholdSettings {
+  ownerId?: string;
+  maxMembers?: number;
+  mealPlanningAccess?: 'owner-only' | 'all-members';
+  [key: string]: unknown;
+}
 
 // Service layer types
 export interface HouseholdSummary {
@@ -35,7 +46,6 @@ export interface HouseholdInviteData {
 
 // Household service class
 export class HouseholdService {
-
   // Get complete household information
   async getHouseholdSummary(householdId: string): Promise<HouseholdSummary> {
     return withLogging(
@@ -52,16 +62,21 @@ export class HouseholdService {
         }
 
         // Determine member roles (simplified - you might want more complex logic)
-        const ownerId = (household.settings as any)?.ownerId || household.users[0]?.id;
+        const ownerId =
+          (household.settings as HouseholdSettings)?.ownerId ||
+          household.users[0]?.id;
 
         const members = household.users.map(user => {
-          const activity = memberActivity.find(activity => activity.memberId === user.id);
-          
+          const activity = memberActivity.find(
+            activity => activity.memberId === user.id
+          );
+
           return {
             id: user.id,
             name: user.name,
             email: user.email,
-            role: user.id === ownerId ? 'owner' as const : 'member' as const,
+            role:
+              user.id === ownerId ? ('owner' as const) : ('member' as const),
             joinedAt: user.createdAt,
             lastActivity: activity?.lastActivityAt || null,
           };
@@ -105,14 +120,21 @@ export class HouseholdService {
           throw new Error('Household not found');
         }
 
-        const ownerId = (household.settings as any)?.ownerId || household.users?.[0]?.id;
-        const mealPlanningAccess = (household.settings as any)?.mealPlanningAccess || 'all-members';
+        const ownerId =
+          (household.settings as HouseholdSettings)?.ownerId ||
+          household.users?.[0]?.id;
+        const mealPlanningAccess =
+          (household.settings as HouseholdSettings)?.mealPlanningAccess ||
+          'all-members';
 
         if (ownerId !== userId && mealPlanningAccess === 'owner') {
           throw new Error('Only the household owner can update these settings');
         }
 
-        const updatedHousehold = await householdRepository.updateSettings(householdId, settings);
+        const updatedHousehold = await householdRepository.updateSettings(
+          householdId,
+          settings
+        );
 
         logger.info('Household settings updated', {
           householdId,
@@ -141,26 +163,35 @@ export class HouseholdService {
         }
 
         // Check if invitee already exists
-        const existingUser = await userRepository.findByEmail(inviteData.inviteeEmail);
+        const existingUser = await userRepository.findByEmail(
+          inviteData.inviteeEmail
+        );
         if (existingUser) {
           throw new Error('User with this email already exists');
         }
 
         // Get household to check member limits
-        const household = await householdRepository.findWithMembers(inviteData.householdId);
+        const household = await householdRepository.findWithMembers(
+          inviteData.householdId
+        );
         if (!household) {
           throw new Error('Household not found');
         }
 
-        const maxMembers = (household.settings as any)?.maxMembers || 10;
+        const maxMembers =
+          (household.settings as HouseholdSettings)?.maxMembers || 10;
         if (household._count.users >= maxMembers) {
-          throw new Error(`Household has reached maximum member limit of ${maxMembers}`);
+          throw new Error(
+            `Household has reached maximum member limit of ${maxMembers}`
+          );
         }
 
         // In a real implementation, you'd create an invite record
         // For now, we'll just return a mock invite
         const inviteId = `invite_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const expiresAt = inviteData.expiresAt || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+        const expiresAt =
+          inviteData.expiresAt ||
+          new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
         logger.info('Household invite created', {
           inviteId,
@@ -171,7 +202,10 @@ export class HouseholdService {
 
         return { inviteId, expiresAt };
       },
-      { householdId: inviteData.householdId, inviteeEmail: inviteData.inviteeEmail }
+      {
+        householdId: inviteData.householdId,
+        inviteeEmail: inviteData.inviteeEmail,
+      }
     );
   }
 
@@ -202,7 +236,7 @@ export class HouseholdService {
           throw new Error('Household not found');
         }
 
-        const ownerId = (household.settings as any)?.ownerId;
+        const ownerId = (household.settings as HouseholdSettings)?.ownerId;
 
         // Permission checks
         if (memberIdToRemove === removedBy) {
@@ -258,12 +292,18 @@ export class HouseholdService {
           throw new Error('Household not found');
         }
 
-        const ownerId = (household.settings as any)?.ownerId || household.users?.[0]?.id;
+        const ownerId =
+          (household.settings as HouseholdSettings)?.ownerId ||
+          household.users?.[0]?.id;
         if (ownerId !== currentOwnerId) {
           throw new Error('You are not the current owner of this household');
         }
 
-        await householdRepository.transferOwnership(householdId, currentOwnerId, newOwnerId);
+        await householdRepository.transferOwnership(
+          householdId,
+          currentOwnerId,
+          newOwnerId
+        );
 
         logger.info('Household ownership transferred', {
           householdId,
@@ -286,18 +326,21 @@ export class HouseholdService {
           throw new Error('User is not a member of this household');
         }
 
-        const household = await householdRepository.findWithMembers(householdId);
+        const household =
+          await householdRepository.findWithMembers(householdId);
         if (!household) {
           throw new Error('Household not found');
         }
 
-        const ownerId = (household.settings as any)?.ownerId || household.users[0]?.id;
+        const ownerId =
+          (household.settings as HouseholdSettings)?.ownerId ||
+          household.users[0]?.id;
         if (ownerId !== userId) {
           throw new Error('Only the household owner can delete the household');
         }
 
         // Delete in transaction
-        await db.$transaction(async (tx) => {
+        await db.$transaction(async tx => {
           // Delete all sessions for household members
           const userIds = household.users.map(user => user.id);
           await tx.session.deleteMany({
@@ -326,7 +369,10 @@ export class HouseholdService {
   }
 
   // Get household analytics
-  async getHouseholdAnalytics(householdId: string, days: number = 30): Promise<{
+  async getHouseholdAnalytics(
+    householdId: string,
+    days: number = 30
+  ): Promise<{
     memberActivity: {
       memberId: string;
       memberName: string;
@@ -341,15 +387,17 @@ export class HouseholdService {
     return withLogging(
       'getHouseholdAnalytics',
       async () => {
-        const [memberActivity, stats] = await Promise.all([
+        const [memberActivity] = await Promise.all([
           householdRepository.getMemberActivity(householdId, days),
           householdRepository.getHouseholdStats(householdId),
         ]);
 
-        const totalSessions = memberActivity.reduce((sum, member) => sum + member.sessionCount, 0);
-        const avgSessionsPerMember = memberActivity.length > 0 
-          ? totalSessions / memberActivity.length 
-          : 0;
+        const totalSessions = memberActivity.reduce(
+          (sum, member) => sum + member.sessionCount,
+          0
+        );
+        const avgSessionsPerMember =
+          memberActivity.length > 0 ? totalSessions / memberActivity.length : 0;
 
         // Simplified day analysis (would need more complex querying for real implementation)
         const mostActiveDay = null; // Would need session timestamps grouped by day
@@ -375,11 +423,14 @@ export class HouseholdService {
       name: string;
       passwordHash: string;
     }
-  ): Promise<{ household: Household; owner: { id: string; name: string; email: string } }> {
+  ): Promise<{
+    household: Household;
+    owner: { id: string; name: string; email: string };
+  }> {
     return withLogging(
       'createHouseholdWithMember',
       async () => {
-        return db.$transaction(async (tx) => {
+        return db.$transaction(async tx => {
           // Create household
           const household = await tx.household.create({
             data: {

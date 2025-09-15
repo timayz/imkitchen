@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import {
   RegisterData,
   ChangePasswordData,
+  UpdateProfileData,
 } from '@/lib/validators/auth-schemas';
 import { AuthUser, UserProfile } from '@/types/auth';
 import { AuthError } from '@/types/auth';
@@ -147,12 +148,7 @@ export class AuthService {
    */
   static async updateUserProfile(
     userId: string,
-    data: Partial<
-      Pick<
-        RegisterData,
-        'name' | 'dietaryPreferences' | 'allergies' | 'language' | 'timezone'
-      >
-    >
+    data: UpdateProfileData
   ): Promise<AuthUser | null> {
     try {
       const user = await prisma.user.update({

@@ -12,7 +12,7 @@ async function hashPassword(password: string): Promise<string> {
 // Create development households
 async function createHouseholds() {
   console.log('Creating households...');
-  
+
   const households = [
     {
       id: '550e8400-e29b-41d4-a716-446655440001',
@@ -71,9 +71,9 @@ async function createHouseholds() {
 }
 
 // Create development users
-async function createUsers(households: any[]) {
+async function createUsers(households: Array<{ id: string; name: string }>) {
   console.log('Creating users...');
-  
+
   const users = [
     // Johnson Family
     {
@@ -127,7 +127,10 @@ async function createUsers(households: any[]) {
       email: 'alex.smith@example.com',
       name: 'Alex Smith',
       passwordHash: await hashPassword('password123'),
-      dietaryPreferences: [DietaryPreference.VEGAN, DietaryPreference.GLUTEN_FREE],
+      dietaryPreferences: [
+        DietaryPreference.VEGAN,
+        DietaryPreference.GLUTEN_FREE,
+      ],
       allergies: ['soy'],
       householdId: households[2].id,
       language: Language.EN,
@@ -148,9 +151,11 @@ async function createUsers(households: any[]) {
 }
 
 // Create sample sessions
-async function createSessions(users: any[]) {
+async function createSessions(
+  users: { id: string; name: string; email: string }[]
+) {
   console.log('Creating sample sessions...');
-  
+
   const sessions = [
     {
       id: '550e8400-e29b-41d4-a716-446655440401',
@@ -230,23 +235,22 @@ export async function createTestUser(
 // Main seeding function
 async function main() {
   console.log('🌱 Starting database seeding...');
-  
+
   try {
     // Create households first
     const households = await createHouseholds();
-    
+
     // Create users
     const users = await createUsers(households);
-    
+
     // Create sessions
     const sessions = await createSessions(users);
-    
+
     console.log('✅ Database seeding completed successfully!');
     console.log(`Summary:
     - ${households.length} households created
     - ${users.length} users created
     - ${sessions.length} sessions created`);
-    
   } catch (error) {
     console.error('❌ Error seeding database:', error);
     throw error;
@@ -255,7 +259,7 @@ async function main() {
 
 // Run the seeding function
 main()
-  .catch((e) => {
+  .catch(e => {
     console.error(e);
     process.exit(1);
   })

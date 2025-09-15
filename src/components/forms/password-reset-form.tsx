@@ -7,6 +7,7 @@ import {
   passwordResetRequestSchema,
   type PasswordResetRequestData,
 } from '@/lib/validators/auth-schemas';
+import Link from 'next/link';
 
 interface PasswordResetFormProps {
   className?: string;
@@ -66,12 +67,12 @@ export function PasswordResetForm({ className = '' }: PasswordResetFormProps) {
             reset email with instructions.
           </p>
           <div className="mt-4">
-            <a
+            <Link
               href="/login"
               className="text-sm text-green-600 hover:text-green-500 font-medium"
             >
               Return to login
-            </a>
+            </Link>
           </div>
         </div>
       </div>
@@ -116,12 +117,12 @@ export function PasswordResetForm({ className = '' }: PasswordResetFormProps) {
         </button>
 
         <div className="text-center">
-          <a
+          <Link
             href="/login"
             className="text-sm text-gray-600 hover:text-gray-500"
           >
             Back to login
-          </a>
+          </Link>
         </div>
       </form>
     </div>
