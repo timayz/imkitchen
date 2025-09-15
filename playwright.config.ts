@@ -88,7 +88,7 @@ export default defineConfig({
       NEXTAUTH_URL: 'http://localhost:3000',
       NEXT_PUBLIC_APP_URL: 'http://localhost:3000',
       NEXT_PUBLIC_API_URL: 'http://localhost:3000/api',
-      NODE_ENV: process.env.CI ? 'production' : 'development',
+      NODE_ENV: 'development',
       LOG_LEVEL: 'error',
       NEXT_TELEMETRY_DISABLED: '1',
     },

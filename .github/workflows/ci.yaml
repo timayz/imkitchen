@@ -50,7 +50,7 @@ jobs:
           echo "NEXTAUTH_URL=http://localhost:3000" >> $GITHUB_ENV
           echo "NEXT_PUBLIC_APP_URL=http://localhost:3000" >> $GITHUB_ENV
           echo "NEXT_PUBLIC_API_URL=http://localhost:3000/api" >> $GITHUB_ENV
-          echo "NODE_ENV=production" >> $GITHUB_ENV
+          echo "NODE_ENV=development" >> $GITHUB_ENV
           echo "LOG_LEVEL=error" >> $GITHUB_ENV
           echo "NEXT_TELEMETRY_DISABLED=1" >> $GITHUB_ENV
 
@@ -120,7 +120,7 @@ jobs:
         run: npx prisma generate
 
       - name: Build application
-        run: npm run build
+        run: NODE_ENV=production npm run build
 
       - name: Check build artifacts
         run: |
