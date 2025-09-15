@@ -5,6 +5,7 @@
 **Purpose:** Represents individual users with their preferences, dietary restrictions, and household membership
 
 **Key Attributes:**
+
 - id: string (UUID) - Unique user identifier
 - email: string - Primary authentication identifier
 - name: string - Display name for household coordination
@@ -30,7 +31,13 @@ interface User {
   updatedAt: Date;
 }
 
-type DietaryPreference = 'vegetarian' | 'vegan' | 'gluten-free' | 'keto' | 'paleo' | 'dairy-free';
+type DietaryPreference =
+  | 'vegetarian'
+  | 'vegan'
+  | 'gluten-free'
+  | 'keto'
+  | 'paleo'
+  | 'dairy-free';
 type Language = 'en' | 'es' | 'fr' | 'de';
 ```
 
@@ -46,6 +53,7 @@ type Language = 'en' | 'es' | 'fr' | 'de';
 **Purpose:** Shared kitchen space for families/roommates with coordinated meal planning and inventory
 
 **Key Attributes:**
+
 - id: string (UUID) - Unique household identifier
 - name: string - Household display name
 - members: User[] - Array of household members
@@ -81,6 +89,7 @@ interface HouseholdSettings {
 **Purpose:** Individual ingredients and food items tracked in pantry, refrigerator, or freezer
 
 **Key Attributes:**
+
 - id: string (UUID) - Unique item identifier
 - name: string - Ingredient name with i18n support
 - quantity: number - Current quantity available
@@ -110,9 +119,29 @@ interface InventoryItem {
   updatedAt: Date;
 }
 
-type InventoryCategory = 'proteins' | 'vegetables' | 'fruits' | 'grains' | 'dairy' | 'spices' | 'condiments' | 'beverages' | 'baking' | 'frozen';
+type InventoryCategory =
+  | 'proteins'
+  | 'vegetables'
+  | 'fruits'
+  | 'grains'
+  | 'dairy'
+  | 'spices'
+  | 'condiments'
+  | 'beverages'
+  | 'baking'
+  | 'frozen';
 type StorageLocation = 'pantry' | 'refrigerator' | 'freezer';
-type MeasurementUnit = 'grams' | 'kilograms' | 'ounces' | 'pounds' | 'cups' | 'tablespoons' | 'teaspoons' | 'pieces' | 'milliliters' | 'liters';
+type MeasurementUnit =
+  | 'grams'
+  | 'kilograms'
+  | 'ounces'
+  | 'pounds'
+  | 'cups'
+  | 'tablespoons'
+  | 'teaspoons'
+  | 'pieces'
+  | 'milliliters'
+  | 'liters';
 ```
 
 ### Relationships
@@ -127,6 +156,7 @@ type MeasurementUnit = 'grams' | 'kilograms' | 'ounces' | 'pounds' | 'cups' | 't
 **Purpose:** Cooking instructions with ingredients, steps, and metadata for meal planning
 
 **Key Attributes:**
+
 - id: string (UUID) - Unique recipe identifier
 - title: string - Recipe name with i18n support
 - description: string - Brief recipe description
@@ -192,6 +222,7 @@ type RecipeSource = 'user-created' | 'imported' | 'api-external';
 **Purpose:** Weekly or monthly meal scheduling with family coordination
 
 **Key Attributes:**
+
 - id: string (UUID) - Unique meal plan identifier
 - name: string - Meal plan name
 - startDate: Date - Beginning of meal plan period
@@ -241,6 +272,7 @@ type MealStatus = 'planned' | 'in-progress' | 'completed' | 'skipped';
 **Purpose:** Automated and manual shopping lists with store organization and purchase tracking
 
 **Key Attributes:**
+
 - id: string (UUID) - Unique shopping list identifier
 - name: string - Shopping list name
 - items: ShoppingListItem[] - Items to purchase
@@ -277,7 +309,14 @@ interface ShoppingListItem {
 }
 
 type ShoppingListStatus = 'active' | 'completed' | 'archived';
-type StoreCategory = 'produce' | 'dairy' | 'meat' | 'frozen' | 'pantry' | 'bakery' | 'other';
+type StoreCategory =
+  | 'produce'
+  | 'dairy'
+  | 'meat'
+  | 'frozen'
+  | 'pantry'
+  | 'bakery'
+  | 'other';
 ```
 
 ### Relationships

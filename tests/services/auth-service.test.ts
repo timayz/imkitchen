@@ -25,7 +25,8 @@ jest.mock('bcrypt', () => ({
 import { prisma } from '@/lib/db';
 import bcrypt from 'bcrypt';
 
-const mockPrisma = prisma as jest.Mocked<typeof prisma>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockPrisma = prisma as any;
 const mockBcrypt = bcrypt as jest.Mocked<typeof bcrypt>;
 
 describe('AuthService', () => {
@@ -70,7 +71,7 @@ describe('AuthService', () => {
         householdName: 'Test Household',
         dietaryPreferences: [],
         allergies: [],
-        language: 'en' as const,
+        language: 'EN' as const,
         timezone: 'UTC',
       };
 
@@ -84,7 +85,7 @@ describe('AuthService', () => {
         email: 'test@example.com',
         name: 'Test User',
         householdId: 'household-id',
-        language: 'en',
+        language: 'EN',
         timezone: 'UTC',
       };
 
@@ -105,7 +106,7 @@ describe('AuthService', () => {
         email: 'test@example.com',
         name: 'Test User',
         householdId: 'household-id',
-        language: 'en',
+        language: 'EN',
         timezone: 'UTC',
       });
     });
@@ -118,7 +119,7 @@ describe('AuthService', () => {
         householdName: 'Test Household',
         dietaryPreferences: [],
         allergies: [],
-        language: 'en' as const,
+        language: 'EN' as const,
         timezone: 'UTC',
       };
 
@@ -148,7 +149,7 @@ describe('AuthService', () => {
         name: 'Test User',
         passwordHash: 'hashedPassword',
         householdId: 'household-id',
-        language: 'en',
+        language: 'EN',
         timezone: 'UTC',
       };
 
@@ -168,7 +169,7 @@ describe('AuthService', () => {
         email: 'test@example.com',
         name: 'Test User',
         householdId: 'household-id',
-        language: 'en',
+        language: 'EN',
         timezone: 'UTC',
       });
     });

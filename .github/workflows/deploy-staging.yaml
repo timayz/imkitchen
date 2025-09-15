@@ -1,0 +1,114 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+
+jobs:
+  deploy-staging:
+    name: Deploy to Staging Environment
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Build application
+        run: npm run build
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          NEXTAUTH_SECRET: ${{ secrets.STAGING_NEXTAUTH_SECRET }}
+          NEXTAUTH_URL: ${{ secrets.STAGING_NEXTAUTH_URL }}
+
+      - name: Run database migrations
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.CONTAINER_REGISTRY }}
+          username: ${{ secrets.CONTAINER_USERNAME }}
+          password: ${{ secrets.CONTAINER_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.CONTAINER_REGISTRY }}/imkitchen:staging-${{ github.sha }}
+            ${{ secrets.CONTAINER_REGISTRY }}/imkitchen:staging-latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy to staging server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USERNAME }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          script: |
+            # Pull latest image
+            docker pull ${{ secrets.CONTAINER_REGISTRY }}/imkitchen:staging-latest
+
+            # Stop existing container
+            docker stop imkitchen-staging || true
+            docker rm imkitchen-staging || true
+
+            # Start new container
+            docker run -d \
+              --name imkitchen-staging \
+              --restart unless-stopped \
+              -p 3000:3000 \
+              -e DATABASE_URL="${{ secrets.STAGING_DATABASE_URL }}" \
+              -e NEXTAUTH_SECRET="${{ secrets.STAGING_NEXTAUTH_SECRET }}" \
+              -e NEXTAUTH_URL="${{ secrets.STAGING_NEXTAUTH_URL }}" \
+              -e NODE_ENV=production \
+              ${{ secrets.CONTAINER_REGISTRY }}/imkitchen:staging-latest
+              
+            # Health check
+            sleep 30
+            curl -f http://localhost:3000/api/health || exit 1
+
+      - name: Run staging smoke tests
+        run: |
+          # Basic smoke tests to verify deployment
+          curl -f ${{ secrets.STAGING_NEXTAUTH_URL }}/api/health
+          curl -f ${{ secrets.STAGING_NEXTAUTH_URL }}/api/health/detailed
+
+      - name: Notify deployment status
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          channel: '#deployments'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow

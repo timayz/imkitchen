@@ -2,12 +2,12 @@
 
 ## Breakpoints
 
-| Breakpoint | Min Width | Max Width | Target Devices |
-|------------|-----------|-----------|----------------|
-| Mobile | 320px | 767px | Smartphones, kitchen tablets |
-| Tablet | 768px | 1023px | iPad, kitchen displays |
-| Desktop | 1024px | 1439px | Laptops, desktop monitors |
-| Wide | 1440px | - | Large desktop screens |
+| Breakpoint | Min Width | Max Width | Target Devices               |
+| ---------- | --------- | --------- | ---------------------------- |
+| Mobile     | 320px     | 767px     | Smartphones, kitchen tablets |
+| Tablet     | 768px     | 1023px    | iPad, kitchen displays       |
+| Desktop    | 1024px    | 1439px    | Laptops, desktop monitors    |
+| Wide       | 1440px    | -         | Large desktop screens        |
 
 ## Adaptation Patterns
 

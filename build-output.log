@@ -1,0 +1,30 @@
+
+> imkitchen@0.1.0 build
+> next build
+
+   ▲ Next.js 15.5.3
+   - Environments: .env
+   - Experiments (use with caution):
+     · optimizePackageImports
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 2.4s
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/14) ...
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /register. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /register. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata themeColor is configured in metadata export in /register. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ ⚠ Unsupported metadata viewport is configured in metadata export in /register. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+Error occurred prerendering page "/register". Read more: https://nextjs.org/docs/messages/prerender-error
+Error: 
+    at <unknown> (.next/server/chunks/227.js:1:66939)
+    at l (.next/server/chunks/389.js:1:1140) {
+  digest: '2603986323'
+}
+Export encountered an error on /(auth)/register/page: /register, exiting the build.
+ ⨯ Next.js build worker exited with code: 1 and signal: null

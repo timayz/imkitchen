@@ -46,19 +46,19 @@ import { ApiError } from '@/types/api';
 export class ErrorHandler {
   static handle(error: unknown, context?: string) {
     console.error(`Error in ${context}:`, error);
-    
+
     if (error instanceof ApiError) {
       return this.handleApiError(error);
     }
-    
+
     if (error instanceof ValidationError) {
       return this.handleValidationError(error);
     }
-    
+
     if (error instanceof NetworkError) {
       return this.handleNetworkError(error);
     }
-    
+
     // Generic error handling
     toast.error('An unexpected error occurred. Please try again.');
     return {
@@ -67,11 +67,11 @@ export class ErrorHandler {
       type: 'error' as const,
     };
   }
-  
+
   private static handleApiError(error: ApiError) {
     const userMessage = this.getUserFriendlyMessage(error.code);
     toast.error(userMessage);
-    
+
     return {
       title: 'Error',
       message: userMessage,
@@ -79,19 +79,25 @@ export class ErrorHandler {
       code: error.code,
     };
   }
-  
+
   private static getUserFriendlyMessage(errorCode: string): string {
     const messages: Record<string, string> = {
-      'INVENTORY_ITEM_NOT_FOUND': 'The inventory item you\'re looking for doesn\'t exist.',
-      'RECIPE_NOT_FOUND': 'This recipe is no longer available.',
-      'MEAL_PLAN_CONFLICT': 'There\'s a conflict with your meal plan. Please check your scheduled meals.',
-      'VOICE_COMMAND_NOT_RECOGNIZED': 'I didn\'t understand that command. Please try again.',
-      'INSUFFICIENT_INGREDIENTS': 'You don\'t have enough ingredients for this recipe.',
-      'HOUSEHOLD_ACCESS_DENIED': 'You don\'t have permission to access this household\'s data.',
-      'EXPIRED_SESSION': 'Your session has expired. Please log in again.',
-      'RATE_LIMIT_EXCEEDED': 'Too many requests. Please wait a moment and try again.',
+      INVENTORY_ITEM_NOT_FOUND:
+        "The inventory item you're looking for doesn't exist.",
+      RECIPE_NOT_FOUND: 'This recipe is no longer available.',
+      MEAL_PLAN_CONFLICT:
+        "There's a conflict with your meal plan. Please check your scheduled meals.",
+      VOICE_COMMAND_NOT_RECOGNIZED:
+        "I didn't understand that command. Please try again.",
+      INSUFFICIENT_INGREDIENTS:
+        "You don't have enough ingredients for this recipe.",
+      HOUSEHOLD_ACCESS_DENIED:
+        "You don't have permission to access this household's data.",
+      EXPIRED_SESSION: 'Your session has expired. Please log in again.',
+      RATE_LIMIT_EXCEEDED:
+        'Too many requests. Please wait a moment and try again.',
     };
-    
+
     return messages[errorCode] || 'Something went wrong. Please try again.';
   }
 }
@@ -140,47 +146,56 @@ export function withErrorHandler<T>(
   return handler().catch((error: unknown) => {
     const requestId = uuidv4();
     const timestamp = new Date().toISOString();
-    
+
     logger.error('API Error', {
       requestId,
       timestamp,
       error: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
     });
-    
+
     if (error instanceof ServiceError) {
-      return NextResponse.json({
-        error: {
-          code: error.code,
-          message: error.message,
-          details: error.details,
-          timestamp,
-          requestId,
+      return NextResponse.json(
+        {
+          error: {
+            code: error.code,
+            message: error.message,
+            details: error.details,
+            timestamp,
+            requestId,
+          },
         },
-      }, { status: error.statusCode });
+        { status: error.statusCode }
+      );
     }
-    
+
     if (error instanceof ValidationError) {
-      return NextResponse.json({
+      return NextResponse.json(
+        {
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: error.message,
+            details: { field: error.field, value: error.value },
+            timestamp,
+            requestId,
+          },
+        },
+        { status: 400 }
+      );
+    }
+
+    // Generic error response
+    return NextResponse.json(
+      {
         error: {
-          code: 'VALIDATION_ERROR',
-          message: error.message,
-          details: { field: error.field, value: error.value },
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'An internal server error occurred',
           timestamp,
           requestId,
         },
-      }, { status: 400 });
-    }
-    
-    // Generic error response
-    return NextResponse.json({
-      error: {
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'An internal server error occurred',
-        timestamp,
-        requestId,
       },
-    }, { status: 500 });
+      { status: 500 }
+    );
   });
 }
 
@@ -189,11 +204,11 @@ export async function POST(request: NextRequest) {
   return withErrorHandler(async () => {
     // Your API logic here
     const data = await request.json();
-    
+
     if (!data.name) {
       throw new ValidationError('Name is required', 'name', data.name);
     }
-    
+
     const result = await SomeService.create(data);
     return NextResponse.json(result);
   });

@@ -1,272 +1,117 @@
-import { env } from './config';
+import winston from 'winston';
+import { env, isDevelopment, isProduction } from '@/lib/config';
 
-// Log levels
-export enum LogLevel {
-  DEBUG = 'debug',
-  INFO = 'info',
-  WARN = 'warn',
-  ERROR = 'error',
-}
+// Custom log levels for imkitchen application
+const customLevels = {
+  levels: {
+    error: 0,
+    warn: 1,
+    info: 2,
+    http: 3,
+    debug: 4,
+  },
+  colors: {
+    error: 'red',
+    warn: 'yellow',
+    info: 'green',
+    http: 'magenta',
+    debug: 'white',
+  },
+};
 
-// Log context interface
-export interface LogContext {
-  userId?: string;
-  householdId?: string;
-  operation?: string;
-  duration?: number;
-  error?: string;
-  stack?: string | undefined;
-  path?: string | undefined;
-  method?: string;
-  statusCode?: number;
-  [key: string]: unknown;
-}
+// Custom format for structured logging
+const logFormat = winston.format.combine(
+  winston.format.timestamp({
+    format: 'YYYY-MM-DD HH:mm:ss',
+  }),
+  winston.format.errors({ stack: true }),
+  winston.format.json(),
+  winston.format.printf(info => {
+    const { timestamp, level, message, ...meta } = info;
 
-// Logger class for structured logging
-class Logger {
-  private level: LogLevel;
-  private isDevelopment: boolean;
-
-  constructor() {
-    this.level = this.parseLogLevel(env.LOG_LEVEL);
-    this.isDevelopment = env.NODE_ENV === 'development';
-  }
-
-  // Parse log level from string
-  private parseLogLevel(level: string): LogLevel {
-    switch (level.toLowerCase()) {
-      case 'debug':
-        return LogLevel.DEBUG;
-      case 'info':
-        return LogLevel.INFO;
-      case 'warn':
-        return LogLevel.WARN;
-      case 'error':
-        return LogLevel.ERROR;
-      default:
-        return LogLevel.INFO;
-    }
-  }
-
-  // Check if level should be logged
-  private shouldLog(level: LogLevel): boolean {
-    const levels = [
-      LogLevel.DEBUG,
-      LogLevel.INFO,
-      LogLevel.WARN,
-      LogLevel.ERROR,
-    ];
-
-    const currentLevelIndex = levels.indexOf(this.level);
-    const targetLevelIndex = levels.indexOf(level);
-    return targetLevelIndex >= currentLevelIndex;
-  }
-
-  // Format log entry
-  private formatLog(level: LogLevel, message: string, context?: LogContext) {
-    const timestamp = new Date().toISOString();
-    const logEntry = {
+    return JSON.stringify({
       timestamp,
       level,
       message,
-      ...context,
       environment: env.NODE_ENV,
-    };
-
-    if (this.isDevelopment) {
-      // Pretty print for development
-      console.log(`[${timestamp}] ${level.toUpperCase()}: ${message}`);
-      if (context && Object.keys(context).length > 0) {
-        console.log('Context:', context);
-      }
-    } else {
-      // Structured JSON for production
-      console.log(JSON.stringify(logEntry));
-    }
-
-    return logEntry;
-  }
-
-  // Debug logging
-  debug(message: string, context?: LogContext): void {
-    if (this.shouldLog(LogLevel.DEBUG)) {
-      this.formatLog(LogLevel.DEBUG, message, context);
-    }
-  }
-
-  // Info logging
-  info(message: string, context?: LogContext): void {
-    if (this.shouldLog(LogLevel.INFO)) {
-      this.formatLog(LogLevel.INFO, message, context);
-    }
-  }
-
-  // Warning logging
-  warn(message: string, context?: LogContext): void {
-    if (this.shouldLog(LogLevel.WARN)) {
-      this.formatLog(LogLevel.WARN, message, context);
-    }
-  }
-
-  // Error logging
-  error(message: string, context?: LogContext): void {
-    if (this.shouldLog(LogLevel.ERROR)) {
-      this.formatLog(LogLevel.ERROR, message, context);
-    }
-  }
-
-  // Database operation logging
-  dbOperation(
-    operation: string,
-    model: string,
-    duration?: number,
-    context?: Omit<LogContext, 'operation' | 'duration'>
-  ) {
-    this.info(`Database operation: ${operation} on ${model}`, {
-      operation,
-      model,
-      ...(duration !== undefined && { duration }),
-      ...context,
+      service: 'imkitchen',
+      ...meta,
     });
-  }
+  })
+);
 
-  // Database error logging
-  dbError(
-    operation: string,
-    model: string,
-    error: string,
-    context?: LogContext
-  ) {
-    this.error(`Database error: ${operation} on ${model}`, {
-      operation,
-      model,
-      error,
-      ...context,
-    });
-  }
+// Console format for development
+const consoleFormat = winston.format.combine(
+  winston.format.colorize({ all: true }),
+  winston.format.timestamp({
+    format: 'HH:mm:ss',
+  }),
+  winston.format.errors({ stack: true }),
+  winston.format.printf(info => {
+    const { timestamp, level, message, ...meta } = info;
+    const metaStr =
+      Object.keys(meta).length > 0 ? `\n${JSON.stringify(meta, null, 2)}` : '';
+    return `${timestamp} [${level}]: ${message}${metaStr}`;
+  })
+);
 
-  // API request logging
-  apiRequest(
-    method: string,
-    path: string,
-    statusCode: number,
-    duration: number,
-    context?: LogContext
-  ) {
-    const level = statusCode >= 400 ? LogLevel.WARN : LogLevel.INFO;
-    const message = `${method} ${path} - ${statusCode} (${duration}ms)`;
+// Configure transports based on environment
+const transports: winston.transport[] = [];
 
-    if (level === LogLevel.WARN) {
-      this.warn(message, { method, path, statusCode, duration, ...context });
-    } else {
-      this.info(message, { method, path, statusCode, duration, ...context });
-    }
-  }
+// Always add console transport
+transports.push(
+  new winston.transports.Console({
+    level: isDevelopment ? 'debug' : 'info',
+    format: isDevelopment ? consoleFormat : logFormat,
+  })
+);
 
-  // Authentication logging
-  authEvent(
-    event: string,
-    userId?: string,
-    success: boolean = true,
-    context?: Omit<LogContext, 'userId' | 'event'>
-  ) {
-    const level = success ? LogLevel.INFO : LogLevel.WARN;
-    const message = `Auth ${event}: ${success ? 'success' : 'failed'}`;
+// Add file transports for production
+if (isProduction) {
+  // Error log file
+  transports.push(
+    new winston.transports.File({
+      filename: 'logs/error.log',
+      level: 'error',
+      format: logFormat,
+      maxsize: 5242880, // 5MB
+      maxFiles: 5,
+    })
+  );
 
-    const logContext = {
-      event,
-      success,
-      ...(userId !== undefined && { userId }),
-      ...context,
-    };
-
-    if (level === LogLevel.WARN) {
-      this.warn(message, logContext);
-    } else {
-      this.info(message, logContext);
-    }
-  }
-
-  // Performance monitoring
-  performance(
-    operation: string,
-    duration: number,
-    threshold: number = 1000,
-    context?: LogContext
-  ) {
-    const level = duration > threshold ? LogLevel.WARN : LogLevel.DEBUG;
-    const message = `Performance: ${operation} took ${duration}ms`;
-
-    if (level === LogLevel.WARN) {
-      this.warn(message, { operation, duration, threshold, ...context });
-    } else {
-      this.debug(message, { operation, duration, threshold, ...context });
-    }
-  }
-
-  // Security event logging
-  security(
-    event: string,
-    severity: 'low' | 'medium' | 'high' | 'critical',
-    context?: LogContext
-  ) {
-    const level =
-      severity === 'critical' || severity === 'high'
-        ? LogLevel.ERROR
-        : LogLevel.WARN;
-
-    const message = `Security ${severity}: ${event}`;
-
-    if (level === LogLevel.ERROR) {
-      this.error(message, { event, severity, ...context });
-    } else {
-      this.warn(message, { event, severity, ...context });
-    }
-  }
+  // Combined log file
+  transports.push(
+    new winston.transports.File({
+      filename: 'logs/combined.log',
+      format: logFormat,
+      maxsize: 5242880, // 5MB
+      maxFiles: 5,
+    })
+  );
 }
 
-// Create singleton logger instance
-export const logger = new Logger();
+// Create the logger instance
+export const logger = winston.createLogger({
+  levels: customLevels.levels,
+  level: env.LOG_LEVEL || 'info',
+  format: logFormat,
+  transports,
+  exitOnError: false,
+});
 
-// Utility function to measure execution time
-export async function withLogging<T>(
-  operation: string,
-  fn: () => Promise<T>,
-  context?: LogContext
-): Promise<T> {
-  const startTime = Date.now();
+// Add colors to winston
+winston.addColors(customLevels.colors);
 
-  try {
-    logger.debug(`Starting ${operation}`, context);
-    const result = await fn();
-    const duration = Date.now() - startTime;
+// Specialized logging functions for different categories
 
-    logger.debug(`Completed ${operation}`, { ...context, duration });
-    logger.performance(operation, duration);
-
-    return result;
-  } catch (error) {
-    const duration = Date.now() - startTime;
-    const errorMessage =
-      error instanceof Error ? error.message : 'Unknown error';
-
-    logger.error(`Failed ${operation}`, {
-      ...context,
-      duration,
-      error: errorMessage,
-      stack: error instanceof Error ? error.stack : undefined,
-    });
-
-    throw error;
-  }
-}
-
-// Database operation logger with automatic timing
+/**
+ * Log database operations with automatic timing
+ */
 export async function logDatabaseOperation<T>(
   operation: string,
   model: string,
-  fn: () => Promise<T>,
-  context?: LogContext
+  fn: () => Promise<T> | T,
+  metadata?: Record<string, unknown>
 ): Promise<T> {
   const startTime = Date.now();
 
@@ -274,60 +119,178 @@ export async function logDatabaseOperation<T>(
     const result = await fn();
     const duration = Date.now() - startTime;
 
-    logger.dbOperation(operation, model, duration, context);
-
-    // Log slow queries
-    if (duration > 1000) {
-      logger.performance(
-        `Slow database query: ${operation} on ${model}`,
-        duration
-      );
-    }
+    logger.info('Database operation', {
+      category: 'database',
+      operation,
+      model,
+      duration,
+      success: true,
+      ...metadata,
+    });
 
     return result;
   } catch (error) {
     const duration = Date.now() - startTime;
-    const errorMessage =
-      error instanceof Error ? error.message : 'Unknown error';
 
-    logger.dbError(operation, model, errorMessage, { ...context, duration });
+    logger.error('Database operation failed', {
+      category: 'database',
+      operation,
+      model,
+      duration,
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      ...metadata,
+    });
+
     throw error;
   }
 }
 
-// Express/Next.js request logger middleware
-export function createRequestLogger() {
-  return (
-    req: { method?: string; url?: string },
-    res: { end?: (...args: unknown[]) => void; statusCode?: number },
-    next: unknown
-  ) => {
-    const startTime = Date.now();
-    const { method, url } = req;
-
-    // Log request start
-    logger.debug(`${method} ${url} - Request started`);
-
-    // Override res.end to log completion
-    const originalEnd = res.end;
-    if (originalEnd) {
-      res.end = function (...args: unknown[]) {
-        const duration = Date.now() - startTime;
-        logger.apiRequest(
-          method || 'UNKNOWN',
-          url || '/',
-          res.statusCode || 500,
-          duration
-        );
-
-        originalEnd.apply(this, args);
-      };
-    }
-    if (typeof next === 'function') {
-      (next as () => void)();
-    }
-  };
+/**
+ * Log API requests
+ */
+export function logApiRequest(
+  method: string,
+  path: string,
+  statusCode: number,
+  duration: number,
+  userId?: string,
+  metadata?: Record<string, unknown>
+) {
+  logger.http('API request', {
+    category: 'api',
+    method,
+    path,
+    statusCode,
+    duration,
+    userId,
+    ...metadata,
+  });
 }
 
-// Export logger for direct use
+/**
+ * Log authentication events
+ */
+export function logAuthEvent(
+  event: 'login' | 'logout' | 'register' | 'password_reset' | 'failed_login',
+  userId?: string,
+  metadata?: Record<string, unknown>
+) {
+  logger.info('Authentication event', {
+    category: 'auth',
+    event,
+    userId,
+    ...metadata,
+  });
+}
+
+/**
+ * Log performance metrics
+ */
+export function logPerformance(
+  operation: string,
+  duration: number,
+  metadata?: Record<string, unknown>
+) {
+  logger.info('Performance metric', {
+    category: 'performance',
+    operation,
+    duration,
+    ...metadata,
+  });
+}
+
+/**
+ * Log security events
+ */
+export function logSecurityEvent(
+  event: 'rate_limit_exceeded' | 'invalid_token' | 'suspicious_activity',
+  severity: 'low' | 'medium' | 'high' = 'medium',
+  metadata?: Record<string, unknown>
+) {
+  logger.warn('Security event', {
+    category: 'security',
+    event,
+    severity,
+    ...metadata,
+  });
+}
+
+/**
+ * Log external service interactions
+ */
+export function logExternalService(
+  service: string,
+  operation: string,
+  success: boolean,
+  duration?: number,
+  metadata?: Record<string, unknown>
+) {
+  logger.info('External service call', {
+    category: 'external',
+    service,
+    operation,
+    success,
+    duration,
+    ...metadata,
+  });
+}
+
+/**
+ * Wrapper for logging function execution with automatic timing
+ */
+export async function withLogging<T>(
+  operation: string,
+  fn: () => Promise<T> | T,
+  metadata?: Record<string, unknown>
+): Promise<T> {
+  const startTime = Date.now();
+
+  try {
+    const result = await fn();
+    const duration = Date.now() - startTime;
+
+    logger.info('Operation completed', {
+      operation,
+      duration,
+      success: true,
+      ...metadata,
+    });
+
+    return result;
+  } catch (error) {
+    const duration = Date.now() - startTime;
+
+    logger.error('Operation failed', {
+      operation,
+      duration,
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      ...metadata,
+    });
+
+    throw error;
+  }
+}
+
+/**
+ * Create a child logger with additional context
+ */
+export function createChildLogger(context: Record<string, unknown>) {
+  return logger.child(context);
+}
+
+/**
+ * Flush all log transports (useful for serverless)
+ */
+export function flushLogs(): Promise<void> {
+  return new Promise(resolve => {
+    logger.on('finish', resolve);
+    logger.end();
+  });
+}
+
+// Export the main logger as default
 export default logger;

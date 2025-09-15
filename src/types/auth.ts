@@ -185,7 +185,9 @@ export interface AuthUtils {
 
 // Database types with relationships
 export type UserWithHousehold = User & {
-  household: Household;
+  household: Household & {
+    settings: Record<string, unknown>;
+  };
 };
 
 export type UserWithSessions = User & {

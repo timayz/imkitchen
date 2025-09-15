@@ -2,159 +2,231 @@
  * @jest-environment node
  */
 
-// Mock dependencies before importing
-jest.mock('@/lib/services/auth-service');
-jest.mock('@/lib/middleware/rate-limiter', () => ({
-  registrationRateLimiter: jest.fn(),
-}));
-jest.mock('@/lib/db', () => ({
-  prisma: {
-    user: {
-      findUnique: jest.fn(),
-      create: jest.fn(),
-    },
-    household: {
-      create: jest.fn(),
-    },
-    $transaction: jest.fn(),
-  },
-}));
-
-// Mock bcrypt
-jest.mock('bcrypt', () => ({
-  hash: jest.fn().mockResolvedValue('mocked-hash'),
-  compare: jest.fn().mockResolvedValue(true),
-}));
-
+import { NextRequest, NextResponse } from 'next/server';
 import { POST } from '@/app/api/auth/register/route';
 import { AuthService } from '@/lib/services/auth-service';
 import { registrationRateLimiter } from '@/lib/middleware/rate-limiter';
+import { Language } from '@prisma/client';
+
+// Mock dependencies
+jest.mock('@/lib/services/auth-service');
+jest.mock('@/lib/middleware/rate-limiter');
 
 const mockAuthService = AuthService as jest.Mocked<typeof AuthService>;
 const mockRateLimiter = registrationRateLimiter as jest.MockedFunction<
   typeof registrationRateLimiter
 >;
 
-// Helper function to create a mock request
-function createMockRequest(body: unknown) {
-  return {
-    json: () => Promise.resolve(body),
-    headers: new Headers({
-      'Content-Type': 'application/json',
-    }),
-    method: 'POST',
-    url: 'http://localhost:3000/api/auth/register',
-  } as {
-    json: () => Promise<unknown>;
-    headers: Headers;
-    method: string;
-    url: string;
-  };
-}
-
 describe('/api/auth/register', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockRateLimiter.mockResolvedValue(null); // Allow requests by default
+    mockRateLimiter.mockResolvedValue(null); // No rate limiting by default
   });
 
-  it('should register a new user successfully', async () => {
-    const registrationData = {
-      email: 'test@example.com',
-      name: 'Test User',
-      password: 'Password123',
-      householdName: 'Test Household',
-      dietaryPreferences: [],
-      allergies: [],
-      language: 'EN',
-      timezone: 'UTC',
-    };
+  describe('POST /api/auth/register', () => {
+    it('successfully registers a new user with valid data', async () => {
+      const userData = {
+        email: 'test@example.com',
+        password: 'SecurePassword123',
+        name: 'Test User',
+        householdName: 'Test Household',
+        language: 'EN',
+        timezone: 'America/New_York',
+        dietaryPreferences: ['VEGETARIAN'],
+        allergies: ['nuts'],
+      };
 
-    const mockUser = {
-      id: 'user-id',
-      email: 'test@example.com',
-      name: 'Test User',
-      householdId: 'household-id',
-      language: 'EN',
-      timezone: 'UTC',
-    };
+      const mockUser = {
+        id: 'user-123',
+        email: userData.email,
+        name: userData.name,
+        householdId: 'household-456',
+        language: userData.language as Language,
+        timezone: userData.timezone,
+      };
 
-    mockAuthService.registerUser.mockResolvedValue(mockUser);
+      mockAuthService.registerUser.mockResolvedValue(
+        mockUser as typeof mockUser
+      );
 
-    const request = createMockRequest(registrationData);
-    const response = await POST(request);
-    const data = await response.json();
+      const request = new NextRequest(
+        'http://localhost:3000/api/auth/register',
+        {
+          method: 'POST',
+          body: JSON.stringify(userData),
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
 
-    expect(response.status).toBe(201);
-    expect(data.success).toBe(true);
-    expect(data.user).toEqual(mockUser);
-    expect(mockAuthService.registerUser).toHaveBeenCalledWith(registrationData);
-  });
+      const response = await POST(request);
+      const data = await response.json();
 
-  it('should return validation error for invalid data', async () => {
-    const invalidData = {
-      email: 'invalid-email',
-      name: '',
-      password: '123', // Too short
-      householdName: '',
-    };
+      expect(response.status).toBe(201);
+      expect(data).toEqual({
+        success: true,
+        user: mockUser,
+        message: 'Registration successful',
+      });
+      expect(mockAuthService.registerUser).toHaveBeenCalledWith(userData);
+    });
 
-    const request = createMockRequest(invalidData);
-    const response = await POST(request);
-    const data = await response.json();
+    it('returns validation error for invalid email', async () => {
+      const invalidData = {
+        email: 'invalid-email',
+        password: 'SecurePassword123',
+        name: 'Test User',
+        householdName: 'Test Household',
+        language: 'EN',
+        timezone: 'America/New_York',
+      };
 
-    expect(response.status).toBe(400);
-    expect(data.success).toBe(false);
-    expect(data.error).toBe('Validation failed');
-    expect(data.details).toBeDefined();
-    expect(Array.isArray(data.details)).toBe(true);
-  });
+      const request = new NextRequest(
+        'http://localhost:3000/api/auth/register',
+        {
+          method: 'POST',
+          body: JSON.stringify(invalidData),
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
 
-  it('should return error when email already exists', async () => {
-    const registrationData = {
-      email: 'existing@example.com',
-      name: 'Test User',
-      password: 'Password123',
-      householdName: 'Test Household',
-    };
+      const response = await POST(request);
+      const data = await response.json();
 
-    mockAuthService.registerUser.mockRejectedValue(
-      new Error('EMAIL_ALREADY_EXISTS')
-    );
+      expect(response.status).toBe(400);
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('Validation failed');
+      expect(data.details).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            field: 'email',
+            message: 'Please enter a valid email address',
+          }),
+        ])
+      );
+    });
 
-    const request = createMockRequest(registrationData);
-    const response = await POST(request);
-    const data = await response.json();
+    it('returns error when email already exists', async () => {
+      const userData = {
+        email: 'existing@example.com',
+        password: 'SecurePassword123',
+        name: 'Test User',
+        householdName: 'Test Household',
+        language: 'EN',
+        timezone: 'America/New_York',
+      };
 
-    expect(response.status).toBe(409);
-    expect(data.success).toBe(false);
-    expect(data.error).toBe('Email already exists');
-  });
+      mockAuthService.registerUser.mockRejectedValue(
+        new Error('EMAIL_ALREADY_EXISTS')
+      );
 
-  it('should respect rate limiting', async () => {
-    const rateLimitResponse = new Response(
-      JSON.stringify({
-        success: false,
-        error: 'Rate limit exceeded',
-        message: 'Too many attempts. Please try again later.',
-      }),
-      { status: 429 }
-    );
+      const request = new NextRequest(
+        'http://localhost:3000/api/auth/register',
+        {
+          method: 'POST',
+          body: JSON.stringify(userData),
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
 
-    mockRateLimiter.mockResolvedValue(rateLimitResponse);
+      const response = await POST(request);
+      const data = await response.json();
 
-    const registrationData = {
-      email: 'test@example.com',
-      name: 'Test User',
-      password: 'Password123',
-      householdName: 'Test Household',
-    };
+      expect(response.status).toBe(409);
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('Email already exists');
+    });
 
-    const request = createMockRequest(registrationData);
-    const response = await POST(request);
+    it('returns error when password requirements not met', async () => {
+      const userData = {
+        email: 'test@example.com',
+        password: 'weak',
+        name: 'Test User',
+        householdName: 'Test Household',
+        language: 'EN',
+        timezone: 'America/New_York',
+      };
 
-    expect(response.status).toBe(429);
-    expect(mockRateLimiter).toHaveBeenCalledWith(request);
-    expect(mockAuthService.registerUser).not.toHaveBeenCalled();
+      mockAuthService.registerUser.mockRejectedValue(
+        new Error('PASSWORD_REQUIREMENTS_NOT_MET')
+      );
+
+      const request = new NextRequest(
+        'http://localhost:3000/api/auth/register',
+        {
+          method: 'POST',
+          body: JSON.stringify(userData),
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('Validation failed');
+    });
+
+    it('applies rate limiting when threshold exceeded', async () => {
+      const rateLimitResponse = new NextResponse(
+        JSON.stringify({ error: 'Too many requests' }),
+        { status: 429 }
+      );
+      mockRateLimiter.mockResolvedValue(rateLimitResponse);
+
+      const userData = {
+        email: 'test@example.com',
+        password: 'SecurePassword123',
+        name: 'Test User',
+        householdName: 'Test Household',
+        language: 'EN',
+        timezone: 'America/New_York',
+      };
+
+      const request = new NextRequest(
+        'http://localhost:3000/api/auth/register',
+        {
+          method: 'POST',
+          body: JSON.stringify(userData),
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+
+      const response = await POST(request);
+
+      expect(response.status).toBe(429);
+      expect(mockAuthService.registerUser).not.toHaveBeenCalled();
+    });
+
+    it('handles unexpected errors gracefully', async () => {
+      const userData = {
+        email: 'test@example.com',
+        password: 'SecurePassword123',
+        name: 'Test User',
+        householdName: 'Test Household',
+        language: 'EN',
+        timezone: 'America/New_York',
+      };
+
+      mockAuthService.registerUser.mockRejectedValue(
+        new Error('Unexpected database error')
+      );
+
+      const request = new NextRequest(
+        'http://localhost:3000/api/auth/register',
+        {
+          method: 'POST',
+          body: JSON.stringify(userData),
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(500);
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('Registration failed');
+    });
   });
 });

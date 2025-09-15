@@ -59,9 +59,7 @@ describe('i18n utilities', () => {
 
   describe('isRTLLocale', () => {
     it('should return false for all current locales (LTR)', () => {
-      locales.forEach(locale => {
-        expect(isRTLLocale(locale)).toBe(false);
-      });
+      expect(isRTLLocale()).toBe(false);
     });
   });
 

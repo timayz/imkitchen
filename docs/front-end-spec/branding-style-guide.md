@@ -6,15 +6,15 @@
 
 ## Color Palette
 
-| Color Type | Hex Code | Usage |
-|------------|----------|-------|
-| Primary | #FF6B35 | Primary actions, recipe highlights, brand elements |
-| Secondary | #2ECC71 | Fresh ingredient indicators, success states |
-| Accent | #F39C12 | Expiration warnings, attention elements |
-| Success | #27AE60 | Completed tasks, positive feedback |
-| Warning | #F1C40F | Expiration alerts, caution states |
-| Error | #E74C3C | Error states, urgent alerts |
-| Neutral | #34495E, #7F8C8D, #BDC3C7, #ECF0F1 | Text, borders, backgrounds |
+| Color Type | Hex Code                           | Usage                                              |
+| ---------- | ---------------------------------- | -------------------------------------------------- |
+| Primary    | #FF6B35                            | Primary actions, recipe highlights, brand elements |
+| Secondary  | #2ECC71                            | Fresh ingredient indicators, success states        |
+| Accent     | #F39C12                            | Expiration warnings, attention elements            |
+| Success    | #27AE60                            | Completed tasks, positive feedback                 |
+| Warning    | #F1C40F                            | Expiration alerts, caution states                  |
+| Error      | #E74C3C                            | Error states, urgent alerts                        |
+| Neutral    | #34495E, #7F8C8D, #BDC3C7, #ECF0F1 | Text, borders, backgrounds                         |
 
 ## Typography
 
@@ -27,12 +27,12 @@
 ### Type Scale
 
 | Element | Size | Weight | Line Height |
-|---------|------|---------|-------------|
-| H1 | 32px | 700 | 1.2 |
-| H2 | 24px | 600 | 1.3 |
-| H3 | 20px | 600 | 1.4 |
-| Body | 16px | 400 | 1.5 |
-| Small | 14px | 400 | 1.4 |
+| ------- | ---- | ------ | ----------- |
+| H1      | 32px | 700    | 1.2         |
+| H2      | 24px | 600    | 1.3         |
+| H3      | 20px | 600    | 1.4         |
+| Body    | 16px | 400    | 1.5         |
+| Small   | 14px | 400    | 1.4         |
 
 ## Iconography
 

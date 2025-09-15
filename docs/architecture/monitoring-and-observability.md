@@ -10,6 +10,7 @@
 ## Key Metrics
 
 **Frontend Metrics:**
+
 - Core Web Vitals (LCP, FID, CLS)
 - JavaScript errors and crash rates
 - API response times from user perspective
@@ -17,6 +18,7 @@
 - Cooking mode session completion rates
 
 **Backend Metrics:**
+
 - Request rate and error rate per endpoint
 - Database query performance and slow query detection
 - External API integration response times and failure rates
@@ -24,6 +26,7 @@
 - User engagement metrics (recipes cooked, meal plans created)
 
 **Kitchen-Specific Performance Metrics:**
+
 - **Cooking Mode Performance:**
   - Step navigation response time (<100ms target)
   - Timer accuracy and synchronization across devices
@@ -43,6 +46,7 @@
   - Conflict resolution success rates for shared meal plans
 
 **Performance Alerting Thresholds:**
+
 - Voice command response time >500ms (kitchen usability impact)
 - Recipe search results >2 seconds (user experience degradation)
 - Shopping list generation >5 seconds (workflow interruption)

@@ -37,7 +37,7 @@ export const registerSchema = z.object({
     .array(z.string().max(50, 'Allergy name must be less than 50 characters'))
     .optional()
     .default([]),
-  language: z.nativeEnum(Language).optional().default(Language.en),
+  language: z.nativeEnum(Language).optional().default(Language.EN),
   timezone: z
     .string()
     .max(50, 'Timezone must be less than 50 characters')

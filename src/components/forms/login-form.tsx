@@ -7,6 +7,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, type LoginData } from '@/lib/validators/auth-schemas';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
+import { useLocale } from 'next-intl';
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -18,6 +20,8 @@ export function LoginForm({ onSuccess, className = '' }: LoginFormProps) {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
+  const t = useTranslations('login');
+  const locale = useLocale();
 
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
   const message = searchParams.get('message');
@@ -77,7 +81,7 @@ export function LoginForm({ onSuccess, className = '' }: LoginFormProps) {
               htmlFor="email"
               className="block text-sm font-medium text-gray-700"
             >
-              Email Address
+              {t('email')}
             </label>
             <input
               {...register('email')}
@@ -99,7 +103,7 @@ export function LoginForm({ onSuccess, className = '' }: LoginFormProps) {
               htmlFor="password"
               className="block text-sm font-medium text-gray-700"
             >
-              Password
+              {t('password')}
             </label>
             <input
               {...register('password')}
@@ -128,24 +132,24 @@ export function LoginForm({ onSuccess, className = '' }: LoginFormProps) {
           disabled={isLoading}
           className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isLoading ? 'Signing In...' : 'Sign In'}
+          {isLoading ? 'Signing In...' : t('submit')}
         </button>
 
         <div className="text-center">
           <Link
-            href="/register"
+            href={`/${locale}/register`}
             className="text-sm text-orange-600 hover:text-orange-500"
           >
-            Don&apos;t have an account? Create one
+            {t('noAccount')} {t('signUp')}
           </Link>
         </div>
 
         <div className="text-center">
           <Link
-            href="/reset-password"
+            href={`/${locale}/reset-password`}
             className="text-sm text-gray-600 hover:text-gray-500"
           >
-            Forgot your password?
+            {t('forgotPassword')}
           </Link>
         </div>
       </form>

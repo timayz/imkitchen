@@ -55,7 +55,15 @@ jest.mock('@/components/layout/user-dropdown', () => ({
 }));
 
 describe('Navigation', () => {
-  const mockT = jest.fn((key: string) => key);
+  const mockT = Object.assign(
+    jest.fn((key: string) => key),
+    {
+      rich: jest.fn((key: string) => key),
+      markup: jest.fn((key: string) => key),
+      raw: jest.fn((key: string) => key),
+      has: jest.fn(() => true),
+    }
+  );
 
   beforeEach(() => {
     mockUseSession.mockReturnValue({
@@ -64,7 +72,10 @@ describe('Navigation', () => {
       update: jest.fn(),
     });
     mockUsePathname.mockReturnValue('/en/dashboard');
-    mockUseTranslations.mockReturnValue(mockT);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockUseTranslations.mockReturnValue(mockT as any);
+    // Reset navigation mock state
+    mockNavigation.isMenuOpen = false;
     jest.clearAllMocks();
   });
 
@@ -101,7 +112,14 @@ describe('Navigation', () => {
   it('renders user dropdown when authenticated', () => {
     mockUseSession.mockReturnValue({
       data: {
-        user: { id: '1', name: 'Test User', email: 'test@example.com' },
+        user: {
+          id: '1',
+          name: 'Test User',
+          email: 'test@example.com',
+          householdId: 'household-1',
+          language: 'EN',
+          timezone: 'UTC',
+        },
         expires: '2024-01-01',
       },
       status: 'authenticated',

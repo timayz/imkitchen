@@ -99,14 +99,14 @@ graph TD
     I --> J[Prompt for feedback and photos]
     J --> K[Update inventory quantities]
     K --> L[Success: Meal completed]
-    
+
     E --> M[Voice: "Set timer for X minutes"]
     M --> N[Timer running with alerts]
     N --> F
-    
+
     F --> O[Voice: "Repeat step"]
     O --> H
-    
+
     F --> P[Voice: "Pause cooking"]
     P --> Q[Save progress and pause all timers]
     Q --> R[Resume when ready]

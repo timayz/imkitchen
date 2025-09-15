@@ -9,6 +9,7 @@
 **Purpose:** Central hub providing overview of kitchen status and quick access to primary functions
 
 **Key Elements:**
+
 - Upcoming meals card with today's planned dishes
 - Expiring ingredients alert with count and quick action
 - Suggested recipes based on available inventory
@@ -24,6 +25,7 @@
 **Purpose:** Comprehensive view and management of pantry and refrigerator contents
 
 **Key Elements:**
+
 - Tabbed interface (Pantry, Fridge, Freezer)
 - Category-based organization with collapsible sections
 - Search bar with voice input option
@@ -39,6 +41,7 @@
 **Purpose:** Step-by-step recipe guidance optimized for kitchen use
 
 **Key Elements:**
+
 - Large, readable step text with high contrast
 - Timer management panel with multiple simultaneous timers
 - Progress indicator showing completion status
@@ -54,6 +57,7 @@
 **Purpose:** Weekly meal organization with drag-and-drop recipe assignment
 
 **Key Elements:**
+
 - 7-day calendar grid with breakfast/lunch/dinner slots
 - Recipe search sidebar with filter options
 - Drag-and-drop recipe assignment

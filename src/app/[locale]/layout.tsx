@@ -29,20 +29,14 @@ export default async function LocaleLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale}>
-      <body>
-        <NextIntlClientProvider messages={messages}>
-          <SessionProvider>
-            <div className="min-h-screen bg-gray-50 flex flex-col">
-              <Navigation />
-              <main className="flex-1 container mx-auto px-4 py-8">
-                {children}
-              </main>
-              <Footer />
-            </div>
-          </SessionProvider>
-        </NextIntlClientProvider>
-      </body>
-    </html>
+    <NextIntlClientProvider messages={messages}>
+      <SessionProvider>
+        <div className="min-h-screen bg-gray-50 flex flex-col">
+          <Navigation />
+          <main className="flex-1 container mx-auto px-4 py-8">{children}</main>
+          <Footer />
+        </div>
+      </SessionProvider>
+    </NextIntlClientProvider>
   );
 }

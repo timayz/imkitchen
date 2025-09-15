@@ -22,7 +22,7 @@ sequenceDiagram
     RecipeService->>DB: Cache recipe data
     RecipeService-->>UI: Recipes with ingredient match %
     UI-->>User: Display recipes with availability indicators
-    
+
     User->>UI: Select recipe for meal plan
     UI->>MealPlanService: POST /api/meal-plans/entries
     MealPlanService->>DB: Save meal plan entry
@@ -49,12 +49,12 @@ sequenceDiagram
     MealPlanService->>DB: Query meal plan entries
     DB-->>MealPlanService: Return planned meals
     MealPlanService-->>ShoppingService: Required ingredients list
-    
+
     ShoppingService->>InventoryService: Check current inventory
     InventoryService->>DB: Query available quantities
     DB-->>InventoryService: Inventory levels
     InventoryService-->>ShoppingService: Available vs needed
-    
+
     ShoppingService->>DB: Create shopping list
     ShoppingService->>StoreAPI: Get pricing estimates
     StoreAPI-->>ShoppingService: Price data
@@ -84,7 +84,7 @@ sequenceDiagram
     VoiceService-->>UI: Initialize cooking mode
     UI->>VoiceAPI: Speak first instruction
     VoiceAPI-->>User: Audio: "First, preheat oven to 350°F"
-    
+
     User->>VoiceAPI: "Next step"
     VoiceAPI->>UI: Voice command recognized
     UI->>VoiceService: POST /api/voice/cooking/next
@@ -93,7 +93,7 @@ sequenceDiagram
     VoiceService-->>UI: Next instruction
     UI->>VoiceAPI: Speak instruction
     VoiceAPI-->>User: Audio cooking guidance
-    
+
     Note over User,NotificationService: Timer completion
     NotificationService->>WebSocket: Timer alert
     WebSocket->>UI: Show/sound alert

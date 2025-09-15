@@ -56,9 +56,23 @@ const CreateInventoryItemSchema = z.object({
   name: z.string().min(1).max(255),
   quantity: z.number().positive(),
   unit: z.string().min(1).max(50),
-  category: z.enum(['proteins', 'vegetables', 'fruits', 'grains', 'dairy', 'spices', 'condiments', 'beverages', 'baking', 'frozen']),
+  category: z.enum([
+    'proteins',
+    'vegetables',
+    'fruits',
+    'grains',
+    'dairy',
+    'spices',
+    'condiments',
+    'beverages',
+    'baking',
+    'frozen',
+  ]),
   location: z.enum(['pantry', 'refrigerator', 'freezer']),
-  expirationDate: z.string().optional().transform(str => str ? new Date(str) : undefined),
+  expirationDate: z
+    .string()
+    .optional()
+    .transform(str => (str ? new Date(str) : undefined)),
   estimatedCost: z.number().optional(),
 });
 
@@ -90,7 +104,10 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const validatedData = await validateRequest(CreateInventoryItemSchema, body);
+    const validatedData = await validateRequest(
+      CreateInventoryItemSchema,
+      body
+    );
 
     const item = await InventoryService.createItem({
       ...validatedData,
@@ -136,15 +153,15 @@ export class InventoryRepository {
     }
   ) {
     const where: any = { householdId };
-    
+
     if (filters?.location) {
       where.location = filters.location;
     }
-    
+
     if (filters?.category) {
       where.category = filters.category;
     }
-    
+
     if (filters?.expiringSoon) {
       const futureDate = new Date();
       futureDate.setDate(futureDate.getDate() + 7);
@@ -156,10 +173,7 @@ export class InventoryRepository {
 
     return prisma.inventoryItem.findMany({
       where,
-      orderBy: [
-        { expirationDate: 'asc' },
-        { name: 'asc' },
-      ],
+      orderBy: [{ expirationDate: 'asc' }, { name: 'asc' }],
       include: {
         addedBy: {
           select: { name: true },
@@ -189,12 +203,15 @@ export class InventoryRepository {
     });
   }
 
-  static async update(id: string, data: Partial<{
-    quantity: number;
-    expirationDate: Date;
-    location: string;
-    estimatedCost: number;
-  }>) {
+  static async update(
+    id: string,
+    data: Partial<{
+      quantity: number;
+      expirationDate: Date;
+      location: string;
+      estimatedCost: number;
+    }>
+  ) {
     return prisma.inventoryItem.update({
       where: { id },
       data: {
@@ -268,26 +285,26 @@ export async function middleware(request: NextRequest) {
   // Check authentication for API routes
   if (request.nextUrl.pathname.startsWith('/api/')) {
     const token = await getToken({ req: request });
-    
+
     // Public API routes that don't require authentication
     const publicRoutes = ['/api/auth', '/api/health', '/api/recipes/public'];
-    const isPublicRoute = publicRoutes.some(route => 
+    const isPublicRoute = publicRoutes.some(route =>
       request.nextUrl.pathname.startsWith(route)
     );
-    
+
     if (!isPublicRoute && !token) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
       );
     }
-    
+
     // Add user context to headers for API routes
     if (token) {
       const requestHeaders = new Headers(request.headers);
       requestHeaders.set('x-user-id', token.sub!);
       requestHeaders.set('x-household-id', token.householdId as string);
-      
+
       return NextResponse.next({
         request: {
           headers: requestHeaders,
@@ -295,16 +312,23 @@ export async function middleware(request: NextRequest) {
       });
     }
   }
-  
+
   // Check authentication for protected pages
-  const protectedPaths = ['/dashboard', '/inventory', '/recipes', '/meal-planning', '/shopping', '/cooking'];
-  const isProtectedPath = protectedPaths.some(path => 
+  const protectedPaths = [
+    '/dashboard',
+    '/inventory',
+    '/recipes',
+    '/meal-planning',
+    '/shopping',
+    '/cooking',
+  ];
+  const isProtectedPath = protectedPaths.some(path =>
     request.nextUrl.pathname.startsWith(path)
   );
-  
+
   if (isProtectedPath) {
     const token = await getToken({ req: request });
-    
+
     if (!token) {
       const url = request.nextUrl.clone();
       url.pathname = '/login';
@@ -312,11 +336,19 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url);
     }
   }
-  
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/api/:path*', '/dashboard/:path*', '/inventory/:path*', '/recipes/:path*', '/meal-planning/:path*', '/shopping/:path*', '/cooking/:path*'],
+  matcher: [
+    '/api/:path*',
+    '/dashboard/:path*',
+    '/inventory/:path*',
+    '/recipes/:path*',
+    '/meal-planning/:path*',
+    '/shopping/:path*',
+    '/cooking/:path*',
+  ],
 };
 ```

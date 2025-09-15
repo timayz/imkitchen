@@ -3,11 +3,13 @@
 Develop comprehensive weekly meal planning interface with drag-and-drop calendar functionality, recipe assignment, and family coordination features. This epic transforms recipe discovery into actionable meal schedules that integrate with inventory management and shopping list generation.
 
 ## Story 4.1: Weekly Meal Planning Calendar Interface
+
 As a user planning meals for my household,
 I want a visual calendar interface to assign recipes to specific days and meals,
 so that I can organize weekly meal schedules and ensure variety in our diet.
 
 **Acceptance Criteria:**
+
 1. Calendar view displays 7-day week with breakfast, lunch, dinner, and snack slots for each day
 2. Drag-and-drop functionality allows moving recipes from search results or favorites onto calendar slots
 3. Calendar navigation supports moving between weeks with smooth transitions
@@ -20,11 +22,13 @@ so that I can organize weekly meal schedules and ensure variety in our diet.
 10. Undo/redo functionality prevents accidental meal plan modifications
 
 ## Story 4.2: Recipe Assignment & Meal Scheduling
+
 As a meal planner,
 I want to assign specific recipes to calendar time slots with automatic conflict detection,
 so that I can create realistic meal schedules that account for cooking time and complexity.
 
 **Acceptance Criteria:**
+
 1. Recipe assignment validates cooking time against available meal preparation windows
 2. Conflict detection warns when multiple complex recipes scheduled for same day
 3. Ingredient overlap analysis optimizes meal sequences to use similar ingredients efficiently
@@ -37,11 +41,13 @@ so that I can create realistic meal schedules that account for cooking time and 
 10. Time-based meal suggestions adapt to user's historical cooking patterns and preferences
 
 ## Story 4.3: Family & Household Coordination
+
 As a household member,
 I want to coordinate meal planning with family members and see everyone's preferences,
 so that planned meals accommodate everyone's schedules and dietary needs.
 
 **Acceptance Criteria:**
+
 1. Household member invitation system allows sharing meal plans with family/roommates
 2. Individual dietary preferences and allergies stored per household member
 3. Schedule integration shows when household members are available for meals
@@ -54,11 +60,13 @@ so that planned meals accommodate everyone's schedules and dietary needs.
 10. Communication system for meal plan changes and real-time updates
 
 ## Story 4.4: Meal Plan Templates & Recurring Schedules
+
 As a busy planner,
 I want to save successful meal plans as templates and set up recurring meal patterns,
 so that I can reduce weekly planning time while maintaining meal variety.
 
 **Acceptance Criteria:**
+
 1. Template creation saves entire week's meal plan with all recipes and scheduling
 2. Template library displays saved plans with preview images and success ratings
 3. Template application applies saved meal plan to selected calendar week with modification options
@@ -71,11 +79,13 @@ so that I can reduce weekly planning time while maintaining meal variety.
 10. Template analytics show success rates and family satisfaction scores
 
 ## Story 4.5: Shopping Integration & Meal Cost Tracking
+
 As a budget-conscious meal planner,
 I want meal plans to automatically generate shopping lists with cost estimates,
 so that I can plan meals within budget constraints and optimize grocery spending.
 
 **Acceptance Criteria:**
+
 1. Automatic shopping list generation based on planned meals and current inventory levels
 2. Cost estimation using average ingredient prices with regional adjustment capabilities
 3. Budget setting allows defining weekly/monthly meal spending limits with tracking
@@ -88,11 +98,13 @@ so that I can plan meals within budget constraints and optimize grocery spending
 10. Budget alert system warns when meal plans exceed spending targets
 
 ## Story 4.6: Meal Plan Analytics & Optimization
+
 As a user improving my meal planning efficiency,
 I want insights into meal plan success rates and family satisfaction,
 so that I can optimize future meal planning decisions and reduce food waste.
 
 **Acceptance Criteria:**
+
 1. Meal completion tracking records which planned meals were actually cooked
 2. Family satisfaction ratings collected after meals to improve future recommendations
 3. Ingredient utilization analysis shows efficiency in using purchased ingredients

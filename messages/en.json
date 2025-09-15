@@ -1,0 +1,110 @@
+{
+  "language": {
+    "en": "English",
+    "es": "Spanish",
+    "fr": "French",
+    "de": "German"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "inventory": "Inventory",
+    "recipes": "Recipes",
+    "mealPlanning": "Meal Planning",
+    "shopping": "Shopping Lists",
+    "settings": "Settings",
+    "menu": "Menu",
+    "toggleMenu": "Toggle navigation menu",
+    "closeMenu": "Close menu",
+    "userMenu": "User menu",
+    "language": "Language",
+    "breadcrumbs": "Breadcrumb navigation",
+    "home": "Home"
+  },
+  "footer": {
+    "description": "Your smart kitchen companion for meal planning, inventory management, and recipe discovery.",
+    "legal": "Legal",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "cookies": "Cookie Policy",
+    "support": "Support",
+    "help": "Help Center",
+    "contact": "Contact Us",
+    "faq": "FAQ",
+    "connect": "Connect",
+    "github": "Follow us on GitHub",
+    "twitter": "Follow us on Twitter",
+    "email": "Email us",
+    "rights": "All rights reserved.",
+    "madeWith": "Made with",
+    "forCooks": "for home cooks everywhere"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search",
+    "filter": "Filter",
+    "clear": "Clear",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+    "required": "Required",
+    "optional": "Optional",
+    "yes": "Yes",
+    "no": "No",
+    "confirm": "Confirm"
+  },
+  "auth": {
+    "login": "Sign In",
+    "register": "Sign Up",
+    "logout": "Sign Out"
+  },
+  "login": {
+    "title": "Sign In to ImKitchen",
+    "email": "Email Address",
+    "password": "Password",
+    "submit": "Sign In",
+    "forgotPassword": "Forgot Password?",
+    "noAccount": "Don't have an account?",
+    "signUp": "Sign Up",
+    "invalidCredentials": "Invalid email or password"
+  },
+  "register": {
+    "title": "Create Your ImKitchen Account",
+    "name": "Full Name",
+    "email": "Email Address",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "language": "Preferred Language",
+    "dietaryPreferences": "Dietary Preferences",
+    "allergies": "Allergies",
+    "submit": "Create Account",
+    "hasAccount": "Already have an account?",
+    "signIn": "Sign In",
+    "passwordMismatch": "Passwords do not match"
+  },
+  "profile": {
+    "title": "Profile Settings",
+    "personalInfo": "Personal Information",
+    "language": "Language Preference",
+    "preferences": "Dietary Preferences",
+    "save": "Save Changes",
+    "logout": "Sign Out"
+  },
+  "passwordReset": {
+    "title": "Reset Your Password",
+    "email": "Email Address",
+    "submit": "Send Reset Link",
+    "checkEmail": "Please check your email for reset instructions",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm New Password",
+    "reset": "Reset Password"
+  }
+}

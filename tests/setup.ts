@@ -128,3 +128,52 @@ jest.mock('../src/lib/logger', () => ({
   withLogging: jest.fn((_operation, fn) => fn()),
   logDatabaseOperation: jest.fn((_operation, _model, fn) => fn()),
 }));
+
+// Mock next-intl
+jest.mock('next-intl', () => ({
+  getTranslations: jest.fn(() => jest.fn(key => key)),
+  getLocale: jest.fn(() => 'en'),
+  getMessages: jest.fn(() => ({})),
+  getFormatter: jest.fn(() => ({
+    dateTime: jest.fn(),
+    number: jest.fn(),
+    relativeTime: jest.fn(),
+  })),
+  useTranslations: jest.fn(() => jest.fn(key => key)),
+  useLocale: jest.fn(() => 'en'),
+  useMessages: jest.fn(() => ({})),
+  useFormatter: jest.fn(() => ({
+    dateTime: jest.fn(),
+    number: jest.fn(),
+    relativeTime: jest.fn(),
+  })),
+}));
+
+// Mock next-intl/server
+jest.mock('next-intl/server', () => ({
+  getTranslations: jest.fn(() => jest.fn(key => key)),
+  getLocale: jest.fn(() => 'en'),
+  getMessages: jest.fn(() => ({})),
+  getFormatter: jest.fn(() => ({
+    dateTime: jest.fn(),
+    number: jest.fn(),
+    relativeTime: jest.fn(),
+  })),
+  getNow: jest.fn(() => new Date()),
+  getTimeZone: jest.fn(() => 'UTC'),
+  setRequestLocale: jest.fn(),
+  getRequestConfig: jest.fn(callback => callback({ locale: 'en' })),
+}));
+
+// Mock next-auth/react
+jest.mock('next-auth/react', () => ({
+  useSession: jest.fn(() => ({
+    data: null,
+    status: 'unauthenticated',
+    update: jest.fn(),
+  })),
+  signIn: jest.fn(),
+  signOut: jest.fn(),
+  getSession: jest.fn(),
+  SessionProvider: ({ children }: { children: React.ReactNode }) => children,
+}));

@@ -9,6 +9,7 @@ This unified approach combines what would traditionally be separate backend and 
 **Project Type:** Greenfield project with Next.js 14+ full-stack foundation
 
 **Architectural Decisions:**
+
 - Single Next.js application combining frontend and backend
 - App Router architecture for unified routing and API patterns
 - TypeScript-first development with strict type safety
@@ -17,6 +18,6 @@ This unified approach combines what would traditionally be separate backend and 
 
 ## Change Log
 
-| Date | Version | Description | Author |
-|------|---------|-------------|---------|
-| 2025-09-14 | 1.0 | Initial fullstack architecture creation | Winston (Architect) |
+| Date       | Version | Description                             | Author              |
+| ---------- | ------- | --------------------------------------- | ------------------- |
+| 2025-09-14 | 1.0     | Initial fullstack architecture creation | Winston (Architect) |

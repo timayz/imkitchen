@@ -25,19 +25,8 @@ export abstract class BaseRepository<T, TCreate, TUpdate>
   }
 
   // Abstract method to get the Prisma model delegate
-  protected abstract getModel(): {
-    findUnique: (args: Record<string, unknown>) => Promise<T | null>;
-    findMany: (args?: Record<string, unknown>) => Promise<T[]>;
-    create: (args: Record<string, unknown>) => Promise<T>;
-    update: (args: Record<string, unknown>) => Promise<T>;
-    delete: (args: Record<string, unknown>) => Promise<T>;
-    count: (args?: Record<string, unknown>) => Promise<number>;
-    createMany: (args: Record<string, unknown>) => Promise<{ count: number }>;
-    updateMany: (args: Record<string, unknown>) => Promise<{ count: number }>;
-    deleteMany: (args: Record<string, unknown>) => Promise<{ count: number }>;
-    findFirst: (args: Record<string, unknown>) => Promise<T | null>;
-    upsert: (args: Record<string, unknown>) => Promise<T>;
-  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  protected abstract getModel(): any;
 
   // Find by ID with logging
   async findById(id: string): Promise<T | null> {
@@ -52,7 +41,6 @@ export abstract class BaseRepository<T, TCreate, TUpdate>
         if (!result) {
           logger.debug(`${this.modelName} not found`, { id });
         }
-
 
         return result;
       },
@@ -205,7 +193,6 @@ export abstract class BaseRepository<T, TCreate, TUpdate>
     where: Record<string, unknown>,
     data: Record<string, unknown>
   ): Promise<{ count: number }> {
-
     return logDatabaseOperation(
       'updateMany',
       this.modelName,
@@ -281,4 +268,3 @@ export abstract class BaseRepository<T, TCreate, TUpdate>
     );
   }
 }
-

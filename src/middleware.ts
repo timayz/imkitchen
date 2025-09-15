@@ -95,7 +95,7 @@ async function handleApiAndAuth(request: NextRequest) {
     if (isProtectedApi) {
       const token = await getToken({
         req: request,
-        secret: process.env.NEXTAUTH_SECRET,
+        secret: process.env.NEXTAUTH_SECRET || '',
       });
 
       if (!token) {
@@ -146,7 +146,7 @@ async function handleAuthForLocalizedRoutes(
   // For protected routes, check if user has a valid token
   const token = await getToken({
     req: request,
-    secret: process.env.NEXTAUTH_SECRET,
+    secret: process.env.NEXTAUTH_SECRET || '',
   });
 
   if (!token) {

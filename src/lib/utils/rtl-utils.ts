@@ -158,7 +158,7 @@ export function createRTLAnimation(
               // Flip translateX values for RTL
               return `${prop}: ${value.replace(
                 /translateX\(([^)]+)\)/,
-                (match, val) => {
+                (_match, val) => {
                   const numericValue = parseFloat(val);
                   return `translateX(${-numericValue}${val.replace(/[-\d.]/g, '')})`;
                 }
