@@ -87,16 +87,12 @@ export function isRTLLocale(): boolean {
 
 // next-intl configuration
 export default getRequestConfig(async ({ locale }) => {
-  // Validate that the incoming `locale` parameter is valid
-  if (!locale || !isValidLocale(locale)) {
-    notFound();
-  }
+  const validLocale = locale && isValidLocale(locale) ? locale : defaultLocale;
+
+  const { messages } = await import('../../messages');
 
   return {
-    locale,
-    messages: {
-      ...(await import(`../../public/locales/${locale}/common.json`)).default,
-      ...(await import(`../../public/locales/${locale}/auth.json`)).default,
-    },
+    locale: validLocale,
+    messages: messages[validLocale as keyof typeof messages],
   };
 });

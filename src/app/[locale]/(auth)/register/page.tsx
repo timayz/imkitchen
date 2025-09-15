@@ -1,6 +1,11 @@
 import { Metadata } from 'next';
 import { RegisterForm } from '@/components/forms/register-form';
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
+
+type Props = {
+  params: Promise<{ locale: string }>;
+};
 
 export const metadata: Metadata = {
   title: 'Create Account | imkitchen',
@@ -8,7 +13,10 @@ export const metadata: Metadata = {
     'Create your imkitchen account to start managing your kitchen with smart inventory tracking, meal planning, and recipe discovery.',
 };
 
-export default function RegisterPage() {
+export default async function RegisterPage({ params }: Props) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'register' });
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -16,7 +24,7 @@ export default function RegisterPage() {
           imkitchen
         </h1>
         <h2 className="mt-6 text-center text-2xl font-medium text-gray-900">
-          Create your account
+          {t('title')}
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
           Start managing your kitchen with smart features
@@ -31,12 +39,12 @@ export default function RegisterPage() {
 
       <div className="mt-6 text-center">
         <p className="text-sm text-gray-600">
-          Already have an account?{' '}
+          {t('hasAccount')}{' '}
           <Link
-            href="/login"
+            href={`/${locale}/login`}
             className="text-orange-600 hover:text-orange-500 font-medium"
           >
-            Sign in
+            {t('signIn')}
           </Link>
         </p>
       </div>
