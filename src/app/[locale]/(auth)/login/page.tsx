@@ -18,8 +18,8 @@ function LoginFormWrapper() {
 }
 
 export default async function LoginPage({ params }: Props) {
-  const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: 'login' });
+  await params;
+  const t = await getTranslations('login');
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">

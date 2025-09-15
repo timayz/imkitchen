@@ -14,8 +14,8 @@ export const metadata: Metadata = {
 };
 
 export default async function RegisterPage({ params }: Props) {
-  const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: 'register' });
+  await params;
+  const t = await getTranslations('register');
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -41,7 +41,7 @@ export default async function RegisterPage({ params }: Props) {
         <p className="text-sm text-gray-600">
           {t('hasAccount')}{' '}
           <Link
-            href={`/${locale}/login`}
+            href="/login"
             className="text-orange-600 hover:text-orange-500 font-medium"
           >
             {t('signIn')}
