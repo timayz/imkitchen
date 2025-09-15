@@ -3,11 +3,13 @@
 Create step-by-step cooking interface with timers, progress tracking, and offline functionality for hands-on recipe execution. This epic transforms static recipes into interactive cooking experiences that guide users through meal preparation with smart assistance and real-time feedback.
 
 ## Story 6.1: Interactive Step-by-Step Cooking Interface
+
 As a cook preparing a meal,
 I want interactive step-by-step guidance that keeps me on track through recipe execution,
 so that I can successfully complete recipes without confusion or mistakes.
 
 **Acceptance Criteria:**
+
 1. Cooking mode displays one recipe step at a time with large, readable text
 2. Next/previous navigation allows moving through steps with touch, click, or voice commands
 3. Ingredients list overlay shows required items for current step with quantities
@@ -20,11 +22,13 @@ so that I can successfully complete recipes without confusion or mistakes.
 10. Emergency stop safely pauses all timers and saves progress for later continuation
 
 ## Story 6.2: Integrated Timers & Time Management
+
 As a cook managing multiple cooking processes,
 I want integrated timers and time management tools,
 so that I can coordinate different cooking elements and avoid over or under-cooking.
 
 **Acceptance Criteria:**
+
 1. Automatic timer suggestions based on recipe instructions with one-tap activation
 2. Multiple simultaneous timers with distinct labels and notification sounds
 3. Timer alerts include visual, audio, and vibration notifications across devices
@@ -37,11 +41,13 @@ so that I can coordinate different cooking elements and avoid over or under-cook
 10. Timer synchronization across household devices ensures all cooks receive notifications
 
 ## Story 6.3: Hands-Free Voice Controls & Accessibility
+
 As a cook with messy hands or accessibility needs,
 I want voice control functionality throughout cooking mode,
 so that I can navigate recipes and control timers without touching the device.
 
 **Acceptance Criteria:**
+
 1. Voice command recognition for "next step," "previous step," "set timer," and "pause"
 2. Recipe reading aloud capability with clear pronunciation and appropriate pacing
 3. Voice-activated timer setting with natural language processing ("set timer for 20 minutes")
@@ -54,11 +60,13 @@ so that I can navigate recipes and control timers without touching the device.
 10. Accessibility compliance includes screen reader compatibility and high contrast display options
 
 ## Story 6.4: Recipe Progress Tracking & Adaptability
+
 As a cook learning new techniques,
 I want progress tracking and adaptive guidance based on my cooking experience,
 so that recipes adjust to my skill level and provide appropriate support.
 
 **Acceptance Criteria:**
+
 1. Skill level assessment adapts recipe detail and timing based on user experience
 2. Progress photos allow documenting cooking stages for reference and sharing
 3. Cooking notes capture personal observations and modifications during recipe execution
@@ -71,11 +79,13 @@ so that recipes adjust to my skill level and provide appropriate support.
 10. Failure recovery suggestions provide troubleshooting when cooking doesn't go as planned
 
 ## Story 6.5: Offline Cooking & Sync Capabilities
+
 As a cook in areas with unreliable internet,
 I want full cooking functionality offline with synchronization when connectivity returns,
 so that I can cook without worrying about losing connection mid-recipe.
 
 **Acceptance Criteria:**
+
 1. Recipe download functionality caches complete recipes including images for offline access
 2. Offline timer functionality maintains all timing features without internet connectivity
 3. Progress saving stores cooking state locally with sync when connection restored
@@ -88,11 +98,13 @@ so that I can cook without worrying about losing connection mid-recipe.
 10. Connectivity status clearly indicates online/offline mode with appropriate feature limitations
 
 ## Story 6.6: Recipe Completion & Follow-up
+
 As a cook finishing a recipe,
 I want to complete the cooking session with feedback collection and next steps,
 so that the system learns from my experience and helps with meal finishing touches.
 
 **Acceptance Criteria:**
+
 1. Recipe completion celebration acknowledges successful cooking with encouraging feedback
 2. Photo capture prompts allow documenting finished dish for personal records or sharing
 3. Satisfaction rating collection helps improve future recipe recommendations

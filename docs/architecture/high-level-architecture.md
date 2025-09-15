@@ -7,7 +7,8 @@ imkitchen utilizes a modern Next.js 14+ fullstack architecture with App Router, 
 ## Platform and Infrastructure Choice
 
 **Platform:** Multi-cloud compatible with Docker deployment
-**Key Services:** 
+**Key Services:**
+
 - **Compute:** Docker containers (supports AWS ECS, GCP Cloud Run, Azure Container Instances, DigitalOcean App Platform)
 - **Database:** PostgreSQL (supports AWS RDS, GCP Cloud SQL, Azure Database, managed providers)
 - **Storage:** S3-compatible object storage with abstraction layer
@@ -31,49 +32,49 @@ graph TB
         Mobile[Mobile Browser]
         Desktop[Desktop Browser]
     end
-    
+
     subgraph "CDN/Edge"
         CF[CloudFlare CDN]
         Edge[Edge Functions]
     end
-    
+
     subgraph "Next.js Application"
         SSG[Static Site Generation]
         SSR[Server-Side Rendering]
         API[API Routes]
         Middleware[Next.js Middleware]
     end
-    
+
     subgraph "External Services"
         RecipeAPI[Recipe Database API]
         NutritionAPI[Nutrition API]
         VoiceAPI[Voice Recognition Service]
         EmailSVC[Email Service]
     end
-    
+
     subgraph "Data Layer"
         PG[(PostgreSQL)]
         Redis[(Redis Cache)]
         S3[Object Storage]
     end
-    
+
     PWA --> CF
     Mobile --> CF
     Desktop --> CF
-    
+
     CF --> Edge
     Edge --> SSG
     Edge --> SSR
-    
+
     SSG --> API
     SSR --> API
     API --> Middleware
-    
+
     API --> RecipeAPI
     API --> NutritionAPI
     API --> VoiceAPI
     API --> EmailSVC
-    
+
     API --> PG
     API --> Redis
     API --> S3

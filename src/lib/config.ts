@@ -3,33 +3,46 @@ import { z } from 'zod';
 // Environment variable schema validation
 const envSchema = z.object({
   // Database Configuration
-  DATABASE_URL: z.string().url('DATABASE_URL must be a valid PostgreSQL connection string'),
-  
+  DATABASE_URL: z
+    .string()
+    .url('DATABASE_URL must be a valid PostgreSQL connection string'),
+
   // Redis Configuration
-  REDIS_URL: z.string().url('REDIS_URL must be a valid Redis connection string').optional(),
-  
+  REDIS_URL: z
+    .string()
+    .url('REDIS_URL must be a valid Redis connection string')
+    .optional(),
+
   // Authentication Configuration
-  NEXTAUTH_SECRET: z.string().min(32, 'NEXTAUTH_SECRET must be at least 32 characters'),
+  NEXTAUTH_SECRET: z
+    .string()
+    .min(32, 'NEXTAUTH_SECRET must be at least 32 characters'),
   NEXTAUTH_URL: z.string().url('NEXTAUTH_URL must be a valid URL'),
-  
+
   // External API Keys
   SPOONACULAR_API_KEY: z.string().optional(),
   OPENAI_API_KEY: z.string().optional(),
   SENDGRID_API_KEY: z.string().optional(),
-  
+
   // File Storage Configuration
   S3_BUCKET_NAME: z.string().optional(),
   S3_ACCESS_KEY_ID: z.string().optional(),
   S3_SECRET_ACCESS_KEY: z.string().optional(),
   S3_REGION: z.string().optional(),
-  
+
   // Application Configuration
-  NODE_ENV: z.enum(['development', 'staging', 'production']).default('development'),
+  NODE_ENV: z
+    .enum(['development', 'staging', 'production'])
+    .default('development'),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
-  
+
   // Public Environment Variables (for client-side access)
-  NEXT_PUBLIC_APP_URL: z.string().url('NEXT_PUBLIC_APP_URL must be a valid URL'),
-  NEXT_PUBLIC_API_URL: z.string().url('NEXT_PUBLIC_API_URL must be a valid URL'),
+  NEXT_PUBLIC_APP_URL: z
+    .string()
+    .url('NEXT_PUBLIC_APP_URL must be a valid URL'),
+  NEXT_PUBLIC_API_URL: z
+    .string()
+    .url('NEXT_PUBLIC_API_URL must be a valid URL'),
 });
 
 // Parse and validate environment variables
@@ -38,10 +51,10 @@ function parseEnv() {
     return envSchema.parse(process.env);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const missingVars = error.issues.map((err: z.ZodIssue) => 
-        `${err.path.join('.')}: ${err.message}`
-      ).join('\n');
-      
+      const missingVars = error.issues
+        .map((err: z.ZodIssue) => `${err.path.join('.')}: ${err.message}`)
+        .join('\n');
+
       throw new Error(`Environment validation failed:\n${missingVars}`);
     }
     throw error;

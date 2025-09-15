@@ -5,6 +5,7 @@
 **Responsibility:** User authentication, session management, and household access control
 
 **Key Interfaces:**
+
 - POST /api/auth/login - User login with email/password
 - POST /api/auth/register - New user registration
 - GET /api/auth/session - Current session validation
@@ -19,6 +20,7 @@
 **Responsibility:** Pantry and refrigerator tracking, expiration monitoring, quantity management
 
 **Key Interfaces:**
+
 - GET /api/inventory - Retrieve household inventory with filtering
 - POST /api/inventory - Add new inventory items
 - PUT /api/inventory/[id] - Update item quantities and expiration dates
@@ -33,6 +35,7 @@
 **Responsibility:** Recipe search, storage, rating, and ingredient-based suggestions
 
 **Key Interfaces:**
+
 - GET /api/recipes/search - Recipe search with filters and available ingredients
 - GET /api/recipes/[id] - Recipe details with instructions and nutrition
 - POST /api/recipes/rate - User recipe ratings and reviews
@@ -47,6 +50,7 @@
 **Responsibility:** Weekly/monthly meal scheduling, family coordination, calendar management
 
 **Key Interfaces:**
+
 - GET /api/meal-plans - Retrieve meal plans for date range
 - POST /api/meal-plans - Create new meal plan with recipe assignments
 - PUT /api/meal-plans/[id]/entries - Update specific meal assignments
@@ -61,6 +65,7 @@
 **Responsibility:** Automated list generation, store organization, purchase tracking
 
 **Key Interfaces:**
+
 - GET /api/shopping-lists - Retrieve active shopping lists
 - POST /api/shopping-lists/generate - Generate list from meal plans
 - PUT /api/shopping-lists/[id]/items - Mark items as purchased
@@ -75,6 +80,7 @@
 **Responsibility:** Voice command processing, cooking mode assistance, hands-free navigation
 
 **Key Interfaces:**
+
 - POST /api/voice/process - Voice command interpretation
 - POST /api/voice/cooking/next - Advance cooking step via voice
 - POST /api/voice/timer - Voice-activated timer management
@@ -89,6 +95,7 @@
 **Responsibility:** Expiration alerts, meal reminders, cooking timers, family coordination
 
 **Key Interfaces:**
+
 - POST /api/notifications/send - Send immediate notifications
 - GET /api/notifications/settings - User notification preferences
 - POST /api/notifications/schedule - Schedule future notifications
@@ -107,7 +114,7 @@ graph TB
         State[State Management]
         Services[Service Layer]
     end
-    
+
     subgraph "API Layer"
         Auth[Auth Service]
         Inventory[Inventory Service]
@@ -117,20 +124,20 @@ graph TB
         Voice[Voice Service]
         Notifications[Notification Service]
     end
-    
+
     subgraph "Data Layer"
         DB[(PostgreSQL)]
         Cache[(Redis)]
         Storage[Object Storage]
     end
-    
+
     subgraph "External Services"
         RecipeAPI[Recipe APIs]
         VoiceAPI[Speech APIs]
         EmailAPI[Email Service]
         StoreAPI[Store APIs]
     end
-    
+
     UI --> Services
     State --> Services
     Services --> Auth
@@ -140,7 +147,7 @@ graph TB
     Services --> Shopping
     Services --> Voice
     Services --> Notifications
-    
+
     Auth --> DB
     Inventory --> DB
     Inventory --> Cache
@@ -152,7 +159,7 @@ graph TB
     Shopping --> StoreAPI
     Voice --> VoiceAPI
     Notifications --> EmailAPI
-    
+
     Inventory --> Storage
     Recipes --> Storage
 ```

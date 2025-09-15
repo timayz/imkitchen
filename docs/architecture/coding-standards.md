@@ -15,13 +15,13 @@
 
 ## Naming Conventions
 
-| Element | Frontend | Backend | Example |
-|---------|----------|---------|---------|
-| Components | PascalCase | - | `InventoryList.tsx` |
-| Hooks | camelCase with 'use' | - | `useInventoryItems.ts` |
-| API Routes | - | kebab-case | `/api/meal-plans` |
-| Database Tables | - | snake_case | `inventory_items` |
-| Services | PascalCase + Service | PascalCase + Service | `InventoryService` |
-| Types/Interfaces | PascalCase | PascalCase | `InventoryItem` |
-| Constants | SCREAMING_SNAKE_CASE | SCREAMING_SNAKE_CASE | `MAX_RECIPE_TITLE_LENGTH` |
-| Environment Variables | SCREAMING_SNAKE_CASE | SCREAMING_SNAKE_CASE | `DATABASE_URL` |
+| Element               | Frontend             | Backend              | Example                   |
+| --------------------- | -------------------- | -------------------- | ------------------------- |
+| Components            | PascalCase           | -                    | `InventoryList.tsx`       |
+| Hooks                 | camelCase with 'use' | -                    | `useInventoryItems.ts`    |
+| API Routes            | -                    | kebab-case           | `/api/meal-plans`         |
+| Database Tables       | -                    | snake_case           | `inventory_items`         |
+| Services              | PascalCase + Service | PascalCase + Service | `InventoryService`        |
+| Types/Interfaces      | PascalCase           | PascalCase           | `InventoryItem`           |
+| Constants             | SCREAMING_SNAKE_CASE | SCREAMING_SNAKE_CASE | `MAX_RECIPE_TITLE_LENGTH` |
+| Environment Variables | SCREAMING_SNAKE_CASE | SCREAMING_SNAKE_CASE | `DATABASE_URL`            |

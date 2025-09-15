@@ -117,7 +117,7 @@ const createWrapper = () => {
       queries: { retry: false },
     },
   });
-  
+
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
       {children}
@@ -157,7 +157,7 @@ describe('InventoryList', () => {
 
   it('renders inventory items correctly', async () => {
     render(<InventoryList />, { wrapper: createWrapper() });
-    
+
     await waitFor(() => {
       expect(screen.getByText('Tomatoes')).toBeInTheDocument();
       expect(screen.getByText('Milk')).toBeInTheDocument();
@@ -166,7 +166,7 @@ describe('InventoryList', () => {
 
   it('highlights items expiring soon', async () => {
     render(<InventoryList />, { wrapper: createWrapper() });
-    
+
     await waitFor(() => {
       const milkItem = screen.getByTestId('inventory-item-2');
       expect(milkItem).toHaveClass('bg-yellow-50'); // Warning background
@@ -175,10 +175,10 @@ describe('InventoryList', () => {
 
   it('filters items by location', async () => {
     render(<InventoryList />, { wrapper: createWrapper() });
-    
+
     const fridgeFilter = screen.getByText('Refrigerator');
     fireEvent.click(fridgeFilter);
-    
+
     await waitFor(() => {
       expect(mockInventoryService.getItems).toHaveBeenCalledWith({
         location: 'refrigerator'
@@ -188,18 +188,18 @@ describe('InventoryList', () => {
 
   it('handles voice command for adding items', async () => {
     const mockVoiceCommand = jest.fn();
-    render(<InventoryList onVoiceCommand={mockVoiceCommand} />, { 
-      wrapper: createWrapper() 
+    render(<InventoryList onVoiceCommand={mockVoiceCommand} />, {
+      wrapper: createWrapper()
     });
-    
+
     const voiceButton = screen.getByLabelText('Voice add item');
     fireEvent.click(voiceButton);
-    
+
     // Simulate voice recognition result
     fireEvent(window, new CustomEvent('voiceresult', {
       detail: { transcript: 'add 2 pounds of chicken to refrigerator' }
     }));
-    
+
     await waitFor(() => {
       expect(mockVoiceCommand).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -229,7 +229,9 @@ import { auth } from '@/lib/auth';
 jest.mock('@/lib/services/inventory-service');
 jest.mock('@/lib/auth');
 
-const mockInventoryService = InventoryService as jest.Mocked<typeof InventoryService>;
+const mockInventoryService = InventoryService as jest.Mocked<
+  typeof InventoryService
+>;
 const mockAuth = auth as jest.MockedFunction<typeof auth>;
 
 describe('/api/inventory', () => {
@@ -383,106 +385,137 @@ test.describe('Cooking Mode', () => {
     await expect(page).toHaveURL('/dashboard');
   });
 
-  test('should start cooking mode and navigate through recipe steps', async ({ page }) => {
+  test('should start cooking mode and navigate through recipe steps', async ({
+    page,
+  }) => {
     // Navigate to recipe
     await page.goto('/recipes/classic-spaghetti-carbonara');
-    
+
     // Start cooking mode
     await page.click('[data-testid=start-cooking]');
     await expect(page).toHaveURL('/cooking/classic-spaghetti-carbonara');
-    
+
     // Verify cooking interface
-    await expect(page.locator('[data-testid=cooking-step]')).toContainText('Step 1');
-    await expect(page.locator('[data-testid=step-instruction]')).toContainText('Bring a large pot of salted water to boil');
-    
+    await expect(page.locator('[data-testid=cooking-step]')).toContainText(
+      'Step 1'
+    );
+    await expect(page.locator('[data-testid=step-instruction]')).toContainText(
+      'Bring a large pot of salted water to boil'
+    );
+
     // Check ingredients panel
     await expect(page.locator('[data-testid=ingredients-panel]')).toBeVisible();
     await expect(page.locator('[data-testid=ingredient-item]')).toHaveCount(6);
-    
+
     // Navigate to next step
     await page.click('[data-testid=next-step]');
-    await expect(page.locator('[data-testid=cooking-step]')).toContainText('Step 2');
-    
+    await expect(page.locator('[data-testid=cooking-step]')).toContainText(
+      'Step 2'
+    );
+
     // Test timer functionality
     await page.click('[data-testid=start-timer]');
     await expect(page.locator('[data-testid=active-timer]')).toBeVisible();
-    await expect(page.locator('[data-testid=timer-display]')).toContainText('10:00');
-    
+    await expect(page.locator('[data-testid=timer-display]')).toContainText(
+      '10:00'
+    );
+
     // Test voice commands (if supported)
     const voiceButton = page.locator('[data-testid=voice-button]');
     if (await voiceButton.isVisible()) {
       await voiceButton.click();
-      await expect(page.locator('[data-testid=voice-status]')).toContainText('Listening');
-      
+      await expect(page.locator('[data-testid=voice-status]')).toContainText(
+        'Listening'
+      );
+
       // Simulate voice command (this would be integration with actual voice API in real test)
       await page.evaluate(() => {
-        window.dispatchEvent(new CustomEvent('voicecommand', {
-          detail: { command: 'next step' }
-        }));
+        window.dispatchEvent(
+          new CustomEvent('voicecommand', {
+            detail: { command: 'next step' },
+          })
+        );
       });
-      
-      await expect(page.locator('[data-testid=cooking-step]')).toContainText('Step 3');
+
+      await expect(page.locator('[data-testid=cooking-step]')).toContainText(
+        'Step 3'
+      );
     }
-    
+
     // Complete recipe
     await page.click('[data-testid=next-step]'); // Step 3
     await page.click('[data-testid=next-step]'); // Step 4
     await page.click('[data-testid=next-step]'); // Step 5
     await page.click('[data-testid=complete-recipe]');
-    
+
     // Verify completion screen
-    await expect(page.locator('[data-testid=completion-message]')).toContainText('Recipe completed!');
+    await expect(
+      page.locator('[data-testid=completion-message]')
+    ).toContainText('Recipe completed!');
     await expect(page.locator('[data-testid=rating-prompt]')).toBeVisible();
-    
+
     // Rate recipe
     await page.click('[data-testid=rating-star-5]');
-    await page.fill('[data-testid=review-text]', 'Delicious and easy to follow!');
+    await page.fill(
+      '[data-testid=review-text]',
+      'Delicious and easy to follow!'
+    );
     await page.click('[data-testid=submit-rating]');
-    
+
     // Verify redirect to recipe page
     await expect(page).toHaveURL('/recipes/classic-spaghetti-carbonara');
-    await expect(page.locator('[data-testid=user-rating]')).toContainText('5 stars');
+    await expect(page.locator('[data-testid=user-rating]')).toContainText(
+      '5 stars'
+    );
   });
 
   test('should handle offline cooking mode', async ({ page, context }) => {
     // Start cooking mode while online
     await page.goto('/recipes/classic-spaghetti-carbonara');
     await page.click('[data-testid=start-cooking]');
-    
+
     // Verify recipe data is cached
-    await expect(page.locator('[data-testid=cooking-step]')).toContainText('Step 1');
-    
+    await expect(page.locator('[data-testid=cooking-step]')).toContainText(
+      'Step 1'
+    );
+
     // Go offline
     await context.setOffline(true);
-    
+
     // Verify cooking mode still works
     await page.click('[data-testid=next-step]');
-    await expect(page.locator('[data-testid=cooking-step]')).toContainText('Step 2');
-    
+    await expect(page.locator('[data-testid=cooking-step]')).toContainText(
+      'Step 2'
+    );
+
     // Start timer offline
     await page.click('[data-testid=start-timer]');
     await expect(page.locator('[data-testid=active-timer]')).toBeVisible();
-    
+
     // Verify offline indicator
     await expect(page.locator('[data-testid=offline-indicator]')).toBeVisible();
-    
+
     // Go back online
     await context.setOffline(false);
-    
+
     // Verify sync happens
-    await expect(page.locator('[data-testid=offline-indicator]')).not.toBeVisible();
+    await expect(
+      page.locator('[data-testid=offline-indicator]')
+    ).not.toBeVisible();
   });
 
   test('should support voice commands during cooking', async ({ page }) => {
     // Grant microphone permissions (in real test environment)
     await page.context().grantPermissions(['microphone']);
-    
+
     await page.goto('/cooking/classic-spaghetti-carbonara');
-    
+
     // Test voice activation
     await page.click('[data-testid=voice-button]');
-    await expect(page.locator('[data-testid=voice-status]')).toContainText('Listening');
-    
+    await expect(page.locator('[data-testid=voice-status]')).toContainText(
+      'Listening'
+    );
+
     // Simulate various voice commands
     const commands = [
       { command: 'next step', expectedAction: 'step advancement' },
@@ -491,17 +524,21 @@ test.describe('Cooking Mode', () => {
       { command: 'pause timer', expectedAction: 'timer pause' },
       { command: 'repeat instructions', expectedAction: 'instruction repeat' },
     ];
-    
+
     for (const { command, expectedAction } of commands) {
-      await page.evaluate((cmd) => {
-        window.dispatchEvent(new CustomEvent('voicecommand', {
-          detail: { command: cmd }
-        }));
+      await page.evaluate(cmd => {
+        window.dispatchEvent(
+          new CustomEvent('voicecommand', {
+            detail: { command: cmd },
+          })
+        );
       }, command);
-      
+
       // Verify appropriate action was taken
       // (This would be more specific based on actual implementation)
-      await expect(page.locator('[data-testid=voice-feedback]')).toContainText('Command processed');
+      await expect(page.locator('[data-testid=voice-feedback]')).toContainText(
+        'Command processed'
+      );
     }
   });
 });

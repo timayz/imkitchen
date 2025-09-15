@@ -59,13 +59,13 @@ const Component: FC<ComponentProps> = ({
   ...props
 }) => {
   const baseClasses = 'inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50';
-  
+
   const variantClasses = {
     primary: 'bg-orange-500 text-white hover:bg-orange-600',
     secondary: 'bg-gray-200 text-gray-900 hover:bg-gray-300',
     danger: 'bg-red-500 text-white hover:bg-red-600',
   };
-  
+
   const sizeClasses = {
     sm: 'h-9 px-3 text-sm',
     md: 'h-11 px-4 text-base',
@@ -105,7 +105,7 @@ interface AppState {
     preferences: UserPreferences;
     isAuthenticated: boolean;
   };
-  
+
   inventory: {
     items: InventoryItem[];
     categories: InventoryCategory[];
@@ -114,7 +114,7 @@ interface AppState {
     loading: boolean;
     error: string | null;
   };
-  
+
   recipes: {
     searchResults: Recipe[];
     favorites: Recipe[];
@@ -123,7 +123,7 @@ interface AppState {
     suggestions: Recipe[];
     loading: boolean;
   };
-  
+
   mealPlanning: {
     currentPlan: MealPlan | null;
     weeklyPlans: MealPlan[];
@@ -131,14 +131,14 @@ interface AppState {
     draggedRecipe: Recipe | null;
     loading: boolean;
   };
-  
+
   shopping: {
     activeLists: ShoppingList[];
     currentList: ShoppingList | null;
     categories: StoreCategory[];
     loading: boolean;
   };
-  
+
   cooking: {
     activeSession: CookingSession | null;
     currentStep: number;
@@ -146,7 +146,7 @@ interface AppState {
     voiceActive: boolean;
     progress: CookingProgress;
   };
-  
+
   voice: {
     isListening: boolean;
     isProcessing: boolean;
@@ -154,7 +154,7 @@ interface AppState {
     error: string | null;
     supported: boolean;
   };
-  
+
   ui: {
     theme: 'light' | 'dark' | 'system';
     language: Language;
@@ -231,7 +231,7 @@ interface ProtectedLayoutProps {
 
 export default async function ProtectedLayout({ children }: ProtectedLayoutProps) {
   const session = await auth();
-  
+
   if (!session?.user) {
     redirect('/login');
   }
@@ -258,17 +258,17 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 class ApiClient {
   private baseURL: string;
-  
+
   constructor(baseURL: string = API_BASE_URL) {
     this.baseURL = baseURL;
   }
-  
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
-    
+
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
@@ -276,36 +276,36 @@ class ApiClient {
       },
       ...options,
     };
-    
+
     const response = await fetch(url, config);
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new ApiError(error.message, response.status, error);
     }
-    
+
     return response.json();
   }
-  
+
   get<T>(endpoint: string, params?: Record<string, string>): Promise<T> {
     const searchParams = params ? `?${new URLSearchParams(params)}` : '';
     return this.request<T>(`${endpoint}${searchParams}`);
   }
-  
+
   post<T>(endpoint: string, data?: any): Promise<T> {
     return this.request<T>(endpoint, {
       method: 'POST',
       body: data ? JSON.stringify(data) : undefined,
     });
   }
-  
+
   put<T>(endpoint: string, data?: any): Promise<T> {
     return this.request<T>(endpoint, {
       method: 'PUT',
       body: data ? JSON.stringify(data) : undefined,
     });
   }
-  
+
   delete<T>(endpoint: string): Promise<T> {
     return this.request<T>(endpoint, { method: 'DELETE' });
   }
@@ -329,7 +329,11 @@ class ApiError extends Error {
 
 ```typescript
 import { apiClient } from '@/lib/api-client';
-import { InventoryItem, InventoryItemCreate, InventoryItemUpdate } from '@/types/inventory';
+import {
+  InventoryItem,
+  InventoryItemCreate,
+  InventoryItemUpdate,
+} from '@/types/inventory';
 
 export class InventoryService {
   static async getItems(filters?: {
@@ -339,21 +343,26 @@ export class InventoryService {
   }): Promise<InventoryItem[]> {
     return apiClient.get<InventoryItem[]>('/inventory', filters);
   }
-  
+
   static async createItem(item: InventoryItemCreate): Promise<InventoryItem> {
     return apiClient.post<InventoryItem>('/inventory', item);
   }
-  
-  static async updateItem(id: string, updates: InventoryItemUpdate): Promise<InventoryItem> {
+
+  static async updateItem(
+    id: string,
+    updates: InventoryItemUpdate
+  ): Promise<InventoryItem> {
     return apiClient.put<InventoryItem>(`/inventory/${id}`, updates);
   }
-  
+
   static async deleteItem(id: string): Promise<void> {
     return apiClient.delete<void>(`/inventory/${id}`);
   }
-  
+
   static async getExpiringItems(days: number = 7): Promise<InventoryItem[]> {
-    return apiClient.get<InventoryItem[]>('/inventory/expiring', { days: days.toString() });
+    return apiClient.get<InventoryItem[]>('/inventory/expiring', {
+      days: days.toString(),
+    });
   }
 }
 ```

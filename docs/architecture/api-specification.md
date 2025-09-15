@@ -66,7 +66,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/InventoryItem'
-    
+
     post:
       summary: Add inventory item
       requestBody:
@@ -292,7 +292,7 @@ components:
             type: string
         language:
           type: string
-    
+
     InventoryItem:
       type: object
       properties:
