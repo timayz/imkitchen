@@ -46,9 +46,13 @@ jobs:
       - name: Setup environment variables
         run: |
           echo "DATABASE_URL=postgresql://test_user:test_password@localhost:5432/imkitchen_test" >> $GITHUB_ENV
-          echo "NEXTAUTH_SECRET=test-secret-for-ci" >> $GITHUB_ENV
+          echo "NEXTAUTH_SECRET=test-secret-key-for-testing-minimum-32-characters-long-secure" >> $GITHUB_ENV
           echo "NEXTAUTH_URL=http://localhost:3000" >> $GITHUB_ENV
-          echo "NODE_ENV=test" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_APP_URL=http://localhost:3000" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_API_URL=http://localhost:3000/api" >> $GITHUB_ENV
+          echo "NODE_ENV=development" >> $GITHUB_ENV
+          echo "LOG_LEVEL=error" >> $GITHUB_ENV
+          echo "NEXT_TELEMETRY_DISABLED=1" >> $GITHUB_ENV
 
       - name: Generate Prisma client
         run: npx prisma generate
@@ -77,6 +81,9 @@ jobs:
           file: ./coverage/lcov.info
           fail_ci_if_error: false
 
+      - name: Install Playwright browsers
+        run: npx playwright install chromium
+
       - name: Run E2E tests
         run: npm run test:e2e
         env:
@@ -103,8 +110,11 @@ jobs:
       - name: Setup environment variables for build
         run: |
           echo "DATABASE_URL=postgresql://placeholder:placeholder@localhost:5432/placeholder" >> $GITHUB_ENV
-          echo "NEXTAUTH_SECRET=build-secret" >> $GITHUB_ENV
+          echo "NEXTAUTH_SECRET=build-secret-key-minimum-32-characters-long-for-security" >> $GITHUB_ENV
           echo "NEXTAUTH_URL=http://localhost:3000" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_APP_URL=http://localhost:3000" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_API_URL=http://localhost:3000/api" >> $GITHUB_ENV
+          echo "NODE_ENV=development" >> $GITHUB_ENV
 
       - name: Generate Prisma client
         run: npx prisma generate
