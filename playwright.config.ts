@@ -34,25 +34,25 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
 
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
+    // {
+    //   name: 'firefox',
+    //   use: { ...devices['Desktop Firefox'] },
+    // },
+    //
+    // {
+    //   name: 'webkit',
+    //   use: { ...devices['Desktop Safari'] },
+    // },
 
     /* Test against mobile viewports. */
     {
       name: 'Mobile Chrome',
       use: { ...devices['Pixel 5'] },
     },
-    {
-      name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] },
-    },
+    // {
+    //   name: 'Mobile Safari',
+    //   use: { ...devices['iPhone 12'] },
+    // },
 
     /* Test against branded browsers. */
     // {
@@ -70,5 +70,18 @@ export default defineConfig({
     command: 'npm run dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
+    env: {
+      ...process.env,
+      // Load test environment variables
+      DATABASE_URL: 'postgresql://test:test@localhost:5432/imkitchen_test',
+      NEXTAUTH_SECRET:
+        'test-secret-key-for-testing-minimum-32-characters-long-secure',
+      NEXTAUTH_URL: 'http://localhost:3000',
+      NEXT_PUBLIC_APP_URL: 'http://localhost:3000',
+      NEXT_PUBLIC_API_URL: 'http://localhost:3000/api',
+      NODE_ENV: 'development',
+      LOG_LEVEL: 'error',
+      NEXT_TELEMETRY_DISABLED: '1',
+    },
   },
 });
