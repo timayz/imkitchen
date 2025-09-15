@@ -50,7 +50,13 @@ class Logger {
 
   // Check if level should be logged
   private shouldLog(level: LogLevel): boolean {
-    const levels = [LogLevel.DEBUG, LogLevel.INFO, LogLevel.WARN, LogLevel.ERROR];
+    const levels = [
+      LogLevel.DEBUG,
+      LogLevel.INFO,
+      LogLevel.WARN,
+      LogLevel.ERROR,
+    ];
+
     const currentLevelIndex = levels.indexOf(this.level);
     const targetLevelIndex = levels.indexOf(level);
     return targetLevelIndex >= currentLevelIndex;
@@ -149,7 +155,7 @@ class Logger {
   ) {
     const level = statusCode >= 400 ? LogLevel.WARN : LogLevel.INFO;
     const message = `${method} ${path} - ${statusCode} (${duration}ms)`;
-    
+
     if (level === LogLevel.WARN) {
       this.warn(message, { method, path, statusCode, duration, ...context });
     } else {
@@ -166,14 +172,14 @@ class Logger {
   ) {
     const level = success ? LogLevel.INFO : LogLevel.WARN;
     const message = `Auth ${event}: ${success ? 'success' : 'failed'}`;
-    
+
     const logContext = {
       event,
       success,
       ...(userId !== undefined && { userId }),
       ...context,
     };
-    
+
     if (level === LogLevel.WARN) {
       this.warn(message, logContext);
     } else {
@@ -190,7 +196,7 @@ class Logger {
   ) {
     const level = duration > threshold ? LogLevel.WARN : LogLevel.DEBUG;
     const message = `Performance: ${operation} took ${duration}ms`;
-    
+
     if (level === LogLevel.WARN) {
       this.warn(message, { operation, duration, threshold, ...context });
     } else {
@@ -204,12 +210,14 @@ class Logger {
     severity: 'low' | 'medium' | 'high' | 'critical',
     context?: LogContext
   ) {
-    const level = severity === 'critical' || severity === 'high' 
-      ? LogLevel.ERROR 
-      : LogLevel.WARN;
-    
+
+    const level =
+      severity === 'critical' || severity === 'high'
+        ? LogLevel.ERROR
+        : LogLevel.WARN;
+
     const message = `Security ${severity}: ${event}`;
-    
+
     if (level === LogLevel.ERROR) {
       this.error(message, { event, severity, ...context });
     } else {
@@ -228,27 +236,28 @@ export async function withLogging<T>(
   context?: LogContext
 ): Promise<T> {
   const startTime = Date.now();
-  
+
   try {
     logger.debug(`Starting ${operation}`, context);
     const result = await fn();
     const duration = Date.now() - startTime;
-    
+
     logger.debug(`Completed ${operation}`, { ...context, duration });
     logger.performance(operation, duration);
-    
+
     return result;
   } catch (error) {
     const duration = Date.now() - startTime;
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error';
+
     logger.error(`Failed ${operation}`, {
       ...context,
       duration,
       error: errorMessage,
       stack: error instanceof Error ? error.stack : undefined,
     });
-    
+
     throw error;
   }
 }
@@ -261,23 +270,27 @@ export async function logDatabaseOperation<T>(
   context?: LogContext
 ): Promise<T> {
   const startTime = Date.now();
-  
+
   try {
     const result = await fn();
     const duration = Date.now() - startTime;
-    
+
     logger.dbOperation(operation, model, duration, context);
-    
+
     // Log slow queries
     if (duration > 1000) {
-      logger.performance(`Slow database query: ${operation} on ${model}`, duration);
+      logger.performance(
+        `Slow database query: ${operation} on ${model}`,
+        duration
+      );
     }
-    
+
     return result;
   } catch (error) {
     const duration = Date.now() - startTime;
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error';
+
     logger.dbError(operation, model, errorMessage, { ...context, duration });
     throw error;
   }
@@ -285,22 +298,21 @@ export async function logDatabaseOperation<T>(
 
 // Express/Next.js request logger middleware
 export function createRequestLogger() {
-  return (req: any, res: any, next: any) => {
+  return (req: unknown, res: unknown, next: unknown) => {
     const startTime = Date.now();
     const { method, url } = req;
-    
+
     // Log request start
     logger.debug(`${method} ${url} - Request started`);
-    
+
     // Override res.end to log completion
     const originalEnd = res.end;
-    res.end = function(...args: any[]) {
+    res.end = function (...args: unknown[]) {
       const duration = Date.now() - startTime;
       logger.apiRequest(method, url, res.statusCode, duration);
-      
+
       originalEnd.apply(this, args);
     };
-    
     next();
   };
 }

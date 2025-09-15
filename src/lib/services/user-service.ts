@@ -1,6 +1,10 @@
 import { User, DietaryPreference, Language } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-import { userRepository, CreateUserData, UpdateUserData } from '../repositories/user-repository';
+import {
+  userRepository,
+  CreateUserData,
+  UpdateUserData,
+} from '../repositories/user-repository';
 import { householdRepository } from '../repositories/household-repository';
 import { logger, withLogging } from '../logger';
 import { db } from '../db';
@@ -40,11 +44,16 @@ export interface UserProfileData {
 
 // User service class
 export class UserService {
-  
   // Create user with new household (registration flow)
   async createUserWithHousehold(data: CreateUserWithHouseholdData): Promise<{
     user: User;
-    household: { id: string; name: string; settings: Record<string, unknown>; createdAt: Date; updatedAt: Date };
+    household: {
+      id: string;
+      name: string;
+      settings: Record<string, unknown>;
+      createdAt: Date;
+      updatedAt: Date;
+    };
   }> {
     return withLogging(
       'createUserWithHousehold',
@@ -53,7 +62,7 @@ export class UserService {
         const passwordHash = await bcrypt.hash(data.password, 12);
 
         // Use transaction to ensure atomicity
-        return db.$transaction(async (tx) => {
+        return db.$transaction(async tx => {
           // Create household first
           const household = await tx.household.create({
             data: {
@@ -104,15 +113,22 @@ export class UserService {
       'addUserToHousehold',
       async () => {
         // Verify household exists and get current member count
-        const household = await householdRepository.findWithMembers(userData.householdId);
+        const household = await householdRepository.findWithMembers(
+          userData.householdId
+        );
+        
         if (!household) {
           throw new Error('Household not found');
         }
 
         // Check household member limit (configurable)
-        const maxMembers = (household.settings as any)?.maxMembers || 10;
+        const maxMembers =
+          ((household.settings as Record<string, unknown>)
+            ?.maxMembers as number) || 10;
         if (household._count.users >= maxMembers) {
-          throw new Error(`Household has reached maximum member limit of ${maxMembers}`);
+          throw new Error(
+            `Household has reached maximum member limit of ${maxMembers}`
+          );
         }
 
         const user = await userRepository.create(userData);
@@ -130,7 +146,10 @@ export class UserService {
   }
 
   // Authenticate user
-  async authenticateUser(email: string, password: string): Promise<User | null> {
+  async authenticateUser(
+    email: string,
+    password: string
+  ): Promise<User | null> {
     return withLogging(
       'authenticateUser',
       async () => {
@@ -140,11 +159,14 @@ export class UserService {
           return null;
         }
 
-        const isValidPassword = await bcrypt.compare(password, user.passwordHash);
+        const isValidPassword = await bcrypt.compare(
+          password,
+          user.passwordHash
+        );
         if (!isValidPassword) {
-          logger.warn('Authentication failed: invalid password', { 
-            userId: user.id, 
-            email 
+          logger.warn('Authentication failed: invalid password', {
+            userId: user.id,
+            email,
           });
           return null;
         }
@@ -161,7 +183,11 @@ export class UserService {
   }
 
   // Update user password
-  async updatePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+  async updatePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string
+  ): Promise<void> {
     return withLogging(
       'updatePassword',
       async () => {
@@ -171,7 +197,11 @@ export class UserService {
         }
 
         // Verify current password
-        const isValidCurrentPassword = await bcrypt.compare(currentPassword, user.passwordHash);
+        const isValidCurrentPassword = await bcrypt.compare(
+          currentPassword,
+          user.passwordHash
+        );
+        
         if (!isValidCurrentPassword) {
           throw new Error('Current password is incorrect');
         }
@@ -242,7 +272,13 @@ export class UserService {
       async () => {
         // Separate user table updates from preferences
         const userUpdates: UpdateUserData = {};
-        const preferenceUpdates: Partial<{ dietaryPreferences: DietaryPreference[]; allergies: string[]; language: Language; timezone: string }> = {};
+
+        const preferenceUpdates: Partial<{
+          dietaryPreferences: DietaryPreference[];
+          allergies: string[];
+          language: Language;
+          timezone: string;
+        }> = {};
 
         if (preferences.name !== undefined) {
           userUpdates.name = preferences.name;
@@ -265,8 +301,11 @@ export class UserService {
         }
 
         // Update in transaction if both types of updates needed
-        if (Object.keys(userUpdates).length > 0 && Object.keys(preferenceUpdates).length > 0) {
-          return db.$transaction(async (tx) => {
+        if (
+          Object.keys(userUpdates).length > 0 &&
+          Object.keys(preferenceUpdates).length > 0
+        ) {
+          return db.$transaction(async tx => {
             await tx.user.update({
               where: { id: userId },
               data: userUpdates,
@@ -291,7 +330,10 @@ export class UserService {
   }
 
   // Remove user from household
-  async removeUserFromHousehold(userId: string, householdId: string): Promise<void> {
+  async removeUserFromHousehold(
+    userId: string,
+    householdId: string
+  ): Promise<void> {
     return withLogging(
       'removeUserFromHousehold',
       async () => {
@@ -322,27 +364,33 @@ export class UserService {
     return withLogging(
       'findCompatibleUsers',
       async () => {
-        const householdUsers = await userRepository.findByHousehold(householdId);
+        const householdUsers =
+          await userRepository.findByHousehold(householdId);
 
         // Filter users who don't conflict with the given restrictions
         return householdUsers.filter(user => {
           // Check if user has any conflicting dietary preferences
-          const hasConflictingPreferences = user.dietaryPreferences.some(pref => {
-            // Define conflicts (this is simplified - you might want more complex logic)
-            const conflicts: Record<DietaryPreference, DietaryPreference[]> = {
-              [DietaryPreference.VEGETARIAN]: [],
-              [DietaryPreference.VEGAN]: [DietaryPreference.VEGETARIAN],
-              [DietaryPreference.KETO]: [],
-              [DietaryPreference.PALEO]: [],
-              [DietaryPreference.GLUTEN_FREE]: [],
-              [DietaryPreference.DAIRY_FREE]: [],
-            };
+          const hasConflictingPreferences = user.dietaryPreferences.some(
+            pref => {
+              // Define conflicts (this is simplified - you might want more complex logic)
+              const conflicts: Record<DietaryPreference, DietaryPreference[]> =
+                {
+                  [DietaryPreference.VEGETARIAN]: [],
+                  [DietaryPreference.VEGAN]: [DietaryPreference.VEGETARIAN],
+                  [DietaryPreference.KETO]: [],
+                  [DietaryPreference.PALEO]: [],
+                  [DietaryPreference.GLUTEN_FREE]: [],
+                  [DietaryPreference.DAIRY_FREE]: [],
+                };
 
-            return conflicts[pref]?.some(conflict => dietaryRestrictions.includes(conflict));
-          });
+              return conflicts[pref]?.some(conflict =>
+                dietaryRestrictions.includes(conflict)
+              );
+            }
+          );
 
           // Check if user has any of the specified allergens
-          const hasConflictingAllergies = user.allergies.some(allergy => 
+          const hasConflictingAllergies = user.allergies.some(allergy =>
             allergens.includes(allergy)
           );
 
@@ -381,9 +429,10 @@ export class UserService {
         // Simplified conflict detection
         const conflictingPreferences = allDietaryPreferences.filter(pref => {
           if (pref === DietaryPreference.VEGAN) {
-            return users.some(user => 
-              !user.dietaryPreferences.includes(DietaryPreference.VEGAN) &&
-              !user.dietaryPreferences.includes(DietaryPreference.VEGETARIAN)
+            return users.some(
+              user =>
+                !user.dietaryPreferences.includes(DietaryPreference.VEGAN) &&
+                !user.dietaryPreferences.includes(DietaryPreference.VEGETARIAN)
             );
           }
           return false;

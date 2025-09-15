@@ -1,6 +1,6 @@
 import { UserRepository } from '../../src/lib/repositories/user-repository';
 import { db } from '../../src/lib/db';
-import { DietaryPreference, Language } from '@prisma/client';
+import { Language } from '@prisma/client';
 
 // Mock Prisma
 jest.mock('../../src/lib/db', () => ({
@@ -61,7 +61,9 @@ describe('UserRepository', () => {
     it('should return null when user not found', async () => {
       mockDb.user.findUnique.mockResolvedValue(null);
 
-      const result = await userRepository.findByEmail('nonexistent@example.com');
+      const result = await userRepository.findByEmail(
+        'nonexistent@example.com'
+      );
 
       expect(result).toBeNull();
     });
@@ -77,7 +79,12 @@ describe('UserRepository', () => {
       };
 
       const mockHousehold = { id: 'household-1', name: 'Test Household' };
-      const mockUser = { ...createData, id: 'user-1', createdAt: new Date(), updatedAt: new Date() };
+      const mockUser = {
+        ...createData,
+        id: 'user-1',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
 
       mockDb.household.findUnique.mockResolvedValue(mockHousehold);
       mockDb.user.findUnique.mockResolvedValue(null); // No existing user
@@ -98,7 +105,9 @@ describe('UserRepository', () => {
 
       mockDb.household.findUnique.mockResolvedValue(null);
 
-      await expect(userRepository.create(createData)).rejects.toThrow('Household not found');
+      await expect(userRepository.create(createData)).rejects.toThrow(
+        'Household not found'
+      );
     });
 
     it('should throw error if email already exists', async () => {
@@ -115,7 +124,9 @@ describe('UserRepository', () => {
       mockDb.household.findUnique.mockResolvedValue(mockHousehold);
       mockDb.user.findUnique.mockResolvedValue(existingUser);
 
-      await expect(userRepository.create(createData)).rejects.toThrow('Email already registered');
+      await expect(userRepository.create(createData)).rejects.toThrow(
+        'Email already registered'
+      );
     });
   });
 
