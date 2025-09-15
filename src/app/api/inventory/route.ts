@@ -8,18 +8,7 @@ const CreateInventoryItemSchema = z.object({
   name: z.string().min(1).max(255),
   quantity: z.number().positive(),
   unit: z.string().min(1).max(50),
-  category: z.enum([
-    'proteins',
-    'vegetables',
-    'fruits',
-    'grains',
-    'dairy',
-    'spices',
-    'condiments',
-    'beverages',
-    'baking',
-    'frozen',
-  ]),
+  category: z.string().min(1).max(50), // Can be predefined enum or custom category ID
   location: z.enum(['pantry', 'refrigerator', 'freezer']),
   expirationDate: z
     .string()
@@ -44,6 +33,9 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category');
     const expiringSoon = searchParams.get('expiringSoon') === 'true';
     const search = searchParams.get('search');
+    const sortBy = searchParams.get('sortBy') || 'recently_added';
+    const sortDirection = searchParams.get('sortDirection') || 'desc';
+    const showOnlyExpiring = searchParams.get('showOnlyExpiring') === 'true';
 
     const where: Record<string, unknown> = {
       householdId: session.user.householdId,
@@ -64,7 +56,7 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    if (expiringSoon) {
+    if (expiringSoon || showOnlyExpiring) {
       const futureDate = new Date();
       futureDate.setDate(futureDate.getDate() + 7);
       where.expirationDate = {
@@ -73,9 +65,31 @@ export async function GET(request: NextRequest) {
       };
     }
 
+    // Build order by clause based on sortBy and sortDirection
+    let orderBy: Prisma.InventoryItemOrderByWithRelationInput[] = [];
+
+    switch (sortBy) {
+      case 'alphabetical':
+        orderBy = [{ name: sortDirection as 'asc' | 'desc' }];
+        break;
+      case 'expiration':
+        orderBy = [
+          { expirationDate: sortDirection as 'asc' | 'desc' },
+          { name: 'asc' },
+        ];
+        break;
+      case 'quantity':
+        orderBy = [{ quantity: sortDirection as 'asc' | 'desc' }];
+        break;
+      case 'recently_added':
+      default:
+        orderBy = [{ createdAt: sortDirection as 'asc' | 'desc' }];
+        break;
+    }
+
     const items = await prisma.inventoryItem.findMany({
       where,
-      orderBy: [{ expirationDate: 'asc' }, { name: 'asc' }],
+      orderBy,
       include: {
         addedByUser: {
           select: { name: true },

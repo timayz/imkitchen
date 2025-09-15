@@ -66,7 +66,7 @@ export interface InventoryItemUpdate {
 
 export interface InventoryFilters {
   location?: StorageLocation;
-  category?: InventoryCategory;
+  category?: CategoryType;
   expiringSoon?: boolean;
   search?: string;
 }
@@ -76,3 +76,74 @@ export type ExpirationStatus =
   | 'expiring_soon'
   | 'expiring_later'
   | 'fresh';
+
+// Custom Category Management
+export interface CustomCategory {
+  id: string;
+  name: string;
+  color: string;
+  icon: string;
+  householdId: string;
+  createdBy: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CustomCategoryCreate {
+  name: string;
+  color: string;
+  icon: string;
+}
+
+export interface CustomCategoryUpdate {
+  name?: string;
+  color?: string;
+  icon?: string;
+}
+
+// Category with custom support
+export type CategoryType = InventoryCategory | string; // string for custom category IDs
+
+// Category Statistics
+export interface CategoryStats {
+  category: CategoryType;
+  itemCount: number;
+  expiringThisWeek: number;
+  expiringToday: number;
+  totalValue?: number;
+  lastUpdated: Date;
+}
+
+// Bulk Operations
+export interface BulkUpdateRequest {
+  itemIds: string[];
+  updates: {
+    category?: CategoryType;
+    location?: StorageLocation;
+  };
+}
+
+// Sorting and filtering
+export type SortOption =
+  | 'alphabetical'
+  | 'expiration'
+  | 'quantity'
+  | 'recently_added';
+export type SortDirection = 'asc' | 'desc';
+
+export interface CategoryFilters extends InventoryFilters {
+  sortBy?: SortOption;
+  sortDirection?: SortDirection;
+  showOnlyExpiring?: boolean;
+}
+
+// Drag and drop
+export interface DragItem {
+  id: string;
+  type: 'inventory-item';
+  item: InventoryItem;
+}
+
+export interface DropResult {
+  category: CategoryType;
+}
