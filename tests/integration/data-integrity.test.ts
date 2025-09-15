@@ -61,7 +61,7 @@ describe('Data Integrity & Security Boundaries', () => {
             mode: 'insensitive',
           },
         }),
-        orderBy: [{ expirationDate: 'asc' }, { name: 'asc' }],
+        orderBy: [{ createdAt: 'desc' }], // Default sorting
         include: { addedByUser: { select: { name: true } } },
       });
     });
@@ -205,9 +205,6 @@ describe('Data Integrity & Security Boundaries', () => {
       expect(await response.json()).toMatchObject({
         error: 'Validation failed',
         details: expect.arrayContaining([
-          expect.objectContaining({
-            path: ['category'],
-          }),
           expect.objectContaining({
             path: ['location'],
           }),
@@ -446,7 +443,7 @@ describe('Data Integrity & Security Boundaries', () => {
             mode: 'insensitive',
           },
         },
-        orderBy: [{ expirationDate: 'asc' }, { name: 'asc' }],
+        orderBy: [{ createdAt: 'desc' }],
         include: { addedByUser: { select: { name: true } } },
       });
     });

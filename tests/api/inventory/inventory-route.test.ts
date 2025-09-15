@@ -90,7 +90,7 @@ describe('/api/inventory', () => {
           householdId: 'household-1',
           location: 'pantry',
         }),
-        orderBy: [{ expirationDate: 'asc' }, { name: 'asc' }],
+        orderBy: [{ createdAt: 'desc' }],
         include: { addedByUser: { select: { name: true } } },
       });
     });
@@ -111,7 +111,7 @@ describe('/api/inventory', () => {
           householdId: 'household-1',
           category: 'vegetables',
         }),
-        orderBy: [{ expirationDate: 'asc' }, { name: 'asc' }],
+        orderBy: [{ createdAt: 'desc' }],
         include: { addedByUser: { select: { name: true } } },
       });
     });
@@ -135,7 +135,7 @@ describe('/api/inventory', () => {
             mode: 'insensitive',
           },
         }),
-        orderBy: [{ expirationDate: 'asc' }, { name: 'asc' }],
+        orderBy: [{ createdAt: 'desc' }],
         include: { addedByUser: { select: { name: true } } },
       });
     });

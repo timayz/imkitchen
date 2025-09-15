@@ -7,24 +7,36 @@ import {
   useDeleteInventoryItem,
 } from '@/hooks/use-inventory';
 import { useSwipe } from '@/hooks/use-swipe';
-import type { InventoryItem } from '@/types/inventory';
+import { useDragItem } from '@/hooks/use-drag-drop';
+import type { InventoryItem, CategoryType } from '@/types/inventory';
 import { cn } from '@/lib/utils';
+import { GripVertical, Check } from 'lucide-react';
 
 interface InventoryItemProps {
   item: InventoryItem;
   onEdit?: (item: InventoryItem) => void;
+  isSelected?: boolean;
+  onSelectionChange?: (itemId: string, selected: boolean) => void;
+  enableDrag?: boolean;
+  availableCategories?: CategoryType[];
   className?: string;
 }
 
 export function InventoryItemComponent({
   item,
   onEdit,
+  isSelected = false,
+  onSelectionChange,
+  enableDrag = false,
   className,
 }: InventoryItemProps) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showSwipeActions, setShowSwipeActions] = useState(false);
   const updateMutation = useUpdateInventoryItem();
   const deleteMutation = useDeleteInventoryItem();
+
+  // Drag and drop functionality
+  const { isDragging, drag } = useDragItem(item);
 
   const swipeRef = useSwipe(
     {
@@ -58,72 +70,114 @@ export function InventoryItemComponent({
     }
   };
 
+  const handleSelectionChange = () => {
+    if (onSelectionChange) {
+      onSelectionChange(item.id, !isSelected);
+    }
+  };
+
+  // Combine refs for drag and swipe
+  const combinedRef = (node: HTMLDivElement | null) => {
+    if (enableDrag && drag) {
+      drag(node);
+    }
+    if (swipeRef.current) {
+      swipeRef.current = node;
+    }
+  };
+
   return (
     <>
       <div
-        ref={swipeRef as React.RefObject<HTMLDivElement>}
+        ref={combinedRef}
         className={cn(
           'bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-all duration-200 relative overflow-hidden',
           showSwipeActions && 'transform -translate-x-20',
+          isDragging && 'opacity-50 rotate-3 scale-105',
+          isSelected && 'ring-2 ring-orange-500 border-orange-500',
+          enableDrag && 'cursor-move',
           className
         )}
       >
         <div className="flex items-start justify-between">
-          <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-medium text-gray-900 truncate">
-              {item.name}
-            </h3>
+          {/* Selection checkbox and drag handle */}
+          <div className="flex items-start gap-3">
+            {onSelectionChange && (
+              <button
+                onClick={handleSelectionChange}
+                className={cn(
+                  'mt-1 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors',
+                  isSelected
+                    ? 'bg-orange-500 border-orange-500 text-white'
+                    : 'border-gray-300 hover:border-orange-500'
+                )}
+              >
+                {isSelected && <Check className="w-3 h-3" />}
+              </button>
+            )}
 
-            <div className="mt-1 flex items-center space-x-4 text-sm text-gray-500">
-              <span className="capitalize">{item.category}</span>
-              <span className="capitalize">{item.location}</span>
-              {item.addedByUser && (
-                <span>Added by {item.addedByUser.name || 'Unknown'}</span>
-              )}
-            </div>
-
-            <div className="mt-2 flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-700">Quantity:</span>
-                <div className="flex items-center space-x-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0"
-                    onClick={() => handleQuantityChange(item.quantity - 1)}
-                    disabled={item.quantity <= 1 || updateMutation.isPending}
-                  >
-                    -
-                  </Button>
-                  <span className="mx-2 text-sm font-medium">
-                    {item.quantity} {item.unit}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0"
-                    onClick={() => handleQuantityChange(item.quantity + 1)}
-                    disabled={updateMutation.isPending}
-                  >
-                    +
-                  </Button>
-                </div>
-              </div>
-
-              {item.estimatedCost && (
-                <span className="text-sm text-gray-700">
-                  ${item.estimatedCost.toFixed(2)}
-                </span>
-              )}
-            </div>
-
-            {item.expirationDate && (
-              <div className="mt-3">
-                <ExpirationAlert
-                  expirationDate={new Date(item.expirationDate)}
-                />
+            {enableDrag && (
+              <div className="mt-1 text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing">
+                <GripVertical className="w-5 h-5" />
               </div>
             )}
+
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg font-medium text-gray-900 truncate">
+                {item.name}
+              </h3>
+
+              <div className="mt-1 flex items-center space-x-4 text-sm text-gray-500">
+                <span className="capitalize">{item.category}</span>
+                <span className="capitalize">{item.location}</span>
+                {item.addedByUser && (
+                  <span>Added by {item.addedByUser.name || 'Unknown'}</span>
+                )}
+              </div>
+
+              <div className="mt-2 flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-700">Quantity:</span>
+                  <div className="flex items-center space-x-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0"
+                      onClick={() => handleQuantityChange(item.quantity - 1)}
+                      disabled={item.quantity <= 1 || updateMutation.isPending}
+                    >
+                      -
+                    </Button>
+                    <span className="mx-2 text-sm font-medium">
+                      {item.quantity} {item.unit}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0"
+                      onClick={() => handleQuantityChange(item.quantity + 1)}
+                      disabled={updateMutation.isPending}
+                    >
+                      +
+                    </Button>
+                  </div>
+                </div>
+
+                {item.estimatedCost && (
+                  <span className="text-sm text-gray-700">
+                    ${item.estimatedCost.toFixed(2)}
+                  </span>
+                )}
+              </div>
+
+              {item.expirationDate && (
+                <div className="mt-3">
+                  <ExpirationAlert
+                    expirationDate={new Date(item.expirationDate)}
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Desktop Actions */}

@@ -3,17 +3,25 @@ import type {
   InventoryItem,
   InventoryItemCreate,
   InventoryItemUpdate,
-  InventoryFilters,
+  CategoryFilters,
+  BulkUpdateRequest,
+  CustomCategory,
+  CustomCategoryCreate,
+  CustomCategoryUpdate,
+  CategoryStats,
 } from '@/types/inventory';
 
 export class InventoryService {
-  static async getItems(filters?: InventoryFilters): Promise<InventoryItem[]> {
+  static async getItems(filters?: CategoryFilters): Promise<InventoryItem[]> {
     const params: Record<string, string> = {};
 
     if (filters?.location) params.location = filters.location;
     if (filters?.category) params.category = filters.category;
     if (filters?.expiringSoon) params.expiringSoon = 'true';
     if (filters?.search) params.search = filters.search;
+    if (filters?.sortBy) params.sortBy = filters.sortBy;
+    if (filters?.sortDirection) params.sortDirection = filters.sortDirection;
+    if (filters?.showOnlyExpiring) params.showOnlyExpiring = 'true';
 
     return apiClient.get<InventoryItem[]>('/inventory', params);
   }
@@ -48,5 +56,41 @@ export class InventoryService {
     return apiClient.get<InventoryItem[]>('/inventory', {
       expiringSoon: 'true',
     });
+  }
+
+  // Category Management
+  static async getCategories(): Promise<CustomCategory[]> {
+    return apiClient.get<CustomCategory[]>('/inventory/categories');
+  }
+
+  static async createCategory(
+    category: CustomCategoryCreate
+  ): Promise<CustomCategory> {
+    return apiClient.post<CustomCategory>('/inventory/categories', category);
+  }
+
+  static async updateCategory(
+    id: string,
+    updates: CustomCategoryUpdate
+  ): Promise<CustomCategory> {
+    return apiClient.put<CustomCategory>(
+      `/inventory/categories/${id}`,
+      updates
+    );
+  }
+
+  static async deleteCategory(id: string): Promise<void> {
+    return apiClient.delete<void>(`/inventory/categories/${id}`);
+  }
+
+  static async getCategoryStats(): Promise<CategoryStats[]> {
+    return apiClient.get<CategoryStats[]>('/inventory/categories/stats');
+  }
+
+  // Bulk Operations
+  static async bulkUpdateItems(
+    request: BulkUpdateRequest
+  ): Promise<InventoryItem[]> {
+    return apiClient.put<InventoryItem[]>('/inventory/bulk-update', request);
   }
 }

@@ -24,13 +24,15 @@ const customJestConfig = {
   moduleDirectories: ['node_modules', '<rootDir>/'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^react-dnd/dist/core$': 'react-dnd',
+    '^react-dnd/dist/hooks$': 'react-dnd',
   },
   testMatch: [
     '<rootDir>/tests/**/*.test.{js,jsx,ts,tsx}',
     '<rootDir>/src/**/*.test.{js,jsx,ts,tsx}',
   ],
   transformIgnorePatterns: [
-    'node_modules/(?!(next-intl|next-auth|@next-auth|@auth)/)',
+    'node_modules/(?!(next-intl|next-auth|@next-auth|@auth|react-dnd|@react-dnd|react-dnd-html5-backend|react-dnd-touch-backend)/)',
   ],
 };
 

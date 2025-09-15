@@ -147,7 +147,7 @@ describe('Authentication & Authorization Integration', () => {
         where: expect.objectContaining({
           householdId: 'household-1',
         }),
-        orderBy: [{ expirationDate: 'asc' }, { name: 'asc' }],
+        orderBy: [{ createdAt: 'desc' }],
         include: { addedByUser: { select: { name: true } } },
       });
     });

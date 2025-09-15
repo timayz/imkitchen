@@ -24,6 +24,7 @@ model Household {
   // Relationships
   users           User[]
   inventoryItems  InventoryItem[]
+  customCategories CustomCategory[]
 
   // Indexes for performance optimization
   @@index([createdAt], name: "idx_households_created_at")
@@ -71,6 +72,7 @@ model User {
   sessions            Session[]
   passwordResetTokens PasswordResetToken[]
   inventoryItems      InventoryItem[]
+  customCategories    CustomCategory[]
 
   // Indexes for performance optimization
   @@index([householdId], name: "idx_users_household_id")
@@ -139,13 +141,34 @@ enum InventoryCategory {
   @@map("inventory_category")
 }
 
+// Custom category model for household-specific categories
+model CustomCategory {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @db.VarChar(50)
+  color       String   @db.VarChar(7) // Hex color code
+  icon        String   @db.VarChar(50)
+  householdId String   @map("household_id") @db.Uuid
+  createdBy   String   @map("created_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relationships
+  household Household @relation(fields: [householdId], references: [id])
+  createdByUser User @relation(fields: [createdBy], references: [id])
+
+  // Unique constraint for name per household
+  @@unique([name, householdId], name: "unique_category_name_per_household")
+  @@index([householdId], name: "idx_custom_categories_household")
+  @@map("custom_categories")
+}
+
 // Inventory management model
 model InventoryItem {
   id             String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name           String            @db.VarChar(255)
   quantity       Decimal           @db.Decimal(10, 2)
   unit           String            @db.VarChar(50)
-  category       InventoryCategory
+  category       String            @db.VarChar(50) // Can be InventoryCategory enum value or CustomCategory.id
   location       StorageLocation
   expirationDate DateTime?         @map("expiration_date") @db.Date
   purchaseDate   DateTime?         @default(now()) @map("purchase_date") @db.Date
@@ -161,6 +184,7 @@ model InventoryItem {
 
   // Indexes for performance optimization
   @@index([householdId, location], name: "idx_inventory_household_location")
+  @@index([householdId, category], name: "idx_inventory_household_category")
   @@index([expirationDate], name: "idx_inventory_expiration")
   @@map("inventory_items")
 }
