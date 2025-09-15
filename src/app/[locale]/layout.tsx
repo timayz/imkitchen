@@ -3,6 +3,8 @@ import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { ReactNode } from 'react';
 import { SessionProvider } from '@/components/providers/session-provider';
+import { Navigation } from '@/components/layout/navigation';
+import { Footer } from '@/components/layout/footer';
 import { isValidLocale } from '@/lib/i18n';
 
 interface LocaleLayoutProps {
@@ -30,7 +32,15 @@ export default async function LocaleLayout({
     <html lang={locale}>
       <body>
         <NextIntlClientProvider messages={messages}>
-          <SessionProvider>{children}</SessionProvider>
+          <SessionProvider>
+            <div className="min-h-screen bg-gray-50 flex flex-col">
+              <Navigation />
+              <main className="flex-1 container mx-auto px-4 py-8">
+                {children}
+              </main>
+              <Footer />
+            </div>
+          </SessionProvider>
         </NextIntlClientProvider>
       </body>
     </html>

@@ -25,5 +25,38 @@
     "es": "Spanish",
     "fr": "French",
     "de": "German"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "inventory": "Inventory",
+    "recipes": "Recipes",
+    "mealPlanning": "Meal Planning",
+    "shopping": "Shopping Lists",
+    "settings": "Settings",
+    "menu": "Menu",
+    "toggleMenu": "Toggle navigation menu",
+    "closeMenu": "Close menu",
+    "userMenu": "User menu",
+    "language": "Language",
+    "breadcrumbs": "Breadcrumb navigation",
+    "home": "Home"
+  },
+  "footer": {
+    "description": "Your smart kitchen companion for meal planning, inventory management, and recipe discovery.",
+    "legal": "Legal",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "cookies": "Cookie Policy",
+    "support": "Support",
+    "help": "Help Center",
+    "contact": "Contact Us",
+    "faq": "FAQ",
+    "connect": "Connect",
+    "github": "Follow us on GitHub",
+    "twitter": "Follow us on Twitter",
+    "email": "Email us",
+    "rights": "All rights reserved.",
+    "madeWith": "Made with",
+    "forCooks": "for home cooks everywhere"
   }
 }
