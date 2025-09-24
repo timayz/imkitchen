@@ -1,33 +1,32 @@
-use axum::{
-    extract::State,
-    response::Json,
-    routing::get,
-    Router,
-    http::StatusCode,
-};
-use tower_http::{
-    cors::{CorsLayer, Any},
-    trace::TraceLayer,
-    timeout::TimeoutLayer,
-    catch_panic::CatchPanicLayer,
-};
+use axum::{extract::State, http::StatusCode, response::Json, routing::get, Router};
 use imkitchen_core::AppState;
-use imkitchen_shared::{HealthResponse, AppConfig, AppError};
+use imkitchen_shared::{AppConfig, AppError, HealthResponse};
 use std::{sync::Arc, time::Duration};
 use tokio::sync::RwLock;
-use tracing::{info, error};
+use tower_http::{
+    catch_panic::CatchPanicLayer,
+    cors::{Any, CorsLayer},
+    timeout::TimeoutLayer,
+    trace::TraceLayer,
+};
+use tracing::{error, info};
 
 pub type SharedState = Arc<RwLock<AppState>>;
 
-pub async fn health_handler(State(state): State<SharedState>) -> Result<Json<HealthResponse>, (StatusCode, String)> {
+pub async fn health_handler(
+    State(state): State<SharedState>,
+) -> Result<Json<HealthResponse>, (StatusCode, String)> {
     let app_state = state.read().await;
     let health_response = app_state.health_check().await;
-    
+
     match health_response.status.as_str() {
         "healthy" => Ok(Json(health_response)),
         _ => {
             error!("Health check failed: {:?}", health_response);
-            Err((StatusCode::SERVICE_UNAVAILABLE, format!("Service unhealthy: {}", health_response.status)))
+            Err((
+                StatusCode::SERVICE_UNAVAILABLE,
+                format!("Service unhealthy: {}", health_response.status),
+            ))
         }
     }
 }
@@ -45,30 +44,51 @@ pub fn create_router(state: SharedState) -> Router {
         )
         .layer(
             TraceLayer::new_for_http()
-                .make_span_with(tower_http::trace::DefaultMakeSpan::new().level(tracing::Level::INFO))
+                .make_span_with(
+                    tower_http::trace::DefaultMakeSpan::new().level(tracing::Level::INFO),
+                )
                 .on_request(tower_http::trace::DefaultOnRequest::new().level(tracing::Level::INFO))
-                .on_response(tower_http::trace::DefaultOnResponse::new().level(tracing::Level::INFO))
+                .on_response(
+                    tower_http::trace::DefaultOnResponse::new().level(tracing::Level::INFO),
+                ),
         )
         .with_state(state)
 }
 
 pub async fn start_server(config: AppConfig) -> Result<(), AppError> {
-    info!("Starting server on {}:{}", config.server.host, config.server.port);
+    info!(
+        "Starting server on {}:{}",
+        config.server.host, config.server.port
+    );
 
     let mut app_state = AppState::new(config.clone());
     app_state.initialize_database().await?;
-    
+
     let shared_state = Arc::new(RwLock::new(app_state));
     let app = create_router(shared_state);
 
-    let listener = match tokio::net::TcpListener::bind(format!("{}:{}", config.server.host, config.server.port)).await {
+    let listener = match tokio::net::TcpListener::bind(format!(
+        "{}:{}",
+        config.server.host, config.server.port
+    ))
+    .await
+    {
         Ok(listener) => {
-            info!("Server listening on {}:{}", config.server.host, config.server.port);
+            info!(
+                "Server listening on {}:{}",
+                config.server.host, config.server.port
+            );
             listener
         }
         Err(e) => {
-            error!("Failed to bind to {}:{}: {}", config.server.host, config.server.port, e);
-            return Err(AppError::Server(format!("Failed to bind to address: {}", e)));
+            error!(
+                "Failed to bind to {}:{}: {}",
+                config.server.host, config.server.port, e
+            );
+            return Err(AppError::Server(format!(
+                "Failed to bind to address: {}",
+                e
+            )));
         }
     };
 
@@ -88,9 +108,9 @@ mod tests {
         http::{Request, StatusCode},
         Router,
     };
-    use tower::ServiceExt; // for `app.oneshot()`
-    use imkitchen_shared::{DatabaseConfig, ServerConfig, LoggingConfig};
+    use imkitchen_shared::{DatabaseConfig, LoggingConfig, ServerConfig};
     use serde_json::Value;
+    use tower::ServiceExt; // for `app.oneshot()`
 
     fn create_test_config() -> AppConfig {
         AppConfig {
@@ -139,7 +159,9 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
 
-        let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
         let health: Value = serde_json::from_slice(&body).unwrap();
 
         assert_eq!(health["status"], "healthy");
@@ -179,7 +201,9 @@ mod tests {
             .await
             .unwrap();
 
-        let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
         let health: Value = serde_json::from_slice(&body).unwrap();
 
         // Verify all required fields are present
@@ -223,6 +247,9 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         // CORS headers should be present due to CorsLayer::new().allow_origin(Any)
-        assert!(response.headers().get("access-control-allow-origin").is_some());
+        assert!(response
+            .headers()
+            .get("access-control-allow-origin")
+            .is_some());
     }
 }

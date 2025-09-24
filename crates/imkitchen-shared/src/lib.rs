@@ -15,7 +15,7 @@ pub enum DatabaseStatus {
     Error(String),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AppConfig {
     pub server: ServerConfig,
     pub database: DatabaseConfig,
@@ -43,10 +43,10 @@ pub struct LoggingConfig {
 pub enum AppError {
     #[error("Database error: {0}")]
     Database(String),
-    
+
     #[error("Configuration error: {0}")]
     Config(String),
-    
+
     #[error("Server error: {0}")]
     Server(String),
 }
@@ -73,16 +73,6 @@ impl Default for LoggingConfig {
         Self {
             level: "info".to_string(),
             format: "json".to_string(),
-        }
-    }
-}
-
-impl Default for AppConfig {
-    fn default() -> Self {
-        Self {
-            server: ServerConfig::default(),
-            database: DatabaseConfig::default(),
-            logging: LoggingConfig::default(),
         }
     }
 }
@@ -124,7 +114,7 @@ mod tests {
     #[test]
     fn test_health_response_serialization() {
         use serde_json;
-        
+
         let health = HealthResponse {
             status: "healthy".to_string(),
             version: "0.1.0".to_string(),
@@ -141,9 +131,18 @@ mod tests {
 
     #[test]
     fn test_database_status_variants() {
-        assert!(matches!(DatabaseStatus::Connected, DatabaseStatus::Connected));
-        assert!(matches!(DatabaseStatus::Disconnected, DatabaseStatus::Disconnected));
-        assert!(matches!(DatabaseStatus::Error("test".to_string()), DatabaseStatus::Error(_)));
+        assert!(matches!(
+            DatabaseStatus::Connected,
+            DatabaseStatus::Connected
+        ));
+        assert!(matches!(
+            DatabaseStatus::Disconnected,
+            DatabaseStatus::Disconnected
+        ));
+        assert!(matches!(
+            DatabaseStatus::Error("test".to_string()),
+            DatabaseStatus::Error(_)
+        ));
     }
 
     #[test]
@@ -152,7 +151,10 @@ mod tests {
         assert_eq!(format!("{}", db_error), "Database error: connection failed");
 
         let config_error = AppError::Config("invalid config".to_string());
-        assert_eq!(format!("{}", config_error), "Configuration error: invalid config");
+        assert_eq!(
+            format!("{}", config_error),
+            "Configuration error: invalid config"
+        );
 
         let server_error = AppError::Server("bind failed".to_string());
         assert_eq!(format!("{}", server_error), "Server error: bind failed");

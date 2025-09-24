@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=sqlite:/data/imkitchen.db
+      - RUST_LOG=debug
+      - ENVIRONMENT=development
+    volumes:
+      - ./data:/data
+      - ./config:/app/config
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  # For testing multiple environments
+  staging:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3000"
+    environment:
+      - DATABASE_URL=sqlite:/data/imkitchen.db
+      - RUST_LOG=info
+      - ENVIRONMENT=staging
+    volumes:
+      - ./data/staging:/data
+      - ./config/staging.toml:/app/config/local.toml
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    profiles: ["staging"]
+
+networks:
+  default:
+    name: imkitchen-network
