@@ -35,8 +35,9 @@ COPY . .
 # Touch files to ensure rebuild
 RUN find crates/ -name "*.rs" -exec touch {} \;
 
-# Build the application
-RUN cargo build --release
+# Build the application with static linking
+ENV RUSTFLAGS="-C target-feature=+crt-static"
+RUN cargo build --release --target x86_64-unknown-linux-gnu
 
 # Runtime stage - Alpine for small size
 FROM alpine:latest
@@ -52,10 +53,13 @@ RUN apk add --no-cache \
 WORKDIR /app
 
 # Copy binary from builder stage
-COPY --from=builder /app/target/release/imkitchen ./imkitchen
+COPY --from=builder /app/target/x86_64-unknown-linux-gnu/release/imkitchen ./imkitchen
 
 # Make binary executable and verify
 RUN chmod +x ./imkitchen && ls -la ./imkitchen
+
+# Debug: Check binary details and dependencies
+RUN file ./imkitchen && ldd ./imkitchen || echo "ldd failed"
 
 # Copy configuration and migration files
 COPY --chown=app:app config/ ./config/
