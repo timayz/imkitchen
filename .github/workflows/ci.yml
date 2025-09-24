@@ -216,11 +216,26 @@ jobs:
         # Start container in background
         docker run -d --name test-container -p 3000:3000 imkitchen:test
         
-        # Wait for container to start
-        sleep 10
-        
-        # Test health endpoint
-        curl -f http://localhost:3000/health || exit 1
+        # Wait for container to be healthy with retries
+        echo "Waiting for container to be ready..."
+        for i in {1..30}; do
+          if docker exec test-container ps aux | grep -q imkitchen; then
+            echo "Container process is running, testing health endpoint..."
+            if curl -f --max-time 5 --retry 3 --retry-delay 2 http://localhost:3000/health; then
+              echo "✅ Health check passed"
+              break
+            fi
+          fi
+          echo "Attempt $i/30: Container not ready yet, waiting 2 seconds..."
+          sleep 2
+          
+          if [ $i -eq 30 ]; then
+            echo "❌ Container failed to become healthy"
+            echo "Container logs:"
+            docker logs test-container
+            exit 1
+          fi
+        done
         
         # Stop container
         docker stop test-container
