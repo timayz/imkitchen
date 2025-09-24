@@ -243,9 +243,12 @@ jobs:
         
     - name: Test Docker container
       run: |
-        # Start container in background with database volume
+        # Start container in background with database volume and environment
         docker run -d --name test-container -p 3000:3000 \
           -v /tmp/docker-test-data:/data \
+          -e ENVIRONMENT=production \
+          -e DATABASE_URL=sqlite:/data/imkitchen.db \
+          -e RUST_LOG=info \
           imkitchen:test
         
         # Wait for container to be healthy with retries
