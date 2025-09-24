@@ -1,47 +1,43 @@
 # Branding & Style Guide
 
 ## Visual Identity
-
-**Brand Guidelines:** Kitchen-inspired warm and approachable design with focus on food photography and clear functionality
+**Brand Guidelines:** [imkitchen Brand Guidelines](https://imkitchen-brand-guide.com) - warm, approachable, kitchen-focused visual identity
 
 ## Color Palette
 
-| Color Type | Hex Code                           | Usage                                              |
-| ---------- | ---------------------------------- | -------------------------------------------------- |
-| Primary    | #FF6B35                            | Primary actions, recipe highlights, brand elements |
-| Secondary  | #2ECC71                            | Fresh ingredient indicators, success states        |
-| Accent     | #F39C12                            | Expiration warnings, attention elements            |
-| Success    | #27AE60                            | Completed tasks, positive feedback                 |
-| Warning    | #F1C40F                            | Expiration alerts, caution states                  |
-| Error      | #E74C3C                            | Error states, urgent alerts                        |
-| Neutral    | #34495E, #7F8C8D, #BDC3C7, #ECF0F1 | Text, borders, backgrounds                         |
+| Color Type | Hex Code | Usage |
+|------------|----------|--------|
+| Primary | #2D5A27 | Main actions, navigation highlights, "Fill My Week" button |
+| Secondary | #8FBC8F | Secondary actions, success states, completed meals |
+| Accent | #FF6B47 | Urgent notifications, prep reminders, error states |
+| Success | #4CAF50 | Positive feedback, confirmations, completed tasks |
+| Warning | #FF9800 | Cautions, important notices, prep timing alerts |
+| Error | #F44336 | Errors, destructive actions, failed operations |
+| Neutral | #F5F5F5, #9E9E9E, #424242 | Text, borders, backgrounds, disabled states |
 
 ## Typography
 
 ### Font Families
-
-- **Primary:** Inter (highly legible, excellent for interfaces)
-- **Secondary:** Merriweather (warmth for recipe titles and content)
-- **Monospace:** JetBrains Mono (cooking times, measurements)
+- **Primary:** Inter (system font fallback: -apple-system, BlinkMacSystemFont)
+- **Secondary:** Inter (consistent for simplicity)
+- **Monospace:** SF Mono (system fallback: 'Monaco', 'Consolas')
 
 ### Type Scale
 
 | Element | Size | Weight | Line Height |
-| ------- | ---- | ------ | ----------- |
-| H1      | 32px | 700    | 1.2         |
-| H2      | 24px | 600    | 1.3         |
-| H3      | 20px | 600    | 1.4         |
-| Body    | 16px | 400    | 1.5         |
-| Small   | 14px | 400    | 1.4         |
+|---------|------|---------|-------------|
+| H1 | 2.5rem | 700 | 1.2 |
+| H2 | 2rem | 600 | 1.3 |  
+| H3 | 1.5rem | 600 | 1.4 |
+| Body | 1rem | 400 | 1.6 |
+| Small | 0.875rem | 400 | 1.4 |
 
 ## Iconography
+**Icon Library:** Lucide Icons with custom kitchen-themed additions for meal types, prep indicators, and cooking actions
 
-**Icon Library:** Lucide React icons with custom kitchen-specific icons for specialized functions
-
-**Usage Guidelines:** 24px minimum for touch targets, consistent stroke width, kitchen-themed iconography for domain-specific functions
+**Usage Guidelines:** 24px standard size, consistent stroke width (2px), meaningful labels for accessibility
 
 ## Spacing & Layout
+**Grid System:** 8px base unit system with 16px, 24px, 32px, 48px increments for consistent spacing
 
-**Grid System:** 8px base unit with 4px, 8px, 16px, 24px, 32px, 48px spacing scale
-
-**Spacing Scale:** Consistent 8-point grid system ensuring touch-friendly spacing and visual rhythm
+**Spacing Scale:** Mobile-optimized with generous touch targets, adequate whitespace for kitchen environment readability

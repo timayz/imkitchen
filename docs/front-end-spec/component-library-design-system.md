@@ -1,55 +1,45 @@
 # Component Library / Design System
 
-**Design System Approach:** Custom design system built on Tailwind CSS utility classes with kitchen-focused component patterns and accessibility-first approach
+## Design System Approach
+**Design System Approach:** Custom component library built on atomic design principles, optimized for mobile-first PWA with kitchen environment considerations
 
 ## Core Components
 
-### Button Component
+### Meal Card Component
+**Purpose:** Display meal information in calendar and list contexts with clear visual hierarchy
 
-**Purpose:** Primary interaction element with kitchen-optimized sizing and states
+**Variants:** 
+- Calendar slot (compact)
+- Detail view (expanded) 
+- Shopping list meal reference (minimal)
 
-**Variants:** Primary, Secondary, Ghost, Danger, Voice-activated
+**States:** 
+- Default, Selected, Completed, Needs Prep, Easy Mode Alternative
 
-**States:** Default, Hover, Active, Disabled, Loading, Voice-listening
+**Usage Guidelines:** Always include prep time indicator, use consistent color coding for complexity, ensure 44px minimum touch target
 
-**Usage Guidelines:** Minimum 44px touch targets, high contrast ratios, clear focus indicators for keyboard navigation
+### Recipe Rating Component  
+**Purpose:** Capture and display community recipe ratings with 5-star system
 
-### Recipe Card Component
+**Variants:**
+- Input mode (interactive stars)
+- Display mode (readonly with aggregate)
+- Compact mode (small rating badge)
 
-**Purpose:** Display recipe information consistently across search, favorites, and planning contexts
+**States:**
+- Not rated, User rated, Average rating, Loading submission
 
-**Variants:** Compact (list view), Standard (grid view), Featured (hero display)
+**Usage Guidelines:** Prominent placement on recipe cards, immediate visual feedback on rating submission
 
-**States:** Default, Hover, Selected, Saved, In-progress
+### Action Button Component
+**Purpose:** Primary call-to-action buttons for key user flows
 
-**Usage Guidelines:** Include cooking time, difficulty, and ingredient match indicators prominently
+**Variants:**
+- Primary (Fill My Week, Generate List)
+- Secondary (Save Recipe, Share)  
+- Floating Action Button (context-aware)
 
-### Timer Component
+**States:**
+- Default, Loading, Success, Disabled
 
-**Purpose:** Kitchen timer management with multiple simultaneous timer support
-
-**Variants:** Compact, Standard, Full-screen alert
-
-**States:** Inactive, Running, Paused, Completed, Overdue
-
-**Usage Guidelines:** Distinct visual/audio alerts, clear labeling system, emergency stop functionality
-
-### Inventory Item Component
-
-**Purpose:** Display ingredient information with quantity and freshness status
-
-**Variants:** List item, Card view, Quick-add
-
-**States:** Fresh, Expiring-soon, Expired, Low-stock, Out-of-stock
-
-**Usage Guidelines:** Color-coded freshness indicators, swipe gestures for mobile editing
-
-### Voice Control Indicator
-
-**Purpose:** Provide clear feedback for voice interaction states
-
-**Variants:** Listening, Processing, Confirmation, Error
-
-**States:** Inactive, Active, Success, Error
-
-**Usage Guidelines:** Subtle but clear visual feedback, works in bright kitchen lighting
+**Usage Guidelines:** Maximum one primary action per screen, loading states with progress indication

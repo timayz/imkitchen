@@ -1,19 +1,16 @@
 # Next Steps
 
 ## Immediate Actions
-
-1. Create detailed Figma component library with all defined components and variants
-2. Develop high-fidelity mockups for all core user flows identified
-3. Conduct usability testing sessions with target personas using prototypes
-4. Validate voice interaction patterns in actual kitchen environments
-5. Create responsive design specifications for development handoff
-6. Establish design token system for consistent implementation
-7. Document accessibility testing procedures and acceptance criteria
+1. Create detailed Figma designs for core screens (Weekly Calendar, Recipe Discovery, Shopping List)
+2. Develop interactive prototype for "Fill My Week" flow user testing
+3. Establish design token system for consistent implementation
+4. Create accessibility testing checklist specific to kitchen environment usage
+5. Design and test notification patterns for prep reminders
+6. Plan user testing sessions with target personas for flow validation
 
 ## Design Handoff Checklist
-
 - [x] All user flows documented
-- [x] Component inventory complete
+- [x] Component inventory complete  
 - [x] Accessibility requirements defined
 - [x] Responsive strategy clear
 - [x] Brand guidelines incorporated

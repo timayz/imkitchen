@@ -1,69 +1,51 @@
 # Wireframes & Mockups
 
-**Primary Design Files:** Will be created in Figma with component library and responsive prototypes
+## Design Files
+**Primary Design Files:** Figma workspace to be created - [imkitchen Design System](https://figma.com/imkitchen-design-system)
 
 ## Key Screen Layouts
 
-### Dashboard (Mobile)
-
-**Purpose:** Central hub providing overview of kitchen status and quick access to primary functions
-
-**Key Elements:**
-
-- Upcoming meals card with today's planned dishes
-- Expiring ingredients alert with count and quick action
-- Suggested recipes based on available inventory
-- Quick action floating buttons (Add Inventory, Start Cooking)
-- Navigation tabs at bottom
-
-**Interaction Notes:** Swipeable cards for upcoming meals, tap expiration alerts to view detailed list, voice activation available throughout
-
-**Design File Reference:** `/dashboard/mobile-dashboard-v1`
-
-### Inventory Management (Mobile)
-
-**Purpose:** Comprehensive view and management of pantry and refrigerator contents
+### Weekly Calendar Dashboard
+**Purpose:** Primary interface for viewing and managing weekly meal plans with quick access to all core features
 
 **Key Elements:**
+- Week navigation with swipe gestures (current week highlighted)
+- 7-day calendar grid with 3 meal slots per day (breakfast/lunch/dinner)  
+- Color-coded meal complexity indicators (green=easy, yellow=medium, red=complex)
+- Prominent "Fill My Week" floating action button
+- Quick access to shopping list with badge showing item count
+- Prep reminder notifications integrated into daily slots
 
-- Tabbed interface (Pantry, Fridge, Freezer)
-- Category-based organization with collapsible sections
-- Search bar with voice input option
-- Item cards showing quantity, expiration status, and quick edit
-- Floating add button with camera/voice/manual options
+**Interaction Notes:** Drag-and-drop meal rescheduling between days, tap meals for detail view, swipe weeks horizontally, pull-to-refresh for sync
 
-**Interaction Notes:** Swipe-to-edit items, long-press for bulk selection, drag-and-drop category organization
+**Design File Reference:** [Weekly Dashboard - Frame 1.1](https://figma.com/weekly-dashboard)
 
-**Design File Reference:** `/inventory/mobile-inventory-v1`
-
-### Cooking Mode (Mobile)
-
-**Purpose:** Step-by-step recipe guidance optimized for kitchen use
-
-**Key Elements:**
-
-- Large, readable step text with high contrast
-- Timer management panel with multiple simultaneous timers
-- Progress indicator showing completion status
-- Voice control indicators and feedback
-- Emergency controls (pause, stop, help)
-
-**Interaction Notes:** Large touch targets for messy hands, voice-first interaction with visual fallback, auto-advance options
-
-**Design File Reference:** `/cooking/mobile-cooking-mode-v1`
-
-### Meal Planning Calendar (Desktop)
-
-**Purpose:** Weekly meal organization with drag-and-drop recipe assignment
+### Recipe Discovery Interface  
+**Purpose:** Community recipe browsing with filtering, search, and personal collection management
 
 **Key Elements:**
+- Search bar with autocomplete and voice input
+- Filter chips for dietary restrictions, prep time, difficulty
+- Recipe card grid with large images, ratings, prep time
+- Collection management shortcuts  
+- Trending and recommended recipe sections
+- Social proof indicators (community ratings, recent activity)
 
-- 7-day calendar grid with breakfast/lunch/dinner slots
-- Recipe search sidebar with filter options
-- Drag-and-drop recipe assignment
-- Shopping list preview with automatic generation
-- Family member coordination indicators
+**Interaction Notes:** Infinite scroll loading, heart icon for favorites, swipe recipe cards for quick actions
 
-**Interaction Notes:** Smooth drag-and-drop with visual feedback, keyboard navigation support, contextual right-click menus
+**Design File Reference:** [Recipe Discovery - Frame 2.1](https://figma.com/recipe-discovery)
 
-**Design File Reference:** `/planning/desktop-calendar-v1`
+### Shopping List View
+**Purpose:** Organized ingredient management with family sharing and store section grouping
+
+**Key Elements:**
+- Store section headers (Produce, Dairy, Meat, Pantry)
+- Checkable ingredient items with quantities  
+- Family sharing status indicators
+- Add custom item quick action
+- Export options (email, text, apps)
+- Purchase history and price estimates
+
+**Interaction Notes:** Swipe to check off items, tap sections to collapse/expand, shake phone to add custom item
+
+**Design File Reference:** [Shopping List - Frame 3.1](https://figma.com/shopping-list)

@@ -2,36 +2,33 @@
 
 ## Overall UX Vision
 
-imkitchen provides an intuitive, visually appealing interface that makes complex kitchen management feel simple and enjoyable. The design emphasizes clean, food-focused imagery with warm, inviting colors that reflect the comfort of home cooking. Navigation follows familiar patterns from popular consumer apps while introducing smart shortcuts for power users. The experience should feel personal and adaptive, learning from user behavior to surface relevant content and streamline workflows.
+imkitchen embodies a "kitchen-first" design philosophy that prioritizes mobile touchscreen interaction, one-handed operation, and visual clarity in various lighting conditions. The interface should feel like a trusted cooking companion that reduces cognitive load rather than adding complexity, with clear visual hierarchies that guide users through meal planning, preparation, and cooking workflows seamlessly.
 
 ## Key Interaction Paradigms
 
-- **Drag-and-drop meal planning** with visual calendar interface and instant feedback
-- **Swipe-based inventory management** for quick addition/removal of pantry items
-- **Smart search with predictive suggestions** for recipes, ingredients, and meal plans
-- **Progressive disclosure** showing basic options first with advanced features accessible via secondary actions
-- **Contextual assistance** providing helpful tips and guidance without overwhelming the interface
-- **Gesture-friendly cooking mode** with large touch targets and hands-free timer controls
+- **One-Touch Automation:** Primary actions like "Fill My Week" and "Generate Shopping List" require single touch interactions
+- **Visual Calendar Navigation:** Week-view calendar with intuitive drag-and-drop for meal rescheduling and color-coded preparation indicators
+- **Progressive Disclosure:** Complex features like optimization settings are hidden behind simple interfaces, revealed only when needed
+- **Gesture-Based Controls:** Swipe gestures for meal navigation, pinch-to-zoom for calendar views, and pull-to-refresh for real-time updates
+- **Voice-Friendly Design:** Large touch targets and clear visual feedback to support voice assistant integration for hands-free kitchen use
 
 ## Core Screens and Views
 
-- **Dashboard/Home Screen** - Overview of upcoming meals, expiring ingredients, and quick actions
-- **Inventory Management** - Pantry and fridge contents with categorization and search capabilities
-- **Recipe Discovery** - Search, browse, and filter recipes with ingredient-based suggestions
-- **Meal Planning Calendar** - Weekly/monthly view with drag-and-drop meal assignment
-- **Shopping List** - Auto-generated and customizable lists with store section organization
-- **Cooking Mode** - Step-by-step recipe guidance with timers and progress tracking
-- **Profile & Settings** - Account management, dietary preferences, and notification controls
-- **Recipe Detail Pages** - Comprehensive recipe information with ratings, reviews, and sharing options
+- **Weekly Meal Calendar:** Primary dashboard showing 7-day meal plan with preparation indicators and quick action buttons
+- **Recipe Discovery:** Community-driven recipe browsing with rating, filtering, and personal collection management
+- **Shopping List View:** Organized ingredient lists with store section grouping and family sharing capabilities
+- **Daily Preparation Guide:** Morning notification screen with step-by-step preparation tasks and timing
+- **User Profile & Settings:** Dietary preferences, family configuration, and optimization parameter management
+- **Community Hub:** Recipe sharing, meal plan inspiration, and cooking success stories from other users
 
 ## Accessibility: WCAG AA
 
-Full compliance with WCAG AA standards including screen reader optimization, keyboard navigation support, high contrast color schemes, and alternative text for all visual content. Focus management during dynamic content updates and clear heading structure for navigation clarity.
+The platform will meet WCAG 2.1 AA standards including keyboard navigation, screen reader compatibility, color contrast ratios above 4.5:1, and alternative text for all visual elements. Voice commands and large text options will support users with motor and visual impairments.
 
 ## Branding
 
-Clean, modern design with food-centric imagery and warm color palette emphasizing trust, efficiency, and culinary inspiration. Brand elements should convey expertise without intimidation, appealing to home cooks of all skill levels. Typography should be highly legible across devices with sufficient contrast ratios.
+Modern, warm, and approachable visual design that evokes home cooking comfort without appearing overly corporate. Color palette emphasizes earth tones and food-inspired colors with high contrast for kitchen environment visibility. Typography should be highly legible on mobile screens with sufficient weight for recipe reading while cooking.
 
 ## Target Device and Platforms: Web Responsive
 
-Progressive Web App optimized for mobile-first experience with full desktop functionality. Installation capabilities on mobile devices provide native app-like experience while maintaining cross-platform compatibility through web technologies.
+Progressive Web App (PWA) optimized for mobile-first experience with desktop support. The application must work seamlessly across iOS Safari, Android Chrome, and desktop browsers while providing native app-like experience through PWA installation capabilities.

@@ -1,11 +1,9 @@
 # Performance Considerations
 
 ## Performance Goals
-
-- **Page Load:** Under 2 seconds on 3G networks
-- **Interaction Response:** Under 100ms for all user interactions
-- **Animation FPS:** Consistent 60fps for all motion design
+- **Page Load:** <3 seconds on mobile 3G connections
+- **Interaction Response:** <100ms for touch feedback, <300ms for data operations
+- **Animation FPS:** 60fps for all transitions and micro-interactions
 
 ## Design Strategies
-
-Image optimization with WebP format and responsive images, progressive loading for recipe photography, efficient component rendering with React.memo optimization, voice processing with local fallbacks, and offline-first design for cooking mode functionality.
+Progressive image loading for recipe photos, skeleton screens during data loading, critical CSS inlined, lazy loading for community content below fold, efficient icon sprite usage, minimal JavaScript for core functionality (leverage server-side rendering)
