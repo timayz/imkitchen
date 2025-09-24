@@ -38,6 +38,9 @@ RUN find crates/ -name "*.rs" -exec touch {} \;
 # Build the application
 RUN cargo build --release
 
+# Debug: List built binaries
+RUN find target/release -name "*imkitchen*" -type f -executable
+
 # Runtime stage - Alpine for small size
 FROM alpine:latest
 
