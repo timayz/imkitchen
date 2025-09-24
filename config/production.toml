@@ -1,0 +1,12 @@
+# Production configuration for imkitchen
+
+[server]
+host = "0.0.0.0"
+port = 8080
+
+[database]
+url = "sqlite:imkitchen_production.db"
+
+[logging]
+level = "info"
+format = "json"

@@ -1,0 +1,49 @@
+[package]
+name = "imkitchen-web"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "imkitchen"
+path = "src/main.rs"
+
+[dependencies]
+# Web Framework
+axum = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true, features = ["cors", "trace", "timeout", "catch-panic"] }
+askama = { workspace = true }
+
+# Database
+sqlx = { workspace = true }
+
+# Async Runtime
+tokio = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# Configuration
+config = { workspace = true }
+serde = { workspace = true }
+
+# Error Handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Events (disabled due to compilation issues)
+# evento = { workspace = true }
+
+# Utilities
+uuid = { workspace = true }
+chrono = { workspace = true }
+
+# Local Dependencies
+imkitchen-core = { path = "../imkitchen-core" }
+imkitchen-shared = { path = "../imkitchen-shared" }
+
+[dev-dependencies]
+tokio-test = "0.4"
+tower = { workspace = true, features = ["util"] }
+serde_json = { workspace = true }
