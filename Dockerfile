@@ -38,9 +38,6 @@ RUN find crates/ -name "*.rs" -exec touch {} \;
 # Build the application
 RUN cargo build --release
 
-# Debug: List built binaries
-RUN find target/release -name "*imkitchen*" -type f -executable
-
 # Runtime stage - Alpine for small size
 FROM alpine:latest
 
@@ -56,6 +53,9 @@ WORKDIR /app
 
 # Copy binary from builder stage
 COPY --from=builder /app/target/release/imkitchen ./imkitchen
+
+# Make binary executable and verify
+RUN chmod +x ./imkitchen && ls -la ./imkitchen
 
 # Copy configuration and migration files
 COPY --chown=app:app config/ ./config/
