@@ -12,8 +12,8 @@ env:
   DATABASE_URL: sqlite:imkitchen.db
 
 jobs:
-  test:
-    name: Test & Lint
+  lint:
+    name: Code Quality
     runs-on: ubuntu-latest
     
     steps:
@@ -29,6 +29,38 @@ jobs:
       uses: Swatinem/rust-cache@v2
       with:
         cache-on-failure: true
+        shared-key: "lint"
+        
+    - name: Setup sccache
+      uses: mozilla-actions/sccache-action@v0.0.4
+      
+    - name: Check formatting
+      run: cargo fmt --all -- --check
+      
+    - name: Run clippy
+      run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      env:
+        RUSTC_WRAPPER: sccache
+
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+        
+    - name: Setup Rust cache
+      uses: Swatinem/rust-cache@v2
+      with:
+        cache-on-failure: true
+        shared-key: "test"
+        
+    - name: Setup sccache
+      uses: mozilla-actions/sccache-action@v0.0.4
         
     - name: Cache SQLx CLI
       id: cache-sqlx
@@ -46,6 +78,23 @@ jobs:
       run: cargo install sqlx-cli --version ${{ env.SQLX_VERSION }} --no-default-features --features sqlite
       env:
         SQLX_VERSION: 0.8.0
+        RUSTC_WRAPPER: sccache
+        
+    - name: Cache cargo-nextest
+      id: cache-nextest
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/bin/cargo-nextest
+        key: ${{ runner.os }}-nextest-${{ env.NEXTEST_VERSION }}
+      env:
+        NEXTEST_VERSION: 0.9.68
+        
+    - name: Install cargo-nextest
+      if: steps.cache-nextest.outputs.cache-hit != 'true'
+      run: cargo install cargo-nextest --version ${{ env.NEXTEST_VERSION }}
+      env:
+        NEXTEST_VERSION: 0.9.68
+        RUSTC_WRAPPER: sccache
       
     - name: Create database
       run: sqlx database create
@@ -53,13 +102,10 @@ jobs:
     - name: Run database migrations
       run: sqlx migrate run
       
-    - name: Check formatting & linting
-      run: |
-        cargo fmt --all -- --check
-        cargo clippy --workspace --all-targets --all-features -- -D warnings
-      
-    - name: Run tests
-      run: cargo test --workspace --all-features
+    - name: Run tests with nextest
+      run: cargo nextest run --workspace --all-features --jobs $(nproc)
+      env:
+        RUSTC_WRAPPER: sccache
 
   coverage:
     name: Coverage Report

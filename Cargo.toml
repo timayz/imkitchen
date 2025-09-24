@@ -50,6 +50,12 @@ chrono = { version = "0.4", features = ["serde"] }
 [profile.dev]
 debug = true
 
+[profile.test]
+# Optimize test compilation for faster CI builds
+opt-level = 1
+debug = "limited"
+incremental = true
+
 [profile.release]
 lto = true
 codegen-units = 1
