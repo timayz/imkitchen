@@ -7,15 +7,43 @@ openapi: 3.0.0
 info:
   title: imkitchen API
   version: 1.0.0
-  description: Kitchen management platform API for inventory tracking, meal planning, and cooking guidance
+  description: Intelligent meal planning platform API
 servers:
-  - url: https://api.imkitchen.com/v1
-    description: Production API server
-  - url: http://localhost:3000/api
-    description: Local development server
+  - url: https://api.imkitchen.app
+    description: Production server
+  - url: http://localhost:3000
+    description: Development server
 
 paths:
-  /auth/login:
+  /api/auth/register:
+    post:
+      summary: User registration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                name:
+                  type: string
+                familySize:
+                  type: integer
+                  minimum: 1
+                  maximum: 8
+      responses:
+        201:
+          description: User created successfully
+        400:
+          description: Validation error
+
+  /api/auth/login:
     post:
       summary: User authentication
       requestBody:
@@ -30,201 +58,17 @@ paths:
                   format: email
                 password:
                   type: string
-              required: [email, password]
       responses:
-        '200':
-          description: Successful authentication
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  user:
-                    $ref: '#/components/schemas/User'
-                  token:
-                    type: string
+        200:
+          description: Authentication successful
+        401:
+          description: Invalid credentials
 
-  /inventory:
-    get:
-      summary: Get household inventory
-      parameters:
-        - name: location
-          in: query
-          schema:
-            type: string
-            enum: [pantry, refrigerator, freezer]
-        - name: category
-          in: query
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Inventory items list
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/InventoryItem'
-
+  /api/meal-plans:
     post:
-      summary: Add inventory item
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/InventoryItemCreate'
-      responses:
-        '201':
-          description: Item created successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InventoryItem'
-
-  /inventory/{itemId}:
-    put:
-      summary: Update inventory item
-      parameters:
-        - name: itemId
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/InventoryItemUpdate'
-      responses:
-        '200':
-          description: Item updated successfully
-
-    delete:
-      summary: Remove inventory item
-      parameters:
-        - name: itemId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '204':
-          description: Item deleted successfully
-
-  /recipes:
-    get:
-      summary: Search recipes
-      parameters:
-        - name: q
-          in: query
-          description: Search query
-          schema:
-            type: string
-        - name: ingredients
-          in: query
-          description: Available ingredients
-          schema:
-            type: array
-            items:
-              type: string
-        - name: cuisine
-          in: query
-          schema:
-            type: string
-        - name: maxCookingTime
-          in: query
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Recipe search results
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  recipes:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Recipe'
-                  pagination:
-                    $ref: '#/components/schemas/Pagination'
-
-  /recipes/{recipeId}:
-    get:
-      summary: Get recipe details
-      parameters:
-        - name: recipeId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Recipe details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Recipe'
-
-  /meal-plans:
-    get:
-      summary: Get meal plans
-      parameters:
-        - name: startDate
-          in: query
-          schema:
-            type: string
-            format: date
-        - name: endDate
-          in: query
-          schema:
-            type: string
-            format: date
-      responses:
-        '200':
-          description: Meal plans list
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/MealPlan'
-
-    post:
-      summary: Create meal plan
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MealPlanCreate'
-      responses:
-        '201':
-          description: Meal plan created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MealPlan'
-
-  /shopping-lists:
-    get:
-      summary: Get shopping lists
-      responses:
-        '200':
-          description: Shopping lists
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ShoppingList'
-
-    post:
-      summary: Generate shopping list from meal plan
+      summary: Generate weekly meal plan
+      security:
+        - sessionAuth: []
       requestBody:
         required: true
         content:
@@ -232,50 +76,135 @@ paths:
             schema:
               type: object
               properties:
-                mealPlanId:
+                weekStartDate:
                   type: string
-                name:
-                  type: string
-              required: [mealPlanId]
+                  format: date
+                preferences:
+                  type: object
+                  properties:
+                    maxComplexity:
+                      type: string
+                      enum: [easy, medium, hard]
+                    avoidRecentRecipes:
+                      type: boolean
       responses:
-        '201':
-          description: Shopping list generated
+        201:
+          description: Meal plan generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MealPlan'
+        400:
+          description: Invalid request
+
+  /api/recipes:
+    get:
+      summary: Browse community recipes
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: difficulty
+          in: query
+          schema:
+            type: string
+            enum: [easy, medium, hard]
+        - name: maxPrepTime
+          in: query
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Recipe list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Recipe'
+
+    post:
+      summary: Create new recipe
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Recipe'
+      responses:
+        201:
+          description: Recipe created
+
+  /api/recipes/{id}/rate:
+    post:
+      summary: Rate a recipe
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                comment:
+                  type: string
+      responses:
+        200:
+          description: Rating submitted
+
+  /api/shopping-lists/{mealPlanId}:
+    get:
+      summary: Get shopping list for meal plan
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: mealPlanId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Shopping list
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ShoppingList'
 
-  /voice/commands:
     post:
-      summary: Process voice command
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                command:
-                  type: string
-                context:
-                  type: object
-              required: [command]
+      summary: Generate shopping list
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: mealPlanId
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
-          description: Command processed
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  action:
-                    type: string
-                  response:
-                    type: string
-                  data:
-                    type: object
+        201:
+          description: Shopping list generated
 
 components:
+  securitySchemes:
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: session_id
   schemas:
     User:
       type: object
@@ -286,32 +215,12 @@ components:
           type: string
         name:
           type: string
-        dietaryPreferences:
+        familySize:
+          type: integer
+        dietaryRestrictions:
           type: array
           items:
             type: string
-        language:
-          type: string
-
-    InventoryItem:
-      type: object
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-        quantity:
-          type: number
-        unit:
-          type: string
-        category:
-          type: string
-        location:
-          type: string
-        expirationDate:
-          type: string
-          format: date
-
     Recipe:
       type: object
       properties:
@@ -321,19 +230,71 @@ components:
           type: string
         description:
           type: string
-        cookingTime:
+        prepTime:
+          type: integer
+        cookTime:
           type: integer
         difficulty:
           type: string
-        servings:
+          enum: [easy, medium, hard]
+        ingredients:
+          type: array
+          items:
+            $ref: '#/components/schemas/Ingredient'
+    Ingredient:
+      type: object
+      properties:
+        name:
+          type: string
+        quantity:
+          type: number
+        unit:
+          type: string
+    MealPlan:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        weekStartDate:
+          type: string
+        meals:
+          type: array
+          items:
+            $ref: '#/components/schemas/MealPlanEntry'
+    MealPlanEntry:
+      type: object
+      properties:
+        dayOfWeek:
           type: integer
-
-  securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-
-security:
-  - BearerAuth: []
+        mealType:
+          type: string
+          enum: [breakfast, lunch, dinner]
+        recipeId:
+          type: string
+    ShoppingList:
+      type: object
+      properties:
+        id:
+          type: string
+        mealPlanId:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShoppingItem'
+    ShoppingItem:
+      type: object
+      properties:
+        name:
+          type: string
+        quantity:
+          type: number
+        unit:
+          type: string
+        category:
+          type: string
+        purchased:
+          type: boolean
 ```

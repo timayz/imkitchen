@@ -1,327 +1,173 @@
 # Data Models
 
-## User Model
-
-**Purpose:** Represents individual users with their preferences, dietary restrictions, and household membership
+## User
+**Purpose:** Represents registered users with authentication and preference information for personalized meal planning
 
 **Key Attributes:**
-
-- id: string (UUID) - Unique user identifier
-- email: string - Primary authentication identifier
-- name: string - Display name for household coordination
-- dietaryPreferences: string[] - Vegetarian, vegan, keto, etc.
-- allergies: string[] - Food allergies and intolerances
-- householdId: string - Reference to shared household data
-- language: string - Preferred interface language
-- timezone: string - For meal planning and cooking schedules
+- id: uuid - Primary key
+- email: String - Unique user identifier and authentication
+- password_hash: String - Securely hashed password
+- name: String - Display name
+- family_size: i32 - Number of people in household (affects recipe quantities)
+- dietary_restrictions: Vec<String> - List of dietary requirements
+- cooking_skill_level: enum - Beginner, Intermediate, Advanced
+- created_at: DateTime - Account creation timestamp
+- last_active: DateTime - Last login for session management
 
 ### TypeScript Interface
-
 ```typescript
 interface User {
   id: string;
   email: string;
   name: string;
-  dietaryPreferences: DietaryPreference[];
-  allergies: string[];
-  householdId: string;
-  language: Language;
-  timezone: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-type DietaryPreference =
-  | 'vegetarian'
-  | 'vegan'
-  | 'gluten-free'
-  | 'keto'
-  | 'paleo'
-  | 'dairy-free';
-type Language = 'en' | 'es' | 'fr' | 'de';
-```
-
-### Relationships
-
-- Belongs to one Household
-- Has many InventoryItems
-- Has many MealPlans
-- Has many RecipeRatings
-
-## Household Model
-
-**Purpose:** Shared kitchen space for families/roommates with coordinated meal planning and inventory
-
-**Key Attributes:**
-
-- id: string (UUID) - Unique household identifier
-- name: string - Household display name
-- members: User[] - Array of household members
-- settings: HouseholdSettings - Shared preferences and configurations
-
-### TypeScript Interface
-
-```typescript
-interface Household {
-  id: string;
-  name: string;
-  settings: HouseholdSettings;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-interface HouseholdSettings {
-  defaultMeasurementUnit: 'metric' | 'imperial';
-  sharedInventory: boolean;
-  mealPlanningAccess: 'owner' | 'all-members';
-  notificationPreferences: NotificationSettings;
+  familySize: number;
+  dietaryRestrictions: string[];
+  cookingSkillLevel: 'beginner' | 'intermediate' | 'advanced';
+  createdAt: string;
+  lastActive: string;
 }
 ```
 
 ### Relationships
+- Has many Recipe (created recipes)
+- Has many MealPlan (weekly meal plans)
+- Has many ShoppingList (generated shopping lists)
+- Has many RecipeRating (community ratings)
 
-- Has many Users (members)
-- Has one shared Inventory
-- Has many shared MealPlans
-
-## InventoryItem Model
-
-**Purpose:** Individual ingredients and food items tracked in pantry, refrigerator, or freezer
-
-**Key Attributes:**
-
-- id: string (UUID) - Unique item identifier
-- name: string - Ingredient name with i18n support
-- quantity: number - Current quantity available
-- unit: string - Measurement unit (cups, grams, pieces, etc.)
-- category: InventoryCategory - Organization category
-- location: StorageLocation - Where item is stored
-- expirationDate: Date - When item expires
-- purchaseDate: Date - When item was acquired
-- estimatedCost: number - Optional cost tracking
-
-### TypeScript Interface
-
-```typescript
-interface InventoryItem {
-  id: string;
-  name: string;
-  quantity: number;
-  unit: MeasurementUnit;
-  category: InventoryCategory;
-  location: StorageLocation;
-  expirationDate: Date;
-  purchaseDate: Date;
-  estimatedCost?: number;
-  householdId: string;
-  addedBy: string; // User ID
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-type InventoryCategory =
-  | 'proteins'
-  | 'vegetables'
-  | 'fruits'
-  | 'grains'
-  | 'dairy'
-  | 'spices'
-  | 'condiments'
-  | 'beverages'
-  | 'baking'
-  | 'frozen';
-type StorageLocation = 'pantry' | 'refrigerator' | 'freezer';
-type MeasurementUnit =
-  | 'grams'
-  | 'kilograms'
-  | 'ounces'
-  | 'pounds'
-  | 'cups'
-  | 'tablespoons'
-  | 'teaspoons'
-  | 'pieces'
-  | 'milliliters'
-  | 'liters';
-```
-
-### Relationships
-
-- Belongs to one Household
-- Added by one User
-- Referenced in many ShoppingListItems
-- Used in many Recipes (through ingredients)
-
-## Recipe Model
-
-**Purpose:** Cooking instructions with ingredients, steps, and metadata for meal planning
+## Recipe
+**Purpose:** Core entity representing cooking recipes with ingredients, instructions, and metadata for meal planning optimization
 
 **Key Attributes:**
-
-- id: string (UUID) - Unique recipe identifier
-- title: string - Recipe name with i18n support
-- description: string - Brief recipe description
-- ingredients: RecipeIngredient[] - Required ingredients with quantities
-- instructions: RecipeStep[] - Cooking steps in order
-- cookingTime: number - Total cooking time in minutes
-- difficulty: DifficultyLevel - Complexity rating
-- servings: number - Number of servings recipe yields
-- cuisine: string - Cuisine type for categorization
-- tags: string[] - Searchable tags
+- id: uuid - Primary key
+- title: String - Recipe name
+- description: String - Brief recipe overview
+- prep_time: i32 - Preparation time in minutes
+- cook_time: i32 - Cooking time in minutes
+- difficulty: enum - Easy, Medium, Hard
+- servings: i32 - Number of servings produced
+- ingredients: Vec<Ingredient> - List of ingredients with quantities
+- instructions: Vec<Instruction> - Ordered cooking steps
+- created_by: uuid - User who created the recipe
+- is_public: bool - Whether recipe is shared with community
+- average_rating: f32 - Community rating average
+- rating_count: i32 - Number of ratings received
 
 ### TypeScript Interface
-
 ```typescript
 interface Recipe {
   id: string;
   title: string;
   description: string;
-  ingredients: RecipeIngredient[];
-  instructions: RecipeStep[];
-  cookingTime: number;
   prepTime: number;
-  difficulty: DifficultyLevel;
+  cookTime: number;
+  difficulty: 'easy' | 'medium' | 'hard';
   servings: number;
-  cuisine: string;
-  tags: string[];
-  imageUrl?: string;
-  nutritionInfo?: NutritionInfo;
-  source: RecipeSource;
-  createdAt: Date;
-  updatedAt: Date;
+  ingredients: Ingredient[];
+  instructions: Instruction[];
+  createdBy: string;
+  isPublic: boolean;
+  averageRating: number;
+  ratingCount: number;
 }
 
-interface RecipeIngredient {
+interface Ingredient {
   name: string;
   quantity: number;
-  unit: MeasurementUnit;
+  unit: string;
   notes?: string;
-  essential: boolean;
 }
 
-interface RecipeStep {
+interface Instruction {
   stepNumber: number;
-  instruction: string;
-  duration?: number;
-  temperature?: number;
-  image?: string;
+  description: string;
+  timingMinutes?: number;
 }
-
-type DifficultyLevel = 'easy' | 'medium' | 'hard';
-type RecipeSource = 'user-created' | 'imported' | 'api-external';
 ```
 
 ### Relationships
+- Belongs to User (creator)
+- Has many RecipeRating (community ratings)
+- Has many MealPlanEntry (scheduled meals)
+- Belongs to many RecipeCollection (user collections)
 
-- Has many RecipeRatings from Users
-- Saved in many UserRecipeCollections
-- Used in many MealPlanEntries
-- Generates many ShoppingListItems
-
-## MealPlan Model
-
-**Purpose:** Weekly or monthly meal scheduling with family coordination
+## MealPlan
+**Purpose:** Weekly meal schedule generated by intelligent planning algorithm with family coordination features
 
 **Key Attributes:**
-
-- id: string (UUID) - Unique meal plan identifier
-- name: string - Meal plan name
-- startDate: Date - Beginning of meal plan period
-- endDate: Date - End of meal plan period
-- entries: MealPlanEntry[] - Individual meal assignments
-- householdId: string - Associated household
+- id: uuid - Primary key
+- user_id: uuid - Owner of the meal plan
+- week_start_date: Date - Monday of the planned week
+- meals: Vec<MealPlanEntry> - Scheduled meals for the week
+- status: enum - Draft, Active, Completed
+- generated_at: DateTime - When plan was created
+- shopping_list_generated: bool - Whether shopping list exists
 
 ### TypeScript Interface
-
 ```typescript
 interface MealPlan {
   id: string;
-  name: string;
-  startDate: Date;
-  endDate: Date;
-  entries: MealPlanEntry[];
-  householdId: string;
-  createdBy: string; // User ID
-  createdAt: Date;
-  updatedAt: Date;
+  userId: string;
+  weekStartDate: string;
+  meals: MealPlanEntry[];
+  status: 'draft' | 'active' | 'completed';
+  generatedAt: string;
+  shoppingListGenerated: boolean;
 }
 
 interface MealPlanEntry {
-  id: string;
-  date: Date;
-  mealType: MealType;
+  dayOfWeek: number; // 0-6, Monday = 0
+  mealType: 'breakfast' | 'lunch' | 'dinner';
   recipeId: string;
-  servings: number;
-  notes?: string;
-  assignedCook?: string; // User ID
-  status: MealStatus;
+  scheduledDate: string;
+  prepReminders: PrepReminder[];
 }
 
-type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
-type MealStatus = 'planned' | 'in-progress' | 'completed' | 'skipped';
+interface PrepReminder {
+  description: string;
+  reminderTime: string;
+  completed: boolean;
+}
 ```
 
 ### Relationships
+- Belongs to User (plan owner)
+- Has many MealPlanEntry (individual meals)
+- Has one ShoppingList (generated ingredients)
 
-- Belongs to one Household
-- Created by one User
-- Contains many MealPlanEntries
-- Generates ShoppingLists
-
-## ShoppingList Model
-
-**Purpose:** Automated and manual shopping lists with store organization and purchase tracking
+## ShoppingList
+**Purpose:** Automatically generated ingredient list optimized for grocery shopping with family sharing capabilities
 
 **Key Attributes:**
-
-- id: string (UUID) - Unique shopping list identifier
-- name: string - Shopping list name
-- items: ShoppingListItem[] - Items to purchase
-- generatedFrom: string[] - Source meal plan IDs
-- status: ShoppingListStatus - Current list status
-- estimatedTotal: number - Projected cost
+- id: uuid - Primary key
+- meal_plan_id: uuid - Associated meal plan
+- items: Vec<ShoppingItem> - Consolidated ingredient list
+- shared_with: Vec<uuid> - Family members with access
+- generated_at: DateTime - Creation timestamp
+- estimated_total: f32 - Estimated grocery cost
 
 ### TypeScript Interface
-
 ```typescript
 interface ShoppingList {
   id: string;
-  name: string;
-  items: ShoppingListItem[];
-  generatedFrom: string[]; // MealPlan IDs
-  status: ShoppingListStatus;
+  mealPlanId: string;
+  items: ShoppingItem[];
+  sharedWith: string[];
+  generatedAt: string;
   estimatedTotal: number;
-  householdId: string;
-  createdBy: string; // User ID
-  createdAt: Date;
-  updatedAt: Date;
 }
 
-interface ShoppingListItem {
-  id: string;
+interface ShoppingItem {
   name: string;
   quantity: number;
-  unit: MeasurementUnit;
-  category: StoreCategory;
+  unit: string;
+  category: 'produce' | 'dairy' | 'meat' | 'pantry' | 'frozen';
+  estimatedPrice: number;
   purchased: boolean;
-  estimatedPrice?: number;
-  actualPrice?: number;
-  notes?: string;
+  purchasedBy?: string;
+  fromRecipes: string[]; // Recipe titles using this ingredient
 }
-
-type ShoppingListStatus = 'active' | 'completed' | 'archived';
-type StoreCategory =
-  | 'produce'
-  | 'dairy'
-  | 'meat'
-  | 'frozen'
-  | 'pantry'
-  | 'bakery'
-  | 'other';
 ```
 
 ### Relationships
-
-- Belongs to one Household
-- Generated from MealPlans
-- Created by one User
-- Updates InventoryItems when marked purchased
+- Belongs to MealPlan
+- Shared with multiple Users (family members)
