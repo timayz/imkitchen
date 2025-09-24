@@ -72,9 +72,9 @@ RUN mkdir -p /data && chown -R app:app /data
 USER app
 
 # Set environment variables
-ENV DATABASE_URL=sqlite:/data/imkitchen.db
+ENV APP_ENVIRONMENT=production
+ENV IMKITCHEN_DATABASE_URL=sqlite:/data/imkitchen.db
 ENV RUST_LOG=info
-ENV ENVIRONMENT=production
 
 # Expose port
 EXPOSE 3000
