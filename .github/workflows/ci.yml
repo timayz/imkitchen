@@ -8,11 +8,12 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
   DATABASE_URL: sqlite:imkitchen.db
 
 jobs:
   test:
-    name: Test Suite
+    name: Test & Lint
     runs-on: ubuntu-latest
     
     steps:
@@ -24,21 +25,27 @@ jobs:
       with:
         components: rustfmt, clippy
         
-    - name: Cache dependencies
+    - name: Setup Rust cache
+      uses: Swatinem/rust-cache@v2
+      with:
+        cache-on-failure: true
+        
+    - name: Cache SQLx CLI
+      id: cache-sqlx
       uses: actions/cache@v4
       with:
-        path: |
-          ~/.cargo/bin/
-          ~/.cargo/registry/index/
-          ~/.cargo/registry/cache/
-          ~/.cargo/git/db/
-          target/
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        path: ~/.cargo/bin/sqlx
+        key: ${{ runner.os }}-sqlx-${{ env.SQLX_VERSION }}
         restore-keys: |
-          ${{ runner.os }}-cargo-
-          
+          ${{ runner.os }}-sqlx-
+      env:
+        SQLX_VERSION: 0.8.0
+        
     - name: Install SQLx CLI
-      run: cargo install sqlx-cli --no-default-features --features sqlite
+      if: steps.cache-sqlx.outputs.cache-hit != 'true'
+      run: cargo install sqlx-cli --version ${{ env.SQLX_VERSION }} --no-default-features --features sqlite
+      env:
+        SQLX_VERSION: 0.8.0
       
     - name: Create database
       run: sqlx database create
@@ -46,17 +53,68 @@ jobs:
     - name: Run database migrations
       run: sqlx migrate run
       
-    - name: Check formatting
-      run: cargo fmt --all -- --check
-      
-    - name: Run clippy
-      run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+    - name: Check formatting & linting
+      run: |
+        cargo fmt --all -- --check
+        cargo clippy --workspace --all-targets --all-features -- -D warnings
       
     - name: Run tests
       run: cargo test --workspace --all-features
+
+  coverage:
+    name: Coverage Report
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
       
-    - name: Install cargo-tarpaulin for coverage
-      run: cargo install cargo-tarpaulin
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+        
+    - name: Setup Rust cache
+      uses: Swatinem/rust-cache@v2
+      with:
+        cache-on-failure: true
+        
+    - name: Cache SQLx CLI
+      id: cache-sqlx
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/bin/sqlx
+        key: ${{ runner.os }}-sqlx-${{ env.SQLX_VERSION }}
+        restore-keys: |
+          ${{ runner.os }}-sqlx-
+      env:
+        SQLX_VERSION: 0.8.0
+        
+    - name: Install SQLx CLI
+      if: steps.cache-sqlx.outputs.cache-hit != 'true'
+      run: cargo install sqlx-cli --version ${{ env.SQLX_VERSION }} --no-default-features --features sqlite
+      env:
+        SQLX_VERSION: 0.8.0
+        
+    - name: Create database
+      run: sqlx database create
+      
+    - name: Run database migrations
+      run: sqlx migrate run
+        
+    - name: Cache cargo-tarpaulin
+      id: cache-tarpaulin
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/bin/cargo-tarpaulin
+        key: ${{ runner.os }}-tarpaulin-${{ env.TARPAULIN_VERSION }}
+      env:
+        TARPAULIN_VERSION: 0.30.0
+        
+    - name: Install cargo-tarpaulin
+      if: steps.cache-tarpaulin.outputs.cache-hit != 'true'
+      run: cargo install cargo-tarpaulin --version ${{ env.TARPAULIN_VERSION }}
+      env:
+        TARPAULIN_VERSION: 0.30.0
       
     - name: Generate coverage report
       run: cargo tarpaulin --workspace --all-features --out xml --output-dir coverage/
@@ -75,7 +133,6 @@ jobs:
   build:
     name: Build Application
     runs-on: ubuntu-latest
-    needs: test
     
     steps:
     - name: Checkout code
@@ -84,19 +141,11 @@ jobs:
     - name: Install Rust toolchain
       uses: dtolnay/rust-toolchain@stable
       
-    - name: Cache dependencies
-      uses: actions/cache@v4
+    - name: Setup Rust cache
+      uses: Swatinem/rust-cache@v2
       with:
-        path: |
-          ~/.cargo/bin/
-          ~/.cargo/registry/index/
-          ~/.cargo/registry/cache/
-          ~/.cargo/git/db/
-          target/
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-cargo-
-          
+        cache-on-failure: true
+        
     - name: Build release binary
       run: cargo build --release --workspace
       
@@ -113,7 +162,6 @@ jobs:
   docker:
     name: Docker Build
     runs-on: ubuntu-latest
-    needs: build
     
     steps:
     - name: Checkout code
@@ -130,6 +178,7 @@ jobs:
         tags: imkitchen:test
         cache-from: type=gha
         cache-to: type=gha,mode=max
+        platforms: linux/amd64
         
     - name: Test Docker container
       run: |
