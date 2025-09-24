@@ -68,15 +68,6 @@ COPY --chown=app:app migrations/ ./migrations/
 # Create directory for database with proper permissions
 RUN mkdir -p /data && chown -R app:app /data
 
-# Switch to app user to create database file
-USER app
-
-# Create empty database file
-RUN touch /data/imkitchen.db
-
-# Switch back to root for remaining setup
-USER root
-
 # Switch to non-root user
 USER app
 
