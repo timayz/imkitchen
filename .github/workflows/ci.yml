@@ -181,7 +181,7 @@ jobs:
       
     - name: Check binary size
       run: |
-        BINARY_SIZE=$(stat -f%z target/release/imkitchen-web 2>/dev/null || stat -c%s target/release/imkitchen-web)
+        BINARY_SIZE=$(stat -f%z target/release/imkitchen 2>/dev/null || stat -c%s target/release/imkitchen)
         echo "Binary size: ${BINARY_SIZE} bytes"
         # Fail if binary exceeds 100MB (reasonable limit)
         if [ $BINARY_SIZE -gt 104857600 ]; then

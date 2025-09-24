@@ -52,7 +52,7 @@ RUN apk add --no-cache \
 WORKDIR /app
 
 # Copy binary from builder stage
-COPY --from=builder /app/target/release/imkitchen-web ./imkitchen-web
+COPY --from=builder /app/target/release/imkitchen ./imkitchen
 
 # Copy configuration and migration files
 COPY --chown=app:app config/ ./config/
@@ -76,4 +76,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
 
 # Run the application
-CMD ["./imkitchen-web"]
+CMD ["./imkitchen"]
