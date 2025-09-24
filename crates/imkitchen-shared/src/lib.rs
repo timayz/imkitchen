@@ -15,8 +15,7 @@ pub enum DatabaseStatus {
     Error(String),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AppConfig {
     pub server: ServerConfig,
     pub database: DatabaseConfig,
@@ -77,7 +76,6 @@ impl Default for LoggingConfig {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {
