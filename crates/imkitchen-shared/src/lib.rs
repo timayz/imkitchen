@@ -16,6 +16,7 @@ pub enum DatabaseStatus {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct AppConfig {
     pub server: ServerConfig,
     pub database: DatabaseConfig,
@@ -77,15 +78,6 @@ impl Default for LoggingConfig {
     }
 }
 
-impl Default for AppConfig {
-    fn default() -> Self {
-        Self {
-            server: ServerConfig::default(),
-            database: DatabaseConfig::default(),
-            logging: LoggingConfig::default(),
-        }
-    }
-}
 
 #[cfg(test)]
 mod tests {
