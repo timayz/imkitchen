@@ -80,30 +80,14 @@ jobs:
         SQLX_VERSION: 0.8.0
         RUSTC_WRAPPER: sccache
         
-    - name: Cache cargo-nextest
-      id: cache-nextest
-      uses: actions/cache@v4
-      with:
-        path: ~/.cargo/bin/cargo-nextest
-        key: ${{ runner.os }}-nextest-${{ env.NEXTEST_VERSION }}
-      env:
-        NEXTEST_VERSION: 0.9.68
-        
-    - name: Install cargo-nextest
-      if: steps.cache-nextest.outputs.cache-hit != 'true'
-      run: cargo install cargo-nextest --version ${{ env.NEXTEST_VERSION }}
-      env:
-        NEXTEST_VERSION: 0.9.68
-        RUSTC_WRAPPER: sccache
-      
     - name: Create database
       run: sqlx database create
       
     - name: Run database migrations
       run: sqlx migrate run
       
-    - name: Run tests with nextest
-      run: cargo nextest run --workspace --all-features --jobs $(nproc)
+    - name: Run tests
+      run: cargo test --workspace --all-features --jobs $(nproc)
       env:
         RUSTC_WRAPPER: sccache
 
