@@ -1,0 +1,18 @@
+[package]
+name = "imkitchen-shared"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Configuration
+serde = { workspace = true }
+
+# Error Handling
+thiserror = { workspace = true }
+
+# Utilities
+uuid = { workspace = true }
+chrono = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
