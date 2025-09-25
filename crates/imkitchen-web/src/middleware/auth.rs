@@ -65,7 +65,7 @@ pub async fn session_auth(
                 (chrono::Utc::now() - chrono::Duration::days(1)).timestamp(),
             )
             .unwrap();
-            cookie.set_expires(Some(past_time.into()));
+            cookie.set_expires(Some(past_time));
             cookies.add(cookie);
 
             Err((

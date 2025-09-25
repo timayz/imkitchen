@@ -155,7 +155,7 @@ pub async fn login_handler(
             cookie.set_path("/");
             let expires_offset =
                 OffsetDateTime::from_unix_timestamp(session.expires_at.timestamp()).unwrap();
-            cookie.set_expires(Some(expires_offset.into()));
+            cookie.set_expires(Some(expires_offset));
             cookies.add(cookie);
 
             // Convert core types to shared types
@@ -432,7 +432,7 @@ pub async fn logout_handler(
                     (chrono::Utc::now() - chrono::Duration::days(1)).timestamp(),
                 )
                 .unwrap();
-                cookie.set_expires(Some(past_time.into()));
+                cookie.set_expires(Some(past_time));
                 cookies.add(cookie);
 
                 let response = AuthResponse {
