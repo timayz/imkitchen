@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+pub mod auth_types;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HealthResponse {
     pub status: String,

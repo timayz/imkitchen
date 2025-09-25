@@ -1,12 +1,19 @@
+use crate::services::SessionCleanupService;
 use imkitchen_shared::{AppConfig, AppError, DatabaseStatus, HealthResponse};
 use sqlx::SqlitePool;
 use std::time::Instant;
 use tracing::{error, info};
 
+pub mod models;
+pub mod repositories;
+pub mod services;
+pub mod utils;
+
 pub struct AppState {
     pub db: Option<SqlitePool>,
     pub config: AppConfig,
     pub start_time: Instant,
+    pub session_cleanup_handle: Option<tokio::task::JoinHandle<()>>,
 }
 
 impl AppState {
@@ -15,6 +22,7 @@ impl AppState {
             db: None,
             config,
             start_time: Instant::now(),
+            session_cleanup_handle: None,
         }
     }
 
@@ -24,7 +32,15 @@ impl AppState {
         match SqlitePool::connect(&self.config.database.url).await {
             Ok(pool) => {
                 info!("Database connection established");
+
+                // Start session cleanup background task
+                let cleanup_service = SessionCleanupService::new(pool.clone());
+                let cleanup_handle = cleanup_service.start();
+
                 self.db = Some(pool);
+                self.session_cleanup_handle = Some(cleanup_handle);
+
+                info!("Session cleanup service started");
                 Ok(())
             }
             Err(e) => {
@@ -62,6 +78,25 @@ impl AppState {
             },
             None => DatabaseStatus::Disconnected,
         }
+    }
+
+    /// Gracefully shutdown the application
+    pub async fn shutdown(&mut self) {
+        info!("Shutting down application...");
+
+        // Stop session cleanup task if running
+        if let Some(handle) = self.session_cleanup_handle.take() {
+            handle.abort();
+            info!("Session cleanup service stopped");
+        }
+
+        // Close database connection
+        if let Some(pool) = self.db.take() {
+            pool.close().await;
+            info!("Database connection closed");
+        }
+
+        info!("Application shutdown complete");
     }
 }
 

@@ -1,15 +1,27 @@
-use axum::{extract::State, http::StatusCode, response::Json, routing::get, Router};
+use axum::{
+    extract::State,
+    http::StatusCode,
+    middleware::from_fn_with_state,
+    response::Json,
+    routing::{get, post, Router},
+};
 use imkitchen_core::AppState;
 use imkitchen_shared::{AppConfig, AppError, HealthResponse};
+use std::net::SocketAddr;
 use std::{sync::Arc, time::Duration};
 use tokio::sync::RwLock;
+use tower_cookies::CookieManagerLayer;
 use tower_http::{
     catch_panic::CatchPanicLayer,
     cors::{Any, CorsLayer},
+    services::ServeDir,
     timeout::TimeoutLayer,
     trace::TraceLayer,
 };
 use tracing::{error, info};
+
+pub mod handlers;
+pub mod middleware;
 
 pub type SharedState = Arc<RwLock<AppState>>;
 
@@ -31,9 +43,31 @@ pub async fn health_handler(
     }
 }
 
+/// Create protected routes that require authentication
+fn create_protected_router(state: SharedState) -> Router<SharedState> {
+    Router::new()
+        .route("/profile", get(handlers::get_profile))
+        .route("/profile", axum::routing::put(handlers::update_profile))
+        .layer(from_fn_with_state(
+            state.clone(),
+            middleware::csrf_protection,
+        ))
+        .layer(from_fn_with_state(state.clone(), middleware::session_auth))
+}
+
 pub fn create_router(state: SharedState) -> Router {
     Router::new()
         .route("/health", get(health_handler))
+        .route("/", get(handlers::hello_page))
+        .route("/login", get(handlers::login_page))
+        .route("/login", post(handlers::login_form_handler))
+        .route("/register", get(handlers::register_page))
+        .route("/register", post(handlers::register_form_handler))
+        .route("/api/csrf-token", get(handlers::get_csrf_token_handler))
+        .nest_service("/static", ServeDir::new("crates/imkitchen-web/static"))
+        .nest("/api/auth", handlers::create_auth_router())
+        .nest("/api/user", create_protected_router(state.clone()))
+        .layer(CookieManagerLayer::new())
         .layer(CatchPanicLayer::new())
         .layer(TimeoutLayer::new(Duration::from_secs(30)))
         .layer(
@@ -92,7 +126,12 @@ pub async fn start_server(config: AppConfig) -> Result<(), AppError> {
         }
     };
 
-    if let Err(e) = axum::serve(listener, app).await {
+    if let Err(e) = axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await
+    {
         error!("Server error: {}", e);
         return Err(AppError::Server(format!("Server failed: {}", e)));
     }

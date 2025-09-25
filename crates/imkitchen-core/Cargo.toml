@@ -15,6 +15,7 @@ tracing = { workspace = true }
 
 # Configuration
 serde = { workspace = true }
+serde_json = { workspace = true }
 
 # Error Handling
 thiserror = { workspace = true }
@@ -29,6 +30,9 @@ rust-i18n = { workspace = true }
 # Utilities
 uuid = { workspace = true }
 chrono = { workspace = true }
+
+# Authentication
+bcrypt = { workspace = true }
 
 # Local Dependencies
 imkitchen-shared = { path = "../imkitchen-shared" }

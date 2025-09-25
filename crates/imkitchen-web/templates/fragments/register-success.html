@@ -1,0 +1,43 @@
+<form id="register-form" ts-req="/register" ts-target="#register-form" ts-req-method="post">
+    <div class="form-group">
+        <label for="name">Full Name</label>
+        <input type="text" id="name" name="name" value="">
+        <div class="error" id="name-error"></div>
+    </div>
+    
+    <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" value="">
+        <div class="error" id="email-error"></div>
+    </div>
+    
+    <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" value="">
+        <div class="password-requirements">
+            Must be 8+ characters with uppercase, lowercase, and number
+        </div>
+        <div class="error" id="password-error"></div>
+    </div>
+    
+    <div class="form-group">
+        <label for="familySize">Family Size</label>
+        <select id="familySize" name="familySize">
+            <option value="">Select family size</option>
+            <option value="1">1 person</option>
+            <option value="2">2 people</option>
+            <option value="3">3 people</option>
+            <option value="4">4 people</option>
+            <option value="5">5 people</option>
+            <option value="6">6 people</option>
+            <option value="7">7 people</option>
+            <option value="8">8 people</option>
+        </select>
+        <div class="error" id="familySize-error"></div>
+    </div>
+    
+    <button type="submit" class="btn">Create Account</button>
+    
+    <div class="success" id="register-success">✅ Account created successfully! Redirecting...</div>
+    <div class="error" id="register-error"></div>
+</form>

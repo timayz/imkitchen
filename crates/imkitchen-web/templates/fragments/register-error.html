@@ -1,0 +1,43 @@
+<form id="register-form" ts-req="/auth/register" ts-target="#register-form" ts-req-method="post">
+    <div class="form-group">
+        <label for="name">Full Name</label>
+        <input type="text" id="name" name="name" value="{{ name }}">
+        <div class="error" id="name-error">{{ name_error }}</div>
+    </div>
+    
+    <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" value="{{ email }}">
+        <div class="error" id="email-error">{{ email_error }}</div>
+    </div>
+    
+    <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" value="">
+        <div class="password-requirements">
+            Must be 8+ characters with uppercase, lowercase, and number
+        </div>
+        <div class="error" id="password-error">{{ password_error }}</div>
+    </div>
+    
+    <div class="form-group">
+        <label for="familySize">Family Size</label>
+        <select id="familySize" name="familySize">
+            <option value="">Select family size</option>
+            <option value="1" {% if family_size == "1" %}selected{% endif %}>1 person</option>
+            <option value="2" {% if family_size == "2" %}selected{% endif %}>2 people</option>
+            <option value="3" {% if family_size == "3" %}selected{% endif %}>3 people</option>
+            <option value="4" {% if family_size == "4" %}selected{% endif %}>4 people</option>
+            <option value="5" {% if family_size == "5" %}selected{% endif %}>5 people</option>
+            <option value="6" {% if family_size == "6" %}selected{% endif %}>6 people</option>
+            <option value="7" {% if family_size == "7" %}selected{% endif %}>7 people</option>
+            <option value="8" {% if family_size == "8" %}selected{% endif %}>8 people</option>
+        </select>
+        <div class="error" id="familySize-error">{{ family_size_error }}</div>
+    </div>
+    
+    <button type="submit" class="btn">Create Account</button>
+    
+    <div class="success" id="register-success"></div>
+    <div class="error" id="register-error">{{ error_message }}</div>
+</form>

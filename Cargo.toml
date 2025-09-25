@@ -8,7 +8,7 @@ resolver = "2"
 
 [workspace.dependencies]
 # Web Framework
-axum = "0.8"
+axum = { version = "0.8", features = ["macros"] }
 askama = "0.14"
 tower = "0.5"
 tower-http = "0.6"
@@ -41,6 +41,10 @@ rust-i18n = "3"
 # Utilities
 uuid = { version = "1.0", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
+
+# Authentication
+bcrypt = "0.15"
+tower-cookies = "0.11"
 
 # Development Dependencies (moved to workspace.dependencies for easier access)
 # [workspace.dev-dependencies]
