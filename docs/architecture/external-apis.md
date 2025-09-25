@@ -1064,7 +1064,7 @@ imkitchen/
 │   │   ├── css/
 │   │   │   └── tailwind.css          # Compiled Tailwind CSS
 │   │   ├── js/
-│   │   │   ├── twinspark.min.js      # Client-side enhancement library
+│   │   │   ├── twinspark.js          # Client-side enhancement library
 │   │   │   └── app.js                # Custom JavaScript enhancements
 │   │   ├── images/
 │   │   │   ├── icons/                # App icons for PWA

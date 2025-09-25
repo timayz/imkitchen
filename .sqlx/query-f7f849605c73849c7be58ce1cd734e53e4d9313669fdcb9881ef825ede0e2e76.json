@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            UPDATE users \n            SET password_hash = ?, \n                password_reset_token = NULL, \n                password_reset_expires_at = NULL\n            WHERE password_reset_token = ? \n            AND password_reset_expires_at > datetime('now')\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "f7f849605c73849c7be58ce1cd734e53e4d9313669fdcb9881ef825ede0e2e76"
+}
