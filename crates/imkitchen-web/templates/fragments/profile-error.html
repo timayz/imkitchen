@@ -1,0 +1,170 @@
+<!-- Error Message -->
+<div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+    {{ error_message }}
+</div>
+
+<form id="profile-form" method="post" action="/profile" ts-req="/profile" ts-target="#profile-form" ts-req-method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                
+                <!-- Personal Information -->
+                <div class="space-y-6">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900 mb-4">Personal Information</h2>
+                        
+                        <div class="grid grid-cols-1 gap-4">
+                            <div>
+                                <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
+                                <input 
+                                    type="text" 
+                                    id="name" 
+                                    name="name" 
+                                    value="{{ name }}"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
+                                    required
+                                >
+                                {% if name_error != "" %}
+                                <p class="mt-1 text-sm text-red-600">{{ name_error }}</p>
+                                {% endif %}
+                            </div>
+
+                            <div>
+                                <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                                <input 
+                                    type="email" 
+                                    id="email" 
+                                    value="{{ email }}"
+                                    class="mt-1 block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm px-3 py-2"
+                                    readonly
+                                    title="Email cannot be changed"
+                                >
+                                <p class="mt-1 text-sm text-gray-500">Email cannot be changed</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cooking Preferences -->
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900 mb-4">Cooking Preferences</h2>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="family_size" class="block text-sm font-medium text-gray-700">Family Size</label>
+                                <select 
+                                    id="family_size" 
+                                    name="familySize"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
+                                >
+                                    {% for size in 1..=8 %}
+                                    <option value="{{ size }}" {% if self.is_family_size_selected(size) %}selected{% endif %}>
+                                        {{ size }} {% if size == 1 %}person{% else %}people{% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                {% if family_size_error != "" %}
+                                <p class="mt-1 text-sm text-red-600">{{ family_size_error }}</p>
+                                {% endif %}
+                            </div>
+
+                            <div>
+                                <label for="cooking_skill_level" class="block text-sm font-medium text-gray-700">Cooking Skill Level</label>
+                                <select 
+                                    id="cooking_skill_level" 
+                                    name="cookingSkillLevel"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
+                                >
+                                    <option value="beginner" {% if cooking_skill_level == "beginner" %}selected{% endif %}>Beginner</option>
+                                    <option value="intermediate" {% if cooking_skill_level == "intermediate" %}selected{% endif %}>Intermediate</option>
+                                    <option value="advanced" {% if cooking_skill_level == "advanced" %}selected{% endif %}>Advanced</option>
+                                </select>
+                                {% if cooking_skill_level_error != "" %}
+                                <p class="mt-1 text-sm text-red-600">{{ cooking_skill_level_error }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cooking Time Preferences -->
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900 mb-4">Time Preferences</h2>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="weekday_time" class="block text-sm font-medium text-gray-700">Weekday Max Cooking Time (minutes)</label>
+                                <input 
+                                    type="number" 
+                                    id="weekday_time" 
+                                    name="cookingTimePreferences.weekdayMaxMinutes"
+                                    value="{{ weekday_max_minutes }}"
+                                    min="5" 
+                                    max="480"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
+                                >
+                                {% if weekday_time_error != "" %}
+                                <p class="mt-1 text-sm text-red-600">{{ weekday_time_error }}</p>
+                                {% endif %}
+                            </div>
+
+                            <div>
+                                <label for="weekend_time" class="block text-sm font-medium text-gray-700">Weekend Max Cooking Time (minutes)</label>
+                                <input 
+                                    type="number" 
+                                    id="weekend_time" 
+                                    name="cookingTimePreferences.weekendMaxMinutes"
+                                    value="{{ weekend_max_minutes }}"
+                                    min="5" 
+                                    max="480"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
+                                >
+                                {% if weekend_time_error != "" %}
+                                <p class="mt-1 text-sm text-red-600">{{ weekend_time_error }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dietary Restrictions -->
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900 mb-4">Dietary Restrictions</h2>
+                        
+                        <div class="space-y-2">
+                            {% for restriction in dietary_options %}
+                            <label class="flex items-center">
+                                <input 
+                                    type="checkbox" 
+                                    name="dietaryRestrictions" 
+                                    value="{{ restriction }}"
+                                    {% if self.has_dietary_restriction_error(restriction) %}checked{% endif %}
+                                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                >
+                                <span class="ml-2 text-sm text-gray-700 capitalize">
+                                    {{ self.format_restriction(restriction) }}
+                                </span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                        {% if dietary_restrictions_error != "" %}
+                        <p class="mt-1 text-sm text-red-600">{{ dietary_restrictions_error }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex justify-between pt-6">
+                        <button 
+                            type="submit"
+                            class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                        >
+                            Update Profile
+                        </button>
+                        
+                        <button 
+                            type="button" 
+                            disabled
+                            class="bg-gray-400 text-white font-medium py-2 px-4 rounded-md cursor-not-allowed"
+                            title="Account deletion feature coming soon"
+                        >
+                            Delete Account
+                        </button>
+                    </div>
+                </div>
+
+            </form>

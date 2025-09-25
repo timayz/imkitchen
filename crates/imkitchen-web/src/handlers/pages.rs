@@ -9,6 +9,8 @@ use axum::{
 use imkitchen_core::models::user::{CreateUserRequest, LoginRequest};
 use imkitchen_core::services::AuthService;
 use serde::Deserialize;
+use tower_cookies::cookie::time::OffsetDateTime;
+use tower_cookies::{Cookie, Cookies};
 use tracing::{info, warn};
 
 #[derive(Template)]
@@ -113,6 +115,7 @@ pub async fn register_page() -> impl IntoResponse {
 /// Handle login form submission (TwinSpark HTML endpoint)
 pub async fn login_form_handler(
     State(shared_state): State<SharedState>,
+    cookies: Cookies,
     Form(form_data): Form<LoginFormData>,
 ) -> Response {
     info!("Login form submitted for: {}", form_data.email);
@@ -146,7 +149,17 @@ pub async fn login_form_handler(
         .login_user(login_request, "127.0.0.1".to_string())
         .await
     {
-        Ok(_user) => {
+        Ok((_auth_response, session)) => {
+            // Set session cookie
+            let mut cookie = Cookie::new("session_id", session.session_token);
+            cookie.set_http_only(true);
+            cookie.set_secure(false); // Set to false for development on HTTP
+            cookie.set_same_site(tower_cookies::cookie::SameSite::Strict);
+            cookie.set_path("/");
+            let expires_offset =
+                OffsetDateTime::from_unix_timestamp(session.expires_at.timestamp()).unwrap();
+            cookie.set_expires(Some(expires_offset));
+            cookies.add(cookie);
             let template = LoginSuccessTemplate {};
             match template.render() {
                 Ok(html) => {

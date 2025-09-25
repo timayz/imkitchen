@@ -56,10 +56,10 @@ impl UserRepository {
             r#"
             INSERT INTO users (
                 id, email, password_hash, name, family_size, dietary_restrictions,
-                cooking_skill_level, email_verified, email_verification_token, 
+                cooking_skill_level, cooking_time_preferences, email_verified, email_verification_token, 
                 email_verification_expires_at, created_at, updated_at, last_active
             )
-            VALUES (?, ?, ?, ?, ?, ?, 'beginner', 0, ?, ?, datetime('now'), datetime('now'), datetime('now'))
+            VALUES (?, ?, ?, ?, ?, ?, 'beginner', '{"weekdayMaxMinutes": 30, "weekendMaxMinutes": 60}', 0, ?, ?, datetime('now'), datetime('now'), datetime('now'))
             "#,
         )
         .bind(&user_id)
@@ -120,6 +120,7 @@ impl UserRepository {
             row.try_get("email_verification_expires_at")?;
         let password_reset_token: Option<String> = row.try_get("password_reset_token")?;
         let password_reset_expires_at: Option<String> = row.try_get("password_reset_expires_at")?;
+        let cooking_time_preferences: Option<String> = row.try_get("cooking_time_preferences")?;
         let created_at: Option<String> = row.try_get("created_at")?;
         let last_active: Option<String> = row.try_get("last_active")?;
 
@@ -154,6 +155,9 @@ impl UserRepository {
             email_verification_expires_at: parse_optional_datetime(email_verification_expires_at),
             password_reset_token,
             password_reset_expires_at: parse_optional_datetime(password_reset_expires_at),
+            cooking_time_preferences: cooking_time_preferences.unwrap_or_else(|| {
+                r#"{"weekdayMaxMinutes": 30, "weekendMaxMinutes": 60}"#.to_string()
+            }),
             created_at: parse_datetime(created_at),
             last_active: parse_datetime(last_active),
         })
@@ -166,6 +170,58 @@ impl UserRepository {
             .execute(&self.pool)
             .await?;
 
+        Ok(())
+    }
+
+    /// Update user profile
+    pub async fn update_profile(&self, user: &User) -> Result<(), UserRepositoryError> {
+        sqlx::query(
+            r#"
+            UPDATE users SET
+                name = ?,
+                family_size = ?,
+                dietary_restrictions = ?,
+                cooking_skill_level = ?,
+                cooking_time_preferences = ?,
+                last_active = datetime('now')
+            WHERE id = ?
+            "#,
+        )
+        .bind(&user.name)
+        .bind(user.family_size)
+        .bind(&user.dietary_restrictions)
+        .bind(&user.cooking_skill_level)
+        .bind(&user.cooking_time_preferences)
+        .bind(&user.id)
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    /// Delete user account and cascade delete related data
+    pub async fn delete_user(&self, user_id: &str) -> Result<(), UserRepositoryError> {
+        // Start a transaction for cascade delete
+        let mut tx = self.pool.begin().await?;
+
+        // Delete user sessions (will cascade automatically due to FK constraints)
+        sqlx::query("DELETE FROM user_sessions WHERE user_id = ?")
+            .bind(user_id)
+            .execute(&mut *tx)
+            .await?;
+
+        // Delete the user (this will cascade delete other related data)
+        let result = sqlx::query("DELETE FROM users WHERE id = ?")
+            .bind(user_id)
+            .execute(&mut *tx)
+            .await?;
+
+        if result.rows_affected() == 0 {
+            tx.rollback().await?;
+            return Err(UserRepositoryError::NotFound);
+        }
+
+        tx.commit().await?;
         Ok(())
     }
 
