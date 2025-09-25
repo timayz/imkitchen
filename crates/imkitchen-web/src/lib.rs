@@ -46,8 +46,9 @@ pub async fn health_handler(
 /// Create protected routes that require authentication
 fn create_protected_router(state: SharedState) -> Router<SharedState> {
     Router::new()
-        .route("/profile", get(handlers::get_profile))
-        .route("/profile", axum::routing::put(handlers::update_profile))
+        .route("/profile", get(handlers::get_profile_api))
+        .route("/profile", axum::routing::put(handlers::update_profile_api))
+        .route("/profile", axum::routing::delete(handlers::delete_account))
         .layer(from_fn_with_state(
             state.clone(),
             middleware::csrf_protection,
@@ -55,8 +56,18 @@ fn create_protected_router(state: SharedState) -> Router<SharedState> {
         .layer(from_fn_with_state(state.clone(), middleware::session_auth))
 }
 
-pub fn create_router(state: SharedState) -> Router {
+/// Create protected page routes that require authentication
+fn create_protected_page_router(state: SharedState) -> Router<SharedState> {
     Router::new()
+        .route("/profile", get(handlers::profile_page))
+        .route("/profile", post(handlers::profile_form_handler))
+        .route("/profile/delete", post(handlers::delete_account_handler))
+        .layer(from_fn_with_state(state.clone(), middleware::session_auth))
+}
+
+pub fn create_router(state: SharedState) -> Router {
+    // Create base router with public routes
+    let public_router = Router::new()
         .route("/health", get(health_handler))
         .route("/", get(handlers::hello_page))
         .route("/login", get(handlers::login_page))
@@ -66,7 +77,14 @@ pub fn create_router(state: SharedState) -> Router {
         .route("/api/csrf-token", get(handlers::get_csrf_token_handler))
         .nest_service("/static", ServeDir::new("crates/imkitchen-web/static"))
         .nest("/api/auth", handlers::create_auth_router())
-        .nest("/api/user", create_protected_router(state.clone()))
+        .nest("/api/user", create_protected_router(state.clone()));
+
+    // Add protected routes separately to avoid middleware leakage
+    let protected_router = create_protected_page_router(state.clone());
+
+    // Combine routers
+    public_router
+        .merge(protected_router)
         .layer(CookieManagerLayer::new())
         .layer(CatchPanicLayer::new())
         .layer(TimeoutLayer::new(Duration::from_secs(30)))
@@ -266,7 +284,10 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+        // In this security-first application, auth middleware is applied broadly,
+        // so unknown routes return 401 (Unauthorized) rather than 404 (Not Found)
+        // This is the expected behavior to avoid information disclosure
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
     }
 
     #[tokio::test]

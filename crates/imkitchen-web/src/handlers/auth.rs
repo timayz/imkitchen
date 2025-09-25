@@ -64,6 +64,16 @@ pub async fn register_handler(
                         CookingSkillLevel::Advanced
                     }
                 },
+                cooking_time_preferences: CookingTimePreferences {
+                    weekday_max_minutes: auth_response
+                        .user
+                        .cooking_time_preferences
+                        .weekday_max_minutes,
+                    weekend_max_minutes: auth_response
+                        .user
+                        .cooking_time_preferences
+                        .weekend_max_minutes,
+                },
                 email_verified: auth_response.user.email_verified,
                 created_at: auth_response.user.created_at.to_rfc3339(),
                 last_active: auth_response.user.last_active.to_rfc3339(),
@@ -150,7 +160,7 @@ pub async fn login_handler(
             // Set session cookie
             let mut cookie = Cookie::new("session_id", session.session_token);
             cookie.set_http_only(true);
-            cookie.set_secure(true); // HTTPS only in production
+            cookie.set_secure(false); // Set to false for development on HTTP
             cookie.set_same_site(tower_cookies::cookie::SameSite::Strict);
             cookie.set_path("/");
             let expires_offset =
@@ -175,6 +185,16 @@ pub async fn login_handler(
                     imkitchen_core::models::user::CookingSkillLevel::Advanced => {
                         CookingSkillLevel::Advanced
                     }
+                },
+                cooking_time_preferences: CookingTimePreferences {
+                    weekday_max_minutes: auth_response
+                        .user
+                        .cooking_time_preferences
+                        .weekday_max_minutes,
+                    weekend_max_minutes: auth_response
+                        .user
+                        .cooking_time_preferences
+                        .weekend_max_minutes,
                 },
                 email_verified: auth_response.user.email_verified,
                 created_at: auth_response.user.created_at.to_rfc3339(),

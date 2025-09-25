@@ -49,6 +49,8 @@ pub struct UserPublic {
     pub dietary_restrictions: Vec<String>,
     #[serde(rename = "cookingSkillLevel")]
     pub cooking_skill_level: CookingSkillLevel,
+    #[serde(rename = "cookingTimePreferences")]
+    pub cooking_time_preferences: CookingTimePreferences,
     #[serde(rename = "emailVerified")]
     pub email_verified: bool,
     #[serde(rename = "createdAt")]
@@ -70,6 +72,42 @@ pub struct ErrorResponse {
     pub success: bool,
     pub error: String,
     pub code: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct CookingTimePreferences {
+    pub weekday_max_minutes: i32,
+    pub weekend_max_minutes: i32,
+}
+
+impl Default for CookingTimePreferences {
+    fn default() -> Self {
+        Self {
+            weekday_max_minutes: 30,
+            weekend_max_minutes: 60,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProfileUpdateRequest {
+    pub name: Option<String>,
+    #[serde(rename = "familySize")]
+    pub family_size: Option<i32>,
+    #[serde(rename = "dietaryRestrictions")]
+    pub dietary_restrictions: Option<Vec<String>>,
+    #[serde(rename = "cookingSkillLevel")]
+    pub cooking_skill_level: Option<CookingSkillLevel>,
+    #[serde(rename = "cookingTimePreferences")]
+    pub cooking_time_preferences: Option<CookingTimePreferences>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProfileResponse {
+    pub success: bool,
+    pub message: String,
+    pub user: Option<UserPublic>,
 }
 
 impl ErrorResponse {
@@ -119,6 +157,7 @@ mod tests {
             family_size: 4,
             dietary_restrictions: vec!["vegetarian".to_string()],
             cooking_skill_level: CookingSkillLevel::Intermediate,
+            cooking_time_preferences: CookingTimePreferences::default(),
             email_verified: true,
             created_at: "2023-01-01T00:00:00Z".to_string(),
             last_active: "2023-01-01T00:00:00Z".to_string(),

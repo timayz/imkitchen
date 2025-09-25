@@ -20,6 +20,7 @@ pub struct User {
     pub password_reset_token: Option<String>,
     #[serde(skip_serializing)]
     pub password_reset_expires_at: Option<DateTime<Utc>>,
+    pub cooking_time_preferences: String, // JSON string
     pub created_at: DateTime<Utc>,
     pub last_active: DateTime<Utc>,
 }
@@ -32,6 +33,7 @@ pub struct UserPublic {
     pub family_size: i32,
     pub dietary_restrictions: Vec<String>,
     pub cooking_skill_level: CookingSkillLevel,
+    pub cooking_time_preferences: CookingTimePreferences,
     pub email_verified: bool,
     pub created_at: DateTime<Utc>,
     pub last_active: DateTime<Utc>,
@@ -43,6 +45,22 @@ pub enum CookingSkillLevel {
     Beginner,
     Intermediate,
     Advanced,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct CookingTimePreferences {
+    pub weekday_max_minutes: i32,
+    pub weekend_max_minutes: i32,
+}
+
+impl Default for CookingTimePreferences {
+    fn default() -> Self {
+        Self {
+            weekday_max_minutes: 30,
+            weekend_max_minutes: 60,
+        }
+    }
 }
 
 impl From<String> for CookingSkillLevel {
@@ -72,6 +90,9 @@ impl From<User> for UserPublic {
 
         let cooking_skill_level = user.cooking_skill_level.into();
 
+        let cooking_time_preferences: CookingTimePreferences =
+            serde_json::from_str(&user.cooking_time_preferences).unwrap_or_default();
+
         Self {
             id: user.id,
             email: user.email,
@@ -79,6 +100,7 @@ impl From<User> for UserPublic {
             family_size: user.family_size,
             dietary_restrictions,
             cooking_skill_level,
+            cooking_time_preferences,
             email_verified: user.email_verified,
             created_at: user.created_at,
             last_active: user.last_active,

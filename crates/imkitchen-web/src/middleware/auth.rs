@@ -57,7 +57,7 @@ pub async fn session_auth(
             // Clear invalid session cookie
             let mut cookie = Cookie::new("session_id", "");
             cookie.set_http_only(true);
-            cookie.set_secure(true);
+            cookie.set_secure(false);
             cookie.set_same_site(tower_cookies::cookie::SameSite::Strict);
             cookie.set_path("/");
             // Set expiration to past time to delete cookie
