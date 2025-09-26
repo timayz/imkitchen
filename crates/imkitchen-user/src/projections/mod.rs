@@ -1,7 +1,7 @@
 // Evento projections for user views
 
 use chrono::{DateTime, Utc};
-use imkitchen_shared::{Email, FamilySize, SkillLevel};
+use imkitchen_shared::SkillLevel;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 

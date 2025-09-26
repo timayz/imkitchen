@@ -4,7 +4,7 @@ use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::domain::{MealSlot, MealType};
+use crate::domain::MealType;
 
 /// Read model for meal plan calendar view
 #[derive(Debug, Clone, Serialize, Deserialize)]
