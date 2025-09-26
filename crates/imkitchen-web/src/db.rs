@@ -171,7 +171,7 @@ pub async fn test_database_connection(pool: &SqlitePool) -> Result<(), sqlx::Err
 
 /// Get database connection pool stats
 pub fn get_pool_stats(pool: &SqlitePool) -> DatabaseStats {
-    let size = pool.size() as u32;
+    let size = pool.size();
     let idle = pool.num_idle() as u32;
 
     DatabaseStats {

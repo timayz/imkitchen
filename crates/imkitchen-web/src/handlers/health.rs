@@ -133,7 +133,7 @@ async fn check_database_health(db_pool: &Option<SqlitePool>) -> ComponentHealth 
                     let mut details = HashMap::new();
                     details.insert(
                         "connections_active".to_string(),
-                        serde_json::Value::Number((pool.size() as u32).into()),
+                        serde_json::Value::Number(pool.size().into()),
                     );
                     details.insert(
                         "connections_idle".to_string(),
