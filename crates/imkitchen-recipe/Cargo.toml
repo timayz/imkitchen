@@ -1,0 +1,17 @@
+[package]
+name = "imkitchen-recipe"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+validator = { workspace = true }
+# evento = { workspace = true }  # TODO: Fix compilation issues
+thiserror = { workspace = true }
+imkitchen-shared = { path = "../imkitchen-shared" }
