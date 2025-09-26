@@ -2,7 +2,6 @@
 
 use clap::{Parser, Subcommand};
 use tracing::{info, Level};
-use tracing_subscriber;
 
 /// IMKitchen CLI - Intelligent Meal Planning Application
 #[derive(Parser)]
