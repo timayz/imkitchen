@@ -10,6 +10,7 @@
 - **Validation First:** Input validation with validator before any business logic execution
 - **Testing Required:** Minimum 90% test coverage, TDD for all new features
 - **Crate Boundaries:** Domain crates cannot depend on web crate, only shared types
+- **Git:** Use semantic release conversion for git commit and git branch name
 
 ## Naming Conventions
 
