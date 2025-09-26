@@ -303,10 +303,31 @@ async fn main() -> Result<()> {
                         // Note: Actual daemon implementation would require fork/detach
                     }
 
-                    // Create database pool for graceful shutdown support
-                    let db_pool = create_database_if_not_exists(&config.database_url)
-                        .await
-                        .ok();
+                    // Create database pool with health checks and retry logic
+                    let db_config =
+                        imkitchen_web::DatabaseConfig::from_url(config.database_url.clone())
+                            .with_max_connections(10)
+                            .with_timeouts(
+                                std::time::Duration::from_secs(30),
+                                std::time::Duration::from_secs(10),
+                            );
+
+                    let db_pool = match imkitchen_web::create_database_pool_with_retry(
+                        &db_config,
+                        3,                                 // max retries
+                        std::time::Duration::from_secs(2), // retry delay
+                    )
+                    .await
+                    {
+                        Ok(pool) => {
+                            info!("Database connection pool created successfully");
+                            Some(pool)
+                        }
+                        Err(e) => {
+                            error!("Failed to create database pool: {}", e);
+                            None
+                        }
+                    };
 
                     // Start the web server with graceful shutdown
                     if let Err(e) = imkitchen_web::start_server_with_shutdown(
