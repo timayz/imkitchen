@@ -6,7 +6,11 @@ use sqlx::SqlitePool;
 use std::fs;
 use std::path::PathBuf;
 use std::process;
-use tracing::{error, info, Level};
+use tracing::{error, info};
+use tracing_appender::rolling::Rotation;
+
+mod monitoring;
+use monitoring::{setup_monitoring, LogFormat};
 
 /// IMKitchen CLI - Intelligent Meal Planning Application
 #[derive(Parser)]
@@ -88,6 +92,9 @@ struct Config {
     database_url: String,
     server_host: String,
     server_port: u16,
+    log_format: LogFormat,
+    log_dir: Option<PathBuf>,
+    log_rotation: Rotation,
 }
 
 impl Config {
@@ -105,10 +112,28 @@ impl Config {
             .and_then(|p| p.parse().ok())
             .unwrap_or(3000);
 
+        let log_format = match std::env::var("LOG_FORMAT").as_deref() {
+            Ok("json") => LogFormat::Json,
+            Ok("compact") => LogFormat::Compact,
+            _ => LogFormat::Pretty,
+        };
+
+        let log_dir = std::env::var("LOG_DIR").ok().map(PathBuf::from);
+
+        let log_rotation = match std::env::var("LOG_ROTATION").as_deref() {
+            Ok("hourly") => Rotation::HOURLY,
+            Ok("daily") => Rotation::DAILY,
+            Ok("never") => Rotation::NEVER,
+            _ => Rotation::DAILY,
+        };
+
         Ok(Config {
             database_url,
             server_host,
             server_port,
+            log_format,
+            log_dir,
+            log_rotation,
         })
     }
 }
@@ -225,38 +250,21 @@ fn write_pid_file(path: &PathBuf) -> Result<()> {
     fs::write(path, pid.to_string()).context("Failed to write PID file")
 }
 
-fn setup_logging(log_level: Option<&String>) {
-    // Get log level from CLI arg or environment variable
-    let env_log_level = std::env::var("RUST_LOG").ok();
-    let effective_log_level = log_level
-        .map(|s| s.as_str())
-        .or(env_log_level.as_deref())
-        .unwrap_or("info");
-
-    let level = match effective_log_level {
-        "trace" => Level::TRACE,
-        "debug" => Level::DEBUG,
-        "info" => Level::INFO,
-        "warn" => Level::WARN,
-        "error" => Level::ERROR,
-        _ => Level::INFO,
-    };
-
-    tracing_subscriber::fmt()
-        .with_max_level(level)
-        .with_target(false)
-        .init();
-}
-
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    // Setup logging first
-    setup_logging(cli.log_level.as_ref());
-
-    // Load configuration
+    // Load configuration first
     let config = Config::from_cli(&cli).context("Failed to load configuration")?;
+
+    // Setup comprehensive monitoring stack
+    setup_monitoring(
+        cli.log_level.as_ref(),
+        &config.log_format,
+        &config.log_dir,
+        config.log_rotation,
+    )
+    .context("Failed to initialize monitoring stack")?;
 
     match &cli.command {
         Commands::Web { action } => {
