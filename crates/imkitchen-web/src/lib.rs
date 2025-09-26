@@ -74,6 +74,7 @@ pub fn create_router(state: SharedState) -> Router {
         .route("/login", post(handlers::login_form_handler))
         .route("/register", get(handlers::register_page))
         .route("/register", post(handlers::register_form_handler))
+        .route("/offline.html", get(handlers::offline_page))
         .route("/api/csrf-token", get(handlers::get_csrf_token_handler))
         .nest_service("/static", ServeDir::new("crates/imkitchen-web/static"))
         .nest("/api/auth", handlers::create_auth_router())

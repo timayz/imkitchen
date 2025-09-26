@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% include "partials/head.html" %}
+</head>
+<body class="bg-gray-50 text-gray-900 antialiased">
+    <!-- Skip to main content for accessibility -->
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 bg-green-600 text-white px-4 py-2 rounded-md z-50">
+        Skip to main content
+    </a>
+
+    <!-- Main application layout -->
+    <div class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <!-- Logo -->
+                    <div class="flex-shrink-0">
+                        <a href="/" class="flex items-center space-x-2 text-green-600 font-bold text-xl focus:outline-none focus:ring-2 focus:ring-green-500 rounded-md p-1">
+                            <img src="/static/images/icons/icon-32x32.png" alt="imkitchen logo" class="w-8 h-8">
+                            <span class="hidden sm:block">imkitchen</span>
+                        </a>
+                    </div>
+
+                    <!-- Desktop Navigation -->
+                    <nav class="hidden md:flex space-x-8" aria-label="Main navigation">
+                        {% block nav_items %}
+                        <a href="/dashboard" class="text-gray-700 hover:text-green-600 px-3 py-2 rounded-md text-sm font-medium transition-colors min-h-[44px] flex items-center focus:outline-none focus:ring-2 focus:ring-green-500">
+                            Dashboard
+                        </a>
+                        <a href="/recipes" class="text-gray-700 hover:text-green-600 px-3 py-2 rounded-md text-sm font-medium transition-colors min-h-[44px] flex items-center focus:outline-none focus:ring-2 focus:ring-green-500">
+                            Recipes
+                        </a>
+                        <a href="/shopping" class="text-gray-700 hover:text-green-600 px-3 py-2 rounded-md text-sm font-medium transition-colors min-h-[44px] flex items-center focus:outline-none focus:ring-2 focus:ring-green-500">
+                            Shopping
+                        </a>
+                        {% endblock %}
+                    </nav>
+
+                    <!-- User menu and mobile menu button -->
+                    <div class="flex items-center space-x-4">
+                        <!-- User menu (desktop) -->
+                        <div class="hidden md:block">
+                            {% block user_menu %}
+                            <a href="/profile" class="text-gray-700 hover:text-green-600 px-3 py-2 rounded-md text-sm font-medium transition-colors min-h-[44px] flex items-center focus:outline-none focus:ring-2 focus:ring-green-500">
+                                Profile
+                            </a>
+                            {% endblock %}
+                        </div>
+
+                        <!-- Mobile menu button -->
+                        <button 
+                            id="mobile-menu-button"
+                            class="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-green-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 min-w-[44px] min-h-[44px]"
+                            aria-expanded="false"
+                            aria-controls="mobile-menu"
+                            aria-label="Toggle navigation menu"
+                        >
+                            <!-- Hamburger icon -->
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile Navigation Menu -->
+            <div id="mobile-menu" class="md:hidden hidden bg-white border-t border-gray-200">
+                <div class="px-2 pt-2 pb-3 space-y-1">
+                    {% block mobile_nav_items %}
+                    <a href="/dashboard" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-green-600 hover:bg-gray-50 rounded-md min-h-[44px] focus:outline-none focus:ring-2 focus:ring-green-500">
+                        Dashboard
+                    </a>
+                    <a href="/recipes" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-green-600 hover:bg-gray-50 rounded-md min-h-[44px] focus:outline-none focus:ring-2 focus:ring-green-500">
+                        Recipes
+                    </a>
+                    <a href="/shopping" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-green-600 hover:bg-gray-50 rounded-md min-h-[44px] focus:outline-none focus:ring-2 focus:ring-green-500">
+                        Shopping
+                    </a>
+                    <a href="/profile" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-green-600 hover:bg-gray-50 rounded-md min-h-[44px] focus:outline-none focus:ring-2 focus:ring-green-500">
+                        Profile
+                    </a>
+                    {% endblock %}
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main id="main-content" class="flex-1">
+            {% block main %}
+            <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                <!-- Page header -->
+                {% if page_title %}
+                <div class="mb-6">
+                    <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">{{ page_title }}</h1>
+                    {% if page_description %}
+                    <p class="mt-2 text-gray-600">{{ page_description }}</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Page content -->
+                <div class="bg-white shadow rounded-lg">
+                    <div class="px-4 py-5 sm:p-6">
+                        {% block content %}
+                        <!-- Page-specific content goes here -->
+                        {% endblock %}
+                    </div>
+                </div>
+            </div>
+            {% endblock %}
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-white border-t border-gray-200 mt-auto">
+            {% include "partials/footer.html" %}
+        </footer>
+    </div>
+
+    <!-- JavaScript -->
+    {% include "partials/scripts.html" %}
+    
+    <!-- Page-specific JavaScript -->
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,150 +1,18 @@
-<form id="profile-form" method="post" action="/profile" ts-req="/profile" ts-target="#profile-form" ts-req-method="post">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    
-    <!-- Success Message -->
-    <div class="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
-        ✅ Profile updated successfully!
-    </div>
-    
-    <!-- Personal Information -->
-    <div class="space-y-6">
-        <div>
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">Personal Information</h2>
-            
-            <div class="grid grid-cols-1 gap-4">
-                <div>
-                    <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
-                    <input 
-                        type="text" 
-                        id="name" 
-                        name="name" 
-                        value="{{ user.name }}"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
-                        required
-                    >
-                </div>
-
-                <div>
-                    <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-                    <input 
-                        type="email" 
-                        id="email" 
-                        value="{{ user.email }}"
-                        class="mt-1 block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm px-3 py-2"
-                        readonly
-                        title="Email cannot be changed"
-                    >
-                    <p class="mt-1 text-sm text-gray-500">Email cannot be changed</p>
+<!-- Response area for TwinSpark with success message -->
+<div id="profile-response" class="px-4 py-4 sm:px-6">
+    <div class="mb-4 p-4 bg-green-50 border border-green-200 text-green-800 rounded-md">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-green-800">Profile Updated Successfully!</h3>
+                <div class="mt-2 text-sm text-green-700">
+                    <p>Your profile information has been saved.</p>
                 </div>
             </div>
-        </div>
-
-        <!-- Cooking Preferences -->
-        <div>
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">Cooking Preferences</h2>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label for="family_size" class="block text-sm font-medium text-gray-700">Family Size</label>
-                    <select 
-                        id="family_size" 
-                        name="familySize"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    >
-                        {% for size in 1..=8 %}
-                        <option value="{{ size }}" {% if size == user.family_size %}selected{% endif %}>
-                            {{ size }} {% if size == 1 %}person{% else %}people{% endif %}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div>
-                    <label for="cooking_skill_level" class="block text-sm font-medium text-gray-700">Cooking Skill Level</label>
-                    <select 
-                        id="cooking_skill_level" 
-                        name="cookingSkillLevel"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    >
-                        <option value="beginner" {% if self.skill_level_str() == "beginner" %}selected{% endif %}>Beginner</option>
-                        <option value="intermediate" {% if self.skill_level_str() == "intermediate" %}selected{% endif %}>Intermediate</option>
-                        <option value="advanced" {% if self.skill_level_str() == "advanced" %}selected{% endif %}>Advanced</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-
-        <!-- Cooking Time Preferences -->
-        <div>
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">Time Preferences</h2>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label for="weekday_time" class="block text-sm font-medium text-gray-700">Weekday Max Cooking Time (minutes)</label>
-                    <input 
-                        type="number" 
-                        id="weekday_time" 
-                        name="cookingTimePreferences.weekdayMaxMinutes"
-                        value="{{ user.cooking_time_preferences.weekday_max_minutes }}"
-                        min="5" 
-                        max="480"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
-                    >
-                </div>
-
-                <div>
-                    <label for="weekend_time" class="block text-sm font-medium text-gray-700">Weekend Max Cooking Time (minutes)</label>
-                    <input 
-                        type="number" 
-                        id="weekend_time" 
-                        name="cookingTimePreferences.weekendMaxMinutes"
-                        value="{{ user.cooking_time_preferences.weekend_max_minutes }}"
-                        min="5" 
-                        max="480"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
-                    >
-                </div>
-            </div>
-        </div>
-
-        <!-- Dietary Restrictions -->
-        <div>
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">Dietary Restrictions</h2>
-            
-            <div class="space-y-2">
-                {% for restriction in dietary_options %}
-                <label class="flex items-center">
-                    <input 
-                        type="checkbox" 
-                        name="dietaryRestrictions" 
-                        value="{{ restriction }}"
-                        {% if self.has_dietary_restriction(restriction) %}checked{% endif %}
-                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    >
-                    <span class="ml-2 text-sm text-gray-700 capitalize">
-                        {{ self.format_restriction(restriction) }}
-                    </span>
-                </label>
-                {% endfor %}
-            </div>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="flex justify-between pt-6">
-            <button 
-                type="submit"
-                class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-            >
-                Update Profile
-            </button>
-            
-            <button 
-                type="button"
-                onclick="confirmDeleteAccount()"
-                class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-            >
-                Delete Account
-            </button>
         </div>
     </div>
-</form>
+</div>

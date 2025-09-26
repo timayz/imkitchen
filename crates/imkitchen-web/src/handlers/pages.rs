@@ -26,6 +26,10 @@ pub struct LoginTemplate {}
 pub struct RegisterTemplate {}
 
 #[derive(Template)]
+#[template(path = "pages/offline.html")]
+pub struct OfflineTemplate {}
+
+#[derive(Template)]
 #[template(path = "fragments/login-success.html")]
 pub struct LoginSuccessTemplate {}
 
@@ -108,6 +112,20 @@ pub async fn register_page() -> impl IntoResponse {
         Err(e) => {
             tracing::error!("Failed to render register template: {}", e);
             Html("<h1>Error loading page</h1>".to_string())
+        }
+    }
+}
+
+/// Serve the offline page
+pub async fn offline_page() -> impl IntoResponse {
+    info!("Offline page requested");
+
+    let template = OfflineTemplate {};
+    match template.render() {
+        Ok(html) => Html(html),
+        Err(e) => {
+            tracing::error!("Failed to render offline template: {}", e);
+            Html("<h1>Offline</h1>".to_string())
         }
     }
 }

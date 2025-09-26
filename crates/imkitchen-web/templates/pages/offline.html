@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#10b981">
+    <title>Offline - imkitchen</title>
+    <link rel="stylesheet" href="/static/css/tailwind.css">
+    <style>
+        /* Critical styles for offline page */
+        .offline-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .offline-card {
+            max-width: 28rem;
+            text-align: center;
+        }
+        .offline-icon {
+            width: 6rem;
+            height: 6rem;
+            margin: 0 auto 1.5rem;
+            opacity: 0.6;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="offline-container">
+        <div class="offline-card bg-white rounded-lg shadow-lg p-8">
+            <!-- Offline icon -->
+            <div class="offline-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-full h-full text-gray-400">
+                    <path d="M1 1l22 22"/>
+                    <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/>
+                    <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/>
+                    <path d="M10.71 5.05A16 16 0 0 1 22.58 9"/>
+                    <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/>
+                    <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+                    <path d="M12 20h.01"/>
+                </svg>
+            </div>
+            
+            <!-- Offline message -->
+            <h1 class="text-2xl font-bold text-gray-900 mb-4">You're Offline</h1>
+            <p class="text-gray-600 mb-6">
+                It looks like you're not connected to the internet. Don't worry! 
+                imkitchen works offline for basic functionality.
+            </p>
+            
+            <!-- Available features when offline -->
+            <div class="text-left mb-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-3">Available Offline:</h2>
+                <ul class="space-y-2 text-sm text-gray-600">
+                    <li class="flex items-center">
+                        <svg class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        View previously loaded recipes
+                    </li>
+                    <li class="flex items-center">
+                        <svg class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Access cached meal plans
+                    </li>
+                    <li class="flex items-center">
+                        <svg class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        View saved shopping lists
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Retry connection -->
+            <button 
+                id="retry-btn" 
+                class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-md transition-colors min-h-[44px]"
+                onclick="window.location.reload()"
+            >
+                Try Again
+            </button>
+            
+            <!-- Back to app -->
+            <div class="mt-4">
+                <a href="/" class="text-green-600 hover:text-green-700 font-medium text-sm">
+                    Back to imkitchen
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simple connection check -->
+    <script>
+        // Check for connection and update UI accordingly
+        function updateConnectionStatus() {
+            const retryBtn = document.getElementById('retry-btn');
+            if (navigator.onLine) {
+                retryBtn.textContent = 'Back Online - Reload App';
+                retryBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                retryBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+            }
+        }
+
+        // Listen for connection changes
+        window.addEventListener('online', updateConnectionStatus);
+        window.addEventListener('offline', updateConnectionStatus);
+        
+        // Initial check
+        updateConnectionStatus();
+    </script>
+</body>
+</html>
