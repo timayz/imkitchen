@@ -64,7 +64,7 @@ tracing-subscriber = { workspace = true }
 
 # Internal crates
 imkitchen-web = { path = "crates/imkitchen-web" }
-imkitchen-shared = { path = "crates/imkitchen-shared" }
+# imkitchen-shared = { path = "crates/imkitchen-shared" }
 
 [dev-dependencies]
 

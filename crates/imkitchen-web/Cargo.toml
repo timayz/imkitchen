@@ -21,11 +21,11 @@ chrono = { workspace = true }
 # sqlx = { workspace = true }
 # evento = { workspace = true }
 # prometheus = { workspace = true }
-tower = "0.5"
+# tower = "0.5"
 tower-http = { version = "0.6", features = ["fs", "trace"] }
 
 # Internal dependencies
-imkitchen-shared = { path = "../imkitchen-shared" }
+# imkitchen-shared = { path = "../imkitchen-shared" }
 # Temporarily disabled until implementation begins
 # imkitchen-user = { path = "../imkitchen-user" }
 # imkitchen-recipe = { path = "../imkitchen-recipe" }
