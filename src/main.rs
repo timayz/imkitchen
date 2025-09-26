@@ -150,7 +150,7 @@ async fn create_database_if_not_exists(database_url: &str) -> Result<SqlitePool>
         info!("Database file doesn't exist, will be created on connection");
 
         // Create an empty file to ensure SQLite can write to it
-        fs::File::create(&path).context("Failed to create database file")?;
+        fs::File::create(path).context("Failed to create database file")?;
         info!("Created empty database file: {}", db_path);
     }
 
@@ -230,7 +230,7 @@ fn setup_logging(log_level: Option<&String>) {
     let env_log_level = std::env::var("RUST_LOG").ok();
     let effective_log_level = log_level
         .map(|s| s.as_str())
-        .or_else(|| env_log_level.as_deref())
+        .or(env_log_level.as_deref())
         .unwrap_or("info");
 
     let level = match effective_log_level {
