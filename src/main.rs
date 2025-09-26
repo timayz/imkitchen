@@ -303,9 +303,18 @@ async fn main() -> Result<()> {
                         // Note: Actual daemon implementation would require fork/detach
                     }
 
-                    // Start the web server
-                    if let Err(e) =
-                        imkitchen_web::start_server(effective_host, effective_port).await
+                    // Create database pool for graceful shutdown support
+                    let db_pool = create_database_if_not_exists(&config.database_url)
+                        .await
+                        .ok();
+
+                    // Start the web server with graceful shutdown
+                    if let Err(e) = imkitchen_web::start_server_with_shutdown(
+                        effective_host,
+                        effective_port,
+                        db_pool,
+                    )
+                    .await
                     {
                         return Err(anyhow::anyhow!("Failed to start web server: {}", e));
                     }
