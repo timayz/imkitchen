@@ -1,0 +1,33 @@
+[package]
+name = "imkitchen-web"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+axum = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+askama = { workspace = true }
+askama_axum = { workspace = true }
+serde = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+sqlx = { workspace = true }
+evento = { workspace = true }  # TODO: Fix compilation issues
+prometheus = { workspace = true }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["fs", "trace"] }
+
+# Internal dependencies
+imkitchen-shared = { path = "../imkitchen-shared" }
+imkitchen-user = { path = "../imkitchen-user" }
+imkitchen-recipe = { path = "../imkitchen-recipe" }
+imkitchen-meal-planning = { path = "../imkitchen-meal-planning" }
+imkitchen-shopping = { path = "../imkitchen-shopping" }
+imkitchen-notification = { path = "../imkitchen-notification" }
