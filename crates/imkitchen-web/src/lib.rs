@@ -1,3 +1,4 @@
+pub mod db;
 pub mod handlers;
 pub mod middleware;
 pub mod shutdown;
@@ -8,21 +9,30 @@ use std::time::Duration;
 use tower_http::{services::ServeDir, trace::TraceLayer};
 use tracing::{info, warn};
 
+pub use db::{create_database_pool_with_retry, DatabaseConfig};
+pub use handlers::health::{ComponentHealth, HealthCheckState, HealthResponse, HealthStatus};
 pub use shutdown::{GracefulShutdown, ResourceCleanup};
 
 /// Web server application state
 #[derive(Clone)]
 pub struct AppState {
-    // Application state will be added as we implement features
+    pub health_state: HealthCheckState,
 }
 
-/// Create the main application router
-pub fn create_app() -> Router {
+/// Create the main application router with database pool
+pub fn create_app_with_db(db_pool: Option<sqlx::SqlitePool>) -> Router {
+    let health_state = HealthCheckState::new(db_pool);
+
     Router::new()
-        .route("/health", get(handlers::health::health_check))
+        .route("/health", get(handlers::health::health_check_with_deps))
         .nest_service("/static", ServeDir::new("crates/imkitchen-web/static"))
         .layer(TraceLayer::new_for_http())
-        .with_state(AppState {})
+        .with_state(health_state)
+}
+
+/// Create the main application router (basic version for backward compatibility)
+pub fn create_app() -> Router {
+    create_app_with_db(None)
 }
 
 /// Start the web server
@@ -44,7 +54,7 @@ pub async fn start_server_with_shutdown(
     port: u16,
     db_pool: Option<sqlx::SqlitePool>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let app = create_app();
+    let app = create_app_with_db(db_pool.clone());
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
 
     info!(

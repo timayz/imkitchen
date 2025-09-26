@@ -1,6 +1,7 @@
 dev:
-	cargo run -- --log error,imkitchen=debug,evento=debug migrate -c ./imkitchen.toml
-	cargo watch -x 'run -- --log error,imkitchen=debug,evento=debug serve -c ./imkitchen.toml'
+	cargo run -- web start
+	# cargo run -- --log error,imkitchen=debug,evento=debug migrate -c ./imkitchen.toml
+	# cargo watch -x 'run -- --log error,imkitchen=debug,evento=debug serve -c ./imkitchen.toml'
 
 tailwind:
 	tailwindcss -i ./tailwind.css -o ./crates/imkitchen-web/static/css/main.css --watch
