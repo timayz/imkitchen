@@ -21,6 +21,20 @@ Existing meal planning solutions focus on recipe storage and basic scheduling wi
 
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
+| 2025-09-26 | 2.4 | Added Story 1.1 for project setup with clap 4.5+ CLI, monitoring infrastructure, and graceful shutdown capabilities | Product Manager John |
+| 2025-09-26 | 2.3 | Enforced Tailwind CSS 3.0+ for utility-first styling with kitchen-optimized design system and responsive components | Product Manager John |
+| 2025-09-26 | 2.2 | Separated sync validation (direct Axum handlers) from async validation and long processes (Evento command handlers) | Product Manager John |
+| 2025-09-26 | 2.1 | Minimized JavaScript usage to zero with TwinSpark declarative HTML attributes for all interactions | Product Manager John |
+| 2025-09-26 | 2.0 | Restructured to CLI binary architecture with imkitchen-web as library crate and CLI commands for web/migrate | Product Manager John |
+| 2025-09-26 | 1.9 | Enforced separate Rust crates for each bounded context with clear dependencies and inter-crate communication | Product Manager John |
+| 2025-09-26 | 1.8 | Enforced Evento 1.1+ for DDD, CQRS, and Event Sourcing with event streams, command bus, and projection builders | Product Manager John |
+| 2025-09-26 | 1.7 | Enhanced Askama + TwinSpark integration for type-safe server-side HTML rendering with progressive enhancement | Product Manager John |
+| 2025-09-26 | 1.6 | Added validator 0.20+ for comprehensive input validation across domain objects, CQRS commands, and value objects | Product Manager John |
+| 2025-09-26 | 1.5 | Enforced DDD, CQRS, and Event Sourcing architectural patterns with bounded contexts and domain events | Product Manager John |
+| 2025-09-26 | 1.4 | Removed Project Setup and CI/CD Pipeline stories from Epic 1 (user will handle infrastructure) | Product Manager John |
+| 2025-09-26 | 1.3 | Specified SMTP for email service integration using lettre 0.11+ with TLS/SSL support | Product Manager John |
+| 2025-09-26 | 1.2 | Enforced Test-Driven Development (TDD) methodology across all stories, increased test coverage to 90% | Product Manager John |
+| 2025-09-26 | 1.1 | Updated to emphasize TwinSpark server-side rendering pattern, eliminated API routes requirement | Product Manager John |
 | 2025-09-24 | 1.0 | Initial PRD creation based on Project Brief | Product Manager John |
 
 ## Requirements
@@ -87,74 +101,186 @@ imkitchen embodies a "kitchen-first" design philosophy that prioritizes mobile t
 - **Gesture-Based Controls:** Swipe gestures for meal navigation, pinch-to-zoom for calendar views, and pull-to-refresh for real-time updates
 - **Voice-Friendly Design:** Large touch targets and clear visual feedback to support voice assistant integration for hands-free kitchen use
 
-### Core Screens and Views
+### Core Screens and Views (Tailwind CSS Implementation)
 
-- **Weekly Meal Calendar:** Primary dashboard showing 7-day meal plan with preparation indicators and quick action buttons
-- **Recipe Discovery:** Community-driven recipe browsing with rating, filtering, and personal collection management
-- **Shopping List View:** Organized ingredient lists with store section grouping and family sharing capabilities
-- **Daily Preparation Guide:** Morning notification screen with step-by-step preparation tasks and timing
-- **User Profile & Settings:** Dietary preferences, family configuration, and optimization parameter management
-- **Community Hub:** Recipe sharing, meal plan inspiration, and cooking success stories from other users
+- **Weekly Meal Calendar:** Primary dashboard with `grid grid-cols-7 gap-4` layout, `bg-amber-50` background, and `shadow-lg` cards for meal slots
+- **Recipe Discovery:** Community browsing with `flex flex-wrap gap-6` masonry layout, `hover:scale-105 transition-transform` effects
+- **Shopping List View:** Organized with `divide-y divide-gray-200` separators, `bg-green-50` checked items, and `text-lg` kitchen-readable text
+- **Daily Preparation Guide:** Morning screen with `space-y-4` timeline layout, `bg-orange-100` priority indicators, and `text-xl` cooking instructions
+- **User Profile & Settings:** Clean forms with `space-y-6` field spacing, `ring-2 ring-blue-500` focus states, and `bg-white` card containers
+- **Community Hub:** Social layout with `grid md:grid-cols-2 lg:grid-cols-3` responsive recipe cards and `text-stone-600` community text
 
 ### Accessibility: WCAG AA
 
-The platform will meet WCAG 2.1 AA standards including keyboard navigation, screen reader compatibility, color contrast ratios above 4.5:1, and alternative text for all visual elements. Voice commands and large text options will support users with motor and visual impairments.
+The platform will meet WCAG 2.1 AA standards using Tailwind's accessibility utilities including `focus:ring-2`, `sr-only` for screen readers, contrast-compliant color combinations (e.g., `text-gray-900 bg-white`), and `text-lg md:text-xl` large text options. Tailwind's semantic color system ensures 4.5:1+ contrast ratios for kitchen environment visibility.
 
-### Branding
+### Branding (Tailwind CSS Implementation)
 
-Modern, warm, and approachable visual design that evokes home cooking comfort without appearing overly corporate. Color palette emphasizes earth tones and food-inspired colors with high contrast for kitchen environment visibility. Typography should be highly legible on mobile screens with sufficient weight for recipe reading while cooking.
+Modern, warm, and approachable visual design implemented with Tailwind CSS utility classes. Color palette uses Tailwind's earth tones (amber, orange, stone, green) and custom food-inspired colors with high contrast for kitchen environment visibility. Typography leverages Tailwind's font system with highly legible mobile-optimized classes for recipe reading while cooking.
 
 ### Target Device and Platforms: Web Responsive
 
-Progressive Web App (PWA) optimized for mobile-first experience with desktop support. The application must work seamlessly across iOS Safari, Android Chrome, and desktop browsers while providing native app-like experience through PWA installation capabilities.
+Progressive Web App (PWA) optimized for mobile-first experience with Tailwind's responsive design system. Uses `sm:`, `md:`, `lg:`, `xl:` breakpoints for seamless cross-device experience on iOS Safari, Android Chrome, and desktop browsers while providing native app-like experience through PWA installation capabilities with Tailwind-styled components.
 
 ## Technical Assumptions
 
-### Repository Structure: Monorepo
+### Repository Structure: Modular Monorepo with Bounded Context Crates
 
-Single Rust project containing both frontend and backend code with shared types and utilities. This approach provides type safety across the full stack, eliminates serialization overhead, and simplifies deployment while maintaining clear module boundaries through Rust workspaces.
+Single Rust workspace containing multiple crates organized by bounded contexts and shared utilities. Each service/bounded context has its own dedicated crate providing strong boundaries, independent evolution, and clear dependency management. This approach provides type safety across the full stack while maintaining proper domain separation through workspace crates.
 
-### Service Architecture
+### Service Architecture: DDD + CQRS + Event Sourcing
 
-Monolithic architecture using Rust workspaces for modular design, deployed as a single binary. Core modules include:
-- **Recipe Management:** Recipe CRUD, rating system, and community features
-- **User Profiles:** Authentication, preferences, and profile management
-- **Scheduling Engine:** Multi-factor optimization algorithm and meal planning logic
-- **Notification Service:** Push notifications and preparation reminders
+**Domain-Driven Design (DDD):** Modular monolithic architecture with each bounded context as a separate Rust crate, deployed as a single binary. Core bounded context crates include:
+- **imkitchen-user-crate:** Authentication, user profiles, and account management (separate crate)
+- **imkitchen-recipe-crate:** Recipe management, ratings, collections, and community features (separate crate)
+- **imkitchen-meal-planning-crate:** Intelligent scheduling, optimization algorithms, and weekly planning (separate crate)
+- **imkitchen-shopping-crate:** Shopping lists, ingredient management, and preparation workflows (separate crate)
+- **imkitchen-notification-crate:** Push notifications, reminders, and communication systems (separate crate)
+- **imkitchen-shared-crate:** Common domain types, events, and utilities shared across contexts
+- **imkitchen-web-crate:** Axum web server, Askama templates, and HTTP handlers
 
-Technology stack:
-- **Web Framework:** Axum 0.8+ for high-performance async HTTP handling
-- **Templates:** Askama 0.14+ for type-safe server-side HTML rendering
-- **UI Reactivity:** twinspark-js for progressive enhancement and selective client-side interactivity
-- **Event System:** Evento 1.1+ for event-driven architecture and async communication
-- **Database:** SQLite3 with SQLx 0.8+ for embedded, zero-dependency data persistence
-- **Monitoring:** Tracing 0.1+ for structured logging and observability
-- **Internationalization:** rust-i18n for multi-language support enabling global expansion
+**CQRS (Command Query Responsibility Segregation):** Separate command and query models with Evento-driven data flows:
+- **Commands:** State-changing operations implemented as Evento commands that generate domain events
+- **Command Handlers:** Evento command handlers validate business rules and emit events to event store
+- **Queries:** Read operations use Evento-maintained projection views for fast data retrieval
+- **Event Store:** Evento-managed single source of truth containing all domain events in chronological order
+- **Projections:** Materialized views built from events using Evento projection builders, optimized for specific query patterns
+- **Event Bus:** Evento event bus ensures reliable event delivery between bounded contexts
+
+**Event Sourcing (ES):** All state changes captured as immutable domain events using Evento:
+- **Evento Event Store:** SQLite-based event storage with automatic serialization, versioning, and replay capabilities
+- **Domain Events:** RecipeCreated, MealPlanned, UserRegistered, ShoppingListGenerated implemented as Evento events
+- **Event Handlers:** Evento event handlers process events to update projections and trigger side effects with guaranteed delivery
+- **Event Streams:** Organized by aggregate ID with Evento stream management and concurrency control
+- **Snapshots:** Periodic aggregate snapshots managed by Evento for performance optimization and fast aggregate reconstruction
+
+Technology stack organized by crate:
+
+**CLI Binary (imkitchen):**
+- **CLI Framework:** clap 4.5+ for command-line argument parsing and subcommands
+- **Database Migrations:** SQLx 0.8+ CLI integration for migrate commands
+- **Server Management:** Integration with imkitchen-web library for web server startup
+
+**Shared Dependencies (All Crates):**
+- **Event System:** Evento 1.1+ for domain event publishing, handling, projection building, and event store management
+- **Serialization:** serde 1.0+ for event serialization with backward compatibility and versioning
+- **Input Validation:** validator 0.20+ for comprehensive input validation with derive macros and custom validators
+- **Monitoring:** Tracing 0.1+ for structured logging, event tracking, and domain observability
 - **Configuration:** config 0.15+ for secure secrets and environment variable management
 
-### Testing Requirements
+**Web Library Crate (imkitchen-web):**
+- **Web Framework:** Axum 0.8+ for high-performance async HTTP handling (library implementation)
+- **Templates:** Askama 0.14+ for type-safe server-side HTML rendering with compile-time template validation
+- **UI Framework:** Tailwind CSS 3.0+ for utility-first styling directly in Askama templates
+- **UI Reactivity:** twinspark-js for declarative HTML-driven interactivity with zero custom JavaScript
+- **Server Library:** Exports server configuration, routing, and startup functions for CLI binary
+- **JavaScript-Free Design:** All interactions handled via TwinSpark HTML attributes and server-side rendering
+- **CSS Build Process:** Tailwind CLI for CSS compilation with Askama template scanning
+
+**Domain Crates (Each Bounded Context):**
+- **Event Store:** Evento 1.1+ with SQLite3 backend for event sourcing and projection storage per context
+- **CQRS Framework:** Evento 1.1+ based implementation with context-specific command/query handlers
+- **Domain Modeling:** Strong typing with Rust enums, structs, and domain-specific value objects per context
+
+**Infrastructure Crates:**
+- **Email Service:** lettre 0.11+ for SMTP integration (imkitchen-notification-crate)
+- **Internationalization:** rust-i18n for multi-language support (imkitchen-shared-crate)
+
+**Architecture Patterns:** 
+- **DDD + CQRS + ES:** Domain-driven design with command-query separation and event sourcing for robust state management
+- **Askama + TwinSpark Rendering:** Type-safe server-side HTML templates with declarative interactivity eliminates API and JavaScript complexity
+- **Command Flow (Async/Long Processes):** HTML forms → Evento command handlers → domain aggregates → events → projections → Askama templates → TwinSpark fragments
+- **Validation Flow (Sync):** HTML forms → direct validator validation → Askama templates → TwinSpark error fragments (no Evento for simple validation)
+- **Query Flow:** Read requests → projection queries → Askama templates → server-rendered HTML → TwinSpark declarative interactions
+- **JavaScript-Minimal Design:** All interactions through TwinSpark HTML attributes (ts-req, ts-trigger, ts-target) without custom JavaScript
+- **Template Safety:** Compile-time HTML template validation with Askama prevents runtime template errors
+- **Event-Driven:** All state changes flow through domain events, enabling audit trails, replay, and temporal queries
+
+### Testing Requirements: Test-Driven Development (TDD)
+
+**MANDATORY TDD Approach:** All development must follow strict Test-Driven Development methodology:
+1. **RED:** Write failing tests first that define expected behavior
+2. **GREEN:** Write minimal code to make tests pass
+3. **REFACTOR:** Improve code while maintaining all tests passing
 
 Comprehensive testing pyramid including:
-- **Unit Tests:** Individual function and module testing with >80% code coverage
+- **Unit Tests:** Individual function and module testing with >90% code coverage (increased from 80%)
 - **Integration Tests:** Database operations, HTTP endpoints, and cross-module communication
 - **End-to-End Tests:** Critical user journeys including meal planning, recipe management, and community features
 - **Performance Tests:** Load testing for optimization algorithms and concurrent user scenarios
 - **Security Tests:** Authentication flows, input validation, and data protection verification
 
+**TDD Enforcement:**
+- No production code written without corresponding failing test first
+- All commits must include tests that validate the implemented functionality
+- CI/CD pipeline blocks merges if test coverage falls below 90%
+- Code reviews must verify TDD methodology was followed
+
 ### Additional Technical Assumptions and Requests
 
+- **TwinSpark Architecture:** Server-side HTML rendering with progressive enhancement eliminates API complexity
 - **Progressive Web App (PWA):** Installable app experience with offline functionality and push notification support
-- **Mobile-First Performance:** Optimized bundle sizes, lazy loading, and efficient asset delivery for mobile networks
+- **Mobile-First Performance:** Server-rendered HTML with selective JavaScript enhancement for optimal mobile performance
 - **Container Deployment:** Docker containerization with Kubernetes orchestration support for scalable cloud deployment
 - **OWASP Security Compliance:** Authentication system following OWASP Authentication Cheat Sheet guidelines
 - **Database Migrations:** Automated schema migration system for safe production deployments
 - **CI/CD Pipeline:** Automated testing, building, and deployment pipeline with quality gates
 - **Monitoring Integration:** Application performance monitoring and error tracking for production observability
+- **Form-Based Interactions:** All user interactions use HTML forms with server-side processing and fragment updates
+- **No JSON APIs:** Eliminates client-server serialization complexity through direct HTML template rendering
+- **Mandatory TDD:** All development follows strict Test-Driven Development with Red-Green-Refactor cycle enforcement
+- **Test Coverage:** Minimum 90% code coverage with comprehensive unit, integration, and end-to-end test suites
+- **Test-First Culture:** No production code commits allowed without corresponding failing tests written first
+- **Continuous Testing:** cargo-watch integration for real-time test execution during development
+- **DDD Testing:** Domain model tests verify business rules, aggregate behavior, and Evento event generation
+- **CQRS Testing:** Separate test suites for Evento command handlers, query handlers, and projection builders
+- **Event Sourcing Testing:** Evento event store tests, event replay tests, and projection consistency validation
+- **Evento Testing:** Command bus tests, event handler tests, projection builder tests, and event stream tests
+- **Integration Testing:** End-to-end tests covering Evento command processing, event propagation, and projection updates
+- **Bounded Context Integration:** Anti-corruption layers between contexts with domain event communication
+- **Ubiquitous Language:** Shared domain vocabulary between business stakeholders and development team
+- **Evento Schema Versioning:** Backward-compatible event evolution with Evento's upcasting support for schema migrations
+- **Evento Projection Rebuilding:** Rebuild all projections from events using Evento's replay capabilities for schema changes
+- **Event Persistence:** Evento handles event persistence, serialization, and deserialization with SQLite backend
+- **Command Processing:** Evento command bus with middleware for validation, logging, and error handling
+- **Input Validation:** Comprehensive validation using validator crate with domain-specific validation rules
+- **Validation Integration:** Validation integrated into value objects, CQRS commands, and domain services
+- **Askama Template Testing:** All HTML templates tested with compile-time validation and runtime integration tests
+- **TwinSpark Pattern:** Server-rendered Askama templates with declarative HTML attributes for JavaScript-free interactivity
+- **Tailwind CSS Integration:** Utility-first styling directly in Askama templates with responsive design classes
+- **Minimal JavaScript:** Zero custom JavaScript code, all interactions via TwinSpark HTML attributes and server responses
+- **Declarative Interactions:** Form submissions, content updates, and dynamic behavior through HTML data attributes
+- **CSS Build Pipeline:** Tailwind CSS compilation with template scanning for optimal bundle size and purging
+- **Template Organization:** Modular template structure with shared layouts, components, and fragments for maintainability
+- **Crate Organization:** Each bounded context implemented as separate Rust crate with clear boundaries and dependencies
+- **Evento Integration:** All domain events, commands, queries, and projections implemented using Evento traits per crate
+- **Event Store Backend:** Evento configured with SQLite backend for embedded, zero-dependency event persistence per context
+- **Command Bus Middleware:** Evento command bus with validation, logging, authentication, and error handling middleware per crate
+- **Event Handlers:** Reliable event processing with Evento's guaranteed delivery and retry mechanisms within each crate
+- **Projection Consistency:** Eventual consistency managed by Evento with projection rebuilding and error recovery per context
+- **Inter-Crate Communication:** Bounded contexts communicate exclusively through Evento domain events
+- **Dependency Management:** Clear crate dependencies with shared-crate for common types and anti-corruption layers
+- **CLI Architecture:** Root binary orchestrates all operations through library crates, no direct main.rs in domain crates
+- **Command Structure:** Hierarchical CLI commands with proper error handling and user feedback
+- **Migration Management:** Database schema versioning and migration commands integrated into CLI
+- **Server Lifecycle:** Web server startup, shutdown, and configuration management through CLI commands
+- **JavaScript-Free Interface:** All user interactions handled via TwinSpark HTML attributes without custom JavaScript development
+- **TwinSpark Patterns:** Form submissions (`ts-req`), live search (`ts-trigger="keyup"`), content updates (`ts-target`), confirmations (`ts-confirm`)
+- **Declarative Interactions:** Dynamic content loading, form validation, and UI updates through HTML data attributes only
+- **Validation Architecture:** Synchronous validation (format, length, required) in Axum handlers; asynchronous validation (database checks, external APIs) via Evento
+- **Performance Optimization:** Direct validation provides immediate feedback; Evento commands handle time-consuming operations without blocking UI
+- **Process Separation:** Simple CRUD operations bypass Evento; complex business processes and external API calls use Evento command handlers
+- **Tailwind CSS Integration:** Utility-first styling with responsive design, dark mode support, and kitchen-optimized color palette
+- **Template-First Styling:** All CSS classes embedded directly in Askama templates for component co-location and maintainability
+- **Design System:** Consistent Tailwind utilities for spacing, typography, colors, and responsive breakpoints across all components
+- **Kitchen-Optimized Design:** Large touch targets (`min-h-12 min-w-12`), high contrast colors (`text-gray-900 bg-white`), readable typography (`text-lg md:text-xl`)
+- **Responsive Grid System:** Mobile-first design with `grid`, `flex`, and responsive modifiers for all screen sizes from phone to desktop
+- **Custom Color Palette:** Extended Tailwind config with food-inspired colors (tomato-red, olive-green, butter-yellow) for kitchen context
 
 ## Epic List
 
 ### Epic 1: Foundation & Authentication Infrastructure
-Establish core project setup, user authentication system, and basic user profile management to enable secure user registration and login functionality.
+Establish secure user authentication system and basic user profile management to enable secure user registration and login functionality.
 
 ### Epic 2: Recipe Management System  
 Create comprehensive recipe CRUD operations, rating system, and personal collection management to enable users to build and organize their recipe libraries.
@@ -170,53 +296,70 @@ Develop recipe sharing, community ratings, and social discovery features to enab
 
 ## Epic 1: Foundation & Authentication Infrastructure
 
-Establish the foundational project infrastructure including development environment, CI/CD pipeline, and secure user authentication system. This epic delivers a fully deployed, secure application with user registration and login capabilities, providing the essential foundation for all subsequent meal planning features.
+Establish secure user authentication system and responsive web interface foundation. This epic delivers a secure application with user registration and login capabilities, providing the essential foundation for all subsequent meal planning features.
 
-### Story 1.1: Project Setup and Development Environment
+### Story 1.1: Project Setup with CLI and Monitoring Infrastructure
 
 As a developer,
-I want a fully configured Rust workspace with all dependencies and development tools,
-so that I can efficiently develop and test the imkitchen application.
+I want a properly configured Rust workspace with CLI, monitoring, and graceful shutdown capabilities,
+so that I can build a production-ready application with observability and operational excellence.
 
 #### Acceptance Criteria
 
 **User Responsibilities:**
-- None - This is a pure developer setup task
+- Users will validate CLI commands work correctly across different environments
+- Users will verify monitoring dashboards provide useful operational insights
+- Users will test graceful shutdown behavior during deployments
 
-**Developer Agent Responsibilities:**
-1. Rust workspace is configured with separate crates for core business logic, web server, and shared types
-2. All specified dependencies are included: Axum 0.8+, Askama 0.14+, SQLx 0.8+, Tracing 0.1+, Evento 1.1+, twinspark-js, rust-i18n, config 0.15+
-3. Development database (SQLite3) is initialized with schema migration system
-4. Basic health check endpoint returns 200 OK with application status
-5. Development server runs locally with hot reload capability
-6. Structured logging is configured and operational across all modules
-7. Configuration system loads from environment variables and config files
-8. Basic error handling and middleware are implemented
+**Developer Agent Responsibilities (TDD + DDD + CQRS + ES + Askama + Crates Required):**
+1. **Workspace Setup:** Create Cargo.toml workspace with all bounded context crates (imkitchen-user, imkitchen-recipe, imkitchen-meal-planning, imkitchen-shopping, imkitchen-notification, imkitchen-shared, imkitchen-web)
+2. **CLI Binary (clap 4.5+):** Root imkitchen binary with clap 4.5+ for command parsing, subcommands (web start, web stop, migrate up, migrate down, migrate status)
+3. **Monitoring Stack:** tracing 0.1+, tracing-subscriber 0.3+, tracing-appender for structured logging with JSON output and log rotation
+4. **Graceful Shutdown:** tokio signal handling with proper resource cleanup, database connection draining, and in-flight request completion
+5. **Health Check Endpoint:** `/health` endpoint with database connectivity, event store status, and dependency health checks
+6. **Metrics Collection:** prometheus 0.13+ metrics for request counts, response times, database query performance, and Evento event processing
+7. **CLI Configuration:** clap configuration with environment variable overrides, config file loading, and validation using validator 0.20+
+8. **Server Lifecycle Management:** Proper server startup, graceful shutdown signals (SIGTERM, SIGINT), and resource cleanup procedures
+9. **TDD CLI Testing:** Command parsing tests, configuration validation tests, and integration tests for all CLI operations
+10. **Monitoring Configuration:** Structured logging with correlation IDs, error tracking, performance metrics, and operational dashboards
+11. **Development Tools:** cargo-watch for development, cargo-audit for security scanning, and pre-commit hooks for code quality
+12. **Error Handling:** Comprehensive error types with tracing integration, proper error propagation, and user-friendly CLI error messages
+13. **Database Connection Management:** SQLx connection pooling with health checks, retry logic, and graceful connection draining
+14. **Signal Handling:** Cross-platform signal handling for graceful shutdown on Linux, macOS, and Windows environments
+15. **Process Management:** PID file creation, daemon mode support, and proper process cleanup for production deployments
+16. **Configuration Validation:** Environment variable validation, required configuration checks, and secure credential handling
+17. **Logging Standards:** Structured logging with request tracing, error correlation, and configurable log levels per module
+18. **Startup Sequence:** Proper initialization order with dependency checks, migration status verification, and service readiness validation
 
-### Story 1.2: CI/CD Pipeline and Deployment Infrastructure
+#### CLI Command Structure
+```bash
+imkitchen web start --port 3000 --host 0.0.0.0          # Start web server
+imkitchen web stop                                        # Graceful shutdown
+imkitchen migrate up                                      # Run pending migrations  
+imkitchen migrate down --steps 1                         # Rollback migrations
+imkitchen migrate status                                  # Check migration status
+imkitchen health                                          # System health check
+imkitchen --help                                          # Show all commands
+```
 
-As a DevOps engineer,
-I want automated build, test, and deployment pipeline,
-so that code changes are safely and consistently deployed to production.
+#### Monitoring and Observability Requirements
+- **Structured Logging:** JSON format with correlation IDs, request tracing, and error context
+- **Metrics Collection:** Prometheus-compatible metrics for requests, database queries, and business events
+- **Health Monitoring:** Deep health checks including database connectivity, event store status, and external dependencies
+- **Graceful Shutdown:** 30-second timeout for in-flight requests, proper connection draining, and resource cleanup
+- **Error Tracking:** Comprehensive error logging with stack traces, context, and correlation for debugging
+- **Performance Monitoring:** Response time percentiles, database query performance, and memory usage tracking
 
-#### Acceptance Criteria
+#### Technology Stack (CLI and Infrastructure)
+- **CLI Framework:** clap 4.5+ with derive macros for command parsing and validation
+- **Async Runtime:** tokio 1.0+ with signal handling, graceful shutdown, and resource management
+- **Logging:** tracing 0.1+ with tracing-subscriber for structured logging and distributed tracing
+- **Metrics:** prometheus 0.13+ for metrics collection and monitoring integration
+- **Configuration:** config 0.15+ for environment variables, file-based config, and validation
+- **Database:** SQLx 0.8+ with connection pooling, health checks, and migration management
+- **Monitoring:** Health check endpoints, metrics exposure, and operational dashboards
 
-**User Responsibilities:**
-- User provides production deployment approval when ready
-- User provides access to deployment environments and registries
-- User configures domain name and SSL certificate settings
-
-**Developer Agent Responsibilities:**
-1. GitHub Actions workflow builds Rust application with all dependencies
-2. Automated test suite runs unit tests with >80% code coverage requirement
-3. Docker containerization builds single binary with SQLite database
-4. Container image is pushed to registry on successful builds
-5. Staging environment deployment is automated on main branch updates
-6. Production deployment requires manual approval with rollback capability
-7. Database migration runs automatically during deployment process
-8. Health checks verify successful deployment before traffic routing
-
-### Story 1.3: User Registration and Authentication System
+### Story 1.2: User Registration and Authentication System
 
 As a potential user,
 I want to create an account and securely log in,
@@ -229,17 +372,27 @@ so that I can access personalized meal planning features.
 - Users will provide feedback on form usability and error messages
 - Users will validate email verification workflow works correctly
 
-**Developer Agent Responsibilities:**
-1. Registration form accepts email, password, and basic profile information (name, family size)
-2. Password validation enforces OWASP Authentication Cheat Sheet requirements (minimum 8 characters, complexity rules)
-3. Email verification is sent upon registration with secure token validation
-4. User authentication uses secure session management with encrypted cookies
-5. Login form provides secure authentication with rate limiting (max 5 attempts per 15 minutes)
-6. Password reset functionality with secure token-based email workflow
-7. User sessions expire after 30 days of inactivity with automatic logout
-8. All authentication endpoints are protected against common attacks (CSRF, injection, brute force)
+**Developer Agent Responsibilities (TDD + DDD + CQRS + ES + Askama + Crates Required):**
+1. **User Crate:** Create imkitchen-user crate with User aggregate, validated value objects (Email, Password with validator derive macros)
+2. **Sync Input Validation:** Email format, password strength validation using validator 0.20+ directly in Axum handlers (no Evento)
+3. **Async Validation Commands:** CheckEmailExistsCommand, ValidateUsernameAvailabilityCommand use Evento for database checks
+4. **Evento Event Sourcing:** UserRegistered, UserLoggedIn, UserPasswordChanged events in user crate with Evento traits and persistence
+5. **Evento Commands (Complex Processes):** RegisterUserCommand (email verification), ResetPasswordCommand (email sending) use Evento handlers
+6. **Direct Operations:** Simple login validation bypasses Evento, complex registration process uses Evento
+7. **Evento Queries in User Crate:** UserByEmailQuery, UserSessionQuery in user crate with Evento query handlers and projection access
+8. **CLI Integration:** imkitchen binary uses imkitchen-web library to start server with dependency on imkitchen-user for authentication
+9. **Askama + Tailwind Templates:** LoginForm.html, RegistrationForm.html, UserDashboard.html with Tailwind utility classes and type-safe binding to user domain
+10. **TwinSpark Sync Validation:** Login form `ts-req` → direct Axum validation → immediate Askama error fragments (no Evento)
+11. **TwinSpark Async Validation:** Email availability check `ts-req` → Evento command → database check → Askama response fragments
+12. **JavaScript-Free Forms:** Registration and login forms use TwinSpark with appropriate sync/async validation patterns
+13. **CLI Server Management:** `imkitchen web start` command initializes and runs the web server from imkitchen-web library
+14. **Evento Domain Events:** UserRegistered triggers email verification across crates using Evento event bus inter-crate communication
+15. **TDD Validation Testing:** Write tests first for both sync validation (direct) and async validation (Evento) patterns
+16. **Event Streams:** User aggregate events stored in user crate's Evento streams with concurrency control
+17. **Projection Views:** UserAccountView, UserSessionView in user crate rendered through web crate Askama templates
+18. **Crate Boundaries:** Clear separation between user domain logic (user crate) and presentation logic (web crate)
 
-### Story 1.4: Basic User Profile Management
+### Story 1.3: Basic User Profile Management
 
 As a registered user,
 I want to manage my profile and preferences,
@@ -252,17 +405,20 @@ so that the meal planning system can provide personalized recommendations.
 - Users will validate that dietary restriction selections meet their needs
 - Users will verify that family size and cooking preferences are accurately captured
 
-**Developer Agent Responsibilities:**
-1. Profile page displays current user information (name, email, family size, dietary restrictions)
-2. Users can update profile information with validation and confirmation
-3. Dietary restrictions can be selected from predefined list (vegetarian, vegan, gluten-free, dairy-free, nut allergies)
-4. Family size preference (1-8 people) affects recipe quantity calculations
-5. Cooking skill level setting (beginner, intermediate, advanced) for future recipe recommendations
-6. Available cooking time preferences (weekday/weekend) for meal complexity optimization
-7. Profile changes are saved immediately with success/error feedback
-8. Account deletion option with secure data removal and confirmation process
+**Developer Agent Responsibilities (TDD + DDD + CQRS + ES Required):**
+1. **DDD Profile Domain:** UserProfile aggregate with validated DietaryRestrictions, FamilySize (range 1-8), SkillLevel value objects using validator
+2. **Input Validation:** Family size range validation, dietary restrictions enum validation, skill level progression validation
+3. **Evento Event Sourcing:** UserProfileUpdated, DietaryRestrictionsChanged, FamilySizeChanged events with Evento serialization and audit trail
+4. **Evento Commands:** UpdateUserProfileCommand, ChangeDietaryRestrictionsCommand handled by Evento command bus with validation middleware
+5. **Evento Queries:** UserProfileByIdQuery, UserPreferencesQuery processed by Evento query handlers with optimized projection access
+6. **Askama Templates:** ProfileEdit.html, PreferencesForm.html, DietaryRestrictionsSelector.html with type-safe preference binding
+7. **TwinSpark Profile Updates:** Profile forms → Axum handlers → validate commands → update projections → render Askama fragments
+8. **Domain Logic:** Encapsulate family size quantity calculations and skill level recommendation logic in validated domain services
+9. **Evento Projections:** UserProfileView, UserPreferencesView maintained by Evento projection builders and rendered through Askama templates
+10. **TDD Template Validation:** Write template tests first covering preference forms, validation messages, and dynamic updates
+11. **Evento Account Deletion:** UserAccountDeleted event propagated via Evento event bus to trigger cascading deletion across bounded contexts
 
-### Story 1.5: Responsive Web Interface Foundation
+### Story 1.4: Responsive Web Interface Foundation
 
 As a user,
 I want a mobile-optimized web interface,
@@ -275,17 +431,17 @@ so that I can access imkitchen conveniently from my kitchen.
 - Users will validate interface usability in kitchen environment conditions
 - Users will provide feedback on navigation and accessibility features
 
-**Developer Agent Responsibilities:**
-1. Progressive Web App (PWA) is installable on mobile devices with proper manifest
-2. Responsive design works seamlessly on mobile phones, tablets, and desktop browsers
-3. Touch-optimized interface with minimum 44px touch targets for mobile interaction
-4. Navigation system provides clear information architecture and user orientation
-5. Loading states and error messages are consistent across all pages
-6. Offline functionality displays appropriate messages when internet is unavailable
-7. Performance optimization ensures <3 second load times on mobile networks
-8. Basic accessibility features include keyboard navigation and proper heading structure
+**Developer Agent Responsibilities (TDD Required):**
+1. **TDD PWA Functionality:** Write tests for PWA installation and manifest validation before implementation
+2. **TDD Responsive Design:** Write tests for responsive breakpoints before implementing mobile/desktop layouts
+3. **TDD Touch Interface:** Write tests for touch target sizes and mobile interaction before implementing UI
+4. **TDD Navigation:** Write tests for information architecture and user orientation before implementing navigation
+5. **TDD Loading States:** Write tests for loading and error state behavior before implementing UI feedback
+6. **TDD Offline Functionality:** Write tests for offline behavior before implementing connectivity handling
+7. **TDD Performance:** Write performance tests targeting <3 second load times before optimization implementation
+8. **TDD Accessibility:** Write accessibility tests for keyboard navigation and screen readers before implementing features
 
-### Story 1.6: External Service Setup and Integration Preparation
+### Story 1.5: External Service Setup and Integration Preparation
 
 As a user and development team,
 I want all required external services to be properly configured and integrated,
@@ -294,33 +450,43 @@ so that the application can send emails, process payments, and integrate with th
 #### Acceptance Criteria
 
 **User Responsibilities:**
-1. User creates account on chosen email service provider (SendGrid, Mailgun, or AWS SES)
-2. User obtains API key from email service and provides it to development team
-3. User sets up necessary domain verification for email sending
-4. User creates accounts for any required external APIs (nutrition data, grocery price checking)
-5. User provides all API keys and service credentials through secure configuration
+1. User configures SMTP server credentials (host, port, username, password) for email sending
+2. User sets up SMTP authentication (typically port 587 with STARTTLS or port 465 with SSL)
+3. User configures sender email address and display name for outbound emails
+4. User provides SMTP configuration through secure environment variables
+5. User creates accounts for any required external APIs (nutrition data, grocery price checking)
+6. User provides all API keys and service credentials through secure configuration
 
-**Developer Agent Responsibilities:**
-1. Email service integration is implemented with template system for registration, password reset, and notifications
-2. Secure credential storage system is implemented using environment variables and config management
-3. Email sending functionality includes error handling and retry logic for failed deliveries
-4. External API client implementations include circuit breaker patterns and fallback mechanisms
-5. Configuration validation ensures all required external service credentials are present at startup
-6. Mock implementations for external services are created for development and testing environments
-7. Integration tests verify external service connectivity and error handling
-8. Documentation is created for external service setup and troubleshooting procedures
+**Developer Agent Responsibilities (TDD Required):**
+1. **TDD SMTP Integration:** Write tests for SMTP connection, authentication, and email template rendering before implementation
+2. **TDD Email Templates:** Write tests for registration, password reset, and notification email templates before implementation
+3. **TDD SMTP Security:** Write tests for secure credential handling and connection encryption before implementation
+4. **TDD Email Delivery:** Write tests for email sending, retry logic, and failure handling before implementation
+5. **TDD Configuration:** Write tests for SMTP configuration validation and environment variable loading before implementation
+6. **TDD Mock SMTP:** Write tests with mock SMTP server for development and testing environments
+7. **TDD Integration Tests:** Write comprehensive integration tests for SMTP connectivity and error scenarios
+8. **TDD Documentation:** Write tests that validate SMTP setup documentation accuracy and completeness
 
 #### External Services Required
-- **Email Service:** For user registration, password reset, and meal planning notifications
+- **SMTP Email Server:** For user registration, password reset, and meal planning notifications (supports Gmail SMTP, custom mail servers, or hosting provider SMTP)
 - **Future APIs:** Nutrition data service, grocery price checking service (for future enhancements)
 - **Payment Processing:** Stripe or similar for premium features (future enhancement)
 
-#### Risk Mitigation
-- Fallback to local email logging in development environment
-- Graceful degradation when external services are unavailable
-- Clear error messages for users when external services are down
+#### SMTP Configuration Requirements (Validated with validator 0.20+)
+- **Host/Port:** SMTP server hostname and port validation (587 for STARTTLS, 465 for SSL, 25 for unencrypted)
+- **Authentication:** Username and password validation for SMTP authentication with length and format checks
+- **Encryption:** TLS/SSL encryption validation for secure email transmission
+- **Sender Identity:** From address email format validation and display name length validation
+- **Rate Limiting:** Respect SMTP provider sending limits with validated rate limit configurations
 
-### Story 1.7: Developer Documentation and Onboarding
+#### Risk Mitigation
+- Fallback to local email logging in development environment when SMTP is unavailable
+- Graceful degradation when SMTP server is unavailable with user notification
+- Clear error messages for users when email delivery fails
+- SMTP connection pooling and retry logic for improved reliability
+- Support for multiple SMTP providers as fallback options
+
+### Story 1.6: Developer Documentation and Onboarding
 
 As a new developer joining the project,
 I want comprehensive documentation and onboarding materials,
@@ -340,7 +506,7 @@ so that I can quickly understand the codebase and contribute effectively.
 5. Create API documentation with endpoint descriptions, request/response examples, and authentication requirements
 6. Document coding standards, naming conventions, and project structure guidelines
 7. Create troubleshooting guide for common development issues and their solutions
-8. Document testing procedures including unit test, integration test, and E2E test execution
+8. **TDD Documentation:** Document Test-Driven Development procedures including Red-Green-Refactor cycle, test-first examples, and continuous testing workflows
 9. Create deployment guide with staging and production deployment procedures
 10. Document external service integration setup with detailed configuration steps
 11. Include architecture decision records (ADRs) for major technical decisions
@@ -349,9 +515,27 @@ so that I can quickly understand the codebase and contribute effectively.
 #### Documentation Structure
 - `/README.md` - Project overview and quick start
 - `/docs/development/` - Developer-focused documentation
-- `/docs/api/` - API documentation and examples  
+- `/docs/domain/` - Domain models, bounded contexts, and ubiquitous language
+- `/docs/events/` - Domain events catalog, schemas, and versioning
+- `/docs/cqrs/` - Command and query documentation with examples
+- `/docs/crates/` - Individual crate documentation and API references
 - `/docs/deployment/` - Deployment and infrastructure guides
-- `/docs/architecture/` - Technical architecture and decisions
+- `/docs/architecture/` - Technical architecture, DDD decisions, and crate organization patterns
+
+#### Crate Structure
+```
+imkitchen/
+├── Cargo.toml (workspace)
+├── crates/
+│   ├── imkitchen-shared/     # Common types, events, utilities
+│   ├── imkitchen-user/       # User bounded context
+│   ├── imkitchen-recipe/     # Recipe bounded context
+│   ├── imkitchen-meal-planning/ # Meal planning bounded context
+│   ├── imkitchen-shopping/   # Shopping bounded context
+│   ├── imkitchen-notification/ # Notification bounded context
+│   └── imkitchen-web/        # Web server and templates
+└── docs/
+```
 
 ## Epic 2: Recipe Management System
 
@@ -363,18 +547,27 @@ As a user,
 I want to add, view, edit, and organize recipes,
 so that I can build my personal recipe collection for meal planning.
 
-#### Acceptance Criteria
+#### Acceptance Criteria (TDD Required)
 
-1. Recipe creation form accepts title, description, ingredients list, instructions, prep time, cook time, and servings
-2. Ingredients are stored with quantities, units, and optional preparation notes (e.g., "diced", "room temperature")
-3. Instructions support numbered steps with timing information and optional images
-4. Recipe categories can be assigned (breakfast, lunch, dinner, snacks, desserts) with custom tags
-5. Recipe difficulty level (easy, medium, hard) and prep complexity indicators
-6. Recipe editing preserves version history with timestamps for user reference
-7. Recipe deletion requires confirmation and moves items to recyclable trash for 30 days
-8. Search functionality finds recipes by title, ingredients, tags, or instruction content
-9. API endpoints for recipe CRUD operations are documented with OpenAPI specification
-10. API documentation includes request/response examples and error handling scenarios
+**ALL criteria must be implemented using TDD + DDD + CQRS + ES + Validation + Askama methodology:**
+
+1. **DDD Recipe Domain:** Recipe aggregate with validated Ingredient, Instruction, Category, Difficulty value objects using validator derive macros
+2. **Input Validation:** Recipe title length (1-200 chars), ingredient quantities (positive numbers), instruction steps (non-empty), prep/cook times (positive integers)
+3. **Evento Event Sourcing:** RecipeCreated, RecipeUpdated, RecipeDeleted, IngredientAdded, InstructionModified events with Evento serialization and audit trail
+4. **Evento Commands:** CreateRecipeCommand, UpdateRecipeCommand, DeleteRecipeCommand processed by Evento command handlers with validation
+5. **Evento Queries:** RecipeByIdQuery, RecipeSearchQuery, RecipesByUserQuery handled by Evento query handlers with projection optimization
+6. **Askama + Tailwind Templates:** RecipeForm.html, RecipeDetail.html, RecipeList.html, IngredientEditor.html with Tailwind styling and type-safe recipe data binding
+7. **TwinSpark Recipe Management:** Recipe forms with `ts-req="/recipes"` and `ts-target="#recipe-list"` → Axum handlers → validate commands → render Askama fragments
+8. **JavaScript-Free Recipe Editor:** Ingredient additions, instruction editing via TwinSpark attributes without custom JavaScript
+9. **Domain Services:** RecipeDifficultyCalculator, IngredientParser, NutritionalCalculator with validated inputs encapsulate complex business logic
+10. **Evento Projections:** RecipeListView, RecipeDetailView, RecipeSearchIndex maintained by Evento projection builders and rendered through Askama templates
+11. **TwinSpark + Tailwind Examples:** Recipe search with `border-2 border-gray-300 focus:border-blue-500 rounded-lg px-4 py-2` styling and live search functionality
+12. **JavaScript-Free Interactions:** Recipe ratings, favoriting, sharing all via TwinSpark HTML attributes and server responses
+13. **Evento Version History:** Recipe versioning through Evento event replay - reconstruct any historical state from event streams with Askama rendering
+14. **Evento Soft Deletion:** RecipeArchivedEvent and RecipeRestoredEvent handled by Evento with automatic projection updates and template management
+15. **TDD Template Testing:** Write template tests first covering recipe forms, ingredient editors, instruction builders, and search results
+16. **Evento Search Projections:** Full-text search index built from Evento event streams with real-time updates and Askama-rendered search results
+17. **Crate Isolation:** Recipe crate independent of presentation concerns, web crate depends on recipe crate types and interfaces"
 
 ### Story 2.2: Personal Recipe Collections and Favorites
 
@@ -447,8 +640,20 @@ so that I can eliminate the mental overhead of daily meal decisions.
 6. Weekend meals can include more complex recipes with longer preparation times
 7. Generated plan can be regenerated with different options while maintaining preferences
 8. Plan generation respects user-defined meal exclusions and scheduling constraints
-9. Meal planning API endpoints are documented with request parameters and response schemas
-10. API documentation includes meal plan generation algorithm explanation and customization options
+9. **Meal Planning Crate:** MealPlan aggregate in imkitchen-meal-planning crate with WeeklySchedule, MealSlot, Recipe references
+10. **Evento Event Sourcing:** MealPlanGenerated, MealScheduled events in meal-planning crate managed by Evento with persistence
+11. **Evento Commands in Meal Planning Crate:** GenerateMealPlanCommand, ScheduleMealCommand in meal-planning crate with Evento handlers
+12. **Evento Queries in Meal Planning Crate:** WeeklyMealPlanQuery, MealCalendarQuery in meal-planning crate with optimized projections
+13. **Inter-Crate Dependencies:** Meal-planning crate depends on recipe crate for Recipe types and user crate for preferences
+14. **Tailwind Calendar Templates:** MealCalendar.html, WeeklyPlan.html, MealSlot.html with Tailwind grid system and responsive design classes
+15. **Cross-Crate Planning Flow:** "Fill My Week" button with `ts-req` attribute → meal-planning crate commands → recipe crate queries → web library fragments
+16. **JavaScript-Free Calendar:** Meal calendar interactions (drag-drop, rescheduling) handled via TwinSpark HTML attributes and server responses
+17. **CLI Server Integration:** `imkitchen web start` initializes meal planning server with all domain crate dependencies
+16. **Domain Services in Meal Planning Crate:** MealPlanningAlgorithm, RecipeRotationEngine, SchedulingOptimizer in meal-planning crate
+17. **Evento Projections in Meal Planning Crate:** WeeklyCalendarView, MealScheduleView maintained by meal-planning projection builders
+18. **Cross-Crate Event Communication:** Meal planning events propagated to shopping crate for automatic list generation
+19. **TDD Crate Testing:** Meal-planning crate algorithm tests separate from web crate template integration tests
+20. **Crate Isolation:** Meal-planning crate independent of presentation, web crate depends on meal-planning interfaces
 
 ### Story 3.2: Visual Weekly Meal Calendar
 
@@ -521,8 +726,8 @@ so that I can efficiently purchase all necessary ingredients without forgetting 
 6. Shopping list includes recipe context for specialized ingredients ("for beef stew marinade")
 7. Estimated shopping cost calculation based on regional pricing data
 8. List can be exported to email, text message, or popular shopping apps
-9. Shopping list API endpoints are documented with ingredient consolidation logic and export options
-10. API documentation includes store section categorization and unit conversion algorithms
+9. Shopping list updates use server-rendered HTML fragments with immediate visual feedback
+10. Ingredient additions and modifications submit to server endpoints returning updated list sections
 
 ### Story 4.2: Advanced Preparation Reminder System
 
