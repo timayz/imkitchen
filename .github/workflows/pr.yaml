@@ -8,7 +8,7 @@ on:
       - synchronize
 
 jobs:
-  test:
+  main:
     uses: timayz/.github/.github/workflows/rust-test.yml@v3
   # main:
   #   name: Validate PR title
