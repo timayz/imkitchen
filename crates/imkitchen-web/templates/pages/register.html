@@ -1,143 +1,258 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - ImKitchen</title>
-    <script src="/static/js/twinspark.js"></script>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            max-width: 400px;
-            margin: 50px auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        .register-container {
-            background: white;
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 30px;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-            color: #555;
-        }
-        input, select {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 16px;
-            box-sizing: border-box;
-        }
-        input:focus, select:focus {
-            outline: none;
-            border-color: #4CAF50;
-        }
-        .btn {
-            width: 100%;
-            padding: 12px;
-            background: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            font-size: 16px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        .btn:hover {
-            background: #45a049;
-        }
-        .error {
-            color: #d32f2f;
-            font-size: 14px;
-            margin-top: 5px;
-        }
-        .success {
-            color: #4CAF50;
-            font-size: 14px;
-            margin-top: 5px;
-        }
-        .links {
-            text-align: center;
-            margin-top: 20px;
-        }
-        .links a {
-            color: #4CAF50;
-            text-decoration: none;
-        }
-        .links a:hover {
-            text-decoration: underline;
-        }
-        .password-requirements {
-            font-size: 12px;
-            color: #666;
-            margin-top: 5px;
-        }
-    </style>
+    {% include "partials/head.html" %}
+    <title>Create Account - imkitchen</title>
 </head>
-<body>
-    <div class="register-container">
-        <h1>Join ImKitchen</h1>
-        
-        <form id="register-form" ts-req="/register" ts-target="#register-form" ts-req-method="post">
-            <div class="form-group">
-                <label for="name">Full Name</label>
-                <input type="text" id="name" name="name" required>
-                <div class="error" id="name-error"></div>
-            </div>
-            
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" required>
-                <div class="error" id="email-error"></div>
-            </div>
-            
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
-                <div class="password-requirements">
-                    Must be 8+ characters with uppercase, lowercase, and number
+<body class="bg-gray-50">
+    <!-- Skip to main content for accessibility -->
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 bg-green-600 text-white px-4 py-2 rounded-md z-50">
+        Skip to main content
+    </a>
+
+    <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-md w-full space-y-8">
+            <!-- Header -->
+            <div class="text-center">
+                <div class="flex justify-center">
+                    <img src="/static/images/icons/icon-64x64.png" alt="imkitchen logo" class="h-16 w-16">
                 </div>
-                <div class="error" id="password-error"></div>
+                <h1 class="mt-6 text-3xl font-bold text-gray-900">Join imkitchen</h1>
+                <p class="mt-2 text-sm text-gray-600">
+                    Start your smart meal planning journey
+                </p>
             </div>
-            
-            <div class="form-group">
-                <label for="familySize">Family Size</label>
-                <select id="familySize" name="familySize" required>
-                    <option value="">Select family size</option>
-                    <option value="1">1 person</option>
-                    <option value="2">2 people</option>
-                    <option value="3">3 people</option>
-                    <option value="4">4 people</option>
-                    <option value="5">5 people</option>
-                    <option value="6">6 people</option>
-                    <option value="7">7 people</option>
-                    <option value="8">8 people</option>
-                </select>
-                <div class="error" id="familySize-error"></div>
+
+            <!-- Registration Form -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 px-6 py-8 sm:px-10">
+                <form id="register-form" ts-req="/register" ts-target="#register-response" ts-req-method="post" class="space-y-6">
+                    <!-- Full Name Field -->
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700 mb-1">
+                            Full Name
+                        </label>
+                        <input 
+                            type="text" 
+                            id="name" 
+                            name="name" 
+                            required 
+                            autocomplete="name"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 
+                                   focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 
+                                   min-h-[44px] text-base sm:text-sm"
+                            placeholder="Enter your full name"
+                        >
+                    </div>
+
+                    <!-- Email Field -->
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
+                            Email Address
+                        </label>
+                        <input 
+                            type="email" 
+                            id="email" 
+                            name="email" 
+                            required 
+                            autocomplete="email"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 
+                                   focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 
+                                   min-h-[44px] text-base sm:text-sm"
+                            placeholder="Enter your email address"
+                        >
+                    </div>
+
+                    <!-- Password Field -->
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">
+                            Password
+                        </label>
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            required 
+                            autocomplete="new-password"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 
+                                   focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 
+                                   min-h-[44px] text-base sm:text-sm"
+                            placeholder="Choose a secure password"
+                        >
+                        <div class="mt-1">
+                            <p class="text-xs text-gray-500">
+                                Must be 8+ characters with uppercase, lowercase, and number
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Family Size Field -->
+                    <div>
+                        <label for="familySize" class="block text-sm font-medium text-gray-700 mb-1">
+                            Family Size
+                        </label>
+                        <select 
+                            id="familySize" 
+                            name="familySize" 
+                            required 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
+                                   focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 
+                                   min-h-[44px] text-base sm:text-sm bg-white"
+                        >
+                            <option value="">Select family size</option>
+                            <option value="1">1 person</option>
+                            <option value="2">2 people</option>
+                            <option value="3">3 people</option>
+                            <option value="4">4 people</option>
+                            <option value="5">5 people</option>
+                            <option value="6">6 people</option>
+                            <option value="7">7 people</option>
+                            <option value="8">8 people</option>
+                        </select>
+                        <div class="mt-1">
+                            <p class="text-xs text-gray-500">
+                                Helps us suggest appropriate recipe quantities
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Terms and Privacy -->
+                    <div class="flex items-start">
+                        <input 
+                            id="agree-terms" 
+                            name="agree-terms" 
+                            type="checkbox" 
+                            required
+                            class="mt-1 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                        >
+                        <label for="agree-terms" class="ml-2 block text-sm text-gray-700">
+                            I agree to the 
+                            <a href="/terms" class="text-green-600 hover:text-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 rounded">Terms of Service</a> 
+                            and 
+                            <a href="/privacy" class="text-green-600 hover:text-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 rounded">Privacy Policy</a>
+                        </label>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div>
+                        <button 
+                            type="submit" 
+                            class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm 
+                                   text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 
+                                   focus:ring-offset-2 focus:ring-green-500 min-h-[44px] font-medium text-base
+                                   disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                        >
+                            <span class="register-text">Create Account</span>
+                            <svg class="register-spinner animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Response area for TwinSpark -->
+                    <div id="register-response"></div>
+                </form>
+
+                <!-- Login Link -->
+                <div class="mt-6 text-center">
+                    <p class="text-sm text-gray-600">
+                        Already have an account?
+                        <a href="/login" class="font-medium text-green-600 hover:text-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 rounded px-1 py-1">
+                            Sign in instead
+                        </a>
+                    </p>
+                </div>
             </div>
-            
-            <button type="submit" class="btn">Create Account</button>
-            
-            <div class="success" id="register-success"></div>
-            <div class="error" id="register-error"></div>
-        </form>
-        
-        <div class="links">
-            <p><a href="/login">Already have an account? Login here</a></p>
+
+            <!-- PWA Install Prompt (if available) -->
+            <div id="pwa-install-prompt" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+                <p class="text-sm text-blue-800 mb-3">Install imkitchen for a better experience!</p>
+                <button id="pwa-install-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm min-h-[44px] focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    Install App
+                </button>
+            </div>
         </div>
     </div>
+
+    <!-- JavaScript -->
+    {% include "partials/scripts.html" %}
+
+    <!-- Form enhancement script -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('register-form');
+        const submitButton = form.querySelector('button[type="submit"]');
+        const registerText = submitButton.querySelector('.register-text');
+        const registerSpinner = submitButton.querySelector('.register-spinner');
+        
+        // Password strength indicator
+        const passwordInput = document.getElementById('password');
+        const strengthIndicator = document.createElement('div');
+        strengthIndicator.className = 'mt-1 text-xs';
+        passwordInput.parentNode.appendChild(strengthIndicator);
+        
+        passwordInput.addEventListener('input', function() {
+            const password = this.value;
+            const hasUpper = /[A-Z]/.test(password);
+            const hasLower = /[a-z]/.test(password);
+            const hasNumber = /\d/.test(password);
+            const hasMinLength = password.length >= 8;
+            
+            let strength = 0;
+            let message = '';
+            
+            if (hasMinLength) strength++;
+            if (hasUpper) strength++;
+            if (hasLower) strength++;
+            if (hasNumber) strength++;
+            
+            switch (strength) {
+                case 0:
+                case 1:
+                    message = '<span class="text-red-500">Weak password</span>';
+                    break;
+                case 2:
+                    message = '<span class="text-yellow-500">Fair password</span>';
+                    break;
+                case 3:
+                    message = '<span class="text-blue-500">Good password</span>';
+                    break;
+                case 4:
+                    message = '<span class="text-green-500">Strong password</span>';
+                    break;
+            }
+            
+            strengthIndicator.innerHTML = password.length > 0 ? message : '';
+        });
+        
+        // Handle form submission loading state
+        form.addEventListener('submit', function() {
+            submitButton.disabled = true;
+            registerText.textContent = 'Creating Account...';
+            registerSpinner.classList.remove('hidden');
+        });
+        
+        // Reset form state on response
+        form.addEventListener('ts:after-request', function(event) {
+            submitButton.disabled = false;
+            registerText.textContent = 'Create Account';
+            registerSpinner.classList.add('hidden');
+            
+            // Announce result to screen readers
+            const response = event.detail.response;
+            if (response.ok) {
+                window.imkitchen?.announceToScreenReader('Account created successfully');
+            } else {
+                window.imkitchen?.announceToScreenReader('Account creation failed');
+            }
+        });
+        
+        // Focus management
+        const firstInput = form.querySelector('input[type="text"]');
+        if (firstInput) {
+            firstInput.focus();
+        }
+    });
+    </script>
 </body>
 </html>

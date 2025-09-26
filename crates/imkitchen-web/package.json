@@ -1,0 +1,16 @@
+{
+  "name": "imkitchen-web",
+  "version": "1.0.0",
+  "description": "Frontend assets for imkitchen PWA",
+  "private": true,
+  "scripts": {
+    "build-css": "tailwindcss -i ./static/css/input.css -o ./static/css/tailwind.css --minify",
+    "watch-css": "tailwindcss -i ./static/css/input.css -o ./static/css/tailwind.css --watch",
+    "build": "npm run build-css",
+    "dev": "npm run watch-css"
+  },
+  "devDependencies": {
+    "@tailwindcss/forms": "^0.5.7",
+    "tailwindcss": "^3.4.0"
+  }
+}

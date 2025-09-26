@@ -56,31 +56,7 @@ struct ProfileFormTemplate {
 
 #[derive(Template)]
 #[template(path = "fragments/profile-success.html")]
-struct ProfileSuccessTemplate {
-    user: UserPublic,
-    dietary_options: Vec<String>,
-    csrf_token: String,
-}
-
-impl ProfileSuccessTemplate {
-    fn skill_level_str(&self) -> &'static str {
-        match self.user.cooking_skill_level {
-            CookingSkillLevel::Beginner => "beginner",
-            CookingSkillLevel::Intermediate => "intermediate",
-            CookingSkillLevel::Advanced => "advanced",
-        }
-    }
-
-    fn has_dietary_restriction(&self, restriction: &str) -> bool {
-        self.user
-            .dietary_restrictions
-            .contains(&restriction.to_string())
-    }
-
-    fn format_restriction(&self, restriction: &str) -> String {
-        restriction.replace("-", " ").to_string()
-    }
-}
+struct ProfileSuccessTemplate;
 
 #[derive(Template)]
 #[template(path = "fragments/profile-error.html")]
@@ -519,10 +495,10 @@ pub async fn profile_form_handler(
             info!("Profile updated successfully for user: {}", user.id);
 
             // Convert updated profile to UserPublic for template
-            let user_public = convert_core_to_shared_user_public(updated_profile);
+            let _user_public = convert_core_to_shared_user_public(updated_profile);
 
             // Define dietary options
-            let dietary_options = vec![
+            let _dietary_options = [
                 "vegetarian".to_string(),
                 "vegan".to_string(),
                 "gluten-free".to_string(),
@@ -530,13 +506,9 @@ pub async fn profile_form_handler(
                 "nut-allergies".to_string(),
             ];
 
-            let csrf_token = "placeholder_csrf_token".to_string();
+            let _csrf_token = "placeholder_csrf_token".to_string();
 
-            let template = ProfileSuccessTemplate {
-                user: user_public,
-                dietary_options,
-                csrf_token,
-            };
+            let template = ProfileSuccessTemplate;
 
             match template.render() {
                 Ok(html) => Ok(Html(html)),

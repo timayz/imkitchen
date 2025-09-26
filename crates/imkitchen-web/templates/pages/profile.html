@@ -1,234 +1,420 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile - imkitchen</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="/static/js/twinspark.js"></script>
-</head>
-<body class="bg-gray-50 min-h-screen">
-    <div class="max-w-2xl mx-auto py-8 px-4">
-        <div class="mb-6">
-            <h1 class="text-3xl font-bold text-gray-900">Profile Management</h1>
-            <p class="text-gray-600 mt-2">Manage your profile information and preferences</p>
-        </div>
+{% extends "layouts/authenticated.html" %}
 
-        <!-- Profile Form -->
-        <div id="profile-form-container" class="bg-white shadow rounded-lg p-6">
-            <form id="profile-form" method="post" action="/profile" ts-req="/profile" ts-target="#profile-form" ts-req-method="post">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+{% set current_page = "profile" %}
+
+{% block title %}Profile Management - imkitchen{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8">
+    <!-- Page Header -->
+    <div class="text-center sm:text-left">
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Profile Management</h1>
+        <p class="mt-2 text-sm sm:text-base text-gray-600">
+            Manage your profile information and preferences for personalized meal planning
+        </p>
+    </div>
+
+    <!-- Profile Form -->
+    <div class="bg-white shadow-sm rounded-lg border border-gray-200">
+        <form id="profile-form" method="post" action="/profile" ts-req="/profile" ts-target="#profile-response" ts-req-method="post" class="divide-y divide-gray-200">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            
+            <!-- Personal Information Section -->
+            <div class="px-4 py-6 sm:px-6">
+                <div class="flex items-center mb-6">
+                    <div class="flex-shrink-0">
+                        <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h2 class="text-lg font-medium text-gray-900">Personal Information</h2>
+                        <p class="text-sm text-gray-500">Basic account information</p>
+                    </div>
+                </div>
                 
-                <!-- Personal Information -->
-                <div class="space-y-6">
-                    <div>
-                        <h2 class="text-lg font-semibold text-gray-900 mb-4">Personal Information</h2>
-                        
-                        <div class="grid grid-cols-1 gap-4">
-                            <div>
-                                <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
-                                <input 
-                                    type="text" 
-                                    id="name" 
-                                    name="name" 
-                                    value="{{ user.name }}"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
-                                    required
-                                >
-                            </div>
-
-                            <div>
-                                <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-                                <input 
-                                    type="email" 
-                                    id="email" 
-                                    value="{{ user.email }}"
-                                    class="mt-1 block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm px-3 py-2"
-                                    readonly
-                                    title="Email cannot be changed"
-                                >
-                                <p class="mt-1 text-sm text-gray-500">Email cannot be changed</p>
-                            </div>
-                        </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div class="sm:col-span-2">
+                        <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
+                            Full Name *
+                        </label>
+                        <input 
+                            type="text" 
+                            id="name" 
+                            name="name" 
+                            value="{{ user.name }}"
+                            required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400
+                                   focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 
+                                   min-h-[44px] text-base sm:text-sm"
+                            placeholder="Enter your full name"
+                        >
                     </div>
 
-                    <!-- Cooking Preferences -->
-                    <div>
-                        <h2 class="text-lg font-semibold text-gray-900 mb-4">Cooking Preferences</h2>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label for="family_size" class="block text-sm font-medium text-gray-700">Family Size</label>
-                                <select 
-                                    id="family_size" 
-                                    name="familySize"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
-                                >
-                                    {% for size in 1..=8 %}
-                                    <option value="{{ size }}" {% if size == user.family_size %}selected{% endif %}>
-                                        {{ size }} {% if size == 1 %}person{% else %}people{% endif %}
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label for="cooking_skill_level" class="block text-sm font-medium text-gray-700">Cooking Skill Level</label>
-                                <select 
-                                    id="cooking_skill_level" 
-                                    name="cookingSkillLevel"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
-                                >
-                                    <option value="beginner" {% if self.skill_level_str() == "beginner" %}selected{% endif %}>Beginner</option>
-                                    <option value="intermediate" {% if self.skill_level_str() == "intermediate" %}selected{% endif %}>Intermediate</option>
-                                    <option value="advanced" {% if self.skill_level_str() == "advanced" %}selected{% endif %}>Advanced</option>
-                                </select>
-                            </div>
-                        </div>
+                    <div class="sm:col-span-2">
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+                            Email Address
+                        </label>
+                        <input 
+                            type="email" 
+                            id="email" 
+                            value="{{ user.email }}"
+                            readonly
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50
+                                   min-h-[44px] text-base sm:text-sm text-gray-500"
+                            title="Email cannot be changed"
+                        >
+                        <p class="mt-1 text-xs text-gray-500">
+                            <svg class="inline w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                            </svg>
+                            Email cannot be changed for security reasons
+                        </p>
                     </div>
+                </div>
+            </div>
 
-                    <!-- Cooking Time Preferences -->
-                    <div>
-                        <h2 class="text-lg font-semibold text-gray-900 mb-4">Time Preferences</h2>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label for="weekday_time" class="block text-sm font-medium text-gray-700">Weekday Max Cooking Time (minutes)</label>
-                                <input 
-                                    type="number" 
-                                    id="weekday_time" 
-                                    name="cookingTimePreferences.weekdayMaxMinutes"
-                                    value="{{ user.cooking_time_preferences.weekday_max_minutes }}"
-                                    min="5" 
-                                    max="480"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
-                                >
-                            </div>
-
-                            <div>
-                                <label for="weekend_time" class="block text-sm font-medium text-gray-700">Weekend Max Cooking Time (minutes)</label>
-                                <input 
-                                    type="number" 
-                                    id="weekend_time" 
-                                    name="cookingTimePreferences.weekendMaxMinutes"
-                                    value="{{ user.cooking_time_preferences.weekend_max_minutes }}"
-                                    min="5" 
-                                    max="480"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
-                                >
-                            </div>
-                        </div>
+            <!-- Cooking Preferences Section -->
+            <div class="px-4 py-6 sm:px-6">
+                <div class="flex items-center mb-6">
+                    <div class="flex-shrink-0">
+                        <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                        </svg>
                     </div>
-
-                    <!-- Dietary Restrictions -->
+                    <div class="ml-3">
+                        <h2 class="text-lg font-medium text-gray-900">Cooking Preferences</h2>
+                        <p class="text-sm text-gray-500">Help us personalize your meal planning experience</p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div>
-                        <h2 class="text-lg font-semibold text-gray-900 mb-4">Dietary Restrictions</h2>
-                        
-                        <div class="space-y-2">
-                            {% for restriction in dietary_options %}
-                            <label class="flex items-center">
-                                <input 
-                                    type="checkbox" 
-                                    name="dietaryRestrictions" 
-                                    value="{{ restriction }}"
-                                    {% if self.has_dietary_restriction(restriction) %}checked{% endif %}
-                                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                >
-                                <span class="ml-2 text-sm text-gray-700 capitalize">
-                                    {{ self.format_restriction(restriction) }}
-                                </span>
-                            </label>
+                        <label for="family_size" class="block text-sm font-medium text-gray-700 mb-2">
+                            Family Size *
+                        </label>
+                        <select 
+                            id="family_size" 
+                            name="familySize"
+                            required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white
+                                   focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 
+                                   min-h-[44px] text-base sm:text-sm"
+                        >
+                            {% for size in 1..=8 %}
+                            <option value="{{ size }}" {% if size == user.family_size %}selected{% endif %}>
+                                {{ size }} {% if size == 1 %}person{% else %}people{% endif %}
+                            </option>
                             {% endfor %}
+                        </select>
+                        <p class="mt-1 text-xs text-gray-500">Affects recipe portion suggestions</p>
+                    </div>
+
+                    <div>
+                        <label for="cooking_skill_level" class="block text-sm font-medium text-gray-700 mb-2">
+                            Cooking Skill Level *
+                        </label>
+                        <select 
+                            id="cooking_skill_level" 
+                            name="cookingSkillLevel"
+                            required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white
+                                   focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 
+                                   min-h-[44px] text-base sm:text-sm"
+                        >
+                            <option value="beginner" {% if self.skill_level_str() == "beginner" %}selected{% endif %}>Beginner</option>
+                            <option value="intermediate" {% if self.skill_level_str() == "intermediate" %}selected{% endif %}>Intermediate</option>
+                            <option value="advanced" {% if self.skill_level_str() == "advanced" %}selected{% endif %}>Advanced</option>
+                        </select>
+                        <p class="mt-1 text-xs text-gray-500">Influences recipe complexity recommendations</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Time Preferences Section -->
+            <div class="px-4 py-6 sm:px-6">
+                <div class="flex items-center mb-6">
+                    <div class="flex-shrink-0">
+                        <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h2 class="text-lg font-medium text-gray-900">Time Preferences</h2>
+                        <p class="text-sm text-gray-500">Set your available cooking time for meal planning</p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                        <label for="weekday_time" class="block text-sm font-medium text-gray-700 mb-2">
+                            Weekday Max Cooking Time
+                        </label>
+                        <div class="relative">
+                            <input 
+                                type="number" 
+                                id="weekday_time" 
+                                name="cookingTimePreferences.weekdayMaxMinutes"
+                                value="{{ user.cooking_time_preferences.weekday_max_minutes }}"
+                                min="5" 
+                                max="480"
+                                class="w-full px-3 py-2 pr-16 border border-gray-300 rounded-md shadow-sm placeholder-gray-400
+                                       focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 
+                                       min-h-[44px] text-base sm:text-sm"
+                                placeholder="30"
+                            >
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <span class="text-gray-500 text-sm">min</span>
+                            </div>
                         </div>
+                        <p class="mt-1 text-xs text-gray-500">Monday through Friday cooking time limit</p>
                     </div>
 
-                    <!-- Action Buttons -->
-                    <div class="flex justify-between pt-6">
-                        <button 
-                            type="submit"
-                            class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                        >
-                            Update Profile
-                        </button>
-                        
-                        <button 
-                            type="button"
-                            onclick="confirmDeleteAccount()"
-                            class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                        >
-                            Delete Account
-                        </button>
+                    <div>
+                        <label for="weekend_time" class="block text-sm font-medium text-gray-700 mb-2">
+                            Weekend Max Cooking Time
+                        </label>
+                        <div class="relative">
+                            <input 
+                                type="number" 
+                                id="weekend_time" 
+                                name="cookingTimePreferences.weekendMaxMinutes"
+                                value="{{ user.cooking_time_preferences.weekend_max_minutes }}"
+                                min="5" 
+                                max="480"
+                                class="w-full px-3 py-2 pr-16 border border-gray-300 rounded-md shadow-sm placeholder-gray-400
+                                       focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 
+                                       min-h-[44px] text-base sm:text-sm"
+                                placeholder="60"
+                            >
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <span class="text-gray-500 text-sm">min</span>
+                            </div>
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500">Saturday and Sunday cooking time limit</p>
                     </div>
                 </div>
-            </form>
-        </div>
-    </div>
+            </div>
 
-    <!-- Navigation -->
-    <div class="fixed top-4 right-4">
-        <a href="/" class="bg-white hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded-md shadow border">
-            ← Back to Home
-        </a>
-    </div>
-
-    <!-- Hidden delete form -->
-    <form id="delete-form" method="post" action="/profile/delete" style="display: none;">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-    </form>
-
-    <!-- Confirmation Modal -->
-    <div id="delete-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" style="display: none;">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div class="mt-3 text-center">
-                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-                    <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.962-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                    </svg>
+            <!-- Dietary Restrictions Section -->
+            <div class="px-4 py-6 sm:px-6">
+                <div class="flex items-center mb-6">
+                    <div class="flex-shrink-0">
+                        <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h2 class="text-lg font-medium text-gray-900">Dietary Restrictions</h2>
+                        <p class="text-sm text-gray-500">Select any dietary restrictions to filter recipes</p>
+                    </div>
                 </div>
-                <h3 class="text-lg font-medium text-gray-900 mt-5">Delete Account</h3>
-                <div class="mt-2 px-7 py-3">
-                    <p class="text-sm text-gray-500">
-                        Are you sure you want to delete your account? This action cannot be undone and will permanently remove all your data.
-                    </p>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {% for restriction in dietary_options %}
+                    <label class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                        <input 
+                            type="checkbox" 
+                            name="dietaryRestrictions" 
+                            value="{{ restriction }}"
+                            {% if self.has_dietary_restriction(restriction) %}checked{% endif %}
+                            class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                        >
+                        <span class="ml-3 text-sm font-medium text-gray-700">
+                            {{ self.format_restriction(restriction) }}
+                        </span>
+                    </label>
+                    {% endfor %}
                 </div>
-                <div class="items-center px-4 py-3">
+            </div>
+
+            <!-- Action Buttons Section -->
+            <div class="px-4 py-6 sm:px-6 bg-gray-50">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
                     <button 
-                        onclick="deleteAccount()"
-                        class="px-4 py-2 bg-red-500 text-white text-base font-medium rounded-md w-24 mr-2 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-300"
+                        type="submit"
+                        class="flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-md 
+                               text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 
+                               focus:ring-green-500 min-h-[44px] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        Delete
+                        <span class="update-text">Update Profile</span>
+                        <svg class="update-spinner animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
                     </button>
+                    
                     <button 
-                        onclick="closeModal()"
-                        class="px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-md w-24 hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                        type="button"
+                        onclick="confirmDeleteAccount()"
+                        class="flex justify-center items-center px-6 py-3 border border-red-300 text-base font-medium rounded-md 
+                               text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 
+                               focus:ring-red-500 min-h-[44px] transition-colors"
                     >
-                        Cancel
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                        Delete Account
                     </button>
                 </div>
             </div>
+
+        </form>
+        
+        <!-- Response area for TwinSpark -->
+        <div id="profile-response" class="px-4 py-4 sm:px-6"></div>
+    </div>
+</div>
+
+<!-- Delete Account Confirmation Modal -->
+<div id="delete-modal" class="fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+            <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+        </div>
+
+        <!-- Modal panel -->
+        <div class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+            <div class="sm:flex sm:items-start">
+                <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <svg class="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.962-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                    </svg>
+                </div>
+                <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                        Delete Account
+                    </h3>
+                    <div class="mt-2">
+                        <p class="text-sm text-gray-500">
+                            Are you sure you want to delete your account? This action cannot be undone and will permanently remove all your data, including recipes, meal plans, and preferences.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                <button 
+                    type="button"
+                    onclick="deleteAccount()"
+                    class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm min-h-[44px]"
+                >
+                    Delete Account
+                </button>
+                <button 
+                    type="button"
+                    onclick="closeModal()"
+                    class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:mt-0 sm:w-auto sm:text-sm min-h-[44px]"
+                >
+                    Cancel
+                </button>
+            </div>
         </div>
     </div>
+</div>
 
-    <script>
-        function confirmDeleteAccount() {
-            document.getElementById('delete-modal').style.display = 'block';
+<!-- Hidden delete form -->
+<form id="delete-form" method="post" action="/profile/delete" style="display: none;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let loadingTimeout;
+    
+    function getFormElements() {
+        const form = document.getElementById('profile-form');
+        const submitButton = form?.querySelector('button[type="submit"]');
+        const updateText = submitButton?.querySelector('.update-text');
+        const updateSpinner = submitButton?.querySelector('.update-spinner');
+        return { form, submitButton, updateText, updateSpinner };
+    }
+    
+    function resetButtonState() {
+        const { submitButton, updateText, updateSpinner } = getFormElements();
+        if (submitButton && updateText && updateSpinner) {
+            submitButton.disabled = false;
+            updateText.textContent = 'Update Profile';
+            updateSpinner.classList.add('hidden');
         }
-
-        function closeModal() {
-            document.getElementById('delete-modal').style.display = 'none';
+        if (loadingTimeout) {
+            clearTimeout(loadingTimeout);
+            loadingTimeout = null;
         }
-
-        function deleteAccount() {
-            document.getElementById('delete-form').submit();
-        }
-
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            const modal = document.getElementById('delete-modal');
-            if (event.target === modal) {
-                closeModal();
+    }
+    
+    // Use event delegation to handle form submission
+    document.body.addEventListener('submit', function(event) {
+        if (event.target.id === 'profile-form') {
+            const { submitButton, updateText, updateSpinner } = getFormElements();
+            if (submitButton && updateText && updateSpinner) {
+                submitButton.disabled = true;
+                updateText.textContent = 'Updating...';
+                updateSpinner.classList.remove('hidden');
+                
+                // Fallback timeout to reset button state if event doesn't fire
+                loadingTimeout = setTimeout(resetButtonState, 10000); // 10 second timeout
             }
         }
-    </script>
-</body>
-</html>
+    });
+    
+    // Use event delegation for TwinSpark events
+    document.body.addEventListener('ts-req-after', function(event) {
+        if (event.target.id === 'profile-form') {
+            resetButtonState();
+            
+            // Announce result to screen readers
+            const response = event.detail?.response;
+            if (window.imkitchen && window.imkitchen.announceToScreenReader) {
+                if (response && response.ok) {
+                    window.imkitchen.announceToScreenReader('Profile updated successfully');
+                } else {
+                    window.imkitchen.announceToScreenReader('Profile update failed');
+                }
+            }
+        }
+    });
+    
+    // Use event delegation for error handling
+    document.body.addEventListener('ts-req-error', function(event) {
+        if (event.target.id === 'profile-form') {
+            resetButtonState();
+            if (window.imkitchen && window.imkitchen.announceToScreenReader) {
+                window.imkitchen.announceToScreenReader('Profile update failed');
+            }
+        }
+    });
+});
+
+// Delete account functionality
+function confirmDeleteAccount() {
+    document.getElementById('delete-modal').classList.remove('hidden');
+    // Focus the cancel button for accessibility
+    setTimeout(() => {
+        document.querySelector('#delete-modal button[onclick="closeModal()"]').focus();
+    }, 100);
+}
+
+function closeModal() {
+    document.getElementById('delete-modal').classList.add('hidden');
+}
+
+function deleteAccount() {
+    document.getElementById('delete-form').submit();
+}
+
+// Close modal when clicking outside or pressing escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeModal();
+    }
+});
+
+document.getElementById('delete-modal').addEventListener('click', function(event) {
+    if (event.target === this) {
+        closeModal();
+    }
+});
+</script>
+{% endblock %}
