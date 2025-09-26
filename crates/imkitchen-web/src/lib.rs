@@ -1,10 +1,7 @@
 pub mod handlers;
 pub mod middleware;
 
-use axum::{
-    routing::get,
-    Router,
-};
+use axum::{routing::get, Router};
 use std::net::SocketAddr;
 use tower_http::{services::ServeDir, trace::TraceLayer};
 use tracing::info;
@@ -28,11 +25,11 @@ pub fn create_app() -> Router {
 pub async fn start_server(host: String, port: u16) -> Result<(), Box<dyn std::error::Error>> {
     let app = create_app();
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
-    
+
     info!("Starting server on {}:{}", host, port);
-    
+
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?;
-    
+
     Ok(())
 }

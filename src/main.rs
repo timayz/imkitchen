@@ -2,7 +2,6 @@
 
 use clap::{Parser, Subcommand};
 use tracing::{info, Level};
-use tracing_subscriber;
 
 /// IMKitchen CLI - Intelligent Meal Planning Application
 #[derive(Parser)]
@@ -63,9 +62,7 @@ enum MigrateCommands {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize tracing
-    tracing_subscriber::fmt()
-        .with_max_level(Level::INFO)
-        .init();
+    tracing_subscriber::fmt().with_max_level(Level::INFO).init();
 
     let cli = Cli::parse();
 

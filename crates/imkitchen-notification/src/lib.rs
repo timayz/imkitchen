@@ -1,12 +1,12 @@
-pub mod domain;
 pub mod commands;
-pub mod queries;
-pub mod projections;
+pub mod domain;
 pub mod events;
+pub mod projections;
+pub mod queries;
 
 // Re-export main types
-pub use domain::*;
 pub use commands::*;
-pub use queries::*;
-pub use projections::*;
+pub use domain::*;
 pub use events::*;
+pub use projections::*;
+pub use queries::*;

@@ -2,7 +2,7 @@ use clap::{CommandFactory, Parser};
 
 // Import the CLI structures from main.rs
 // Since we can't directly import from main.rs, we'll recreate the essential structures for testing
-use clap::{Subcommand};
+use clap::Subcommand;
 
 /// IMKitchen CLI - Intelligent Meal Planning Application
 #[derive(Parser)]
@@ -78,7 +78,7 @@ mod cli_tests {
         let args = vec!["imkitchen", "web", "start"];
         let cli = Cli::try_parse_from(args);
         assert!(cli.is_ok());
-        
+
         let cli = cli.unwrap();
         match &cli.command {
             Commands::Web { action } => {
@@ -96,21 +96,27 @@ mod cli_tests {
 
     #[test]
     fn test_web_start_with_custom_host_port() {
-        let args = vec!["imkitchen", "web", "start", "--host", "127.0.0.1", "--port", "8080"];
+        let args = vec![
+            "imkitchen",
+            "web",
+            "start",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            "8080",
+        ];
         let cli = Cli::try_parse_from(args);
         assert!(cli.is_ok());
-        
+
         let cli = cli.unwrap();
         match &cli.command {
-            Commands::Web { action } => {
-                match action {
-                    WebCommands::Start { host, port } => {
-                        assert_eq!(host, "127.0.0.1");
-                        assert_eq!(*port, 8080);
-                    }
-                    _ => panic!("Expected WebCommands::Start"),
+            Commands::Web { action } => match action {
+                WebCommands::Start { host, port } => {
+                    assert_eq!(host, "127.0.0.1");
+                    assert_eq!(*port, 8080);
                 }
-            }
+                _ => panic!("Expected WebCommands::Start"),
+            },
             _ => panic!("Expected Commands::Web"),
         }
     }
@@ -120,7 +126,7 @@ mod cli_tests {
         let args = vec!["imkitchen", "web", "stop"];
         let cli = Cli::try_parse_from(args);
         assert!(cli.is_ok());
-        
+
         let cli = cli.unwrap();
         match &cli.command {
             Commands::Web { action } => {
@@ -135,7 +141,7 @@ mod cli_tests {
         let args = vec!["imkitchen", "migrate", "up"];
         let cli = Cli::try_parse_from(args);
         assert!(cli.is_ok());
-        
+
         let cli = cli.unwrap();
         match &cli.command {
             Commands::Migrate { action } => {
@@ -150,7 +156,7 @@ mod cli_tests {
         let args = vec!["imkitchen", "migrate", "down"];
         let cli = Cli::try_parse_from(args);
         assert!(cli.is_ok());
-        
+
         let cli = cli.unwrap();
         match &cli.command {
             Commands::Migrate { action } => {
@@ -170,17 +176,15 @@ mod cli_tests {
         let args = vec!["imkitchen", "migrate", "down", "--steps", "5"];
         let cli = Cli::try_parse_from(args);
         assert!(cli.is_ok());
-        
+
         let cli = cli.unwrap();
         match &cli.command {
-            Commands::Migrate { action } => {
-                match action {
-                    MigrateCommands::Down { steps } => {
-                        assert_eq!(*steps, 5);
-                    }
-                    _ => panic!("Expected MigrateCommands::Down"),
+            Commands::Migrate { action } => match action {
+                MigrateCommands::Down { steps } => {
+                    assert_eq!(*steps, 5);
                 }
-            }
+                _ => panic!("Expected MigrateCommands::Down"),
+            },
             _ => panic!("Expected Commands::Migrate"),
         }
     }
@@ -190,7 +194,7 @@ mod cli_tests {
         let args = vec!["imkitchen", "migrate", "status"];
         let cli = Cli::try_parse_from(args);
         assert!(cli.is_ok());
-        
+
         let cli = cli.unwrap();
         match &cli.command {
             Commands::Migrate { action } => {
@@ -205,7 +209,7 @@ mod cli_tests {
         let args = vec!["imkitchen", "health"];
         let cli = Cli::try_parse_from(args);
         assert!(cli.is_ok());
-        
+
         let cli = cli.unwrap();
         matches!(&cli.command, Commands::Health);
     }

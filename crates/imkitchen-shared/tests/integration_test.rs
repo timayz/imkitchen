@@ -1,4 +1,4 @@
-use imkitchen_shared::{Email, FamilySize, SkillLevel, Difficulty};
+use imkitchen_shared::{Difficulty, Email, FamilySize, SkillLevel};
 
 #[test]
 fn test_valid_email_creation() {
@@ -27,7 +27,7 @@ fn test_family_size_validation_errors() {
     // Test too small
     let family_size = FamilySize::new(0);
     assert!(family_size.is_err());
-    
+
     // Test too large
     let family_size = FamilySize::new(9);
     assert!(family_size.is_err());

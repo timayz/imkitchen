@@ -1,7 +1,7 @@
 // Recipe domain events
 
 use chrono::{DateTime, Utc};
-use imkitchen_shared::{DomainEvent, Difficulty};
+use imkitchen_shared::{Difficulty, DomainEvent};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 

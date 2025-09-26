@@ -12,6 +12,7 @@ serde = { workspace = true }
 uuid = { workspace = true }
 chrono = { workspace = true }
 validator = { workspace = true }
-evento = { workspace = true }
-thiserror = { workspace = true }
+# Temporarily disabled unused dependencies
+# evento = { workspace = true }
+# thiserror = { workspace = true }
 imkitchen-shared = { path = "../imkitchen-shared" }

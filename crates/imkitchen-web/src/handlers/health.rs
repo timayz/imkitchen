@@ -17,6 +17,6 @@ pub async fn health_check() -> Result<Json<HealthResponse>, StatusCode> {
         version: env!("CARGO_PKG_VERSION").to_string(),
         timestamp: chrono::Utc::now().to_rfc3339(),
     };
-    
+
     Ok(Json(response))
 }
