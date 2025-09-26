@@ -12,7 +12,7 @@ serde = { workspace = true }
 uuid = { workspace = true }
 chrono = { workspace = true }
 validator = { workspace = true }
-# evento = { workspace = true }  # TODO: Fix compilation issues
+evento = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
