@@ -19,7 +19,7 @@ chrono = { workspace = true }
 thiserror = { workspace = true }
 anyhow = { workspace = true }
 sqlx = { workspace = true }
-evento = { workspace = true }  # TODO: Fix compilation issues
+evento = { workspace = true }
 prometheus = { workspace = true }
 tower = "0.5"
 tower-http = { version = "0.6", features = ["fs", "trace"] }
