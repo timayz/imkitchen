@@ -129,7 +129,7 @@ async fn check_database_health(db_pool: &Option<SqlitePool>) -> ComponentHealth 
                 .fetch_one(pool)
                 .await
             {
-                Ok(result) if result == 1 => {
+                Ok(1) => {
                     let mut details = HashMap::new();
                     details.insert(
                         "connections_active".to_string(),
