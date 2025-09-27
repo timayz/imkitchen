@@ -20,8 +20,8 @@ chrono = { workspace = true }
 # thiserror = { workspace = true }
 # anyhow = { workspace = true }
 sqlx = { workspace = true }
+prometheus = { workspace = true }
 # evento = { workspace = true }
-# prometheus = { workspace = true }
 # tower = "0.5"
 tower-http = { version = "0.6", features = ["fs", "trace"] }
 
@@ -33,3 +33,6 @@ tower-http = { version = "0.6", features = ["fs", "trace"] }
 # imkitchen-meal-planning = { path = "../imkitchen-meal-planning" }
 # imkitchen-shopping = { path = "../imkitchen-shopping" }
 # imkitchen-notification = { path = "../imkitchen-notification" }
+
+[dev-dependencies]
+tower = "0.5"

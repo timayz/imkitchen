@@ -1,3 +1,3 @@
-// HTTP middleware modules
+pub mod metrics;
 
-// Placeholder for future middleware implementations
+pub use metrics::metrics_middleware;

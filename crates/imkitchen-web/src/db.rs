@@ -169,6 +169,39 @@ pub async fn test_database_connection(pool: &SqlitePool) -> Result<(), sqlx::Err
     }
 }
 
+/// Test database connection with metrics tracking
+pub async fn test_database_connection_with_metrics(
+    pool: &SqlitePool,
+    metrics: Option<&crate::metrics::AppMetrics>,
+) -> Result<(), sqlx::Error> {
+    let _guard = metrics.map(|m| m.start_db_query("health_check"));
+    
+    let result = sqlx::query_scalar::<_, i32>("SELECT 1")
+        .fetch_one(pool)
+        .await;
+    
+    if let Some(_metrics) = metrics {
+        match &result {
+            Ok(_) => {
+                if let Some(guard) = _guard {
+                    guard.complete("success");
+                }
+            }
+            Err(_) => {
+                if let Some(guard) = _guard {
+                    guard.complete("error");
+                }
+            }
+        }
+    }
+    
+    match result {
+        Ok(1) => Ok(()),
+        Ok(_) => Err(sqlx::Error::RowNotFound),
+        Err(e) => Err(e),
+    }
+}
+
 /// Get database connection pool stats
 pub fn get_pool_stats(pool: &SqlitePool) -> DatabaseStats {
     let size = pool.size();

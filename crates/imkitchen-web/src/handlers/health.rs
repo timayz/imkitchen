@@ -4,7 +4,7 @@ use axum::{extract::State, http::StatusCode, response::Json};
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use std::collections::HashMap;
-use tracing::{error, info, warn};
+use tracing::{error, info};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum HealthStatus {
@@ -125,11 +125,8 @@ async fn check_database_health(db_pool: &Option<SqlitePool>) -> ComponentHealth 
     match db_pool {
         Some(pool) => {
             // Test database connectivity with a simple query
-            match sqlx::query_scalar::<_, i32>("SELECT 1")
-                .fetch_one(pool)
-                .await
-            {
-                Ok(1) => {
+            match crate::db::test_database_connection(pool).await {
+                Ok(()) => {
                     let mut details = HashMap::new();
                     details.insert(
                         "connections_active".to_string(),
@@ -144,16 +141,6 @@ async fn check_database_health(db_pool: &Option<SqlitePool>) -> ComponentHealth 
                         status: HealthStatus::Healthy,
                         message: "Database connection successful".to_string(),
                         details: Some(details),
-                        checked_at: chrono::Utc::now().to_rfc3339(),
-                        response_time_ms: Some(start_time.elapsed().as_millis() as u64),
-                    }
-                }
-                Ok(_) => {
-                    warn!("Database query returned unexpected result");
-                    ComponentHealth {
-                        status: HealthStatus::Degraded,
-                        message: "Database query returned unexpected result".to_string(),
-                        details: None,
                         checked_at: chrono::Utc::now().to_rfc3339(),
                         response_time_ms: Some(start_time.elapsed().as_millis() as u64),
                     }

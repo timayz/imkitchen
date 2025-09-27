@@ -1,9 +1,10 @@
 pub mod db;
 pub mod handlers;
+pub mod metrics;
 pub mod middleware;
 pub mod shutdown;
 
-use axum::{routing::get, Router};
+use axum::{middleware::from_fn_with_state, routing::get, Router};
 use std::net::SocketAddr;
 use std::time::Duration;
 use tower_http::{services::ServeDir, trace::TraceLayer};
@@ -11,23 +12,56 @@ use tracing::{info, warn};
 
 pub use db::{create_database_pool_with_retry, DatabaseConfig};
 pub use handlers::health::{ComponentHealth, HealthCheckState, HealthResponse, HealthStatus};
+pub use handlers::metrics::metrics_handler;
+pub use metrics::AppMetrics;
 pub use shutdown::{GracefulShutdown, ResourceCleanup};
 
-/// Web server application state
+/// Enhanced web server application state with metrics
 #[derive(Clone)]
 pub struct AppState {
     pub health_state: HealthCheckState,
+    pub metrics: AppMetrics,
+}
+
+/// Create the main application router with database pool and metrics
+pub fn create_app_with_metrics(
+    db_pool: Option<sqlx::SqlitePool>,
+    metrics: AppMetrics,
+) -> Router {
+    let health_state = HealthCheckState::new(db_pool);
+
+    // Set application info in metrics
+    metrics.set_app_info(
+        env!("CARGO_PKG_VERSION"),
+        env!("CARGO_PKG_RUST_VERSION"),
+    );
+
+    // Create health router with health state
+    let health_router = Router::new()
+        .route("/health", get(handlers::health::health_check_with_deps))
+        .with_state(health_state);
+
+    // Create metrics router with metrics state
+    let metrics_router = Router::new()
+        .route("/metrics", get(handlers::metrics::metrics_handler))
+        .with_state(metrics.clone());
+
+    // Combine routers with metrics middleware
+    Router::new()
+        .merge(health_router)
+        .merge(metrics_router)
+        .nest_service("/static", ServeDir::new("crates/imkitchen-web/static"))
+        .layer(from_fn_with_state(
+            metrics,
+            crate::middleware::metrics_middleware,
+        ))
+        .layer(TraceLayer::new_for_http())
 }
 
 /// Create the main application router with database pool
 pub fn create_app_with_db(db_pool: Option<sqlx::SqlitePool>) -> Router {
-    let health_state = HealthCheckState::new(db_pool);
-
-    Router::new()
-        .route("/health", get(handlers::health::health_check_with_deps))
-        .nest_service("/static", ServeDir::new("crates/imkitchen-web/static"))
-        .layer(TraceLayer::new_for_http())
-        .with_state(health_state)
+    let metrics = AppMetrics::new().expect("Failed to create metrics");
+    create_app_with_metrics(db_pool, metrics)
 }
 
 /// Create the main application router (basic version for backward compatibility)
@@ -54,13 +88,23 @@ pub async fn start_server_with_shutdown(
     port: u16,
     db_pool: Option<sqlx::SqlitePool>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let app = create_app_with_db(db_pool.clone());
+    let metrics = AppMetrics::new().expect("Failed to create metrics");
+    let app = create_app_with_metrics(db_pool.clone(), metrics.clone());
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
 
     info!(
         "Starting server with graceful shutdown on {}:{}",
         host, port
     );
+
+    // Start database metrics collection task if we have a pool
+    if let Some(ref pool) = db_pool {
+        let pool_clone = pool.clone();
+        let metrics_clone = metrics.clone();
+        tokio::spawn(async move {
+            update_database_metrics_periodically(pool_clone, metrics_clone).await;
+        });
+    }
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
 
@@ -107,4 +151,22 @@ pub async fn start_server_with_shutdown(
     }
 
     Ok(())
+}
+
+/// Periodically update database connection metrics
+async fn update_database_metrics_periodically(db_pool: sqlx::SqlitePool, metrics: AppMetrics) {
+    let mut interval = tokio::time::interval(Duration::from_secs(30));
+    
+    loop {
+        interval.tick().await;
+        
+        let stats = db::get_pool_stats(&db_pool);
+        metrics.update_db_connections(stats.size, stats.idle);
+        
+        // Update uptime metrics
+        let uptime = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default();
+        metrics.update_uptime(uptime);
+    }
 }
