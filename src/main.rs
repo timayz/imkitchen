@@ -5,17 +5,19 @@ use sqlx::SqlitePool;
 use std::fs;
 use std::path::PathBuf;
 use std::process::exit;
-use tracing::info;
+use tracing::{error, info};
 
 mod config;
 mod error;
 mod monitoring;
 mod process;
+mod startup;
 
 use config::{Config, ConfigOverrides};
 use error::{AppError, AppResult};
 use monitoring::setup_monitoring;
 use process::ProcessManager;
+use startup::StartupManager;
 
 /// IMKitchen CLI - Intelligent Meal Planning Application
 #[derive(Parser)]
@@ -280,7 +282,7 @@ async fn run() -> AppResult<()> {
         Some(&config.logging.level),
         &config.logging.format,
         &config.logging.dir,
-        config.logging.rotation,
+        config.logging.rotation.clone(),
     )?;
 
     match &cli.command {
@@ -330,31 +332,17 @@ async fn run() -> AppResult<()> {
                     // Initialize process management (PID file, signal handlers)
                     process_manager.initialize().await?;
 
-                    // Create database pool with health checks and retry logic
-                    let db_config =
-                        imkitchen_web::DatabaseConfig::from_url(config.database.url.clone())
-                            .with_max_connections(config.database.max_connections)
-                            .with_timeouts(
-                                std::time::Duration::from_secs(config.database.connection_timeout),
-                                std::time::Duration::from_secs(config.database.acquire_timeout),
-                            );
-
-                    let db_pool = match imkitchen_web::create_database_pool_with_retry(
-                        &db_config,
-                        3,                                 // max retries
-                        std::time::Duration::from_secs(2), // retry delay
-                    )
-                    .await
-                    {
+                    // Use StartupManager for comprehensive initialization sequence
+                    let startup_manager = StartupManager::new(config.clone());
+                    let db_pool = match startup_manager.initialize().await {
                         Ok(pool) => {
-                            info!("Database connection pool created successfully");
+                            info!("Application startup sequence completed successfully");
                             Some(pool)
                         }
                         Err(e) => {
-                            let app_err =
-                                AppError::database_with_source("Failed to create database pool", e);
-                            app_err.log_error();
-                            None
+                            e.log_error();
+                            error!("Startup sequence failed: {}", e.user_message());
+                            return Err(e);
                         }
                     };
 
