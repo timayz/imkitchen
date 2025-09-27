@@ -295,7 +295,7 @@ impl Config {
         // Load from config file if it exists
         if config_path.exists() {
             info!("Loading configuration from file: {:?}", config_path);
-                config = Self::load_from_file(config_path)?;
+            config = Self::load_from_file(config_path)?;
         } else {
             info!(
                 "Configuration file not found, using defaults: {:?}",
@@ -320,19 +320,21 @@ impl Config {
 
     /// Load configuration from TOML file
     pub fn load_from_file(path: &PathBuf) -> AppResult<Self> {
-        let content = fs::read_to_string(path)
-            .map_err(|e| AppError::file_system_with_source(
+        let content = fs::read_to_string(path).map_err(|e| {
+            AppError::file_system_with_source(
                 format!("Failed to read config file: {:?}", path),
                 path.to_string_lossy().to_string(),
                 crate::error::FileOperation::Read,
-                e
-            ))?;
+                e,
+            )
+        })?;
 
-        let config: Config = toml::from_str(&content)
-            .map_err(|e| AppError::configuration_with_source(
+        let config: Config = toml::from_str(&content).map_err(|e| {
+            AppError::configuration_with_source(
                 format!("Failed to parse config file: {:?}", path),
-                e
-            ))?;
+                e,
+            )
+        })?;
 
         info!("Configuration loaded from file: {:?}", path);
         Ok(config)
@@ -340,27 +342,30 @@ impl Config {
 
     /// Save configuration to TOML file
     pub fn save_to_file(&self, path: &PathBuf) -> AppResult<()> {
-        let content = toml::to_string_pretty(self)
-            .map_err(|e| AppError::configuration_with_source("Failed to serialize configuration", e))?;
+        let content = toml::to_string_pretty(self).map_err(|e| {
+            AppError::configuration_with_source("Failed to serialize configuration", e)
+        })?;
 
         // Create parent directory if it doesn't exist
         if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent)
-                .map_err(|e| AppError::file_system_with_source(
+            fs::create_dir_all(parent).map_err(|e| {
+                AppError::file_system_with_source(
                     "Failed to create config directory",
                     parent.to_string_lossy().to_string(),
                     crate::error::FileOperation::Create,
-                    e
-                ))?;
+                    e,
+                )
+            })?;
         }
 
-        fs::write(path, content)
-            .map_err(|e| AppError::file_system_with_source(
+        fs::write(path, content).map_err(|e| {
+            AppError::file_system_with_source(
                 format!("Failed to write config file: {:?}", path),
                 path.to_string_lossy().to_string(),
                 crate::error::FileOperation::Write,
-                e
-            ))?;
+                e,
+            )
+        })?;
 
         info!("Configuration saved to file: {:?}", path);
         Ok(())
@@ -373,12 +378,9 @@ impl Config {
             self.database.url = url;
         }
         if let Ok(max_conn) = std::env::var("DATABASE_MAX_CONNECTIONS") {
-            self.database.max_connections = max_conn
-                .parse()
-                .map_err(|e| AppError::configuration_with_source(
-                    "Invalid DATABASE_MAX_CONNECTIONS value",
-                    e
-                ))?;
+            self.database.max_connections = max_conn.parse().map_err(|e| {
+                AppError::configuration_with_source("Invalid DATABASE_MAX_CONNECTIONS value", e)
+            })?;
         }
 
         // Server overrides
@@ -386,11 +388,9 @@ impl Config {
             self.server.host = host;
         }
         if let Ok(port) = std::env::var("SERVER_PORT") {
-            self.server.port = port.parse()
-                .map_err(|e| AppError::configuration_with_source(
-                    "Invalid SERVER_PORT value",
-                    e
-                ))?;
+            self.server.port = port
+                .parse()
+                .map_err(|e| AppError::configuration_with_source("Invalid SERVER_PORT value", e))?;
         }
 
         // Security overrides
@@ -459,7 +459,7 @@ impl Config {
         if self.security.session_secret.len() < 32 {
             return Err(AppError::security(
                 "Session secret must be at least 32 characters for security",
-                crate::error::SecuritySeverity::High
+                crate::error::SecuritySeverity::High,
             ));
         }
 

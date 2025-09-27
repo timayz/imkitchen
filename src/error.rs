@@ -4,6 +4,7 @@ use tracing::{error, warn};
 
 /// Comprehensive error types for IMKitchen application
 #[derive(Error, Debug)]
+#[allow(dead_code)] // Some variants are planned for future use
 pub enum AppError {
     /// Configuration related errors
     #[error("Configuration error: {message}")]
@@ -131,6 +132,7 @@ pub enum AppError {
 
 /// File system operations
 #[derive(Debug, Clone)]
+#[allow(dead_code)] // Some variants are planned for future use
 pub enum FileOperation {
     Read,
     Write,
@@ -159,6 +161,7 @@ impl fmt::Display for FileOperation {
 
 /// Security error severity levels
 #[derive(Debug, Clone)]
+#[allow(dead_code)] // Some variants are planned for future use
 pub enum SecuritySeverity {
     Low,
     Medium,
@@ -179,6 +182,7 @@ impl fmt::Display for SecuritySeverity {
 
 /// Service operations
 #[derive(Debug, Clone)]
+#[allow(dead_code)] // Some variants are planned for future use
 pub enum ServiceOperation {
     Start,
     Stop,
@@ -201,6 +205,7 @@ impl fmt::Display for ServiceOperation {
 
 /// Migration operations
 #[derive(Debug, Clone)]
+#[allow(dead_code)] // Some variants are planned for future use
 pub enum MigrationOperation {
     Up,
     Down,
@@ -221,6 +226,7 @@ impl fmt::Display for MigrationOperation {
 
 /// Process operations
 #[derive(Debug, Clone)]
+#[allow(dead_code)] // Some variants are planned for future use
 pub enum ProcessOperation {
     Start,
     Stop,
@@ -241,6 +247,7 @@ impl fmt::Display for ProcessOperation {
     }
 }
 
+#[allow(dead_code)] // Some methods are planned for future use
 impl AppError {
     /// Create a configuration error with correlation ID
     pub fn configuration<S: Into<String>>(message: S) -> Self {
@@ -252,7 +259,10 @@ impl AppError {
     }
 
     /// Create a configuration error with source and correlation ID
-    pub fn configuration_with_source<S: Into<String>, E: std::error::Error + Send + Sync + 'static>(
+    pub fn configuration_with_source<
+        S: Into<String>,
+        E: std::error::Error + Send + Sync + 'static,
+    >(
         message: S,
         source: E,
     ) -> Self {
@@ -627,7 +637,7 @@ impl AppError {
             } => false, // High severity security errors are not recoverable
             AppError::Network { .. } | AppError::FileSystem { .. } => true, // These might be temporary
             AppError::Database { .. } => true, // Database errors might be temporary
-            _ => false, // Conservative default
+            _ => false,                        // Conservative default
         }
     }
 }
@@ -691,6 +701,7 @@ impl From<validator::ValidationErrors> for AppError {
 }
 
 /// Result type alias for our application
+/// Note: AppError is intentionally large to provide comprehensive error context
 pub type AppResult<T> = Result<T, AppError>;
 
 #[cfg(test)]
@@ -740,7 +751,7 @@ mod tests {
     fn test_correlation_id() {
         let err1 = AppError::internal("Test 1");
         let err2 = AppError::internal("Test 2");
-        
+
         assert!(err1.correlation_id().is_some());
         assert!(err2.correlation_id().is_some());
         assert_ne!(err1.correlation_id(), err2.correlation_id());

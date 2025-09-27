@@ -5,7 +5,7 @@ use sqlx::SqlitePool;
 use std::fs;
 use std::path::PathBuf;
 use std::process;
-use tracing::{error, info};
+use tracing::info;
 
 mod config;
 mod error;
@@ -117,19 +117,21 @@ async fn create_database_if_not_exists(database_url: &str) -> AppResult<SqlitePo
         if path.starts_with('/') {
             path.to_string()
         } else {
-            let current_dir = std::env::current_dir()
-                .map_err(|e| AppError::file_system_with_source(
+            let current_dir = std::env::current_dir().map_err(|e| {
+                AppError::file_system_with_source(
                     "Failed to get current directory",
                     ".".to_string(),
                     crate::error::FileOperation::Read,
-                    e
-                ))?;
+                    e,
+                )
+            })?;
             current_dir.join(path).to_string_lossy().to_string()
         }
     } else {
-        return Err(AppError::configuration(
-            format!("Invalid SQLite URL format: {}", database_url)
-        ));
+        return Err(AppError::configuration(format!(
+            "Invalid SQLite URL format: {}",
+            database_url
+        )));
     };
 
     info!("Resolved database path: {}", db_path);
@@ -138,13 +140,14 @@ async fn create_database_if_not_exists(database_url: &str) -> AppResult<SqlitePo
     let path = std::path::Path::new(&db_path);
     if let Some(parent) = path.parent() {
         if !parent.exists() {
-            fs::create_dir_all(parent)
-                .map_err(|e| AppError::file_system_with_source(
+            fs::create_dir_all(parent).map_err(|e| {
+                AppError::file_system_with_source(
                     "Failed to create database directory",
                     parent.to_string_lossy().to_string(),
                     crate::error::FileOperation::Create,
-                    e
-                ))?;
+                    e,
+                )
+            })?;
             info!("Created database directory: {:?}", parent);
         }
     }
@@ -156,13 +159,14 @@ async fn create_database_if_not_exists(database_url: &str) -> AppResult<SqlitePo
         info!("Database file doesn't exist, will be created on connection");
 
         // Create an empty file to ensure SQLite can write to it
-        fs::File::create(path)
-            .map_err(|e| AppError::file_system_with_source(
+        fs::File::create(path).map_err(|e| {
+            AppError::file_system_with_source(
                 "Failed to create database file",
                 path.to_string_lossy().to_string(),
                 crate::error::FileOperation::Create,
-                e
-            ))?;
+                e,
+            )
+        })?;
         info!("Created empty database file: {}", db_path);
     }
 
@@ -235,13 +239,14 @@ async fn check_migration_status(pool: &SqlitePool) -> AppResult<()> {
 
 fn write_pid_file(path: &PathBuf) -> AppResult<()> {
     let pid = process::id();
-    fs::write(path, pid.to_string())
-        .map_err(|e| AppError::file_system_with_source(
+    fs::write(path, pid.to_string()).map_err(|e| {
+        AppError::file_system_with_source(
             "Failed to write PID file",
             path.to_string_lossy().to_string(),
             crate::error::FileOperation::Write,
-            e
-        ))
+            e,
+        )
+    })
 }
 
 #[tokio::main]
@@ -249,15 +254,15 @@ async fn main() {
     if let Err(e) = run().await {
         // Log the error with full context
         e.log_error();
-        
+
         // Show user-friendly message to stderr
         eprintln!("Error: {}", e.user_message());
-        
+
         // Show correlation ID for debugging if available
         if let Some(correlation_id) = e.correlation_id() {
             eprintln!("Correlation ID: {}", correlation_id);
         }
-        
+
         // Exit with error code
         std::process::exit(1);
     }
@@ -346,7 +351,8 @@ async fn run() -> AppResult<()> {
                             Some(pool)
                         }
                         Err(e) => {
-                            let app_err = AppError::database_with_source("Failed to create database pool", e);
+                            let app_err =
+                                AppError::database_with_source("Failed to create database pool", e);
                             app_err.log_error();
                             None
                         }
@@ -360,7 +366,10 @@ async fn run() -> AppResult<()> {
                     )
                     .await
                     {
-                        return Err(AppError::command_line(format!("Failed to start web server: {}", e)));
+                        return Err(AppError::command_line(format!(
+                            "Failed to start web server: {}",
+                            e
+                        )));
                     }
                 }
                 WebCommands::Stop => {

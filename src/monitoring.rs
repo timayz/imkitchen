@@ -32,14 +32,18 @@ pub fn setup_monitoring(
         EnvFilter::new(level)
     } else {
         EnvFilter::from_default_env()
-            .add_directive("imkitchen=info".parse()
-                .map_err(|e| AppError::configuration_with_source("Invalid logging directive for imkitchen", e))?)
-            .add_directive("sqlx=warn".parse()
-                .map_err(|e| AppError::configuration_with_source("Invalid logging directive for sqlx", e))?)
-            .add_directive("tokio=warn".parse()
-                .map_err(|e| AppError::configuration_with_source("Invalid logging directive for tokio", e))?)
-            .add_directive("hyper=warn".parse()
-                .map_err(|e| AppError::configuration_with_source("Invalid logging directive for hyper", e))?)
+            .add_directive("imkitchen=info".parse().map_err(|e| {
+                AppError::configuration_with_source("Invalid logging directive for imkitchen", e)
+            })?)
+            .add_directive("sqlx=warn".parse().map_err(|e| {
+                AppError::configuration_with_source("Invalid logging directive for sqlx", e)
+            })?)
+            .add_directive("tokio=warn".parse().map_err(|e| {
+                AppError::configuration_with_source("Invalid logging directive for tokio", e)
+            })?)
+            .add_directive("hyper=warn".parse().map_err(|e| {
+                AppError::configuration_with_source("Invalid logging directive for hyper", e)
+            })?)
     };
 
     match log_dir {
@@ -121,13 +125,14 @@ fn setup_file_logging_json(
     rotation: &Rotation,
     env_filter: EnvFilter,
 ) -> AppResult<()> {
-    fs::create_dir_all(log_dir)
-        .map_err(|e| AppError::file_system_with_source(
+    fs::create_dir_all(log_dir).map_err(|e| {
+        AppError::file_system_with_source(
             "Failed to create log directory",
             log_dir.to_string_lossy().to_string(),
             crate::error::FileOperation::Create,
-            e
-        ))?;
+            e,
+        )
+    })?;
 
     let file_appender = RollingFileAppender::new(rotation.clone(), log_dir, "imkitchen.log");
     let (non_blocking, _guard) = non_blocking(file_appender);
@@ -158,13 +163,14 @@ fn setup_file_logging_pretty(
     rotation: &Rotation,
     env_filter: EnvFilter,
 ) -> AppResult<()> {
-    fs::create_dir_all(log_dir)
-        .map_err(|e| AppError::file_system_with_source(
+    fs::create_dir_all(log_dir).map_err(|e| {
+        AppError::file_system_with_source(
             "Failed to create log directory",
             log_dir.to_string_lossy().to_string(),
             crate::error::FileOperation::Create,
-            e
-        ))?;
+            e,
+        )
+    })?;
 
     let file_appender = RollingFileAppender::new(rotation.clone(), log_dir, "imkitchen.log");
     let (non_blocking, _guard) = non_blocking(file_appender);
@@ -193,13 +199,14 @@ fn setup_file_logging_compact(
     rotation: &Rotation,
     env_filter: EnvFilter,
 ) -> AppResult<()> {
-    fs::create_dir_all(log_dir)
-        .map_err(|e| AppError::file_system_with_source(
+    fs::create_dir_all(log_dir).map_err(|e| {
+        AppError::file_system_with_source(
             "Failed to create log directory",
             log_dir.to_string_lossy().to_string(),
             crate::error::FileOperation::Create,
-            e
-        ))?;
+            e,
+        )
+    })?;
 
     let file_appender = RollingFileAppender::new(rotation.clone(), log_dir, "imkitchen.log");
     let (non_blocking, _guard) = non_blocking(file_appender);

@@ -20,7 +20,7 @@ mod error_tests {
         // Simulate database connection failure
         Err(Box::new(io::Error::new(
             io::ErrorKind::ConnectionRefused,
-            "Database connection refused"
+            "Database connection refused",
         )) as Box<dyn StdError + Send + Sync>)
     }
 
@@ -29,7 +29,7 @@ mod error_tests {
         // Test that errors are properly propagated through the chain
         let config_result = simulate_config_error().await;
         assert!(config_result.is_err());
-        
+
         let db_result = simulate_database_error().await;
         assert!(db_result.is_err());
     }
@@ -38,25 +38,31 @@ mod error_tests {
     fn test_error_correlation_id_generation() {
         // Test that correlation IDs are generated and unique
         use uuid::Uuid;
-        
+
         let id1 = Uuid::new_v4().to_string();
         let id2 = Uuid::new_v4().to_string();
-        
+
         assert_ne!(id1, id2);
-        assert!(id1.len() > 0);
-        assert!(id2.len() > 0);
+        assert!(!id1.is_empty());
+        assert!(!id2.is_empty());
     }
 
     #[test]
     fn test_file_operation_types() {
         // Test that file operations are properly categorized
         let operations = [
-            "Read", "Write", "Create", "Delete", 
-            "Copy", "Move", "CreateDirectory", "DeleteDirectory"
+            "Read",
+            "Write",
+            "Create",
+            "Delete",
+            "Copy",
+            "Move",
+            "CreateDirectory",
+            "DeleteDirectory",
         ];
-        
+
         for op in &operations {
-            assert!(op.len() > 0);
+            assert!(!op.is_empty());
         }
     }
 
@@ -64,9 +70,9 @@ mod error_tests {
     fn test_security_severity_levels() {
         // Test security severity classifications
         let levels = ["Low", "Medium", "High", "Critical"];
-        
+
         for level in &levels {
-            assert!(level.len() > 0);
+            assert!(!level.is_empty());
         }
     }
 
@@ -74,24 +80,24 @@ mod error_tests {
     async fn test_command_line_error_handling() {
         // Test command line argument parsing errors
         use std::process::Command;
-        
+
         let output = Command::new("cargo")
-            .args(&["run", "--", "--invalid-arg"])
+            .args(["run", "--", "--invalid-arg"])
             .output()
             .expect("Failed to execute command");
-        
+
         // Should exit with error code for invalid arguments
         assert!(!output.status.success());
     }
 
     #[tokio::test]
     async fn test_config_validation_errors() {
-        use tempfile::tempdir;
         use std::fs;
-        
+        use tempfile::tempdir;
+
         let temp_dir = tempdir().unwrap();
         let config_path = temp_dir.path().join("invalid_config.toml");
-        
+
         // Create an invalid config file
         let invalid_config = r#"
 [database]
@@ -115,11 +121,11 @@ health_endpoint = ""
 enable_tracing = true
 metrics_interval = 30
 "#;
-        
+
         fs::write(&config_path, invalid_config).unwrap();
-        
+
         let output = std::process::Command::new("cargo")
-            .args(&[
+            .args([
                 "run",
                 "--",
                 "--config",
@@ -129,18 +135,22 @@ metrics_interval = 30
             ])
             .output()
             .expect("Failed to execute command");
-        
+
         // Should fail validation
         assert!(!output.status.success());
         let stderr = String::from_utf8(output.stderr).unwrap();
-        assert!(stderr.contains("Configuration") || stderr.contains("validation") || stderr.contains("Error"));
+        assert!(
+            stderr.contains("Configuration")
+                || stderr.contains("validation")
+                || stderr.contains("Error")
+        );
     }
 
     #[tokio::test]
     async fn test_database_connection_errors() {
         // Test database connection error handling
         let output = std::process::Command::new("cargo")
-            .args(&[
+            .args([
                 "run",
                 "--",
                 "--database-url",
@@ -149,7 +159,7 @@ metrics_interval = 30
             ])
             .output()
             .expect("Failed to execute command");
-        
+
         // Should handle database connection errors gracefully
         assert!(!output.status.success());
     }
@@ -157,13 +167,13 @@ metrics_interval = 30
     #[tokio::test]
     async fn test_migration_error_handling() {
         use tempfile::tempdir;
-        
+
         let temp_dir = tempdir().unwrap();
         let db_path = temp_dir.path().join("test.db");
-        
+
         // Try to run migrations on a non-existent database directory
         let output = std::process::Command::new("cargo")
-            .args(&[
+            .args([
                 "run",
                 "--",
                 "--database-url",
@@ -173,18 +183,18 @@ metrics_interval = 30
             ])
             .output()
             .expect("Failed to execute command");
-        
+
         // Should either succeed (creating DB) or fail gracefully
         // Both outcomes are acceptable for this test
         let stdout = String::from_utf8(output.stdout).unwrap();
         let stderr = String::from_utf8(output.stderr).unwrap();
-        
+
         // Check that output contains meaningful information
         assert!(
-            stdout.contains("migration") || 
-            stderr.contains("migration") ||
-            stdout.contains("Database") ||
-            stderr.contains("Database")
+            stdout.contains("migration")
+                || stderr.contains("migration")
+                || stdout.contains("Database")
+                || stderr.contains("Database")
         );
     }
 
@@ -192,19 +202,19 @@ metrics_interval = 30
     async fn test_graceful_error_display() {
         // Test that errors are displayed in a user-friendly manner
         let output = std::process::Command::new("cargo")
-            .args(&["run", "--", "invalid-command"])
+            .args(["run", "--", "invalid-command"])
             .output()
             .expect("Failed to execute command");
-        
+
         assert!(!output.status.success());
-        
+
         let stderr = String::from_utf8(output.stderr).unwrap();
         // Should contain usage information or helpful error message
         assert!(
-            stderr.contains("Usage") || 
-            stderr.contains("error") ||
-            stderr.contains("Error") ||
-            stderr.len() > 0
+            stderr.contains("Usage")
+                || stderr.contains("error")
+                || stderr.contains("Error")
+                || !stderr.is_empty()
         );
     }
 }

@@ -3,7 +3,7 @@ use std::process::Command;
 #[test]
 fn test_cli_help_displays() {
     let output = Command::new("cargo")
-        .args(&["run", "--", "--help"])
+        .args(["run", "--", "--help"])
         .output()
         .expect("Failed to execute command");
 
@@ -16,7 +16,7 @@ fn test_cli_help_displays() {
 #[test]
 fn test_web_start_command_parsing() {
     let output = Command::new("cargo")
-        .args(&[
+        .args([
             "run",
             "--",
             "web",
@@ -41,7 +41,7 @@ fn test_web_start_command_parsing() {
 #[test]
 fn test_migrate_commands_exist() {
     let output = Command::new("cargo")
-        .args(&["run", "--", "migrate", "--help"])
+        .args(["run", "--", "migrate", "--help"])
         .output()
         .expect("Failed to execute command");
 
@@ -55,7 +55,7 @@ fn test_migrate_commands_exist() {
 #[test]
 fn test_health_command_exists() {
     let output = Command::new("cargo")
-        .args(&["run", "--", "health", "--help"])
+        .args(["run", "--", "health", "--help"])
         .output()
         .expect("Failed to execute command");
 
@@ -66,7 +66,7 @@ fn test_health_command_exists() {
 #[test]
 fn test_global_config_options() {
     let output = Command::new("cargo")
-        .args(&["run", "--", "--help"])
+        .args(["run", "--", "--help"])
         .output()
         .expect("Failed to execute command");
 
@@ -79,7 +79,7 @@ fn test_global_config_options() {
 #[test]
 fn test_migrate_down_steps_option() {
     let output = Command::new("cargo")
-        .args(&["run", "--", "migrate", "down", "--help"])
+        .args(["run", "--", "migrate", "down", "--help"])
         .output()
         .expect("Failed to execute command");
 
@@ -101,7 +101,7 @@ mod integration_tests {
         fs::write(&temp_config, "").unwrap();
 
         let output = Command::new("cargo")
-            .args(&[
+            .args([
                 "run",
                 "--",
                 "--config",
@@ -120,7 +120,7 @@ mod integration_tests {
     fn test_database_url_environment_variable() {
         let output = Command::new("cargo")
             .env("DATABASE_URL", "sqlite::memory:")
-            .args(&["run", "--", "health"])
+            .args(["run", "--", "health"])
             .output()
             .expect("Failed to execute command");
 
@@ -139,7 +139,7 @@ mod integration_tests {
     fn test_log_level_environment_variable() {
         let output = Command::new("cargo")
             .env("RUST_LOG", "debug")
-            .args(&["run", "--", "health"])
+            .args(["run", "--", "health"])
             .output()
             .expect("Failed to execute command");
 
@@ -160,7 +160,7 @@ mod integration_tests {
         let db_url = format!("sqlite:{}", db_path);
 
         let output = Command::new("cargo")
-            .args(&["run", "--", "--database-url", &db_url, "migrate", "up"])
+            .args(["run", "--", "--database-url", &db_url, "migrate", "up"])
             .output()
             .expect("Failed to execute command");
 
