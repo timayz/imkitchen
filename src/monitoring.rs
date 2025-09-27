@@ -21,6 +21,7 @@ pub enum LogFormat {
 }
 
 /// Sets up comprehensive monitoring with structured logging, correlation IDs, and log rotation
+#[allow(clippy::result_large_err)]
 pub fn setup_monitoring(
     log_level: Option<&String>,
     log_format: &LogFormat,
@@ -75,6 +76,7 @@ pub fn setup_monitoring(
     Ok(())
 }
 
+#[allow(clippy::result_large_err)]
 fn setup_stdout_logging_json(env_filter: EnvFilter) -> AppResult<()> {
     tracing_subscriber::registry()
         .with(env_filter)
@@ -90,6 +92,7 @@ fn setup_stdout_logging_json(env_filter: EnvFilter) -> AppResult<()> {
     Ok(())
 }
 
+#[allow(clippy::result_large_err)]
 fn setup_stdout_logging_pretty(env_filter: EnvFilter) -> AppResult<()> {
     tracing_subscriber::registry()
         .with(env_filter)
@@ -106,6 +109,7 @@ fn setup_stdout_logging_pretty(env_filter: EnvFilter) -> AppResult<()> {
     Ok(())
 }
 
+#[allow(clippy::result_large_err)]
 fn setup_stdout_logging_compact(env_filter: EnvFilter) -> AppResult<()> {
     tracing_subscriber::registry()
         .with(env_filter)
@@ -120,6 +124,7 @@ fn setup_stdout_logging_compact(env_filter: EnvFilter) -> AppResult<()> {
     Ok(())
 }
 
+#[allow(clippy::result_large_err)]
 fn setup_file_logging_json(
     log_dir: &PathBuf,
     rotation: &Rotation,
@@ -158,6 +163,7 @@ fn setup_file_logging_json(
     Ok(())
 }
 
+#[allow(clippy::result_large_err)]
 fn setup_file_logging_pretty(
     log_dir: &PathBuf,
     rotation: &Rotation,
@@ -194,6 +200,7 @@ fn setup_file_logging_pretty(
     Ok(())
 }
 
+#[allow(clippy::result_large_err)]
 fn setup_file_logging_compact(
     log_dir: &PathBuf,
     rotation: &Rotation,
@@ -241,6 +248,7 @@ pub fn create_correlation_id() -> String {
 
 /// Enhanced error context with correlation for debugging
 #[allow(dead_code)]
+#[allow(clippy::result_large_err)]
 pub fn with_error_correlation<T>(
     result: AppResult<T>,
     operation: &str,

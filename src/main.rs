@@ -237,6 +237,7 @@ async fn check_migration_status(pool: &SqlitePool) -> AppResult<()> {
     Ok(())
 }
 
+#[allow(clippy::result_large_err)]
 fn write_pid_file(path: &PathBuf) -> AppResult<()> {
     let pid = process::id();
     fs::write(path, pid.to_string()).map_err(|e| {

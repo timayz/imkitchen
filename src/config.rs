@@ -286,6 +286,7 @@ impl Default for MonitoringConfig {
 impl Config {
     /// Load configuration from file, CLI arguments, and environment variables
     /// Priority: CLI args > Environment variables > Config file > Defaults
+    #[allow(clippy::result_large_err)]
     pub fn load_from_sources(config_path: &PathBuf, cli_args: &ConfigOverrides) -> AppResult<Self> {
         info!("Loading configuration from multiple sources");
 
@@ -319,6 +320,7 @@ impl Config {
     }
 
     /// Load configuration from TOML file
+    #[allow(clippy::result_large_err)]
     pub fn load_from_file(path: &PathBuf) -> AppResult<Self> {
         let content = fs::read_to_string(path).map_err(|e| {
             AppError::file_system_with_source(
@@ -341,6 +343,7 @@ impl Config {
     }
 
     /// Save configuration to TOML file
+    #[allow(clippy::result_large_err)]
     pub fn save_to_file(&self, path: &PathBuf) -> AppResult<()> {
         let content = toml::to_string_pretty(self).map_err(|e| {
             AppError::configuration_with_source("Failed to serialize configuration", e)
@@ -372,6 +375,7 @@ impl Config {
     }
 
     /// Apply environment variable overrides
+    #[allow(clippy::result_large_err)]
     fn apply_env_overrides(&mut self) -> AppResult<()> {
         // Database overrides
         if let Ok(url) = std::env::var("DATABASE_URL") {
@@ -425,6 +429,7 @@ impl Config {
     }
 
     /// Apply CLI argument overrides
+    #[allow(clippy::result_large_err)]
     fn apply_cli_overrides(&mut self, overrides: &ConfigOverrides) -> AppResult<()> {
         if let Some(ref database_url) = overrides.database_url {
             self.database.url = database_url.clone();
@@ -446,6 +451,7 @@ impl Config {
     }
 
     /// Generate a sample configuration file
+    #[allow(clippy::result_large_err)]
     pub fn generate_sample_config(path: &PathBuf) -> AppResult<()> {
         let config = Config::default();
         config.save_to_file(path)?;
@@ -454,6 +460,7 @@ impl Config {
     }
 
     /// Validate sensitive configuration values
+    #[allow(clippy::result_large_err)]
     pub fn validate_security(&self) -> AppResult<()> {
         // Check session secret strength
         if self.security.session_secret.len() < 32 {
