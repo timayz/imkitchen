@@ -211,6 +211,7 @@ pub enum MigrationOperation {
     Down,
     Status,
     Validate,
+    Check,
 }
 
 impl fmt::Display for MigrationOperation {
@@ -220,6 +221,7 @@ impl fmt::Display for MigrationOperation {
             MigrationOperation::Down => write!(f, "down"),
             MigrationOperation::Status => write!(f, "status"),
             MigrationOperation::Validate => write!(f, "validate"),
+            MigrationOperation::Check => write!(f, "check"),
         }
     }
 }
