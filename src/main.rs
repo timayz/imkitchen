@@ -21,8 +21,7 @@ use startup::StartupManager;
 
 /// IMKitchen CLI - Intelligent Meal Planning Application
 #[derive(Parser)]
-#[command(name = "imkitchen")]
-#[command(version = "0.1.0")]
+#[command(version)]
 #[command(about = "Intelligent meal planning and kitchen management")]
 #[command(long_about = None)]
 struct Cli {
