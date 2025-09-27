@@ -1,34 +1,12 @@
-// User domain events
+// User domain events with Evento integration
 
-use chrono::{DateTime, Utc};
-use imkitchen_shared::{DomainEvent, FamilySize, SkillLevel};
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
+pub mod user_registered;
+pub mod user_logged_in;
+pub mod user_password_changed;
+pub mod user_profile_updated;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UserRegistered {
-    pub event_id: Uuid,
-    pub user_id: Uuid,
-    pub email: String,
-    pub family_size: FamilySize,
-    pub cooking_skill_level: SkillLevel,
-    pub occurred_at: DateTime<Utc>,
-}
-
-impl DomainEvent for UserRegistered {
-    fn event_id(&self) -> Uuid {
-        self.event_id
-    }
-
-    fn aggregate_id(&self) -> Uuid {
-        self.user_id
-    }
-
-    fn occurred_at(&self) -> DateTime<Utc> {
-        self.occurred_at
-    }
-
-    fn event_type(&self) -> &'static str {
-        "UserRegistered"
-    }
-}
+// Re-export all events
+pub use user_registered::*;
+pub use user_logged_in::*;
+pub use user_password_changed::*;
+pub use user_profile_updated::*;
