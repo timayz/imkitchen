@@ -175,11 +175,11 @@ pub async fn test_database_connection_with_metrics(
     metrics: Option<&crate::metrics::AppMetrics>,
 ) -> Result<(), sqlx::Error> {
     let _guard = metrics.map(|m| m.start_db_query("health_check"));
-    
+
     let result = sqlx::query_scalar::<_, i32>("SELECT 1")
         .fetch_one(pool)
         .await;
-    
+
     if let Some(_metrics) = metrics {
         match &result {
             Ok(_) => {
@@ -194,7 +194,7 @@ pub async fn test_database_connection_with_metrics(
             }
         }
     }
-    
+
     match result {
         Ok(1) => Ok(()),
         Ok(_) => Err(sqlx::Error::RowNotFound),

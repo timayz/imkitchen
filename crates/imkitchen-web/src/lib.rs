@@ -24,17 +24,11 @@ pub struct AppState {
 }
 
 /// Create the main application router with database pool and metrics
-pub fn create_app_with_metrics(
-    db_pool: Option<sqlx::SqlitePool>,
-    metrics: AppMetrics,
-) -> Router {
+pub fn create_app_with_metrics(db_pool: Option<sqlx::SqlitePool>, metrics: AppMetrics) -> Router {
     let health_state = HealthCheckState::new(db_pool);
 
     // Set application info in metrics
-    metrics.set_app_info(
-        env!("CARGO_PKG_VERSION"),
-        env!("CARGO_PKG_RUST_VERSION"),
-    );
+    metrics.set_app_info(env!("CARGO_PKG_VERSION"), env!("CARGO_PKG_RUST_VERSION"));
 
     // Create health router with health state
     let health_router = Router::new()
@@ -156,13 +150,13 @@ pub async fn start_server_with_shutdown(
 /// Periodically update database connection metrics
 async fn update_database_metrics_periodically(db_pool: sqlx::SqlitePool, metrics: AppMetrics) {
     let mut interval = tokio::time::interval(Duration::from_secs(30));
-    
+
     loop {
         interval.tick().await;
-        
+
         let stats = db::get_pool_stats(&db_pool);
         metrics.update_db_connections(stats.size, stats.idle);
-        
+
         // Update uptime metrics
         let uptime = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
