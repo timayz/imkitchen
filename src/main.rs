@@ -8,11 +8,11 @@ use std::path::PathBuf;
 use std::process;
 use tracing::{error, info};
 
-mod monitoring;
 mod config;
+mod monitoring;
 
-use monitoring::setup_monitoring;
 use config::{Config, ConfigOverrides};
+use monitoring::setup_monitoring;
 
 /// IMKitchen CLI - Intelligent Meal Planning Application
 #[derive(Parser)]
@@ -106,7 +106,6 @@ enum ConfigCommands {
     /// Show the current configuration
     Show,
 }
-
 
 async fn create_database_if_not_exists(database_url: &str) -> Result<SqlitePool> {
     info!("Preparing database at: {}", database_url);
@@ -237,7 +236,8 @@ async fn main() -> Result<()> {
         .context("Failed to load and validate configuration")?;
 
     // Validate security configuration
-    config.validate_security()
+    config
+        .validate_security()
         .context("Security configuration validation failed")?;
 
     // Setup comprehensive monitoring stack using new config
@@ -374,14 +374,16 @@ async fn main() -> Result<()> {
                     Config::generate_sample_config(output)
                         .context("Failed to generate sample configuration")?;
                     println!("Sample configuration generated at: {:?}", output);
-                    println!("Edit the file and set the SESSION_SECRET environment variable before use.");
+                    println!(
+                        "Edit the file and set the SESSION_SECRET environment variable before use."
+                    );
                 }
                 ConfigCommands::Validate => {
                     info!("Validating configuration");
                     // Configuration was already validated during load
                     println!("✓ Configuration: Valid");
                     println!("✓ All settings: OK");
-                    
+
                     // Show current config source info
                     if cli.config.exists() {
                         println!("✓ Config file: {:?}", cli.config);
@@ -401,7 +403,10 @@ async fn main() -> Result<()> {
                     println!("Security Settings:");
                     println!("  Session Timeout: {}s", config.security.session_timeout);
                     println!("  Force HTTPS: {}", config.security.force_https);
-                    println!("  Rate Limit: {} req/min", config.security.rate_limit_per_minute);
+                    println!(
+                        "  Rate Limit: {} req/min",
+                        config.security.rate_limit_per_minute
+                    );
                 }
             }
         }

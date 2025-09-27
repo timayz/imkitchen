@@ -6,15 +6,22 @@ use tempfile::tempdir;
 async fn test_config_generate_command() {
     let temp_dir = tempdir().unwrap();
     let config_path = temp_dir.path().join("test_config.toml");
-    
+
     let output = std::process::Command::new("cargo")
-        .args(&["run", "--", "config", "generate", "--output", config_path.to_str().unwrap()])
+        .args(&[
+            "run",
+            "--",
+            "config",
+            "generate",
+            "--output",
+            config_path.to_str().unwrap(),
+        ])
         .output()
         .expect("Failed to execute command");
-    
+
     assert!(output.status.success());
     assert!(config_path.exists());
-    
+
     let config_content = fs::read_to_string(&config_path).unwrap();
     assert!(config_content.contains("[database]"));
     assert!(config_content.contains("[server]"));
@@ -23,11 +30,11 @@ async fn test_config_generate_command() {
     assert!(config_content.contains("[monitoring]"));
 }
 
-#[tokio::test] 
+#[tokio::test]
 async fn test_config_validate_command() {
     let temp_dir = tempdir().unwrap();
     let config_path = temp_dir.path().join("valid_config.toml");
-    
+
     // Create a valid config file
     let config_content = r#"
 [database]
@@ -70,14 +77,21 @@ health_endpoint = "/health"
 enable_tracing = true
 metrics_interval = 30
 "#;
-    
+
     fs::write(&config_path, config_content).unwrap();
-    
+
     let output = std::process::Command::new("cargo")
-        .args(&["run", "--", "--config", config_path.to_str().unwrap(), "config", "validate"])
+        .args(&[
+            "run",
+            "--",
+            "--config",
+            config_path.to_str().unwrap(),
+            "config",
+            "validate",
+        ])
         .output()
         .expect("Failed to execute command");
-    
+
     assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert!(stdout.contains("✓ Configuration: Valid"));
@@ -89,7 +103,7 @@ async fn test_config_show_command() {
         .args(&["run", "--", "config", "show"])
         .output()
         .expect("Failed to execute command");
-    
+
     assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert!(stdout.contains("Current Configuration:"));
@@ -107,7 +121,7 @@ async fn test_environment_variable_precedence() {
         .env("RUST_LOG", "debug")
         .output()
         .expect("Failed to execute command");
-    
+
     assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert!(stdout.contains("Database URL: sqlite:env_test.db"));
@@ -118,10 +132,19 @@ async fn test_environment_variable_precedence() {
 #[tokio::test]
 async fn test_cli_argument_precedence() {
     let output = std::process::Command::new("cargo")
-        .args(&["run", "--", "--database-url", "sqlite:cli_test.db", "--log-level", "warn", "config", "show"])
+        .args(&[
+            "run",
+            "--",
+            "--database-url",
+            "sqlite:cli_test.db",
+            "--log-level",
+            "warn",
+            "config",
+            "show",
+        ])
         .output()
         .expect("Failed to execute command");
-    
+
     assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert!(stdout.contains("Database URL: sqlite:cli_test.db"));
@@ -132,7 +155,7 @@ async fn test_cli_argument_precedence() {
 async fn test_invalid_config_validation() {
     let temp_dir = tempdir().unwrap();
     let config_path = temp_dir.path().join("invalid_config.toml");
-    
+
     // Create an invalid config file (port too low)
     let config_content = r#"
 [database]
@@ -175,14 +198,21 @@ health_endpoint = ""
 enable_tracing = true
 metrics_interval = 30
 "#;
-    
+
     fs::write(&config_path, config_content).unwrap();
-    
+
     let output = std::process::Command::new("cargo")
-        .args(&["run", "--", "--config", config_path.to_str().unwrap(), "config", "validate"])
+        .args(&[
+            "run",
+            "--",
+            "--config",
+            config_path.to_str().unwrap(),
+            "config",
+            "validate",
+        ])
         .output()
         .expect("Failed to execute command");
-    
+
     // Should fail validation
     assert!(!output.status.success());
 }
@@ -191,7 +221,7 @@ metrics_interval = 30
 async fn test_config_file_priority_order() {
     let temp_dir = tempdir().unwrap();
     let config_path = temp_dir.path().join("priority_test.toml");
-    
+
     // Create config file with specific values
     let config_content = r#"
 [database]
@@ -234,30 +264,35 @@ health_endpoint = "/health"
 enable_tracing = true
 metrics_interval = 30
 "#;
-    
+
     fs::write(&config_path, config_content).unwrap();
-    
+
     // Test that CLI args override both env vars and config file
     let output = std::process::Command::new("cargo")
         .args(&[
-            "run", "--", 
-            "--config", config_path.to_str().unwrap(),
-            "--database-url", "sqlite:cli_override.db",
-            "--log-level", "error",
-            "config", "show"
+            "run",
+            "--",
+            "--config",
+            config_path.to_str().unwrap(),
+            "--database-url",
+            "sqlite:cli_override.db",
+            "--log-level",
+            "error",
+            "config",
+            "show",
         ])
         .env("DATABASE_URL", "sqlite:env_override.db")
         .env("RUST_LOG", "warn")
         .output()
         .expect("Failed to execute command");
-    
+
     assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout).unwrap();
-    
+
     // CLI args should take precedence
     assert!(stdout.contains("Database URL: sqlite:cli_override.db"));
     assert!(stdout.contains("Log Level: error"));
-    
+
     // Values not overridden should come from config file
     assert!(stdout.contains("Server: 192.168.1.1:4000"));
 }
@@ -266,7 +301,7 @@ metrics_interval = 30
 async fn test_web_server_with_custom_config() {
     let temp_dir = tempdir().unwrap();
     let config_path = temp_dir.path().join("web_test.toml");
-    
+
     // Create config with custom web server settings
     let config_content = r#"
 [database]
@@ -309,15 +344,21 @@ health_endpoint = "/health"
 enable_tracing = true
 metrics_interval = 30
 "#;
-    
+
     fs::write(&config_path, config_content).unwrap();
-    
+
     // Test that health command works with custom config
     let output = std::process::Command::new("cargo")
-        .args(&["run", "--", "--config", config_path.to_str().unwrap(), "health"])
+        .args(&[
+            "run",
+            "--",
+            "--config",
+            config_path.to_str().unwrap(),
+            "health",
+        ])
         .output()
         .expect("Failed to execute command");
-    
+
     assert!(output.status.success());
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert!(stdout.contains("✓ Database: Connected"));
