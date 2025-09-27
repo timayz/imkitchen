@@ -1,0 +1,231 @@
+#!/usr/bin/env bash
+# Security audit script for IMKitchen
+# Runs cargo-audit with appropriate configuration and handling
+
+set -e
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Function to print colored output
+print_info() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+print_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# Function to show usage
+show_usage() {
+    echo "IMKitchen Security Audit Script"
+    echo "Usage: $0 [OPTIONS]"
+    echo ""
+    echo "Options:"
+    echo "  --strict     Run strict audit (fail on any vulnerabilities)"
+    echo "  --json       Output results in JSON format"
+    echo "  --report     Generate detailed security report"
+    echo "  --fix        Show suggested fixes for vulnerabilities"
+    echo "  --help       Show this help message"
+    echo ""
+    echo "Examples:"
+    echo "  $0           # Run standard audit with known ignores"
+    echo "  $0 --strict  # Run audit failing on any vulnerabilities"
+    echo "  $0 --report  # Generate detailed security report"
+}
+
+# Check if cargo-audit is installed
+check_cargo_audit() {
+    # Add cargo bin directory to PATH if it exists
+    if [ -d "$HOME/.cargo/bin" ] && [[ ":$PATH:" != *":$HOME/.cargo/bin:"* ]]; then
+        export PATH="$HOME/.cargo/bin:$PATH"
+    fi
+    
+    # Check if cargo-audit is now available
+    if ! command -v cargo-audit &> /dev/null; then
+        print_error "cargo-audit is not installed"
+        print_info "Install it with: cargo install cargo-audit"
+        exit 1
+    fi
+}
+
+# Run standard audit with known acceptable ignores
+run_standard_audit() {
+    print_info "Running security audit with known acceptable ignores..."
+    
+    # Known vulnerabilities we're tracking but temporarily accepting
+    local ignore_flags=""
+    ignore_flags+="--ignore RUSTSEC-2023-0071 "  # RSA Marvin Attack (no fix available)
+    # Uncomment to ignore protobuf issue while we work on fix:
+    # ignore_flags+="--ignore RUSTSEC-2024-0437 "  # Protobuf recursion (fix available)
+    
+    if cargo audit $ignore_flags; then
+        print_success "Security audit passed with acceptable ignores"
+        print_warning "Note: Some vulnerabilities are temporarily ignored (see SECURITY.md)"
+        return 0
+    else
+        print_error "Security audit failed - new vulnerabilities found!"
+        print_info "Check SECURITY.md for current mitigation strategies"
+        return 1
+    fi
+}
+
+# Run strict audit (no ignores)
+run_strict_audit() {
+    print_info "Running strict security audit (no ignores)..."
+    
+    if cargo audit; then
+        print_success "Strict security audit passed - no vulnerabilities!"
+        return 0
+    else
+        print_error "Strict security audit failed"
+        print_info "This is expected due to known vulnerabilities in SECURITY.md"
+        return 1
+    fi
+}
+
+# Generate JSON report
+run_json_audit() {
+    print_info "Generating JSON security report..."
+    
+    local timestamp=$(date +%Y%m%d_%H%M%S)
+    local report_file="security-report-${timestamp}.json"
+    
+    if cargo audit --json > "$report_file"; then
+        print_success "JSON security report generated: $report_file"
+        return 0
+    else
+        print_error "Failed to generate JSON report"
+        return 1
+    fi
+}
+
+# Generate detailed security report
+generate_report() {
+    print_info "Generating detailed security report..."
+    
+    local timestamp=$(date +%Y%m%d_%H%M%S)
+    local report_file="security-report-${timestamp}.md"
+    
+    cat > "$report_file" << EOF
+# Security Audit Report
+
+**Generated**: $(date)
+**Project**: IMKitchen
+**Audit Tool**: cargo-audit
+
+## Executive Summary
+
+EOF
+
+    print_info "Running audit for report generation..."
+    
+    # Capture audit output
+    if cargo audit > temp_audit.txt 2>&1; then
+        echo "✅ **Status**: PASS - No new vulnerabilities detected" >> "$report_file"
+    else
+        echo "⚠️ **Status**: VULNERABILITIES DETECTED" >> "$report_file"
+    fi
+    
+    cat >> "$report_file" << EOF
+
+## Detailed Findings
+
+\`\`\`
+$(cat temp_audit.txt)
+\`\`\`
+
+## Known Issues (See SECURITY.md)
+
+- **RUSTSEC-2023-0071**: RSA Marvin Attack (Medium severity, no fix available)
+- **RUSTSEC-2024-0437**: Protobuf recursion vulnerability (Fix available)
+
+## Recommendations
+
+1. Monitor for updates to affected dependencies
+2. Review SECURITY.md for current mitigation strategies  
+3. Consider alternative dependencies where possible
+4. Implement additional security controls as outlined in SECURITY.md
+
+## Next Actions
+
+- [ ] Review any new vulnerabilities found
+- [ ] Update dependency versions where fixes are available
+- [ ] Update SECURITY.md with any new findings
+- [ ] Schedule follow-up audit in 1 week
+
+---
+*This report was automatically generated by the IMKitchen security audit script.*
+EOF
+
+    rm -f temp_audit.txt
+    
+    print_success "Detailed security report generated: $report_file"
+    print_info "Review the report and update SECURITY.md as needed"
+}
+
+# Show fix suggestions
+show_fixes() {
+    print_info "Security vulnerability fix suggestions:"
+    echo ""
+    echo "🔧 RUSTSEC-2023-0071 (RSA Marvin Attack):"
+    echo "   - No direct fix available"
+    echo "   - Monitor sqlx updates for rsa crate replacement"
+    echo "   - Consider using SQLite only (disable MySQL support temporarily)"
+    echo ""
+    echo "🔧 RUSTSEC-2024-0437 (Protobuf recursion):"
+    echo "   - Update prometheus crate to version that uses protobuf >=3.7.2"
+    echo "   - Or temporarily disable metrics collection"
+    echo "   - Check: cargo update -p prometheus"
+    echo ""
+    print_info "For detailed information, see SECURITY.md"
+}
+
+# Main execution
+main() {
+    local mode="${1:-standard}"
+    
+    check_cargo_audit
+    
+    case "$mode" in
+        "--strict")
+            run_strict_audit
+            ;;
+        "--json")
+            run_json_audit
+            ;;
+        "--report")
+            generate_report
+            ;;
+        "--fix")
+            show_fixes
+            ;;
+        "--help"|"-h")
+            show_usage
+            ;;
+        "standard"|"")
+            run_standard_audit
+            ;;
+        *)
+            print_error "Unknown option: $mode"
+            echo ""
+            show_usage
+            exit 1
+            ;;
+    esac
+}
+
+# Execute main function with all arguments
+main "$@"

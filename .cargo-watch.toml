@@ -1,0 +1,54 @@
+# Cargo-watch configuration for IMKitchen development
+# This file configures automatic rebuild and test execution during development
+
+[commands]
+# Default command - compile and run tests on file changes
+default = "cargo build && cargo test"
+
+# Check command - fast syntax and type checking
+check = "cargo check"
+
+# Test command - run all tests including unit, integration, and doc tests
+test = "cargo test"
+
+# Lint command - run clippy for code quality checks
+lint = "cargo clippy -- -D warnings"
+
+# Format command - automatically format code
+fmt = "cargo fmt"
+
+# Full command - comprehensive build, test, and quality checks
+full = "cargo build && cargo test && cargo clippy -- -D warnings && cargo fmt --check"
+
+[watch]
+# Watch these file patterns for changes
+patterns = [
+    "src/**/*.rs",
+    "tests/**/*.rs", 
+    "crates/*/src/**/*.rs",
+    "crates/*/tests/**/*.rs",
+    "migrations/*.sql",
+    "Cargo.toml",
+    "*/Cargo.toml"
+]
+
+# Ignore these patterns to avoid unnecessary rebuilds
+ignore = [
+    "target/**/*",
+    ".git/**/*",
+    "*.log",
+    "*.db",
+    "*.pid",
+    ".env*",
+    "logs/**/*",
+    "docs/**/*.md"
+]
+
+# Clear screen on each run
+clear = true
+
+# Enable verbose output
+verbose = false
+
+# Delay before running command (in milliseconds)
+delay = 500
