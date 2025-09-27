@@ -1,5 +1,4 @@
 use std::fs;
-use std::path::PathBuf;
 use tempfile::tempdir;
 
 #[tokio::test]
@@ -8,7 +7,7 @@ async fn test_config_generate_command() {
     let config_path = temp_dir.path().join("test_config.toml");
 
     let output = std::process::Command::new("cargo")
-        .args(&[
+        .args([
             "run",
             "--",
             "config",
@@ -81,7 +80,7 @@ metrics_interval = 30
     fs::write(&config_path, config_content).unwrap();
 
     let output = std::process::Command::new("cargo")
-        .args(&[
+        .args([
             "run",
             "--",
             "--config",
@@ -100,7 +99,7 @@ metrics_interval = 30
 #[tokio::test]
 async fn test_config_show_command() {
     let output = std::process::Command::new("cargo")
-        .args(&["run", "--", "config", "show"])
+        .args(["run", "--", "config", "show"])
         .output()
         .expect("Failed to execute command");
 
@@ -115,7 +114,7 @@ async fn test_config_show_command() {
 #[tokio::test]
 async fn test_environment_variable_precedence() {
     let output = std::process::Command::new("cargo")
-        .args(&["run", "--", "config", "show"])
+        .args(["run", "--", "config", "show"])
         .env("DATABASE_URL", "sqlite:env_test.db")
         .env("SERVER_PORT", "9000")
         .env("RUST_LOG", "debug")
@@ -132,7 +131,7 @@ async fn test_environment_variable_precedence() {
 #[tokio::test]
 async fn test_cli_argument_precedence() {
     let output = std::process::Command::new("cargo")
-        .args(&[
+        .args([
             "run",
             "--",
             "--database-url",
@@ -202,7 +201,7 @@ metrics_interval = 30
     fs::write(&config_path, config_content).unwrap();
 
     let output = std::process::Command::new("cargo")
-        .args(&[
+        .args([
             "run",
             "--",
             "--config",
@@ -269,7 +268,7 @@ metrics_interval = 30
 
     // Test that CLI args override both env vars and config file
     let output = std::process::Command::new("cargo")
-        .args(&[
+        .args([
             "run",
             "--",
             "--config",
@@ -349,7 +348,7 @@ metrics_interval = 30
 
     // Test that health command works with custom config
     let output = std::process::Command::new("cargo")
-        .args(&[
+        .args([
             "run",
             "--",
             "--config",

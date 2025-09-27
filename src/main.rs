@@ -1,17 +1,18 @@
 // IMKitchen CLI Binary
 
-use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use sqlx::SqlitePool;
 use std::fs;
 use std::path::PathBuf;
 use std::process;
-use tracing::{error, info};
+use tracing::info;
 
 mod config;
+mod error;
 mod monitoring;
 
 use config::{Config, ConfigOverrides};
+use error::{AppError, AppResult};
 use monitoring::setup_monitoring;
 
 /// IMKitchen CLI - Intelligent Meal Planning Application
@@ -107,7 +108,7 @@ enum ConfigCommands {
     Show,
 }
 
-async fn create_database_if_not_exists(database_url: &str) -> Result<SqlitePool> {
+async fn create_database_if_not_exists(database_url: &str) -> AppResult<SqlitePool> {
     info!("Preparing database at: {}", database_url);
 
     // Extract the database file path from the URL
@@ -116,14 +117,21 @@ async fn create_database_if_not_exists(database_url: &str) -> Result<SqlitePool>
         if path.starts_with('/') {
             path.to_string()
         } else {
-            let current_dir = std::env::current_dir().context("Failed to get current directory")?;
+            let current_dir = std::env::current_dir().map_err(|e| {
+                AppError::file_system_with_source(
+                    "Failed to get current directory",
+                    ".".to_string(),
+                    crate::error::FileOperation::Read,
+                    e,
+                )
+            })?;
             current_dir.join(path).to_string_lossy().to_string()
         }
     } else {
-        return Err(anyhow::anyhow!(
+        return Err(AppError::configuration(format!(
             "Invalid SQLite URL format: {}",
             database_url
-        ));
+        )));
     };
 
     info!("Resolved database path: {}", db_path);
@@ -132,7 +140,14 @@ async fn create_database_if_not_exists(database_url: &str) -> Result<SqlitePool>
     let path = std::path::Path::new(&db_path);
     if let Some(parent) = path.parent() {
         if !parent.exists() {
-            fs::create_dir_all(parent).context("Failed to create database directory")?;
+            fs::create_dir_all(parent).map_err(|e| {
+                AppError::file_system_with_source(
+                    "Failed to create database directory",
+                    parent.to_string_lossy().to_string(),
+                    crate::error::FileOperation::Create,
+                    e,
+                )
+            })?;
             info!("Created database directory: {:?}", parent);
         }
     }
@@ -144,27 +159,34 @@ async fn create_database_if_not_exists(database_url: &str) -> Result<SqlitePool>
         info!("Database file doesn't exist, will be created on connection");
 
         // Create an empty file to ensure SQLite can write to it
-        fs::File::create(path).context("Failed to create database file")?;
+        fs::File::create(path).map_err(|e| {
+            AppError::file_system_with_source(
+                "Failed to create database file",
+                path.to_string_lossy().to_string(),
+                crate::error::FileOperation::Create,
+                e,
+            )
+        })?;
         info!("Created empty database file: {}", db_path);
     }
 
     // Connect to database
     let pool = SqlitePool::connect(database_url)
         .await
-        .context("Failed to connect to database")?;
+        .map_err(|e| AppError::database_with_source("Failed to connect to database", e))?;
 
     info!("Database connected successfully");
     Ok(pool)
 }
 
-async fn run_migrations(pool: &SqlitePool) -> Result<()> {
+async fn run_migrations(pool: &SqlitePool) -> AppResult<()> {
     sqlx::migrate!("./migrations")
         .run(pool)
         .await
-        .context("Failed to run migrations")
+        .map_err(|e| AppError::database_with_source("Failed to run migrations", e.into()))
 }
 
-async fn rollback_migrations(_pool: &SqlitePool, steps: u32) -> Result<()> {
+async fn rollback_migrations(_pool: &SqlitePool, steps: u32) -> AppResult<()> {
     info!("Rolling back {} migrations", steps);
     // Note: SQLx doesn't have built-in rollback, implementing basic version
     for i in 0..steps {
@@ -174,7 +196,7 @@ async fn rollback_migrations(_pool: &SqlitePool, steps: u32) -> Result<()> {
     Ok(())
 }
 
-async fn check_migration_status(pool: &SqlitePool) -> Result<()> {
+async fn check_migration_status(pool: &SqlitePool) -> AppResult<()> {
     info!("Checking migration status...");
 
     // Check if migration table exists first
@@ -193,7 +215,8 @@ async fn check_migration_status(pool: &SqlitePool) -> Result<()> {
     // Get migration count and latest migration
     let migration_count = sqlx::query_scalar::<_, i32>("SELECT COUNT(*) FROM _sqlx_migrations")
         .fetch_one(pool)
-        .await?;
+        .await
+        .map_err(|e| AppError::database_with_source("Failed to query migration count", e))?;
 
     if migration_count == 0 {
         println!("Migration table exists but no migrations applied");
@@ -214,13 +237,39 @@ async fn check_migration_status(pool: &SqlitePool) -> Result<()> {
     Ok(())
 }
 
-fn write_pid_file(path: &PathBuf) -> Result<()> {
+#[allow(clippy::result_large_err)]
+fn write_pid_file(path: &PathBuf) -> AppResult<()> {
     let pid = process::id();
-    fs::write(path, pid.to_string()).context("Failed to write PID file")
+    fs::write(path, pid.to_string()).map_err(|e| {
+        AppError::file_system_with_source(
+            "Failed to write PID file",
+            path.to_string_lossy().to_string(),
+            crate::error::FileOperation::Write,
+            e,
+        )
+    })
 }
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() {
+    if let Err(e) = run().await {
+        // Log the error with full context
+        e.log_error();
+
+        // Show user-friendly message to stderr
+        eprintln!("Error: {}", e.user_message());
+
+        // Show correlation ID for debugging if available
+        if let Some(correlation_id) = e.correlation_id() {
+            eprintln!("Correlation ID: {}", correlation_id);
+        }
+
+        // Exit with error code
+        std::process::exit(1);
+    }
+}
+
+async fn run() -> AppResult<()> {
     let cli = Cli::parse();
 
     // Create CLI overrides from command line arguments
@@ -232,13 +281,10 @@ async fn main() -> Result<()> {
     };
 
     // Load configuration from multiple sources with validation
-    let config = Config::load_from_sources(&cli.config, &cli_overrides)
-        .context("Failed to load and validate configuration")?;
+    let config = Config::load_from_sources(&cli.config, &cli_overrides)?;
 
     // Validate security configuration
-    config
-        .validate_security()
-        .context("Security configuration validation failed")?;
+    config.validate_security()?;
 
     // Setup comprehensive monitoring stack using new config
     setup_monitoring(
@@ -246,8 +292,7 @@ async fn main() -> Result<()> {
         &config.logging.format,
         &config.logging.dir,
         config.logging.rotation,
-    )
-    .context("Failed to initialize monitoring stack")?;
+    )?;
 
     match &cli.command {
         Commands::Web { action } => {
@@ -307,7 +352,9 @@ async fn main() -> Result<()> {
                             Some(pool)
                         }
                         Err(e) => {
-                            error!("Failed to create database pool: {}", e);
+                            let app_err =
+                                AppError::database_with_source("Failed to create database pool", e);
+                            app_err.log_error();
                             None
                         }
                     };
@@ -320,7 +367,10 @@ async fn main() -> Result<()> {
                     )
                     .await
                     {
-                        return Err(anyhow::anyhow!("Failed to start web server: {}", e));
+                        return Err(AppError::command_line(format!(
+                            "Failed to start web server: {}",
+                            e
+                        )));
                     }
                 }
                 WebCommands::Stop => {
@@ -360,8 +410,11 @@ async fn main() -> Result<()> {
                     println!("✓ System: OK");
                 }
                 Err(e) => {
-                    error!("Database connection failed: {}", e);
-                    println!("✗ Database: Failed to connect");
+                    e.log_error();
+                    eprintln!("✗ Database: {}", e.user_message());
+                    if let Some(correlation_id) = e.correlation_id() {
+                        eprintln!("Debug correlation ID: {}", correlation_id);
+                    }
                     println!("✗ System: Degraded");
                     process::exit(1);
                 }
@@ -371,8 +424,7 @@ async fn main() -> Result<()> {
             match action {
                 ConfigCommands::Generate { output } => {
                     info!("Generating sample configuration file: {:?}", output);
-                    Config::generate_sample_config(output)
-                        .context("Failed to generate sample configuration")?;
+                    Config::generate_sample_config(output)?;
                     println!("Sample configuration generated at: {:?}", output);
                     println!(
                         "Edit the file and set the SESSION_SECRET environment variable before use."
