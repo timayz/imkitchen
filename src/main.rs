@@ -366,8 +366,8 @@ async fn run() -> AppResult<()> {
                         process_manager = process_manager.add_cleanup_handler(move || {
                             info!("Closing database connection pool");
                             // Note: close() returns a future but we can't await in sync cleanup handler
-                            // The future will be dropped, but the pool will still be closed when dropped
-                            let _ = pool_clone.close();
+                            // Explicitly drop the future - the pool will be closed when the Pool is dropped
+                            std::mem::drop(pool_clone.close());
                             Ok(())
                         });
                     }
