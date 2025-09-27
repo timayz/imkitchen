@@ -1,7 +1,7 @@
 // User aggregate with Evento event sourcing implementation
 
 use chrono::{DateTime, Utc};
-use imkitchen_shared::{Email, Password, FamilySize, SkillLevel, DietaryRestriction};
+use imkitchen_shared::{DietaryRestriction, Email, FamilySize, Password, SkillLevel};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
@@ -60,14 +60,10 @@ impl Default for UserProfile {
 // Core User domain methods
 impl User {
     /// Create a new User - this will later be integrated with Evento
-    pub fn new(
-        email: Email,
-        password: Password,
-        profile: UserProfile,
-    ) -> Self {
+    pub fn new(email: Email, password: Password, profile: UserProfile) -> Self {
         let user_id = Uuid::new_v4();
         let now = Utc::now();
-        
+
         Self {
             user_id,
             email,
@@ -95,7 +91,7 @@ impl User {
     pub fn change_password(&mut self, new_password: Password) -> UserPasswordChanged {
         self.password_hash = new_password.hash();
         self.updated_at = Utc::now();
-        
+
         UserPasswordChanged {
             user_id: self.user_id,
             password_hash: self.password_hash.clone(),
@@ -107,14 +103,14 @@ impl User {
     pub fn update_profile(&mut self, new_profile: UserProfile) -> UserProfileUpdated {
         self.profile = new_profile.clone();
         self.updated_at = Utc::now();
-        
+
         UserProfileUpdated {
             user_id: self.user_id,
             profile: new_profile,
             updated_at: self.updated_at,
         }
     }
-    
+
     /// Verify user email
     pub fn verify_email(&mut self) {
         self.is_email_verified = true;
@@ -127,16 +123,16 @@ impl User {
 pub enum UserError {
     #[error("Email address has not been verified")]
     EmailNotVerified,
-    
+
     #[error("User not found")]
     NotFound,
-    
+
     #[error("Invalid credentials")]
     InvalidCredentials,
-    
+
     #[error("Email already exists")]
     EmailAlreadyExists,
-    
+
     #[error("Validation error: {0}")]
     ValidationError(#[from] validator::ValidationErrors),
 }

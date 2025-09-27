@@ -1,6 +1,6 @@
 // Basic domain model tests for User aggregate and value objects
 
-use imkitchen_shared::{Email, Password, FamilySize, SkillLevel};
+use imkitchen_shared::{Email, FamilySize, Password, SkillLevel};
 use imkitchen_user::domain::{User, UserProfile};
 
 #[test]
@@ -21,7 +21,10 @@ fn test_create_user_with_valid_data() {
     assert_eq!(user.email.value, "test@example.com");
     assert!(!user.is_email_verified);
     assert_eq!(user.profile.family_size.value, 4);
-    assert!(matches!(user.profile.cooking_skill_level, SkillLevel::Intermediate));
+    assert!(matches!(
+        user.profile.cooking_skill_level,
+        SkillLevel::Intermediate
+    ));
 }
 
 #[test]
