@@ -7,10 +7,12 @@ use std::fs;
 use std::path::PathBuf;
 use std::process;
 use tracing::{error, info};
-use tracing_appender::rolling::Rotation;
 
 mod monitoring;
-use monitoring::{setup_monitoring, LogFormat};
+mod config;
+
+use monitoring::setup_monitoring;
+use config::{Config, ConfigOverrides};
 
 /// IMKitchen CLI - Intelligent Meal Planning Application
 #[derive(Parser)]
@@ -49,6 +51,11 @@ enum Commands {
     },
     /// System health check
     Health,
+    /// Configuration management
+    Config {
+        #[command(subcommand)]
+        action: ConfigCommands,
+    },
 }
 
 #[derive(Subcommand)]
@@ -86,57 +93,20 @@ enum MigrateCommands {
     Status,
 }
 
-/// Configuration for the application
-#[derive(Debug, Clone)]
-struct Config {
-    database_url: String,
-    server_host: String,
-    server_port: u16,
-    log_format: LogFormat,
-    log_dir: Option<PathBuf>,
-    log_rotation: Rotation,
+#[derive(Subcommand)]
+enum ConfigCommands {
+    /// Generate a sample configuration file
+    Generate {
+        /// Output path for the configuration file
+        #[arg(long, short, default_value = "imkitchen.toml")]
+        output: PathBuf,
+    },
+    /// Validate the current configuration
+    Validate,
+    /// Show the current configuration
+    Show,
 }
 
-impl Config {
-    fn from_cli(cli: &Cli) -> Result<Self> {
-        let database_url = cli
-            .database_url
-            .clone()
-            .or_else(|| std::env::var("DATABASE_URL").ok())
-            .unwrap_or_else(|| "sqlite:imkitchen.db".to_string());
-
-        let server_host = std::env::var("SERVER_HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
-
-        let server_port = std::env::var("SERVER_PORT")
-            .ok()
-            .and_then(|p| p.parse().ok())
-            .unwrap_or(3000);
-
-        let log_format = match std::env::var("LOG_FORMAT").as_deref() {
-            Ok("json") => LogFormat::Json,
-            Ok("compact") => LogFormat::Compact,
-            _ => LogFormat::Pretty,
-        };
-
-        let log_dir = std::env::var("LOG_DIR").ok().map(PathBuf::from);
-
-        let log_rotation = match std::env::var("LOG_ROTATION").as_deref() {
-            Ok("hourly") => Rotation::HOURLY,
-            Ok("daily") => Rotation::DAILY,
-            Ok("never") => Rotation::NEVER,
-            _ => Rotation::DAILY,
-        };
-
-        Ok(Config {
-            database_url,
-            server_host,
-            server_port,
-            log_format,
-            log_dir,
-            log_rotation,
-        })
-    }
-}
 
 async fn create_database_if_not_exists(database_url: &str) -> Result<SqlitePool> {
     info!("Preparing database at: {}", database_url);
@@ -254,15 +224,28 @@ fn write_pid_file(path: &PathBuf) -> Result<()> {
 async fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    // Load configuration first
-    let config = Config::from_cli(&cli).context("Failed to load configuration")?;
+    // Create CLI overrides from command line arguments
+    let cli_overrides = ConfigOverrides {
+        database_url: cli.database_url.clone(),
+        log_level: cli.log_level.clone(),
+        host: None, // Will be set per command
+        port: None, // Will be set per command
+    };
 
-    // Setup comprehensive monitoring stack
+    // Load configuration from multiple sources with validation
+    let config = Config::load_from_sources(&cli.config, &cli_overrides)
+        .context("Failed to load and validate configuration")?;
+
+    // Validate security configuration
+    config.validate_security()
+        .context("Security configuration validation failed")?;
+
+    // Setup comprehensive monitoring stack using new config
     setup_monitoring(
-        cli.log_level.as_ref(),
-        &config.log_format,
-        &config.log_dir,
-        config.log_rotation,
+        Some(&config.logging.level),
+        &config.logging.format,
+        &config.logging.dir,
+        config.logging.rotation,
     )
     .context("Failed to initialize monitoring stack")?;
 
@@ -279,12 +262,12 @@ async fn main() -> Result<()> {
                     let effective_host = if *host != "0.0.0.0" {
                         host.clone()
                     } else {
-                        config.server_host.clone()
+                        config.server.host.clone()
                     };
                     let effective_port = if *port != 3000 {
                         *port
                     } else {
-                        config.server_port
+                        config.server.port
                     };
 
                     info!(
@@ -305,11 +288,11 @@ async fn main() -> Result<()> {
 
                     // Create database pool with health checks and retry logic
                     let db_config =
-                        imkitchen_web::DatabaseConfig::from_url(config.database_url.clone())
-                            .with_max_connections(10)
+                        imkitchen_web::DatabaseConfig::from_url(config.database.url.clone())
+                            .with_max_connections(config.database.max_connections)
                             .with_timeouts(
-                                std::time::Duration::from_secs(30),
-                                std::time::Duration::from_secs(10),
+                                std::time::Duration::from_secs(config.database.connection_timeout),
+                                std::time::Duration::from_secs(config.database.acquire_timeout),
                             );
 
                     let db_pool = match imkitchen_web::create_database_pool_with_retry(
@@ -348,8 +331,8 @@ async fn main() -> Result<()> {
             }
         }
         Commands::Migrate { action } => {
-            info!("Preparing database: {}", config.database_url);
-            let pool = create_database_if_not_exists(&config.database_url).await?;
+            info!("Preparing database: {}", config.database.url);
+            let pool = create_database_if_not_exists(&config.database.url).await?;
 
             match action {
                 MigrateCommands::Up => {
@@ -370,9 +353,10 @@ async fn main() -> Result<()> {
             info!("Performing system health check");
 
             // Check database connectivity (will create if not exists)
-            match create_database_if_not_exists(&config.database_url).await {
+            match create_database_if_not_exists(&config.database.url).await {
                 Ok(_) => {
                     println!("✓ Database: Connected");
+                    println!("✓ Configuration: Valid");
                     println!("✓ System: OK");
                 }
                 Err(e) => {
@@ -380,6 +364,44 @@ async fn main() -> Result<()> {
                     println!("✗ Database: Failed to connect");
                     println!("✗ System: Degraded");
                     process::exit(1);
+                }
+            }
+        }
+        Commands::Config { action } => {
+            match action {
+                ConfigCommands::Generate { output } => {
+                    info!("Generating sample configuration file: {:?}", output);
+                    Config::generate_sample_config(output)
+                        .context("Failed to generate sample configuration")?;
+                    println!("Sample configuration generated at: {:?}", output);
+                    println!("Edit the file and set the SESSION_SECRET environment variable before use.");
+                }
+                ConfigCommands::Validate => {
+                    info!("Validating configuration");
+                    // Configuration was already validated during load
+                    println!("✓ Configuration: Valid");
+                    println!("✓ All settings: OK");
+                    
+                    // Show current config source info
+                    if cli.config.exists() {
+                        println!("✓ Config file: {:?}", cli.config);
+                    } else {
+                        println!("ℹ Config file: Not found, using defaults");
+                    }
+                }
+                ConfigCommands::Show => {
+                    info!("Displaying current configuration");
+                    println!("Current Configuration:");
+                    println!("====================");
+                    println!("Database URL: {}", config.database.url);
+                    println!("Server: {}:{}", config.server.host, config.server.port);
+                    println!("Log Level: {}", config.logging.level);
+                    println!("Log Format: {:?}", config.logging.format);
+                    println!("Metrics Enabled: {}", config.monitoring.enable_metrics);
+                    println!("Security Settings:");
+                    println!("  Session Timeout: {}s", config.security.session_timeout);
+                    println!("  Force HTTPS: {}", config.security.force_https);
+                    println!("  Rate Limit: {} req/min", config.security.rate_limit_per_minute);
                 }
             }
         }

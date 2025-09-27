@@ -9,10 +9,13 @@ use tracing_appender::{
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 use uuid::Uuid;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub enum LogFormat {
+    #[serde(rename = "pretty")]
     Pretty,
+    #[serde(rename = "json")]
     Json,
+    #[serde(rename = "compact")]
     Compact,
 }
 
