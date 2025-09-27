@@ -67,6 +67,7 @@ validator = { workspace = true }
 serde = { workspace = true }
 toml = "0.8"
 thiserror = { workspace = true }
+libc = "0.2"
 
 # Internal crates
 imkitchen-web = { path = "crates/imkitchen-web" }

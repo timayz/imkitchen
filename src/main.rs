@@ -4,16 +4,18 @@ use clap::{Parser, Subcommand};
 use sqlx::SqlitePool;
 use std::fs;
 use std::path::PathBuf;
-use std::process;
+use std::process::exit;
 use tracing::info;
 
 mod config;
 mod error;
 mod monitoring;
+mod process;
 
 use config::{Config, ConfigOverrides};
 use error::{AppError, AppResult};
 use monitoring::setup_monitoring;
+use process::ProcessManager;
 
 /// IMKitchen CLI - Intelligent Meal Planning Application
 #[derive(Parser)]
@@ -237,19 +239,6 @@ async fn check_migration_status(pool: &SqlitePool) -> AppResult<()> {
     Ok(())
 }
 
-#[allow(clippy::result_large_err)]
-fn write_pid_file(path: &PathBuf) -> AppResult<()> {
-    let pid = process::id();
-    fs::write(path, pid.to_string()).map_err(|e| {
-        AppError::file_system_with_source(
-            "Failed to write PID file",
-            path.to_string_lossy().to_string(),
-            crate::error::FileOperation::Write,
-            e,
-        )
-    })
-}
-
 #[tokio::main]
 async fn main() {
     if let Err(e) = run().await {
@@ -320,16 +309,26 @@ async fn run() -> AppResult<()> {
                         effective_host, effective_port
                     );
 
-                    // Write PID file if specified
+                    // Initialize process manager with production-ready features
+                    let mut process_manager = ProcessManager::new().with_daemon_mode(*daemon);
+
                     if let Some(pid_path) = pid_file {
-                        write_pid_file(pid_path)?;
-                        info!("PID file written to {:?}", pid_path);
+                        process_manager = process_manager.with_pid_file(pid_path);
                     }
 
-                    if *daemon {
-                        info!("Running in daemon mode");
-                        // Note: Actual daemon implementation would require fork/detach
+                    // Check for existing process to prevent conflicts
+                    if let Some(existing_pid) = process_manager.check_existing_process()? {
+                        return Err(AppError::process(
+                            format!(
+                                "Another instance is already running with PID {}",
+                                existing_pid
+                            ),
+                            crate::error::ProcessOperation::Start,
+                        ));
                     }
+
+                    // Initialize process management (PID file, signal handlers)
+                    process_manager.initialize().await?;
 
                     // Create database pool with health checks and retry logic
                     let db_config =
@@ -359,24 +358,108 @@ async fn run() -> AppResult<()> {
                         }
                     };
 
-                    // Start the web server with graceful shutdown
-                    if let Err(e) = imkitchen_web::start_server_with_shutdown(
-                        effective_host,
-                        effective_port,
-                        db_pool,
-                    )
-                    .await
-                    {
-                        return Err(AppError::command_line(format!(
-                            "Failed to start web server: {}",
-                            e
-                        )));
+                    // Add cleanup handler for database connections
+                    if let Some(ref pool) = db_pool {
+                        let pool_clone = pool.clone();
+                        process_manager = process_manager.add_cleanup_handler(move || {
+                            info!("Closing database connection pool");
+                            // Note: close() returns a future but we can't await in sync cleanup handler
+                            // Explicitly drop the future - the pool will be closed when the Pool is dropped
+                            std::mem::drop(pool_clone.close());
+                            Ok(())
+                        });
+                    }
+
+                    // Start the web server with ProcessManager-coordinated shutdown
+                    let server_result = tokio::select! {
+                        server_result = imkitchen_web::start_server_with_shutdown(
+                            effective_host,
+                            effective_port,
+                            db_pool,
+                        ) => server_result,
+                        _ = process_manager.wait_for_shutdown(std::time::Duration::from_secs(300)) => {
+                            info!("Shutdown signal received, terminating server");
+                            Ok(())
+                        }
+                    };
+
+                    // Perform graceful shutdown with cleanup
+                    process_manager
+                        .shutdown(std::time::Duration::from_secs(30))
+                        .await?;
+
+                    if let Err(e) = server_result {
+                        return Err(AppError::command_line(format!("Web server error: {}", e)));
                     }
                 }
                 WebCommands::Stop => {
                     info!("Initiating graceful shutdown");
-                    // TODO: Implement graceful shutdown with signal handling
-                    println!("Graceful shutdown initiated");
+
+                    // Look for existing PID file from default or common locations
+                    let pid_paths = vec![
+                        PathBuf::from("imkitchen.pid"),
+                        PathBuf::from("/tmp/imkitchen.pid"),
+                        PathBuf::from("/var/run/imkitchen.pid"),
+                    ];
+
+                    let mut found_process = false;
+                    for pid_path in pid_paths {
+                        if pid_path.exists() {
+                            let process_manager = ProcessManager::new().with_pid_file(&pid_path);
+
+                            if let Ok(Some(existing_pid)) = process_manager.check_existing_process()
+                            {
+                                info!("Found running process with PID: {}", existing_pid);
+
+                                // Send SIGTERM signal for graceful shutdown
+                                #[cfg(unix)]
+                                {
+                                    use std::process::Command;
+                                    let result = Command::new("kill")
+                                        .arg("-TERM")
+                                        .arg(existing_pid.to_string())
+                                        .output();
+
+                                    match result {
+                                        Ok(output) if output.status.success() => {
+                                            println!(
+                                                "✓ Graceful shutdown signal sent to process {}",
+                                                existing_pid
+                                            );
+                                            found_process = true;
+                                        }
+                                        Ok(_) => {
+                                            eprintln!(
+                                                "✗ Failed to send shutdown signal to process {}",
+                                                existing_pid
+                                            );
+                                        }
+                                        Err(e) => {
+                                            eprintln!("✗ Error sending signal: {}", e);
+                                        }
+                                    }
+                                }
+
+                                #[cfg(not(unix))]
+                                {
+                                    println!(
+                                        "⚠ Graceful shutdown not implemented for this platform"
+                                    );
+                                    println!(
+                                        "Please stop the process manually (PID: {})",
+                                        existing_pid
+                                    );
+                                    found_process = true;
+                                }
+
+                                break;
+                            }
+                        }
+                    }
+
+                    if !found_process {
+                        println!("ℹ No running process found (no PID file located)");
+                    }
                 }
             }
         }
@@ -416,7 +499,7 @@ async fn run() -> AppResult<()> {
                         eprintln!("Debug correlation ID: {}", correlation_id);
                     }
                     println!("✗ System: Degraded");
-                    process::exit(1);
+                    exit(1);
                 }
             }
         }
