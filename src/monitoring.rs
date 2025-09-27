@@ -1,4 +1,3 @@
-use anyhow::{Context, Result};
 use std::fs;
 use std::path::PathBuf;
 use tracing::info;
@@ -8,6 +7,8 @@ use tracing_appender::{
 };
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 use uuid::Uuid;
+
+use crate::error::{AppError, AppResult};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub enum LogFormat {
@@ -25,16 +26,20 @@ pub fn setup_monitoring(
     log_format: &LogFormat,
     log_dir: &Option<PathBuf>,
     log_rotation: Rotation,
-) -> Result<()> {
+) -> AppResult<()> {
     // Build environment filter from CLI args or RUST_LOG
     let env_filter = if let Some(level) = log_level {
         EnvFilter::new(level)
     } else {
         EnvFilter::from_default_env()
-            .add_directive("imkitchen=info".parse()?)
-            .add_directive("sqlx=warn".parse()?)
-            .add_directive("tokio=warn".parse()?)
-            .add_directive("hyper=warn".parse()?)
+            .add_directive("imkitchen=info".parse()
+                .map_err(|e| AppError::configuration_with_source("Invalid logging directive for imkitchen", e))?)
+            .add_directive("sqlx=warn".parse()
+                .map_err(|e| AppError::configuration_with_source("Invalid logging directive for sqlx", e))?)
+            .add_directive("tokio=warn".parse()
+                .map_err(|e| AppError::configuration_with_source("Invalid logging directive for tokio", e))?)
+            .add_directive("hyper=warn".parse()
+                .map_err(|e| AppError::configuration_with_source("Invalid logging directive for hyper", e))?)
     };
 
     match log_dir {
@@ -66,7 +71,7 @@ pub fn setup_monitoring(
     Ok(())
 }
 
-fn setup_stdout_logging_json(env_filter: EnvFilter) -> Result<()> {
+fn setup_stdout_logging_json(env_filter: EnvFilter) -> AppResult<()> {
     tracing_subscriber::registry()
         .with(env_filter)
         .with(
@@ -81,7 +86,7 @@ fn setup_stdout_logging_json(env_filter: EnvFilter) -> Result<()> {
     Ok(())
 }
 
-fn setup_stdout_logging_pretty(env_filter: EnvFilter) -> Result<()> {
+fn setup_stdout_logging_pretty(env_filter: EnvFilter) -> AppResult<()> {
     tracing_subscriber::registry()
         .with(env_filter)
         .with(
@@ -97,7 +102,7 @@ fn setup_stdout_logging_pretty(env_filter: EnvFilter) -> Result<()> {
     Ok(())
 }
 
-fn setup_stdout_logging_compact(env_filter: EnvFilter) -> Result<()> {
+fn setup_stdout_logging_compact(env_filter: EnvFilter) -> AppResult<()> {
     tracing_subscriber::registry()
         .with(env_filter)
         .with(
@@ -115,8 +120,14 @@ fn setup_file_logging_json(
     log_dir: &PathBuf,
     rotation: &Rotation,
     env_filter: EnvFilter,
-) -> Result<()> {
-    fs::create_dir_all(log_dir).context("Failed to create log directory")?;
+) -> AppResult<()> {
+    fs::create_dir_all(log_dir)
+        .map_err(|e| AppError::file_system_with_source(
+            "Failed to create log directory",
+            log_dir.to_string_lossy().to_string(),
+            crate::error::FileOperation::Create,
+            e
+        ))?;
 
     let file_appender = RollingFileAppender::new(rotation.clone(), log_dir, "imkitchen.log");
     let (non_blocking, _guard) = non_blocking(file_appender);
@@ -146,8 +157,14 @@ fn setup_file_logging_pretty(
     log_dir: &PathBuf,
     rotation: &Rotation,
     env_filter: EnvFilter,
-) -> Result<()> {
-    fs::create_dir_all(log_dir).context("Failed to create log directory")?;
+) -> AppResult<()> {
+    fs::create_dir_all(log_dir)
+        .map_err(|e| AppError::file_system_with_source(
+            "Failed to create log directory",
+            log_dir.to_string_lossy().to_string(),
+            crate::error::FileOperation::Create,
+            e
+        ))?;
 
     let file_appender = RollingFileAppender::new(rotation.clone(), log_dir, "imkitchen.log");
     let (non_blocking, _guard) = non_blocking(file_appender);
@@ -175,8 +192,14 @@ fn setup_file_logging_compact(
     log_dir: &PathBuf,
     rotation: &Rotation,
     env_filter: EnvFilter,
-) -> Result<()> {
-    fs::create_dir_all(log_dir).context("Failed to create log directory")?;
+) -> AppResult<()> {
+    fs::create_dir_all(log_dir)
+        .map_err(|e| AppError::file_system_with_source(
+            "Failed to create log directory",
+            log_dir.to_string_lossy().to_string(),
+            crate::error::FileOperation::Create,
+            e
+        ))?;
 
     let file_appender = RollingFileAppender::new(rotation.clone(), log_dir, "imkitchen.log");
     let (non_blocking, _guard) = non_blocking(file_appender);
@@ -212,14 +235,14 @@ pub fn create_correlation_id() -> String {
 /// Enhanced error context with correlation for debugging
 #[allow(dead_code)]
 pub fn with_error_correlation<T>(
-    result: Result<T>,
+    result: AppResult<T>,
     operation: &str,
     correlation_id: &str,
-) -> Result<T> {
-    result.with_context(|| {
-        format!(
+) -> AppResult<T> {
+    result.map_err(|err| {
+        err.with_context(format!(
             "Operation '{}' failed [correlation_id={}]",
             operation, correlation_id
-        )
+        ))
     })
 }

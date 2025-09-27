@@ -1,4 +1,3 @@
-use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
@@ -6,6 +5,7 @@ use tracing::{info, warn};
 use tracing_appender::rolling::Rotation;
 use validator::Validate;
 
+use crate::error::{AppError, AppResult};
 use crate::monitoring::LogFormat;
 
 /// Enhanced configuration for the IMKitchen application
@@ -286,7 +286,7 @@ impl Default for MonitoringConfig {
 impl Config {
     /// Load configuration from file, CLI arguments, and environment variables
     /// Priority: CLI args > Environment variables > Config file > Defaults
-    pub fn load_from_sources(config_path: &PathBuf, cli_args: &ConfigOverrides) -> Result<Self> {
+    pub fn load_from_sources(config_path: &PathBuf, cli_args: &ConfigOverrides) -> AppResult<Self> {
         info!("Loading configuration from multiple sources");
 
         // Start with defaults
@@ -295,8 +295,7 @@ impl Config {
         // Load from config file if it exists
         if config_path.exists() {
             info!("Loading configuration from file: {:?}", config_path);
-            config = Self::load_from_file(config_path)
-                .context("Failed to load configuration from file")?;
+                config = Self::load_from_file(config_path)?;
         } else {
             info!(
                 "Configuration file not found, using defaults: {:?}",
@@ -305,54 +304,70 @@ impl Config {
         }
 
         // Apply environment variable overrides
-        config
-            .apply_env_overrides()
-            .context("Failed to apply environment variable overrides")?;
+        config.apply_env_overrides()?;
 
         // Apply CLI argument overrides
-        config
-            .apply_cli_overrides(cli_args)
-            .context("Failed to apply CLI argument overrides")?;
+        config.apply_cli_overrides(cli_args)?;
 
         // Validate the final configuration
         config
             .validate()
-            .context("Configuration validation failed")?;
+            .map_err(|e| AppError::validation_with_source("Configuration validation failed", e))?;
 
         info!("Configuration loaded and validated successfully");
         Ok(config)
     }
 
     /// Load configuration from TOML file
-    pub fn load_from_file(path: &PathBuf) -> Result<Self> {
+    pub fn load_from_file(path: &PathBuf) -> AppResult<Self> {
         let content = fs::read_to_string(path)
-            .with_context(|| format!("Failed to read config file: {:?}", path))?;
+            .map_err(|e| AppError::file_system_with_source(
+                format!("Failed to read config file: {:?}", path),
+                path.to_string_lossy().to_string(),
+                crate::error::FileOperation::Read,
+                e
+            ))?;
 
         let config: Config = toml::from_str(&content)
-            .with_context(|| format!("Failed to parse config file: {:?}", path))?;
+            .map_err(|e| AppError::configuration_with_source(
+                format!("Failed to parse config file: {:?}", path),
+                e
+            ))?;
 
         info!("Configuration loaded from file: {:?}", path);
         Ok(config)
     }
 
     /// Save configuration to TOML file
-    pub fn save_to_file(&self, path: &PathBuf) -> Result<()> {
-        let content = toml::to_string_pretty(self).context("Failed to serialize configuration")?;
+    pub fn save_to_file(&self, path: &PathBuf) -> AppResult<()> {
+        let content = toml::to_string_pretty(self)
+            .map_err(|e| AppError::configuration_with_source("Failed to serialize configuration", e))?;
 
         // Create parent directory if it doesn't exist
         if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent).context("Failed to create config directory")?;
+            fs::create_dir_all(parent)
+                .map_err(|e| AppError::file_system_with_source(
+                    "Failed to create config directory",
+                    parent.to_string_lossy().to_string(),
+                    crate::error::FileOperation::Create,
+                    e
+                ))?;
         }
 
         fs::write(path, content)
-            .with_context(|| format!("Failed to write config file: {:?}", path))?;
+            .map_err(|e| AppError::file_system_with_source(
+                format!("Failed to write config file: {:?}", path),
+                path.to_string_lossy().to_string(),
+                crate::error::FileOperation::Write,
+                e
+            ))?;
 
         info!("Configuration saved to file: {:?}", path);
         Ok(())
     }
 
     /// Apply environment variable overrides
-    fn apply_env_overrides(&mut self) -> Result<()> {
+    fn apply_env_overrides(&mut self) -> AppResult<()> {
         // Database overrides
         if let Ok(url) = std::env::var("DATABASE_URL") {
             self.database.url = url;
@@ -360,7 +375,10 @@ impl Config {
         if let Ok(max_conn) = std::env::var("DATABASE_MAX_CONNECTIONS") {
             self.database.max_connections = max_conn
                 .parse()
-                .context("Invalid DATABASE_MAX_CONNECTIONS value")?;
+                .map_err(|e| AppError::configuration_with_source(
+                    "Invalid DATABASE_MAX_CONNECTIONS value",
+                    e
+                ))?;
         }
 
         // Server overrides
@@ -368,7 +386,11 @@ impl Config {
             self.server.host = host;
         }
         if let Ok(port) = std::env::var("SERVER_PORT") {
-            self.server.port = port.parse().context("Invalid SERVER_PORT value")?;
+            self.server.port = port.parse()
+                .map_err(|e| AppError::configuration_with_source(
+                    "Invalid SERVER_PORT value",
+                    e
+                ))?;
         }
 
         // Security overrides
@@ -403,7 +425,7 @@ impl Config {
     }
 
     /// Apply CLI argument overrides
-    fn apply_cli_overrides(&mut self, overrides: &ConfigOverrides) -> Result<()> {
+    fn apply_cli_overrides(&mut self, overrides: &ConfigOverrides) -> AppResult<()> {
         if let Some(ref database_url) = overrides.database_url {
             self.database.url = database_url.clone();
         }
@@ -424,7 +446,7 @@ impl Config {
     }
 
     /// Generate a sample configuration file
-    pub fn generate_sample_config(path: &PathBuf) -> Result<()> {
+    pub fn generate_sample_config(path: &PathBuf) -> AppResult<()> {
         let config = Config::default();
         config.save_to_file(path)?;
         info!("Sample configuration generated at: {:?}", path);
@@ -432,11 +454,12 @@ impl Config {
     }
 
     /// Validate sensitive configuration values
-    pub fn validate_security(&self) -> Result<()> {
+    pub fn validate_security(&self) -> AppResult<()> {
         // Check session secret strength
         if self.security.session_secret.len() < 32 {
-            return Err(anyhow::anyhow!(
-                "Session secret must be at least 32 characters for security"
+            return Err(AppError::security(
+                "Session secret must be at least 32 characters for security",
+                crate::error::SecuritySeverity::High
             ));
         }
 
