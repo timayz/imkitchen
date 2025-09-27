@@ -63,6 +63,9 @@ tracing-appender = { workspace = true }
 anyhow = { workspace = true }
 sqlx = { workspace = true }
 uuid = { workspace = true }
+validator = { workspace = true }
+serde = { workspace = true }
+toml = "0.8"
 # thiserror = { workspace = true }
 
 # Internal crates
