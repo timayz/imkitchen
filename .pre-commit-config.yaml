@@ -1,0 +1,126 @@
+# Pre-commit hooks configuration for IMKitchen
+# See https://pre-commit.com for more information
+
+repos:
+  # Rust formatting and linting
+  - repo: local
+    hooks:
+      # Cargo fmt - code formatting
+      - id: cargo-fmt
+        name: Cargo Format
+        entry: cargo fmt
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+      # Cargo clippy - linting
+      - id: cargo-clippy
+        name: Cargo Clippy
+        entry: cargo clippy
+        language: system
+        args: [--all-targets, --all-features, --, -D, warnings]
+        types: [rust]
+        pass_filenames: false
+
+      # Cargo check - fast compilation check
+      - id: cargo-check
+        name: Cargo Check
+        entry: cargo check
+        language: system
+        args: [--all-targets, --all-features]
+        types: [rust]
+        pass_filenames: false
+
+      # Security audit with ignores for known issues
+      - id: cargo-audit
+        name: Cargo Security Audit
+        entry: bash
+        language: system
+        args: [scripts/security-audit.sh]
+        pass_filenames: false
+        files: "Cargo\\.(toml|lock)$"
+
+      # Unit tests
+      - id: cargo-test
+        name: Cargo Test
+        entry: cargo test
+        language: system
+        args: [--lib]
+        types: [rust]
+        pass_filenames: false
+
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      # Check for files that would conflict on case-insensitive filesystems
+      - id: check-case-conflict
+
+      # Check for merge conflicts
+      - id: check-merge-conflict
+
+      # Check YAML files
+      - id: check-yaml
+        args: [--unsafe]  # Allow custom YAML tags
+
+      # Check TOML files
+      - id: check-toml
+
+      # Check JSON files
+      - id: check-json
+
+      # Prevent large files from being committed
+      - id: check-added-large-files
+        args: [--maxkb=1000]
+
+      # Check for private keys
+      - id: detect-private-key
+
+      # Trim trailing whitespace
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+
+      # Ensure files end with newline
+      - id: end-of-file-fixer
+
+      # Check shebang scripts are executable
+      - id: check-executables-have-shebangs
+
+      # Check shell scripts
+      - id: check-shell-scripts
+
+  # Markdown linting
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.43.0
+    hooks:
+      - id: markdownlint
+        args: [--disable, MD013, MD033, MD041]  # Disable line length, HTML tags, first line h1
+
+  # Security checks
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: [--baseline, .secrets.baseline]
+        exclude: |
+          (?x)^(
+              .*\.lock|
+              .*\.log|
+              target/.*
+          )$
+
+# Configuration
+default_stages: [commit]
+fail_fast: false
+
+# Global excludes
+exclude: |
+  (?x)^(
+      target/.*|
+      \.git/.*|
+      .*\.log|
+      .*\.db|
+      .*\.pid|
+      node_modules/.*|
+      docs/.*\.md
+  )$

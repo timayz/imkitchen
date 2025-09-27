@@ -377,7 +377,6 @@ impl Default for ShutdownCoordinator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::time::Duration;
     use tempfile::tempdir;
 
     #[tokio::test]

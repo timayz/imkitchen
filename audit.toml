@@ -1,0 +1,67 @@
+# Security audit configuration for IMKitchen
+# This file is used by cargo-audit to manage security scanning
+
+[database]
+# Fetch fresh advisory database on each run
+fetch = true
+# Path to the advisory database
+path = "~/.cargo/advisory-db"
+
+[advisories]
+# Vulnerability handling configuration
+vulnerability_threshold = "medium" # Fail on medium or higher severity
+unmaintained_threshold = "warn"    # Warn on unmaintained crates
+
+# Temporary ignore list - should be addressed ASAP
+ignore = [
+    # RUSTSEC-2023-0071: RSA crate Marvin Attack vulnerability 
+    # TODO: No fix available yet, monitoring for updates
+    # Used via sqlx-mysql dependency chain
+    # Impact: Medium severity timing attack on RSA private keys
+    # Plan: Monitor for sqlx updates that replace rsa crate
+    "RUSTSEC-2023-0071",
+    
+    # RUSTSEC-2024-0437: Protobuf uncontrolled recursion crash
+    # TODO: Need to update prometheus crate that depends on old protobuf
+    # Used via prometheus -> protobuf dependency
+    # Impact: DoS through stack overflow
+    # Plan: Find prometheus alternative or wait for prometheus update
+    # "RUSTSEC-2024-0437", # Uncomment to ignore temporarily
+]
+
+[licenses]
+# License compliance configuration
+confidence_threshold = 0.8
+# Allow these license types
+allow = [
+    "MIT",
+    "Apache-2.0", 
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unicode-DFS-2016",
+]
+
+# Deny these licenses
+deny = [
+    "GPL-3.0",
+    "AGPL-3.0",
+]
+
+[bans]
+# Crate banning configuration
+multiple_versions = "deny" # Don't allow multiple versions of same crate
+deny = [
+    # Banned crates that should not be used
+]
+
+# Allow these duplicate dependencies temporarily
+skip = [
+    # Multiple versions allowed temporarily during transitions
+]
+
+# Allow these build dependencies
+skip_tree = [
+    # Build tools that don't affect runtime security
+]
