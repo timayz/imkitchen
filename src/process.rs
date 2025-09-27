@@ -79,6 +79,7 @@ impl ProcessManager {
     }
 
     /// Write PID file with proper error handling and permissions
+    #[allow(clippy::result_large_err)]
     fn write_pid_file(&self, path: &PathBuf) -> AppResult<()> {
         let pid = process::id();
         
@@ -156,6 +157,7 @@ impl ProcessManager {
     }
 
     /// Check if shutdown has been signaled
+    #[allow(dead_code)]
     pub fn should_shutdown(&self) -> bool {
         self.shutdown_signal.load(Ordering::Relaxed)
     }
@@ -214,6 +216,7 @@ impl ProcessManager {
     }
 
     /// Remove PID file on shutdown
+    #[allow(clippy::result_large_err)]
     fn remove_pid_file(&self, path: &PathBuf) -> AppResult<()> {
         if path.exists() {
             fs::remove_file(path).map_err(|e| {
@@ -230,6 +233,7 @@ impl ProcessManager {
     }
 
     /// Check if another process is running using the PID file
+    #[allow(clippy::result_large_err)]
     pub fn check_existing_process(&self) -> AppResult<Option<u32>> {
         if let Some(ref pid_path) = self.pid_file {
             if pid_path.exists() {
@@ -316,6 +320,7 @@ fn process_exists(pid: u32) -> bool {
 }
 
 /// Shutdown coordinator for managing multiple services
+#[allow(dead_code)]
 pub struct ShutdownCoordinator {
     shutdown_tx: Option<oneshot::Sender<()>>,
     shutdown_rx: Option<oneshot::Receiver<()>>,
@@ -323,6 +328,7 @@ pub struct ShutdownCoordinator {
 
 impl ShutdownCoordinator {
     /// Create a new shutdown coordinator
+    #[allow(dead_code)]
     pub fn new() -> Self {
         let (tx, rx) = oneshot::channel();
         Self {
@@ -332,11 +338,13 @@ impl ShutdownCoordinator {
     }
 
     /// Get a receiver for shutdown notifications
+    #[allow(dead_code)]
     pub fn subscribe(&mut self) -> Option<oneshot::Receiver<()>> {
         self.shutdown_rx.take()
     }
 
     /// Signal shutdown to all subscribers
+    #[allow(dead_code)]
     pub fn shutdown(&mut self) {
         if let Some(tx) = self.shutdown_tx.take() {
             let _ = tx.send(());
