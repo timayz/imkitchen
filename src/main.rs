@@ -239,7 +239,6 @@ async fn check_migration_status(pool: &SqlitePool) -> AppResult<()> {
     Ok(())
 }
 
-
 #[tokio::main]
 async fn main() {
     if let Err(e) = run().await {
@@ -311,24 +310,23 @@ async fn run() -> AppResult<()> {
                     );
 
                     // Initialize process manager with production-ready features
-                    let mut process_manager = ProcessManager::new()
-                        .with_daemon_mode(*daemon);
-                        
+                    let mut process_manager = ProcessManager::new().with_daemon_mode(*daemon);
+
                     if let Some(pid_path) = pid_file {
                         process_manager = process_manager.with_pid_file(pid_path);
                     }
-                    
+
                     // Check for existing process to prevent conflicts
                     if let Some(existing_pid) = process_manager.check_existing_process()? {
                         return Err(AppError::process(
                             format!(
-                                "Another instance is already running with PID {}", 
+                                "Another instance is already running with PID {}",
                                 existing_pid
                             ),
                             crate::error::ProcessOperation::Start,
                         ));
                     }
-                    
+
                     // Initialize process management (PID file, signal handlers)
                     process_manager.initialize().await?;
 
@@ -371,7 +369,7 @@ async fn run() -> AppResult<()> {
                             Ok(())
                         });
                     }
-                    
+
                     // Start the web server with ProcessManager-coordinated shutdown
                     let server_result = tokio::select! {
                         server_result = imkitchen_web::start_server_with_shutdown(
@@ -384,35 +382,35 @@ async fn run() -> AppResult<()> {
                             Ok(())
                         }
                     };
-                    
+
                     // Perform graceful shutdown with cleanup
-                    process_manager.shutdown(std::time::Duration::from_secs(30)).await?;
-                    
+                    process_manager
+                        .shutdown(std::time::Duration::from_secs(30))
+                        .await?;
+
                     if let Err(e) = server_result {
-                        return Err(AppError::command_line(format!(
-                            "Web server error: {}",
-                            e
-                        )));
+                        return Err(AppError::command_line(format!("Web server error: {}", e)));
                     }
                 }
                 WebCommands::Stop => {
                     info!("Initiating graceful shutdown");
-                    
+
                     // Look for existing PID file from default or common locations
                     let pid_paths = vec![
                         PathBuf::from("imkitchen.pid"),
                         PathBuf::from("/tmp/imkitchen.pid"),
                         PathBuf::from("/var/run/imkitchen.pid"),
                     ];
-                    
+
                     let mut found_process = false;
                     for pid_path in pid_paths {
                         if pid_path.exists() {
                             let process_manager = ProcessManager::new().with_pid_file(&pid_path);
-                            
-                            if let Ok(Some(existing_pid)) = process_manager.check_existing_process() {
+
+                            if let Ok(Some(existing_pid)) = process_manager.check_existing_process()
+                            {
                                 info!("Found running process with PID: {}", existing_pid);
-                                
+
                                 // Send SIGTERM signal for graceful shutdown
                                 #[cfg(unix)]
                                 {
@@ -421,33 +419,44 @@ async fn run() -> AppResult<()> {
                                         .arg("-TERM")
                                         .arg(existing_pid.to_string())
                                         .output();
-                                        
+
                                     match result {
                                         Ok(output) if output.status.success() => {
-                                            println!("✓ Graceful shutdown signal sent to process {}", existing_pid);
+                                            println!(
+                                                "✓ Graceful shutdown signal sent to process {}",
+                                                existing_pid
+                                            );
                                             found_process = true;
                                         }
                                         Ok(_) => {
-                                            eprintln!("✗ Failed to send shutdown signal to process {}", existing_pid);
+                                            eprintln!(
+                                                "✗ Failed to send shutdown signal to process {}",
+                                                existing_pid
+                                            );
                                         }
                                         Err(e) => {
                                             eprintln!("✗ Error sending signal: {}", e);
                                         }
                                     }
                                 }
-                                
+
                                 #[cfg(not(unix))]
                                 {
-                                    println!("⚠ Graceful shutdown not implemented for this platform");
-                                    println!("Please stop the process manually (PID: {})", existing_pid);
+                                    println!(
+                                        "⚠ Graceful shutdown not implemented for this platform"
+                                    );
+                                    println!(
+                                        "Please stop the process manually (PID: {})",
+                                        existing_pid
+                                    );
                                     found_process = true;
                                 }
-                                
+
                                 break;
                             }
                         }
                     }
-                    
+
                     if !found_process {
                         println!("ℹ No running process found (no PID file located)");
                     }

@@ -82,7 +82,7 @@ impl ProcessManager {
     #[allow(clippy::result_large_err)]
     fn write_pid_file(&self, path: &PathBuf) -> AppResult<()> {
         let pid = process::id();
-        
+
         // Create parent directory if it doesn't exist
         if let Some(parent) = path.parent() {
             if !parent.exists() {
@@ -149,7 +149,7 @@ impl ProcessManager {
 
         // For this implementation, we'll simulate daemon behavior
         // by ensuring proper signal handling and background operation
-        
+
         warn!("Daemon mode enabled - process will run in background");
         warn!("Standard I/O streams should be redirected in production");
 
@@ -165,12 +165,13 @@ impl ProcessManager {
     /// Wait for shutdown signal with timeout
     pub async fn wait_for_shutdown(&self, timeout_duration: Duration) -> AppResult<()> {
         let shutdown_signal = Arc::clone(&self.shutdown_signal);
-        
+
         let result = timeout(timeout_duration, async move {
             while !shutdown_signal.load(Ordering::Relaxed) {
                 tokio::time::sleep(Duration::from_millis(100)).await;
             }
-        }).await;
+        })
+        .await;
 
         match result {
             Ok(_) => {
@@ -179,7 +180,10 @@ impl ProcessManager {
             }
             Err(_) => {
                 warn!("Shutdown timeout reached");
-                Err(AppError::process("Shutdown timeout exceeded", crate::error::ProcessOperation::Stop))
+                Err(AppError::process(
+                    "Shutdown timeout exceeded",
+                    crate::error::ProcessOperation::Stop,
+                ))
             }
         }
     }
@@ -198,7 +202,8 @@ impl ProcessManager {
                     error!("Cleanup handler failed: {}", e);
                 }
             }
-        }).await;
+        })
+        .await;
 
         if cleanup_result.is_err() {
             warn!("Cleanup handlers timed out");
@@ -272,14 +277,27 @@ impl Default for ProcessManager {
 
 /// Setup signal handlers for graceful shutdown
 async fn setup_signal_handlers(shutdown_signal: Arc<AtomicBool>) -> AppResult<()> {
-    let mut sigterm = signal::unix::signal(signal::unix::SignalKind::terminate())
-        .map_err(|_| AppError::process("Failed to setup SIGTERM handler", crate::error::ProcessOperation::Signal))?;
-    
-    let mut sigint = signal::unix::signal(signal::unix::SignalKind::interrupt())
-        .map_err(|_| AppError::process("Failed to setup SIGINT handler", crate::error::ProcessOperation::Signal))?;
+    let mut sigterm =
+        signal::unix::signal(signal::unix::SignalKind::terminate()).map_err(|_| {
+            AppError::process(
+                "Failed to setup SIGTERM handler",
+                crate::error::ProcessOperation::Signal,
+            )
+        })?;
 
-    let mut sighup = signal::unix::signal(signal::unix::SignalKind::hangup())
-        .map_err(|_| AppError::process("Failed to setup SIGHUP handler", crate::error::ProcessOperation::Signal))?;
+    let mut sigint = signal::unix::signal(signal::unix::SignalKind::interrupt()).map_err(|_| {
+        AppError::process(
+            "Failed to setup SIGINT handler",
+            crate::error::ProcessOperation::Signal,
+        )
+    })?;
+
+    let mut sighup = signal::unix::signal(signal::unix::SignalKind::hangup()).map_err(|_| {
+        AppError::process(
+            "Failed to setup SIGHUP handler",
+            crate::error::ProcessOperation::Signal,
+        )
+    })?;
 
     tokio::select! {
         _ = sigterm.recv() => {
@@ -304,12 +322,10 @@ fn process_exists(pid: u32) -> bool {
     #[cfg(unix)]
     {
         // Send signal 0 to check if process exists without actually sending a signal
-        let result = unsafe {
-            libc::kill(pid as libc::pid_t, 0)
-        };
+        let result = unsafe { libc::kill(pid as libc::pid_t, 0) };
         result == 0
     }
-    
+
     #[cfg(not(unix))]
     {
         // On non-Unix systems, we'll assume the process exists
@@ -361,8 +377,8 @@ impl Default for ShutdownCoordinator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::tempdir;
     use std::time::Duration;
+    use tempfile::tempdir;
 
     #[tokio::test]
     async fn test_process_manager_creation() {
@@ -375,11 +391,11 @@ mod tests {
     async fn test_process_manager_configuration() {
         let temp_dir = tempdir().unwrap();
         let pid_path = temp_dir.path().join("test.pid");
-        
+
         let pm = ProcessManager::new()
             .with_pid_file(&pid_path)
             .with_daemon_mode(true);
-            
+
         assert!(pm.daemon_mode);
         assert_eq!(pm.pid_file.unwrap(), pid_path);
     }
@@ -388,19 +404,18 @@ mod tests {
     async fn test_pid_file_operations() {
         let temp_dir = tempdir().unwrap();
         let pid_path = temp_dir.path().join("test.pid");
-        
-        let pm = ProcessManager::new()
-            .with_pid_file(&pid_path);
-            
+
+        let pm = ProcessManager::new().with_pid_file(&pid_path);
+
         // Write PID file
         pm.write_pid_file(&pid_path).unwrap();
         assert!(pid_path.exists());
-        
+
         // Read back PID
         let content = fs::read_to_string(&pid_path).unwrap();
         let pid: u32 = content.trim().parse().unwrap();
         assert_eq!(pid, process::id());
-        
+
         // Remove PID file
         pm.remove_pid_file(&pid_path).unwrap();
         assert!(!pid_path.exists());
@@ -410,13 +425,13 @@ mod tests {
     async fn test_shutdown_coordinator() {
         let mut coordinator = ShutdownCoordinator::new();
         let mut rx = coordinator.subscribe().unwrap();
-        
+
         // Should not have received shutdown yet
         assert!(rx.try_recv().is_err());
-        
+
         // Signal shutdown
         coordinator.shutdown();
-        
+
         // Should receive shutdown signal
         assert!(rx.await.is_ok());
     }
@@ -425,13 +440,12 @@ mod tests {
     fn test_cleanup_handler() {
         let cleanup_called = Arc::new(AtomicBool::new(false));
         let cleanup_called_clone = Arc::clone(&cleanup_called);
-        
-        let _pm = ProcessManager::new()
-            .add_cleanup_handler(move || {
-                cleanup_called_clone.store(true, Ordering::Relaxed);
-                Ok(())
-            });
-            
+
+        let _pm = ProcessManager::new().add_cleanup_handler(move || {
+            cleanup_called_clone.store(true, Ordering::Relaxed);
+            Ok(())
+        });
+
         // In a real test, we'd call shutdown and verify the handler was called
         // For now, just verify the handler was added
         // This would require making cleanup_handlers public or adding a test method
