@@ -62,7 +62,10 @@ mod tests {
     fn test_dietary_restrictions_changed_creation() {
         let user_id = Uuid::new_v4();
         let previous = vec![DietaryRestriction::Vegetarian];
-        let new = vec![DietaryRestriction::Vegetarian, DietaryRestriction::GlutenFree];
+        let new = vec![
+            DietaryRestriction::Vegetarian,
+            DietaryRestriction::GlutenFree,
+        ];
 
         let event = DietaryRestrictionsChanged::new(user_id, previous.clone(), new.clone());
 
@@ -111,7 +114,10 @@ mod tests {
     #[test]
     fn test_no_changes() {
         let user_id = Uuid::new_v4();
-        let restrictions = vec![DietaryRestriction::Vegetarian, DietaryRestriction::GlutenFree];
+        let restrictions = vec![
+            DietaryRestriction::Vegetarian,
+            DietaryRestriction::GlutenFree,
+        ];
 
         let event = DietaryRestrictionsChanged::new(user_id, restrictions.clone(), restrictions);
 
@@ -127,11 +133,11 @@ mod tests {
         let new = vec![DietaryRestriction::Vegan];
 
         let event = DietaryRestrictionsChanged::new(user_id, previous, new);
-        
+
         // Test serialization
         let json = serde_json::to_string(&event).unwrap();
         let deserialized: DietaryRestrictionsChanged = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(event, deserialized);
     }
 }

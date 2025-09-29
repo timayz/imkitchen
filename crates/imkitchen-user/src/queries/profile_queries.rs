@@ -96,9 +96,8 @@ impl ProfileQueryHandler {
                 _ => SkillLevel::Beginner,
             };
 
-            let dietary_restrictions: Vec<DietaryRestriction> = 
-                serde_json::from_str(row.get("dietary_restrictions"))
-                    .unwrap_or_default();
+            let dietary_restrictions: Vec<DietaryRestriction> =
+                serde_json::from_str(row.get("dietary_restrictions")).unwrap_or_default();
 
             let last_updated = DateTime::parse_from_rfc3339(row.get("updated_at"))
                 .unwrap_or_else(|_| Utc::now().into())
@@ -154,9 +153,8 @@ impl ProfileQueryHandler {
                 _ => SkillLevel::Beginner,
             };
 
-            let dietary_restrictions: Vec<DietaryRestriction> = 
-                serde_json::from_str(row.get("dietary_restrictions"))
-                    .unwrap_or_default();
+            let dietary_restrictions: Vec<DietaryRestriction> =
+                serde_json::from_str(row.get("dietary_restrictions")).unwrap_or_default();
 
             // Create optimized profile for meal planning
             let profile = UserProfile {
@@ -307,8 +305,9 @@ mod tests {
         let dietary_restrictions = serde_json::to_string(&vec![
             DietaryRestriction::Vegetarian,
             DietaryRestriction::GlutenFree,
-        ]).unwrap();
-        
+        ])
+        .unwrap();
+
         sqlx::query(
             r#"
             INSERT INTO user_profiles 
@@ -371,12 +370,12 @@ mod tests {
     async fn test_profile_statistics() {
         let pool = setup_test_db().await;
         let handler = ProfileQueryHandler::new(pool.clone());
-        
+
         // Create multiple test profiles
         create_test_profile(&pool).await;
-        
+
         let stats = handler.get_profile_statistics().await.unwrap();
-        
+
         assert!(stats.total_profiles > 0);
         assert!(stats.average_family_size > 0.0);
     }
@@ -385,17 +384,17 @@ mod tests {
     async fn test_profile_completeness_calculation() {
         let pool = setup_test_db().await;
         let handler = ProfileQueryHandler::new(pool);
-        
+
         let family_size = FamilySize::new(4).unwrap();
         let skill_level = SkillLevel::Intermediate;
         let dietary_restrictions = vec![DietaryRestriction::Vegetarian];
-        
+
         let completeness = handler.calculate_profile_completeness(
             &family_size,
             &skill_level,
             &dietary_restrictions,
         );
-        
+
         assert_eq!(completeness, 100.0); // All fields present
     }
 }

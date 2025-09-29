@@ -1,7 +1,7 @@
 // Profile domain service for business logic calculations
 
-use imkitchen_shared::{DietaryRestriction, FamilySize, SkillLevel};
 use crate::domain::{User, UserProfile};
+use imkitchen_shared::{DietaryRestriction, FamilySize, SkillLevel};
 use std::collections::HashSet;
 
 /// Profile service for domain logic calculations and validations
@@ -53,20 +53,22 @@ impl ProfileService {
     /// Validate dietary restrictions compatibility
     /// Returns list of conflicts if any exist
     pub fn validate_dietary_restrictions_compatibility(
-        restrictions: &[DietaryRestriction]
+        restrictions: &[DietaryRestriction],
     ) -> Result<(), Vec<String>> {
         let mut conflicts = Vec::new();
         let restriction_set: HashSet<_> = restrictions.iter().collect();
 
         // Check for vegan/vegetarian conflict
-        if restriction_set.contains(&DietaryRestriction::Vegan) 
-            && restriction_set.contains(&DietaryRestriction::Vegetarian) {
+        if restriction_set.contains(&DietaryRestriction::Vegan)
+            && restriction_set.contains(&DietaryRestriction::Vegetarian)
+        {
             conflicts.push("Vegan diet already includes vegetarian restrictions".to_string());
         }
 
         // Check for keto/low-carb redundancy
-        if restriction_set.contains(&DietaryRestriction::Keto) 
-            && restriction_set.contains(&DietaryRestriction::LowCarb) {
+        if restriction_set.contains(&DietaryRestriction::Keto)
+            && restriction_set.contains(&DietaryRestriction::LowCarb)
+        {
             conflicts.push("Keto diet already includes low-carb restrictions".to_string());
         }
 
@@ -90,7 +92,7 @@ impl ProfileService {
     pub fn calculate_cooking_efficiency_score(profile: &UserProfile) -> f32 {
         let _weekday_ratio = profile.weekday_cooking_minutes as f32 / 60.0; // Convert to hours
         let _weekend_ratio = profile.weekend_cooking_minutes as f32 / 60.0;
-        
+
         // Optimal cooking times: 30-60 min weekdays, 60-120 min weekends
         let weekday_score = match profile.weekday_cooking_minutes {
             15..=30 => 80.0,
@@ -114,10 +116,10 @@ impl ProfileService {
     /// Determine if user profile suggests they're ready for meal planning
     pub fn is_ready_for_meal_planning(user: &User) -> bool {
         let completeness = Self::calculate_profile_completeness(&user.profile);
-        let has_valid_restrictions = Self::validate_dietary_restrictions_compatibility(
-            &user.profile.dietary_restrictions
-        ).is_ok();
-        
+        let has_valid_restrictions =
+            Self::validate_dietary_restrictions_compatibility(&user.profile.dietary_restrictions)
+                .is_ok();
+
         completeness >= 75.0 && has_valid_restrictions
     }
 
@@ -127,12 +129,18 @@ impl ProfileService {
 
         // Dietary restrictions suggestion
         if profile.dietary_restrictions.is_empty() {
-            suggestions.push("Consider adding dietary restrictions for more personalized meal recommendations".to_string());
+            suggestions.push(
+                "Consider adding dietary restrictions for more personalized meal recommendations"
+                    .to_string(),
+            );
         }
 
         // Cooking time balance suggestion
         if profile.weekday_cooking_minutes > profile.weekend_cooking_minutes {
-            suggestions.push("Consider allocating more cooking time on weekends when you have more flexibility".to_string());
+            suggestions.push(
+                "Consider allocating more cooking time on weekends when you have more flexibility"
+                    .to_string(),
+            );
         }
 
         // Very low cooking time warning
@@ -143,14 +151,23 @@ impl ProfileService {
         // Skill level progression suggestion
         match profile.cooking_skill_level {
             SkillLevel::Beginner => {
-                suggestions.push("Start with simple recipes and gradually work up to more complex dishes".to_string());
-            },
+                suggestions.push(
+                    "Start with simple recipes and gradually work up to more complex dishes"
+                        .to_string(),
+                );
+            }
             SkillLevel::Intermediate => {
-                suggestions.push("Try challenging yourself with advanced techniques to improve your skills".to_string());
-            },
+                suggestions.push(
+                    "Try challenging yourself with advanced techniques to improve your skills"
+                        .to_string(),
+                );
+            }
             SkillLevel::Advanced => {
-                suggestions.push("Share your expertise! Consider creating your own recipe variations".to_string());
-            },
+                suggestions.push(
+                    "Share your expertise! Consider creating your own recipe variations"
+                        .to_string(),
+                );
+            }
         }
 
         suggestions
@@ -173,20 +190,20 @@ impl ProfileService {
                 if profile.weekend_cooking_minutes > 60 {
                     complexities.push("Easy".to_string());
                 }
-            },
+            }
             SkillLevel::Intermediate => {
                 complexities.push("Easy".to_string());
                 complexities.push("Medium".to_string());
                 if profile.weekend_cooking_minutes >= 90 {
                     complexities.push("Complex".to_string());
                 }
-            },
+            }
             SkillLevel::Advanced => {
                 complexities.push("Easy".to_string());
                 complexities.push("Medium".to_string());
                 complexities.push("Complex".to_string());
                 complexities.push("Gourmet".to_string());
-            },
+            }
         }
 
         // Adjust for cooking time constraints
@@ -238,14 +255,17 @@ mod tests {
         let mut profile = create_test_profile();
         profile.dietary_restrictions.clear();
         profile.weekday_cooking_minutes = 0;
-        
+
         let completeness = ProfileService::calculate_profile_completeness(&profile);
         assert_eq!(completeness, 50.0); // Only family_size and skill_level
     }
 
     #[test]
     fn test_validate_dietary_restrictions_compatibility_valid() {
-        let restrictions = vec![DietaryRestriction::Vegetarian, DietaryRestriction::GlutenFree];
+        let restrictions = vec![
+            DietaryRestriction::Vegetarian,
+            DietaryRestriction::GlutenFree,
+        ];
         let result = ProfileService::validate_dietary_restrictions_compatibility(&restrictions);
         assert!(result.is_ok());
     }
@@ -255,7 +275,7 @@ mod tests {
         let restrictions = vec![DietaryRestriction::Vegan, DietaryRestriction::Vegetarian];
         let result = ProfileService::validate_dietary_restrictions_compatibility(&restrictions);
         assert!(result.is_err());
-        
+
         let conflicts = result.unwrap_err();
         assert_eq!(conflicts.len(), 1);
         assert!(conflicts[0].contains("Vegan diet already includes vegetarian"));
@@ -293,7 +313,7 @@ mod tests {
             created_at: chrono::Utc::now(),
             updated_at: chrono::Utc::now(),
         };
-        
+
         let ready = ProfileService::is_ready_for_meal_planning(&user);
         assert!(ready);
     }
@@ -303,11 +323,15 @@ mod tests {
         let mut profile = create_test_profile();
         profile.dietary_restrictions.clear();
         profile.weekday_cooking_minutes = 10;
-        
+
         let suggestions = ProfileService::get_profile_improvement_suggestions(&profile);
         assert!(suggestions.len() >= 2);
-        assert!(suggestions.iter().any(|s| s.contains("dietary restrictions")));
-        assert!(suggestions.iter().any(|s| s.contains("Very short weekday cooking times")));
+        assert!(suggestions
+            .iter()
+            .any(|s| s.contains("dietary restrictions")));
+        assert!(suggestions
+            .iter()
+            .any(|s| s.contains("Very short weekday cooking times")));
     }
 
     #[test]
@@ -321,7 +345,7 @@ mod tests {
     fn test_determine_optimal_meal_complexity() {
         let profile = create_test_profile(); // Intermediate skill, 90 min weekend
         let complexities = ProfileService::determine_optimal_meal_complexity(&profile);
-        
+
         assert!(complexities.contains(&"Easy".to_string()));
         assert!(complexities.contains(&"Medium".to_string()));
         assert!(complexities.contains(&"Complex".to_string())); // Weekend time > 90
@@ -332,9 +356,9 @@ mod tests {
         let mut profile = create_test_profile();
         profile.cooking_skill_level = SkillLevel::Beginner;
         profile.weekend_cooking_minutes = 45; // Lower weekend time
-        
+
         let complexities = ProfileService::determine_optimal_meal_complexity(&profile);
-        
+
         assert!(complexities.contains(&"Simple".to_string()));
         assert!(!complexities.contains(&"Complex".to_string()));
     }
@@ -344,11 +368,14 @@ mod tests {
         let mut profile = create_test_profile();
         profile.cooking_skill_level = SkillLevel::Advanced;
         profile.weekday_cooking_minutes = 20; // Very short weekday time
-        
+
         let complexities = ProfileService::determine_optimal_meal_complexity(&profile);
-        
+
         // Should be limited to simple/easy despite advanced skill
         assert!(complexities.len() <= 2);
-        assert!(complexities.contains(&"Simple".to_string()) || complexities.contains(&"Easy".to_string()));
+        assert!(
+            complexities.contains(&"Simple".to_string())
+                || complexities.contains(&"Easy".to_string())
+        );
     }
 }

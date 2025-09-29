@@ -1,4 +1,4 @@
-use imkitchen_shared::{Difficulty, Email, FamilySize, SkillLevel, DietaryRestriction};
+use imkitchen_shared::{DietaryRestriction, Difficulty, Email, FamilySize, SkillLevel};
 
 #[test]
 fn test_valid_email_creation() {
@@ -72,7 +72,7 @@ fn test_dietary_restriction_all_variants() {
         DietaryRestriction::Keto,
         DietaryRestriction::Paleo,
     ];
-    
+
     // All should serialize and deserialize correctly
     for restriction in restrictions {
         let json = serde_json::to_string(&restriction).unwrap();

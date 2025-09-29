@@ -11,6 +11,19 @@ pub use commands::*;
 pub use domain::*;
 pub use event_store::*;
 pub use events::*;
-pub use projections::*;
+
+// Re-export projections (read models)
+pub use projections::{
+    MaintenanceConfig, MaintenanceStats, ProjectionCacheInfo, ProjectionMaintenanceManager,
+    UserPreferencesProjectionBuilder, UserProfileProjectionBuilder,
+};
+
+// Re-export projection views
+pub use projections::{
+    UserPreferencesView as UserPreferencesProjection, UserProfileView as UserProfileProjection,
+};
+
+// Re-export query handlers and query-specific views
 pub use queries::*;
+
 pub use services::*;

@@ -18,9 +18,17 @@ pub struct UpdateUserProfileCommand {
     pub user_id: Uuid,
     pub family_size: FamilySize,
     pub cooking_skill_level: SkillLevel,
-    #[validate(range(min = 5, max = 480, message = "Weekday cooking time must be between 5 and 480 minutes"))]
+    #[validate(range(
+        min = 5,
+        max = 480,
+        message = "Weekday cooking time must be between 5 and 480 minutes"
+    ))]
     pub weekday_cooking_minutes: u32,
-    #[validate(range(min = 5, max = 480, message = "Weekend cooking time must be between 5 and 480 minutes"))]
+    #[validate(range(
+        min = 5,
+        max = 480,
+        message = "Weekend cooking time must be between 5 and 480 minutes"
+    ))]
     pub weekend_cooking_minutes: u32,
 }
 
@@ -68,11 +76,11 @@ impl UpdateUserProfileCommand {
     /// Validate the command using the validation middleware
     pub fn validate_command(&self) -> Result<(), UserError> {
         self.validate()?;
-        
+
         // Additional business rule validation
         if self.weekday_cooking_minutes > self.weekend_cooking_minutes {
             return Err(UserError::DatabaseError(
-                "Weekday cooking time cannot exceed weekend cooking time".to_string()
+                "Weekday cooking time cannot exceed weekend cooking time".to_string(),
             ));
         }
 
@@ -91,17 +99,20 @@ impl ChangeDietaryRestrictionsCommand {
     /// Validate dietary restrictions for conflicts
     pub fn validate_command(&self) -> Result<(), UserError> {
         // Check for conflicting restrictions
-        if self.new_restrictions.contains(&DietaryRestriction::Vegetarian) 
-            && self.new_restrictions.contains(&DietaryRestriction::Vegan) {
+        if self
+            .new_restrictions
+            .contains(&DietaryRestriction::Vegetarian)
+            && self.new_restrictions.contains(&DietaryRestriction::Vegan)
+        {
             return Err(UserError::DatabaseError(
-                "Cannot be both Vegetarian and Vegan - Vegan includes Vegetarian".to_string()
+                "Cannot be both Vegetarian and Vegan - Vegan includes Vegetarian".to_string(),
             ));
         }
 
         // Check for excessive restrictions (more than 5 might be impractical)
         if self.new_restrictions.len() > 5 {
             return Err(UserError::DatabaseError(
-                "Too many dietary restrictions selected (maximum 5)".to_string()
+                "Too many dietary restrictions selected (maximum 5)".to_string(),
             ));
         }
 
@@ -127,8 +138,10 @@ impl ProfileCommandHandler {
         command.validate_command()?;
 
         // Begin database transaction
-        let _tx = self.db_pool.begin().await
-            .map_err(|e| UserError::DatabaseError(format!("Database transaction error: {}", e)))?;
+        let _tx =
+            self.db_pool.begin().await.map_err(|e| {
+                UserError::DatabaseError(format!("Database transaction error: {}", e))
+            })?;
 
         // Load current user profile
         let current_user = self.load_user_profile(command.user_id).await?;
@@ -149,28 +162,41 @@ impl ProfileCommandHandler {
         // Check for family size change
         if user.profile.family_size != command.family_size {
             let family_size_event = user.update_family_size(command.family_size);
-            self.event_store.store_event(&family_size_event).await
-                .map_err(|e| UserError::DatabaseError(format!("Failed to store family size event: {}", e)))?;
+            self.event_store
+                .store_event(&family_size_event)
+                .await
+                .map_err(|e| {
+                    UserError::DatabaseError(format!("Failed to store family size event: {}", e))
+                })?;
             events_stored += 1;
         }
 
         // Check for skill level change
         if user.profile.cooking_skill_level != command.cooking_skill_level {
             let skill_update_event = user.update_skill_level(command.cooking_skill_level);
-            self.event_store.store_event(&skill_update_event).await
-                .map_err(|e| UserError::DatabaseError(format!("Failed to store skill level event: {}", e)))?;
+            self.event_store
+                .store_event(&skill_update_event)
+                .await
+                .map_err(|e| {
+                    UserError::DatabaseError(format!("Failed to store skill level event: {}", e))
+                })?;
             events_stored += 1;
         }
 
         // Check for cooking time changes
-        if user.profile.weekday_cooking_minutes != command.weekday_cooking_minutes 
-            || user.profile.weekend_cooking_minutes != command.weekend_cooking_minutes {
+        if user.profile.weekday_cooking_minutes != command.weekday_cooking_minutes
+            || user.profile.weekend_cooking_minutes != command.weekend_cooking_minutes
+        {
             let time_update_event = user.update_cooking_time(
                 command.weekday_cooking_minutes,
                 command.weekend_cooking_minutes,
             );
-            self.event_store.store_event(&time_update_event).await
-                .map_err(|e| UserError::DatabaseError(format!("Failed to store cooking time event: {}", e)))?;
+            self.event_store
+                .store_event(&time_update_event)
+                .await
+                .map_err(|e| {
+                    UserError::DatabaseError(format!("Failed to store cooking time event: {}", e))
+                })?;
             events_stored += 1;
         }
 
@@ -178,8 +204,9 @@ impl ProfileCommandHandler {
         self.update_user_profile_in_db(&user).await?;
 
         // Commit transaction
-        _tx.commit().await
-            .map_err(|e| UserError::DatabaseError(format!("Failed to commit transaction: {}", e)))?;
+        _tx.commit().await.map_err(|e| {
+            UserError::DatabaseError(format!("Failed to commit transaction: {}", e))
+        })?;
 
         Ok(ProfileUpdateResponse {
             success: true,
@@ -203,8 +230,15 @@ impl ProfileCommandHandler {
 
         // Update dietary restrictions and store event
         let dietary_event = user.update_dietary_restrictions(command.new_restrictions);
-        self.event_store.store_event(&dietary_event).await
-            .map_err(|e| UserError::DatabaseError(format!("Failed to store dietary restrictions event: {}", e)))?;
+        self.event_store
+            .store_event(&dietary_event)
+            .await
+            .map_err(|e| {
+                UserError::DatabaseError(format!(
+                    "Failed to store dietary restrictions event: {}",
+                    e
+                ))
+            })?;
 
         // Update user profile in database
         self.update_user_profile_in_db(&user).await?;
@@ -223,7 +257,8 @@ impl ProfileCommandHandler {
         let row = sqlx::query(
             r#"
             SELECT id, email, password_hash, family_size, skill_level, 
-                   dietary_restrictions, created_at, updated_at, email_verified
+                   dietary_restrictions, weekday_cooking_minutes, weekend_cooking_minutes,
+                   created_at, updated_at, email_verified
             FROM user_profiles 
             WHERE id = ?
             "#,
@@ -236,7 +271,7 @@ impl ProfileCommandHandler {
         // Parse the data
         let email = imkitchen_shared::Email::new(row.get("email"))
             .map_err(|_| UserError::DatabaseError("Invalid email in database".to_string()))?;
-        
+
         let family_size = FamilySize::new(row.get::<i64, _>("family_size") as u8)
             .map_err(|_| UserError::DatabaseError("Invalid family size in database".to_string()))?;
 
@@ -244,19 +279,26 @@ impl ProfileCommandHandler {
             "Beginner" => SkillLevel::Beginner,
             "Intermediate" => SkillLevel::Intermediate,
             "Advanced" => SkillLevel::Advanced,
-            _ => return Err(UserError::DatabaseError("Invalid skill level in database".to_string())),
+            _ => {
+                return Err(UserError::DatabaseError(
+                    "Invalid skill level in database".to_string(),
+                ))
+            }
         };
 
-        let dietary_restrictions: Vec<DietaryRestriction> = 
-            serde_json::from_str(row.get("dietary_restrictions"))
-                .unwrap_or_default();
+        let dietary_restrictions: Vec<DietaryRestriction> =
+            serde_json::from_str(row.get("dietary_restrictions")).unwrap_or_default();
 
         let profile = UserProfile {
             family_size,
             cooking_skill_level: skill_level,
             dietary_restrictions,
-            weekday_cooking_minutes: 30, // Default values - could be added to DB schema
-            weekend_cooking_minutes: 60,
+            weekday_cooking_minutes: row
+                .get::<Option<i64>, _>("weekday_cooking_minutes")
+                .unwrap_or(30) as u32,
+            weekend_cooking_minutes: row
+                .get::<Option<i64>, _>("weekend_cooking_minutes")
+                .unwrap_or(60) as u32,
         };
 
         let created_at = DateTime::parse_from_rfc3339(row.get("created_at"))
@@ -281,18 +323,23 @@ impl ProfileCommandHandler {
     /// Update user profile in database
     async fn update_user_profile_in_db(&self, user: &User) -> Result<(), UserError> {
         let dietary_restrictions_json = serde_json::to_string(&user.profile.dietary_restrictions)
-            .map_err(|e| UserError::DatabaseError(format!("Failed to serialize dietary restrictions: {}", e)))?;
+            .map_err(|e| {
+            UserError::DatabaseError(format!("Failed to serialize dietary restrictions: {}", e))
+        })?;
 
         sqlx::query(
             r#"
             UPDATE user_profiles 
-            SET family_size = ?, skill_level = ?, dietary_restrictions = ?, updated_at = ?
+            SET family_size = ?, skill_level = ?, dietary_restrictions = ?, 
+                weekday_cooking_minutes = ?, weekend_cooking_minutes = ?, updated_at = ?
             WHERE id = ?
             "#,
         )
         .bind(user.profile.family_size.value as i64)
         .bind(user.profile.cooking_skill_level.to_string())
         .bind(dietary_restrictions_json)
+        .bind(user.profile.weekday_cooking_minutes as i64)
+        .bind(user.profile.weekend_cooking_minutes as i64)
         .bind(user.updated_at.format("%Y-%m-%d %H:%M:%S%.3fZ").to_string())
         .bind(user.user_id.to_string())
         .execute(&self.db_pool)
@@ -358,7 +405,7 @@ mod tests {
         let user_id = Uuid::new_v4();
         let email = "test@example.com";
         let password_hash = "hashed_password";
-        
+
         sqlx::query(
             r#"
             INSERT INTO user_profiles 
@@ -384,25 +431,15 @@ mod tests {
     async fn test_update_user_profile_command_validation() {
         let user_id = Uuid::new_v4();
         let family_size = FamilySize::new(4).unwrap();
-        
+
         // Valid command
-        let valid_command = UpdateUserProfileCommand::new(
-            user_id,
-            family_size,
-            SkillLevel::Intermediate,
-            30,
-            60,
-        );
+        let valid_command =
+            UpdateUserProfileCommand::new(user_id, family_size, SkillLevel::Intermediate, 30, 60);
         assert!(valid_command.validate_command().is_ok());
 
         // Invalid command - weekday > weekend
-        let invalid_command = UpdateUserProfileCommand::new(
-            user_id,
-            family_size,
-            SkillLevel::Intermediate,
-            90,
-            60,
-        );
+        let invalid_command =
+            UpdateUserProfileCommand::new(user_id, family_size, SkillLevel::Intermediate, 90, 60);
         assert!(invalid_command.validate_command().is_err());
     }
 
@@ -413,7 +450,10 @@ mod tests {
         // Valid command
         let valid_command = ChangeDietaryRestrictionsCommand::new(
             user_id,
-            vec![DietaryRestriction::Vegetarian, DietaryRestriction::GlutenFree],
+            vec![
+                DietaryRestriction::Vegetarian,
+                DietaryRestriction::GlutenFree,
+            ],
         );
         assert!(valid_command.validate_command().is_ok());
 
@@ -468,10 +508,16 @@ mod tests {
 
         let command = ChangeDietaryRestrictionsCommand::new(
             user_id,
-            vec![DietaryRestriction::Vegetarian, DietaryRestriction::GlutenFree],
+            vec![
+                DietaryRestriction::Vegetarian,
+                DietaryRestriction::GlutenFree,
+            ],
         );
 
-        let response = handler.handle_dietary_restrictions_change(command).await.unwrap();
+        let response = handler
+            .handle_dietary_restrictions_change(command)
+            .await
+            .unwrap();
 
         assert!(response.success);
         assert_eq!(response.user_id, user_id);

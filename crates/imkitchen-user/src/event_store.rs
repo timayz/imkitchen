@@ -6,7 +6,7 @@ use sqlx::{Row, SqlitePool};
 use uuid::Uuid;
 
 use crate::events::{
-    DietaryRestrictionsChanged, FamilySizeChanged, UserAccountDeleted, UserLoggedIn, UserPasswordChanged,
+    DietaryRestrictionsChanged, FamilySizeChanged, UserLoggedIn, UserPasswordChanged,
     UserProfileUpdated, UserRegistered,
 };
 
@@ -339,7 +339,10 @@ mod tests {
         let event = DietaryRestrictionsChanged::new(
             user_id,
             vec![DietaryRestriction::Vegetarian],
-            vec![DietaryRestriction::Vegetarian, DietaryRestriction::GlutenFree],
+            vec![
+                DietaryRestriction::Vegetarian,
+                DietaryRestriction::GlutenFree,
+            ],
         );
 
         let persisted = event_store.store_event(&event).await.unwrap();
@@ -376,11 +379,8 @@ mod tests {
         let user_id = Uuid::new_v4();
 
         // Store multiple events
-        let event1 = DietaryRestrictionsChanged::new(
-            user_id,
-            vec![],
-            vec![DietaryRestriction::Vegetarian],
-        );
+        let event1 =
+            DietaryRestrictionsChanged::new(user_id, vec![], vec![DietaryRestriction::Vegetarian]);
         let event2 = FamilySizeChanged::new(
             user_id,
             FamilySize::new(2).unwrap(),
@@ -406,16 +406,10 @@ mod tests {
         let user_id2 = Uuid::new_v4();
 
         // Store events of same type for different users
-        let event1 = DietaryRestrictionsChanged::new(
-            user_id1,
-            vec![],
-            vec![DietaryRestriction::Vegetarian],
-        );
-        let event2 = DietaryRestrictionsChanged::new(
-            user_id2,
-            vec![],
-            vec![DietaryRestriction::Vegan],
-        );
+        let event1 =
+            DietaryRestrictionsChanged::new(user_id1, vec![], vec![DietaryRestriction::Vegetarian]);
+        let event2 =
+            DietaryRestrictionsChanged::new(user_id2, vec![], vec![DietaryRestriction::Vegan]);
 
         event_store.store_event(&event1).await.unwrap();
         event_store.store_event(&event2).await.unwrap();
@@ -442,11 +436,8 @@ mod tests {
         assert_eq!(count, 0);
 
         // Store an event
-        let event = DietaryRestrictionsChanged::new(
-            user_id,
-            vec![],
-            vec![DietaryRestriction::Vegetarian],
-        );
+        let event =
+            DietaryRestrictionsChanged::new(user_id, vec![], vec![DietaryRestriction::Vegetarian]);
         event_store.store_event(&event).await.unwrap();
 
         // Count should be 1

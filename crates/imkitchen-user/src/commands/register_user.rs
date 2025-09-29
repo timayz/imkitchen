@@ -194,7 +194,7 @@ impl RegisterUserService {
         // Return success response
         // Generate verification token for email verification
         let verification_token = uuid::Uuid::new_v4().to_string();
-        
+
         let response = RegisterUserResponse {
             user_id: user.user_id,
             email: command.email,

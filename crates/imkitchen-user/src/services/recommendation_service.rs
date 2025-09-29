@@ -1,7 +1,7 @@
 // Recommendation service for personalized meal planning
 
-use imkitchen_shared::{DietaryRestriction, SkillLevel};
 use crate::domain::UserProfile;
+use imkitchen_shared::{DietaryRestriction, SkillLevel};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -42,7 +42,10 @@ pub struct SkillProgressionRecommendations {
 
 impl RecommendationService {
     /// Generate recipe recommendation criteria based on user profile
-    pub fn generate_recipe_criteria(profile: &UserProfile, is_weekday: bool) -> RecipeRecommendationCriteria {
+    pub fn generate_recipe_criteria(
+        profile: &UserProfile,
+        is_weekday: bool,
+    ) -> RecipeRecommendationCriteria {
         let max_cooking_time = if is_weekday {
             profile.weekday_cooking_minutes
         } else {
@@ -50,9 +53,23 @@ impl RecommendationService {
         };
 
         let skill_level_tags = match profile.cooking_skill_level {
-            SkillLevel::Beginner => vec!["quick".to_string(), "simple".to_string(), "one-pot".to_string()],
-            SkillLevel::Intermediate => vec!["quick".to_string(), "simple".to_string(), "moderate".to_string(), "multi-step".to_string()],
-            SkillLevel::Advanced => vec!["moderate".to_string(), "complex".to_string(), "gourmet".to_string(), "technique-focused".to_string()],
+            SkillLevel::Beginner => vec![
+                "quick".to_string(),
+                "simple".to_string(),
+                "one-pot".to_string(),
+            ],
+            SkillLevel::Intermediate => vec![
+                "quick".to_string(),
+                "simple".to_string(),
+                "moderate".to_string(),
+                "multi-step".to_string(),
+            ],
+            SkillLevel::Advanced => vec![
+                "moderate".to_string(),
+                "complex".to_string(),
+                "gourmet".to_string(),
+                "technique-focused".to_string(),
+            ],
         };
 
         let complexity_levels = Self::determine_complexity_levels(profile, is_weekday);
@@ -71,7 +88,7 @@ impl RecommendationService {
     /// Determine appropriate complexity levels for recipes
     pub fn determine_complexity_levels(profile: &UserProfile, is_weekday: bool) -> Vec<String> {
         let mut levels = Vec::new();
-        
+
         let time_limit = if is_weekday {
             profile.weekday_cooking_minutes
         } else {
@@ -85,14 +102,14 @@ impl RecommendationService {
                 if time_limit >= 45 || !is_weekday {
                     levels.push("Easy".to_string());
                 }
-            },
+            }
             SkillLevel::Intermediate => {
                 levels.push("Easy".to_string());
                 levels.push("Medium".to_string());
                 if time_limit >= 60 || !is_weekday {
                     levels.push("Complex".to_string());
                 }
-            },
+            }
             SkillLevel::Advanced => {
                 if time_limit < 30 && is_weekday {
                     levels.push("Easy".to_string());
@@ -102,7 +119,7 @@ impl RecommendationService {
                     levels.push("Complex".to_string());
                     levels.push("Gourmet".to_string());
                 }
-            },
+            }
         }
 
         levels
@@ -125,26 +142,26 @@ impl RecommendationService {
                 DietaryRestriction::Vegetarian => {
                     categories.push("vegetarian".to_string());
                     categories.push("plant-based".to_string());
-                },
+                }
                 DietaryRestriction::Vegan => {
                     categories.push("vegan".to_string());
                     categories.push("plant-based".to_string());
-                },
+                }
                 DietaryRestriction::GlutenFree => {
                     categories.push("gluten-free".to_string());
-                },
+                }
                 DietaryRestriction::Keto => {
                     categories.push("keto".to_string());
                     categories.push("low-carb".to_string());
-                },
+                }
                 DietaryRestriction::LowCarb => {
                     categories.push("low-carb".to_string());
-                },
+                }
                 DietaryRestriction::Paleo => {
                     categories.push("paleo".to_string());
                     categories.push("whole-foods".to_string());
-                },
-                _ => {}, // Other restrictions don't add specific categories
+                }
+                _ => {} // Other restrictions don't add specific categories
             }
         }
 
@@ -163,7 +180,9 @@ impl RecommendationService {
     }
 
     /// Generate meal planning recommendations
-    pub fn generate_meal_planning_recommendations(profile: &UserProfile) -> MealPlanningRecommendations {
+    pub fn generate_meal_planning_recommendations(
+        profile: &UserProfile,
+    ) -> MealPlanningRecommendations {
         let weekly_meal_count = Self::calculate_optimal_weekly_meals(profile);
         let prep_day_suggestions = Self::suggest_prep_days(profile);
         let cooking_schedule = Self::create_cooking_schedule(profile);
@@ -182,13 +201,14 @@ impl RecommendationService {
     /// Calculate optimal number of meals to plan per week
     fn calculate_optimal_weekly_meals(profile: &UserProfile) -> u32 {
         let base_meals = 14; // 2 meals per day * 7 days
-        let cooking_capacity = (profile.weekday_cooking_minutes * 5 + profile.weekend_cooking_minutes * 2) / 60;
+        let cooking_capacity =
+            (profile.weekday_cooking_minutes * 5 + profile.weekend_cooking_minutes * 2) / 60;
 
         match cooking_capacity {
-            0..=5 => base_meals / 2,     // Very limited time - focus on key meals
+            0..=5 => base_meals / 2, // Very limited time - focus on key meals
             6..=10 => (base_meals * 3 / 4).max(10), // Moderate time - at least 10 meals
             11..=15 => base_meals * 4 / 5, // Good time - 11-12 meals
-            _ => base_meals,             // Plenty of time - full meal planning
+            _ => base_meals,         // Plenty of time - full meal planning
         }
     }
 
@@ -209,7 +229,8 @@ impl RecommendationService {
         }
 
         if suggestions.is_empty() {
-            suggestions.push("Choose your least busy evening for 30-minute prep sessions".to_string());
+            suggestions
+                .push("Choose your least busy evening for 30-minute prep sessions".to_string());
         }
 
         suggestions
@@ -218,7 +239,7 @@ impl RecommendationService {
     /// Create a weekly cooking schedule
     fn create_cooking_schedule(profile: &UserProfile) -> HashMap<String, u32> {
         let mut schedule = HashMap::new();
-        
+
         let weekday_time = profile.weekday_cooking_minutes;
         let weekend_time = profile.weekend_cooking_minutes;
 
@@ -240,7 +261,8 @@ impl RecommendationService {
 
         if profile.weekend_cooking_minutes >= 120 {
             opportunities.push("Weekend batch cooking: Prepare 4-5 meals at once".to_string());
-            opportunities.push("Freezer-friendly meals: Cook double portions and freeze half".to_string());
+            opportunities
+                .push("Freezer-friendly meals: Cook double portions and freeze half".to_string());
         }
 
         if profile.weekend_cooking_minutes >= 90 {
@@ -278,7 +300,9 @@ impl RecommendationService {
     }
 
     /// Generate skill progression recommendations
-    pub fn generate_skill_progression_recommendations(profile: &UserProfile) -> SkillProgressionRecommendations {
+    pub fn generate_skill_progression_recommendations(
+        profile: &UserProfile,
+    ) -> SkillProgressionRecommendations {
         let current_level = profile.cooking_skill_level;
         let next_level_requirements = Self::get_next_level_requirements(&current_level);
         let recommended_techniques = Self::get_recommended_techniques(&current_level);
@@ -374,12 +398,14 @@ impl RecommendationService {
 
     /// Estimate time needed to progress to next level
     fn estimate_progression_time(current_level: &SkillLevel, profile: &UserProfile) -> String {
-        let weekly_cooking_hours = (profile.weekday_cooking_minutes * 5 + profile.weekend_cooking_minutes * 2) as f32 / 60.0;
-        
+        let weekly_cooking_hours = (profile.weekday_cooking_minutes * 5
+            + profile.weekend_cooking_minutes * 2) as f32
+            / 60.0;
+
         let base_weeks = match current_level {
-            SkillLevel::Beginner => 12, // 3 months to intermediate
+            SkillLevel::Beginner => 12,     // 3 months to intermediate
             SkillLevel::Intermediate => 24, // 6 months to advanced
-            SkillLevel::Advanced => 0, // Already at top
+            SkillLevel::Advanced => 0,      // Already at top
         };
 
         if current_level == &SkillLevel::Advanced {
@@ -399,7 +425,10 @@ impl RecommendationService {
         } else if adjusted_weeks <= 12 {
             format!("About {} months with regular cooking", adjusted_weeks / 4)
         } else {
-            format!("About {} months with dedicated practice", adjusted_weeks / 4)
+            format!(
+                "About {} months with dedicated practice",
+                adjusted_weeks / 4
+            )
         }
     }
 
@@ -417,24 +446,36 @@ impl RecommendationService {
         match profile.cooking_skill_level {
             SkillLevel::Beginner => {
                 tips.push("Taste as you go - seasoning is key to good food".to_string());
-                tips.push("Don't be afraid to make mistakes - they're learning opportunities".to_string());
-            },
+                tips.push(
+                    "Don't be afraid to make mistakes - they're learning opportunities".to_string(),
+                );
+            }
             SkillLevel::Intermediate => {
                 tips.push("Experiment with new cuisines to expand your repertoire".to_string());
                 tips.push("Learn to cook by sight and smell, not just timers".to_string());
-            },
+            }
             SkillLevel::Advanced => {
-                tips.push("Try teaching others - it will deepen your own understanding".to_string());
-                tips.push("Challenge yourself with unfamiliar ingredients and techniques".to_string());
-            },
+                tips.push(
+                    "Try teaching others - it will deepen your own understanding".to_string(),
+                );
+                tips.push(
+                    "Challenge yourself with unfamiliar ingredients and techniques".to_string(),
+                );
+            }
         }
 
         // Dietary restriction tips
-        if profile.dietary_restrictions.contains(&DietaryRestriction::Vegetarian) {
+        if profile
+            .dietary_restrictions
+            .contains(&DietaryRestriction::Vegetarian)
+        {
             tips.push("Explore plant-based proteins like legumes, tofu, and tempeh".to_string());
         }
 
-        if profile.dietary_restrictions.contains(&DietaryRestriction::GlutenFree) {
+        if profile
+            .dietary_restrictions
+            .contains(&DietaryRestriction::GlutenFree)
+        {
             tips.push("Stock up on alternative grains like quinoa, rice, and millet".to_string());
         }
 
@@ -442,7 +483,9 @@ impl RecommendationService {
         if profile.family_size.value >= 6 {
             tips.push("Invest in larger pots and pans for efficient big-batch cooking".to_string());
         } else if profile.family_size.value <= 2 {
-            tips.push("Look for recipes that scale down well or provide good leftovers".to_string());
+            tips.push(
+                "Look for recipes that scale down well or provide good leftovers".to_string(),
+            );
         }
 
         tips
@@ -468,10 +511,13 @@ mod tests {
     fn test_generate_recipe_criteria_weekday() {
         let profile = create_test_profile();
         let criteria = RecommendationService::generate_recipe_criteria(&profile, true);
-        
+
         assert_eq!(criteria.max_cooking_time, 45);
         assert!(criteria.skill_level_tags.contains(&"moderate".to_string()));
-        assert_eq!(criteria.dietary_filters, vec![DietaryRestriction::Vegetarian]);
+        assert_eq!(
+            criteria.dietary_filters,
+            vec![DietaryRestriction::Vegetarian]
+        );
         assert!(criteria.complexity_levels.contains(&"Easy".to_string()));
         assert!(criteria.complexity_levels.contains(&"Medium".to_string()));
     }
@@ -480,7 +526,7 @@ mod tests {
     fn test_generate_recipe_criteria_weekend() {
         let profile = create_test_profile();
         let criteria = RecommendationService::generate_recipe_criteria(&profile, false);
-        
+
         assert_eq!(criteria.max_cooking_time, 90);
         assert!(criteria.complexity_levels.contains(&"Complex".to_string()));
     }
@@ -489,9 +535,9 @@ mod tests {
     fn test_determine_complexity_levels_beginner() {
         let mut profile = create_test_profile();
         profile.cooking_skill_level = SkillLevel::Beginner;
-        
+
         let levels = RecommendationService::determine_complexity_levels(&profile, true);
-        
+
         assert!(levels.contains(&"Simple".to_string()));
         assert!(levels.contains(&"Easy".to_string()));
         assert!(!levels.contains(&"Complex".to_string()));
@@ -501,7 +547,7 @@ mod tests {
     fn test_determine_preferred_categories() {
         let profile = create_test_profile();
         let categories = RecommendationService::determine_preferred_categories(&profile);
-        
+
         assert!(categories.contains(&"vegetarian".to_string()));
         assert!(categories.contains(&"plant-based".to_string()));
         assert!(categories.contains(&"dinner".to_string()));
@@ -510,8 +556,9 @@ mod tests {
     #[test]
     fn test_generate_meal_planning_recommendations() {
         let profile = create_test_profile();
-        let recommendations = RecommendationService::generate_meal_planning_recommendations(&profile);
-        
+        let recommendations =
+            RecommendationService::generate_meal_planning_recommendations(&profile);
+
         assert!(recommendations.weekly_meal_count > 0);
         assert!(!recommendations.prep_day_suggestions.is_empty());
         assert_eq!(recommendations.cooking_schedule.len(), 7); // 7 days
@@ -522,7 +569,7 @@ mod tests {
     fn test_calculate_optimal_weekly_meals() {
         let profile = create_test_profile();
         let meal_count = RecommendationService::calculate_optimal_weekly_meals(&profile);
-        
+
         // With good cooking time allocation, should plan most meals
         assert!(meal_count >= 10);
     }
@@ -530,8 +577,9 @@ mod tests {
     #[test]
     fn test_generate_skill_progression_recommendations() {
         let profile = create_test_profile();
-        let recommendations = RecommendationService::generate_skill_progression_recommendations(&profile);
-        
+        let recommendations =
+            RecommendationService::generate_skill_progression_recommendations(&profile);
+
         assert_eq!(recommendations.current_level, SkillLevel::Intermediate);
         assert!(!recommendations.next_level_requirements.is_empty());
         assert!(!recommendations.recommended_techniques.is_empty());
@@ -542,7 +590,7 @@ mod tests {
     fn test_get_practice_recipes_by_skill_level() {
         let beginner_recipes = RecommendationService::get_practice_recipes(&SkillLevel::Beginner);
         let advanced_recipes = RecommendationService::get_practice_recipes(&SkillLevel::Advanced);
-        
+
         assert!(beginner_recipes.iter().any(|r| r.contains("stir-fry")));
         assert!(advanced_recipes.iter().any(|r| r.contains("Wellington")));
     }
@@ -552,9 +600,9 @@ mod tests {
         let mut profile = create_test_profile();
         profile.weekday_cooking_minutes = 15; // Very limited time
         profile.cooking_skill_level = SkillLevel::Beginner;
-        
+
         let tips = RecommendationService::generate_cooking_tips(&profile);
-        
+
         assert!(tips.iter().any(|t| t.contains("Pre-cut vegetables")));
         assert!(tips.iter().any(|t| t.contains("Taste as you go")));
         assert!(tips.iter().any(|t| t.contains("plant-based proteins")));
@@ -564,17 +612,19 @@ mod tests {
     fn test_estimate_progression_time() {
         let mut profile = create_test_profile();
         profile.cooking_skill_level = SkillLevel::Beginner;
-        
-        let time_estimate = RecommendationService::estimate_progression_time(&SkillLevel::Beginner, &profile);
-        
+
+        let time_estimate =
+            RecommendationService::estimate_progression_time(&SkillLevel::Beginner, &profile);
+
         assert!(time_estimate.contains("months") || time_estimate.contains("weeks"));
     }
 
     #[test]
     fn test_advanced_skill_level_progression() {
         let profile = create_test_profile();
-        let time_estimate = RecommendationService::estimate_progression_time(&SkillLevel::Advanced, &profile);
-        
+        let time_estimate =
+            RecommendationService::estimate_progression_time(&SkillLevel::Advanced, &profile);
+
         assert!(time_estimate.contains("Continue exploring"));
     }
 }

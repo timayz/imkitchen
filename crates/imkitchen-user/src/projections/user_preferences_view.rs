@@ -1,30 +1,32 @@
 // User preferences projection for optimized meal planning and recommendations
 
+use crate::events::{
+    DietaryRestrictionsChanged, FamilySizeChanged, UserEvent, UserProfileUpdated, UserRegistered,
+};
 use chrono::{DateTime, Utc};
 use imkitchen_shared::{DietaryRestriction, FamilySize, SkillLevel};
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-use crate::events::{UserEvent, UserRegistered, FamilySizeChanged, DietaryRestrictionsChanged, UserProfileUpdated};
 use std::collections::HashMap;
+use uuid::Uuid;
 
 /// Optimized read model for user preferences focused on meal planning
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserPreferencesView {
     pub user_id: Uuid,
     pub email: String,
-    
+
     // Core preferences for meal planning
     pub family_size: FamilySize,
     pub cooking_skill_level: SkillLevel,
     pub dietary_restrictions: Vec<DietaryRestriction>,
     pub weekday_cooking_minutes: u32,
     pub weekend_cooking_minutes: u32,
-    
+
     // Precomputed recommendation criteria
     pub recipe_criteria: RecipeCriteriaSummary,
     pub meal_planning_preferences: MealPlanningPreferences,
     pub cooking_recommendations: CookingRecommendations,
-    
+
     // Preference metadata
     pub preference_strength: f32, // 0.0-1.0 based on profile completeness
     pub last_updated: DateTime<Utc>,
@@ -83,9 +85,9 @@ pub struct CookingRecommendations {
 impl UserPreferencesView {
     /// Create from user registered event
     pub fn from_user_registered(event: &UserRegistered) -> Self {
-        use crate::services::{ProfileService, RecommendationService};
         use crate::domain::UserProfile;
-        
+        use crate::services::ProfileService;
+
         // Default profile for new user
         let profile = UserProfile {
             family_size: FamilySize::FAMILY1,
@@ -94,12 +96,12 @@ impl UserPreferencesView {
             weekday_cooking_minutes: 0,
             weekend_cooking_minutes: 0,
         };
-        
+
         let recipe_criteria = Self::build_recipe_criteria(&profile);
         let meal_planning_preferences = Self::build_meal_planning_preferences(&profile);
         let cooking_recommendations = Self::build_cooking_recommendations(&profile);
         let preference_strength = ProfileService::calculate_profile_completeness(&profile) / 100.0;
-        
+
         UserPreferencesView {
             user_id: event.user_id,
             email: event.email.value.clone(),
@@ -116,7 +118,7 @@ impl UserPreferencesView {
             version: 1,
         }
     }
-    
+
     /// Apply family size changed event
     pub fn apply_family_size_changed(&mut self, event: &FamilySizeChanged) {
         self.family_size = event.new_size;
@@ -124,7 +126,7 @@ impl UserPreferencesView {
         self.version += 1;
         self.recalculate_preferences();
     }
-    
+
     /// Apply profile updated event
     pub fn apply_profile_updated(&mut self, event: &UserProfileUpdated) {
         self.cooking_skill_level = event.profile.cooking_skill_level;
@@ -134,7 +136,7 @@ impl UserPreferencesView {
         self.version += 1;
         self.recalculate_preferences();
     }
-    
+
     /// Apply dietary restrictions changed event
     pub fn apply_dietary_restrictions_changed(&mut self, event: &DietaryRestrictionsChanged) {
         self.dietary_restrictions = event.new_restrictions.clone();
@@ -142,13 +144,12 @@ impl UserPreferencesView {
         self.version += 1;
         self.recalculate_preferences();
     }
-    
-    
+
     /// Recalculate all preferences after profile changes
     fn recalculate_preferences(&mut self) {
-        use crate::services::ProfileService;
         use crate::domain::UserProfile;
-        
+        use crate::services::ProfileService;
+
         let profile = UserProfile {
             family_size: self.family_size,
             cooking_skill_level: self.cooking_skill_level,
@@ -156,20 +157,20 @@ impl UserPreferencesView {
             weekday_cooking_minutes: self.weekday_cooking_minutes,
             weekend_cooking_minutes: self.weekend_cooking_minutes,
         };
-        
+
         self.recipe_criteria = Self::build_recipe_criteria(&profile);
         self.meal_planning_preferences = Self::build_meal_planning_preferences(&profile);
         self.cooking_recommendations = Self::build_cooking_recommendations(&profile);
         self.preference_strength = ProfileService::calculate_profile_completeness(&profile) / 100.0;
     }
-    
+
     /// Build recipe criteria from profile
     fn build_recipe_criteria(profile: &crate::domain::UserProfile) -> RecipeCriteriaSummary {
         use crate::services::{ProfileService, RecommendationService};
-        
+
         let weekday_criteria = RecommendationService::generate_recipe_criteria(profile, true);
         let weekend_criteria = RecommendationService::generate_recipe_criteria(profile, false);
-        
+
         RecipeCriteriaSummary {
             weekday_max_cooking_time: weekday_criteria.max_cooking_time,
             weekend_max_cooking_time: weekend_criteria.max_cooking_time,
@@ -180,13 +181,16 @@ impl UserPreferencesView {
             preferred_categories: RecommendationService::determine_preferred_categories(profile),
         }
     }
-    
+
     /// Build meal planning preferences from profile
-    fn build_meal_planning_preferences(profile: &crate::domain::UserProfile) -> MealPlanningPreferences {
+    fn build_meal_planning_preferences(
+        profile: &crate::domain::UserProfile,
+    ) -> MealPlanningPreferences {
         use crate::services::RecommendationService;
-        
-        let recommendations = RecommendationService::generate_meal_planning_recommendations(profile);
-        
+
+        let recommendations =
+            RecommendationService::generate_meal_planning_recommendations(profile);
+
         // Generate complexity balance
         let complexity_balance = ComplexityBalance {
             weekday_complexity: RecommendationService::determine_complexity_levels(profile, true),
@@ -202,7 +206,7 @@ impl UserPreferencesView {
                 SkillLevel::Advanced => 0.6,
             },
         };
-        
+
         // Generate daily schedule
         let cooking_schedule = vec![
             DailySchedule {
@@ -239,16 +243,24 @@ impl UserPreferencesView {
                 day: "Saturday".to_string(),
                 recommended_cooking_time: profile.weekend_cooking_minutes,
                 meal_types: vec!["brunch".to_string(), "dinner".to_string()],
-                complexity_preference: if profile.weekend_cooking_minutes >= 90 { "Complex".to_string() } else { "Medium".to_string() },
+                complexity_preference: if profile.weekend_cooking_minutes >= 90 {
+                    "Complex".to_string()
+                } else {
+                    "Medium".to_string()
+                },
             },
             DailySchedule {
                 day: "Sunday".to_string(),
                 recommended_cooking_time: profile.weekend_cooking_minutes,
                 meal_types: vec!["brunch".to_string(), "dinner".to_string()],
-                complexity_preference: if profile.weekend_cooking_minutes >= 90 { "Complex".to_string() } else { "Medium".to_string() },
+                complexity_preference: if profile.weekend_cooking_minutes >= 90 {
+                    "Complex".to_string()
+                } else {
+                    "Medium".to_string()
+                },
             },
         ];
-        
+
         MealPlanningPreferences {
             optimal_weekly_meals: recommendations.weekly_meal_count,
             prep_day_suggestions: recommendations.prep_day_suggestions,
@@ -257,14 +269,16 @@ impl UserPreferencesView {
             meal_complexity_balance: complexity_balance,
         }
     }
-    
+
     /// Build cooking recommendations from profile
-    fn build_cooking_recommendations(profile: &crate::domain::UserProfile) -> CookingRecommendations {
+    fn build_cooking_recommendations(
+        profile: &crate::domain::UserProfile,
+    ) -> CookingRecommendations {
         use crate::services::{ProfileService, RecommendationService};
-        
+
         let tips = RecommendationService::generate_cooking_tips(profile);
         let suggestions = ProfileService::get_profile_improvement_suggestions(profile);
-        
+
         let equipment_suggestions = match profile.cooking_skill_level {
             SkillLevel::Beginner => vec![
                 "Sharp chef's knife".to_string(),
@@ -285,14 +299,14 @@ impl UserPreferencesView {
                 "Specialty cookware (Dutch oven, etc.)".to_string(),
             ],
         };
-        
+
         let ingredient_prep_tips = vec![
             "Mise en place - prep all ingredients before cooking".to_string(),
             "Store prepped vegetables properly to maintain freshness".to_string(),
             "Batch prep grains and proteins for the week".to_string(),
             "Keep a well-stocked pantry with basics".to_string(),
         ];
-        
+
         CookingRecommendations {
             skill_progression_tips: suggestions,
             time_saving_techniques: tips,
@@ -314,11 +328,15 @@ impl UserPreferencesProjectionBuilder {
             projections: HashMap::new(),
         }
     }
-    
+
     /// Build projection from event stream
-    pub fn build_from_events(&mut self, user_id: Uuid, events: &[UserEvent]) -> Option<UserPreferencesView> {
+    pub fn build_from_events(
+        &mut self,
+        user_id: Uuid,
+        events: &[UserEvent],
+    ) -> Option<UserPreferencesView> {
         let mut projection: Option<UserPreferencesView> = None;
-        
+
         for event in events.iter() {
             match event {
                 UserEvent::UserRegistered(event) => {
@@ -342,20 +360,20 @@ impl UserPreferencesProjectionBuilder {
                 _ => {} // Handle other events that don't affect preferences projection
             }
         }
-        
+
         // Cache the projection
         if let Some(ref p) = projection {
             self.projections.insert(user_id, p.clone());
         }
-        
+
         projection
     }
-    
+
     /// Get cached projection
     pub fn get_cached_projection(&self, user_id: &Uuid) -> Option<&UserPreferencesView> {
         self.projections.get(user_id)
     }
-    
+
     /// Update cached projection with new event
     pub fn update_projection(&mut self, user_id: Uuid, event: &UserEvent) {
         if let Some(projection) = self.projections.get_mut(&user_id) {
@@ -373,31 +391,37 @@ impl UserPreferencesProjectionBuilder {
             }
         }
     }
-    
+
     /// Invalidate and rebuild projection from events
-    pub fn rebuild_projection(&mut self, user_id: Uuid, events: &[UserEvent]) -> Option<UserPreferencesView> {
+    pub fn rebuild_projection(
+        &mut self,
+        user_id: Uuid,
+        events: &[UserEvent],
+    ) -> Option<UserPreferencesView> {
         self.projections.remove(&user_id);
         self.build_from_events(user_id, events)
     }
-    
+
     /// Clear projection cache
     pub fn clear_cache(&mut self) {
         self.projections.clear();
     }
-    
+
     /// Get projection maintenance info
     pub fn maintenance_info(&self) -> ProjectionMaintenanceInfo {
         let total_projections = self.projections.len();
         let user_ids: Vec<Uuid> = self.projections.keys().cloned().collect();
-        
+
         let avg_version: f64 = if total_projections > 0 {
-            self.projections.values()
+            self.projections
+                .values()
                 .map(|p| p.version as f64)
-                .sum::<f64>() / total_projections as f64
+                .sum::<f64>()
+                / total_projections as f64
         } else {
             0.0
         };
-        
+
         ProjectionMaintenanceInfo {
             total_projections,
             user_ids,
@@ -442,7 +466,7 @@ mod tests {
     fn test_user_preferences_view_from_registered() {
         let event = create_test_user_registered_event();
         let view = UserPreferencesView::from_user_registered(&event);
-        
+
         assert_eq!(view.user_id, event.user_id);
         assert_eq!(view.email, event.email.value);
         assert_eq!(view.family_size.value, 1);
@@ -456,7 +480,7 @@ mod tests {
     fn test_recipe_criteria_summary() {
         let event = create_test_user_registered_event();
         let view = UserPreferencesView::from_user_registered(&event);
-        
+
         let criteria = &view.recipe_criteria;
         assert_eq!(criteria.portion_multiplier, 0.25); // 1/4 = 0.25
         assert!(criteria.skill_level_tags.contains(&"basic".to_string()));
@@ -467,7 +491,7 @@ mod tests {
     fn test_meal_planning_preferences() {
         let event = create_test_user_registered_event();
         let view = UserPreferencesView::from_user_registered(&event);
-        
+
         let meal_prefs = &view.meal_planning_preferences;
         assert_eq!(meal_prefs.cooking_schedule.len(), 7); // 7 days
         assert!(meal_prefs.meal_complexity_balance.beginner_friendly_ratio > 0.5);
@@ -478,7 +502,7 @@ mod tests {
     fn test_cooking_recommendations() {
         let event = create_test_user_registered_event();
         let view = UserPreferencesView::from_user_registered(&event);
-        
+
         let cooking_recs = &view.cooking_recommendations;
         assert!(!cooking_recs.equipment_suggestions.is_empty());
         assert!(!cooking_recs.ingredient_prep_tips.is_empty());
@@ -495,16 +519,16 @@ mod tests {
             is_email_verified: false,
             created_at: Utc::now(),
         };
-        
+
         let events = vec![UserEvent::UserRegistered(reg_event)];
-        
+
         let mut builder = UserPreferencesProjectionBuilder::new();
         let projection = builder.build_from_events(user_id, &events);
-        
+
         assert!(projection.is_some());
         let proj = projection.unwrap();
         assert_eq!(proj.user_id, user_id);
-        
+
         // Check maintenance info
         let info = builder.maintenance_info();
         assert_eq!(info.total_projections, 1);
@@ -516,7 +540,7 @@ mod tests {
     fn test_apply_dietary_restrictions_changed() {
         let reg_event = create_test_user_registered_event();
         let mut view = UserPreferencesView::from_user_registered(&reg_event);
-        
+
         let dietary_change = DietaryRestrictionsChanged {
             user_id: view.user_id,
             old_restrictions: vec![],
@@ -525,9 +549,9 @@ mod tests {
             removed_restrictions: vec![],
             changed_at: Utc::now(),
         };
-        
+
         view.apply_dietary_restrictions_changed(&dietary_change);
-        
+
         assert_eq!(view.dietary_restrictions.len(), 2);
         assert!(view.dietary_restrictions.contains(&DietaryRestriction::Vegetarian));
         assert!(view.dietary_restrictions.contains(&DietaryRestriction::GlutenFree));
@@ -545,7 +569,7 @@ mod tests {
             is_email_verified: false,
             created_at: Utc::now(),
         };
-        
+
         let family_event = FamilySizeChanged {
             user_id,
             old_family_size: FamilySize::FAMILY1,
@@ -554,19 +578,19 @@ mod tests {
             percentage_change: 300.0,
             changed_at: Utc::now(),
         };
-        
+
         let events = vec![
             UserEvent::UserRegistered(reg_event),
             UserEvent::FamilySizeChanged(family_event),
         ];
-        
+
         let mut builder = UserPreferencesProjectionBuilder::new();
-        
+
         // Build initial projection
         builder.build_from_events(user_id, &events[0..1]);
         let initial = builder.get_cached_projection(&user_id).unwrap();
         assert_eq!(initial.family_size.value, 1);
-        
+
         // Rebuild with all events
         let rebuilt = builder.rebuild_projection(user_id, &events).unwrap();
         assert_eq!(rebuilt.family_size.value, 4);

@@ -56,9 +56,10 @@ impl Session {
     pub fn from_login_event(login_event: &UserLoggedIn) -> Self {
         let now = Utc::now();
         let expires_at = now + Duration::days(7); // 7 days expiry
-        
+
         // Parse session_id from the event if available
-        let session_id = login_event.session_id
+        let session_id = login_event
+            .session_id
             .as_ref()
             .and_then(|s| Uuid::parse_str(s).ok())
             .unwrap_or_else(Uuid::new_v4);

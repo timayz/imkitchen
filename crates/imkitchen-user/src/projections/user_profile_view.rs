@@ -1,11 +1,13 @@
 // User profile projection for optimized read operations
 
+use crate::events::{
+    DietaryRestrictionsChanged, FamilySizeChanged, UserEvent, UserProfileUpdated, UserRegistered,
+};
 use chrono::{DateTime, Utc};
 use imkitchen_shared::{DietaryRestriction, FamilySize, SkillLevel};
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-use crate::events::{UserEvent, UserRegistered, FamilySizeChanged, DietaryRestrictionsChanged, UserProfileUpdated};
 use std::collections::HashMap;
+use uuid::Uuid;
 
 /// Comprehensive read model for user profile with all profile information
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -13,25 +15,25 @@ pub struct UserProfileView {
     pub user_id: Uuid,
     pub email: String,
     pub is_email_verified: bool,
-    
+
     // Profile information
     pub family_size: FamilySize,
     pub cooking_skill_level: SkillLevel,
     pub dietary_restrictions: Vec<DietaryRestriction>,
     pub weekday_cooking_minutes: u32,
     pub weekend_cooking_minutes: u32,
-    
+
     // Computed metrics
     pub profile_completeness_percentage: f32,
     pub weekly_cooking_load: u32,
     pub is_ready_for_meal_planning: bool,
     pub optimal_meal_complexities: Vec<String>,
-    
+
     // Timestamps
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub last_profile_update: DateTime<Utc>,
-    
+
     // Version for optimistic locking
     pub version: u64,
 }
@@ -40,11 +42,12 @@ impl UserProfileView {
     /// Create new user profile view from user registered event
     pub fn from_user_registered(event: &UserRegistered) -> Self {
         use crate::services::ProfileService;
-        
+
         let profile_completeness = ProfileService::calculate_profile_completeness(&event.profile);
         let weekly_cooking_load = ProfileService::calculate_weekly_cooking_load(&event.profile);
-        let optimal_complexities = ProfileService::determine_optimal_meal_complexity(&event.profile);
-        
+        let optimal_complexities =
+            ProfileService::determine_optimal_meal_complexity(&event.profile);
+
         UserProfileView {
             user_id: event.user_id,
             email: event.email.value.clone(),
@@ -64,7 +67,7 @@ impl UserProfileView {
             version: 1,
         }
     }
-    
+
     /// Apply family size changed event
     pub fn apply_family_size_changed(&mut self, event: &FamilySizeChanged) {
         self.family_size = event.new_size;
@@ -73,7 +76,7 @@ impl UserProfileView {
         self.version += 1;
         self.recalculate_metrics();
     }
-    
+
     /// Apply profile updated event (handles skill level and cooking time changes)
     pub fn apply_profile_updated(&mut self, event: &UserProfileUpdated) {
         self.cooking_skill_level = event.profile.cooking_skill_level;
@@ -84,7 +87,7 @@ impl UserProfileView {
         self.version += 1;
         self.recalculate_metrics();
     }
-    
+
     /// Apply dietary restrictions changed event
     pub fn apply_dietary_restrictions_changed(&mut self, event: &DietaryRestrictionsChanged) {
         self.dietary_restrictions = event.new_restrictions.clone();
@@ -93,13 +96,12 @@ impl UserProfileView {
         self.version += 1;
         self.recalculate_metrics();
     }
-    
-    
+
     /// Recalculate all computed metrics after profile changes
     fn recalculate_metrics(&mut self) {
-        use crate::services::ProfileService;
         use crate::domain::{User, UserProfile};
-        
+        use crate::services::ProfileService;
+
         let profile = UserProfile {
             family_size: self.family_size,
             cooking_skill_level: self.cooking_skill_level,
@@ -107,7 +109,7 @@ impl UserProfileView {
             weekday_cooking_minutes: self.weekday_cooking_minutes,
             weekend_cooking_minutes: self.weekend_cooking_minutes,
         };
-        
+
         // Create temporary user for meal planning readiness check
         let user = User {
             user_id: self.user_id,
@@ -118,11 +120,13 @@ impl UserProfileView {
             created_at: self.created_at,
             updated_at: self.updated_at,
         };
-        
-        self.profile_completeness_percentage = ProfileService::calculate_profile_completeness(&profile);
+
+        self.profile_completeness_percentage =
+            ProfileService::calculate_profile_completeness(&profile);
         self.weekly_cooking_load = ProfileService::calculate_weekly_cooking_load(&profile);
         self.is_ready_for_meal_planning = ProfileService::is_ready_for_meal_planning(&user);
-        self.optimal_meal_complexities = ProfileService::determine_optimal_meal_complexity(&profile);
+        self.optimal_meal_complexities =
+            ProfileService::determine_optimal_meal_complexity(&profile);
     }
 }
 
@@ -138,11 +142,15 @@ impl UserProfileProjectionBuilder {
             projections: HashMap::new(),
         }
     }
-    
+
     /// Build projection from event stream
-    pub fn build_from_events(&mut self, user_id: Uuid, events: &[UserEvent]) -> Option<UserProfileView> {
+    pub fn build_from_events(
+        &mut self,
+        user_id: Uuid,
+        events: &[UserEvent],
+    ) -> Option<UserProfileView> {
         let mut projection: Option<UserProfileView> = None;
-        
+
         for event in events.iter() {
             match event {
                 UserEvent::UserRegistered(event) => {
@@ -166,20 +174,20 @@ impl UserProfileProjectionBuilder {
                 _ => {} // Handle other events that don't affect profile projection
             }
         }
-        
+
         // Cache the projection
         if let Some(ref p) = projection {
             self.projections.insert(user_id, p.clone());
         }
-        
+
         projection
     }
-    
+
     /// Get cached projection if available
     pub fn get_cached_projection(&self, user_id: &Uuid) -> Option<&UserProfileView> {
         self.projections.get(user_id)
     }
-    
+
     /// Update cached projection with new event
     pub fn update_projection(&mut self, user_id: Uuid, event: &UserEvent) {
         if let Some(projection) = self.projections.get_mut(&user_id) {
@@ -197,18 +205,22 @@ impl UserProfileProjectionBuilder {
             }
         }
     }
-    
+
     /// Clear projection cache
     pub fn clear_cache(&mut self) {
         self.projections.clear();
     }
-    
+
     /// Invalidate and rebuild projection from events
-    pub fn rebuild_projection(&mut self, user_id: Uuid, events: &[UserEvent]) -> Option<UserProfileView> {
+    pub fn rebuild_projection(
+        &mut self,
+        user_id: Uuid,
+        events: &[UserEvent],
+    ) -> Option<UserProfileView> {
         self.projections.remove(&user_id);
         self.build_from_events(user_id, events)
     }
-    
+
     /// Get cache statistics
     pub fn cache_stats(&self) -> (usize, Vec<Uuid>) {
         let count = self.projections.len();
@@ -231,7 +243,7 @@ mod tests {
 
     fn create_test_user_registered_event() -> UserRegistered {
         use crate::domain::UserProfile;
-        
+
         let default_profile = UserProfile {
             family_size: FamilySize::FAMILY1,
             cooking_skill_level: SkillLevel::Beginner,
@@ -239,7 +251,7 @@ mod tests {
             weekday_cooking_minutes: 0,
             weekend_cooking_minutes: 0,
         };
-        
+
         UserRegistered {
             user_id: Uuid::new_v4(),
             email: imkitchen_shared::Email::new("test@example.com".to_string()).unwrap(),
@@ -255,7 +267,7 @@ mod tests {
     fn test_user_profile_view_from_registered_event() {
         let event = create_test_user_registered_event();
         let view = UserProfileView::from_user_registered(&event);
-        
+
         assert_eq!(view.user_id, event.user_id);
         assert_eq!(view.email, event.email.value);
         assert_eq!(view.family_size.value, 1); // Default
@@ -270,7 +282,7 @@ mod tests {
     fn test_apply_family_size_changed() {
         let reg_event = create_test_user_registered_event();
         let mut view = UserProfileView::from_user_registered(&reg_event);
-        
+
         let family_change_event = FamilySizeChanged {
             user_id: view.user_id,
             previous_size: FamilySize::FAMILY1,
@@ -278,9 +290,9 @@ mod tests {
             reason: Some("Growing family".to_string()),
             changed_at: Utc::now(),
         };
-        
+
         view.apply_family_size_changed(&family_change_event);
-        
+
         assert_eq!(view.family_size.value, 4);
         assert_eq!(view.version, 2);
     }
@@ -295,16 +307,16 @@ mod tests {
             is_email_verified: false,
             created_at: Utc::now(),
         };
-        
+
         let events = vec![UserEvent::UserRegistered(reg_event)];
-        
+
         let mut builder = UserProfileProjectionBuilder::new();
         let projection = builder.build_from_events(user_id, &events);
-        
+
         assert!(projection.is_some());
         let proj = projection.unwrap();
         assert_eq!(proj.user_id, user_id);
-        
+
         // Check cached projection
         let cached = builder.get_cached_projection(&user_id);
         assert!(cached.is_some());
@@ -320,7 +332,7 @@ mod tests {
             is_email_verified: false,
             created_at: Utc::now(),
         };
-        
+
         let family_event = FamilySizeChanged {
             user_id,
             previous_size: FamilySize::FAMILY1,
@@ -328,15 +340,15 @@ mod tests {
             reason: None,
             changed_at: Utc::now(),
         };
-        
+
         let events = vec![
             UserEvent::UserRegistered(reg_event),
             UserEvent::FamilySizeChanged(family_event),
         ];
-        
+
         let mut builder = UserProfileProjectionBuilder::new();
         let projection = builder.build_from_events(user_id, &events).unwrap();
-        
+
         assert_eq!(projection.family_size.value, 3);
         assert_eq!(projection.version, 2);
     }
@@ -345,10 +357,10 @@ mod tests {
     fn test_projection_builder_cache_stats() {
         let mut builder = UserProfileProjectionBuilder::new();
         let (count, users) = builder.cache_stats();
-        
+
         assert_eq!(count, 0);
         assert!(users.is_empty());
-        
+
         // Add a projection
         let user_id = Uuid::new_v4();
         let reg_event = UserRegistered {
@@ -358,10 +370,10 @@ mod tests {
             is_email_verified: false,
             created_at: Utc::now(),
         };
-        
+
         let events = vec![UserEvent::UserRegistered(reg_event)];
         builder.build_from_events(user_id, &events);
-        
+
         let (count, users) = builder.cache_stats();
         assert_eq!(count, 1);
         assert_eq!(users.len(), 1);

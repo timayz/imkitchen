@@ -68,7 +68,7 @@ impl FamilySizeChanged {
         if self.previous_size.value == 0 {
             return 0.0;
         }
-        
+
         let change = self.size_change() as f64;
         let previous = self.previous_size.value as f64;
         (change / previous) * 100.0
@@ -114,7 +114,7 @@ mod tests {
     #[test]
     fn test_size_change_calculations() {
         let user_id = Uuid::new_v4();
-        
+
         // Test increase
         let increase_event = FamilySizeChanged::new(
             user_id,
@@ -150,7 +150,7 @@ mod tests {
     #[test]
     fn test_percentage_change() {
         let user_id = Uuid::new_v4();
-        
+
         // Test 100% increase (double)
         let double_event = FamilySizeChanged::new(
             user_id,
@@ -182,17 +182,13 @@ mod tests {
         let previous = FamilySize::new(2).unwrap();
         let new = FamilySize::new(4).unwrap();
 
-        let event = FamilySizeChanged::with_reason(
-            user_id,
-            previous,
-            new,
-            "Growing family".to_string(),
-        );
-        
+        let event =
+            FamilySizeChanged::with_reason(user_id, previous, new, "Growing family".to_string());
+
         // Test serialization
         let json = serde_json::to_string(&event).unwrap();
         let deserialized: FamilySizeChanged = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(event, deserialized);
     }
 }

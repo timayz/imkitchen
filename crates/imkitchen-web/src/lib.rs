@@ -22,6 +22,7 @@ pub use shutdown::{GracefulShutdown, ResourceCleanup};
 
 // Import user authentication services
 use imkitchen_user::commands::register_user::RegisterUserService;
+use imkitchen_user::commands::ProfileCommandHandler;
 use imkitchen_user::queries::UserQueryHandler;
 use imkitchen_user::services::login_service::DirectLoginService;
 
@@ -33,6 +34,7 @@ pub struct AppState {
     pub login_service: Option<DirectLoginService>,
     pub user_query_handler: Option<UserQueryHandler>,
     pub register_service: Option<RegisterUserService>,
+    pub profile_handler: Option<ProfileCommandHandler>,
 }
 
 /// Create the main application router with database pool and metrics
@@ -40,18 +42,21 @@ pub fn create_app_with_metrics(db_pool: Option<sqlx::SqlitePool>, metrics: AppMe
     let health_state = HealthCheckState::new(db_pool.clone());
 
     // Initialize user services if database is available
-    let (login_service, user_query_handler, register_service) = if let Some(ref pool) = db_pool {
-        let login_service = DirectLoginService::new(pool.clone());
-        let user_query_handler = UserQueryHandler::new(pool.clone());
-        let register_service = RegisterUserService::with_database(pool.clone());
-        (
-            Some(login_service),
-            Some(user_query_handler),
-            Some(register_service),
-        )
-    } else {
-        (None, None, None)
-    };
+    let (login_service, user_query_handler, register_service, profile_handler) =
+        if let Some(ref pool) = db_pool {
+            let login_service = DirectLoginService::new(pool.clone());
+            let user_query_handler = UserQueryHandler::new(pool.clone());
+            let register_service = RegisterUserService::with_database(pool.clone());
+            let profile_handler = ProfileCommandHandler::new(pool.clone());
+            (
+                Some(login_service),
+                Some(user_query_handler),
+                Some(register_service),
+                Some(profile_handler),
+            )
+        } else {
+            (None, None, None, None)
+        };
 
     // Create unified app state
     let app_state = AppState {
@@ -60,6 +65,7 @@ pub fn create_app_with_metrics(db_pool: Option<sqlx::SqlitePool>, metrics: AppMe
         login_service,
         user_query_handler,
         register_service,
+        profile_handler,
     };
 
     // Set application info in metrics
@@ -93,6 +99,28 @@ pub fn create_app_with_metrics(db_pool: Option<sqlx::SqlitePool>, metrics: AppMe
         ))
         .with_state(app_state.clone());
 
+    // Create profile router with auth middleware
+    let profile_router = Router::new()
+        .route("/profile", get(handlers::profile::profile_page))
+        .route("/profile/edit", get(handlers::profile::profile_edit_page))
+        .route(
+            "/profile/update",
+            post(handlers::profile::update_profile_handler),
+        )
+        .route(
+            "/profile/dietary",
+            post(handlers::profile::update_dietary_restrictions_handler),
+        )
+        .route(
+            "/profile/validate",
+            post(handlers::profile::validate_profile_handler),
+        )
+        .layer(from_fn_with_state(
+            app_state.clone(),
+            crate::middleware::auth::auth_middleware,
+        ))
+        .with_state(app_state.clone());
+
     // Add async validation routes if we have a database pool
     if let Some(pool) = db_pool.clone() {
         let async_validation_router = Router::new()
@@ -116,6 +144,7 @@ pub fn create_app_with_metrics(db_pool: Option<sqlx::SqlitePool>, metrics: AppMe
     // Combine routers with middleware layers
     Router::new()
         .merge(dashboard_router)
+        .merge(profile_router)
         .merge(health_router)
         .merge(metrics_router)
         .merge(auth_router)
