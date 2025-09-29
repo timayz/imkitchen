@@ -1,17 +1,24 @@
-// Evento projections for user views
+// Projections for user domain read models
 
-use chrono::{DateTime, Utc};
-use imkitchen_shared::SkillLevel;
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
+pub mod user_profile_view;
+pub mod user_preferences_view;
+pub mod projection_maintenance;
 
-/// Read model for user profile view
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UserProfileView {
-    pub user_id: Uuid,
-    pub email: String,
-    pub family_size: u8,
-    pub cooking_skill_level: SkillLevel,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
-}
+// Re-export projection types
+pub use user_profile_view::{UserProfileView, UserProfileProjectionBuilder};
+pub use user_preferences_view::{
+    UserPreferencesView, 
+    UserPreferencesProjectionBuilder,
+    RecipeCriteriaSummary,
+    MealPlanningPreferences,
+    CookingRecommendations,
+    DailySchedule,
+    ComplexityBalance,
+    ProjectionMaintenanceInfo,
+};
+pub use projection_maintenance::{
+    ProjectionMaintenanceManager,
+    MaintenanceConfig,
+    MaintenanceStats,
+    ProjectionCacheInfo,
+};

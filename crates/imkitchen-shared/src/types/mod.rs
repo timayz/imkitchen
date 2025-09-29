@@ -129,7 +129,7 @@ impl Password {
 }
 
 /// Dietary restriction types
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum DietaryRestriction {
     Vegetarian,
     Vegan,

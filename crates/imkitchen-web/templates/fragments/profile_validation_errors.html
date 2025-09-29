@@ -1,0 +1,145 @@
+<!-- Profile Validation Errors Fragment -->
+<div id="profile-form-container">
+    <!-- Error Message -->
+    <div class="mb-6 rounded-md bg-red-50 p-4" ts-action="animate:shake">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-red-800">
+                    Please correct the following errors:
+                </h3>
+                <div class="mt-2 text-sm text-red-700">
+                    <ul class="list-disc pl-5 space-y-1">
+                        {% for error in validation_errors %}
+                        <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Fields with Error States -->
+    <!-- Family Size -->
+    <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
+        <label for="family_size" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+            Family Size
+            <span class="text-red-500">*</span>
+        </label>
+        <div class="mt-1 sm:mt-0 sm:col-span-2">
+            <select id="family_size" 
+                    name="family_size" 
+                    required
+                    class="max-w-lg block focus:ring-red-500 focus:border-red-500 w-full shadow-sm sm:max-w-xs sm:text-sm {% if field_errors.contains_key("family_size") %}border-red-300{% else %}border-gray-300{% endif %} rounded-md">
+                <option value="">Select family size</option>
+                <option value="1" {% if form_data.family_size == 1 %}selected{% endif %}>1 person</option>
+                <option value="2" {% if form_data.family_size == 2 %}selected{% endif %}>2 people</option>
+                <option value="3" {% if form_data.family_size == 3 %}selected{% endif %}>3 people</option>
+                <option value="4" {% if form_data.family_size == 4 %}selected{% endif %}>4 people</option>
+                <option value="5" {% if form_data.family_size == 5 %}selected{% endif %}>5 people</option>
+                <option value="6" {% if form_data.family_size == 6 %}selected{% endif %}>6+ people</option>
+            </select>
+            {% if field_errors.contains_key("family_size") %}
+            <p class="mt-2 text-sm text-red-600">{{ field_errors["family_size"] }}</p>
+            {% else %}
+            <p class="mt-2 text-sm text-gray-500">
+                This helps us determine portion sizes and recipe scaling.
+            </p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Cooking Skill Level -->
+    <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
+        <label for="cooking_skill_level" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+            Cooking Skill Level
+            <span class="text-red-500">*</span>
+        </label>
+        <div class="mt-1 sm:mt-0 sm:col-span-2">
+            <select id="cooking_skill_level" 
+                    name="cooking_skill_level" 
+                    required
+                    class="max-w-lg block focus:ring-red-500 focus:border-red-500 w-full shadow-sm sm:max-w-xs sm:text-sm {% if field_errors.contains_key("cooking_skill_level") %}border-red-300{% else %}border-gray-300{% endif %} rounded-md">
+                <option value="">Select skill level</option>
+                <option value="Beginner" {% if form_data.cooking_skill_level == "Beginner" %}selected{% endif %}>
+                    Beginner - Simple recipes, basic techniques
+                </option>
+                <option value="Intermediate" {% if form_data.cooking_skill_level == "Intermediate" %}selected{% endif %}>
+                    Intermediate - Comfortable with most cooking methods
+                </option>
+                <option value="Advanced" {% if form_data.cooking_skill_level == "Advanced" %}selected{% endif %}>
+                    Advanced - Complex recipes, advanced techniques
+                </option>
+            </select>
+            {% if field_errors.contains_key("cooking_skill_level") %}
+            <p class="mt-2 text-sm text-red-600">{{ field_errors["cooking_skill_level"] }}</p>
+            {% else %}
+            <p class="mt-2 text-sm text-gray-500">
+                We'll recommend recipes that match your cooking experience.
+            </p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Cooking Time Preferences -->
+    <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start">
+        <label class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+            Cooking Time Preferences
+        </label>
+        <div class="mt-1 sm:mt-0 sm:col-span-2 space-y-4">
+            <div>
+                <label for="weekday_cooking_minutes" class="block text-sm font-medium text-gray-700">
+                    Weekdays (minutes)
+                </label>
+                <input type="number" 
+                       id="weekday_cooking_minutes" 
+                       name="weekday_cooking_minutes" 
+                       min="5" 
+                       max="480" 
+                       value="{{ form_data.weekday_cooking_minutes }}"
+                       class="mt-1 focus:ring-red-500 focus:border-red-500 block w-full shadow-sm sm:text-sm {% if field_errors.contains_key("weekday_cooking_minutes") %}border-red-300{% else %}border-gray-300{% endif %} rounded-md">
+                {% if field_errors.contains_key("weekday_cooking_minutes") %}
+                <p class="mt-1 text-sm text-red-600">{{ field_errors["weekday_cooking_minutes"] }}</p>
+                {% else %}
+                <p class="mt-1 text-sm text-gray-500">How much time you have for cooking on weekdays</p>
+                {% endif %}
+            </div>
+            <div>
+                <label for="weekend_cooking_minutes" class="block text-sm font-medium text-gray-700">
+                    Weekends (minutes)
+                </label>
+                <input type="number" 
+                       id="weekend_cooking_minutes" 
+                       name="weekend_cooking_minutes" 
+                       min="5" 
+                       max="480" 
+                       value="{{ form_data.weekend_cooking_minutes }}"
+                       class="mt-1 focus:ring-red-500 focus:border-red-500 block w-full shadow-sm sm:text-sm {% if field_errors.contains_key("weekend_cooking_minutes") %}border-red-300{% else %}border-gray-300{% endif %} rounded-md">
+                {% if field_errors.contains_key("weekend_cooking_minutes") %}
+                <p class="mt-1 text-sm text-red-600">{{ field_errors["weekend_cooking_minutes"] }}</p>
+                {% else %}
+                <p class="mt-1 text-sm text-gray-500">How much time you have for cooking on weekends</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="pt-5">
+        <div class="flex justify-end space-x-3">
+            <button type="button" 
+                    onclick="window.history.back()"
+                    class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-kitchen-500">
+                Cancel
+            </button>
+            <button type="submit" 
+                    class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-kitchen-600 hover:bg-kitchen-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-kitchen-500">
+                Save Changes
+            </button>
+        </div>
+    </div>
+</div>

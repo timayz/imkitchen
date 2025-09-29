@@ -192,11 +192,14 @@ impl RegisterUserService {
         // TODO: Generate verification token
 
         // Return success response
+        // Generate verification token for email verification
+        let verification_token = uuid::Uuid::new_v4().to_string();
+        
         let response = RegisterUserResponse {
             user_id: user.user_id,
             email: command.email,
-            verification_required: false, // For now, skip email verification
-            verification_token: None,
+            verification_required: true,
+            verification_token: Some(verification_token),
             request_id: command.request_id,
         };
 
@@ -238,7 +241,7 @@ mod tests {
     fn test_register_user_command_creation() {
         let email = Email::new("test@example.com".to_string()).unwrap();
         let password = Password::new("SecurePass123!".to_string()).unwrap();
-        let family_size = FamilySize::Family2;
+        let family_size = FamilySize::FAMILY2;
         let skill_level = SkillLevel::Beginner;
 
         let command = RegisterUserCommand::new(email.clone(), password, family_size, skill_level);
@@ -253,7 +256,7 @@ mod tests {
     async fn test_register_user_service_handle() {
         let email = Email::new("test@example.com".to_string()).unwrap();
         let password = Password::new("SecurePass123!".to_string()).unwrap();
-        let family_size = FamilySize::Family4;
+        let family_size = FamilySize::FAMILY4;
         let skill_level = SkillLevel::Intermediate;
 
         let command = RegisterUserCommand::new(email.clone(), password, family_size, skill_level);

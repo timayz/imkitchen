@@ -7,7 +7,8 @@ use uuid::Uuid;
 use validator::Validate;
 
 use crate::events::{
-    PasswordChangeReason, UserLoggedIn, UserPasswordChanged, UserProfileUpdated, UserRegistered,
+    DietaryRestrictionsChanged, FamilySizeChanged, PasswordChangeReason, UserLoggedIn, 
+    UserPasswordChanged, UserProfileUpdated, UserRegistered,
 };
 
 /// User aggregate root with Evento event sourcing
@@ -194,10 +195,100 @@ impl User {
         }
     }
 
+    /// Update dietary restrictions specifically with dedicated event
+    pub fn update_dietary_restrictions(&mut self, restrictions: Vec<DietaryRestriction>) -> DietaryRestrictionsChanged {
+        let previous_restrictions = self.profile.dietary_restrictions.clone();
+        self.profile.dietary_restrictions = restrictions.clone();
+        self.updated_at = Utc::now();
+
+        DietaryRestrictionsChanged::new(self.user_id, previous_restrictions, restrictions)
+    }
+
+    /// Update family size specifically with dedicated event
+    pub fn update_family_size(&mut self, family_size: FamilySize) -> FamilySizeChanged {
+        let previous_size = self.profile.family_size;
+        self.profile.family_size = family_size;
+        self.updated_at = Utc::now();
+
+        FamilySizeChanged::new(self.user_id, previous_size, family_size)
+    }
+
+    /// Update cooking skill level specifically
+    pub fn update_skill_level(&mut self, skill_level: SkillLevel) -> UserProfileUpdated {
+        self.profile.cooking_skill_level = skill_level;
+        self.updated_at = Utc::now();
+
+        UserProfileUpdated {
+            user_id: self.user_id,
+            profile: self.profile.clone(),
+            updated_at: self.updated_at,
+        }
+    }
+
+    /// Update cooking time preferences
+    pub fn update_cooking_time(&mut self, weekday_minutes: u32, weekend_minutes: u32) -> UserProfileUpdated {
+        self.profile.weekday_cooking_minutes = weekday_minutes;
+        self.profile.weekend_cooking_minutes = weekend_minutes;
+        self.updated_at = Utc::now();
+
+        UserProfileUpdated {
+            user_id: self.user_id,
+            profile: self.profile.clone(),
+            updated_at: self.updated_at,
+        }
+    }
+
     /// Verify user email
     pub fn verify_email(&mut self) {
         self.is_email_verified = true;
         self.updated_at = Utc::now();
+    }
+}
+
+// UserProfile domain methods
+impl UserProfile {
+    /// Create a new UserProfile with validation
+    pub fn new(
+        family_size: FamilySize,
+        cooking_skill_level: SkillLevel,
+        dietary_restrictions: Vec<DietaryRestriction>,
+        weekday_cooking_minutes: u32,
+        weekend_cooking_minutes: u32,
+    ) -> Result<Self, UserError> {
+        let profile = Self {
+            family_size,
+            cooking_skill_level,
+            dietary_restrictions,
+            weekday_cooking_minutes,
+            weekend_cooking_minutes,
+        };
+
+        // Validate the profile
+        profile.validate()?;
+        Ok(profile)
+    }
+
+    /// Check if profile is complete for meal planning
+    pub fn is_complete_for_meal_planning(&self) -> bool {
+        // Family size is always valid due to type safety
+        // At least one dietary preference should be specified (even if empty vector is valid)
+        // Cooking times should be reasonable (at least 5 minutes)
+        self.weekday_cooking_minutes >= 5 && self.weekend_cooking_minutes >= 5
+    }
+
+    /// Get recommended recipe complexity based on skill level
+    pub fn get_recommended_complexity(&self) -> Vec<String> {
+        match self.cooking_skill_level {
+            SkillLevel::Beginner => vec!["Easy".to_string()],
+            SkillLevel::Intermediate => vec!["Easy".to_string(), "Medium".to_string()],
+            SkillLevel::Advanced => vec!["Easy".to_string(), "Medium".to_string(), "Hard".to_string()],
+        }
+    }
+
+    /// Calculate portions needed based on family size
+    pub fn calculate_portions(&self, base_portions: u8) -> u8 {
+        let multiplier = self.family_size.value as f32 / base_portions as f32;
+        (base_portions as f32 * multiplier).ceil() as u8
     }
 }
 
@@ -218,4 +309,7 @@ pub enum UserError {
 
     #[error("Validation error: {0}")]
     ValidationError(#[from] validator::ValidationErrors),
+
+    #[error("Database error: {0}")]
+    DatabaseError(String),
 }
