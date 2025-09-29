@@ -116,8 +116,15 @@ impl Password {
     }
 
     pub fn hash(&self) -> String {
-        // TODO: Implement bcrypt hashing in the authentication layer
-        format!("HASH:{}", self.value)
+        // Generate bcrypt hash with cost factor of 12 (recommended for security)
+        bcrypt::hash(&self.value, 12).unwrap_or_else(|_| {
+            // Fallback - should never happen in normal operation
+            panic!("Failed to hash password - this is a critical security error")
+        })
+    }
+
+    pub fn verify(&self, hash: &str) -> bool {
+        bcrypt::verify(&self.value, hash).unwrap_or(false)
     }
 }
 

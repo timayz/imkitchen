@@ -9,6 +9,7 @@ use axum::{
 use tracing::{error, info, warn};
 use uuid::Uuid;
 
+use crate::middleware::auth::extract_user_id_from_token;
 use crate::AppState;
 use imkitchen_user::queries::UserAccountView;
 
@@ -35,15 +36,12 @@ pub async fn user_dashboard(
             for cookie in cookie_str.split(';') {
                 let cookie = cookie.trim();
                 if let Some(session_value) = cookie.strip_prefix("imkitchen_session=") {
-                    match Uuid::parse_str(session_value) {
-                        Ok(id) => {
-                            found_user_id = Some(id);
-                            break;
-                        }
-                        Err(_) => {
-                            error!("Invalid session cookie format after auth middleware");
-                            return Err(StatusCode::INTERNAL_SERVER_ERROR);
-                        }
+                    if let Some(id) = extract_user_id_from_token(session_value) {
+                        found_user_id = Some(id);
+                        break;
+                    } else {
+                        error!("Invalid session token format after auth middleware");
+                        return Err(StatusCode::INTERNAL_SERVER_ERROR);
                     }
                 }
             }
