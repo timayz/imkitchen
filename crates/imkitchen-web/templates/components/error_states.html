@@ -1,0 +1,392 @@
+<!-- Error States Component -->
+<!-- Kitchen-optimized error handling and recovery patterns -->
+
+<!-- General Error State -->
+<div class="general-error bg-red-50 border border-red-200 rounded-lg p-6 text-center" role="alert" aria-live="assertive">
+    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+        <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z"/>
+        </svg>
+    </div>
+    <h3 class="text-lg font-medium text-red-900 mb-2">Something went wrong</h3>
+    <p class="text-sm text-red-700 mb-4">We're sorry, but something unexpected happened. Please try again.</p>
+    <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <button type="button" 
+                onclick="location.reload()" 
+                class="touch-target-lg bg-red-600 text-white px-6 py-3 rounded-md font-medium hover:bg-red-700 transition-colors kitchen-touch kitchen-focus">
+            Try Again
+        </button>
+        <a href="/" 
+           class="touch-target-lg bg-white text-red-600 border border-red-600 px-6 py-3 rounded-md font-medium hover:bg-red-50 transition-colors kitchen-touch kitchen-focus">
+            Go Home
+        </a>
+    </div>
+</div>
+
+<!-- Network Error State -->
+<div class="network-error bg-orange-50 border border-orange-200 rounded-lg p-6 text-center" role="alert" aria-live="assertive">
+    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-orange-100 mb-4">
+        <svg class="h-6 w-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/>
+        </svg>
+    </div>
+    <h3 class="text-lg font-medium text-orange-900 mb-2">Connection Problem</h3>
+    <p class="text-sm text-orange-700 mb-4">It looks like you're having trouble connecting. Please check your internet connection and try again.</p>
+    <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <button type="button" 
+                onclick="window.IMKitchen.ErrorStates.retryLastAction()" 
+                class="touch-target-lg bg-orange-600 text-white px-6 py-3 rounded-md font-medium hover:bg-orange-700 transition-colors kitchen-touch kitchen-focus">
+            Retry Connection
+        </button>
+        <button type="button" 
+                onclick="window.IMKitchen.ErrorStates.checkConnection()" 
+                class="touch-target-lg bg-white text-orange-600 border border-orange-600 px-6 py-3 rounded-md font-medium hover:bg-orange-50 transition-colors kitchen-touch kitchen-focus">
+            Check Connection
+        </button>
+    </div>
+</div>
+
+<!-- Validation Error State -->
+<div class="validation-error bg-yellow-50 border border-yellow-200 rounded-lg p-4" role="alert" aria-live="polite">
+    <div class="flex">
+        <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+            </svg>
+        </div>
+        <div class="ml-3">
+            <h3 class="text-sm font-medium text-yellow-800">Please check your input</h3>
+            <div class="mt-2 text-sm text-yellow-700">
+                <ul class="list-disc list-inside space-y-1" id="validation-errors">
+                    <!-- Dynamic validation errors will be inserted here -->
+                    <li>Please fill in all required fields</li>
+                </ul>
+            </div>
+            <div class="mt-4">
+                <button type="button" 
+                        onclick="window.IMKitchen.ErrorStates.focusFirstError()" 
+                        class="text-sm bg-yellow-100 text-yellow-800 px-3 py-2 rounded-md hover:bg-yellow-200 transition-colors kitchen-touch kitchen-focus">
+                    Fix Issues
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 404 Not Found Error -->
+<div class="not-found-error bg-gray-50 border border-gray-200 rounded-lg p-8 text-center" role="alert">
+    <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-gray-100 mb-4">
+        <svg class="h-8 w-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+    </div>
+    <h3 class="text-xl font-medium text-gray-900 mb-2">Page Not Found</h3>
+    <p class="text-gray-600 mb-6 max-w-md mx-auto">The recipe or page you're looking for might have been moved or doesn't exist.</p>
+    <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <a href="/recipes/discover" 
+           class="touch-target-lg bg-kitchen-600 text-white px-6 py-3 rounded-md font-medium hover:bg-kitchen-700 transition-colors kitchen-touch kitchen-focus">
+            Discover Recipes
+        </a>
+        <a href="/" 
+           class="touch-target-lg bg-white text-kitchen-600 border border-kitchen-600 px-6 py-3 rounded-md font-medium hover:bg-kitchen-50 transition-colors kitchen-touch kitchen-focus">
+            Back to Home
+        </a>
+    </div>
+</div>
+
+<!-- Server Error (5xx) -->
+<div class="server-error bg-red-50 border border-red-200 rounded-lg p-6 text-center" role="alert" aria-live="assertive">
+    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+        <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+    </div>
+    <h3 class="text-lg font-medium text-red-900 mb-2">Server Error</h3>
+    <p class="text-sm text-red-700 mb-4">Our kitchen is experiencing some technical difficulties. We're working to fix this!</p>
+    <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <button type="button" 
+                onclick="setTimeout(() => location.reload(), 2000)" 
+                class="touch-target-lg bg-red-600 text-white px-6 py-3 rounded-md font-medium hover:bg-red-700 transition-colors kitchen-touch kitchen-focus">
+            Retry in 2 seconds
+        </button>
+        <a href="/help" 
+           class="touch-target-lg bg-white text-red-600 border border-red-600 px-6 py-3 rounded-md font-medium hover:bg-red-50 transition-colors kitchen-touch kitchen-focus">
+            Get Help
+        </a>
+    </div>
+</div>
+
+<!-- Form Submission Error -->
+<div class="form-error bg-red-50 border border-red-200 rounded-lg p-4 mb-4 hidden" role="alert" aria-live="polite">
+    <div class="flex">
+        <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd"/>
+            </svg>
+        </div>
+        <div class="ml-3">
+            <h3 class="text-sm font-medium text-red-800">Submission Failed</h3>
+            <div class="mt-2 text-sm text-red-700">
+                <p id="form-error-message">There was a problem submitting your form. Please try again.</p>
+            </div>
+            <div class="mt-4">
+                <button type="button" 
+                        onclick="window.IMKitchen.ErrorStates.retryFormSubmission()" 
+                        class="text-sm bg-red-100 text-red-800 px-3 py-2 rounded-md hover:bg-red-200 transition-colors kitchen-touch kitchen-focus">
+                    Try Again
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Offline State -->
+<div class="offline-error bg-blue-50 border border-blue-200 rounded-lg p-6 text-center" role="alert" aria-live="assertive">
+    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
+        <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M12 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+    </div>
+    <h3 class="text-lg font-medium text-blue-900 mb-2">You're Offline</h3>
+    <p class="text-sm text-blue-700 mb-4">You can still browse your saved recipes and meal plans while offline.</p>
+    <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <a href="/offline" 
+           class="touch-target-lg bg-blue-600 text-white px-6 py-3 rounded-md font-medium hover:bg-blue-700 transition-colors kitchen-touch kitchen-focus">
+            Browse Offline
+        </a>
+        <button type="button" 
+                onclick="window.IMKitchen.ErrorStates.checkConnection()" 
+                class="touch-target-lg bg-white text-blue-600 border border-blue-600 px-6 py-3 rounded-md font-medium hover:bg-blue-50 transition-colors kitchen-touch kitchen-focus">
+            Check Connection
+        </button>
+    </div>
+</div>
+
+<!-- Progressive Enhancement Script for Error States -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Global error state management
+    window.IMKitchen = window.IMKitchen || {};
+    window.IMKitchen.ErrorStates = {
+        
+        // Show specific error type
+        showError: function(errorType, message = null, details = null) {
+            const errorMap = {
+                'general': '.general-error',
+                'network': '.network-error',
+                'validation': '.validation-error',
+                '404': '.not-found-error',
+                'server': '.server-error',
+                'form': '.form-error',
+                'offline': '.offline-error'
+            };
+            
+            const errorSelector = errorMap[errorType];
+            if (!errorSelector) return;
+            
+            const errorElement = document.querySelector(errorSelector);
+            if (!errorElement) return;
+            
+            // Update error message if provided
+            if (message) {
+                const messageElement = errorElement.querySelector('#form-error-message, p');
+                if (messageElement) {
+                    messageElement.textContent = message;
+                }
+            }
+            
+            // Update validation details if provided
+            if (details && errorType === 'validation') {
+                const errorsList = errorElement.querySelector('#validation-errors');
+                if (errorsList && Array.isArray(details)) {
+                    errorsList.innerHTML = details.map(error => `<li>${error}</li>`).join('');
+                }
+            }
+            
+            // Show error and scroll into view
+            errorElement.classList.remove('hidden');
+            errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Focus first interactive element for accessibility
+            const firstButton = errorElement.querySelector('button, a');
+            if (firstButton) {
+                setTimeout(() => firstButton.focus(), 100);
+            }
+        },
+        
+        // Hide all error states
+        hideAllErrors: function() {
+            const errors = document.querySelectorAll('[role="alert"]');
+            errors.forEach(error => {
+                error.classList.add('hidden');
+            });
+        },
+        
+        // Retry last action (stored in sessionStorage)
+        retryLastAction: function() {
+            const lastAction = sessionStorage.getItem('imkitchen_last_action');
+            if (lastAction) {
+                const action = JSON.parse(lastAction);
+                if (action.type === 'form') {
+                    const form = document.querySelector(action.selector);
+                    if (form) {
+                        form.dispatchEvent(new Event('submit', { bubbles: true }));
+                    }
+                } else if (action.type === 'navigation') {
+                    window.location.href = action.url;
+                }
+            } else {
+                location.reload();
+            }
+        },
+        
+        // Store action for retry functionality
+        storeAction: function(type, data) {
+            sessionStorage.setItem('imkitchen_last_action', JSON.stringify({
+                type: type,
+                ...data,
+                timestamp: Date.now()
+            }));
+        },
+        
+        // Check network connection
+        checkConnection: function() {
+            if (navigator.onLine) {
+                // Try to fetch a small resource to verify connection
+                fetch('/health', { method: 'HEAD', cache: 'no-cache' })
+                    .then(() => {
+                        this.hideAllErrors();
+                        this.showSuccess('Connection restored!');
+                    })
+                    .catch(() => {
+                        this.showError('network', 'Still having connection issues. Please try again.');
+                    });
+            } else {
+                this.showError('offline');
+            }
+        },
+        
+        // Focus first error for accessibility
+        focusFirstError: function() {
+            const firstError = document.querySelector('input:invalid, [aria-invalid="true"]');
+            if (firstError) {
+                firstError.focus();
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        },
+        
+        // Retry form submission
+        retryFormSubmission: function() {
+            const lastForm = document.querySelector('form[data-last-submit="true"]');
+            if (lastForm) {
+                lastForm.dispatchEvent(new Event('submit', { bubbles: true }));
+            }
+        },
+        
+        // Show success message
+        showSuccess: function(message) {
+            // Create temporary success notification
+            const successDiv = document.createElement('div');
+            successDiv.className = 'fixed top-4 right-4 bg-green-50 border border-green-200 rounded-lg p-4 shadow-lg z-50';
+            successDiv.setAttribute('role', 'status');
+            successDiv.setAttribute('aria-live', 'polite');
+            successDiv.innerHTML = `
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.236 4.53L8.53 10.53a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-green-800">${message}</p>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(successDiv);
+            
+            // Auto-remove after 3 seconds
+            setTimeout(() => {
+                if (successDiv.parentNode) {
+                    successDiv.parentNode.removeChild(successDiv);
+                }
+            }, 3000);
+        }
+    };
+    
+    // Auto-detect and handle form errors
+    document.addEventListener('submit', function(e) {
+        const form = e.target;
+        if (form.tagName === 'FORM') {
+            // Mark form for retry functionality
+            document.querySelectorAll('form[data-last-submit]').forEach(f => {
+                f.removeAttribute('data-last-submit');
+            });
+            form.setAttribute('data-last-submit', 'true');
+            
+            // Store action for retry
+            window.IMKitchen.ErrorStates.storeAction('form', {
+                selector: `#${form.id}` || 'form[data-last-submit="true"]'
+            });
+        }
+    });
+    
+    // Auto-detect navigation actions
+    document.addEventListener('click', function(e) {
+        const link = e.target.closest('a[href]');
+        if (link && !link.href.startsWith('#') && !link.href.startsWith('javascript:')) {
+            window.IMKitchen.ErrorStates.storeAction('navigation', {
+                url: link.href
+            });
+        }
+    });
+    
+    // Handle online/offline events
+    window.addEventListener('online', function() {
+        window.IMKitchen.ErrorStates.hideAllErrors();
+        window.IMKitchen.ErrorStates.showSuccess('Connection restored!');
+    });
+    
+    window.addEventListener('offline', function() {
+        window.IMKitchen.ErrorStates.showError('offline');
+    });
+    
+    // Global error handler for unhandled promises
+    window.addEventListener('unhandledrejection', function(e) {
+        console.error('Unhandled promise rejection:', e.reason);
+        window.IMKitchen.ErrorStates.showError('general', 'An unexpected error occurred. Please try again.');
+    });
+    
+    // Enhanced form validation error display
+    document.addEventListener('invalid', function(e) {
+        e.preventDefault(); // Prevent default browser validation UI
+        
+        const form = e.target.closest('form');
+        if (!form) return;
+        
+        // Collect all validation errors
+        const invalidFields = form.querySelectorAll(':invalid');
+        const errors = Array.from(invalidFields).map(field => {
+            const label = form.querySelector(`label[for="${field.id}"]`);
+            const fieldName = label ? label.textContent : field.name || 'This field';
+            return `${fieldName}: ${field.validationMessage}`;
+        });
+        
+        if (errors.length > 0) {
+            window.IMKitchen.ErrorStates.showError('validation', null, errors);
+        }
+    }, true);
+    
+    // Accessibility enhancement: Keyboard navigation for error recovery
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            // Allow escape to dismiss errors
+            const visibleError = document.querySelector('[role="alert"]:not(.hidden)');
+            if (visibleError) {
+                visibleError.classList.add('hidden');
+                e.preventDefault();
+            }
+        }
+    });
+});
+</script>

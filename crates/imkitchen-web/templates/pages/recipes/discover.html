@@ -1,0 +1,161 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}{{ title }} - IMKitchen{% endblock %}
+{% block meta_description %}Discover new recipes tailored to your family's preferences and dietary needs{% endblock %}
+
+{% block main_classes %}pb-20 md:pb-0{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Breadcrumb Navigation -->
+    <!-- Breadcrumb temporarily disabled during development -->
+    
+    <!-- Page Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ title }}</h1>
+        <p class="text-lg text-gray-600">Find the perfect recipes for your family's taste and dietary preferences</p>
+    </div>
+
+    <!-- Recipe Discovery Interface -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Filters Sidebar -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Filter Recipes</h2>
+                
+                <!-- Meal Type Filter -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Meal Type</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" class="rounded border-gray-300 text-kitchen-600 focus:ring-kitchen-600 kitchen-touch kitchen-focus">
+                            <span class="ml-2 text-sm text-gray-700">Breakfast</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" class="rounded border-gray-300 text-kitchen-600 focus:ring-kitchen-600 kitchen-touch kitchen-focus">
+                            <span class="ml-2 text-sm text-gray-700">Lunch</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" class="rounded border-gray-300 text-kitchen-600 focus:ring-kitchen-600 kitchen-touch kitchen-focus">
+                            <span class="ml-2 text-sm text-gray-700">Dinner</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Cooking Time Filter -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Cooking Time</label>
+                    <select class="block w-full rounded-md border-gray-300 py-2 px-3 text-gray-900 shadow-sm focus:ring-2 focus:ring-kitchen-600 kitchen-touch kitchen-focus">
+                        <option>Any time</option>
+                        <option>Under 30 minutes</option>
+                        <option>30-60 minutes</option>
+                        <option>Over 1 hour</option>
+                    </select>
+                </div>
+
+                <!-- Difficulty Filter -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Difficulty</label>
+                    <select class="block w-full rounded-md border-gray-300 py-2 px-3 text-gray-900 shadow-sm focus:ring-2 focus:ring-kitchen-600 kitchen-touch kitchen-focus">
+                        <option>Any difficulty</option>
+                        <option>Beginner</option>
+                        <option>Intermediate</option>
+                        <option>Advanced</option>
+                    </select>
+                </div>
+
+                <button type="button" 
+                        ts-req="/recipes/filter" 
+                        ts-target="#recipe-results"
+                        ts-include="form"
+                        class="touch-target-lg w-full bg-kitchen-600 text-white rounded-md px-4 py-3 font-medium hover:bg-kitchen-700 transition-colors kitchen-touch kitchen-focus">
+                    Apply Filters
+                </button>
+            </div>
+        </div>
+
+        <!-- Recipe Results -->
+        <div class="lg:col-span-2" id="recipe-results">
+            <div class="mb-6 flex items-center justify-between">
+                <p class="text-sm text-gray-600">Showing recipes that match your preferences</p>
+                <div class="flex items-center space-x-2">
+                    <label class="text-sm text-gray-600">Sort by:</label>
+                    <select class="rounded-md border-gray-300 text-sm kitchen-touch kitchen-focus">
+                        <option>Relevance</option>
+                        <option>Cooking Time</option>
+                        <option>Difficulty</option>
+                        <option>Rating</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Recipe Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Sample Recipe Card -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                    <div class="h-48 bg-gray-200 flex items-center justify-center">
+                        <span class="text-gray-500">Recipe Image</span>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-semibold text-gray-900 mb-2">Sample Recipe</h3>
+                        <p class="text-sm text-gray-600 mb-3">A delicious and nutritious meal perfect for your family.</p>
+                        <div class="flex items-center justify-between text-sm text-gray-500">
+                            <span>🕒 30 mins</span>
+                            <span>👨‍🍳 Intermediate</span>
+                            <span>⭐ 4.5/5</span>
+                        </div>
+                        <button class="mt-3 w-full bg-kitchen-600 text-white py-2 px-4 rounded-md text-sm font-medium hover:bg-kitchen-700 transition-colors kitchen-touch kitchen-focus">
+                            View Recipe
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Coming Soon Card -->
+                <div class="bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 p-6 text-center">
+                    <div class="text-gray-400 mb-3">
+                        <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">More Recipes Coming Soon</h3>
+                    <p class="text-sm text-gray-600">We're building an amazing recipe discovery experience for you!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contextual Navigation -->
+    <div class="mt-12 bg-kitchen-50 rounded-lg p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">What's Next?</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <a href="/meal-plans/current" class="flex items-center p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow kitchen-focus">
+                <svg class="w-8 h-8 text-kitchen-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <div>
+                    <h3 class="font-medium text-gray-900">Plan Your Week</h3>
+                    <p class="text-sm text-gray-600">Add recipes to your meal plan</p>
+                </div>
+            </a>
+            <a href="/shopping-lists/current" class="flex items-center p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow kitchen-focus">
+                <svg class="w-8 h-8 text-kitchen-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5H17"/>
+                </svg>
+                <div>
+                    <h3 class="font-medium text-gray-900">Shopping List</h3>
+                    <p class="text-sm text-gray-600">Generate your grocery list</p>
+                </div>
+            </a>
+            <a href="/collections" class="flex items-center p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow kitchen-focus">
+                <svg class="w-8 h-8 text-kitchen-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                </svg>
+                <div>
+                    <h3 class="font-medium text-gray-900">Collections</h3>
+                    <p class="text-sm text-gray-600">Save favorite recipes</p>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

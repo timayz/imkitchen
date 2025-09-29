@@ -1,0 +1,40 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}{{ title }} - IMKitchen{% endblock %}
+{% block meta_description %}Manage your current shopping list and grocery items{% endblock %}
+
+{% block main_classes %}pb-20 md:pb-0{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Breadcrumb Navigation -->
+    <!-- Breadcrumb temporarily disabled during development -->
+    
+    <!-- Page Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ title }}</h1>
+        <p class="text-lg text-gray-600">Your grocery list for this week</p>
+    </div>
+
+    <!-- Coming Soon Content -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+        <div class="text-gray-400 mb-4">
+            <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5H17"/>
+            </svg>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-900 mb-4">Smart Shopping Lists Coming Soon</h2>
+        <p class="text-lg text-gray-600 mb-6">We're building intelligent shopping lists that automatically generate from your meal plans.</p>
+        
+        <!-- Contextual Navigation -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="/recipes/discover" class="touch-target-lg bg-kitchen-600 text-white px-6 py-3 rounded-md font-medium hover:bg-kitchen-700 transition-colors kitchen-touch kitchen-focus">
+                Discover Recipes
+            </a>
+            <a href="/meal-plans/current" class="touch-target-lg bg-white text-kitchen-600 border border-kitchen-600 px-6 py-3 rounded-md font-medium hover:bg-kitchen-50 transition-colors kitchen-touch kitchen-focus">
+                Plan Your Meals
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

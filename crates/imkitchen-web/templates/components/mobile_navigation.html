@@ -1,0 +1,125 @@
+<!-- Mobile Navigation Component -->
+<!-- Responsive mobile-first navigation optimized for kitchen environment -->
+
+<!-- Mobile Navigation Bar (visible on small screens) -->
+<nav class="md:hidden bg-white border-t border-gray-200 fixed bottom-0 left-0 right-0 z-50 kitchen-touch h-16">
+    <div class="grid grid-cols-4 min-h-touch-lg h-16">
+        <!-- Home -->
+        <a href="/" class="touch-target flex flex-col items-center justify-center space-y-1 text-gray-600 hover:text-kitchen-600 active:bg-gray-100 transition-colors kitchen-touch kitchen-focus">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+            </svg>
+            <span class="text-xs font-medium">Home</span>
+        </a>
+        
+        <!-- Recipes -->
+        <a href="/recipes/discover" class="touch-target flex flex-col items-center justify-center space-y-1 text-gray-600 hover:text-kitchen-600 active:bg-gray-100 transition-colors kitchen-touch kitchen-focus">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <span class="text-xs font-medium">Recipes</span>
+        </a>
+        
+        <!-- Meal Plans -->
+        <a href="/meal-plans/current" class="touch-target flex flex-col items-center justify-center space-y-1 text-gray-600 hover:text-kitchen-600 active:bg-gray-100 transition-colors kitchen-touch kitchen-focus">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <span class="text-xs font-medium">Plan</span>
+        </a>
+        
+        <!-- Shopping -->
+        <a href="/shopping-lists/current" class="touch-target flex flex-col items-center justify-center space-y-1 text-gray-600 hover:text-kitchen-600 active:bg-gray-100 transition-colors kitchen-touch kitchen-focus">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5H17"/>
+            </svg>
+            <span class="text-xs font-medium">Shop</span>
+        </a>
+    </div>
+</nav>
+
+<!-- Desktop Navigation Enhancement (hidden on mobile) -->
+<div class="hidden md:flex md:items-center md:space-x-6">
+    <a href="/" class="text-gray-600 hover:text-kitchen-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+        🏠 Dashboard
+    </a>
+    <a href="/recipes/discover" class="text-gray-600 hover:text-kitchen-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+        📖 Recipes
+    </a>
+    <a href="/meal-plans/current" class="text-gray-600 hover:text-kitchen-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+        📅 Meal Plans
+    </a>
+    <a href="/collections" class="text-gray-600 hover:text-kitchen-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+        📁 Collections
+    </a>
+    <a href="/shopping-lists/current" class="text-gray-600 hover:text-kitchen-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+        🛒 Shopping
+    </a>
+    <a href="/profile" class="text-gray-600 hover:text-kitchen-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+        👤 Profile
+    </a>
+</div>
+
+<!-- Mobile Menu Toggle (for potential expandable menus) -->
+<button id="mobile-menu-toggle" class="md:hidden p-2 rounded-md text-gray-600 hover:text-kitchen-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-kitchen-500 touch-manipulation">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+    </svg>
+</button>
+
+<!-- TwinSpark-powered expandable mobile menu -->
+<div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-200 touch-manipulation">
+    <div class="px-2 pt-2 pb-3 space-y-1">
+        <a href="/profile" class="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-kitchen-600 hover:bg-gray-100 transition-colors touch-manipulation">
+            👤 My Profile
+        </a>
+        <a href="/collections" class="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-kitchen-600 hover:bg-gray-100 transition-colors touch-manipulation">
+            📁 My Collections
+        </a>
+        <a href="/settings" class="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-kitchen-600 hover:bg-gray-100 transition-colors touch-manipulation">
+            ⚙️ Settings
+        </a>
+        <a href="/help" class="block px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-kitchen-600 hover:bg-gray-100 transition-colors touch-manipulation">
+            ❓ Help
+        </a>
+        <hr class="my-2 border-gray-200">
+        <a href="/auth/logout" class="block px-3 py-2 rounded-md text-base font-medium text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors touch-manipulation">
+            🚪 Sign Out
+        </a>
+    </div>
+</div>
+
+<script>
+// TwinSpark alternative: Simple mobile menu toggle
+document.addEventListener('DOMContentLoaded', function() {
+    const menuToggle = document.getElementById('mobile-menu-toggle');
+    const mobileMenu = document.getElementById('mobile-menu');
+    
+    if (menuToggle && mobileMenu) {
+        menuToggle.addEventListener('click', function() {
+            mobileMenu.classList.toggle('hidden');
+            
+            // Update aria-expanded for accessibility
+            const isExpanded = !mobileMenu.classList.contains('hidden');
+            menuToggle.setAttribute('aria-expanded', isExpanded.toString());
+        });
+        
+        // Close menu when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!menuToggle.contains(event.target) && !mobileMenu.contains(event.target)) {
+                mobileMenu.classList.add('hidden');
+                menuToggle.setAttribute('aria-expanded', 'false');
+            }
+        });
+        
+        // Close menu on ESC key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && !mobileMenu.classList.contains('hidden')) {
+                mobileMenu.classList.add('hidden');
+                menuToggle.setAttribute('aria-expanded', 'false');
+                menuToggle.focus(); // Return focus to toggle button
+            }
+        });
+    }
+});
+</script>

@@ -1,0 +1,137 @@
+<!-- Breadcrumb Navigation Component -->
+<!-- Provides contextual navigation for complex workflows -->
+
+<nav class="hidden sm:flex kitchen-focus" aria-label="Breadcrumb navigation" role="navigation">
+    <ol class="flex items-center space-x-2 text-sm">
+        <!-- Home breadcrumb (always present) -->
+        <li>
+            <a href="/" 
+               class="text-gray-500 hover:text-kitchen-600 transition-colors kitchen-focus"
+               aria-label="Go to home">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+                </svg>
+                <span class="sr-only">Home</span>
+            </a>
+        </li>
+
+        <!-- Dynamic breadcrumb items will be inserted here by TwinSpark or server-side rendering -->
+        {% if breadcrumb_items %}
+        {% for item in breadcrumb_items %}
+        <li class="flex items-center">
+            <!-- Separator -->
+            <svg class="w-4 h-4 text-gray-400 mx-2" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+            </svg>
+            
+            <!-- Breadcrumb item -->
+            {% if item.url %}
+            <a href="{{ item.url }}" 
+               class="text-gray-500 hover:text-kitchen-600 transition-colors kitchen-focus"
+               {% if loop.last %}aria-current="page"{% endif %}>
+                {{ item.title }}
+            </a>
+            {% else %}
+            <span class="text-gray-900 font-medium" aria-current="page">
+                {{ item.title }}
+            </span>
+            {% endif %}
+        </li>
+        {% endfor %}
+        {% endif %}
+    </ol>
+</nav>
+
+<!-- Mobile Breadcrumb (simplified for touch interface) -->
+<nav class="sm:hidden bg-gray-50 px-4 py-2 border-b border-gray-200 kitchen-touch" 
+     aria-label="Mobile breadcrumb navigation" 
+     role="navigation">
+    <div class="flex items-center space-x-2">
+        <!-- Back button for mobile -->
+        <button type="button" 
+                onclick="history.back()" 
+                class="touch-target flex items-center justify-center w-8 h-8 rounded-full bg-white shadow-sm border border-gray-200 text-gray-600 hover:text-kitchen-600 kitchen-touch kitchen-focus"
+                aria-label="Go back">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </button>
+        
+        <!-- Current page title -->
+        <span class="text-sm font-medium text-gray-900 truncate">
+            {% if current_page_title %}{{ current_page_title }}{% else %}IMKitchen{% endif %}
+        </span>
+    </div>
+</nav>
+
+<!-- Progressive Enhancement for Dynamic Breadcrumbs -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-generate breadcrumbs based on URL path if not provided by server
+    const breadcrumbNav = document.querySelector('nav[aria-label="Breadcrumb navigation"] ol');
+    
+    if (breadcrumbNav && !breadcrumbNav.querySelector('li:nth-child(2)')) {
+        const path = window.location.pathname;
+        const segments = path.split('/').filter(segment => segment.length > 0);
+        
+        if (segments.length > 0) {
+            // Generate breadcrumbs for common paths
+            const breadcrumbMap = {
+                'recipes': { title: 'Recipes', url: '/recipes' },
+                'discover': { title: 'Discover', url: null },
+                'meal-plans': { title: 'Meal Plans', url: '/meal-plans' },
+                'current': { title: 'Current Plan', url: null },
+                'shopping-lists': { title: 'Shopping', url: '/shopping-lists' },
+                'profile': { title: 'Profile', url: null },
+                'settings': { title: 'Settings', url: null }
+            };
+            
+            let currentPath = '';
+            segments.forEach((segment, index) => {
+                currentPath += '/' + segment;
+                const isLast = index === segments.length - 1;
+                const breadcrumbInfo = breadcrumbMap[segment];
+                
+                if (breadcrumbInfo) {
+                    const li = document.createElement('li');
+                    li.className = 'flex items-center';
+                    
+                    const separator = document.createElement('svg');
+                    separator.className = 'w-4 h-4 text-gray-400 mx-2';
+                    separator.setAttribute('fill', 'currentColor');
+                    separator.setAttribute('viewBox', '0 0 20 20');
+                    separator.setAttribute('aria-hidden', 'true');
+                    separator.innerHTML = '<path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>';
+                    
+                    li.appendChild(separator);
+                    
+                    if (isLast || !breadcrumbInfo.url) {
+                        const span = document.createElement('span');
+                        span.className = 'text-gray-900 font-medium';
+                        span.setAttribute('aria-current', 'page');
+                        span.textContent = breadcrumbInfo.title;
+                        li.appendChild(span);
+                    } else {
+                        const a = document.createElement('a');
+                        a.href = breadcrumbInfo.url;
+                        a.className = 'text-gray-500 hover:text-kitchen-600 transition-colors kitchen-focus';
+                        a.textContent = breadcrumbInfo.title;
+                        li.appendChild(a);
+                    }
+                    
+                    breadcrumbNav.appendChild(li);
+                }
+            });
+        }
+    }
+    
+    // Update mobile breadcrumb title
+    const mobileTitle = document.querySelector('nav[aria-label="Mobile breadcrumb navigation"] span');
+    if (mobileTitle && !mobileTitle.textContent.includes('IMKitchen')) {
+        const pageTitle = document.title.split(' - ')[0];
+        if (pageTitle) {
+            mobileTitle.textContent = pageTitle;
+        }
+    }
+});
+</script>

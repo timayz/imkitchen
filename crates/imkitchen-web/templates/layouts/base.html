@@ -2,9 +2,35 @@
 <html lang="en" class="h-full bg-gray-50">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta name="description" content="{% block meta_description %}IMKitchen - Intelligent Meal Planning{% endblock %}">
     <title>{% block title %}IMKitchen{% endblock %}</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#059669">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="IMKitchen">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="IMKitchen">
+    <meta name="msapplication-TileColor" content="#059669">
+    <meta name="msapplication-tap-highlight" content="no">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/static/manifest.json">
+    
+    <!-- Icons for various devices -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/images/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/images/icon-16x16.png">
+    <link rel="apple-touch-icon" href="/static/images/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/static/images/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/images/icon-180x180.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="/static/images/icon-167x167.png">
+    
+    <!-- Splash screens for iOS -->
+    <link rel="apple-touch-startup-image" href="/static/images/splash-640x1136.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)">
+    <link rel="apple-touch-startup-image" href="/static/images/splash-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)">
+    <link rel="apple-touch-startup-image" href="/static/images/splash-1242x2208.png" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3)">
     
     <!-- Tailwind CSS CDN for development -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -37,9 +63,17 @@
     {% block head %}{% endblock %}
 </head>
 <body class="h-full">
+    <!-- Skip Links for Screen Readers -->
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-kitchen-600 text-white px-4 py-2 rounded-md text-sm font-medium z-50">
+        Skip to main content
+    </a>
+    <a href="#navigation" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-32 bg-kitchen-600 text-white px-4 py-2 rounded-md text-sm font-medium z-50">
+        Skip to navigation
+    </a>
+    
     <div class="min-h-full">
         <!-- Navigation -->
-        <nav class="bg-white shadow-sm border-b border-gray-200">
+        <nav id="navigation" class="bg-white shadow-sm border-b border-gray-200" role="navigation" aria-label="Main navigation">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-16">
                     <div class="flex items-center">
@@ -53,7 +87,16 @@
                         {% block nav_links %}
                         <div class="hidden md:ml-6 md:flex md:space-x-8">
                             <a href="/" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors">
-                                Home
+                                🏠 Dashboard
+                            </a>
+                            <a href="/recipes/discover" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors">
+                                📖 Recipes
+                            </a>
+                            <a href="/meal-plans/current" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors">
+                                📅 Meal Plans
+                            </a>
+                            <a href="/shopping-lists/current" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors">
+                                🛒 Shopping
                             </a>
                         </div>
                         {% endblock %}
@@ -74,12 +117,15 @@
         </nav>
 
         <!-- Main content -->
-        <main class="{% block main_classes %}{% endblock %}">
+        <main id="main-content" class="{% block main_classes %}pb-20 md:pb-0{% endblock %}" role="main" aria-label="Main content area">
             {% block content %}{% endblock %}
         </main>
+        
+        <!-- Mobile Navigation (included from component) -->
+        {% include "components/mobile_navigation.html" %}
 
         <!-- Footer -->
-        <footer class="bg-white border-t border-gray-200 mt-auto">
+        <footer class="bg-white border-t border-gray-200 mt-auto" role="contentinfo" aria-label="Site footer">
             <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between items-center">
                     <p class="text-gray-500 text-sm">
@@ -98,6 +144,211 @@
         </footer>
     </div>
 
+    <!-- Screen Reader Announcements -->
+    <div id="sr-announcements" class="sr-only" aria-live="polite" aria-atomic="true" role="status">
+        <!-- Dynamic announcements for screen readers will be inserted here -->
+    </div>
+    
+    <!-- Screen Reader Only Content -->
+    <div class="sr-only">
+        <h2>Page Navigation Help</h2>
+        <p>Use Tab to navigate through page elements. Press Enter to activate buttons and links.</p>
+        <p>This is IMKitchen, a meal planning application optimized for kitchen environments.</p>
+    </div>
+
     {% block scripts %}{% endblock %}
+    
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/js/service-worker.js')
+                    .then(registration => {
+                        console.log('SW registered: ', registration);
+                        
+                        // Check for updates
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // Show update available notification
+                                    showUpdateNotification();
+                                }
+                            });
+                        });
+                    })
+                    .catch(registrationError => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+        
+        // PWA Install Prompt
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('PWA install prompt triggered');
+            e.preventDefault();
+            deferredPrompt = e;
+            showInstallPromotion();
+        });
+        
+        function showInstallPromotion() {
+            // Create install button if it doesn't exist
+            const existingButton = document.getElementById('pwa-install-btn');
+            if (existingButton) return;
+            
+            const installButton = document.createElement('button');
+            installButton.id = 'pwa-install-btn';
+            installButton.innerHTML = '📱 Install App';
+            installButton.className = 'fixed bottom-4 right-4 bg-kitchen-600 hover:bg-kitchen-700 text-white px-4 py-2 rounded-lg shadow-lg transition-colors z-50 text-sm font-medium';
+            installButton.onclick = installPWA;
+            document.body.appendChild(installButton);
+        }
+        
+        function installPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted PWA install');
+                    } else {
+                        console.log('User dismissed PWA install');
+                    }
+                    deferredPrompt = null;
+                    const installButton = document.getElementById('pwa-install-btn');
+                    if (installButton) {
+                        installButton.remove();
+                    }
+                });
+            }
+        }
+        
+        function showUpdateNotification() {
+            // Create update notification
+            const updateNotification = document.createElement('div');
+            updateNotification.id = 'update-notification';
+            updateNotification.className = 'fixed top-4 right-4 bg-blue-600 text-white px-4 py-3 rounded-lg shadow-lg z-50 max-w-sm';
+            updateNotification.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium">App Updated!</p>
+                        <p class="text-xs opacity-90">Refresh to get the latest features</p>
+                    </div>
+                    <button onclick="refreshApp()" class="ml-3 bg-white text-blue-600 px-2 py-1 rounded text-xs font-medium">
+                        Refresh
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(updateNotification);
+            
+            // Auto-hide after 10 seconds
+            setTimeout(() => {
+                if (updateNotification.parentNode) {
+                    updateNotification.remove();
+                }
+            }, 10000);
+        }
+        
+        function refreshApp() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistration().then(registration => {
+                    if (registration && registration.waiting) {
+                        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                    }
+                });
+            }
+            window.location.reload();
+        }
+        
+        // Offline detection and connectivity management
+        function setupOfflineDetection() {
+            let offlineNotification = null;
+            
+            function showOfflineNotification() {
+                if (offlineNotification) return; // Already showing
+                
+                offlineNotification = document.createElement('div');
+                offlineNotification.id = 'offline-notification';
+                offlineNotification.className = 'fixed top-0 left-0 right-0 bg-orange-600 text-white p-3 text-center z-50';
+                offlineNotification.innerHTML = `
+                    <div class="flex items-center justify-center space-x-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M12 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span>You're offline - saved content is still available</span>
+                        <a href="/offline" class="underline ml-2">View offline features</a>
+                    </div>
+                `;
+                document.body.appendChild(offlineNotification);
+                
+                // Adjust body padding to account for notification
+                document.body.style.paddingTop = '60px';
+            }
+            
+            function hideOfflineNotification() {
+                if (offlineNotification && offlineNotification.parentNode) {
+                    offlineNotification.remove();
+                    offlineNotification = null;
+                    document.body.style.paddingTop = '';
+                }
+            }
+            
+            function showOnlineNotification() {
+                const onlineNotification = document.createElement('div');
+                onlineNotification.className = 'fixed top-0 left-0 right-0 bg-green-600 text-white p-3 text-center z-50';
+                onlineNotification.innerHTML = `
+                    <div class="flex items-center justify-center space-x-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span>Connection restored!</span>
+                    </div>
+                `;
+                document.body.appendChild(onlineNotification);
+                document.body.style.paddingTop = '60px';
+                
+                // Auto-hide after 3 seconds
+                setTimeout(() => {
+                    if (onlineNotification.parentNode) {
+                        onlineNotification.remove();
+                        document.body.style.paddingTop = '';
+                    }
+                }, 3000);
+            }
+            
+            // Listen for offline/online events
+            window.addEventListener('offline', function() {
+                console.log('Gone offline');
+                showOfflineNotification();
+            });
+            
+            window.addEventListener('online', function() {
+                console.log('Back online');
+                hideOfflineNotification();
+                
+                // Test actual connectivity before showing online notification
+                fetch('/health', { method: 'HEAD', cache: 'no-cache' })
+                    .then(() => {
+                        showOnlineNotification();
+                    })
+                    .catch(() => {
+                        // Still offline despite navigator.onLine being true
+                        showOfflineNotification();
+                    });
+            });
+            
+            // Initial check
+            if (!navigator.onLine) {
+                showOfflineNotification();
+            }
+        }
+        
+        // Initialize offline detection when page loads
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', setupOfflineDetection);
+        } else {
+            setupOfflineDetection();
+        }
+    </script>
 </body>
 </html>

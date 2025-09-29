@@ -37,6 +37,23 @@ pub struct AppState {
     pub profile_handler: Option<ProfileCommandHandler>,
 }
 
+impl AppState {
+    /// Create a test instance of AppState
+    pub async fn test_default() -> Self {
+        let health_state = HealthCheckState::new(None);
+        let metrics = AppMetrics::new().expect("Failed to create metrics");
+
+        Self {
+            health_state,
+            metrics,
+            login_service: None,
+            user_query_handler: None,
+            register_service: None,
+            profile_handler: None,
+        }
+    }
+}
+
 /// Create the main application router with database pool and metrics
 pub fn create_app_with_metrics(db_pool: Option<sqlx::SqlitePool>, metrics: AppMetrics) -> Router {
     let health_state = HealthCheckState::new(db_pool.clone());
@@ -141,13 +158,75 @@ pub fn create_app_with_metrics(db_pool: Option<sqlx::SqlitePool>, metrics: AppMe
         auth_router = auth_router.merge(async_validation_router);
     }
 
+    // Create PWA router
+    let pwa_router = Router::new()
+        .route("/pwa/install", post(handlers::pwa::pwa_install_handler))
+        .route(
+            "/pwa/offline-status",
+            get(handlers::pwa::pwa_offline_status_handler),
+        )
+        .route(
+            "/pwa/cache-status",
+            get(handlers::pwa::pwa_cache_status_handler),
+        )
+        .route("/offline", get(handlers::pwa::offline_page_handler))
+        .route(
+            "/static/manifest.json",
+            get(handlers::pwa::manifest_handler),
+        )
+        .route(
+            "/static/js/service-worker.js",
+            get(handlers::pwa::service_worker_handler),
+        )
+        .with_state(app_state.clone());
+
+    // Create navigation routers (no auth required for discovery)
+    let recipes_router = Router::new()
+        .route("/recipes", get(handlers::recipes::recipes_overview))
+        .route("/recipes/discover", get(handlers::recipes::recipe_discover))
+        .with_state(app_state.clone());
+
+    let meal_plans_router = Router::new()
+        .route(
+            "/meal-plans",
+            get(handlers::meal_plans::meal_plans_overview),
+        )
+        .route(
+            "/meal-plans/current",
+            get(handlers::meal_plans::current_meal_plan),
+        )
+        .with_state(app_state.clone());
+
+    let shopping_router = Router::new()
+        .route(
+            "/shopping-lists",
+            get(handlers::shopping::shopping_lists_overview),
+        )
+        .route(
+            "/shopping-lists/current",
+            get(handlers::shopping::current_shopping_list),
+        )
+        .with_state(app_state.clone());
+
+    let collections_router = Router::new()
+        .route(
+            "/collections",
+            get(handlers::collections::collections_index),
+        )
+        .with_state(app_state.clone());
+
     // Combine routers with middleware layers
     Router::new()
         .merge(dashboard_router)
         .merge(profile_router)
+        .merge(recipes_router)
+        .merge(meal_plans_router)
+        .merge(shopping_router)
+        .merge(collections_router)
         .merge(health_router)
         .merge(metrics_router)
         .merge(auth_router)
+        .merge(pwa_router)
         .nest_service("/static", ServeDir::new("crates/imkitchen-web/static"))
         .layer(from_fn_with_state(
             metrics,
@@ -165,6 +244,131 @@ pub fn create_app_with_db(db_pool: Option<sqlx::SqlitePool>) -> Router {
 /// Create the main application router (basic version for backward compatibility)
 pub fn create_app() -> Router {
     create_app_with_db(None)
+}
+
+/// Create application routes for testing
+pub fn create_app_routes(app_state: AppState) -> Router {
+    let metrics = app_state.metrics.clone();
+
+    // Create all routers using the provided app_state
+    let auth_router = Router::new()
+        .route("/auth/login", get(handlers::auth::login_page))
+        .route("/auth/login", post(handlers::auth::login_handler))
+        .route("/auth/register", get(handlers::auth::register_page))
+        .route("/auth/register", post(handlers::auth::register_handler))
+        .with_state(app_state.clone());
+
+    let dashboard_router = Router::new()
+        .route("/dashboard", get(handlers::dashboard::user_dashboard))
+        .route("/", get(handlers::dashboard::user_dashboard))
+        .layer(from_fn_with_state(
+            app_state.clone(),
+            crate::middleware::auth::auth_middleware,
+        ))
+        .with_state(app_state.clone());
+
+    let profile_router = Router::new()
+        .route("/profile", get(handlers::profile::profile_page))
+        .route("/profile/edit", get(handlers::profile::profile_edit_page))
+        .route(
+            "/profile/update",
+            post(handlers::profile::update_profile_handler),
+        )
+        .route(
+            "/profile/dietary",
+            post(handlers::profile::update_dietary_restrictions_handler),
+        )
+        .route(
+            "/profile/validate",
+            post(handlers::profile::validate_profile_handler),
+        )
+        .layer(from_fn_with_state(
+            app_state.clone(),
+            crate::middleware::auth::auth_middleware,
+        ))
+        .with_state(app_state.clone());
+
+    let health_router = Router::new()
+        .route("/health", get(handlers::health::health_check_with_deps))
+        .with_state(app_state.health_state.clone());
+
+    let metrics_router = Router::new()
+        .route("/metrics", get(handlers::metrics::metrics_handler))
+        .with_state(metrics.clone());
+
+    let pwa_router = Router::new()
+        .route("/pwa/install", post(handlers::pwa::pwa_install_handler))
+        .route(
+            "/pwa/offline-status",
+            get(handlers::pwa::pwa_offline_status_handler),
+        )
+        .route(
+            "/pwa/cache-status",
+            get(handlers::pwa::pwa_cache_status_handler),
+        )
+        .route("/offline", get(handlers::pwa::offline_page_handler))
+        .route(
+            "/static/manifest.json",
+            get(handlers::pwa::manifest_handler),
+        )
+        .route(
+            "/static/js/service-worker.js",
+            get(handlers::pwa::service_worker_handler),
+        )
+        .with_state(app_state.clone());
+
+    // Navigation routers for testing
+    let recipes_router = Router::new()
+        .route("/recipes", get(handlers::recipes::recipes_overview))
+        .route("/recipes/discover", get(handlers::recipes::recipe_discover))
+        .with_state(app_state.clone());
+
+    let meal_plans_router = Router::new()
+        .route(
+            "/meal-plans",
+            get(handlers::meal_plans::meal_plans_overview),
+        )
+        .route(
+            "/meal-plans/current",
+            get(handlers::meal_plans::current_meal_plan),
+        )
+        .with_state(app_state.clone());
+
+    let shopping_router = Router::new()
+        .route(
+            "/shopping-lists",
+            get(handlers::shopping::shopping_lists_overview),
+        )
+        .route(
+            "/shopping-lists/current",
+            get(handlers::shopping::current_shopping_list),
+        )
+        .with_state(app_state.clone());
+
+    let collections_router = Router::new()
+        .route(
+            "/collections",
+            get(handlers::collections::collections_index),
+        )
+        .with_state(app_state.clone());
+
+    Router::new()
+        .merge(dashboard_router)
+        .merge(profile_router)
+        .merge(recipes_router)
+        .merge(meal_plans_router)
+        .merge(shopping_router)
+        .merge(collections_router)
+        .merge(health_router)
+        .merge(metrics_router)
+        .merge(auth_router)
+        .merge(pwa_router)
+        .nest_service("/static", ServeDir::new("crates/imkitchen-web/static"))
+        .layer(from_fn_with_state(
+            metrics,
+            crate::middleware::metrics_middleware,
+        ))
+        .layer(TraceLayer::new_for_http())
 }
 
 /// Start the web server
