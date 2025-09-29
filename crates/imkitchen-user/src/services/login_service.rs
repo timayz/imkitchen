@@ -174,11 +174,10 @@ impl DirectLoginService {
         Ok(response)
     }
 
-    /// Verify password hash
+    /// Verify password hash using bcrypt
     fn verify_password(&self, password: &Password, hash: &str) -> Result<bool, LoginError> {
-        // TODO: Implement actual password verification using bcrypt or similar
-        // For now, this is a placeholder
-        Ok(password.hash() == hash)
+        // Use the Password domain object's verify method which uses bcrypt
+        Ok(password.verify(hash))
     }
 
     /// Validate session token
