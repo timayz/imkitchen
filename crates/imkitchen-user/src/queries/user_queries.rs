@@ -2,7 +2,7 @@
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use sqlx::SqlitePool;
+use sqlx::{Row, SqlitePool};
 use uuid::Uuid;
 use validator::Validate;
 
@@ -178,11 +178,77 @@ impl UserQueryHandler {
         &self,
         query: UserByIdQuery,
     ) -> Result<UserByIdResponse, UserQueryError> {
-        // TODO: Implement user by ID lookup
-        // For now, return a placeholder response
+        // Use the existing UserRepository to find user by ID
+        let _user_repository = crate::queries::UserRepository::new(self.db_pool.clone());
+
+        // First, query by user_id directly from the database
+        let row = sqlx::query(
+            "SELECT id, email, password_hash, family_size, skill_level, 
+             dietary_restrictions, weekday_cooking_minutes, weekend_cooking_minutes,
+             created_at, updated_at 
+             FROM user_profiles WHERE id = ?",
+        )
+        .bind(query.user_id.to_string())
+        .fetch_optional(&self.db_pool)
+        .await?;
+
+        let user = if let Some(row) = row {
+            let email = row.get::<String, _>("email");
+            let email_obj = Email::new(email.clone())
+                .map_err(|_| UserQueryError::InvalidData("email".to_string()))?;
+
+            Some(UserAccountView {
+                user_id: query.user_id,
+                email: email_obj,
+                profile: UserProfile {
+                    family_size: imkitchen_shared::FamilySize::new(
+                        row.get::<i64, _>("family_size") as u8,
+                    )
+                    .map_err(|_| UserQueryError::InvalidData("family_size".to_string()))?,
+                    cooking_skill_level: match row.get::<String, _>("skill_level").as_str() {
+                        "Beginner" => imkitchen_shared::SkillLevel::Beginner,
+                        "Intermediate" => imkitchen_shared::SkillLevel::Intermediate,
+                        "Advanced" => imkitchen_shared::SkillLevel::Advanced,
+                        _ => imkitchen_shared::SkillLevel::Beginner,
+                    },
+                    dietary_restrictions: {
+                        // Parse dietary_restrictions from JSON string if available
+                        let dietary_str = row
+                            .get::<Option<String>, _>("dietary_restrictions")
+                            .unwrap_or_default();
+                        if dietary_str.is_empty() {
+                            vec![]
+                        } else {
+                            // For now, return empty vec - would need to parse JSON in production
+                            vec![]
+                        }
+                    },
+                    // Load cooking times from database
+                    weekday_cooking_minutes: row
+                        .get::<Option<i64>, _>("weekday_cooking_minutes")
+                        .unwrap_or(30) as u32,
+                    weekend_cooking_minutes: row
+                        .get::<Option<i64>, _>("weekend_cooking_minutes")
+                        .unwrap_or(60) as u32,
+                },
+                is_email_verified: true, // Placeholder
+                created_at: DateTime::parse_from_rfc3339(&row.get::<String, _>("created_at"))
+                    .map_err(|_| UserQueryError::InvalidData("created_at".to_string()))?
+                    .with_timezone(&Utc),
+                updated_at: DateTime::parse_from_rfc3339(&row.get::<String, _>("updated_at"))
+                    .map_err(|_| UserQueryError::InvalidData("updated_at".to_string()))?
+                    .with_timezone(&Utc),
+                last_login_at: None, // TODO: Track login timestamps
+                login_count: 0,      // TODO: Track login counts
+            })
+        } else {
+            None
+        };
+
+        let found = user.is_some();
         Ok(UserByIdResponse {
-            user: None,
-            found: false,
+            user,
+            found,
             request_id: query.request_id,
         })
     }

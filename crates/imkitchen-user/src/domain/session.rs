@@ -4,6 +4,8 @@ use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::events::UserLoggedIn;
+
 /// Simple session data structure for authentication
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Session {
@@ -50,6 +52,30 @@ impl Session {
         }
     }
 
+    /// Create a session from a login event
+    pub fn from_login_event(login_event: &UserLoggedIn) -> Self {
+        let now = Utc::now();
+        let expires_at = now + Duration::days(7); // 7 days expiry
+
+        // Parse session_id from the event if available
+        let session_id = login_event
+            .session_id
+            .as_ref()
+            .and_then(|s| Uuid::parse_str(s).ok())
+            .unwrap_or_else(Uuid::new_v4);
+
+        Self {
+            session_id,
+            user_id: login_event.user_id,
+            created_at: now,
+            expires_at,
+            created_from_ip: login_event.login_ip.clone(),
+            user_agent: login_event.user_agent.clone(),
+            is_active: true,
+            last_accessed_at: now,
+        }
+    }
+
     /// Check if the session is valid (not expired and active)
     pub fn is_valid(&self) -> bool {
         self.is_active && Utc::now() < self.expires_at
@@ -85,6 +111,7 @@ pub enum SessionError {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::UserLoggedIn;
 
     #[test]
     fn test_session_creation() {
