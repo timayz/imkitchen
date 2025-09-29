@@ -11,8 +11,16 @@ repository.workspace = true
 serde = { workspace = true }
 uuid = { workspace = true }
 chrono = { workspace = true }
-validator = { workspace = true }
+validator = { workspace = true, features = ["derive"] }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+lettre = "0.11"
+tokio = { workspace = true, features = ["full"] }
+askama = { workspace = true }
 # Temporarily disabled unused dependencies
 # evento = { workspace = true }
-# thiserror = { workspace = true }
 imkitchen-shared = { path = "../imkitchen-shared" }
+
+[dev-dependencies]
+tokio-test = "0.4"
+futures = "0.3"

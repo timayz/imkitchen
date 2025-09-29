@@ -1,0 +1,24 @@
+{{ notification_title }} - {{ app_name }}
+
+Hi {{ user_name }},
+
+{{ notification_title }}
+
+{{ notification_body }}
+
+{% if has_action %}
+{{ action_text }}: {{ action_url }}
+{% endif %}
+
+We hope you're enjoying your {{ app_name }} experience. If you have any questions or feedback, we'd love to hear from you!
+
+Happy cooking!
+The {{ app_name }} Team
+
+---
+
+This notification was sent by {{ app_name }}. You can manage your notification preferences in your account settings.
+
+{% if has_action %}
+Action URL: {{ action_url }}
+{% endif %}

@@ -65,6 +65,8 @@ SMTP_USERNAME=your-email@example.com
 SMTP_PASSWORD=your-app-password
 SMTP_FROM_EMAIL=noreply@imkitchen.com
 SMTP_FROM_NAME=IMKitchen
+SMTP_SECURITY=starttls  # Options: starttls, ssl, none
+SMTP_TIMEOUT=30         # Connection timeout in seconds
 
 # Security
 SESSION_SECRET=your-secret-key-here-32-chars-min
