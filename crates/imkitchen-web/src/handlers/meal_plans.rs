@@ -11,7 +11,6 @@ use crate::AppState;
 #[template(path = "pages/meal_plans/current.html")]
 struct CurrentMealPlanTemplate {
     title: String,
-    current_page_title: String,
 }
 
 /// GET /meal-plans/current - Current meal plan page
@@ -20,7 +19,6 @@ pub async fn current_meal_plan(
 ) -> Result<Html<String>, StatusCode> {
     let template = CurrentMealPlanTemplate {
         title: "Current Meal Plan".to_string(),
-        current_page_title: "Current Meal Plan".to_string(),
     };
 
     match template.render() {

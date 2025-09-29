@@ -7,7 +7,6 @@ use crate::AppState;
 #[template(path = "pages/collections/index.html")]
 struct CollectionsTemplate {
     title: String,
-    current_page_title: String,
 }
 
 /// GET /collections - Collections page
@@ -16,7 +15,6 @@ pub async fn collections_index(
 ) -> Result<Html<String>, StatusCode> {
     let template = CollectionsTemplate {
         title: "My Collections".to_string(),
-        current_page_title: "Collections".to_string(),
     };
 
     match template.render() {
