@@ -9,7 +9,7 @@ use askama::Template;
 use tracing::{error, info, warn};
 use uuid::Uuid;
 
-use imkitchen_user::queries::{UserAccountView, UserByEmailQuery, UserQueryHandler};
+use imkitchen_user::queries::UserAccountView;
 use crate::AppState;
 
 /// Askama template for user dashboard
@@ -84,7 +84,6 @@ pub async fn user_dashboard(
 /// In a real application, this would be retrieved from the database
 fn create_mock_user_with_id(user_id: Uuid) -> UserAccountView {
     use chrono::Utc;
-    use uuid::Uuid;
     use imkitchen_shared::{Email, FamilySize, SkillLevel};
     use imkitchen_user::domain::UserProfile;
     

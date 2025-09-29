@@ -13,7 +13,6 @@ use validator::Validate;
 use imkitchen_shared::{Email, Password, FamilySize, SkillLevel};
 use imkitchen_user::services::login_service::{LoginCommand, LoginError};
 use imkitchen_user::commands::register_user::{RegisterUserCommand, RegisterUserError};
-use imkitchen_user::domain::UserProfile;
 use crate::middleware::auth::create_session_cookie_header;
 use crate::AppState;
 
@@ -285,7 +284,7 @@ pub async fn register_handler(
         let register_command = RegisterUserCommand::new(
             email.clone(),
             password,
-            FamilySize::Family2, // Default family size
+            FamilySize::FAMILY2, // Default family size
             SkillLevel::Beginner, // Default skill level
         );
         

@@ -1,20 +1,18 @@
 use axum::{
     extract::{Request, State},
-    http::{header, StatusCode, HeaderMap},
+    http::header,
     middleware::Next,
     response::{IntoResponse, Redirect, Response},
 };
 use uuid::Uuid;
-use tracing::{error, info, warn};
+use tracing::{info, warn};
 
 use crate::AppState;
 
-/// Session key for storing user ID in cookies
-const SESSION_COOKIE_NAME: &str = "imkitchen_session";
 
 /// Authentication middleware that checks for valid session
 pub async fn auth_middleware(
-    State(app_state): State<AppState>,
+    State(_app_state): State<AppState>,
     request: Request,
     next: Next,
 ) -> Response {

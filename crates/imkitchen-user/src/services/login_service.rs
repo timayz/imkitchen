@@ -7,8 +7,7 @@ use uuid::Uuid;
 use validator::Validate;
 
 use imkitchen_shared::{Email, Password};
-use crate::domain::{Session, SessionError};
-use crate::events::UserLoggedIn;
+use crate::domain::Session;
 use crate::queries::UserRepository;
 
 /// Simple login command that bypasses Evento
@@ -121,7 +120,7 @@ impl UserSession {
 /// Login service with session management
 #[derive(Clone)]
 pub struct DirectLoginService {
-    db_pool: SqlitePool,
+    _db_pool: SqlitePool,
     user_repository: UserRepository,
 }
 
@@ -129,7 +128,7 @@ impl DirectLoginService {
     pub fn new(db_pool: SqlitePool) -> Self {
         let user_repository = UserRepository::new(db_pool.clone());
         Self {
-            db_pool,
+            _db_pool: db_pool,
             user_repository,
         }
     }

@@ -33,14 +33,14 @@ impl FamilySize {
     }
 
     // Convenience constants for common family sizes
-    pub const Family1: FamilySize = FamilySize { value: 1 };
-    pub const Family2: FamilySize = FamilySize { value: 2 };
-    pub const Family3: FamilySize = FamilySize { value: 3 };
-    pub const Family4: FamilySize = FamilySize { value: 4 };
-    pub const Family5: FamilySize = FamilySize { value: 5 };
-    pub const Family6: FamilySize = FamilySize { value: 6 };
-    pub const Family7: FamilySize = FamilySize { value: 7 };
-    pub const Family8: FamilySize = FamilySize { value: 8 };
+    pub const FAMILY1: FamilySize = FamilySize { value: 1 };
+    pub const FAMILY2: FamilySize = FamilySize { value: 2 };
+    pub const FAMILY3: FamilySize = FamilySize { value: 3 };
+    pub const FAMILY4: FamilySize = FamilySize { value: 4 };
+    pub const FAMILY5: FamilySize = FamilySize { value: 5 };
+    pub const FAMILY6: FamilySize = FamilySize { value: 6 };
+    pub const FAMILY7: FamilySize = FamilySize { value: 7 };
+    pub const FAMILY8: FamilySize = FamilySize { value: 8 };
 }
 
 /// Cooking skill level enumeration
