@@ -52,6 +52,7 @@ impl RegisterUserCommand {
     }
 
     /// Create a RegisterUserCommand with full details
+    #[allow(clippy::too_many_arguments)]
     pub fn with_details(
         email: Email,
         password: Password,

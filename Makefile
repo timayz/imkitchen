@@ -127,7 +127,7 @@ down:
 	sudo docker compose down -v --rmi local --remove-orphans
 
 lint:
-	cargo clippy --fix --workspace --all-features -- -D warnings
+	cargo clippy --fix --allow-dirty --workspace --all-features -- -D warnings
 
 test:
 	cargo test
