@@ -1,0 +1,275 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Dashboard - IMKitchen{% endblock %}
+{% block meta_description %}Your personalized meal planning dashboard with family preferences and weekly meals{% endblock %}
+
+{% block nav_links %}
+<div class="hidden md:ml-6 md:flex md:space-x-8">
+    <a href="/dashboard" class="border-kitchen-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+        Dashboard
+    </a>
+    <a href="/meal-planning" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors">
+        Meal Planning
+    </a>
+    <a href="/recipes" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors">
+        Recipes
+    </a>
+    <a href="/shopping" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors">
+        Shopping List
+    </a>
+</div>
+{% endblock %}
+
+{% block auth_nav %}
+<div class="relative">
+    <button type="button" 
+            class="flex max-w-xs items-center rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-kitchen-500 focus:ring-offset-2"
+            id="user-menu-button" 
+            aria-expanded="false" 
+            aria-haspopup="true">
+        <span class="sr-only">Open user menu</span>
+        <div class="h-8 w-8 rounded-full bg-kitchen-600 flex items-center justify-center">
+            <span class="text-sm font-medium text-white">
+                U
+            </span>
+        </div>
+        <span class="ml-3 text-sm font-medium text-gray-700">{{ user.email.value }}</span>
+    </button>
+</div>
+{% endblock %}
+
+{% block main_classes %}{% endblock %}
+
+{% block content %}
+<div class="py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Page Header -->
+        <div class="border-b border-gray-200 pb-5">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold leading-tight text-gray-900">
+                        Welcome back!
+                    </h1>
+                    <p class="mt-1 max-w-2xl text-sm text-gray-500">
+                        Your personalized meal planning dashboard for a family of {{ user.profile.family_size.value }}.
+                    </p>
+                </div>
+                <div class="flex space-x-3">
+                    <button type="button" 
+                            class="inline-flex items-center rounded-md bg-kitchen-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-kitchen-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-kitchen-600">
+                        Plan This Week
+                    </button>
+                    <button type="button" 
+                            class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                        View Recipes
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="mt-8">
+            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                <!-- Stat Card: This Week's Meals -->
+                <div class="relative overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:px-6 sm:py-6">
+                    <dt>
+                        <div class="absolute rounded-md bg-kitchen-500 p-3">
+                            <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5a2.25 2.25 0 002.25-2.25m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5a2.25 2.25 0 012.25 2.25v7.5" />
+                            </svg>
+                        </div>
+                        <p class="ml-16 truncate text-sm font-medium text-gray-500">This Week's Meals</p>
+                    </dt>
+                    <dd class="ml-16 flex items-baseline">
+                        <p class="text-2xl font-semibold text-gray-900">5 / 7</p>
+                        <p class="ml-2 flex items-baseline text-sm font-semibold text-green-600">
+                            <svg class="h-5 w-5 flex-shrink-0 self-center text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 17a.75.75 0 01-.75-.75V5.612L5.29 9.77a.75.75 0 01-1.08-1.04l5.25-5.5a.75.75 0 011.08 0l5.25 5.5a.75.75 0 11-1.08 1.04L10.75 5.612V16.25A.75.75 0 0110 17z" clip-rule="evenodd" />
+                            </svg>
+                            71%
+                        </p>
+                    </dd>
+                </div>
+
+                <!-- Stat Card: Cooking Time -->
+                <div class="relative overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:px-6 sm:py-6">
+                    <dt>
+                        <div class="absolute rounded-md bg-orange-500 p-3">
+                            <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <p class="ml-16 truncate text-sm font-medium text-gray-500">Avg. Cooking Time</p>
+                    </dt>
+                    <dd class="ml-16 flex items-baseline">
+                        <p class="text-2xl font-semibold text-gray-900">{{ user.profile.weekday_cooking_minutes }} min</p>
+                        <p class="ml-2 text-sm text-gray-500">weekdays</p>
+                    </dd>
+                </div>
+
+                <!-- Stat Card: Skill Level -->
+                <div class="relative overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:px-6 sm:py-6">
+                    <dt>
+                        <div class="absolute rounded-md bg-purple-500 p-3">
+                            <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423L16.5 15.75l.394 1.183a2.25 2.25 0 001.423 1.423L19.5 18.75l-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+                            </svg>
+                        </div>
+                        <p class="ml-16 truncate text-sm font-medium text-gray-500">Cooking Level</p>
+                    </dt>
+                    <dd class="ml-16 flex items-baseline">
+                        <p class="text-2xl font-semibold text-gray-900">{{ user.profile.cooking_skill_level }}</p>
+                    </dd>
+                </div>
+
+                <!-- Stat Card: Family Size -->
+                <div class="relative overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:px-6 sm:py-6">
+                    <dt>
+                        <div class="absolute rounded-md bg-green-500 p-3">
+                            <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                            </svg>
+                        </div>
+                        <p class="ml-16 truncate text-sm font-medium text-gray-500">Family Size</p>
+                    </dt>
+                    <dd class="ml-16 flex items-baseline">
+                        <p class="text-2xl font-semibold text-gray-900">{{ user.profile.family_size.value }}</p>
+                        <p class="ml-2 text-sm text-gray-500">people</p>
+                    </dd>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <!-- Weekly Meal Calendar -->
+            <div class="lg:col-span-2">
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="px-4 py-5 sm:p-6">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900">This Week's Meals</h3>
+                            <button type="button" 
+                                    class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-kitchen-500">
+                                Plan Week
+                            </button>
+                        </div>
+                        
+                        <div class="mt-6">
+                            <div class="space-y-4">
+                                <!-- Monday -->
+                                <div class="flex items-center justify-between py-3 border-b border-gray-200">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 w-12 text-center">
+                                            <p class="text-sm font-medium text-gray-900">Mon</p>
+                                            <p class="text-xs text-gray-500">Dec 23</p>
+                                        </div>
+                                        <div class="ml-4">
+                                            <p class="text-sm font-medium text-gray-900">Spaghetti Carbonara</p>
+                                            <p class="text-xs text-gray-500">{{ user.profile.weekday_cooking_minutes }} min • {{ user.profile.cooking_skill_level }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            Planned
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Tuesday -->
+                                <div class="flex items-center justify-between py-3 border-b border-gray-200">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 w-12 text-center">
+                                            <p class="text-sm font-medium text-gray-900">Tue</p>
+                                            <p class="text-xs text-gray-500">Dec 24</p>
+                                        </div>
+                                        <div class="ml-4">
+                                            <p class="text-sm font-medium text-gray-500">Not planned yet</p>
+                                            <p class="text-xs text-gray-400">Click to add meal</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <button type="button" 
+                                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 hover:bg-gray-200">
+                                            + Add
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Wednesday through Sunday... -->
+                                <div class="text-center py-8">
+                                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                    </svg>
+                                    <h3 class="mt-2 text-sm font-medium text-gray-900">Complete your weekly plan</h3>
+                                    <p class="mt-1 text-sm text-gray-500">Add more meals to complete your weekly meal planning.</p>
+                                    <div class="mt-6">
+                                        <button type="button" 
+                                                class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-kitchen-600 hover:bg-kitchen-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-kitchen-500">
+                                            Auto-Plan Week
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile & Quick Actions -->
+            <div class="space-y-6">
+                <!-- Profile Summary -->
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="px-4 py-5 sm:p-6">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Your Profile</h3>
+                        <dl class="mt-5 space-y-4">
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Email</dt>
+                                <dd class="mt-1 text-sm text-gray-900">{{ user.email.value }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Family Size</dt>
+                                <dd class="mt-1 text-sm text-gray-900">{{ user.profile.family_size.value }} people</dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Cooking Skill</dt>
+                                <dd class="mt-1 text-sm text-gray-900">{{ user.profile.cooking_skill_level }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Cooking Time</dt>
+                                <dd class="mt-1 text-sm text-gray-900">{{ user.profile.weekday_cooking_minutes }}min weekdays, {{ user.profile.weekend_cooking_minutes }}min weekends</dd>
+                            </div>
+                        </dl>
+                        <div class="mt-5">
+                            <a href="/profile/edit" 
+                               class="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-kitchen-500">
+                                Edit Profile
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="px-4 py-5 sm:p-6">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Quick Actions</h3>
+                        <div class="mt-5 space-y-3">
+                            <a href="/recipes/discover" 
+                               class="w-full flex items-center justify-center py-2 px-4 border border-transparent rounded-md shadow-sm bg-kitchen-600 text-sm font-medium text-white hover:bg-kitchen-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-kitchen-500">
+                                Discover Recipes
+                            </a>
+                            <a href="/shopping/list" 
+                               class="w-full flex items-center justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-kitchen-500">
+                                Shopping List
+                            </a>
+                            <a href="/meal-planning" 
+                               class="w-full flex items-center justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-kitchen-500">
+                                Weekly Planner
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

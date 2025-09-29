@@ -1,0 +1,8 @@
+<!-- Validation error fragment template for TwinSpark responses -->
+{% if !errors.is_empty() %}
+    {% for (field, field_errors) in errors %}
+        {% for error in field_errors %}
+            <div class="text-red-600 text-sm">{{ error }}</div>
+        {% endfor %}
+    {% endfor %}
+{% endif %}

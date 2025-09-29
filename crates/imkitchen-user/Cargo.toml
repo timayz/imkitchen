@@ -12,7 +12,14 @@ serde = { workspace = true }
 uuid = { workspace = true }
 chrono = { workspace = true }
 validator = { workspace = true }
-# evento = { workspace = true }
 thiserror = { workspace = true }
-# bincode = "1.3"
+sqlx = { workspace = true }
+regex = { workspace = true }
+async-trait = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+bincode = "1.3"
 imkitchen-shared = { path = "../imkitchen-shared" }
+
+[dev-dependencies]
+tokio = { workspace = true }

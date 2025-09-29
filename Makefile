@@ -163,4 +163,4 @@ outdated:
 	cargo outdated
 
 claude.git:
-	@echo "git create branch,commit,push,get story issue id search by title than create PR that close it when merged"
+	@echo "git create branch,commit,push,create PR that closed #[] when merged"

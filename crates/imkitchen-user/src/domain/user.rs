@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
 
-use crate::events::{UserLoggedIn, UserPasswordChanged, UserProfileUpdated};
+use crate::events::{UserLoggedIn, UserPasswordChanged, UserProfileUpdated, UserRegistered, PasswordChangeReason};
 
 /// User aggregate root with Evento event sourcing
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
@@ -59,20 +59,59 @@ impl Default for UserProfile {
 
 // Core User domain methods
 impl User {
-    /// Create a new User - this will later be integrated with Evento
-    pub fn new(email: Email, password: Password, profile: UserProfile) -> Self {
+    /// Create a new User and return both the user and the registration event
+    pub fn new(email: Email, password: Password, profile: UserProfile) -> (Self, UserRegistered) {
         let user_id = Uuid::new_v4();
         let now = Utc::now();
+        let password_hash = password.hash();
 
-        Self {
+        let user = Self {
             user_id,
-            email,
-            password_hash: password.hash(),
-            profile,
+            email: email.clone(),
+            password_hash: password_hash.clone(),
+            profile: profile.clone(),
             is_email_verified: false,
             created_at: now,
             updated_at: now,
-        }
+        };
+
+        let event = UserRegistered::basic(user_id, email, password_hash, profile);
+
+        (user, event)
+    }
+
+    /// Create a new User with registration context (IP, user agent)
+    pub fn new_with_context(
+        email: Email,
+        password: Password,
+        profile: UserProfile,
+        registration_ip: Option<String>,
+        user_agent: Option<String>,
+    ) -> (Self, UserRegistered) {
+        let user_id = Uuid::new_v4();
+        let now = Utc::now();
+        let password_hash = password.hash();
+
+        let user = Self {
+            user_id,
+            email: email.clone(),
+            password_hash: password_hash.clone(),
+            profile: profile.clone(),
+            is_email_verified: false,
+            created_at: now,
+            updated_at: now,
+        };
+
+        let event = UserRegistered::new(
+            user_id,
+            email,
+            password_hash,
+            profile,
+            registration_ip,
+            user_agent,
+        );
+
+        (user, event)
     }
 
     /// Record user login
@@ -81,22 +120,59 @@ impl User {
             return Err(UserError::EmailNotVerified);
         }
 
-        Ok(UserLoggedIn {
-            user_id: self.user_id,
-            logged_in_at: Utc::now(),
-        })
+        Ok(UserLoggedIn::basic(self.user_id))
     }
 
-    /// Change user password
+    /// Record user login with context (IP, user agent, session)
+    pub fn login_with_context(
+        &self,
+        login_ip: Option<String>,
+        user_agent: Option<String>,
+        session_id: Option<String>,
+    ) -> Result<UserLoggedIn, UserError> {
+        if !self.is_email_verified {
+            return Err(UserError::EmailNotVerified);
+        }
+
+        Ok(UserLoggedIn::new(self.user_id, login_ip, user_agent, session_id))
+    }
+
+    /// Change user password (voluntary change)
     pub fn change_password(&mut self, new_password: Password) -> UserPasswordChanged {
+        let previous_hash = Some(self.password_hash.clone());
         self.password_hash = new_password.hash();
         self.updated_at = Utc::now();
 
-        UserPasswordChanged {
-            user_id: self.user_id,
-            password_hash: self.password_hash.clone(),
-            changed_at: self.updated_at,
-        }
+        UserPasswordChanged::new(
+            self.user_id,
+            self.password_hash.clone(),
+            PasswordChangeReason::Voluntary,
+            None,
+            None,
+            previous_hash,
+        )
+    }
+
+    /// Change user password with context and reason
+    pub fn change_password_with_context(
+        &mut self,
+        new_password: Password,
+        reason: PasswordChangeReason,
+        change_ip: Option<String>,
+        user_agent: Option<String>,
+    ) -> UserPasswordChanged {
+        let previous_hash = Some(self.password_hash.clone());
+        self.password_hash = new_password.hash();
+        self.updated_at = Utc::now();
+
+        UserPasswordChanged::new(
+            self.user_id,
+            self.password_hash.clone(),
+            reason,
+            change_ip,
+            user_agent,
+            previous_hash,
+        )
     }
 
     /// Update user profile

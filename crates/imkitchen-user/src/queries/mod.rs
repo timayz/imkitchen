@@ -1,14 +1,13 @@
 // CQRS queries for user data
 
+pub mod email_queries;
+pub mod user_queries;
+
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UserByIdQuery {
-    pub user_id: Uuid,
-}
+// Re-export email query handlers
+pub use email_queries::*;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UserByEmailQuery {
-    pub email: String,
-}
+// Re-export user query handlers
+pub use user_queries::*;

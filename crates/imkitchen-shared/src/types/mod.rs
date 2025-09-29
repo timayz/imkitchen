@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use validator::Validate;
 
 /// Email address value object with validation
-#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+#[derive(Debug, Clone, Serialize, Deserialize, Validate, PartialEq, Eq)]
 pub struct Email {
     #[validate(email)]
     pub value: String,
@@ -19,7 +19,7 @@ impl Email {
 }
 
 /// Family size with validation (1-8 people)
-#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Validate, PartialEq, Eq)]
 pub struct FamilySize {
     #[validate(range(min = 1, max = 8))]
     pub value: u8,
@@ -31,14 +31,34 @@ impl FamilySize {
         family_size.validate()?;
         Ok(family_size)
     }
+
+    // Convenience constants for common family sizes
+    pub const Family1: FamilySize = FamilySize { value: 1 };
+    pub const Family2: FamilySize = FamilySize { value: 2 };
+    pub const Family3: FamilySize = FamilySize { value: 3 };
+    pub const Family4: FamilySize = FamilySize { value: 4 };
+    pub const Family5: FamilySize = FamilySize { value: 5 };
+    pub const Family6: FamilySize = FamilySize { value: 6 };
+    pub const Family7: FamilySize = FamilySize { value: 7 };
+    pub const Family8: FamilySize = FamilySize { value: 8 };
 }
 
 /// Cooking skill level enumeration
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum SkillLevel {
     Beginner,
     Intermediate,
     Advanced,
+}
+
+impl std::fmt::Display for SkillLevel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SkillLevel::Beginner => write!(f, "Beginner"),
+            SkillLevel::Intermediate => write!(f, "Intermediate"),
+            SkillLevel::Advanced => write!(f, "Advanced"),
+        }
+    }
 }
 
 /// Difficulty level for recipes
@@ -57,7 +77,7 @@ lazy_static::lazy_static! {
 }
 
 /// Password value object with strength validation
-#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+#[derive(Debug, Clone, Serialize, Deserialize, Validate, PartialEq, Eq)]
 pub struct Password {
     #[validate(length(
         min = 8,

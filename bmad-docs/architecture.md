@@ -68,7 +68,7 @@ graph TD
 ### Architectural Patterns
 
 - **Domain-Driven Design (DDD):** Bounded contexts as separate crates with ubiquitous language - _Rationale:_ Clear business domain separation and independent evolution of meal planning, recipe management, and user management concerns
-- **Event Sourcing with Evento:** Immutable event streams as single source of truth with aggregate replay - _Rationale:_ Complete audit trails for meal planning decisions, temporal queries for user behavior analysis, and reliable state reconstruction from events
+- **CRUD with Domain Validation:** Direct database operations with domain model validation - _Rationale:_ Simplified development workflow, faster feature delivery, and reduced complexity while maintaining data integrity
 - **Server-Side Rendering (SSR):** Askama templates with progressive enhancement - _Rationale:_ Optimal mobile performance, SEO benefits, and reduced client-side complexity for kitchen environments
 - **Progressive Web App (PWA):** Installable with offline capabilities - _Rationale:_ Native app experience for kitchen usage with unreliable connectivity
 - **Modular Monolith:** Single binary with crate boundaries - _Rationale:_ Type safety across boundaries, simplified deployment, while maintaining domain separation
@@ -84,7 +84,7 @@ graph TD
 | Frontend Language | Rust | 1.90+ | Template rendering logic | Type-safe server-side rendering, shared types between backend/frontend |
 | Frontend Framework | Askama | 0.14+ | HTML template engine | Compile-time template validation, type-safe data binding, performance |
 | UI Component Library | Tailwind CSS | 4.1+ | Utility-first styling | Kitchen-optimized responsive design, rapid development, consistent design system |
-| Event Sourcing | Evento | 1.1+ | Event store and aggregate management | Immutable event streams, aggregate replay, SQL database persistence |
+| Database ORM | SQLx | 0.8+ | Type-safe database operations and migrations | Direct database operations, connection pooling, embedded SQLite support |
 | Database | SQLite | 3.40+ | Event store and projections | Embedded database, excellent Rust support, per-context isolation |
 | Cache | In-Memory | Built-in | Projection caching | Fast query responses, reduced database load |
 | File Storage | Local Filesystem | Built-in | Recipe images, assets | Simple deployment, no external dependencies |

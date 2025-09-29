@@ -16,7 +16,7 @@ fn test_create_user_with_valid_data() {
         weekend_cooking_minutes: 90,
     };
 
-    let user = User::new(email.clone(), password, profile.clone());
+    let (user, _event) = User::new(email.clone(), password, profile.clone());
 
     assert_eq!(user.email.value, "test@example.com");
     assert!(!user.is_email_verified);
@@ -33,7 +33,7 @@ fn test_user_login_requires_email_verification() {
     let password = Password::new("TestPass123!".to_string()).unwrap();
     let profile = UserProfile::default();
 
-    let user = User::new(email, password, profile);
+    let (user, _event) = User::new(email, password, profile);
 
     // Login should fail because email is not verified
     let result = user.login();
@@ -46,7 +46,7 @@ fn test_user_login_succeeds_when_email_verified() {
     let password = Password::new("TestPass123!".to_string()).unwrap();
     let profile = UserProfile::default();
 
-    let mut user = User::new(email, password, profile);
+    let (mut user, _event) = User::new(email, password, profile);
     user.verify_email();
 
     // Login should succeed now

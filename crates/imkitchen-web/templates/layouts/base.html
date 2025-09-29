@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{% block meta_description %}IMKitchen - Intelligent Meal Planning{% endblock %}">
+    <title>{% block title %}IMKitchen{% endblock %}</title>
+    
+    <!-- Tailwind CSS CDN for development -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'kitchen': {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- TwinSpark for progressive enhancement -->
+    <script src="/static/js/twinspark.js" defer></script>
+    
+    {% block head %}{% endblock %}
+</head>
+<body class="h-full">
+    <div class="min-h-full">
+        <!-- Navigation -->
+        <nav class="bg-white shadow-sm border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <h1 class="text-2xl font-bold text-kitchen-600">
+                                <a href="/" class="hover:text-kitchen-700 transition-colors">
+                                    🍳 IMKitchen
+                                </a>
+                            </h1>
+                        </div>
+                        {% block nav_links %}
+                        <div class="hidden md:ml-6 md:flex md:space-x-8">
+                            <a href="/" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors">
+                                Home
+                            </a>
+                        </div>
+                        {% endblock %}
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        {% block auth_nav %}
+                        <a href="/auth/login" class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                            Login
+                        </a>
+                        <a href="/auth/register" class="bg-kitchen-600 hover:bg-kitchen-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                            Sign up
+                        </a>
+                        {% endblock %}
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main content -->
+        <main class="{% block main_classes %}{% endblock %}">
+            {% block content %}{% endblock %}
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-white border-t border-gray-200 mt-auto">
+            <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center">
+                    <p class="text-gray-500 text-sm">
+                        © 2025 IMKitchen. Intelligent meal planning for busy families.
+                    </p>
+                    <div class="flex space-x-6">
+                        <a href="/health" class="text-gray-400 hover:text-gray-500 text-sm transition-colors">
+                            Health Check
+                        </a>
+                        <a href="/metrics" class="text-gray-400 hover:text-gray-500 text-sm transition-colors">
+                            Metrics
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>
