@@ -1,0 +1,105 @@
+<!-- Bottom Navigation Component -->
+<!-- Kitchen-optimized bottom navigation bar for mobile devices -->
+
+<nav class="md:hidden bg-white border-t border-gray-200 fixed bottom-0 left-0 right-0 z-50 kitchen-touch" 
+     role="navigation" 
+     aria-label="Main navigation">
+    <div class="grid grid-cols-4 h-16">
+        <!-- Home -->
+        <a href="/" 
+           class="touch-target flex flex-col items-center justify-center space-y-1 text-gray-600 hover:text-kitchen-600 active:bg-gray-100 transition-colors kitchen-touch kitchen-focus"
+           aria-label="Go to home dashboard"
+           data-nav-item="home">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+            </svg>
+            <span class="text-xs font-medium">Home</span>
+        </a>
+        
+        <!-- Recipes -->
+        <a href="/recipes/discover" 
+           class="touch-target flex flex-col items-center justify-center space-y-1 text-gray-600 hover:text-kitchen-600 active:bg-gray-100 transition-colors kitchen-touch kitchen-focus"
+           aria-label="Discover recipes"
+           data-nav-item="recipes">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <span class="text-xs font-medium">Recipes</span>
+        </a>
+        
+        <!-- Meal Plans -->
+        <a href="/meal-plans/current" 
+           class="touch-target flex flex-col items-center justify-center space-y-1 text-gray-600 hover:text-kitchen-600 active:bg-gray-100 transition-colors kitchen-touch kitchen-focus"
+           aria-label="View current meal plan"
+           data-nav-item="meal-plans">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <span class="text-xs font-medium">Plan</span>
+        </a>
+        
+        <!-- Shopping -->
+        <a href="/shopping-lists/current" 
+           class="touch-target flex flex-col items-center justify-center space-y-1 text-gray-600 hover:text-kitchen-600 active:bg-gray-100 transition-colors kitchen-touch kitchen-focus"
+           aria-label="View shopping list"
+           data-nav-item="shopping">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5H17"/>
+            </svg>
+            <span class="text-xs font-medium">Shop</span>
+        </a>
+    </div>
+</nav>
+
+<!-- Progressive Enhancement Script for Active State Management -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Update active navigation state based on current page
+    const currentPath = window.location.pathname;
+    const navItems = document.querySelectorAll('[data-nav-item]');
+    
+    navItems.forEach(item => {
+        const href = item.getAttribute('href');
+        const navItem = item.getAttribute('data-nav-item');
+        
+        // Remove any existing active classes
+        item.classList.remove('text-kitchen-600', 'bg-kitchen-50');
+        
+        // Determine if this nav item should be active
+        let isActive = false;
+        
+        if (currentPath === '/' && navItem === 'home') {
+            isActive = true;
+        } else if (currentPath.startsWith('/recipes') && navItem === 'recipes') {
+            isActive = true;
+        } else if (currentPath.startsWith('/meal-plans') && navItem === 'meal-plans') {
+            isActive = true;
+        } else if (currentPath.startsWith('/shopping') && navItem === 'shopping') {
+            isActive = true;
+        }
+        
+        // Apply active state
+        if (isActive) {
+            item.classList.add('text-kitchen-600', 'bg-kitchen-50');
+            item.setAttribute('aria-current', 'page');
+        } else {
+            item.removeAttribute('aria-current');
+        }
+    });
+    
+    // Add haptic-like feedback for touch interactions
+    navItems.forEach(item => {
+        item.addEventListener('touchstart', function() {
+            this.style.transform = 'scale(0.95)';
+        }, { passive: true });
+        
+        item.addEventListener('touchend', function() {
+            this.style.transform = 'scale(1)';
+        }, { passive: true });
+        
+        item.addEventListener('touchcancel', function() {
+            this.style.transform = 'scale(1)';
+        }, { passive: true });
+    });
+});
+</script>

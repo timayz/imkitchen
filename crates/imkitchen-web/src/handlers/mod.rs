@@ -1,14 +1,24 @@
 pub mod async_validation;
 pub mod auth;
+pub mod collections;
 pub mod dashboard;
 pub mod health;
+pub mod meal_plans;
 pub mod metrics;
 pub mod profile;
+pub mod pwa;
+pub mod recipes;
+pub mod shopping;
 
 // Re-export handlers
 pub use async_validation::*;
 pub use auth::*;
+pub use collections::*;
 pub use dashboard::*;
 pub use health::*;
+pub use meal_plans::*;
 pub use metrics::*;
 pub use profile::*;
+pub use pwa::*;
+pub use recipes::*;
+pub use shopping::*;
