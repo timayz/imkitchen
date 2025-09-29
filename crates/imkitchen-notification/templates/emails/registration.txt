@@ -1,0 +1,25 @@
+Welcome to {{ app_name }}!
+
+Hi {{ user_name }},
+
+Welcome to {{ app_name }}! We're excited to help you transform your meal planning and cooking experience.
+
+PLEASE VERIFY YOUR EMAIL ADDRESS TO GET STARTED:
+{{ verification_url }}
+
+Once you've verified your email, you'll be able to:
+• Create personalized weekly meal plans
+• Discover recipes tailored to your preferences  
+• Generate smart shopping lists
+• Track your cooking progress
+
+If you didn't create an account with us, you can safely ignore this email.
+
+Happy cooking!
+The {{ app_name }} Team
+
+---
+
+This email was sent by {{ app_name }}. If you have any questions, feel free to contact our support team.
+
+Verification URL: {{ verification_url }}
