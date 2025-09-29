@@ -1,5 +1,6 @@
 pub mod data;
 pub mod renderer;
+#[allow(clippy::module_inception)]
 pub mod templates;
 
 pub use data::{
