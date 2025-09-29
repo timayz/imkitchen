@@ -4,7 +4,11 @@ pub mod metrics;
 pub mod middleware;
 pub mod shutdown;
 
-use axum::{middleware::from_fn_with_state, routing::get, Router};
+use axum::{
+    middleware::from_fn_with_state,
+    routing::{get, post},
+    Router,
+};
 use std::net::SocketAddr;
 use std::time::Duration;
 use tower_http::{services::ServeDir, trace::TraceLayer};
@@ -16,16 +20,47 @@ pub use handlers::metrics::metrics_handler;
 pub use metrics::AppMetrics;
 pub use shutdown::{GracefulShutdown, ResourceCleanup};
 
-/// Enhanced web server application state with metrics
+// Import user authentication services
+use imkitchen_user::commands::register_user::RegisterUserService;
+use imkitchen_user::queries::UserQueryHandler;
+use imkitchen_user::services::login_service::DirectLoginService;
+
+/// Enhanced web server application state with metrics and user services
 #[derive(Clone)]
 pub struct AppState {
     pub health_state: HealthCheckState,
     pub metrics: AppMetrics,
+    pub login_service: Option<DirectLoginService>,
+    pub user_query_handler: Option<UserQueryHandler>,
+    pub register_service: Option<RegisterUserService>,
 }
 
 /// Create the main application router with database pool and metrics
 pub fn create_app_with_metrics(db_pool: Option<sqlx::SqlitePool>, metrics: AppMetrics) -> Router {
-    let health_state = HealthCheckState::new(db_pool);
+    let health_state = HealthCheckState::new(db_pool.clone());
+
+    // Initialize user services if database is available
+    let (login_service, user_query_handler, register_service) = if let Some(ref pool) = db_pool {
+        let login_service = DirectLoginService::new(pool.clone());
+        let user_query_handler = UserQueryHandler::new(pool.clone());
+        let register_service = RegisterUserService::with_database(pool.clone());
+        (
+            Some(login_service),
+            Some(user_query_handler),
+            Some(register_service),
+        )
+    } else {
+        (None, None, None)
+    };
+
+    // Create unified app state
+    let app_state = AppState {
+        health_state: health_state.clone(),
+        metrics: metrics.clone(),
+        login_service,
+        user_query_handler,
+        register_service,
+    };
 
     // Set application info in metrics
     metrics.set_app_info(env!("CARGO_PKG_VERSION"), env!("CARGO_PKG_RUST_VERSION"));
@@ -40,10 +75,50 @@ pub fn create_app_with_metrics(db_pool: Option<sqlx::SqlitePool>, metrics: AppMe
         .route("/metrics", get(handlers::metrics::metrics_handler))
         .with_state(metrics.clone());
 
-    // Combine routers with metrics middleware
+    // Create auth router with app state
+    let mut auth_router = Router::new()
+        .route("/auth/login", get(handlers::auth::login_page))
+        .route("/auth/login", post(handlers::auth::login_handler))
+        .route("/auth/register", get(handlers::auth::register_page))
+        .route("/auth/register", post(handlers::auth::register_handler))
+        .with_state(app_state.clone());
+
+    // Create dashboard router with auth middleware
+    let dashboard_router = Router::new()
+        .route("/dashboard", get(handlers::dashboard::user_dashboard))
+        .route("/", get(handlers::dashboard::user_dashboard)) // Root redirects to dashboard for demo
+        .layer(from_fn_with_state(
+            app_state.clone(),
+            crate::middleware::auth::auth_middleware,
+        ))
+        .with_state(app_state.clone());
+
+    // Add async validation routes if we have a database pool
+    if let Some(pool) = db_pool.clone() {
+        let async_validation_router = Router::new()
+            .route(
+                "/api/validate/email",
+                get(handlers::async_validation::validate_email_async),
+            )
+            .route(
+                "/api/validate/email",
+                post(handlers::async_validation::validate_email_form),
+            )
+            .route(
+                "/api/validate/username",
+                get(handlers::async_validation::validate_username_async),
+            )
+            .with_state(pool);
+
+        auth_router = auth_router.merge(async_validation_router);
+    }
+
+    // Combine routers with middleware layers
     Router::new()
+        .merge(dashboard_router)
         .merge(health_router)
         .merge(metrics_router)
+        .merge(auth_router)
         .nest_service("/static", ServeDir::new("crates/imkitchen-web/static"))
         .layer(from_fn_with_state(
             metrics,

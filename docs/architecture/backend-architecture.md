@@ -25,7 +25,7 @@ src/
 #### Controller Template
 ```rust
 use axum::{extract::State, response::Html, Form};
-use crate::domain::meal_planning::{GenerateMealPlanCommand, MealPlanningService};
+use crate::domain::meal_planning::{GenerateMealPlanRequest, MealPlanningService};
 use crate::templates::calendar::WeeklyCalendarTemplate;
 use crate::auth::AuthenticatedUser;
 
@@ -37,10 +37,9 @@ pub async fn generate_meal_plan_handler(
     // Validate request
     request.validate()?;
     
-    // Execute command through meal planning crate
-    let command = GenerateMealPlanCommand::new(user.id, request.into());
+    // Execute business logic through meal planning service
     let meal_plan = app_state.meal_planning_service
-        .handle_generate_command(command)
+        .generate_meal_plan(user.id, request)
         .await?;
     
     // Render response template
@@ -53,13 +52,29 @@ pub async fn generate_meal_plan_handler(
 
 ### Schema Design
 ```sql
--- Application-specific read models only
--- Evento manages all event sourcing infrastructure automatically
+-- Direct SQLite schema for application data
+CREATE TABLE recipes (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    ingredients TEXT NOT NULL,
+    instructions TEXT NOT NULL,
+    created_by TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE meal_plans (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    week_start DATE NOT NULL,
+    plan_data TEXT NOT NULL, -- JSON
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
 ```
 
 ### Data Access Layer
 ```rust
-use evento::{create, Context};
+use sqlx::{SqlitePool, query_as};
 use axum::{extract::State, response::Html, Form};
 use askama::Template;
 
@@ -70,25 +85,36 @@ pub struct RecipeListTemplate {
     pub search_query: String,
 }
 
-// Direct Axum handler pattern from Evento example
+// Direct database operation with SQLx
 pub async fn create_recipe_handler(
-    State(context): State<Context>,
+    State(pool): State<SqlitePool>,
     user: AuthenticatedUser,
     Form(request): Form<CreateRecipeRequest>,
 ) -> Result<Html<String>, AppError> {
-    // Create recipe event using Evento
-    let recipe_id = create::<Recipe>()
-        .data(&RecipeCreated {
-            title: request.title,
-            ingredients: request.ingredients,
-            instructions: request.instructions,
-            created_by: user.id,
-        })?
-        .commit(&context)
-        .await?;
+    // Validate request
+    request.validate()?;
+    
+    // Insert recipe into database
+    let recipe_id = Uuid::new_v4();
+    sqlx::query!(
+        "INSERT INTO recipes (id, title, ingredients, instructions, created_by) 
+         VALUES (?, ?, ?, ?, ?)",
+        recipe_id.to_string(),
+        request.title,
+        request.ingredients,
+        request.instructions,
+        user.id.to_string()
+    )
+    .execute(&pool)
+    .await?;
 
-    // Load updated recipe to render
-    let recipe = context.load::<Recipe>(&recipe_id).await?;
+    // Load created recipe
+    let recipe = sqlx::query_as!(Recipe,
+        "SELECT * FROM recipes WHERE id = ?",
+        recipe_id.to_string()
+    )
+    .fetch_one(&pool)
+    .await?;
     
     // Return HTML fragment for TwinSpark replacement
     let template = RecipeCardTemplate { recipe };
@@ -96,12 +122,18 @@ pub async fn create_recipe_handler(
 }
 
 pub async fn search_recipes_handler(
-    State(context): State<Context>,
+    State(pool): State<SqlitePool>,
     Query(params): Query<SearchParams>,
 ) -> Result<Html<String>, AppError> {
-    // Query read model for fast search
-    // (Evento handles write side, read model for queries)
-    let recipes = search_recipes_in_read_model(&params.query).await?;
+    // Direct SQL query for search
+    let recipes = sqlx::query_as!(Recipe,
+        "SELECT * FROM recipes WHERE title LIKE ? OR ingredients LIKE ? 
+         ORDER BY created_at DESC LIMIT 50",
+        format!("%{}%", params.query),
+        format!("%{}%", params.query)
+    )
+    .fetch_all(&pool)
+    .await?;
     
     let template = RecipeListTemplate {
         recipes,
@@ -109,17 +141,6 @@ pub async fn search_recipes_handler(
     };
     
     Ok(Html(template.render()?))
-}
-
-// Evento event handlers for side effects (like the todos example)
-#[evento::handler(Recipe)]
-async fn on_recipe_created(
-    context: &Context,
-    event: EventDetails<RecipeCreated>
-) -> Result<()> {
-    // Update search index, send notifications, etc.
-    update_search_index(&event.aggregate_id, &event.data).await?;
-    Ok(())
 }
 ```
 
@@ -132,18 +153,20 @@ sequenceDiagram
     participant W as Web Server
     participant A as Auth Service
     participant UC as User Crate
-    participant E as Evento
+    participant DB as Database
 
     U->>W: POST /auth/login
     W->>A: Validate credentials
     A->>UC: Query user by email
-    UC->>A: User profile with password hash
+    UC->>DB: SELECT user WHERE email = ?
+    DB->>UC: User profile with password hash
+    UC->>A: User profile data
     A->>A: Verify password hash
     A->>A: Generate session token
     A->>W: Set secure session cookie
     W->>U: Redirect to dashboard
     
-    Note over U,E: Subsequent requests
+    Note over U,DB: Subsequent requests
     U->>W: GET /dashboard (with cookie)
     W->>A: Validate session token
     A->>W: User context

@@ -15,13 +15,13 @@ so that I can build a production-ready application with observability and operat
 - Users will verify monitoring dashboards provide useful operational insights
 - Users will test graceful shutdown behavior during deployments
 
-**Developer Agent Responsibilities (TDD + DDD + CQRS + ES + Askama + Crates Required):**
+**Developer Agent Responsibilities (TDD + DDD + CRUD + Askama + Crates Required):**
 1. **Workspace Setup:** Create Cargo.toml workspace with all bounded context crates (imkitchen-user, imkitchen-recipe, imkitchen-meal-planning, imkitchen-shopping, imkitchen-notification, imkitchen-shared, imkitchen-web)
 2. **CLI Binary (clap 4.5+):** Root imkitchen binary with clap 4.5+ for command parsing, subcommands (web start, web stop, migrate up, migrate down, migrate status)
 3. **Monitoring Stack:** tracing 0.1+, tracing-subscriber 0.3+, tracing-appender for structured logging with JSON output and log rotation
 4. **Graceful Shutdown:** tokio signal handling with proper resource cleanup, database connection draining, and in-flight request completion
 5. **Health Check Endpoint:** `/health` endpoint with database connectivity, event store status, and dependency health checks
-6. **Metrics Collection:** prometheus 0.13+ metrics for request counts, response times, database query performance, and Evento event processing
+6. **Metrics Collection:** prometheus 0.13+ metrics for request counts, response times, database query performance, and database query processing
 7. **CLI Configuration:** clap configuration with environment variable overrides, config file loading, and validation using validator 0.20+
 8. **Server Lifecycle Management:** Proper server startup, graceful shutdown signals (SIGTERM, SIGINT), and resource cleanup procedures
 9. **TDD CLI Testing:** Command parsing tests, configuration validation tests, and integration tests for all CLI operations
@@ -76,23 +76,23 @@ so that I can access personalized meal planning features.
 - Users will provide feedback on form usability and error messages
 - Users will validate email verification workflow works correctly
 
-**Developer Agent Responsibilities (TDD + DDD + CQRS + ES + Askama + Crates Required):**
+**Developer Agent Responsibilities (TDD + DDD + CRUD + Askama + Crates Required):**
 1. **User Crate:** Create imkitchen-user crate with User aggregate, validated value objects (Email, Password with validator derive macros)
-2. **Sync Input Validation:** Email format, password strength validation using validator 0.20+ directly in Axum handlers (no Evento)
-3. **Async Validation Commands:** CheckEmailExistsCommand, ValidateUsernameAvailabilityCommand use Evento for database checks
-4. **Evento Event Sourcing:** UserRegistered, UserLoggedIn, UserPasswordChanged events in user crate with Evento traits and persistence
-5. **Evento Commands (Complex Processes):** RegisterUserCommand (email verification), ResetPasswordCommand (email sending) use Evento handlers
-6. **Direct Operations:** Simple login validation bypasses Evento, complex registration process uses Evento
-7. **Evento Queries in User Crate:** UserByEmailQuery, UserSessionQuery in user crate with Evento query handlers and projection access
+2. **Sync Input Validation:** Email format, password strength validation using validator 0.20+ directly in Axum handlers (direct validation)
+3. **Async Validation Commands:** CheckEmailExistsCommand, ValidateUsernameAvailabilityCommand use direct database queries for validation checks
+4. **database operations Event Sourcing:** UserRegistered, UserLoggedIn, UserPasswordChanged events in user crate with database operations traits and persistence
+5. **database operations Commands (Complex Processes):** RegisterUserCommand (email verification), ResetPasswordCommand (email sending) use database operations handlers
+6. **Direct Operations:** Simple login validation bypasses database operations, complex registration process uses database operations
+7. **database operations Queries in User Crate:** UserByEmailQuery, UserSessionQuery in user crate with database operations query handlers and projection access
 8. **CLI Integration:** imkitchen binary uses imkitchen-web library to start server with dependency on imkitchen-user for authentication
 9. **Askama + Tailwind Templates:** LoginForm.html, RegistrationForm.html, UserDashboard.html with Tailwind utility classes and type-safe binding to user domain
-10. **TwinSpark Sync Validation:** Login form `ts-req` → direct Axum validation → immediate Askama error fragments (no Evento)
-11. **TwinSpark Async Validation:** Email availability check `ts-req` → Evento command → database check → Askama response fragments
+10. **TwinSpark Sync Validation:** Login form `ts-req` → direct Axum validation → immediate Askama error fragments (direct validation)
+11. **TwinSpark Async Validation:** Email availability check `ts-req` → database operations command → database check → Askama response fragments
 12. **JavaScript-Free Forms:** Registration and login forms use TwinSpark with appropriate sync/async validation patterns
 13. **CLI Server Management:** `imkitchen web start` command initializes and runs the web server from imkitchen-web library
-14. **Evento Domain Events:** UserRegistered triggers email verification across crates using Evento event bus inter-crate communication
-15. **TDD Validation Testing:** Write tests first for both sync validation (direct) and async validation (Evento) patterns
-16. **Event Streams:** User aggregate events stored in user crate's Evento streams with concurrency control
+14. **database operations Domain Events:** UserRegistered triggers email verification across crates using database operations event bus inter-crate communication
+15. **TDD Validation Testing:** Write tests first for both sync validation (direct) and async validation (database operations) patterns
+16. **Event Streams:** User aggregate events stored in user crate's database operations streams with concurrency control
 17. **Projection Views:** UserAccountView, UserSessionView in user crate rendered through web crate Askama templates
 18. **Crate Boundaries:** Clear separation between user domain logic (user crate) and presentation logic (web crate)
 
@@ -112,15 +112,15 @@ so that the meal planning system can provide personalized recommendations.
 **Developer Agent Responsibilities (TDD + DDD + CQRS + ES Required):**
 1. **DDD Profile Domain:** UserProfile aggregate with validated DietaryRestrictions, FamilySize (range 1-8), SkillLevel value objects using validator
 2. **Input Validation:** Family size range validation, dietary restrictions enum validation, skill level progression validation
-3. **Evento Event Sourcing:** UserProfileUpdated, DietaryRestrictionsChanged, FamilySizeChanged events with Evento serialization and audit trail
-4. **Evento Commands:** UpdateUserProfileCommand, ChangeDietaryRestrictionsCommand handled by Evento command bus with validation middleware
-5. **Evento Queries:** UserProfileByIdQuery, UserPreferencesQuery processed by Evento query handlers with optimized projection access
+3. **database operations Event Sourcing:** UserProfileUpdated, DietaryRestrictionsChanged, FamilySizeChanged events with database operations serialization and audit trail
+4. **database operations Commands:** UpdateUserProfileCommand, ChangeDietaryRestrictionsCommand handled by database operations command bus with validation middleware
+5. **database operations Queries:** UserProfileByIdQuery, UserPreferencesQuery processed by database operations query handlers with optimized projection access
 6. **Askama Templates:** ProfileEdit.html, PreferencesForm.html, DietaryRestrictionsSelector.html with type-safe preference binding
 7. **TwinSpark Profile Updates:** Profile forms → Axum handlers → validate commands → update projections → render Askama fragments
 8. **Domain Logic:** Encapsulate family size quantity calculations and skill level recommendation logic in validated domain services
-9. **Evento Projections:** UserProfileView, UserPreferencesView maintained by Evento projection builders and rendered through Askama templates
+9. **database operations Projections:** UserProfileView, UserPreferencesView maintained by database operations projection builders and rendered through Askama templates
 10. **TDD Template Validation:** Write template tests first covering preference forms, validation messages, and dynamic updates
-11. **Evento Account Deletion:** UserAccountDeleted event propagated via Evento event bus to trigger cascading deletion across bounded contexts
+11. **database operations Account Deletion:** UserAccountDeleted event propagated via database operations event bus to trigger cascading deletion across bounded contexts
 
 ## Story 1.4: Responsive Web Interface Foundation
 

@@ -4,7 +4,7 @@
 
 Single Rust workspace containing multiple crates organized by bounded contexts and shared utilities. Each service/bounded context has its own dedicated crate providing strong boundaries, independent evolution, and clear dependency management. This approach provides type safety across the full stack while maintaining proper domain separation through workspace crates.
 
-## Service Architecture: DDD + CQRS + Event Sourcing
+## Service Architecture: Domain-Driven CRUD with Bounded Contexts
 
 **Domain-Driven Design (DDD):** Modular monolithic architecture with each bounded context as a separate Rust crate, deployed as a single binary. Core bounded context crates include:
 - **imkitchen-user-crate:** Authentication, user profiles, and account management (separate crate)
@@ -15,20 +15,14 @@ Single Rust workspace containing multiple crates organized by bounded contexts a
 - **imkitchen-shared-crate:** Common domain types, events, and utilities shared across contexts
 - **imkitchen-web-crate:** Axum web server, Askama templates, and HTTP handlers
 
-**CQRS (Command Query Responsibility Segregation):** Separate command and query models with Evento-driven data flows:
-- **Commands:** State-changing operations implemented as Evento commands that generate domain events
-- **Command Handlers:** Evento command handlers validate business rules and emit events to event store
-- **Queries:** Read operations use Evento-maintained projection views for fast data retrieval
-- **Event Store:** Evento-managed single source of truth containing all domain events in chronological order
-- **Projections:** Materialized views built from events using Evento projection builders, optimized for specific query patterns
-- **Event Bus:** Evento event bus ensures reliable event delivery between bounded contexts
-
-**Event Sourcing (ES):** All state changes captured as immutable domain events using Evento:
-- **Evento Event Store:** SQLite-based event storage with automatic serialization, versioning, and replay capabilities
-- **Domain Events:** RecipeCreated, MealPlanned, UserRegistered, ShoppingListGenerated implemented as Evento events
-- **Event Handlers:** Evento event handlers process events to update projections and trigger side effects with guaranteed delivery
-- **Event Streams:** Organized by aggregate ID with Evento stream management and concurrency control
-- **Snapshots:** Periodic aggregate snapshots managed by Evento for performance optimization and fast aggregate reconstruction
+**Simple CRUD Operations:** Direct database operations with domain model validation:
+- **Commands:** State-changing operations implemented as direct SQLx database operations with domain validation
+- **Services:** Domain services encapsulate business logic and coordinate database operations
+- **Queries:** Read operations use optimized SQLx queries with prepared statements for performance
+- **Database:** SQLite with connection pooling for reliable, embedded data persistence
+- **Domain Validation:** Business rules enforced through Rust domain models and validator derive macros
+- **Transactions:** Database transactions ensure data consistency for complex multi-table operations
+- **Migrations:** SQLx migration system for reliable schema evolution and deployment
 
 Technology stack organized by crate:
 
@@ -38,10 +32,10 @@ Technology stack organized by crate:
 - **Server Management:** Integration with imkitchen-web library for web server startup
 
 **Shared Dependencies (All Crates):**
-- **Event System:** Evento 1.1+ for domain event publishing, handling, projection building, and event store management
-- **Serialization:** serde 1.0+ for event serialization with backward compatibility and versioning
+- **Database:** SQLx 0.8+ for type-safe database operations with connection pooling and migrations
+- **Serialization:** serde 1.0+ for JSON serialization with backward compatibility and API integration
 - **Input Validation:** validator 0.20+ for comprehensive input validation with derive macros and custom validators
-- **Monitoring:** Tracing 0.1+ for structured logging, event tracking, and domain observability
+- **Monitoring:** Tracing 0.1+ for structured logging, performance tracking, and domain observability
 - **Configuration:** config 0.15+ for secure secrets and environment variable management
 
 **Web Library Crate (imkitchen-web):**
@@ -54,8 +48,8 @@ Technology stack organized by crate:
 - **CSS Build Process:** Tailwind CLI for CSS compilation with Askama template scanning
 
 **Domain Crates (Each Bounded Context):**
-- **Event Store:** Evento 1.1+ with SQLite3 backend for event sourcing and projection storage per context
-- **CQRS Framework:** Evento 1.1+ based implementation with context-specific command/query handlers
+- **Database Operations:** SQLx 0.8+ with SQLite3 backend for direct CRUD operations and query optimization per context
+- **Domain Services:** Context-specific business logic services with validated input/output operations
 - **Domain Modeling:** Strong typing with Rust enums, structs, and domain-specific value objects per context
 
 **Infrastructure Crates:**
@@ -63,14 +57,14 @@ Technology stack organized by crate:
 - **Internationalization:** rust-i18n for multi-language support (imkitchen-shared-crate)
 
 **Architecture Patterns:** 
-- **DDD + CQRS + ES:** Domain-driven design with command-query separation and event sourcing for robust state management
+- **DDD + Direct CRUD:** Domain-driven design with direct database operations and domain validation for robust state management
 - **Askama + TwinSpark Rendering:** Type-safe server-side HTML templates with declarative interactivity eliminates API and JavaScript complexity
-- **Command Flow (Async/Long Processes):** HTML forms → Evento command handlers → domain aggregates → events → projections → Askama templates → TwinSpark fragments
-- **Validation Flow (Sync):** HTML forms → direct validator validation → Askama templates → TwinSpark error fragments (no Evento for simple validation)
-- **Query Flow:** Read requests → projection queries → Askama templates → server-rendered HTML → TwinSpark declarative interactions
+- **Request Flow:** HTML forms → Axum handlers → domain validation → database operations → Askama templates → TwinSpark fragments
+- **Validation Flow:** HTML forms → validator validation → domain logic → database persistence → Askama templates → TwinSpark error fragments
+- **Query Flow:** Read requests → SQLx queries → domain models → Askama templates → server-rendered HTML → TwinSpark declarative interactions
 - **JavaScript-Minimal Design:** All interactions through TwinSpark HTML attributes (ts-req, ts-trigger, ts-target) without custom JavaScript
 - **Template Safety:** Compile-time HTML template validation with Askama prevents runtime template errors
-- **Event-Driven:** All state changes flow through domain events, enabling audit trails, replay, and temporal queries
+- **Transaction-Based:** Database transactions ensure consistency for complex operations with proper rollback handling
 
 ## Testing Requirements: Test-Driven Development (TDD)
 
@@ -108,19 +102,19 @@ Comprehensive testing pyramid including:
 - **Test Coverage:** Minimum 90% code coverage with comprehensive unit, integration, and end-to-end test suites
 - **Test-First Culture:** No production code commits allowed without corresponding failing tests written first
 - **Continuous Testing:** cargo-watch integration for real-time test execution during development
-- **DDD Testing:** Domain model tests verify business rules, aggregate behavior, and Evento event generation
-- **CQRS Testing:** Separate test suites for Evento command handlers, query handlers, and projection builders
-- **Event Sourcing Testing:** Evento event store tests, event replay tests, and projection consistency validation
-- **Evento Testing:** Command bus tests, event handler tests, projection builder tests, and event stream tests
-- **Integration Testing:** End-to-end tests covering Evento command processing, event propagation, and projection updates
-- **Bounded Context Integration:** Anti-corruption layers between contexts with domain event communication
+- **Domain Testing:** Domain model tests verify business rules, validation logic, and service behavior
+- **Database Testing:** Direct SQLx tests for CRUD operations, query performance, and transaction handling
+- **Service Testing:** Domain service tests covering business logic and database integration patterns
+- **Handler Testing:** Axum handler tests for HTTP endpoints, validation, and response generation
+- **Integration Testing:** End-to-end tests covering request processing, database persistence, and template rendering
+- **Bounded Context Integration:** Clear service interfaces between contexts with shared type definitions
 - **Ubiquitous Language:** Shared domain vocabulary between business stakeholders and development team
-- **Evento Schema Versioning:** Backward-compatible event evolution with Evento's upcasting support for schema migrations
-- **Evento Projection Rebuilding:** Rebuild all projections from events using Evento's replay capabilities for schema changes
-- **Event Persistence:** Evento handles event persistence, serialization, and deserialization with SQLite backend
-- **Command Processing:** Evento command bus with middleware for validation, logging, and error handling
+- **Database Schema Versioning:** Backward-compatible schema evolution with SQLx migration system
+- **Data Migration Support:** Database migration scripts for schema changes and data transformations
+- **Data Persistence:** SQLx handles database operations, connection pooling, and transaction management
+- **Request Processing:** Direct handler processing with middleware for validation, logging, and error handling
 - **Input Validation:** Comprehensive validation using validator crate with domain-specific validation rules
-- **Validation Integration:** Validation integrated into value objects, CQRS commands, and domain services
+- **Validation Integration:** Validation integrated into value objects, domain services, and HTTP handlers
 - **Askama Template Testing:** All HTML templates tested with compile-time validation and runtime integration tests
 - **TwinSpark Pattern:** Server-rendered Askama templates with declarative HTML attributes for JavaScript-free interactivity
 - **Tailwind CSS Integration:** Utility-first styling directly in Askama templates with responsive design classes
@@ -129,12 +123,12 @@ Comprehensive testing pyramid including:
 - **CSS Build Pipeline:** Tailwind CSS compilation with template scanning for optimal bundle size and purging
 - **Template Organization:** Modular template structure with shared layouts, components, and fragments for maintainability
 - **Crate Organization:** Each bounded context implemented as separate Rust crate with clear boundaries and dependencies
-- **Evento Integration:** All domain events, commands, queries, and projections implemented using Evento traits per crate
-- **Event Store Backend:** Evento configured with SQLite backend for embedded, zero-dependency event persistence per context
-- **Command Bus Middleware:** Evento command bus with validation, logging, authentication, and error handling middleware per crate
-- **Event Handlers:** Reliable event processing with Evento's guaranteed delivery and retry mechanisms within each crate
-- **Projection Consistency:** Eventual consistency managed by Evento with projection rebuilding and error recovery per context
-- **Inter-Crate Communication:** Bounded contexts communicate exclusively through Evento domain events
+- **Database Integration:** All domain operations and queries implemented using SQLx with type-safe database access per crate
+- **Database Backend:** SQLx configured with SQLite backend for embedded, zero-dependency data persistence per context
+- **Handler Middleware:** Axum middleware for validation, logging, authentication, and error handling per crate
+- **Service Reliability:** Reliable operation processing with proper error handling and transaction management within each crate
+- **Data Consistency:** Strong consistency managed through database transactions with proper error recovery per context
+- **Inter-Crate Communication:** Bounded contexts communicate through well-defined service interfaces and shared types
 - **Dependency Management:** Clear crate dependencies with shared-crate for common types and anti-corruption layers
 - **CLI Architecture:** Root binary orchestrates all operations through library crates, no direct main.rs in domain crates
 - **Command Structure:** Hierarchical CLI commands with proper error handling and user feedback
@@ -143,9 +137,9 @@ Comprehensive testing pyramid including:
 - **JavaScript-Free Interface:** All user interactions handled via TwinSpark HTML attributes without custom JavaScript development
 - **TwinSpark Patterns:** Form submissions (`ts-req`), live search (`ts-trigger="keyup"`), content updates (`ts-target`), confirmations (`ts-confirm`)
 - **Declarative Interactions:** Dynamic content loading, form validation, and UI updates through HTML data attributes only
-- **Validation Architecture:** Synchronous validation (format, length, required) in Axum handlers; asynchronous validation (database checks, external APIs) via Evento
-- **Performance Optimization:** Direct validation provides immediate feedback; Evento commands handle time-consuming operations without blocking UI
-- **Process Separation:** Simple CRUD operations bypass Evento; complex business processes and external API calls use Evento command handlers
+- **Validation Architecture:** Synchronous validation (format, length, required) in Axum handlers; asynchronous validation (database checks, external APIs) via background services
+- **Performance Optimization:** Direct validation provides immediate feedback; background services handle time-consuming operations without blocking UI
+- **Process Separation:** Simple CRUD operations use direct database access; complex business processes use dedicated service handlers
 - **Tailwind CSS Integration:** Utility-first styling with responsive design, dark mode support, and kitchen-optimized color palette
 - **Template-First Styling:** All CSS classes embedded directly in Askama templates for component co-location and maintainability
 - **Design System:** Consistent Tailwind utilities for spacing, typography, colors, and responsive breakpoints across all components

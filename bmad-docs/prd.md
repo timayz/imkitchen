@@ -128,7 +128,7 @@ Progressive Web App (PWA) optimized for mobile-first experience with Tailwind's 
 
 Single Rust workspace containing multiple crates organized by bounded contexts and shared utilities. Each service/bounded context has its own dedicated crate providing strong boundaries, independent evolution, and clear dependency management. This approach provides type safety across the full stack while maintaining proper domain separation through workspace crates.
 
-### Service Architecture: DDD + CQRS + Event Sourcing
+### Service Architecture: Domain-Driven CRUD with Bounded Contexts
 
 **Domain-Driven Design (DDD):** Modular monolithic architecture with each bounded context as a separate Rust crate, deployed as a single binary. Core bounded context crates include:
 - **imkitchen-user-crate:** Authentication, user profiles, and account management (separate crate)
@@ -139,20 +139,13 @@ Single Rust workspace containing multiple crates organized by bounded contexts a
 - **imkitchen-shared-crate:** Common domain types, events, and utilities shared across contexts
 - **imkitchen-web-crate:** Axum web server, Askama templates, and HTTP handlers
 
-**CQRS (Command Query Responsibility Segregation):** Separate command and query models with Evento-driven data flows:
-- **Commands:** State-changing operations implemented as Evento commands that generate domain events
-- **Command Handlers:** Evento command handlers validate business rules and emit events to event store
-- **Queries:** Read operations use Evento-maintained projection views for fast data retrieval
-- **Event Store:** Evento-managed single source of truth containing all domain events in chronological order
-- **Projections:** Materialized views built from events using Evento projection builders, optimized for specific query patterns
-- **Event Bus:** Evento event bus ensures reliable event delivery between bounded contexts
-
-**Event Sourcing (ES):** All state changes captured as immutable domain events using Evento:
-- **Evento Event Store:** SQLite-based event storage with automatic serialization, versioning, and replay capabilities
-- **Domain Events:** RecipeCreated, MealPlanned, UserRegistered, ShoppingListGenerated implemented as Evento events
-- **Event Handlers:** Evento event handlers process events to update projections and trigger side effects with guaranteed delivery
-- **Event Streams:** Organized by aggregate ID with Evento stream management and concurrency control
-- **Snapshots:** Periodic aggregate snapshots managed by Evento for performance optimization and fast aggregate reconstruction
+**Simple CRUD Operations:** Direct database operations with domain model validation:
+- **Commands:** State-changing operations implemented as direct SQLx database operations with domain validation
+- **Queries:** Read operations use optimized SQLx queries with prepared statements for performance
+- **Database:** SQLite with connection pooling for reliable, embedded data persistence
+- **Domain Validation:** Business rules enforced through Rust domain models and validator derive macros
+- **Transactions:** Database transactions ensure data consistency for complex multi-table operations
+- **Migrations:** SQLx migration system for reliable schema evolution and deployment
 
 Technology stack organized by crate:
 
@@ -162,10 +155,10 @@ Technology stack organized by crate:
 - **Server Management:** Integration with imkitchen-web library for web server startup
 
 **Shared Dependencies (All Crates):**
-- **Event System:** Evento 1.1+ for domain event publishing, handling, projection building, and event store management
-- **Serialization:** serde 1.0+ for event serialization with backward compatibility and versioning
+- **Database:** SQLx 0.8+ for type-safe database operations with connection pooling and migrations
+- **Serialization:** serde 1.0+ for JSON serialization with backward compatibility and API integration
 - **Input Validation:** validator 0.20+ for comprehensive input validation with derive macros and custom validators
-- **Monitoring:** Tracing 0.1+ for structured logging, event tracking, and domain observability
+- **Monitoring:** Tracing 0.1+ for structured logging, performance tracking, and domain observability
 - **Configuration:** config 0.15+ for secure secrets and environment variable management
 
 **Web Library Crate (imkitchen-web):**
@@ -178,8 +171,8 @@ Technology stack organized by crate:
 - **CSS Build Process:** Tailwind CLI for CSS compilation with Askama template scanning
 
 **Domain Crates (Each Bounded Context):**
-- **Event Store:** Evento 1.1+ with SQLite3 backend for event sourcing and projection storage per context
-- **CQRS Framework:** Evento 1.1+ based implementation with context-specific command/query handlers
+- **Database Operations:** SQLx 0.8+ with SQLite3 backend for direct CRUD operations and query optimization per context
+- **Domain Services:** Context-specific business logic services with validated input/output operations
 - **Domain Modeling:** Strong typing with Rust enums, structs, and domain-specific value objects per context
 
 **Infrastructure Crates:**
@@ -187,14 +180,14 @@ Technology stack organized by crate:
 - **Internationalization:** rust-i18n for multi-language support (imkitchen-shared-crate)
 
 **Architecture Patterns:** 
-- **DDD + CQRS + ES:** Domain-driven design with command-query separation and event sourcing for robust state management
+- **DDD + Direct CRUD:** Domain-driven design with direct database operations and domain validation for robust state management
 - **Askama + TwinSpark Rendering:** Type-safe server-side HTML templates with declarative interactivity eliminates API and JavaScript complexity
-- **Command Flow (Async/Long Processes):** HTML forms → Evento command handlers → domain aggregates → events → projections → Askama templates → TwinSpark fragments
-- **Validation Flow (Sync):** HTML forms → direct validator validation → Askama templates → TwinSpark error fragments (no Evento for simple validation)
-- **Query Flow:** Read requests → projection queries → Askama templates → server-rendered HTML → TwinSpark declarative interactions
+- **Request Flow:** HTML forms → Axum handlers → domain validation → database operations → Askama templates → TwinSpark fragments
+- **Validation Flow:** HTML forms → validator validation → domain logic → database persistence → Askama templates → TwinSpark error fragments
+- **Query Flow:** Read requests → SQLx queries → domain models → Askama templates → server-rendered HTML → TwinSpark declarative interactions
 - **JavaScript-Minimal Design:** All interactions through TwinSpark HTML attributes (ts-req, ts-trigger, ts-target) without custom JavaScript
 - **Template Safety:** Compile-time HTML template validation with Askama prevents runtime template errors
-- **Event-Driven:** All state changes flow through domain events, enabling audit trails, replay, and temporal queries
+- **Transaction-Based:** Database transactions ensure consistency for complex operations with proper rollback handling
 
 ### Testing Requirements: Test-Driven Development (TDD)
 
