@@ -5,13 +5,13 @@ use axum::{
     http::{Request, StatusCode},
     Router,
 };
-use tower::ServiceExt;
 use imkitchen_web::create_app;
+use tower::ServiceExt;
 
 #[tokio::test]
 async fn test_login_page_renders() {
     let app = create_app();
-    
+
     let response = app
         .oneshot(
             Request::builder()
@@ -23,10 +23,12 @@ async fn test_login_page_renders() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::OK);
-    
-    let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
-    
+
     // Verify the login page contains expected elements
     assert!(body_str.contains("Welcome back to IMKitchen"));
     assert!(body_str.contains("ts-req=\"/auth/login\""));
@@ -37,7 +39,7 @@ async fn test_login_page_renders() {
 #[tokio::test]
 async fn test_register_page_renders() {
     let app = create_app();
-    
+
     let response = app
         .oneshot(
             Request::builder()
@@ -49,10 +51,12 @@ async fn test_register_page_renders() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::OK);
-    
-    let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
-    
+
     // Verify the registration page contains expected elements
     assert!(body_str.contains("Join IMKitchen"));
     assert!(body_str.contains("ts-req=\"/auth/register\""));
@@ -64,7 +68,7 @@ async fn test_register_page_renders() {
 #[tokio::test]
 async fn test_dashboard_renders() {
     let app = create_app();
-    
+
     let response = app
         .oneshot(
             Request::builder()
@@ -76,10 +80,12 @@ async fn test_dashboard_renders() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::OK);
-    
-    let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
-    
+
     // Verify the dashboard contains expected elements
     assert!(body_str.contains("Welcome back!"));
     assert!(body_str.contains("This Week's Meals"));
@@ -89,7 +95,7 @@ async fn test_dashboard_renders() {
 #[tokio::test]
 async fn test_sync_validation_endpoint() {
     let app = create_app();
-    
+
     // Test with invalid email format
     let response = app
         .oneshot(
@@ -104,10 +110,12 @@ async fn test_sync_validation_endpoint() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::OK);
-    
-    let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
-    
+
     // Should contain validation error fragments
     assert!(body_str.contains("validation") || body_str.contains("error"));
 }
@@ -115,7 +123,7 @@ async fn test_sync_validation_endpoint() {
 #[tokio::test]
 async fn test_login_with_valid_data() {
     let app = create_app();
-    
+
     // Test with valid email and password format
     let response = app
         .oneshot(
@@ -130,11 +138,13 @@ async fn test_login_with_valid_data() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::OK);
-    
+
     // Should process without validation errors
-    let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
-    
+
     // Validation should pass (empty error response or minimal errors)
     assert!(body_str.len() < 1000); // Should be a minimal response for valid input
 }
@@ -142,18 +152,18 @@ async fn test_login_with_valid_data() {
 #[tokio::test]
 async fn test_password_strength_validation() {
     let app = create_app();
-    
+
     // Test various password strength scenarios
     let test_cases = vec![
-        ("test@example.com", "weak", true), // Should fail - too weak
+        ("test@example.com", "weak", true),     // Should fail - too weak
         ("test@example.com", "12345678", true), // Should fail - no special chars
         ("test@example.com", "ValidPass123!", false), // Should pass
         ("test@example.com", "ComplexP@ssw0rd", false), // Should pass
     ];
-    
+
     for (email, password, should_have_errors) in test_cases {
         let body_content = format!("email={}&password={}", email, password);
-        
+
         let response = app
             .clone()
             .oneshot(
@@ -168,10 +178,12 @@ async fn test_password_strength_validation() {
             .unwrap();
 
         assert_eq!(response.status(), StatusCode::OK);
-        
-        let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
         let body_str = String::from_utf8(body.to_vec()).unwrap();
-        
+
         if should_have_errors {
             // Should contain validation errors for weak passwords
             assert!(body_str.contains("password") || body_str.len() > 100);
@@ -185,19 +197,19 @@ async fn test_password_strength_validation() {
 #[tokio::test]
 async fn test_email_format_validation() {
     let app = create_app();
-    
+
     // Test various email format scenarios
     let test_cases = vec![
         ("invalid-email", "ValidPass123!", true), // Should fail - invalid format
-        ("test@", "ValidPass123!", true), // Should fail - incomplete
-        ("test@example", "ValidPass123!", true), // Should fail - no TLD
+        ("test@", "ValidPass123!", true),         // Should fail - incomplete
+        ("test@example", "ValidPass123!", true),  // Should fail - no TLD
         ("test@example.com", "ValidPass123!", false), // Should pass
         ("user.name+tag@example.com", "ValidPass123!", false), // Should pass
     ];
-    
+
     for (email, password, should_have_errors) in test_cases {
         let body_content = format!("email={}&password={}", email, password);
-        
+
         let response = app
             .clone()
             .oneshot(
@@ -212,10 +224,12 @@ async fn test_email_format_validation() {
             .unwrap();
 
         assert_eq!(response.status(), StatusCode::OK);
-        
-        let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
         let body_str = String::from_utf8(body.to_vec()).unwrap();
-        
+
         if should_have_errors {
             // Should contain validation errors for invalid emails
             assert!(body_str.contains("email") || body_str.len() > 100);
@@ -229,7 +243,7 @@ async fn test_email_format_validation() {
 #[tokio::test]
 async fn test_static_files_served() {
     let app = create_app();
-    
+
     // Test that static files are properly served
     let response = app
         .oneshot(
@@ -251,7 +265,7 @@ async fn test_static_files_served() {
 #[tokio::test]
 async fn test_health_check_endpoint() {
     let app = create_app();
-    
+
     let response = app
         .oneshot(
             Request::builder()
@@ -263,10 +277,12 @@ async fn test_health_check_endpoint() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::OK);
-    
-    let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
-    
+
     // Health check should return JSON with status information
     assert!(body_str.contains("status") || body_str.contains("health"));
 }
@@ -274,7 +290,7 @@ async fn test_health_check_endpoint() {
 #[tokio::test]
 async fn test_metrics_endpoint() {
     let app = create_app();
-    
+
     let response = app
         .oneshot(
             Request::builder()
@@ -286,10 +302,12 @@ async fn test_metrics_endpoint() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::OK);
-    
-    let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
-    
+
     // Metrics should return Prometheus format
     assert!(body_str.contains("#") || body_str.contains("TYPE"));
 }
@@ -297,22 +315,13 @@ async fn test_metrics_endpoint() {
 #[tokio::test]
 async fn test_nonexistent_routes_return_404() {
     let app = create_app();
-    
-    let test_routes = vec![
-        "/nonexistent",
-        "/auth/invalid",
-        "/api/invalid",
-    ];
-    
+
+    let test_routes = vec!["/nonexistent", "/auth/invalid", "/api/invalid"];
+
     for route in test_routes {
         let response = app
             .clone()
-            .oneshot(
-                Request::builder()
-                    .uri(route)
-                    .body(Body::empty())
-                    .unwrap(),
-            )
+            .oneshot(Request::builder().uri(route).body(Body::empty()).unwrap())
             .await
             .unwrap();
 

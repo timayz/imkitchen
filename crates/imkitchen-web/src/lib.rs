@@ -4,7 +4,11 @@ pub mod metrics;
 pub mod middleware;
 pub mod shutdown;
 
-use axum::{middleware::from_fn_with_state, routing::{get, post}, Router};
+use axum::{
+    middleware::from_fn_with_state,
+    routing::{get, post},
+    Router,
+};
 use std::net::SocketAddr;
 use std::time::Duration;
 use tower_http::{services::ServeDir, trace::TraceLayer};
@@ -17,9 +21,9 @@ pub use metrics::AppMetrics;
 pub use shutdown::{GracefulShutdown, ResourceCleanup};
 
 // Import user authentication services
-use imkitchen_user::services::login_service::DirectLoginService;
-use imkitchen_user::queries::UserQueryHandler;
 use imkitchen_user::commands::register_user::RegisterUserService;
+use imkitchen_user::queries::UserQueryHandler;
+use imkitchen_user::services::login_service::DirectLoginService;
 
 /// Enhanced web server application state with metrics and user services
 #[derive(Clone)]
@@ -40,7 +44,11 @@ pub fn create_app_with_metrics(db_pool: Option<sqlx::SqlitePool>, metrics: AppMe
         let login_service = DirectLoginService::new(pool.clone());
         let user_query_handler = UserQueryHandler::new(pool.clone());
         let register_service = RegisterUserService::with_database(pool.clone());
-        (Some(login_service), Some(user_query_handler), Some(register_service))
+        (
+            Some(login_service),
+            Some(user_query_handler),
+            Some(register_service),
+        )
     } else {
         (None, None, None)
     };
@@ -74,7 +82,7 @@ pub fn create_app_with_metrics(db_pool: Option<sqlx::SqlitePool>, metrics: AppMe
         .route("/auth/register", get(handlers::auth::register_page))
         .route("/auth/register", post(handlers::auth::register_handler))
         .with_state(app_state.clone());
-    
+
     // Create dashboard router with auth middleware
     let dashboard_router = Router::new()
         .route("/dashboard", get(handlers::dashboard::user_dashboard))
@@ -88,11 +96,20 @@ pub fn create_app_with_metrics(db_pool: Option<sqlx::SqlitePool>, metrics: AppMe
     // Add async validation routes if we have a database pool
     if let Some(pool) = db_pool.clone() {
         let async_validation_router = Router::new()
-            .route("/api/validate/email", get(handlers::async_validation::validate_email_async))
-            .route("/api/validate/email", post(handlers::async_validation::validate_email_form))
-            .route("/api/validate/username", get(handlers::async_validation::validate_username_async))
+            .route(
+                "/api/validate/email",
+                get(handlers::async_validation::validate_email_async),
+            )
+            .route(
+                "/api/validate/email",
+                post(handlers::async_validation::validate_email_form),
+            )
+            .route(
+                "/api/validate/username",
+                get(handlers::async_validation::validate_username_async),
+            )
             .with_state(pool);
-        
+
         auth_router = auth_router.merge(async_validation_router);
     }
 

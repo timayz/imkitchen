@@ -11,13 +11,13 @@ use imkitchen_shared::{Email, Password};
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub struct InitiatePasswordResetCommand {
     pub email: Email,
-    
+
     /// IP address from which reset was requested
     pub request_ip: Option<String>,
-    
+
     /// User agent string
     pub user_agent: Option<String>,
-    
+
     /// Request ID for tracking
     pub request_id: Option<Uuid>,
 }
@@ -50,15 +50,15 @@ impl InitiatePasswordResetCommand {
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub struct CompletePasswordResetCommand {
     pub reset_token: String,
-    
+
     pub new_password: Password,
-    
+
     /// IP address from which reset was completed
     pub completion_ip: Option<String>,
-    
+
     /// User agent string
     pub user_agent: Option<String>,
-    
+
     /// Request ID for tracking
     pub request_id: Option<Uuid>,
 }
@@ -156,6 +156,12 @@ pub struct PasswordResetService {
     // - Event store for storing events
 }
 
+impl Default for PasswordResetService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PasswordResetService {
     pub fn new() -> Self {
         Self {}
@@ -217,28 +223,28 @@ impl PasswordResetService {
 pub enum PasswordResetError {
     #[error("User not found")]
     UserNotFound,
-    
+
     #[error("Invalid reset token")]
     InvalidToken,
-    
+
     #[error("Reset token has expired")]
     TokenExpired,
-    
+
     #[error("Reset token has already been used")]
     TokenAlreadyUsed,
-    
+
     #[error("Password does not meet requirements")]
     InvalidPassword,
-    
+
     #[error("Validation error: {0}")]
     ValidationError(#[from] validator::ValidationErrors),
-    
+
     #[error("Database error: {0}")]
     DatabaseError(String),
-    
+
     #[error("Email service error: {0}")]
     EmailServiceError(String),
-    
+
     #[error("Internal server error: {0}")]
     InternalError(String),
 }

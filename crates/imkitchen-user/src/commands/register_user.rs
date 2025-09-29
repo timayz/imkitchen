@@ -4,28 +4,28 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
 
-use imkitchen_shared::{Email, FamilySize, Password, SkillLevel};
 use crate::domain::{User, UserProfile};
+use imkitchen_shared::{Email, FamilySize, Password, SkillLevel};
 
 /// Command for registering a new user with email verification workflow
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub struct RegisterUserCommand {
     pub email: Email,
-    
+
     pub password: Password,
-    
+
     pub family_size: FamilySize,
-    
+
     pub cooking_skill_level: SkillLevel,
-    
+
     /// Optional meal planning preferences
     pub weekday_cooking_minutes: Option<u32>,
     pub weekend_cooking_minutes: Option<u32>,
-    
+
     /// Registration context for security audit
     pub registration_ip: Option<String>,
     pub user_agent: Option<String>,
-    
+
     /// Optional request ID for tracking
     pub request_id: Option<Uuid>,
 }
@@ -96,13 +96,21 @@ pub struct RegisterUserService {
     db_pool: Option<sqlx::SqlitePool>,
 }
 
+impl Default for RegisterUserService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RegisterUserService {
     pub fn new() -> Self {
         Self { db_pool: None }
     }
 
     pub fn with_database(db_pool: sqlx::SqlitePool) -> Self {
-        Self { db_pool: Some(db_pool) }
+        Self {
+            db_pool: Some(db_pool),
+        }
     }
 
     /// Handle user registration command
@@ -150,10 +158,11 @@ impl RegisterUserService {
             let user_id_str = user.user_id.to_string();
             let family_size_i64 = user.profile.family_size.value as i64;
             let skill_level_str = user.profile.cooking_skill_level.to_string();
-            let dietary_restrictions_json = serde_json::to_string(&user.profile.dietary_restrictions).unwrap_or_default();
+            let dietary_restrictions_json =
+                serde_json::to_string(&user.profile.dietary_restrictions).unwrap_or_default();
             let created_at_str = user.created_at.to_rfc3339();
             let updated_at_str = user.updated_at.to_rfc3339();
-            
+
             sqlx::query!(
                 r#"
                 INSERT INTO user_profiles (
@@ -199,22 +208,22 @@ impl RegisterUserService {
 pub enum RegisterUserError {
     #[error("Email already exists")]
     EmailAlreadyExists,
-    
+
     #[error("Invalid email format")]
     InvalidEmail,
-    
+
     #[error("Password does not meet requirements")]
     InvalidPassword,
-    
+
     #[error("Validation error: {0}")]
     ValidationError(#[from] validator::ValidationErrors),
-    
+
     #[error("Database error: {0}")]
     DatabaseError(String),
-    
+
     #[error("Email service error: {0}")]
     EmailServiceError(String),
-    
+
     #[error("Internal server error: {0}")]
     InternalError(String),
 }

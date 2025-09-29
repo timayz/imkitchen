@@ -29,7 +29,7 @@ impl EmailExistsQueryHandler {
             .bind(email)
             .fetch_one(&self.db_pool)
             .await?;
-            
+
         let count: i64 = row.get("count");
         let exists = count > 0;
 
@@ -51,11 +51,11 @@ impl EmailExistsQueryHandler {
             .bind(username)
             .fetch_one(&self.db_pool)
             .await?;
-            
+
         let count: i64 = row.get("count");
         let exists = count > 0;
         let available = !exists;
-        
+
         let suggestions = if !available {
             generate_email_suggestions(username)
         } else {
@@ -82,7 +82,8 @@ fn generate_email_suggestions(email: &str) -> Vec<String> {
         ];
 
         // Filter out invalid suggestions using email regex
-        let email_regex = regex::Regex::new(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$").unwrap();
+        let email_regex =
+            regex::Regex::new(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$").unwrap();
         base_suggestions
             .into_iter()
             .filter(|s| email_regex.is_match(s))
@@ -105,11 +106,14 @@ impl UserRepository {
     }
 
     /// Find user by email address
-    pub async fn find_by_email(&self, email: &str) -> Result<Option<UserRecord>, EmailValidationError> {
+    pub async fn find_by_email(
+        &self,
+        email: &str,
+    ) -> Result<Option<UserRecord>, EmailValidationError> {
         let row = sqlx::query(
             "SELECT id, email, password_hash, family_size, skill_level, 
              created_at, updated_at 
-             FROM user_profiles WHERE email = ?"
+             FROM user_profiles WHERE email = ?",
         )
         .bind(email)
         .fetch_optional(&self.db_pool)
@@ -139,7 +143,7 @@ impl UserRepository {
             .bind(email)
             .fetch_one(&self.db_pool)
             .await?;
-            
+
         let count: i64 = row.get("count");
         Ok(count > 0)
     }
@@ -168,7 +172,8 @@ mod tests {
         let suggestions = generate_email_suggestions("john@example.com");
         assert!(suggestions.len() <= 3);
         assert!(suggestions.iter().all(|s| s.contains("@example.com")));
-        let email_regex = regex::Regex::new(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$").unwrap();
+        let email_regex =
+            regex::Regex::new(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$").unwrap();
         assert!(suggestions.iter().all(|s| email_regex.is_match(s)));
     }
 

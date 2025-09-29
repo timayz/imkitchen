@@ -6,16 +6,16 @@ use sqlx::SqlitePool;
 use uuid::Uuid;
 use validator::Validate;
 
-use imkitchen_shared::{Email, Password};
 use crate::domain::Session;
 use crate::queries::UserRepository;
+use imkitchen_shared::{Email, Password};
 
 /// Simple login command that bypasses Evento
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub struct LoginCommand {
     pub email: Email,
     pub password: Password,
-    
+
     /// Optional context for security logging
     pub login_ip: Option<String>,
     pub user_agent: Option<String>,
@@ -112,7 +112,7 @@ impl UserSession {
 
     /// Extend session expiry
     pub fn extend(&mut self, hours: i64) {
-        self.expires_at = self.expires_at + Duration::hours(hours);
+        self.expires_at += Duration::hours(hours);
         self.update_activity();
     }
 }
@@ -150,7 +150,8 @@ impl DirectLoginService {
             return Err(LoginError::InvalidCredentials);
         }
 
-        let user_id = Uuid::parse_str(&user_record.user_id).map_err(|_| LoginError::InvalidUserId)?;
+        let user_id =
+            Uuid::parse_str(&user_record.user_id).map_err(|_| LoginError::InvalidUserId)?;
 
         // Create session using the Session domain object
         let session = Session::new(
@@ -183,8 +184,7 @@ impl DirectLoginService {
     /// Validate session token
     pub async fn validate_session(&self, session_token: &str) -> Result<Session, LoginError> {
         // Parse session token as UUID
-        let _session_id = Uuid::parse_str(session_token)
-            .map_err(|_| LoginError::InvalidSession)?;
+        let _session_id = Uuid::parse_str(session_token).map_err(|_| LoginError::InvalidSession)?;
 
         // TODO: Load session from database or event store
         // For now, return an error as we haven't implemented session storage yet
@@ -194,8 +194,7 @@ impl DirectLoginService {
     /// Logout user (invalidate session)
     pub async fn logout(&self, session_token: &str) -> Result<(), LoginError> {
         // Parse session token as UUID
-        let _session_id = Uuid::parse_str(session_token)
-            .map_err(|_| LoginError::InvalidSession)?;
+        let _session_id = Uuid::parse_str(session_token).map_err(|_| LoginError::InvalidSession)?;
 
         // TODO: Invalidate session in database or event store
         // For now, this is a placeholder
@@ -205,8 +204,7 @@ impl DirectLoginService {
     /// Refresh session (extend expiry)
     pub async fn refresh_session(&self, session_token: &str) -> Result<Session, LoginError> {
         // Parse session token as UUID
-        let _session_id = Uuid::parse_str(session_token)
-            .map_err(|_| LoginError::InvalidSession)?;
+        let _session_id = Uuid::parse_str(session_token).map_err(|_| LoginError::InvalidSession)?;
 
         // TODO: Load and update session in database or event store
         // For now, this is a placeholder
@@ -219,31 +217,31 @@ impl DirectLoginService {
 pub enum LoginError {
     #[error("Invalid credentials")]
     InvalidCredentials,
-    
+
     #[error("Email not verified")]
     EmailNotVerified,
-    
+
     #[error("Account locked")]
     AccountLocked,
-    
+
     #[error("Invalid session")]
     InvalidSession,
-    
+
     #[error("Session expired")]
     SessionExpired,
-    
+
     #[error("Invalid user ID format")]
     InvalidUserId,
-    
+
     #[error("Validation error: {0}")]
     ValidationError(#[from] validator::ValidationErrors),
-    
+
     #[error("Database error: {0}")]
     DatabaseError(#[from] sqlx::Error),
-    
+
     #[error("User repository error: {0}")]
     UserRepositoryError(#[from] crate::commands::EmailValidationError),
-    
+
     #[error("Internal server error: {0}")]
     InternalError(String),
 }
@@ -257,9 +255,9 @@ mod tests {
     fn test_login_command_creation() {
         let email = Email::new("test@example.com".to_string()).unwrap();
         let password = Password::new("SecurePass123!".to_string()).unwrap();
-        
+
         let command = LoginCommand::new(email.clone(), password);
-        
+
         assert_eq!(command.email, email);
         assert!(command.login_ip.is_none());
         assert!(command.user_agent.is_none());
@@ -269,9 +267,9 @@ mod tests {
     fn test_user_session_creation() {
         let user_id = Uuid::new_v4();
         let email = Email::new("test@example.com".to_string()).unwrap();
-        
+
         let session = UserSession::new(user_id, email.clone(), None, None);
-        
+
         assert_eq!(session.user_id, user_id);
         assert_eq!(session.email, email);
         assert!(session.is_valid());
@@ -282,10 +280,10 @@ mod tests {
     fn test_user_session_invalidation() {
         let user_id = Uuid::new_v4();
         let email = Email::new("test@example.com".to_string()).unwrap();
-        
+
         let mut session = UserSession::new(user_id, email, None, None);
         assert!(session.is_valid());
-        
+
         session.invalidate();
         assert!(!session.is_valid());
     }
@@ -294,10 +292,10 @@ mod tests {
     fn test_user_session_extension() {
         let user_id = Uuid::new_v4();
         let email = Email::new("test@example.com".to_string()).unwrap();
-        
+
         let mut session = UserSession::new(user_id, email, None, None);
         let original_expiry = session.expires_at;
-        
+
         session.extend(12); // Extend by 12 hours
         assert!(session.expires_at > original_expiry);
     }

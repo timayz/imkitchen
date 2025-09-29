@@ -10,16 +10,16 @@ pub struct UserPasswordChanged {
     pub user_id: Uuid,
     pub password_hash: String,
     pub changed_at: DateTime<Utc>,
-    
+
     /// IP address from which password change occurred (for security audit)
     pub change_ip: Option<String>,
-    
+
     /// User agent string (for security audit)
     pub user_agent: Option<String>,
-    
+
     /// Reason for password change (reset, voluntary, forced)
     pub change_reason: PasswordChangeReason,
-    
+
     /// Hash of the previous password (for audit purposes, optional)
     pub previous_password_hash: Option<String>,
 }

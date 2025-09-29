@@ -15,10 +15,10 @@ pub struct UserRegistered {
     pub password_hash: String,
     pub profile: UserProfile,
     pub created_at: DateTime<Utc>,
-    
+
     /// IP address from which registration occurred (for security)
     pub registration_ip: Option<String>,
-    
+
     /// User agent string (for security and analytics)
     pub user_agent: Option<String>,
 }
@@ -45,12 +45,7 @@ impl UserRegistered {
     }
 
     /// Create a basic UserRegistered event with minimal information
-    pub fn basic(
-        user_id: Uuid,
-        email: Email,
-        password_hash: String,
-        profile: UserProfile,
-    ) -> Self {
+    pub fn basic(user_id: Uuid, email: Email, password_hash: String, profile: UserProfile) -> Self {
         Self::new(user_id, email, password_hash, profile, None, None)
     }
 }

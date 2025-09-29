@@ -6,9 +6,9 @@ use sqlx::SqlitePool;
 use uuid::Uuid;
 use validator::Validate;
 
-use imkitchen_shared::Email;
 use crate::commands::EmailValidationError;
 use crate::domain::UserProfile;
+use imkitchen_shared::Email;
 
 /// Query to find user by email address
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
@@ -131,9 +131,7 @@ impl UserQueryHandler {
         // For now, use the existing UserRepository to find user
         // This is a simplified implementation
         let user_repository = crate::queries::UserRepository::new(self.db_pool.clone());
-        let user_record = user_repository
-            .find_by_email(&query.email.value)
-            .await?;
+        let user_record = user_repository.find_by_email(&query.email.value).await?;
 
         let user = if let Some(record) = user_record {
             Some(UserAccountView {
@@ -161,7 +159,7 @@ impl UserQueryHandler {
                     .map_err(|_| UserQueryError::InvalidData("updated_at".to_string()))?
                     .with_timezone(&Utc),
                 last_login_at: None, // TODO: Track login timestamps
-                login_count: 0, // TODO: Track login counts
+                login_count: 0,      // TODO: Track login counts
             })
         } else {
             None
@@ -209,22 +207,22 @@ impl UserQueryHandler {
 pub enum UserQueryError {
     #[error("User not found")]
     NotFound,
-    
+
     #[error("Invalid user ID format")]
     InvalidUserId,
-    
+
     #[error("Invalid data format for field: {0}")]
     InvalidData(String),
-    
+
     #[error("Validation error: {0}")]
     ValidationError(#[from] validator::ValidationErrors),
-    
+
     #[error("Database error: {0}")]
     DatabaseError(#[from] sqlx::Error),
-    
+
     #[error("Email validation error: {0}")]
     EmailValidationError(#[from] EmailValidationError),
-    
+
     #[error("Internal server error: {0}")]
     InternalError(String),
 }
@@ -238,7 +236,7 @@ mod tests {
     fn test_user_by_email_query_creation() {
         let email = Email::new("test@example.com".to_string()).unwrap();
         let query = UserByEmailQuery::new(email.clone());
-        
+
         assert_eq!(query.email, email);
         assert!(query.request_id.is_some());
     }
@@ -247,7 +245,7 @@ mod tests {
     fn test_user_by_id_query_creation() {
         let user_id = Uuid::new_v4();
         let query = UserByIdQuery::new(user_id);
-        
+
         assert_eq!(query.user_id, user_id);
         assert!(query.request_id.is_some());
     }
@@ -256,7 +254,7 @@ mod tests {
     fn test_user_session_query_creation() {
         let session_token = "test_session_token".to_string();
         let query = UserSessionQuery::new(session_token.clone());
-        
+
         assert_eq!(query.session_token, session_token);
         assert!(query.request_id.is_some());
     }

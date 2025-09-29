@@ -25,12 +25,16 @@ async fn test_login_form_route() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::OK);
-    
-    let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
-    
+
     // Check that it contains expected HTML elements
-    assert!(body_str.contains("Welcome back to IMKitchen") || body_str.contains("Sign in to access"));
+    assert!(
+        body_str.contains("Welcome back to IMKitchen") || body_str.contains("Sign in to access")
+    );
     assert!(body_str.contains("ts-req=\"/auth/login\""));
     assert!(body_str.contains("ts-req") || body_str.contains("form"));
 }
@@ -52,10 +56,12 @@ async fn test_login_validation_route() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::OK);
-    
-    let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
-    
+
     // Should return validation errors in HTML format
     assert!(body_str.contains("text-red-600") || body_str.contains("error"));
 }

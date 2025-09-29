@@ -1,27 +1,27 @@
 // Authentication handlers with sync validation
 
+use askama::Template;
 use axum::{
     extract::{Form, Query, State},
-    http::{StatusCode, HeaderMap, HeaderValue, header::SET_COOKIE},
+    http::{header::SET_COOKIE, HeaderMap, HeaderValue, StatusCode},
     response::{Html, IntoResponse, Redirect, Response},
 };
-use askama::Template;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 use validator::Validate;
 
-use imkitchen_shared::{Email, Password, FamilySize, SkillLevel};
-use imkitchen_user::services::login_service::{LoginCommand, LoginError};
-use imkitchen_user::commands::register_user::{RegisterUserCommand, RegisterUserError};
 use crate::middleware::auth::create_session_cookie_header;
 use crate::AppState;
+use imkitchen_shared::{Email, FamilySize, Password, SkillLevel};
+use imkitchen_user::commands::register_user::{RegisterUserCommand, RegisterUserError};
+use imkitchen_user::services::login_service::{LoginCommand, LoginError};
 
 /// Login form data with validation
 #[derive(Debug, Deserialize, Validate)]
 pub struct LoginForm {
     #[validate(email)]
     pub email: String,
-    
+
     #[validate(length(min = 8))]
     pub password: String,
 }
@@ -32,16 +32,15 @@ pub struct LoginQuery {
     pub success: Option<String>,
 }
 
-
 /// Registration form data with validation
 #[derive(Debug, Deserialize, Validate)]
 pub struct RegisterForm {
     #[validate(email)]
     pub email: String,
-    
+
     #[validate(length(min = 8))]
     pub password: String,
-    
+
     #[validate(length(min = 8))]
     pub password_confirm: String,
 }
@@ -99,14 +98,13 @@ pub struct ValidationErrorsTemplate {
     pub errors: std::collections::HashMap<String, Vec<String>>,
 }
 
-
 /// Login handler with form processing using DirectLoginService
 pub async fn login_handler(
     State(app_state): State<AppState>,
     Form(form): Form<LoginForm>,
 ) -> Result<Response, StatusCode> {
     info!("Processing login for email: {}", form.email);
-    
+
     // First validate the form
     if let Err(_validation_errors) = form.validate() {
         error!("Login form validation failed");
@@ -116,7 +114,7 @@ pub async fn login_handler(
         let html = template.to_string();
         return Ok(Html(html).into_response());
     }
-    
+
     // Parse email and password using our domain value objects
     let email = match Email::new(form.email) {
         Ok(email) => email,
@@ -129,7 +127,7 @@ pub async fn login_handler(
             return Ok(Html(html).into_response());
         }
     };
-    
+
     let password = match Password::new(form.password) {
         Ok(password) => password,
         Err(e) => {
@@ -141,21 +139,23 @@ pub async fn login_handler(
             return Ok(Html(html).into_response());
         }
     };
-    
+
     // Use DirectLoginService if available
     if let Some(ref login_service) = app_state.login_service {
         let login_command = LoginCommand::new(email.clone(), password);
-        
+
         match login_service.login(login_command).await {
             Ok(login_response) => {
                 info!("Login successful for user: {}", email.value);
-                
+
                 // Create session cookie header
                 let cookie_header = create_session_cookie_header(login_response.user_id);
-                
+
                 // Return HTTP redirect to dashboard with cookie header
                 let mut response = Redirect::to("/dashboard").into_response();
-                response.headers_mut().insert(SET_COOKIE, cookie_header.parse().unwrap());
+                response
+                    .headers_mut()
+                    .insert(SET_COOKIE, cookie_header.parse().unwrap());
                 Ok(response)
             }
             Err(LoginError::InvalidCredentials) => {
@@ -186,7 +186,6 @@ pub async fn login_handler(
     }
 }
 
-
 /// Render the login form (GET request) - old simple version
 pub async fn login_form() -> Result<Response, StatusCode> {
     let template = LoginFormTemplate {
@@ -202,7 +201,7 @@ pub async fn login_page(Query(query): Query<LoginQuery>) -> Result<Response, Sta
         Some("registered") => "Registration successful! You can now log in.".to_string(),
         _ => String::new(),
     };
-    
+
     let template = LoginPageTemplate {
         general_error: String::new(),
         success_message,
@@ -226,24 +225,30 @@ pub async fn register_handler(
     Form(form): Form<RegisterForm>,
 ) -> Result<Response, StatusCode> {
     info!("Processing registration for email: {}", form.email);
-    
+
     // Validate the form
     if let Err(validation_errors) = form.validate() {
         let mut error_map = std::collections::HashMap::new();
         for (field, errors) in validation_errors.field_errors() {
-            let error_messages: Vec<String> = errors.iter()
-                .map(|e| e.message.as_ref().map(|m| m.to_string()).unwrap_or_else(|| "Invalid input".to_string()))
+            let error_messages: Vec<String> = errors
+                .iter()
+                .map(|e| {
+                    e.message
+                        .as_ref()
+                        .map(|m| m.to_string())
+                        .unwrap_or_else(|| "Invalid input".to_string())
+                })
                 .collect();
             error_map.insert(field.to_string(), error_messages);
         }
-        
+
         let template = RegisterPageTemplate {
             general_error: "Please correct the errors below".to_string(),
         };
         let html = template.to_string();
         return Ok(Html(html).into_response());
     }
-    
+
     // Check password confirmation
     if let Err(password_error) = form.validate_passwords_match() {
         let template = RegisterPageTemplate {
@@ -265,7 +270,7 @@ pub async fn register_handler(
             return Ok(Html(html).into_response());
         }
     };
-    
+
     let password = match Password::new(form.password) {
         Ok(password) => password,
         Err(e) => {
@@ -284,29 +289,35 @@ pub async fn register_handler(
         let register_command = RegisterUserCommand::new(
             email.clone(),
             password,
-            FamilySize::FAMILY2, // Default family size
+            FamilySize::FAMILY2,  // Default family size
             SkillLevel::Beginner, // Default skill level
         );
-        
+
         match register_service.handle(register_command).await {
             Ok(_register_response) => {
                 info!("Registration successful for user: {}", email.value);
-                
+
                 // TODO: Create session cookie for the newly registered user
                 // For now, redirect to login page with success message
                 // let session_cookie = create_session_cookie(register_response.user_id);
                 // cookies.add(session_cookie);
-                
+
                 // Use ts-location header to redirect to login page with success message
                 let mut headers = HeaderMap::new();
-                headers.insert("ts-location", HeaderValue::from_static("/auth/login?success=registered"));
-                
+                headers.insert(
+                    "ts-location",
+                    HeaderValue::from_static("/auth/login?success=registered"),
+                );
+
                 let mut response = Html("").into_response();
                 *response.headers_mut() = headers;
                 Ok(response)
             }
             Err(RegisterUserError::EmailAlreadyExists) => {
-                error!("Registration failed - email already exists: {}", email.value);
+                error!(
+                    "Registration failed - email already exists: {}",
+                    email.value
+                );
                 let template = RegisterPageTemplate {
                     general_error: "An account with this email already exists".to_string(),
                 };
@@ -336,7 +347,7 @@ pub async fn register_handler(
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_login_form_validation() {
         let valid_form = LoginForm {
@@ -344,13 +355,13 @@ mod tests {
             password: "ValidPass123!".to_string(),
         };
         assert!(valid_form.validate().is_ok());
-        
+
         let invalid_email = LoginForm {
             email: "not-an-email".to_string(),
             password: "ValidPass123!".to_string(),
         };
         assert!(invalid_email.validate().is_err());
-        
+
         let short_password = LoginForm {
             email: "user@example.com".to_string(),
             password: "short".to_string(),

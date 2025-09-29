@@ -6,7 +6,9 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
 
-use crate::events::{UserLoggedIn, UserPasswordChanged, UserProfileUpdated, UserRegistered, PasswordChangeReason};
+use crate::events::{
+    PasswordChangeReason, UserLoggedIn, UserPasswordChanged, UserProfileUpdated, UserRegistered,
+};
 
 /// User aggregate root with Evento event sourcing
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
@@ -134,7 +136,12 @@ impl User {
             return Err(UserError::EmailNotVerified);
         }
 
-        Ok(UserLoggedIn::new(self.user_id, login_ip, user_agent, session_id))
+        Ok(UserLoggedIn::new(
+            self.user_id,
+            login_ip,
+            user_agent,
+            session_id,
+        ))
     }
 
     /// Change user password (voluntary change)

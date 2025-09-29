@@ -9,13 +9,13 @@ use uuid::Uuid;
 pub struct UserLoggedIn {
     pub user_id: Uuid,
     pub logged_in_at: DateTime<Utc>,
-    
+
     /// IP address from which login occurred (for security)
     pub login_ip: Option<String>,
-    
+
     /// User agent string (for security and analytics)
     pub user_agent: Option<String>,
-    
+
     /// Session ID for tracking user sessions
     pub session_id: Option<String>,
 }

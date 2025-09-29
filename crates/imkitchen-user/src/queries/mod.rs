@@ -3,7 +3,6 @@
 pub mod email_queries;
 pub mod user_queries;
 
-
 // Re-export email query handlers
 pub use email_queries::*;
 

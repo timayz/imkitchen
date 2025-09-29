@@ -4,14 +4,13 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
 
-
 /// Command to check if an email address already exists in the database
 /// This command uses Evento for async database queries
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub struct CheckEmailExistsCommand {
     #[validate(email)]
     pub email: String,
-    
+
     /// Optional request ID for tracking async validation requests
     pub request_id: Option<Uuid>,
 }
@@ -23,7 +22,7 @@ impl CheckEmailExistsCommand {
             request_id: Some(Uuid::new_v4()),
         }
     }
-    
+
     pub fn with_request_id(email: String, request_id: Uuid) -> Self {
         Self {
             email,
@@ -45,8 +44,8 @@ pub struct CheckEmailExistsResponse {
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub struct ValidateUsernameAvailabilityCommand {
     #[validate(email)]
-    pub username: String,  // This is the email address
-    
+    pub username: String, // This is the email address
+
     /// Optional request ID for tracking async validation requests
     pub request_id: Option<Uuid>,
 }
@@ -66,7 +65,7 @@ pub struct ValidateUsernameAvailabilityResponse {
     pub username: String,
     pub available: bool,
     pub request_id: Option<Uuid>,
-    pub suggestions: Vec<String>,  // Alternative usernames if not available
+    pub suggestions: Vec<String>, // Alternative usernames if not available
 }
 
 /// Error types for email validation commands
@@ -74,13 +73,13 @@ pub struct ValidateUsernameAvailabilityResponse {
 pub enum EmailValidationError {
     #[error("Invalid email format: {0}")]
     InvalidFormat(String),
-    
+
     #[error("Database query failed: {0}")]
     DatabaseError(#[from] sqlx::Error),
-    
+
     #[error("Validation error: {0}")]
     ValidationError(#[from] validator::ValidationErrors),
-    
+
     #[error("Request timeout")]
     Timeout,
 }
