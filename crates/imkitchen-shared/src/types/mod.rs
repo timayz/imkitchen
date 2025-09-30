@@ -62,7 +62,7 @@ impl std::fmt::Display for SkillLevel {
 }
 
 /// Difficulty level for recipes
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum Difficulty {
     Easy,
     Medium,

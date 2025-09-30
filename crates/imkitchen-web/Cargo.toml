@@ -27,6 +27,7 @@ urlencoding = "2.1"
 # Internal dependencies
 imkitchen-shared = { path = "../imkitchen-shared" }
 imkitchen-user = { path = "../imkitchen-user" }
+imkitchen-recipe = { path = "../imkitchen-recipe" }
 
 [dev-dependencies]
 tower = "0.5"

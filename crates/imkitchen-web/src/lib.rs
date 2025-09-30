@@ -6,7 +6,7 @@ pub mod shutdown;
 
 use axum::{
     middleware::from_fn_with_state,
-    routing::{get, post},
+    routing::{delete, get, post, put},
     Router,
 };
 use std::net::SocketAddr;
@@ -182,8 +182,35 @@ pub fn create_app_with_metrics(db_pool: Option<sqlx::SqlitePool>, metrics: AppMe
 
     // Create navigation routers (no auth required for discovery)
     let recipes_router = Router::new()
-        .route("/recipes", get(handlers::recipes::recipes_overview))
-        .route("/recipes/discover", get(handlers::recipes::recipe_discover))
+        .route("/recipes", get(handlers::recipes::list_recipes))
+        .route("/recipes/new", get(handlers::recipes::new_recipe_form))
+        .route("/recipes", post(handlers::recipes::create_recipe))
+        .route("/recipes/search", get(handlers::recipes::search_recipes))
+        .route("/recipes/filter", get(handlers::recipes::filter_recipes))
+        .route("/recipes/discover", get(handlers::recipes::list_recipes)) // Add discover route
+        .route("/recipes/{id}", get(handlers::recipes::show_recipe))
+        .route(
+            "/recipes/{id}/edit",
+            get(handlers::recipes::edit_recipe_form),
+        )
+        .route("/recipes/{id}", put(handlers::recipes::update_recipe))
+        .route("/recipes/{id}", delete(handlers::recipes::delete_recipe))
+        .route(
+            "/recipes/ingredients/add",
+            post(handlers::recipes::add_ingredient),
+        )
+        .route(
+            "/recipes/ingredients/remove",
+            post(handlers::recipes::remove_ingredient),
+        )
+        .route(
+            "/recipes/instructions/add",
+            post(handlers::recipes::add_instruction),
+        )
+        .route(
+            "/recipes/instructions/remove",
+            post(handlers::recipes::remove_instruction),
+        )
         .with_state(app_state.clone());
 
     let meal_plans_router = Router::new()
@@ -319,8 +346,8 @@ pub fn create_app_routes(app_state: AppState) -> Router {
 
     // Navigation routers for testing
     let recipes_router = Router::new()
-        .route("/recipes", get(handlers::recipes::recipes_overview))
-        .route("/recipes/discover", get(handlers::recipes::recipe_discover))
+        .route("/recipes", get(handlers::recipes::list_recipes))
+        .route("/recipes/discover", get(handlers::recipes::list_recipes))
         .with_state(app_state.clone());
 
     let meal_plans_router = Router::new()

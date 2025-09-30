@@ -3,43 +3,6 @@
 {% block title %}Dashboard - IMKitchen{% endblock %}
 {% block meta_description %}Your personalized meal planning dashboard with family preferences and weekly meals{% endblock %}
 
-{% block nav_links %}
-<div class="hidden md:ml-6 md:flex md:space-x-8">
-    <a href="/dashboard" class="border-kitchen-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-        Dashboard
-    </a>
-    <a href="/profile" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors">
-        Profile
-    </a>
-    <a href="/meal-planning" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors">
-        Meal Planning
-    </a>
-    <a href="/recipes" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors">
-        Recipes
-    </a>
-    <a href="/shopping" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors">
-        Shopping List
-    </a>
-</div>
-{% endblock %}
-
-{% block auth_nav %}
-<div class="relative">
-    <button type="button" 
-            class="flex max-w-xs items-center rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-kitchen-500 focus:ring-offset-2"
-            id="user-menu-button" 
-            aria-expanded="false" 
-            aria-haspopup="true">
-        <span class="sr-only">Open user menu</span>
-        <div class="h-8 w-8 rounded-full bg-kitchen-600 flex items-center justify-center">
-            <span class="text-sm font-medium text-white">
-                U
-            </span>
-        </div>
-        <span class="ml-3 text-sm font-medium text-gray-700">{{ user.email.value }}</span>
-    </button>
-</div>
-{% endblock %}
 
 {% block main_classes %}{% endblock %}
 
