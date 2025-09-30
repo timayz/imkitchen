@@ -1,4 +1,5 @@
 // CQRS queries for recipe data
+pub mod discovery;
 
 use crate::domain::{Difficulty, RecipeCategory};
 use serde::{Deserialize, Serialize};

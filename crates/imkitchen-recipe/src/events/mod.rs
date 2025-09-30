@@ -1,4 +1,5 @@
 // Recipe domain events
+pub mod discovery;
 
 use chrono::{DateTime, Utc};
 use imkitchen_shared::{Difficulty, DomainEvent};

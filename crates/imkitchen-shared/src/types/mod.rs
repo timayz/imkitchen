@@ -152,3 +152,44 @@ pub enum DietaryRestriction {
     Keto,
     Paleo,
 }
+
+impl std::fmt::Display for DietaryRestriction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DietaryRestriction::Vegetarian => write!(f, "Vegetarian"),
+            DietaryRestriction::Vegan => write!(f, "Vegan"),
+            DietaryRestriction::GlutenFree => write!(f, "Gluten-Free"),
+            DietaryRestriction::DairyFree => write!(f, "Dairy-Free"),
+            DietaryRestriction::NutFree => write!(f, "Nut-Free"),
+            DietaryRestriction::SoyFree => write!(f, "Soy-Free"),
+            DietaryRestriction::LowSodium => write!(f, "Low Sodium"),
+            DietaryRestriction::LowCarb => write!(f, "Low Carb"),
+            DietaryRestriction::Keto => write!(f, "Keto"),
+            DietaryRestriction::Paleo => write!(f, "Paleo"),
+        }
+    }
+}
+
+/// Meal type classification
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub enum MealType {
+    Breakfast,
+    Lunch,
+    Dinner,
+    Snack,
+    Dessert,
+    Appetizer,
+}
+
+impl std::fmt::Display for MealType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MealType::Breakfast => write!(f, "Breakfast"),
+            MealType::Lunch => write!(f, "Lunch"),
+            MealType::Dinner => write!(f, "Dinner"),
+            MealType::Snack => write!(f, "Snack"),
+            MealType::Dessert => write!(f, "Dessert"),
+            MealType::Appetizer => write!(f, "Appetizer"),
+        }
+    }
+}

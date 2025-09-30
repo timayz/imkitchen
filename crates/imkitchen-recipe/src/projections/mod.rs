@@ -1,4 +1,5 @@
 // Evento projections for recipe views
+pub mod discovery;
 
 use chrono::{DateTime, Utc};
 use imkitchen_shared::Difficulty;
