@@ -77,6 +77,7 @@ struct RecipeCollectionSelectorTemplate {
 
 // Data structures for templates
 #[derive(Debug, Clone)]
+#[allow(dead_code)] // Used in templates and future implementations
 struct CollectionListItem {
     collection_id: Uuid,
     name: String,
@@ -149,6 +150,7 @@ struct RecipeSelectorItem {
 // Fragment templates for TwinSpark responses
 #[derive(Template)]
 #[template(path = "fragments/collections/collection_list_fragment.html")]
+#[allow(dead_code)] // Used for TwinSpark fragment responses
 struct CollectionListFragment {
     collections: Vec<CollectionListItem>,
 }
@@ -178,6 +180,7 @@ pub struct CreateCollectionForm {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)] // Fields will be used when update functionality is implemented
 pub struct UpdateCollectionForm {
     name: String,
     description: Option<String>,
@@ -206,6 +209,7 @@ pub struct SortParams {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)] // context field used for advanced selector functionality
 pub struct SelectorParams {
     collection_id: Uuid,
     context: Option<String>,
