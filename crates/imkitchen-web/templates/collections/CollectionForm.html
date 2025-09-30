@@ -1,0 +1,160 @@
+<form 
+    class="max-w-2xl mx-auto bg-white shadow-xl rounded-lg overflow-hidden border border-gray-200"
+    method="POST"
+    action="/collections"
+    ts-req="/collections"
+    ts-target="#main-content"
+    ts-indicator="#form-loading"
+>
+    <!-- Form Header -->
+    <div class="bg-gradient-to-r from-green-500 to-blue-600 px-6 py-4">
+        <h2 class="text-2xl font-bold text-white">{{ form_title }}</h2>
+        <p class="text-green-100 mt-1">Create a new recipe collection to organize your favorites</p>
+    </div>
+
+    <!-- Form Content -->
+    <div class="p-6 space-y-6">
+        <!-- Collection Name -->
+        <div class="space-y-2">
+            <label for="name" class="block text-sm font-medium text-gray-700">
+                Collection Name <span class="text-red-500">*</span>
+            </label>
+            <input
+                type="text"
+                id="name"
+                name="name"
+                value="{{ collection.name }}"
+                class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors duration-200"
+                placeholder="Enter collection name (1-100 characters)"
+                required
+                maxlength="100"
+                minlength="1"
+            />
+            {% if !form_errors.name.is_empty() %}
+            <p class="text-sm text-red-600">{{ form_errors.name }}</p>
+            {% endif %}
+        </div>
+
+        <!-- Collection Description -->
+        <div class="space-y-2">
+            <label for="description" class="block text-sm font-medium text-gray-700">
+                Description <span class="text-gray-500">(optional)</span>
+            </label>
+            <textarea
+                id="description"
+                name="description"
+                rows="3"
+                class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors duration-200 resize-none"
+                placeholder="Describe your collection (max 500 characters)"
+                maxlength="500"
+            >{{ collection.description }}</textarea>
+            {% if !form_errors.description.is_empty() %}
+            <p class="text-sm text-red-600">{{ form_errors.description }}</p>
+            {% endif %}
+            <p class="text-sm text-gray-500">
+                <span id="description-count">0</span>/500 characters
+            </p>
+        </div>
+
+        <!-- Privacy Setting -->
+        <div class="space-y-2">
+            <label class="block text-sm font-medium text-gray-700">
+                Privacy Setting <span class="text-red-500">*</span>
+            </label>
+            <div class="space-y-3">
+                <label class="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input
+                        type="radio"
+                        name="privacy"
+                        value="Private"
+                        {% if collection.privacy == "Private" %}checked{% endif %}
+                        class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                        required
+                    />
+                    <div>
+                        <div class="text-sm font-medium text-gray-900">🔒 Private</div>
+                        <div class="text-sm text-gray-500">Only you can see this collection</div>
+                    </div>
+                </label>
+                
+                <label class="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input
+                        type="radio"
+                        name="privacy"
+                        value="Shared"
+                        {% if collection.privacy == "Shared" %}checked{% endif %}
+                        class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                    />
+                    <div>
+                        <div class="text-sm font-medium text-gray-900">👥 Shared</div>
+                        <div class="text-sm text-gray-500">Share with specific people</div>
+                    </div>
+                </label>
+                
+                <label class="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <input
+                        type="radio"
+                        name="privacy"
+                        value="Public"
+                        {% if collection.privacy == "Public" %}checked{% endif %}
+                        class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                    />
+                    <div>
+                        <div class="text-sm font-medium text-gray-900">🌍 Public</div>
+                        <div class="text-sm text-gray-500">Anyone can discover this collection</div>
+                    </div>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="bg-gray-50 px-6 py-4 flex items-center justify-between border-t border-gray-200">
+        <div class="flex items-center space-x-3">
+            <div id="form-loading" class="hidden">
+                <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+            </div>
+            <span class="text-sm text-gray-500">All required fields marked with *</span>
+        </div>
+        
+        <div class="flex items-center space-x-3">
+            <button
+                type="button"
+                class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors duration-200 focus:ring-2 focus:ring-gray-200"
+                onclick="history.back()"
+            >
+                Cancel
+            </button>
+            <button
+                type="submit"
+                class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 focus:ring-2 focus:ring-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                {{ submit_button_text }}
+            </button>
+        </div>
+    </div>
+</form>
+
+<script>
+// Character counter for description
+document.addEventListener('DOMContentLoaded', function() {
+    const textarea = document.getElementById('description');
+    const counter = document.getElementById('description-count');
+    
+    function updateCounter() {
+        const count = textarea.value.length;
+        counter.textContent = count;
+        
+        if (count > 450) {
+            counter.className = 'text-red-600 font-semibold';
+        } else if (count > 400) {
+            counter.className = 'text-orange-600 font-semibold';
+        } else {
+            counter.className = '';
+        }
+    }
+    
+    textarea.addEventListener('input', updateCounter);
+    updateCounter(); // Initialize
+});
+</script>

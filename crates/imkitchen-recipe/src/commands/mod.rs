@@ -241,3 +241,196 @@ impl RestoreRecipeCommand {
         }
     }
 }
+
+// Collection commands
+
+use crate::domain::collection::CollectionPrivacy;
+
+/// Parameters for creating a new collection
+#[derive(Debug, Clone)]
+pub struct CreateCollectionParams {
+    pub name: String,
+    pub description: Option<String>,
+    pub privacy: CollectionPrivacy,
+    pub created_by: Uuid,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+pub struct CreateCollectionCommand {
+    #[validate(length(min = 1, max = 100))]
+    pub name: String,
+    #[validate(length(max = 500))]
+    pub description: Option<String>,
+    pub privacy: CollectionPrivacy,
+    pub created_by: Uuid,
+}
+
+impl CreateCollectionCommand {
+    pub fn new(params: CreateCollectionParams) -> Result<Self, validator::ValidationErrors> {
+        let command = Self {
+            name: params.name,
+            description: params.description,
+            privacy: params.privacy,
+            created_by: params.created_by,
+        };
+
+        command.validate()?;
+        Ok(command)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+pub struct UpdateCollectionCommand {
+    pub collection_id: Uuid,
+    #[validate(length(min = 1, max = 100))]
+    pub name: Option<String>,
+    #[validate(length(max = 500))]
+    pub description: Option<Option<String>>,
+    pub privacy: Option<CollectionPrivacy>,
+    pub updated_by: Uuid,
+}
+
+impl UpdateCollectionCommand {
+    pub fn new(collection_id: Uuid, updated_by: Uuid) -> Self {
+        Self {
+            collection_id,
+            name: None,
+            description: None,
+            privacy: None,
+            updated_by,
+        }
+    }
+
+    pub fn with_name(mut self, name: String) -> Self {
+        self.name = Some(name);
+        self
+    }
+
+    pub fn with_description(mut self, description: Option<String>) -> Self {
+        self.description = Some(description);
+        self
+    }
+
+    pub fn with_privacy(mut self, privacy: CollectionPrivacy) -> Self {
+        self.privacy = Some(privacy);
+        self
+    }
+
+    pub fn validate_and_build(self) -> Result<Self, validator::ValidationErrors> {
+        self.validate()?;
+        Ok(self)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DeleteCollectionCommand {
+    pub collection_id: Uuid,
+    pub deleted_by: Uuid,
+}
+
+impl DeleteCollectionCommand {
+    pub fn new(collection_id: Uuid, deleted_by: Uuid) -> Self {
+        Self {
+            collection_id,
+            deleted_by,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AddRecipeToCollectionCommand {
+    pub collection_id: Uuid,
+    pub recipe_id: Uuid,
+    pub added_by: Uuid,
+}
+
+impl AddRecipeToCollectionCommand {
+    pub fn new(collection_id: Uuid, recipe_id: Uuid, added_by: Uuid) -> Self {
+        Self {
+            collection_id,
+            recipe_id,
+            added_by,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RemoveRecipeFromCollectionCommand {
+    pub collection_id: Uuid,
+    pub recipe_id: Uuid,
+    pub removed_by: Uuid,
+}
+
+impl RemoveRecipeFromCollectionCommand {
+    pub fn new(collection_id: Uuid, recipe_id: Uuid, removed_by: Uuid) -> Self {
+        Self {
+            collection_id,
+            recipe_id,
+            removed_by,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BulkAddRecipesToCollectionCommand {
+    pub collection_id: Uuid,
+    pub recipe_ids: Vec<Uuid>,
+    pub added_by: Uuid,
+}
+
+impl BulkAddRecipesToCollectionCommand {
+    pub fn new(collection_id: Uuid, recipe_ids: Vec<Uuid>, added_by: Uuid) -> Self {
+        Self {
+            collection_id,
+            recipe_ids,
+            added_by,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BulkRemoveRecipesFromCollectionCommand {
+    pub collection_id: Uuid,
+    pub recipe_ids: Vec<Uuid>,
+    pub removed_by: Uuid,
+}
+
+impl BulkRemoveRecipesFromCollectionCommand {
+    pub fn new(collection_id: Uuid, recipe_ids: Vec<Uuid>, removed_by: Uuid) -> Self {
+        Self {
+            collection_id,
+            recipe_ids,
+            removed_by,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ArchiveCollectionCommand {
+    pub collection_id: Uuid,
+    pub archived_by: Uuid,
+}
+
+impl ArchiveCollectionCommand {
+    pub fn new(collection_id: Uuid, archived_by: Uuid) -> Self {
+        Self {
+            collection_id,
+            archived_by,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RestoreCollectionCommand {
+    pub collection_id: Uuid,
+    pub restored_by: Uuid,
+}
+
+impl RestoreCollectionCommand {
+    pub fn new(collection_id: Uuid, restored_by: Uuid) -> Self {
+        Self {
+            collection_id,
+            restored_by,
+        }
+    }
+}

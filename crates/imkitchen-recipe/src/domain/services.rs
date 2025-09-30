@@ -211,3 +211,172 @@ impl Default for NutritionalCalculator {
         Self::new()
     }
 }
+
+// Collection-related services
+
+use super::collection::{CollectionPrivacy, RecipeCollection};
+use uuid::Uuid;
+
+/// Service for validating collection operations and constraints
+pub struct CollectionValidationService;
+
+impl CollectionValidationService {
+    pub fn new() -> Self {
+        Self
+    }
+
+    /// Validate that a user hasn't exceeded the maximum collection limit (50 collections)
+    pub fn validate_user_collection_limit(&self, _user_id: Uuid, current_count: usize) -> bool {
+        current_count < 50
+    }
+
+    /// Validate that a collection hasn't exceeded the maximum recipe limit (1000 recipes)
+    pub fn validate_collection_recipe_limit(&self, collection: &RecipeCollection) -> bool {
+        collection.recipes.len() < 1000
+    }
+
+    /// Validate collection name uniqueness for a user
+    pub fn validate_collection_name_uniqueness(
+        &self,
+        _user_id: Uuid,
+        _name: &str,
+        _existing_collections: &[RecipeCollection],
+    ) -> bool {
+        // In a real implementation, this would check against existing collections
+        // For now, we'll assume uniqueness validation happens at the database level
+        true
+    }
+}
+
+impl Default for CollectionValidationService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Simple view model for collection list display (used by domain services)
+#[derive(Debug, Clone)]
+pub struct CollectionListItem {
+    pub collection_id: Uuid,
+    pub name: String,
+    pub description: Option<String>,
+    pub privacy: CollectionPrivacy,
+    pub recipe_count: usize,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
+}
+
+/// Simple view model for collection detail display (used by domain services)
+#[derive(Debug, Clone)]
+pub struct CollectionDetailItem {
+    pub collection_id: Uuid,
+    pub user_id: Uuid,
+    pub name: String,
+    pub description: Option<String>,
+    pub privacy: CollectionPrivacy,
+    pub recipe_ids: Vec<Uuid>,
+    pub recipe_count: usize,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
+}
+
+/// Service for mapping collections to different view models
+pub struct RecipeCollectionMapper;
+
+impl RecipeCollectionMapper {
+    pub fn new() -> Self {
+        Self
+    }
+
+    /// Map collection to list item
+    pub fn to_list_item(&self, collection: &RecipeCollection) -> CollectionListItem {
+        CollectionListItem {
+            collection_id: collection.collection_id,
+            name: collection.name.clone(),
+            description: collection.description.clone(),
+            privacy: collection.privacy,
+            recipe_count: collection.recipes.len(),
+            created_at: collection.created_at,
+            updated_at: collection.updated_at,
+        }
+    }
+
+    /// Map collection to detail item
+    pub fn to_detail_item(&self, collection: &RecipeCollection) -> CollectionDetailItem {
+        CollectionDetailItem {
+            collection_id: collection.collection_id,
+            user_id: collection.user_id,
+            name: collection.name.clone(),
+            description: collection.description.clone(),
+            privacy: collection.privacy,
+            recipe_ids: collection.recipes.iter().map(|r| r.recipe_id).collect(),
+            recipe_count: collection.recipes.len(),
+            created_at: collection.created_at,
+            updated_at: collection.updated_at,
+        }
+    }
+}
+
+impl Default for RecipeCollectionMapper {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Service for searching and filtering collections
+pub struct CollectionSearchService;
+
+impl CollectionSearchService {
+    pub fn new() -> Self {
+        Self
+    }
+
+    /// Check if a collection matches a search query
+    pub fn matches_search_query(&self, collection: &RecipeCollection, query: &str) -> bool {
+        let query_lower = query.to_lowercase();
+
+        // Search in collection name
+        if collection.name.to_lowercase().contains(&query_lower) {
+            return true;
+        }
+
+        // Search in collection description
+        if let Some(description) = &collection.description {
+            if description.to_lowercase().contains(&query_lower) {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    /// Filter collections by privacy setting
+    pub fn filter_by_privacy(
+        &self,
+        collections: Vec<RecipeCollection>,
+        privacy: CollectionPrivacy,
+    ) -> Vec<RecipeCollection> {
+        collections
+            .into_iter()
+            .filter(|c| c.privacy == privacy)
+            .collect()
+    }
+
+    /// Filter collections by user
+    pub fn filter_by_user(
+        &self,
+        collections: Vec<RecipeCollection>,
+        user_id: Uuid,
+    ) -> Vec<RecipeCollection> {
+        collections
+            .into_iter()
+            .filter(|c| c.user_id == user_id)
+            .collect()
+    }
+}
+
+impl Default for CollectionSearchService {
+    fn default() -> Self {
+        Self::new()
+    }
+}

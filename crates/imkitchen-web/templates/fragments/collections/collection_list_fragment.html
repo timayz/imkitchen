@@ -1,0 +1,143 @@
+<!-- Collection List Fragment for TwinSpark Updates -->
+<div id="collection-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for collection in collections %}
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200">
+        <div class="p-6">
+            <!-- Collection Header -->
+            <div class="flex items-start justify-between mb-4">
+                <div class="flex-1">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">
+                        <a href="/collections/{{ collection.collection_id }}" class="hover:text-blue-600 transition-colors">
+                            {{ collection.name }}
+                        </a>
+                    </h3>
+                    
+                    <div class="flex items-center space-x-2 mb-2">
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                            {% if collection.privacy.to_string() == "Private" %}bg-gray-100 text-gray-800{% endif %}
+                            {% if collection.privacy.to_string() == "Shared" %}bg-blue-100 text-blue-800{% endif %}
+                            {% if collection.privacy.to_string() == "Public" %}bg-green-100 text-green-800{% endif %}
+                        ">
+                            {% if collection.privacy.to_string() == "Private" %}🔒 Private{% endif %}
+                            {% if collection.privacy.to_string() == "Shared" %}👥 Shared{% endif %}
+                            {% if collection.privacy.to_string() == "Public" %}🌍 Public{% endif %}
+                        </span>
+                        
+                        {% if collection.is_archived %}
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            📦 Archived
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Collection Actions Menu -->
+                <div class="relative">
+                    <button
+                        type="button"
+                        class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+                        onclick="toggleMenu('menu-{{ collection.collection_id }}')"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
+                        </svg>
+                    </button>
+                    
+                    <div id="menu-{{ collection.collection_id }}" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10">
+                        <div class="py-1">
+                            <button
+                                type="button"
+                                class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                ts-req="/collections/{{ collection.collection_id }}/edit"
+                                ts-target="#main-content"
+                            >
+                                Edit Collection
+                            </button>
+                            
+                            {% if !collection.is_archived %}
+                            <button
+                                type="button"
+                                class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                ts-req="/collections/{{ collection.collection_id }}/archive"
+                                ts-target="#collection-list"
+                                ts-method="POST"
+                            >
+                                Archive Collection
+                            </button>
+                            {% else %}
+                            <button
+                                type="button"
+                                class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                ts-req="/collections/{{ collection.collection_id }}/restore"
+                                ts-target="#collection-list"
+                                ts-method="POST"
+                            >
+                                Restore Collection
+                            </button>
+                            {% endif %}
+                            
+                            {% if collection.privacy.to_string() != "Private" %}
+                            <button
+                                type="button"
+                                class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                onclick="shareCollection('{{ collection.collection_id }}', '{{ collection.name }}')"
+                            >
+                                Share Collection
+                            </button>
+                            {% endif %}
+                            
+                            <div class="border-t border-gray-100"></div>
+                            <button
+                                type="button"
+                                class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                                onclick="deleteCollection('{{ collection.collection_id }}', '{{ collection.name }}')"
+                            >
+                                Delete Collection
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Collection Description -->
+            {% if !collection.description.is_empty() %}
+            <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ collection.description }}</p>
+            {% endif %}
+            
+            <!-- Collection Stats -->
+            <div class="flex items-center justify-between text-sm text-gray-500 mb-4">
+                <span class="flex items-center">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    {{ collection.recipe_count }} recipes
+                </span>
+                
+                <span>{{ collection.updated_at }}</span>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex space-x-2">
+                <a
+                    href="/collections/{{ collection.collection_id }}"
+                    class="flex-1 text-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                >
+                    View Collection
+                </a>
+                
+                {% if collection.recipe_count > 0 %}
+                <button
+                    type="button"
+                    class="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                    ts-req="/recipes/selector"
+                    ts-target="#recipe-selector-modal"
+                    ts-vals="collection_id:{{ collection.collection_id }}"
+                >
+                    Add Recipes
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>

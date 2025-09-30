@@ -1,0 +1,287 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}My Favorites - IMKitchen{% endblock %}
+{% block meta_description %}Quick access to your favorite recipes{% endblock %}
+
+{% block main_classes %}pb-20 md:pb-0{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Page Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">⭐ My Favorites</h1>
+        <p class="text-lg text-gray-600">Quick access to your favorite recipes</p>
+    </div>
+
+    <!-- Favorites Stats -->
+    {% if favorites.total_count > 0 %}
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+            <div class="text-2xl font-bold text-red-600">{{ favorites.total_count }}</div>
+            <div class="text-sm text-gray-500">Total Favorites</div>
+        </div>
+        
+        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+            <div class="text-2xl font-bold text-green-600">{{ favorites.quick_recipes .len() }}</div>
+            <div class="text-sm text-gray-500">Quick Recipes</div>
+        </div>
+        
+        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+            <div class="text-2xl font-bold text-yellow-600">{{ favorites.highly_rated_favorites .len() }}</div>
+            <div class="text-sm text-gray-500">Highly Rated</div>
+        </div>
+        
+        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+            <div class="text-2xl font-bold text-purple-600">{{ favorites.categories .len() }}</div>
+            <div class="text-sm text-gray-500">Categories</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Filter Tabs -->
+    {% if favorites.total_count > 0 %}
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+        <div class="border-b border-gray-200">
+            <nav class="flex space-x-8 px-6" aria-label="Tabs">
+                <button
+                    type="button"
+                    class="favorites-tab py-4 px-1 border-b-2 border-blue-500 text-blue-600 font-medium text-sm"
+                    data-target="all-favorites"
+                    onclick="showFavoriteTab('all-favorites', this)"
+                >
+                    All Favorites ({{ favorites.total_count }})
+                </button>
+                
+                {% if favorites.quick_recipes .len() > 0 %}
+                <button
+                    type="button"
+                    class="favorites-tab py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-medium text-sm"
+                    data-target="quick-favorites"
+                    onclick="showFavoriteTab('quick-favorites', this)"
+                >
+                    Quick Recipes ({{ favorites.quick_recipes .len() }})
+                </button>
+                {% endif %}
+                
+                {% if favorites.highly_rated_favorites .len() > 0 %}
+                <button
+                    type="button"
+                    class="favorites-tab py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-medium text-sm"
+                    data-target="highly-rated-favorites"
+                    onclick="showFavoriteTab('highly-rated-favorites', this)"
+                >
+                    Highly Rated ({{ favorites.highly_rated_favorites .len() }})
+                </button>
+                {% endif %}
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Favorites Content -->
+    <div id="favorites-content">
+        {% if favorites.total_count > 0 %}
+        
+        <!-- All Favorites Tab -->
+        <div id="all-favorites" class="favorite-tab-content">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for recipe in favorites.recipes %}
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200">
+                    {% if !recipe.image_url.is_empty() %}
+                    <img src="{{ recipe.image_url }}" alt="{{ recipe.title }}" class="w-full h-48 object-cover rounded-t-lg">
+                    {% else %}
+                    <div class="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-lg flex items-center justify-center">
+                        <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="p-4">
+                        <div class="flex items-start justify-between mb-2">
+                            <h3 class="text-lg font-semibold text-gray-900 line-clamp-2">
+                                <a href="/recipes/{{ recipe.recipe_id }}" class="hover:text-blue-600 transition-colors">
+                                    {{ recipe.title }}
+                                </a>
+                            </h3>
+                            
+                            <button
+                                type="button"
+                                class="p-1 text-red-500 hover:text-red-700 transition-colors"
+                                ts-req="/favorites/{{ recipe.recipe_id }}"
+                                ts-target="#favorites-content"
+                                ts-method="DELETE"
+                                title="Remove from favorites"
+                            >
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        <div class="flex items-center space-x-4 text-sm text-gray-500 mb-3">
+                            <span class="inline-flex items-center">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                {{ recipe.total_time_minutes }}m
+                            </span>
+                            <span class="inline-flex items-center
+                                {% if recipe.difficulty.to_string() == "Easy" %}text-green-600{% endif %}
+                                {% if recipe.difficulty.to_string() == "Medium" %}text-yellow-600{% endif %}
+                                {% if recipe.difficulty.to_string() == "Hard" %}text-red-600{% endif %}
+                            ">
+                                {{ recipe.difficulty }}
+                            </span>
+                            {% if recipe.rating > 0.0 %}
+                            <span class="inline-flex items-center">
+                                <svg class="w-4 h-4 mr-1 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                </svg>
+                                {{ recipe.rating }}
+                            </span>
+                            {% endif %}
+                        </div>
+                        
+                        {% if !recipe.tags.is_empty() %}
+                        <div class="flex flex-wrap gap-1">
+                            {% for tag in recipe.tags %}
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                {{ tag }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Quick Recipes Tab -->
+        {% if favorites.quick_recipes .len() > 0 %}
+        <div id="quick-favorites" class="favorite-tab-content hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for recipe in favorites.quick_recipes %}
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200">
+                    {% if !recipe.image_url.is_empty() %}
+                    <img src="{{ recipe.image_url }}" alt="{{ recipe.title }}" class="w-full h-48 object-cover rounded-t-lg">
+                    {% else %}
+                    <div class="w-full h-48 bg-gradient-to-br from-green-100 to-green-200 rounded-t-lg flex items-center justify-center">
+                        <div class="text-center">
+                            <svg class="w-12 h-12 text-green-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <div class="text-green-600 text-sm font-medium">Quick Recipe</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="p-4">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
+                            <a href="/recipes/{{ recipe.recipe_id }}" class="hover:text-blue-600 transition-colors">
+                                {{ recipe.title }}
+                            </a>
+                        </h3>
+                        
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-green-600 font-medium">
+                                {{ recipe.total_time_minutes }} minutes
+                            </span>
+                            <span class="text-gray-500">{{ recipe.difficulty }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Highly Rated Tab -->
+        {% if favorites.highly_rated_favorites .len() > 0 %}
+        <div id="highly-rated-favorites" class="favorite-tab-content hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for recipe in favorites.highly_rated_favorites %}
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200">
+                    {% if !recipe.image_url.is_empty() %}
+                    <img src="{{ recipe.image_url }}" alt="{{ recipe.title }}" class="w-full h-48 object-cover rounded-t-lg">
+                    {% else %}
+                    <div class="w-full h-48 bg-gradient-to-br from-yellow-100 to-yellow-200 rounded-t-lg flex items-center justify-center">
+                        <div class="text-center">
+                            <svg class="w-12 h-12 text-yellow-600 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                            </svg>
+                            <div class="text-yellow-600 text-sm font-medium">Highly Rated</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="p-4">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
+                            <a href="/recipes/{{ recipe.recipe_id }}" class="hover:text-blue-600 transition-colors">
+                                {{ recipe.title }}
+                            </a>
+                        </h3>
+                        
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="flex items-center text-yellow-600 font-medium">
+                                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                </svg>
+                                {{ recipe.rating }} ({{ recipe.review_count }} reviews)
+                            </span>
+                            <span class="text-gray-500">{{ recipe.total_time_minutes }}m</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <!-- Empty State -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+            <div class="text-gray-400 mb-4">
+                <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                </svg>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">No favorites yet</h2>
+            <p class="text-lg text-gray-600 mb-6">Start favoriting recipes to build your personal collection!</p>
+            
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="/recipes/discover" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 focus:ring-2 focus:ring-blue-200">
+                    Discover Recipes
+                </a>
+                <a href="/collections/new" class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors duration-200 focus:ring-2 focus:ring-gray-200">
+                    Create Collection
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function showFavoriteTab(targetId, button) {
+    // Hide all tab contents
+    document.querySelectorAll('.favorite-tab-content').forEach(tab => {
+        tab.classList.add('hidden');
+    });
+    
+    // Remove active styles from all tabs
+    document.querySelectorAll('.favorites-tab').forEach(tab => {
+        tab.classList.remove('border-blue-500', 'text-blue-600');
+        tab.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    // Show target tab content
+    document.getElementById(targetId).classList.remove('hidden');
+    
+    // Add active styles to clicked tab
+    button.classList.remove('border-transparent', 'text-gray-500');
+    button.classList.add('border-blue-500', 'text-blue-600');
+}
+</script>
+{% endblock %}
