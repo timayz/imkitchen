@@ -380,3 +380,237 @@ impl Default for CollectionSearchService {
         Self::new()
     }
 }
+
+// Rating and Review Services
+
+use super::rating::{
+    RatingStatistics, RecipeRating, RecipeReview, ReviewModerationStatus, StarRating,
+};
+
+/// Service for aggregating rating statistics and calculating weighted averages
+pub struct RatingAggregationService;
+
+impl RatingAggregationService {
+    pub fn new() -> Self {
+        Self
+    }
+
+    /// Calculate weighted average rating with statistical significance weighting
+    pub fn calculate_weighted_average(&self, ratings: &[RecipeRating]) -> f32 {
+        if ratings.is_empty() {
+            return 0.0;
+        }
+
+        let total_ratings = ratings.len() as f32;
+        let sum: u32 = ratings.iter().map(|r| r.star_rating.value as u32).sum();
+        let raw_average = sum as f32 / total_ratings;
+
+        // Apply statistical significance weighting
+        // Fewer ratings get pulled toward the global average (3.0)
+        let global_average = 3.0;
+        let weight = total_ratings / (total_ratings + 10.0); // Bayesian average weight
+
+        raw_average * weight + global_average * (1.0 - weight)
+    }
+
+    /// Generate rating distribution for visualization
+    pub fn calculate_rating_distribution(&self, ratings: &[RecipeRating]) -> [u32; 5] {
+        let mut distribution = [0u32; 5];
+
+        for rating in ratings {
+            let index = (rating.star_rating.value - 1) as usize;
+            distribution[index] += 1;
+        }
+
+        distribution
+    }
+
+    /// Update recipe statistics when new rating is added
+    pub fn update_statistics_for_new_rating(
+        &self,
+        mut stats: RatingStatistics,
+        rating: StarRating,
+    ) -> RatingStatistics {
+        stats.add_rating(rating);
+        stats
+    }
+
+    /// Calculate confidence score for rating reliability
+    pub fn calculate_confidence_score(&self, total_ratings: u32) -> f32 {
+        // Simple confidence calculation based on sample size
+        match total_ratings {
+            0 => 0.0,
+            1..=5 => 0.3,
+            6..=15 => 0.6,
+            16..=50 => 0.8,
+            _ => 0.95,
+        }
+    }
+}
+
+impl Default for RatingAggregationService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Service for automated review moderation and spam detection
+pub struct ReviewModerationService {
+    spam_keywords: Vec<String>,
+    inappropriate_keywords: Vec<String>,
+}
+
+impl ReviewModerationService {
+    pub fn new() -> Self {
+        Self {
+            spam_keywords: vec![
+                "spam".to_string(),
+                "click here".to_string(),
+                "buy now".to_string(),
+                "free money".to_string(),
+                "visit my site".to_string(),
+            ],
+            inappropriate_keywords: vec![
+                "offensive_word1".to_string(),
+                "offensive_word2".to_string(),
+                // Add actual inappropriate content keywords
+            ],
+        }
+    }
+
+    /// Automatically moderate review content
+    pub fn moderate_review(&self, review: &RecipeReview) -> ReviewModerationStatus {
+        let review_text_lower = review.review_text.to_lowercase();
+
+        // Check for spam content
+        if self.contains_spam_content(&review_text_lower) {
+            return ReviewModerationStatus::Flagged;
+        }
+
+        // Check for inappropriate content
+        if self.contains_inappropriate_content(&review_text_lower) {
+            return ReviewModerationStatus::Rejected;
+        }
+
+        // Check review length and quality heuristics
+        if self.is_low_quality_review(&review.review_text) {
+            return ReviewModerationStatus::Pending;
+        }
+
+        ReviewModerationStatus::Approved
+    }
+
+    fn contains_spam_content(&self, text: &str) -> bool {
+        self.spam_keywords
+            .iter()
+            .any(|keyword| text.contains(keyword))
+    }
+
+    fn contains_inappropriate_content(&self, text: &str) -> bool {
+        self.inappropriate_keywords
+            .iter()
+            .any(|keyword| text.contains(keyword))
+    }
+
+    fn is_low_quality_review(&self, text: &str) -> bool {
+        // Check for very short reviews that might not be helpful
+        if text.len() < 20 {
+            return true;
+        }
+
+        // Check for repetitive characters (like "aaaaaaa")
+        let chars: Vec<char> = text.chars().collect();
+        let mut consecutive_count = 1;
+        for i in 1..chars.len() {
+            if chars[i] == chars[i - 1] {
+                consecutive_count += 1;
+                if consecutive_count > 5 {
+                    return true;
+                }
+            } else {
+                consecutive_count = 1;
+            }
+        }
+
+        false
+    }
+
+    /// Check if review requires manual moderation
+    pub fn requires_manual_review(&self, review: &RecipeReview) -> bool {
+        // Flag for manual review if contains certain patterns
+        let text = &review.review_text.to_lowercase();
+
+        // Check for borderline content that needs human judgment
+        let borderline_keywords = ["maybe", "not sure", "controversial", "might be"];
+        borderline_keywords
+            .iter()
+            .any(|keyword| text.contains(keyword))
+    }
+}
+
+impl Default for ReviewModerationService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Service for statistical weighting of ratings and reviews
+pub struct StatisticalWeightingService;
+
+impl StatisticalWeightingService {
+    pub fn new() -> Self {
+        Self
+    }
+
+    /// Calculate helpfulness score weighting based on user reputation
+    pub fn calculate_helpfulness_weight(&self, _user_id: Uuid, base_score: i32) -> f32 {
+        // In a real implementation, this would factor in user reputation,
+        // review history, and other trust signals
+        // For now, using a simple weighting
+        let weight_factor = 1.0; // Could be adjusted based on user reputation
+        base_score as f32 * weight_factor
+    }
+
+    /// Calculate time-decay factor for review relevance
+    pub fn calculate_time_decay_factor(&self, review_age_days: u32) -> f32 {
+        // More recent reviews have higher weight
+        let decay_rate = 0.01; // 1% decay per day
+        let max_age = 365.0; // Reviews older than 1 year get minimum weight
+
+        if review_age_days as f32 > max_age {
+            0.1 // Minimum weight of 10%
+        } else {
+            (1.0 - (review_age_days as f32 * decay_rate)).max(0.1)
+        }
+    }
+
+    /// Calculate overall review quality score
+    pub fn calculate_review_quality_score(&self, review: &RecipeReview) -> f32 {
+        let mut score = 0.0;
+
+        // Length factor (longer reviews generally more helpful)
+        let length_score = (review.review_text.len() as f32 / 500.0).min(1.0);
+        score += length_score * 0.3;
+
+        // Helpfulness factor
+        let helpfulness_score = if !review.helpfulness_votes.is_empty() {
+            (review.helpfulness_score as f32 / review.helpfulness_votes.len() as f32)
+                .clamp(0.0, 1.0)
+        } else {
+            0.5 // Neutral score for reviews without votes
+        };
+        score += helpfulness_score * 0.4;
+
+        // Photo factor (reviews with photos can be more helpful)
+        let photo_score = if !review.photos.is_empty() { 1.0 } else { 0.5 };
+        score += photo_score * 0.3;
+
+        score.min(1.0)
+    }
+}
+
+impl Default for StatisticalWeightingService {
+    fn default() -> Self {
+        Self::new()
+    }
+}

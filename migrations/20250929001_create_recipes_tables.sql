@@ -16,8 +16,8 @@ CREATE TABLE IF NOT EXISTS recipes (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME,
     
-    -- Foreign key to users table (when implemented)
-    FOREIGN KEY (created_by) REFERENCES users(user_id) ON DELETE CASCADE
+    -- Foreign key to user_profiles table
+    FOREIGN KEY (created_by) REFERENCES user_profiles(id) ON DELETE CASCADE
 );
 
 -- Recipe ingredients table

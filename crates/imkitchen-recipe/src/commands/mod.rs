@@ -434,3 +434,165 @@ impl RestoreCollectionCommand {
         }
     }
 }
+
+// Rating and Review commands
+
+use crate::domain::rating::{ReviewModerationStatus, StarRating};
+
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+pub struct RateRecipeCommand {
+    pub recipe_id: Uuid,
+    pub user_id: Uuid,
+    pub star_rating: StarRating,
+}
+
+impl RateRecipeCommand {
+    pub fn new(
+        recipe_id: Uuid,
+        user_id: Uuid,
+        star_rating: StarRating,
+    ) -> Result<Self, validator::ValidationErrors> {
+        let command = Self {
+            recipe_id,
+            user_id,
+            star_rating,
+        };
+
+        command.validate()?;
+        Ok(command)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+pub struct CreateReviewCommand {
+    pub rating_id: Uuid,
+    pub user_id: Uuid,
+    pub recipe_id: Uuid,
+    #[validate(length(min = 10, max = 2000))]
+    pub review_text: String,
+    pub photos: Vec<String>,
+}
+
+impl CreateReviewCommand {
+    pub fn new(
+        rating_id: Uuid,
+        user_id: Uuid,
+        recipe_id: Uuid,
+        review_text: String,
+        photos: Vec<String>,
+    ) -> Result<Self, validator::ValidationErrors> {
+        let command = Self {
+            rating_id,
+            user_id,
+            recipe_id,
+            review_text,
+            photos,
+        };
+
+        command.validate()?;
+        Ok(command)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+pub struct EditReviewCommand {
+    pub review_id: Uuid,
+    pub user_id: Uuid,
+    #[validate(length(min = 10, max = 2000))]
+    pub new_review_text: String,
+}
+
+impl EditReviewCommand {
+    pub fn new(
+        review_id: Uuid,
+        user_id: Uuid,
+        new_review_text: String,
+    ) -> Result<Self, validator::ValidationErrors> {
+        let command = Self {
+            review_id,
+            user_id,
+            new_review_text,
+        };
+
+        command.validate()?;
+        Ok(command)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DeleteReviewCommand {
+    pub review_id: Uuid,
+    pub user_id: Uuid,
+}
+
+impl DeleteReviewCommand {
+    pub fn new(review_id: Uuid, user_id: Uuid) -> Self {
+        Self { review_id, user_id }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VoteHelpfulnessCommand {
+    pub review_id: Uuid,
+    pub user_id: Uuid,
+    pub is_helpful: bool,
+}
+
+impl VoteHelpfulnessCommand {
+    pub fn new(review_id: Uuid, user_id: Uuid, is_helpful: bool) -> Self {
+        Self {
+            review_id,
+            user_id,
+            is_helpful,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ModerateReviewCommand {
+    pub review_id: Uuid,
+    pub moderation_status: ReviewModerationStatus,
+    pub moderation_reason: Option<String>,
+    pub moderated_by: Uuid,
+}
+
+impl ModerateReviewCommand {
+    pub fn new(
+        review_id: Uuid,
+        moderation_status: ReviewModerationStatus,
+        moderation_reason: Option<String>,
+        moderated_by: Uuid,
+    ) -> Self {
+        Self {
+            review_id,
+            moderation_status,
+            moderation_reason,
+            moderated_by,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+pub struct FlagReviewCommand {
+    pub review_id: Uuid,
+    pub flagged_by: Uuid,
+    #[validate(length(min = 10, max = 500))]
+    pub flag_reason: String,
+}
+
+impl FlagReviewCommand {
+    pub fn new(
+        review_id: Uuid,
+        flagged_by: Uuid,
+        flag_reason: String,
+    ) -> Result<Self, validator::ValidationErrors> {
+        let command = Self {
+            review_id,
+            flagged_by,
+            flag_reason,
+        };
+
+        command.validate()?;
+        Ok(command)
+    }
+}

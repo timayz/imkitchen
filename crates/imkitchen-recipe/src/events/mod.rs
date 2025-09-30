@@ -392,3 +392,196 @@ impl DomainEvent for CollectionRestored {
         "CollectionRestored"
     }
 }
+
+// Rating and Review events
+
+use crate::domain::rating::{HelpfulnessVote, ReviewModerationStatus, StarRating};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RecipeRated {
+    pub event_id: Uuid,
+    pub rating_id: Uuid,
+    pub user_id: Uuid,
+    pub recipe_id: Uuid,
+    pub star_rating: StarRating,
+    pub occurred_at: DateTime<Utc>,
+}
+
+impl DomainEvent for RecipeRated {
+    fn event_id(&self) -> Uuid {
+        self.event_id
+    }
+
+    fn aggregate_id(&self) -> Uuid {
+        self.rating_id
+    }
+
+    fn occurred_at(&self) -> DateTime<Utc> {
+        self.occurred_at
+    }
+
+    fn event_type(&self) -> &'static str {
+        "RecipeRated"
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RecipeReviewed {
+    pub event_id: Uuid,
+    pub review_id: Uuid,
+    pub rating_id: Uuid,
+    pub user_id: Uuid,
+    pub recipe_id: Uuid,
+    pub review_text: String,
+    pub photos: Vec<String>,
+    pub occurred_at: DateTime<Utc>,
+}
+
+impl DomainEvent for RecipeReviewed {
+    fn event_id(&self) -> Uuid {
+        self.event_id
+    }
+
+    fn aggregate_id(&self) -> Uuid {
+        self.review_id
+    }
+
+    fn occurred_at(&self) -> DateTime<Utc> {
+        self.occurred_at
+    }
+
+    fn event_type(&self) -> &'static str {
+        "RecipeReviewed"
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReviewEdited {
+    pub event_id: Uuid,
+    pub review_id: Uuid,
+    pub new_review_text: String,
+    pub occurred_at: DateTime<Utc>,
+}
+
+impl DomainEvent for ReviewEdited {
+    fn event_id(&self) -> Uuid {
+        self.event_id
+    }
+
+    fn aggregate_id(&self) -> Uuid {
+        self.review_id
+    }
+
+    fn occurred_at(&self) -> DateTime<Utc> {
+        self.occurred_at
+    }
+
+    fn event_type(&self) -> &'static str {
+        "ReviewEdited"
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReviewDeleted {
+    pub event_id: Uuid,
+    pub review_id: Uuid,
+    pub occurred_at: DateTime<Utc>,
+}
+
+impl DomainEvent for ReviewDeleted {
+    fn event_id(&self) -> Uuid {
+        self.event_id
+    }
+
+    fn aggregate_id(&self) -> Uuid {
+        self.review_id
+    }
+
+    fn occurred_at(&self) -> DateTime<Utc> {
+        self.occurred_at
+    }
+
+    fn event_type(&self) -> &'static str {
+        "ReviewDeleted"
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReviewHelpfulnessVoted {
+    pub event_id: Uuid,
+    pub review_id: Uuid,
+    pub vote: HelpfulnessVote,
+    pub occurred_at: DateTime<Utc>,
+}
+
+impl DomainEvent for ReviewHelpfulnessVoted {
+    fn event_id(&self) -> Uuid {
+        self.event_id
+    }
+
+    fn aggregate_id(&self) -> Uuid {
+        self.review_id
+    }
+
+    fn occurred_at(&self) -> DateTime<Utc> {
+        self.occurred_at
+    }
+
+    fn event_type(&self) -> &'static str {
+        "ReviewHelpfulnessVoted"
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReviewModerated {
+    pub event_id: Uuid,
+    pub review_id: Uuid,
+    pub moderation_status: ReviewModerationStatus,
+    pub moderation_reason: Option<String>,
+    pub occurred_at: DateTime<Utc>,
+}
+
+impl DomainEvent for ReviewModerated {
+    fn event_id(&self) -> Uuid {
+        self.event_id
+    }
+
+    fn aggregate_id(&self) -> Uuid {
+        self.review_id
+    }
+
+    fn occurred_at(&self) -> DateTime<Utc> {
+        self.occurred_at
+    }
+
+    fn event_type(&self) -> &'static str {
+        "ReviewModerated"
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReviewFlagged {
+    pub event_id: Uuid,
+    pub review_id: Uuid,
+    pub flagged_by: Uuid,
+    pub flag_reason: String,
+    pub occurred_at: DateTime<Utc>,
+}
+
+impl DomainEvent for ReviewFlagged {
+    fn event_id(&self) -> Uuid {
+        self.event_id
+    }
+
+    fn aggregate_id(&self) -> Uuid {
+        self.review_id
+    }
+
+    fn occurred_at(&self) -> DateTime<Utc> {
+        self.occurred_at
+    }
+
+    fn event_type(&self) -> &'static str {
+        "ReviewFlagged"
+    }
+}

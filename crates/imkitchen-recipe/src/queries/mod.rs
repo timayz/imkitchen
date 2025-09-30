@@ -358,3 +358,221 @@ impl UserFavoritesQuery {
         self
     }
 }
+
+// Rating and Review queries
+
+use crate::domain::rating::ReviewModerationStatus;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RatingsByRecipeQuery {
+    pub recipe_id: Uuid,
+    pub limit: Option<usize>,
+    pub offset: Option<usize>,
+}
+
+impl RatingsByRecipeQuery {
+    pub fn new(recipe_id: Uuid) -> Self {
+        Self {
+            recipe_id,
+            limit: Some(50),
+            offset: Some(0),
+        }
+    }
+
+    pub fn with_pagination(mut self, limit: usize, offset: usize) -> Self {
+        self.limit = Some(limit);
+        self.offset = Some(offset);
+        self
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReviewsByRecipeQuery {
+    pub recipe_id: Uuid,
+    pub moderation_status_filter: Option<ReviewModerationStatus>,
+    pub sort_by_helpfulness: bool,
+    pub limit: Option<usize>,
+    pub offset: Option<usize>,
+}
+
+impl ReviewsByRecipeQuery {
+    pub fn new(recipe_id: Uuid) -> Self {
+        Self {
+            recipe_id,
+            moderation_status_filter: Some(ReviewModerationStatus::Approved),
+            sort_by_helpfulness: true,
+            limit: Some(20),
+            offset: Some(0),
+        }
+    }
+
+    pub fn include_all_moderation_statuses(mut self) -> Self {
+        self.moderation_status_filter = None;
+        self
+    }
+
+    pub fn filter_by_moderation_status(mut self, status: ReviewModerationStatus) -> Self {
+        self.moderation_status_filter = Some(status);
+        self
+    }
+
+    pub fn sort_by_date_instead(mut self) -> Self {
+        self.sort_by_helpfulness = false;
+        self
+    }
+
+    pub fn with_pagination(mut self, limit: usize, offset: usize) -> Self {
+        self.limit = Some(limit);
+        self.offset = Some(offset);
+        self
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UserRatingHistoryQuery {
+    pub user_id: Uuid,
+    pub recipe_id: Option<Uuid>, // Optional filter for specific recipe
+    pub limit: Option<usize>,
+    pub offset: Option<usize>,
+}
+
+impl UserRatingHistoryQuery {
+    pub fn new(user_id: Uuid) -> Self {
+        Self {
+            user_id,
+            recipe_id: None,
+            limit: Some(50),
+            offset: Some(0),
+        }
+    }
+
+    pub fn for_recipe(mut self, recipe_id: Uuid) -> Self {
+        self.recipe_id = Some(recipe_id);
+        self
+    }
+
+    pub fn with_pagination(mut self, limit: usize, offset: usize) -> Self {
+        self.limit = Some(limit);
+        self.offset = Some(offset);
+        self
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UserReviewHistoryQuery {
+    pub user_id: Uuid,
+    pub moderation_status_filter: Option<ReviewModerationStatus>,
+    pub limit: Option<usize>,
+    pub offset: Option<usize>,
+}
+
+impl UserReviewHistoryQuery {
+    pub fn new(user_id: Uuid) -> Self {
+        Self {
+            user_id,
+            moderation_status_filter: None,
+            limit: Some(20),
+            offset: Some(0),
+        }
+    }
+
+    pub fn filter_by_moderation_status(mut self, status: ReviewModerationStatus) -> Self {
+        self.moderation_status_filter = Some(status);
+        self
+    }
+
+    pub fn with_pagination(mut self, limit: usize, offset: usize) -> Self {
+        self.limit = Some(limit);
+        self.offset = Some(offset);
+        self
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RecipeRatingStatsQuery {
+    pub recipe_id: Uuid,
+}
+
+impl RecipeRatingStatsQuery {
+    pub fn new(recipe_id: Uuid) -> Self {
+        Self { recipe_id }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReviewsByModerationStatusQuery {
+    pub moderation_status: ReviewModerationStatus,
+    pub limit: Option<usize>,
+    pub offset: Option<usize>,
+}
+
+impl ReviewsByModerationStatusQuery {
+    pub fn new(moderation_status: ReviewModerationStatus) -> Self {
+        Self {
+            moderation_status,
+            limit: Some(50),
+            offset: Some(0),
+        }
+    }
+
+    pub fn with_pagination(mut self, limit: usize, offset: usize) -> Self {
+        self.limit = Some(limit);
+        self.offset = Some(offset);
+        self
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TopRatedRecipesQuery {
+    pub category: Option<RecipeCategory>,
+    pub min_rating: f32,
+    pub min_review_count: u32,
+    pub time_range_days: Option<u32>,
+    pub limit: Option<usize>,
+    pub offset: Option<usize>,
+}
+
+impl TopRatedRecipesQuery {
+    pub fn new() -> Self {
+        Self {
+            category: None,
+            min_rating: 4.0,
+            min_review_count: 5,
+            time_range_days: None,
+            limit: Some(20),
+            offset: Some(0),
+        }
+    }
+
+    pub fn with_category(mut self, category: RecipeCategory) -> Self {
+        self.category = Some(category);
+        self
+    }
+
+    pub fn with_minimum_rating(mut self, min_rating: f32) -> Self {
+        self.min_rating = min_rating;
+        self
+    }
+
+    pub fn with_minimum_reviews(mut self, min_review_count: u32) -> Self {
+        self.min_review_count = min_review_count;
+        self
+    }
+
+    pub fn with_time_range(mut self, days: u32) -> Self {
+        self.time_range_days = Some(days);
+        self
+    }
+
+    pub fn with_pagination(mut self, limit: usize, offset: usize) -> Self {
+        self.limit = Some(limit);
+        self.offset = Some(offset);
+        self
+    }
+}
+
+impl Default for TopRatedRecipesQuery {
+    fn default() -> Self {
+        Self::new()
+    }
+}

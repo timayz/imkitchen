@@ -211,6 +211,61 @@ pub fn create_app_with_metrics(db_pool: Option<sqlx::SqlitePool>, metrics: AppMe
             "/recipes/instructions/remove",
             post(handlers::recipes::remove_instruction),
         )
+        // Rating and Review routes
+        .route(
+            "/recipes/{id}/ratings",
+            post(handlers::reviews::rate_recipe),
+        )
+        .route(
+            "/recipes/{id}/reviews",
+            get(handlers::reviews::list_reviews),
+        )
+        .route(
+            "/recipes/{id}/rating-distribution",
+            get(handlers::reviews::get_rating_distribution),
+        )
+        .with_state(app_state.clone());
+
+    // Create reviews router (requires auth for most operations)
+    let reviews_router = Router::new()
+        .route("/reviews", post(handlers::reviews::create_review))
+        .route("/reviews/{id}/edit", put(handlers::reviews::edit_review))
+        .route("/reviews/{id}", delete(handlers::reviews::delete_review))
+        .route(
+            "/reviews/{id}/helpful",
+            post(handlers::reviews::update_review_helpfulness),
+        )
+        .route(
+            "/reviews/{id}/photos/{index}",
+            delete(handlers::reviews::remove_review_photo),
+        )
+        .route(
+            "/reviews/{id}/cancel-edit",
+            get(handlers::reviews::cancel_edit_review),
+        )
+        // User flagging routes
+        .route("/reviews/{id}/flag", post(handlers::reviews::flag_review))
+        // Admin moderation routes
+        .route(
+            "/admin/reviews/moderate",
+            get(handlers::reviews::review_moderation_panel),
+        )
+        .route(
+            "/admin/reviews/queue",
+            get(handlers::reviews::get_moderation_queue_stats),
+        )
+        .route(
+            "/admin/reviews/{id}/approve",
+            post(handlers::reviews::approve_review),
+        )
+        .route(
+            "/admin/reviews/{id}/reject",
+            post(handlers::reviews::reject_review),
+        )
+        .route(
+            "/admin/reviews/bulk-approve",
+            post(handlers::reviews::bulk_approve_reviews),
+        )
         .with_state(app_state.clone());
 
     let meal_plans_router = Router::new()
@@ -244,6 +299,10 @@ pub fn create_app_with_metrics(db_pool: Option<sqlx::SqlitePool>, metrics: AppMe
         .route(
             "/collections/new",
             get(handlers::collections::new_collection_form),
+        )
+        .route(
+            "/collections/new/fragment",
+            get(handlers::collections::new_collection_form_fragment),
         )
         .route(
             "/collections/search",
@@ -309,6 +368,7 @@ pub fn create_app_with_metrics(db_pool: Option<sqlx::SqlitePool>, metrics: AppMe
         .merge(dashboard_router)
         .merge(profile_router)
         .merge(recipes_router)
+        .merge(reviews_router)
         .merge(meal_plans_router)
         .merge(shopping_router)
         .merge(collections_router)
@@ -410,6 +470,22 @@ pub fn create_app_routes(app_state: AppState) -> Router {
     let recipes_router = Router::new()
         .route("/recipes", get(handlers::recipes::list_recipes))
         .route("/recipes/discover", get(handlers::recipes::list_recipes))
+        .route(
+            "/recipes/{id}/ratings",
+            post(handlers::reviews::rate_recipe),
+        )
+        .route(
+            "/recipes/{id}/reviews",
+            get(handlers::reviews::list_reviews),
+        )
+        .with_state(app_state.clone());
+
+    let reviews_router = Router::new()
+        .route("/reviews", post(handlers::reviews::create_review))
+        .route(
+            "/reviews/{id}/helpful",
+            post(handlers::reviews::update_review_helpfulness),
+        )
         .with_state(app_state.clone());
 
     let meal_plans_router = Router::new()
@@ -443,6 +519,10 @@ pub fn create_app_routes(app_state: AppState) -> Router {
         .route(
             "/collections/new",
             get(handlers::collections::new_collection_form),
+        )
+        .route(
+            "/collections/new/fragment",
+            get(handlers::collections::new_collection_form_fragment),
         )
         .route(
             "/collections/search",
@@ -507,6 +587,7 @@ pub fn create_app_routes(app_state: AppState) -> Router {
         .merge(dashboard_router)
         .merge(profile_router)
         .merge(recipes_router)
+        .merge(reviews_router)
         .merge(meal_plans_router)
         .merge(shopping_router)
         .merge(collections_router)

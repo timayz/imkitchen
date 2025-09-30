@@ -32,3 +32,4 @@ imkitchen-recipe = { path = "../imkitchen-recipe" }
 [dev-dependencies]
 tower = "0.5"
 urlencoding = "2.1"
+axum = { workspace = true }

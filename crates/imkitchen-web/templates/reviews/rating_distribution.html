@@ -1,0 +1,236 @@
+<!-- Rating Distribution Component -->
+<!-- Visual breakdown of rating distribution for recipes -->
+
+<div class="bg-white rounded-lg border border-gray-200 p-6 kitchen-card">
+    <h3 class="text-lg font-semibold text-gray-900 mb-4">Rating Breakdown</h3>
+    
+    <!-- Overall Rating Summary -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+        <div class="flex items-center space-x-4">
+            <!-- Large Average Rating -->
+            <div class="text-center">
+                <div class="text-3xl font-bold text-gray-900">
+                    {{ average_rating|round(1) }}
+                </div>
+                <div class="flex justify-center space-x-1 mt-1">
+                    {%- for star in 1..=5 -%}
+                    <svg class="w-5 h-5 {% if star <= average_rating %}text-yellow-400{% else %}text-gray-300{% endif %}"
+                         fill="currentColor" 
+                         viewBox="0 0 20 20" 
+                         aria-hidden="true">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                    </svg>
+                    {%- endfor -%}
+                </div>
+                <div class="text-sm text-gray-600 mt-1">
+                    {{ total_ratings }} rating{% if total_ratings != 1 %}s{% endif %}
+                </div>
+            </div>
+            
+            <!-- Confidence Indicator -->
+            {%- if confidence_score -%}
+            <div class="text-center">
+                <div class="w-16 h-16 relative">
+                    <!-- Confidence Circle -->
+                    <svg class="w-16 h-16 transform -rotate-90" viewBox="0 0 36 36">
+                        <path class="text-gray-200" 
+                              stroke="currentColor" 
+                              stroke-width="3" 
+                              fill="none" 
+                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                        <path class="{% if confidence_score >= 0.8 %}text-green-500{% elif confidence_score >= 0.6 %}text-yellow-500{% else %}text-red-500{% endif %}" 
+                              stroke="currentColor" 
+                              stroke-width="3" 
+                              fill="none" 
+                              stroke-dasharray="{{ (confidence_score * 100)|round }}, 100"
+                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span class="text-xs font-medium text-gray-600">
+                            {{ (confidence_score * 100)|round }}%
+                        </span>
+                    </div>
+                </div>
+                <div class="text-xs text-gray-500 mt-1">Confidence</div>
+            </div>
+            {%- endif -%}
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-2 gap-4 text-center sm:text-left">
+            <div>
+                <div class="text-lg font-semibold text-gray-900">
+                    {{ most_common_rating|default(value="N/A") }}★
+                </div>
+                <div class="text-sm text-gray-600">Most Common</div>
+            </div>
+            <div>
+                <div class="text-lg font-semibold text-gray-900">
+                    {{ recommendation_percentage|default(value=0)|round }}%
+                </div>
+                <div class="text-sm text-gray-600">Recommend</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Rating Distribution Bars -->
+    <div class="space-y-3">
+        {%- for rating in 5..=1 -%}
+        <div class="flex items-center space-x-3">
+            <!-- Star Label -->
+            <div class="flex items-center space-x-1 w-12 justify-end">
+                <span class="text-sm font-medium text-gray-700">{{ rating }}</span>
+                <svg class="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                </svg>
+            </div>
+            
+            <!-- Progress Bar -->
+            <div class="flex-1 flex items-center space-x-3">
+                <div class="flex-1 bg-gray-200 rounded-full h-3 relative overflow-hidden">
+                    {%- set count = distribution[rating - 1]|default(value=0) -%}
+                    {%- set percentage = (count / total_ratings * 100)|round(1) if total_ratings > 0 else 0 -%}
+                    
+                    <div class="h-full bg-gradient-to-r from-kitchen-400 to-kitchen-500 rounded-full transition-all duration-500 ease-out"
+                         style="width: {{ percentage }}%"
+                         aria-label="{{ count }} {{ rating }}-star ratings ({{ percentage }}%)">
+                    </div>
+                    
+                    <!-- Animated Fill Effect -->
+                    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-20 -skew-x-12 animate-pulse"
+                         style="animation-delay: {{ rating * 0.1 }}s; animation-duration: 2s;">
+                    </div>
+                </div>
+                
+                <!-- Count and Percentage -->
+                <div class="w-16 text-right">
+                    <span class="text-sm font-medium text-gray-700">{{ count }}</span>
+                    <span class="text-xs text-gray-500 ml-1">({{ percentage }}%)</span>
+                </div>
+            </div>
+        </div>
+        {%- endfor -%}
+    </div>
+    
+    <!-- Additional Statistics -->
+    {%- if show_detailed_stats -%}
+    <div class="mt-6 pt-6 border-t border-gray-200">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+            <div>
+                <div class="text-lg font-semibold text-gray-900">
+                    {{ (positive_rating_percentage)|round }}%
+                </div>
+                <div class="text-sm text-gray-600">4+ Stars</div>
+            </div>
+            
+            <div>
+                <div class="text-lg font-semibold text-gray-900">
+                    {{ average_helpfulness_score|default(value=0)|round(1) }}
+                </div>
+                <div class="text-sm text-gray-600">Avg Helpfulness</div>
+            </div>
+            
+            <div>
+                <div class="text-lg font-semibold text-gray-900">
+                    {{ verified_review_count|default(value=0) }}
+                </div>
+                <div class="text-sm text-gray-600">Verified</div>
+            </div>
+            
+            <div>
+                <div class="text-lg font-semibold text-gray-900">
+                    {{ reviews_with_photos|default(value=0) }}
+                </div>
+                <div class="text-sm text-gray-600">With Photos</div>
+            </div>
+        </div>
+    </div>
+    {%- endif -%}
+    
+    <!-- Filter Links -->
+    <div class="mt-6 pt-6 border-t border-gray-200">
+        <div class="flex flex-wrap gap-2">
+            <a href="/recipes/{{ recipe_id }}/reviews" 
+               class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
+                      {% if current_filter == 'all' %}bg-kitchen-100 text-kitchen-800{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}
+                      transition-colors kitchen-focus">
+                All Reviews
+            </a>
+            
+            {%- for rating in 5..=1 -%}
+            {%- set count = distribution[rating - 1]|default(value=0) -%}
+            {%- if count > 0 -%}
+            <a href="/recipes/{{ recipe_id }}/reviews?rating={{ rating }}" 
+               class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
+                      {% if current_filter == rating %}bg-kitchen-100 text-kitchen-800{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}
+                      transition-colors kitchen-focus">
+                {{ rating }}★ ({{ count }})
+            </a>
+            {%- endif -%}
+            {%- endfor -%}
+            
+            {%- if reviews_with_photos > 0 -%}
+            <a href="/recipes/{{ recipe_id }}/reviews?photos=true" 
+               class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
+                      {% if current_filter == 'photos' %}bg-kitchen-100 text-kitchen-800{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}
+                      transition-colors kitchen-focus">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                With Photos ({{ reviews_with_photos }})
+            </a>
+            {%- endif -%}
+        </div>
+    </div>
+</div>
+
+<!-- Interactive Enhancement Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animate the progress bars on load
+    const bars = document.querySelectorAll('[style*="width:"]');
+    bars.forEach((bar, index) => {
+        const originalWidth = bar.style.width;
+        bar.style.width = '0%';
+        
+        setTimeout(() => {
+            bar.style.width = originalWidth;
+        }, index * 100 + 200);
+    });
+    
+    // Add hover effects to distribution bars
+    const distributionRows = document.querySelectorAll('.space-y-3 > div');
+    distributionRows.forEach(row => {
+        const bar = row.querySelector('[style*="width:"]');
+        const originalClasses = bar.className;
+        
+        row.addEventListener('mouseenter', function() {
+            bar.className = originalClasses + ' shadow-md transform scale-105';
+        });
+        
+        row.addEventListener('mouseleave', function() {
+            bar.className = originalClasses;
+        });
+    });
+    
+    // Pulse effect for confidence indicator
+    const confidenceCircle = document.querySelector('svg path[stroke-dasharray]');
+    if (confidenceCircle) {
+        setInterval(() => {
+            confidenceCircle.style.filter = 'drop-shadow(0 0 4px currentColor)';
+            setTimeout(() => {
+                confidenceCircle.style.filter = '';
+            }, 1000);
+        }, 3000);
+    }
+});
+</script>
+
+<!-- Accessibility Enhancement -->
+<div class="sr-only" id="rating-summary" aria-live="polite">
+    This recipe has an average rating of {{ average_rating|round(1) }} out of 5 stars,
+    based on {{ total_ratings }} review{% if total_ratings != 1 %}s{% endif %}.
+    {%- if confidence_score -%}
+    The confidence level for this rating is {{ (confidence_score * 100)|round }}%.
+    {%- endif -%}
+</div>
