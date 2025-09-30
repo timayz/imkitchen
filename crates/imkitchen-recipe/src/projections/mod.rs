@@ -393,7 +393,7 @@ impl CollectionSearchIndex {
             || self
                 .description
                 .as_ref()
-                .map_or(false, |desc| desc.to_lowercase().contains(&query_lower))
+                .is_some_and(|desc| desc.to_lowercase().contains(&query_lower))
             || self
                 .recipe_titles
                 .iter()
