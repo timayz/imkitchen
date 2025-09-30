@@ -12,6 +12,8 @@ serde = { workspace = true }
 uuid = { workspace = true }
 chrono = { workspace = true }
 validator = { workspace = true }
+regex = { workspace = true }
+serde_json = { workspace = true }
 # Temporarily disabled unused dependencies
 # evento = { workspace = true }
 # thiserror = { workspace = true }

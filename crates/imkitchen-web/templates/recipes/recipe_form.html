@@ -1,0 +1,313 @@
+<form 
+    class="max-w-4xl mx-auto bg-white shadow-xl rounded-lg overflow-hidden border border-gray-200"
+    ts-req="/recipes"
+    ts-target="#recipe-list"
+    ts-indicator="#form-loading"
+>
+    <!-- Form Header -->
+    <div class="bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-4">
+        <h2 class="text-2xl font-bold text-white">{{ form_title }}</h2>
+        <p class="text-blue-100 mt-1">Create a new recipe with ingredients and instructions</p>
+    </div>
+
+    <!-- Form Content -->
+    <div class="p-6 space-y-6">
+        <!-- Recipe Title -->
+        <div class="space-y-2">
+            <label for="title" class="block text-sm font-medium text-gray-700">
+                Recipe Title <span class="text-red-500">*</span>
+            </label>
+            <input
+                type="text"
+                id="title"
+                name="title"
+                value="{{ recipe.title }}"
+                class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors duration-200"
+                placeholder="Enter recipe name (1-200 characters)"
+                required
+                maxlength="200"
+                minlength="1"
+            />
+            {% if form_errors.title %}
+            <p class="text-sm text-red-600">{{ form_errors.title }}</p>
+            {% endif %}
+        </div>
+
+        <!-- Recipe Category and Difficulty Row -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Category -->
+            <div class="space-y-2">
+                <label for="category" class="block text-sm font-medium text-gray-700">
+                    Category <span class="text-red-500">*</span>
+                </label>
+                <select 
+                    id="category" 
+                    name="category"
+                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors duration-200"
+                    required
+                >
+                    {% for category in categories %}
+                    <option value="{{ category.value }}">
+                        {{ category.display }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Difficulty -->
+            <div class="space-y-2">
+                <label for="difficulty" class="block text-sm font-medium text-gray-700">
+                    Difficulty <span class="text-red-500">*</span>
+                </label>
+                <select 
+                    id="difficulty" 
+                    name="difficulty"
+                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors duration-200"
+                    required
+                >
+                    {% for difficulty in difficulties %}
+                    <option value="{{ difficulty.value }}">
+                        {{ difficulty.display }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <!-- Timing Row -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Prep Time -->
+            <div class="space-y-2">
+                <label for="prep_time_minutes" class="block text-sm font-medium text-gray-700">
+                    Prep Time (minutes) <span class="text-red-500">*</span>
+                </label>
+                <input
+                    type="number"
+                    id="prep_time_minutes"
+                    name="prep_time_minutes"
+                    value="{{ recipe.prep_time_minutes }}"
+                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors duration-200"
+                    placeholder="15"
+                    min="1"
+                    required
+                />
+                {% if form_errors.prep_time_minutes %}
+                <p class="text-sm text-red-600">{{ form_errors.prep_time_minutes }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Cook Time -->
+            <div class="space-y-2">
+                <label for="cook_time_minutes" class="block text-sm font-medium text-gray-700">
+                    Cook Time (minutes) <span class="text-red-500">*</span>
+                </label>
+                <input
+                    type="number"
+                    id="cook_time_minutes"
+                    name="cook_time_minutes"
+                    value="{{ recipe.cook_time_minutes }}"
+                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors duration-200"
+                    placeholder="30"
+                    min="1"
+                    required
+                />
+                {% if form_errors.cook_time_minutes %}
+                <p class="text-sm text-red-600">{{ form_errors.cook_time_minutes }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Ingredients Section -->
+        <div class="space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-gray-800">Ingredients</h3>
+                <button
+                    type="button"
+                    class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors duration-200 focus:ring-2 focus:ring-green-200"
+                    ts-req="/recipes/ingredients/add"
+                    ts-target="#ingredients-list"
+                    ts-indicator="#ingredient-loading"
+                >
+                    <span class="inline-flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Add Ingredient
+                    </span>
+                </button>
+            </div>
+
+            <div id="ingredients-list" class="space-y-3">
+                {% for ingredient in recipe.ingredients %}
+                <div class="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg border border-gray-200" data-ingredient-index="{{ loop.index0 }}">
+                    <div class="flex-1">
+                        <input
+                            type="text"
+                            name="ingredients[{{ loop.index0 }}][name]"
+                            value="{{ ingredient.name }}"
+                            placeholder="Ingredient name"
+                            class="w-full px-3 py-2 border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-200"
+                            required
+                        />
+                    </div>
+                    <div class="w-24">
+                        <input
+                            type="number"
+                            name="ingredients[{{ loop.index0 }}][quantity]"
+                            value="{{ ingredient.quantity }}"
+                            placeholder="2"
+                            step="0.01"
+                            min="0.01"
+                            class="w-full px-3 py-2 border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-200"
+                            required
+                        />
+                    </div>
+                    <div class="w-20">
+                        <input
+                            type="text"
+                            name="ingredients[{{ loop.index0 }}][unit]"
+                            value="{{ ingredient.unit }}"
+                            placeholder="cups"
+                            class="w-full px-3 py-2 border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-200"
+                            required
+                        />
+                    </div>
+                    <button
+                        type="button"
+                        class="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors duration-200"
+                        ts-req="/recipes/ingredients/remove"
+                        ts-target="#ingredients-list"
+                        ts-vals="index:{{ loop.index0 }}"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+            <div id="ingredient-loading" class="hidden">
+                <div class="animate-pulse bg-gray-200 h-16 rounded-lg"></div>
+            </div>
+        </div>
+
+        <!-- Instructions Section -->
+        <div class="space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-gray-800">Instructions</h3>
+                <button
+                    type="button"
+                    class="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium transition-colors duration-200 focus:ring-2 focus:ring-purple-200"
+                    ts-req="/recipes/instructions/add"
+                    ts-target="#instructions-list"
+                    ts-indicator="#instruction-loading"
+                >
+                    <span class="inline-flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Add Step
+                    </span>
+                </button>
+            </div>
+
+            <div id="instructions-list" class="space-y-3">
+                {% for instruction in recipe.instructions %}
+                <div class="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg border border-gray-200" data-instruction-index="{{ loop.index0 }}">
+                    <div class="flex-shrink-0 w-8 h-8 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center font-semibold text-sm">
+                        {{ instruction.step_number }}
+                    </div>
+                    <div class="flex-1">
+                        <textarea
+                            name="instructions[{{ loop.index0 }}][text]"
+                            placeholder="Describe this cooking step..."
+                            rows="3"
+                            class="w-full px-3 py-2 border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-200 resize-none"
+                            required
+                        >{{ instruction.text }}</textarea>
+                    </div>
+                    <div class="w-20">
+                        <input
+                            type="number"
+                            name="instructions[{{ loop.index0 }}][estimated_minutes]"
+                            value=""
+                            placeholder="5"
+                            min="1"
+                            class="w-full px-3 py-2 border border-gray-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-200"
+                        />
+                        <label class="text-xs text-gray-500 mt-1 block">min</label>
+                    </div>
+                    <button
+                        type="button"
+                        class="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors duration-200"
+                        ts-req="/recipes/instructions/remove"
+                        ts-target="#instructions-list"
+                        ts-vals="index:{{ loop.index0 }}"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+            <div id="instruction-loading" class="hidden">
+                <div class="animate-pulse bg-gray-200 h-24 rounded-lg"></div>
+            </div>
+        </div>
+
+        <!-- Tags Section -->
+        <div class="space-y-2">
+            <label for="tags" class="block text-sm font-medium text-gray-700">Tags</label>
+            <input
+                type="text"
+                id="tags"
+                name="tags"
+                value=""
+                class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors duration-200"
+                placeholder="quick, healthy, vegetarian (comma-separated)"
+            />
+            <p class="text-sm text-gray-500">Add tags to help others find your recipe</p>
+        </div>
+
+        <!-- Visibility -->
+        <div class="flex items-center space-x-3">
+            <input
+                type="checkbox"
+                id="is_public"
+                name="is_public"
+                {% if recipe.is_public %}checked{% endif %}
+                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label for="is_public" class="text-sm font-medium text-gray-700">
+                Make this recipe public (others can view and rate it)
+            </label>
+        </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="bg-gray-50 px-6 py-4 flex items-center justify-between border-t border-gray-200">
+        <div class="flex items-center space-x-3">
+            <div id="form-loading" class="hidden">
+                <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+            </div>
+            <span class="text-sm text-gray-500">All required fields marked with *</span>
+        </div>
+        
+        <div class="flex items-center space-x-3">
+            <button
+                type="button"
+                class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors duration-200 focus:ring-2 focus:ring-gray-200"
+                onclick="history.back()"
+            >
+                Cancel
+            </button>
+            <button
+                type="submit"
+                class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 focus:ring-2 focus:ring-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                {{ submit_button_text }}
+            </button>
+        </div>
+    </div>
+</form>
