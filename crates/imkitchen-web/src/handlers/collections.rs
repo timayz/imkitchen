@@ -284,6 +284,23 @@ pub async fn new_collection_form(
     }
 }
 
+/// GET /collections/new/fragment - New collection form fragment for TwinSpark
+pub async fn new_collection_form_fragment(
+    State(_app_state): State<AppState>,
+) -> Result<Html<String>, StatusCode> {
+    let template = CollectionFormTemplate {
+        form_title: "Create New Collection".to_string(),
+        submit_button_text: "Create Collection".to_string(),
+        collection: CollectionFormData::default(),
+        form_errors: CollectionFormErrors::default(),
+    };
+
+    match template.render() {
+        Ok(html) => Ok(Html(html)),
+        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+    }
+}
+
 /// GET /favorites - User favorites page
 pub async fn favorites_list(
     State(_app_state): State<AppState>,

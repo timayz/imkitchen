@@ -535,3 +535,385 @@ impl RecipeInCollectionsView {
             .collect()
     }
 }
+
+// Rating and Review projections
+
+use crate::domain::rating::{HelpfulnessVote, ReviewModerationStatus, StarRating};
+
+/// Aggregated rating statistics for a recipe
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RecipeRatingAggregateView {
+    pub recipe_id: Uuid,
+    pub average_rating: f32,
+    pub total_ratings: u32,
+    pub rating_distribution: [u32; 5], // [1-star, 2-star, 3-star, 4-star, 5-star]
+    pub confidence_score: f32,         // Statistical confidence based on sample size
+    pub last_updated: DateTime<Utc>,
+}
+
+impl RecipeRatingAggregateView {
+    pub fn new(recipe_id: Uuid) -> Self {
+        Self {
+            recipe_id,
+            average_rating: 0.0,
+            total_ratings: 0,
+            rating_distribution: [0; 5],
+            confidence_score: 0.0,
+            last_updated: Utc::now(),
+        }
+    }
+
+    pub fn add_rating(&mut self, rating: StarRating) {
+        let rating_index = (rating.value - 1) as usize;
+        self.rating_distribution[rating_index] += 1;
+        self.total_ratings += 1;
+        self.recalculate_weighted_average();
+        self.recalculate_confidence();
+        self.last_updated = Utc::now();
+    }
+
+    pub fn remove_rating(&mut self, rating: StarRating) {
+        let rating_index = (rating.value - 1) as usize;
+        if self.rating_distribution[rating_index] > 0 {
+            self.rating_distribution[rating_index] -= 1;
+            self.total_ratings -= 1;
+            self.recalculate_weighted_average();
+            self.recalculate_confidence();
+            self.last_updated = Utc::now();
+        }
+    }
+
+    fn recalculate_weighted_average(&mut self) {
+        if self.total_ratings == 0 {
+            self.average_rating = 0.0;
+            return;
+        }
+
+        let weighted_sum: u32 = self
+            .rating_distribution
+            .iter()
+            .enumerate()
+            .map(|(index, &count)| (index as u32 + 1) * count)
+            .sum();
+
+        let raw_average = weighted_sum as f32 / self.total_ratings as f32;
+
+        // Apply Bayesian weighting with global average (3.0)
+        let global_average = 3.0;
+        let weight = self.total_ratings as f32 / (self.total_ratings as f32 + 10.0);
+
+        self.average_rating = raw_average * weight + global_average * (1.0 - weight);
+    }
+
+    fn recalculate_confidence(&mut self) {
+        self.confidence_score = match self.total_ratings {
+            0 => 0.0,
+            1..=5 => 0.3,
+            6..=15 => 0.6,
+            16..=50 => 0.8,
+            _ => 0.95,
+        };
+    }
+
+    pub fn most_common_rating(&self) -> Option<u8> {
+        self.rating_distribution
+            .iter()
+            .enumerate()
+            .max_by_key(|(_, &count)| count)
+            .map(|(index, _)| (index + 1) as u8)
+    }
+
+    pub fn rating_percentage(&self, rating: u8) -> f32 {
+        if self.total_ratings == 0 || rating < 1 || rating > 5 {
+            return 0.0;
+        }
+
+        let index = (rating - 1) as usize;
+        (self.rating_distribution[index] as f32 / self.total_ratings as f32) * 100.0
+    }
+}
+
+/// List view for reviews with sorting and filtering support
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReviewListView {
+    pub recipe_id: Uuid,
+    pub reviews: Vec<ReviewSummary>,
+    pub total_review_count: u32,
+    pub average_helpfulness: f32,
+    pub last_updated: DateTime<Utc>,
+}
+
+impl ReviewListView {
+    pub fn new(recipe_id: Uuid) -> Self {
+        Self {
+            recipe_id,
+            reviews: Vec::new(),
+            total_review_count: 0,
+            average_helpfulness: 0.0,
+            last_updated: Utc::now(),
+        }
+    }
+
+    pub fn add_review(&mut self, review: ReviewSummary) {
+        if !self.reviews.iter().any(|r| r.review_id == review.review_id) {
+            self.reviews.push(review);
+            self.total_review_count += 1;
+            self.recalculate_average_helpfulness();
+            self.last_updated = Utc::now();
+        }
+    }
+
+    pub fn update_review(&mut self, review: ReviewSummary) {
+        if let Some(pos) = self
+            .reviews
+            .iter()
+            .position(|r| r.review_id == review.review_id)
+        {
+            self.reviews[pos] = review;
+            self.recalculate_average_helpfulness();
+            self.last_updated = Utc::now();
+        }
+    }
+
+    pub fn remove_review(&mut self, review_id: Uuid) {
+        if let Some(pos) = self.reviews.iter().position(|r| r.review_id == review_id) {
+            self.reviews.remove(pos);
+            self.total_review_count -= 1;
+            self.recalculate_average_helpfulness();
+            self.last_updated = Utc::now();
+        }
+    }
+
+    fn recalculate_average_helpfulness(&mut self) {
+        if self.reviews.is_empty() {
+            self.average_helpfulness = 0.0;
+            return;
+        }
+
+        let total_helpfulness: i32 = self.reviews.iter().map(|r| r.helpfulness_score).sum();
+        self.average_helpfulness = total_helpfulness as f32 / self.reviews.len() as f32;
+    }
+
+    pub fn sort_by_helpfulness(&mut self) {
+        self.reviews
+            .sort_by(|a, b| b.helpfulness_score.cmp(&a.helpfulness_score));
+    }
+
+    pub fn sort_by_date(&mut self) {
+        self.reviews.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+    }
+
+    pub fn filter_by_moderation_status(
+        &self,
+        status: ReviewModerationStatus,
+    ) -> Vec<&ReviewSummary> {
+        self.reviews
+            .iter()
+            .filter(|r| r.moderation_status == status)
+            .collect()
+    }
+
+    pub fn approved_reviews(&self) -> Vec<&ReviewSummary> {
+        self.filter_by_moderation_status(ReviewModerationStatus::Approved)
+    }
+}
+
+/// Summary view of a review for list displays
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReviewSummary {
+    pub review_id: Uuid,
+    pub user_id: Uuid,
+    pub recipe_id: Uuid,
+    pub rating_id: Uuid,
+    pub star_rating: StarRating,
+    pub review_text: String,
+    pub review_preview: String, // First 100 characters
+    pub has_photos: bool,
+    pub photo_count: usize,
+    pub helpfulness_score: i32,
+    pub total_votes: usize,
+    pub moderation_status: ReviewModerationStatus,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+impl ReviewSummary {
+    pub fn from_review(
+        review_id: Uuid,
+        user_id: Uuid,
+        recipe_id: Uuid,
+        rating_id: Uuid,
+        star_rating: StarRating,
+        review_text: String,
+        photos: Vec<String>,
+        helpfulness_score: i32,
+        helpfulness_votes: Vec<HelpfulnessVote>,
+        moderation_status: ReviewModerationStatus,
+        created_at: DateTime<Utc>,
+        updated_at: DateTime<Utc>,
+    ) -> Self {
+        let review_preview = if review_text.len() > 100 {
+            format!("{}...", &review_text[..97])
+        } else {
+            review_text.clone()
+        };
+
+        Self {
+            review_id,
+            user_id,
+            recipe_id,
+            rating_id,
+            star_rating,
+            review_text,
+            review_preview,
+            has_photos: !photos.is_empty(),
+            photo_count: photos.len(),
+            helpfulness_score,
+            total_votes: helpfulness_votes.len(),
+            moderation_status,
+            created_at,
+            updated_at,
+        }
+    }
+
+    pub fn is_helpful(&self) -> bool {
+        self.helpfulness_score > 0
+    }
+
+    pub fn helpfulness_percentage(&self) -> f32 {
+        if self.total_votes == 0 {
+            return 50.0; // Neutral
+        }
+
+        let helpful_votes = (self.total_votes as i32 + self.helpfulness_score) / 2;
+        (helpful_votes as f32 / self.total_votes as f32) * 100.0
+    }
+}
+
+/// Distribution view for visualizing rating breakdown
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RatingDistributionView {
+    pub recipe_id: Uuid,
+    pub distribution: [u32; 5], // [1-star, 2-star, 3-star, 4-star, 5-star]
+    pub total_ratings: u32,
+    pub average_rating: f32,
+    pub percentages: [f32; 5], // Percentage for each star rating
+    pub last_updated: DateTime<Utc>,
+}
+
+impl RatingDistributionView {
+    pub fn new(recipe_id: Uuid) -> Self {
+        Self {
+            recipe_id,
+            distribution: [0; 5],
+            total_ratings: 0,
+            average_rating: 0.0,
+            percentages: [0.0; 5],
+            last_updated: Utc::now(),
+        }
+    }
+
+    pub fn from_aggregate(aggregate: &RecipeRatingAggregateView) -> Self {
+        let mut view = Self::new(aggregate.recipe_id);
+        view.distribution = aggregate.rating_distribution;
+        view.total_ratings = aggregate.total_ratings;
+        view.average_rating = aggregate.average_rating;
+        view.calculate_percentages();
+        view.last_updated = aggregate.last_updated;
+        view
+    }
+
+    fn calculate_percentages(&mut self) {
+        if self.total_ratings == 0 {
+            self.percentages = [0.0; 5];
+            return;
+        }
+
+        for (i, &count) in self.distribution.iter().enumerate() {
+            self.percentages[i] = (count as f32 / self.total_ratings as f32) * 100.0;
+        }
+    }
+
+    pub fn get_star_percentage(&self, star_rating: u8) -> f32 {
+        if star_rating < 1 || star_rating > 5 {
+            return 0.0;
+        }
+        self.percentages[(star_rating - 1) as usize]
+    }
+
+    pub fn get_star_count(&self, star_rating: u8) -> u32 {
+        if star_rating < 1 || star_rating > 5 {
+            return 0;
+        }
+        self.distribution[(star_rating - 1) as usize]
+    }
+}
+
+/// Notification view for review-related notifications
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReviewNotificationView {
+    pub recipient_user_id: Uuid,
+    pub notifications: Vec<ReviewNotification>,
+    pub unread_count: usize,
+    pub last_updated: DateTime<Utc>,
+}
+
+impl ReviewNotificationView {
+    pub fn new(recipient_user_id: Uuid) -> Self {
+        Self {
+            recipient_user_id,
+            notifications: Vec::new(),
+            unread_count: 0,
+            last_updated: Utc::now(),
+        }
+    }
+
+    pub fn add_notification(&mut self, notification: ReviewNotification) {
+        if notification.is_unread {
+            self.unread_count += 1;
+        }
+        self.notifications.push(notification);
+        self.last_updated = Utc::now();
+    }
+
+    pub fn mark_as_read(&mut self, notification_id: Uuid) {
+        if let Some(notification) = self
+            .notifications
+            .iter_mut()
+            .find(|n| n.notification_id == notification_id)
+        {
+            if notification.is_unread {
+                notification.is_unread = false;
+                self.unread_count = self.unread_count.saturating_sub(1);
+                self.last_updated = Utc::now();
+            }
+        }
+    }
+
+    pub fn recent_notifications(&self, limit: usize) -> Vec<&ReviewNotification> {
+        self.notifications.iter().take(limit).collect()
+    }
+}
+
+/// Individual notification about review activity
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReviewNotification {
+    pub notification_id: Uuid,
+    pub notification_type: ReviewNotificationType,
+    pub recipe_id: Uuid,
+    pub recipe_title: String,
+    pub review_id: Option<Uuid>,
+    pub from_user_id: Uuid,
+    pub message: String,
+    pub is_unread: bool,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum ReviewNotificationType {
+    NewReview,
+    ReviewHelpful,
+    ReviewFlagged,
+    ReviewApproved,
+    ReviewRejected,
+}

@@ -8,6 +8,7 @@ pub mod metrics;
 pub mod profile;
 pub mod pwa;
 pub mod recipes;
+pub mod reviews;
 pub mod shopping;
 
 // Re-export handlers
@@ -21,4 +22,5 @@ pub use metrics::*;
 pub use profile::*;
 pub use pwa::*;
 pub use recipes::*;
+pub use reviews::*;
 pub use shopping::*;

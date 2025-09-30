@@ -1,0 +1,87 @@
+<!-- Rating Stars Component -->
+<!-- Interactive star rating component for recipe ratings -->
+
+{%- if mode == "input" -%}
+<!-- Interactive star input for rating submission -->
+<div class="flex items-center space-x-1" role="radiogroup" aria-label="Rate this recipe">
+    <form ts-req="/recipes/{{ recipe_id }}/ratings" 
+          ts-target="#rating-section" 
+          ts-trigger="submit"
+          class="flex items-center space-x-1">
+        
+        <input type="hidden" name="recipe_id" value="{{ recipe_id }}">
+        
+        {%- for star in 1..=5 -%}
+        <label class="cursor-pointer touch-target group kitchen-focus" 
+               for="rating-{{ star }}"
+               aria-label="Rate {{ star }} star{% if star != 1 %}s{% endif %}">
+            <input type="radio" 
+                   id="rating-{{ star }}" 
+                   name="star_rating" 
+                   value="{{ star }}"
+                   {% if current_rating %}{% if current_rating == star %}checked{% endif %}{% endif %}
+                   class="sr-only peer"
+                   onchange="this.form.submit()">
+            
+            <svg class="w-8 h-8 text-gray-300 hover:text-yellow-400 peer-checked:text-yellow-400 
+                        group-hover:text-yellow-500 transition-colors duration-150 
+                        {% if current_rating %}{% if star <= current_rating %}text-yellow-400{% endif %}{% endif %}"
+                 fill="currentColor" 
+                 viewBox="0 0 20 20" 
+                 aria-hidden="true">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+            </svg>
+        </label>
+        {%- endfor -%}
+        
+        <noscript>
+            <button type="submit" 
+                    class="ml-2 px-3 py-1 bg-kitchen-600 text-white rounded-md text-sm 
+                           hover:bg-kitchen-700 transition-colors kitchen-focus">
+                Rate
+            </button>
+        </noscript>
+    </form>
+</div>
+
+{%- else -%}
+<!-- Display-only star rating -->
+<div class="flex items-center space-x-1" 
+     aria-label="Recipe rated {{ average_rating|round(1) }} out of 5 stars">
+    
+    {%- for star in 1..=5 -%}
+    <svg class="w-5 h-5 {% if star <= average_rating %}text-yellow-400{% else %}text-gray-300{% endif %}"
+         fill="currentColor" 
+         viewBox="0 0 20 20" 
+         aria-hidden="true">
+        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+    </svg>
+    {%- endfor -%}
+    
+    {%- if show_details -%}
+    <span class="ml-2 text-sm text-gray-600">
+        {{ average_rating|round(1) }} 
+        {%- if total_ratings > 0 -%}
+        ({{ total_ratings }} review{% if total_ratings != 1 %}s{% endif %})
+        {%- endif -%}
+    </span>
+    {%- endif -%}
+</div>
+
+{%- endif -%}
+
+<!-- Compact star rating for cards and lists -->
+{%- if compact -%}
+<div class="flex items-center space-x-1">
+    {%- for star in 1..=5 -%}
+    <svg class="w-4 h-4 {% if star <= average_rating %}text-yellow-400{% else %}text-gray-300{% endif %}"
+         fill="currentColor" 
+         viewBox="0 0 20 20" 
+         aria-hidden="true">
+        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+    </svg>
+    {%- endfor -%}
+    
+    <span class="ml-1 text-xs text-gray-500">{{ average_rating|round(1) }}</span>
+</div>
+{%- endif -%}
