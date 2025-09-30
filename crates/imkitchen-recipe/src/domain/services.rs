@@ -541,7 +541,7 @@ impl ReviewModerationService {
         let text = &review.review_text.to_lowercase();
 
         // Check for borderline content that needs human judgment
-        let borderline_keywords = vec!["maybe", "not sure", "controversial", "might be"];
+        let borderline_keywords = ["maybe", "not sure", "controversial", "might be"];
         borderline_keywords
             .iter()
             .any(|keyword| text.contains(keyword))
@@ -593,10 +593,9 @@ impl StatisticalWeightingService {
         score += length_score * 0.3;
 
         // Helpfulness factor
-        let helpfulness_score = if review.helpfulness_votes.len() > 0 {
+        let helpfulness_score = if !review.helpfulness_votes.is_empty() {
             (review.helpfulness_score as f32 / review.helpfulness_votes.len() as f32)
-                .max(0.0)
-                .min(1.0)
+                .clamp(0.0, 1.0)
         } else {
             0.5 // Neutral score for reviews without votes
         };

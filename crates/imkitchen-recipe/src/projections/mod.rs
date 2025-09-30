@@ -5,7 +5,7 @@ use imkitchen_shared::Difficulty;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::domain::{Ingredient, Instruction, RecipeCategory};
+use crate::domain::{Ingredient, Instruction, RecipeCategory, RecipeReview};
 
 /// Read model for recipe list view - optimized for browsing
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -538,7 +538,7 @@ impl RecipeInCollectionsView {
 
 // Rating and Review projections
 
-use crate::domain::rating::{HelpfulnessVote, ReviewModerationStatus, StarRating};
+use crate::domain::rating::{ReviewModerationStatus, StarRating};
 
 /// Aggregated rating statistics for a recipe
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -624,7 +624,7 @@ impl RecipeRatingAggregateView {
     }
 
     pub fn rating_percentage(&self, rating: u8) -> f32 {
-        if self.total_ratings == 0 || rating < 1 || rating > 5 {
+        if self.total_ratings == 0 || !(1..=5).contains(&rating) {
             return 0.0;
         }
 
@@ -738,41 +738,28 @@ pub struct ReviewSummary {
 }
 
 impl ReviewSummary {
-    pub fn from_review(
-        review_id: Uuid,
-        user_id: Uuid,
-        recipe_id: Uuid,
-        rating_id: Uuid,
-        star_rating: StarRating,
-        review_text: String,
-        photos: Vec<String>,
-        helpfulness_score: i32,
-        helpfulness_votes: Vec<HelpfulnessVote>,
-        moderation_status: ReviewModerationStatus,
-        created_at: DateTime<Utc>,
-        updated_at: DateTime<Utc>,
-    ) -> Self {
-        let review_preview = if review_text.len() > 100 {
-            format!("{}...", &review_text[..97])
+    pub fn from_review(review: &RecipeReview, star_rating: StarRating) -> Self {
+        let review_preview = if review.review_text.len() > 100 {
+            format!("{}...", &review.review_text[..97])
         } else {
-            review_text.clone()
+            review.review_text.clone()
         };
 
         Self {
-            review_id,
-            user_id,
-            recipe_id,
-            rating_id,
+            review_id: review.review_id,
+            user_id: review.user_id,
+            recipe_id: review.recipe_id,
+            rating_id: review.rating_id,
             star_rating,
-            review_text,
+            review_text: review.review_text.clone(),
             review_preview,
-            has_photos: !photos.is_empty(),
-            photo_count: photos.len(),
-            helpfulness_score,
-            total_votes: helpfulness_votes.len(),
-            moderation_status,
-            created_at,
-            updated_at,
+            has_photos: !review.photos.is_empty(),
+            photo_count: review.photos.len(),
+            helpfulness_score: review.helpfulness_score,
+            total_votes: review.helpfulness_votes.len(),
+            moderation_status: review.moderation_status,
+            created_at: review.created_at,
+            updated_at: review.updated_at,
         }
     }
 
@@ -835,14 +822,14 @@ impl RatingDistributionView {
     }
 
     pub fn get_star_percentage(&self, star_rating: u8) -> f32 {
-        if star_rating < 1 || star_rating > 5 {
+        if !(1..=5).contains(&star_rating) {
             return 0.0;
         }
         self.percentages[(star_rating - 1) as usize]
     }
 
     pub fn get_star_count(&self, star_rating: u8) -> u32 {
-        if star_rating < 1 || star_rating > 5 {
+        if !(1..=5).contains(&star_rating) {
             return 0;
         }
         self.distribution[(star_rating - 1) as usize]

@@ -464,9 +464,7 @@ pub async fn approve_review(
     };
 
     // Return updated moderation status
-    Html(format!(
-        r#"<div class="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">Approved</div>"#
-    ))
+    Html(r#"<div class="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">Approved</div>"#.to_string())
 }
 
 /// POST /admin/reviews/{id}/reject - Reject a review
@@ -483,9 +481,7 @@ pub async fn reject_review(
     };
 
     // Return updated moderation status
-    Html(format!(
-        r#"<div class="inline-flex items-center px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">Rejected</div>"#
-    ))
+    Html(r#"<div class="inline-flex items-center px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">Rejected</div>"#.to_string())
 }
 
 /// POST /admin/reviews/bulk-approve - Bulk approve reviews
