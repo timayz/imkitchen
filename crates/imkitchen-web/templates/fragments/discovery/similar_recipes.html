@@ -1,0 +1,195 @@
+<!-- Similar Recipes Fragment -->
+<div class="similar-recipes-container">
+    <div class="similar-header mb-6">
+        <div class="flex items-center justify-between">
+            <h2 class="text-xl font-semibold text-gray-900">🔍 Similar Recipes</h2>
+            <div class="text-sm text-gray-500">
+                Similarity threshold: {{ similarity_threshold * 100 }}%
+            </div>
+        </div>
+        <p class="text-gray-600 mt-1">Recipes with similar ingredients and cooking techniques</p>
+    </div>
+
+    {% if similar_recipes.len() > 0 %}
+    <div class="similar-recipes grid grid-cols-1 md:grid-cols-2 gap-6">
+        {% for recipe in similar_recipes %}
+        <div class="similar-recipe bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
+             data-recipe-id="{{ recipe.recipe_id }}">
+            
+            <!-- Recipe Header -->
+            <div class="p-6">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex-1">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                            <a href="/recipes/{{ recipe.recipe_id }}" 
+                               class="hover:text-kitchen-600 transition-colors">
+                                {{ recipe.title }}
+                            </a>
+                        </h3>
+                        
+                        <!-- Similarity Score -->
+                        <div class="flex items-center mb-3">
+                            <span class="text-sm text-gray-600 mr-2">Similarity:</span>
+                            <div class="flex items-center">
+                                <div class="w-20 bg-gray-200 rounded-full h-2">
+                                    <div class="bg-gradient-to-r from-kitchen-500 to-kitchen-600 h-2 rounded-full" 
+                                         style="width: {{ recipe.similarity_score * 100 }}%"></div>
+                                </div>
+                                <span class="ml-2 text-sm font-medium text-gray-700">{{ (recipe.similarity_score * 100) | round }}%</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Similarity Badge -->
+                        <div class="mb-3">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                                       {% if recipe.similarity_score >= 0.9 %}bg-green-100 text-green-800
+                                       {% elif recipe.similarity_score >= 0.7 %}bg-blue-100 text-blue-800
+                                       {% else %}bg-gray-100 text-gray-800
+                                       {% endif %}">
+                                {% if recipe.is_highly_similar() %}
+                                🔥 {{ recipe.similarity_badge() }}
+                                {% else %}
+                                {{ recipe.similarity_badge() }}
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Button -->
+                    <div class="ml-4">
+                        <a href="/recipes/{{ recipe.recipe_id }}"
+                           class="px-4 py-2 bg-kitchen-600 hover:bg-kitchen-700 text-white text-sm font-medium rounded-lg transition-colors">
+                            View Recipe
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Similarity Breakdown -->
+                <div class="similarity-breakdown grid grid-cols-2 gap-4 mb-4">
+                    <div class="text-center p-3 bg-blue-50 rounded-lg">
+                        <div class="text-lg font-semibold text-blue-700">{{ (recipe.ingredient_overlap * 100) | round }}%</div>
+                        <div class="text-xs text-blue-600 font-medium">Ingredient Match</div>
+                    </div>
+                    
+                    <div class="text-center p-3 bg-purple-50 rounded-lg">
+                        <div class="text-lg font-semibold text-purple-700">{{ (recipe.technique_similarity * 100) | round }}%</div>
+                        <div class="text-xs text-purple-600 font-medium">Technique Match</div>
+                    </div>
+                </div>
+
+                <!-- Similarity Reasons -->
+                {% if recipe.similarity_reasons.len() > 0 %}
+                <div class="similarity-reasons">
+                    <h4 class="text-sm font-medium text-gray-700 mb-2">Why it's similar:</h4>
+                    <div class="space-y-1">
+                        {% for reason in recipe.similarity_reasons %}
+                        <div class="flex items-start">
+                            <span class="text-kitchen-600 mr-2 mt-1">•</span>
+                            <p class="text-sm text-gray-600">{{ reason }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Quick Actions -->
+                <div class="mt-4 flex space-x-2">
+                    <button type="button"
+                            class="flex-1 px-3 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                            ts-req="/discovery/quick-add-favorite" ts-target="#favorite-status-{{ recipe.recipe_id }}" ts-vals="recipe_id:{{ recipe.recipe_id }}"
+                            title="Add to favorites">
+                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                        </svg>
+                        Favorite
+                    </button>
+                    <button type="button"
+                            class="flex-1 px-3 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                            ts-req="/discovery/compare-recipes" ts-target="#comparison-modal" ts-vals="recipe1:{{ original_recipe_id }},recipe2:{{ recipe.recipe_id }}"
+                            title="Compare recipes">
+                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        Compare
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Status Indicator -->
+            <div id="favorite-status-{{ recipe.recipe_id }}" class="hidden">
+                <div class="p-2 bg-green-50 border-t border-green-200 text-center">
+                    <span class="text-sm text-green-600">Added to favorites!</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Similarity Settings -->
+    <div class="mt-6 bg-gray-50 rounded-lg p-4">
+        <h3 class="text-sm font-medium text-gray-700 mb-3">Adjust Similarity</h3>
+        <div class="flex items-center space-x-4">
+            <label class="text-sm text-gray-600">Threshold:</label>
+            <input type="range" 
+                   min="0.5" max="1.0" step="0.1" 
+                   value="{{ similarity_threshold }}"
+                   class="flex-1"
+                   ts-req="/discovery/similar" 
+                   ts-target="#similar-recipes-content" 
+                   ts-trigger="change"
+                   ts-vals="recipe_id:{{ original_recipe_id }}"
+                   ts-include="this">
+            <span class="text-sm font-medium text-gray-700 min-w-0">{{ (similarity_threshold * 100) | round }}%</span>
+        </div>
+        <p class="text-xs text-gray-500 mt-2">
+            Higher thresholds show more similar recipes. Lower thresholds show more diverse options.
+        </p>
+    </div>
+
+    <!-- Find More Similar -->
+    <div class="mt-4 text-center">
+        <button type="button"
+                class="px-4 py-2 border border-kitchen-300 text-kitchen-700 text-sm font-medium rounded-lg hover:bg-kitchen-50 transition-colors"
+                ts-req="/discovery/similar" ts-target="#similar-recipes-content" ts-vals="recipe_id:{{ original_recipe_id }},limit:10">
+            Show More Similar Recipes
+        </button>
+    </div>
+
+    {% else %}
+    <!-- No Similar Recipes State -->
+    <div class="no-similar text-center py-8 bg-gray-50 rounded-lg">
+        <div class="max-w-sm mx-auto">
+            <div class="text-4xl mb-3">🔍</div>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">No similar recipes found</h3>
+            <p class="text-gray-500 text-sm mb-4">
+                Try lowering the similarity threshold or explore other recipes with similar ingredients.
+            </p>
+            
+            <!-- Adjust Threshold -->
+            <div class="mb-4">
+                <label class="block text-sm text-gray-600 mb-2">Lower similarity threshold:</label>
+                <input type="range" 
+                       min="0.3" max="{{ similarity_threshold }}" step="0.1" 
+                       value="0.5"
+                       class="w-full"
+                       ts-req="/discovery/similar" 
+                       ts-target="#similar-recipes-content" 
+                       ts-trigger="change"
+                       ts-vals="recipe_id:{{ original_recipe_id }}"
+                       ts-include="this">
+            </div>
+            
+            <button type="button"
+                    class="px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-kitchen-600 hover:bg-kitchen-700"
+                    ts-req="/discovery/browse" ts-target="#similar-recipes-content">
+                Browse All Recipes
+            </button>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Generated Info -->
+    <div class="mt-6 text-center text-xs text-gray-500">
+        Generated {{ generated_at.format("%Y-%m-%d at %H:%M") }} UTC
+    </div>
+</div>

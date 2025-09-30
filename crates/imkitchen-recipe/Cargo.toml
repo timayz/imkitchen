@@ -14,9 +14,11 @@ chrono = { workspace = true }
 validator = { workspace = true }
 regex = { workspace = true }
 serde_json = { workspace = true }
+tracing = { workspace = true }
+askama = { workspace = true }
 # Temporarily disabled unused dependencies
-# evento = { workspace = true }
-# thiserror = { workspace = true }
+# evento = { workspace = true }  # Will be added when Evento is configured in workspace
+thiserror = { workspace = true }
 imkitchen-shared = { path = "../imkitchen-shared" }
 
 [dev-dependencies]

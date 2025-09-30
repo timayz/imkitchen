@@ -1,4 +1,5 @@
 // CQRS commands for recipe operations
+pub mod discovery;
 
 use crate::domain::{Ingredient, Instruction, RecipeCategory};
 use imkitchen_shared::Difficulty;

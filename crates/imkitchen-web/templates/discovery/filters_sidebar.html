@@ -1,0 +1,242 @@
+<!-- Discovery Filters Sidebar -->
+<div class="discovery-filters-sidebar bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4">Filter Recipes</h2>
+    
+    <form id="discovery-filters-form" class="space-y-6">
+        <!-- Rating Filter -->
+        <div class="filter-section">
+            <label class="block text-sm font-medium text-gray-700 mb-3">Minimum Rating</label>
+            <div class="space-y-2">
+                <label class="flex items-center">
+                    <input type="radio" name="rating_threshold" value="" 
+                           class="rounded border-gray-300 text-kitchen-600 focus:ring-kitchen-600 kitchen-touch kitchen-focus"
+                           {% if !applied_filters.rating_threshold %}checked{% endif %}>
+                    <span class="ml-2 text-sm text-gray-700">Any rating</span>
+                </label>
+                <label class="flex items-center">
+                    <input type="radio" name="rating_threshold" value="3.0"
+                           class="rounded border-gray-300 text-kitchen-600 focus:ring-kitchen-600 kitchen-touch kitchen-focus"
+                           {% if applied_filters.rating_threshold == Some(3.0) %}checked{% endif %}>
+                    <span class="ml-2 text-sm text-gray-700">3+ stars</span>
+                </label>
+                <label class="flex items-center">
+                    <input type="radio" name="rating_threshold" value="4.0"
+                           class="rounded border-gray-300 text-kitchen-600 focus:ring-kitchen-600 kitchen-touch kitchen-focus"
+                           {% if applied_filters.rating_threshold == Some(4.0) %}checked{% endif %}>
+                    <span class="ml-2 text-sm text-gray-700">4+ stars</span>
+                </label>
+                <label class="flex items-center">
+                    <input type="radio" name="rating_threshold" value="4.5"
+                           class="rounded border-gray-300 text-kitchen-600 focus:ring-kitchen-600 kitchen-touch kitchen-focus"
+                           {% if applied_filters.rating_threshold == Some(4.5) %}checked{% endif %}>
+                    <span class="ml-2 text-sm text-gray-700">4.5+ stars</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Difficulty Filter -->
+        <div class="filter-section">
+            <label class="block text-sm font-medium text-gray-700 mb-3">Difficulty Level</label>
+            <div class="space-y-2">
+                <label class="flex items-center">
+                    <input type="checkbox" name="difficulty_levels" value="Easy"
+                           class="rounded border-gray-300 text-kitchen-600 focus:ring-kitchen-600 kitchen-touch kitchen-focus"
+                           {% if applied_filters.difficulty_levels.contains(&"Easy".to_string()) %}checked{% endif %}>
+                    <span class="ml-2 text-sm text-gray-700 flex items-center">
+                        <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                        Easy
+                    </span>
+                </label>
+                <label class="flex items-center">
+                    <input type="checkbox" name="difficulty_levels" value="Medium"
+                           class="rounded border-gray-300 text-kitchen-600 focus:ring-kitchen-600 kitchen-touch kitchen-focus"
+                           {% if applied_filters.difficulty_levels.contains(&"Medium".to_string()) %}checked{% endif %}>
+                    <span class="ml-2 text-sm text-gray-700 flex items-center">
+                        <span class="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
+                        Medium
+                    </span>
+                </label>
+                <label class="flex items-center">
+                    <input type="checkbox" name="difficulty_levels" value="Hard"
+                           class="rounded border-gray-300 text-kitchen-600 focus:ring-kitchen-600 kitchen-touch kitchen-focus"
+                           {% if applied_filters.difficulty_levels.contains(&"Hard".to_string()) %}checked{% endif %}>
+                    <span class="ml-2 text-sm text-gray-700 flex items-center">
+                        <span class="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                        Hard
+                    </span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Prep Time Filter -->
+        <div class="filter-section">
+            <label class="block text-sm font-medium text-gray-700 mb-3">Maximum Prep Time</label>
+            <div class="space-y-2">
+                <label class="flex items-center">
+                    <input type="radio" name="max_prep_time" value=""
+                           class="rounded border-gray-300 text-kitchen-600 focus:ring-kitchen-600 kitchen-touch kitchen-focus"
+                           {% if !applied_filters.max_prep_time %}checked{% endif %}>
+                    <span class="ml-2 text-sm text-gray-700">Any time</span>
+                </label>
+                <label class="flex items-center">
+                    <input type="radio" name="max_prep_time" value="15"
+                           class="rounded border-gray-300 text-kitchen-600 focus:ring-kitchen-600 kitchen-touch kitchen-focus"
+                           {% if applied_filters.max_prep_time == Some(15) %}checked{% endif %}>
+                    <span class="ml-2 text-sm text-gray-700">Under 15 minutes</span>
+                </label>
+                <label class="flex items-center">
+                    <input type="radio" name="max_prep_time" value="30"
+                           class="rounded border-gray-300 text-kitchen-600 focus:ring-kitchen-600 kitchen-touch kitchen-focus"
+                           {% if applied_filters.max_prep_time == Some(30) %}checked{% endif %}>
+                    <span class="ml-2 text-sm text-gray-700">Under 30 minutes</span>
+                </label>
+                <label class="flex items-center">
+                    <input type="radio" name="max_prep_time" value="60"
+                           class="rounded border-gray-300 text-kitchen-600 focus:ring-kitchen-600 kitchen-touch kitchen-focus"
+                           {% if applied_filters.max_prep_time == Some(60) %}checked{% endif %}>
+                    <span class="ml-2 text-sm text-gray-700">Under 1 hour</span>
+                </label>
+                <label class="flex items-center">
+                    <input type="radio" name="max_prep_time" value="120"
+                           class="rounded border-gray-300 text-kitchen-600 focus:ring-kitchen-600 kitchen-touch kitchen-focus"
+                           {% if applied_filters.max_prep_time == Some(120) %}checked{% endif %}>
+                    <span class="ml-2 text-sm text-gray-700">Under 2 hours</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Dietary Restrictions Filter -->
+        <div class="filter-section">
+            <label class="block text-sm font-medium text-gray-700 mb-3">Dietary Restrictions</label>
+            <div class="space-y-2">
+                <label class="flex items-center">
+                    <input type="checkbox" name="dietary_restrictions" value="Vegetarian"
+                           class="rounded border-gray-300 text-kitchen-600 focus:ring-kitchen-600 kitchen-touch kitchen-focus"
+                           {% if applied_filters.dietary_restrictions.contains(&"Vegetarian".to_string()) %}checked{% endif %}>
+                    <span class="ml-2 text-sm text-gray-700">Vegetarian</span>
+                </label>
+                <label class="flex items-center">
+                    <input type="checkbox" name="dietary_restrictions" value="Vegan"
+                           class="rounded border-gray-300 text-kitchen-600 focus:ring-kitchen-600 kitchen-touch kitchen-focus"
+                           {% if applied_filters.dietary_restrictions.contains(&"Vegan".to_string()) %}checked{% endif %}>
+                    <span class="ml-2 text-sm text-gray-700">Vegan</span>
+                </label>
+                <label class="flex items-center">
+                    <input type="checkbox" name="dietary_restrictions" value="GlutenFree"
+                           class="rounded border-gray-300 text-kitchen-600 focus:ring-kitchen-600 kitchen-touch kitchen-focus"
+                           {% if applied_filters.dietary_restrictions.contains(&"GlutenFree".to_string()) %}checked{% endif %}>
+                    <span class="ml-2 text-sm text-gray-700">Gluten-Free</span>
+                </label>
+                <label class="flex items-center">
+                    <input type="checkbox" name="dietary_restrictions" value="DairyFree"
+                           class="rounded border-gray-300 text-kitchen-600 focus:ring-kitchen-600 kitchen-touch kitchen-focus"
+                           {% if applied_filters.dietary_restrictions.contains(&"DairyFree".to_string()) %}checked{% endif %}>
+                    <span class="ml-2 text-sm text-gray-700">Dairy-Free</span>
+                </label>
+                <label class="flex items-center">
+                    <input type="checkbox" name="dietary_restrictions" value="NutFree"
+                           class="rounded border-gray-300 text-kitchen-600 focus:ring-kitchen-600 kitchen-touch kitchen-focus"
+                           {% if applied_filters.dietary_restrictions.contains(&"NutFree".to_string()) %}checked{% endif %}>
+                    <span class="ml-2 text-sm text-gray-700">Nut-Free</span>
+                </label>
+                <label class="flex items-center">
+                    <input type="checkbox" name="dietary_restrictions" value="Keto"
+                           class="rounded border-gray-300 text-kitchen-600 focus:ring-kitchen-600 kitchen-touch kitchen-focus"
+                           {% if applied_filters.dietary_restrictions.contains(&"Keto".to_string()) %}checked{% endif %}>
+                    <span class="ml-2 text-sm text-gray-700">Keto</span>
+                </label>
+                <label class="flex items-center">
+                    <input type="checkbox" name="dietary_restrictions" value="Paleo"
+                           class="rounded border-gray-300 text-kitchen-600 focus:ring-kitchen-600 kitchen-touch kitchen-focus"
+                           {% if applied_filters.dietary_restrictions.contains(&"Paleo".to_string()) %}checked{% endif %}>
+                    <span class="ml-2 text-sm text-gray-700">Paleo</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Meal Type Filter -->
+        <div class="filter-section">
+            <label class="block text-sm font-medium text-gray-700 mb-3">Meal Type</label>
+            <div class="space-y-2">
+                <label class="flex items-center">
+                    <input type="checkbox" name="meal_types" value="Breakfast"
+                           class="rounded border-gray-300 text-kitchen-600 focus:ring-kitchen-600 kitchen-touch kitchen-focus"
+                           {% if applied_filters.meal_types.contains(&"Breakfast".to_string()) %}checked{% endif %}>
+                    <span class="ml-2 text-sm text-gray-700">🌅 Breakfast</span>
+                </label>
+                <label class="flex items-center">
+                    <input type="checkbox" name="meal_types" value="Lunch"
+                           class="rounded border-gray-300 text-kitchen-600 focus:ring-kitchen-600 kitchen-touch kitchen-focus"
+                           {% if applied_filters.meal_types.contains(&"Lunch".to_string()) %}checked{% endif %}>
+                    <span class="ml-2 text-sm text-gray-700">☀️ Lunch</span>
+                </label>
+                <label class="flex items-center">
+                    <input type="checkbox" name="meal_types" value="Dinner"
+                           class="rounded border-gray-300 text-kitchen-600 focus:ring-kitchen-600 kitchen-touch kitchen-focus"
+                           {% if applied_filters.meal_types.contains(&"Dinner".to_string()) %}checked{% endif %}>
+                    <span class="ml-2 text-sm text-gray-700">🌙 Dinner</span>
+                </label>
+                <label class="flex items-center">
+                    <input type="checkbox" name="meal_types" value="Snack"
+                           class="rounded border-gray-300 text-kitchen-600 focus:ring-kitchen-600 kitchen-touch kitchen-focus"
+                           {% if applied_filters.meal_types.contains(&"Snack".to_string()) %}checked{% endif %}>
+                    <span class="ml-2 text-sm text-gray-700">🍿 Snack</span>
+                </label>
+                <label class="flex items-center">
+                    <input type="checkbox" name="meal_types" value="Dessert"
+                           class="rounded border-gray-300 text-kitchen-600 focus:ring-kitchen-600 kitchen-touch kitchen-focus"
+                           {% if applied_filters.meal_types.contains(&"Dessert".to_string()) %}checked{% endif %}>
+                    <span class="ml-2 text-sm text-gray-700">🍰 Dessert</span>
+                </label>
+                <label class="flex items-center">
+                    <input type="checkbox" name="meal_types" value="Appetizer"
+                           class="rounded border-gray-300 text-kitchen-600 focus:ring-kitchen-600 kitchen-touch kitchen-focus"
+                           {% if applied_filters.meal_types.contains(&"Appetizer".to_string()) %}checked{% endif %}>
+                    <span class="ml-2 text-sm text-gray-700">🥗 Appetizer</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Filter Actions -->
+        <div class="pt-4 border-t border-gray-200 space-y-3">
+            <button type="submit"
+                    class="w-full bg-kitchen-600 text-white rounded-md px-4 py-3 font-medium hover:bg-kitchen-700 transition-colors kitchen-touch kitchen-focus"
+                    ts-req="/discovery/apply-filters" ts-target="#recipe-browse-content" ts-include="form">
+                Apply Filters
+            </button>
+            
+            <button type="button"
+                    class="w-full bg-gray-100 text-gray-700 rounded-md px-4 py-2 font-medium hover:bg-gray-200 transition-colors kitchen-touch kitchen-focus"
+                    ts-req="/discovery/clear-filters" ts-target="#recipe-browse-content">
+                Clear All Filters
+            </button>
+        </div>
+    </form>
+
+    <!-- Quick Filter Suggestions -->
+    <div class="mt-6 pt-6 border-t border-gray-200">
+        <h3 class="text-sm font-medium text-gray-700 mb-3">Quick Filters</h3>
+        <div class="space-y-2">
+            <button type="button" 
+                    class="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-md transition-colors"
+                    ts-req="/discovery/quick-filter" ts-target="#recipe-browse-content" ts-vals="preset:quick_meals">
+                ⚡ Quick Meals (Under 30 min)
+            </button>
+            <button type="button"
+                    class="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-md transition-colors"
+                    ts-req="/discovery/quick-filter" ts-target="#recipe-browse-content" ts-vals="preset:highly_rated">
+                ⭐ Highly Rated (4+ stars)
+            </button>
+            <button type="button"
+                    class="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-md transition-colors"
+                    ts-req="/discovery/quick-filter" ts-target="#recipe-browse-content" ts-vals="preset:vegetarian">
+                🥬 Vegetarian Friendly
+            </button>
+            <button type="button"
+                    class="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-md transition-colors"
+                    ts-req="/discovery/quick-filter" ts-target="#recipe-browse-content" ts-vals="preset:easy_cooking">
+                👨‍🍳 Easy Cooking
+            </button>
+        </div>
+    </div>
+</div>

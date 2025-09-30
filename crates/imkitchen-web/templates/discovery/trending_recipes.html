@@ -1,0 +1,235 @@
+<!-- Trending Recipes Template -->
+<div class="trending-recipes-container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Trending Header -->
+    <div class="trending-header mb-8 bg-gradient-to-r from-kitchen-600 to-kitchen-700 rounded-lg shadow-lg text-white p-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold mb-2">🔥 Trending Recipes</h1>
+                <p class="text-kitchen-100 text-lg">{{ time_window }} • Most popular recipes right now</p>
+            </div>
+            <div class="text-right text-kitchen-100">
+                <div class="text-sm">Last updated</div>
+                <div class="text-lg font-medium">{{ calculated_at.format("%H:%M") }}</div>
+                <div class="text-sm">{{ calculated_at.format("%b %d") }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Time Window Selector -->
+    <div class="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div class="flex items-center space-x-4">
+            <span class="text-sm font-medium text-gray-700">Time Period:</span>
+            <div class="flex space-x-2">
+                <button type="button"
+                        class="px-3 py-1 rounded-md text-sm font-medium transition-colors
+                               {% if time_window == "1h" %}bg-kitchen-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}"
+                        ts-req="/discovery/trending" ts-target="#trending-content" ts-vals="window:1h">
+                    1 Hour
+                </button>
+                <button type="button"
+                        class="px-3 py-1 rounded-md text-sm font-medium transition-colors
+                               {% if time_window == "24h" %}bg-kitchen-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}"
+                        ts-req="/discovery/trending" ts-target="#trending-content" ts-vals="window:24h">
+                    24 Hours
+                </button>
+                <button type="button"
+                        class="px-3 py-1 rounded-md text-sm font-medium transition-colors
+                               {% if time_window == "7d" %}bg-kitchen-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}"
+                        ts-req="/discovery/trending" ts-target="#trending-content" ts-vals="window:7d">
+                    7 Days
+                </button>
+                <button type="button"
+                        class="px-3 py-1 rounded-md text-sm font-medium transition-colors
+                               {% if time_window == "30d" %}bg-kitchen-600 text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}"
+                        ts-req="/discovery/trending" ts-target="#trending-content" ts-vals="window:30d">
+                    30 Days
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trending Recipes List -->
+    {% if trending_recipes.len() > 0 %}
+    <div class="trending-recipes space-y-6">
+        {% for recipe in trending_recipes %}
+        <div class="trending-recipe bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow"
+             data-recipe-id="{{ recipe.recipe_id }}" data-rank="{{ recipe.trending_rank }}">
+            
+            <div class="flex items-center p-6">
+                <!-- Trending Rank -->
+                <div class="trending-rank mr-6 flex-shrink-0">
+                    <div class="relative">
+                        <!-- Rank Circle -->
+                        <div class="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold
+                                   {% if recipe.trending_rank == 1 %}bg-yellow-100 text-yellow-800 border-2 border-yellow-300
+                                   {% elif recipe.trending_rank == 2 %}bg-gray-100 text-gray-800 border-2 border-gray-300
+                                   {% elif recipe.trending_rank == 3 %}bg-orange-100 text-orange-800 border-2 border-orange-300
+                                   {% else %}bg-blue-100 text-blue-800 border-2 border-blue-300
+                                   {% endif %}">
+                            #{{ recipe.trending_rank }}
+                        </div>
+                        
+                        <!-- Trending Icon -->
+                        {% if recipe.trending_rank <= 3 %}
+                        <div class="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-red-500 flex items-center justify-center">
+                            <span class="text-white text-xs">🔥</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Recipe Content -->
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <h3 class="text-xl font-semibold text-gray-900 mb-2">
+                                <a href="/recipes/{{ recipe.recipe_id }}" 
+                                   class="hover:text-kitchen-600 transition-colors">
+                                    {{ recipe.title }}
+                                </a>
+                            </h3>
+                            
+                            <!-- Trending Stats -->
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                <div class="text-center p-3 bg-gradient-to-r from-red-50 to-red-100 rounded-lg">
+                                    <div class="text-lg font-semibold text-red-700">{{ recipe.popularity_score | round }}</div>
+                                    <div class="text-xs text-red-600 font-medium">Popularity</div>
+                                </div>
+                                
+                                <div class="text-center p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg">
+                                    <div class="text-lg font-semibold text-blue-700">{{ recipe.view_count_24h }}</div>
+                                    <div class="text-xs text-blue-600 font-medium">Views (24h)</div>
+                                </div>
+                                
+                                <div class="text-center p-3 bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-lg">
+                                    <div class="text-lg font-semibold text-yellow-700">{{ recipe.rating_average }}/5</div>
+                                    <div class="text-xs text-yellow-600 font-medium">Rating</div>
+                                </div>
+                                
+                                <div class="text-center p-3 bg-gradient-to-r from-green-50 to-green-100 rounded-lg">
+                                    <div class="text-lg font-semibold text-green-700">{{ recipe.time_weighted_score | round }}</div>
+                                    <div class="text-xs text-green-600 font-medium">Trend Score</div>
+                                </div>
+                            </div>
+
+                            <!-- Trending Indicators -->
+                            <div class="flex items-center space-x-4 text-sm">
+                                <!-- Popularity Indicator -->
+                                <div class="flex items-center">
+                                    <span class="text-gray-600 mr-2">Popularity:</span>
+                                    <div class="flex items-center">
+                                        <div class="w-20 bg-gray-200 rounded-full h-2">
+                                            <div class="bg-gradient-to-r from-kitchen-500 to-kitchen-600 h-2 rounded-full" 
+                                                 style="width: {% if recipe.popularity_score > 100 %}100{% else %}{{ recipe.popularity_score }}{% endif %}%"></div>
+                                        </div>
+                                        <span class="ml-2 text-xs font-medium text-gray-700">{{ recipe.popularity_score | round }}/100</span>
+                                    </div>
+                                </div>
+
+                                <!-- Trend Direction -->
+                                <div class="flex items-center">
+                                    {% if recipe.time_weighted_score > recipe.popularity_score %}
+                                    <span class="text-green-600 flex items-center">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                                        </svg>
+                                        Trending Up
+                                    </span>
+                                    {% elif recipe.time_weighted_score < recipe.popularity_score %}
+                                    <span class="text-red-600 flex items-center">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path>
+                                        </svg>
+                                        Trending Down
+                                    </span>
+                                    {% else %}
+                                    <span class="text-gray-600 flex items-center">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+                                        </svg>
+                                        Stable
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="ml-6 flex flex-col space-y-2">
+                            <a href="/recipes/{{ recipe.recipe_id }}"
+                               class="px-4 py-2 bg-kitchen-600 hover:bg-kitchen-700 text-white text-sm font-medium rounded-lg transition-colors text-center">
+                                View Recipe
+                            </a>
+                            <button type="button"
+                                    class="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                                    ts-req="/discovery/quick-add-favorite" ts-target="#favorite-status-{{ recipe.recipe_id }}" ts-vals="recipe_id:{{ recipe.recipe_id }}"
+                                    title="Add to favorites">
+                                <svg class="w-4 h-4 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Status Indicator -->
+            <div id="favorite-status-{{ recipe.recipe_id }}" class="hidden">
+                <div class="p-2 bg-green-50 border-t border-green-200 text-center">
+                    <span class="text-sm text-green-600">Added to favorites!</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Trending Highlights -->
+    {% if trending_recipes.len() > 0 %}
+    <div class="mt-8 bg-gradient-to-r from-kitchen-50 to-kitchen-100 rounded-lg p-6">
+        <h2 class="text-lg font-semibold text-kitchen-800 mb-4">🏆 Trending Highlights</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white rounded-lg p-4 text-center">
+                <h3 class="font-medium text-kitchen-700 mb-2">🥇 Most Popular</h3>
+                <p class="text-lg font-semibold text-gray-900">{{ trending_recipes[0].title }}</p>
+                <p class="text-sm text-gray-600">{{ trending_recipes[0].view_count_24h }} views today</p>
+            </div>
+            
+            {% if trending_recipes.len() > 1 %}
+            <div class="bg-white rounded-lg p-4 text-center">
+                <h3 class="font-medium text-kitchen-700 mb-2">⭐ Highest Rated</h3>
+                {% set highest_rated = trending_recipes | sort(attribute="rating_average") | reverse | first %}
+                <p class="text-lg font-semibold text-gray-900">{{ highest_rated.title }}</p>
+                <p class="text-sm text-gray-600">{{ highest_rated.rating_average }}/5 stars</p>
+            </div>
+            {% endif %}
+            
+            {% if trending_recipes.len() > 2 %}
+            <div class="bg-white rounded-lg p-4 text-center">
+                <h3 class="font-medium text-kitchen-700 mb-2">🚀 Rising Fast</h3>
+                {% set rising_fast = trending_recipes | sort(attribute="time_weighted_score") | reverse | first %}
+                <p class="text-lg font-semibold text-gray-900">{{ rising_fast.title }}</p>
+                <p class="text-sm text-gray-600">{{ rising_fast.time_weighted_score | round }} trend score</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- No Trending Recipes State -->
+    <div class="no-trending text-center py-12 bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="max-w-md mx-auto">
+            <div class="text-6xl mb-4">📈</div>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">No trending data yet</h3>
+            <p class="text-gray-500 mb-6">
+                Trending recipes will appear here as more users interact with recipes. Check back soon!
+            </p>
+            <button type="button"
+                    class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-kitchen-600 hover:bg-kitchen-700"
+                    ts-req="/discovery/browse" ts-target="#trending-content">
+                Browse All Recipes
+            </button>
+        </div>
+    </div>
+    {% endif %}
+</div>

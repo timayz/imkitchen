@@ -187,7 +187,7 @@ pub fn create_app_with_metrics(db_pool: Option<sqlx::SqlitePool>, metrics: AppMe
         .route("/recipes", post(handlers::recipes::create_recipe))
         .route("/recipes/search", get(handlers::recipes::search_recipes))
         .route("/recipes/filter", get(handlers::recipes::filter_recipes))
-        .route("/recipes/discover", get(handlers::recipes::list_recipes)) // Add discover route
+        .route("/recipes/discover", get(handlers::discovery::discovery_page)) // Update discover route
         .route("/recipes/{id}", get(handlers::recipes::show_recipe))
         .route(
             "/recipes/{id}/edit",
@@ -224,6 +224,25 @@ pub fn create_app_with_metrics(db_pool: Option<sqlx::SqlitePool>, metrics: AppMe
             "/recipes/{id}/rating-distribution",
             get(handlers::reviews::get_rating_distribution),
         )
+        .with_state(app_state.clone());
+
+    // Create discovery router for TwinSpark recipe discovery features
+    let discovery_router = Router::new()
+        .route("/discovery", get(handlers::discovery::discovery_page))
+        .route("/discovery/browse", get(handlers::discovery::browse_recipes))
+        .route("/discovery/search", get(handlers::discovery::discovery_search_recipes))
+        .route("/discovery/search", post(handlers::discovery::discovery_search_recipes))
+        .route("/discovery/autocomplete", get(handlers::discovery::search_autocomplete))
+        .route("/discovery/trending", get(handlers::discovery::trending_recipes))
+        .route("/discovery/similar/{recipe_id}", get(handlers::discovery::similar_recipes))
+        .route("/discovery/filters", get(handlers::discovery::filters_sidebar))
+        .route("/discovery/apply-filters", post(handlers::discovery::apply_filters))
+        .route("/discovery/clear-filters", post(handlers::discovery::clear_filters))
+        .route("/discovery/quick-filter", get(handlers::discovery::quick_filter))
+        .route("/discovery/change-sort", post(handlers::discovery::change_sort))
+        .route("/discovery/favorite", post(handlers::discovery::quick_add_to_favorites))
+        .route("/discovery/quick-add-favorite", post(handlers::discovery::quick_add_to_favorites))
+        .route("/discovery/quick-add-shopping", post(handlers::discovery::quick_add_to_shopping))
         .with_state(app_state.clone());
 
     // Create reviews router (requires auth for most operations)
@@ -368,6 +387,7 @@ pub fn create_app_with_metrics(db_pool: Option<sqlx::SqlitePool>, metrics: AppMe
         .merge(dashboard_router)
         .merge(profile_router)
         .merge(recipes_router)
+        .merge(discovery_router)
         .merge(reviews_router)
         .merge(meal_plans_router)
         .merge(shopping_router)
@@ -583,10 +603,19 @@ pub fn create_app_routes(app_state: AppState) -> Router {
         )
         .with_state(app_state.clone());
 
+    // Create discovery router for tests
+    let discovery_router = Router::new()
+        .route("/discovery", get(handlers::discovery::discovery_page))
+        .route("/discovery/browse", get(handlers::discovery::browse_recipes))
+        .route("/discovery/search", get(handlers::discovery::discovery_search_recipes))
+        .route("/discovery/trending", get(handlers::discovery::trending_recipes))
+        .with_state(app_state.clone());
+
     Router::new()
         .merge(dashboard_router)
         .merge(profile_router)
         .merge(recipes_router)
+        .merge(discovery_router)
         .merge(reviews_router)
         .merge(meal_plans_router)
         .merge(shopping_router)
