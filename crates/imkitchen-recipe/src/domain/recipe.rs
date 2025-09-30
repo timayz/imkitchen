@@ -5,6 +5,21 @@ use validator::Validate;
 
 use super::value_objects::{Difficulty, Ingredient, Instruction, RecipeCategory};
 
+/// Parameters for creating a new recipe
+#[derive(Debug, Clone)]
+pub struct RecipeParams {
+    pub title: String,
+    pub ingredients: Vec<Ingredient>,
+    pub instructions: Vec<Instruction>,
+    pub prep_time_minutes: u32,
+    pub cook_time_minutes: u32,
+    pub difficulty: Difficulty,
+    pub category: RecipeCategory,
+    pub created_by: Uuid,
+    pub is_public: bool,
+    pub tags: Vec<String>,
+}
+
 /// Recipe aggregate root
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub struct Recipe {
@@ -31,32 +46,21 @@ pub struct Recipe {
 }
 
 impl Recipe {
-    pub fn new(
-        title: String,
-        ingredients: Vec<Ingredient>,
-        instructions: Vec<Instruction>,
-        prep_time_minutes: u32,
-        cook_time_minutes: u32,
-        difficulty: Difficulty,
-        category: RecipeCategory,
-        created_by: Uuid,
-        is_public: bool,
-        tags: Vec<String>,
-    ) -> Result<Self, validator::ValidationErrors> {
+    pub fn new(params: RecipeParams) -> Result<Self, validator::ValidationErrors> {
         let recipe = Self {
             recipe_id: Uuid::new_v4(),
-            title,
-            ingredients,
-            instructions,
-            prep_time_minutes,
-            cook_time_minutes,
-            difficulty,
-            category,
+            title: params.title,
+            ingredients: params.ingredients,
+            instructions: params.instructions,
+            prep_time_minutes: params.prep_time_minutes,
+            cook_time_minutes: params.cook_time_minutes,
+            difficulty: params.difficulty,
+            category: params.category,
             rating: 0.0,
             review_count: 0,
-            created_by,
-            is_public,
-            tags,
+            created_by: params.created_by,
+            is_public: params.is_public,
+            tags: params.tags,
             created_at: Utc::now(),
         };
 

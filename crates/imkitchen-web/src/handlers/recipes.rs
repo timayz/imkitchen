@@ -9,7 +9,7 @@ use uuid::Uuid;
 
 use crate::AppState;
 use imkitchen_recipe::{
-    domain::{Difficulty, Ingredient, Recipe, RecipeCategory},
+    domain::{Difficulty, Ingredient, Recipe, RecipeCategory, RecipeParams},
     projections::{RecipeDetailView, RecipeListView},
     queries::RecipeSearchQuery,
 };
@@ -304,18 +304,18 @@ pub async fn filter_recipes(
 // Helper functions
 
 fn create_mock_recipe(_recipe_id: Uuid) -> Recipe {
-    Recipe::new(
-        "Sample Recipe".to_string(),
-        vec![],
-        vec![],
-        15,
-        30,
-        Difficulty::Medium,
-        RecipeCategory::Dessert,
-        Uuid::new_v4(),
-        true,
-        vec!["sample".to_string()],
-    )
+    Recipe::new(RecipeParams {
+        title: "Sample Recipe".to_string(),
+        ingredients: vec![],
+        instructions: vec![],
+        prep_time_minutes: 15,
+        cook_time_minutes: 30,
+        difficulty: Difficulty::Medium,
+        category: RecipeCategory::Dessert,
+        created_by: Uuid::new_v4(),
+        is_public: true,
+        tags: vec!["sample".to_string()],
+    })
     .unwrap()
 }
 

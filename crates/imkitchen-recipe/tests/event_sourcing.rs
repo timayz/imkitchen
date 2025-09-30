@@ -1,6 +1,6 @@
 use chrono::Utc;
 use imkitchen_recipe::{
-    commands::{CreateRecipeCommand, DeleteRecipeCommand, UpdateRecipeCommand},
+    commands::{CreateRecipeCommand, CreateRecipeParams, DeleteRecipeCommand, UpdateRecipeCommand},
     domain::{Difficulty, Ingredient, Instruction, RecipeCategory},
     events::{RecipeCreated, RecipeDeleted, RecipeUpdated},
 };
@@ -21,34 +21,34 @@ mod command_tests {
         let instruction = Instruction::new(1, "Mix ingredients".to_string(), Some(5)).unwrap();
 
         // Valid command
-        let valid_command = CreateRecipeCommand::new(
-            "Test Recipe".to_string(),
-            vec![ingredient.clone()],
-            vec![instruction.clone()],
-            15,
-            30,
-            Difficulty::Easy,
-            RecipeCategory::Main,
-            user_id,
-            true,
-            vec!["test".to_string()],
-        );
+        let valid_command = CreateRecipeCommand::new(CreateRecipeParams {
+            title: "Test Recipe".to_string(),
+            ingredients: vec![ingredient.clone()],
+            instructions: vec![instruction.clone()],
+            prep_time_minutes: 15,
+            cook_time_minutes: 30,
+            difficulty: Difficulty::Easy,
+            category: RecipeCategory::Main,
+            created_by: user_id,
+            is_public: true,
+            tags: vec!["test".to_string()],
+        });
 
         assert!(valid_command.is_ok());
 
         // Invalid command - empty title
-        let invalid_command = CreateRecipeCommand::new(
-            "".to_string(),
-            vec![ingredient],
-            vec![instruction],
-            15,
-            30,
-            Difficulty::Easy,
-            RecipeCategory::Main,
-            user_id,
-            true,
-            vec![],
-        );
+        let invalid_command = CreateRecipeCommand::new(CreateRecipeParams {
+            title: "".to_string(),
+            ingredients: vec![ingredient],
+            instructions: vec![instruction],
+            prep_time_minutes: 15,
+            cook_time_minutes: 30,
+            difficulty: Difficulty::Easy,
+            category: RecipeCategory::Main,
+            created_by: user_id,
+            is_public: true,
+            tags: vec![],
+        });
 
         assert!(invalid_command.is_err());
     }

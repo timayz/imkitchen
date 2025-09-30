@@ -6,6 +6,21 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
 
+/// Parameters for creating a new recipe
+#[derive(Debug, Clone)]
+pub struct CreateRecipeParams {
+    pub title: String,
+    pub ingredients: Vec<Ingredient>,
+    pub instructions: Vec<Instruction>,
+    pub prep_time_minutes: u32,
+    pub cook_time_minutes: u32,
+    pub difficulty: Difficulty,
+    pub category: RecipeCategory,
+    pub created_by: Uuid,
+    pub is_public: bool,
+    pub tags: Vec<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub struct CreateRecipeCommand {
     #[validate(length(min = 1, max = 200))]
@@ -26,29 +41,18 @@ pub struct CreateRecipeCommand {
 }
 
 impl CreateRecipeCommand {
-    pub fn new(
-        title: String,
-        ingredients: Vec<Ingredient>,
-        instructions: Vec<Instruction>,
-        prep_time_minutes: u32,
-        cook_time_minutes: u32,
-        difficulty: Difficulty,
-        category: RecipeCategory,
-        created_by: Uuid,
-        is_public: bool,
-        tags: Vec<String>,
-    ) -> Result<Self, validator::ValidationErrors> {
+    pub fn new(params: CreateRecipeParams) -> Result<Self, validator::ValidationErrors> {
         let command = Self {
-            title,
-            ingredients,
-            instructions,
-            prep_time_minutes,
-            cook_time_minutes,
-            difficulty,
-            category,
-            created_by,
-            is_public,
-            tags,
+            title: params.title,
+            ingredients: params.ingredients,
+            instructions: params.instructions,
+            prep_time_minutes: params.prep_time_minutes,
+            cook_time_minutes: params.cook_time_minutes,
+            difficulty: params.difficulty,
+            category: params.category,
+            created_by: params.created_by,
+            is_public: params.is_public,
+            tags: params.tags,
         };
 
         command.validate()?;

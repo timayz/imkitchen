@@ -1,7 +1,7 @@
 use chrono::Utc;
 use imkitchen_recipe::{
-    commands::{CreateRecipeCommand, UpdateRecipeCommand},
-    domain::{Difficulty, Ingredient, Instruction, Recipe, RecipeCategory},
+    commands::{CreateRecipeCommand, CreateRecipeParams, UpdateRecipeCommand},
+    domain::{Difficulty, Ingredient, Instruction, Recipe, RecipeCategory, RecipeParams},
     projections::{RecipeDetailView, RecipeListView, RecipeSearchIndex},
     queries::RecipeSearchQuery,
 };
@@ -77,23 +77,23 @@ mod integration_tests {
             .unwrap(),
         ];
 
-        let recipe = Recipe::new(
-            "Classic Vanilla Cake".to_string(),
-            ingredients.clone(),
-            instructions.clone(),
-            15, // prep time
-            30, // cook time
-            Difficulty::Medium,
-            RecipeCategory::Dessert,
-            user_id,
-            true, // public
-            vec![
+        let recipe = Recipe::new(RecipeParams {
+            title: "Classic Vanilla Cake".to_string(),
+            ingredients: ingredients.clone(),
+            instructions: instructions.clone(),
+            prep_time_minutes: 15,
+            cook_time_minutes: 30,
+            difficulty: Difficulty::Medium,
+            category: RecipeCategory::Dessert,
+            created_by: user_id,
+            is_public: true,
+            tags: vec![
                 "cake".to_string(),
                 "dessert".to_string(),
                 "vanilla".to_string(),
                 "baking".to_string(),
             ],
-        )
+        })
         .unwrap();
 
         // Verify recipe properties
@@ -106,18 +106,18 @@ mod integration_tests {
         assert!(recipe.is_public);
 
         // 2. Test command creation
-        let create_command = CreateRecipeCommand::new(
-            recipe.title.clone(),
-            recipe.ingredients.clone(),
-            recipe.instructions.clone(),
-            recipe.prep_time_minutes,
-            recipe.cook_time_minutes,
-            recipe.difficulty,
-            recipe.category,
-            recipe.created_by,
-            recipe.is_public,
-            recipe.tags.clone(),
-        )
+        let create_command = CreateRecipeCommand::new(CreateRecipeParams {
+            title: recipe.title.clone(),
+            ingredients: recipe.ingredients.clone(),
+            instructions: recipe.instructions.clone(),
+            prep_time_minutes: recipe.prep_time_minutes,
+            cook_time_minutes: recipe.cook_time_minutes,
+            difficulty: recipe.difficulty,
+            category: recipe.category,
+            created_by: recipe.created_by,
+            is_public: recipe.is_public,
+            tags: recipe.tags.clone(),
+        })
         .unwrap();
 
         assert_eq!(create_command.title, recipe.title);
@@ -259,64 +259,64 @@ mod integration_tests {
         let user_id = Uuid::new_v4();
 
         // Test empty title
-        let result = Recipe::new(
-            String::new(),
-            vec![],
-            vec![],
-            1,
-            1,
-            Difficulty::Easy,
-            RecipeCategory::Main,
-            user_id,
-            false,
-            vec![],
-        );
+        let result = Recipe::new(RecipeParams {
+            title: String::new(),
+            ingredients: vec![],
+            instructions: vec![],
+            prep_time_minutes: 1,
+            cook_time_minutes: 1,
+            difficulty: Difficulty::Easy,
+            category: RecipeCategory::Main,
+            created_by: user_id,
+            is_public: false,
+            tags: vec![],
+        });
         assert!(result.is_err());
 
         // Test title too long (over 200 characters)
         let long_title = "a".repeat(201);
-        let result = Recipe::new(
-            long_title,
-            vec![],
-            vec![],
-            1,
-            1,
-            Difficulty::Easy,
-            RecipeCategory::Main,
-            user_id,
-            false,
-            vec![],
-        );
+        let result = Recipe::new(RecipeParams {
+            title: long_title,
+            ingredients: vec![],
+            instructions: vec![],
+            prep_time_minutes: 1,
+            cook_time_minutes: 1,
+            difficulty: Difficulty::Easy,
+            category: RecipeCategory::Main,
+            created_by: user_id,
+            is_public: false,
+            tags: vec![],
+        });
         assert!(result.is_err());
 
         // Test zero prep time
-        let result = Recipe::new(
-            "Valid Title".to_string(),
-            vec![],
-            vec![],
-            0, // Invalid prep time
-            1,
-            Difficulty::Easy,
-            RecipeCategory::Main,
-            user_id,
-            false,
-            vec![],
-        );
+        let result = Recipe::new(RecipeParams {
+            title: "Valid Title".to_string(),
+            ingredients: vec![],
+            instructions: vec![],
+            prep_time_minutes: 0, // Invalid prep time
+            cook_time_minutes: 1,
+            difficulty: Difficulty::Easy,
+            category: RecipeCategory::Main,
+            created_by: user_id,
+            is_public: false,
+            tags: vec![],
+        });
         assert!(result.is_err());
 
         // Test zero cook time
-        let result = Recipe::new(
-            "Valid Title".to_string(),
-            vec![],
-            vec![],
-            1,
-            0, // Invalid cook time
-            Difficulty::Easy,
-            RecipeCategory::Main,
-            user_id,
-            false,
-            vec![],
-        );
+        let result = Recipe::new(RecipeParams {
+            title: "Valid Title".to_string(),
+            ingredients: vec![],
+            instructions: vec![],
+            prep_time_minutes: 1,
+            cook_time_minutes: 0, // Invalid cook time
+            difficulty: Difficulty::Easy,
+            category: RecipeCategory::Main,
+            created_by: user_id,
+            is_public: false,
+            tags: vec![],
+        });
         assert!(result.is_err());
     }
 
