@@ -1,8 +1,8 @@
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
-use serde::{Deserialize, Serialize};
 
-use crate::domain::{Recipe, RecipeCategory, Difficulty};
+use crate::domain::{Difficulty, Recipe, RecipeCategory};
 use imkitchen_shared::types::{DietaryRestriction, MealType};
 
 /// Advanced search service with suggestion algorithms and similarity matching
@@ -44,11 +44,23 @@ pub struct RecipeSimilarity {
 /// Reasons why recipes are similar
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SimilarityReason {
-    IngredientOverlap { common_ingredients: Vec<String>, overlap_score: f64 },
-    CookingTechnique { common_techniques: Vec<String>, technique_score: f64 },
-    Category { category: RecipeCategory },
-    Difficulty { difficulty: Difficulty },
-    PrepTime { similar_time_range: String },
+    IngredientOverlap {
+        common_ingredients: Vec<String>,
+        overlap_score: f64,
+    },
+    CookingTechnique {
+        common_techniques: Vec<String>,
+        technique_score: f64,
+    },
+    Category {
+        category: RecipeCategory,
+    },
+    Difficulty {
+        difficulty: Difficulty,
+    },
+    PrepTime {
+        similar_time_range: String,
+    },
 }
 
 /// Search analytics for query optimization
@@ -88,28 +100,38 @@ impl RecipeSearchService {
         limit: usize,
     ) -> Result<Vec<SearchSuggestion>, SearchError> {
         let mut suggestions = Vec::new();
-        
+
         // Ingredient-based suggestions
         suggestions.extend(self.suggest_ingredients(partial_query, limit / 4).await?);
-        
+
         // Recipe name suggestions
         suggestions.extend(self.suggest_recipes(partial_query, limit / 4).await?);
-        
+
         // Tag and category suggestions
-        suggestions.extend(self.suggest_tags_and_categories(partial_query, limit / 4).await?);
-        
+        suggestions.extend(
+            self.suggest_tags_and_categories(partial_query, limit / 4)
+                .await?,
+        );
+
         // Typo correction suggestions
-        suggestions.extend(self.suggest_typo_corrections(partial_query, limit / 4).await?);
-        
+        suggestions.extend(
+            self.suggest_typo_corrections(partial_query, limit / 4)
+                .await?,
+        );
+
         // Apply user preference weighting
         if let Some(prefs) = user_preferences {
             self.apply_preference_weighting(&mut suggestions, prefs);
         }
-        
+
         // Sort by score and limit results
-        suggestions.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+        suggestions.sort_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         suggestions.truncate(limit);
-        
+
         Ok(suggestions)
     }
 
@@ -121,28 +143,34 @@ impl RecipeSearchService {
     ) -> Result<Vec<RecipeSimilarity>, SearchError> {
         // Get the base recipe (in real implementation, from database)
         let base_recipe = self.get_recipe_by_id(recipe_id).await?;
-        
+
         let mut similarities = Vec::new();
-        
+
         // Find recipes with ingredient overlap
-        let ingredient_similar = self.find_ingredient_similar(&base_recipe, limit * 2).await?;
+        let ingredient_similar = self
+            .find_ingredient_similar(&base_recipe, limit * 2)
+            .await?;
         similarities.extend(ingredient_similar);
-        
+
         // Find recipes with similar cooking techniques
         let technique_similar = self.find_technique_similar(&base_recipe, limit * 2).await?;
         similarities.extend(technique_similar);
-        
+
         // Find recipes in same category with similar attributes
         let category_similar = self.find_category_similar(&base_recipe, limit).await?;
         similarities.extend(category_similar);
-        
+
         // Deduplicate and merge similarity scores
         let mut merged = self.merge_similarity_scores(similarities);
-        
+
         // Sort by combined score and limit
-        merged.sort_by(|a, b| b.similarity_score.partial_cmp(&a.similarity_score).unwrap_or(std::cmp::Ordering::Equal));
+        merged.sort_by(|a, b| {
+            b.similarity_score
+                .partial_cmp(&a.similarity_score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         merged.truncate(limit);
-        
+
         Ok(merged)
     }
 
@@ -154,50 +182,57 @@ impl RecipeSearchService {
     ) -> Result<Vec<RecipeSimilarity>, SearchError> {
         // Mock implementation - in real version, this would query database
         // and calculate actual ingredient overlap scores
-        
-        let base_ingredients: HashSet<String> = base_recipe.ingredients.iter()
+
+        let base_ingredients: HashSet<String> = base_recipe
+            .ingredients
+            .iter()
             .map(|ing| ing.name.to_lowercase())
             .collect();
-        
+
         // Get candidate recipes (mock data for now)
-        let candidates = self.get_candidate_recipes(&base_recipe.category, limit * 3).await?;
-        
+        let candidates = self
+            .get_candidate_recipes(&base_recipe.category, limit * 3)
+            .await?;
+
         let mut similarities = Vec::new();
-        
+
         for candidate in candidates {
             if candidate.recipe_id == base_recipe.recipe_id {
                 continue; // Skip self
             }
-            
-            let candidate_ingredients: HashSet<String> = candidate.ingredients.iter()
+
+            let candidate_ingredients: HashSet<String> = candidate
+                .ingredients
+                .iter()
                 .map(|ing| ing.name.to_lowercase())
                 .collect();
-            
-            let intersection: HashSet<_> = base_ingredients.intersection(&candidate_ingredients).collect();
+
+            let intersection: HashSet<_> = base_ingredients
+                .intersection(&candidate_ingredients)
+                .collect();
             let union: HashSet<_> = base_ingredients.union(&candidate_ingredients).collect();
-            
-            if intersection.len() > 0 {
+
+            if !intersection.is_empty() {
                 let jaccard_score = intersection.len() as f64 / union.len() as f64;
-                
+
                 // Boost score if many core ingredients match
                 let core_ingredient_bonus = if intersection.len() >= 3 { 0.2 } else { 0.0 };
                 let final_score = (jaccard_score + core_ingredient_bonus).min(1.0);
-                
-                if final_score > 0.1 { // Minimum threshold
+
+                if final_score > 0.1 {
+                    // Minimum threshold
                     similarities.push(RecipeSimilarity {
                         recipe_id: candidate.recipe_id,
                         similarity_score: final_score,
-                        similarity_reasons: vec![
-                            SimilarityReason::IngredientOverlap {
-                                common_ingredients: intersection.into_iter().cloned().collect(),
-                                overlap_score: jaccard_score,
-                            }
-                        ],
+                        similarity_reasons: vec![SimilarityReason::IngredientOverlap {
+                            common_ingredients: intersection.into_iter().cloned().collect(),
+                            overlap_score: jaccard_score,
+                        }],
                     });
                 }
             }
         }
-        
+
         Ok(similarities)
     }
 
@@ -209,43 +244,44 @@ impl RecipeSearchService {
     ) -> Result<Vec<RecipeSimilarity>, SearchError> {
         // Extract cooking techniques from instructions using simple keyword matching
         let techniques = self.extract_cooking_techniques(&base_recipe.instructions);
-        
+
         if techniques.is_empty() {
             return Ok(Vec::new());
         }
-        
-        let candidates = self.get_candidate_recipes(&base_recipe.category, limit * 2).await?;
+
+        let candidates = self
+            .get_candidate_recipes(&base_recipe.category, limit * 2)
+            .await?;
         let mut similarities = Vec::new();
-        
+
         for candidate in candidates {
             if candidate.recipe_id == base_recipe.recipe_id {
                 continue;
             }
-            
+
             let candidate_techniques = self.extract_cooking_techniques(&candidate.instructions);
-            let common_techniques: Vec<String> = techniques.intersection(&candidate_techniques)
+            let common_techniques: Vec<String> = techniques
+                .intersection(&candidate_techniques)
                 .cloned()
                 .collect();
-            
+
             if !common_techniques.is_empty() {
-                let technique_score = common_techniques.len() as f64 / 
-                    techniques.union(&candidate_techniques).count() as f64;
-                
+                let technique_score = common_techniques.len() as f64
+                    / techniques.union(&candidate_techniques).count() as f64;
+
                 if technique_score > 0.2 {
                     similarities.push(RecipeSimilarity {
                         recipe_id: candidate.recipe_id,
                         similarity_score: technique_score * 0.7, // Weight technique similarity lower than ingredient
-                        similarity_reasons: vec![
-                            SimilarityReason::CookingTechnique {
-                                common_techniques,
-                                technique_score,
-                            }
-                        ],
+                        similarity_reasons: vec![SimilarityReason::CookingTechnique {
+                            common_techniques,
+                            technique_score,
+                        }],
                     });
                 }
             }
         }
-        
+
         Ok(similarities)
     }
 
@@ -255,36 +291,39 @@ impl RecipeSearchService {
         base_recipe: &Recipe,
         limit: usize,
     ) -> Result<Vec<RecipeSimilarity>, SearchError> {
-        let candidates = self.get_candidate_recipes(&base_recipe.category, limit * 2).await?;
+        let candidates = self
+            .get_candidate_recipes(&base_recipe.category, limit * 2)
+            .await?;
         let mut similarities = Vec::new();
-        
+
         for candidate in candidates {
             if candidate.recipe_id == base_recipe.recipe_id {
                 continue;
             }
-            
+
             let mut score = 0.3; // Base category match score
-            let mut reasons = vec![SimilarityReason::Category { 
-                category: base_recipe.category.clone() 
+            let mut reasons = vec![SimilarityReason::Category {
+                category: base_recipe.category,
             }];
-            
+
             // Same difficulty bonus
             if candidate.difficulty == base_recipe.difficulty {
                 score += 0.1;
-                reasons.push(SimilarityReason::Difficulty { 
-                    difficulty: base_recipe.difficulty.clone() 
+                reasons.push(SimilarityReason::Difficulty {
+                    difficulty: base_recipe.difficulty,
                 });
             }
-            
+
             // Similar prep time bonus
-            let time_diff = (candidate.prep_time_minutes as i32 - base_recipe.prep_time_minutes as i32).abs();
+            let time_diff =
+                (candidate.prep_time_minutes as i32 - base_recipe.prep_time_minutes as i32).abs();
             if time_diff <= 15 {
                 score += 0.1;
-                reasons.push(SimilarityReason::PrepTime { 
-                    similar_time_range: format!("±15 minutes") 
+                reasons.push(SimilarityReason::PrepTime {
+                    similar_time_range: "±15 minutes".to_string(),
                 });
             }
-            
+
             if score > 0.3 {
                 similarities.push(RecipeSimilarity {
                     recipe_id: candidate.recipe_id,
@@ -293,72 +332,117 @@ impl RecipeSearchService {
                 });
             }
         }
-        
+
         Ok(similarities)
     }
 
     /// Extract cooking techniques from instruction text
-    fn extract_cooking_techniques(&self, instructions: &[crate::domain::Instruction]) -> HashSet<String> {
+    fn extract_cooking_techniques(
+        &self,
+        instructions: &[crate::domain::Instruction],
+    ) -> HashSet<String> {
         let techniques = [
-            "sauté", "sautee", "fry", "deep fry", "pan fry",
-            "bake", "roast", "grill", "broil",
-            "boil", "simmer", "poach", "steam",
-            "braise", "stew", "slow cook",
-            "whisk", "whip", "beat", "fold", "mix",
-            "chop", "dice", "mince", "slice", "julienne",
-            "marinate", "season", "salt", "pepper",
-            "reduce", "deglaze", "caramelize",
-            "rest", "chill", "freeze", "thaw",
+            "sauté",
+            "sautee",
+            "fry",
+            "deep fry",
+            "pan fry",
+            "bake",
+            "roast",
+            "grill",
+            "broil",
+            "boil",
+            "simmer",
+            "poach",
+            "steam",
+            "braise",
+            "stew",
+            "slow cook",
+            "whisk",
+            "whip",
+            "beat",
+            "fold",
+            "mix",
+            "chop",
+            "dice",
+            "mince",
+            "slice",
+            "julienne",
+            "marinate",
+            "season",
+            "salt",
+            "pepper",
+            "reduce",
+            "deglaze",
+            "caramelize",
+            "rest",
+            "chill",
+            "freeze",
+            "thaw",
         ];
-        
-        let instruction_text = instructions.iter()
+
+        let instruction_text = instructions
+            .iter()
             .map(|inst| inst.text.to_lowercase())
             .collect::<Vec<_>>()
             .join(" ");
-        
-        techniques.iter()
+
+        techniques
+            .iter()
             .filter(|&technique| instruction_text.contains(technique))
             .map(|&technique| technique.to_string())
             .collect()
     }
 
     /// Merge overlapping similarity scores for the same recipe
-    fn merge_similarity_scores(&self, similarities: Vec<RecipeSimilarity>) -> Vec<RecipeSimilarity> {
+    fn merge_similarity_scores(
+        &self,
+        similarities: Vec<RecipeSimilarity>,
+    ) -> Vec<RecipeSimilarity> {
         let mut merged: HashMap<Uuid, RecipeSimilarity> = HashMap::new();
-        
+
         for similarity in similarities {
             match merged.get_mut(&similarity.recipe_id) {
                 Some(existing) => {
                     // Combine scores using weighted average
-                    existing.similarity_score = (existing.similarity_score + similarity.similarity_score) / 2.0;
-                    existing.similarity_reasons.extend(similarity.similarity_reasons);
+                    existing.similarity_score =
+                        (existing.similarity_score + similarity.similarity_score) / 2.0;
+                    existing
+                        .similarity_reasons
+                        .extend(similarity.similarity_reasons);
                 }
                 None => {
                     merged.insert(similarity.recipe_id, similarity);
                 }
             }
         }
-        
+
         merged.into_values().collect()
     }
 
     /// Generate ingredient-based suggestions
-    async fn suggest_ingredients(&self, query: &str, limit: usize) -> Result<Vec<SearchSuggestion>, SearchError> {
+    async fn suggest_ingredients(
+        &self,
+        query: &str,
+        limit: usize,
+    ) -> Result<Vec<SearchSuggestion>, SearchError> {
         // Common ingredients database (in real implementation, this would be from DB)
         let ingredients = [
-            "chicken", "beef", "pork", "fish", "salmon", "tuna",
-            "rice", "pasta", "noodles", "bread", "flour",
-            "tomato", "onion", "garlic", "potato", "carrot",
-            "cheese", "milk", "eggs", "butter", "oil",
-            "salt", "pepper", "herbs", "spices",
+            "chicken", "beef", "pork", "fish", "salmon", "tuna", "rice", "pasta", "noodles",
+            "bread", "flour", "tomato", "onion", "garlic", "potato", "carrot", "cheese", "milk",
+            "eggs", "butter", "oil", "salt", "pepper", "herbs", "spices",
         ];
-        
+
         let query_lower = query.to_lowercase();
         let mut suggestions = Vec::new();
-        
+
         for &ingredient in &ingredients {
             if ingredient.contains(&query_lower) && suggestions.len() < limit {
-                let score = if ingredient.starts_with(&query_lower) { 0.9 } else { 0.6 };
+                let score = if ingredient.starts_with(&query_lower) {
+                    0.9
+                } else {
+                    0.6
+                };
                 suggestions.push(SearchSuggestion {
                     text: ingredient.to_string(),
                     suggestion_type: SuggestionType::Ingredient,
@@ -368,25 +452,39 @@ impl RecipeSearchService {
                 });
             }
         }
-        
+
         Ok(suggestions)
     }
 
     /// Generate recipe name suggestions  
-    async fn suggest_recipes(&self, query: &str, limit: usize) -> Result<Vec<SearchSuggestion>, SearchError> {
+    async fn suggest_recipes(
+        &self,
+        query: &str,
+        limit: usize,
+    ) -> Result<Vec<SearchSuggestion>, SearchError> {
         // Mock recipe suggestions
         let recipes = [
-            "Chicken Parmesan", "Beef Stir Fry", "Salmon Teriyaki",
-            "Pasta Carbonara", "Vegetable Curry", "Chocolate Cake",
-            "Caesar Salad", "Mushroom Risotto", "Fish Tacos",
+            "Chicken Parmesan",
+            "Beef Stir Fry",
+            "Salmon Teriyaki",
+            "Pasta Carbonara",
+            "Vegetable Curry",
+            "Chocolate Cake",
+            "Caesar Salad",
+            "Mushroom Risotto",
+            "Fish Tacos",
         ];
-        
+
         let query_lower = query.to_lowercase();
         let mut suggestions = Vec::new();
-        
+
         for &recipe in &recipes {
             if recipe.to_lowercase().contains(&query_lower) && suggestions.len() < limit {
-                let score = if recipe.to_lowercase().starts_with(&query_lower) { 0.95 } else { 0.7 };
+                let score = if recipe.to_lowercase().starts_with(&query_lower) {
+                    0.95
+                } else {
+                    0.7
+                };
                 suggestions.push(SearchSuggestion {
                     text: recipe.to_string(),
                     suggestion_type: SuggestionType::Recipe,
@@ -396,24 +494,45 @@ impl RecipeSearchService {
                 });
             }
         }
-        
+
         Ok(suggestions)
     }
 
     /// Generate tag and category suggestions
-    async fn suggest_tags_and_categories(&self, query: &str, limit: usize) -> Result<Vec<SearchSuggestion>, SearchError> {
+    async fn suggest_tags_and_categories(
+        &self,
+        query: &str,
+        limit: usize,
+    ) -> Result<Vec<SearchSuggestion>, SearchError> {
         let tags = [
-            "quick", "easy", "healthy", "vegetarian", "vegan", "gluten-free",
-            "low-carb", "high-protein", "comfort-food", "spicy", "mild",
-            "breakfast", "lunch", "dinner", "dessert", "snack",
+            "quick",
+            "easy",
+            "healthy",
+            "vegetarian",
+            "vegan",
+            "gluten-free",
+            "low-carb",
+            "high-protein",
+            "comfort-food",
+            "spicy",
+            "mild",
+            "breakfast",
+            "lunch",
+            "dinner",
+            "dessert",
+            "snack",
         ];
-        
+
         let query_lower = query.to_lowercase();
         let mut suggestions = Vec::new();
-        
+
         for &tag in &tags {
             if tag.contains(&query_lower) && suggestions.len() < limit {
-                let score = if tag.starts_with(&query_lower) { 0.8 } else { 0.5 };
+                let score = if tag.starts_with(&query_lower) {
+                    0.8
+                } else {
+                    0.5
+                };
                 suggestions.push(SearchSuggestion {
                     text: tag.to_string(),
                     suggestion_type: SuggestionType::Tag,
@@ -423,25 +542,38 @@ impl RecipeSearchService {
                 });
             }
         }
-        
+
         Ok(suggestions)
     }
 
     /// Generate typo correction suggestions
-    async fn suggest_typo_corrections(&self, query: &str, limit: usize) -> Result<Vec<SearchSuggestion>, SearchError> {
+    async fn suggest_typo_corrections(
+        &self,
+        query: &str,
+        limit: usize,
+    ) -> Result<Vec<SearchSuggestion>, SearchError> {
         // Simple typo correction using edit distance
         let common_terms = [
-            "chicken", "recipe", "quick", "easy", "healthy", "delicious",
-            "pasta", "sauce", "cheese", "vegetables", "cooking",
+            "chicken",
+            "recipe",
+            "quick",
+            "easy",
+            "healthy",
+            "delicious",
+            "pasta",
+            "sauce",
+            "cheese",
+            "vegetables",
+            "cooking",
         ];
-        
+
         let mut suggestions = Vec::new();
-        
+
         for &term in &common_terms {
             if suggestions.len() >= limit {
                 break;
             }
-            
+
             let distance = self.levenshtein_distance(query, term);
             if distance <= 2 && distance > 0 && query.len() > 2 {
                 let score = 1.0 - (distance as f64 / query.len().max(term.len()) as f64);
@@ -456,23 +588,29 @@ impl RecipeSearchService {
                 }
             }
         }
-        
+
         Ok(suggestions)
     }
 
     /// Apply user preference weighting to suggestions
-    fn apply_preference_weighting(&self, suggestions: &mut [SearchSuggestion], prefs: &UserSearchPreferences) {
+    fn apply_preference_weighting(
+        &self,
+        suggestions: &mut [SearchSuggestion],
+        prefs: &UserSearchPreferences,
+    ) {
         for suggestion in suggestions {
             // Boost suggestions that match user's recent searches
             if prefs.recent_searches.iter().any(|search| {
-                search.to_lowercase().contains(&suggestion.text.to_lowercase())
+                search
+                    .to_lowercase()
+                    .contains(&suggestion.text.to_lowercase())
             }) {
                 suggestion.score *= 1.2;
             }
-            
+
             // Apply search history weighting
-            suggestion.score = suggestion.score * (1.0 - prefs.search_history_weight) + 
-                              suggestion.score * prefs.search_history_weight * suggestion.success_rate;
+            suggestion.score = suggestion.score * (1.0 - prefs.search_history_weight)
+                + suggestion.score * prefs.search_history_weight * suggestion.success_rate;
         }
     }
 
@@ -482,16 +620,16 @@ impl RecipeSearchService {
         let chars2: Vec<char> = s2.chars().collect();
         let len1 = chars1.len();
         let len2 = chars2.len();
-        
+
         let mut matrix = vec![vec![0; len2 + 1]; len1 + 1];
-        
-        for i in 0..=len1 {
-            matrix[i][0] = i;
+
+        for (i, row) in matrix.iter_mut().enumerate().take(len1 + 1) {
+            row[0] = i;
         }
         for j in 0..=len2 {
             matrix[0][j] = j;
         }
-        
+
         for i in 1..=len1 {
             for j in 1..=len2 {
                 let cost = if chars1[i - 1] == chars2[j - 1] { 0 } else { 1 };
@@ -500,12 +638,15 @@ impl RecipeSearchService {
                     .min(matrix[i - 1][j - 1] + cost);
             }
         }
-        
+
         matrix[len1][len2]
     }
 
     /// Record search analytics for optimization
-    pub async fn record_search_analytics(&self, analytics: SearchAnalytics) -> Result<(), SearchError> {
+    pub async fn record_search_analytics(
+        &self,
+        analytics: SearchAnalytics,
+    ) -> Result<(), SearchError> {
         // In real implementation, this would store analytics in the database
         // for query optimization and suggestion improvement
         println!("Recording search analytics: {:?}", analytics.query);
@@ -514,33 +655,36 @@ impl RecipeSearchService {
 
     /// Update user search preferences based on behavior
     pub async fn update_user_preferences(
-        &self, 
-        user_id: Uuid, 
+        &self,
+        user_id: Uuid,
         search_query: &str,
         _clicked_recipe_id: Option<Uuid>,
     ) -> Result<(), SearchError> {
         // In real implementation, this would update user preferences
         // based on search behavior and successful clicks
-        println!("Updating preferences for user {} based on search: {}", user_id, search_query);
+        println!(
+            "Updating preferences for user {} based on search: {}",
+            user_id, search_query
+        );
         Ok(())
     }
 
     // Mock helper methods (in real implementation, these would query the database)
-    
+
     async fn get_recipe_by_id(&self, recipe_id: Uuid) -> Result<Recipe, SearchError> {
         // Mock recipe for demonstration
-        use crate::domain::{RecipeParams, Ingredient, Instruction};
-        
+        use crate::domain::{Ingredient, Instruction, RecipeParams};
+
         let ingredients = vec![
             Ingredient::new("Chicken".to_string(), 1.0, "lb".to_string(), None)?,
             Ingredient::new("Rice".to_string(), 2.0, "cups".to_string(), None)?,
         ];
-        
+
         let instructions = vec![
             Instruction::new(1, "Cook the chicken".to_string(), Some(20))?,
             Instruction::new(2, "Add rice and simmer".to_string(), Some(15))?,
         ];
-        
+
         Recipe::new(RecipeParams {
             title: "Sample Recipe".to_string(),
             ingredients,
@@ -552,10 +696,15 @@ impl RecipeSearchService {
             created_by: recipe_id, // Mock user ID
             is_public: true,
             tags: vec!["quick".to_string(), "easy".to_string()],
-        }).map_err(|e| SearchError::DomainError(e.to_string()))
+        })
+        .map_err(|e| SearchError::DomainError(e.to_string()))
     }
-    
-    async fn get_candidate_recipes(&self, _category: &RecipeCategory, limit: usize) -> Result<Vec<Recipe>, SearchError> {
+
+    async fn get_candidate_recipes(
+        &self,
+        _category: &RecipeCategory,
+        limit: usize,
+    ) -> Result<Vec<Recipe>, SearchError> {
         // Return mock recipes for demonstration
         let mut recipes = Vec::new();
         for _i in 0..limit.min(5) {
@@ -577,19 +726,19 @@ impl Default for RecipeSearchService {
 pub enum SearchError {
     #[error("Database error: {0}")]
     DatabaseError(String),
-    
+
     #[error("Invalid search query: {0}")]
     InvalidQuery(String),
-    
+
     #[error("Search timeout")]
     Timeout,
-    
+
     #[error("Recipe not found: {0}")]
     RecipeNotFound(Uuid),
-    
+
     #[error("Validation error: {0}")]
     ValidationError(#[from] validator::ValidationErrors),
-    
+
     #[error("Domain error: {0}")]
     DomainError(String),
 }
@@ -603,8 +752,11 @@ mod tests {
     #[tokio::test]
     async fn test_generate_suggestions() {
         let service = RecipeSearchService::new();
-        let suggestions = service.generate_suggestions("chick", None, 10).await.unwrap();
-        
+        let suggestions = service
+            .generate_suggestions("chick", None, 10)
+            .await
+            .unwrap();
+
         assert!(!suggestions.is_empty());
         assert!(suggestions.iter().any(|s| s.text.contains("chicken")));
     }
@@ -614,7 +766,7 @@ mod tests {
         let service = RecipeSearchService::new();
         let recipe_id = Uuid::new_v4();
         let similarities = service.find_similar_recipes(recipe_id, 5).await.unwrap();
-        
+
         // Should return some similarities even with mock data
         assert!(!similarities.is_empty());
     }
@@ -623,7 +775,7 @@ mod tests {
     async fn test_ingredient_suggestions() {
         let service = RecipeSearchService::new();
         let suggestions = service.suggest_ingredients("tom", 5).await.unwrap();
-        
+
         assert!(suggestions.iter().any(|s| s.text == "tomato"));
     }
 
@@ -631,7 +783,7 @@ mod tests {
     async fn test_typo_correction() {
         let service = RecipeSearchService::new();
         let suggestions = service.suggest_typo_corrections("chickn", 5).await.unwrap();
-        
+
         assert!(suggestions.iter().any(|s| s.text == "chicken"));
     }
 

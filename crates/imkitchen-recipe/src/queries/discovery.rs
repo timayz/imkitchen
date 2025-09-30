@@ -1,7 +1,7 @@
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 use crate::domain::discovery::{DiscoveryFilters, SearchCriteria, SortingCriteria};
 use crate::projections::discovery::*;
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 /// Query for recipe discovery with filtering and pagination
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -47,29 +47,36 @@ pub struct RecipeDiscoveryQueryHandler {
     // Handler will be connected to database/cache when implementing infrastructure
 }
 
+impl Default for RecipeDiscoveryQueryHandler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RecipeDiscoveryQueryHandler {
     pub fn new() -> Self {
         Self {}
     }
 
-    pub async fn handle(&self, query: RecipeDiscoveryQuery) -> Result<RecipeBrowseView, QueryError> {
+    pub async fn handle(
+        &self,
+        query: RecipeDiscoveryQuery,
+    ) -> Result<RecipeBrowseView, QueryError> {
         // TODO: Implement actual database query when infrastructure is ready
         // For now, return mock data to satisfy tests
-        
-        let mock_recipes = vec![
-            RecipeCard {
-                recipe_id: Uuid::new_v4(),
-                title: "Mock Vegetarian Pasta".to_string(),
-                prep_time_minutes: 15,
-                cook_time_minutes: 20,
-                difficulty: imkitchen_shared::types::Difficulty::Easy,
-                rating_average: 4.5,
-                rating_count: 25,
-                image_url: Some("pasta.jpg".to_string()),
-                created_by: Uuid::new_v4(),
-                tags: vec!["vegetarian".to_string(), "pasta".to_string()],
-            }
-        ];
+
+        let mock_recipes = vec![RecipeCard {
+            recipe_id: Uuid::new_v4(),
+            title: "Mock Vegetarian Pasta".to_string(),
+            prep_time_minutes: 15,
+            cook_time_minutes: 20,
+            difficulty: imkitchen_shared::types::Difficulty::Easy,
+            rating_average: 4.5,
+            rating_count: 25,
+            image_url: Some("pasta.jpg".to_string()),
+            created_by: Uuid::new_v4(),
+            tags: vec!["vegetarian".to_string(), "pasta".to_string()],
+        }];
 
         Ok(RecipeBrowseView {
             recipes: mock_recipes,
@@ -88,24 +95,31 @@ pub struct DiscoverySearchQueryHandler {
     // Handler will be connected to search index when implementing infrastructure
 }
 
+impl Default for DiscoverySearchQueryHandler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DiscoverySearchQueryHandler {
     pub fn new() -> Self {
         Self {}
     }
 
-    pub async fn handle(&self, query: DiscoverySearchQuery) -> Result<SearchResultsView, QueryError> {
+    pub async fn handle(
+        &self,
+        query: DiscoverySearchQuery,
+    ) -> Result<SearchResultsView, QueryError> {
         // TODO: Implement actual search when infrastructure is ready
         // For now, return mock data to satisfy tests
-        
-        let mock_results = vec![
-            SearchResult {
-                recipe_id: Uuid::new_v4(),
-                title: "Mock Search Result".to_string(),
-                snippet: "A delicious recipe...".to_string(),
-                relevance_score: 0.95,
-                match_type: "title".to_string(),
-            }
-        ];
+
+        let mock_results = vec![SearchResult {
+            recipe_id: Uuid::new_v4(),
+            title: "Mock Search Result".to_string(),
+            snippet: "A delicious recipe...".to_string(),
+            relevance_score: 0.95,
+            match_type: "title".to_string(),
+        }];
 
         Ok(SearchResultsView {
             results: mock_results,
@@ -124,15 +138,24 @@ pub struct TrendingRecipesQueryHandler {
     // Handler will be connected to trending calculation service
 }
 
+impl Default for TrendingRecipesQueryHandler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TrendingRecipesQueryHandler {
     pub fn new() -> Self {
         Self {}
     }
 
-    pub async fn handle(&self, query: TrendingRecipesQuery) -> Result<TrendingRecipesView, QueryError> {
+    pub async fn handle(
+        &self,
+        query: TrendingRecipesQuery,
+    ) -> Result<TrendingRecipesView, QueryError> {
         // TODO: Implement actual trending calculation when infrastructure is ready
         // For now, return mock data to satisfy tests
-        
+
         let mock_trending = vec![
             TrendingRecipe {
                 recipe_id: Uuid::new_v4(),
@@ -167,28 +190,35 @@ pub struct SimilarRecipesQueryHandler {
     // Handler will be connected to recommendation engine
 }
 
+impl Default for SimilarRecipesQueryHandler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SimilarRecipesQueryHandler {
     pub fn new() -> Self {
         Self {}
     }
 
-    pub async fn handle(&self, query: SimilarRecipesQuery) -> Result<SimilarRecipesView, QueryError> {
+    pub async fn handle(
+        &self,
+        query: SimilarRecipesQuery,
+    ) -> Result<SimilarRecipesView, QueryError> {
         // TODO: Implement actual similarity calculation when recommendation engine is ready
         // For now, return mock data to satisfy tests
-        
-        let mock_similar = vec![
-            SimilarRecipe {
-                recipe_id: Uuid::new_v4(),
-                title: "Mock Similar Recipe".to_string(),
-                similarity_score: 0.85,
-                similarity_reasons: vec![
-                    "Common ingredients: pasta, cheese".to_string(),
-                    "Similar cooking technique: boiling".to_string(),
-                ],
-                ingredient_overlap: 0.75,
-                technique_similarity: 0.90,
-            }
-        ];
+
+        let mock_similar = vec![SimilarRecipe {
+            recipe_id: Uuid::new_v4(),
+            title: "Mock Similar Recipe".to_string(),
+            similarity_score: 0.85,
+            similarity_reasons: vec![
+                "Common ingredients: pasta, cheese".to_string(),
+                "Similar cooking technique: boiling".to_string(),
+            ],
+            ingredient_overlap: 0.75,
+            technique_similarity: 0.90,
+        }];
 
         Ok(SimilarRecipesView {
             original_recipe_id: query.recipe_id,

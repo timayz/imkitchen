@@ -1,9 +1,9 @@
-use serde::{Deserialize, Serialize};
-use validator::Validate;
-use uuid::Uuid;
 use chrono::{DateTime, Utc};
+use imkitchen_shared::types::{DietaryRestriction, Difficulty, MealType};
+use serde::{Deserialize, Serialize};
 use std::fmt;
-use imkitchen_shared::types::{Difficulty, DietaryRestriction, MealType};
+use uuid::Uuid;
+use validator::Validate;
 
 /// Recipe discovery aggregate for managing search and filtering state
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
@@ -23,7 +23,7 @@ pub struct RecipeDiscovery {
 }
 
 /// Filters for recipe discovery with comprehensive filtering options
-#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+#[derive(Debug, Clone, Serialize, Deserialize, Validate, Default)]
 pub struct DiscoveryFilters {
     #[validate(range(min = 1.0, max = 5.0))]
     pub rating_threshold: Option<f32>,
@@ -89,17 +89,26 @@ pub struct RecipeSearchService {
     // Service implementation will be added when implementing search infrastructure
 }
 
+impl Default for RecipeSearchService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RecipeSearchService {
     pub fn new() -> Self {
         Self {}
     }
-    
+
     /// Perform full-text search on recipes
-    pub async fn search_recipes(&self, _criteria: &SearchCriteria) -> Result<Vec<Uuid>, SearchError> {
+    pub async fn search_recipes(
+        &self,
+        _criteria: &SearchCriteria,
+    ) -> Result<Vec<Uuid>, SearchError> {
         // Implementation will be added in search infrastructure task
         Ok(vec![])
     }
-    
+
     /// Generate autocomplete suggestions
     pub async fn get_suggestions(&self, _partial_query: &str) -> Result<Vec<String>, SearchError> {
         // Implementation will be added in search infrastructure task
@@ -112,13 +121,22 @@ pub struct RecipeTrendingService {
     // Service implementation will be added when implementing trending system
 }
 
+impl Default for RecipeTrendingService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RecipeTrendingService {
     pub fn new() -> Self {
         Self {}
     }
-    
+
     /// Calculate trending score for a recipe
-    pub async fn calculate_trending_score(&self, recipe_id: Uuid) -> Result<TrendingScore, TrendingError> {
+    pub async fn calculate_trending_score(
+        &self,
+        recipe_id: Uuid,
+    ) -> Result<TrendingScore, TrendingError> {
         // Implementation will be added in trending system task
         Ok(TrendingScore {
             recipe_id,
@@ -128,7 +146,7 @@ impl RecipeTrendingService {
             time_weighted_score: 0.0,
         })
     }
-    
+
     /// Update trending rankings
     pub async fn update_trending_rankings(&self) -> Result<(), TrendingError> {
         // Implementation will be added in trending system task
@@ -141,13 +159,23 @@ pub struct RandomRecipeSelector {
     // Service implementation will be added
 }
 
+impl Default for RandomRecipeSelector {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RandomRecipeSelector {
     pub fn new() -> Self {
         Self {}
     }
-    
+
     /// Select random recipe with user preference filtering
-    pub async fn select_random_recipe(&self, _user_id: Option<Uuid>, _filters: &DiscoveryFilters) -> Result<Option<Uuid>, SelectionError> {
+    pub async fn select_random_recipe(
+        &self,
+        _user_id: Option<Uuid>,
+        _filters: &DiscoveryFilters,
+    ) -> Result<Option<Uuid>, SelectionError> {
         // Implementation will be added in random recipe feature
         Ok(None)
     }
@@ -178,18 +206,6 @@ pub enum SelectionError {
     Database(String),
     #[error("No recipes available")]
     NoRecipesAvailable,
-}
-
-impl Default for DiscoveryFilters {
-    fn default() -> Self {
-        Self {
-            rating_threshold: None,
-            difficulty_levels: vec![],
-            max_prep_time: None,
-            dietary_restrictions: vec![],
-            meal_types: vec![],
-        }
-    }
 }
 
 impl Default for SearchCriteria {

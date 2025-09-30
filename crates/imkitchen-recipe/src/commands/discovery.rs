@@ -1,7 +1,7 @@
-use serde::{Deserialize, Serialize};
-use validator::Validate;
-use uuid::Uuid;
 use crate::domain::discovery::{DiscoveryFilters, SearchCriteria, SortingCriteria};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+use validator::Validate;
 
 /// Command to search for recipes with criteria and filters
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]

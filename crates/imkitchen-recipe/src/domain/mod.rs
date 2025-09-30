@@ -10,8 +10,8 @@ pub use collection::{
 };
 pub use discovery::{
     DiscoveryFilters, RandomRecipeSelector, RecipeDiscovery, RecipeSearchService,
-    RecipeTrendingService, SearchCriteria, SearchType, SortingCriteria, TrendingScore,
-    SearchError, TrendingError, SelectionError,
+    RecipeTrendingService, SearchCriteria, SearchError, SearchType, SelectionError,
+    SortingCriteria, TrendingError, TrendingScore,
 };
 pub use rating::{
     HelpfulnessVote, RatingStatistics, RecipeRating, RecipeReview, ReviewModerationStatus,

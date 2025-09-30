@@ -1,12 +1,12 @@
-pub mod search;
-pub mod popularity;
 pub mod discovery_data;
+pub mod popularity;
 pub mod recommendation;
+pub mod search;
 
-pub use search::*;
-pub use popularity::{PopularityService, PopularityConfig, TimeWindow};
 pub use discovery_data::{
-    DiscoveryDataService, RecipeDiscoveryMetrics, 
-    PreferenceType, DiscoveryQueryAnalytics, RecipeDiscoveryEvent, DiscoveryDataError
+    DiscoveryDataError, DiscoveryDataService, DiscoveryQueryAnalytics, PreferenceType,
+    RecipeDiscoveryEvent, RecipeDiscoveryMetrics,
 };
+pub use popularity::{PopularityConfig, PopularityService, TimeWindow};
 pub use recommendation::*;
+pub use search::*;

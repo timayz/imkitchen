@@ -1,5 +1,5 @@
-use imkitchen_recipe::events::discovery::*;
 use chrono::Utc;
+use imkitchen_recipe::events::discovery::*;
 use uuid::Uuid;
 
 #[test]
@@ -16,7 +16,7 @@ fn test_recipe_viewed_event() {
     // Test Evento-style serialization/deserialization
     let encoded = event.encode().unwrap();
     let decoded: RecipeViewedEvent = RecipeViewedEvent::decode(&encoded).unwrap();
-    
+
     assert_eq!(event.recipe_id, decoded.recipe_id);
     assert_eq!(event.user_id, decoded.user_id);
     assert_eq!(event.session_id, decoded.session_id);
@@ -37,7 +37,7 @@ fn test_recipe_searched_event() {
     // Test Evento serialization
     let encoded = event.encode().unwrap();
     let decoded: RecipeSearchedEvent = RecipeSearchedEvent::decode(&encoded).unwrap();
-    
+
     assert_eq!(event.query_text, decoded.query_text);
     assert_eq!(event.search_type, decoded.search_type);
     assert_eq!(event.results_count, decoded.results_count);
@@ -60,7 +60,7 @@ fn test_filter_applied_event() {
 
     let encoded = event.encode().unwrap();
     let decoded: FilterAppliedEvent = FilterAppliedEvent::decode(&encoded).unwrap();
-    
+
     assert_eq!(event.rating_threshold, decoded.rating_threshold);
     assert_eq!(event.difficulty_levels, decoded.difficulty_levels);
     assert_eq!(event.results_count, decoded.results_count);
@@ -79,7 +79,7 @@ fn test_random_recipe_requested_event() {
 
     let encoded = event.encode().unwrap();
     let decoded: RandomRecipeRequestedEvent = RandomRecipeRequestedEvent::decode(&encoded).unwrap();
-    
+
     assert_eq!(event.filter_criteria, decoded.filter_criteria);
     assert_eq!(event.selected_recipe_id, decoded.selected_recipe_id);
 }
@@ -95,8 +95,9 @@ fn test_discovery_session_started_event() {
     };
 
     let encoded = event.encode().unwrap();
-    let decoded: DiscoverySessionStartedEvent = DiscoverySessionStartedEvent::decode(&encoded).unwrap();
-    
+    let decoded: DiscoverySessionStartedEvent =
+        DiscoverySessionStartedEvent::decode(&encoded).unwrap();
+
     assert_eq!(event.session_id, decoded.session_id);
     assert_eq!(event.discovery_type, decoded.discovery_type);
 }
@@ -114,7 +115,7 @@ fn test_trending_calculated_event() {
 
     let encoded = event.encode().unwrap();
     let decoded: TrendingCalculatedEvent = TrendingCalculatedEvent::decode(&encoded).unwrap();
-    
+
     assert_eq!(event.recipe_id, decoded.recipe_id);
     assert_eq!(event.popularity_score, decoded.popularity_score);
     assert_eq!(event.trending_rank, decoded.trending_rank);
@@ -134,8 +135,9 @@ fn test_recipe_popularity_updated_event() {
     };
 
     let encoded = event.encode().unwrap();
-    let decoded: RecipePopularityUpdatedEvent = RecipePopularityUpdatedEvent::decode(&encoded).unwrap();
-    
+    let decoded: RecipePopularityUpdatedEvent =
+        RecipePopularityUpdatedEvent::decode(&encoded).unwrap();
+
     assert_eq!(event.recipe_id, decoded.recipe_id);
     assert_eq!(event.view_count, decoded.view_count);
     assert_eq!(event.rating_average, decoded.rating_average);
@@ -148,7 +150,10 @@ fn test_aggregator_names() {
     assert_eq!(RecipeSearchedEvent::aggregator_name(), "Discovery");
     assert_eq!(FilterAppliedEvent::aggregator_name(), "Discovery");
     assert_eq!(RandomRecipeRequestedEvent::aggregator_name(), "Discovery");
-    assert_eq!(DiscoverySessionStartedEvent::aggregator_name(), "DiscoverySession");
+    assert_eq!(
+        DiscoverySessionStartedEvent::aggregator_name(),
+        "DiscoverySession"
+    );
     assert_eq!(TrendingCalculatedEvent::aggregator_name(), "Trending");
     assert_eq!(RecipePopularityUpdatedEvent::aggregator_name(), "Trending");
 }

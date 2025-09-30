@@ -1,8 +1,8 @@
+use crate::domain::discovery::{DiscoveryFilters, SortingCriteria};
+use chrono::{DateTime, Utc};
+use imkitchen_shared::types::Difficulty;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
-use crate::domain::discovery::{DiscoveryFilters, SortingCriteria};
-use imkitchen_shared::types::Difficulty;
 
 /// Recipe browse view projection for efficient discovery page rendering
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -46,7 +46,7 @@ impl RecipeCard {
     pub fn difficulty_color(&self) -> &'static str {
         match self.difficulty {
             Difficulty::Easy => "green",
-            Difficulty::Medium => "yellow", 
+            Difficulty::Medium => "yellow",
             Difficulty::Hard => "red",
         }
     }
@@ -85,7 +85,8 @@ pub struct SearchSuggestionsView {
 impl SearchSuggestionsView {
     /// Sort suggestions by frequency (most popular first)
     pub fn sort_by_frequency(&mut self) {
-        self.suggestions.sort_by(|a, b| b.frequency.cmp(&a.frequency));
+        self.suggestions
+            .sort_by(|a, b| b.frequency.cmp(&a.frequency));
     }
 
     /// Filter suggestions by type

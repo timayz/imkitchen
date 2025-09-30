@@ -1,8 +1,8 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use thiserror::Error;
 use uuid::Uuid;
-use std::collections::HashMap;
 
 #[derive(Debug, Error)]
 pub enum DiscoveryDataError {
@@ -71,8 +71,8 @@ impl PreferenceType {
             PreferenceType::Technique => "technique",
         }
     }
-    
-    pub fn from_str(s: &str) -> Option<Self> {
+
+    pub fn parse_str(s: &str) -> Option<Self> {
         match s {
             "category" => Some(PreferenceType::Category),
             "difficulty" => Some(PreferenceType::Difficulty),
@@ -111,7 +111,7 @@ impl SimilarityType {
     pub fn as_str(&self) -> &'static str {
         match self {
             SimilarityType::Ingredient => "ingredient",
-            SimilarityType::Technique => "technique", 
+            SimilarityType::Technique => "technique",
             SimilarityType::Category => "category",
             SimilarityType::Difficulty => "difficulty",
             SimilarityType::PrepTime => "prep_time",
@@ -365,7 +365,10 @@ impl DiscoveryDataService {
     }
 
     /// Get or create discovery metrics for a recipe
-    pub async fn get_recipe_metrics(&self, recipe_id: Uuid) -> Result<RecipeDiscoveryMetrics, DiscoveryDataError> {
+    pub async fn get_recipe_metrics(
+        &self,
+        recipe_id: Uuid,
+    ) -> Result<RecipeDiscoveryMetrics, DiscoveryDataError> {
         // Simulate database query
         Ok(RecipeDiscoveryMetrics {
             recipe_id,
@@ -388,13 +391,19 @@ impl DiscoveryDataService {
     }
 
     /// Update recipe metrics
-    pub async fn update_recipe_metrics(&self, metrics: &RecipeDiscoveryMetrics) -> Result<(), DiscoveryDataError> {
+    pub async fn update_recipe_metrics(
+        &self,
+        _metrics: &RecipeDiscoveryMetrics,
+    ) -> Result<(), DiscoveryDataError> {
         // Simulate database update
         Ok(())
     }
 
     /// Get user discovery preferences
-    pub async fn get_user_preferences(&self, user_id: &str) -> Result<Vec<UserDiscoveryPreference>, DiscoveryDataError> {
+    pub async fn get_user_preferences(
+        &self,
+        user_id: &str,
+    ) -> Result<Vec<UserDiscoveryPreference>, DiscoveryDataError> {
         // Simulate database query
         Ok(vec![
             UserDiscoveryPreference {
@@ -419,10 +428,10 @@ impl DiscoveryDataService {
     /// Update user preference
     pub async fn update_user_preference(
         &self,
-        user_id: &str,
-        preference_type: PreferenceType,
-        preference_value: &str,
-        interaction_weight: f64,
+        _user_id: &str,
+        _preference_type: PreferenceType,
+        _preference_value: &str,
+        _interaction_weight: f64,
     ) -> Result<(), DiscoveryDataError> {
         // Simulate database upsert
         Ok(())
@@ -430,9 +439,9 @@ impl DiscoveryDataService {
 
     /// Get cached recipe similarities
     pub async fn get_recipe_similarities(
-        &self, 
-        recipe_id: Uuid, 
-        limit: usize
+        &self,
+        recipe_id: Uuid,
+        limit: usize,
     ) -> Result<Vec<RecipeSimilarityCache>, DiscoveryDataError> {
         // Simulate database query
         let mut similarities = Vec::new();
@@ -455,26 +464,36 @@ impl DiscoveryDataService {
     /// Cache recipe similarities
     pub async fn cache_recipe_similarities(
         &self,
-        similarities: &[RecipeSimilarityCache],
+        _similarities: &[RecipeSimilarityCache],
     ) -> Result<(), DiscoveryDataError> {
         // Simulate database insert/update
         Ok(())
     }
 
     /// Record discovery event
-    pub async fn record_discovery_event(&self, event: &RecipeDiscoveryEvent) -> Result<(), DiscoveryDataError> {
+    pub async fn record_discovery_event(
+        &self,
+        _event: &RecipeDiscoveryEvent,
+    ) -> Result<(), DiscoveryDataError> {
         // Simulate database insert
         Ok(())
     }
 
     /// Record query analytics
-    pub async fn record_query_analytics(&self, analytics: &DiscoveryQueryAnalytics) -> Result<(), DiscoveryDataError> {
+    pub async fn record_query_analytics(
+        &self,
+        _analytics: &DiscoveryQueryAnalytics,
+    ) -> Result<(), DiscoveryDataError> {
         // Simulate database insert
         Ok(())
     }
 
     /// Get popular recipes
-    pub async fn get_popular_recipes(&self, limit: usize, category: Option<&str>) -> Result<Vec<PopularRecipe>, DiscoveryDataError> {
+    pub async fn get_popular_recipes(
+        &self,
+        limit: usize,
+        category: Option<&str>,
+    ) -> Result<Vec<PopularRecipe>, DiscoveryDataError> {
         // Simulate database query with view
         let mut recipes = Vec::new();
         for i in 0..limit.min(20) {
@@ -485,7 +504,9 @@ impl DiscoveryDataService {
                 prep_time: Some(20 + (i as i32 * 5)),
                 cook_time: Some(30 + (i as i32 * 3)),
                 difficulty: Some("easy".to_string()),
-                category: category.map(|c| c.to_string()).or_else(|| Some("main".to_string())),
+                category: category
+                    .map(|c| c.to_string())
+                    .or_else(|| Some("main".to_string())),
                 base_popularity_score: 100.0 - (i as f64 * 5.0),
                 view_count_total: 1000 - (i as i64 * 50),
                 bookmark_count: 100 - (i as i64 * 5),
@@ -499,7 +520,11 @@ impl DiscoveryDataService {
     }
 
     /// Get trending recipes  
-    pub async fn get_trending_recipes(&self, limit: usize, time_window: &str) -> Result<Vec<TrendingRecipe>, DiscoveryDataError> {
+    pub async fn get_trending_recipes(
+        &self,
+        limit: usize,
+        time_window: &str,
+    ) -> Result<Vec<TrendingRecipe>, DiscoveryDataError> {
         // Simulate database query with view
         let mut recipes = Vec::new();
         for i in 0..limit.min(15) {
@@ -509,7 +534,7 @@ impl DiscoveryDataService {
                 "30d" => 100.0 - (i as f64 * 6.0),
                 _ => 80.0 - (i as f64 * 5.0),
             };
-            
+
             recipes.push(TrendingRecipe {
                 recipe_id: Uuid::new_v4(),
                 title: format!("Trending Recipe {}", i + 1),
@@ -517,8 +542,16 @@ impl DiscoveryDataService {
                 prep_time: Some(15 + (i as i32 * 3)),
                 difficulty: Some("medium".to_string()),
                 category: Some("trending".to_string()),
-                trending_score_24h: if time_window == "24h" { trending_score } else { trending_score * 0.8 },
-                trending_score_7d: if time_window == "7d" { trending_score } else { trending_score * 0.9 },
+                trending_score_24h: if time_window == "24h" {
+                    trending_score
+                } else {
+                    trending_score * 0.8
+                },
+                trending_score_7d: if time_window == "7d" {
+                    trending_score
+                } else {
+                    trending_score * 0.9
+                },
                 view_count_24h: 200 - (i as i64 * 20),
                 view_count_7d: 800 - (i as i64 * 50),
                 bookmark_velocity_24h: 2.5 - (i as f64 * 0.2),
@@ -531,7 +564,10 @@ impl DiscoveryDataService {
     }
 
     /// Get discovery analytics summary
-    pub async fn get_analytics_summary(&self, days: i32) -> Result<Vec<DiscoveryAnalyticsSummary>, DiscoveryDataError> {
+    pub async fn get_analytics_summary(
+        &self,
+        days: i32,
+    ) -> Result<Vec<DiscoveryAnalyticsSummary>, DiscoveryDataError> {
         // Simulate analytics query
         let mut summaries = Vec::new();
         for i in 0..days.min(30) {
@@ -551,7 +587,10 @@ impl DiscoveryDataService {
     }
 
     /// Get feature configuration
-    pub async fn get_feature_config(&self, category: Option<&str>) -> Result<Vec<DiscoveryFeatureConfig>, DiscoveryDataError> {
+    pub async fn get_feature_config(
+        &self,
+        category: Option<&str>,
+    ) -> Result<Vec<DiscoveryFeatureConfig>, DiscoveryDataError> {
         // Simulate configuration query
         let mut configs = vec![
             DiscoveryFeatureConfig {
@@ -586,9 +625,9 @@ impl DiscoveryDataService {
     /// Update feature configuration
     pub async fn update_feature_config(
         &self,
-        config_key: &str,
-        config_value: &str,
-        updated_by: Option<&str>,
+        _config_key: &str,
+        _config_value: &str,
+        _updated_by: Option<&str>,
     ) -> Result<(), DiscoveryDataError> {
         // Simulate database update
         Ok(())
@@ -597,9 +636,9 @@ impl DiscoveryDataService {
     /// Full-text search recipes
     pub async fn search_recipes_fts(
         &self,
-        query: &str,
+        _query: &str,
         limit: usize,
-        offset: usize,
+        _offset: usize,
     ) -> Result<Vec<(Uuid, f64)>, DiscoveryDataError> {
         // Simulate FTS search with relevance scores
         let mut results = Vec::new();

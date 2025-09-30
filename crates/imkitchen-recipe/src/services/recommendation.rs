@@ -48,42 +48,42 @@ pub enum RecommendationType {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum RecommendationReason {
-    SimilarIngredients { 
-        common_ingredients: Vec<String>, 
-        similarity_score: f64 
+    SimilarIngredients {
+        common_ingredients: Vec<String>,
+        similarity_score: f64,
     },
-    SimilarCookingStyle { 
-        techniques: Vec<String>, 
-        style_match: f64 
+    SimilarCookingStyle {
+        techniques: Vec<String>,
+        style_match: f64,
     },
-    UserPreferenceMatch { 
-        preference_type: String, 
-        preference_value: String, 
-        match_strength: f64 
+    UserPreferenceMatch {
+        preference_type: String,
+        preference_value: String,
+        match_strength: f64,
     },
-    CollaborativeSignal { 
-        similar_users: i32, 
-        confidence: f64 
+    CollaborativeSignal {
+        similar_users: i32,
+        confidence: f64,
     },
-    TrendingInCategory { 
-        category: String, 
-        trend_strength: f64 
+    TrendingInCategory {
+        category: String,
+        trend_strength: f64,
     },
-    SeasonalRelevance { 
-        season: String, 
-        relevance_score: f64 
+    SeasonalRelevance {
+        season: String,
+        relevance_score: f64,
     },
-    DiversityBoost { 
-        category_exploration: String, 
-        novelty_factor: f64 
+    DiversityBoost {
+        category_exploration: String,
+        novelty_factor: f64,
     },
-    RecipePopularity { 
-        popularity_rank: i32, 
-        popularity_score: f64 
+    RecipePopularity {
+        popularity_rank: i32,
+        popularity_score: f64,
     },
-    RecentActivity { 
-        activity_type: String, 
-        recency_factor: f64 
+    RecentActivity {
+        activity_type: String,
+        recency_factor: f64,
     },
 }
 
@@ -262,31 +262,48 @@ impl RecommendationEngine {
     ) -> Result<Vec<RecipeRecommendation>, RecommendationError> {
         // Get user profile
         let user_profile = self.get_user_profile(&context.user_id).await?;
-        
+
         // Generate recommendations from different models
-        let content_recs = self.content_based_recommendations(&user_profile, context).await?;
-        let collaborative_recs = self.collaborative_filtering_recommendations(&user_profile, context).await?;
-        let trending_recs = self.trending_recommendations(&user_profile, context).await?;
-        let seasonal_recs = self.seasonal_recommendations(&user_profile, context).await?;
-        
+        let content_recs = self
+            .content_based_recommendations(&user_profile, context)
+            .await?;
+        let collaborative_recs = self
+            .collaborative_filtering_recommendations(&user_profile, context)
+            .await?;
+        let trending_recs = self
+            .trending_recommendations(&user_profile, context)
+            .await?;
+        let seasonal_recs = self
+            .seasonal_recommendations(&user_profile, context)
+            .await?;
+
         // Combine and rank recommendations
-        let mut combined_recs = self.combine_recommendations(vec![
-            (content_recs, RecommendationType::ContentBased),
-            (collaborative_recs, RecommendationType::CollaborativeFiltering),
-            (trending_recs, RecommendationType::Trending),
-            (seasonal_recs, RecommendationType::SeasonalSuggestion),
-        ]).await?;
-        
+        let mut combined_recs = self
+            .combine_recommendations(vec![
+                (content_recs, RecommendationType::ContentBased),
+                (
+                    collaborative_recs,
+                    RecommendationType::CollaborativeFiltering,
+                ),
+                (trending_recs, RecommendationType::Trending),
+                (seasonal_recs, RecommendationType::SeasonalSuggestion),
+            ])
+            .await?;
+
         // Apply post-processing
         combined_recs = self.apply_diversity_boost(&combined_recs, context).await?;
-        combined_recs = self.apply_novelty_scoring(&combined_recs, &user_profile).await?;
-        combined_recs = self.apply_temporal_relevance(&combined_recs, &context.time_context).await?;
-        
+        combined_recs = self
+            .apply_novelty_scoring(&combined_recs, &user_profile)
+            .await?;
+        combined_recs = self
+            .apply_temporal_relevance(&combined_recs, &context.time_context)
+            .await?;
+
         // Filter and rank final recommendations
         let mut final_recs = self.filter_recommendations(&combined_recs, context).await?;
         final_recs.sort_by(|a, b| b.confidence_score.partial_cmp(&a.confidence_score).unwrap());
         final_recs.truncate(context.max_recommendations);
-        
+
         Ok(final_recs)
     }
 
@@ -296,7 +313,9 @@ impl RecommendationEngine {
         user_profile: &UserProfile,
         context: &RecommendationContext,
     ) -> Result<Vec<RecipeRecommendation>, RecommendationError> {
-        self.content_model.generate_recommendations(user_profile, context).await
+        self.content_model
+            .generate_recommendations(user_profile, context)
+            .await
     }
 
     /// Collaborative filtering recommendations based on similar users
@@ -305,7 +324,9 @@ impl RecommendationEngine {
         user_profile: &UserProfile,
         context: &RecommendationContext,
     ) -> Result<Vec<RecipeRecommendation>, RecommendationError> {
-        self.collaborative_model.generate_recommendations(user_profile, context).await
+        self.collaborative_model
+            .generate_recommendations(user_profile, context)
+            .await
     }
 
     /// Trending recommendations with personalization
@@ -317,14 +338,19 @@ impl RecommendationEngine {
         // Get trending recipes and personalize them
         let trending_recipes = self.get_trending_recipes(&context.time_context).await?;
         let mut recommendations = Vec::new();
-        
+
         for recipe_id in trending_recipes.into_iter().take(10) {
-            let personalization_score = self.calculate_personalization_score(&recipe_id, user_profile).await?;
-            
+            let personalization_score = self
+                .calculate_personalization_score(&recipe_id, user_profile)
+                .await?;
+
             if personalization_score > 0.3 {
                 recommendations.push(RecipeRecommendation {
                     recipe_id,
-                    title: format!("Trending Recipe {}", recipe_id.to_string().chars().take(8).collect::<String>()),
+                    title: format!(
+                        "Trending Recipe {}",
+                        recipe_id.to_string().chars().take(8).collect::<String>()
+                    ),
                     confidence_score: personalization_score * 0.8, // Slight discount for trending
                     recommendation_type: RecommendationType::PersonalizedTrending,
                     reasons: vec![
@@ -346,7 +372,7 @@ impl RecommendationEngine {
                 });
             }
         }
-        
+
         Ok(recommendations)
     }
 
@@ -356,24 +382,31 @@ impl RecommendationEngine {
         user_profile: &UserProfile,
         context: &RecommendationContext,
     ) -> Result<Vec<RecipeRecommendation>, RecommendationError> {
-        let seasonal_recipes = self.get_seasonal_recipes(&context.time_context.season).await?;
+        let seasonal_recipes = self
+            .get_seasonal_recipes(&context.time_context.season)
+            .await?;
         let mut recommendations = Vec::new();
-        
+
         for recipe_id in seasonal_recipes.into_iter().take(8) {
-            let personalization_score = self.calculate_personalization_score(&recipe_id, user_profile).await?;
-            let seasonal_relevance = self.calculate_seasonal_relevance(&recipe_id, &context.time_context.season).await?;
-            
+            let personalization_score = self
+                .calculate_personalization_score(&recipe_id, user_profile)
+                .await?;
+            let seasonal_relevance = self
+                .calculate_seasonal_relevance(&recipe_id, &context.time_context.season)
+                .await?;
+
             recommendations.push(RecipeRecommendation {
                 recipe_id,
-                title: format!("Seasonal Recipe {}", recipe_id.to_string().chars().take(8).collect::<String>()),
+                title: format!(
+                    "Seasonal Recipe {}",
+                    recipe_id.to_string().chars().take(8).collect::<String>()
+                ),
                 confidence_score: (personalization_score + seasonal_relevance) / 2.0,
                 recommendation_type: RecommendationType::SeasonalSuggestion,
-                reasons: vec![
-                    RecommendationReason::SeasonalRelevance {
-                        season: format!("{:?}", context.time_context.season),
-                        relevance_score: seasonal_relevance,
-                    },
-                ],
+                reasons: vec![RecommendationReason::SeasonalRelevance {
+                    season: format!("{:?}", context.time_context.season),
+                    relevance_score: seasonal_relevance,
+                }],
                 personalization_score,
                 novelty_score: 0.0,
                 diversity_boost: 0.0,
@@ -381,7 +414,7 @@ impl RecommendationEngine {
                 generated_at: Utc::now(),
             });
         }
-        
+
         Ok(recommendations)
     }
 
@@ -391,13 +424,13 @@ impl RecommendationEngine {
         model_results: Vec<(Vec<RecipeRecommendation>, RecommendationType)>,
     ) -> Result<Vec<RecipeRecommendation>, RecommendationError> {
         let mut recipe_scores: HashMap<Uuid, (RecipeRecommendation, f64)> = HashMap::new();
-        
+
         for (recommendations, model_type) in model_results {
             let weight = self.hybrid_weights.get(&model_type).unwrap_or(&0.25);
-            
+
             for mut rec in recommendations {
                 let weighted_score = rec.confidence_score * weight;
-                
+
                 match recipe_scores.get_mut(&rec.recipe_id) {
                     Some((existing_rec, existing_score)) => {
                         *existing_score += weighted_score;
@@ -412,11 +445,14 @@ impl RecommendationEngine {
                 }
             }
         }
-        
-        Ok(recipe_scores.into_values().map(|(mut rec, score)| {
-            rec.confidence_score = score;
-            rec
-        }).collect())
+
+        Ok(recipe_scores
+            .into_values()
+            .map(|(mut rec, score)| {
+                rec.confidence_score = score;
+                rec
+            })
+            .collect())
     }
 
     /// Apply diversity boost to avoid too many similar recommendations
@@ -427,22 +463,29 @@ impl RecommendationEngine {
     ) -> Result<Vec<RecipeRecommendation>, RecommendationError> {
         let mut diverse_recs = Vec::new();
         let mut category_counts: HashMap<String, i32> = HashMap::new();
-        
+
         for rec in recommendations {
-            let category = self.get_recipe_category(&rec.recipe_id).await.unwrap_or_else(|_| "unknown".to_string());
+            let category = self
+                .get_recipe_category(&rec.recipe_id)
+                .await
+                .unwrap_or_else(|_| "unknown".to_string());
             let category_count = category_counts.get(&category).unwrap_or(&0);
-            
+
             let diversity_penalty = (*category_count as f64) * 0.1;
-            let diversity_boost = if *category_count < 2 { 0.1 } else { -diversity_penalty };
-            
+            let diversity_boost = if *category_count < 2 {
+                0.1
+            } else {
+                -diversity_penalty
+            };
+
             let mut boosted_rec = rec.clone();
             boosted_rec.diversity_boost = diversity_boost;
             boosted_rec.confidence_score += diversity_boost * context.diversity_weight;
-            
+
             diverse_recs.push(boosted_rec);
             category_counts.insert(category, category_count + 1);
         }
-        
+
         Ok(diverse_recs)
     }
 
@@ -452,31 +495,32 @@ impl RecommendationEngine {
         recommendations: &[RecipeRecommendation],
         user_profile: &UserProfile,
     ) -> Result<Vec<RecipeRecommendation>, RecommendationError> {
-        let user_history: HashSet<Uuid> = user_profile.interaction_history
+        let user_history: HashSet<Uuid> = user_profile
+            .interaction_history
             .iter()
             .map(|i| i.recipe_id)
             .collect();
-        
+
         let mut novel_recs = Vec::new();
-        
+
         for rec in recommendations {
             let novelty_score = if user_history.contains(&rec.recipe_id) {
                 0.0 // Already interacted with
             } else {
                 let recipe_age = self.get_recipe_age(&rec.recipe_id).await.unwrap_or(0);
                 let base_novelty = if recipe_age < 30 { 0.8 } else { 0.4 };
-                
+
                 // Boost novelty for users with high adventurousness
                 base_novelty * (0.5 + user_profile.taste_profile.adventurousness * 0.5)
             };
-            
+
             let mut novel_rec = rec.clone();
             novel_rec.novelty_score = novelty_score;
             novel_rec.confidence_score += novelty_score * 0.1; // Small novelty boost
-            
+
             novel_recs.push(novel_rec);
         }
-        
+
         Ok(novel_recs)
     }
 
@@ -487,27 +531,29 @@ impl RecommendationEngine {
         time_context: &TimeContext,
     ) -> Result<Vec<RecipeRecommendation>, RecommendationError> {
         let mut temporal_recs = Vec::new();
-        
+
         for rec in recommendations {
             let mut temporal_relevance = 0.5; // Base relevance
-            
+
             // Meal time relevance
             if let Some(meal_time) = &time_context.meal_time {
-                temporal_relevance += self.calculate_meal_time_relevance(&rec.recipe_id, meal_time).await?;
+                temporal_relevance += self
+                    .calculate_meal_time_relevance(&rec.recipe_id, meal_time)
+                    .await?;
             }
-            
+
             // Weekend/weekday relevance
             if time_context.is_weekend {
                 temporal_relevance += 0.1; // Slight boost for more complex recipes on weekends
             }
-            
+
             let mut temporal_rec = rec.clone();
             temporal_rec.temporal_relevance = temporal_relevance;
             temporal_rec.confidence_score += temporal_relevance * 0.15;
-            
+
             temporal_recs.push(temporal_rec);
         }
-        
+
         Ok(temporal_recs)
     }
 
@@ -518,13 +564,13 @@ impl RecommendationEngine {
         context: &RecommendationContext,
     ) -> Result<Vec<RecipeRecommendation>, RecommendationError> {
         let mut filtered = Vec::new();
-        
+
         for rec in recommendations {
             // Skip excluded recipes
             if context.exclude_recipes.contains(&rec.recipe_id) {
                 continue;
             }
-            
+
             // Apply filters
             let mut passes_filters = true;
             for filter in &context.filters {
@@ -533,20 +579,20 @@ impl RecommendationEngine {
                     break;
                 }
             }
-            
+
             if passes_filters {
                 filtered.push(rec.clone());
             }
         }
-        
+
         Ok(filtered)
     }
 
     /// Update user profile based on interaction feedback
     pub async fn update_user_profile_from_interaction(
         &self,
-        user_id: &str,
-        interaction: &UserInteraction,
+        _user_id: &str,
+        _interaction: &UserInteraction,
     ) -> Result<(), RecommendationError> {
         // In a real implementation, this would update the user profile in the database
         // and potentially retrain personalization models
@@ -554,7 +600,9 @@ impl RecommendationEngine {
     }
 
     /// Get model performance metrics
-    pub async fn get_model_metrics(&self) -> Result<Vec<RecommendationModelMetrics>, RecommendationError> {
+    pub async fn get_model_metrics(
+        &self,
+    ) -> Result<Vec<RecommendationModelMetrics>, RecommendationError> {
         Ok(vec![
             RecommendationModelMetrics {
                 model_type: "content_based".to_string(),
@@ -614,16 +662,14 @@ impl RecommendationEngine {
             }],
             dietary_restrictions: vec!["vegetarian".to_string()],
             favorite_categories: vec!["pasta".to_string(), "salads".to_string()],
-            interaction_history: vec![
-                UserInteraction {
-                    recipe_id: Uuid::new_v4(),
-                    interaction_type: InteractionType::Cooked,
-                    rating: Some(4.5),
-                    completion_status: Some("completed".to_string()),
-                    timestamp: Utc::now() - Duration::days(1),
-                    context: Some("dinner".to_string()),
-                },
-            ],
+            interaction_history: vec![UserInteraction {
+                recipe_id: Uuid::new_v4(),
+                interaction_type: InteractionType::Cooked,
+                rating: Some(4.5),
+                completion_status: Some("completed".to_string()),
+                timestamp: Utc::now() - Duration::days(1),
+                context: Some("dinner".to_string()),
+            }],
             taste_profile: TasteProfile {
                 flavor_preferences: HashMap::from([
                     ("savory".to_string(), 0.8),
@@ -642,27 +688,41 @@ impl RecommendationEngine {
         })
     }
 
-    async fn get_trending_recipes(&self, _time_context: &TimeContext) -> Result<Vec<Uuid>, RecommendationError> {
+    async fn get_trending_recipes(
+        &self,
+        _time_context: &TimeContext,
+    ) -> Result<Vec<Uuid>, RecommendationError> {
         Ok((0..15).map(|_| Uuid::new_v4()).collect())
     }
 
-    async fn get_seasonal_recipes(&self, _season: &Season) -> Result<Vec<Uuid>, RecommendationError> {
+    async fn get_seasonal_recipes(
+        &self,
+        _season: &Season,
+    ) -> Result<Vec<Uuid>, RecommendationError> {
         Ok((0..10).map(|_| Uuid::new_v4()).collect())
     }
 
-    async fn calculate_personalization_score(&self, recipe_id: &Uuid, _user_profile: &UserProfile) -> Result<f64, RecommendationError> {
+    async fn calculate_personalization_score(
+        &self,
+        recipe_id: &Uuid,
+        _user_profile: &UserProfile,
+    ) -> Result<f64, RecommendationError> {
         // Use recipe_id as seed for deterministic randomness, ensure 0.0-1.0 range
         let score = 0.6 + ((recipe_id.as_u128() % 40) as f64 / 100.0);
-        Ok(score.min(1.0).max(0.0))
+        Ok(score.clamp(0.0, 1.0))
     }
 
-    async fn calculate_seasonal_relevance(&self, recipe_id: &Uuid, _season: &Season) -> Result<f64, RecommendationError> {
+    async fn calculate_seasonal_relevance(
+        &self,
+        recipe_id: &Uuid,
+        _season: &Season,
+    ) -> Result<f64, RecommendationError> {
         let score = 0.7 + ((recipe_id.as_u128() % 30) as f64 / 100.0);
         Ok(score)
     }
 
     async fn get_recipe_category(&self, recipe_id: &Uuid) -> Result<String, RecommendationError> {
-        let categories = vec!["pasta", "salad", "soup", "dessert", "main"];
+        let categories = ["pasta", "salad", "soup", "dessert", "main"];
         let index = (recipe_id.as_u128() % categories.len() as u128) as usize;
         Ok(categories[index].to_string())
     }
@@ -671,14 +731,22 @@ impl RecommendationEngine {
         Ok((recipe_id.as_u128() % 365) as i32) // Deterministic age in days
     }
 
-    async fn calculate_meal_time_relevance(&self, recipe_id: &Uuid, _meal_time: &MealTime) -> Result<f64, RecommendationError> {
+    async fn calculate_meal_time_relevance(
+        &self,
+        recipe_id: &Uuid,
+        _meal_time: &MealTime,
+    ) -> Result<f64, RecommendationError> {
         let boost = 0.1 + ((recipe_id.as_u128() % 20) as f64 / 100.0);
         Ok(boost)
     }
 
-    async fn applies_filter(&self, recipe_id: &Uuid, _filter: &RecommendationFilter) -> Result<bool, RecommendationError> {
+    async fn applies_filter(
+        &self,
+        recipe_id: &Uuid,
+        _filter: &RecommendationFilter,
+    ) -> Result<bool, RecommendationError> {
         // Deterministic filter application based on recipe_id
-        Ok((recipe_id.as_u128() % 2) == 0)
+        Ok(recipe_id.as_u128().is_multiple_of(2))
     }
 }
 
@@ -697,12 +765,12 @@ impl ContentBasedModel {
         _context: &RecommendationContext,
     ) -> Result<Vec<RecipeRecommendation>, RecommendationError> {
         let mut recommendations = Vec::new();
-        
+
         // Simulate content-based recommendations based on user preferences
         for i in 0..8 {
             let recipe_id = Uuid::new_v4();
-            let base_score = (0.7 + (i as f64 * 0.05)).min(1.0).max(0.0);
-            
+            let base_score = (0.7 + (i as f64 * 0.05)).clamp(0.0, 1.0);
+
             recommendations.push(RecipeRecommendation {
                 recipe_id,
                 title: format!("Content-Based Recipe {}", i + 1),
@@ -716,7 +784,10 @@ impl ContentBasedModel {
                     RecommendationReason::UserPreferenceMatch {
                         preference_type: "cuisine".to_string(),
                         preference_value: "italian".to_string(),
-                        match_strength: user_profile.cuisine_preferences.get("italian").unwrap_or(&0.5).clone(),
+                        match_strength: *user_profile
+                            .cuisine_preferences
+                            .get("italian")
+                            .unwrap_or(&0.5),
                     },
                 ],
                 personalization_score: base_score,
@@ -726,7 +797,7 @@ impl ContentBasedModel {
                 generated_at: Utc::now(),
             });
         }
-        
+
         Ok(recommendations)
     }
 }
@@ -746,12 +817,12 @@ impl CollaborativeFilteringModel {
         _context: &RecommendationContext,
     ) -> Result<Vec<RecipeRecommendation>, RecommendationError> {
         let mut recommendations = Vec::new();
-        
+
         // Simulate collaborative filtering recommendations
         for i in 0..6 {
             let recipe_id = Uuid::new_v4();
-            let base_score = (0.65 + (i as f64 * 0.08)).min(1.0).max(0.0);
-            
+            let base_score = (0.65 + (i as f64 * 0.08)).clamp(0.0, 1.0);
+
             recommendations.push(RecipeRecommendation {
                 recipe_id,
                 title: format!("Collaborative Recipe {}", i + 1),
@@ -759,11 +830,11 @@ impl CollaborativeFilteringModel {
                 recommendation_type: RecommendationType::CollaborativeFiltering,
                 reasons: vec![
                     RecommendationReason::CollaborativeSignal {
-                        similar_users: 45 + (i as i32 * 5),
+                        similar_users: 45 + (i * 5),
                         confidence: base_score,
                     },
                     RecommendationReason::RecipePopularity {
-                        popularity_rank: 15 + i as i32,
+                        popularity_rank: 15 + i,
                         popularity_score: 0.75,
                     },
                 ],
@@ -774,7 +845,7 @@ impl CollaborativeFilteringModel {
                 generated_at: Utc::now(),
             });
         }
-        
+
         Ok(recommendations)
     }
 }

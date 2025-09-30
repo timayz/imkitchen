@@ -1,14 +1,14 @@
-use imkitchen_recipe::queries::discovery::*;
+use chrono::Utc;
 use imkitchen_recipe::domain::discovery::*;
 use imkitchen_recipe::projections::discovery::*;
-use imkitchen_shared::types::{Difficulty, DietaryRestriction, MealType};
-use chrono::Utc;
+use imkitchen_recipe::queries::discovery::*;
+use imkitchen_shared::types::{DietaryRestriction, Difficulty, MealType};
 use uuid::Uuid;
 
 #[tokio::test]
 async fn test_recipe_discovery_query() {
     let query_handler = RecipeDiscoveryQueryHandler::new();
-    
+
     let query = RecipeDiscoveryQuery {
         query_id: Uuid::new_v4(),
         user_id: Some(Uuid::new_v4()),
@@ -26,7 +26,7 @@ async fn test_recipe_discovery_query() {
 
     let result = query_handler.handle(query).await;
     assert!(result.is_ok());
-    
+
     let browse_view = result.unwrap();
     assert_eq!(browse_view.page, 1);
     assert_eq!(browse_view.page_size, 20);
@@ -36,7 +36,7 @@ async fn test_recipe_discovery_query() {
 #[tokio::test]
 async fn test_discovery_search_query() {
     let query_handler = DiscoverySearchQueryHandler::new();
-    
+
     let query = DiscoverySearchQuery {
         query_id: Uuid::new_v4(),
         user_id: Some(Uuid::new_v4()),
@@ -51,7 +51,7 @@ async fn test_discovery_search_query() {
 
     let result = query_handler.handle(query).await;
     assert!(result.is_ok());
-    
+
     let search_results = result.unwrap();
     assert_eq!(search_results.query_text, "pasta");
     assert_eq!(search_results.page, 1);
@@ -61,7 +61,7 @@ async fn test_discovery_search_query() {
 #[tokio::test]
 async fn test_trending_recipes_query() {
     let query_handler = TrendingRecipesQueryHandler::new();
-    
+
     let query = TrendingRecipesQuery {
         query_id: Uuid::new_v4(),
         time_window: "24h".to_string(),
@@ -71,11 +71,11 @@ async fn test_trending_recipes_query() {
 
     let result = query_handler.handle(query).await;
     assert!(result.is_ok());
-    
+
     let trending_view = result.unwrap();
     assert_eq!(trending_view.time_window, "24h");
     assert!(trending_view.trending_recipes.len() <= 10);
-    
+
     // Verify recipes are sorted by trending rank
     for window in trending_view.trending_recipes.windows(2) {
         assert!(window[0].trending_rank <= window[1].trending_rank);
@@ -85,7 +85,7 @@ async fn test_trending_recipes_query() {
 #[tokio::test]
 async fn test_similar_recipes_query() {
     let query_handler = SimilarRecipesQueryHandler::new();
-    
+
     let recipe_id = Uuid::new_v4();
     let query = SimilarRecipesQuery {
         query_id: Uuid::new_v4(),
@@ -96,11 +96,11 @@ async fn test_similar_recipes_query() {
 
     let result = query_handler.handle(query).await;
     assert!(result.is_ok());
-    
+
     let similar_recipes = result.unwrap();
     assert_eq!(similar_recipes.original_recipe_id, recipe_id);
     assert!(similar_recipes.similar_recipes.len() <= 5);
-    
+
     // Verify similarity scores are above threshold
     for recipe in &similar_recipes.similar_recipes {
         assert!(recipe.similarity_score >= 0.7);
@@ -111,7 +111,7 @@ async fn test_similar_recipes_query() {
 fn test_recipe_browse_view_projection() {
     let recipe_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
-    
+
     let recipe_card = RecipeCard {
         recipe_id,
         title: "Vegetarian Pasta".to_string(),
@@ -154,7 +154,7 @@ fn test_search_suggestions_view() {
     suggestions_view.sort_by_frequency();
     assert_eq!(suggestions_view.suggestions[0].suggestion_text, "pasta");
     assert_eq!(suggestions_view.suggestions[1].suggestion_text, "pastry");
-    
+
     // Test filtering by type
     let ingredient_suggestions = suggestions_view.filter_by_type("ingredient");
     assert_eq!(ingredient_suggestions.len(), 1);
@@ -191,7 +191,7 @@ fn test_trending_recipes_view() {
     assert_eq!(trending_view.trending_recipes.len(), 2);
     assert_eq!(trending_view.trending_recipes[0].trending_rank, 1);
     assert_eq!(trending_view.trending_recipes[1].trending_rank, 2);
-    
+
     // Test top trending recipe
     let top_recipe = trending_view.get_top_trending();
     assert!(top_recipe.is_some());

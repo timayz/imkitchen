@@ -1,13 +1,14 @@
 use askama::Template;
 use chrono::Utc;
-use uuid::Uuid;
-use imkitchen_recipe::projections::discovery::*;
 use imkitchen_recipe::domain::discovery::{DiscoveryFilters, SortingCriteria};
-use imkitchen_shared::types::{Difficulty, DietaryRestriction, MealType};
+use imkitchen_recipe::projections::discovery::*;
+use imkitchen_shared::types::{DietaryRestriction, Difficulty, MealType};
+use uuid::Uuid;
 
 // Template for recipe browse view with filtering and pagination
 #[derive(Template)]
-#[template(source = r#"
+#[template(
+    source = r#"
 <div class="recipe-browse-container">
     <div class="filters-section">
         <!-- Applied Filters -->
@@ -90,7 +91,9 @@ use imkitchen_shared::types::{Difficulty, DietaryRestriction, MealType};
         {% endif %}
     </div>
 </div>
-"#, ext = "html")]
+"#,
+    ext = "html"
+)]
 pub struct RecipeBrowseTemplate {
     pub recipes: Vec<RecipeCard>,
     pub total_count: u32,
@@ -103,7 +106,8 @@ pub struct RecipeBrowseTemplate {
 
 // Template for search results with suggestions
 #[derive(Template)]
-#[template(source = r#"
+#[template(
+    source = r#"
 <div class="search-results-container">
     <div class="search-header">
         <h2>Search Results for "{{ query_text }}"</h2>
@@ -145,7 +149,9 @@ pub struct RecipeBrowseTemplate {
     </div>
     {% endif %}
 </div>
-"#, ext = "html")]
+"#,
+    ext = "html"
+)]
 pub struct SearchResultsTemplate {
     pub results: Vec<SearchResult>,
     pub query_text: String,
@@ -158,7 +164,8 @@ pub struct SearchResultsTemplate {
 
 // Template for trending recipes
 #[derive(Template)]
-#[template(source = r#"
+#[template(
+    source = r#"
 <div class="trending-recipes-container">
     <div class="trending-header">
         <h2>Trending Recipes ({{ time_window }})</h2>
@@ -189,7 +196,9 @@ pub struct SearchResultsTemplate {
     </div>
     {% endif %}
 </div>
-"#, ext = "html")]
+"#,
+    ext = "html"
+)]
 pub struct TrendingRecipesTemplate {
     pub time_window: String,
     pub trending_recipes: Vec<TrendingRecipe>,
@@ -198,7 +207,8 @@ pub struct TrendingRecipesTemplate {
 
 // Template for similar recipes
 #[derive(Template)]
-#[template(source = r#"
+#[template(
+    source = r#"
 <div class="similar-recipes-container">
     <div class="similar-header">
         <h2>Similar Recipes</h2>
@@ -231,7 +241,9 @@ pub struct TrendingRecipesTemplate {
         {% endfor %}
     </div>
 </div>
-"#, ext = "html")]
+"#,
+    ext = "html"
+)]
 pub struct SimilarRecipesTemplate {
     pub original_recipe_id: Uuid,
     pub similar_recipes: Vec<SimilarRecipe>,
@@ -241,7 +253,8 @@ pub struct SimilarRecipesTemplate {
 
 // Template for user preferences view
 #[derive(Template)]
-#[template(source = r#"
+#[template(
+    source = r#"
 <div class="user-preferences-container">
     <div class="preferences-header">
         <h2>Your Recipe Preferences</h2>
@@ -299,7 +312,9 @@ pub struct SimilarRecipesTemplate {
         {% endif %}
     </div>
 </div>
-"#, ext = "html")]
+"#,
+    ext = "html"
+)]
 pub struct UserPreferencesTemplate {
     pub user_id: Uuid,
     pub preferred_difficulties: Vec<Difficulty>,
@@ -327,7 +342,8 @@ impl UserPreferencesTemplate {
 
 // Template for discovery analytics
 #[derive(Template)]
-#[template(source = r#"
+#[template(
+    source = r#"
 <div class="discovery-analytics-container">
     <div class="analytics-header">
         <h2>Discovery Analytics ({{ time_period }})</h2>
@@ -379,7 +395,9 @@ impl UserPreferencesTemplate {
     </div>
     {% endif %}
 </div>
-"#, ext = "html")]
+"#,
+    ext = "html"
+)]
 pub struct DiscoveryAnalyticsTemplate {
     pub time_period: String,
     pub total_searches: u32,
@@ -436,8 +454,10 @@ mod tests {
             sort_order: SortingCriteria::HighestRated,
         };
 
-        let rendered = template.render().expect("Template should render successfully");
-        
+        let rendered = template
+            .render()
+            .expect("Template should render successfully");
+
         assert!(rendered.contains("Test Pasta Recipe"));
         assert!(rendered.contains("Rating: 4+"));
         assert!(rendered.contains("Difficulty:") && rendered.contains("Easy"));
@@ -473,8 +493,10 @@ mod tests {
             search_time_ms: 50,
         };
 
-        let rendered = template.render().expect("Template should render successfully");
-        
+        let rendered = template
+            .render()
+            .expect("Template should render successfully");
+
         assert!(rendered.contains("Search Results for \"pasta\""));
         assert!(rendered.contains("1 results found in 50ms"));
         assert!(rendered.contains("Delicious Pasta"));
@@ -504,8 +526,10 @@ mod tests {
             calculated_at: Utc::now(),
         };
 
-        let rendered = template.render().expect("Template should render successfully");
-        
+        let rendered = template
+            .render()
+            .expect("Template should render successfully");
+
         assert!(rendered.contains("Trending Recipes (24h)"));
         assert!(rendered.contains("Viral Pasta Recipe"));
         assert!(rendered.contains("Popularity: 95.5"));
@@ -535,8 +559,10 @@ mod tests {
             generated_at: Utc::now(),
         };
 
-        let rendered = template.render().expect("Template should render successfully");
-        
+        let rendered = template
+            .render()
+            .expect("Template should render successfully");
+
         assert!(rendered.contains("Similar Recipes"));
         assert!(rendered.contains("Similar Pasta Dish"));
         assert!(rendered.contains("0.85"));
@@ -560,8 +586,10 @@ mod tests {
             updated_at: Utc::now(),
         };
 
-        let rendered = template.render().expect("Template should render successfully");
-        
+        let rendered = template
+            .render()
+            .expect("Template should render successfully");
+
         assert!(rendered.contains("Your Recipe Preferences"));
         assert!(rendered.contains("⚡ Prefers Quick Recipes"));
         assert!(rendered.contains("Average preferred prep time: 25 minutes"));
@@ -584,8 +612,10 @@ mod tests {
             generated_at: Utc::now(),
         };
 
-        let rendered = template.render().expect("Template should render successfully");
-        
+        let rendered = template
+            .render()
+            .expect("Template should render successfully");
+
         assert!(rendered.contains("Discovery Analytics (last 7 days)"));
         assert!(rendered.contains("Total Searches"));
         assert!(rendered.contains("150"));

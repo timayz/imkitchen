@@ -1,6 +1,6 @@
-use imkitchen_recipe::domain::discovery::*;
-use imkitchen_shared::types::{Difficulty, DietaryRestriction, MealType};
 use chrono::Utc;
+use imkitchen_recipe::domain::discovery::*;
+use imkitchen_shared::types::{DietaryRestriction, Difficulty, MealType};
 use uuid::Uuid;
 use validator::Validate;
 
@@ -76,7 +76,7 @@ fn test_sorting_criteria_display() {
 fn test_recipe_discovery_creation() {
     let discovery_id = Uuid::new_v4();
     let user_id = Some(Uuid::new_v4());
-    
+
     let search_criteria = SearchCriteria {
         query_text: "chicken".to_string(),
         search_type: SearchType::Ingredient,
@@ -113,7 +113,7 @@ fn test_recipe_discovery_creation() {
 fn test_trending_score_creation() {
     let recipe_id = Uuid::new_v4();
     let now = Utc::now();
-    
+
     let trending_score = TrendingScore {
         recipe_id,
         popularity_score: 85.5,
@@ -133,7 +133,7 @@ fn test_trending_score_validation() {
     let invalid_score = TrendingScore {
         recipe_id: Uuid::new_v4(),
         popularity_score: -10.0, // Invalid - negative score
-        trending_rank: 0, // Invalid - should be positive
+        trending_rank: 0,        // Invalid - should be positive
         calculated_at: Utc::now(),
         time_weighted_score: -5.0, // Invalid - negative score
     };

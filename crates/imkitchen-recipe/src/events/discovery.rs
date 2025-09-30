@@ -1,7 +1,7 @@
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use imkitchen_shared::DomainEvent;
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 /// Event triggered when a recipe is viewed by a user
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -216,11 +216,11 @@ impl RecipeViewedEvent {
     pub fn aggregator_name() -> &'static str {
         "Discovery"
     }
-    
+
     pub fn encode(&self) -> Result<Vec<u8>, String> {
         serde_json::to_vec(self).map_err(|e| e.to_string())
     }
-    
+
     pub fn decode(data: &[u8]) -> Result<Self, String> {
         serde_json::from_slice(data).map_err(|e| e.to_string())
     }
@@ -230,11 +230,11 @@ impl RecipeSearchedEvent {
     pub fn aggregator_name() -> &'static str {
         "Discovery"
     }
-    
+
     pub fn encode(&self) -> Result<Vec<u8>, String> {
         serde_json::to_vec(self).map_err(|e| e.to_string())
     }
-    
+
     pub fn decode(data: &[u8]) -> Result<Self, String> {
         serde_json::from_slice(data).map_err(|e| e.to_string())
     }
@@ -244,11 +244,11 @@ impl FilterAppliedEvent {
     pub fn aggregator_name() -> &'static str {
         "Discovery"
     }
-    
+
     pub fn encode(&self) -> Result<Vec<u8>, String> {
         serde_json::to_vec(self).map_err(|e| e.to_string())
     }
-    
+
     pub fn decode(data: &[u8]) -> Result<Self, String> {
         serde_json::from_slice(data).map_err(|e| e.to_string())
     }
@@ -258,11 +258,11 @@ impl RandomRecipeRequestedEvent {
     pub fn aggregator_name() -> &'static str {
         "Discovery"
     }
-    
+
     pub fn encode(&self) -> Result<Vec<u8>, String> {
         serde_json::to_vec(self).map_err(|e| e.to_string())
     }
-    
+
     pub fn decode(data: &[u8]) -> Result<Self, String> {
         serde_json::from_slice(data).map_err(|e| e.to_string())
     }
@@ -272,11 +272,11 @@ impl DiscoverySessionStartedEvent {
     pub fn aggregator_name() -> &'static str {
         "DiscoverySession"
     }
-    
+
     pub fn encode(&self) -> Result<Vec<u8>, String> {
         serde_json::to_vec(self).map_err(|e| e.to_string())
     }
-    
+
     pub fn decode(data: &[u8]) -> Result<Self, String> {
         serde_json::from_slice(data).map_err(|e| e.to_string())
     }
@@ -286,11 +286,11 @@ impl TrendingCalculatedEvent {
     pub fn aggregator_name() -> &'static str {
         "Trending"
     }
-    
+
     pub fn encode(&self) -> Result<Vec<u8>, String> {
         serde_json::to_vec(self).map_err(|e| e.to_string())
     }
-    
+
     pub fn decode(data: &[u8]) -> Result<Self, String> {
         serde_json::from_slice(data).map_err(|e| e.to_string())
     }
@@ -300,11 +300,11 @@ impl RecipePopularityUpdatedEvent {
     pub fn aggregator_name() -> &'static str {
         "Trending"
     }
-    
+
     pub fn encode(&self) -> Result<Vec<u8>, String> {
         serde_json::to_vec(self).map_err(|e| e.to_string())
     }
-    
+
     pub fn decode(data: &[u8]) -> Result<Self, String> {
         serde_json::from_slice(data).map_err(|e| e.to_string())
     }

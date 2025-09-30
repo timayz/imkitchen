@@ -1,14 +1,20 @@
 use crate::commands::discovery::*;
 use crate::domain::discovery::*;
 use crate::events::discovery::*;
-use uuid::Uuid;
 use chrono::Utc;
-use validator::Validate;
 use std::collections::HashMap;
+use uuid::Uuid;
+use validator::Validate;
 
 /// Command handler for recipe search operations
 pub struct SearchRecipesCommandHandler {
     search_service: RecipeSearchService,
+}
+
+impl Default for SearchRecipesCommandHandler {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl SearchRecipesCommandHandler {
@@ -20,10 +26,15 @@ impl SearchRecipesCommandHandler {
 
     pub async fn handle(&self, command: SearchRecipesCommand) -> Result<Vec<Uuid>, SearchError> {
         // Validate command
-        command.validate().map_err(|e| SearchError::InvalidQuery(e.to_string()))?;
+        command
+            .validate()
+            .map_err(|e| SearchError::InvalidQuery(e.to_string()))?;
 
         // Perform search using the search service
-        let results = self.search_service.search_recipes(&command.search_criteria).await?;
+        let results = self
+            .search_service
+            .search_recipes(&command.search_criteria)
+            .await?;
 
         // Emit search event
         let _event = RecipeSearchedEvent {
@@ -48,6 +59,12 @@ pub struct ApplyFiltersCommandHandler {
     search_service: RecipeSearchService,
 }
 
+impl Default for ApplyFiltersCommandHandler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ApplyFiltersCommandHandler {
     pub fn new() -> Self {
         Self {
@@ -57,10 +74,15 @@ impl ApplyFiltersCommandHandler {
 
     pub async fn handle(&self, command: ApplyFiltersCommand) -> Result<Vec<Uuid>, SearchError> {
         // Validate command
-        command.validate().map_err(|e| SearchError::InvalidQuery(e.to_string()))?;
+        command
+            .validate()
+            .map_err(|e| SearchError::InvalidQuery(e.to_string()))?;
 
         // Apply filters to current search
-        let results = self.search_service.search_recipes(&command.current_search_criteria).await?;
+        let results = self
+            .search_service
+            .search_recipes(&command.current_search_criteria)
+            .await?;
 
         // Emit filter applied event
         let _event = FilterAppliedEvent {
@@ -68,13 +90,25 @@ impl ApplyFiltersCommandHandler {
             user_id: command.user_id,
             session_id: command.session_id,
             rating_threshold: command.filters.rating_threshold,
-            difficulty_levels: command.filters.difficulty_levels.iter()
-                .map(|d| format!("{:?}", d)).collect(),
+            difficulty_levels: command
+                .filters
+                .difficulty_levels
+                .iter()
+                .map(|d| format!("{:?}", d))
+                .collect(),
             max_prep_time: command.filters.max_prep_time,
-            dietary_restrictions: command.filters.dietary_restrictions.iter()
-                .map(|d| format!("{:?}", d)).collect(),
-            meal_types: command.filters.meal_types.iter()
-                .map(|m| format!("{:?}", m)).collect(),
+            dietary_restrictions: command
+                .filters
+                .dietary_restrictions
+                .iter()
+                .map(|d| format!("{:?}", d))
+                .collect(),
+            meal_types: command
+                .filters
+                .meal_types
+                .iter()
+                .map(|m| format!("{:?}", m))
+                .collect(),
             results_count: results.len() as u32,
             applied_at: Utc::now(),
         };
@@ -91,6 +125,12 @@ pub struct RequestRandomRecipeCommandHandler {
     random_selector: RandomRecipeSelector,
 }
 
+impl Default for RequestRandomRecipeCommandHandler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RequestRandomRecipeCommandHandler {
     pub fn new() -> Self {
         Self {
@@ -98,13 +138,20 @@ impl RequestRandomRecipeCommandHandler {
         }
     }
 
-    pub async fn handle(&self, command: RequestRandomRecipeCommand) -> Result<Option<Uuid>, SelectionError> {
+    pub async fn handle(
+        &self,
+        command: RequestRandomRecipeCommand,
+    ) -> Result<Option<Uuid>, SelectionError> {
         // Validate command
-        command.validate().map_err(|_e| SelectionError::NoRecipesAvailable)?;
+        command
+            .validate()
+            .map_err(|_e| SelectionError::NoRecipesAvailable)?;
 
         // Select random recipe with preference filtering
-        let selected_recipe = self.random_selector
-            .select_random_recipe(command.user_id, &command.preference_filters).await?;
+        let selected_recipe = self
+            .random_selector
+            .select_random_recipe(command.user_id, &command.preference_filters)
+            .await?;
 
         // Emit random recipe requested event
         let filter_criteria = format!(
@@ -171,7 +218,11 @@ impl DiscoverySession {
         };
 
         // TODO: Emit event through event store when Evento is configured
-        tracing::info!("Discovery session started: {} ({})", session_id, discovery_type);
+        tracing::info!(
+            "Discovery session started: {} ({})",
+            session_id,
+            discovery_type
+        );
 
         session
     }
@@ -179,7 +230,7 @@ impl DiscoverySession {
     /// Record a search performed in this session
     pub fn record_search(&mut self, query: &str, search_type: &str, _results_count: u32) {
         self.search_count += 1;
-        
+
         // Learn preferences from search patterns
         if query.contains("vegetarian") || query.contains("vegan") {
             self.learn_preference("dietary", "plant_based");
@@ -188,14 +239,23 @@ impl DiscoverySession {
             self.learn_preference("difficulty", "Easy");
         }
 
-        tracing::debug!("Search recorded in session {}: {} ({})", self.session_id, query, search_type);
+        tracing::debug!(
+            "Search recorded in session {}: {} ({})",
+            self.session_id,
+            query,
+            search_type
+        );
     }
 
     /// Record filter application in this session
     pub fn record_filter_application(&mut self, results_count: u32) {
         self.filter_applications += 1;
-        
-        tracing::debug!("Filter application recorded in session {}: {} results", self.session_id, results_count);
+
+        tracing::debug!(
+            "Filter application recorded in session {}: {} results",
+            self.session_id,
+            results_count
+        );
     }
 
     /// Record a recipe view in this session
@@ -215,19 +275,25 @@ impl DiscoverySession {
             };
 
             // TODO: Emit event through event store when Evento is configured
-            tracing::debug!("Recipe view recorded in session {}: {}", self.session_id, recipe_id);
+            tracing::debug!(
+                "Recipe view recorded in session {}: {}",
+                self.session_id,
+                recipe_id
+            );
         }
     }
 
     /// Learn a user preference from interactions
     pub fn learn_preference(&mut self, preference_type: &str, preference_value: &str) {
-        self.learned_preferences.insert(
-            preference_type.to_string(),
-            preference_value.to_string()
+        self.learned_preferences
+            .insert(preference_type.to_string(), preference_value.to_string());
+
+        tracing::debug!(
+            "Preference learned in session {}: {} = {}",
+            self.session_id,
+            preference_type,
+            preference_value
         );
-        
-        tracing::debug!("Preference learned in session {}: {} = {}", 
-                       self.session_id, preference_type, preference_value);
     }
 
     /// Get learned preferences for this session

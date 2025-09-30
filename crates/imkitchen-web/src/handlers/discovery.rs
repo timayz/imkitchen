@@ -9,12 +9,12 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::AppState;
-use imkitchen_recipe::services::search::{RecipeSearchService, SearchAnalytics};
 use imkitchen_recipe::services::popularity::{PopularityService, TimeWindow};
 use imkitchen_recipe::services::recommendation::{
-    RecommendationEngine, RecommendationContext, TimeContext, Season, MealTime, 
-    RecommendationFilter, UserInteraction, InteractionType
+    InteractionType, MealTime, RecommendationContext, RecommendationEngine, RecommendationFilter,
+    Season, TimeContext, UserInteraction,
 };
+use imkitchen_recipe::services::search::{RecipeSearchService, SearchAnalytics};
 
 // Template for main discovery page
 #[derive(Template)]
@@ -118,7 +118,8 @@ pub async fn browse_recipes(
     State(_state): State<AppState>,
 ) -> impl IntoResponse {
     // For now, return a simple HTML fragment
-    Html(r#"
+    Html(
+        r#"
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Browse Results</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -146,7 +147,8 @@ pub async fn browse_recipes(
             </div>
         </div>
     </div>
-    "#)
+    "#,
+    )
 }
 
 /// GET/POST /discovery/search - Recipe search with suggestions
@@ -157,14 +159,16 @@ pub async fn discovery_search_recipes(
     let query_text = params.q.clone();
     let page = params.page.unwrap_or(1);
     let _page_size = params.page_size.unwrap_or(20);
-    
+
     // Use the search service to get suggestions and perform search
     let search_service = RecipeSearchService::new();
-    
+
     // Generate search suggestions for autocomplete
-    let suggestions = search_service.generate_suggestions(&query_text, None, 5).await
+    let suggestions = search_service
+        .generate_suggestions(&query_text, None, 5)
+        .await
         .unwrap_or_default();
-    
+
     // Record search analytics
     let analytics = SearchAnalytics {
         query: query_text.clone(),
@@ -174,34 +178,38 @@ pub async fn discovery_search_recipes(
         popular_filters: std::collections::HashMap::new(),
         successful_suggestions: suggestions.iter().map(|s| s.text.clone()).collect(),
     };
-    
+
     let _ = search_service.record_search_analytics(analytics).await;
-    
+
     // Generate enhanced search results with suggestions
     let suggestions_html = if !suggestions.is_empty() {
         let suggestion_items: Vec<String> = suggestions.iter().map(|s| {
             format!(r#"<span class="inline-block px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs mr-2 mb-2 cursor-pointer hover:bg-gray-200" onclick="document.querySelector('input[name=q]').value='{}'">
                 {}</span>"#, s.text, s.text)
         }).collect();
-        
-        format!(r#"
+
+        format!(
+            r#"
         <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <h4 class="text-sm font-medium text-blue-900 mb-2">Suggestions:</h4>
             <div class="flex flex-wrap">
                 {}
             </div>
         </div>
-        "#, suggestion_items.join(""))
+        "#,
+            suggestion_items.join("")
+        )
     } else {
         String::new()
     };
-    
-    Html(format!(r#"
+
+    Html(format!(
+        r#"
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Search Results for "{}"</h2>
-        
+
         {}
-        
+
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                 <h3 class="font-medium text-gray-900">Chicken Teriyaki</h3>
@@ -237,12 +245,14 @@ pub async fn discovery_search_recipes(
                 </div>
             </div>
         </div>
-        
+
         <div class="mt-6 text-center">
             <p class="text-sm text-gray-600">Found 3 recipes matching "{}" (Page {} of 1)</p>
         </div>
     </div>
-    "#, query_text, suggestions_html, query_text, page))
+    "#,
+        query_text, suggestions_html, query_text, page
+    ))
 }
 
 /// GET /discovery/trending - Trending recipes
@@ -251,18 +261,20 @@ pub async fn trending_recipes(
     State(_state): State<AppState>,
 ) -> impl IntoResponse {
     let popularity_service = PopularityService::new();
-    
+
     // Determine time window
     let time_window = match params.time_window.as_deref() {
         Some("7d") => TimeWindow::last_week(),
         Some("30d") => TimeWindow::last_month(),
         _ => TimeWindow::last_24_hours(),
     };
-    
+
     // Get trending recipes
-    let trending_recipes = popularity_service.get_trending_recipes(&time_window, 12).await
+    let trending_recipes = popularity_service
+        .get_trending_recipes(&time_window, 12)
+        .await
         .unwrap_or_default();
-    
+
     if trending_recipes.is_empty() {
         return Html(r#"
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -274,16 +286,16 @@ pub async fn trending_recipes(
         </div>
         "#.to_string());
     }
-    
+
     // Generate trending recipes HTML
     let recipes_html = trending_recipes.iter().enumerate().map(|(index, recipe)| {
         let trend_icon = match index {
             0 => "🥇", // Gold for #1
-            1 => "🥈", // Silver for #2  
+            1 => "🥈", // Silver for #2
             2 => "🥉", // Bronze for #3
             _ => "🔥", // Fire for others
         };
-        
+
         let trend_factors_html = recipe.trend_factors.iter().map(|factor| {
             match factor {
                 imkitchen_recipe::services::popularity::TrendFactor::ViewSpike { multiplier, .. } => {
@@ -306,7 +318,7 @@ pub async fn trending_recipes(
                 },
             }
         }).collect::<Vec<_>>().join(" • ");
-        
+
         format!(r#"
         <div class="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all duration-200">
             <div class="flex items-center justify-between mb-2">
@@ -331,7 +343,7 @@ pub async fn trending_recipes(
                 </div>
             </div>
         </div>
-        "#, 
+        "#,
         trend_icon,
         index + 1,
         recipe.trending_score,
@@ -341,20 +353,21 @@ pub async fn trending_recipes(
         if trend_factors_html.is_empty() { "Gaining popularity".to_string() } else { trend_factors_html }
         )
     }).collect::<Vec<_>>().join("");
-    
-    Html(format!(r#"
+
+    Html(format!(
+        r#"
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div class="flex justify-between items-center mb-4">
             <h2 class="text-lg font-semibold text-gray-900">
-                Trending Recipes 
+                Trending Recipes
                 <span class="text-sm font-normal text-gray-500">({} window)</span>
             </h2>
             <div class="flex space-x-2">
-                <button class="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded" 
+                <button class="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded"
                         onclick="updateTrending('24h')">24h</button>
-                <button class="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded" 
+                <button class="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded"
                         onclick="updateTrending('7d')">7d</button>
-                <button class="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded" 
+                <button class="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded"
                         onclick="updateTrending('30d')">30d</button>
             </div>
         </div>
@@ -367,7 +380,9 @@ pub async fn trending_recipes(
             </p>
         </div>
     </div>
-    "#, time_window.label, recipes_html))
+    "#,
+        time_window.label, recipes_html
+    ))
 }
 
 /// GET /discovery/similar/{recipe_id} - Similar recipes
@@ -377,9 +392,11 @@ pub async fn similar_recipes(
 ) -> impl IntoResponse {
     // Use the search service to find similar recipes
     let search_service = RecipeSearchService::new();
-    let similarities = search_service.find_similar_recipes(recipe_id, 6).await
+    let similarities = search_service
+        .find_similar_recipes(recipe_id, 6)
+        .await
         .unwrap_or_default();
-    
+
     // Generate HTML for similar recipes
     let similar_recipes_html = if !similarities.is_empty() {
         similarities.iter().map(|sim| {
@@ -402,7 +419,7 @@ pub async fn similar_recipes(
                     },
                 }
             }).collect();
-            
+
             format!(r#"
             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-shadow">
                 <div class="flex justify-between items-start mb-2">
@@ -418,7 +435,7 @@ pub async fn similar_recipes(
                     </div>
                 </div>
             </div>
-            "#, 
+            "#,
             sim.recipe_id.to_string().chars().take(8).collect::<String>(),
             sim.similarity_score * 100.0,
             reasons.join(" • ")
@@ -433,7 +450,8 @@ pub async fn similar_recipes(
         "#.to_string()
     };
 
-    Html(format!(r#"
+    Html(format!(
+        r#"
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">
             Similar Recipes
@@ -443,7 +461,9 @@ pub async fn similar_recipes(
             {}
         </div>
     </div>
-    "#, similar_recipes_html))
+    "#,
+        similar_recipes_html
+    ))
 }
 
 /// GET /discovery/filters - Filters sidebar
@@ -477,7 +497,7 @@ pub async fn filters_sidebar(State(_state): State<AppState>) -> impl IntoRespons
         </form>
     </div>
     "##;
-    
+
     Html(FILTERS_HTML)
 }
 
@@ -489,32 +509,40 @@ pub async fn apply_filters(
     Form(_form): Form<FilterForm>,
 ) -> impl IntoResponse {
     // Return updated browse view
-    browse_recipes(Query(DiscoveryQuery { 
-        page: Some(1), 
-        page_size: Some(20),
-        rating_threshold: None,
-        difficulty_levels: None,
-        max_prep_time: None,
-        dietary_restrictions: None,
-        meal_types: None,
-        sort_order: None,
-        append: None,
-    }), State(_state)).await
+    browse_recipes(
+        Query(DiscoveryQuery {
+            page: Some(1),
+            page_size: Some(20),
+            rating_threshold: None,
+            difficulty_levels: None,
+            max_prep_time: None,
+            dietary_restrictions: None,
+            meal_types: None,
+            sort_order: None,
+            append: None,
+        }),
+        State(_state),
+    )
+    .await
 }
 
 /// POST /discovery/clear-filters - Clear all discovery filters
 pub async fn clear_filters(State(_state): State<AppState>) -> impl IntoResponse {
-    browse_recipes(Query(DiscoveryQuery { 
-        page: Some(1), 
-        page_size: Some(20),
-        rating_threshold: None,
-        difficulty_levels: None,
-        max_prep_time: None,
-        dietary_restrictions: None,
-        meal_types: None,
-        sort_order: None,
-        append: None,
-    }), State(_state)).await
+    browse_recipes(
+        Query(DiscoveryQuery {
+            page: Some(1),
+            page_size: Some(20),
+            rating_threshold: None,
+            difficulty_levels: None,
+            max_prep_time: None,
+            dietary_restrictions: None,
+            meal_types: None,
+            sort_order: None,
+            append: None,
+        }),
+        State(_state),
+    )
+    .await
 }
 
 /// GET /discovery/quick-filter - Quick filter presets
@@ -530,17 +558,21 @@ pub async fn change_sort(
     State(_state): State<AppState>,
     Form(_form): Form<SortForm>,
 ) -> impl IntoResponse {
-    browse_recipes(Query(DiscoveryQuery { 
-        page: Some(1), 
-        page_size: Some(20),
-        rating_threshold: None,
-        difficulty_levels: None,
-        max_prep_time: None,
-        dietary_restrictions: None,
-        meal_types: None,
-        sort_order: None,
-        append: None,
-    }), State(_state)).await
+    browse_recipes(
+        Query(DiscoveryQuery {
+            page: Some(1),
+            page_size: Some(20),
+            rating_threshold: None,
+            difficulty_levels: None,
+            max_prep_time: None,
+            dietary_restrictions: None,
+            meal_types: None,
+            sort_order: None,
+            append: None,
+        }),
+        State(_state),
+    )
+    .await
 }
 
 /// POST /discovery/favorite - Add recipe to favorites
@@ -548,11 +580,13 @@ pub async fn quick_add_to_favorites(
     State(_state): State<AppState>,
     Form(_form): Form<FavoriteForm>,
 ) -> impl IntoResponse {
-    Html(r#"
+    Html(
+        r#"
     <div class="p-2 bg-green-50 border border-green-200 rounded-md text-center">
         <span class="text-sm text-green-600">Added to favorites!</span>
     </div>
-    "#)
+    "#,
+    )
 }
 
 /// POST /discovery/quick-add-shopping - Quick add to shopping list
@@ -560,11 +594,13 @@ pub async fn quick_add_to_shopping(
     State(_state): State<AppState>,
     Form(_form): Form<ShoppingForm>,
 ) -> impl IntoResponse {
-    Html(r#"
+    Html(
+        r#"
     <div class="p-2 bg-blue-50 border border-blue-200 rounded-md text-center">
         <span class="text-sm text-blue-600">Added to shopping list!</span>
     </div>
-    "#)
+    "#,
+    )
 }
 
 /// GET /discovery/autocomplete - Search autocomplete suggestions
@@ -573,16 +609,15 @@ pub async fn search_autocomplete(
     State(_state): State<AppState>,
 ) -> impl IntoResponse {
     let search_service = RecipeSearchService::new();
-    let suggestions = search_service.generate_suggestions(
-        &params.q, 
-        None, 
-        params.limit.unwrap_or(8)
-    ).await.unwrap_or_default();
-    
+    let suggestions = search_service
+        .generate_suggestions(&params.q, None, params.limit.unwrap_or(8))
+        .await
+        .unwrap_or_default();
+
     // Return JSON-like response for autocomplete
     let suggestions_html: Vec<String> = suggestions.iter().map(|s| {
         format!(r#"
-        <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0" 
+        <div class="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
              onclick="selectSuggestion('{}')">
             <div class="flex items-center justify-between">
                 <span class="text-sm text-gray-900">{}</span>
@@ -591,13 +626,16 @@ pub async fn search_autocomplete(
         </div>
         "#, s.text, s.text, s.suggestion_type)
     }).collect();
-    
+
     if suggestions_html.is_empty() {
-        Html(r#"
+        Html(
+            r#"
         <div class="px-3 py-2 text-sm text-gray-500 text-center">
             No suggestions found
         </div>
-        "#.to_string())
+        "#
+            .to_string(),
+        )
     } else {
         Html(suggestions_html.join(""))
     }
@@ -610,19 +648,17 @@ pub async fn recipe_recommendations(
 ) -> impl IntoResponse {
     let recommendation_engine = RecommendationEngine::new();
     let user_id = params.user_id.unwrap_or_else(|| "anonymous".to_string());
-    
+
     // Parse meal time
-    let meal_time = params.meal_time.as_deref().and_then(|mt| {
-        match mt {
-            "breakfast" => Some(MealTime::Breakfast),
-            "lunch" => Some(MealTime::Lunch),
-            "dinner" => Some(MealTime::Dinner),
-            "snack" => Some(MealTime::Snack),
-            "dessert" => Some(MealTime::Dessert),
-            _ => None,
-        }
+    let meal_time = params.meal_time.as_deref().and_then(|mt| match mt {
+        "breakfast" => Some(MealTime::Breakfast),
+        "lunch" => Some(MealTime::Lunch),
+        "dinner" => Some(MealTime::Dinner),
+        "snack" => Some(MealTime::Snack),
+        "dessert" => Some(MealTime::Dessert),
+        _ => None,
     });
-    
+
     // Determine current season (simplified)
     let now = chrono::Utc::now();
     let season = match now.month() {
@@ -631,7 +667,7 @@ pub async fn recipe_recommendations(
         9..=11 => Season::Fall,
         _ => Season::Winter,
     };
-    
+
     // Build recommendation context
     let context = RecommendationContext {
         user_id: user_id.clone(),
@@ -643,24 +679,29 @@ pub async fn recipe_recommendations(
             day_of_week: now.weekday().to_string(),
             is_weekend: matches!(now.weekday(), chrono::Weekday::Sat | chrono::Weekday::Sun),
         },
-        filters: params.exclude_categories.unwrap_or_default().into_iter().map(|cat| {
-            RecommendationFilter {
+        filters: params
+            .exclude_categories
+            .unwrap_or_default()
+            .into_iter()
+            .map(|cat| RecommendationFilter {
                 filter_type: "category".to_string(),
                 filter_values: vec![cat],
                 is_exclude: true,
-            }
-        }).collect(),
+            })
+            .collect(),
         exclude_recipes: vec![],
         boost_categories: params.boost_categories.unwrap_or_default(),
         max_recommendations: params.limit.unwrap_or(12),
         require_novelty: params.require_novelty.unwrap_or(false),
         diversity_weight: params.diversity_weight.unwrap_or(0.3),
     };
-    
+
     // Generate recommendations
-    let recommendations = recommendation_engine.generate_recommendations(&context).await
+    let recommendations = recommendation_engine
+        .generate_recommendations(&context)
+        .await
         .unwrap_or_default();
-    
+
     if recommendations.is_empty() {
         return Html(r#"
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -672,7 +713,7 @@ pub async fn recipe_recommendations(
         </div>
         "#.to_string());
     }
-    
+
     // Generate recommendations HTML
     let recommendations_html = recommendations.iter().enumerate().map(|(index, rec)| {
         let recommendation_type_badge = match rec.recommendation_type {
@@ -698,7 +739,7 @@ pub async fn recipe_recommendations(
                 r#"<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Recommended</span>"#
             },
         };
-        
+
         let reasons_html = rec.reasons.iter().take(3).map(|reason| {
             match reason {
                 imkitchen_recipe::services::recommendation::RecommendationReason::SimilarIngredients { common_ingredients, .. } => {
@@ -719,7 +760,7 @@ pub async fn recipe_recommendations(
                 _ => "✨ Recommended for you".to_string(),
             }
         }).collect::<Vec<_>>().join(" • ");
-        
+
         let confidence_color = if rec.confidence_score > 0.8 {
             "text-green-600"
         } else if rec.confidence_score > 0.6 {
@@ -727,7 +768,7 @@ pub async fn recipe_recommendations(
         } else {
             "text-gray-600"
         };
-        
+
         format!(r#"
         <div class="bg-white rounded-lg border border-gray-200 hover:shadow-md transition-all duration-200 overflow-hidden">
             <div class="p-4">
@@ -738,13 +779,13 @@ pub async fn recipe_recommendations(
                     </div>
                     <span class="text-xs font-bold {}">{}% match</span>
                 </div>
-                
+
                 <h3 class="font-semibold text-gray-900 mb-2">{}</h3>
-                
+
                 <div class="text-xs text-gray-600 mb-3 line-clamp-2">
                     {}
                 </div>
-                
+
                 <div class="flex items-center justify-between text-xs text-gray-500">
                     <div class="flex items-center space-x-3">
                         <span>⏱️ 25 min</span>
@@ -767,8 +808,9 @@ pub async fn recipe_recommendations(
         } else { "" }
         )
     }).collect::<Vec<_>>().join("");
-    
-    Html(format!(r#"
+
+    Html(format!(
+        r#"
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div class="flex justify-between items-center mb-6">
             <div>
@@ -779,31 +821,34 @@ pub async fn recipe_recommendations(
                 <p class="text-sm text-gray-600 mt-1">Curated just for you based on your preferences and behavior</p>
             </div>
             <div class="flex items-center space-x-2">
-                <button class="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full" 
+                <button class="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full"
                         onclick="refreshRecommendations('novelty')">🎲 Surprise me</button>
-                <button class="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full" 
+                <button class="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full"
                         onclick="refreshRecommendations('similar')">🔄 More like these</button>
             </div>
         </div>
-        
+
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {recommendations_html}
         </div>
-        
+
         <div class="mt-6 text-center">
             <p class="text-xs text-gray-500">
-                Recommendations improve as you interact with recipes • 
+                Recommendations improve as you interact with recipes •
                 <button class="text-blue-600 hover:underline" onclick="showFeedback()">Rate these recommendations</button>
             </p>
         </div>
     </div>
-    "#, 
-    meal_time_context = if let Some(ref mt) = meal_time {
-        format!(" <span class=\"text-sm font-normal text-gray-500\">for {:?}</span>", mt)
-    } else {
-        String::new()
-    },
-    recommendations_html = recommendations_html
+    "#,
+        meal_time_context = if let Some(ref mt) = meal_time {
+            format!(
+                " <span class=\"text-sm font-normal text-gray-500\">for {:?}</span>",
+                mt
+            )
+        } else {
+            String::new()
+        },
+        recommendations_html = recommendations_html
     ))
 }
 
@@ -813,7 +858,7 @@ pub async fn record_user_interaction(
     Form(form): Form<UserInteractionForm>,
 ) -> impl IntoResponse {
     let recommendation_engine = RecommendationEngine::new();
-    
+
     // Parse interaction type
     let interaction_type = match form.interaction_type.as_str() {
         "viewed" => InteractionType::Viewed,
@@ -824,7 +869,7 @@ pub async fn record_user_interaction(
         "shared" => InteractionType::Shared,
         _ => InteractionType::Viewed,
     };
-    
+
     let interaction = UserInteraction {
         recipe_id: form.recipe_id,
         interaction_type,
@@ -833,24 +878,34 @@ pub async fn record_user_interaction(
         timestamp: chrono::Utc::now(),
         context: form.context,
     };
-    
+
     // Update user profile based on interaction
-    let _ = recommendation_engine.update_user_profile_from_interaction(&form.user_id, &interaction).await;
-    
-    Html(r#"
+    let _ = recommendation_engine
+        .update_user_profile_from_interaction(&form.user_id, &interaction)
+        .await;
+
+    Html(
+        r#"
     <div class="p-3 bg-green-50 border border-green-200 rounded-md text-center">
         <span class="text-sm text-green-600">✅ Thanks for your feedback! This helps improve your recommendations.</span>
     </div>
-    "#)
+    "#,
+    )
 }
 
 /// GET /discovery/recommendation-metrics - Show recommendation system metrics
 pub async fn recommendation_metrics(State(_state): State<AppState>) -> impl IntoResponse {
     let recommendation_engine = RecommendationEngine::new();
-    let metrics = recommendation_engine.get_model_metrics().await.unwrap_or_default();
-    
-    let metrics_html = metrics.iter().map(|metric| {
-        format!(r#"
+    let metrics = recommendation_engine
+        .get_model_metrics()
+        .await
+        .unwrap_or_default();
+
+    let metrics_html = metrics
+        .iter()
+        .map(|metric| {
+            format!(
+                r#"
         <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
             <h3 class="font-medium text-gray-900 mb-3 capitalize">{}</h3>
             <div class="grid grid-cols-2 gap-3 text-sm">
@@ -880,18 +935,21 @@ pub async fn recommendation_metrics(State(_state): State<AppState>) -> impl Into
                 </div>
             </div>
         </div>
-        "#, 
-        metric.model_type.replace("_", " "),
-        metric.accuracy * 100.0,
-        metric.precision * 100.0,
-        metric.coverage * 100.0,
-        metric.click_through_rate * 100.0,
-        metric.user_satisfaction * 100.0,
-        metric.novelty * 100.0
-        )
-    }).collect::<Vec<_>>().join("");
-    
-    Html(format!(r#"
+        "#,
+                metric.model_type.replace("_", " "),
+                metric.accuracy * 100.0,
+                metric.precision * 100.0,
+                metric.coverage * 100.0,
+                metric.click_through_rate * 100.0,
+                metric.user_satisfaction * 100.0,
+                metric.novelty * 100.0
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("");
+
+    Html(format!(
+        r#"
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Recommendation System Performance</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -903,7 +961,10 @@ pub async fn recommendation_metrics(State(_state): State<AppState>) -> impl Into
             </p>
         </div>
     </div>
-    "#, metrics_html, chrono::Utc::now().format("%Y-%m-%d %H:%M UTC")))
+    "#,
+        metrics_html,
+        chrono::Utc::now().format("%Y-%m-%d %H:%M UTC")
+    ))
 }
 
 /// GET /discovery/popular - Popular recipes with different time windows
@@ -912,32 +973,34 @@ pub async fn popular_recipes(
     State(_state): State<AppState>,
 ) -> impl IntoResponse {
     let popularity_service = PopularityService::new();
-    
+
     // Determine time window
     let time_window = match params.time_window.as_deref() {
         Some("7d") => TimeWindow::last_week(),
         Some("30d") => TimeWindow::last_month(),
         _ => TimeWindow::last_24_hours(),
     };
-    
+
     // Get popularity rankings
-    let rankings = popularity_service.get_popularity_rankings(
-        params.category.clone(), 
-        &time_window, 
-        15
-    ).await.unwrap_or_default();
-    
+    let rankings = popularity_service
+        .get_popularity_rankings(params.category.clone(), &time_window, 15)
+        .await
+        .unwrap_or_default();
+
     if rankings.is_empty() {
-        return Html(r#"
+        return Html(
+            r#"
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h2 class="text-lg font-semibold text-gray-900 mb-4">Popular Recipes</h2>
             <div class="text-center py-8">
                 <p class="text-gray-500">No popular recipes found for this category.</p>
             </div>
         </div>
-        "#.to_string());
+        "#
+            .to_string(),
+        );
     }
-    
+
     // Generate popular recipes HTML
     let recipes_html = rankings.iter().enumerate().map(|(index, (recipe_id, score))| {
         let rank_badge = if index < 3 {
@@ -949,7 +1012,7 @@ pub async fn popular_recipes(
                 #{}
             </span>"#, index + 1)
         };
-        
+
         format!(r#"
         <div class="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-shadow">
             <div class="flex justify-between items-start mb-2">
@@ -966,14 +1029,15 @@ pub async fn popular_recipes(
                 </div>
             </div>
         </div>
-        "#, 
+        "#,
         rank_badge,
         score,
         recipe_id.to_string().chars().take(8).collect::<String>()
         )
     }).collect::<Vec<_>>().join("");
-    
-    Html(format!(r#"
+
+    Html(format!(
+        r#"
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div class="flex justify-between items-center mb-4">
             <h2 class="text-lg font-semibold text-gray-900">
@@ -981,11 +1045,11 @@ pub async fn popular_recipes(
                 <span class="text-sm font-normal text-gray-500">({} window)</span>
             </h2>
             <div class="flex space-x-2">
-                <button class="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded" 
+                <button class="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded"
                         onclick="updatePopular('24h')">24h</button>
-                <button class="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded" 
+                <button class="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded"
                         onclick="updatePopular('7d')">7d</button>
-                <button class="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded" 
+                <button class="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded"
                         onclick="updatePopular('30d')">30d</button>
             </div>
         </div>
@@ -998,5 +1062,7 @@ pub async fn popular_recipes(
             </p>
         </div>
     </div>
-    "#, time_window.label, recipes_html))
+    "#,
+        time_window.label, recipes_html
+    ))
 }
