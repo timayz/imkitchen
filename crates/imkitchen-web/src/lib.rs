@@ -236,9 +236,71 @@ pub fn create_app_with_metrics(db_pool: Option<sqlx::SqlitePool>, metrics: AppMe
         .with_state(app_state.clone());
 
     let collections_router = Router::new()
+        .route("/collections", get(handlers::collections::collections_list))
         .route(
             "/collections",
-            get(handlers::collections::collections_index),
+            post(handlers::collections::create_collection),
+        )
+        .route(
+            "/collections/new",
+            get(handlers::collections::new_collection_form),
+        )
+        .route(
+            "/collections/search",
+            get(handlers::collections::search_collections),
+        )
+        .route(
+            "/collections/filter",
+            get(handlers::collections::filter_collections),
+        )
+        .route(
+            "/collections/sort",
+            get(handlers::collections::sort_collections),
+        )
+        .route(
+            "/collections/{id}",
+            get(handlers::collections::show_collection),
+        )
+        .route(
+            "/collections/{id}/edit",
+            get(handlers::collections::edit_collection_form),
+        )
+        .route(
+            "/collections/{id}",
+            put(handlers::collections::update_collection),
+        )
+        .route(
+            "/collections/{id}",
+            delete(handlers::collections::delete_collection),
+        )
+        .route(
+            "/collections/{id}/archive",
+            post(handlers::collections::archive_collection),
+        )
+        .route(
+            "/collections/{id}/restore",
+            post(handlers::collections::restore_collection),
+        )
+        .route(
+            "/collections/{id}/recipes",
+            post(handlers::collections::add_recipe_to_collection),
+        )
+        .route(
+            "/collections/{id}/recipes/{recipe_id}",
+            delete(handlers::collections::remove_recipe_from_collection),
+        )
+        .route("/favorites", get(handlers::collections::favorites_list))
+        .route(
+            "/favorites/{recipe_id}",
+            post(handlers::collections::add_to_favorites),
+        )
+        .route(
+            "/favorites/{recipe_id}",
+            delete(handlers::collections::remove_from_favorites),
+        )
+        .route(
+            "/recipes/selector",
+            get(handlers::collections::recipe_selector),
         )
         .with_state(app_state.clone());
 
@@ -373,9 +435,71 @@ pub fn create_app_routes(app_state: AppState) -> Router {
         .with_state(app_state.clone());
 
     let collections_router = Router::new()
+        .route("/collections", get(handlers::collections::collections_list))
         .route(
             "/collections",
-            get(handlers::collections::collections_index),
+            post(handlers::collections::create_collection),
+        )
+        .route(
+            "/collections/new",
+            get(handlers::collections::new_collection_form),
+        )
+        .route(
+            "/collections/search",
+            get(handlers::collections::search_collections),
+        )
+        .route(
+            "/collections/filter",
+            get(handlers::collections::filter_collections),
+        )
+        .route(
+            "/collections/sort",
+            get(handlers::collections::sort_collections),
+        )
+        .route(
+            "/collections/{id}",
+            get(handlers::collections::show_collection),
+        )
+        .route(
+            "/collections/{id}/edit",
+            get(handlers::collections::edit_collection_form),
+        )
+        .route(
+            "/collections/{id}",
+            put(handlers::collections::update_collection),
+        )
+        .route(
+            "/collections/{id}",
+            delete(handlers::collections::delete_collection),
+        )
+        .route(
+            "/collections/{id}/archive",
+            post(handlers::collections::archive_collection),
+        )
+        .route(
+            "/collections/{id}/restore",
+            post(handlers::collections::restore_collection),
+        )
+        .route(
+            "/collections/{id}/recipes",
+            post(handlers::collections::add_recipe_to_collection),
+        )
+        .route(
+            "/collections/{id}/recipes/{recipe_id}",
+            delete(handlers::collections::remove_recipe_from_collection),
+        )
+        .route("/favorites", get(handlers::collections::favorites_list))
+        .route(
+            "/favorites/{recipe_id}",
+            post(handlers::collections::add_to_favorites),
+        )
+        .route(
+            "/favorites/{recipe_id}",
+            delete(handlers::collections::remove_from_favorites),
+        )
+        .route(
+            "/recipes/selector",
+            get(handlers::collections::recipe_selector),
         )
         .with_state(app_state.clone());
 

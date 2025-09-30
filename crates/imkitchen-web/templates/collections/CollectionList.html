@@ -1,0 +1,332 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}My Collections - IMKitchen{% endblock %}
+{% block meta_description %}Organize and manage your favorite recipe collections{% endblock %}
+
+{% block main_classes %}pb-20 md:pb-0{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">My Collections</h1>
+            <p class="text-lg text-gray-600">Organize your favorite recipes into collections</p>
+        </div>
+        
+        <button
+            type="button"
+            class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 focus:ring-2 focus:ring-blue-200"
+            ts-req="/collections/new"
+            ts-target="#main-content"
+        >
+            <span class="inline-flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                New Collection
+            </span>
+        </button>
+    </div>
+
+    <!-- Search and Filter Bar -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div class="flex flex-col md:flex-row gap-4">
+            <!-- Search Input -->
+            <div class="flex-1">
+                <div class="relative">
+                    <input
+                        type="text"
+                        id="collection-search"
+                        placeholder="Search collections..."
+                        class="w-full pl-10 pr-4 py-2 border-2 border-gray-300 focus:border-blue-500 rounded-lg px-4 py-2"
+                        ts-req="/collections/search"
+                        ts-target="#collection-results"
+                        ts-trigger="keyup changed delay:500ms"
+                    />
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Privacy Filter -->
+            <div class="md:w-48">
+                <select 
+                    id="privacy-filter"
+                    class="w-full px-4 py-2 border-2 border-gray-300 focus:border-blue-500 rounded-lg"
+                    ts-req="/collections/filter"
+                    ts-target="#collection-results"
+                    ts-trigger="change"
+                >
+                    <option value="">All Privacy Levels</option>
+                    <option value="Private">🔒 Private</option>
+                    <option value="Shared">👥 Shared</option>
+                    <option value="Public">🌍 Public</option>
+                </select>
+            </div>
+            
+            <!-- Sort Options -->
+            <div class="md:w-48">
+                <select 
+                    id="sort-filter"
+                    class="w-full px-4 py-2 border-2 border-gray-300 focus:border-blue-500 rounded-lg"
+                    ts-req="/collections/sort"
+                    ts-target="#collection-results"
+                    ts-trigger="change"
+                >
+                    <option value="updated_desc">Recently Updated</option>
+                    <option value="created_desc">Recently Created</option>
+                    <option value="name_asc">Name A-Z</option>
+                    <option value="name_desc">Name Z-A</option>
+                    <option value="recipe_count_desc">Most Recipes</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Collection Grid -->
+    <div id="collection-results">
+        {% if !collections.is_empty() %}
+        <div id="collection-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for collection in collections %}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200">
+                <div class="p-6">
+                    <!-- Collection Header -->
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex-1">
+                            <h3 class="text-xl font-semibold text-gray-900 mb-2">
+                                <a href="/collections/{{ collection.collection_id }}" class="hover:text-blue-600 transition-colors">
+                                    {{ collection.name }}
+                                </a>
+                            </h3>
+                            
+                            <div class="flex items-center space-x-2 mb-2">
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                    {% if collection.privacy.to_string() == "Private" %}bg-gray-100 text-gray-800{% endif %}
+                                    {% if collection.privacy.to_string() == "Shared" %}bg-blue-100 text-blue-800{% endif %}
+                                    {% if collection.privacy.to_string() == "Public" %}bg-green-100 text-green-800{% endif %}
+                                ">
+                                    {% if collection.privacy.to_string() == "Private" %}🔒 Private{% endif %}
+                                    {% if collection.privacy.to_string() == "Shared" %}👥 Shared{% endif %}
+                                    {% if collection.privacy.to_string() == "Public" %}🌍 Public{% endif %}
+                                </span>
+                                
+                                {% if collection.is_archived %}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    📦 Archived
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Collection Actions Menu -->
+                        <div class="relative">
+                            <button
+                                type="button"
+                                class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+                                onclick="toggleMenu('menu-{{ collection.collection_id }}')"
+                            >
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
+                                </svg>
+                            </button>
+                            
+                            <div id="menu-{{ collection.collection_id }}" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10">
+                                <div class="py-1">
+                                    <button
+                                        type="button"
+                                        class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        ts-req="/collections/{{ collection.collection_id }}/edit"
+                                        ts-target="#main-content"
+                                    >
+                                        Edit Collection
+                                    </button>
+                                    
+                                    {% if !collection.is_archived %}
+                                    <button
+                                        type="button"
+                                        class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        ts-req="/collections/{{ collection.collection_id }}/archive"
+                                        ts-target="#collection-list"
+                                        ts-method="POST"
+                                    >
+                                        Archive Collection
+                                    </button>
+                                    {% else %}
+                                    <button
+                                        type="button"
+                                        class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        ts-req="/collections/{{ collection.collection_id }}/restore"
+                                        ts-target="#collection-list"
+                                        ts-method="POST"
+                                    >
+                                        Restore Collection
+                                    </button>
+                                    {% endif %}
+                                    
+                                    {% if collection.privacy.to_string() != "Private" %}
+                                    <button
+                                        type="button"
+                                        class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        onclick="shareCollection('{{ collection.collection_id }}', '{{ collection.name }}')"
+                                    >
+                                        Share Collection
+                                    </button>
+                                    {% endif %}
+                                    
+                                    <div class="border-t border-gray-100"></div>
+                                    <button
+                                        type="button"
+                                        class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                                        onclick="deleteCollection('{{ collection.collection_id }}', '{{ collection.name }}')"
+                                    >
+                                        Delete Collection
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Collection Description -->
+                    {% if !collection.description.is_empty() %}
+                    <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ collection.description }}</p>
+                    {% endif %}
+                    
+                    <!-- Collection Stats -->
+                    <div class="flex items-center justify-between text-sm text-gray-500 mb-4">
+                        <span class="flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            {{ collection.recipe_count }} recipes
+                        </span>
+                        
+                        <span>{{ collection.updated_at }}</span>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="flex space-x-2">
+                        <a
+                            href="/collections/{{ collection.collection_id }}"
+                            class="flex-1 text-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                        >
+                            View Collection
+                        </a>
+                        
+                        {% if collection.recipe_count > 0 %}
+                        <button
+                            type="button"
+                            class="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                            ts-req="/recipes/selector"
+                            ts-target="#recipe-selector-modal"
+                            ts-vals="collection_id:{{ collection.collection_id }}"
+                        >
+                            Add Recipes
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <!-- Empty State -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+            <div class="text-gray-400 mb-4">
+                <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                </svg>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">No collections yet</h2>
+            <p class="text-lg text-gray-600 mb-6">Create your first collection to organize your favorite recipes!</p>
+            
+            <button
+                type="button"
+                class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200 focus:ring-2 focus:ring-blue-200"
+                ts-req="/collections/new"
+                ts-target="#main-content"
+            >
+                Create Collection
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Recipe Selector Modal (will be populated via TwinSpark) -->
+<div id="recipe-selector-modal"></div>
+
+<script>
+function toggleMenu(menuId) {
+    // Hide all other menus
+    document.querySelectorAll('[id^="menu-"]').forEach(menu => {
+        if (menu.id !== menuId) {
+            menu.classList.add('hidden');
+        }
+    });
+    
+    // Toggle the clicked menu
+    const menu = document.getElementById(menuId);
+    menu.classList.toggle('hidden');
+}
+
+// Close menus when clicking outside
+document.addEventListener('click', function(event) {
+    if (!event.target.closest('button') || !event.target.closest('[id^="menu-"]')) {
+        document.querySelectorAll('[id^="menu-"]').forEach(menu => {
+            menu.classList.add('hidden');
+        });
+    }
+});
+
+function shareCollection(collectionId, collectionName) {
+    const url = `${window.location.origin}/collections/${collectionId}`;
+    
+    if (navigator.share) {
+        navigator.share({
+            title: collectionName,
+            text: 'Check out this recipe collection!',
+            url: url
+        }).catch(console.error);
+    } else {
+        // Fallback: copy to clipboard
+        navigator.clipboard.writeText(url).then(() => {
+            showToast('Collection link copied to clipboard!', 'success');
+        }).catch(console.error);
+    }
+}
+
+function deleteCollection(collectionId, collectionName) {
+    if (confirm(`Are you sure you want to delete "${collectionName}"? This action cannot be undone.`)) {
+        // Use TwinSpark to delete the collection
+        const form = document.createElement('form');
+        form.setAttribute('ts-req', `/collections/${collectionId}`);
+        form.setAttribute('ts-target', '#collection-list');
+        form.setAttribute('ts-method', 'DELETE');
+        document.body.appendChild(form);
+        
+        // Trigger the form submission
+        form.dispatchEvent(new Event('submit'));
+        form.remove();
+    }
+}
+
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `fixed top-4 right-4 px-4 py-2 rounded-lg shadow-lg z-50 ${
+        type === 'success' ? 'bg-green-600 text-white' : 
+        type === 'error' ? 'bg-red-600 text-white' : 
+        'bg-blue-600 text-white'
+    }`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+</script>
+{% endblock %}

@@ -69,6 +69,16 @@ pub enum Difficulty {
     Hard,
 }
 
+impl std::fmt::Display for Difficulty {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Difficulty::Easy => write!(f, "Easy"),
+            Difficulty::Medium => write!(f, "Medium"),
+            Difficulty::Hard => write!(f, "Hard"),
+        }
+    }
+}
+
 // Password validation regex: basic pattern (will be enhanced with custom validation)
 lazy_static::lazy_static! {
     static ref PASSWORD_REGEX: regex::Regex = regex::Regex::new(

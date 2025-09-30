@@ -203,3 +203,192 @@ impl DomainEvent for RecipeRestored {
         "RecipeRestored"
     }
 }
+
+// Collection events
+
+use crate::domain::collection::CollectionPrivacy;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CollectionCreated {
+    pub event_id: Uuid,
+    pub collection_id: Uuid,
+    pub user_id: Uuid,
+    pub name: String,
+    pub description: Option<String>,
+    pub privacy: CollectionPrivacy,
+    pub occurred_at: DateTime<Utc>,
+}
+
+impl DomainEvent for CollectionCreated {
+    fn event_id(&self) -> Uuid {
+        self.event_id
+    }
+
+    fn aggregate_id(&self) -> Uuid {
+        self.collection_id
+    }
+
+    fn occurred_at(&self) -> DateTime<Utc> {
+        self.occurred_at
+    }
+
+    fn event_type(&self) -> &'static str {
+        "CollectionCreated"
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CollectionUpdated {
+    pub event_id: Uuid,
+    pub collection_id: Uuid,
+    pub name: Option<String>,
+    pub description: Option<Option<String>>,
+    pub privacy: Option<CollectionPrivacy>,
+    pub occurred_at: DateTime<Utc>,
+}
+
+impl DomainEvent for CollectionUpdated {
+    fn event_id(&self) -> Uuid {
+        self.event_id
+    }
+
+    fn aggregate_id(&self) -> Uuid {
+        self.collection_id
+    }
+
+    fn occurred_at(&self) -> DateTime<Utc> {
+        self.occurred_at
+    }
+
+    fn event_type(&self) -> &'static str {
+        "CollectionUpdated"
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CollectionDeleted {
+    pub event_id: Uuid,
+    pub collection_id: Uuid,
+    pub occurred_at: DateTime<Utc>,
+}
+
+impl DomainEvent for CollectionDeleted {
+    fn event_id(&self) -> Uuid {
+        self.event_id
+    }
+
+    fn aggregate_id(&self) -> Uuid {
+        self.collection_id
+    }
+
+    fn occurred_at(&self) -> DateTime<Utc> {
+        self.occurred_at
+    }
+
+    fn event_type(&self) -> &'static str {
+        "CollectionDeleted"
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RecipeAddedToCollection {
+    pub event_id: Uuid,
+    pub collection_id: Uuid,
+    pub recipe_id: Uuid,
+    pub sort_order: u32,
+    pub occurred_at: DateTime<Utc>,
+}
+
+impl DomainEvent for RecipeAddedToCollection {
+    fn event_id(&self) -> Uuid {
+        self.event_id
+    }
+
+    fn aggregate_id(&self) -> Uuid {
+        self.collection_id
+    }
+
+    fn occurred_at(&self) -> DateTime<Utc> {
+        self.occurred_at
+    }
+
+    fn event_type(&self) -> &'static str {
+        "RecipeAddedToCollection"
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RecipeRemovedFromCollection {
+    pub event_id: Uuid,
+    pub collection_id: Uuid,
+    pub recipe_id: Uuid,
+    pub occurred_at: DateTime<Utc>,
+}
+
+impl DomainEvent for RecipeRemovedFromCollection {
+    fn event_id(&self) -> Uuid {
+        self.event_id
+    }
+
+    fn aggregate_id(&self) -> Uuid {
+        self.collection_id
+    }
+
+    fn occurred_at(&self) -> DateTime<Utc> {
+        self.occurred_at
+    }
+
+    fn event_type(&self) -> &'static str {
+        "RecipeRemovedFromCollection"
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CollectionArchived {
+    pub event_id: Uuid,
+    pub collection_id: Uuid,
+    pub occurred_at: DateTime<Utc>,
+}
+
+impl DomainEvent for CollectionArchived {
+    fn event_id(&self) -> Uuid {
+        self.event_id
+    }
+
+    fn aggregate_id(&self) -> Uuid {
+        self.collection_id
+    }
+
+    fn occurred_at(&self) -> DateTime<Utc> {
+        self.occurred_at
+    }
+
+    fn event_type(&self) -> &'static str {
+        "CollectionArchived"
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CollectionRestored {
+    pub event_id: Uuid,
+    pub collection_id: Uuid,
+    pub occurred_at: DateTime<Utc>,
+}
+
+impl DomainEvent for CollectionRestored {
+    fn event_id(&self) -> Uuid {
+        self.event_id
+    }
+
+    fn aggregate_id(&self) -> Uuid {
+        self.collection_id
+    }
+
+    fn occurred_at(&self) -> DateTime<Utc> {
+        self.occurred_at
+    }
+
+    fn event_type(&self) -> &'static str {
+        "CollectionRestored"
+    }
+}
