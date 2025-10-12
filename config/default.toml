@@ -1,0 +1,65 @@
+# imkitchen Default Configuration
+#
+# This file contains default configuration values for development.
+# For production, create a separate config file and override with environment variables.
+#
+# Environment variable overrides use the pattern: IMKITCHEN__SECTION__KEY
+# Example: IMKITCHEN__JWT__SECRET=your-secret
+#
+# Legacy environment variables are also supported:
+# - DATABASE_URL
+# - JWT_SECRET
+
+[server]
+# Server host address
+host = "127.0.0.1"
+
+# Server port
+port = 3000
+
+[database]
+# SQLite database URL
+# For production, use absolute path: sqlite:///data/imkitchen.db
+url = "sqlite:imkitchen.db"
+
+# Maximum number of database connections
+max_connections = 5
+
+[jwt]
+# JWT secret key (MUST be overridden in production)
+# Minimum 32 characters required
+# Override with: IMKITCHEN__JWT__SECRET or JWT_SECRET environment variable
+secret = "development_secret_key_change_in_production_32chars"
+
+# JWT token expiration in days
+expiration_days = 7
+
+[observability]
+# OpenTelemetry collector endpoint (OTLP gRPC)
+# For production, use your OTLP collector address
+# Override with: IMKITCHEN__OBSERVABILITY__OTEL_ENDPOINT
+otel_endpoint = "http://localhost:4317"
+
+# Log level: trace, debug, info, warn, error
+# Override with: IMKITCHEN__OBSERVABILITY__LOG_LEVEL or RUST_LOG
+log_level = "info"
+
+# Future configuration sections (not yet implemented):
+#
+# [smtp]
+# host = "smtp.example.com"
+# port = 587
+# username = "user@example.com"
+# password = ""  # Override with IMKITCHEN__SMTP__PASSWORD
+#
+# [stripe]
+# secret_key = ""  # Override with IMKITCHEN__STRIPE__SECRET_KEY
+#
+# [minio]
+# endpoint = "http://localhost:9000"
+# access_key = "minioadmin"
+# secret_key = ""  # Override with IMKITCHEN__MINIO__SECRET_KEY
+#
+# [vapid]
+# public_key = ""
+# private_key = ""

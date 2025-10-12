@@ -1,0 +1,89 @@
+{# Recipe Card Component
+   Usage: {% include "components/recipe-card.html" with recipe=recipe %}
+
+   Parameters:
+   - recipe: Recipe object with properties:
+     - id: Recipe ID
+     - title: Recipe title
+     - image_url: Recipe image URL (optional)
+     - prep_time_min: Prep time in minutes
+     - cook_time_min: Cook time in minutes
+     - complexity: Recipe complexity (simple, moderate, complex)
+     - cuisine: Cuisine type
+     - is_favorite: Boolean
+#}
+
+<div class="recipe-card bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+    <!-- Recipe Image -->
+    <a href="/recipes/{{ recipe.id }}" class="block">
+        {% if recipe.image_url %}
+        <img
+            src="{{ recipe.image_url }}"
+            alt="{{ recipe.title }}"
+            class="w-full h-48 object-cover"
+            loading="lazy"
+        />
+        {% else %}
+        <div class="w-full h-48 bg-gray-200 flex items-center justify-center">
+            <svg class="h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+        </div>
+        {% endif %}
+    </a>
+
+    <!-- Recipe Info -->
+    <div class="p-4">
+        <div class="flex items-start justify-between mb-2">
+            <a href="/recipes/{{ recipe.id }}" class="flex-1">
+                <h3 class="text-lg font-semibold text-gray-900 hover:text-primary-500">
+                    {{ recipe.title }}
+                </h3>
+            </a>
+
+            <!-- Favorite Icon -->
+            <form method="POST" action="/recipes/{{ recipe.id }}/favorite" class="ml-2">
+                <button type="submit" class="text-gray-400 hover:text-error-500 focus:outline-none">
+                    {% if recipe.is_favorite %}
+                    <svg class="h-6 w-6 fill-current text-error-500" viewBox="0 0 24 24">
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                    </svg>
+                    {% else %}
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
+                    {% endif %}
+                </button>
+            </form>
+        </div>
+
+        <!-- Recipe Metadata -->
+        <div class="flex items-center space-x-4 text-sm text-gray-600 mb-3">
+            <span class="flex items-center">
+                <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {{ recipe.prep_time_min + recipe.cook_time_min }} min
+            </span>
+
+            {% if recipe.complexity %}
+            <span class="px-2 py-1 text-xs font-medium rounded
+                         {% if recipe.complexity == 'simple' %}
+                             bg-success-100 text-success-800
+                         {% elif recipe.complexity == 'moderate' %}
+                             bg-warning-100 text-warning-800
+                         {% else %}
+                             bg-error-100 text-error-800
+                         {% endif %}">
+                {{ recipe.complexity|title }}
+            </span>
+            {% endif %}
+        </div>
+
+        {% if recipe.cuisine %}
+        <p class="text-sm text-gray-500">
+            {{ recipe.cuisine }}
+        </p>
+        {% endif %}
+    </div>
+</div>
