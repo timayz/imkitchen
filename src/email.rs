@@ -85,16 +85,25 @@ pub async fn send_password_reset_email(
         .context("Failed to build email message")?;
 
     // Create SMTP transport
-    let credentials = Credentials::new(
-        config.smtp_username.clone(),
-        config.smtp_password.clone(),
-    );
+    // For local dev (MailDev), don't use relay or credentials
+    let mailer = if config.smtp_username.is_empty() && config.smtp_password.is_empty() {
+        // Local development mode - direct connection without authentication
+        SmtpTransport::builder_dangerous(&config.smtp_host)
+            .port(config.smtp_port)
+            .build()
+    } else {
+        // Production mode - authenticated relay
+        let credentials = Credentials::new(
+            config.smtp_username.clone(),
+            config.smtp_password.clone(),
+        );
 
-    let mailer = SmtpTransport::relay(&config.smtp_host)
-        .context("Failed to create SMTP transport")?
-        .port(config.smtp_port)
-        .credentials(credentials)
-        .build();
+        SmtpTransport::relay(&config.smtp_host)
+            .context("Failed to create SMTP transport")?
+            .port(config.smtp_port)
+            .credentials(credentials)
+            .build()
+    };
 
     // Send email - log errors but don't fail (prevent user enumeration)
     match mailer.send(&email) {
