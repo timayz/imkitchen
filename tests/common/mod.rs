@@ -45,7 +45,7 @@ impl TestApp {
 }
 
 pub async fn create_test_app(pool: SqlitePool) -> TestApp {
-    use imkitchen::routes::{get_register, post_register, AppState};
+    use imkitchen::routes::{get_login, get_register, post_login, post_register, AppState};
 
     // Create evento executor
     let evento_executor: evento::Sqlite = pool.clone().into();
@@ -59,6 +59,8 @@ pub async fn create_test_app(pool: SqlitePool) -> TestApp {
     let router = Router::new()
         .route("/register", get(get_register))
         .route("/register", post(post_register))
+        .route("/login", get(get_login))
+        .route("/login", post(post_login))
         .route("/dashboard", get(|| async { "Dashboard" }))
         .with_state(state);
 

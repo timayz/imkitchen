@@ -1,6 +1,4 @@
-'docs/stories/story-0.1.md' create git branch, commit (conventional commits), push, create PR title format "feat: add [story title]" in lowe case witch include tasks (task_title) checklist without subtasks (remove # from AC num) that closed issue id (seach with title filter by story title)
-
-'docs/stories/story-0.1.md' create git branch, commit (conventional commits), push, create PR title (conventional commits base on story title) witch include tasks (task_title) checklist without subtasks (remove # from AC num) that closed issue id (seach with title filter by story title)
+'docs/stories/story-0.1.md' create git branch, commit (conventional commits), push, create PR title (conventional commits base on story title without num) in lower case witch include tasks (task_title) checklist without subtasks (remove # from AC num) that closed issue id (seach with title filter by story title)
 
 git commit (conventional commits), push
 

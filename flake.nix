@@ -38,7 +38,7 @@
             openssl
             pkg-config
             cargo-watch
-            tailwindcss
+            tailwindcss_4
             playwright-test
             mkcert
             sqlite

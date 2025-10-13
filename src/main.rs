@@ -5,7 +5,9 @@ use axum::{
 };
 use clap::{Parser, Subcommand};
 use evento::prelude::*;
-use imkitchen::routes::{get_register, health, post_register, ready, AppState, AssetsService};
+use imkitchen::routes::{
+    get_login, get_register, health, post_login, post_register, ready, AppState, AssetsService,
+};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions};
 use tower_http::trace::TraceLayer;
 use user::user_projection;
@@ -115,6 +117,8 @@ async fn serve_command(
                 // Auth routes
                 .route("/register", get(get_register))
                 .route("/register", post(post_register))
+                .route("/login", get(get_login))
+                .route("/login", post(post_login))
                 // Protected routes
                 .route("/dashboard", get(dashboard_handler))
                 // Static assets

@@ -1,0 +1,453 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>1.2</storyId>
+    <title>User Login</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-12T00:00:00Z</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-1.2.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>registered user</asA>
+    <iWant>to log in with my credentials</iWant>
+    <soThat>I can access my meal plans and recipes</soThat>
+    <tasks>
+      - Create login page template (AC: 1)
+        - Create templates/pages/login.html with Askama
+        - Add email input with HTML5 validation (type="email")
+        - Add password input field
+        - Display generic error message from server
+        - Style form with Tailwind CSS utilities
+        - Add "Don't have an account? Register" link
+        - Add "Forgot Password?" link for password reset
+
+      - Implement POST /login route handler (AC: 2, 3, 4, 5)
+        - Create LoginForm struct with email and password fields
+        - Add validator derives for email format validation
+        - Validate form inputs server-side
+        - Query user by email via query_user_by_email function
+        - Return generic "Invalid credentials" error if email not found
+        - Verify password hash using verify_password utility
+        - Return generic "Invalid credentials" error if password incorrect
+        - Generate JWT token on successful authentication
+        - Set HTTP-only, Secure, SameSite=Lax cookie with 7-day expiration
+        - Redirect to /dashboard on success
+        - Handle and display validation errors
+
+      - Add GET /login route (AC: 1)
+        - Create route handler in src/routes/auth.rs
+        - Render login page template
+        - Display flash messages for errors (e.g., "Please log in to continue")
+
+      - Enhance JWT utilities for login (AC: 6, 7, 8)
+        - Verify generate_jwt includes user_id, email, tier claims
+        - Confirm JWT expiration set to 7 days
+        - Verify token persists across browser restarts via cookie
+        - Add unit tests for JWT validation with expired tokens
+
+      - Add comprehensive tests (AC: 1-8)
+        - Integration test: POST /login with valid credentials sets JWT cookie
+        - Integration test: POST /login with invalid email returns "Invalid credentials"
+        - Integration test: POST /login with incorrect password returns "Invalid credentials"
+        - Integration test: Successful login redirects to /dashboard
+        - Integration test: JWT cookie is HTTP-only, Secure, SameSite=Lax
+        - Integration test: JWT includes correct claims (user_id, email, tier)
+        - Integration test: JWT expiration set to 7 days
+        - Integration test: Login with expired JWT redirects to /login
+        - E2E test: Complete login flow from form to dashboard
+
+      - Security validations (AC: 4)
+        - Verify no user enumeration (same error for invalid email or password)
+        - Log failed login attempts for security audit
+        - Test password verification timing attack resistance
+        - Confirm error messages never expose password hash
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    1. Login form accepts email and password
+    2. System validates credentials against stored hashed password
+    3. Successful login issues JWT token in HTTP-only secure cookie
+    4. Failed login displays generic error "Invalid credentials" (no user enumeration)
+    5. Login redirected to home dashboard
+    6. Session persists across browser restarts until token expiration
+    7. JWT token includes user ID and role (user/premium-user)
+    8. Token expiration set to 7 days with sliding expiration on activity
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-1.md</path>
+        <title>Technical Specification: User Authentication &amp; Profile Management</title>
+        <section>Authentication Routes - POST /login</section>
+        <snippet>
+POST /login - User Login
+
+async fn login_handler(
+    State(app_state): State&lt;AppState&gt;,
+    Form(form): Form&lt;LoginForm&gt;,
+) -&gt; Result&lt;impl IntoResponse, AppError&gt; {
+    // 1. Validate
+    form.validate()?;
+
+    // 2. Query user by email
+    let user = user::query_user_by_email(&amp;form.email, &amp;app_state.executor)
+        .await?
+        .ok_or(AuthError::InvalidCredentials)?;
+
+    // 3. Verify password
+    let valid = user::verify_password(&amp;form.password, &amp;user.password_hash)?;
+    if !valid {
+        return Err(AuthError::InvalidCredentials.into());
+    }
+
+    // 4. Generate JWT
+    let token = generate_jwt(&amp;user.id, &amp;user.email, &amp;user.tier, &amp;app_state.jwt_secret)?;
+
+    // 5. Set cookie and redirect
+    let cookie = format!(
+        "auth_token={}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=604800",
+        token
+    );
+
+    Ok((
+        StatusCode::SEE_OTHER,
+        [("Set-Cookie", cookie), ("Location", "/dashboard".to_string())],
+        ()
+    ))
+}
+        </snippet>
+        <reason>Provides complete reference implementation for login handler with security best practices</reason>
+      </doc>
+
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-1.md</path>
+        <title>Technical Specification: User Authentication &amp; Profile Management</title>
+        <section>Workflows and Sequencing - Login Flow</section>
+        <snippet>
+Login Flow:
+1. User navigates to /login
+2. GET /login → Render login form
+3. User submits form (email, password)
+4. POST /login → Validate form
+5. Query user by email (read model)
+6. Verify password with Argon2 (compare hash)
+7. Generate JWT with user_id, email, tier
+8. Set HTTP-only cookie (auth_token)
+9. Redirect to /dashboard (302)
+10. Auth middleware validates JWT → Extract user_id
+11. Dashboard page rendered
+        </snippet>
+        <reason>Defines complete login workflow sequence for implementation</reason>
+      </doc>
+
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>Authentication and Authorization - Auth Strategy</section>
+        <snippet>
+JWT Cookie-Based Authentication:
+
+1. Registration: POST /register → Password hashed with Argon2 → User aggregate created → UserCreated event
+2. Login: POST /login → Verify password → Generate JWT → Set HTTP-only cookie
+3. Session: JWT cookie included in all requests → Axum middleware validates → Extract user ID
+4. Logout: POST /logout → Clear cookie
+
+JWT Claims:
+struct Claims {
+    sub: String,      // User ID
+    email: String,
+    tier: String,     // free|premium
+    exp: u64,         // Expiration timestamp
+    iat: u64,         // Issued at
+}
+
+JWT Configuration:
+- Algorithm: HS256
+- Secret: Environment variable (32-byte random key)
+- Expiration: 7 days
+- Cookie: HTTP-only, Secure (HTTPS only), SameSite=Lax
+        </snippet>
+        <reason>Establishes JWT authentication strategy and cookie security requirements</reason>
+      </doc>
+
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>Security - OWASP Compliance</section>
+        <snippet>
+A07:2021 – Identification and Authentication Failures:
+- Argon2 password hashing (not bcrypt or plaintext)
+- JWT expiration enforced
+- No session fixation (stateless JWTs)
+
+Security Measures:
+- CSRF protection via SameSite cookie attribute
+- HTTP-only cookie prevents XSS access to token
+- Secure flag enforces HTTPS in production
+- Short-lived tokens reduce exposure window
+- Generic error messages prevent email enumeration
+        </snippet>
+        <reason>Defines security requirements for login implementation</reason>
+      </doc>
+
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/epics.md</path>
+        <title>Epic Breakdown</title>
+        <section>Epic 1 - Story 1.2: User Login</section>
+        <snippet>
+As a registered user
+I want to log in with my credentials
+So that I can access my meal plans and recipes
+
+Prerequisites: User has registered account
+
+Acceptance Criteria:
+1. Login form accepts email and password
+2. System validates credentials against stored hashed password
+3. Successful login issues JWT token in HTTP-only secure cookie
+4. Failed login displays generic error "Invalid credentials" (no user enumeration)
+5. Login redirected to home dashboard
+6. Session persists across browser restarts until token expiration
+7. JWT token includes user ID and role (user/premium-user)
+8. Token expiration set to 7 days with sliding expiration on activity
+
+Technical Notes:
+- JWT signing using RS256 algorithm
+- Token includes claims: user_id, email, role, exp, iat
+- Failed login attempts logged for security monitoring
+        </snippet>
+        <reason>Source story definition with acceptance criteria and technical notes</reason>
+      </doc>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/crates/user/src/read_model.rs</path>
+        <kind>function</kind>
+        <symbol>query_user_by_email</symbol>
+        <lines>62-75</lines>
+        <reason>Required function to query user by email for login authentication</reason>
+      </artifact>
+
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/crates/user/src/password.rs</path>
+        <kind>function</kind>
+        <symbol>verify_password</symbol>
+        <lines>31-41</lines>
+        <reason>Required function to verify password hash during login</reason>
+      </artifact>
+
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/crates/user/src/jwt.rs</path>
+        <kind>function</kind>
+        <symbol>generate_jwt</symbol>
+        <lines>18-42</lines>
+        <reason>Required function to generate JWT token on successful login</reason>
+      </artifact>
+
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/src/routes/auth.rs</path>
+        <kind>module</kind>
+        <symbol>auth routes</symbol>
+        <lines>1-128</lines>
+        <reason>Existing auth routes module - pattern to follow for login implementation</reason>
+      </artifact>
+
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/crates/user/src/lib.rs</path>
+        <kind>module</kind>
+        <symbol>user crate exports</symbol>
+        <lines>1-17</lines>
+        <reason>Public API exports from user crate - shows available functions</reason>
+      </artifact>
+
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/crates/user/src/error.rs</path>
+        <kind>enum</kind>
+        <symbol>UserError</symbol>
+        <lines>all</lines>
+        <reason>Error types for user domain - may need InvalidCredentials variant</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <rust>
+        <package name="axum" version="0.8" features="macros" />
+        <package name="askama" version="0.14" />
+        <package name="sqlx" version="0.8" features="runtime-tokio,sqlite,chrono,uuid" />
+        <package name="validator" version="0.20" features="derive" />
+        <package name="jsonwebtoken" version="9.3" />
+        <package name="argon2" version="0.5" features="std" />
+        <package name="serde" version="1.0" features="derive" />
+        <package name="anyhow" version="1.0" />
+        <package name="tracing" version="0.1" />
+        <package name="uuid" version="1.10" features="v4,serde" />
+        <package name="chrono" version="0.4" features="serde" />
+      </rust>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>
+      <name>No User Enumeration</name>
+      <description>Login error messages must be generic "Invalid credentials" for both invalid email and incorrect password to prevent email enumeration attacks</description>
+    </constraint>
+
+    <constraint>
+      <name>Cookie Security</name>
+      <description>JWT cookie must have HttpOnly, Secure, SameSite=Lax flags for OWASP compliance</description>
+    </constraint>
+
+    <constraint>
+      <name>TDD Enforced</name>
+      <description>Write failing test first, then implement feature to pass test. No implementation without tests.</description>
+    </constraint>
+
+    <constraint>
+      <name>No Domain Events for Login</name>
+      <description>Login does not create new events (no UserLoggedIn event in MVP). Authentication is stateless via JWT cookies.</description>
+    </constraint>
+
+    <constraint>
+      <name>Existing Infrastructure Reuse</name>
+      <description>Reuse existing user crate functions: query_user_by_email, verify_password, generate_jwt. Do not reimplement.</description>
+    </constraint>
+
+    <constraint>
+      <name>Performance Target</name>
+      <description>Login flow must complete in &lt;200ms (email lookup &lt;50ms, password verification ~100ms, JWT generation &lt;10ms)</description>
+    </constraint>
+
+    <constraint>
+      <name>Security Logging</name>
+      <description>Failed login attempts must be logged for security monitoring using OpenTelemetry tracing</description>
+    </constraint>
+
+    <constraint>
+      <name>Redirect Pattern</name>
+      <description>Use TwinSpark progressive enhancement: return 200 OK with ts-location header for form swap, fallback to traditional 302 redirect</description>
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>query_user_by_email</name>
+      <kind>function</kind>
+      <signature>pub async fn query_user_by_email(email: &amp;str, pool: &amp;SqlitePool) -&gt; UserResult&lt;Option&lt;String&gt;&gt;</signature>
+      <path>/home/snapiz/projects/github/timayz/imkitchen/crates/user/src/read_model.rs</path>
+      <description>Query user by email from read model. Returns Some(user_id) if exists, None otherwise. Use for login email lookup.</description>
+    </interface>
+
+    <interface>
+      <name>verify_password</name>
+      <kind>function</kind>
+      <signature>pub fn verify_password(password: &amp;str, hash: &amp;str) -&gt; UserResult&lt;bool&gt;</signature>
+      <path>/home/snapiz/projects/github/timayz/imkitchen/crates/user/src/password.rs</path>
+      <description>Verify password against Argon2 hash. Returns Ok(true) if valid, Ok(false) if invalid. Constant-time comparison.</description>
+    </interface>
+
+    <interface>
+      <name>generate_jwt</name>
+      <kind>function</kind>
+      <signature>pub fn generate_jwt(user_id: String, email: String, tier: String, secret: &amp;str) -&gt; Result&lt;String&gt;</signature>
+      <path>/home/snapiz/projects/github/timayz/imkitchen/crates/user/src/jwt.rs</path>
+      <description>Generate JWT token with 7-day expiration. Claims include sub (user_id), email, tier, exp, iat. Uses HS256 algorithm.</description>
+    </interface>
+
+    <interface>
+      <name>AppState</name>
+      <kind>struct</kind>
+      <signature>pub struct AppState { pub db_pool: SqlitePool, pub evento_executor: evento::Sqlite, pub jwt_secret: String }</signature>
+      <path>/home/snapiz/projects/github/timayz/imkitchen/src/routes/auth.rs</path>
+      <description>Axum application state containing database pool, evento executor, and JWT secret. Injected via State extractor.</description>
+    </interface>
+
+    <interface>
+      <name>LoginForm</name>
+      <kind>struct (to implement)</kind>
+      <signature>pub struct LoginForm { pub email: String, pub password: String }</signature>
+      <description>Login form struct to implement. Add #[derive(Debug, Deserialize, Validate)] with #[validate(email)] on email field.</description>
+    </interface>
+
+    <interface>
+      <name>LoginPageTemplate</name>
+      <kind>struct (to implement)</kind>
+      <signature>pub struct LoginPageTemplate { pub error: String, pub user: Option&lt;()&gt; }</signature>
+      <description>Askama template struct for login page. Add #[derive(Template)] #[template(path = "pages/login.html")].</description>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      TDD Approach (enforced):
+      1. Write failing integration test for POST /login with valid credentials
+      2. Implement login_handler to make test pass
+      3. Write failing test for invalid credentials
+      4. Add error handling
+      5. Write E2E test for full login flow
+      6. Repeat for all acceptance criteria
+
+      Test Coverage Targets:
+      - Route handlers: 85%
+      - Templates: Manual verification via E2E tests
+
+      Integration Test Setup:
+      - Use in-memory SQLite database for each test
+      - Pre-create test user via registration flow or direct insertion
+      - Use reqwest client to call HTTP endpoints
+      - Verify database state and cookie values after operations
+    </standards>
+
+    <locations>
+      - tests/auth_integration_tests.rs (integration tests for routes)
+      - crates/user/tests/ (unit tests for domain logic)
+      - e2e/tests/auth.spec.ts (Playwright E2E tests)
+    </locations>
+
+    <ideas>
+      <test ac="1">
+        Integration test: GET /login renders login form with email and password fields
+      </test>
+
+      <test ac="2,3">
+        Integration test: POST /login with valid credentials (pre-created user) returns 200 OK with JWT cookie and ts-location header to /dashboard
+      </test>
+
+      <test ac="4">
+        Integration test: POST /login with invalid email returns 200 OK with "Invalid credentials" error (no user enumeration)
+      </test>
+
+      <test ac="4">
+        Integration test: POST /login with correct email but wrong password returns 200 OK with "Invalid credentials" error
+      </test>
+
+      <test ac="3,6,7">
+        Integration test: Verify JWT cookie has HttpOnly, Secure, SameSite=Lax flags and 7-day Max-Age
+      </test>
+
+      <test ac="7">
+        Integration test: Decode JWT token from cookie and verify claims (user_id, email, tier="free", exp, iat)
+      </test>
+
+      <test ac="8">
+        Unit test: Verify JWT expiration is exactly 7 days from generation time
+      </test>
+
+      <test ac="4">
+        Security test: Verify same error message for invalid email vs incorrect password (timing should be similar)
+      </test>
+
+      <test ac="all">
+        E2E test: Complete login flow - navigate to /login, fill form, submit, verify redirect to /dashboard, verify logged-in state
+      </test>
+
+      <test ac="4">
+        Security test: Verify failed login attempts are logged with email (not password) for security audit
+      </test>
+    </ideas>
+  </tests>
+</story-context>

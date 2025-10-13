@@ -1,6 +1,16 @@
 # syntax=docker/dockerfile:1
 
-FROM rust:1.89-alpine AS chef
+FROM node:24-alpine AS node
+
+WORKDIR /app
+
+COPY . .
+
+RUN npm install tailwindcss @tailwindcss/cli
+
+RUN npx @tailwindcss/cli -i ./static/css/tailwind.css -o ./static/css/main.css --minify
+
+FROM rust:1.90-alpine AS chef
 
 RUN apk add --no-cache musl-dev tzdata \
         openssl-dev openssl-libs-static \
@@ -46,6 +56,8 @@ RUN cargo chef cook --release --recipe-path recipe.json
 # Build application
 
 COPY . .
+COPY --from=node /app/static/css/main.css ./static/css/main.css
+
 RUN cargo build --release --bin imkitchen
 
 RUN mkdir /var/lib/imkitchen
