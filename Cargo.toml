@@ -10,6 +10,9 @@ edition = "2021"
 rust-version = "1.90"
 authors = ["imkitchen team"]
 
+[workspace.metadata.cargo-machete]
+ignored = []
+
 # in a workspace Cargo.toml
 [workspace.metadata.cargo-machete.renamed]
 async-stripe = "stripe"
@@ -81,6 +84,9 @@ name = "imkitchen"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
+
+[package.metadata.cargo-machete]
+ignored = ["async-stripe"]
 
 [dependencies]
 tokio = { workspace = true }

@@ -38,6 +38,7 @@
             openssl
             pkg-config
             cargo-watch
+            cargo-machete
             tailwindcss_4
             playwright-test
             mkcert

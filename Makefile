@@ -1,4 +1,4 @@
-.PHONY: css css-watch dev lint fmt fmt-fix test build check help
+.PHONY: css css-watch dev lint fmt fmt-fix test build check machete help
 
 # Build CSS once
 css:
@@ -32,8 +32,17 @@ test:
 build:
 	cargo build --workspace
 
-# Run all checks: format, lint, and test (CI-ready)
-check: fmt lint test
+# Check for unused dependencies (optional: install with 'cargo install cargo-machete')
+machete:
+	@if command -v cargo-machete >/dev/null 2>&1; then \
+		cargo machete; \
+	else \
+		echo "⚠ cargo-machete not installed. Skipping unused dependency check."; \
+		echo "  Install with: cargo install cargo-machete"; \
+	fi
+
+# Run all checks: format, lint, machete, and test (CI-ready)
+check: fmt lint machete test
 	@echo "✓ All checks passed!"
 
 # Show help
@@ -45,6 +54,7 @@ help:
 	@echo "  make fmt        - Check code formatting (fails if not formatted)"
 	@echo "  make fmt-fix    - Auto-fix code formatting"
 	@echo "  make lint       - Run Clippy linter (deny warnings)"
+	@echo "  make machete    - Check for unused dependencies"
 	@echo "  make test       - Run all tests"
 	@echo "  make build      - Build the project"
-	@echo "  make check      - Run fmt + lint + test (CI-ready)"
+	@echo "  make check      - Run fmt + lint + machete + test (CI-ready)"
