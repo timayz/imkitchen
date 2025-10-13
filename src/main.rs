@@ -6,7 +6,9 @@ use axum::{
 use clap::{Parser, Subcommand};
 use evento::prelude::*;
 use imkitchen::routes::{
-    get_login, get_register, health, post_login, post_register, ready, AppState, AssetsService,
+    get_login, get_password_reset, get_password_reset_complete, get_register, health, post_login,
+    post_password_reset, post_password_reset_complete, post_register, ready, AppState,
+    AssetsService,
 };
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions};
 use tower_http::trace::TraceLayer;
@@ -100,10 +102,21 @@ async fn serve_command(
     tracing::info!("Evento subscription 'user-read-model' started");
 
     // Create app state
+    let email_config = imkitchen::email::EmailConfig {
+        smtp_host: config.email.smtp_host,
+        smtp_port: config.email.smtp_port,
+        smtp_username: config.email.smtp_username,
+        smtp_password: config.email.smtp_password,
+        from_email: config.email.from_email,
+        from_name: config.email.from_name,
+    };
+
     let state = AppState {
         db_pool,
         evento_executor,
         jwt_secret: config.jwt.secret,
+        email_config,
+        base_url: config.email.base_url,
     };
 
     // Build router with health checks using db_pool state
@@ -119,6 +132,14 @@ async fn serve_command(
                 .route("/register", post(post_register))
                 .route("/login", get(get_login))
                 .route("/login", post(post_login))
+                // Password reset routes
+                .route("/password-reset", get(get_password_reset))
+                .route("/password-reset", post(post_password_reset))
+                .route("/password-reset/{token}", get(get_password_reset_complete))
+                .route(
+                    "/password-reset/{token}",
+                    post(post_password_reset_complete),
+                )
                 // Protected routes
                 .route("/dashboard", get(dashboard_handler))
                 // Static assets

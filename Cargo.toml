@@ -32,6 +32,9 @@ evento = { version = "1.3", features = ["sqlite-migrator"] }
 argon2 = { version = "0.5", features = ["std"] }
 jsonwebtoken = "9.3"
 
+# Email
+lettre = { version = "0.11", features = ["tokio1-native-tls", "builder"] }
+
 # Validation
 validator = { version = "0.20", features = ["derive"] }
 
@@ -89,6 +92,7 @@ clap = { workspace = true }
 config = { workspace = true }
 rust-embed = { workspace = true }
 mime_guess = { workspace = true }
+lettre = { workspace = true }
 
 # Domain crates
 user = { path = "crates/user" }

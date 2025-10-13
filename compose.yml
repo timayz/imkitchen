@@ -1,0 +1,63 @@
+services:
+  # MailDev - SMTP testing server with web UI
+  # Access web UI at: http://localhost:1080
+  # SMTP server runs on: localhost:1025
+  maildev:
+    image: maildev/maildev:latest
+    container_name: imkitchen-maildev
+    ports:
+      - "1080:1080"  # Web UI
+      - "1025:1025"  # SMTP Server
+    environment:
+      - MAILDEV_WEB_PORT=1080
+      - MAILDEV_SMTP_PORT=1025
+    networks:
+      - imkitchen-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:1080"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # PostgreSQL (future - for production use)
+  # Uncomment when ready to migrate from SQLite
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: imkitchen-postgres
+  #   environment:
+  #     POSTGRES_DB: imkitchen
+  #     POSTGRES_USER: imkitchen
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres-data:/var/lib/postgresql/data
+  #   networks:
+  #     - imkitchen-network
+  #   restart: unless-stopped
+
+  # OpenTelemetry Collector (future - for observability)
+  # Uncomment to enable distributed tracing
+  # otel-collector:
+  #   image: otel/opentelemetry-collector-contrib:latest
+  #   container_name: imkitchen-otel
+  #   command: ["--config=/etc/otel-collector-config.yaml"]
+  #   volumes:
+  #     - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+  #   ports:
+  #     - "4317:4317"   # OTLP gRPC receiver
+  #     - "4318:4318"   # OTLP HTTP receiver
+  #     - "8888:8888"   # Prometheus metrics
+  #   networks:
+  #     - imkitchen-network
+  #   restart: unless-stopped
+
+networks:
+  imkitchen-network:
+    driver: bridge
+
+# volumes:
+#   postgres-data:
+#     driver: local

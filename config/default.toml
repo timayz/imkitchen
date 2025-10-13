@@ -34,6 +34,22 @@ secret = "development_secret_key_change_in_production_32chars"
 # JWT token expiration in days
 expiration_days = 7
 
+[email]
+# SMTP Configuration for sending emails
+# Local development: Use MailDev (docker-compose up -d maildev)
+# Production: Use SendGrid, AWS SES, or similar
+smtp_host = "localhost"
+smtp_port = 1025  # MailDev SMTP port
+smtp_username = ""
+smtp_password = ""  # Override with: IMKITCHEN__EMAIL__SMTP_PASSWORD
+
+# Email sender information
+from_email = "noreply@imkitchen.local"  # Use real domain in production
+from_name = "imkitchen"
+
+# Base URL for email links (password reset, etc.)
+base_url = "http://localhost:3000"  # Use https://imkitchen.app in production
+
 [observability]
 # OpenTelemetry collector endpoint (OTLP gRPC)
 # For production, use your OTLP collector address
@@ -45,12 +61,6 @@ otel_endpoint = "http://localhost:4317"
 log_level = "info"
 
 # Future configuration sections (not yet implemented):
-#
-# [smtp]
-# host = "smtp.example.com"
-# port = 587
-# username = "user@example.com"
-# password = ""  # Override with IMKITCHEN__SMTP__PASSWORD
 #
 # [stripe]
 # secret_key = ""  # Override with IMKITCHEN__STRIPE__SECRET_KEY
