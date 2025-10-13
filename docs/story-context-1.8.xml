@@ -1,0 +1,268 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>8</storyId>
+    <title>User Logout</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-13</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-1.8.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a logged-in user</asA>
+    <iWant>to log out</iWant>
+    <soThat>my session is securely terminated</soThat>
+    <tasks>
+      - [ ] Implement logout route handler (AC: 2, 3, 4, 6)
+        - [ ] Add `post_logout` handler to `src/routes/auth.rs`
+        - [ ] Clear auth_token cookie with `Max-Age=0`, `HttpOnly`, `Secure`, `SameSite=Lax` flags
+        - [ ] Redirect to `/login?logout=success` (302 status code)
+        - [ ] Log logout event with user_id from JWT claims (tracing::info)
+        - [ ] Optional: Emit UserLoggedOut domain event for audit trail
+        - [ ] Register route in `src/routes/mod.rs` and `src/main.rs`
+      - [ ] Add logout button to navigation (AC: 1)
+        - [ ] Update `templates/base.html` or navigation component
+        - [ ] Add logout form/button in authenticated navigation menu
+        - [ ] Style logout button with appropriate Tailwind classes
+        - [ ] Ensure logout button only visible when user authenticated
+      - [ ] Display logout confirmation (AC: 7)
+        - [ ] Update `templates/pages/login.html` to detect `?logout=success` query param
+        - [ ] Show success message: "You have been logged out successfully"
+        - [ ] Style message with success color (Tailwind green)
+      - [ ] Verify auth middleware behavior (AC: 5)
+        - [ ] Confirm existing auth middleware redirects unauthenticated users to /login
+        - [ ] Test: Access /dashboard after logout → redirected to /login
+        - [ ] No code changes needed (middleware already implements this)
+      - [ ] Test logout functionality (AC: 1-7)
+        - [ ] Unit test: `post_logout` clears cookie and redirects to /login
+        - [ ] Integration test: POST /logout clears cookie, subsequent GET /dashboard redirects to /login
+        - [ ] Integration test: Logout confirmation message displays on login page
+        - [ ] E2E test (Playwright): Login → Navigate to dashboard → Click logout → Verify redirected to login with confirmation → Attempt dashboard access → Blocked
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    1. Logout button accessible from navigation menu on all authenticated pages
+    2. Clicking logout triggers POST /logout endpoint
+    3. POST /logout clears JWT cookie (auth_token) with Max-Age=0 and secure flags
+    4. User redirected to login page after logout (302 redirect to /login)
+    5. Logged-out user cannot access authenticated routes (redirected to /login by auth middleware)
+    6. Logout action logged for security audit (UserLoggedOut event optional for audit trail)
+    7. Logout confirmation message displayed on login page
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>FR-18: Authentication and Authorization</section>
+        <snippet>System provides secure user authentication via JWT cookie-based tokens, password reset flows, and role-based access control for user/premium-user roles.</snippet>
+        <relevance>Defines JWT cookie-based authentication strategy and security requirements for logout functionality</relevance>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>NFR-4: Security</section>
+        <snippet>All user data encrypted at rest (AES-256) and in transit (TLS 1.3). JWT cookie-based authentication with secure HTTP-only flags and CSRF protection. OWASP Top 10 security standards compliance for all implementations.</snippet>
+        <relevance>Establishes security standards for cookie handling and OWASP compliance</relevance>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/epics.md</path>
+        <title>Epic Breakdown</title>
+        <section>Story 1.8: User Logout</section>
+        <snippet>As a logged-in user, I want to log out, So that my session is securely terminated. Acceptance Criteria: 1. Logout button accessible from navigation menu 2. Clicking logout clears JWT cookie 3. User redirected to login page 4. Logged-out user cannot access authenticated routes 5. Logout action logged for security audit 6. Logout confirmation message displayed</snippet>
+        <relevance>Original story definition with full acceptance criteria</relevance>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-1.md</path>
+        <title>Technical Specification: User Authentication &amp; Profile Management</title>
+        <section>APIs/POST /logout</section>
+        <snippet>Logout endpoint clears auth_token cookie with Max-Age=0, HttpOnly, Secure, SameSite=Lax flags. Handler extracts user_id from Auth extension for logging before clearing cookie. No authentication required for route (but Auth extension provides user context). Redirects to /login?logout=success.</snippet>
+        <relevance>Detailed implementation specification for logout endpoint</relevance>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>5.1: JWT Cookie-Based Authentication</section>
+        <snippet>JWT Configuration: Algorithm HS256, Secret from environment variable (32-byte random key), Expiration 7 days, Cookie HTTP-only, Secure (HTTPS only), SameSite=Lax. Logout: POST /logout → Clear cookie</snippet>
+        <relevance>Defines JWT configuration and cookie security parameters for logout</relevance>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>5.2: Session Management</section>
+        <snippet>Stateless Sessions: No server-side session store, all state in JWT. Security Measures: CSRF protection via SameSite cookie attribute, HTTP-only cookie prevents XSS access to token, Secure flag enforces HTTPS in production</snippet>
+        <relevance>Explains stateless session management approach - no server-side session invalidation needed</relevance>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>5.3: Protected Routes</section>
+        <snippet>Auth Middleware: Extracts auth_token cookie, validates JWT, inserts claims in request extensions. Route Protection: Apply middleware to /dashboard, /recipes, /plan, /shopping, /profile routes. Missing/invalid token returns 401 Unauthorized redirect to /login.</snippet>
+        <relevance>Describes auth middleware behavior for protecting routes after logout</relevance>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>2.3: Page Routing and Navigation</section>
+        <snippet>POST /logout → Logout handler. Route Structure follows REST conventions with proper HTTP methods. Forms use POST for state-changing operations.</snippet>
+        <relevance>Confirms routing pattern for logout endpoint</relevance>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>4.3: Form Actions and Mutations</section>
+        <snippet>Response Patterns: Success: 302 Redirect (PRG pattern) or 200 OK with HTML fragment (TwinSpark). Auth error: 401 Unauthorized, redirect to /login. Error Handling: Domain errors displayed as flash messages.</snippet>
+        <relevance>Defines response pattern for logout redirect with query parameter</relevance>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>15.2: Integration Tests</section>
+        <snippet>HTTP Routes: Test full request/response cycle, use in-memory SQLite database, test authentication flows. Example: Login, perform action, logout, verify session cleared, subsequent protected access blocked.</snippet>
+        <relevance>Testing strategy for logout functionality</relevance>
+      </doc>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/src/routes/auth.rs</path>
+        <kind>module</kind>
+        <symbol>post_login</symbol>
+        <lines>199-282</lines>
+        <reason>Existing login handler demonstrates JWT token generation and cookie setting pattern with same security flags needed for logout cookie clearing. Shows cookie format: "auth_token=TOKEN; HttpOnly; Secure; SameSite=Lax; Max-Age=SECONDS; Path=/"</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/src/routes/auth.rs</path>
+        <kind>module</kind>
+        <symbol>AppState</symbol>
+        <lines>17-27</lines>
+        <reason>State structure containing jwt_secret and other dependencies accessible in logout handler via State extractor</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/src/middleware/auth.rs</path>
+        <kind>module</kind>
+        <symbol>auth_middleware</symbol>
+        <lines>22-52</lines>
+        <reason>Existing auth middleware that validates JWT from cookie. On missing/invalid token, redirects to /login with SEE_OTHER (303). This is the defense-in-depth mechanism that blocks logged-out users from accessing protected routes (AC #5).</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/src/middleware/auth.rs</path>
+        <kind>struct</kind>
+        <symbol>Auth</symbol>
+        <lines>13-16</lines>
+        <reason>Auth extension containing user_id extracted from JWT. Can be used in logout handler to log which user is logging out before clearing the cookie.</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/templates/pages/login.html</path>
+        <kind>template</kind>
+        <symbol>LoginPageTemplate</symbol>
+        <lines>1-69</lines>
+        <reason>Login page template that needs modification to detect ?logout=success query parameter and display confirmation message. Currently shows error messages, needs similar pattern for success messages.</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/templates/base.html</path>
+        <kind>template</kind>
+        <symbol>base layout</symbol>
+        <lines>all</lines>
+        <reason>Base template with navigation that needs logout button/form added. Should conditionally display logout button only when user is authenticated (when user variable is Some).</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/tests/auth_integration_tests.rs</path>
+        <kind>test</kind>
+        <symbol>test_login_flow</symbol>
+        <lines>all</lines>
+        <reason>Existing authentication integration tests demonstrating pattern for testing login/logout flows with cookie handling and protected route access</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <rust>
+        <package name="axum" version="0.8">Web framework for HTTP routing and handlers</package>
+        <package name="axum-extra" version="0.10">Cookie handling via CookieJar extractor</package>
+        <package name="askama" version="0.14">Server-side HTML templating</package>
+        <package name="jsonwebtoken" version="9.3">JWT token validation (used in auth middleware)</package>
+        <package name="tracing" version="0.1">Structured logging for audit trail</package>
+        <package name="serde" version="1.0">Serialization for form data and query params</package>
+        <package name="evento" version="1.3">Optional: Event sourcing for UserLoggedOut domain event</package>
+        <package name="sqlx" version="0.8">Database queries for user lookups (if emitting event)</package>
+      </rust>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Cookie clearing MUST use exact security flags as cookie setting: HttpOnly, Secure, SameSite=Lax, Path=/</constraint>
+    <constraint>Cookie expiration via Max-Age=0 is the browser-standard approach for immediate deletion</constraint>
+    <constraint>Logout handler can optionally use Auth extension to extract user_id for logging, but authentication is not strictly required for the route (stateless JWT means no server-side session to invalidate)</constraint>
+    <constraint>Redirect to /login MUST use query parameter ?logout=success for confirmation message display (stateless approach, no session flash messages)</constraint>
+    <constraint>Auth middleware already provides defense-in-depth by redirecting unauthenticated users to /login - no changes needed to middleware</constraint>
+    <constraint>Logout button must be visible on ALL authenticated pages - add to base.html navigation</constraint>
+    <constraint>Use POST method for logout (semantic correctness for state-changing operation)</constraint>
+    <constraint>Follow PRG (Post/Redirect/Get) pattern: POST /logout → 302 redirect → GET /login</constraint>
+    <constraint>TDD enforced: Write tests before implementation (unit, integration, E2E)</constraint>
+    <constraint>Tracing instrumentation required: Log logout event with user_id for security audit</constraint>
+    <constraint>Optional: Emit UserLoggedOut domain event for completeness of event sourcing audit trail (not required for MVP, tracing logs sufficient)</constraint>
+    <constraint>Login page template modification: Detect query param, show success message with green styling (Tailwind success classes)</constraint>
+    <constraint>Route registration: Add to src/routes/mod.rs and mount in src/main.rs router</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>POST /logout</name>
+      <kind>HTTP endpoint</kind>
+      <signature>async fn post_logout(State(state): State&lt;AppState&gt;, Extension(auth): Extension&lt;Auth&gt;) -&gt; Response</signature>
+      <path>/home/snapiz/projects/github/timayz/imkitchen/src/routes/auth.rs</path>
+      <description>Logout handler that clears auth_token cookie and redirects to /login?logout=success. Extracts user_id from Auth extension for logging.</description>
+    </interface>
+    <interface>
+      <name>auth_middleware</name>
+      <kind>Axum middleware</kind>
+      <signature>async fn auth_middleware(State(state): State&lt;AppState&gt;, jar: CookieJar, req: Request, next: Next) -&gt; Response</signature>
+      <path>/home/snapiz/projects/github/timayz/imkitchen/src/middleware/auth.rs</path>
+      <description>Existing middleware that validates JWT from cookie. Missing/invalid token redirects to /login. No changes needed - already provides AC #5 (logged-out users blocked from protected routes).</description>
+    </interface>
+    <interface>
+      <name>LoginPageTemplate</name>
+      <kind>Askama template struct</kind>
+      <signature>struct LoginPageTemplate { error: String, user: Option&lt;()&gt; }</signature>
+      <path>/home/snapiz/projects/github/timayz/imkitchen/src/routes/auth.rs</path>
+      <description>Template struct for login page. Needs new field: success: String for logout confirmation message display.</description>
+    </interface>
+    <interface>
+      <name>Auth extension</name>
+      <kind>Axum request extension</kind>
+      <signature>struct Auth { user_id: String }</signature>
+      <path>/home/snapiz/projects/github/timayz/imkitchen/src/middleware/auth.rs</path>
+      <description>Extension inserted by auth middleware containing user_id extracted from JWT. Can be extracted in logout handler for audit logging.</description>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing follows TDD approach with comprehensive coverage across unit, integration, and E2E layers. Unit tests validate individual functions and handlers using mocks. Integration tests use in-memory SQLite database to test full request/response cycles including cookie handling and database interactions. E2E tests use Playwright for browser-based testing of complete user flows. All tests use tracing instrumentation for debugging. Minimum 80% code coverage required per NFR-10. Tests organized in crates/*/tests/ for unit tests and tests/ for integration tests, e2e/ for Playwright tests.
+    </standards>
+
+    <locations>
+      <location>crates/user/tests/ - Unit tests for user domain logic</location>
+      <location>tests/auth_integration_tests.rs - Integration tests for authentication flows</location>
+      <location>e2e/tests/auth.spec.ts - Playwright E2E tests for login/logout flows</location>
+    </locations>
+
+    <ideas>
+      <idea ac="1">Unit test: Verify logout button present in base.html navigation when user authenticated</idea>
+      <idea ac="2,3">Unit test: post_logout handler sets cookie with Max-Age=0, HttpOnly, Secure, SameSite=Lax, Path=/</idea>
+      <idea ac="4">Unit test: post_logout returns 302 redirect with Location: /login?logout=success</idea>
+      <idea ac="6">Unit test: post_logout logs user_id via tracing::info before clearing cookie</idea>
+      <idea ac="7">Unit test: LoginPageTemplate detects ?logout=success query param and includes success message</idea>
+      <idea ac="2,3,4">Integration test: POST /logout with valid auth cookie clears cookie and redirects to /login?logout=success</idea>
+      <idea ac="5">Integration test: After logout (cookie cleared), GET /dashboard returns 303 redirect to /login (auth middleware blocks access)</idea>
+      <idea ac="7">Integration test: GET /login?logout=success displays success message "You have been logged out successfully"</idea>
+      <idea ac="1,2,3,4,5,6,7">E2E test (Playwright): Complete flow - Login → Navigate to dashboard (verify authenticated) → Click logout button → Verify redirected to /login with success message → Attempt to access /dashboard → Verify redirected to /login (blocked)</idea>
+      <idea>E2E test (Playwright): Verify logout button visible on multiple authenticated pages (dashboard, profile, recipes)</idea>
+      <idea>Integration test: Verify logout with no auth cookie still works gracefully (no error, redirects to /login)</idea>
+      <idea>Integration test: Verify logout logs contain user_id (tracing audit)</idea>
+    </ideas>
+  </tests>
+</story-context>

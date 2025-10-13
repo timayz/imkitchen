@@ -1,10 +1,10 @@
 use askama::Template;
 use axum::{
     body::Bytes,
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::StatusCode,
     response::{Html, IntoResponse, Response},
-    Form,
+    Extension, Form,
 };
 use serde::Deserialize;
 use sqlx::SqlitePool;
@@ -13,6 +13,8 @@ use user::{
     reset_password, validate_jwt, verify_password, RegisterUserCommand, ResetPasswordCommand,
     UserError,
 };
+
+use crate::middleware::auth::Auth;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -50,7 +52,13 @@ pub struct LoginForm {
 #[template(path = "pages/login.html")]
 pub struct LoginPageTemplate {
     pub error: String,
+    pub success: String,
     pub user: Option<()>, // None for public pages
+}
+
+#[derive(Debug, Deserialize)]
+pub struct LoginQueryParams {
+    pub logout: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -188,9 +196,16 @@ pub async fn post_register(
 
 /// GET /login - Display login form
 #[tracing::instrument]
-pub async fn get_login() -> impl IntoResponse {
+pub async fn get_login(Query(params): Query<LoginQueryParams>) -> impl IntoResponse {
+    let success = if params.logout == Some("success".to_string()) {
+        "You have been logged out successfully".to_string()
+    } else {
+        String::new()
+    };
+
     let template = LoginPageTemplate {
         error: String::new(),
+        success,
         user: None,
     };
     Html(template.render().unwrap())
@@ -207,6 +222,7 @@ pub async fn post_login(State(state): State<AppState>, Form(form): Form<LoginFor
             tracing::warn!("Failed login attempt for email: {}", form.email);
             let template = LoginPageTemplate {
                 error: "Invalid credentials".to_string(),
+                success: String::new(),
                 user: None,
             };
             return Html(template.render().unwrap()).into_response();
@@ -215,6 +231,7 @@ pub async fn post_login(State(state): State<AppState>, Form(form): Form<LoginFor
             tracing::error!("Database error during login: {:?}", e);
             let template = LoginPageTemplate {
                 error: "An error occurred. Please try again.".to_string(),
+                success: String::new(),
                 user: None,
             };
             return Html(template.render().unwrap()).into_response();
@@ -228,6 +245,7 @@ pub async fn post_login(State(state): State<AppState>, Form(form): Form<LoginFor
             tracing::error!("Password verification error: {:?}", e);
             let template = LoginPageTemplate {
                 error: "An error occurred. Please try again.".to_string(),
+                success: String::new(),
                 user: None,
             };
             return Html(template.render().unwrap()).into_response();
@@ -242,6 +260,7 @@ pub async fn post_login(State(state): State<AppState>, Form(form): Form<LoginFor
         );
         let template = LoginPageTemplate {
             error: "Invalid credentials".to_string(),
+            success: String::new(),
             user: None,
         };
         return Html(template.render().unwrap()).into_response();
@@ -255,6 +274,7 @@ pub async fn post_login(State(state): State<AppState>, Form(form): Form<LoginFor
             let template = LoginPageTemplate {
                 error: "Login succeeded but failed to generate session token. Please try again."
                     .to_string(),
+                success: String::new(),
                 user: None,
             };
             return Html(template.render().unwrap()).into_response();
@@ -275,6 +295,31 @@ pub async fn post_login(State(state): State<AppState>, Form(form): Form<LoginFor
         [
             ("Set-Cookie", cookie.as_str()),
             ("ts-location", "/dashboard"),
+        ],
+        (),
+    )
+        .into_response()
+}
+
+/// POST /logout - Handle logout (clears JWT cookie and redirects to login)
+///
+/// AC #2, #3, #4, #6: Clears auth_token cookie with secure flags and redirects to /login?logout=success
+#[tracing::instrument(skip(auth))]
+pub async fn post_logout(Extension(auth): Extension<Auth>) -> Response {
+    // Log logout event for security audit (AC: 6)
+    tracing::info!("User logged out: user_id={}", auth.user_id);
+
+    // Clear auth_token cookie with Max-Age=0 for immediate expiration (AC: 3)
+    // Must use same security flags as cookie setting: HttpOnly, Secure, SameSite=Lax, Path=/
+    let cookie = "auth_token=; HttpOnly; Secure; SameSite=Lax; Max-Age=0; Path=/";
+
+    // Redirect to login page with logout success query parameter (AC: 4, 7)
+    // Using 302 redirect (PRG pattern: Post/Redirect/Get)
+    (
+        StatusCode::FOUND,
+        [
+            ("Set-Cookie", cookie),
+            ("Location", "/login?logout=success"),
         ],
         (),
     )

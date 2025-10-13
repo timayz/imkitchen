@@ -461,3 +461,208 @@ async fn test_login_jwt_includes_correct_claims() {
     assert_eq!(claims.tier, "free");
     assert!(claims.exp > claims.iat); // Expiration is in future
 }
+
+// ============================================================================
+// LOGOUT TESTS (Story 1.8)
+// ============================================================================
+
+#[tokio::test]
+async fn test_logout_clears_cookie_and_redirects() {
+    let pool = common::setup_test_db().await;
+    let test_app = common::create_test_app(pool).await;
+
+    // Pre-create and login user
+    test_app
+        .router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/register")
+                .header("content-type", "application/x-www-form-urlencoded")
+                .body(Body::from(
+                    "email=test@example.com&password=password123&password_confirm=password123",
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    test_app.process_events().await;
+
+    let login_response = test_app
+        .router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/login")
+                .header("content-type", "application/x-www-form-urlencoded")
+                .body(Body::from("email=test@example.com&password=password123"))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let auth_cookie = login_response
+        .headers()
+        .get("set-cookie")
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .split(';')
+        .next()
+        .unwrap()
+        .to_string();
+
+    // POST /logout with auth cookie (AC: 2, 3, 4)
+    let logout_response = test_app
+        .router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/logout")
+                .header("cookie", auth_cookie)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    // Verify 302 redirect to /login?logout=success (AC: 4)
+    assert_eq!(logout_response.status(), StatusCode::FOUND);
+    assert_eq!(
+        logout_response.headers().get("location").unwrap(),
+        "/login?logout=success"
+    );
+
+    // Verify cookie cleared with Max-Age=0 (AC: 3)
+    let cookie = logout_response
+        .headers()
+        .get("set-cookie")
+        .unwrap()
+        .to_str()
+        .unwrap();
+
+    assert!(cookie.contains("auth_token="));
+    assert!(cookie.contains("Max-Age=0"));
+    assert!(cookie.contains("HttpOnly"));
+    assert!(cookie.contains("Secure"));
+    assert!(cookie.contains("SameSite=Lax"));
+}
+
+#[tokio::test]
+async fn test_logout_confirmation_displays_on_login_page() {
+    let pool = common::setup_test_db().await;
+    let test_app = common::create_test_app(pool).await;
+
+    // GET /login?logout=success (AC: 7)
+    let response = test_app
+        .router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/login?logout=success")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let body_str = String::from_utf8(body.to_vec()).unwrap();
+
+    // Verify success message displayed (AC: 7)
+    assert!(body_str.contains("You have been logged out successfully"));
+    assert!(body_str.contains("bg-green")); // Tailwind green styling
+}
+
+#[tokio::test]
+async fn test_accessing_protected_route_after_logout_redirects_to_login() {
+    let pool = common::setup_test_db().await;
+    let test_app = common::create_test_app(pool).await;
+
+    // Pre-create and login user
+    test_app
+        .router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/register")
+                .header("content-type", "application/x-www-form-urlencoded")
+                .body(Body::from(
+                    "email=test@example.com&password=password123&password_confirm=password123",
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    test_app.process_events().await;
+
+    let login_response = test_app
+        .router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/login")
+                .header("content-type", "application/x-www-form-urlencoded")
+                .body(Body::from("email=test@example.com&password=password123"))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let auth_cookie = login_response
+        .headers()
+        .get("set-cookie")
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .split(';')
+        .next()
+        .unwrap()
+        .to_string();
+
+    // Logout
+    test_app
+        .router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/logout")
+                .header("cookie", auth_cookie)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    // Attempt to access /dashboard without auth cookie (AC: 5)
+    let dashboard_response = test_app
+        .router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/dashboard")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    // Auth middleware should redirect to /login (AC: 5)
+    assert_eq!(dashboard_response.status(), StatusCode::SEE_OTHER);
+    assert_eq!(
+        dashboard_response.headers().get("location").unwrap(),
+        "/login"
+    );
+}
