@@ -4,7 +4,7 @@ use axum::{
 };
 use evento::prelude::*;
 use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
-use user::on_user_created;
+use user::user_projection;
 
 pub async fn setup_test_db() -> SqlitePool {
     let pool = SqlitePoolOptions::new()
@@ -37,12 +37,7 @@ pub struct TestApp {
 impl TestApp {
     /// Process all pending events synchronously
     pub async fn process_events(&self) {
-        use user::UserAggregate;
-
-        evento::subscribe("user-read-model-test-process")
-            .aggregator::<UserAggregate>()
-            .data(self.pool.clone())
-            .handler(on_user_created())
+        user_projection(self.pool.clone())
             .run_once(&self.evento_executor)
             .await
             .unwrap();

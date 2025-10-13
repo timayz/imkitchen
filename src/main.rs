@@ -5,10 +5,10 @@ use axum::{
 };
 use clap::{Parser, Subcommand};
 use evento::prelude::*;
-use imkitchen::routes::{get_register, health, post_register, ready, AppState};
+use imkitchen::routes::{get_register, health, post_register, ready, AppState, AssetsService};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions};
 use tower_http::trace::TraceLayer;
-use user::{on_user_created, UserAggregate};
+use user::user_projection;
 
 /// imkitchen - Intelligent Meal Planning
 #[derive(Parser)]
@@ -91,10 +91,7 @@ async fn serve_command(
     let evento_executor: evento::Sqlite = db_pool.clone().into();
 
     // Set up evento subscription for read model projections
-    evento::subscribe("user-read-model")
-        .aggregator::<UserAggregate>()
-        .data(db_pool.clone())
-        .handler(on_user_created())
+    user_projection(db_pool.clone())
         .run(&evento_executor)
         .await?;
 
@@ -121,7 +118,7 @@ async fn serve_command(
                 // Protected routes
                 .route("/dashboard", get(dashboard_handler))
                 // Static assets
-                .nest_service("/static", tower_http::services::ServeDir::new("static"))
+                .nest_service("/static", AssetsService::new())
                 .with_state(state),
         )
         .layer(TraceLayer::new_for_http());

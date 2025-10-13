@@ -21,7 +21,6 @@ tower-http = { version = "0.6", features = ["fs", "trace"] }
 
 # Templating
 askama = "0.14"
-askama_axum = "0.4"
 
 # Database
 sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite", "chrono", "uuid"] }
@@ -59,6 +58,10 @@ opentelemetry-otlp = { version = "0.30", features = ["trace", "grpc-tonic"] }
 # Serialization (for evento)
 bincode = "2.0"
 
+# Static assets
+rust-embed = "8.7"
+mime_guess = "2.0"
+
 [package]
 name = "imkitchen"
 version.workspace = true
@@ -71,7 +74,6 @@ axum = { workspace = true }
 tower = { workspace = true }
 tower-http = { workspace = true }
 askama = { workspace = true }
-askama_axum = { workspace = true }
 sqlx = { workspace = true }
 evento = { workspace = true }
 serde = { workspace = true }
@@ -83,9 +85,10 @@ tracing-opentelemetry = { workspace = true }
 opentelemetry = { workspace = true }
 opentelemetry_sdk = { workspace = true }
 opentelemetry-otlp = { workspace = true }
-uuid = { workspace = true }
 clap = { workspace = true }
 config = { workspace = true }
+rust-embed = { workspace = true }
+mime_guess = { workspace = true }
 
 # Domain crates
 user = { path = "crates/user" }

@@ -36,19 +36,24 @@ async fn user_created_handler<E: Executor>(
     Ok(())
 }
 
-/// Public wrapper to access the evento subscription handler
+/// Create user event subscription for read model projection
 ///
-/// The handler is registered via:
-/// ```ignore
-/// evento::subscribe("user-read-model")
-///     .aggregator::<UserAggregate>()
-///     .data(pool.clone())
-///     .handler(on_user_created())
-///     .run(&executor)
-///     .await?;
+/// Returns a subscription builder that can be run with `.run(&executor).await`
+///
+/// Usage in main.rs:
+/// ```no_run
+/// # use sqlx::SqlitePool;
+/// # use evento::Sqlite;
+/// # async fn example(pool: SqlitePool, executor: Sqlite) -> anyhow::Result<()> {
+/// user::user_projection(pool.clone()).run(&executor).await?;
+/// # Ok(())
+/// # }
 /// ```
-pub fn on_user_created() -> impl evento::SubscribeHandler<evento::Sqlite> {
-    user_created_handler()
+pub fn user_projection(pool: SqlitePool) -> evento::SubscribeBuilder<evento::Sqlite> {
+    evento::subscribe("user-read-model")
+        .aggregator::<UserAggregate>()
+        .data(pool)
+        .handler(user_created_handler())
 }
 
 /// Query user by email for uniqueness check in read model
