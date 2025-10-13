@@ -30,8 +30,12 @@ async fn test_register_with_valid_inputs_creates_user() {
         .unwrap();
 
     // TwinSpark returns 200 OK with ts-location header (progressive enhancement)
+    // Story 1.4: Registration now redirects to /onboarding instead of /dashboard
     assert_eq!(response.status(), StatusCode::OK);
-    assert_eq!(response.headers().get("ts-location").unwrap(), "/dashboard");
+    assert_eq!(
+        response.headers().get("ts-location").unwrap(),
+        "/onboarding"
+    );
 
     // Process pending events to project to read model
     test_app.process_events().await;
@@ -210,8 +214,12 @@ async fn test_successful_registration_redirects_to_dashboard() {
         .unwrap();
 
     // TwinSpark returns 200 OK with ts-location header (progressive enhancement)
+    // Story 1.4: Registration now redirects to /onboarding instead of /dashboard
     assert_eq!(response.status(), StatusCode::OK);
-    assert_eq!(response.headers().get("ts-location").unwrap(), "/dashboard");
+    assert_eq!(
+        response.headers().get("ts-location").unwrap(),
+        "/onboarding"
+    );
 }
 
 // ============================================================================

@@ -1,6 +1,9 @@
 use crate::aggregate::UserAggregate;
 use crate::error::UserResult;
-use crate::events::{PasswordChanged, UserCreated};
+use crate::events::{
+    DietaryRestrictionsSet, HouseholdSizeSet, PasswordChanged, ProfileCompleted, SkillLevelSet,
+    UserCreated, WeeknightAvailabilitySet,
+};
 use evento::{AggregatorName, Context, EventDetails, Executor};
 use sqlx::{Row, SqlitePool};
 
@@ -63,6 +66,91 @@ async fn password_changed_handler<E: Executor>(
     Ok(())
 }
 
+/// Handler for DietaryRestrictionsSet event (Step 1)
+#[evento::handler(UserAggregate)]
+async fn dietary_restrictions_set_handler<E: Executor>(
+    context: &Context<'_, E>,
+    event: EventDetails<DietaryRestrictionsSet>,
+) -> anyhow::Result<()> {
+    let pool: SqlitePool = context.extract();
+    let dietary_restrictions_json = serde_json::to_string(&event.data.dietary_restrictions)?;
+
+    sqlx::query("UPDATE users SET dietary_restrictions = ?1 WHERE id = ?2")
+        .bind(&dietary_restrictions_json)
+        .bind(&event.aggregator_id)
+        .execute(&pool)
+        .await?;
+
+    Ok(())
+}
+
+/// Handler for HouseholdSizeSet event (Step 2)
+#[evento::handler(UserAggregate)]
+async fn household_size_set_handler<E: Executor>(
+    context: &Context<'_, E>,
+    event: EventDetails<HouseholdSizeSet>,
+) -> anyhow::Result<()> {
+    let pool: SqlitePool = context.extract();
+
+    sqlx::query("UPDATE users SET household_size = ?1 WHERE id = ?2")
+        .bind(event.data.household_size)
+        .bind(&event.aggregator_id)
+        .execute(&pool)
+        .await?;
+
+    Ok(())
+}
+
+/// Handler for SkillLevelSet event (Step 3)
+#[evento::handler(UserAggregate)]
+async fn skill_level_set_handler<E: Executor>(
+    context: &Context<'_, E>,
+    event: EventDetails<SkillLevelSet>,
+) -> anyhow::Result<()> {
+    let pool: SqlitePool = context.extract();
+
+    sqlx::query("UPDATE users SET skill_level = ?1 WHERE id = ?2")
+        .bind(&event.data.skill_level)
+        .bind(&event.aggregator_id)
+        .execute(&pool)
+        .await?;
+
+    Ok(())
+}
+
+/// Handler for WeeknightAvailabilitySet event (Step 4)
+#[evento::handler(UserAggregate)]
+async fn weeknight_availability_set_handler<E: Executor>(
+    context: &Context<'_, E>,
+    event: EventDetails<WeeknightAvailabilitySet>,
+) -> anyhow::Result<()> {
+    let pool: SqlitePool = context.extract();
+
+    sqlx::query("UPDATE users SET weeknight_availability = ?1 WHERE id = ?2")
+        .bind(&event.data.weeknight_availability)
+        .bind(&event.aggregator_id)
+        .execute(&pool)
+        .await?;
+
+    Ok(())
+}
+
+/// Handler for ProfileCompleted event - marks onboarding as complete
+#[evento::handler(UserAggregate)]
+async fn profile_completed_handler<E: Executor>(
+    context: &Context<'_, E>,
+    event: EventDetails<ProfileCompleted>,
+) -> anyhow::Result<()> {
+    let pool: SqlitePool = context.extract();
+
+    sqlx::query("UPDATE users SET onboarding_completed = 1 WHERE id = ?1")
+        .bind(&event.aggregator_id)
+        .execute(&pool)
+        .await?;
+
+    Ok(())
+}
+
 /// Create user event subscription for read model projection
 ///
 /// Returns a subscription builder that can be run with `.run(&executor).await`
@@ -82,6 +170,11 @@ pub fn user_projection(pool: SqlitePool) -> evento::SubscribeBuilder<evento::Sql
         .data(pool)
         .handler(user_created_handler())
         .handler(password_changed_handler())
+        .handler(dietary_restrictions_set_handler())
+        .handler(household_size_set_handler())
+        .handler(skill_level_set_handler())
+        .handler(weeknight_availability_set_handler())
+        .handler(profile_completed_handler())
 }
 
 /// Query user by email for uniqueness check in read model

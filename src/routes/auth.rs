@@ -147,13 +147,13 @@ pub async fn post_register(
                 7 * 24 * 60 * 60 // 7 days in seconds
             );
 
-            // Redirect to dashboard using TwinSpark (progressive enhancement)
+            // Redirect to onboarding using TwinSpark (Story 1.4 AC #1: onboarding wizard displays after registration)
             // Returns 200 OK for proper form swap, ts-location triggers client-side navigation
             (
                 StatusCode::OK,
                 [
                     ("Set-Cookie", cookie.as_str()),
-                    ("ts-location", "/dashboard"),
+                    ("ts-location", "/onboarding"),
                 ],
                 (),
             )

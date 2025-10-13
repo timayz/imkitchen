@@ -26,3 +26,42 @@ pub struct PasswordChanged {
     pub password_hash: String, // New Argon2 hashed password
     pub changed_at: String,    // RFC3339 formatted timestamp
 }
+
+/// DietaryRestrictionsSet event emitted when user sets dietary restrictions (Step 1)
+#[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
+pub struct DietaryRestrictionsSet {
+    pub dietary_restrictions: Vec<String>, // e.g., ["vegetarian", "gluten-free", "peanuts"]
+    pub set_at: String,                    // RFC3339 formatted timestamp
+}
+
+/// HouseholdSizeSet event emitted when user sets household size (Step 2)
+#[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
+pub struct HouseholdSizeSet {
+    pub household_size: u8, // 1-10 people
+    pub set_at: String,     // RFC3339 formatted timestamp
+}
+
+/// SkillLevelSet event emitted when user sets cooking skill level (Step 3)
+#[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
+pub struct SkillLevelSet {
+    pub skill_level: String, // "beginner", "intermediate", "expert"
+    pub set_at: String,      // RFC3339 formatted timestamp
+}
+
+/// WeeknightAvailabilitySet event emitted when user sets weeknight availability (Step 4)
+#[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
+pub struct WeeknightAvailabilitySet {
+    pub weeknight_availability: String, // JSON: {"start":"18:00","duration_minutes":45}
+    pub set_at: String,                 // RFC3339 formatted timestamp
+}
+
+/// ProfileCompleted event emitted when a user completes onboarding
+///
+/// This event marks the onboarding as complete. Individual profile data is already
+/// set via the step events above.
+///
+/// Note: user_id is provided by event.aggregator_id, not stored in event data
+#[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
+pub struct ProfileCompleted {
+    pub completed_at: String, // RFC3339 formatted timestamp
+}

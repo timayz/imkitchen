@@ -1,7 +1,10 @@
 use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
-use crate::events::{PasswordChanged, UserCreated};
+use crate::events::{
+    DietaryRestrictionsSet, HouseholdSizeSet, PasswordChanged, ProfileCompleted, SkillLevelSet,
+    UserCreated, WeeknightAvailabilitySet,
+};
 
 /// User aggregate representing the state of a user entity
 ///
@@ -20,7 +23,9 @@ pub struct UserAggregate {
     // Profile fields (from tech spec)
     pub dietary_restrictions: Vec<String>,
     pub household_size: Option<u8>,
-    pub skill_level: Option<String>, // "beginner", "intermediate", "advanced"
+    pub skill_level: Option<String>, // "beginner", "intermediate", "expert"
+    pub weeknight_availability: Option<String>, // JSON: {"start":"18:00","duration_minutes":45}
+    pub onboarding_completed: bool,
 
     // Subscription management
     pub tier: String, // "free", "premium"
@@ -56,6 +61,8 @@ impl UserAggregate {
         self.dietary_restrictions = Vec::new();
         self.household_size = None;
         self.skill_level = None;
+        self.weeknight_availability = None;
+        self.onboarding_completed = false;
         self.stripe_customer_id = None;
         self.stripe_subscription_id = None;
         Ok(())
@@ -71,6 +78,53 @@ impl UserAggregate {
         event: evento::EventDetails<PasswordChanged>,
     ) -> anyhow::Result<()> {
         self.password_hash = event.data.password_hash;
+        Ok(())
+    }
+
+    /// Handle DietaryRestrictionsSet event (Step 1)
+    async fn dietary_restrictions_set(
+        &mut self,
+        event: evento::EventDetails<DietaryRestrictionsSet>,
+    ) -> anyhow::Result<()> {
+        self.dietary_restrictions = event.data.dietary_restrictions;
+        Ok(())
+    }
+
+    /// Handle HouseholdSizeSet event (Step 2)
+    async fn household_size_set(
+        &mut self,
+        event: evento::EventDetails<HouseholdSizeSet>,
+    ) -> anyhow::Result<()> {
+        self.household_size = Some(event.data.household_size);
+        Ok(())
+    }
+
+    /// Handle SkillLevelSet event (Step 3)
+    async fn skill_level_set(
+        &mut self,
+        event: evento::EventDetails<SkillLevelSet>,
+    ) -> anyhow::Result<()> {
+        self.skill_level = Some(event.data.skill_level);
+        Ok(())
+    }
+
+    /// Handle WeeknightAvailabilitySet event (Step 4)
+    async fn weeknight_availability_set(
+        &mut self,
+        event: evento::EventDetails<WeeknightAvailabilitySet>,
+    ) -> anyhow::Result<()> {
+        self.weeknight_availability = Some(event.data.weeknight_availability);
+        Ok(())
+    }
+
+    /// Handle ProfileCompleted event - marks onboarding as complete
+    ///
+    /// This is emitted after all step events, simply marking onboarding as done.
+    async fn profile_completed(
+        &mut self,
+        _event: evento::EventDetails<ProfileCompleted>,
+    ) -> anyhow::Result<()> {
+        self.onboarding_completed = true;
         Ok(())
     }
 }
