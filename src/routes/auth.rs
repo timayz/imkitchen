@@ -118,6 +118,7 @@ pub async fn post_register(
     };
 
     // Execute registration (evento event sourcing)
+    // Email uniqueness is enforced in the command via user_email_uniqueness table
     match register_user(command, &state.evento_executor, &state.db_pool).await {
         Ok(aggregator_id) => {
             // Generate JWT token

@@ -7,8 +7,8 @@ use crate::aggregate::UserAggregate;
 use crate::error::{UserError, UserResult};
 use crate::events::{PasswordChanged, UserCreated};
 use crate::password::hash_password;
-use crate::read_model::query_user_by_email;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub struct RegisterUserCommand {
@@ -41,15 +41,45 @@ pub async fn register_user(
         .validate()
         .map_err(|e| UserError::ValidationError(e.to_string()))?;
 
-    // Check if email already exists in read model
-    if let Some(_) = query_user_by_email(&command.email, pool).await? {
-        return Err(UserError::EmailAlreadyExists);
-    }
-
     // Hash password using Argon2id with OWASP parameters
     let password_hash = hash_password(&command.password)?;
 
+    // Generate user ID
+    let user_id = Uuid::new_v4();
     let created_at = Utc::now();
+
+    // Check and insert into user_email_uniqueness table
+    // This enforces email uniqueness at database level with UNIQUE constraint
+    // This is NOT the read model - it's a write-side uniqueness constraint table
+    let insert_result = sqlx::query(
+        "INSERT INTO user_email_uniqueness (email, user_id, created_at) VALUES (?, ?, ?)",
+    )
+    .bind(&command.email)
+    .bind(user_id.to_string())
+    .bind(created_at.to_rfc3339())
+    .execute(pool)
+    .await;
+
+    match insert_result {
+        Ok(_) => {
+            // Email is unique, continue
+        }
+        Err(e) => {
+            // Check if it's a unique constraint violation
+            if let Some(db_err) = e.as_database_error() {
+                let is_unique_violation = if let Some(code) = db_err.code() {
+                    code.as_ref() == "2067" || code.as_ref() == "1555"
+                } else {
+                    false
+                };
+
+                if is_unique_violation || db_err.message().contains("UNIQUE constraint failed") {
+                    return Err(UserError::EmailAlreadyExists);
+                }
+            }
+            return Err(UserError::DatabaseError(e));
+        }
+    }
 
     // Create UserCreated event and commit to evento event store
     // The async subscription handler (on_user_created) will project to read model
@@ -106,6 +136,8 @@ pub async fn reset_password(command: ResetPasswordCommand, executor: &Sqlite) ->
             password_hash,
             changed_at: changed_at.to_rfc3339(),
         })
+        .map_err(|e| UserError::EventStoreError(e.to_string()))?
+        .metadata(&true)
         .map_err(|e| UserError::EventStoreError(e.to_string()))?
         .commit(executor)
         .await
