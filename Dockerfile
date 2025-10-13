@@ -56,7 +56,7 @@ RUN cargo chef cook --release --recipe-path recipe.json
 # Build application
 
 COPY . .
-COPY --from=node /static/css/main.css ./static/css/main.css
+COPY --from=node /app/static/css/main.css ./static/css/main.css
 
 RUN cargo build --release --bin imkitchen
 
