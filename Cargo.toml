@@ -93,7 +93,6 @@ config = { workspace = true }
 rust-embed = { workspace = true }
 mime_guess = { workspace = true }
 lettre = { workspace = true }
-chrono = { workspace = true }
 
 # Domain crates
 user = { path = "crates/user" }

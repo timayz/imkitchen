@@ -1410,7 +1410,6 @@ dependencies = [
  "anyhow",
  "askama",
  "axum",
- "chrono",
  "clap",
  "config",
  "evento",
