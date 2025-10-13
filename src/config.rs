@@ -11,6 +11,8 @@ pub struct Config {
     pub email: EmailConfig,
     #[serde(default)]
     pub observability: ObservabilityConfig,
+    #[serde(default)]
+    pub stripe: StripeConfig,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -112,6 +114,16 @@ pub struct JwtConfig {
     pub expiration_days: i64,
 }
 
+#[derive(Debug, Deserialize, Clone, Default)]
+pub struct StripeConfig {
+    #[serde(default)]
+    pub secret_key: String,
+    #[serde(default)]
+    pub webhook_secret: String,
+    #[serde(default)]
+    pub price_id: String, // Stripe Price ID for $9.99/month subscription
+}
+
 impl Config {
     /// Load configuration from file and environment variables
     ///
@@ -154,6 +166,15 @@ impl Config {
         if let Ok(jwt_secret) = env::var("JWT_SECRET") {
             builder = builder.set_override("jwt.secret", jwt_secret)?;
         }
+        if let Ok(stripe_secret) = env::var("STRIPE_SECRET_KEY") {
+            builder = builder.set_override("stripe.secret_key", stripe_secret)?;
+        }
+        if let Ok(stripe_webhook_secret) = env::var("STRIPE_WEBHOOK_SECRET") {
+            builder = builder.set_override("stripe.webhook_secret", stripe_webhook_secret)?;
+        }
+        if let Ok(stripe_price_id) = env::var("STRIPE_PRICE_ID") {
+            builder = builder.set_override("stripe.price_id", stripe_price_id)?;
+        }
 
         builder.build()?.try_deserialize()
     }
@@ -194,6 +215,7 @@ mod tests {
             },
             email: EmailConfig::default(),
             observability: ObservabilityConfig::default(),
+            stripe: StripeConfig::default(),
         };
 
         assert!(config.validate().is_err());
@@ -216,6 +238,7 @@ mod tests {
             },
             email: EmailConfig::default(),
             observability: ObservabilityConfig::default(),
+            stripe: StripeConfig::default(),
         };
 
         assert!(config.validate().is_err());
@@ -238,6 +261,7 @@ mod tests {
             },
             email: EmailConfig::default(),
             observability: ObservabilityConfig::default(),
+            stripe: StripeConfig::default(),
         };
 
         assert!(config.validate().is_err());
@@ -260,6 +284,7 @@ mod tests {
             },
             email: EmailConfig::default(),
             observability: ObservabilityConfig::default(),
+            stripe: StripeConfig::default(),
         };
 
         assert!(config.validate().is_ok());

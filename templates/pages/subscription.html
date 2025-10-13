@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Subscription - imkitchen{% endblock %}
+
+{% block content %}
+<div class="min-h-screen py-12">
+    <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Subscription Management</h1>
+        <p class="text-gray-600 mb-8">Manage your imkitchen subscription and billing</p>
+
+        {% if !error.is_empty() %}
+        <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded mb-6" role="alert">
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <!-- Current Subscription Status -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-semibold text-gray-900 mb-4">Current Plan</h2>
+            <div class="bg-gray-50 rounded-lg p-6 border-2 {% if is_premium %}border-green-500{% else %}border-gray-200{% endif %}">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900">
+                            {% if is_premium %}
+                                Premium Plan 🌟
+                            {% else %}
+                                Free Plan
+                            {% endif %}
+                        </h3>
+                        {% if !is_premium %}
+                        <p class="text-sm text-gray-600 mt-1">{{ recipe_count }}/10 recipes used</p>
+                        {% endif %}
+                    </div>
+                    {% if is_premium %}
+                    <span class="px-4 py-2 bg-green-100 text-green-800 rounded-full font-semibold">Active</span>
+                    {% endif %}
+                </div>
+
+                {% if is_premium %}
+                <div class="space-y-2 text-gray-700">
+                    <p>✓ Unlimited recipes</p>
+                    <p>✓ Advanced meal planning features</p>
+                    <p>✓ Priority support</p>
+                    <p class="text-sm text-gray-600 mt-4">$9.99/month</p>
+                </div>
+                {% else %}
+                <div class="space-y-2 text-gray-700">
+                    <p>✓ Up to 10 recipes</p>
+                    <p>✓ Basic meal planning</p>
+                    <p>✓ Community support</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if !is_premium %}
+        <!-- Upgrade to Premium Section -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-semibold text-gray-900 mb-4">Upgrade to Premium</h2>
+            <div class="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-6 border-2 border-blue-200">
+                <div class="mb-4">
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">Premium Plan</h3>
+                    <p class="text-3xl font-bold text-blue-600 mb-4">$9.99<span class="text-base font-normal text-gray-600">/month</span></p>
+                </div>
+
+                <div class="mb-6 space-y-3">
+                    <div class="flex items-start">
+                        <svg class="w-6 h-6 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <div>
+                            <p class="font-semibold text-gray-900">Unlimited Recipes</p>
+                            <p class="text-sm text-gray-600">Create and store as many recipes as you want</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <svg class="w-6 h-6 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <div>
+                            <p class="font-semibold text-gray-900">Advanced Meal Planning</p>
+                            <p class="text-sm text-gray-600">AI-powered meal suggestions and smart scheduling</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <svg class="w-6 h-6 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <div>
+                            <p class="font-semibold text-gray-900">Priority Support</p>
+                            <p class="text-sm text-gray-600">Get help faster with dedicated support</p>
+                        </div>
+                    </div>
+                </div>
+
+                <form method="POST" action="/subscription/upgrade">
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200">
+                        Upgrade to Premium
+                    </button>
+                </form>
+                <p class="text-xs text-gray-600 text-center mt-4">Secure payment powered by Stripe. Cancel anytime.</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Back to Dashboard -->
+        <div class="mt-8 text-center">
+            <a href="/dashboard" class="text-blue-600 hover:text-blue-800 font-medium">← Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

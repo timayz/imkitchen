@@ -9,10 +9,11 @@ use evento::prelude::*;
 use imkitchen::middleware::auth_middleware;
 use imkitchen::routes::{
     get_login, get_onboarding, get_onboarding_skip, get_password_reset,
-    get_password_reset_complete, get_profile, get_register, health, post_login,
-    post_onboarding_step_1, post_onboarding_step_2, post_onboarding_step_3, post_onboarding_step_4,
-    post_password_reset, post_password_reset_complete, post_profile, post_register, ready,
-    AppState, AssetsService,
+    get_password_reset_complete, get_profile, get_register, get_subscription,
+    get_subscription_success, health, post_login, post_onboarding_step_1, post_onboarding_step_2,
+    post_onboarding_step_3, post_onboarding_step_4, post_password_reset,
+    post_password_reset_complete, post_profile, post_register, post_stripe_webhook,
+    post_subscription_upgrade, ready, AppState, AssetsService,
 };
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions};
 use tower_http::trace::TraceLayer;
@@ -121,6 +122,9 @@ async fn serve_command(
         jwt_secret: config.jwt.secret,
         email_config,
         base_url: config.email.base_url,
+        stripe_secret_key: config.stripe.secret_key,
+        stripe_webhook_secret: config.stripe.webhook_secret,
+        stripe_price_id: config.stripe.price_id,
     };
 
     // Build protected routes with auth middleware
@@ -132,6 +136,9 @@ async fn serve_command(
         .route("/onboarding/step/4", post(post_onboarding_step_4))
         .route("/onboarding/skip", get(get_onboarding_skip))
         .route("/profile", get(get_profile).post(post_profile))
+        .route("/subscription", get(get_subscription))
+        .route("/subscription/upgrade", post(post_subscription_upgrade))
+        .route("/subscription/success", get(get_subscription_success))
         .route("/dashboard", get(dashboard_handler))
         .route_layer(axum_middleware::from_fn_with_state(
             state.clone(),
@@ -159,6 +166,8 @@ async fn serve_command(
                     "/password-reset/{token}",
                     post(post_password_reset_complete),
                 )
+                // Stripe webhook (public, no auth - verified via signature)
+                .route("/webhooks/stripe", post(post_stripe_webhook))
                 // Merge protected routes
                 .merge(protected_routes)
                 // Static assets (no auth)

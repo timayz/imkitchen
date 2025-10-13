@@ -50,9 +50,10 @@ pub async fn create_test_app(pool: SqlitePool) -> TestApp {
     use axum::middleware as axum_middleware;
     use imkitchen::middleware::auth_middleware;
     use imkitchen::routes::{
-        get_login, get_onboarding, get_onboarding_skip, get_profile, get_register, post_login,
-        post_onboarding_step_1, post_onboarding_step_2, post_onboarding_step_3,
-        post_onboarding_step_4, post_profile, post_register, AppState,
+        get_login, get_onboarding, get_onboarding_skip, get_profile, get_register,
+        get_subscription, get_subscription_success, post_login, post_onboarding_step_1,
+        post_onboarding_step_2, post_onboarding_step_3, post_onboarding_step_4, post_profile,
+        post_register, post_subscription_upgrade, AppState,
     };
 
     // Create evento executor
@@ -73,6 +74,9 @@ pub async fn create_test_app(pool: SqlitePool) -> TestApp {
         jwt_secret: "test_secret_key_minimum_32_characters_long".to_string(),
         email_config,
         base_url: "http://localhost:3000".to_string(),
+        stripe_secret_key: "sk_test_mock_key".to_string(),
+        stripe_webhook_secret: "whsec_test_mock_secret".to_string(),
+        stripe_price_id: "price_test_mock_id".to_string(),
     };
 
     // Create protected routes with auth middleware
@@ -85,6 +89,9 @@ pub async fn create_test_app(pool: SqlitePool) -> TestApp {
         .route("/onboarding/skip", get(get_onboarding_skip))
         .route("/profile", get(get_profile))
         .route("/profile", post(post_profile))
+        .route("/subscription", get(get_subscription))
+        .route("/subscription/upgrade", post(post_subscription_upgrade))
+        .route("/subscription/success", get(get_subscription_success))
         .route("/dashboard", get(|| async { "Dashboard" }))
         .route_layer(axum_middleware::from_fn_with_state(
             state.clone(),

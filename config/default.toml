@@ -54,16 +54,30 @@ base_url = "http://localhost:3000"  # Use https://imkitchen.app in production
 # OpenTelemetry collector endpoint (OTLP gRPC)
 # For production, use your OTLP collector address
 # Override with: IMKITCHEN__OBSERVABILITY__OTEL_ENDPOINT
-otel_endpoint = "http://localhost:4317"
+otel_endpoint = "http://localhost:4319"
 
 # Log level: trace, debug, info, warn, error
 # Override with: IMKITCHEN__OBSERVABILITY__LOG_LEVEL or RUST_LOG
 log_level = "info"
 
+# Stripe payment processing configuration
+# Get these values from: https://dashboard.stripe.com/test/apikeys
+[stripe]
+# Stripe secret key (test mode: sk_test_...)
+# Override with: IMKITCHEN__STRIPE__SECRET_KEY or STRIPE_SECRET_KEY environment variable
+secret_key = ""  # REQUIRED: Add your Stripe secret key
+
+# Stripe webhook secret for signature verification (whsec_...)
+# Get from: https://dashboard.stripe.com/test/webhooks
+# Override with: IMKITCHEN__STRIPE__WEBHOOK_SECRET or STRIPE_WEBHOOK_SECRET
+webhook_secret = ""  # REQUIRED: Add your webhook secret
+
+# Stripe Price ID for $9.99/month premium subscription (price_...)
+# Get from: https://dashboard.stripe.com/test/products
+# Override with: IMKITCHEN__STRIPE__PRICE_ID or STRIPE_PRICE_ID
+price_id = ""  # REQUIRED: Add your price ID
+
 # Future configuration sections (not yet implemented):
-#
-# [stripe]
-# secret_key = ""  # Override with IMKITCHEN__STRIPE__SECRET_KEY
 #
 # [minio]
 # endpoint = "http://localhost:9000"

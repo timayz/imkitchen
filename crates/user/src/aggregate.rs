@@ -3,7 +3,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::events::{
     DietaryRestrictionsSet, HouseholdSizeSet, PasswordChanged, ProfileCompleted, ProfileUpdated,
-    RecipeCreated, RecipeDeleted, SkillLevelSet, UserCreated, WeeknightAvailabilitySet,
+    RecipeCreated, RecipeDeleted, SkillLevelSet, SubscriptionUpgraded, UserCreated,
+    WeeknightAvailabilitySet,
 };
 
 /// User aggregate representing the state of a user entity
@@ -174,6 +175,21 @@ impl UserAggregate {
         _event: evento::EventDetails<RecipeDeleted>,
     ) -> anyhow::Result<()> {
         self.recipe_count = (self.recipe_count - 1).max(0); // Prevent negative counts
+        Ok(())
+    }
+
+    /// Handle SubscriptionUpgraded event - update subscription tier and Stripe metadata
+    ///
+    /// This handler is called when a user upgrades or downgrades their subscription tier.
+    /// It updates the tier field and stores Stripe Customer ID and Subscription ID for
+    /// future subscription management (cancellation, billing updates).
+    async fn subscription_upgraded(
+        &mut self,
+        event: evento::EventDetails<SubscriptionUpgraded>,
+    ) -> anyhow::Result<()> {
+        self.tier = event.data.new_tier;
+        self.stripe_customer_id = event.data.stripe_customer_id;
+        self.stripe_subscription_id = event.data.stripe_subscription_id;
         Ok(())
     }
 }

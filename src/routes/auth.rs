@@ -1,5 +1,6 @@
 use askama::Template;
 use axum::{
+    body::Bytes,
     extract::{Path, State},
     http::StatusCode,
     response::{Html, IntoResponse, Response},
@@ -20,6 +21,9 @@ pub struct AppState {
     pub jwt_secret: String,
     pub email_config: crate::email::EmailConfig,
     pub base_url: String,
+    pub stripe_secret_key: String,
+    pub stripe_webhook_secret: String,
+    pub stripe_price_id: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -487,5 +491,123 @@ pub async fn post_password_reset_complete(
             };
             Html(template.render().unwrap()).into_response()
         }
+    }
+}
+
+// ========================
+// Stripe Webhook Handler
+// ========================
+
+/// POST /webhooks/stripe - Handle Stripe webhook events
+///
+/// AC #5, AC #6: Handle checkout.session.completed event and upgrade user tier
+#[tracing::instrument(skip(state, body, headers))]
+pub async fn post_stripe_webhook(
+    State(state): State<AppState>,
+    headers: axum::http::HeaderMap,
+    body: Bytes,
+) -> Response {
+    // Get Stripe signature from headers
+    let signature = match headers.get("stripe-signature") {
+        Some(sig) => match sig.to_str() {
+            Ok(s) => s,
+            Err(_) => {
+                tracing::error!("Invalid stripe-signature header format");
+                return (StatusCode::BAD_REQUEST, "Invalid signature header").into_response();
+            }
+        },
+        None => {
+            tracing::error!("Missing stripe-signature header");
+            return (StatusCode::BAD_REQUEST, "Missing signature").into_response();
+        }
+    };
+
+    // Convert body to string
+    let payload = match std::str::from_utf8(&body) {
+        Ok(s) => s,
+        Err(_) => {
+            tracing::error!("Invalid UTF-8 in webhook payload");
+            return (StatusCode::BAD_REQUEST, "Invalid payload").into_response();
+        }
+    };
+
+    // Verify webhook signature
+    let event =
+        match stripe::Webhook::construct_event(payload, signature, &state.stripe_webhook_secret) {
+            Ok(event) => event,
+            Err(e) => {
+                tracing::error!("Webhook signature verification failed: {:?}", e);
+                return (StatusCode::UNAUTHORIZED, "Invalid signature").into_response();
+            }
+        };
+
+    tracing::info!("Received Stripe webhook event: type={:?}", event.type_);
+
+    // Handle checkout.session.completed event
+    if event.type_ == stripe::EventType::CheckoutSessionCompleted {
+        // Parse event data
+        if let stripe::EventObject::CheckoutSession(session) = event.data.object {
+            // Extract user_id from metadata
+            let user_id = match session.metadata.as_ref().and_then(|m| m.get("user_id")) {
+                Some(id) => id.clone(),
+                None => {
+                    tracing::error!(
+                        "Missing user_id in checkout session metadata: session_id={}",
+                        session.id
+                    );
+                    return (StatusCode::OK, "Missing metadata").into_response();
+                }
+            };
+
+            // Extract Stripe Customer ID and Subscription ID
+            let stripe_customer_id = session.customer.as_ref().map(|c| match c {
+                stripe::Expandable::Id(id) => id.to_string(),
+                stripe::Expandable::Object(obj) => obj.id.to_string(),
+            });
+
+            let stripe_subscription_id = session.subscription.as_ref().map(|s| match s {
+                stripe::Expandable::Id(id) => id.to_string(),
+                stripe::Expandable::Object(obj) => obj.id.to_string(),
+            });
+
+            tracing::info!(
+                "Processing subscription upgrade: user_id={}, customer_id={:?}, subscription_id={:?}, session_id={}",
+                user_id,
+                stripe_customer_id,
+                stripe_subscription_id,
+                session.id
+            );
+
+            // Call upgrade_subscription command
+            let command = user::UpgradeSubscriptionCommand {
+                user_id: user_id.clone(),
+                new_tier: "premium".to_string(),
+                stripe_customer_id,
+                stripe_subscription_id,
+            };
+
+            match user::upgrade_subscription(command, &state.evento_executor).await {
+                Ok(_) => {
+                    tracing::info!("Successfully upgraded user {} to premium", user_id);
+                    (StatusCode::OK, "Subscription upgraded").into_response()
+                }
+                Err(e) => {
+                    tracing::error!(
+                        "Failed to upgrade subscription for user {}: {:?}",
+                        user_id,
+                        e
+                    );
+                    // Still return 200 to acknowledge webhook receipt (Stripe will retry on non-200)
+                    (StatusCode::OK, "Processing failed").into_response()
+                }
+            }
+        } else {
+            tracing::warn!("Unexpected event object type for checkout.session.completed");
+            (StatusCode::OK, "Unexpected object type").into_response()
+        }
+    } else {
+        // Other event types - acknowledge but don't process
+        tracing::debug!("Ignoring webhook event type: {:?}", event.type_);
+        (StatusCode::OK, "Event type not handled").into_response()
     }
 }

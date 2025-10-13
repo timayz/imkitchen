@@ -2,7 +2,8 @@ use crate::aggregate::UserAggregate;
 use crate::error::UserResult;
 use crate::events::{
     DietaryRestrictionsSet, HouseholdSizeSet, PasswordChanged, ProfileCompleted, ProfileUpdated,
-    RecipeCreated, RecipeDeleted, SkillLevelSet, UserCreated, WeeknightAvailabilitySet,
+    RecipeCreated, RecipeDeleted, SkillLevelSet, SubscriptionUpgraded, UserCreated,
+    WeeknightAvailabilitySet,
 };
 use evento::{AggregatorName, Context, EventDetails, Executor};
 use sqlx::{Row, SqlitePool};
@@ -255,6 +256,35 @@ async fn recipe_deleted_handler<E: Executor>(
     Ok(())
 }
 
+/// Handler for SubscriptionUpgraded event - update tier and Stripe metadata in users table
+///
+/// This handler projects SubscriptionUpgraded events from the evento event store
+/// into the users read model table, updating the tier, stripe_customer_id, and
+/// stripe_subscription_id fields.
+#[evento::handler(UserAggregate)]
+async fn subscription_upgraded_handler<E: Executor>(
+    context: &Context<'_, E>,
+    event: EventDetails<SubscriptionUpgraded>,
+) -> anyhow::Result<()> {
+    let pool: SqlitePool = context.extract();
+
+    sqlx::query(
+        r#"
+        UPDATE users
+        SET tier = ?1, stripe_customer_id = ?2, stripe_subscription_id = ?3
+        WHERE id = ?4
+        "#,
+    )
+    .bind(&event.data.new_tier)
+    .bind(&event.data.stripe_customer_id)
+    .bind(&event.data.stripe_subscription_id)
+    .bind(&event.aggregator_id)
+    .execute(&pool)
+    .await?;
+
+    Ok(())
+}
+
 /// Create user event subscription for read model projection
 ///
 /// Returns a subscription builder that can be run with `.run(&executor).await`
@@ -282,6 +312,7 @@ pub fn user_projection(pool: SqlitePool) -> evento::SubscribeBuilder<evento::Sql
         .handler(profile_updated_handler())
         .handler(recipe_created_handler())
         .handler(recipe_deleted_handler())
+        .handler(subscription_upgraded_handler())
 }
 
 /// Query user by email for uniqueness check in read model

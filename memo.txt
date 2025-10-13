@@ -1,6 +1,6 @@
 create git branch, commit (conventional commits), push, create PR title (conventional commits base on story title) in lower case without story num witch include tasks (task_title) checklist without subtasks (remove # from AC num) that closed issue id (seach with title filter by story title)
 
-git commit (conventional commits), push
+run and fix make check than git commit (conventional commits), push
 
 can you create all epics as milestone with associeted stories as issue ? epic title format
   "v0.{epic_num}", issue title format "{story_title}" with label story.
