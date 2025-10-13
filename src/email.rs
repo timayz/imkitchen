@@ -16,6 +16,106 @@ pub struct EmailConfig {
     pub from_name: String,
 }
 
+impl EmailConfig {
+    /// Create SMTP transport based on configuration
+    /// Uses builder_dangerous for local dev (no credentials), relay for production
+    fn create_transport(&self) -> Result<SmtpTransport> {
+        if self.smtp_username.is_empty() && self.smtp_password.is_empty() {
+            // Local development mode - direct connection without authentication
+            Ok(SmtpTransport::builder_dangerous(&self.smtp_host)
+                .port(self.smtp_port)
+                .build())
+        } else {
+            // Production mode - authenticated relay
+            let credentials = Credentials::new(
+                self.smtp_username.clone(),
+                self.smtp_password.clone(),
+            );
+
+            Ok(SmtpTransport::relay(&self.smtp_host)
+                .context("Failed to create SMTP transport")?
+                .port(self.smtp_port)
+                .credentials(credentials)
+                .build())
+        }
+    }
+}
+
+/// Send an email with HTML and plain text parts
+///
+/// Returns success even if email fails to send (to prevent user enumeration)
+/// Errors are logged for monitoring
+async fn send_email(
+    to_email: &str,
+    subject: &str,
+    html_body: String,
+    plain_body: String,
+    config: &EmailConfig,
+    log_context: &str,
+) -> Result<()> {
+    let from_mailbox: Mailbox = format!("{} <{}>", config.from_name, config.from_email)
+        .parse()
+        .context("Failed to parse from email")?;
+
+    let to_mailbox: Mailbox = to_email
+        .parse()
+        .context("Failed to parse to email")?;
+
+    let email = Message::builder()
+        .from(from_mailbox)
+        .to(to_mailbox)
+        .subject(subject)
+        .header(ContentType::TEXT_HTML)
+        .multipart(
+            lettre::message::MultiPart::alternative()
+                .singlepart(
+                    lettre::message::SinglePart::builder()
+                        .header(ContentType::TEXT_PLAIN)
+                        .body(plain_body),
+                )
+                .singlepart(
+                    lettre::message::SinglePart::builder()
+                        .header(ContentType::TEXT_HTML)
+                        .body(html_body),
+                ),
+        )
+        .context("Failed to build email message")?;
+
+    let mailer = config.create_transport()?;
+
+    // Send email - log errors but don't fail (prevent user enumeration)
+    match mailer.send(&email) {
+        Ok(_) => {
+            info!(
+                to = to_email,
+                context = log_context,
+                "Email sent successfully"
+            );
+            Ok(())
+        }
+        Err(e) => {
+            warn!(
+                error = %e,
+                to = to_email,
+                context = log_context,
+                "Failed to send email - logging for monitoring"
+            );
+            // Return success to prevent user enumeration
+            Ok(())
+        }
+    }
+}
+
+// ============================================================================
+// Email Templates
+// ============================================================================
+// To add a new email type:
+// 1. Create HTML template in templates/emails/your-email.html
+// 2. Create text template in templates/emails/your-email.txt
+// 3. Define template structs below with #[derive(Template)]
+// 4. Create a public send_your_email() function that calls send_email()
+// ============================================================================
+
 /// Password reset email HTML template
 #[derive(Template)]
 #[template(path = "emails/password-reset.html")]
@@ -56,74 +156,15 @@ pub async fn send_password_reset_email(
         .render()
         .context("Failed to render plain text email template")?;
 
-    let from_mailbox: Mailbox = format!("{} <{}>", config.from_name, config.from_email)
-        .parse()
-        .context("Failed to parse from email")?;
-
-    let to_mailbox: Mailbox = to_email
-        .parse()
-        .context("Failed to parse to email")?;
-
-    let email = Message::builder()
-        .from(from_mailbox)
-        .to(to_mailbox)
-        .subject("Password Reset Request - imkitchen")
-        .header(ContentType::TEXT_HTML)
-        .multipart(
-            lettre::message::MultiPart::alternative()
-                .singlepart(
-                    lettre::message::SinglePart::builder()
-                        .header(ContentType::TEXT_PLAIN)
-                        .body(plain_body),
-                )
-                .singlepart(
-                    lettre::message::SinglePart::builder()
-                        .header(ContentType::TEXT_HTML)
-                        .body(html_body),
-                ),
-        )
-        .context("Failed to build email message")?;
-
-    // Create SMTP transport
-    // For local dev (MailDev), don't use relay or credentials
-    let mailer = if config.smtp_username.is_empty() && config.smtp_password.is_empty() {
-        // Local development mode - direct connection without authentication
-        SmtpTransport::builder_dangerous(&config.smtp_host)
-            .port(config.smtp_port)
-            .build()
-    } else {
-        // Production mode - authenticated relay
-        let credentials = Credentials::new(
-            config.smtp_username.clone(),
-            config.smtp_password.clone(),
-        );
-
-        SmtpTransport::relay(&config.smtp_host)
-            .context("Failed to create SMTP transport")?
-            .port(config.smtp_port)
-            .credentials(credentials)
-            .build()
-    };
-
-    // Send email - log errors but don't fail (prevent user enumeration)
-    match mailer.send(&email) {
-        Ok(_) => {
-            info!(
-                to = to_email,
-                "Password reset email sent successfully"
-            );
-            Ok(())
-        }
-        Err(e) => {
-            warn!(
-                error = %e,
-                to = to_email,
-                "Failed to send password reset email - logging for monitoring"
-            );
-            // Return success to prevent user enumeration
-            Ok(())
-        }
-    }
+    send_email(
+        to_email,
+        "Password Reset Request - imkitchen",
+        html_body,
+        plain_body,
+        config,
+        "password_reset",
+    )
+    .await
 }
 
 #[cfg(test)]
