@@ -10,8 +10,8 @@ use imkitchen::middleware::auth_middleware;
 use imkitchen::routes::{
     get_login, get_onboarding, get_onboarding_skip, get_password_reset,
     get_password_reset_complete, get_profile, get_register, get_subscription,
-    get_subscription_success, health, post_login, post_onboarding_step_1, post_onboarding_step_2,
-    post_onboarding_step_3, post_onboarding_step_4, post_password_reset,
+    get_subscription_success, health, post_login, post_logout, post_onboarding_step_1,
+    post_onboarding_step_2, post_onboarding_step_3, post_onboarding_step_4, post_password_reset,
     post_password_reset_complete, post_profile, post_register, post_stripe_webhook,
     post_subscription_upgrade, ready, AppState, AssetsService,
 };
@@ -129,6 +129,7 @@ async fn serve_command(
 
     // Build protected routes with auth middleware
     let protected_routes = Router::new()
+        .route("/logout", post(post_logout))
         .route("/onboarding", get(get_onboarding))
         .route("/onboarding/step/1", post(post_onboarding_step_1))
         .route("/onboarding/step/2", post(post_onboarding_step_2))
