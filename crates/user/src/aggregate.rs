@@ -2,8 +2,8 @@ use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
 use crate::events::{
-    DietaryRestrictionsSet, HouseholdSizeSet, PasswordChanged, ProfileCompleted, SkillLevelSet,
-    UserCreated, WeeknightAvailabilitySet,
+    DietaryRestrictionsSet, HouseholdSizeSet, PasswordChanged, ProfileCompleted, ProfileUpdated,
+    SkillLevelSet, UserCreated, WeeknightAvailabilitySet,
 };
 
 /// User aggregate representing the state of a user entity
@@ -125,6 +125,31 @@ impl UserAggregate {
         _event: evento::EventDetails<ProfileCompleted>,
     ) -> anyhow::Result<()> {
         self.onboarding_completed = true;
+        Ok(())
+    }
+
+    /// Handle ProfileUpdated event - updates profile fields with COALESCE logic
+    ///
+    /// This event supports partial updates. Only non-None fields are updated,
+    /// preserving existing values for None fields (COALESCE behavior).
+    /// Used for post-onboarding profile editing.
+    async fn profile_updated(
+        &mut self,
+        event: evento::EventDetails<ProfileUpdated>,
+    ) -> anyhow::Result<()> {
+        // COALESCE logic: only update non-None fields
+        if let Some(dietary_restrictions) = event.data.dietary_restrictions {
+            self.dietary_restrictions = dietary_restrictions;
+        }
+        if let Some(household_size) = event.data.household_size {
+            self.household_size = Some(household_size);
+        }
+        if let Some(skill_level) = event.data.skill_level {
+            self.skill_level = Some(skill_level);
+        }
+        if let Some(weeknight_availability) = event.data.weeknight_availability {
+            self.weeknight_availability = Some(weeknight_availability);
+        }
         Ok(())
     }
 }

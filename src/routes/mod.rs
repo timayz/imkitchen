@@ -10,6 +10,6 @@ pub use auth::{
 };
 pub use health::{health, ready};
 pub use profile::{
-    get_onboarding, get_onboarding_skip, post_onboarding_step_1, post_onboarding_step_2,
-    post_onboarding_step_3, post_onboarding_step_4,
+    get_onboarding, get_onboarding_skip, get_profile, post_onboarding_step_1,
+    post_onboarding_step_2, post_onboarding_step_3, post_onboarding_step_4, post_profile,
 };

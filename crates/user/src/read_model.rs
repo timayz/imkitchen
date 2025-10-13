@@ -1,8 +1,8 @@
 use crate::aggregate::UserAggregate;
 use crate::error::UserResult;
 use crate::events::{
-    DietaryRestrictionsSet, HouseholdSizeSet, PasswordChanged, ProfileCompleted, SkillLevelSet,
-    UserCreated, WeeknightAvailabilitySet,
+    DietaryRestrictionsSet, HouseholdSizeSet, PasswordChanged, ProfileCompleted, ProfileUpdated,
+    SkillLevelSet, UserCreated, WeeknightAvailabilitySet,
 };
 use evento::{AggregatorName, Context, EventDetails, Executor};
 use sqlx::{Row, SqlitePool};
@@ -151,6 +151,71 @@ async fn profile_completed_handler<E: Executor>(
     Ok(())
 }
 
+/// Handler for ProfileUpdated event - updates profile with COALESCE logic
+///
+/// This handler supports partial updates by only updating non-None fields.
+/// Uses SQL COALESCE pattern to preserve existing values when field is None.
+/// Updates updated_at timestamp for audit trail (AC-7).
+#[evento::handler(UserAggregate)]
+async fn profile_updated_handler<E: Executor>(
+    context: &Context<'_, E>,
+    event: EventDetails<ProfileUpdated>,
+) -> anyhow::Result<()> {
+    let pool: SqlitePool = context.extract();
+
+    // Build dynamic SQL query based on which fields are present
+    let mut updates: Vec<String> = Vec::new();
+    let mut bindings: Vec<String> = Vec::new();
+
+    // Process dietary_restrictions (convert Vec<String> to JSON)
+    if let Some(ref dietary_restrictions) = event.data.dietary_restrictions {
+        let dietary_json = serde_json::to_string(dietary_restrictions)?;
+        bindings.push(dietary_json);
+        updates.push(format!("dietary_restrictions = ?{}", bindings.len()));
+    }
+
+    // Process household_size
+    if let Some(household_size) = event.data.household_size {
+        bindings.push(household_size.to_string());
+        updates.push(format!("household_size = ?{}", bindings.len()));
+    }
+
+    // Process skill_level
+    if let Some(ref skill_level) = event.data.skill_level {
+        bindings.push(skill_level.clone());
+        updates.push(format!("skill_level = ?{}", bindings.len()));
+    }
+
+    // Process weeknight_availability
+    if let Some(ref weeknight_availability) = event.data.weeknight_availability {
+        bindings.push(weeknight_availability.clone());
+        updates.push(format!("weeknight_availability = ?{}", bindings.len()));
+    }
+
+    // Always update updated_at timestamp
+    bindings.push(event.data.updated_at.clone());
+    updates.push(format!("updated_at = ?{}", bindings.len()));
+
+    // Only execute if there are fields to update
+    if !updates.is_empty() {
+        let sql = format!(
+            "UPDATE users SET {} WHERE id = ?{}",
+            updates.join(", "),
+            bindings.len() + 1
+        );
+
+        let mut query = sqlx::query(&sql);
+        for binding in bindings {
+            query = query.bind(binding);
+        }
+        query = query.bind(&event.aggregator_id);
+
+        query.execute(&pool).await?;
+    }
+
+    Ok(())
+}
+
 /// Create user event subscription for read model projection
 ///
 /// Returns a subscription builder that can be run with `.run(&executor).await`
@@ -175,6 +240,7 @@ pub fn user_projection(pool: SqlitePool) -> evento::SubscribeBuilder<evento::Sql
         .handler(skill_level_set_handler())
         .handler(weeknight_availability_set_handler())
         .handler(profile_completed_handler())
+        .handler(profile_updated_handler())
 }
 
 /// Query user by email for uniqueness check in read model

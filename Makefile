@@ -1,4 +1,4 @@
-.PHONY: css css-watch lint fmt fmt-fix test build check help
+.PHONY: css css-watch dev lint fmt fmt-fix test build check help
 
 # Build CSS once
 css:
@@ -7,6 +7,10 @@ css:
 # Watch CSS for changes
 css-watch:
 	tailwindcss -i static/css/tailwind.css -o static/css/main.css --watch
+
+# Watch and run server on code changes
+dev:
+	cargo watch -x "run -- serve"
 
 # Run Clippy linter for code quality
 lint:
@@ -37,6 +41,7 @@ help:
 	@echo "Available commands:"
 	@echo "  make css        - Build Tailwind CSS (minified)"
 	@echo "  make css-watch  - Watch and rebuild CSS on changes"
+	@echo "  make dev        - Watch and run server on code changes"
 	@echo "  make fmt        - Check code formatting (fails if not formatted)"
 	@echo "  make fmt-fix    - Auto-fix code formatting"
 	@echo "  make lint       - Run Clippy linter (deny warnings)"

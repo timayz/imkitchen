@@ -6,8 +6,8 @@ use validator::Validate;
 use crate::aggregate::UserAggregate;
 use crate::error::{UserError, UserResult};
 use crate::events::{
-    DietaryRestrictionsSet, HouseholdSizeSet, PasswordChanged, ProfileCompleted, SkillLevelSet,
-    UserCreated, WeeknightAvailabilitySet,
+    DietaryRestrictionsSet, HouseholdSizeSet, PasswordChanged, ProfileCompleted, ProfileUpdated,
+    SkillLevelSet, UserCreated, WeeknightAvailabilitySet,
 };
 use crate::password::hash_password;
 use serde::{Deserialize, Serialize};
@@ -278,6 +278,59 @@ pub async fn complete_profile(
     evento::save::<UserAggregate>(command.user_id.clone())
         .data(&ProfileCompleted {
             completed_at: completed_at.to_rfc3339(),
+        })
+        .map_err(|e| UserError::EventStoreError(e.to_string()))?
+        .metadata(&true)
+        .map_err(|e| UserError::EventStoreError(e.to_string()))?
+        .commit(executor)
+        .await
+        .map_err(|e| UserError::EventStoreError(e.to_string()))?;
+
+    Ok(())
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+pub struct UpdateProfileCommand {
+    pub user_id: String,
+    pub dietary_restrictions: Option<Vec<String>>,
+
+    #[validate(range(min = 1, max = 20, message = "Household size must be between 1 and 20"))]
+    pub household_size: Option<u8>,
+
+    pub skill_level: Option<String>, // "beginner", "intermediate", "expert"
+    pub weeknight_availability: Option<String>, // JSON: {"start":"18:00","duration_minutes":45}
+}
+
+/// Update user profile using evento event sourcing pattern
+///
+/// Supports partial updates - only provided fields (Some) are included in the ProfileUpdated event.
+/// Uses COALESCE logic: None fields preserve existing values, Some fields update.
+/// Emits ProfileUpdated event with timestamp for audit trail (AC-7).
+pub async fn update_profile(command: UpdateProfileCommand, executor: &Sqlite) -> UserResult<()> {
+    // Validate command
+    command
+        .validate()
+        .map_err(|e| UserError::ValidationError(e.to_string()))?;
+
+    // Validate skill_level enum if provided
+    if let Some(ref skill_level) = command.skill_level {
+        if !["beginner", "intermediate", "expert"].contains(&skill_level.as_str()) {
+            return Err(UserError::ValidationError(
+                "skill_level must be one of: beginner, intermediate, expert".to_string(),
+            ));
+        }
+    }
+
+    let updated_at = Utc::now();
+
+    // Emit ProfileUpdated event with only changed fields
+    evento::save::<UserAggregate>(command.user_id.clone())
+        .data(&ProfileUpdated {
+            dietary_restrictions: command.dietary_restrictions,
+            household_size: command.household_size,
+            skill_level: command.skill_level,
+            weeknight_availability: command.weeknight_availability,
+            updated_at: updated_at.to_rfc3339(),
         })
         .map_err(|e| UserError::EventStoreError(e.to_string()))?
         .metadata(&true)

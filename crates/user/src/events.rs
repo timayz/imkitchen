@@ -65,3 +65,18 @@ pub struct WeeknightAvailabilitySet {
 pub struct ProfileCompleted {
     pub completed_at: String, // RFC3339 formatted timestamp
 }
+
+/// ProfileUpdated event emitted when a user updates their profile
+///
+/// This event supports partial updates - only changed fields are included (Option types).
+/// Used for post-onboarding profile editing. Includes timestamp for audit trail (AC-7).
+///
+/// Note: user_id is provided by event.aggregator_id, not stored in event data
+#[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
+pub struct ProfileUpdated {
+    pub dietary_restrictions: Option<Vec<String>>, // None = no change
+    pub household_size: Option<u8>,                // None = no change
+    pub skill_level: Option<String>,               // None = no change
+    pub weeknight_availability: Option<String>,    // None = no change, JSON: {"start":"18:00","duration_minutes":45}
+    pub updated_at: String,                        // RFC3339 formatted timestamp
+}
