@@ -399,3 +399,201 @@ pub async fn get_onboarding_skip(
         }
     }
 }
+
+#[derive(Template)]
+#[template(path = "pages/profile.html")]
+pub struct ProfilePageTemplate {
+    pub error: String,
+    pub success: bool,
+    pub user: Option<()>,
+    pub dietary_restrictions: Vec<String>,
+    pub allergens: String,
+    pub household_size: String,
+    pub skill_level: String,
+    pub availability_start: String,
+    pub availability_duration: String,
+}
+
+/// GET /profile - Display profile editing page
+///
+/// AC #1: Profile page displays current preferences in editable form
+#[tracing::instrument(skip(state, auth))]
+pub async fn get_profile(
+    State(state): State<AppState>,
+    Extension(auth): Extension<Auth>,
+    Query(query): Query<SuccessQuery>,
+) -> Response {
+    // Query user profile data from read model
+    let user_data = sqlx::query(
+        "SELECT dietary_restrictions, household_size, skill_level, weeknight_availability FROM users WHERE id = ?1"
+    )
+    .bind(&auth.user_id)
+    .fetch_one(&state.db_pool)
+    .await;
+
+    match user_data {
+        Ok(row) => {
+            // Parse dietary_restrictions from JSON
+            let dietary_str: Option<String> = row.get("dietary_restrictions");
+            let dietary: Vec<String> = dietary_str
+                .and_then(|s| serde_json::from_str(&s).ok())
+                .unwrap_or_default();
+
+            // Get household_size
+            let household: Option<i32> = row.get("household_size");
+            let household_str = household.map(|h| h.to_string()).unwrap_or_default();
+
+            // Get skill_level
+            let skill: Option<String> = row.get("skill_level");
+            let skill_str = skill.unwrap_or_default();
+
+            // Parse weeknight_availability JSON
+            let availability: Option<String> = row.get("weeknight_availability");
+            let (availability_start, availability_duration) = availability
+                .and_then(|json| serde_json::from_str::<serde_json::Value>(&json).ok())
+                .map(|v| {
+                    let start = v["start"].as_str().unwrap_or("18:00").to_string();
+                    let duration = v["duration_minutes"].as_u64().unwrap_or(45).to_string();
+                    (start, duration)
+                })
+                .unwrap_or((String::from("18:00"), String::from("45")));
+
+            let template = ProfilePageTemplate {
+                error: String::new(),
+                success: query.updated.unwrap_or(false),
+                user: Some(()),
+                dietary_restrictions: dietary,
+                allergens: String::new(), // Allergens merged into dietary_restrictions
+                household_size: household_str,
+                skill_level: skill_str,
+                availability_start,
+                availability_duration,
+            };
+
+            Html(template.render().unwrap()).into_response()
+        }
+        Err(sqlx::Error::RowNotFound) => {
+            // User not found in read model (JWT valid but user deleted/corrupted)
+            tracing::warn!("User not found in read model: user_id={}", auth.user_id);
+            (StatusCode::SEE_OTHER, [("Location", "/login")]).into_response()
+        }
+        Err(e) => {
+            tracing::error!("Failed to query user profile: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SuccessQuery {
+    updated: Option<bool>,
+}
+
+/// POST /profile - Update user profile (creates ProfileUpdated event)
+///
+/// AC #2, #3, #4: User can modify profile, changes validated, successful save shows confirmation
+#[tracing::instrument(skip(state, auth, body))]
+pub async fn post_profile(
+    State(state): State<AppState>,
+    Extension(auth): Extension<Auth>,
+    body: Bytes,
+) -> Response {
+    let body_str = String::from_utf8_lossy(&body);
+    let form = OnboardingForm::from_form_data(&body_str);
+
+    // Clone form fields for error handling
+    let form_allergens = form.allergens.clone();
+    let form_household_size = form.household_size.clone();
+    let form_skill_level = form.skill_level.clone();
+    let form_availability_start = form.availability_start.clone();
+    let form_availability_duration = form.availability_duration.clone();
+
+    // Combine dietary restrictions and allergens
+    let mut dietary_restrictions = form.dietary_restrictions.clone();
+    if !form.allergens.is_empty() {
+        for allergen in form.allergens.split(',') {
+            let trimmed = allergen.trim();
+            if !trimmed.is_empty() {
+                dietary_restrictions.push(trimmed.to_string());
+            }
+        }
+    }
+
+    // Parse household_size (domain layer validates range 1-20)
+    let household_size = if form.household_size.is_empty() {
+        None
+    } else {
+        form.household_size.parse::<u8>().ok()
+    };
+
+    // Parse skill_level
+    let skill_level = if form.skill_level.is_empty() {
+        None
+    } else {
+        Some(form.skill_level)
+    };
+
+    // Parse weeknight_availability
+    let weeknight_availability = if !form.availability_start.is_empty() {
+        let availability_duration = form.availability_duration.parse::<u32>().unwrap_or(45);
+        Some(
+            json!({"start": form.availability_start, "duration_minutes": availability_duration})
+                .to_string(),
+        )
+    } else {
+        None
+    };
+
+    // Create UpdateProfileCommand
+    let command = user::UpdateProfileCommand {
+        user_id: auth.user_id.clone(),
+        dietary_restrictions: Some(dietary_restrictions.clone()),
+        household_size,
+        skill_level,
+        weeknight_availability,
+    };
+
+    // Invoke domain command
+    match user::update_profile(command, &state.evento_executor).await {
+        Ok(_) => {
+            // Success - use optimistic UI rendering with form data to avoid projection lag
+            // This ensures user immediately sees their changes without waiting for read model update
+            let template = ProfilePageTemplate {
+                error: String::new(),
+                success: true,
+                user: Some(()),
+                dietary_restrictions,
+                allergens: form_allergens,
+                household_size: form_household_size,
+                skill_level: form_skill_level,
+                availability_start: form_availability_start,
+                availability_duration: form_availability_duration,
+            };
+
+            Html(template.render().unwrap()).into_response()
+        }
+        Err(user::UserError::ValidationError(msg)) => {
+            // Validation error - re-render form with error
+            let template = ProfilePageTemplate {
+                error: msg,
+                success: false,
+                user: Some(()),
+                dietary_restrictions,
+                allergens: form_allergens,
+                household_size: form_household_size,
+                skill_level: form_skill_level,
+                availability_start: form_availability_start,
+                availability_duration: form_availability_duration,
+            };
+            (
+                StatusCode::UNPROCESSABLE_ENTITY,
+                Html(template.render().unwrap()),
+            )
+                .into_response()
+        }
+        Err(e) => {
+            tracing::error!("Failed to update profile: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
+        }
+    }
+}

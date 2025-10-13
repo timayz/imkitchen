@@ -31,3 +31,4 @@ anyhow = { workspace = true }
 
 [dev-dependencies]
 tokio-test = "0.4"
+tokio = { workspace = true }

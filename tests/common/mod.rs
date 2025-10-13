@@ -28,12 +28,14 @@ pub async fn setup_test_db() -> SqlitePool {
     pool
 }
 
+#[allow(dead_code)]
 pub struct TestApp {
     pub router: Router,
     pub evento_executor: evento::Sqlite,
     pub pool: SqlitePool,
 }
 
+#[allow(dead_code)]
 impl TestApp {
     /// Process all pending events synchronously
     pub async fn process_events(&self) {
@@ -48,9 +50,9 @@ pub async fn create_test_app(pool: SqlitePool) -> TestApp {
     use axum::middleware as axum_middleware;
     use imkitchen::middleware::auth_middleware;
     use imkitchen::routes::{
-        get_login, get_onboarding, get_onboarding_skip, get_register, post_login,
+        get_login, get_onboarding, get_onboarding_skip, get_profile, get_register, post_login,
         post_onboarding_step_1, post_onboarding_step_2, post_onboarding_step_3,
-        post_onboarding_step_4, post_register, AppState,
+        post_onboarding_step_4, post_profile, post_register, AppState,
     };
 
     // Create evento executor
@@ -81,6 +83,8 @@ pub async fn create_test_app(pool: SqlitePool) -> TestApp {
         .route("/onboarding/step/3", post(post_onboarding_step_3))
         .route("/onboarding/step/4", post(post_onboarding_step_4))
         .route("/onboarding/skip", get(get_onboarding_skip))
+        .route("/profile", get(get_profile))
+        .route("/profile", post(post_profile))
         .route("/dashboard", get(|| async { "Dashboard" }))
         .route_layer(axum_middleware::from_fn_with_state(
             state.clone(),
