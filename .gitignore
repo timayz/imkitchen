@@ -7,7 +7,9 @@
 *.db-wal
 
 # Environment
-.env*
+.env
+.env.local
+!.env.example
 
 # Node.js / Tailwind
 node_modules/

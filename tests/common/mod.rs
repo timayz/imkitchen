@@ -50,10 +50,21 @@ pub async fn create_test_app(pool: SqlitePool) -> TestApp {
     // Create evento executor
     let evento_executor: evento::Sqlite = pool.clone().into();
 
+    let email_config = imkitchen::email::EmailConfig {
+        smtp_host: "localhost".to_string(),
+        smtp_port: 587,
+        smtp_username: "test@example.com".to_string(),
+        smtp_password: "password".to_string(),
+        from_email: "noreply@imkitchen.app".to_string(),
+        from_name: "imkitchen".to_string(),
+    };
+
     let state = AppState {
         db_pool: pool.clone(),
         evento_executor: evento_executor.clone(),
         jwt_secret: "test_secret_key_minimum_32_characters_long".to_string(),
+        email_config,
+        base_url: "http://localhost:3000".to_string(),
     };
 
     let router = Router::new()

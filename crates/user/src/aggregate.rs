@@ -1,7 +1,7 @@
 use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
-use crate::events::UserCreated;
+use crate::events::{PasswordChanged, UserCreated};
 
 /// User aggregate representing the state of a user entity
 ///
@@ -58,6 +58,19 @@ impl UserAggregate {
         self.skill_level = None;
         self.stripe_customer_id = None;
         self.stripe_subscription_id = None;
+        Ok(())
+    }
+
+    /// Handle PasswordChanged event to update password hash
+    ///
+    /// This event handler updates the aggregate state when a user successfully
+    /// resets their password. The old password is invalidated automatically
+    /// by replacing the password_hash field.
+    async fn password_changed(
+        &mut self,
+        event: evento::EventDetails<PasswordChanged>,
+    ) -> anyhow::Result<()> {
+        self.password_hash = event.data.password_hash;
         Ok(())
     }
 }
