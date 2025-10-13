@@ -8,7 +8,7 @@ pub mod read_model;
 
 // Re-export main types
 pub use aggregate::UserAggregate;
-pub use commands::{register_user, RegisterUserCommand};
+pub use commands::{register_user, reset_password, RegisterUserCommand, ResetPasswordCommand};
 pub use error::{UserError, UserResult};
 pub use events::{PasswordChanged, UserCreated};
 pub use jwt::{generate_jwt, generate_reset_token, validate_jwt, Claims};

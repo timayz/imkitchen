@@ -1,6 +1,6 @@
 use crate::aggregate::UserAggregate;
 use crate::error::UserResult;
-use crate::events::UserCreated;
+use crate::events::{PasswordChanged, UserCreated};
 use evento::{AggregatorName, Context, EventDetails, Executor};
 use sqlx::{Row, SqlitePool};
 
@@ -33,6 +33,34 @@ async fn user_created_handler<E: Executor>(
     Ok(())
 }
 
+/// Async evento subscription handler for PasswordChanged events
+///
+/// This handler projects PasswordChanged events from the evento event store
+/// into the users read model table, updating the password_hash field.
+#[evento::handler(UserAggregate)]
+async fn password_changed_handler<E: Executor>(
+    context: &Context<'_, E>,
+    event: EventDetails<PasswordChanged>,
+) -> anyhow::Result<()> {
+    // Extract the shared SqlitePool from context
+    let pool: SqlitePool = context.extract();
+
+    // Execute SQL update to project event into read model
+    sqlx::query(
+        r#"
+        UPDATE users
+        SET password_hash = ?1
+        WHERE id = ?2
+        "#,
+    )
+    .bind(&event.data.password_hash)
+    .bind(&event.data.user_id)
+    .execute(&pool)
+    .await?;
+
+    Ok(())
+}
+
 /// Create user event subscription for read model projection
 ///
 /// Returns a subscription builder that can be run with `.run(&executor).await`
@@ -51,6 +79,7 @@ pub fn user_projection(pool: SqlitePool) -> evento::SubscribeBuilder<evento::Sql
         .aggregator::<UserAggregate>()
         .data(pool)
         .handler(user_created_handler())
+        .handler(password_changed_handler())
 }
 
 /// Query user by email for uniqueness check in read model

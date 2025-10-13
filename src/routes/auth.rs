@@ -8,8 +8,9 @@ use axum::{
 use serde::Deserialize;
 use sqlx::SqlitePool;
 use user::{
-    generate_jwt, generate_reset_token, hash_password, query_user_by_email, query_user_for_login,
-    register_user, validate_jwt, verify_password, RegisterUserCommand, UserError,
+    generate_jwt, generate_reset_token, query_user_by_email, query_user_for_login,
+    register_user, reset_password, validate_jwt, verify_password, RegisterUserCommand,
+    ResetPasswordCommand, UserError,
 };
 
 #[derive(Clone)]
@@ -420,49 +421,29 @@ pub async fn post_password_reset_complete(
         return Html(template.render().unwrap()).into_response();
     }
 
-    // Hash new password with Argon2 (AC: 5)
-    let new_password_hash = match hash_password(&form.new_password) {
-        Ok(hash) => hash,
-        Err(e) => {
-            tracing::error!("Failed to hash password: {:?}", e);
-            let template = PasswordResetCompleteTemplate {
-                error: "An error occurred. Please try again.".to_string(),
-                token,
-                user: None,
-            };
-            return Html(template.render().unwrap()).into_response();
-        }
+    // Reset password using evento command (AC: 6)
+    // This creates a PasswordChanged event which is automatically projected to read model
+    let command = ResetPasswordCommand {
+        user_id: claims.sub.clone(),
+        new_password: form.new_password.clone(),
     };
 
-    // Update password in database (AC: 6)
-    // Note: For this MVP, we update the read model directly. In a full event-sourced implementation,
-    // we would emit a PasswordChanged event and update via subscription.
-    match sqlx::query(
-        "UPDATE users SET password_hash = ? WHERE id = ?",
-    )
-    .bind(&new_password_hash)
-    .bind(&claims.sub)
-    .execute(&state.db_pool)
-    .await
-    {
-        Ok(result) => {
-            if result.rows_affected() == 0 {
-                tracing::error!("User not found in database for password update: {}", claims.sub);
-                let template = PasswordResetCompleteTemplate {
-                    error: "User not found. Please request a new password reset.".to_string(),
-                    token,
-                    user: None,
-                };
-                return Html(template.render().unwrap()).into_response();
-            }
+    match reset_password(command, &state.evento_executor).await {
+        Ok(_) => {
+            // Password successfully reset and PasswordChanged event committed (AC: 6, 7)
+            tracing::info!("Password reset successful for user: {}", claims.sub);
 
-            tracing::info!("Password changed successfully for user {}", claims.sub);
-
-            // Redirect to login with success message (AC: 7)
-            Redirect::to("/login?success=password_reset").into_response()
+            // Redirect to login page with success message (AC: 7)
+            (
+                StatusCode::SEE_OTHER,
+                [("Location", "/login?reset_success=true")],
+                (),
+            )
+                .into_response()
         }
         Err(e) => {
-            tracing::error!("Failed to update password in database: {:?}", e);
+            // Password reset failed
+            tracing::error!("Failed to reset password: {:?}", e);
             let template = PasswordResetCompleteTemplate {
                 error: "An error occurred. Please try again.".to_string(),
                 token,

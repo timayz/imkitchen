@@ -6,7 +6,7 @@ use validator::Validate;
 
 use crate::aggregate::UserAggregate;
 use crate::error::{UserError, UserResult};
-use crate::events::UserCreated;
+use crate::events::{PasswordChanged, UserCreated};
 use crate::password::hash_password;
 use serde::{Deserialize, Serialize};
 
@@ -104,4 +104,50 @@ pub async fn register_user(
         .map_err(|e| UserError::EventStoreError(e.to_string()))?;
 
     Ok(aggregator_id)
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+pub struct ResetPasswordCommand {
+    pub user_id: String,
+
+    #[validate(length(min = 8, message = "Password must be at least 8 characters"))]
+    pub new_password: String,
+}
+
+/// Reset user password using evento event sourcing pattern
+///
+/// 1. Validates password length
+/// 2. Hashes new password with Argon2
+/// 3. Creates and commits PasswordChanged event to evento event store
+/// 4. Event automatically projected to read model via async subscription handler
+///
+/// This invalidates the old password and all existing JWT sessions (stateless JWT limitation)
+pub async fn reset_password(
+    command: ResetPasswordCommand,
+    executor: &Sqlite,
+) -> UserResult<()> {
+    // Validate command
+    command
+        .validate()
+        .map_err(|e| UserError::ValidationError(e.to_string()))?;
+
+    // Hash new password using Argon2id with OWASP parameters
+    let password_hash = hash_password(&command.new_password)?;
+
+    let changed_at = Utc::now();
+
+    // Create PasswordChanged event and commit to evento event store
+    // The async subscription handler (password_changed_handler) will project to read model
+    evento::save::<UserAggregate>(command.user_id.clone())
+        .data(&PasswordChanged {
+            user_id: command.user_id.clone(),
+            password_hash,
+            changed_at: changed_at.to_rfc3339(),
+        })
+        .map_err(|e| UserError::EventStoreError(e.to_string()))?
+        .commit(executor)
+        .await
+        .map_err(|e| UserError::EventStoreError(e.to_string()))?;
+
+    Ok(())
 }
