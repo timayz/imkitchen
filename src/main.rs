@@ -1,14 +1,17 @@
 use anyhow::Result;
 use axum::{
+    middleware as axum_middleware,
     routing::{get, post},
     Router,
 };
 use clap::{Parser, Subcommand};
 use evento::prelude::*;
+use imkitchen::middleware::auth_middleware;
 use imkitchen::routes::{
-    get_login, get_password_reset, get_password_reset_complete, get_register, health, post_login,
-    post_password_reset, post_password_reset_complete, post_register, ready, AppState,
-    AssetsService,
+    get_login, get_onboarding, get_onboarding_skip, get_password_reset,
+    get_password_reset_complete, get_register, health, post_login, post_onboarding_step_1,
+    post_onboarding_step_2, post_onboarding_step_3, post_onboarding_step_4, post_password_reset,
+    post_password_reset_complete, post_register, ready, AppState, AssetsService,
 };
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions};
 use tower_http::trace::TraceLayer;
@@ -119,6 +122,20 @@ async fn serve_command(
         base_url: config.email.base_url,
     };
 
+    // Build protected routes with auth middleware
+    let protected_routes = Router::new()
+        .route("/onboarding", get(get_onboarding))
+        .route("/onboarding/step/1", post(post_onboarding_step_1))
+        .route("/onboarding/step/2", post(post_onboarding_step_2))
+        .route("/onboarding/step/3", post(post_onboarding_step_3))
+        .route("/onboarding/step/4", post(post_onboarding_step_4))
+        .route("/onboarding/skip", get(get_onboarding_skip))
+        .route("/dashboard", get(dashboard_handler))
+        .route_layer(axum_middleware::from_fn_with_state(
+            state.clone(),
+            auth_middleware,
+        ));
+
     // Build router with health checks using db_pool state
     let app = Router::new()
         // Health check endpoints (no auth required)
@@ -127,12 +144,12 @@ async fn serve_command(
         .with_state(state.db_pool.clone())
         .merge(
             Router::new()
-                // Auth routes
+                // Auth routes (public)
                 .route("/register", get(get_register))
                 .route("/register", post(post_register))
                 .route("/login", get(get_login))
                 .route("/login", post(post_login))
-                // Password reset routes
+                // Password reset routes (public)
                 .route("/password-reset", get(get_password_reset))
                 .route("/password-reset", post(post_password_reset))
                 .route("/password-reset/{token}", get(get_password_reset_complete))
@@ -140,9 +157,9 @@ async fn serve_command(
                     "/password-reset/{token}",
                     post(post_password_reset_complete),
                 )
-                // Protected routes
-                .route("/dashboard", get(dashboard_handler))
-                // Static assets
+                // Merge protected routes
+                .merge(protected_routes)
+                // Static assets (no auth)
                 .nest_service("/static", AssetsService::new())
                 .with_state(state),
         )

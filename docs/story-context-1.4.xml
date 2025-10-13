@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Story Context for Story 1.4: User Profile Creation (Onboarding) -->
+<!-- Generated: 2025-10-13 by Bob (SM) using claude-sonnet-4-5-20250929 -->
+<story-context version="6.0">
+  <metadata>
+    <story_id>1.4</story_id>
+    <epic_id>1</epic_id>
+    <title>User Profile Creation (Onboarding)</title>
+    <status>Draft</status>
+    <created_at>2025-10-13</created_at>
+  </metadata>
+
+  <user_story>
+    <as_a>newly registered user</as_a>
+    <i_want>complete my profile with dietary and cooking preferences</i_want>
+    <so_that>the meal planning algorithm can personalize recommendations</so_that>
+  </user_story>
+
+  <acceptance_criteria>
+    <criterion id="1">Onboarding wizard displays after first registration</criterion>
+    <criterion id="2">Step 1: Dietary restrictions (checkboxes: vegetarian, vegan, gluten-free, allergens with text input)</criterion>
+    <criterion id="3">Step 2: Household size (numeric input, 1-10)</criterion>
+    <criterion id="4">Step 3: Cooking skill level (radio: beginner, intermediate, expert)</criterion>
+    <criterion id="5">Step 4: Typical weeknight availability (time range picker, duration slider)</criterion>
+    <criterion id="6">Each step validates inputs before allowing progression</criterion>
+    <criterion id="7">User can skip onboarding (optional) - defaults applied</criterion>
+    <criterion id="8">Completed profile stored and accessible for editing later</criterion>
+    <criterion id="9">Profile data feeds meal planning optimization algorithm</criterion>
+  </acceptance_criteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic 1 Story 1.4: User Profile Creation</title>
+        <section>Lines 116-138</section>
+        <snippet>Story 1.4 defines onboarding wizard with 4 steps (dietary restrictions, household size, skill level, weeknight availability). Defaults: household_size=2, skill_level=intermediate, availability=6-7pm/45min. UserProfile aggregate with ProfileCompleted event. Validation via validator crate.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-1.md</path>
+        <title>Technical Specification: User Authentication &amp; Profile Management</title>
+        <section>Section: Commands - UpdateProfileCommand</section>
+        <snippet>UpdateProfileCommand structure at lines 203-212 with dietary_restrictions (Vec&lt;String&gt;), household_size (u32, range 1-20), skill_level (SkillLevel enum), weeknight_availability (JSON string). Validation via validator derives. Command handler at lines 265-286 loads aggregate, appends ProfileUpdated event.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-1.md</path>
+        <title>Technical Specification: User Authentication &amp; Profile Management</title>
+        <section>Section: Events - ProfileUpdated</section>
+        <snippet>ProfileUpdated event structure at lines 317-322. Read model projection at lines 493-531 updates users table with profile fields via evento subscription. SkillLevel enum mapped to string (beginner/intermediate/expert).</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-1.md</path>
+        <title>Technical Specification: User Authentication &amp; Profile Management</title>
+        <section>Section: Users Table Schema</section>
+        <snippet>Users table schema at lines 436-463. Profile fields: dietary_restrictions TEXT (JSON array), household_size INTEGER, skill_level TEXT (beginner|intermediate|expert), weeknight_availability TEXT (JSON time range). Defaults applied on UserCreated event projection.</snippet>
+      </doc>
+      <doc>
+        <path>docs/solution-architecture.md</path>
+        <title>Solution Architecture</title>
+        <section>Section 2.1: Event-Sourced Architecture</section>
+        <snippet>Event sourcing via evento. Commands write events to stream, queries read from materialized read models. UserAggregate rebuilds state from events. CQRS pattern enforced.</snippet>
+      </doc>
+      <doc>
+        <path>docs/solution-architecture.md</path>
+        <title>Solution Architecture</title>
+        <section>Section 2.2: Server-Side Rendering Strategy</section>
+        <snippet>Askama templates render HTML server-side. TwinSpark progressive enhancement for interactivity. POST/Redirect/Get pattern for form submissions. Route handlers invoke domain crates, pass data to templates.</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/story-1.1.md</path>
+        <title>Story 1.1: User Registration - Dev Notes</title>
+        <section>Dev Notes - References</section>
+        <snippet>Registration flow redirects to /dashboard after UserCreated event. Pattern: validate form → create aggregate → emit event → projection → redirect. Existing pattern to follow for onboarding integration.</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/story-1.3.md</path>
+        <title>Story 1.3: Password Reset Flow - Dev Notes</title>
+        <section>Dev Notes - Architecture Patterns</section>
+        <snippet>Form handling with validator derives. Askama templates with base.html inheritance. POST handlers validate, emit events, redirect with success messages. TwinSpark for progressive enhancement.</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>crates/user/src/aggregate.rs</path>
+        <kind>aggregate</kind>
+        <symbol>UserAggregate</symbol>
+        <lines>106-185</lines>
+        <reason>UserAggregate defines user state including profile fields (dietary_restrictions, household_size, skill_level, weeknight_availability). Event handlers rebuild state from ProfileUpdated events. Must add profile_completed handler if creating separate ProfileCompleted event.</reason>
+      </artifact>
+      <artifact>
+        <path>crates/user/src/commands.rs</path>
+        <kind>command</kind>
+        <symbol>UpdateProfileCommand</symbol>
+        <lines>104-147</lines>
+        <reason>UpdateProfileCommand structure with validation derives. Command handler loads aggregate, appends ProfileUpdated event, commits to evento. Reuse or extend for onboarding flow.</reason>
+      </artifact>
+      <artifact>
+        <path>crates/user/src/events.rs</path>
+        <kind>event</kind>
+        <symbol>ProfileUpdated</symbol>
+        <lines>14-22</lines>
+        <reason>ProfileUpdated event with dietary_restrictions, household_size, skill_level, weeknight_availability fields. Bincode serialization for evento. May need ProfileCompleted event variant for onboarding completion tracking.</reason>
+      </artifact>
+      <artifact>
+        <path>crates/user/src/read_model.rs</path>
+        <kind>projection</kind>
+        <symbol>profile_updated_handler</symbol>
+        <lines>1-64</lines>
+        <reason>Read model projection updates users table from ProfileUpdated events. Uses COALESCE for partial updates. Handles skill_level enum mapping to string. Pattern to follow for ProfileCompleted projection.</reason>
+      </artifact>
+      <artifact>
+        <path>src/routes/auth.rs</path>
+        <kind>route</kind>
+        <symbol>post_register</symbol>
+        <lines>108-179</lines>
+        <reason>Registration handler creates user, sets JWT cookie, redirects to /dashboard. Must modify redirect target to /onboarding for AC #1 (onboarding wizard displays after registration).</reason>
+      </artifact>
+      <artifact>
+        <path>src/routes/auth.rs</path>
+        <kind>route</kind>
+        <symbol>RegisterForm</symbol>
+        <lines>91-106</lines>
+        <reason>Example form struct with validator derives (email validation, password length). Pattern to follow for OnboardingForm with household_size range validation (1-10).</reason>
+      </artifact>
+      <artifact>
+        <path>templates/pages/login.html</path>
+        <kind>template</kind>
+        <symbol>login.html</symbol>
+        <lines>1-50</lines>
+        <reason>Askama template with base.html inheritance. Form styling with Tailwind CSS. Input validation attributes. Pattern to follow for onboarding.html multi-step wizard.</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <rust>
+        <dependency name="axum" version="0.8">Web framework for route handlers</dependency>
+        <dependency name="askama" version="0.14">Compile-time templates for onboarding.html</dependency>
+        <dependency name="evento" version="1.3">Event sourcing for ProfileCompleted/ProfileUpdated events</dependency>
+        <dependency name="validator" version="0.20">Form validation with derives (household_size range 1-10)</dependency>
+        <dependency name="serde" version="1.0">Serialization for JSON fields (weeknight_availability)</dependency>
+        <dependency name="serde_json" version="1.0">JSON parsing for time range and dietary restrictions</dependency>
+        <dependency name="sqlx" version="0.8">Database queries for read model</dependency>
+        <dependency name="tracing" version="0.1">Logging and observability</dependency>
+      </rust>
+    </dependencies>
+  </artifacts>
+
+  <interfaces>
+    <interface>
+      <name>user::update_profile</name>
+      <kind>command_handler</kind>
+      <signature>pub async fn update_profile&lt;E: evento::Executor&gt;(cmd: UpdateProfileCommand, executor: &amp;E) -> Result&lt;(), UserError&gt;</signature>
+      <path>crates/user/src/commands.rs:265-286</path>
+      <usage>Reuse or extend for onboarding handler. Validates command, loads UserAggregate, appends ProfileUpdated event, commits to evento.</usage>
+    </interface>
+    <interface>
+      <name>user::query_user_by_id</name>
+      <kind>query</kind>
+      <signature>pub async fn query_user_by_id&lt;E: evento::Executor&gt;(user_id: &amp;str, executor: &amp;E) -> Result&lt;Option&lt;UserReadModel&gt;, UserError&gt;</signature>
+      <path>crates/user/src/read_model.rs:93-106</path>
+      <usage>Query user from read model to check onboarding_completed status before rendering wizard (AC #1 - display after first registration only).</usage>
+    </interface>
+    <interface>
+      <name>ProfileUpdated event</name>
+      <kind>event</kind>
+      <signature>pub struct ProfileUpdated { dietary_restrictions: Option&lt;Vec&lt;String&gt;&gt;, household_size: Option&lt;u32&gt;, skill_level: Option&lt;SkillLevel&gt;, weeknight_availability: Option&lt;String&gt; }</signature>
+      <path>crates/user/src/events.rs:14-22</path>
+      <usage>Emit ProfileUpdated event after onboarding form submission. Evento subscription projects to users table.</usage>
+    </interface>
+    <interface>
+      <name>Auth middleware</name>
+      <kind>middleware</kind>
+      <signature>Extract user_id from JWT cookie in request.extensions</signature>
+      <path>src/middleware/auth.rs</path>
+      <usage>Onboarding routes require authentication. Extract user_id from Auth extension to load user and update profile.</usage>
+    </interface>
+  </interfaces>
+
+  <constraints>
+    <constraint>Event sourcing: All profile changes must emit evento events (ProfileUpdated or ProfileCompleted). No direct database writes in route handlers.</constraint>
+    <constraint>CQRS: Commands write to event stream via domain crates. Queries read from materialized users table via read model.</constraint>
+    <constraint>Server-side rendering: Use Askama templates (onboarding.html) with base.html inheritance. No client-side React/Vue.</constraint>
+    <constraint>Validation: Use validator crate for household_size range (1-10). Server-side validation mandatory before event emission.</constraint>
+    <constraint>Default values: Apply defaults for skipped fields - household_size=2, skill_level=intermediate, weeknight_availability={"start":"18:00","duration_minutes":45}, dietary_restrictions=[]</constraint>
+    <constraint>Route pattern: GET /onboarding (render wizard), POST /onboarding (submit form). Follow RESTful conventions.</constraint>
+    <constraint>Progressive enhancement: TwinSpark optional for step navigation. Core functionality must work without JavaScript.</constraint>
+    <constraint>Test coverage: 80% minimum code coverage. Integration tests for all 9 acceptance criteria. Unit tests for default value logic.</constraint>
+    <constraint>Database migration: Add onboarding_completed BOOLEAN column to users table. Update read model projection.</constraint>
+    <constraint>Registration flow: Modify POST /register to redirect to /onboarding instead of /dashboard (AC #1).</constraint>
+  </constraints>
+
+  <tests>
+    <standards>
+      TDD enforced: Write failing tests first, implement to pass, refactor. Integration tests in tests/ directory using existing test harness (tests/common/mod.rs). Unit tests for domain logic in crates/user/tests/. Use in-memory SQLite for test isolation. Mock evento executor for aggregate tests. Target 80% code coverage minimum (90% for user crate due to security criticality).
+    </standards>
+    <locations>
+      <location>tests/profile_integration_tests.rs</location>
+      <location>crates/user/tests/command_tests.rs</location>
+    </locations>
+    <ideas>
+      <idea ac="1">Integration test: GET /onboarding renders wizard for new user (check HTML contains 4 steps, dietary checkboxes, household input, skill radios, availability fields)</idea>
+      <idea ac="1">Integration test: GET /onboarding redirects to /dashboard if user.onboarding_completed=true</idea>
+      <idea ac="2,3,4,5">Integration test: POST /onboarding with all fields populated creates ProfileUpdated event with correct data</idea>
+      <idea ac="6">Integration test: POST /onboarding with household_size=0 returns validation error (range 1-10)</idea>
+      <idea ac="6">Integration test: POST /onboarding with household_size=11 returns validation error (range 1-10)</idea>
+      <idea ac="7">Integration test: POST /onboarding with all fields empty/skipped applies defaults (household_size=2, skill_level=intermediate, availability={"start":"18:00","duration_minutes":45})</idea>
+      <idea ac="8">Integration test: After POST /onboarding, query users table and verify profile fields persisted (dietary_restrictions, household_size, skill_level, weeknight_availability)</idea>
+      <idea ac="8">Integration test: After onboarding, GET /profile displays saved profile data (edit flow in Story 1.5)</idea>
+      <idea ac="9">Unit test: ProfileUpdated event projects to users read model with correct field mappings (skill_level enum → string)</idea>
+      <idea ac="1">Integration test: POST /register redirects to /onboarding instead of /dashboard</idea>
+      <idea ac="7">Unit test: Default value application logic - household_size=2, skill_level=intermediate, availability JSON, dietary_restrictions=[]</idea>
+    </ideas>
+  </tests>
+
+  <technical_notes>
+    <note>Multi-step wizard: Single-page form with JavaScript/TwinSpark for step visibility toggling (preferred over multi-page flow). Steps 1-4 displayed progressively.</note>
+    <note>Default values from epics.md: household_size=2, skill_level=intermediate, weeknight_availability={"start":"18:00","duration_minutes":45}, dietary_restrictions=[]</note>
+    <note>weeknight_availability stored as JSON string in users table. Parse/serialize with serde_json.</note>
+    <note>SkillLevel enum: beginner|intermediate|expert. Map to string for database storage. Define in crates/user/src/aggregate.rs if not exists.</note>
+    <note>onboarding_completed flag: Add BOOLEAN column to users table via migration. Track completion status to prevent re-displaying wizard.</note>
+    <note>Registration redirect: Modify src/routes/auth.rs POST /register handler to redirect to /onboarding instead of /dashboard.</note>
+    <note>ProfileCompleted event: Consider creating separate event vs reusing ProfileUpdated. ProfileCompleted signals onboarding completion explicitly.</note>
+    <note>Validation: household_size range 1-10 (per epics.md AC #3). Use validator derive: #[validate(range(min=1, max=10))]</note>
+    <note>Time range picker: HTML5 time input for start time. Number input for duration_minutes. Serialize to JSON: {"start":"HH:MM","duration_minutes":N}</note>
+    <note>Dietary restrictions: Checkboxes for common restrictions (vegetarian, vegan, gluten-free). Text input for custom allergens. Combine into Vec&lt;String&gt;</note>
+  </technical_notes>
+</story-context>

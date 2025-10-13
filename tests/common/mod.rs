@@ -45,7 +45,13 @@ impl TestApp {
 }
 
 pub async fn create_test_app(pool: SqlitePool) -> TestApp {
-    use imkitchen::routes::{get_login, get_register, post_login, post_register, AppState};
+    use axum::middleware as axum_middleware;
+    use imkitchen::middleware::auth_middleware;
+    use imkitchen::routes::{
+        get_login, get_onboarding, get_onboarding_skip, get_register, post_login,
+        post_onboarding_step_1, post_onboarding_step_2, post_onboarding_step_3,
+        post_onboarding_step_4, post_register, AppState,
+    };
 
     // Create evento executor
     let evento_executor: evento::Sqlite = pool.clone().into();
@@ -67,12 +73,27 @@ pub async fn create_test_app(pool: SqlitePool) -> TestApp {
         base_url: "http://localhost:3000".to_string(),
     };
 
+    // Create protected routes with auth middleware
+    let protected_router = Router::new()
+        .route("/onboarding", get(get_onboarding))
+        .route("/onboarding/step/1", post(post_onboarding_step_1))
+        .route("/onboarding/step/2", post(post_onboarding_step_2))
+        .route("/onboarding/step/3", post(post_onboarding_step_3))
+        .route("/onboarding/step/4", post(post_onboarding_step_4))
+        .route("/onboarding/skip", get(get_onboarding_skip))
+        .route("/dashboard", get(|| async { "Dashboard" }))
+        .route_layer(axum_middleware::from_fn_with_state(
+            state.clone(),
+            auth_middleware,
+        ));
+
+    // Create public routes
     let router = Router::new()
         .route("/register", get(get_register))
         .route("/register", post(post_register))
         .route("/login", get(get_login))
         .route("/login", post(post_login))
-        .route("/dashboard", get(|| async { "Dashboard" }))
+        .merge(protected_router)
         .with_state(state);
 
     TestApp {
