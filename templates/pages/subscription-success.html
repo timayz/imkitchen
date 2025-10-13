@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Payment Successful - imkitchen{% endblock %}
+
+{% block content %}
+<div class="min-h-screen py-12">
+    <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-8 text-center">
+        <!-- Success Icon -->
+        <div class="mb-6">
+            <svg class="w-20 h-20 text-green-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+        </div>
+
+        <h1 class="text-3xl font-bold text-gray-900 mb-4">Welcome to Premium! 🎉</h1>
+        <p class="text-lg text-gray-600 mb-8">Your payment was successful and your premium subscription is now active.</p>
+
+        <!-- Benefits Reminder -->
+        <div class="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-6 mb-8 text-left">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">What's included in your Premium plan:</h2>
+            <div class="space-y-3">
+                <div class="flex items-start">
+                    <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <p class="text-gray-700"><span class="font-semibold">Unlimited recipes</span> - No more 10 recipe limit!</p>
+                </div>
+                <div class="flex items-start">
+                    <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <p class="text-gray-700"><span class="font-semibold">Advanced meal planning</span> - AI-powered suggestions and smart scheduling</p>
+                </div>
+                <div class="flex items-start">
+                    <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <p class="text-gray-700"><span class="font-semibold">Priority support</span> - Get help faster when you need it</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Email Confirmation Note -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8">
+            <p class="text-sm text-blue-800">
+                📧 A confirmation email has been sent to your inbox with your subscription details.
+            </p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="/dashboard" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition duration-200">
+                Go to Dashboard
+            </a>
+            <a href="/subscription" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-8 rounded-lg transition duration-200">
+                View Subscription
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

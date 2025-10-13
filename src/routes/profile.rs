@@ -597,3 +597,168 @@ pub async fn post_profile(
         }
     }
 }
+
+// ========================
+// Subscription Management
+// ========================
+
+#[derive(Template)]
+#[template(path = "pages/subscription.html")]
+pub struct SubscriptionPageTemplate {
+    pub error: String,
+    pub user: Option<()>,
+    pub tier: String,      // "free" or "premium"
+    pub recipe_count: i32, // Current recipe count for free tier
+    pub is_premium: bool,  // Derived: tier == "premium"
+}
+
+/// GET /subscription - Display subscription management page
+///
+/// AC #1, AC #2: Show current tier, premium benefits, pricing, upgrade button
+#[tracing::instrument(skip(state, auth))]
+pub async fn get_subscription(
+    State(state): State<AppState>,
+    Extension(auth): Extension<Auth>,
+) -> Response {
+    // Query user tier and recipe_count from read model
+    let user_result = sqlx::query("SELECT tier, recipe_count FROM users WHERE id = ?1")
+        .bind(&auth.user_id)
+        .fetch_optional(&state.db_pool)
+        .await;
+
+    match user_result {
+        Ok(Some(row)) => {
+            let tier: String = row.get("tier");
+            let recipe_count: i32 = row.get("recipe_count");
+            let is_premium = tier == "premium";
+
+            let template = SubscriptionPageTemplate {
+                error: String::new(),
+                user: Some(()),
+                tier,
+                recipe_count,
+                is_premium,
+            };
+
+            Html(template.render().unwrap()).into_response()
+        }
+        Ok(None) => {
+            tracing::error!("User not found: {}", auth.user_id);
+            (StatusCode::INTERNAL_SERVER_ERROR, "User not found").into_response()
+        }
+        Err(e) => {
+            tracing::error!("Failed to query user: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
+        }
+    }
+}
+
+/// POST /subscription/upgrade - Create Stripe Checkout Session and redirect to Stripe
+///
+/// AC #3, AC #4: Redirect to Stripe Checkout hosted page for payment
+#[tracing::instrument(skip(state, auth))]
+pub async fn post_subscription_upgrade(
+    State(state): State<AppState>,
+    Extension(auth): Extension<Auth>,
+) -> Response {
+    // Query user email for Stripe Checkout
+    let user_result = sqlx::query("SELECT email, tier FROM users WHERE id = ?1")
+        .bind(&auth.user_id)
+        .fetch_optional(&state.db_pool)
+        .await;
+
+    match user_result {
+        Ok(Some(row)) => {
+            let email: String = row.get("email");
+            let tier: String = row.get("tier");
+
+            // Prevent duplicate upgrade if already premium
+            if tier == "premium" {
+                tracing::warn!(
+                    "User {} already premium, redirecting to subscription page",
+                    auth.user_id
+                );
+                return axum::response::Redirect::to("/subscription").into_response();
+            }
+
+            // Initialize Stripe client
+            let client = stripe::Client::new(&state.stripe_secret_key);
+
+            // Create URL strings with proper lifetimes
+            let success_url = format!("{}/subscription/success", state.base_url);
+            let cancel_url = format!("{}/subscription", state.base_url);
+
+            // Create Checkout Session
+            let mut create_params = stripe::CreateCheckoutSession::new();
+            create_params.mode = Some(stripe::CheckoutSessionMode::Subscription);
+            create_params.customer_email = Some(&email);
+            create_params.success_url = Some(&success_url);
+            create_params.cancel_url = Some(&cancel_url);
+
+            // Line items with Price ID
+            create_params.line_items = Some(vec![stripe::CreateCheckoutSessionLineItems {
+                price: Some(state.stripe_price_id.clone()),
+                quantity: Some(1),
+                ..Default::default()
+            }]);
+
+            // Metadata to identify user in webhook
+            let mut metadata = std::collections::HashMap::new();
+            metadata.insert("user_id".to_string(), auth.user_id.clone());
+            create_params.metadata = Some(metadata);
+
+            // Create session
+            match stripe::CheckoutSession::create(&client, create_params).await {
+                Ok(session) => {
+                    if let Some(url) = session.url {
+                        tracing::info!(
+                            "Created Stripe Checkout Session for user {}: {}",
+                            auth.user_id,
+                            session.id
+                        );
+                        axum::response::Redirect::to(&url).into_response()
+                    } else {
+                        tracing::error!("Stripe Checkout Session created but no URL returned");
+                        (
+                            StatusCode::INTERNAL_SERVER_ERROR,
+                            "Failed to create checkout session",
+                        )
+                            .into_response()
+                    }
+                }
+                Err(e) => {
+                    tracing::error!("Failed to create Stripe Checkout Session: {:?}", e);
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        "Failed to create checkout session",
+                    )
+                        .into_response()
+                }
+            }
+        }
+        Ok(None) => {
+            tracing::error!("User not found: {}", auth.user_id);
+            (StatusCode::INTERNAL_SERVER_ERROR, "User not found").into_response()
+        }
+        Err(e) => {
+            tracing::error!("Failed to query user: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
+        }
+    }
+}
+
+#[derive(Template)]
+#[template(path = "pages/subscription-success.html")]
+pub struct SubscriptionSuccessTemplate {
+    pub user: Option<()>,
+}
+
+/// GET /subscription/success - Payment confirmation page
+///
+/// AC #7: User redirected back to /subscription/success after successful payment
+#[tracing::instrument(skip(_auth))]
+pub async fn get_subscription_success(Extension(_auth): Extension<Auth>) -> Response {
+    let template = SubscriptionSuccessTemplate { user: Some(()) };
+
+    Html(template.render().unwrap()).into_response()
+}

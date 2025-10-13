@@ -7,7 +7,7 @@ use crate::aggregate::UserAggregate;
 use crate::error::{UserError, UserResult};
 use crate::events::{
     DietaryRestrictionsSet, HouseholdSizeSet, PasswordChanged, ProfileCompleted, ProfileUpdated,
-    SkillLevelSet, UserCreated, WeeknightAvailabilitySet,
+    SkillLevelSet, SubscriptionUpgraded, UserCreated, WeeknightAvailabilitySet,
 };
 use crate::password::hash_password;
 use serde::{Deserialize, Serialize};
@@ -380,4 +380,51 @@ pub async fn validate_recipe_creation(user_id: &str, pool: &SqlitePool) -> UserR
             Err(UserError::ValidationError("User not found".to_string()))
         }
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+pub struct UpgradeSubscriptionCommand {
+    pub user_id: String,
+    pub new_tier: String, // "free" or "premium"
+    pub stripe_customer_id: Option<String>,
+    pub stripe_subscription_id: Option<String>,
+}
+
+/// Upgrade user subscription tier via evento event sourcing pattern
+///
+/// This command is invoked by the Stripe webhook handler after successful payment.
+/// 1. Emits SubscriptionUpgraded event with tier change and Stripe metadata
+/// 2. evento::save() automatically loads the aggregate before appending the event
+/// 3. Event automatically projected to read model via async subscription handler
+///
+/// The SubscriptionUpgraded event stores Stripe Customer ID and Subscription ID
+/// for future subscription management (cancellation, billing updates).
+pub async fn upgrade_subscription(
+    command: UpgradeSubscriptionCommand,
+    executor: &Sqlite,
+) -> UserResult<()> {
+    // Validate command
+    command
+        .validate()
+        .map_err(|e| UserError::ValidationError(e.to_string()))?;
+
+    let upgraded_at = Utc::now();
+
+    // Emit SubscriptionUpgraded event
+    // evento::save() automatically loads the aggregate before appending the event
+    evento::save::<UserAggregate>(command.user_id.clone())
+        .data(&SubscriptionUpgraded {
+            new_tier: command.new_tier,
+            stripe_customer_id: command.stripe_customer_id,
+            stripe_subscription_id: command.stripe_subscription_id,
+            upgraded_at: upgraded_at.to_rfc3339(),
+        })
+        .map_err(|e| UserError::EventStoreError(e.to_string()))?
+        .metadata(&true)
+        .map_err(|e| UserError::EventStoreError(e.to_string()))?
+        .commit(executor)
+        .await
+        .map_err(|e| UserError::EventStoreError(e.to_string()))?;
+
+    Ok(())
 }

@@ -105,3 +105,17 @@ pub struct RecipeDeleted {
     pub user_id: String,    // ID of the user who deleted the recipe
     pub deleted_at: String, // RFC3339 formatted timestamp
 }
+
+/// SubscriptionUpgraded event emitted when a user upgrades/downgrades subscription tier
+///
+/// This event captures subscription changes including Stripe metadata for future management.
+/// Emitted when Stripe webhook confirms successful payment or subscription update.
+///
+/// Note: user_id is provided by event.aggregator_id, not stored in event data
+#[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
+pub struct SubscriptionUpgraded {
+    pub new_tier: String,                       // "free" or "premium"
+    pub stripe_customer_id: Option<String>,     // Stripe Customer ID for billing management
+    pub stripe_subscription_id: Option<String>, // Stripe Subscription ID for cancellation
+    pub upgraded_at: String,                    // RFC3339 formatted timestamp
+}
