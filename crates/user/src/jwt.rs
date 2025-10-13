@@ -16,12 +16,31 @@ pub struct Claims {
 /// Token expires in 7 days
 /// Uses HS256 algorithm with secret from config
 pub fn generate_jwt(user_id: String, email: String, tier: String, secret: &str) -> Result<String> {
+    generate_jwt_with_expiration(user_id, email, tier, secret, 7 * 24 * 60 * 60)
+}
+
+/// Generate a password reset JWT token
+/// Token expires in 1 hour (3600 seconds)
+/// Uses HS256 algorithm with secret from config
+pub fn generate_reset_token(user_id: String, email: String, secret: &str) -> Result<String> {
+    generate_jwt_with_expiration(user_id, email, "reset".to_string(), secret, 60 * 60)
+}
+
+/// Generate a JWT token with custom expiration
+/// Internal helper function to support different token types
+fn generate_jwt_with_expiration(
+    user_id: String,
+    email: String,
+    tier: String,
+    secret: &str,
+    expiration_seconds: u64,
+) -> Result<String> {
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .context("Failed to get current time")?
         .as_secs() as usize;
 
-    let expiration = now + (7 * 24 * 60 * 60); // 7 days in seconds
+    let expiration = now + expiration_seconds as usize;
 
     let claims = Claims {
         sub: user_id,

@@ -1,15 +1,15 @@
 use askama::Template;
 use axum::{
-    extract::State,
+    extract::{Path, State},
     http::StatusCode,
-    response::{Html, IntoResponse, Response},
+    response::{Html, IntoResponse, Redirect, Response},
     Form,
 };
 use serde::Deserialize;
 use sqlx::SqlitePool;
 use user::{
-    generate_jwt, query_user_for_login, register_user, verify_password, RegisterUserCommand,
-    UserError,
+    generate_jwt, generate_reset_token, hash_password, query_user_by_email, query_user_for_login,
+    register_user, validate_jwt, verify_password, RegisterUserCommand, UserError,
 };
 
 #[derive(Clone)]
@@ -17,6 +17,8 @@ pub struct AppState {
     pub db_pool: SqlitePool,
     pub evento_executor: evento::Sqlite,
     pub jwt_secret: String,
+    pub email_config: crate::email::EmailConfig,
+    pub base_url: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -43,6 +45,34 @@ pub struct LoginForm {
 #[template(path = "pages/login.html")]
 pub struct LoginPageTemplate {
     pub error: String,
+    pub user: Option<()>, // None for public pages
+}
+
+#[derive(Debug, Deserialize)]
+pub struct PasswordResetRequestForm {
+    pub email: String,
+}
+
+#[derive(Template)]
+#[template(path = "pages/password-reset-request.html")]
+pub struct PasswordResetRequestTemplate {
+    pub error: String,
+    pub success: bool,
+    pub email: String,
+    pub user: Option<()>, // None for public pages
+}
+
+#[derive(Debug, Deserialize)]
+pub struct PasswordResetCompleteForm {
+    pub new_password: String,
+    pub password_confirm: String,
+}
+
+#[derive(Template)]
+#[template(path = "pages/password-reset-complete.html")]
+pub struct PasswordResetCompleteTemplate {
+    pub error: String,
+    pub token: String,
     pub user: Option<()>, // None for public pages
 }
 
@@ -235,4 +265,210 @@ pub async fn post_login(State(state): State<AppState>, Form(form): Form<LoginFor
         (),
     )
         .into_response()
+}
+
+/// GET /password-reset - Display password reset request form
+#[tracing::instrument]
+pub async fn get_password_reset() -> impl IntoResponse {
+    let template = PasswordResetRequestTemplate {
+        error: String::new(),
+        success: false,
+        email: String::new(),
+        user: None,
+    };
+    Html(template.render().unwrap())
+}
+
+/// POST /password-reset - Handle password reset request form submission
+#[tracing::instrument(skip(state, form), fields(email = %form.email))]
+pub async fn post_password_reset(
+    State(state): State<AppState>,
+    Form(form): Form<PasswordResetRequestForm>,
+) -> Response {
+    tracing::info!("Password reset requested for email: {}", form.email);
+
+    // Query user by email (AC: 2)
+    let user_id_opt = match query_user_by_email(&form.email, &state.db_pool).await {
+        Ok(id_opt) => id_opt,
+        Err(e) => {
+            tracing::error!("Database error during password reset query: {:?}", e);
+            // Return success to prevent user enumeration (AC: 4)
+            let template = PasswordResetRequestTemplate {
+                error: String::new(),
+                success: true,
+                email: form.email.clone(),
+                user: None,
+            };
+            return Html(template.render().unwrap()).into_response();
+        }
+    };
+
+    // Always return success message to prevent user enumeration (AC: 4)
+    if let Some(user_id) = user_id_opt {
+        // User exists - generate reset token and send email
+        match generate_reset_token(user_id, form.email.clone(), &state.jwt_secret) {
+            Ok(reset_token) => {
+                // Send password reset email (AC: 3)
+                if let Err(e) = crate::email::send_password_reset_email(
+                    &form.email,
+                    &reset_token,
+                    &state.email_config,
+                    &state.base_url,
+                )
+                .await
+                {
+                    tracing::warn!(
+                        "Failed to send password reset email to {}: {:?}",
+                        form.email,
+                        e
+                    );
+                }
+                tracing::info!("Password reset email sent successfully to {}", form.email);
+            }
+            Err(e) => {
+                tracing::error!("Failed to generate reset token: {:?}", e);
+            }
+        }
+    } else {
+        // User doesn't exist - log but return success (prevent enumeration)
+        tracing::warn!(
+            "Password reset requested for non-existent email: {}",
+            form.email
+        );
+    }
+
+    // Always show success message (AC: 4)
+    let template = PasswordResetRequestTemplate {
+        error: String::new(),
+        success: true,
+        email: form.email,
+        user: None,
+    };
+    Html(template.render().unwrap()).into_response()
+}
+
+/// GET /password-reset/:token - Display password reset completion form
+#[tracing::instrument(skip(state))]
+pub async fn get_password_reset_complete(
+    State(state): State<AppState>,
+    Path(token): Path<String>,
+) -> Response {
+    // Validate token before rendering form (AC: 4, 8)
+    match validate_jwt(&token, &state.jwt_secret) {
+        Ok(claims) => {
+            // Check if token type is "reset"
+            if claims.tier != "reset" {
+                tracing::warn!("Invalid token type for password reset: {}", claims.tier);
+                return Html("<html><body><h1>Invalid Reset Token</h1><p>This password reset link is invalid. Please request a new password reset.</p><a href=\"/password-reset\">Request Password Reset</a></body></html>").into_response();
+            }
+
+            // Token valid - render form
+            let template = PasswordResetCompleteTemplate {
+                error: String::new(),
+                token,
+                user: None,
+            };
+            Html(template.render().unwrap()).into_response()
+        }
+        Err(e) => {
+            // Token invalid or expired (AC: 8)
+            tracing::warn!("Invalid or expired password reset token: {:?}", e);
+            Html("<html><body><h1>Invalid or Expired Reset Token</h1><p>This password reset link has expired or is invalid. Reset tokens are valid for 1 hour. Please request a new password reset.</p><a href=\"/password-reset\">Request Password Reset</a></body></html>").into_response()
+        }
+    }
+}
+
+/// POST /password-reset/:token - Handle password reset completion
+#[tracing::instrument(skip(state, form, token))]
+pub async fn post_password_reset_complete(
+    State(state): State<AppState>,
+    Path(token): Path<String>,
+    Form(form): Form<PasswordResetCompleteForm>,
+) -> Response {
+    // Validate token (AC: 4, 8)
+    let claims = match validate_jwt(&token, &state.jwt_secret) {
+        Ok(c) => c,
+        Err(e) => {
+            tracing::warn!("Invalid or expired token during password reset completion: {:?}", e);
+            return Html("<html><body><h1>Invalid or Expired Reset Token</h1><p>This password reset link has expired or is invalid. Please request a new password reset.</p><a href=\"/password-reset\">Request Password Reset</a></body></html>").into_response();
+        }
+    };
+
+    // Verify token type
+    if claims.tier != "reset" {
+        tracing::warn!("Invalid token type for password reset: {}", claims.tier);
+        return Html("<html><body><h1>Invalid Reset Token</h1><p>This password reset link is invalid. Please request a new password reset.</p><a href=\"/password-reset\">Request Password Reset</a></body></html>").into_response();
+    }
+
+    // Validate password length (AC: 5)
+    if form.new_password.len() < 8 {
+        let template = PasswordResetCompleteTemplate {
+            error: "Password must be at least 8 characters long".to_string(),
+            token,
+            user: None,
+        };
+        return Html(template.render().unwrap()).into_response();
+    }
+
+    // Validate password confirmation matches (AC: 5)
+    if form.new_password != form.password_confirm {
+        let template = PasswordResetCompleteTemplate {
+            error: "Passwords do not match".to_string(),
+            token,
+            user: None,
+        };
+        return Html(template.render().unwrap()).into_response();
+    }
+
+    // Hash new password with Argon2 (AC: 5)
+    let new_password_hash = match hash_password(&form.new_password) {
+        Ok(hash) => hash,
+        Err(e) => {
+            tracing::error!("Failed to hash password: {:?}", e);
+            let template = PasswordResetCompleteTemplate {
+                error: "An error occurred. Please try again.".to_string(),
+                token,
+                user: None,
+            };
+            return Html(template.render().unwrap()).into_response();
+        }
+    };
+
+    // Update password in database (AC: 6)
+    // Note: For this MVP, we update the read model directly. In a full event-sourced implementation,
+    // we would emit a PasswordChanged event and update via subscription.
+    match sqlx::query(
+        "UPDATE users SET password_hash = ? WHERE id = ?",
+    )
+    .bind(&new_password_hash)
+    .bind(&claims.sub)
+    .execute(&state.db_pool)
+    .await
+    {
+        Ok(result) => {
+            if result.rows_affected() == 0 {
+                tracing::error!("User not found in database for password update: {}", claims.sub);
+                let template = PasswordResetCompleteTemplate {
+                    error: "User not found. Please request a new password reset.".to_string(),
+                    token,
+                    user: None,
+                };
+                return Html(template.render().unwrap()).into_response();
+            }
+
+            tracing::info!("Password changed successfully for user {}", claims.sub);
+
+            // Redirect to login with success message (AC: 7)
+            Redirect::to("/login?success=password_reset").into_response()
+        }
+        Err(e) => {
+            tracing::error!("Failed to update password in database: {:?}", e);
+            let template = PasswordResetCompleteTemplate {
+                error: "An error occurred. Please try again.".to_string(),
+                token,
+                user: None,
+            };
+            Html(template.render().unwrap()).into_response()
+        }
+    }
 }

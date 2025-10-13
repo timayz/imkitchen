@@ -8,7 +8,65 @@ pub struct Config {
     pub database: DatabaseConfig,
     pub jwt: JwtConfig,
     #[serde(default)]
+    pub email: EmailConfig,
+    #[serde(default)]
     pub observability: ObservabilityConfig,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct EmailConfig {
+    #[serde(default = "default_smtp_host")]
+    pub smtp_host: String,
+    #[serde(default = "default_smtp_port")]
+    pub smtp_port: u16,
+    #[serde(default = "default_smtp_username")]
+    pub smtp_username: String,
+    #[serde(default)]
+    pub smtp_password: String,
+    #[serde(default = "default_from_email")]
+    pub from_email: String,
+    #[serde(default = "default_from_name")]
+    pub from_name: String,
+    #[serde(default = "default_base_url")]
+    pub base_url: String,
+}
+
+impl Default for EmailConfig {
+    fn default() -> Self {
+        Self {
+            smtp_host: default_smtp_host(),
+            smtp_port: default_smtp_port(),
+            smtp_username: default_smtp_username(),
+            smtp_password: String::new(),
+            from_email: default_from_email(),
+            from_name: default_from_name(),
+            base_url: default_base_url(),
+        }
+    }
+}
+
+fn default_smtp_host() -> String {
+    "localhost".to_string()
+}
+
+fn default_smtp_port() -> u16 {
+    587
+}
+
+fn default_smtp_username() -> String {
+    "noreply@imkitchen.app".to_string()
+}
+
+fn default_from_email() -> String {
+    "noreply@imkitchen.app".to_string()
+}
+
+fn default_from_name() -> String {
+    "imkitchen".to_string()
+}
+
+fn default_base_url() -> String {
+    "http://localhost:3000".to_string()
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -134,6 +192,7 @@ mod tests {
                 secret: "short".to_string(),
                 expiration_days: 7,
             },
+            email: EmailConfig::default(),
             observability: ObservabilityConfig::default(),
         };
 
@@ -155,6 +214,7 @@ mod tests {
                 secret: "test_secret_key_minimum_32_characters_long".to_string(),
                 expiration_days: 7,
             },
+            email: EmailConfig::default(),
             observability: ObservabilityConfig::default(),
         };
 
@@ -176,6 +236,7 @@ mod tests {
                 secret: "test_secret_key_minimum_32_characters_long".to_string(),
                 expiration_days: 7,
             },
+            email: EmailConfig::default(),
             observability: ObservabilityConfig::default(),
         };
 
@@ -197,6 +258,7 @@ mod tests {
                 secret: "test_secret_key_minimum_32_characters_long".to_string(),
                 expiration_days: 7,
             },
+            email: EmailConfig::default(),
             observability: ObservabilityConfig::default(),
         };
 
