@@ -10,15 +10,15 @@ pub mod read_model;
 pub use aggregate::UserAggregate;
 pub use commands::{
     complete_profile, register_user, reset_password, set_dietary_restrictions, set_household_size,
-    set_skill_level, set_weeknight_availability, update_profile, CompleteProfileCommand,
-    RegisterUserCommand, ResetPasswordCommand, SetDietaryRestrictionsCommand,
-    SetHouseholdSizeCommand, SetSkillLevelCommand, SetWeeknightAvailabilityCommand,
-    UpdateProfileCommand,
+    set_skill_level, set_weeknight_availability, update_profile, validate_recipe_creation,
+    CompleteProfileCommand, RegisterUserCommand, ResetPasswordCommand,
+    SetDietaryRestrictionsCommand, SetHouseholdSizeCommand, SetSkillLevelCommand,
+    SetWeeknightAvailabilityCommand, UpdateProfileCommand,
 };
 pub use error::{UserError, UserResult};
 pub use events::{
     DietaryRestrictionsSet, HouseholdSizeSet, PasswordChanged, ProfileCompleted, ProfileUpdated,
-    SkillLevelSet, UserCreated, WeeknightAvailabilitySet,
+    RecipeCreated, RecipeDeleted, SkillLevelSet, UserCreated, WeeknightAvailabilitySet,
 };
 pub use jwt::{generate_jwt, generate_reset_token, validate_jwt, Claims};
 pub use password::{hash_password, verify_password};

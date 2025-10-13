@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::events::{
     DietaryRestrictionsSet, HouseholdSizeSet, PasswordChanged, ProfileCompleted, ProfileUpdated,
-    SkillLevelSet, UserCreated, WeeknightAvailabilitySet,
+    RecipeCreated, RecipeDeleted, SkillLevelSet, UserCreated, WeeknightAvailabilitySet,
 };
 
 /// User aggregate representing the state of a user entity
@@ -150,6 +150,30 @@ impl UserAggregate {
         if let Some(weeknight_availability) = event.data.weeknight_availability {
             self.weeknight_availability = Some(weeknight_availability);
         }
+        Ok(())
+    }
+
+    /// Handle RecipeCreated event (cross-domain) - increment recipe_count
+    ///
+    /// This handler is called when a recipe is created in the recipe domain.
+    /// It increments the recipe_count to track freemium tier limits (10 recipe max for free tier).
+    async fn recipe_created(
+        &mut self,
+        _event: evento::EventDetails<RecipeCreated>,
+    ) -> anyhow::Result<()> {
+        self.recipe_count += 1;
+        Ok(())
+    }
+
+    /// Handle RecipeDeleted event (cross-domain) - decrement recipe_count
+    ///
+    /// This handler is called when a recipe is deleted in the recipe domain.
+    /// It decrements the recipe_count to free up a slot for free tier users.
+    async fn recipe_deleted(
+        &mut self,
+        _event: evento::EventDetails<RecipeDeleted>,
+    ) -> anyhow::Result<()> {
+        self.recipe_count = (self.recipe_count - 1).max(0); // Prevent negative counts
         Ok(())
     }
 }

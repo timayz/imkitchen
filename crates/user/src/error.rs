@@ -30,6 +30,9 @@ pub enum UserError {
 
     #[error("Validation error: {0}")]
     ValidationError(String),
+
+    #[error("Recipe limit reached. Upgrade to premium for unlimited recipes")]
+    RecipeLimitReached,
 }
 
 /// Result type for user operations that may fail with UserError
