@@ -26,8 +26,7 @@ async fn test_get_profile_requires_auth() {
 
     // Should return 401 Unauthorized or 303 redirect to login
     assert!(
-        response.status() == StatusCode::UNAUTHORIZED
-            || response.status() == StatusCode::SEE_OTHER
+        response.status() == StatusCode::UNAUTHORIZED || response.status() == StatusCode::SEE_OTHER
     );
 }
 
@@ -54,7 +53,6 @@ async fn test_post_profile_requires_auth() {
 
     // Should return 401 Unauthorized or 303 redirect to login
     assert!(
-        response.status() == StatusCode::UNAUTHORIZED
-            || response.status() == StatusCode::SEE_OTHER
+        response.status() == StatusCode::UNAUTHORIZED || response.status() == StatusCode::SEE_OTHER
     );
 }

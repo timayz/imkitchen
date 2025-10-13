@@ -10,9 +10,9 @@ use imkitchen::middleware::auth_middleware;
 use imkitchen::routes::{
     get_login, get_onboarding, get_onboarding_skip, get_password_reset,
     get_password_reset_complete, get_profile, get_register, health, post_login,
-    post_onboarding_step_1, post_onboarding_step_2, post_onboarding_step_3,
-    post_onboarding_step_4, post_password_reset, post_password_reset_complete, post_profile,
-    post_register, ready, AppState, AssetsService,
+    post_onboarding_step_1, post_onboarding_step_2, post_onboarding_step_3, post_onboarding_step_4,
+    post_password_reset, post_password_reset_complete, post_profile, post_register, ready,
+    AppState, AssetsService,
 };
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions};
 use tower_http::trace::TraceLayer;

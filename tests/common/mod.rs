@@ -28,12 +28,14 @@ pub async fn setup_test_db() -> SqlitePool {
     pool
 }
 
+#[allow(dead_code)]
 pub struct TestApp {
     pub router: Router,
     pub evento_executor: evento::Sqlite,
     pub pool: SqlitePool,
 }
 
+#[allow(dead_code)]
 impl TestApp {
     /// Process all pending events synchronously
     pub async fn process_events(&self) {

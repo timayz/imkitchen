@@ -585,7 +585,11 @@ pub async fn post_profile(
                 availability_start: form_availability_start,
                 availability_duration: form_availability_duration,
             };
-            (StatusCode::UNPROCESSABLE_ENTITY, Html(template.render().unwrap())).into_response()
+            (
+                StatusCode::UNPROCESSABLE_ENTITY,
+                Html(template.render().unwrap()),
+            )
+                .into_response()
         }
         Err(e) => {
             tracing::error!("Failed to update profile: {:?}", e);

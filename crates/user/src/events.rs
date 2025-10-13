@@ -77,6 +77,6 @@ pub struct ProfileUpdated {
     pub dietary_restrictions: Option<Vec<String>>, // None = no change
     pub household_size: Option<u8>,                // None = no change
     pub skill_level: Option<String>,               // None = no change
-    pub weeknight_availability: Option<String>,    // None = no change, JSON: {"start":"18:00","duration_minutes":45}
-    pub updated_at: String,                        // RFC3339 formatted timestamp
+    pub weeknight_availability: Option<String>, // None = no change, JSON: {"start":"18:00","duration_minutes":45}
+    pub updated_at: String,                     // RFC3339 formatted timestamp
 }

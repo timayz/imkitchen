@@ -3,7 +3,6 @@
 /// Note: These tests verify the command/event flow works correctly by testing
 /// the public API (command handlers) rather than private event handlers directly.
 /// This follows evento best practices for testing event-sourced aggregates.
-
 use chrono::Utc;
 
 /// Test that profile update command validates household_size range (1-20)
@@ -94,7 +93,7 @@ fn test_user_aggregate_default() {
     assert_eq!(aggregate.household_size, None);
     assert_eq!(aggregate.skill_level, None);
     assert_eq!(aggregate.weeknight_availability, None);
-    assert_eq!(aggregate.onboarding_completed, false);
+    assert!(!aggregate.onboarding_completed);
 }
 
 /// Test ProfileCompleted event structure
@@ -120,7 +119,9 @@ fn test_dietary_restrictions_set_event() {
     };
 
     assert_eq!(dietary_event.dietary_restrictions.len(), 2);
-    assert!(dietary_event.dietary_restrictions.contains(&"vegetarian".to_string()));
+    assert!(dietary_event
+        .dietary_restrictions
+        .contains(&"vegetarian".to_string()));
 }
 
 /// Test HouseholdSizeSet event
