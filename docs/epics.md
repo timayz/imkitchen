@@ -123,7 +123,7 @@ This document provides the detailed epic breakdown for imkitchen, an intelligent
 1. Onboarding wizard displays after first registration
 2. Step 1: Dietary restrictions (checkboxes: vegetarian, vegan, gluten-free, allergens with text input)
 3. Step 2: Household size (numeric input, 1-10)
-4. Step 3: Cooking skill level (radio: beginner, intermediate, advanced)
+4. Step 3: Cooking skill level (radio: beginner, intermediate, expert)
 5. Step 4: Typical weeknight availability (time range picker, duration slider)
 6. Each step validates inputs before allowing progression
 7. User can skip onboarding (optional) - defaults applied

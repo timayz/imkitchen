@@ -13,7 +13,7 @@ so that the meal planning algorithm can personalize recommendations.
 1. Onboarding wizard displays after first registration
 2. Step 1: Dietary restrictions (checkboxes: vegetarian, vegan, gluten-free, allergens with text input)
 3. Step 2: Household size (numeric input, 1-10)
-4. Step 3: Cooking skill level (radio: beginner, intermediate, advanced)
+4. Step 3: Cooking skill level (radio: beginner, intermediate, expert)
 5. Step 4: Typical weeknight availability (time range picker, duration slider)
 6. Each step validates inputs before allowing progression
 7. User can skip onboarding (optional) - defaults applied
@@ -26,7 +26,7 @@ so that the meal planning algorithm can personalize recommendations.
   - [ ] Create `templates/pages/onboarding.html` multi-step form with Askama
   - [ ] Step 1: Dietary restrictions checkboxes (vegetarian, vegan, gluten-free) + allergens text field
   - [ ] Step 2: Household size input (number, min=1, max=10)
-  - [ ] Step 3: Skill level radio buttons (beginner, intermediate, advanced)
+  - [ ] Step 3: Skill level radio buttons (beginner, intermediate, expert)
   - [ ] Step 4: Weeknight availability time picker + duration slider
   - [ ] Add "Skip for now" link on each step
   - [ ] Style with Tailwind CSS utility classes
@@ -177,6 +177,7 @@ so that the meal planning algorithm can personalize recommendations.
 |------|--------|----------------|
 | 2025-10-13 | Bob (SM) | Initial story creation from epics.md and tech-spec-epic-1.md |
 | 2025-10-13 | Bob (SM) | Generated story context XML with documentation and code artifacts; Status updated to Approved |
+| 2025-10-13 | Bob (SM) | Fixed skill level terminology: "advanced" → "expert" to align with solution-architecture.md and tech-spec-epic-1.md |
 
 ## Dev Agent Record
 
