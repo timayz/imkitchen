@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{% block meta_description %}Intelligent meal planning and cooking optimization{% endblock %}">
+
+    <title>{% block title %}imkitchen{% endblock %}</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/static/icons/icon-192.png">
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#2563eb">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/static/css/main.css">
+
+    <!-- TwinSpark for progressive enhancement -->
+    <script src="/static/js/twinspark.min.js" defer></script>
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+    <!-- Skip to main content for accessibility -->
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary-500 focus:text-white focus:rounded">
+        Skip to main content
+    </a>
+
+    <!-- Navigation -->
+    {% block navigation %}
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-8">
+                    <a href="/" class="text-2xl font-bold text-primary-500">
+                        imkitchen
+                    </a>
+
+                    {% if user.is_some() %}
+                    <!-- Authenticated navigation -->
+                    <div class="hidden md:flex space-x-6">
+                        <a href="/dashboard" class="text-gray-700 hover:text-primary-500 font-medium">
+                            Dashboard
+                        </a>
+                        <a href="/plan" class="text-gray-700 hover:text-primary-500 font-medium">
+                            Meal Plan
+                        </a>
+                        <a href="/recipes" class="text-gray-700 hover:text-primary-500 font-medium">
+                            Recipes
+                        </a>
+                        <a href="/shopping" class="text-gray-700 hover:text-primary-500 font-medium">
+                            Shopping
+                        </a>
+                        <a href="/discover" class="text-gray-700 hover:text-primary-500 font-medium">
+                            Discover
+                        </a>
+                    </div>
+                    {% else %}
+                    <!-- Public navigation -->
+                    <div class="hidden md:flex space-x-6">
+                        <a href="/discover" class="text-gray-700 hover:text-primary-500 font-medium">
+                            Discover Recipes
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    {% if user.is_some() %}
+                    <!-- User menu -->
+                    <div class="flex items-center space-x-4">
+                        <a href="/profile" class="text-gray-700 hover:text-primary-500 font-medium">
+                            Profile
+                        </a>
+                        <form method="POST" action="/logout" class="inline">
+                            <button type="submit" class="text-gray-700 hover:text-primary-500 font-medium">
+                                Logout
+                            </button>
+                        </form>
+                    </div>
+                    {% else %}
+                    <!-- Auth links -->
+                    <a href="/login" class="text-gray-700 hover:text-primary-500 font-medium">
+                        Login
+                    </a>
+                    <a href="/register" class="bg-primary-500 text-white px-4 py-2 rounded-lg hover:bg-primary-600 font-medium">
+                        Sign Up
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+    {% endblock %}
+
+    <!-- Main Content -->
+    <main id="main-content" class="flex-1">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    {% block footer %}
+    <footer class="bg-white border-t border-gray-200 mt-12">
+        <div class="container mx-auto px-4 py-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900 mb-4">imkitchen</h3>
+                    <p class="text-gray-600 text-sm">
+                        Intelligent meal planning and cooking optimization for busy households.
+                    </p>
+                </div>
+
+                <div>
+                    <h4 class="font-semibold text-gray-900 mb-4">Product</h4>
+                    <ul class="space-y-2">
+                        <li><a href="/discover" class="text-gray-600 hover:text-primary-500 text-sm">Discover Recipes</a></li>
+                        {% if user.is_some() %}
+                        <li><a href="/dashboard" class="text-gray-600 hover:text-primary-500 text-sm">Dashboard</a></li>
+                        <li><a href="/subscription" class="text-gray-600 hover:text-primary-500 text-sm">Premium</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="font-semibold text-gray-900 mb-4">Support</h4>
+                    <ul class="space-y-2">
+                        <li><a href="/help" class="text-gray-600 hover:text-primary-500 text-sm">Help Center</a></li>
+                        <li><a href="/contact" class="text-gray-600 hover:text-primary-500 text-sm">Contact Us</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="font-semibold text-gray-900 mb-4">Legal</h4>
+                    <ul class="space-y-2">
+                        <li><a href="/privacy" class="text-gray-600 hover:text-primary-500 text-sm">Privacy Policy</a></li>
+                        <li><a href="/terms" class="text-gray-600 hover:text-primary-500 text-sm">Terms of Service</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="border-t border-gray-200 mt-8 pt-8 text-center">
+                <p class="text-gray-600 text-sm">
+                    &copy; 2025 imkitchen. All rights reserved.
+                </p>
+            </div>
+        </div>
+    </footer>
+    {% endblock %}
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

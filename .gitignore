@@ -1,0 +1,25 @@
+# Rust
+/target
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# Environment
+.env*
+
+# Node.js / Tailwind
+node_modules/
+static/css/main.css
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
