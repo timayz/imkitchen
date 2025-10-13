@@ -1,0 +1,243 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>7</storyId>
+    <title>Premium Subscription Upgrade Flow</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-13T20:15:00Z</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-1.7.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a free tier user</asA>
+    <iWant>to upgrade to premium</iWant>
+    <soThat>I can access unlimited recipes and advanced features</soThat>
+    <tasks>
+      - Create subscription management UI (AC: 1, 2)
+      - Implement Stripe Checkout integration (AC: 3, 4)
+      - Implement webhook handler (AC: 5, 6, 8, 9)
+      - Add SubscriptionUpgraded event handling (AC: 6, 8, 9)
+      - Display premium status (AC: 8, 9)
+      - Handle errors and edge cases (AC: 10, 11)
+      - Test premium upgrade flow (AC: 1-11)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-1">"Upgrade to Premium" button visible on subscription page and within freemium restriction prompts</criterion>
+    <criterion id="AC-2">Subscription page displays premium benefits (unlimited recipes, advanced features) and pricing ($9.99/month)</criterion>
+    <criterion id="AC-3">Clicking "Upgrade to Premium" redirects to Stripe Checkout hosted page</criterion>
+    <criterion id="AC-4">Stripe Checkout accepts credit/debit card payment securely</criterion>
+    <criterion id="AC-5">Successful payment triggers `checkout.session.completed` webhook</criterion>
+    <criterion id="AC-6">Webhook handler upgrades user tier to "premium" via `SubscriptionUpgraded` event</criterion>
+    <criterion id="AC-7">User redirected back to `/subscription/success` after successful payment</criterion>
+    <criterion id="AC-8">Premium tier status immediately reflected in UI (badge, unlimited recipe indicator)</criterion>
+    <criterion id="AC-9">All freemium restrictions (10 recipe limit) removed for premium users</criterion>
+    <criterion id="AC-10">Failed payment displays Stripe error message and allows retry</criterion>
+    <criterion id="AC-11">User can cancel Stripe Checkout and return to app without charge</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>FR-13: User Management - Freemium business model</section>
+        <snippet>Premium subscription unlocks unlimited recipes ($9.99/month), target 15% conversion within 60 days</snippet>
+      </doc>
+      <doc>
+        <path>docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>Section 1.1: Technology Stack - async-stripe 0.39+</section>
+        <snippet>Stripe SDK: async-stripe 0.39+ for payment processing with Stripe API integration</snippet>
+      </doc>
+      <doc>
+        <path>docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>ADR-006: Freemium Model with 10 Recipe Limit</section>
+        <snippet>Free tier limited to 10 recipes, premium tier unlimited. Enforced in domain logic to drive conversion.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-1.md</path>
+        <title>Technical Specification: User Authentication & Profile Management</title>
+        <section>Subscription Routes</section>
+        <snippet>POST /subscription/upgrade creates Stripe Checkout Session with mode: Subscription, success/cancel URLs, customer email, line items, and user_id in metadata</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-1.md</path>
+        <title>Technical Specification: User Authentication & Profile Management</title>
+        <section>Stripe Webhook Handler</section>
+        <snippet>POST /webhooks/stripe verifies signature, handles checkout.session.completed and customer.subscription.deleted events, emits SubscriptionUpgraded event</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-1.md</path>
+        <title>Technical Specification: User Authentication & Profile Management</title>
+        <section>Events/SubscriptionUpgraded</section>
+        <snippet>SubscriptionUpgraded event captures: new_tier (Premium/Free), stripe_customer_id, stripe_subscription_id for future subscription management</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-1.md</path>
+        <title>Technical Specification: User Authentication & Profile Management</title>
+        <section>AC-9.1 to AC-9.5</section>
+        <snippet>Authoritative acceptance criteria: Stripe Checkout redirect, webhook handling, tier upgrade, premium status display, unlimited recipe creation</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic Breakdown</title>
+        <section>Story 1.7: Premium Upgrade Flow</section>
+        <snippet>Secure payment via Stripe Checkout, webhook-driven tier upgrade, email confirmation, PCI DSS compliance via payment gateway</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>crates/user/src/events.rs</path>
+        <kind>event</kind>
+        <symbol>UserCreated, PasswordChanged, ProfileUpdated, ProfileCompleted, RecipeCreated, RecipeDeleted</symbol>
+        <lines>1-108</lines>
+        <reason>Existing event structs show pattern for creating SubscriptionUpgraded event (bincode serialization, AggregatorName derive, event-sourced pattern)</reason>
+      </artifact>
+      <artifact>
+        <path>crates/user/src/commands.rs</path>
+        <kind>command</kind>
+        <symbol>register_user, reset_password, update_profile, validate_recipe_creation</symbol>
+        <lines>1-384</lines>
+        <reason>Existing command handlers demonstrate evento pattern: validate, emit event, commit to executor. Template for upgrade_subscription command.</reason>
+      </artifact>
+      <artifact>
+        <path>crates/user/src/commands.rs</path>
+        <kind>validation</kind>
+        <symbol>validate_recipe_creation</symbol>
+        <lines>345-383</lines>
+        <reason>Freemium enforcement logic queries users table for tier and recipe_count. Premium users bypass all limits. Must be tested after upgrade.</reason>
+      </artifact>
+      <artifact>
+        <path>src/routes/profile.rs</path>
+        <kind>route</kind>
+        <symbol>get_profile, post_profile, get_onboarding</symbol>
+        <lines>1-600</lines>
+        <reason>Profile route handlers show Axum patterns: State extraction, Auth middleware, template rendering, evento command invocation. Template for subscription routes.</reason>
+      </artifact>
+      <artifact>
+        <path>src/routes/auth.rs</path>
+        <kind>route</kind>
+        <symbol>auth routes (login, register, logout)</symbol>
+        <lines>N/A</lines>
+        <reason>Auth routes file is where webhook handler (POST /webhooks/stripe) should be added per tech-spec</reason>
+      </artifact>
+      <artifact>
+        <path>crates/user/src/error.rs</path>
+        <kind>error</kind>
+        <symbol>UserError</symbol>
+        <lines>N/A</lines>
+        <reason>Domain error types for validation failures, database errors, event store errors. May need StripeError variant for payment failures.</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <rust>
+        <package name="async-stripe" version="0.39+" reason="NOT YET ADDED - Required for Stripe Checkout Session API and webhook signature verification" />
+        <package name="evento" version="1.3" reason="Event sourcing framework - SubscriptionUpgraded event will use evento::save pattern" />
+        <package name="sqlx" version="0.8" reason="Read model queries - users table tier and stripe IDs" />
+        <package name="axum" version="0.8" reason="HTTP routes for subscription pages and webhook handler" />
+        <package name="askama" version="0.14" reason="Server-side templates for subscription.html and subscription-success.html" />
+        <package name="serde" version="1.0" reason="JSON serialization for Stripe webhook payloads and metadata" />
+        <package name="validator" version="0.20" reason="Command validation (already used in existing commands)" />
+        <package name="chrono" version="0.4" reason="Timestamp generation for event timestamps" />
+        <package name="uuid" version="1.10" reason="User ID generation (already used in register_user)" />
+        <package name="tracing" version="0.1" reason="Observability - log webhook events, upgrade events, signature verification failures" />
+      </rust>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>MUST add async-stripe dependency to root Cargo.toml before implementing Stripe integration</constraint>
+    <constraint>MUST verify webhook signature using stripe-signature header and STRIPE_WEBHOOK_SECRET to prevent forged payment events</constraint>
+    <constraint>MUST use Stripe Checkout hosted page (not custom payment form) to avoid PCI DSS compliance burden</constraint>
+    <constraint>MUST store Stripe Customer ID and Subscription ID for future subscription management (cancellation, billing)</constraint>
+    <constraint>MUST follow evento event-sourcing pattern: emit SubscriptionUpgraded event, let projection update read model asynchronously</constraint>
+    <constraint>MUST handle idempotent webhook delivery - Stripe may retry failed webhooks multiple times</constraint>
+    <constraint>MUST test premium tier bypasses freemium validation after upgrade (validate_recipe_creation returns Ok for premium)</constraint>
+    <constraint>MUST follow TDD: write failing tests first, implement feature, tests pass</constraint>
+    <constraint>MUST use Axum patterns from existing routes: State extraction, Extension&lt;Auth&gt;, template rendering, evento command invocation</constraint>
+    <constraint>MUST log security events: webhook signature verification failures, upgrade events, payment failures</constraint>
+    <constraint>Configuration values MUST be loaded from config or environment variables: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_PRICE_ID</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>user::upgrade_subscription</name>
+      <kind>command</kind>
+      <signature>pub async fn upgrade_subscription(command: UpgradeSubscriptionCommand, executor: &amp;Sqlite) -&gt; UserResult&lt;()&gt;</signature>
+      <path>crates/user/src/commands.rs</path>
+      <usage>Called by webhook handler after checkout.session.completed event. Emits SubscriptionUpgraded event to evento store.</usage>
+    </interface>
+    <interface>
+      <name>SubscriptionUpgraded</name>
+      <kind>event</kind>
+      <signature>pub struct SubscriptionUpgraded { pub new_tier: SubscriptionTier, pub stripe_customer_id: Option&lt;String&gt;, pub stripe_subscription_id: Option&lt;String&gt; }</signature>
+      <path>crates/user/src/events.rs</path>
+      <usage>Event emitted when user upgrades or downgrades subscription tier. Projected to users table (tier, stripe_customer_id, stripe_subscription_id columns).</usage>
+    </interface>
+    <interface>
+      <name>validate_recipe_creation</name>
+      <kind>query</kind>
+      <signature>pub async fn validate_recipe_creation(user_id: &amp;str, pool: &amp;SqlitePool) -&gt; UserResult&lt;()&gt;</signature>
+      <path>crates/user/src/commands.rs (lines 354-383)</path>
+      <usage>Freemium enforcement - returns RecipeLimitReached if free user has 10 recipes. Premium users bypass limit. MUST be tested after upgrade.</usage>
+    </interface>
+    <interface>
+      <name>stripe::CheckoutSession::create</name>
+      <kind>external_api</kind>
+      <signature>pub async fn create(client: &amp;Client, params: CreateCheckoutSession) -&gt; Result&lt;CheckoutSession, StripeError&gt;</signature>
+      <path>async-stripe crate</path>
+      <usage>Create Stripe Checkout Session with mode: Subscription, success_url, cancel_url, customer_email, line_items, metadata. Returns session with URL for redirect.</usage>
+    </interface>
+    <interface>
+      <name>stripe::Webhook::construct_event</name>
+      <kind>external_api</kind>
+      <signature>pub fn construct_event(payload: &amp;str, signature: &amp;str, secret: &amp;str) -&gt; Result&lt;Event, WebhookError&gt;</signature>
+      <path>async-stripe crate</path>
+      <usage>Verify webhook signature and deserialize Stripe event payload. Returns Event with type_ (e.g., CheckoutSessionCompleted) and data.object.</usage>
+    </interface>
+    <interface>
+      <name>AppState</name>
+      <kind>state</kind>
+      <signature>pub struct AppState { pub evento_executor: Sqlite, pub db_pool: SqlitePool, pub stripe_secret_key: String, pub stripe_webhook_secret: String, pub stripe_price_id: String, pub base_url: String }</signature>
+      <path>src/routes/auth.rs (assumed - needs verification)</path>
+      <usage>Axum shared state containing evento executor, database pool, Stripe config. Extract via State(state): State&lt;AppState&gt; in route handlers.</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      TDD enforced: write failing test → implement feature → test passes. Target 90% coverage for user crate (security critical). Use tokio::test for async tests. Mock external services (Stripe) using test doubles. In-memory SQLite for integration tests.
+    </standards>
+
+    <locations>
+      - crates/user/tests/ (unit tests for commands, events, aggregates)
+      - tests/subscription_tests.rs (integration tests for subscription routes and webhook handler)
+      - e2e/tests/subscription.spec.ts (Playwright E2E tests for upgrade flow)
+    </locations>
+
+    <ideas>
+      <test ac="AC-1,AC-2" type="integration">GET /subscription renders subscription page with current tier (Free), upgrade button, premium benefits list ($9.99/month pricing)</test>
+      <test ac="AC-3" type="integration">POST /subscription/upgrade creates Stripe Checkout Session, returns 302 redirect to Stripe URL</test>
+      <test ac="AC-4" type="unit">Stripe Checkout Session params validation: mode=Subscription, success_url, cancel_url, customer_email, line_items with STRIPE_PRICE_ID, metadata with user_id</test>
+      <test ac="AC-5,AC-6" type="integration">Mock webhook POST /webhooks/stripe with checkout.session.completed event (valid signature) → SubscriptionUpgraded event emitted → users.tier updated to premium</test>
+      <test ac="AC-5,AC-6" type="integration">Mock webhook with INVALID signature → returns 401 Unauthorized, logs security event, NO tier upgrade</test>
+      <test ac="AC-7" type="integration">GET /subscription/success renders success page with confirmation message</test>
+      <test ac="AC-8" type="integration">Query users table after upgrade → tier=premium, stripe_customer_id and stripe_subscription_id populated</test>
+      <test ac="AC-8" type="integration">GET /profile after upgrade → displays "Premium Member" badge</test>
+      <test ac="AC-9" type="integration">Premium user calls validate_recipe_creation with 50 recipes → returns Ok(()), no RecipeLimitReached error</test>
+      <test ac="AC-9" type="integration">Free user upgraded to premium → create recipe #11 succeeds (validate_recipe_creation bypasses limit)</test>
+      <test ac="AC-10" type="e2e">Stripe Checkout payment fails (mock card decline) → user sees error message from Stripe UI, can retry</test>
+      <test ac="AC-11" type="e2e">User clicks cancel in Stripe Checkout → redirected to /subscription, no charge, tier remains Free</test>
+      <test ac="unit" type="unit">upgrade_subscription command creates SubscriptionUpgraded event with correct tier, stripe_customer_id, stripe_subscription_id</test>
+      <test ac="unit" type="unit">UserAggregate.subscription_upgraded event handler updates aggregate.tier to Premium</test>
+      <test ac="unit" type="unit">Read model projection handler updates users table: tier, stripe_customer_id, stripe_subscription_id</test>
+      <test ac="idempotency" type="integration">Duplicate webhook delivery (same session ID) → evento idempotency prevents duplicate tier upgrade</test>
+    </ideas>
+  </tests>
+</story-context>
