@@ -17,13 +17,14 @@ async fn user_created_handler<E: Executor>(
     let pool: SqlitePool = context.extract();
 
     // Execute SQL insert to project event into read model
+    // Use event.aggregator_id as the primary key (user id)
     sqlx::query(
         r#"
         INSERT INTO users (id, email, password_hash, tier, recipe_count, created_at)
         VALUES (?1, ?2, ?3, 'free', 0, ?4)
         "#,
     )
-    .bind(&event.data.user_id)
+    .bind(&event.aggregator_id)
     .bind(&event.data.email)
     .bind(&event.data.password_hash)
     .bind(&event.data.created_at)
@@ -46,6 +47,7 @@ async fn password_changed_handler<E: Executor>(
     let pool: SqlitePool = context.extract();
 
     // Execute SQL update to project event into read model
+    // Use event.aggregator_id to identify which user to update
     sqlx::query(
         r#"
         UPDATE users
@@ -54,7 +56,7 @@ async fn password_changed_handler<E: Executor>(
         "#,
     )
     .bind(&event.data.password_hash)
-    .bind(&event.data.user_id)
+    .bind(&event.aggregator_id)
     .execute(&pool)
     .await?;
 
