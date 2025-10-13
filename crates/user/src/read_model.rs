@@ -30,9 +30,6 @@ async fn user_created_handler<E: Executor>(
     .execute(&pool)
     .await?;
 
-    // Acknowledge the event so subscription cursor advances
-    context.acknowledge().await?;
-
     Ok(())
 }
 
