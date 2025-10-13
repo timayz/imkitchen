@@ -117,19 +117,22 @@ pub struct ResetPasswordCommand {
 /// Reset user password using evento event sourcing pattern
 ///
 /// 1. Validates password length
-/// 2. Hashes new password with Argon2
-/// 3. Creates and commits PasswordChanged event to evento event store
-/// 4. Event automatically projected to read model via async subscription handler
+/// 2. Loads user aggregate from event store
+/// 3. Hashes new password with Argon2
+/// 4. Creates and commits PasswordChanged event to evento event store
+/// 5. Event automatically projected to read model via async subscription handler
 ///
 /// This invalidates the old password and all existing JWT sessions (stateless JWT limitation)
-pub async fn reset_password(
-    command: ResetPasswordCommand,
-    executor: &Sqlite,
-) -> UserResult<()> {
+pub async fn reset_password(command: ResetPasswordCommand, executor: &Sqlite) -> UserResult<()> {
     // Validate command
     command
         .validate()
         .map_err(|e| UserError::ValidationError(e.to_string()))?;
+
+    // Load existing user aggregate from event store
+    let user_aggregate = evento::load::<UserAggregate, _>(executor, &command.user_id)
+        .await
+        .map_err(|e| UserError::EventStoreError(e.to_string()))?;
 
     // Hash new password using Argon2id with OWASP parameters
     let password_hash = hash_password(&command.new_password)?;
@@ -138,7 +141,7 @@ pub async fn reset_password(
 
     // Create PasswordChanged event and commit to evento event store
     // The async subscription handler (password_changed_handler) will project to read model
-    evento::save::<UserAggregate>(command.user_id.clone())
+    evento::save_with::<UserAggregate>(user_aggregate)
         .data(&PasswordChanged {
             user_id: command.user_id.clone(),
             password_hash,
