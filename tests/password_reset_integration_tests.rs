@@ -1,6 +1,4 @@
-use http_body_util::BodyExt;
-use sqlx::SqlitePool;
-use user::{generate_reset_token, hash_password, UserCreated};
+use user::{generate_reset_token, hash_password};
 
 /// Test: Password reset token generation and validation
 #[tokio::test]
@@ -24,7 +22,7 @@ async fn test_reset_token_generation_and_validation() {
 
     // Verify token expires in approximately 1 hour (3600 seconds)
     let expiration_delta = claims.exp - claims.iat;
-    assert!(expiration_delta >= 3595 && expiration_delta <= 3605); // Allow 5 second margin
+    assert!((3595..=3605).contains(&expiration_delta)); // Allow 5 second margin
 }
 
 /// Test: Expired reset token validation fails

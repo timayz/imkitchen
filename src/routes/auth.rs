@@ -8,9 +8,9 @@ use axum::{
 use serde::Deserialize;
 use sqlx::SqlitePool;
 use user::{
-    generate_jwt, generate_reset_token, query_user_by_email, query_user_for_login,
-    register_user, reset_password, validate_jwt, verify_password, RegisterUserCommand,
-    ResetPasswordCommand, UserError,
+    generate_jwt, generate_reset_token, query_user_by_email, query_user_for_login, register_user,
+    reset_password, validate_jwt, verify_password, RegisterUserCommand, ResetPasswordCommand,
+    UserError,
 };
 
 #[derive(Clone)]
@@ -371,7 +371,9 @@ pub async fn get_password_reset_complete(
                 tracing::warn!("Invalid token type for password reset: {}", claims.tier);
                 let template = PasswordResetErrorTemplate {
                     title: "Invalid Reset Token".to_string(),
-                    message: "This password reset link is invalid. Please request a new password reset.".to_string(),
+                    message:
+                        "This password reset link is invalid. Please request a new password reset."
+                            .to_string(),
                     user: None,
                 };
                 return Html(template.render().unwrap()).into_response();
@@ -409,7 +411,10 @@ pub async fn post_password_reset_complete(
     let claims = match validate_jwt(&token, &state.jwt_secret) {
         Ok(c) => c,
         Err(e) => {
-            tracing::warn!("Invalid or expired token during password reset completion: {:?}", e);
+            tracing::warn!(
+                "Invalid or expired token during password reset completion: {:?}",
+                e
+            );
             let template = PasswordResetErrorTemplate {
                 title: "Invalid or Expired Reset Token".to_string(),
                 message: "This password reset link has expired or is invalid. Please request a new password reset.".to_string(),
@@ -424,7 +429,8 @@ pub async fn post_password_reset_complete(
         tracing::warn!("Invalid token type for password reset: {}", claims.tier);
         let template = PasswordResetErrorTemplate {
             title: "Invalid Reset Token".to_string(),
-            message: "This password reset link is invalid. Please request a new password reset.".to_string(),
+            message: "This password reset link is invalid. Please request a new password reset."
+                .to_string(),
             user: None,
         };
         return Html(template.render().unwrap()).into_response();

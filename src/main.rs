@@ -136,7 +136,10 @@ async fn serve_command(
                 .route("/password-reset", get(get_password_reset))
                 .route("/password-reset", post(post_password_reset))
                 .route("/password-reset/{token}", get(get_password_reset_complete))
-                .route("/password-reset/{token}", post(post_password_reset_complete))
+                .route(
+                    "/password-reset/{token}",
+                    post(post_password_reset_complete),
+                )
                 // Protected routes
                 .route("/dashboard", get(dashboard_handler))
                 // Static assets

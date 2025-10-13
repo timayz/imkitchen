@@ -27,10 +27,8 @@ impl EmailConfig {
                 .build())
         } else {
             // Production mode - authenticated relay
-            let credentials = Credentials::new(
-                self.smtp_username.clone(),
-                self.smtp_password.clone(),
-            );
+            let credentials =
+                Credentials::new(self.smtp_username.clone(), self.smtp_password.clone());
 
             Ok(SmtpTransport::relay(&self.smtp_host)
                 .context("Failed to create SMTP transport")?
@@ -57,9 +55,7 @@ async fn send_email(
         .parse()
         .context("Failed to parse from email")?;
 
-    let to_mailbox: Mailbox = to_email
-        .parse()
-        .context("Failed to parse to email")?;
+    let to_mailbox: Mailbox = to_email.parse().context("Failed to parse to email")?;
 
     let email = Message::builder()
         .from(from_mailbox)
@@ -185,13 +181,9 @@ mod tests {
         // This test validates the email formatting logic
         // In real tests, we'll mock the SMTP transport
         let token = "test_token_123";
-        let result = send_password_reset_email(
-            "user@example.com",
-            token,
-            &config,
-            "https://imkitchen.app",
-        )
-        .await;
+        let result =
+            send_password_reset_email("user@example.com", token, &config, "https://imkitchen.app")
+                .await;
 
         // Even with invalid SMTP config, should return Ok (prevent enumeration)
         assert!(result.is_ok());
