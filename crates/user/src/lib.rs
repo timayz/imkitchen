@@ -13,4 +13,4 @@ pub use error::{UserError, UserResult};
 pub use events::UserCreated;
 pub use jwt::{generate_jwt, validate_jwt, Claims};
 pub use password::{hash_password, verify_password};
-pub use read_model::{query_user_by_email, user_projection};
+pub use read_model::{query_user_by_email, query_user_for_login, user_projection, UserLoginData};

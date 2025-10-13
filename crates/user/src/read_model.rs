@@ -73,3 +73,40 @@ pub async fn query_user_by_email(email: &str, pool: &SqlitePool) -> UserResult<O
         None => Ok(None),
     }
 }
+
+/// User data for login authentication
+pub struct UserLoginData {
+    pub id: String,
+    pub email: String,
+    pub password_hash: String,
+    pub tier: String,
+}
+
+/// Query user by email for login authentication
+///
+/// Returns complete user data needed for login: id, email, password_hash, tier
+/// Used by POST /login route handler to verify credentials and generate JWT
+///
+/// Returns Some(UserLoginData) if user exists, None otherwise
+pub async fn query_user_for_login(
+    email: &str,
+    pool: &SqlitePool,
+) -> UserResult<Option<UserLoginData>> {
+    let result = sqlx::query("SELECT id, email, password_hash, tier FROM users WHERE email = ?1")
+        .bind(email)
+        .fetch_optional(pool)
+        .await?;
+
+    match result {
+        Some(row) => {
+            let user_data = UserLoginData {
+                id: row.get("id"),
+                email: row.get("email"),
+                password_hash: row.get("password_hash"),
+                tier: row.get("tier"),
+            };
+            Ok(Some(user_data))
+        }
+        None => Ok(None),
+    }
+}
