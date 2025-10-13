@@ -80,3 +80,28 @@ pub struct ProfileUpdated {
     pub weeknight_availability: Option<String>, // None = no change, JSON: {"start":"18:00","duration_minutes":45}
     pub updated_at: String,                     // RFC3339 formatted timestamp
 }
+
+/// RecipeCreated event (cross-domain event from recipe domain)
+///
+/// User domain listens to this event to increment recipe_count for freemium enforcement.
+/// This event is emitted by the recipe domain when a user creates a new recipe.
+///
+/// Note: user_id stored in metadata, recipe_id in aggregator_id
+#[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
+pub struct RecipeCreated {
+    pub user_id: String,    // ID of the user who created the recipe
+    pub title: String,      // Recipe title for audit
+    pub created_at: String, // RFC3339 formatted timestamp
+}
+
+/// RecipeDeleted event (cross-domain event from recipe domain)
+///
+/// User domain listens to this event to decrement recipe_count for freemium enforcement.
+/// This event is emitted by the recipe domain when a user deletes a recipe.
+///
+/// Note: user_id stored in metadata, recipe_id in aggregator_id
+#[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
+pub struct RecipeDeleted {
+    pub user_id: String,    // ID of the user who deleted the recipe
+    pub deleted_at: String, // RFC3339 formatted timestamp
+}

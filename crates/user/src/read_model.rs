@@ -2,7 +2,7 @@ use crate::aggregate::UserAggregate;
 use crate::error::UserResult;
 use crate::events::{
     DietaryRestrictionsSet, HouseholdSizeSet, PasswordChanged, ProfileCompleted, ProfileUpdated,
-    SkillLevelSet, UserCreated, WeeknightAvailabilitySet,
+    RecipeCreated, RecipeDeleted, SkillLevelSet, UserCreated, WeeknightAvailabilitySet,
 };
 use evento::{AggregatorName, Context, EventDetails, Executor};
 use sqlx::{Row, SqlitePool};
@@ -216,6 +216,45 @@ async fn profile_updated_handler<E: Executor>(
     Ok(())
 }
 
+/// Handler for RecipeCreated event - increment recipe_count in users table
+///
+/// This handler listens to RecipeCreated events from the recipe domain and
+/// increments the recipe_count in the users read model table for freemium enforcement.
+#[evento::handler(UserAggregate)]
+async fn recipe_created_handler<E: Executor>(
+    context: &Context<'_, E>,
+    event: EventDetails<RecipeCreated>,
+) -> anyhow::Result<()> {
+    let pool: SqlitePool = context.extract();
+
+    sqlx::query("UPDATE users SET recipe_count = recipe_count + 1 WHERE id = ?1")
+        .bind(&event.data.user_id)
+        .execute(&pool)
+        .await?;
+
+    Ok(())
+}
+
+/// Handler for RecipeDeleted event - decrement recipe_count in users table
+///
+/// This handler listens to RecipeDeleted events from the recipe domain and
+/// decrements the recipe_count in the users read model table to free up a slot.
+#[evento::handler(UserAggregate)]
+async fn recipe_deleted_handler<E: Executor>(
+    context: &Context<'_, E>,
+    event: EventDetails<RecipeDeleted>,
+) -> anyhow::Result<()> {
+    let pool: SqlitePool = context.extract();
+
+    // Use MAX to prevent negative counts
+    sqlx::query("UPDATE users SET recipe_count = MAX(0, recipe_count - 1) WHERE id = ?1")
+        .bind(&event.data.user_id)
+        .execute(&pool)
+        .await?;
+
+    Ok(())
+}
+
 /// Create user event subscription for read model projection
 ///
 /// Returns a subscription builder that can be run with `.run(&executor).await`
@@ -241,6 +280,8 @@ pub fn user_projection(pool: SqlitePool) -> evento::SubscribeBuilder<evento::Sql
         .handler(weeknight_availability_set_handler())
         .handler(profile_completed_handler())
         .handler(profile_updated_handler())
+        .handler(recipe_created_handler())
+        .handler(recipe_deleted_handler())
 }
 
 /// Query user by email for uniqueness check in read model
