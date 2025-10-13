@@ -1,13 +1,13 @@
 use chrono::Utc;
 use evento::Sqlite;
 use sqlx::SqlitePool;
-use uuid::Uuid;
 use validator::Validate;
 
 use crate::aggregate::UserAggregate;
 use crate::error::{UserError, UserResult};
 use crate::events::{PasswordChanged, UserCreated};
 use crate::password::hash_password;
+use crate::read_model::query_user_by_email;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
@@ -41,57 +41,21 @@ pub async fn register_user(
         .validate()
         .map_err(|e| UserError::ValidationError(e.to_string()))?;
 
+    // Check if email already exists in read model
+    if let Some(_) = query_user_by_email(&command.email, pool).await? {
+        return Err(UserError::EmailAlreadyExists);
+    }
+
     // Hash password using Argon2id with OWASP parameters
     let password_hash = hash_password(&command.password)?;
 
-    // Generate user ID
-    let user_id = Uuid::new_v4();
     let created_at = Utc::now();
-
-    // Start transaction for consistent email validation
-    let mut tx = pool.begin().await.map_err(UserError::DatabaseError)?;
-
-    // Check and insert into user_email_uniqueness table
-    // This enforces email uniqueness at database level with UNIQUE constraint
-    let insert_result = sqlx::query(
-        "INSERT INTO user_email_uniqueness (email, user_id, created_at) VALUES (?, ?, ?)",
-    )
-    .bind(&command.email)
-    .bind(user_id.to_string())
-    .bind(created_at.to_rfc3339())
-    .execute(&mut *tx)
-    .await;
-
-    match insert_result {
-        Ok(_) => {
-            // Email is unique, commit transaction
-            tx.commit().await.map_err(UserError::DatabaseError)?;
-        }
-        Err(e) => {
-            // Check if it's a unique constraint violation
-            // SQLite UNIQUE constraint violations can have multiple error codes
-            if let Some(db_err) = e.as_database_error() {
-                // Check both error code and message for UNIQUE constraint violations
-                let is_unique_violation = if let Some(code) = db_err.code() {
-                    // SQLite error code 2067 = SQLITE_CONSTRAINT_UNIQUE
-                    code.as_ref() == "2067" || code.as_ref() == "1555"
-                } else {
-                    false
-                };
-
-                if is_unique_violation || db_err.message().contains("UNIQUE constraint failed") {
-                    return Err(UserError::EmailAlreadyExists);
-                }
-            }
-            return Err(UserError::DatabaseError(e));
-        }
-    }
 
     // Create UserCreated event and commit to evento event store
     // The async subscription handler (on_user_created) will project to read model
+    // evento::create() generates a ULID for the aggregator_id
     let aggregator_id = evento::create::<UserAggregate>()
         .data(&UserCreated {
-            user_id: user_id.to_string(),
             email: command.email,
             password_hash,
             created_at: created_at.to_rfc3339(),
@@ -103,6 +67,7 @@ pub async fn register_user(
         .await
         .map_err(|e| UserError::EventStoreError(e.to_string()))?;
 
+    // Return the generated aggregator_id as the user_id
     Ok(aggregator_id)
 }
 
@@ -138,7 +103,6 @@ pub async fn reset_password(command: ResetPasswordCommand, executor: &Sqlite) ->
     // The async subscription handler (password_changed_handler) will project to read model
     evento::save::<UserAggregate>(command.user_id.clone())
         .data(&PasswordChanged {
-            user_id: command.user_id.clone(),
             password_hash,
             changed_at: changed_at.to_rfc3339(),
         })

@@ -47,7 +47,7 @@ impl UserAggregate {
         &mut self,
         event: evento::EventDetails<UserCreated>,
     ) -> anyhow::Result<()> {
-        self.user_id = event.data.user_id;
+        self.user_id = event.aggregator_id.clone();
         self.email = event.data.email;
         self.password_hash = event.data.password_hash;
         self.created_at = event.data.created_at;
