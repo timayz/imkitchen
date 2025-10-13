@@ -433,10 +433,11 @@ pub async fn post_password_reset_complete(
             // Password successfully reset and PasswordChanged event committed (AC: 6, 7)
             tracing::info!("Password reset successful for user: {}", claims.sub);
 
-            // Redirect to login page with success message (AC: 7)
+            // Redirect to login page with success message using TwinSpark (AC: 7)
+            // Returns 200 OK for proper form swap, ts-location triggers client-side navigation
             (
-                StatusCode::SEE_OTHER,
-                [("Location", "/login?reset_success=true")],
+                StatusCode::OK,
+                [("ts-location", "/login?reset_success=true")],
                 (),
             )
                 .into_response()
