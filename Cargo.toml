@@ -102,7 +102,6 @@ rust-embed = { workspace = true }
 mime_guess = { workspace = true }
 lettre = { workspace = true }
 urlencoding = { workspace = true }
-async-stripe = { workspace = true }
 
 # Domain crates
 user = { path = "crates/user" }
