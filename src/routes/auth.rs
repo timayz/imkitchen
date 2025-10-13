@@ -77,6 +77,14 @@ pub struct PasswordResetCompleteTemplate {
     pub user: Option<()>, // None for public pages
 }
 
+#[derive(Template)]
+#[template(path = "pages/password-reset-error.html")]
+pub struct PasswordResetErrorTemplate {
+    pub title: String,
+    pub message: String,
+    pub user: Option<()>,
+}
+
 /// GET /register - Display registration form
 #[tracing::instrument]
 pub async fn get_register() -> impl IntoResponse {
@@ -360,7 +368,12 @@ pub async fn get_password_reset_complete(
             // Check if token type is "reset"
             if claims.tier != "reset" {
                 tracing::warn!("Invalid token type for password reset: {}", claims.tier);
-                return Html("<html><body><h1>Invalid Reset Token</h1><p>This password reset link is invalid. Please request a new password reset.</p><a href=\"/password-reset\">Request Password Reset</a></body></html>").into_response();
+                let template = PasswordResetErrorTemplate {
+                    title: "Invalid Reset Token".to_string(),
+                    message: "This password reset link is invalid. Please request a new password reset.".to_string(),
+                    user: None,
+                };
+                return Html(template.render().unwrap()).into_response();
             }
 
             // Token valid - render form
@@ -374,7 +387,12 @@ pub async fn get_password_reset_complete(
         Err(e) => {
             // Token invalid or expired (AC: 8)
             tracing::warn!("Invalid or expired password reset token: {:?}", e);
-            Html("<html><body><h1>Invalid or Expired Reset Token</h1><p>This password reset link has expired or is invalid. Reset tokens are valid for 1 hour. Please request a new password reset.</p><a href=\"/password-reset\">Request Password Reset</a></body></html>").into_response()
+            let template = PasswordResetErrorTemplate {
+                title: "Invalid or Expired Reset Token".to_string(),
+                message: "This password reset link has expired or is invalid. Reset tokens are valid for 1 hour. Please request a new password reset.".to_string(),
+                user: None,
+            };
+            Html(template.render().unwrap()).into_response()
         }
     }
 }
@@ -391,14 +409,24 @@ pub async fn post_password_reset_complete(
         Ok(c) => c,
         Err(e) => {
             tracing::warn!("Invalid or expired token during password reset completion: {:?}", e);
-            return Html("<html><body><h1>Invalid or Expired Reset Token</h1><p>This password reset link has expired or is invalid. Please request a new password reset.</p><a href=\"/password-reset\">Request Password Reset</a></body></html>").into_response();
+            let template = PasswordResetErrorTemplate {
+                title: "Invalid or Expired Reset Token".to_string(),
+                message: "This password reset link has expired or is invalid. Please request a new password reset.".to_string(),
+                user: None,
+            };
+            return Html(template.render().unwrap()).into_response();
         }
     };
 
     // Verify token type
     if claims.tier != "reset" {
         tracing::warn!("Invalid token type for password reset: {}", claims.tier);
-        return Html("<html><body><h1>Invalid Reset Token</h1><p>This password reset link is invalid. Please request a new password reset.</p><a href=\"/password-reset\">Request Password Reset</a></body></html>").into_response();
+        let template = PasswordResetErrorTemplate {
+            title: "Invalid Reset Token".to_string(),
+            message: "This password reset link is invalid. Please request a new password reset.".to_string(),
+            user: None,
+        };
+        return Html(template.render().unwrap()).into_response();
     }
 
     // Validate password length (AC: 5)
