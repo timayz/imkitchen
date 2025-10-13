@@ -19,7 +19,7 @@ All emails sent by the application are captured by MailDev and can be viewed in 
 ### 1. Start MailDev
 
 ```bash
-docker-compose up -d maildev
+docker compose up -d maildev
 ```
 
 ### 2. Verify Configuration
@@ -55,7 +55,7 @@ Open http://localhost:1080 in your browser to view captured emails.
 
 ## Testing Password Reset Flow
 
-1. Start MailDev: `docker-compose up -d maildev`
+1. Start MailDev: `docker compose up -d maildev`
 2. Start the app: `cargo run -- serve`
 3. Navigate to http://localhost:3000/login
 4. Click "Forgot Password?"
@@ -68,13 +68,13 @@ Open http://localhost:1080 in your browser to view captured emails.
 Stop all services:
 
 ```bash
-docker-compose down
+docker compose down
 ```
 
 Stop and remove volumes:
 
 ```bash
-docker-compose down -v
+docker compose down -v
 ```
 
 ## Configuration
@@ -172,7 +172,7 @@ For production, you can:
 
 ## Future Services
 
-The docker-compose.yml includes commented-out configurations for:
+The compose.yml includes commented-out configurations for:
 
 - **PostgreSQL**: Production database (currently using SQLite)
 - **OpenTelemetry Collector**: Distributed tracing and observability
@@ -183,14 +183,14 @@ Uncomment these sections when ready to use them.
 
 ### MailDev not receiving emails
 
-1. Check MailDev is running: `docker-compose ps`
-2. Check logs: `docker-compose logs maildev`
+1. Check MailDev is running: `docker compose ps`
+2. Check logs: `docker compose logs maildev`
 3. Verify config in `config/default.toml` matches MailDev ports
 4. Ensure no firewall blocking port 1025
 
 ### Port conflicts
 
-If port 1080 or 1025 is already in use, edit `docker-compose.yml`:
+If port 1080 or 1025 is already in use, edit `compose.yml`:
 
 ```yaml
 ports:
