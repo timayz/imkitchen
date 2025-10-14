@@ -1,0 +1,69 @@
+# imkitchen Docker Configuration
+#
+# This file contains Docker Compose-specific defaults.
+# Most settings are overridden by environment variables in compose.yml.
+#
+# Environment variable overrides use the pattern: IMKITCHEN__SECTION__KEY
+# Example: IMKITCHEN__JWT__SECRET=your-secret
+
+[server]
+# Server host address (listen on all interfaces in container)
+host = "0.0.0.0"
+
+# Server port
+port = 3000
+
+[database]
+# SQLite database URL (persistent volume mount at /var/lib/imkitchen)
+url = "sqlite:///var/lib/imkitchen/db.sqlite3"
+
+# Maximum number of database connections
+max_connections = 5
+
+[jwt]
+# JWT secret key (MUST be overridden via environment variable in production)
+# Override with: IMKITCHEN__JWT__SECRET or JWT_SECRET environment variable
+secret = "development_secret_key_change_in_production_32chars"
+
+# JWT token expiration in days
+expiration_days = 7
+
+[email]
+# SMTP Configuration - uses maildev service in Docker Compose
+smtp_host = "maildev"
+smtp_port = 1025
+smtp_username = ""
+smtp_password = ""
+
+# Email sender information
+from_email = "noreply@imkitchen.local"
+from_name = "imkitchen"
+
+# Base URL for email links (password reset, etc.)
+# Override in production: IMKITCHEN__EMAIL__BASE_URL=https://yourdomain.com
+base_url = "http://localhost:3000"
+
+[observability]
+# OpenTelemetry collector endpoint - uses otel-collector service
+otel_endpoint = "http://otel-collector:4319"
+
+# Log level: trace, debug, info, warn, error
+log_level = "info"
+
+# Stripe payment processing configuration
+# Override these via environment variables (see compose.yml)
+[stripe]
+secret_key = ""
+webhook_secret = ""
+price_id = ""
+
+# Future configuration sections (not yet implemented):
+#
+# [minio]
+# endpoint = "http://minio:9000"
+# access_key = "minioadmin"
+# secret_key = ""  # Override with IMKITCHEN__MINIO__SECRET_KEY
+#
+# [vapid]
+# public_key = ""
+# private_key = ""
