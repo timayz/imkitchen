@@ -1,20 +1,33 @@
 {% extends "base.html" %}
 
-{% block title %}Create Recipe - imkitchen{% endblock %}
+{% block title %}{% if mode == "edit" %}Edit Recipe{% else %}Create Recipe{% endif %} - imkitchen{% endblock %}
 
 {% block content %}
 <div class="min-h-screen py-12">
     <div class="container mx-auto px-4 max-w-2xl">
         <div class="bg-white rounded-lg shadow-md p-8">
-            <h1 class="text-3xl font-bold text-gray-900 mb-6">Create New Recipe</h1>
+            <h1 class="text-3xl font-bold text-gray-900 mb-6">
+                {% if mode == "edit" %}
+                    Edit Recipe
+                {% else %}
+                    Create New Recipe
+                {% endif %}
+            </h1>
 
-            {% if !error.is_empty() %}
-            <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded mb-4" role="alert">
-                {{ error }}
-            </div>
-            {% endif %}
+            <div id="recipe-form-container">
+                {% if !error.is_empty() %}
+                <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded mb-4" role="alert">
+                    {{ error }}
+                </div>
+                {% endif %}
 
-            <form method="POST" action="/recipes" class="space-y-6" id="recipe-form">
+                <form method="POST"
+                  action="{% if mode == "edit" %}/recipes/{{ recipe.as_ref().unwrap().id }}{% else %}/recipes{% endif %}"
+                  class="space-y-6"
+                  id="recipe-form"
+                  ts-req="{% if mode == "edit" %}/recipes/{{ recipe.as_ref().unwrap().id }}{% else %}/recipes{% endif %}"
+                  ts-target="#recipe-form-container"
+                  ts-req-selector="#recipe-form-container">
                 <!-- Title -->
                 <div>
                     <label for="title" class="block text-sm font-medium text-gray-700 mb-1">
@@ -29,6 +42,7 @@
                         maxlength="200"
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="e.g., Chicken Tikka Masala"
+                        {% if mode == "edit" %}value="{{ recipe.as_ref().unwrap().title }}"{% endif %}
                     />
                 </div>
 
@@ -38,51 +52,102 @@
                         Ingredients *
                     </label>
                     <div id="ingredients-list" class="space-y-2 mb-2">
-                        <!-- Initial ingredient row -->
-                        <div class="ingredient-row flex gap-2">
-                            <input
-                                type="text"
-                                name="ingredient_name[]"
-                                placeholder="Ingredient name"
-                                class="ingredient-name flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                required
-                            />
-                            <input
-                                type="number"
-                                name="ingredient_quantity[]"
-                                placeholder="Qty"
-                                step="0.01"
-                                class="ingredient-quantity w-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                required
-                            />
-                            <select
-                                name="ingredient_unit[]"
-                                class="ingredient-unit w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                required
-                            >
-                                <option value="">Unit</option>
-                                <option value="cup">cup</option>
-                                <option value="cups">cups</option>
-                                <option value="tbsp">tbsp</option>
-                                <option value="tsp">tsp</option>
-                                <option value="oz">oz</option>
-                                <option value="lb">lb</option>
-                                <option value="g">g</option>
-                                <option value="kg">kg</option>
-                                <option value="ml">ml</option>
-                                <option value="L">L</option>
-                                <option value="fl oz">fl oz</option>
-                                <option value="piece">piece</option>
-                                <option value="whole">whole</option>
-                                <option value="can">can</option>
-                                <option value="package">package</option>
-                                <option value="pinch">pinch</option>
-                                <option value="to taste">to taste</option>
-                            </select>
-                            <button type="button" class="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600" ts-action="remove .ingredient-row">
-                                Remove
-                            </button>
-                        </div>
+                        {% if mode == "edit" %}
+                            {% for ingredient in recipe.as_ref().unwrap().ingredients %}
+                            <div class="ingredient-row flex gap-2">
+                                <input
+                                    type="text"
+                                    name="ingredient_name[]"
+                                    placeholder="Ingredient name"
+                                    class="ingredient-name flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    value="{{ ingredient.name }}"
+                                    required
+                                />
+                                <input
+                                    type="number"
+                                    name="ingredient_quantity[]"
+                                    placeholder="Qty"
+                                    step="0.01"
+                                    class="ingredient-quantity w-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    value="{{ ingredient.quantity }}"
+                                    required
+                                />
+                                <select
+                                    name="ingredient_unit[]"
+                                    class="ingredient-unit w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    required
+                                >
+                                    <option value="">Unit</option>
+                                    <option value="cup" {% if ingredient.unit == "cup" %}selected{% endif %}>cup</option>
+                                    <option value="cups" {% if ingredient.unit == "cups" %}selected{% endif %}>cups</option>
+                                    <option value="tbsp" {% if ingredient.unit == "tbsp" %}selected{% endif %}>tbsp</option>
+                                    <option value="tsp" {% if ingredient.unit == "tsp" %}selected{% endif %}>tsp</option>
+                                    <option value="oz" {% if ingredient.unit == "oz" %}selected{% endif %}>oz</option>
+                                    <option value="lb" {% if ingredient.unit == "lb" %}selected{% endif %}>lb</option>
+                                    <option value="g" {% if ingredient.unit == "g" %}selected{% endif %}>g</option>
+                                    <option value="kg" {% if ingredient.unit == "kg" %}selected{% endif %}>kg</option>
+                                    <option value="ml" {% if ingredient.unit == "ml" %}selected{% endif %}>ml</option>
+                                    <option value="L" {% if ingredient.unit == "L" %}selected{% endif %}>L</option>
+                                    <option value="fl oz" {% if ingredient.unit == "fl oz" %}selected{% endif %}>fl oz</option>
+                                    <option value="piece" {% if ingredient.unit == "piece" %}selected{% endif %}>piece</option>
+                                    <option value="whole" {% if ingredient.unit == "whole" %}selected{% endif %}>whole</option>
+                                    <option value="can" {% if ingredient.unit == "can" %}selected{% endif %}>can</option>
+                                    <option value="package" {% if ingredient.unit == "package" %}selected{% endif %}>package</option>
+                                    <option value="pinch" {% if ingredient.unit == "pinch" %}selected{% endif %}>pinch</option>
+                                    <option value="to taste" {% if ingredient.unit == "to taste" %}selected{% endif %}>to taste</option>
+                                </select>
+                                <button type="button" class="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600" ts-action="remove .ingredient-row">
+                                    Remove
+                                </button>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <!-- Initial ingredient row for create mode -->
+                            <div class="ingredient-row flex gap-2">
+                                <input
+                                    type="text"
+                                    name="ingredient_name[]"
+                                    placeholder="Ingredient name"
+                                    class="ingredient-name flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    required
+                                />
+                                <input
+                                    type="number"
+                                    name="ingredient_quantity[]"
+                                    placeholder="Qty"
+                                    step="0.01"
+                                    class="ingredient-quantity w-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    required
+                                />
+                                <select
+                                    name="ingredient_unit[]"
+                                    class="ingredient-unit w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    required
+                                >
+                                    <option value="">Unit</option>
+                                    <option value="cup">cup</option>
+                                    <option value="cups">cups</option>
+                                    <option value="tbsp">tbsp</option>
+                                    <option value="tsp">tsp</option>
+                                    <option value="oz">oz</option>
+                                    <option value="lb">lb</option>
+                                    <option value="g">g</option>
+                                    <option value="kg">kg</option>
+                                    <option value="ml">ml</option>
+                                    <option value="L">L</option>
+                                    <option value="fl oz">fl oz</option>
+                                    <option value="piece">piece</option>
+                                    <option value="whole">whole</option>
+                                    <option value="can">can</option>
+                                    <option value="package">package</option>
+                                    <option value="pinch">pinch</option>
+                                    <option value="to taste">to taste</option>
+                                </select>
+                                <button type="button" class="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600" ts-action="remove .ingredient-row">
+                                    Remove
+                                </button>
+                            </div>
+                        {% endif %}
                     </div>
                     <button type="button" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
                             ts-req="/recipes/ingredient-row"
@@ -98,37 +163,73 @@
                         Instructions *
                     </label>
                     <div id="instructions-list" class="space-y-2 mb-2">
-                        <!-- Initial instruction row -->
-                        <div class="instruction-row">
-                            <div class="flex gap-2 items-start">
-                                <span class="instruction-number px-3 py-2 bg-gray-100 rounded-md font-medium">1</span>
-                                <textarea
-                                    name="instruction_text[]"
-                                    placeholder="Instruction step"
-                                    class="instruction-text flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    rows="2"
-                                    required
-                                ></textarea>
-                                <input
-                                    type="number"
-                                    name="instruction_timer[]"
-                                    placeholder="Timer (min)"
-                                    class="instruction-timer w-28 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                                <!-- Reorder buttons -->
-                                <div class="flex flex-col gap-1">
-                                    <button type="button" onclick="moveInstructionUp(this)" class="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs" title="Move up">
-                                        ↑
-                                    </button>
-                                    <button type="button" onclick="moveInstructionDown(this)" class="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs" title="Move down">
-                                        ↓
+                        {% if mode == "edit" %}
+                            {% for instruction in recipe.as_ref().unwrap().instructions %}
+                            <div class="instruction-row">
+                                <div class="flex gap-2 items-start">
+                                    <span class="instruction-number px-3 py-2 bg-gray-100 rounded-md font-medium">{{ instruction.step_number }}</span>
+                                    <textarea
+                                        name="instruction_text[]"
+                                        placeholder="Instruction step"
+                                        class="instruction-text flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        rows="2"
+                                        required
+                                    >{{ instruction.instruction_text }}</textarea>
+                                    <input
+                                        type="number"
+                                        name="instruction_timer[]"
+                                        placeholder="Timer (min)"
+                                        class="instruction-timer w-28 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        {% if instruction.timer_minutes.is_some() %}value="{{ instruction.timer_minutes.unwrap() }}"{% endif %}
+                                    />
+                                    <!-- Reorder buttons -->
+                                    <div class="flex flex-col gap-1">
+                                        <button type="button" onclick="moveInstructionUp(this)" class="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs" title="Move up">
+                                            ↑
+                                        </button>
+                                        <button type="button" onclick="moveInstructionDown(this)" class="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs" title="Move down">
+                                            ↓
+                                        </button>
+                                    </div>
+                                    <button type="button" class="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600" onclick="removeInstructionRow(this)">
+                                        Remove
                                     </button>
                                 </div>
-                                <button type="button" class="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600" ts-action="remove .instruction-row; renumberInstructions">
-                                    Remove
-                                </button>
                             </div>
-                        </div>
+                            {% endfor %}
+                        {% else %}
+                            <!-- Initial instruction row for create mode -->
+                            <div class="instruction-row">
+                                <div class="flex gap-2 items-start">
+                                    <span class="instruction-number px-3 py-2 bg-gray-100 rounded-md font-medium">1</span>
+                                    <textarea
+                                        name="instruction_text[]"
+                                        placeholder="Instruction step"
+                                        class="instruction-text flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        rows="2"
+                                        required
+                                    ></textarea>
+                                    <input
+                                        type="number"
+                                        name="instruction_timer[]"
+                                        placeholder="Timer (min)"
+                                        class="instruction-timer w-28 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                    <!-- Reorder buttons -->
+                                    <div class="flex flex-col gap-1">
+                                        <button type="button" onclick="moveInstructionUp(this)" class="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs" title="Move up">
+                                            ↑
+                                        </button>
+                                        <button type="button" onclick="moveInstructionDown(this)" class="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs" title="Move down">
+                                            ↓
+                                        </button>
+                                    </div>
+                                    <button type="button" class="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600" onclick="removeInstructionRow(this)">
+                                        Remove
+                                    </button>
+                                </div>
+                            </div>
+                        {% endif %}
                     </div>
                     <button type="button" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
                             ts-req="/recipes/instruction-row"
@@ -150,6 +251,7 @@
                             name="prep_time_min"
                             min="0"
                             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            {% if mode == "edit" %}{% if recipe.as_ref().unwrap().prep_time_min.is_some() %}value="{{ recipe.as_ref().unwrap().prep_time_min.unwrap() }}"{% endif %}{% endif %}
                         />
                     </div>
                     <div>
@@ -162,6 +264,7 @@
                             name="cook_time_min"
                             min="0"
                             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            {% if mode == "edit" %}{% if recipe.as_ref().unwrap().cook_time_min.is_some() %}value="{{ recipe.as_ref().unwrap().cook_time_min.unwrap() }}"{% endif %}{% endif %}
                         />
                     </div>
                 </div>
@@ -179,6 +282,7 @@
                             min="0"
                             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="e.g., 4 for marinating"
+                            {% if mode == "edit" %}{% if recipe.as_ref().unwrap().advance_prep_hours.is_some() %}value="{{ recipe.as_ref().unwrap().advance_prep_hours.unwrap() }}"{% endif %}{% endif %}
                         />
                     </div>
                     <div>
@@ -191,6 +295,7 @@
                             name="serving_size"
                             min="1"
                             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            {% if mode == "edit" %}{% if recipe.as_ref().unwrap().serving_size.is_some() %}value="{{ recipe.as_ref().unwrap().serving_size.unwrap() }}"{% endif %}{% endif %}
                         />
                     </div>
                 </div>
@@ -201,13 +306,14 @@
                         type="submit"
                         class="flex-1 bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium"
                     >
-                        Create Recipe
+                        {% if mode == "edit" %}Update Recipe{% else %}Create Recipe{% endif %}
                     </button>
-                    <a href="/dashboard" class="px-6 py-3 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 font-medium text-center">
+                    <a href="{% if mode == "edit" %}/recipes/{{ recipe.as_ref().unwrap().id }}{% else %}/dashboard{% endif %}" class="px-6 py-3 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 font-medium text-center">
                         Cancel
                     </a>
                 </div>
             </form>
+            </div>
         </div>
     </div>
 </div>
@@ -242,6 +348,13 @@ function moveInstructionDown(button) {
         row.parentNode.insertBefore(next, row);
         renumberInstructions();
     }
+}
+
+// Remove instruction row
+function removeInstructionRow(button) {
+    const row = button.closest('.instruction-row');
+    row.remove();
+    renumberInstructions();
 }
 </script>
 

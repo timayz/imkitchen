@@ -59,3 +59,21 @@ pub struct RecipeFavorited {
     pub favorited: bool,    // true = favorited, false = unfavorited
     pub toggled_at: String, // RFC3339 formatted timestamp
 }
+
+/// RecipeUpdated event emitted when a recipe is modified
+///
+/// This event stores only the changed fields (delta) for efficiency.
+/// All fields are Optional - only modified values are included in the event.
+///
+/// Note: recipe_id is provided by event.aggregator_id, not stored in event data
+#[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
+pub struct RecipeUpdated {
+    pub title: Option<String>,
+    pub ingredients: Option<Vec<Ingredient>>,
+    pub instructions: Option<Vec<InstructionStep>>,
+    pub prep_time_min: Option<Option<u32>>, // Option<Option<>> to differentiate between "not changed" and "set to None"
+    pub cook_time_min: Option<Option<u32>>,
+    pub advance_prep_hours: Option<Option<u32>>,
+    pub serving_size: Option<Option<u32>>,
+    pub updated_at: String, // RFC3339 formatted timestamp
+}

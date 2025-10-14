@@ -17,5 +17,6 @@ pub use profile::{
     post_profile, post_subscription_upgrade,
 };
 pub use recipes::{
-    get_ingredient_row, get_instruction_row, get_recipe_detail, get_recipe_form, post_create_recipe,
+    get_ingredient_row, get_instruction_row, get_recipe_detail, get_recipe_edit_form,
+    get_recipe_form, post_create_recipe, post_update_recipe,
 };

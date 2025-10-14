@@ -341,3 +341,460 @@ async fn test_delete_recipe_permission_denied() {
     // Should fail with PermissionDenied
     assert!(matches!(result, Err(RecipeError::PermissionDenied)));
 }
+
+// ============================================================================
+// UPDATE RECIPE HTTP INTEGRATION TESTS (Story 2.2)
+// TwinSpark Pattern: POST with 200 OK + ts-location header (progressive enhancement)
+// ============================================================================
+
+#[tokio::test]
+async fn test_post_recipe_update_success_returns_ts_location() {
+    use axum::{
+        body::Body,
+        http::{Request, StatusCode},
+    };
+    use tower::ServiceExt;
+
+    let pool = setup_test_db().await;
+    let executor = setup_evento_executor(pool.clone()).await;
+    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+
+    // Start projection
+    tokio::spawn({
+        let pool = pool.clone();
+        let executor = executor.clone();
+        async move {
+            recipe_projection(pool).run(&executor).await.ok();
+        }
+    });
+
+    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+
+    // Create recipe via command
+    let command = CreateRecipeCommand {
+        title: "Original Recipe".to_string(),
+        ingredients: vec![Ingredient {
+            name: "Salt".to_string(),
+            quantity: 1.0,
+            unit: "tsp".to_string(),
+        }],
+        instructions: vec![InstructionStep {
+            step_number: 1,
+            instruction_text: "Cook it".to_string(),
+            timer_minutes: None,
+        }],
+        prep_time_min: Some(10),
+        cook_time_min: Some(20),
+        advance_prep_hours: None,
+        serving_size: Some(2),
+    };
+    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+        .await
+        .unwrap();
+
+    tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
+
+    // Create Axum app with recipe routes
+    let app = imkitchen::create_app(pool.clone(), executor.clone())
+        .await
+        .unwrap();
+
+    // Create JWT token for user1
+    let token = user::generate_jwt(
+        "user1".to_string(),
+        "user1@test.com".to_string(),
+        "free".to_string(),
+        "test-secret-key-32-bytes-long!!",
+    )
+    .unwrap();
+
+    // POST /recipes/:id with updated data (TwinSpark pattern)
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri(format!("/recipes/{}", recipe_id))
+                .header("content-type", "application/x-www-form-urlencoded")
+                .header("cookie", format!("auth_token={}", token))
+                .body(Body::from(
+                    "title=Updated Recipe&ingredient_name[]=Pepper&ingredient_quantity[]=2&ingredient_unit[]=tsp&instruction_text[]=Season it&instruction_timer[]=&prep_time_min=15&cook_time_min=25",
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    // TwinSpark pattern: Returns 200 OK with ts-location header
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(
+        response.headers().get("ts-location").unwrap(),
+        format!("/recipes/{}", recipe_id).as_str()
+    );
+
+    tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
+
+    // Verify recipe updated in read model
+    let updated_recipe = query_recipe_by_id(&recipe_id, &pool)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(updated_recipe.title, "Updated Recipe");
+    assert_eq!(updated_recipe.prep_time_min, Some(15));
+    assert_eq!(updated_recipe.cook_time_min, Some(25));
+}
+
+#[tokio::test]
+async fn test_post_recipe_update_unauthorized_returns_403() {
+    use axum::{
+        body::Body,
+        http::{Request, StatusCode},
+    };
+    use tower::ServiceExt;
+
+    let pool = setup_test_db().await;
+    let executor = setup_evento_executor(pool.clone()).await;
+    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+    insert_test_user(&pool, "user2", "user2@test.com", "free").await;
+
+    // Start projection
+    tokio::spawn({
+        let pool = pool.clone();
+        let executor = executor.clone();
+        async move {
+            recipe_projection(pool).run(&executor).await.ok();
+        }
+    });
+
+    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+
+    // User1 creates recipe
+    let command = CreateRecipeCommand {
+        title: "User1 Recipe".to_string(),
+        ingredients: vec![Ingredient {
+            name: "Salt".to_string(),
+            quantity: 1.0,
+            unit: "tsp".to_string(),
+        }],
+        instructions: vec![InstructionStep {
+            step_number: 1,
+            instruction_text: "Cook it".to_string(),
+            timer_minutes: None,
+        }],
+        prep_time_min: Some(10),
+        cook_time_min: Some(20),
+        advance_prep_hours: None,
+        serving_size: Some(2),
+    };
+    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+        .await
+        .unwrap();
+
+    tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
+
+    // Create Axum app
+    let app = imkitchen::create_app(pool.clone(), executor.clone())
+        .await
+        .unwrap();
+
+    // Create JWT token for user2
+    let token = user::generate_jwt(
+        "user2".to_string(),
+        "user2@test.com".to_string(),
+        "free".to_string(),
+        "test-secret-key-32-bytes-long!!",
+    )
+    .unwrap();
+
+    // User2 tries to POST /recipes/:id (user1's recipe)
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri(format!("/recipes/{}", recipe_id))
+                .header("content-type", "application/x-www-form-urlencoded")
+                .header("cookie", format!("auth_token={}", token))
+                .body(Body::from("title=Hijacked Recipe&ingredient_name[]=Salt&ingredient_quantity[]=1&ingredient_unit[]=tsp&instruction_text[]=Hack it&instruction_timer[]="))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    // Should return 403 Forbidden
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn test_post_recipe_update_invalid_data_returns_422() {
+    use axum::{
+        body::Body,
+        http::{Request, StatusCode},
+    };
+    use tower::ServiceExt;
+
+    let pool = setup_test_db().await;
+    let executor = setup_evento_executor(pool.clone()).await;
+    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+
+    // Start projection
+    tokio::spawn({
+        let pool = pool.clone();
+        let executor = executor.clone();
+        async move {
+            recipe_projection(pool).run(&executor).await.ok();
+        }
+    });
+
+    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+
+    // Create recipe
+    let command = CreateRecipeCommand {
+        title: "Original Recipe".to_string(),
+        ingredients: vec![Ingredient {
+            name: "Salt".to_string(),
+            quantity: 1.0,
+            unit: "tsp".to_string(),
+        }],
+        instructions: vec![InstructionStep {
+            step_number: 1,
+            instruction_text: "Cook it".to_string(),
+            timer_minutes: None,
+        }],
+        prep_time_min: Some(10),
+        cook_time_min: Some(20),
+        advance_prep_hours: None,
+        serving_size: Some(2),
+    };
+    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+        .await
+        .unwrap();
+
+    tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
+
+    // Create Axum app
+    let app = imkitchen::create_app(pool.clone(), executor.clone())
+        .await
+        .unwrap();
+
+    // Create JWT token for user1
+    let token = user::generate_jwt(
+        "user1".to_string(),
+        "user1@test.com".to_string(),
+        "free".to_string(),
+        "test-secret-key-32-bytes-long!!",
+    )
+    .unwrap();
+
+    // POST /recipes/:id with invalid data (title too short)
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri(format!("/recipes/{}", recipe_id))
+                .header("content-type", "application/x-www-form-urlencoded")
+                .header("cookie", format!("auth_token={}", token))
+                .body(Body::from("title=Ab")) // Title < 3 characters
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    // Should return 422 Unprocessable Entity for validation error
+    assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+}
+
+#[tokio::test]
+async fn test_get_recipe_edit_form_prepopulated() {
+    use axum::{
+        body::Body,
+        http::{Request, StatusCode},
+    };
+    use http_body_util::BodyExt;
+    use tower::ServiceExt;
+
+    let pool = setup_test_db().await;
+    let executor = setup_evento_executor(pool.clone()).await;
+    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+
+    // Start projection
+    tokio::spawn({
+        let pool = pool.clone();
+        let executor = executor.clone();
+        async move {
+            recipe_projection(pool).run(&executor).await.ok();
+        }
+    });
+
+    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+
+    // Create recipe
+    let command = CreateRecipeCommand {
+        title: "Test Recipe".to_string(),
+        ingredients: vec![Ingredient {
+            name: "Salt".to_string(),
+            quantity: 1.0,
+            unit: "tsp".to_string(),
+        }],
+        instructions: vec![InstructionStep {
+            step_number: 1,
+            instruction_text: "Cook it".to_string(),
+            timer_minutes: Some(30),
+        }],
+        prep_time_min: Some(10),
+        cook_time_min: Some(20),
+        advance_prep_hours: Some(2),
+        serving_size: Some(4),
+    };
+    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+        .await
+        .unwrap();
+
+    tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
+
+    // Create Axum app
+    let app = imkitchen::create_app(pool.clone(), executor.clone())
+        .await
+        .unwrap();
+
+    // Create JWT token for user1
+    let token = user::generate_jwt(
+        "user1".to_string(),
+        "user1@test.com".to_string(),
+        "free".to_string(),
+        "test-secret-key-32-bytes-long!!",
+    )
+    .unwrap();
+
+    // GET /recipes/:id/edit
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri(format!("/recipes/{}/edit", recipe_id))
+                .header("cookie", format!("auth_token={}", token))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let body_str = String::from_utf8(body.to_vec()).unwrap();
+
+    // Verify form is prepopulated with recipe data
+    assert!(body_str.contains("Edit Recipe"));
+    assert!(body_str.contains("value=\"Test Recipe\""));
+    assert!(body_str.contains("Salt"));
+    assert!(body_str.contains("Cook it"));
+    assert!(body_str.contains("value=\"10\"")); // prep_time_min
+    assert!(body_str.contains("value=\"20\"")); // cook_time_min
+    assert!(body_str.contains("value=\"2\"")); // advance_prep_hours
+    assert!(body_str.contains("value=\"4\"")); // serving_size
+}
+
+#[tokio::test]
+async fn test_recipe_update_syncs_to_read_model() {
+    let pool = setup_test_db().await;
+    let executor = setup_evento_executor(pool.clone()).await;
+    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+
+    // Start projection
+    tokio::spawn({
+        let pool = pool.clone();
+        let executor = executor.clone();
+        async move {
+            recipe_projection(pool).run(&executor).await.ok();
+        }
+    });
+
+    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+
+    // Create recipe
+    let command = CreateRecipeCommand {
+        title: "Original Recipe".to_string(),
+        ingredients: vec![Ingredient {
+            name: "Salt".to_string(),
+            quantity: 1.0,
+            unit: "tsp".to_string(),
+        }],
+        instructions: vec![InstructionStep {
+            step_number: 1,
+            instruction_text: "Cook it".to_string(),
+            timer_minutes: None,
+        }],
+        prep_time_min: Some(10),
+        cook_time_min: Some(20),
+        advance_prep_hours: Some(1),
+        serving_size: Some(2),
+    };
+    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+        .await
+        .unwrap();
+
+    tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
+
+    // Update recipe via command
+    let update_command = recipe::UpdateRecipeCommand {
+        recipe_id: recipe_id.clone(),
+        user_id: "user1".to_string(),
+        title: Some("Updated Recipe".to_string()),
+        ingredients: Some(vec![
+            Ingredient {
+                name: "Pepper".to_string(),
+                quantity: 2.0,
+                unit: "tsp".to_string(),
+            },
+            Ingredient {
+                name: "Garlic".to_string(),
+                quantity: 3.0,
+                unit: "cloves".to_string(),
+            },
+        ]),
+        instructions: Some(vec![
+            InstructionStep {
+                step_number: 1,
+                instruction_text: "Season with spices".to_string(),
+                timer_minutes: Some(5),
+            },
+            InstructionStep {
+                step_number: 2,
+                instruction_text: "Cook thoroughly".to_string(),
+                timer_minutes: Some(30),
+            },
+        ]),
+        prep_time_min: Some(Some(15)),
+        cook_time_min: Some(Some(25)),
+        advance_prep_hours: Some(Some(2)), // Change to 2 hours
+        serving_size: Some(None),          // Clear serving size
+    };
+    recipe::update_recipe(update_command, &executor, &pool)
+        .await
+        .unwrap();
+
+    tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
+
+    // Verify read model updated
+    let updated_recipe = query_recipe_by_id(&recipe_id, &pool)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(updated_recipe.title, "Updated Recipe");
+    assert_eq!(updated_recipe.prep_time_min, Some(15));
+    assert_eq!(updated_recipe.cook_time_min, Some(25));
+    assert_eq!(updated_recipe.advance_prep_hours, Some(2));
+    assert_eq!(updated_recipe.serving_size, None);
+
+    // Verify ingredients updated
+    let ingredients: Vec<Ingredient> = serde_json::from_str(&updated_recipe.ingredients).unwrap();
+    assert_eq!(ingredients.len(), 2);
+    assert_eq!(ingredients[0].name, "Pepper");
+    assert_eq!(ingredients[1].name, "Garlic");
+
+    // Verify instructions updated
+    let instructions: Vec<InstructionStep> =
+        serde_json::from_str(&updated_recipe.instructions).unwrap();
+    assert_eq!(instructions.len(), 2);
+    assert_eq!(instructions[0].instruction_text, "Season with spices");
+    assert_eq!(instructions[1].instruction_text, "Cook thoroughly");
+}
