@@ -1,0 +1,61 @@
+use bincode::{Decode, Encode};
+use evento::AggregatorName;
+use serde::{Deserialize, Serialize};
+
+/// Ingredient structure for recipes
+#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
+pub struct Ingredient {
+    pub name: String,
+    pub quantity: f32,
+    pub unit: String, // e.g., "cups", "tbsp", "grams", "oz"
+}
+
+/// Instruction step for recipes
+#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
+pub struct InstructionStep {
+    pub step_number: u32,
+    pub instruction_text: String,
+    pub timer_minutes: Option<u32>, // Optional timer for this step
+}
+
+/// RecipeCreated event emitted when a new recipe is created
+///
+/// This event is the source of truth for recipe creation in the event sourced system.
+/// Uses String types for bincode compatibility (UUID and timestamps serialized as strings).
+///
+/// Note: recipe_id is provided by event.aggregator_id, not stored in event data
+#[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
+pub struct RecipeCreated {
+    pub user_id: String,                    // Owner of the recipe
+    pub title: String,                      // Recipe title
+    pub ingredients: Vec<Ingredient>,       // List of ingredients with quantities
+    pub instructions: Vec<InstructionStep>, // Step-by-step cooking instructions
+    pub prep_time_min: Option<u32>,         // Preparation time in minutes
+    pub cook_time_min: Option<u32>,         // Cooking time in minutes
+    pub advance_prep_hours: Option<u32>,    // Hours needed for advance prep (e.g., marinating)
+    pub serving_size: Option<u32>,          // Number of servings
+    pub created_at: String,                 // RFC3339 formatted timestamp
+}
+
+/// RecipeDeleted event emitted when a recipe is deleted
+///
+/// This event marks a recipe as deleted (soft delete in event sourcing).
+/// The RecipeDeleted event is consumed by the user domain to decrement recipe_count.
+///
+/// Note: recipe_id is provided by event.aggregator_id, not stored in event data
+#[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
+pub struct RecipeDeleted {
+    pub user_id: String,    // ID of the user who deleted the recipe
+    pub deleted_at: String, // RFC3339 formatted timestamp
+}
+
+/// RecipeFavorited event emitted when a user toggles favorite status
+///
+/// This event tracks favorite status changes for quick access filtering.
+///
+/// Note: recipe_id is provided by event.aggregator_id, not stored in event data
+#[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
+pub struct RecipeFavorited {
+    pub favorited: bool,    // true = favorited, false = unfavorited
+    pub toggled_at: String, // RFC3339 formatted timestamp
+}

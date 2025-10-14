@@ -1,0 +1,30 @@
+<div class="instruction-row">
+    <div class="flex gap-2 items-start">
+        <span class="instruction-number px-3 py-2 bg-gray-100 rounded-md font-medium">{{ step_number }}</span>
+        <textarea
+            name="instruction_text[]"
+            placeholder="Instruction step"
+            class="instruction-text flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            rows="2"
+            required
+        ></textarea>
+        <input
+            type="number"
+            name="instruction_timer[]"
+            placeholder="Timer (min)"
+            class="instruction-timer w-28 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <!-- Reorder buttons -->
+        <div class="flex flex-col gap-1">
+            <button type="button" onclick="moveInstructionUp(this)" class="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs" title="Move up">
+                ↑
+            </button>
+            <button type="button" onclick="moveInstructionDown(this)" class="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs" title="Move down">
+                ↓
+            </button>
+        </div>
+        <button type="button" class="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600" ts-action="remove .instruction-row">
+            Remove
+        </button>
+    </div>
+</div>

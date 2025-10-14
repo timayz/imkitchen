@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}Create Recipe - imkitchen{% endblock %}
+
+{% block content %}
+<div class="min-h-screen py-12">
+    <div class="container mx-auto px-4 max-w-2xl">
+        <div class="bg-white rounded-lg shadow-md p-8">
+            <h1 class="text-3xl font-bold text-gray-900 mb-6">Create New Recipe</h1>
+
+            {% if !error.is_empty() %}
+            <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded mb-4" role="alert">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="POST" action="/recipes" class="space-y-6" id="recipe-form">
+                <!-- Title -->
+                <div>
+                    <label for="title" class="block text-sm font-medium text-gray-700 mb-1">
+                        Recipe Title *
+                    </label>
+                    <input
+                        type="text"
+                        id="title"
+                        name="title"
+                        required
+                        minlength="3"
+                        maxlength="200"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="e.g., Chicken Tikka Masala"
+                    />
+                </div>
+
+                <!-- Ingredients Section -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Ingredients *
+                    </label>
+                    <div id="ingredients-list" class="space-y-2 mb-2">
+                        <!-- Initial ingredient row -->
+                        <div class="ingredient-row flex gap-2">
+                            <input
+                                type="text"
+                                name="ingredient_name[]"
+                                placeholder="Ingredient name"
+                                class="ingredient-name flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required
+                            />
+                            <input
+                                type="number"
+                                name="ingredient_quantity[]"
+                                placeholder="Qty"
+                                step="0.01"
+                                class="ingredient-quantity w-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required
+                            />
+                            <select
+                                name="ingredient_unit[]"
+                                class="ingredient-unit w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required
+                            >
+                                <option value="">Unit</option>
+                                <option value="cup">cup</option>
+                                <option value="cups">cups</option>
+                                <option value="tbsp">tbsp</option>
+                                <option value="tsp">tsp</option>
+                                <option value="oz">oz</option>
+                                <option value="lb">lb</option>
+                                <option value="g">g</option>
+                                <option value="kg">kg</option>
+                                <option value="ml">ml</option>
+                                <option value="L">L</option>
+                                <option value="fl oz">fl oz</option>
+                                <option value="piece">piece</option>
+                                <option value="whole">whole</option>
+                                <option value="can">can</option>
+                                <option value="package">package</option>
+                                <option value="pinch">pinch</option>
+                                <option value="to taste">to taste</option>
+                            </select>
+                            <button type="button" class="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600" ts-action="remove .ingredient-row">
+                                Remove
+                            </button>
+                        </div>
+                    </div>
+                    <button type="button" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                            ts-req="/recipes/ingredient-row"
+                            ts-target="#ingredients-list"
+                            ts-swap="append">
+                        + Add Ingredient
+                    </button>
+                </div>
+
+                <!-- Instructions Section -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Instructions *
+                    </label>
+                    <div id="instructions-list" class="space-y-2 mb-2">
+                        <!-- Initial instruction row -->
+                        <div class="instruction-row">
+                            <div class="flex gap-2 items-start">
+                                <span class="instruction-number px-3 py-2 bg-gray-100 rounded-md font-medium">1</span>
+                                <textarea
+                                    name="instruction_text[]"
+                                    placeholder="Instruction step"
+                                    class="instruction-text flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    rows="2"
+                                    required
+                                ></textarea>
+                                <input
+                                    type="number"
+                                    name="instruction_timer[]"
+                                    placeholder="Timer (min)"
+                                    class="instruction-timer w-28 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                                <!-- Reorder buttons -->
+                                <div class="flex flex-col gap-1">
+                                    <button type="button" onclick="moveInstructionUp(this)" class="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs" title="Move up">
+                                        ↑
+                                    </button>
+                                    <button type="button" onclick="moveInstructionDown(this)" class="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs" title="Move down">
+                                        ↓
+                                    </button>
+                                </div>
+                                <button type="button" class="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600" ts-action="remove .instruction-row; renumberInstructions">
+                                    Remove
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                            ts-req="/recipes/instruction-row"
+                            ts-target="#instructions-list"
+                            ts-swap="append">
+                        + Add Step
+                    </button>
+                </div>
+
+                <!-- Timing Information -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="prep_time_min" class="block text-sm font-medium text-gray-700 mb-1">
+                            Prep Time (minutes)
+                        </label>
+                        <input
+                            type="number"
+                            id="prep_time_min"
+                            name="prep_time_min"
+                            min="0"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+                    <div>
+                        <label for="cook_time_min" class="block text-sm font-medium text-gray-700 mb-1">
+                            Cook Time (minutes)
+                        </label>
+                        <input
+                            type="number"
+                            id="cook_time_min"
+                            name="cook_time_min"
+                            min="0"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+                </div>
+
+                <!-- Advance Prep and Serving Size -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="advance_prep_hours" class="block text-sm font-medium text-gray-700 mb-1">
+                            Advance Prep (hours)
+                        </label>
+                        <input
+                            type="number"
+                            id="advance_prep_hours"
+                            name="advance_prep_hours"
+                            min="0"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="e.g., 4 for marinating"
+                        />
+                    </div>
+                    <div>
+                        <label for="serving_size" class="block text-sm font-medium text-gray-700 mb-1">
+                            Serving Size
+                        </label>
+                        <input
+                            type="number"
+                            id="serving_size"
+                            name="serving_size"
+                            min="1"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="flex gap-4">
+                    <button
+                        type="submit"
+                        class="flex-1 bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium"
+                    >
+                        Create Recipe
+                    </button>
+                    <a href="/dashboard" class="px-6 py-3 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 font-medium text-center">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Renumber all instruction steps after add/remove/reorder
+function renumberInstructions() {
+    const rows = document.querySelectorAll('#instructions-list .instruction-row');
+    rows.forEach((row, index) => {
+        const numberSpan = row.querySelector('.instruction-number');
+        if (numberSpan) {
+            numberSpan.textContent = (index + 1).toString();
+        }
+    });
+}
+
+// Move instruction up
+function moveInstructionUp(button) {
+    const row = button.closest('.instruction-row');
+    const prev = row.previousElementSibling;
+    if (prev && prev.classList.contains('instruction-row')) {
+        row.parentNode.insertBefore(row, prev);
+        renumberInstructions();
+    }
+}
+
+// Move instruction down
+function moveInstructionDown(button) {
+    const row = button.closest('.instruction-row');
+    const next = row.nextElementSibling;
+    if (next && next.classList.contains('instruction-row')) {
+        row.parentNode.insertBefore(next, row);
+        renumberInstructions();
+    }
+}
+</script>
+
+{% endblock %}
