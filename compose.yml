@@ -1,4 +1,42 @@
 services:
+  # imkitchen-migrate - Database migration init container
+  # Runs migrations before the main app starts
+  imkitchen-migrate:
+    image: timayz/imkitchen:latest
+    container_name: imkitchen-migrate
+    command: ["migrate"]
+    environment:
+      - CONFIG_PATH=/etc/imkitchen/config.toml
+    volumes:
+      - ./config/docker.toml:/etc/imkitchen/config.toml:ro
+      - imkitchen-data:/var/lib/imkitchen
+    networks:
+      - imkitchen-network
+    restart: "no"
+
+  # imkitchen - Main application
+  # Access web UI at: http://localhost:3000
+  imkitchen:
+    image: timayz/imkitchen:latest
+    container_name: imkitchen-app
+    ports:
+      - "3000:3000"
+    environment:
+      - CONFIG_PATH=/etc/imkitchen/config.toml
+    volumes:
+      - ./config/docker.toml:/etc/imkitchen/config.toml:ro
+      - imkitchen-data:/var/lib/imkitchen
+    networks:
+      - imkitchen-network
+    restart: unless-stopped
+    depends_on:
+      imkitchen-migrate:
+        condition: service_completed_successfully
+      maildev:
+        condition: service_started
+      otel-collector:
+        condition: service_started
+
   # MailDev - SMTP testing server with web UI
   # Access web UI at: http://localhost:1080
   # SMTP server runs on: localhost:1025
@@ -56,12 +94,6 @@ services:
     restart: unless-stopped
     depends_on:
       - jaeger
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:13133/"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
 
   # Jaeger - distributed tracing UI
   # Access web UI at: http://localhost:16686
@@ -80,17 +112,13 @@ services:
     networks:
       - imkitchen-network
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:16686/"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
 
 networks:
   imkitchen-network:
     driver: bridge
 
-# volumes:
+volumes:
+  imkitchen-data:
+    driver: local
 #   postgres-data:
 #     driver: local
