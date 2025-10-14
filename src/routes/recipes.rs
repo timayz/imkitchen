@@ -2,12 +2,12 @@ use askama::Template;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
-    response::{Html, IntoResponse, Redirect, Response},
+    response::{Html, IntoResponse, Response},
     Extension,
 };
 use recipe::{
-    create_recipe, query_recipe_by_id, CreateRecipeCommand, Ingredient, InstructionStep,
-    RecipeError,
+    create_recipe, query_recipe_by_id, update_recipe, CreateRecipeCommand, Ingredient,
+    InstructionStep, RecipeError, UpdateRecipeCommand,
 };
 use serde::Deserialize;
 
@@ -42,7 +42,9 @@ pub struct CreateRecipeForm {
 #[template(path = "pages/recipe-form.html")]
 pub struct RecipeFormTemplate {
     pub error: String,
-    pub user: Option<Auth>, // Some(Auth) for authenticated pages
+    pub user: Option<Auth>,               // Some(Auth) for authenticated pages
+    pub mode: String,                     // "create" or "edit"
+    pub recipe: Option<RecipeDetailView>, // Pre-populated data for edit mode
 }
 
 #[derive(Template)]
@@ -74,6 +76,8 @@ pub async fn get_recipe_form(Extension(auth): Extension<Auth>) -> impl IntoRespo
     let template = RecipeFormTemplate {
         error: String::new(),
         user: Some(auth),
+        mode: "create".to_string(),
+        recipe: None,
     };
     Html(template.render().unwrap())
 }
@@ -93,22 +97,44 @@ pub async fn post_create_recipe(
             let template = RecipeFormTemplate {
                 error: format!("Failed to parse form data: {}", e),
                 user: Some(auth),
+                mode: "create".to_string(),
+                recipe: None,
             };
             return (StatusCode::BAD_REQUEST, Html(template.render().unwrap())).into_response();
         }
     };
-    // Build ingredients from parallel arrays
-    let ingredients: Vec<Ingredient> = form
+    // Build ingredients from parallel arrays - validate quantities first
+    let mut ingredients: Vec<Ingredient> = Vec::new();
+    for ((name, quantity_str), unit) in form
         .ingredient_name
         .iter()
         .zip(&form.ingredient_quantity)
         .zip(&form.ingredient_unit)
-        .map(|((name, quantity_str), unit)| Ingredient {
+    {
+        let quantity = match quantity_str.parse::<f32>() {
+            Ok(q) => q,
+            Err(_) => {
+                tracing::warn!(
+                    ingredient_name = %name,
+                    invalid_quantity = %quantity_str,
+                    "Invalid ingredient quantity in form submission"
+                );
+                return (
+                    StatusCode::UNPROCESSABLE_ENTITY,
+                    format!(
+                        "Invalid ingredient quantity '{}' for '{}'. Must be a valid number.",
+                        quantity_str, name
+                    ),
+                )
+                    .into_response();
+            }
+        };
+        ingredients.push(Ingredient {
             name: name.clone(),
-            quantity: quantity_str.parse::<f32>().unwrap_or(0.0),
+            quantity,
             unit: unit.clone(),
-        })
-        .collect();
+        });
+    }
 
     // Build instructions from parallel arrays
     let instructions: Vec<InstructionStep> = form
@@ -163,14 +189,22 @@ pub async fn post_create_recipe(
     {
         Ok(recipe_id) => {
             tracing::info!("Recipe created successfully: {}", recipe_id);
-            // Redirect to recipe detail page (PRG pattern)
-            Redirect::to(&format!("/recipes/{}", recipe_id)).into_response()
+            // Redirect to recipe detail page using TwinSpark (progressive enhancement)
+            // Returns 200 OK with ts-location header for client-side navigation
+            (
+                StatusCode::OK,
+                [("ts-location", format!("/recipes/{}", recipe_id).as_str())],
+                (),
+            )
+                .into_response()
         }
         Err(RecipeError::RecipeLimitReached) => {
             tracing::warn!("User {} reached recipe limit", auth.user_id);
             let template = RecipeFormTemplate {
                 error: "You've reached your recipe limit (10 recipes for free tier). Please upgrade to premium for unlimited recipes.".to_string(),
                 user: Some(auth),
+                mode: "create".to_string(),
+                recipe: None,
             };
             (
                 StatusCode::UNPROCESSABLE_ENTITY,
@@ -183,6 +217,8 @@ pub async fn post_create_recipe(
             let template = RecipeFormTemplate {
                 error: format!("Validation error: {}", msg),
                 user: Some(auth),
+                mode: "create".to_string(),
+                recipe: None,
             };
             (
                 StatusCode::UNPROCESSABLE_ENTITY,
@@ -195,6 +231,8 @@ pub async fn post_create_recipe(
             let template = RecipeFormTemplate {
                 error: "An error occurred while creating the recipe. Please try again.".to_string(),
                 user: Some(auth),
+                mode: "create".to_string(),
+                recipe: None,
             };
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -290,6 +328,241 @@ pub async fn get_ingredient_row(Extension(_auth): Extension<Auth>) -> impl IntoR
 pub async fn get_instruction_row(Extension(_auth): Extension<Auth>) -> impl IntoResponse {
     let template = InstructionRowTemplate { step_number: 1 };
     Html(template.render().unwrap())
+}
+
+/// GET /recipes/:id/edit - Display recipe edit form
+#[tracing::instrument(skip(state, auth), fields(recipe_id = %recipe_id, user_id = %auth.user_id))]
+pub async fn get_recipe_edit_form(
+    State(state): State<AppState>,
+    Extension(auth): Extension<Auth>,
+    Path(recipe_id): Path<String>,
+) -> Response {
+    // Query recipe from read model
+    match query_recipe_by_id(&recipe_id, &state.db_pool).await {
+        Ok(Some(recipe_data)) => {
+            // Check ownership: only the owner can edit
+            if recipe_data.user_id != auth.user_id {
+                tracing::warn!(
+                    user_id = %auth.user_id,
+                    recipe_id = %recipe_id,
+                    owner_id = %recipe_data.user_id,
+                    event = "ownership_violation",
+                    action = "edit_recipe_form",
+                    "User attempted to access edit form for recipe owned by another user"
+                );
+                return (
+                    StatusCode::FORBIDDEN,
+                    "You do not have permission to edit this recipe",
+                )
+                    .into_response();
+            }
+
+            // Parse ingredients and instructions from JSON
+            let ingredients: Vec<Ingredient> = match serde_json::from_str(&recipe_data.ingredients)
+            {
+                Ok(ing) => ing,
+                Err(e) => {
+                    tracing::error!("Failed to parse ingredients JSON: {:?}", e);
+                    return (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        "Failed to load recipe data",
+                    )
+                        .into_response();
+                }
+            };
+
+            let instructions: Vec<InstructionStep> =
+                match serde_json::from_str(&recipe_data.instructions) {
+                    Ok(inst) => inst,
+                    Err(e) => {
+                        tracing::error!("Failed to parse instructions JSON: {:?}", e);
+                        return (
+                            StatusCode::INTERNAL_SERVER_ERROR,
+                            "Failed to load recipe data",
+                        )
+                            .into_response();
+                    }
+                };
+
+            let recipe_view = RecipeDetailView {
+                id: recipe_data.id.clone(),
+                title: recipe_data.title,
+                ingredients,
+                instructions,
+                prep_time_min: recipe_data.prep_time_min.map(|v| v as u32),
+                cook_time_min: recipe_data.cook_time_min.map(|v| v as u32),
+                advance_prep_hours: recipe_data.advance_prep_hours.map(|v| v as u32),
+                serving_size: recipe_data.serving_size.map(|v| v as u32),
+                is_favorite: recipe_data.is_favorite,
+                created_at: recipe_data.created_at,
+            };
+
+            let template = RecipeFormTemplate {
+                error: String::new(),
+                user: Some(auth),
+                mode: "edit".to_string(),
+                recipe: Some(recipe_view),
+            };
+
+            Html(template.render().unwrap()).into_response()
+        }
+        Ok(None) => {
+            tracing::warn!("Recipe not found: {}", recipe_id);
+            (StatusCode::NOT_FOUND, "Recipe not found").into_response()
+        }
+        Err(e) => {
+            tracing::error!("Failed to query recipe: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, "Failed to load recipe").into_response()
+        }
+    }
+}
+
+/// POST /recipes/:id - Handle recipe update form submission (TwinSpark pattern)
+#[tracing::instrument(skip(state, auth), fields(recipe_id = %recipe_id, user_id = %auth.user_id))]
+pub async fn post_update_recipe(
+    State(state): State<AppState>,
+    Extension(auth): Extension<Auth>,
+    Path(recipe_id): Path<String>,
+    body: String,
+) -> Response {
+    // Parse URL-encoded form manually to handle array fields
+    let form = match parse_recipe_form(&body) {
+        Ok(f) => f,
+        Err(e) => {
+            tracing::error!("Failed to parse form: {:?}", e);
+            return (
+                StatusCode::BAD_REQUEST,
+                format!("Failed to parse form data: {}", e),
+            )
+                .into_response();
+        }
+    };
+
+    // Build ingredients from parallel arrays - validate quantities first
+    let mut ingredients: Vec<Ingredient> = Vec::new();
+    for ((name, quantity_str), unit) in form
+        .ingredient_name
+        .iter()
+        .zip(&form.ingredient_quantity)
+        .zip(&form.ingredient_unit)
+    {
+        let quantity = match quantity_str.parse::<f32>() {
+            Ok(q) => q,
+            Err(_) => {
+                tracing::warn!(
+                    ingredient_name = %name,
+                    invalid_quantity = %quantity_str,
+                    "Invalid ingredient quantity in form submission"
+                );
+                return (
+                    StatusCode::UNPROCESSABLE_ENTITY,
+                    format!(
+                        "Invalid ingredient quantity '{}' for '{}'. Must be a valid number.",
+                        quantity_str, name
+                    ),
+                )
+                    .into_response();
+            }
+        };
+        ingredients.push(Ingredient {
+            name: name.clone(),
+            quantity,
+            unit: unit.clone(),
+        });
+    }
+
+    // Build instructions from parallel arrays
+    let instructions: Vec<InstructionStep> = form
+        .instruction_text
+        .iter()
+        .zip(&form.instruction_timer)
+        .enumerate()
+        .map(|(index, (text, timer_str))| InstructionStep {
+            step_number: (index + 1) as u32,
+            instruction_text: text.clone(),
+            timer_minutes: if timer_str.is_empty() {
+                None
+            } else {
+                timer_str.parse::<u32>().ok()
+            },
+        })
+        .collect();
+
+    // Parse optional numeric fields (handle empty strings as None)
+    let prep_time_min = form
+        .prep_time_min
+        .map(|s| if s.is_empty() { None } else { s.parse().ok() });
+    let cook_time_min = form
+        .cook_time_min
+        .map(|s| if s.is_empty() { None } else { s.parse().ok() });
+    let advance_prep_hours =
+        form.advance_prep_hours
+            .map(|s| if s.is_empty() { None } else { s.parse().ok() });
+    let serving_size = form
+        .serving_size
+        .map(|s| if s.is_empty() { None } else { s.parse().ok() });
+
+    // Create update command
+    let command = UpdateRecipeCommand {
+        recipe_id: recipe_id.clone(),
+        user_id: auth.user_id.clone(),
+        title: Some(form.title.clone()),
+        ingredients: Some(ingredients),
+        instructions: Some(instructions),
+        prep_time_min,
+        cook_time_min,
+        advance_prep_hours,
+        serving_size,
+    };
+
+    // Execute recipe update (evento event sourcing)
+    match update_recipe(command, &state.evento_executor, &state.db_pool).await {
+        Ok(()) => {
+            tracing::info!("Recipe updated successfully: {}", recipe_id);
+            // Redirect to recipe detail page using TwinSpark (progressive enhancement)
+            // Returns 200 OK for proper form swap, ts-location triggers client-side navigation
+            (
+                StatusCode::OK,
+                [("ts-location", format!("/recipes/{}", recipe_id).as_str())],
+                (),
+            )
+                .into_response()
+        }
+        Err(RecipeError::PermissionDenied) => {
+            tracing::warn!(
+                user_id = %auth.user_id,
+                recipe_id = %recipe_id,
+                event = "ownership_violation",
+                action = "update_recipe",
+                "User denied permission to update recipe - ownership check failed"
+            );
+            (
+                StatusCode::FORBIDDEN,
+                "You do not have permission to edit this recipe",
+            )
+                .into_response()
+        }
+        Err(RecipeError::NotFound) => {
+            tracing::warn!("Recipe not found: {}", recipe_id);
+            (StatusCode::NOT_FOUND, "Recipe not found").into_response()
+        }
+        Err(RecipeError::ValidationError(msg)) => {
+            tracing::warn!("Recipe validation failed: {}", msg);
+            (
+                StatusCode::UNPROCESSABLE_ENTITY,
+                format!("Validation error: {}", msg),
+            )
+                .into_response()
+        }
+        Err(e) => {
+            tracing::error!("Failed to update recipe: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "An error occurred while updating the recipe. Please try again.",
+            )
+                .into_response()
+        }
+    }
 }
 
 /// Parse URL-encoded form with array fields (ingredient_name[], etc.)
