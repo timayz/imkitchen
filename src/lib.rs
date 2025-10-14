@@ -10,7 +10,6 @@ pub use routes::AppState;
 ///
 /// This function creates the Axum router with all routes configured,
 /// useful for integration testing without starting the full server.
-#[cfg(test)]
 pub async fn create_app(
     db_pool: sqlx::SqlitePool,
     evento_executor: evento::Sqlite,
@@ -23,9 +22,9 @@ pub async fn create_app(
     use middleware::auth_middleware;
     use routes::{
         get_ingredient_row, get_instruction_row, get_login, get_password_reset,
-        get_password_reset_complete, get_recipe_detail, get_recipe_form, get_register, health,
-        post_create_recipe, post_login, post_logout, post_password_reset,
-        post_password_reset_complete, post_register, ready, AssetsService,
+        get_password_reset_complete, get_recipe_detail, get_recipe_edit_form, get_recipe_form,
+        get_register, health, post_create_recipe, post_login, post_logout, post_password_reset,
+        post_password_reset_complete, post_register, post_update_recipe, ready, AssetsService,
     };
 
     let email_config = email::EmailConfig {
@@ -55,6 +54,8 @@ pub async fn create_app(
         .route("/recipes/new", get(get_recipe_form))
         .route("/recipes", post(post_create_recipe))
         .route("/recipes/{id}", get(get_recipe_detail))
+        .route("/recipes/{id}/edit", get(get_recipe_edit_form))
+        .route("/recipes/{id}", post(post_update_recipe))
         .route("/recipes/ingredient-row", get(get_ingredient_row))
         .route("/recipes/instruction-row", get(get_instruction_row))
         .route_layer(axum_middleware::from_fn_with_state(

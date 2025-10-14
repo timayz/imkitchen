@@ -1,6 +1,6 @@
 use crate::aggregate::RecipeAggregate;
 use crate::error::RecipeResult;
-use crate::events::{RecipeCreated, RecipeDeleted, RecipeFavorited};
+use crate::events::{RecipeCreated, RecipeDeleted, RecipeFavorited, RecipeUpdated};
 use evento::{AggregatorName, Context, EventDetails, Executor};
 use serde::{Deserialize, Serialize};
 use sqlx::{Row, SqlitePool};
@@ -111,6 +111,90 @@ async fn recipe_favorited_handler<E: Executor>(
     Ok(())
 }
 
+/// Async evento subscription handler for RecipeUpdated events
+///
+/// This handler updates the recipes read model table with changed fields (delta pattern).
+/// Only fields that are present in the event (Some value) are updated in the read model.
+///
+/// Note: Uses dynamic SQL construction with parameterized bindings. The column names are
+/// hardcoded (not user input), and all values are bound via SQLx parameters, making this
+/// approach safe from SQL injection while maintaining optimal performance (single UPDATE).
+#[evento::handler(RecipeAggregate)]
+async fn recipe_updated_handler<E: Executor>(
+    context: &Context<'_, E>,
+    event: EventDetails<RecipeUpdated>,
+) -> anyhow::Result<()> {
+    // Extract the shared SqlitePool from context
+    let pool: SqlitePool = context.extract();
+
+    // Build dynamic UPDATE query based on which fields are present in the event
+    let mut updates = Vec::new();
+    let mut update_query = String::from("UPDATE recipes SET ");
+
+    if event.data.title.is_some() {
+        updates.push("title = ?");
+    }
+    if event.data.ingredients.is_some() {
+        updates.push("ingredients = ?");
+    }
+    if event.data.instructions.is_some() {
+        updates.push("instructions = ?");
+    }
+    if event.data.prep_time_min.is_some() {
+        updates.push("prep_time_min = ?");
+    }
+    if event.data.cook_time_min.is_some() {
+        updates.push("cook_time_min = ?");
+    }
+    if event.data.advance_prep_hours.is_some() {
+        updates.push("advance_prep_hours = ?");
+    }
+    if event.data.serving_size.is_some() {
+        updates.push("serving_size = ?");
+    }
+
+    // Always update updated_at timestamp
+    updates.push("updated_at = ?");
+
+    update_query.push_str(&updates.join(", "));
+    update_query.push_str(" WHERE id = ?");
+
+    // Bind parameters in the same order as the updates
+    let mut query = sqlx::query(&update_query);
+
+    if let Some(ref title) = event.data.title {
+        query = query.bind(title);
+    }
+    if let Some(ref ingredients) = event.data.ingredients {
+        let ingredients_json = serde_json::to_string(ingredients)?;
+        query = query.bind(ingredients_json);
+    }
+    if let Some(ref instructions) = event.data.instructions {
+        let instructions_json = serde_json::to_string(instructions)?;
+        query = query.bind(instructions_json);
+    }
+    if let Some(prep_time) = event.data.prep_time_min {
+        query = query.bind(prep_time.map(|v| v as i32));
+    }
+    if let Some(cook_time) = event.data.cook_time_min {
+        query = query.bind(cook_time.map(|v| v as i32));
+    }
+    if let Some(advance_prep) = event.data.advance_prep_hours {
+        query = query.bind(advance_prep.map(|v| v as i32));
+    }
+    if let Some(serving_size) = event.data.serving_size {
+        query = query.bind(serving_size.map(|v| v as i32));
+    }
+
+    // Bind updated_at and recipe_id
+    query = query.bind(&event.data.updated_at);
+    query = query.bind(&event.aggregator_id);
+
+    query.execute(&pool).await?;
+
+    Ok(())
+}
+
 /// Create recipe event subscription for read model projection
 ///
 /// Returns a subscription builder that can be run with `.run(&executor).await`
@@ -124,6 +208,22 @@ async fn recipe_favorited_handler<E: Executor>(
 /// # Ok(())
 /// # }
 /// ```
+///
+/// # Cross-Domain Integration
+///
+/// **TODO (AC-6): meal_planning crate integration**
+///
+/// When the `meal_planning` crate is implemented, it should subscribe to `RecipeUpdated` events
+/// to cascade changes to active meal plans that reference this recipe. This ensures that meal
+/// plans immediately reflect recipe modifications (title, timing, etc.) without manual refresh.
+///
+/// Recommended implementation:
+/// 1. Create `meal_planning::recipe_updated_cascade_handler()` subscription
+/// 2. Listen for `RecipeUpdated` events (cross-aggregator subscription)
+/// 3. Query `meal_assignments` table for recipes matching `event.aggregator_id`
+/// 4. Update meal plan read model with refreshed recipe metadata
+///
+/// Reference: Story 2.2 AC-6 - "Updated recipe immediately reflects in meal plans (if currently scheduled)"
 pub fn recipe_projection(pool: SqlitePool) -> evento::SubscribeBuilder<evento::Sqlite> {
     evento::subscribe("recipe-read-model")
         .aggregator::<RecipeAggregate>()
@@ -131,6 +231,7 @@ pub fn recipe_projection(pool: SqlitePool) -> evento::SubscribeBuilder<evento::S
         .handler(recipe_created_handler())
         .handler(recipe_deleted_handler())
         .handler(recipe_favorited_handler())
+        .handler(recipe_updated_handler())
 }
 
 /// Query recipe by ID from read model

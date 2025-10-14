@@ -1,7 +1,9 @@
 use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
-use crate::events::{Ingredient, InstructionStep, RecipeCreated, RecipeDeleted, RecipeFavorited};
+use crate::events::{
+    Ingredient, InstructionStep, RecipeCreated, RecipeDeleted, RecipeFavorited, RecipeUpdated,
+};
 
 /// Recipe aggregate representing the state of a recipe entity
 ///
@@ -88,6 +90,38 @@ impl RecipeAggregate {
         event: evento::EventDetails<RecipeFavorited>,
     ) -> anyhow::Result<()> {
         self.is_favorite = event.data.favorited;
+        Ok(())
+    }
+
+    /// Handle RecipeUpdated event to apply changes to aggregate state
+    ///
+    /// This event handler updates only the fields that were changed (delta pattern).
+    /// Fields that are None in the event are not modified in the aggregate.
+    async fn recipe_updated(
+        &mut self,
+        event: evento::EventDetails<RecipeUpdated>,
+    ) -> anyhow::Result<()> {
+        if let Some(title) = event.data.title {
+            self.title = title;
+        }
+        if let Some(ingredients) = event.data.ingredients {
+            self.ingredients = ingredients;
+        }
+        if let Some(instructions) = event.data.instructions {
+            self.instructions = instructions;
+        }
+        if let Some(prep_time) = event.data.prep_time_min {
+            self.prep_time_min = prep_time;
+        }
+        if let Some(cook_time) = event.data.cook_time_min {
+            self.cook_time_min = cook_time;
+        }
+        if let Some(advance_prep) = event.data.advance_prep_hours {
+            self.advance_prep_hours = advance_prep;
+        }
+        if let Some(serving_size) = event.data.serving_size {
+            self.serving_size = serving_size;
+        }
         Ok(())
     }
 }

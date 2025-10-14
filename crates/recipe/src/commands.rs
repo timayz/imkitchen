@@ -5,7 +5,7 @@ use validator::Validate;
 
 use crate::aggregate::RecipeAggregate;
 use crate::error::{RecipeError, RecipeResult};
-use crate::events::{Ingredient, InstructionStep, RecipeCreated, RecipeDeleted};
+use crate::events::{Ingredient, InstructionStep, RecipeCreated, RecipeDeleted, RecipeUpdated};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
@@ -164,6 +164,111 @@ pub async fn delete_recipe(
         .data(&RecipeDeleted {
             user_id: command.user_id,
             deleted_at: deleted_at.to_rfc3339(),
+        })
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .metadata(&true)
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .commit(executor)
+        .await
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
+
+    Ok(())
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+pub struct UpdateRecipeCommand {
+    pub recipe_id: String,
+    pub user_id: String, // For ownership verification
+
+    #[validate(length(
+        min = 3,
+        max = 200,
+        message = "Title must be between 3 and 200 characters"
+    ))]
+    pub title: Option<String>,
+
+    #[validate(length(min = 1, message = "At least 1 ingredient is required"))]
+    pub ingredients: Option<Vec<Ingredient>>,
+
+    #[validate(length(min = 1, message = "At least 1 instruction step is required"))]
+    pub instructions: Option<Vec<InstructionStep>>,
+
+    pub prep_time_min: Option<Option<u32>>,
+    pub cook_time_min: Option<Option<u32>>,
+    pub advance_prep_hours: Option<Option<u32>>,
+    pub serving_size: Option<Option<u32>>,
+}
+
+/// Update an existing recipe using evento event sourcing pattern
+///
+/// 1. Validates command fields
+/// 2. Verifies recipe ownership via read model
+/// 3. Creates and commits RecipeUpdated event with delta (changed fields only)
+/// 4. Event automatically projected to read model via async subscription handler
+/// 5. Returns () on success
+///
+/// Permission check: Only the recipe owner can update their recipe.
+/// Note: Ownership is verified via read model query, not aggregate load
+pub async fn update_recipe(
+    command: UpdateRecipeCommand,
+    executor: &Sqlite,
+    pool: &SqlitePool,
+) -> RecipeResult<()> {
+    // Validate command
+    command
+        .validate()
+        .map_err(|e| RecipeError::ValidationError(e.to_string()))?;
+
+    // Validate that ingredients list is not empty if provided
+    if let Some(ref ingredients) = command.ingredients {
+        if ingredients.is_empty() {
+            return Err(RecipeError::ValidationError(
+                "At least 1 ingredient is required".to_string(),
+            ));
+        }
+    }
+
+    // Validate that instructions list is not empty if provided
+    if let Some(ref instructions) = command.instructions {
+        if instructions.is_empty() {
+            return Err(RecipeError::ValidationError(
+                "At least 1 instruction step is required".to_string(),
+            ));
+        }
+    }
+
+    // Verify recipe exists and check ownership via read model
+    let recipe_result = sqlx::query("SELECT user_id FROM recipes WHERE id = ?1")
+        .bind(&command.recipe_id)
+        .fetch_optional(pool)
+        .await?;
+
+    match recipe_result {
+        Some(row) => {
+            let owner_id: String = row.get("user_id");
+            if owner_id != command.user_id {
+                return Err(RecipeError::PermissionDenied);
+            }
+        }
+        None => {
+            return Err(RecipeError::NotFound);
+        }
+    }
+
+    let updated_at = Utc::now();
+
+    // Create RecipeUpdated event with only changed fields (delta pattern)
+    // evento::save() automatically loads the aggregate before appending the event
+    evento::save::<RecipeAggregate>(command.recipe_id.clone())
+        .data(&RecipeUpdated {
+            title: command.title,
+            ingredients: command.ingredients,
+            instructions: command.instructions,
+            prep_time_min: command.prep_time_min,
+            cook_time_min: command.cook_time_min,
+            advance_prep_hours: command.advance_prep_hours,
+            serving_size: command.serving_size,
+            updated_at: updated_at.to_rfc3339(),
         })
         .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
         .metadata(&true)
