@@ -1,0 +1,44 @@
+<div class="ingredient-row flex gap-2">
+    <input
+        type="text"
+        name="ingredient_name[]"
+        placeholder="Ingredient name"
+        class="ingredient-name flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        required
+    />
+    <input
+        type="number"
+        name="ingredient_quantity[]"
+        placeholder="Qty"
+        step="0.01"
+        class="ingredient-quantity w-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        required
+    />
+    <select
+        name="ingredient_unit[]"
+        class="ingredient-unit w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        required
+    >
+        <option value="">Unit</option>
+        <option value="cup">cup</option>
+        <option value="cups">cups</option>
+        <option value="tbsp">tbsp</option>
+        <option value="tsp">tsp</option>
+        <option value="oz">oz</option>
+        <option value="lb">lb</option>
+        <option value="g">g</option>
+        <option value="kg">kg</option>
+        <option value="ml">ml</option>
+        <option value="L">L</option>
+        <option value="fl oz">fl oz</option>
+        <option value="piece">piece</option>
+        <option value="whole">whole</option>
+        <option value="can">can</option>
+        <option value="package">package</option>
+        <option value="pinch">pinch</option>
+        <option value="to taste">to taste</option>
+    </select>
+    <button type="button" class="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600" ts-action="remove .ingredient-row">
+        Remove
+    </button>
+</div>

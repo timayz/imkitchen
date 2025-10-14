@@ -8,13 +8,15 @@ use clap::{Parser, Subcommand};
 use evento::prelude::*;
 use imkitchen::middleware::auth_middleware;
 use imkitchen::routes::{
-    get_login, get_onboarding, get_onboarding_skip, get_password_reset,
-    get_password_reset_complete, get_profile, get_register, get_subscription,
-    get_subscription_success, health, post_login, post_logout, post_onboarding_step_1,
-    post_onboarding_step_2, post_onboarding_step_3, post_onboarding_step_4, post_password_reset,
+    get_ingredient_row, get_instruction_row, get_login, get_onboarding, get_onboarding_skip,
+    get_password_reset, get_password_reset_complete, get_profile, get_recipe_detail,
+    get_recipe_form, get_register, get_subscription, get_subscription_success, health,
+    post_create_recipe, post_login, post_logout, post_onboarding_step_1, post_onboarding_step_2,
+    post_onboarding_step_3, post_onboarding_step_4, post_password_reset,
     post_password_reset_complete, post_profile, post_register, post_stripe_webhook,
     post_subscription_upgrade, ready, AppState, AssetsService,
 };
+use recipe::recipe_projection;
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions};
 use tower_http::trace::TraceLayer;
 use user::user_projection;
@@ -103,8 +105,12 @@ async fn serve_command(
     user_projection(db_pool.clone())
         .run(&evento_executor)
         .await?;
-
     tracing::info!("Evento subscription 'user-read-model' started");
+
+    recipe_projection(db_pool.clone())
+        .run(&evento_executor)
+        .await?;
+    tracing::info!("Evento subscription 'recipe-read-model' started");
 
     // Create app state
     let email_config = imkitchen::email::EmailConfig {
@@ -141,6 +147,12 @@ async fn serve_command(
         .route("/subscription/upgrade", post(post_subscription_upgrade))
         .route("/subscription/success", get(get_subscription_success))
         .route("/dashboard", get(dashboard_handler))
+        // Recipe routes
+        .route("/recipes/new", get(get_recipe_form))
+        .route("/recipes", post(post_create_recipe))
+        .route("/recipes/{id}", get(get_recipe_detail))
+        .route("/recipes/ingredient-row", get(get_ingredient_row))
+        .route("/recipes/instruction-row", get(get_instruction_row))
         .route_layer(axum_middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,

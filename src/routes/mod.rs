@@ -2,6 +2,7 @@ pub mod assets;
 pub mod auth;
 pub mod health;
 pub mod profile;
+pub mod recipes;
 
 pub use assets::AssetsService;
 pub use auth::{
@@ -14,4 +15,7 @@ pub use profile::{
     get_onboarding, get_onboarding_skip, get_profile, get_subscription, get_subscription_success,
     post_onboarding_step_1, post_onboarding_step_2, post_onboarding_step_3, post_onboarding_step_4,
     post_profile, post_subscription_upgrade,
+};
+pub use recipes::{
+    get_ingredient_row, get_instruction_row, get_recipe_detail, get_recipe_form, post_create_recipe,
 };

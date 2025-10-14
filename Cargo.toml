@@ -1,6 +1,7 @@
 [workspace]
 members = [
 	"crates/user",
+	"crates/recipe",
 ]
 resolver = "2"
 
@@ -81,6 +82,7 @@ lettre = { workspace = true }
 urlencoding = { workspace = true }
 async-stripe = { workspace = true }
 user = { path = "crates/user", version = "0.1.0" }
+recipe = { path = "crates/recipe", version = "0.1.0" }
 
 [dev-dependencies]
 http-body-util = "0.1"
