@@ -103,7 +103,10 @@ async fn test_create_recipe_integration_with_read_model_projection() {
         .unwrap();
 
     // Wait for projection to complete
-    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
 
     // Verify recipe was projected into read model
     let recipe = query_recipe_by_id(&recipe_id, &pool).await.unwrap();
@@ -151,7 +154,10 @@ async fn test_query_recipes_by_user() {
         }
     });
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
 
     // Create 3 recipes for user1
     for i in 1..=3 {
@@ -180,7 +186,7 @@ async fn test_query_recipes_by_user() {
     tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
 
     // Query all recipes for user1
-    let recipes = query_recipes_by_user("user1", &pool).await.unwrap();
+    let recipes = query_recipes_by_user("user1", false, &pool).await.unwrap();
     assert_eq!(recipes.len(), 3, "Should have 3 recipes");
 
     // Verify sorted by created_at DESC (most recent first)
@@ -204,7 +210,10 @@ async fn test_delete_recipe_integration() {
         }
     });
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
 
     // Create recipe
     let command = CreateRecipeCommand {
@@ -228,7 +237,10 @@ async fn test_delete_recipe_integration() {
         .await
         .unwrap();
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
 
     // Verify recipe exists
     let recipe = query_recipe_by_id(&recipe_id, &pool).await.unwrap();
@@ -243,7 +255,10 @@ async fn test_delete_recipe_integration() {
         .await
         .unwrap();
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
 
     // Verify recipe deleted from read model
     let recipe = query_recipe_by_id(&recipe_id, &pool).await.unwrap();
@@ -267,7 +282,10 @@ async fn test_delete_recipe_permission_denied() {
         }
     });
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
 
     // User1 creates recipe
     let command = CreateRecipeCommand {
@@ -291,7 +309,10 @@ async fn test_delete_recipe_permission_denied() {
         .await
         .unwrap();
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
 
     // User2 tries to delete user1's recipe
     let delete_command = DeleteRecipeCommand {
@@ -330,7 +351,10 @@ async fn test_post_recipe_update_success_returns_ts_location() {
         }
     });
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
 
     // Create recipe via command
     let command = CreateRecipeCommand {
@@ -427,7 +451,10 @@ async fn test_post_recipe_update_unauthorized_returns_403() {
         }
     });
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
 
     // User1 creates recipe
     let command = CreateRecipeCommand {
@@ -506,7 +533,10 @@ async fn test_post_recipe_update_invalid_data_returns_422() {
         }
     });
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
 
     // Create recipe
     let command = CreateRecipeCommand {
@@ -586,7 +616,10 @@ async fn test_get_recipe_edit_form_prepopulated() {
         }
     });
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
 
     // Create recipe
     let command = CreateRecipeCommand {
@@ -670,7 +703,10 @@ async fn test_recipe_update_syncs_to_read_model() {
         }
     });
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
 
     // Create recipe
     let command = CreateRecipeCommand {
@@ -780,7 +816,10 @@ async fn test_delete_recipe_integration_removes_from_read_model() {
         }
     });
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
 
     // Create a recipe
     let command = CreateRecipeCommand {
@@ -806,7 +845,10 @@ async fn test_delete_recipe_integration_removes_from_read_model() {
         .unwrap();
 
     // Wait for projection
-    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
 
     // Verify recipe exists in read model
     let recipe_before = query_recipe_by_id(&recipe_id, &pool).await.unwrap();
@@ -826,7 +868,10 @@ async fn test_delete_recipe_integration_removes_from_read_model() {
         .unwrap();
 
     // Wait for projection to process RecipeDeleted event
-    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
 
     // Verify recipe no longer exists in read model (soft delete via removal)
     let recipe_after = query_recipe_by_id(&recipe_id, &pool).await.unwrap();
@@ -852,7 +897,10 @@ async fn test_delete_recipe_integration_unauthorized_returns_403() {
         }
     });
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
 
     // User1 creates a recipe
     let command = CreateRecipeCommand {
@@ -878,7 +926,10 @@ async fn test_delete_recipe_integration_unauthorized_returns_403() {
         .unwrap();
 
     // Wait for projection
-    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
 
     // User2 attempts to delete user1's recipe
     let delete_command = DeleteRecipeCommand {
@@ -915,7 +966,10 @@ async fn test_delete_recipe_integration_excluded_from_user_queries() {
         }
     });
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
 
     // Create 3 recipes for user1
     let mut recipe_ids = Vec::new();
@@ -945,10 +999,13 @@ async fn test_delete_recipe_integration_excluded_from_user_queries() {
     }
 
     // Wait for projections
-    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
 
     // Verify all 3 recipes exist
-    let recipes_before = query_recipes_by_user("user1", &pool).await.unwrap();
+    let recipes_before = query_recipes_by_user("user1", false, &pool).await.unwrap();
     assert_eq!(
         recipes_before.len(),
         3,
@@ -966,10 +1023,13 @@ async fn test_delete_recipe_integration_excluded_from_user_queries() {
         .unwrap();
 
     // Wait for projection
-    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
 
     // Verify only 2 recipes remain
-    let recipes_after = query_recipes_by_user("user1", &pool).await.unwrap();
+    let recipes_after = query_recipes_by_user("user1", false, &pool).await.unwrap();
     assert_eq!(
         recipes_after.len(),
         2,
@@ -980,5 +1040,262 @@ async fn test_delete_recipe_integration_excluded_from_user_queries() {
     assert!(
         !recipes_after.iter().any(|r| r.id == recipe_ids[1]),
         "Deleted recipe should not appear in user queries"
+    );
+}
+
+// ============================================================================
+// Favorite Recipe Integration Tests
+// ============================================================================
+
+#[tokio::test]
+async fn test_favorite_recipe_integration_full_cycle() {
+    let pool = setup_test_db().await;
+    let executor = setup_evento_executor(pool.clone()).await;
+    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+
+    // Run projection once to catch up
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+
+    // Create a recipe
+    let command = CreateRecipeCommand {
+        title: "Integration Test Recipe".to_string(),
+        ingredients: vec![Ingredient {
+            name: "Test Ingredient".to_string(),
+            quantity: 1.0,
+            unit: "cup".to_string(),
+        }],
+        instructions: vec![InstructionStep {
+            step_number: 1,
+            instruction_text: "Test instruction".to_string(),
+            timer_minutes: Some(5),
+        }],
+        prep_time_min: Some(10),
+        cook_time_min: Some(15),
+        advance_prep_hours: None,
+        serving_size: Some(4),
+    };
+
+    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+        .await
+        .unwrap();
+
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+
+    // Verify initial state: not favorited
+    let recipe = query_recipe_by_id(&recipe_id, &pool)
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(
+        !recipe.is_favorite,
+        "Recipe should not be favorited initially"
+    );
+
+    // Favorite the recipe
+    use recipe::{favorite_recipe, FavoriteRecipeCommand};
+    let fav_command = FavoriteRecipeCommand {
+        recipe_id: recipe_id.clone(),
+        user_id: "user1".to_string(),
+    };
+    let new_status = favorite_recipe(fav_command, &executor, &pool)
+        .await
+        .unwrap();
+    assert!(new_status, "Should return true after favoriting");
+
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+
+    // Verify favorited in read model
+    let recipe = query_recipe_by_id(&recipe_id, &pool)
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(
+        recipe.is_favorite,
+        "Recipe should be favorited in read model"
+    );
+
+    // Query all recipes vs favorites
+    let all_recipes = query_recipes_by_user("user1", false, &pool).await.unwrap();
+    let fav_recipes = query_recipes_by_user("user1", true, &pool).await.unwrap();
+
+    assert_eq!(all_recipes.len(), 1, "Should have 1 recipe total");
+    assert_eq!(fav_recipes.len(), 1, "Should have 1 favorite recipe");
+
+    // Un-favorite the recipe
+    let unfav_command = FavoriteRecipeCommand {
+        recipe_id: recipe_id.clone(),
+        user_id: "user1".to_string(),
+    };
+    let new_status = favorite_recipe(unfav_command, &executor, &pool)
+        .await
+        .unwrap();
+    assert!(!new_status, "Should return false after un-favoriting");
+
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+
+    // Verify not favorited in read model
+    let recipe = query_recipe_by_id(&recipe_id, &pool)
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(
+        !recipe.is_favorite,
+        "Recipe should not be favorited in read model"
+    );
+
+    // Query favorites (should be empty now)
+    let fav_recipes = query_recipes_by_user("user1", true, &pool).await.unwrap();
+    assert_eq!(fav_recipes.len(), 0, "Should have 0 favorite recipes");
+}
+
+#[tokio::test]
+async fn test_favorite_filter_with_multiple_recipes() {
+    let pool = setup_test_db().await;
+    let executor = setup_evento_executor(pool.clone()).await;
+    insert_test_user(&pool, "user1", "user1@test.com", "premium").await;
+
+    // Run projection once to catch up
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+
+    // Create 5 recipes
+    let mut recipe_ids = Vec::new();
+    for i in 1..=5 {
+        let command = CreateRecipeCommand {
+            title: format!("Recipe {}", i),
+            ingredients: vec![Ingredient {
+                name: "Ingredient".to_string(),
+                quantity: 1.0,
+                unit: "unit".to_string(),
+            }],
+            instructions: vec![InstructionStep {
+                step_number: 1,
+                instruction_text: "Do something".to_string(),
+                timer_minutes: None,
+            }],
+            prep_time_min: Some(10),
+            cook_time_min: None,
+            advance_prep_hours: None,
+            serving_size: Some(2),
+        };
+
+        let recipe_id = create_recipe(command, "user1", &executor, &pool)
+            .await
+            .unwrap();
+        recipe_ids.push(recipe_id);
+    }
+
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+
+    // Favorite recipes 1, 3, and 5
+    use recipe::{favorite_recipe, FavoriteRecipeCommand};
+    for i in &[0, 2, 4] {
+        let fav_command = FavoriteRecipeCommand {
+            recipe_id: recipe_ids[*i].clone(),
+            user_id: "user1".to_string(),
+        };
+        favorite_recipe(fav_command, &executor, &pool)
+            .await
+            .unwrap();
+    }
+
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+
+    // Query all recipes
+    let all_recipes = query_recipes_by_user("user1", false, &pool).await.unwrap();
+    assert_eq!(all_recipes.len(), 5, "Should have 5 recipes total");
+
+    // Query favorite recipes only
+    let fav_recipes = query_recipes_by_user("user1", true, &pool).await.unwrap();
+    assert_eq!(fav_recipes.len(), 3, "Should have 3 favorite recipes");
+
+    // Verify the correct recipes are favorited
+    let fav_ids: Vec<String> = fav_recipes.iter().map(|r| r.id.clone()).collect();
+    assert!(
+        fav_ids.contains(&recipe_ids[0]),
+        "Recipe 1 should be favorite"
+    );
+    assert!(
+        fav_ids.contains(&recipe_ids[2]),
+        "Recipe 3 should be favorite"
+    );
+    assert!(
+        fav_ids.contains(&recipe_ids[4]),
+        "Recipe 5 should be favorite"
+    );
+}
+
+#[tokio::test]
+async fn test_favorite_permission_denied_for_other_users_recipe() {
+    let pool = setup_test_db().await;
+    let executor = setup_evento_executor(pool.clone()).await;
+    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+    insert_test_user(&pool, "user2", "user2@test.com", "free").await;
+
+    // Run projection once to catch up
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+
+    // User1 creates a recipe
+    let command = CreateRecipeCommand {
+        title: "User1 Recipe".to_string(),
+        ingredients: vec![Ingredient {
+            name: "Ingredient".to_string(),
+            quantity: 1.0,
+            unit: "unit".to_string(),
+        }],
+        instructions: vec![InstructionStep {
+            step_number: 1,
+            instruction_text: "Do something".to_string(),
+            timer_minutes: None,
+        }],
+        prep_time_min: Some(10),
+        cook_time_min: None,
+        advance_prep_hours: None,
+        serving_size: Some(2),
+    };
+
+    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+        .await
+        .unwrap();
+
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+
+    // User2 tries to favorite User1's recipe
+    use recipe::{favorite_recipe, FavoriteRecipeCommand};
+    let fav_command = FavoriteRecipeCommand {
+        recipe_id: recipe_id.clone(),
+        user_id: "user2".to_string(),
+    };
+    let result = favorite_recipe(fav_command, &executor, &pool).await;
+
+    assert!(
+        matches!(result, Err(RecipeError::PermissionDenied)),
+        "Should return PermissionDenied when user tries to favorite another user's recipe"
     );
 }

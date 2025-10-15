@@ -2,8 +2,8 @@ use crate::aggregate::UserAggregate;
 use crate::error::UserResult;
 use crate::events::{
     DietaryRestrictionsSet, HouseholdSizeSet, PasswordChanged, ProfileCompleted, ProfileUpdated,
-    RecipeCreated, RecipeDeleted, SkillLevelSet, SubscriptionUpgraded, UserCreated,
-    WeeknightAvailabilitySet,
+    RecipeCreated, RecipeDeleted, RecipeFavorited, SkillLevelSet, SubscriptionUpgraded,
+    UserCreated, WeeknightAvailabilitySet,
 };
 use evento::{AggregatorName, Context, EventDetails, Executor};
 use sqlx::{Row, SqlitePool};
@@ -256,6 +256,35 @@ async fn recipe_deleted_handler<E: Executor>(
     Ok(())
 }
 
+/// Handler for RecipeFavorited event - update favorite_count in users table
+///
+/// This handler listens to RecipeFavorited events from the recipe domain and
+/// increments or decrements the favorite_count in the users read model table.
+/// This provides O(1) favorite count queries instead of O(n) COUNT(*) queries.
+#[evento::handler(UserAggregate)]
+async fn recipe_favorited_handler<E: Executor>(
+    context: &Context<'_, E>,
+    event: EventDetails<RecipeFavorited>,
+) -> anyhow::Result<()> {
+    let pool: SqlitePool = context.extract();
+
+    if event.data.favorited {
+        // Increment favorite_count when favorited
+        sqlx::query("UPDATE users SET favorite_count = favorite_count + 1 WHERE id = ?1")
+            .bind(&event.data.user_id)
+            .execute(&pool)
+            .await?;
+    } else {
+        // Decrement favorite_count when unfavorited (use MAX to prevent negative)
+        sqlx::query("UPDATE users SET favorite_count = MAX(0, favorite_count - 1) WHERE id = ?1")
+            .bind(&event.data.user_id)
+            .execute(&pool)
+            .await?;
+    }
+
+    Ok(())
+}
+
 /// Handler for SubscriptionUpgraded event - update tier and Stripe metadata in users table
 ///
 /// This handler projects SubscriptionUpgraded events from the evento event store
@@ -312,6 +341,7 @@ pub fn user_projection(pool: SqlitePool) -> evento::SubscribeBuilder<evento::Sql
         .handler(profile_updated_handler())
         .handler(recipe_created_handler())
         .handler(recipe_deleted_handler())
+        .handler(recipe_favorited_handler())
         .handler(subscription_upgraded_handler())
 }
 

@@ -13,7 +13,7 @@ use imkitchen::routes::{
     get_recipe_detail, get_recipe_edit_form, get_recipe_form, get_recipe_list, get_register,
     get_subscription, get_subscription_success, health, post_add_recipe_to_collection,
     post_create_collection, post_create_recipe, post_delete_collection, post_delete_recipe,
-    post_login, post_logout, post_onboarding_step_1, post_onboarding_step_2,
+    post_favorite_recipe, post_login, post_logout, post_onboarding_step_1, post_onboarding_step_2,
     post_onboarding_step_3, post_onboarding_step_4, post_password_reset,
     post_password_reset_complete, post_profile, post_register, post_remove_recipe_from_collection,
     post_stripe_webhook, post_subscription_upgrade, post_update_collection, post_update_recipe,
@@ -162,6 +162,7 @@ async fn serve_command(
         .route("/recipes/{id}/edit", get(get_recipe_edit_form))
         .route("/recipes/{id}", post(post_update_recipe))
         .route("/recipes/{id}/delete", post(post_delete_recipe))
+        .route("/recipes/{id}/favorite", post(post_favorite_recipe))
         .route("/recipes/{id}/tags", post(post_update_recipe_tags))
         .route("/recipes/ingredient-row", get(get_ingredient_row))
         .route("/recipes/instruction-row", get(get_instruction_row))

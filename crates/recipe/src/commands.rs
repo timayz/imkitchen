@@ -1,12 +1,14 @@
 use chrono::Utc;
 use evento::Sqlite;
 use sqlx::{Row, SqlitePool};
+use tracing;
 use validator::Validate;
 
 use crate::aggregate::RecipeAggregate;
 use crate::error::{RecipeError, RecipeResult};
 use crate::events::{
-    Ingredient, InstructionStep, RecipeCreated, RecipeDeleted, RecipeTagged, RecipeUpdated,
+    Ingredient, InstructionStep, RecipeCreated, RecipeDeleted, RecipeFavorited, RecipeTagged,
+    RecipeUpdated,
 };
 use crate::tagging::{CuisineInferenceService, DietaryTagDetector, RecipeComplexityCalculator};
 use serde::{Deserialize, Serialize};
@@ -403,4 +405,79 @@ pub async fn update_recipe_tags(
         .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
 
     Ok(())
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FavoriteRecipeCommand {
+    pub recipe_id: String,
+    pub user_id: String, // For ownership verification
+}
+
+/// Toggle favorite status of a recipe using evento event sourcing pattern
+///
+/// 1. Verifies recipe ownership via read model
+/// 2. Loads recipe aggregate from event stream to get current is_favorite status
+/// 3. Creates and commits RecipeFavorited event with toggled status
+/// 4. Event automatically projected to read model via async subscription handler
+/// 5. Returns the new favorite status (true/false)
+///
+/// Permission check: Only the recipe owner can favorite/unfavorite their recipe.
+/// Note: Ownership is verified via read model query before loading aggregate
+#[tracing::instrument(skip(executor, pool), fields(recipe_id = %command.recipe_id, user_id = %command.user_id))]
+pub async fn favorite_recipe(
+    command: FavoriteRecipeCommand,
+    executor: &Sqlite,
+    pool: &SqlitePool,
+) -> RecipeResult<bool> {
+    // Verify recipe exists and check ownership via read model
+    let recipe_result = sqlx::query("SELECT user_id FROM recipes WHERE id = ?1")
+        .bind(&command.recipe_id)
+        .fetch_optional(pool)
+        .await?;
+
+    match recipe_result {
+        Some(row) => {
+            let owner_id: String = row.get("user_id");
+            if owner_id != command.user_id {
+                return Err(RecipeError::PermissionDenied);
+            }
+        }
+        None => {
+            return Err(RecipeError::NotFound);
+        }
+    }
+
+    // Load recipe aggregate to get current is_favorite status
+    let load_result = evento::load::<RecipeAggregate, _>(executor, &command.recipe_id)
+        .await
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
+
+    // Toggle the favorite status
+    let new_favorited_status = !load_result.item.is_favorite;
+
+    let toggled_at = Utc::now();
+
+    // Create RecipeFavorited event and commit to evento event store
+    // evento::save() automatically loads the aggregate before appending the event
+    evento::save::<RecipeAggregate>(command.recipe_id.clone())
+        .data(&RecipeFavorited {
+            user_id: command.user_id.clone(),
+            favorited: new_favorited_status,
+            toggled_at: toggled_at.to_rfc3339(),
+        })
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .metadata(&true)
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .commit(executor)
+        .await
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
+
+    tracing::info!(
+        recipe_id = %command.recipe_id,
+        favorited = new_favorited_status,
+        "Recipe favorite status toggled"
+    );
+
+    // Return the new favorited status for UI updates
+    Ok(new_favorited_status)
 }

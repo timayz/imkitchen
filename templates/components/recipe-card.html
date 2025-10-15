@@ -41,20 +41,29 @@
                 </h3>
             </a>
 
-            <!-- Favorite Icon -->
-            <form method="POST" action="/recipes/{{ recipe.id }}/favorite" class="ml-2">
-                <button type="submit" class="text-gray-400 hover:text-error-500 focus:outline-none">
+            <!-- Favorite Icon (TwinSpark AJAX toggle) -->
+            <div class="ml-2">
+                <form
+                  id="favorite-form-{{ recipe.id }}"
+                  ts-req="/recipes/{{ recipe.id }}/favorite"
+                  ts-req-method="POST"
+                  ts-target="#favorite-form-{{ recipe.id }}"
+                  class="inline-block"
+                >
+                  <button
+                    type="submit"
+                    class="text-2xl focus:outline-none hover:scale-110 transition-transform"
+                    aria-label="{% if recipe.is_favorite %}Remove from favorites{% else %}Add to favorites{% endif %}"
+                    title="{% if recipe.is_favorite %}Remove from favorites{% else %}Add to favorites{% endif %}"
+                  >
                     {% if recipe.is_favorite %}
-                    <svg class="h-6 w-6 fill-current text-error-500" viewBox="0 0 24 24">
-                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                    </svg>
+                      ⭐
                     {% else %}
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
+                      ☆
                     {% endif %}
-                </button>
-            </form>
+                  </button>
+                </form>
+            </div>
         </div>
 
         <!-- Recipe Metadata -->

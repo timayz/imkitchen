@@ -321,11 +321,23 @@ pub async fn query_recipe_by_id(
 /// Query all recipes for a user from read model
 ///
 /// Returns list of recipes owned by the user (sorted by created_at descending)
+/// If favorite_only is true, only returns favorited recipes
 pub async fn query_recipes_by_user(
     user_id: &str,
+    favorite_only: bool,
     pool: &SqlitePool,
 ) -> RecipeResult<Vec<RecipeReadModel>> {
-    let rows = sqlx::query(
+    let query_str = if favorite_only {
+        r#"
+        SELECT id, user_id, title, ingredients, instructions,
+               prep_time_min, cook_time_min, advance_prep_hours, serving_size,
+               is_favorite, is_shared, complexity, cuisine, dietary_tags,
+               created_at, updated_at
+        FROM recipes
+        WHERE user_id = ?1 AND is_favorite = 1
+        ORDER BY created_at DESC
+        "#
+    } else {
         r#"
         SELECT id, user_id, title, ingredients, instructions,
                prep_time_min, cook_time_min, advance_prep_hours, serving_size,
@@ -334,11 +346,10 @@ pub async fn query_recipes_by_user(
         FROM recipes
         WHERE user_id = ?1
         ORDER BY created_at DESC
-        "#,
-    )
-    .bind(user_id)
-    .fetch_all(pool)
-    .await?;
+        "#
+    };
+
+    let rows = sqlx::query(query_str).bind(user_id).fetch_all(pool).await?;
 
     let recipes = rows
         .into_iter()
