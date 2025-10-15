@@ -52,10 +52,12 @@ pub struct RecipeDeleted {
 /// RecipeFavorited event emitted when a user toggles favorite status
 ///
 /// This event tracks favorite status changes for quick access filtering.
+/// User domain subscribes to this event to update favorite_count for performance.
 ///
 /// Note: recipe_id is provided by event.aggregator_id, not stored in event data
 #[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
 pub struct RecipeFavorited {
+    pub user_id: String,    // ID of the user who favorited/unfavorited the recipe
     pub favorited: bool,    // true = favorited, false = unfavorited
     pub toggled_at: String, // RFC3339 formatted timestamp
 }

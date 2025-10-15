@@ -412,6 +412,7 @@ pub struct ProfilePageTemplate {
     pub skill_level: String,
     pub availability_start: String,
     pub availability_duration: String,
+    pub favorite_count: i64,
 }
 
 /// GET /profile - Display profile editing page
@@ -423,9 +424,9 @@ pub async fn get_profile(
     Extension(auth): Extension<Auth>,
     Query(query): Query<SuccessQuery>,
 ) -> Response {
-    // Query user profile data from read model
+    // Query user profile data from read model (including favorite_count)
     let user_data = sqlx::query(
-        "SELECT dietary_restrictions, household_size, skill_level, weeknight_availability FROM users WHERE id = ?1"
+        "SELECT dietary_restrictions, household_size, skill_level, weeknight_availability, favorite_count FROM users WHERE id = ?1"
     )
     .bind(&auth.user_id)
     .fetch_one(&state.db_pool)
@@ -458,6 +459,9 @@ pub async fn get_profile(
                 })
                 .unwrap_or((String::from("18:00"), String::from("45")));
 
+            // Get favorite_count from users table (O(1) query via subscription)
+            let favorite_count: i32 = row.get("favorite_count");
+
             let template = ProfilePageTemplate {
                 error: String::new(),
                 success: query.updated.unwrap_or(false),
@@ -468,6 +472,7 @@ pub async fn get_profile(
                 skill_level: skill_str,
                 availability_start,
                 availability_duration,
+                favorite_count: favorite_count as i64,
             };
 
             Html(template.render().unwrap()).into_response()
@@ -558,6 +563,15 @@ pub async fn post_profile(
         Ok(_) => {
             // Success - use optimistic UI rendering with form data to avoid projection lag
             // This ensures user immediately sees their changes without waiting for read model update
+            // Query favorite count from users table (O(1) query)
+            let favorite_count = sqlx::query_scalar::<_, i32>(
+                "SELECT favorite_count FROM users WHERE id = ?1"
+            )
+            .bind(&auth.user_id)
+            .fetch_one(&state.db_pool)
+            .await
+            .unwrap_or(0);
+
             let template = ProfilePageTemplate {
                 error: String::new(),
                 success: true,
@@ -568,11 +582,21 @@ pub async fn post_profile(
                 skill_level: form_skill_level,
                 availability_start: form_availability_start,
                 availability_duration: form_availability_duration,
+                favorite_count: favorite_count as i64,
             };
 
             Html(template.render().unwrap()).into_response()
         }
         Err(user::UserError::ValidationError(msg)) => {
+            // Query favorite count from users table (O(1) query)
+            let favorite_count = sqlx::query_scalar::<_, i32>(
+                "SELECT favorite_count FROM users WHERE id = ?1"
+            )
+            .bind(&auth.user_id)
+            .fetch_one(&state.db_pool)
+            .await
+            .unwrap_or(0);
+
             // Validation error - re-render form with error
             let template = ProfilePageTemplate {
                 error: msg,
@@ -584,6 +608,7 @@ pub async fn post_profile(
                 skill_level: form_skill_level,
                 availability_start: form_availability_start,
                 availability_duration: form_availability_duration,
+                favorite_count: favorite_count as i64,
             };
             (
                 StatusCode::UNPROCESSABLE_ENTITY,

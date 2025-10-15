@@ -106,6 +106,19 @@ pub struct RecipeDeleted {
     pub deleted_at: String, // RFC3339 formatted timestamp
 }
 
+/// RecipeFavorited event (cross-domain event from recipe domain)
+///
+/// User domain listens to this event to update favorite_count for performance optimization.
+/// This event is emitted by the recipe domain when a user toggles favorite status on a recipe.
+///
+/// Note: user_id stored in event data, recipe_id in aggregator_id
+#[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
+pub struct RecipeFavorited {
+    pub user_id: String,     // ID of the user who favorited the recipe
+    pub favorited: bool,     // true = favorited, false = unfavorited
+    pub toggled_at: String,  // RFC3339 formatted timestamp
+}
+
 /// SubscriptionUpgraded event emitted when a user upgrades/downgrades subscription tier
 ///
 /// This event captures subscription changes including Stripe metadata for future management.

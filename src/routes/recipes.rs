@@ -6,9 +6,10 @@ use axum::{
     Extension,
 };
 use recipe::{
-    create_recipe, delete_recipe, query_collections_by_user, query_collections_for_recipe,
-    query_recipe_by_id, query_recipes_by_collection, query_recipes_by_user, update_recipe,
-    update_recipe_tags, CollectionReadModel, CreateRecipeCommand, DeleteRecipeCommand, Ingredient,
+    create_recipe, delete_recipe, favorite_recipe, query_collections_by_user,
+    query_collections_for_recipe, query_recipe_by_id, query_recipes_by_collection,
+    query_recipes_by_user, update_recipe, update_recipe_tags, CollectionReadModel,
+    CreateRecipeCommand, DeleteRecipeCommand, FavoriteRecipeCommand, Ingredient,
     InstructionStep, RecipeError, UpdateRecipeCommand, UpdateRecipeTagsCommand,
 };
 use serde::Deserialize;
@@ -744,6 +745,7 @@ pub struct RecipeListQuery {
     pub complexity: Option<String>, // "simple", "moderate", "complex"
     pub cuisine: Option<String>,    // e.g., "Italian", "Asian"
     pub dietary: Option<String>,    // e.g., "vegetarian", "vegan", "gluten-free"
+    pub favorite_only: Option<bool>, // Filter for favorited recipes only
 }
 
 /// View model for recipe list with parsed ingredient/instruction counts
@@ -771,6 +773,8 @@ pub struct RecipeListTemplate {
     pub recipes: Vec<RecipeListView>,
     pub collections: Vec<CollectionReadModel>,
     pub active_collection: Option<String>,
+    pub favorite_only: bool,
+    pub favorite_count: i64,
     pub user: Option<Auth>,
 }
 
@@ -793,8 +797,9 @@ pub async fn get_recipe_list(
             .await
             .unwrap_or_default()
     } else {
-        // Show all user's recipes
-        query_recipes_by_user(&auth.user_id, &state.db_pool)
+        // Show all user's recipes (with optional favorite filter)
+        let favorite_only = query.favorite_only.unwrap_or(false);
+        query_recipes_by_user(&auth.user_id, favorite_only, &state.db_pool)
             .await
             .unwrap_or_default()
     };
@@ -864,10 +869,22 @@ pub async fn get_recipe_list(
         });
     }
 
+    // Query favorite count from users table (O(1) query via subscription)
+    let favorite_count = sqlx::query_scalar::<_, i32>(
+        "SELECT favorite_count FROM users WHERE id = ?1"
+    )
+    .bind(&auth.user_id)
+    .fetch_one(&state.db_pool)
+    .await
+    .unwrap_or(0);
+
+    let favorite_only = query.favorite_only.unwrap_or(false);
+
     tracing::info!(
         user_id = %auth.user_id,
         recipe_count = recipe_views.len(),
         collection_filter = ?query.collection,
+        favorite_only = favorite_only,
         "Fetched recipe list"
     );
 
@@ -875,6 +892,8 @@ pub async fn get_recipe_list(
         recipes: recipe_views,
         collections,
         active_collection: query.collection,
+        favorite_only,
+        favorite_count: favorite_count as i64,
         user: Some(auth),
     };
 
@@ -957,6 +976,77 @@ pub async fn post_update_recipe_tags(
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 format!("Failed to update tags: {:?}", e),
+            )
+                .into_response()
+        }
+    }
+}
+
+#[derive(Template)]
+#[template(path = "components/favorite-icon.html")]
+pub struct FavoriteIconTemplate {
+    pub recipe_id: String,
+    pub is_favorite: bool,
+}
+
+/// POST /recipes/:id/favorite - Toggle favorite status (TwinSpark pattern)
+#[tracing::instrument(skip(state, auth), fields(recipe_id = %recipe_id, user_id = %auth.user_id))]
+pub async fn post_favorite_recipe(
+    State(state): State<AppState>,
+    Extension(auth): Extension<Auth>,
+    Path(recipe_id): Path<String>,
+) -> Response {
+    let command = FavoriteRecipeCommand {
+        recipe_id: recipe_id.clone(),
+        user_id: auth.user_id.clone(),
+    };
+
+    match favorite_recipe(command, &state.evento_executor, &state.db_pool).await {
+        Ok(new_favorited_status) => {
+            tracing::info!(
+                user_id = %auth.user_id,
+                recipe_id = %recipe_id,
+                favorited = new_favorited_status,
+                "Recipe favorite status toggled"
+            );
+
+            let template = FavoriteIconTemplate {
+                recipe_id,
+                is_favorite: new_favorited_status,
+            };
+
+            Html(template.render().unwrap()).into_response()
+        }
+        Err(RecipeError::PermissionDenied) => {
+            tracing::warn!(
+                user_id = %auth.user_id,
+                recipe_id = %recipe_id,
+                "User denied permission to favorite recipe"
+            );
+            (
+                StatusCode::FORBIDDEN,
+                "You do not have permission to favorite this recipe",
+            )
+                .into_response()
+        }
+        Err(RecipeError::NotFound) => {
+            tracing::warn!(
+                user_id = %auth.user_id,
+                recipe_id = %recipe_id,
+                "Recipe not found for favorite toggle"
+            );
+            (StatusCode::NOT_FOUND, "Recipe not found").into_response()
+        }
+        Err(e) => {
+            tracing::error!(
+                user_id = %auth.user_id,
+                recipe_id = %recipe_id,
+                error = ?e,
+                "Failed to toggle favorite status"
+            );
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "An error occurred while updating favorite status. Please try again.",
             )
                 .into_response()
         }

@@ -14,11 +14,22 @@
                     <nav class="space-y-2">
                         <!-- All Recipes -->
                         <a href="/recipes"
-                           class="block px-4 py-2 rounded-md {% if active_collection.is_none() %}bg-blue-100 text-blue-800 font-medium{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                           class="block px-4 py-2 rounded-md {% if active_collection.is_none() && !favorite_only %}bg-blue-100 text-blue-800 font-medium{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
                             <div class="flex items-center justify-between">
                                 <span>All Recipes</span>
-                                <span class="text-sm {% if active_collection.is_none() %}text-blue-600{% else %}text-gray-500{% endif %}">
+                                <span class="text-sm {% if active_collection.is_none() && !favorite_only %}text-blue-600{% else %}text-gray-500{% endif %}">
                                     {{ recipes.len() }}
+                                </span>
+                            </div>
+                        </a>
+
+                        <!-- Favorites Filter -->
+                        <a href="/recipes?favorite_only=true"
+                           class="block px-4 py-2 rounded-md {% if favorite_only %}bg-blue-100 text-blue-800 font-medium{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <div class="flex items-center justify-between">
+                                <span>⭐ Favorites</span>
+                                <span class="text-sm {% if favorite_only %}text-blue-600{% else %}text-gray-500{% endif %}">
+                                    {{ favorite_count }}
                                 </span>
                             </div>
                         </a>
@@ -64,7 +75,11 @@
                                     {% endif %}
                                 {% endfor %}
                             {% when None %}
-                                All Recipes
+                                {% if favorite_only %}
+                                    ⭐ Favorite Recipes
+                                {% else %}
+                                    All Recipes
+                                {% endif %}
                             {% endmatch %}
                         </h1>
                         <a href="/recipes/new" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium">
@@ -84,7 +99,11 @@
                             {% endif %}
                         {% endfor %}
                     {% when None %}
-                    <p class="text-gray-600">Browse all your recipes or filter by collection using the sidebar.</p>
+                        {% if favorite_only %}
+                            <p class="text-gray-600">Your favorite recipes that you've marked for meal planning.</p>
+                        {% else %}
+                            <p class="text-gray-600">Browse all your recipes or filter by collection using the sidebar.</p>
+                        {% endif %}
                     {% endmatch %}
                 </div>
 

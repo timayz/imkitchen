@@ -1,7 +1,7 @@
 use recipe::{
     create_recipe, CreateRecipeCommand, Ingredient, InstructionStep, RecipeAggregate, RecipeError,
 };
-use sqlx::{Pool, Sqlite, SqlitePool};
+use sqlx::{Pool, Row, Sqlite, SqlitePool};
 
 /// Helper to create in-memory SQLite database for testing
 async fn setup_test_db() -> SqlitePool {
@@ -847,5 +847,327 @@ async fn test_delete_recipe_not_found() {
     assert!(
         matches!(result, Err(RecipeError::NotFound)),
         "Should return NotFound for non-existent recipe"
+    );
+}
+
+// ============================================================================
+// Favorite Recipe Tests
+// ============================================================================
+
+#[tokio::test]
+async fn test_favorite_recipe_toggles_status() {
+    let pool = setup_test_db().await;
+    let executor = setup_evento_executor(pool.clone()).await;
+
+    // Setup: Create a test user
+    insert_test_user(&pool, "user1", "free", 0).await;
+
+    // Create a recipe
+    let command = CreateRecipeCommand {
+        title: "Test Recipe".to_string(),
+        ingredients: vec![Ingredient {
+            name: "Flour".to_string(),
+            quantity: 2.0,
+            unit: "cups".to_string(),
+        }],
+        instructions: vec![InstructionStep {
+            step_number: 1,
+            instruction_text: "Mix ingredients".to_string(),
+            timer_minutes: None,
+        }],
+        prep_time_min: Some(10),
+        cook_time_min: Some(20),
+        advance_prep_hours: None,
+        serving_size: Some(4),
+    };
+
+    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+        .await
+        .unwrap();
+
+    // Run projection once to update read model
+    use recipe::recipe_projection;
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+
+    // Initial state: not favorited
+    let recipe = sqlx::query("SELECT is_favorite FROM recipes WHERE id = ?1")
+        .bind(&recipe_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    let is_favorite: bool = recipe.get("is_favorite");
+    assert!(!is_favorite, "Recipe should not be favorited initially");
+
+    // Favorite the recipe
+    use recipe::{favorite_recipe, FavoriteRecipeCommand};
+    let fav_command = FavoriteRecipeCommand {
+        recipe_id: recipe_id.clone(),
+        user_id: "user1".to_string(),
+    };
+    let new_status = favorite_recipe(fav_command, &executor, &pool)
+        .await
+        .unwrap();
+    assert!(new_status, "Recipe should be favorited after toggle");
+
+    // Run projection to sync read model
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+
+    // Verify read model updated
+    let recipe = sqlx::query("SELECT is_favorite FROM recipes WHERE id = ?1")
+        .bind(&recipe_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    let is_favorite: bool = recipe.get("is_favorite");
+    assert!(is_favorite, "Recipe should be favorited in read model");
+
+    // Un-favorite the recipe
+    let unfav_command = FavoriteRecipeCommand {
+        recipe_id: recipe_id.clone(),
+        user_id: "user1".to_string(),
+    };
+    let new_status = favorite_recipe(unfav_command, &executor, &pool)
+        .await
+        .unwrap();
+    assert!(!new_status, "Recipe should not be favorited after second toggle");
+
+    // Run projection to sync read model
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+
+    // Verify read model updated
+    let recipe = sqlx::query("SELECT is_favorite FROM recipes WHERE id = ?1")
+        .bind(&recipe_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    let is_favorite: bool = recipe.get("is_favorite");
+    assert!(!is_favorite, "Recipe should not be favorited in read model");
+}
+
+#[tokio::test]
+async fn test_favorite_recipe_ownership_check() {
+    let pool = setup_test_db().await;
+    let executor = setup_evento_executor(pool.clone()).await;
+
+    // Setup: Create two users
+    insert_test_user(&pool, "user1", "free", 0).await;
+    insert_test_user(&pool, "user2", "free", 0).await;
+
+    // User1 creates a recipe
+    let command = CreateRecipeCommand {
+        title: "User1 Recipe".to_string(),
+        ingredients: vec![Ingredient {
+            name: "Salt".to_string(),
+            quantity: 1.0,
+            unit: "tsp".to_string(),
+        }],
+        instructions: vec![InstructionStep {
+            step_number: 1,
+            instruction_text: "Add salt".to_string(),
+            timer_minutes: None,
+        }],
+        prep_time_min: Some(5),
+        cook_time_min: None,
+        advance_prep_hours: None,
+        serving_size: Some(2),
+    };
+
+    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+        .await
+        .unwrap();
+
+    // Run projection once
+    use recipe::recipe_projection;
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+
+    // User2 tries to favorite User1's recipe (should fail)
+    use recipe::{favorite_recipe, FavoriteRecipeCommand};
+    let fav_command = FavoriteRecipeCommand {
+        recipe_id: recipe_id.clone(),
+        user_id: "user2".to_string(),
+    };
+    let result = favorite_recipe(fav_command, &executor, &pool).await;
+
+    match result {
+        Err(RecipeError::PermissionDenied) => {
+            // Expected error
+        }
+        _ => panic!("Expected PermissionDenied error when favoriting other user's recipe"),
+    }
+}
+
+#[tokio::test]
+async fn test_favorite_recipe_not_found() {
+    let pool = setup_test_db().await;
+    let executor = setup_evento_executor(pool.clone()).await;
+
+    // Setup: Create a test user
+    insert_test_user(&pool, "user1", "free", 0).await;
+
+    // Try to favorite non-existent recipe
+    use recipe::{favorite_recipe, FavoriteRecipeCommand};
+    let fav_command = FavoriteRecipeCommand {
+        recipe_id: "nonexistent-recipe-id".to_string(),
+        user_id: "user1".to_string(),
+    };
+    let result = favorite_recipe(fav_command, &executor, &pool).await;
+
+    match result {
+        Err(RecipeError::NotFound) => {
+            // Expected error
+        }
+        _ => panic!("Expected NotFound error when favoriting non-existent recipe"),
+    }
+}
+
+#[tokio::test]
+async fn test_query_recipes_favorite_only_filter() {
+    let pool = setup_test_db().await;
+    let executor = setup_evento_executor(pool.clone()).await;
+
+    // Setup: Create a test user
+    insert_test_user(&pool, "user1", "free", 0).await;
+
+    // Create 3 recipes
+    let command1 = CreateRecipeCommand {
+        title: "Recipe 1".to_string(),
+        ingredients: vec![Ingredient {
+            name: "Ingredient 1".to_string(),
+            quantity: 1.0,
+            unit: "cup".to_string(),
+        }],
+        instructions: vec![InstructionStep {
+            step_number: 1,
+            instruction_text: "Step 1".to_string(),
+            timer_minutes: None,
+        }],
+        prep_time_min: Some(10),
+        cook_time_min: None,
+        advance_prep_hours: None,
+        serving_size: Some(2),
+    };
+
+    let recipe_id_1 = create_recipe(command1, "user1", &executor, &pool)
+        .await
+        .unwrap();
+
+    let command2 = CreateRecipeCommand {
+        title: "Recipe 2".to_string(),
+        ingredients: vec![Ingredient {
+            name: "Ingredient 2".to_string(),
+            quantity: 2.0,
+            unit: "cups".to_string(),
+        }],
+        instructions: vec![InstructionStep {
+            step_number: 1,
+            instruction_text: "Step 1".to_string(),
+            timer_minutes: None,
+        }],
+        prep_time_min: Some(15),
+        cook_time_min: None,
+        advance_prep_hours: None,
+        serving_size: Some(4),
+    };
+
+    let recipe_id_2 = create_recipe(command2, "user1", &executor, &pool)
+        .await
+        .unwrap();
+
+    let command3 = CreateRecipeCommand {
+        title: "Recipe 3".to_string(),
+        ingredients: vec![Ingredient {
+            name: "Ingredient 3".to_string(),
+            quantity: 3.0,
+            unit: "tbsp".to_string(),
+        }],
+        instructions: vec![InstructionStep {
+            step_number: 1,
+            instruction_text: "Step 1".to_string(),
+            timer_minutes: None,
+        }],
+        prep_time_min: Some(20),
+        cook_time_min: None,
+        advance_prep_hours: None,
+        serving_size: Some(6),
+    };
+
+    let recipe_id_3 = create_recipe(command3, "user1", &executor, &pool)
+        .await
+        .unwrap();
+
+    // Run projection once
+    use recipe::recipe_projection;
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+
+    // Favorite recipe 1 and 3
+    use recipe::{favorite_recipe, FavoriteRecipeCommand};
+    
+    let fav_command_1 = FavoriteRecipeCommand {
+        recipe_id: recipe_id_1.clone(),
+        user_id: "user1".to_string(),
+    };
+    favorite_recipe(fav_command_1, &executor, &pool)
+        .await
+        .unwrap();
+
+    let fav_command_3 = FavoriteRecipeCommand {
+        recipe_id: recipe_id_3.clone(),
+        user_id: "user1".to_string(),
+    };
+    favorite_recipe(fav_command_3, &executor, &pool)
+        .await
+        .unwrap();
+
+    // Run projection to sync read model
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+
+    // Query all recipes (should return 3)
+    use recipe::query_recipes_by_user;
+    let all_recipes = query_recipes_by_user("user1", false, &pool)
+        .await
+        .unwrap();
+    assert_eq!(all_recipes.len(), 3, "Should return all 3 recipes");
+
+    // Query favorite recipes only (should return 2)
+    let favorite_recipes = query_recipes_by_user("user1", true, &pool)
+        .await
+        .unwrap();
+    assert_eq!(
+        favorite_recipes.len(),
+        2,
+        "Should return only 2 favorited recipes"
+    );
+
+    // Verify the correct recipes are returned
+    let favorite_ids: Vec<String> = favorite_recipes.iter().map(|r| r.id.clone()).collect();
+    assert!(
+        favorite_ids.contains(&recipe_id_1),
+        "Recipe 1 should be in favorites"
+    );
+    assert!(
+        favorite_ids.contains(&recipe_id_3),
+        "Recipe 3 should be in favorites"
+    );
+    assert!(
+        !favorite_ids.contains(&recipe_id_2),
+        "Recipe 2 should not be in favorites"
     );
 }

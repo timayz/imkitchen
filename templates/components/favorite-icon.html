@@ -1,0 +1,23 @@
+{# Favorite icon button component - toggles recipe favorite status via TwinSpark AJAX #}
+{# Parameters: recipe_id (String), is_favorite (bool) #}
+
+<form
+  id="favorite-form-{{ recipe_id }}"
+  ts-req="/recipes/{{ recipe_id }}/favorite"
+  ts-req-method="POST"
+  ts-target="#favorite-form-{{ recipe_id }}"
+  class="inline-block"
+>
+  <button
+    type="submit"
+    class="text-2xl focus:outline-none hover:scale-110 transition-transform"
+    aria-label="{% if is_favorite %}Remove from favorites{% else %}Add to favorites{% endif %}"
+    title="{% if is_favorite %}Remove from favorites{% else %}Add to favorites{% endif %}"
+  >
+    {% if is_favorite %}
+      ⭐
+    {% else %}
+      ☆
+    {% endif %}
+  </button>
+</form>

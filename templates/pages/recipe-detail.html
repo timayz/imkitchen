@@ -10,7 +10,33 @@
             <div class="p-8 border-b border-gray-200">
                 <div class="flex items-start justify-between">
                     <div class="flex-1">
-                        <h1 class="text-4xl font-bold text-gray-900 mb-4">{{ recipe.title }}</h1>
+                        <div class="flex items-start justify-between mb-4">
+                            <h1 class="text-4xl font-bold text-gray-900">{{ recipe.title }}</h1>
+
+                            <!-- Favorite Icon (TwinSpark AJAX toggle) -->
+                            {% if is_owner %}
+                            <form
+                              id="favorite-form-{{ recipe.id }}"
+                              ts-req="/recipes/{{ recipe.id }}/favorite"
+                              ts-req-method="POST"
+                              ts-target="#favorite-form-{{ recipe.id }}"
+                              class="inline-block ml-4"
+                            >
+                              <button
+                                type="submit"
+                                class="text-3xl focus:outline-none hover:scale-110 transition-transform"
+                                aria-label="{% if recipe.is_favorite %}Remove from favorites{% else %}Add to favorites{% endif %}"
+                                title="{% if recipe.is_favorite %}Remove from favorites{% else %}Add to favorites{% endif %}"
+                              >
+                                {% if recipe.is_favorite %}
+                                  ⭐
+                                {% else %}
+                                  ☆
+                                {% endif %}
+                              </button>
+                            </form>
+                            {% endif %}
+                        </div>
 
                         <!-- Timing Information -->
                         <div class="flex flex-wrap gap-4 text-gray-600 mb-4">
