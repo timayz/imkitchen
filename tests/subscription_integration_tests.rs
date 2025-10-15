@@ -33,7 +33,7 @@ async fn create_test_user(pool: &sqlx::SqlitePool, executor: &evento::Sqlite) ->
 
     // Process events to project to read model
     user::user_projection(pool.clone())
-        .run_once(executor)
+        .unsafe_oneshot(executor)
         .await
         .unwrap();
 

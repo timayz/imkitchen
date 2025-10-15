@@ -400,11 +400,11 @@ Implemented comprehensive integration tests for collection management:
 2. **Test Pattern:**
    - Uses in-memory SQLite database for isolation
    - Creates all required tables (users, recipes, recipe_collections, recipe_collection_assignments)
-   - Uses `run_once()` for synchronous event processing (cleaner than async subscriptions in tests)
+   - Uses `unsafe_oneshot()` for synchronous event processing (cleaner than async subscriptions in tests)
    - Tests CQRS read model projection after each command
    - Verifies ownership enforcement and authorization
 
 3. **Key Learnings:**
-   - `collection_projection(pool.clone()).run_once(&executor).await.unwrap()` - synchronous event processing for predictable test execution
+   - `collection_projection(pool.clone()).unsafe_oneshot(&executor).await.unwrap()` - synchronous event processing for predictable test execution
    - Integration tests verify full stack: command → events → aggregate → subscription → read model → queries
    - Multi-user tests ensure proper isolation and authorization checks
