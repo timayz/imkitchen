@@ -1,13 +1,15 @@
 use askama::Template;
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::StatusCode,
     response::{Html, IntoResponse, Response},
     Extension,
 };
 use recipe::{
-    create_recipe, delete_recipe, query_recipe_by_id, update_recipe, CreateRecipeCommand,
-    DeleteRecipeCommand, Ingredient, InstructionStep, RecipeError, UpdateRecipeCommand,
+    create_recipe, delete_recipe, query_collections_by_user, query_collections_for_recipe,
+    query_recipe_by_id, query_recipes_by_collection, query_recipes_by_user, update_recipe,
+    CollectionReadModel, CreateRecipeCommand, DeleteRecipeCommand, Ingredient, InstructionStep,
+    RecipeError, UpdateRecipeCommand,
 };
 use serde::Deserialize;
 
@@ -53,6 +55,8 @@ pub struct RecipeDetailTemplate {
     pub recipe: RecipeDetailView,
     pub is_owner: bool,
     pub user: Option<Auth>,
+    pub all_collections: Vec<CollectionReadModel>,
+    pub recipe_collections: Vec<CollectionReadModel>,
 }
 
 /// Recipe detail view model for template
@@ -296,10 +300,26 @@ pub async fn get_recipe_detail(
             // Check if user is the owner
             let is_owner = recipe_data.user_id == auth.user_id;
 
+            // Query collections for this recipe (only if owner)
+            let (all_collections, recipe_collections) = if is_owner {
+                let all = query_collections_by_user(&auth.user_id, &state.db_pool)
+                    .await
+                    .unwrap_or_default();
+                let recipe_cols =
+                    query_collections_for_recipe(&recipe_id, &auth.user_id, &state.db_pool)
+                        .await
+                        .unwrap_or_default();
+                (all, recipe_cols)
+            } else {
+                (Vec::new(), Vec::new())
+            };
+
             let template = RecipeDetailTemplate {
                 recipe: recipe_view,
                 is_owner,
                 user: Some(auth),
+                all_collections,
+                recipe_collections,
             };
 
             Html(template.render().unwrap()).into_response()
@@ -693,4 +713,104 @@ pub async fn post_delete_recipe(
                 .into_response()
         }
     }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RecipeListQuery {
+    pub collection: Option<String>,
+}
+
+/// View model for recipe list with parsed ingredient/instruction counts
+#[derive(Debug, Clone)]
+pub struct RecipeListView {
+    pub id: String,
+    pub user_id: String,
+    pub title: String,
+    pub prep_time_min: Option<i32>,
+    pub cook_time_min: Option<i32>,
+    pub advance_prep_hours: Option<i32>,
+    pub serving_size: Option<i32>,
+    pub is_favorite: bool,
+    pub ingredient_count: usize,
+    pub instruction_count: usize,
+    pub created_at: String,
+}
+
+#[derive(Template)]
+#[template(path = "pages/recipe-list.html")]
+pub struct RecipeListTemplate {
+    pub recipes: Vec<RecipeListView>,
+    pub collections: Vec<CollectionReadModel>,
+    pub active_collection: Option<String>,
+    pub user: Option<Auth>,
+}
+
+/// GET /recipes - Display recipe library with optional collection filter
+#[tracing::instrument(skip(state, auth), fields(user_id = %auth.user_id))]
+pub async fn get_recipe_list(
+    State(state): State<AppState>,
+    Extension(auth): Extension<Auth>,
+    Query(query): Query<RecipeListQuery>,
+) -> impl IntoResponse {
+    // Query user's collections for sidebar
+    let collections = query_collections_by_user(&auth.user_id, &state.db_pool)
+        .await
+        .unwrap_or_default();
+
+    // Query recipes based on collection filter
+    let recipes = if let Some(ref collection_id) = query.collection {
+        // Filter by specific collection
+        query_recipes_by_collection(collection_id, &state.db_pool)
+            .await
+            .unwrap_or_default()
+    } else {
+        // Show all user's recipes
+        query_recipes_by_user(&auth.user_id, &state.db_pool)
+            .await
+            .unwrap_or_default()
+    };
+
+    // Convert RecipeReadModel to RecipeListView (parse JSON counts)
+    let recipe_views: Vec<RecipeListView> = recipes
+        .into_iter()
+        .map(|r| {
+            // Parse ingredient and instruction JSON arrays to get counts
+            let ingredient_count = serde_json::from_str::<Vec<Ingredient>>(&r.ingredients)
+                .map(|v| v.len())
+                .unwrap_or(0);
+            let instruction_count = serde_json::from_str::<Vec<InstructionStep>>(&r.instructions)
+                .map(|v| v.len())
+                .unwrap_or(0);
+
+            RecipeListView {
+                id: r.id,
+                user_id: r.user_id,
+                title: r.title,
+                prep_time_min: r.prep_time_min,
+                cook_time_min: r.cook_time_min,
+                advance_prep_hours: r.advance_prep_hours,
+                serving_size: r.serving_size,
+                is_favorite: r.is_favorite,
+                ingredient_count,
+                instruction_count,
+                created_at: r.created_at,
+            }
+        })
+        .collect();
+
+    tracing::info!(
+        user_id = %auth.user_id,
+        recipe_count = recipe_views.len(),
+        collection_filter = ?query.collection,
+        "Fetched recipe list"
+    );
+
+    let template = RecipeListTemplate {
+        recipes: recipe_views,
+        collections,
+        active_collection: query.collection,
+        user: Some(auth),
+    };
+
+    Html(template.render().unwrap())
 }
