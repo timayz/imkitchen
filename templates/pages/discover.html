@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Discover Community Recipes - imkitchen{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="container mx-auto px-4">
+        <!-- Page Header -->
+        <div class="mb-8">
+            <h1 class="text-4xl font-bold text-gray-900 mb-2">Discover Community Recipes</h1>
+            <p class="text-gray-600">Explore recipes shared by the imkitchen community</p>
+        </div>
+
+        {% if recipes.is_empty() %}
+        <!-- Empty State -->
+        <div class="bg-white rounded-lg shadow-md p-12 text-center">
+            <svg class="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <h2 class="text-2xl font-semibold text-gray-900 mb-2">No Shared Recipes Yet</h2>
+            <p class="text-gray-600 mb-6">Be the first to share a recipe with the community!</p>
+            {% if user.is_some() %}
+            <a href="/recipes" class="inline-block bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 font-medium">
+                Go to My Recipes
+            </a>
+            {% else %}
+            <a href="/login" class="inline-block bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 font-medium">
+                Sign In to Share
+            </a>
+            {% endif %}
+        </div>
+        {% else %}
+        <!-- Recipe Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for recipe in recipes %}
+            <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                <a href="/recipes/{{ recipe.id }}" class="block">
+                    <!-- Recipe Card Header -->
+                    <div class="p-6">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-2 line-clamp-2">{{ recipe.title }}</h3>
+
+                        <!-- Timing Info -->
+                        <div class="flex items-center gap-4 text-sm text-gray-600 mb-3">
+                            {% if recipe.prep_time_min.is_some() %}
+                            <div class="flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>Prep: {{ recipe.prep_time_min.unwrap() }}m</span>
+                            </div>
+                            {% endif %}
+                            {% if recipe.cook_time_min.is_some() %}
+                            <div class="flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+                                </svg>
+                                <span>Cook: {{ recipe.cook_time_min.unwrap() }}m</span>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Tags -->
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            {% if recipe.complexity.is_some() %}
+                            <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
+                                {{ recipe.complexity.as_ref().unwrap() }}
+                            </span>
+                            {% endif %}
+                            {% if recipe.cuisine.is_some() %}
+                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">
+                                {{ recipe.cuisine.as_ref().unwrap() }}
+                            </span>
+                            {% endif %}
+                            {% for tag in recipe.dietary_tags %}
+                            <span class="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded">
+                                {{ tag }}
+                            </span>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Ingredients Preview -->
+                        <div class="text-sm text-gray-600">
+                            <span class="font-medium">{{ recipe.ingredients.len() }}</span> ingredients •
+                            <span class="font-medium">{{ recipe.instructions.len() }}</span> steps
+                        </div>
+                    </div>
+
+                    <!-- Card Footer (AC-4: Recipe Attribution) -->
+                    <div class="px-6 py-3 bg-gray-50 border-t border-gray-100">
+                        <div class="flex items-center justify-between text-xs text-gray-500">
+                            {% if recipe.creator_email.is_some() %}
+                            <span>By {{ recipe.creator_email.as_ref().unwrap() }}</span>
+                            {% else %}
+                            <span>Shared recipe</span>
+                            {% endif %}
+                            <span>View recipe →</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

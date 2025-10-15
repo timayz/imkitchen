@@ -300,6 +300,33 @@
                     </div>
                 </div>
 
+                <!-- Share to Community Toggle (AC-1) -->
+                {% if mode == "edit" %}
+                <div class="border-t border-gray-200 pt-6">
+                    <div class="bg-blue-50 border border-blue-200 rounded-md p-4">
+                        <div class="flex items-start">
+                            <div class="flex items-center h-5">
+                                <input
+                                    id="is_shared"
+                                    name="is_shared"
+                                    type="checkbox"
+                                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                    {% if recipe.as_ref().unwrap().is_shared %}checked{% endif %}
+                                />
+                            </div>
+                            <div class="ml-3">
+                                <label for="is_shared" class="font-medium text-gray-900">
+                                    Share this recipe with the community
+                                </label>
+                                <p class="text-sm text-gray-600 mt-1">
+                                    Shared recipes are visible to all users and can be rated. You can make your recipe private again at any time.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
                 <!-- Submit Button -->
                 <div class="flex gap-4">
                     <button
