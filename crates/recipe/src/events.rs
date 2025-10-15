@@ -77,3 +77,18 @@ pub struct RecipeUpdated {
     pub serving_size: Option<Option<u32>>,
     pub updated_at: String, // RFC3339 formatted timestamp
 }
+
+/// RecipeTagged event emitted when recipe tags are automatically assigned
+///
+/// This event is emitted after RecipeCreated or RecipeUpdated events
+/// to store the automatically calculated tags (complexity, cuisine, dietary).
+///
+/// Note: recipe_id is provided by event.aggregator_id, not stored in event data
+#[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
+pub struct RecipeTagged {
+    pub complexity: Option<String>, // "simple", "moderate", or "complex"
+    pub cuisine: Option<String>,    // e.g., "Italian", "Asian", "Mexican", etc.
+    pub dietary_tags: Vec<String>,  // e.g., ["vegetarian", "vegan", "gluten-free"]
+    pub manual_override: bool,      // true if user manually set tags
+    pub tagged_at: String,          // RFC3339 formatted timestamp
+}

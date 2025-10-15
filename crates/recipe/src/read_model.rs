@@ -5,7 +5,7 @@ use crate::collection_events::{
     RecipeRemovedFromCollection,
 };
 use crate::error::RecipeResult;
-use crate::events::{RecipeCreated, RecipeDeleted, RecipeFavorited, RecipeUpdated};
+use crate::events::{RecipeCreated, RecipeDeleted, RecipeFavorited, RecipeTagged, RecipeUpdated};
 use evento::{AggregatorName, Context, EventDetails, Executor};
 use serde::{Deserialize, Serialize};
 use sqlx::{Row, SqlitePool};
@@ -24,6 +24,9 @@ pub struct RecipeReadModel {
     pub serving_size: Option<i32>,
     pub is_favorite: bool,
     pub is_shared: bool,
+    pub complexity: Option<String>, // "simple", "moderate", "complex"
+    pub cuisine: Option<String>,    // e.g., "Italian", "Asian"
+    pub dietary_tags: Option<String>, // JSON array e.g., ["vegetarian", "vegan"]
     pub created_at: String,
     pub updated_at: String,
 }
@@ -200,6 +203,34 @@ async fn recipe_updated_handler<E: Executor>(
     Ok(())
 }
 
+/// Async evento subscription handler for RecipeTagged events
+///
+/// This handler updates the tag columns in the recipes read model table.
+#[evento::handler(RecipeAggregate)]
+async fn recipe_tagged_handler<E: Executor>(
+    context: &Context<'_, E>,
+    event: EventDetails<RecipeTagged>,
+) -> anyhow::Result<()> {
+    // Extract the shared SqlitePool from context
+    let pool: SqlitePool = context.extract();
+
+    // Serialize dietary_tags to JSON
+    let dietary_tags_json = serde_json::to_string(&event.data.dietary_tags)?;
+
+    // Execute SQL update to set tag columns
+    sqlx::query(
+        "UPDATE recipes SET complexity = ?1, cuisine = ?2, dietary_tags = ?3 WHERE id = ?4",
+    )
+    .bind(&event.data.complexity)
+    .bind(&event.data.cuisine)
+    .bind(&dietary_tags_json)
+    .bind(&event.aggregator_id)
+    .execute(&pool)
+    .await?;
+
+    Ok(())
+}
+
 /// Create recipe event subscription for read model projection
 ///
 /// Returns a subscription builder that can be run with `.run(&executor).await`
@@ -237,6 +268,7 @@ pub fn recipe_projection(pool: SqlitePool) -> evento::SubscribeBuilder<evento::S
         .handler(recipe_deleted_handler())
         .handler(recipe_favorited_handler())
         .handler(recipe_updated_handler())
+        .handler(recipe_tagged_handler())
 }
 
 /// Query recipe by ID from read model
@@ -250,7 +282,8 @@ pub async fn query_recipe_by_id(
         r#"
         SELECT id, user_id, title, ingredients, instructions,
                prep_time_min, cook_time_min, advance_prep_hours, serving_size,
-               is_favorite, is_shared, created_at, updated_at
+               is_favorite, is_shared, complexity, cuisine, dietary_tags,
+               created_at, updated_at
         FROM recipes
         WHERE id = ?1
         "#,
@@ -273,6 +306,9 @@ pub async fn query_recipe_by_id(
                 serving_size: row.get("serving_size"),
                 is_favorite: row.get("is_favorite"),
                 is_shared: row.get("is_shared"),
+                complexity: row.get("complexity"),
+                cuisine: row.get("cuisine"),
+                dietary_tags: row.get("dietary_tags"),
                 created_at: row.get("created_at"),
                 updated_at: row.get("updated_at"),
             };
@@ -293,7 +329,8 @@ pub async fn query_recipes_by_user(
         r#"
         SELECT id, user_id, title, ingredients, instructions,
                prep_time_min, cook_time_min, advance_prep_hours, serving_size,
-               is_favorite, is_shared, created_at, updated_at
+               is_favorite, is_shared, complexity, cuisine, dietary_tags,
+               created_at, updated_at
         FROM recipes
         WHERE user_id = ?1
         ORDER BY created_at DESC
@@ -317,6 +354,9 @@ pub async fn query_recipes_by_user(
             serving_size: row.get("serving_size"),
             is_favorite: row.get("is_favorite"),
             is_shared: row.get("is_shared"),
+            complexity: row.get("complexity"),
+            cuisine: row.get("cuisine"),
+            dietary_tags: row.get("dietary_tags"),
             created_at: row.get("created_at"),
             updated_at: row.get("updated_at"),
         })
@@ -609,7 +649,8 @@ pub async fn query_recipes_by_collection(
         r#"
         SELECT r.id, r.user_id, r.title, r.ingredients, r.instructions,
                r.prep_time_min, r.cook_time_min, r.advance_prep_hours, r.serving_size,
-               r.is_favorite, r.is_shared, r.created_at, r.updated_at
+               r.is_favorite, r.is_shared, r.complexity, r.cuisine, r.dietary_tags,
+               r.created_at, r.updated_at
         FROM recipes r
         INNER JOIN recipe_collection_assignments a ON r.id = a.recipe_id
         WHERE a.collection_id = ?1
@@ -634,6 +675,9 @@ pub async fn query_recipes_by_collection(
             serving_size: row.get("serving_size"),
             is_favorite: row.get("is_favorite"),
             is_shared: row.get("is_shared"),
+            complexity: row.get("complexity"),
+            cuisine: row.get("cuisine"),
+            dietary_tags: row.get("dietary_tags"),
             created_at: row.get("created_at"),
             updated_at: row.get("updated_at"),
         })

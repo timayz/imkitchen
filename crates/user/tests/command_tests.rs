@@ -9,22 +9,8 @@ use user::{validate_recipe_creation, UserError};
 async fn setup_test_db() -> SqlitePool {
     let pool = SqlitePool::connect(":memory:").await.unwrap();
 
-    // Create users table matching read model schema
-    sqlx::query(
-        r#"
-        CREATE TABLE users (
-            id TEXT PRIMARY KEY,
-            email TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            tier TEXT NOT NULL,
-            recipe_count INTEGER NOT NULL DEFAULT 0,
-            created_at TEXT NOT NULL
-        )
-        "#,
-    )
-    .execute(&pool)
-    .await
-    .unwrap();
+    // Run SQLx migrations for read model tables (same as production)
+    sqlx::migrate!("../../migrations").run(&pool).await.unwrap();
 
     pool
 }

@@ -13,91 +13,17 @@ use sqlx::{Pool, Sqlite, SqlitePool};
 async fn setup_test_db() -> SqlitePool {
     let pool = SqlitePool::connect("sqlite::memory:").await.unwrap();
 
-    // Run evento migrations
+    // Run evento migrations for event store tables
     let mut conn = pool.acquire().await.unwrap();
     evento::sql_migrator::new_migrator::<sqlx::Sqlite>()
         .unwrap()
         .run(&mut *conn, &Plan::apply_all())
         .await
         .unwrap();
+    drop(conn);
 
-    // Create users table
-    sqlx::query(
-        r#"
-        CREATE TABLE users (
-            id TEXT PRIMARY KEY NOT NULL,
-            email TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            tier TEXT NOT NULL DEFAULT 'free',
-            recipe_count INTEGER NOT NULL DEFAULT 0,
-            created_at TEXT NOT NULL
-        )
-        "#,
-    )
-    .execute(&pool)
-    .await
-    .unwrap();
-
-    // Create recipes table
-    sqlx::query(
-        r#"
-        CREATE TABLE recipes (
-            id TEXT PRIMARY KEY NOT NULL,
-            user_id TEXT NOT NULL,
-            title TEXT NOT NULL,
-            ingredients TEXT NOT NULL,
-            instructions TEXT NOT NULL,
-            prep_time_min INTEGER,
-            cook_time_min INTEGER,
-            advance_prep_hours INTEGER,
-            serving_size INTEGER,
-            is_favorite INTEGER NOT NULL DEFAULT 0,
-            is_shared INTEGER NOT NULL DEFAULT 0,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL,
-            FOREIGN KEY (user_id) REFERENCES users(id)
-        )
-        "#,
-    )
-    .execute(&pool)
-    .await
-    .unwrap();
-
-    // Create recipe_collections table
-    sqlx::query(
-        r#"
-        CREATE TABLE recipe_collections (
-            id TEXT PRIMARY KEY NOT NULL,
-            user_id TEXT NOT NULL,
-            name TEXT NOT NULL,
-            description TEXT,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL,
-            deleted_at TEXT,
-            FOREIGN KEY (user_id) REFERENCES users(id)
-        )
-        "#,
-    )
-    .execute(&pool)
-    .await
-    .unwrap();
-
-    // Create recipe_collection_assignments table
-    sqlx::query(
-        r#"
-        CREATE TABLE recipe_collection_assignments (
-            collection_id TEXT NOT NULL,
-            recipe_id TEXT NOT NULL,
-            assigned_at TEXT NOT NULL,
-            PRIMARY KEY (collection_id, recipe_id),
-            FOREIGN KEY (collection_id) REFERENCES recipe_collections(id) ON DELETE CASCADE,
-            FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE
-        )
-        "#,
-    )
-    .execute(&pool)
-    .await
-    .unwrap();
+    // Run SQLx migrations for read model tables (same as production)
+    sqlx::migrate!("./migrations").run(&pool).await.unwrap();
 
     pool
 }

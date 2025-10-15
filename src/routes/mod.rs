@@ -24,4 +24,5 @@ pub use profile::{
 pub use recipes::{
     get_ingredient_row, get_instruction_row, get_recipe_detail, get_recipe_edit_form,
     get_recipe_form, get_recipe_list, post_create_recipe, post_delete_recipe, post_update_recipe,
+    post_update_recipe_tags,
 };

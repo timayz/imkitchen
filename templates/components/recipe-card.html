@@ -69,21 +69,32 @@
             {% if recipe.complexity %}
             <span class="px-2 py-1 text-xs font-medium rounded
                          {% if recipe.complexity == 'simple' %}
-                             bg-success-100 text-success-800
+                             bg-green-100 text-green-800
                          {% elif recipe.complexity == 'moderate' %}
-                             bg-warning-100 text-warning-800
+                             bg-yellow-100 text-yellow-800
                          {% else %}
-                             bg-error-100 text-error-800
+                             bg-red-100 text-red-800
                          {% endif %}">
                 {{ recipe.complexity|title }}
             </span>
             {% endif %}
         </div>
 
-        {% if recipe.cuisine %}
-        <p class="text-sm text-gray-500">
-            {{ recipe.cuisine }}
-        </p>
-        {% endif %}
+        <!-- Tags Row -->
+        <div class="flex flex-wrap gap-2 items-center">
+            {% if recipe.cuisine %}
+            <span class="text-xs text-gray-600 px-2 py-1 bg-gray-100 rounded">
+                🍽️ {{ recipe.cuisine }}
+            </span>
+            {% endif %}
+
+            {% if recipe.dietary_tags %}
+            {% for tag in recipe.dietary_tags %}
+            <span class="text-xs text-blue-700 px-2 py-1 bg-blue-50 rounded border border-blue-200">
+                {{ tag|title }}
+            </span>
+            {% endfor %}
+            {% endif %}
+        </div>
     </div>
 </div>
