@@ -40,7 +40,7 @@ impl TestApp {
     /// Process all pending events synchronously
     pub async fn process_events(&self) {
         user_projection(self.pool.clone())
-            .run_once(&self.evento_executor)
+            .unsafe_oneshot(&self.evento_executor)
             .await
             .unwrap();
     }

@@ -64,7 +64,7 @@ async fn test_collection_created_event_sets_name_and_description() {
 
     // Process events synchronously into read model
     collection_projection(pool.clone())
-        .run_once(&executor)
+        .unsafe_oneshot(&executor)
         .await
         .unwrap();
 
@@ -136,7 +136,7 @@ async fn test_ownership_verification_prevents_unauthorized_deletion() {
 
     // Process events synchronously into read model
     collection_projection(pool.clone())
-        .run_once(&executor)
+        .unsafe_oneshot(&executor)
         .await
         .unwrap();
 
@@ -190,11 +190,11 @@ async fn test_recipe_assignment_and_unassignment() {
 
     // Process events synchronously into read model
     collection_projection(pool.clone())
-        .run_once(&executor)
+        .unsafe_oneshot(&executor)
         .await
         .unwrap();
     recipe_projection(pool.clone())
-        .run_once(&executor)
+        .unsafe_oneshot(&executor)
         .await
         .unwrap();
 
@@ -210,7 +210,7 @@ async fn test_recipe_assignment_and_unassignment() {
 
     // Process events synchronously into read model
     collection_projection(pool.clone())
-        .run_once(&executor)
+        .unsafe_oneshot(&executor)
         .await
         .unwrap();
 
@@ -283,11 +283,11 @@ async fn test_collection_deletion_preserves_recipes() {
 
     // Process events synchronously into read model
     collection_projection(pool.clone())
-        .run_once(&executor)
+        .unsafe_oneshot(&executor)
         .await
         .unwrap();
     recipe_projection(pool.clone())
-        .run_once(&executor)
+        .unsafe_oneshot(&executor)
         .await
         .unwrap();
 
@@ -303,7 +303,7 @@ async fn test_collection_deletion_preserves_recipes() {
 
     // Process events synchronously into read model
     collection_projection(pool.clone())
-        .run_once(&executor)
+        .unsafe_oneshot(&executor)
         .await
         .unwrap();
 
