@@ -55,7 +55,9 @@
                         <a href="/recipes/{{ recipe.id }}/edit" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 font-medium">
                             Edit
                         </a>
-                        <form method="POST" action="/recipes/{{ recipe.id }}/delete" onsubmit="return confirm('Are you sure you want to delete this recipe?');">
+                        <form method="POST" action="/recipes/{{ recipe.id }}/delete"
+                              ts-req="/recipes/{{ recipe.id }}/delete"
+                              onsubmit="return confirm('Are you sure? This cannot be undone.');">
                             <button type="submit" class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 font-medium">
                                 Delete
                             </button>

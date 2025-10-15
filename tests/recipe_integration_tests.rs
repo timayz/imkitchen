@@ -798,3 +798,225 @@ async fn test_recipe_update_syncs_to_read_model() {
     assert_eq!(instructions[0].instruction_text, "Season with spices");
     assert_eq!(instructions[1].instruction_text, "Cook thoroughly");
 }
+
+// ============================================================================
+// Recipe Deletion Integration Tests (Story 2.3)
+// ============================================================================
+
+#[tokio::test]
+async fn test_delete_recipe_integration_removes_from_read_model() {
+    let pool = setup_test_db().await;
+    let executor = setup_evento_executor(pool.clone()).await;
+    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+
+    // Start projection
+    tokio::spawn({
+        let pool = pool.clone();
+        let executor = executor.clone();
+        async move {
+            recipe_projection(pool).run(&executor).await.ok();
+        }
+    });
+
+    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+
+    // Create a recipe
+    let command = CreateRecipeCommand {
+        title: "Recipe to Delete".to_string(),
+        ingredients: vec![Ingredient {
+            name: "Salt".to_string(),
+            quantity: 1.0,
+            unit: "tsp".to_string(),
+        }],
+        instructions: vec![InstructionStep {
+            step_number: 1,
+            instruction_text: "Add salt".to_string(),
+            timer_minutes: None,
+        }],
+        prep_time_min: Some(5),
+        cook_time_min: Some(10),
+        advance_prep_hours: None,
+        serving_size: Some(2),
+    };
+
+    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+        .await
+        .unwrap();
+
+    // Wait for projection
+    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+
+    // Verify recipe exists in read model
+    let recipe_before = query_recipe_by_id(&recipe_id, &pool).await.unwrap();
+    assert!(
+        recipe_before.is_some(),
+        "Recipe should exist before deletion"
+    );
+
+    // Delete the recipe
+    let delete_command = DeleteRecipeCommand {
+        recipe_id: recipe_id.clone(),
+        user_id: "user1".to_string(),
+    };
+
+    delete_recipe(delete_command, &executor, &pool)
+        .await
+        .unwrap();
+
+    // Wait for projection to process RecipeDeleted event
+    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+
+    // Verify recipe no longer exists in read model (soft delete via removal)
+    let recipe_after = query_recipe_by_id(&recipe_id, &pool).await.unwrap();
+    assert!(
+        recipe_after.is_none(),
+        "Recipe should be removed from read model after deletion"
+    );
+}
+
+#[tokio::test]
+async fn test_delete_recipe_integration_unauthorized_returns_403() {
+    let pool = setup_test_db().await;
+    let executor = setup_evento_executor(pool.clone()).await;
+    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+    insert_test_user(&pool, "user2", "user2@test.com", "free").await;
+
+    // Start projection
+    tokio::spawn({
+        let pool = pool.clone();
+        let executor = executor.clone();
+        async move {
+            recipe_projection(pool).run(&executor).await.ok();
+        }
+    });
+
+    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+
+    // User1 creates a recipe
+    let command = CreateRecipeCommand {
+        title: "User1's Recipe".to_string(),
+        ingredients: vec![Ingredient {
+            name: "Salt".to_string(),
+            quantity: 1.0,
+            unit: "tsp".to_string(),
+        }],
+        instructions: vec![InstructionStep {
+            step_number: 1,
+            instruction_text: "Add salt".to_string(),
+            timer_minutes: None,
+        }],
+        prep_time_min: Some(5),
+        cook_time_min: Some(10),
+        advance_prep_hours: None,
+        serving_size: Some(2),
+    };
+
+    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+        .await
+        .unwrap();
+
+    // Wait for projection
+    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+
+    // User2 attempts to delete user1's recipe
+    let delete_command = DeleteRecipeCommand {
+        recipe_id: recipe_id.clone(),
+        user_id: "user2".to_string(), // Different user!
+    };
+
+    let result = delete_recipe(delete_command, &executor, &pool).await;
+    assert!(
+        matches!(result, Err(RecipeError::PermissionDenied)),
+        "Should return PermissionDenied for unauthorized deletion"
+    );
+
+    // Verify recipe still exists in read model
+    let recipe = query_recipe_by_id(&recipe_id, &pool).await.unwrap();
+    assert!(
+        recipe.is_some(),
+        "Recipe should still exist after failed deletion"
+    );
+}
+
+#[tokio::test]
+async fn test_delete_recipe_integration_excluded_from_user_queries() {
+    let pool = setup_test_db().await;
+    let executor = setup_evento_executor(pool.clone()).await;
+    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+
+    // Start projection
+    tokio::spawn({
+        let pool = pool.clone();
+        let executor = executor.clone();
+        async move {
+            recipe_projection(pool).run(&executor).await.ok();
+        }
+    });
+
+    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+
+    // Create 3 recipes for user1
+    let mut recipe_ids = Vec::new();
+    for i in 1..=3 {
+        let command = CreateRecipeCommand {
+            title: format!("Recipe {}", i),
+            ingredients: vec![Ingredient {
+                name: "Salt".to_string(),
+                quantity: 1.0,
+                unit: "tsp".to_string(),
+            }],
+            instructions: vec![InstructionStep {
+                step_number: 1,
+                instruction_text: "Add salt".to_string(),
+                timer_minutes: None,
+            }],
+            prep_time_min: Some(5),
+            cook_time_min: Some(10),
+            advance_prep_hours: None,
+            serving_size: Some(2),
+        };
+
+        let recipe_id = create_recipe(command, "user1", &executor, &pool)
+            .await
+            .unwrap();
+        recipe_ids.push(recipe_id);
+    }
+
+    // Wait for projections
+    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+
+    // Verify all 3 recipes exist
+    let recipes_before = query_recipes_by_user("user1", &pool).await.unwrap();
+    assert_eq!(
+        recipes_before.len(),
+        3,
+        "Should have 3 recipes before deletion"
+    );
+
+    // Delete the second recipe
+    let delete_command = DeleteRecipeCommand {
+        recipe_id: recipe_ids[1].clone(),
+        user_id: "user1".to_string(),
+    };
+
+    delete_recipe(delete_command, &executor, &pool)
+        .await
+        .unwrap();
+
+    // Wait for projection
+    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+
+    // Verify only 2 recipes remain
+    let recipes_after = query_recipes_by_user("user1", &pool).await.unwrap();
+    assert_eq!(
+        recipes_after.len(),
+        2,
+        "Should have 2 recipes after deleting one"
+    );
+
+    // Verify the deleted recipe is not in the list
+    assert!(
+        !recipes_after.iter().any(|r| r.id == recipe_ids[1]),
+        "Deleted recipe should not appear in user queries"
+    );
+}

@@ -6,8 +6,8 @@ use axum::{
     Extension,
 };
 use recipe::{
-    create_recipe, query_recipe_by_id, update_recipe, CreateRecipeCommand, Ingredient,
-    InstructionStep, RecipeError, UpdateRecipeCommand,
+    create_recipe, delete_recipe, query_recipe_by_id, update_recipe, CreateRecipeCommand,
+    DeleteRecipeCommand, Ingredient, InstructionStep, RecipeError, UpdateRecipeCommand,
 };
 use serde::Deserialize;
 
@@ -626,4 +626,71 @@ fn parse_recipe_form(body: &str) -> Result<CreateRecipeForm, String> {
         advance_prep_hours,
         serving_size,
     })
+}
+
+/// POST /recipes/:id/delete - Handle recipe deletion (TwinSpark pattern)
+#[tracing::instrument(skip(state, auth), fields(recipe_id = %recipe_id, user_id = %auth.user_id))]
+pub async fn post_delete_recipe(
+    State(state): State<AppState>,
+    Extension(auth): Extension<Auth>,
+    Path(recipe_id): Path<String>,
+) -> Response {
+    // Create delete command
+    let command = DeleteRecipeCommand {
+        recipe_id: recipe_id.clone(),
+        user_id: auth.user_id.clone(),
+    };
+
+    // Execute recipe deletion (evento event sourcing)
+    match delete_recipe(command, &state.evento_executor, &state.db_pool).await {
+        Ok(()) => {
+            tracing::info!(
+                user_id = %auth.user_id,
+                recipe_id = %recipe_id,
+                event = "recipe_deleted",
+                action = "delete_recipe",
+                "Recipe successfully deleted"
+            );
+            // Redirect to recipes list using TwinSpark (progressive enhancement)
+            // Returns 200 OK with ts-location header for client-side navigation
+            (StatusCode::OK, [("ts-location", "/recipes")], ()).into_response()
+        }
+        Err(RecipeError::PermissionDenied) => {
+            tracing::warn!(
+                user_id = %auth.user_id,
+                recipe_id = %recipe_id,
+                event = "ownership_violation",
+                action = "delete_recipe",
+                "User denied permission to delete recipe - ownership check failed"
+            );
+            (
+                StatusCode::FORBIDDEN,
+                "You do not have permission to delete this recipe",
+            )
+                .into_response()
+        }
+        Err(RecipeError::NotFound) => {
+            tracing::warn!(
+                user_id = %auth.user_id,
+                recipe_id = %recipe_id,
+                event = "recipe_not_found",
+                action = "delete_recipe",
+                "Recipe not found for deletion"
+            );
+            (StatusCode::NOT_FOUND, "Recipe not found").into_response()
+        }
+        Err(e) => {
+            tracing::error!(
+                user_id = %auth.user_id,
+                recipe_id = %recipe_id,
+                error = ?e,
+                "Failed to delete recipe"
+            );
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "An error occurred while deleting the recipe. Please try again.",
+            )
+                .into_response()
+        }
+    }
 }

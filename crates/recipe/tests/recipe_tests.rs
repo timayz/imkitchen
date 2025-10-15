@@ -754,3 +754,137 @@ async fn test_update_recipe_clears_optional_fields() {
     assert_eq!(aggregate.advance_prep_hours, None); // Cleared
     assert_eq!(aggregate.serving_size, Some(4)); // Unchanged
 }
+
+// ============================================================================
+// RecipeDeleted Event Tests (Story 2.3)
+// ============================================================================
+
+use recipe::delete_recipe;
+use recipe::DeleteRecipeCommand;
+
+/// Test that RecipeDeleted event sets is_deleted flag on aggregate
+#[tokio::test]
+async fn test_recipe_deleted_event_sets_is_deleted_flag() {
+    let pool = setup_test_db().await;
+    let executor = setup_evento_executor(pool.clone()).await;
+    insert_test_user(&pool, "user1", "free", 0).await;
+
+    // Create a recipe
+    let create_command = CreateRecipeCommand {
+        title: "Recipe to Delete".to_string(),
+        ingredients: vec![Ingredient {
+            name: "Salt".to_string(),
+            quantity: 1.0,
+            unit: "tsp".to_string(),
+        }],
+        instructions: vec![InstructionStep {
+            step_number: 1,
+            instruction_text: "Add salt".to_string(),
+            timer_minutes: None,
+        }],
+        prep_time_min: Some(5),
+        cook_time_min: Some(10),
+        advance_prep_hours: None,
+        serving_size: Some(2),
+    };
+
+    let recipe_id = create_recipe(create_command, "user1", &executor, &pool)
+        .await
+        .unwrap();
+
+    // Insert recipe into read model for ownership check
+    insert_test_recipe(&pool, &recipe_id, "user1", "Recipe to Delete").await;
+
+    // Delete the recipe
+    let delete_command = DeleteRecipeCommand {
+        recipe_id: recipe_id.clone(),
+        user_id: "user1".to_string(),
+    };
+
+    delete_recipe(delete_command, &executor, &pool)
+        .await
+        .unwrap();
+
+    // Load aggregate and verify is_deleted flag is set
+    let aggregate = evento::load::<RecipeAggregate, _>(&executor, &recipe_id)
+        .await
+        .unwrap()
+        .item;
+
+    assert!(aggregate.is_deleted, "Recipe should be marked as deleted");
+    assert_eq!(aggregate.title, "Recipe to Delete"); // Other fields preserved
+}
+
+/// Test that delete_recipe validates ownership (unauthorized user cannot delete)
+#[tokio::test]
+async fn test_delete_recipe_validates_ownership() {
+    let pool = setup_test_db().await;
+    let executor = setup_evento_executor(pool.clone()).await;
+    insert_test_user(&pool, "user1", "free", 0).await;
+    insert_test_user(&pool, "user2", "free", 0).await;
+
+    // User1 creates a recipe
+    let create_command = CreateRecipeCommand {
+        title: "User1's Recipe".to_string(),
+        ingredients: vec![Ingredient {
+            name: "Salt".to_string(),
+            quantity: 1.0,
+            unit: "tsp".to_string(),
+        }],
+        instructions: vec![InstructionStep {
+            step_number: 1,
+            instruction_text: "Add salt".to_string(),
+            timer_minutes: None,
+        }],
+        prep_time_min: Some(5),
+        cook_time_min: Some(10),
+        advance_prep_hours: None,
+        serving_size: Some(2),
+    };
+
+    let recipe_id = create_recipe(create_command, "user1", &executor, &pool)
+        .await
+        .unwrap();
+
+    // Insert recipe into read model for ownership check
+    insert_test_recipe(&pool, &recipe_id, "user1", "User1's Recipe").await;
+
+    // User2 attempts to delete user1's recipe
+    let delete_command = DeleteRecipeCommand {
+        recipe_id: recipe_id.clone(),
+        user_id: "user2".to_string(), // Different user!
+    };
+
+    let result = delete_recipe(delete_command, &executor, &pool).await;
+    assert!(
+        matches!(result, Err(RecipeError::PermissionDenied)),
+        "Should reject unauthorized deletion"
+    );
+
+    // Verify recipe was NOT deleted
+    let aggregate = evento::load::<RecipeAggregate, _>(&executor, &recipe_id)
+        .await
+        .unwrap()
+        .item;
+    assert!(!aggregate.is_deleted, "Recipe should NOT be deleted");
+}
+
+/// Test deleting a non-existent recipe returns NotFound error
+#[tokio::test]
+async fn test_delete_recipe_not_found() {
+    let pool = setup_test_db().await;
+    let executor = setup_evento_executor(pool.clone()).await;
+    insert_test_user(&pool, "user1", "free", 0).await;
+
+    // Attempt to delete recipe that doesn't exist
+    let delete_command = DeleteRecipeCommand {
+        recipe_id: "non_existent_id".to_string(),
+        user_id: "user1".to_string(),
+    };
+
+    let result = delete_recipe(delete_command, &executor, &pool).await;
+    assert!(
+        matches!(result, Err(RecipeError::NotFound)),
+        "Should return NotFound for non-existent recipe"
+    );
+}
