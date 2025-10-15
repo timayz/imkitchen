@@ -19,10 +19,7 @@ async fn setup_test_db() -> SqlitePool {
     drop(conn);
 
     // Run SQLx migrations for read model tables (same as production)
-    sqlx::migrate!("./migrations")
-        .run(&pool)
-        .await
-        .unwrap();
+    sqlx::migrate!("./migrations").run(&pool).await.unwrap();
 
     pool
 }
