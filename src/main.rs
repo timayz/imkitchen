@@ -11,11 +11,11 @@ use imkitchen::routes::{
     get_ingredient_row, get_instruction_row, get_login, get_onboarding, get_onboarding_skip,
     get_password_reset, get_password_reset_complete, get_profile, get_recipe_detail,
     get_recipe_edit_form, get_recipe_form, get_register, get_subscription,
-    get_subscription_success, health, post_create_recipe, post_login, post_logout,
-    post_onboarding_step_1, post_onboarding_step_2, post_onboarding_step_3, post_onboarding_step_4,
-    post_password_reset, post_password_reset_complete, post_profile, post_register,
-    post_stripe_webhook, post_subscription_upgrade, post_update_recipe, ready, AppState,
-    AssetsService,
+    get_subscription_success, health, post_create_recipe, post_delete_recipe, post_login,
+    post_logout, post_onboarding_step_1, post_onboarding_step_2, post_onboarding_step_3,
+    post_onboarding_step_4, post_password_reset, post_password_reset_complete, post_profile,
+    post_register, post_stripe_webhook, post_subscription_upgrade, post_update_recipe, ready,
+    AppState, AssetsService,
 };
 use recipe::recipe_projection;
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions};
@@ -154,6 +154,7 @@ async fn serve_command(
         .route("/recipes/{id}", get(get_recipe_detail))
         .route("/recipes/{id}/edit", get(get_recipe_edit_form))
         .route("/recipes/{id}", post(post_update_recipe))
+        .route("/recipes/{id}/delete", post(post_delete_recipe))
         .route("/recipes/ingredient-row", get(get_ingredient_row))
         .route("/recipes/instruction-row", get(get_instruction_row))
         .route_layer(axum_middleware::from_fn_with_state(
