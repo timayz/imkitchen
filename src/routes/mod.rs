@@ -1,5 +1,6 @@
 pub mod assets;
 pub mod auth;
+pub mod collections;
 pub mod health;
 pub mod profile;
 pub mod recipes;
@@ -10,6 +11,10 @@ pub use auth::{
     post_logout, post_password_reset, post_password_reset_complete, post_register,
     post_stripe_webhook, AppState,
 };
+pub use collections::{
+    get_collections, post_add_recipe_to_collection, post_create_collection, post_delete_collection,
+    post_remove_recipe_from_collection, post_update_collection,
+};
 pub use health::{health, ready};
 pub use profile::{
     get_onboarding, get_onboarding_skip, get_profile, get_subscription, get_subscription_success,
@@ -18,5 +23,5 @@ pub use profile::{
 };
 pub use recipes::{
     get_ingredient_row, get_instruction_row, get_recipe_detail, get_recipe_edit_form,
-    get_recipe_form, post_create_recipe, post_delete_recipe, post_update_recipe,
+    get_recipe_form, get_recipe_list, post_create_recipe, post_delete_recipe, post_update_recipe,
 };

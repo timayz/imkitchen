@@ -8,16 +8,18 @@ use clap::{Parser, Subcommand};
 use evento::prelude::*;
 use imkitchen::middleware::auth_middleware;
 use imkitchen::routes::{
-    get_ingredient_row, get_instruction_row, get_login, get_onboarding, get_onboarding_skip,
-    get_password_reset, get_password_reset_complete, get_profile, get_recipe_detail,
-    get_recipe_edit_form, get_recipe_form, get_register, get_subscription,
-    get_subscription_success, health, post_create_recipe, post_delete_recipe, post_login,
-    post_logout, post_onboarding_step_1, post_onboarding_step_2, post_onboarding_step_3,
-    post_onboarding_step_4, post_password_reset, post_password_reset_complete, post_profile,
-    post_register, post_stripe_webhook, post_subscription_upgrade, post_update_recipe, ready,
-    AppState, AssetsService,
+    get_collections, get_ingredient_row, get_instruction_row, get_login, get_onboarding,
+    get_onboarding_skip, get_password_reset, get_password_reset_complete, get_profile,
+    get_recipe_detail, get_recipe_edit_form, get_recipe_form, get_recipe_list, get_register,
+    get_subscription, get_subscription_success, health, post_add_recipe_to_collection,
+    post_create_collection, post_create_recipe, post_delete_collection, post_delete_recipe,
+    post_login, post_logout, post_onboarding_step_1, post_onboarding_step_2,
+    post_onboarding_step_3, post_onboarding_step_4, post_password_reset,
+    post_password_reset_complete, post_profile, post_register, post_remove_recipe_from_collection,
+    post_stripe_webhook, post_subscription_upgrade, post_update_collection, post_update_recipe,
+    ready, AppState, AssetsService,
 };
-use recipe::recipe_projection;
+use recipe::{collection_projection, recipe_projection};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions};
 use tower_http::trace::TraceLayer;
 use user::user_projection;
@@ -113,6 +115,11 @@ async fn serve_command(
         .await?;
     tracing::info!("Evento subscription 'recipe-read-model' started");
 
+    collection_projection(db_pool.clone())
+        .run(&evento_executor)
+        .await?;
+    tracing::info!("Evento subscription 'collection-read-model' started");
+
     // Create app state
     let email_config = imkitchen::email::EmailConfig {
         smtp_host: config.email.smtp_host,
@@ -149,14 +156,29 @@ async fn serve_command(
         .route("/subscription/success", get(get_subscription_success))
         .route("/dashboard", get(dashboard_handler))
         // Recipe routes
+        .route("/recipes", get(get_recipe_list).post(post_create_recipe))
         .route("/recipes/new", get(get_recipe_form))
-        .route("/recipes", post(post_create_recipe))
         .route("/recipes/{id}", get(get_recipe_detail))
         .route("/recipes/{id}/edit", get(get_recipe_edit_form))
         .route("/recipes/{id}", post(post_update_recipe))
         .route("/recipes/{id}/delete", post(post_delete_recipe))
         .route("/recipes/ingredient-row", get(get_ingredient_row))
         .route("/recipes/instruction-row", get(get_instruction_row))
+        // Collection routes
+        .route(
+            "/collections",
+            get(get_collections).post(post_create_collection),
+        )
+        .route("/collections/{id}/update", post(post_update_collection))
+        .route("/collections/{id}/delete", post(post_delete_collection))
+        .route(
+            "/collections/{collection_id}/recipes/{recipe_id}/add",
+            post(post_add_recipe_to_collection),
+        )
+        .route(
+            "/collections/{collection_id}/recipes/{recipe_id}/remove",
+            post(post_remove_recipe_from_collection),
+        )
         .route_layer(axum_middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,
