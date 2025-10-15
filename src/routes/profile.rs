@@ -413,6 +413,7 @@ pub struct ProfilePageTemplate {
     pub availability_start: String,
     pub availability_duration: String,
     pub favorite_count: i64,
+    pub shared_recipe_count: i64, // AC-8: Display shared recipe count
 }
 
 /// GET /profile - Display profile editing page
@@ -431,6 +432,15 @@ pub async fn get_profile(
     .bind(&auth.user_id)
     .fetch_one(&state.db_pool)
     .await;
+
+    // AC-8: Query shared recipe count (exclude deleted recipes)
+    let shared_count: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM recipes WHERE user_id = ?1 AND is_shared = 1 AND deleted_at IS NULL",
+    )
+    .bind(&auth.user_id)
+    .fetch_one(&state.db_pool)
+    .await
+    .unwrap_or(0);
 
     match user_data {
         Ok(row) => {
@@ -473,6 +483,7 @@ pub async fn get_profile(
                 availability_start,
                 availability_duration,
                 favorite_count: favorite_count as i64,
+                shared_recipe_count: shared_count, // AC-8
             };
 
             Html(template.render().unwrap()).into_response()
@@ -571,6 +582,15 @@ pub async fn post_profile(
                     .await
                     .unwrap_or(0);
 
+            // AC-8: Query shared recipe count
+            let shared_count: i64 = sqlx::query_scalar(
+                "SELECT COUNT(*) FROM recipes WHERE user_id = ?1 AND is_shared = 1",
+            )
+            .bind(&auth.user_id)
+            .fetch_one(&state.db_pool)
+            .await
+            .unwrap_or(0);
+
             let template = ProfilePageTemplate {
                 error: String::new(),
                 success: true,
@@ -582,6 +602,7 @@ pub async fn post_profile(
                 availability_start: form_availability_start,
                 availability_duration: form_availability_duration,
                 favorite_count: favorite_count as i64,
+                shared_recipe_count: shared_count, // AC-8
             };
 
             Html(template.render().unwrap()).into_response()
@@ -595,6 +616,15 @@ pub async fn post_profile(
                     .await
                     .unwrap_or(0);
 
+            // AC-8: Query shared recipe count
+            let shared_count: i64 = sqlx::query_scalar(
+                "SELECT COUNT(*) FROM recipes WHERE user_id = ?1 AND is_shared = 1",
+            )
+            .bind(&auth.user_id)
+            .fetch_one(&state.db_pool)
+            .await
+            .unwrap_or(0);
+
             // Validation error - re-render form with error
             let template = ProfilePageTemplate {
                 error: msg,
@@ -607,6 +637,7 @@ pub async fn post_profile(
                 availability_start: form_availability_start,
                 availability_duration: form_availability_duration,
                 favorite_count: favorite_count as i64,
+                shared_recipe_count: shared_count, // AC-8
             };
             (
                 StatusCode::UNPROCESSABLE_ENTITY,
