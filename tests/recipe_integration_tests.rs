@@ -1088,8 +1088,14 @@ async fn test_favorite_recipe_integration_full_cycle() {
         .unwrap();
 
     // Verify initial state: not favorited
-    let recipe = query_recipe_by_id(&recipe_id, &pool).await.unwrap().unwrap();
-    assert!(!recipe.is_favorite, "Recipe should not be favorited initially");
+    let recipe = query_recipe_by_id(&recipe_id, &pool)
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(
+        !recipe.is_favorite,
+        "Recipe should not be favorited initially"
+    );
 
     // Favorite the recipe
     use recipe::{favorite_recipe, FavoriteRecipeCommand};
@@ -1108,16 +1114,18 @@ async fn test_favorite_recipe_integration_full_cycle() {
         .unwrap();
 
     // Verify favorited in read model
-    let recipe = query_recipe_by_id(&recipe_id, &pool).await.unwrap().unwrap();
-    assert!(recipe.is_favorite, "Recipe should be favorited in read model");
+    let recipe = query_recipe_by_id(&recipe_id, &pool)
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(
+        recipe.is_favorite,
+        "Recipe should be favorited in read model"
+    );
 
     // Query all recipes vs favorites
-    let all_recipes = query_recipes_by_user("user1", false, &pool)
-        .await
-        .unwrap();
-    let fav_recipes = query_recipes_by_user("user1", true, &pool)
-        .await
-        .unwrap();
+    let all_recipes = query_recipes_by_user("user1", false, &pool).await.unwrap();
+    let fav_recipes = query_recipes_by_user("user1", true, &pool).await.unwrap();
 
     assert_eq!(all_recipes.len(), 1, "Should have 1 recipe total");
     assert_eq!(fav_recipes.len(), 1, "Should have 1 favorite recipe");
@@ -1138,13 +1146,17 @@ async fn test_favorite_recipe_integration_full_cycle() {
         .unwrap();
 
     // Verify not favorited in read model
-    let recipe = query_recipe_by_id(&recipe_id, &pool).await.unwrap().unwrap();
-    assert!(!recipe.is_favorite, "Recipe should not be favorited in read model");
+    let recipe = query_recipe_by_id(&recipe_id, &pool)
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(
+        !recipe.is_favorite,
+        "Recipe should not be favorited in read model"
+    );
 
     // Query favorites (should be empty now)
-    let fav_recipes = query_recipes_by_user("user1", true, &pool)
-        .await
-        .unwrap();
+    let fav_recipes = query_recipes_by_user("user1", true, &pool).await.unwrap();
     assert_eq!(fav_recipes.len(), 0, "Should have 0 favorite recipes");
 }
 
@@ -1210,22 +1222,27 @@ async fn test_favorite_filter_with_multiple_recipes() {
         .unwrap();
 
     // Query all recipes
-    let all_recipes = query_recipes_by_user("user1", false, &pool)
-        .await
-        .unwrap();
+    let all_recipes = query_recipes_by_user("user1", false, &pool).await.unwrap();
     assert_eq!(all_recipes.len(), 5, "Should have 5 recipes total");
 
     // Query favorite recipes only
-    let fav_recipes = query_recipes_by_user("user1", true, &pool)
-        .await
-        .unwrap();
+    let fav_recipes = query_recipes_by_user("user1", true, &pool).await.unwrap();
     assert_eq!(fav_recipes.len(), 3, "Should have 3 favorite recipes");
 
     // Verify the correct recipes are favorited
     let fav_ids: Vec<String> = fav_recipes.iter().map(|r| r.id.clone()).collect();
-    assert!(fav_ids.contains(&recipe_ids[0]), "Recipe 1 should be favorite");
-    assert!(fav_ids.contains(&recipe_ids[2]), "Recipe 3 should be favorite");
-    assert!(fav_ids.contains(&recipe_ids[4]), "Recipe 5 should be favorite");
+    assert!(
+        fav_ids.contains(&recipe_ids[0]),
+        "Recipe 1 should be favorite"
+    );
+    assert!(
+        fav_ids.contains(&recipe_ids[2]),
+        "Recipe 3 should be favorite"
+    );
+    assert!(
+        fav_ids.contains(&recipe_ids[4]),
+        "Recipe 5 should be favorite"
+    );
 }
 
 #[tokio::test]

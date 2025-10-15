@@ -564,13 +564,12 @@ pub async fn post_profile(
             // Success - use optimistic UI rendering with form data to avoid projection lag
             // This ensures user immediately sees their changes without waiting for read model update
             // Query favorite count from users table (O(1) query)
-            let favorite_count = sqlx::query_scalar::<_, i32>(
-                "SELECT favorite_count FROM users WHERE id = ?1"
-            )
-            .bind(&auth.user_id)
-            .fetch_one(&state.db_pool)
-            .await
-            .unwrap_or(0);
+            let favorite_count =
+                sqlx::query_scalar::<_, i32>("SELECT favorite_count FROM users WHERE id = ?1")
+                    .bind(&auth.user_id)
+                    .fetch_one(&state.db_pool)
+                    .await
+                    .unwrap_or(0);
 
             let template = ProfilePageTemplate {
                 error: String::new(),
@@ -589,13 +588,12 @@ pub async fn post_profile(
         }
         Err(user::UserError::ValidationError(msg)) => {
             // Query favorite count from users table (O(1) query)
-            let favorite_count = sqlx::query_scalar::<_, i32>(
-                "SELECT favorite_count FROM users WHERE id = ?1"
-            )
-            .bind(&auth.user_id)
-            .fetch_one(&state.db_pool)
-            .await
-            .unwrap_or(0);
+            let favorite_count =
+                sqlx::query_scalar::<_, i32>("SELECT favorite_count FROM users WHERE id = ?1")
+                    .bind(&auth.user_id)
+                    .fetch_one(&state.db_pool)
+                    .await
+                    .unwrap_or(0);
 
             // Validation error - re-render form with error
             let template = ProfilePageTemplate {

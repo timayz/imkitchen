@@ -9,8 +9,8 @@ use recipe::{
     create_recipe, delete_recipe, favorite_recipe, query_collections_by_user,
     query_collections_for_recipe, query_recipe_by_id, query_recipes_by_collection,
     query_recipes_by_user, update_recipe, update_recipe_tags, CollectionReadModel,
-    CreateRecipeCommand, DeleteRecipeCommand, FavoriteRecipeCommand, Ingredient,
-    InstructionStep, RecipeError, UpdateRecipeCommand, UpdateRecipeTagsCommand,
+    CreateRecipeCommand, DeleteRecipeCommand, FavoriteRecipeCommand, Ingredient, InstructionStep,
+    RecipeError, UpdateRecipeCommand, UpdateRecipeTagsCommand,
 };
 use serde::Deserialize;
 
@@ -742,9 +742,9 @@ pub async fn post_delete_recipe(
 #[derive(Debug, Deserialize)]
 pub struct RecipeListQuery {
     pub collection: Option<String>,
-    pub complexity: Option<String>, // "simple", "moderate", "complex"
-    pub cuisine: Option<String>,    // e.g., "Italian", "Asian"
-    pub dietary: Option<String>,    // e.g., "vegetarian", "vegan", "gluten-free"
+    pub complexity: Option<String>,  // "simple", "moderate", "complex"
+    pub cuisine: Option<String>,     // e.g., "Italian", "Asian"
+    pub dietary: Option<String>,     // e.g., "vegetarian", "vegan", "gluten-free"
     pub favorite_only: Option<bool>, // Filter for favorited recipes only
 }
 
@@ -870,13 +870,12 @@ pub async fn get_recipe_list(
     }
 
     // Query favorite count from users table (O(1) query via subscription)
-    let favorite_count = sqlx::query_scalar::<_, i32>(
-        "SELECT favorite_count FROM users WHERE id = ?1"
-    )
-    .bind(&auth.user_id)
-    .fetch_one(&state.db_pool)
-    .await
-    .unwrap_or(0);
+    let favorite_count =
+        sqlx::query_scalar::<_, i32>("SELECT favorite_count FROM users WHERE id = ?1")
+            .bind(&auth.user_id)
+            .fetch_one(&state.db_pool)
+            .await
+            .unwrap_or(0);
 
     let favorite_only = query.favorite_only.unwrap_or(false);
 

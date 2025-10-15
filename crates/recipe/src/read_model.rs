@@ -349,10 +349,7 @@ pub async fn query_recipes_by_user(
         "#
     };
 
-    let rows = sqlx::query(query_str)
-    .bind(user_id)
-    .fetch_all(pool)
-    .await?;
+    let rows = sqlx::query(query_str).bind(user_id).fetch_all(pool).await?;
 
     let recipes = rows
         .into_iter()

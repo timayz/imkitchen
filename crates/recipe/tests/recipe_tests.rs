@@ -935,7 +935,10 @@ async fn test_favorite_recipe_toggles_status() {
     let new_status = favorite_recipe(unfav_command, &executor, &pool)
         .await
         .unwrap();
-    assert!(!new_status, "Recipe should not be favorited after second toggle");
+    assert!(
+        !new_status,
+        "Recipe should not be favorited after second toggle"
+    );
 
     // Run projection to sync read model
     recipe_projection(pool.clone())
@@ -1116,7 +1119,7 @@ async fn test_query_recipes_favorite_only_filter() {
 
     // Favorite recipe 1 and 3
     use recipe::{favorite_recipe, FavoriteRecipeCommand};
-    
+
     let fav_command_1 = FavoriteRecipeCommand {
         recipe_id: recipe_id_1.clone(),
         user_id: "user1".to_string(),
@@ -1141,15 +1144,11 @@ async fn test_query_recipes_favorite_only_filter() {
 
     // Query all recipes (should return 3)
     use recipe::query_recipes_by_user;
-    let all_recipes = query_recipes_by_user("user1", false, &pool)
-        .await
-        .unwrap();
+    let all_recipes = query_recipes_by_user("user1", false, &pool).await.unwrap();
     assert_eq!(all_recipes.len(), 3, "Should return all 3 recipes");
 
     // Query favorite recipes only (should return 2)
-    let favorite_recipes = query_recipes_by_user("user1", true, &pool)
-        .await
-        .unwrap();
+    let favorite_recipes = query_recipes_by_user("user1", true, &pool).await.unwrap();
     assert_eq!(
         favorite_recipes.len(),
         2,
