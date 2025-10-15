@@ -5,7 +5,9 @@ use crate::collection_events::{
     RecipeRemovedFromCollection,
 };
 use crate::error::RecipeResult;
-use crate::events::{RecipeCreated, RecipeDeleted, RecipeFavorited, RecipeTagged, RecipeUpdated};
+use crate::events::{
+    RecipeCreated, RecipeDeleted, RecipeFavorited, RecipeShared, RecipeTagged, RecipeUpdated,
+};
 use evento::{AggregatorName, Context, EventDetails, Executor};
 use serde::{Deserialize, Serialize};
 use sqlx::{Row, SqlitePool};
@@ -78,8 +80,9 @@ async fn recipe_created_handler<E: Executor>(
 
 /// Async evento subscription handler for RecipeDeleted events
 ///
-/// This handler soft-deletes recipes from the read model by removing them from the table.
+/// This handler soft-deletes recipes from the read model by setting deleted_at timestamp.
 /// The events remain in the event store for audit trail.
+/// Soft-deleted recipes are excluded from queries via WHERE deleted_at IS NULL filters.
 #[evento::handler(RecipeAggregate)]
 async fn recipe_deleted_handler<E: Executor>(
     context: &Context<'_, E>,
@@ -88,9 +91,11 @@ async fn recipe_deleted_handler<E: Executor>(
     // Extract the shared SqlitePool from context
     let pool: SqlitePool = context.extract();
 
-    // Execute SQL delete to remove recipe from read model
-    // This is a soft delete - events remain in the event store
-    sqlx::query("DELETE FROM recipes WHERE id = ?1")
+    // Execute SQL UPDATE to soft-delete recipe in read model
+    // Sets deleted_at timestamp instead of removing the row
+    // This enables future features like "show deleted recipes" and maintains referential integrity
+    sqlx::query("UPDATE recipes SET deleted_at = ?1 WHERE id = ?2")
+        .bind(&event.data.deleted_at)
         .bind(&event.aggregator_id)
         .execute(&pool)
         .await?;
@@ -112,6 +117,29 @@ async fn recipe_favorited_handler<E: Executor>(
     // Execute SQL update to toggle favorite status
     sqlx::query("UPDATE recipes SET is_favorite = ?1 WHERE id = ?2")
         .bind(event.data.favorited)
+        .bind(&event.aggregator_id)
+        .execute(&pool)
+        .await?;
+
+    Ok(())
+}
+
+/// Async evento subscription handler for RecipeShared events
+///
+/// This handler updates the is_shared flag in the recipes read model table.
+/// AC-3: Shared recipes appear in community discovery feed (/discover route)
+/// AC-6: Owner can revert to private at any time (removes from community discovery)
+#[evento::handler(RecipeAggregate)]
+async fn recipe_shared_handler<E: Executor>(
+    context: &Context<'_, E>,
+    event: EventDetails<RecipeShared>,
+) -> anyhow::Result<()> {
+    // Extract the shared SqlitePool from context
+    let pool: SqlitePool = context.extract();
+
+    // Execute SQL update to toggle share status
+    sqlx::query("UPDATE recipes SET is_shared = ?1 WHERE id = ?2")
+        .bind(event.data.shared)
         .bind(&event.aggregator_id)
         .execute(&pool)
         .await?;
@@ -267,6 +295,7 @@ pub fn recipe_projection(pool: SqlitePool) -> evento::SubscribeBuilder<evento::S
         .handler(recipe_created_handler())
         .handler(recipe_deleted_handler())
         .handler(recipe_favorited_handler())
+        .handler(recipe_shared_handler())
         .handler(recipe_updated_handler())
         .handler(recipe_tagged_handler())
 }
@@ -285,7 +314,7 @@ pub async fn query_recipe_by_id(
                is_favorite, is_shared, complexity, cuisine, dietary_tags,
                created_at, updated_at
         FROM recipes
-        WHERE id = ?1
+        WHERE id = ?1 AND deleted_at IS NULL
         "#,
     )
     .bind(recipe_id)
@@ -334,7 +363,7 @@ pub async fn query_recipes_by_user(
                is_favorite, is_shared, complexity, cuisine, dietary_tags,
                created_at, updated_at
         FROM recipes
-        WHERE user_id = ?1 AND is_favorite = 1
+        WHERE user_id = ?1 AND is_favorite = 1 AND deleted_at IS NULL
         ORDER BY created_at DESC
         "#
     } else {
@@ -344,12 +373,58 @@ pub async fn query_recipes_by_user(
                is_favorite, is_shared, complexity, cuisine, dietary_tags,
                created_at, updated_at
         FROM recipes
-        WHERE user_id = ?1
+        WHERE user_id = ?1 AND deleted_at IS NULL
         ORDER BY created_at DESC
         "#
     };
 
     let rows = sqlx::query(query_str).bind(user_id).fetch_all(pool).await?;
+
+    let recipes = rows
+        .into_iter()
+        .map(|row| RecipeReadModel {
+            id: row.get("id"),
+            user_id: row.get("user_id"),
+            title: row.get("title"),
+            ingredients: row.get("ingredients"),
+            instructions: row.get("instructions"),
+            prep_time_min: row.get("prep_time_min"),
+            cook_time_min: row.get("cook_time_min"),
+            advance_prep_hours: row.get("advance_prep_hours"),
+            serving_size: row.get("serving_size"),
+            is_favorite: row.get("is_favorite"),
+            is_shared: row.get("is_shared"),
+            complexity: row.get("complexity"),
+            cuisine: row.get("cuisine"),
+            dietary_tags: row.get("dietary_tags"),
+            created_at: row.get("created_at"),
+            updated_at: row.get("updated_at"),
+        })
+        .collect();
+
+    Ok(recipes)
+}
+
+/// Query shared recipes from read model for community discovery feed
+///
+/// Returns list of shared recipes (is_shared = true) visible to all users
+/// AC-3, AC-4, AC-12: Filters by is_shared = true, joins users for creator attribution
+/// Uses idx_recipes_shared index for performance
+pub async fn list_shared_recipes(pool: &SqlitePool) -> RecipeResult<Vec<RecipeReadModel>> {
+    let rows = sqlx::query(
+        r#"
+        SELECT r.id, r.user_id, r.title, r.ingredients, r.instructions,
+               r.prep_time_min, r.cook_time_min, r.advance_prep_hours, r.serving_size,
+               r.is_favorite, r.is_shared, r.complexity, r.cuisine, r.dietary_tags,
+               r.created_at, r.updated_at
+        FROM recipes r
+        WHERE r.is_shared = 1
+        ORDER BY r.created_at DESC
+        LIMIT 100
+        "#,
+    )
+    .fetch_all(pool)
+    .await?;
 
     let recipes = rows
         .into_iter()
@@ -664,7 +739,7 @@ pub async fn query_recipes_by_collection(
                r.created_at, r.updated_at
         FROM recipes r
         INNER JOIN recipe_collection_assignments a ON r.id = a.recipe_id
-        WHERE a.collection_id = ?1
+        WHERE a.collection_id = ?1 AND r.deleted_at IS NULL
         ORDER BY r.created_at DESC
         "#,
     )
