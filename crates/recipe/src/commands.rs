@@ -5,7 +5,10 @@ use validator::Validate;
 
 use crate::aggregate::RecipeAggregate;
 use crate::error::{RecipeError, RecipeResult};
-use crate::events::{Ingredient, InstructionStep, RecipeCreated, RecipeDeleted, RecipeUpdated};
+use crate::events::{
+    Ingredient, InstructionStep, RecipeCreated, RecipeDeleted, RecipeTagged, RecipeUpdated,
+};
+use crate::tagging::{CuisineInferenceService, DietaryTagDetector, RecipeComplexityCalculator};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
@@ -114,8 +117,65 @@ pub async fn create_recipe(
         .await
         .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
 
+    // Calculate and emit RecipeTagged event for automatic tagging
+    // Load the aggregate to access the recipe data
+    let load_result = evento::load::<RecipeAggregate, _>(executor, &aggregator_id)
+        .await
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
+
+    emit_recipe_tagged_event(&aggregator_id, &load_result.item, executor, false).await?;
+
     // Return the generated aggregator_id as the recipe_id
     Ok(aggregator_id)
+}
+
+/// Helper function to calculate tags and emit RecipeTagged event
+///
+/// This is called after RecipeCreated or RecipeUpdated events to automatically tag the recipe.
+/// Skips tagging if manual_override flag is set.
+async fn emit_recipe_tagged_event(
+    recipe_id: &str,
+    aggregate: &RecipeAggregate,
+    executor: &Sqlite,
+    manual_override: bool,
+) -> RecipeResult<()> {
+    // Skip automatic tagging if manual override is already set
+    if aggregate.tags.manual_override && !manual_override {
+        return Ok(());
+    }
+
+    // Calculate complexity using domain service
+    let complexity = RecipeComplexityCalculator::calculate(
+        &aggregate.ingredients,
+        &aggregate.instructions,
+        aggregate.advance_prep_hours,
+    );
+
+    // Infer cuisine using domain service
+    let cuisine = CuisineInferenceService::infer(&aggregate.ingredients);
+
+    // Detect dietary tags using domain service
+    let dietary_tags = DietaryTagDetector::detect(&aggregate.ingredients);
+
+    let tagged_at = Utc::now();
+
+    // Emit RecipeTagged event
+    evento::save::<RecipeAggregate>(recipe_id.to_string())
+        .data(&RecipeTagged {
+            complexity: Some(complexity.as_str().to_string()),
+            cuisine,
+            dietary_tags,
+            manual_override,
+            tagged_at: tagged_at.to_rfc3339(),
+        })
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .metadata(&true)
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .commit(executor)
+        .await
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
+
+    Ok(())
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -269,6 +329,71 @@ pub async fn update_recipe(
             advance_prep_hours: command.advance_prep_hours,
             serving_size: command.serving_size,
             updated_at: updated_at.to_rfc3339(),
+        })
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .metadata(&true)
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .commit(executor)
+        .await
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
+
+    // Calculate and emit RecipeTagged event for automatic tagging
+    // Load the updated aggregate to access the latest recipe data
+    let load_result = evento::load::<RecipeAggregate, _>(executor, &command.recipe_id)
+        .await
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
+
+    emit_recipe_tagged_event(&command.recipe_id, &load_result.item, executor, false).await?;
+
+    Ok(())
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateRecipeTagsCommand {
+    pub recipe_id: String,
+    pub user_id: String, // For ownership verification
+    pub complexity: Option<String>,
+    pub cuisine: Option<String>,
+    pub dietary_tags: Vec<String>,
+}
+
+/// Update recipe tags manually (with manual_override flag)
+///
+/// This allows users to override the automatically assigned tags.
+/// Once tags are manually set, automatic tagging will be skipped on subsequent updates.
+pub async fn update_recipe_tags(
+    command: UpdateRecipeTagsCommand,
+    executor: &Sqlite,
+    pool: &SqlitePool,
+) -> RecipeResult<()> {
+    // Verify recipe exists and check ownership via read model
+    let recipe_result = sqlx::query("SELECT user_id FROM recipes WHERE id = ?1")
+        .bind(&command.recipe_id)
+        .fetch_optional(pool)
+        .await?;
+
+    match recipe_result {
+        Some(row) => {
+            let owner_id: String = row.get("user_id");
+            if owner_id != command.user_id {
+                return Err(RecipeError::PermissionDenied);
+            }
+        }
+        None => {
+            return Err(RecipeError::NotFound);
+        }
+    }
+
+    let tagged_at = Utc::now();
+
+    // Emit RecipeTagged event with manual_override=true
+    evento::save::<RecipeAggregate>(command.recipe_id.clone())
+        .data(&RecipeTagged {
+            complexity: command.complexity,
+            cuisine: command.cuisine,
+            dietary_tags: command.dietary_tags,
+            manual_override: true,
+            tagged_at: tagged_at.to_rfc3339(),
         })
         .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
         .metadata(&true)

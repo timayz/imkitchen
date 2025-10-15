@@ -2,8 +2,10 @@ use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
 use crate::events::{
-    Ingredient, InstructionStep, RecipeCreated, RecipeDeleted, RecipeFavorited, RecipeUpdated,
+    Ingredient, InstructionStep, RecipeCreated, RecipeDeleted, RecipeFavorited, RecipeTagged,
+    RecipeUpdated,
 };
+use crate::tagging::{Complexity, RecipeTags};
 
 /// Recipe aggregate representing the state of a recipe entity
 ///
@@ -33,6 +35,9 @@ pub struct RecipeAggregate {
     // Status flags
     pub is_favorite: bool,
     pub is_deleted: bool,
+
+    // Tags
+    pub tags: RecipeTags,
 
     // Timestamps
     pub created_at: String, // RFC3339 formatted timestamp
@@ -66,6 +71,7 @@ impl RecipeAggregate {
         self.created_at = event.data.created_at;
         self.is_favorite = false;
         self.is_deleted = false;
+        self.tags = RecipeTags::default();
         Ok(())
     }
 
@@ -122,6 +128,30 @@ impl RecipeAggregate {
         if let Some(serving_size) = event.data.serving_size {
             self.serving_size = serving_size;
         }
+        Ok(())
+    }
+
+    /// Handle RecipeTagged event to update recipe tags
+    ///
+    /// This event handler updates the tags field when the recipe is automatically tagged.
+    async fn recipe_tagged(
+        &mut self,
+        event: evento::EventDetails<RecipeTagged>,
+    ) -> anyhow::Result<()> {
+        // Parse complexity from string to enum
+        self.tags.complexity = event
+            .data
+            .complexity
+            .as_ref()
+            .and_then(|c| match c.as_str() {
+                "simple" => Some(Complexity::Simple),
+                "moderate" => Some(Complexity::Moderate),
+                "complex" => Some(Complexity::Complex),
+                _ => None,
+            });
+        self.tags.cuisine = event.data.cuisine.clone();
+        self.tags.dietary_tags = event.data.dietary_tags.clone();
+        self.tags.manual_override = event.data.manual_override;
         Ok(())
     }
 }

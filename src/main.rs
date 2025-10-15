@@ -17,7 +17,7 @@ use imkitchen::routes::{
     post_onboarding_step_3, post_onboarding_step_4, post_password_reset,
     post_password_reset_complete, post_profile, post_register, post_remove_recipe_from_collection,
     post_stripe_webhook, post_subscription_upgrade, post_update_collection, post_update_recipe,
-    ready, AppState, AssetsService,
+    post_update_recipe_tags, ready, AppState, AssetsService,
 };
 use recipe::{collection_projection, recipe_projection};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions};
@@ -162,6 +162,7 @@ async fn serve_command(
         .route("/recipes/{id}/edit", get(get_recipe_edit_form))
         .route("/recipes/{id}", post(post_update_recipe))
         .route("/recipes/{id}/delete", post(post_delete_recipe))
+        .route("/recipes/{id}/tags", post(post_update_recipe_tags))
         .route("/recipes/ingredient-row", get(get_ingredient_row))
         .route("/recipes/instruction-row", get(get_instruction_row))
         // Collection routes

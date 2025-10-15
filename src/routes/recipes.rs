@@ -8,8 +8,8 @@ use axum::{
 use recipe::{
     create_recipe, delete_recipe, query_collections_by_user, query_collections_for_recipe,
     query_recipe_by_id, query_recipes_by_collection, query_recipes_by_user, update_recipe,
-    CollectionReadModel, CreateRecipeCommand, DeleteRecipeCommand, Ingredient, InstructionStep,
-    RecipeError, UpdateRecipeCommand,
+    update_recipe_tags, CollectionReadModel, CreateRecipeCommand, DeleteRecipeCommand, Ingredient,
+    InstructionStep, RecipeError, UpdateRecipeCommand, UpdateRecipeTagsCommand,
 };
 use serde::Deserialize;
 
@@ -71,6 +71,9 @@ pub struct RecipeDetailView {
     pub advance_prep_hours: Option<u32>,
     pub serving_size: Option<u32>,
     pub is_favorite: bool,
+    pub complexity: Option<String>,
+    pub cuisine: Option<String>,
+    pub dietary_tags: Vec<String>,
     pub created_at: String,
 }
 
@@ -284,6 +287,13 @@ pub async fn get_recipe_detail(
                     }
                 };
 
+            // Parse dietary tags JSON array
+            let dietary_tags = recipe_data
+                .dietary_tags
+                .as_ref()
+                .and_then(|tags_json| serde_json::from_str::<Vec<String>>(tags_json).ok())
+                .unwrap_or_default();
+
             let recipe_view = RecipeDetailView {
                 id: recipe_data.id.clone(),
                 title: recipe_data.title,
@@ -294,6 +304,9 @@ pub async fn get_recipe_detail(
                 advance_prep_hours: recipe_data.advance_prep_hours.map(|v| v as u32),
                 serving_size: recipe_data.serving_size.map(|v| v as u32),
                 is_favorite: recipe_data.is_favorite,
+                complexity: recipe_data.complexity,
+                cuisine: recipe_data.cuisine,
+                dietary_tags,
                 created_at: recipe_data.created_at,
             };
 
@@ -404,6 +417,13 @@ pub async fn get_recipe_edit_form(
                     }
                 };
 
+            // Parse dietary tags JSON array
+            let dietary_tags = recipe_data
+                .dietary_tags
+                .as_ref()
+                .and_then(|tags_json| serde_json::from_str::<Vec<String>>(tags_json).ok())
+                .unwrap_or_default();
+
             let recipe_view = RecipeDetailView {
                 id: recipe_data.id.clone(),
                 title: recipe_data.title,
@@ -414,6 +434,9 @@ pub async fn get_recipe_edit_form(
                 advance_prep_hours: recipe_data.advance_prep_hours.map(|v| v as u32),
                 serving_size: recipe_data.serving_size.map(|v| v as u32),
                 is_favorite: recipe_data.is_favorite,
+                complexity: recipe_data.complexity,
+                cuisine: recipe_data.cuisine,
+                dietary_tags,
                 created_at: recipe_data.created_at,
             };
 
@@ -718,6 +741,9 @@ pub async fn post_delete_recipe(
 #[derive(Debug, Deserialize)]
 pub struct RecipeListQuery {
     pub collection: Option<String>,
+    pub complexity: Option<String>, // "simple", "moderate", "complex"
+    pub cuisine: Option<String>,    // e.g., "Italian", "Asian"
+    pub dietary: Option<String>,    // e.g., "vegetarian", "vegan", "gluten-free"
 }
 
 /// View model for recipe list with parsed ingredient/instruction counts
@@ -733,6 +759,9 @@ pub struct RecipeListView {
     pub is_favorite: bool,
     pub ingredient_count: usize,
     pub instruction_count: usize,
+    pub complexity: Option<String>,
+    pub cuisine: Option<String>,
+    pub dietary_tags: Vec<String>,
     pub created_at: String,
 }
 
@@ -771,7 +800,7 @@ pub async fn get_recipe_list(
     };
 
     // Convert RecipeReadModel to RecipeListView (parse JSON counts)
-    let recipe_views: Vec<RecipeListView> = recipes
+    let mut recipe_views: Vec<RecipeListView> = recipes
         .into_iter()
         .map(|r| {
             // Parse ingredient and instruction JSON arrays to get counts
@@ -781,6 +810,13 @@ pub async fn get_recipe_list(
             let instruction_count = serde_json::from_str::<Vec<InstructionStep>>(&r.instructions)
                 .map(|v| v.len())
                 .unwrap_or(0);
+
+            // Parse dietary tags JSON array
+            let dietary_tags = r
+                .dietary_tags
+                .as_ref()
+                .and_then(|tags_json| serde_json::from_str::<Vec<String>>(tags_json).ok())
+                .unwrap_or_default();
 
             RecipeListView {
                 id: r.id,
@@ -793,10 +829,40 @@ pub async fn get_recipe_list(
                 is_favorite: r.is_favorite,
                 ingredient_count,
                 instruction_count,
+                complexity: r.complexity,
+                cuisine: r.cuisine,
+                dietary_tags,
                 created_at: r.created_at,
             }
         })
         .collect();
+
+    // Apply tag filters
+    if let Some(ref complexity_filter) = query.complexity {
+        recipe_views.retain(|r| {
+            r.complexity
+                .as_ref()
+                .map(|c| c.eq_ignore_ascii_case(complexity_filter))
+                .unwrap_or(false)
+        });
+    }
+
+    if let Some(ref cuisine_filter) = query.cuisine {
+        recipe_views.retain(|r| {
+            r.cuisine
+                .as_ref()
+                .map(|c| c.eq_ignore_ascii_case(cuisine_filter))
+                .unwrap_or(false)
+        });
+    }
+
+    if let Some(ref dietary_filter) = query.dietary {
+        recipe_views.retain(|r| {
+            r.dietary_tags
+                .iter()
+                .any(|tag| tag.eq_ignore_ascii_case(dietary_filter))
+        });
+    }
 
     tracing::info!(
         user_id = %auth.user_id,
@@ -813,4 +879,86 @@ pub async fn get_recipe_list(
     };
 
     Html(template.render().unwrap())
+}
+
+/// POST /recipes/:id/tags - Update recipe tags manually
+#[tracing::instrument(skip(state, auth), fields(user_id = %auth.user_id, recipe_id = %recipe_id))]
+pub async fn post_update_recipe_tags(
+    State(state): State<AppState>,
+    Extension(auth): Extension<Auth>,
+    Path(recipe_id): Path<String>,
+    body: String,
+) -> Response {
+    // Parse form data manually (simple key=value pairs)
+    use std::collections::HashMap;
+    let mut form_data: HashMap<String, String> = HashMap::new();
+    for pair in body.split('&') {
+        if let Some((key, value)) = pair.split_once('=') {
+            let decoded_key = urlencoding::decode(key).unwrap_or_default().to_string();
+            let decoded_value = urlencoding::decode(value).unwrap_or_default().to_string();
+            form_data.insert(decoded_key, decoded_value);
+        }
+    }
+
+    // Parse complexity (optional) - filter out empty strings
+    let complexity = form_data
+        .get("complexity")
+        .cloned()
+        .filter(|s| !s.is_empty());
+
+    // Parse cuisine (optional) - filter out empty strings
+    let cuisine = form_data.get("cuisine").cloned().filter(|s| !s.is_empty());
+
+    // Parse dietary tags (checkbox array)
+    let dietary_tags: Vec<String> = form_data
+        .iter()
+        .filter_map(|(key, value)| {
+            if key.starts_with("dietary_") && value == "on" {
+                Some(key.strip_prefix("dietary_").unwrap().to_string())
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    let command = UpdateRecipeTagsCommand {
+        recipe_id: recipe_id.clone(),
+        user_id: auth.user_id.clone(),
+        complexity,
+        cuisine,
+        dietary_tags,
+    };
+
+    match update_recipe_tags(command, &state.evento_executor, &state.db_pool).await {
+        Ok(_) => {
+            tracing::info!(
+                user_id = %auth.user_id,
+                recipe_id = %recipe_id,
+                "Recipe tags updated manually"
+            );
+
+            // Return success message for TwinSpark to display
+            (
+                StatusCode::OK,
+                Html(r#"<div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded mb-4" role="alert">
+                    ✓ Tags updated successfully!
+                </div>"#),
+            )
+                .into_response()
+        }
+        Err(e) => {
+            tracing::error!(
+                error = ?e,
+                user_id = %auth.user_id,
+                recipe_id = %recipe_id,
+                "Failed to update recipe tags"
+            );
+
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to update tags: {:?}", e),
+            )
+                .into_response()
+        }
+    }
 }
