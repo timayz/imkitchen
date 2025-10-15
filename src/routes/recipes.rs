@@ -8,11 +8,12 @@ use axum::{
 use recipe::{
     create_recipe, delete_recipe, favorite_recipe, query_collections_by_user,
     query_collections_for_recipe, query_recipe_by_id, query_recipes_by_collection,
-    query_recipes_by_user, update_recipe, update_recipe_tags, CollectionReadModel,
+    query_recipes_by_user, share_recipe, update_recipe, update_recipe_tags, CollectionReadModel,
     CreateRecipeCommand, DeleteRecipeCommand, FavoriteRecipeCommand, Ingredient, InstructionStep,
-    RecipeError, UpdateRecipeCommand, UpdateRecipeTagsCommand,
+    RecipeError, ShareRecipeCommand, UpdateRecipeCommand, UpdateRecipeTagsCommand,
 };
 use serde::Deserialize;
+use sqlx::Row;
 
 use crate::middleware::auth::Auth;
 use crate::routes::auth::AppState;
@@ -72,10 +73,12 @@ pub struct RecipeDetailView {
     pub advance_prep_hours: Option<u32>,
     pub serving_size: Option<u32>,
     pub is_favorite: bool,
+    pub is_shared: bool,
     pub complexity: Option<String>,
     pub cuisine: Option<String>,
     pub dietary_tags: Vec<String>,
     pub created_at: String,
+    pub creator_email: Option<String>, // AC-4: Recipe attribution (creator username)
 }
 
 /// GET /recipes/new - Display recipe creation form
@@ -252,6 +255,7 @@ pub async fn post_create_recipe(
 }
 
 /// GET /recipes/:id - Display recipe detail page
+/// AC-10: Returns 404 for private recipes when accessed by non-owners
 #[tracing::instrument(skip(state, auth), fields(recipe_id = %recipe_id))]
 pub async fn get_recipe_detail(
     State(state): State<AppState>,
@@ -261,6 +265,17 @@ pub async fn get_recipe_detail(
     // Query recipe from read model
     match query_recipe_by_id(&recipe_id, &state.db_pool).await {
         Ok(Some(recipe_data)) => {
+            // AC-10: Privacy check - return 404 if recipe is private and user is not owner
+            if !recipe_data.is_shared && recipe_data.user_id != auth.user_id {
+                tracing::warn!(
+                    recipe_id = %recipe_id,
+                    requesting_user = %auth.user_id,
+                    owner_user = %recipe_data.user_id,
+                    "Non-owner attempted to access private recipe"
+                );
+                return (StatusCode::NOT_FOUND, "Recipe not found").into_response();
+            }
+
             // Parse ingredients and instructions from JSON
             let ingredients: Vec<Ingredient> = match serde_json::from_str(&recipe_data.ingredients)
             {
@@ -305,10 +320,12 @@ pub async fn get_recipe_detail(
                 advance_prep_hours: recipe_data.advance_prep_hours.map(|v| v as u32),
                 serving_size: recipe_data.serving_size.map(|v| v as u32),
                 is_favorite: recipe_data.is_favorite,
+                is_shared: recipe_data.is_shared,
                 complexity: recipe_data.complexity,
                 cuisine: recipe_data.cuisine,
                 dietary_tags,
                 created_at: recipe_data.created_at,
+                creator_email: None, // Not needed for owner's own recipe views
             };
 
             // Check if user is the owner
@@ -435,10 +452,12 @@ pub async fn get_recipe_edit_form(
                 advance_prep_hours: recipe_data.advance_prep_hours.map(|v| v as u32),
                 serving_size: recipe_data.serving_size.map(|v| v as u32),
                 is_favorite: recipe_data.is_favorite,
+                is_shared: recipe_data.is_shared,
                 complexity: recipe_data.complexity,
                 cuisine: recipe_data.cuisine,
                 dietary_tags,
                 created_at: recipe_data.created_at,
+                creator_email: None, // Not needed for owner's own recipe views
             };
 
             let template = RecipeFormTemplate {
@@ -563,6 +582,29 @@ pub async fn post_update_recipe(
     match update_recipe(command, &state.evento_executor, &state.db_pool).await {
         Ok(()) => {
             tracing::info!("Recipe updated successfully: {}", recipe_id);
+
+            // Handle share status toggle (AC-1, AC-2)
+            // Check if is_shared checkbox was included in the form
+            let is_shared = body.contains("is_shared=on");
+
+            // Call share_recipe to emit RecipeShared event
+            let share_command = ShareRecipeCommand {
+                recipe_id: recipe_id.clone(),
+                user_id: auth.user_id.clone(),
+                shared: is_shared,
+            };
+
+            if let Err(e) =
+                share_recipe(share_command, &state.evento_executor, &state.db_pool).await
+            {
+                tracing::error!(
+                    recipe_id = %recipe_id,
+                    error = ?e,
+                    "Failed to update share status during recipe update"
+                );
+                // Continue - don't fail the whole update if share toggle fails
+            }
+
             // Redirect to recipe detail page using TwinSpark (progressive enhancement)
             // Returns 200 OK for proper form swap, ts-location triggers client-side navigation
             (
@@ -1046,6 +1088,205 @@ pub async fn post_favorite_recipe(
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "An error occurred while updating favorite status. Please try again.",
+            )
+                .into_response()
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ShareRecipeForm {
+    pub shared: String, // "true" or "false" from checkbox
+}
+
+/// POST /recipes/:id/share - Toggle share status
+///
+/// AC-2: Toggle changes privacy from "private" to "shared" (RecipeShared event)
+/// AC-6: Owner can revert to private at any time (removes from community discovery)
+#[tracing::instrument(skip(state, auth), fields(recipe_id = %recipe_id, user_id = %auth.user_id))]
+pub async fn post_share_recipe(
+    State(state): State<AppState>,
+    Extension(auth): Extension<Auth>,
+    Path(recipe_id): Path<String>,
+    axum::Form(form): axum::Form<ShareRecipeForm>,
+) -> Response {
+    // Parse shared boolean from form string
+    let shared = form.shared == "true" || form.shared == "on";
+
+    let command = ShareRecipeCommand {
+        recipe_id: recipe_id.clone(),
+        user_id: auth.user_id.clone(),
+        shared,
+    };
+
+    match share_recipe(command, &state.evento_executor, &state.db_pool).await {
+        Ok(()) => {
+            tracing::info!(
+                user_id = %auth.user_id,
+                recipe_id = %recipe_id,
+                shared = shared,
+                "Recipe share status toggled"
+            );
+
+            // Return success message
+            (
+                StatusCode::OK,
+                Html(format!(
+                    r#"<div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded mb-4" role="alert">
+                    ✓ Recipe {} {}!
+                </div>"#,
+                    if shared { "shared" } else { "made private" },
+                    if shared {
+                        "with community"
+                    } else {
+                        "successfully"
+                    }
+                )),
+            )
+                .into_response()
+        }
+        Err(RecipeError::PermissionDenied) => {
+            tracing::warn!(
+                user_id = %auth.user_id,
+                recipe_id = %recipe_id,
+                "User denied permission to share recipe"
+            );
+            (
+                StatusCode::FORBIDDEN,
+                "You do not have permission to share this recipe",
+            )
+                .into_response()
+        }
+        Err(RecipeError::NotFound) => {
+            tracing::warn!(
+                user_id = %auth.user_id,
+                recipe_id = %recipe_id,
+                "Recipe not found"
+            );
+            (StatusCode::NOT_FOUND, "Recipe not found").into_response()
+        }
+        Err(e) => {
+            tracing::error!(
+                user_id = %auth.user_id,
+                recipe_id = %recipe_id,
+                error = ?e,
+                "Failed to toggle share status"
+            );
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "An error occurred while updating share status. Please try again.",
+            )
+                .into_response()
+        }
+    }
+}
+
+#[derive(Template)]
+#[template(path = "pages/discover.html")]
+pub struct DiscoverTemplate {
+    pub recipes: Vec<RecipeDetailView>,
+    pub user: Option<Auth>,
+}
+
+/// GET /discover - Community discovery feed (AC-3, AC-4, AC-12)
+///
+/// Public route showing all shared recipes (no authentication required for read-only)
+/// Filters: WHERE is_shared = TRUE (uses idx_recipes_shared index)
+/// Joins users table for creator attribution (AC-4)
+#[tracing::instrument(skip(state))]
+pub async fn get_discover(
+    State(state): State<AppState>,
+    user: Option<Extension<Auth>>,
+) -> impl IntoResponse {
+    // Query all shared recipes from read model with creator email (AC-4)
+    // AC-12: Filter by is_shared = 1 AND deleted_at IS NULL
+    let shared_recipes_query = sqlx::query(
+        r#"
+        SELECT r.id, r.user_id, r.title, r.ingredients, r.instructions,
+               r.prep_time_min, r.cook_time_min, r.advance_prep_hours, r.serving_size,
+               r.is_favorite, r.is_shared, r.complexity, r.cuisine, r.dietary_tags,
+               r.created_at, r.updated_at, u.email as creator_email
+        FROM recipes r
+        LEFT JOIN users u ON r.user_id = u.id
+        WHERE r.is_shared = 1 AND r.deleted_at IS NULL
+        ORDER BY r.created_at DESC
+        LIMIT 100
+        "#,
+    )
+    .fetch_all(&state.db_pool)
+    .await;
+
+    match shared_recipes_query {
+        Ok(rows) => {
+            // Convert query results to RecipeDetailView
+            let mut recipe_views = Vec::new();
+            for row in rows {
+                // Parse ingredients and instructions JSON
+                let ingredients_json: String = row.get("ingredients");
+                let instructions_json: String = row.get("instructions");
+
+                let ingredients: Vec<Ingredient> = match serde_json::from_str(&ingredients_json) {
+                    Ok(ing) => ing,
+                    Err(e) => {
+                        tracing::error!("Failed to parse ingredients JSON: {:?}", e);
+                        continue; // Skip this recipe
+                    }
+                };
+
+                let instructions: Vec<InstructionStep> =
+                    match serde_json::from_str(&instructions_json) {
+                        Ok(inst) => inst,
+                        Err(e) => {
+                            tracing::error!("Failed to parse instructions JSON: {:?}", e);
+                            continue; // Skip this recipe
+                        }
+                    };
+
+                // Parse dietary tags JSON array
+                let dietary_tags_json: Option<String> = row.get("dietary_tags");
+                let dietary_tags = dietary_tags_json
+                    .as_ref()
+                    .and_then(|tags_json| serde_json::from_str::<Vec<String>>(tags_json).ok())
+                    .unwrap_or_default();
+
+                recipe_views.push(RecipeDetailView {
+                    id: row.get("id"),
+                    title: row.get("title"),
+                    ingredients,
+                    instructions,
+                    prep_time_min: row.get::<Option<i32>, _>("prep_time_min").map(|v| v as u32),
+                    cook_time_min: row.get::<Option<i32>, _>("cook_time_min").map(|v| v as u32),
+                    advance_prep_hours: row
+                        .get::<Option<i32>, _>("advance_prep_hours")
+                        .map(|v| v as u32),
+                    serving_size: row.get::<Option<i32>, _>("serving_size").map(|v| v as u32),
+                    is_favorite: row.get("is_favorite"),
+                    is_shared: row.get("is_shared"),
+                    complexity: row.get("complexity"),
+                    cuisine: row.get("cuisine"),
+                    dietary_tags,
+                    created_at: row.get("created_at"),
+                    creator_email: row.get("creator_email"), // AC-4: Recipe attribution
+                });
+            }
+
+            tracing::info!(
+                recipe_count = recipe_views.len(),
+                "Fetched community discovery feed"
+            );
+
+            let template = DiscoverTemplate {
+                recipes: recipe_views,
+                user: user.map(|u| u.0),
+            };
+
+            Html(template.render().unwrap()).into_response()
+        }
+        Err(e) => {
+            tracing::error!("Failed to query shared recipes: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to load community recipes",
             )
                 .into_response()
         }

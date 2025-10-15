@@ -94,3 +94,16 @@ pub struct RecipeTagged {
     pub manual_override: bool,      // true if user manually set tags
     pub tagged_at: String,          // RFC3339 formatted timestamp
 }
+
+/// RecipeShared event emitted when a recipe's privacy status is toggled
+///
+/// This event captures changes to the is_shared flag, allowing recipes to be
+/// shared with the community discovery feed or made private again.
+///
+/// Note: recipe_id is provided by event.aggregator_id, not stored in event data
+#[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
+pub struct RecipeShared {
+    pub user_id: String, // ID of the user who toggled the share status (ownership verified)
+    pub shared: bool,    // true = shared with community, false = private
+    pub toggled_at: String, // RFC3339 formatted timestamp
+}

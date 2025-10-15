@@ -2,8 +2,8 @@ use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
 use crate::events::{
-    Ingredient, InstructionStep, RecipeCreated, RecipeDeleted, RecipeFavorited, RecipeTagged,
-    RecipeUpdated,
+    Ingredient, InstructionStep, RecipeCreated, RecipeDeleted, RecipeFavorited, RecipeShared,
+    RecipeTagged, RecipeUpdated,
 };
 use crate::tagging::{Complexity, RecipeTags};
 
@@ -35,6 +35,7 @@ pub struct RecipeAggregate {
     // Status flags
     pub is_favorite: bool,
     pub is_deleted: bool,
+    pub is_shared: bool, // Privacy: false = private, true = shared with community
 
     // Tags
     pub tags: RecipeTags,
@@ -71,6 +72,7 @@ impl RecipeAggregate {
         self.created_at = event.data.created_at;
         self.is_favorite = false;
         self.is_deleted = false;
+        self.is_shared = false; // Default to private per AC-9
         self.tags = RecipeTags::default();
         Ok(())
     }
@@ -152,6 +154,18 @@ impl RecipeAggregate {
         self.tags.cuisine = event.data.cuisine.clone();
         self.tags.dietary_tags = event.data.dietary_tags.clone();
         self.tags.manual_override = event.data.manual_override;
+        Ok(())
+    }
+
+    /// Handle RecipeShared event to toggle share status
+    ///
+    /// This event handler updates the aggregate state when a user toggles
+    /// the privacy status of a recipe (shared with community vs. private).
+    async fn recipe_shared(
+        &mut self,
+        event: evento::EventDetails<RecipeShared>,
+    ) -> anyhow::Result<()> {
+        self.is_shared = event.data.shared;
         Ok(())
     }
 }

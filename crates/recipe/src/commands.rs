@@ -7,8 +7,8 @@ use validator::Validate;
 use crate::aggregate::RecipeAggregate;
 use crate::error::{RecipeError, RecipeResult};
 use crate::events::{
-    Ingredient, InstructionStep, RecipeCreated, RecipeDeleted, RecipeFavorited, RecipeTagged,
-    RecipeUpdated,
+    Ingredient, InstructionStep, RecipeCreated, RecipeDeleted, RecipeFavorited, RecipeShared,
+    RecipeTagged, RecipeUpdated,
 };
 use crate::tagging::{CuisineInferenceService, DietaryTagDetector, RecipeComplexityCalculator};
 use serde::{Deserialize, Serialize};
@@ -71,8 +71,9 @@ pub async fn create_recipe(
     }
 
     // Check user tier and recipe count for freemium enforcement
-    // Query users table to get tier and recipe_count
-    let user_result = sqlx::query("SELECT tier, recipe_count FROM users WHERE id = ?1")
+    // AC-11: Count only private recipes (shared recipes don't count toward limit)
+    // Query users table to get tier, then count private recipes
+    let user_result = sqlx::query("SELECT tier FROM users WHERE id = ?1")
         .bind(user_id)
         .fetch_optional(pool)
         .await?;
@@ -80,12 +81,19 @@ pub async fn create_recipe(
     match user_result {
         Some(user_row) => {
             let tier: String = user_row.get("tier");
-            let recipe_count: i32 = user_row.get("recipe_count");
 
             // Premium users bypass all limits
             if tier != "premium" {
-                // Free tier users limited to 10 recipes
-                if recipe_count >= 10 {
+                // AC-11: Count only private recipes (is_shared = false) that are not deleted
+                let private_recipe_count: i64 = sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM recipes WHERE user_id = ?1 AND is_shared = 0 AND deleted_at IS NULL"
+                )
+                .bind(user_id)
+                .fetch_one(pool)
+                .await?;
+
+                // Free tier users limited to 10 private recipes
+                if private_recipe_count >= 10 {
                     return Err(RecipeError::RecipeLimitReached);
                 }
             }
@@ -480,4 +488,74 @@ pub async fn favorite_recipe(
 
     // Return the new favorited status for UI updates
     Ok(new_favorited_status)
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ShareRecipeCommand {
+    pub recipe_id: String,
+    pub user_id: String, // For ownership verification
+    pub shared: bool,    // true = share with community, false = make private
+}
+
+/// Toggle share status of a recipe using evento event sourcing pattern
+///
+/// 1. Verifies recipe ownership via read model
+/// 2. Creates and commits RecipeShared event with shared boolean parameter
+/// 3. Event automatically projected to read model via async subscription handler
+/// 4. Returns () on success
+///
+/// Permission check: Only the recipe owner can share/unshare their recipe.
+/// Note: Ownership is verified via read model query, not aggregate load
+///
+/// This command handles both sharing (shared=true) and unsharing (shared=false).
+/// AC-2: Toggle changes privacy from "private" to "shared" (RecipeShared event)
+/// AC-6: Owner can revert to private at any time (removes from community discovery)
+#[tracing::instrument(skip(executor, pool), fields(recipe_id = %command.recipe_id, user_id = %command.user_id, shared = %command.shared))]
+pub async fn share_recipe(
+    command: ShareRecipeCommand,
+    executor: &Sqlite,
+    pool: &SqlitePool,
+) -> RecipeResult<()> {
+    // Verify recipe exists and check ownership via read model
+    let recipe_result = sqlx::query("SELECT user_id FROM recipes WHERE id = ?1")
+        .bind(&command.recipe_id)
+        .fetch_optional(pool)
+        .await?;
+
+    match recipe_result {
+        Some(row) => {
+            let owner_id: String = row.get("user_id");
+            if owner_id != command.user_id {
+                return Err(RecipeError::PermissionDenied);
+            }
+        }
+        None => {
+            return Err(RecipeError::NotFound);
+        }
+    }
+
+    let toggled_at = Utc::now();
+
+    // Create RecipeShared event and commit to evento event store
+    // evento::save() automatically loads the aggregate before appending the event
+    evento::save::<RecipeAggregate>(command.recipe_id.clone())
+        .data(&RecipeShared {
+            user_id: command.user_id.clone(),
+            shared: command.shared,
+            toggled_at: toggled_at.to_rfc3339(),
+        })
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .metadata(&true)
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .commit(executor)
+        .await
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
+
+    tracing::info!(
+        recipe_id = %command.recipe_id,
+        shared = command.shared,
+        "Recipe share status toggled"
+    );
+
+    Ok(())
 }

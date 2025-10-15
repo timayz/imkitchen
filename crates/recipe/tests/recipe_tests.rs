@@ -1,5 +1,7 @@
 use recipe::{
-    create_recipe, CreateRecipeCommand, Ingredient, InstructionStep, RecipeAggregate, RecipeError,
+    create_recipe, delete_recipe, query_recipe_by_id, query_recipes_by_user, share_recipe,
+    CreateRecipeCommand, DeleteRecipeCommand, Ingredient, InstructionStep, RecipeAggregate,
+    RecipeError, ShareRecipeCommand,
 };
 use sqlx::{Pool, Row, Sqlite, SqlitePool};
 
@@ -138,8 +140,19 @@ async fn test_free_tier_recipe_limit_enforced() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
 
-    // User already has 10 recipes (at free tier limit)
+    // User already has 10 private recipes (at free tier limit)
     insert_test_user(&pool, "user1", "free", 10).await;
+
+    // AC-11: Create 10 private recipes (is_shared = 0)
+    for i in 1..=10 {
+        insert_test_recipe(
+            &pool,
+            &format!("recipe{}", i),
+            "user1",
+            &format!("Recipe {}", i),
+        )
+        .await;
+    }
 
     let command = CreateRecipeCommand {
         title: "11th Recipe".to_string(),
@@ -191,6 +204,66 @@ async fn test_premium_tier_bypasses_recipe_limit() {
 
     let result = create_recipe(command, "premium_user", &executor, &pool).await;
     assert!(result.is_ok(), "Premium users should bypass recipe limit");
+}
+
+#[tokio::test]
+async fn test_shared_recipes_dont_count_toward_limit() {
+    let pool = setup_test_db().await;
+    let executor = setup_evento_executor(pool.clone()).await;
+
+    // AC-11: Shared recipes should NOT count toward free tier limit
+    insert_test_user(&pool, "user1", "free", 0).await;
+
+    // Create 10 private recipes (at limit)
+    for i in 1..=10 {
+        insert_test_recipe(
+            &pool,
+            &format!("private{}", i),
+            "user1",
+            &format!("Private Recipe {}", i),
+        )
+        .await;
+    }
+
+    // Create 5 shared recipes (should not affect limit)
+    for i in 1..=5 {
+        sqlx::query(
+            "INSERT INTO recipes (id, user_id, title, ingredients, instructions, is_shared, created_at, updated_at)
+             VALUES (?1, ?2, ?3, '[]', '[]', 1, datetime('now'), datetime('now'))"
+        )
+        .bind(format!("shared{}", i))
+        .bind("user1")
+        .bind(format!("Shared Recipe {}", i))
+        .execute(&pool)
+        .await
+        .unwrap();
+    }
+
+    // User now has 10 private + 5 shared = 15 total recipes
+    // But only private count toward limit, so creating another should FAIL
+    let command = CreateRecipeCommand {
+        title: "Should Fail".to_string(),
+        ingredients: vec![Ingredient {
+            name: "Salt".to_string(),
+            quantity: 1.0,
+            unit: "tsp".to_string(),
+        }],
+        instructions: vec![InstructionStep {
+            step_number: 1,
+            instruction_text: "Add salt".to_string(),
+            timer_minutes: None,
+        }],
+        prep_time_min: Some(5),
+        cook_time_min: Some(10),
+        advance_prep_hours: None,
+        serving_size: Some(4),
+    };
+
+    let result = create_recipe(command, "user1", &executor, &pool).await;
+    assert!(
+        matches!(result, Err(RecipeError::RecipeLimitReached)),
+        "Creating 11th private recipe should fail even with shared recipes"
+    );
 }
 
 #[tokio::test]
@@ -720,9 +793,6 @@ async fn test_update_recipe_clears_optional_fields() {
 // RecipeDeleted Event Tests (Story 2.3)
 // ============================================================================
 
-use recipe::delete_recipe;
-use recipe::DeleteRecipeCommand;
-
 /// Test that RecipeDeleted event sets is_deleted flag on aggregate
 #[tokio::test]
 async fn test_recipe_deleted_event_sets_is_deleted_flag() {
@@ -1168,5 +1238,611 @@ async fn test_query_recipes_favorite_only_filter() {
     assert!(
         !favorite_ids.contains(&recipe_id_2),
         "Recipe 2 should not be in favorites"
+    );
+}
+
+// ===== Share Recipe Tests =====
+
+/// Test: share_recipe emits RecipeShared event with shared=true
+#[tokio::test]
+async fn test_share_recipe_emits_event() {
+    let pool = setup_test_db().await;
+    let executor = setup_evento_executor(pool.clone()).await;
+    insert_test_user(&pool, "user1", "free", 0).await;
+
+    // Create a test recipe
+    let command = CreateRecipeCommand {
+        title: "Test Recipe".to_string(),
+        ingredients: vec![Ingredient {
+            name: "Salt".to_string(),
+            quantity: 1.0,
+            unit: "tsp".to_string(),
+        }],
+        instructions: vec![InstructionStep {
+            step_number: 1,
+            instruction_text: "Add salt".to_string(),
+            timer_minutes: None,
+        }],
+        prep_time_min: Some(5),
+        cook_time_min: Some(10),
+        advance_prep_hours: None,
+        serving_size: Some(4),
+    };
+
+    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+        .await
+        .unwrap();
+
+    // Run projection to sync read model
+    use recipe::recipe_projection;
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+
+    // Share the recipe
+    let share_command = ShareRecipeCommand {
+        recipe_id: recipe_id.clone(),
+        user_id: "user1".to_string(),
+        shared: true,
+    };
+
+    let result = share_recipe(share_command, &executor, &pool).await;
+    assert!(result.is_ok(), "Share recipe should succeed");
+
+    // Load aggregate and verify is_shared = true
+    let load_result = evento::load::<RecipeAggregate, _>(&executor, &recipe_id)
+        .await
+        .unwrap();
+
+    assert!(
+        load_result.item.is_shared,
+        "Recipe should be marked as shared in aggregate"
+    );
+}
+
+/// Test: unshare_recipe emits RecipeShared event with shared=false
+#[tokio::test]
+async fn test_unshare_recipe_emits_event() {
+    let pool = setup_test_db().await;
+    let executor = setup_evento_executor(pool.clone()).await;
+    insert_test_user(&pool, "user1", "free", 0).await;
+
+    // Create and share a recipe
+    let command = CreateRecipeCommand {
+        title: "Test Recipe".to_string(),
+        ingredients: vec![Ingredient {
+            name: "Salt".to_string(),
+            quantity: 1.0,
+            unit: "tsp".to_string(),
+        }],
+        instructions: vec![InstructionStep {
+            step_number: 1,
+            instruction_text: "Add salt".to_string(),
+            timer_minutes: None,
+        }],
+        prep_time_min: Some(5),
+        cook_time_min: None,
+        advance_prep_hours: None,
+        serving_size: None,
+    };
+
+    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+        .await
+        .unwrap();
+
+    // Run projection to sync read model
+    use recipe::recipe_projection;
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+
+    // Share the recipe first
+    share_recipe(
+        ShareRecipeCommand {
+            recipe_id: recipe_id.clone(),
+            user_id: "user1".to_string(),
+            shared: true,
+        },
+        &executor,
+        &pool,
+    )
+    .await
+    .unwrap();
+
+    // Now unshare it
+    let unshare_command = ShareRecipeCommand {
+        recipe_id: recipe_id.clone(),
+        user_id: "user1".to_string(),
+        shared: false,
+    };
+
+    let result = share_recipe(unshare_command, &executor, &pool).await;
+    assert!(result.is_ok(), "Unshare recipe should succeed");
+
+    // Load aggregate and verify is_shared = false
+    let load_result = evento::load::<RecipeAggregate, _>(&executor, &recipe_id)
+        .await
+        .unwrap();
+
+    assert!(
+        !load_result.item.is_shared,
+        "Recipe should be marked as private in aggregate"
+    );
+}
+
+/// Test: share_recipe verifies ownership (AC-5)
+#[tokio::test]
+async fn test_share_recipe_ownership_check() {
+    let pool = setup_test_db().await;
+    let executor = setup_evento_executor(pool.clone()).await;
+    insert_test_user(&pool, "user1", "free", 0).await;
+    insert_test_user(&pool, "user2", "free", 0).await;
+
+    // User1 creates a recipe
+    let command = CreateRecipeCommand {
+        title: "User1's Recipe".to_string(),
+        ingredients: vec![Ingredient {
+            name: "Salt".to_string(),
+            quantity: 1.0,
+            unit: "tsp".to_string(),
+        }],
+        instructions: vec![InstructionStep {
+            step_number: 1,
+            instruction_text: "Add salt".to_string(),
+            timer_minutes: None,
+        }],
+        prep_time_min: None,
+        cook_time_min: None,
+        advance_prep_hours: None,
+        serving_size: None,
+    };
+
+    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+        .await
+        .unwrap();
+
+    // Run projection to sync read model
+    use recipe::recipe_projection;
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+
+    // User2 attempts to share User1's recipe
+    let share_command = ShareRecipeCommand {
+        recipe_id: recipe_id.clone(),
+        user_id: "user2".to_string(), // Different user!
+        shared: true,
+    };
+
+    let result = share_recipe(share_command, &executor, &pool).await;
+
+    assert!(
+        matches!(result, Err(RecipeError::PermissionDenied)),
+        "Share recipe by non-owner should return PermissionDenied"
+    );
+}
+
+/// Test: share_recipe returns NotFound for non-existent recipe
+#[tokio::test]
+async fn test_share_recipe_not_found() {
+    let pool = setup_test_db().await;
+    let executor = setup_evento_executor(pool.clone()).await;
+    insert_test_user(&pool, "user1", "free", 0).await;
+
+    // Attempt to share a non-existent recipe
+    let share_command = ShareRecipeCommand {
+        recipe_id: "nonexistent-recipe-id".to_string(),
+        user_id: "user1".to_string(),
+        shared: true,
+    };
+
+    let result = share_recipe(share_command, &executor, &pool).await;
+
+    assert!(
+        matches!(result, Err(RecipeError::NotFound)),
+        "Share non-existent recipe should return NotFound"
+    );
+}
+
+/// Test: RecipeShared event is applied to aggregate state
+#[tokio::test]
+async fn test_recipe_shared_event_applied_to_aggregate() {
+    let pool = setup_test_db().await;
+    let executor = setup_evento_executor(pool.clone()).await;
+    insert_test_user(&pool, "user1", "free", 0).await;
+
+    // Create recipe
+    let command = CreateRecipeCommand {
+        title: "Test Recipe".to_string(),
+        ingredients: vec![Ingredient {
+            name: "Salt".to_string(),
+            quantity: 1.0,
+            unit: "tsp".to_string(),
+        }],
+        instructions: vec![InstructionStep {
+            step_number: 1,
+            instruction_text: "Add salt".to_string(),
+            timer_minutes: None,
+        }],
+        prep_time_min: None,
+        cook_time_min: None,
+        advance_prep_hours: None,
+        serving_size: None,
+    };
+
+    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+        .await
+        .unwrap();
+
+    // Run projection to sync read model
+    use recipe::recipe_projection;
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+
+    // Verify initial state (is_shared = false by default)
+    let load_result_before = evento::load::<RecipeAggregate, _>(&executor, &recipe_id)
+        .await
+        .unwrap();
+    assert!(
+        !load_result_before.item.is_shared,
+        "Recipe should default to private"
+    );
+
+    // Share the recipe
+    share_recipe(
+        ShareRecipeCommand {
+            recipe_id: recipe_id.clone(),
+            user_id: "user1".to_string(),
+            shared: true,
+        },
+        &executor,
+        &pool,
+    )
+    .await
+    .unwrap();
+
+    // Verify shared state
+    let load_result_after = evento::load::<RecipeAggregate, _>(&executor, &recipe_id)
+        .await
+        .unwrap();
+    assert!(
+        load_result_after.item.is_shared,
+        "Recipe should be marked as shared after RecipeShared event"
+    );
+
+    // Unshare and verify
+    share_recipe(
+        ShareRecipeCommand {
+            recipe_id: recipe_id.clone(),
+            user_id: "user1".to_string(),
+            shared: false,
+        },
+        &executor,
+        &pool,
+    )
+    .await
+    .unwrap();
+
+    let load_result_unshared = evento::load::<RecipeAggregate, _>(&executor, &recipe_id)
+        .await
+        .unwrap();
+    assert!(
+        !load_result_unshared.item.is_shared,
+        "Recipe should be marked as private after unshare"
+    );
+}
+
+// ===== Soft Delete Integration Tests (AC-12) =====
+
+/// Test: Deleted recipes are excluded from query_recipe_by_id
+#[tokio::test]
+async fn test_deleted_recipe_excluded_from_query() {
+    let pool = setup_test_db().await;
+    let executor = setup_evento_executor(pool.clone()).await;
+    insert_test_user(&pool, "user1", "free", 0).await;
+
+    // Create and share a recipe
+    let command = CreateRecipeCommand {
+        title: "Recipe to Delete".to_string(),
+        ingredients: vec![Ingredient {
+            name: "Salt".to_string(),
+            quantity: 1.0,
+            unit: "tsp".to_string(),
+        }],
+        instructions: vec![InstructionStep {
+            step_number: 1,
+            instruction_text: "Add salt".to_string(),
+            timer_minutes: None,
+        }],
+        prep_time_min: Some(5),
+        cook_time_min: Some(10),
+        advance_prep_hours: None,
+        serving_size: Some(4),
+    };
+
+    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+        .await
+        .unwrap();
+
+    // Run projection to sync read model after creation
+    use recipe::recipe_projection;
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+
+    // Share the recipe (after projection so it exists in read model for ownership check)
+    let share_command = ShareRecipeCommand {
+        recipe_id: recipe_id.clone(),
+        user_id: "user1".to_string(),
+        shared: true,
+    };
+    share_recipe(share_command, &executor, &pool).await.unwrap();
+
+    // Run projection again to sync share status
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+
+    // Verify recipe is queryable before deletion
+    let recipe_before = query_recipe_by_id(&recipe_id, &pool).await.unwrap();
+    assert!(
+        recipe_before.is_some(),
+        "Recipe should be queryable before deletion"
+    );
+    assert!(recipe_before.unwrap().is_shared, "Recipe should be shared");
+
+    // Delete the recipe
+    let delete_command = DeleteRecipeCommand {
+        recipe_id: recipe_id.clone(),
+        user_id: "user1".to_string(),
+    };
+    delete_recipe(delete_command, &executor, &pool)
+        .await
+        .unwrap();
+
+    // Run projection to sync soft delete
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+
+    // AC-12: Verify deleted recipe is NOT returned by query_recipe_by_id
+    let recipe_after = query_recipe_by_id(&recipe_id, &pool).await.unwrap();
+    assert!(
+        recipe_after.is_none(),
+        "Deleted recipe should NOT be returned by query_recipe_by_id (soft delete via deleted_at IS NULL filter)"
+    );
+}
+
+/// Test: Deleted shared recipes are excluded from user's recipe list
+#[tokio::test]
+async fn test_deleted_recipe_excluded_from_user_list() {
+    let pool = setup_test_db().await;
+    let executor = setup_evento_executor(pool.clone()).await;
+    insert_test_user(&pool, "user1", "free", 0).await;
+
+    // Create two recipes
+    let recipe_id_1 = create_recipe(
+        CreateRecipeCommand {
+            title: "Recipe 1".to_string(),
+            ingredients: vec![Ingredient {
+                name: "Salt".to_string(),
+                quantity: 1.0,
+                unit: "tsp".to_string(),
+            }],
+            instructions: vec![InstructionStep {
+                step_number: 1,
+                instruction_text: "Step 1".to_string(),
+                timer_minutes: None,
+            }],
+            prep_time_min: None,
+            cook_time_min: None,
+            advance_prep_hours: None,
+            serving_size: None,
+        },
+        "user1",
+        &executor,
+        &pool,
+    )
+    .await
+    .unwrap();
+
+    let recipe_id_2 = create_recipe(
+        CreateRecipeCommand {
+            title: "Recipe 2".to_string(),
+            ingredients: vec![Ingredient {
+                name: "Pepper".to_string(),
+                quantity: 1.0,
+                unit: "tsp".to_string(),
+            }],
+            instructions: vec![InstructionStep {
+                step_number: 1,
+                instruction_text: "Step 1".to_string(),
+                timer_minutes: None,
+            }],
+            prep_time_min: None,
+            cook_time_min: None,
+            advance_prep_hours: None,
+            serving_size: None,
+        },
+        "user1",
+        &executor,
+        &pool,
+    )
+    .await
+    .unwrap();
+
+    // Run projection
+    use recipe::recipe_projection;
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+
+    // Verify both recipes in list
+    let recipes_before = query_recipes_by_user("user1", false, &pool).await.unwrap();
+    assert_eq!(
+        recipes_before.len(),
+        2,
+        "Should have 2 recipes before delete"
+    );
+
+    // Delete recipe 1
+    delete_recipe(
+        DeleteRecipeCommand {
+            recipe_id: recipe_id_1.clone(),
+            user_id: "user1".to_string(),
+        },
+        &executor,
+        &pool,
+    )
+    .await
+    .unwrap();
+
+    // Run projection
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+
+    // AC-12: Verify only non-deleted recipe in list
+    let recipes_after = query_recipes_by_user("user1", false, &pool).await.unwrap();
+    assert_eq!(
+        recipes_after.len(),
+        1,
+        "Should have only 1 recipe after soft delete (deleted recipes filtered by deleted_at IS NULL)"
+    );
+    assert_eq!(
+        recipes_after[0].id, recipe_id_2,
+        "Only non-deleted recipe should remain"
+    );
+}
+
+/// Test: Deleted recipes are excluded from freemium limit count
+#[tokio::test]
+async fn test_deleted_recipes_excluded_from_limit() {
+    let pool = setup_test_db().await;
+    let executor = setup_evento_executor(pool.clone()).await;
+    insert_test_user(&pool, "user1", "free", 0).await;
+
+    // Create 10 recipes (free tier limit)
+    for i in 0..10 {
+        create_recipe(
+            CreateRecipeCommand {
+                title: format!("Recipe {}", i + 1),
+                ingredients: vec![Ingredient {
+                    name: "Salt".to_string(),
+                    quantity: 1.0,
+                    unit: "tsp".to_string(),
+                }],
+                instructions: vec![InstructionStep {
+                    step_number: 1,
+                    instruction_text: "Step 1".to_string(),
+                    timer_minutes: None,
+                }],
+                prep_time_min: None,
+                cook_time_min: None,
+                advance_prep_hours: None,
+                serving_size: None,
+            },
+            "user1",
+            &executor,
+            &pool,
+        )
+        .await
+        .unwrap();
+    }
+
+    // Run projection
+    use recipe::recipe_projection;
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+
+    // Verify limit reached - 11th recipe should fail
+    let result_at_limit = create_recipe(
+        CreateRecipeCommand {
+            title: "Recipe 11".to_string(),
+            ingredients: vec![Ingredient {
+                name: "Salt".to_string(),
+                quantity: 1.0,
+                unit: "tsp".to_string(),
+            }],
+            instructions: vec![InstructionStep {
+                step_number: 1,
+                instruction_text: "Step 1".to_string(),
+                timer_minutes: None,
+            }],
+            prep_time_min: None,
+            cook_time_min: None,
+            advance_prep_hours: None,
+            serving_size: None,
+        },
+        "user1",
+        &executor,
+        &pool,
+    )
+    .await;
+
+    assert!(
+        matches!(result_at_limit, Err(RecipeError::RecipeLimitReached)),
+        "Should hit recipe limit at 10 recipes"
+    );
+
+    // Delete one recipe
+    let recipes = query_recipes_by_user("user1", false, &pool).await.unwrap();
+    delete_recipe(
+        DeleteRecipeCommand {
+            recipe_id: recipes[0].id.clone(),
+            user_id: "user1".to_string(),
+        },
+        &executor,
+        &pool,
+    )
+    .await
+    .unwrap();
+
+    // Run projection
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+
+    // AC-12: Deleted recipes should NOT count toward limit - should be able to create another
+    let result_after_delete = create_recipe(
+        CreateRecipeCommand {
+            title: "Recipe after delete".to_string(),
+            ingredients: vec![Ingredient {
+                name: "Salt".to_string(),
+                quantity: 1.0,
+                unit: "tsp".to_string(),
+            }],
+            instructions: vec![InstructionStep {
+                step_number: 1,
+                instruction_text: "Step 1".to_string(),
+                timer_minutes: None,
+            }],
+            prep_time_min: None,
+            cook_time_min: None,
+            advance_prep_hours: None,
+            serving_size: None,
+        },
+        "user1",
+        &executor,
+        &pool,
+    )
+    .await;
+
+    assert!(
+        result_after_delete.is_ok(),
+        "Should be able to create recipe after deleting one (deleted recipes excluded from count via deleted_at IS NULL)"
     );
 }
