@@ -314,7 +314,14 @@ async fn recipe_tagged_handler<E: Executor>(
 ///
 /// Reference: Story 2.2 AC-6 - "Updated recipe immediately reflects in meal plans (if currently scheduled)"
 pub fn recipe_projection(pool: SqlitePool) -> evento::SubscribeBuilder<evento::Sqlite> {
-    evento::subscribe("recipe-read-model")
+    recipe_projection_with_key(pool, "recipe-read-model")
+}
+
+pub fn recipe_projection_with_key(
+    pool: SqlitePool,
+    key: &str,
+) -> evento::SubscribeBuilder<evento::Sqlite> {
+    evento::subscribe(key)
         .aggregator::<RecipeAggregate>()
         .data(pool)
         .handler(recipe_created_handler())

@@ -1961,6 +1961,10 @@ async fn test_copy_recipe_prevents_duplicates() {
     insert_test_user(&pool, "creator", "free", 0).await;
     insert_test_user(&pool, "copier", "free", 0).await;
 
+    // Use unique subscription key for test isolation
+    use uuid::Uuid;
+    let sub_key = format!("test-{}", Uuid::new_v4());
+
     // Creator creates and shares a recipe
     let original_recipe_id = create_recipe(
         CreateRecipeCommand {
@@ -1988,8 +1992,8 @@ async fn test_copy_recipe_prevents_duplicates() {
     .unwrap();
 
     // Run projection
-    use recipe::recipe_projection;
-    recipe_projection(pool.clone())
+    use recipe::recipe_projection_with_key;
+    recipe_projection_with_key(pool.clone(), &sub_key)
         .unsafe_oneshot(&executor)
         .await
         .unwrap();
@@ -2008,7 +2012,7 @@ async fn test_copy_recipe_prevents_duplicates() {
     .unwrap();
 
     // Run projection
-    recipe_projection(pool.clone())
+    recipe_projection_with_key(pool.clone(), &sub_key)
         .unsafe_oneshot(&executor)
         .await
         .unwrap();
@@ -2021,8 +2025,12 @@ async fn test_copy_recipe_prevents_duplicates() {
     let result_1 = copy_recipe(copy_command_1, "copier", &executor, &pool).await;
     assert!(result_1.is_ok(), "First copy should succeed");
 
-    // Run projection
-    recipe_projection(pool.clone())
+    // Run projection (may need multiple passes for all events)
+    recipe_projection_with_key(pool.clone(), &sub_key)
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+    recipe_projection_with_key(pool.clone(), &sub_key)
         .unsafe_oneshot(&executor)
         .await
         .unwrap();
@@ -2047,6 +2055,10 @@ async fn test_copy_recipe_enforces_freemium_limit() {
     insert_test_user(&pool, "creator", "free", 0).await;
     insert_test_user(&pool, "copier", "free", 0).await;
 
+    // Use unique subscription key for test isolation
+    use uuid::Uuid;
+    let sub_key = format!("test-{}", Uuid::new_v4());
+
     // Creator creates and shares a recipe
     let original_recipe_id = create_recipe(
         CreateRecipeCommand {
@@ -2074,8 +2086,8 @@ async fn test_copy_recipe_enforces_freemium_limit() {
     .unwrap();
 
     // Run projection
-    use recipe::recipe_projection;
-    recipe_projection(pool.clone())
+    use recipe::recipe_projection_with_key;
+    recipe_projection_with_key(pool.clone(), &sub_key)
         .unsafe_oneshot(&executor)
         .await
         .unwrap();
@@ -2094,7 +2106,7 @@ async fn test_copy_recipe_enforces_freemium_limit() {
     .unwrap();
 
     // Run projection
-    recipe_projection(pool.clone())
+    recipe_projection_with_key(pool.clone(), &sub_key)
         .unsafe_oneshot(&executor)
         .await
         .unwrap();
@@ -2127,8 +2139,12 @@ async fn test_copy_recipe_enforces_freemium_limit() {
         .unwrap();
     }
 
-    // Run projection
-    recipe_projection(pool.clone())
+    // Run projection (may need multiple passes for all events)
+    recipe_projection_with_key(pool.clone(), &sub_key)
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+    recipe_projection_with_key(pool.clone(), &sub_key)
         .unsafe_oneshot(&executor)
         .await
         .unwrap();
@@ -2235,6 +2251,10 @@ async fn test_copy_recipe_modifications_independent() {
     insert_test_user(&pool, "creator", "free", 0).await;
     insert_test_user(&pool, "copier", "free", 0).await;
 
+    // Use unique subscription key for test isolation
+    use uuid::Uuid;
+    let sub_key = format!("test-{}", Uuid::new_v4());
+
     // Creator creates and shares a recipe
     let original_recipe_id = create_recipe(
         CreateRecipeCommand {
@@ -2262,8 +2282,8 @@ async fn test_copy_recipe_modifications_independent() {
     .unwrap();
 
     // Run projection
-    use recipe::recipe_projection;
-    recipe_projection(pool.clone())
+    use recipe::recipe_projection_with_key;
+    recipe_projection_with_key(pool.clone(), &sub_key)
         .unsafe_oneshot(&executor)
         .await
         .unwrap();
@@ -2282,7 +2302,7 @@ async fn test_copy_recipe_modifications_independent() {
     .unwrap();
 
     // Run projection
-    recipe_projection(pool.clone())
+    recipe_projection_with_key(pool.clone(), &sub_key)
         .unsafe_oneshot(&executor)
         .await
         .unwrap();
@@ -2296,8 +2316,12 @@ async fn test_copy_recipe_modifications_independent() {
         .await
         .unwrap();
 
-    // Run projection to update read model with copied recipe
-    recipe_projection(pool.clone())
+    // Run projection to update read model with copied recipe (may need multiple passes)
+    recipe_projection_with_key(pool.clone(), &sub_key)
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+    recipe_projection_with_key(pool.clone(), &sub_key)
         .unsafe_oneshot(&executor)
         .await
         .unwrap();
