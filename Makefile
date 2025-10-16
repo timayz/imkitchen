@@ -24,9 +24,9 @@ fmt:
 fmt-fix:
 	cargo fmt --all
 
-# Run tests
+# Run tests (sequentially to avoid test isolation issues with evento subscriptions)
 test:
-	cargo test --workspace
+	cargo test --workspace -- --test-threads=1
 
 # Build the project
 build:
