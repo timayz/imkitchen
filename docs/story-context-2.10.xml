@@ -1,0 +1,241 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>2.10</storyId>
+    <title>Copy Community Recipe to Personal Library</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-15</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-2.10.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user browsing community recipes</asA>
+    <iWant>add a community recipe to my library</iWant>
+    <soThat>I can use it in my meal planning</soThat>
+    <tasks>
+      - Create RecipeCopied event and copy command
+      - Implement freemium limit checking
+      - Create recipe copy route (POST /discover/:id/copy)
+      - Update community recipe detail template with "Add to My Recipes" button
+      - Implement duplicate copy prevention
+      - Handle privacy and favoriting defaults
+      - Write comprehensive tests (unit, integration, E2E)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    1. "Add to My Recipes" button visible on community recipe detail page (GET /discover/:id)
+    2. Clicking button copies recipe to user's personal library with full recipe data duplicated
+    3. Copied recipe becomes owned by user (user_id set to current user, editable by owner only)
+    4. Original creator attribution maintained in metadata (original_recipe_id, original_author fields)
+    5. Copy counts as new recipe toward free tier limit (10 recipe maximum for free users)
+    6. Copied recipe defaults to private (is_shared = false, user must explicitly share separately)
+    7. Modifications to copy don't affect original recipe (independent Recipe aggregate created)
+    8. User can mark copied recipe as favorite for meal planning inclusion
+    9. Confirmation message displayed: "Recipe added to your library"
+    10. Button disabled if user already copied this recipe (prevent duplicate copies)
+    11. Button disabled if free tier user at recipe limit (show "Upgrade to add more recipes" message)
+    12. Copying recipe from discover page redirects to user's personal recipe detail page
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic 2: Recipe Management System - Story 2.10</title>
+        <section>Story 2.10: Copy Community Recipe to Personal Library</section>
+        <snippet>Story definition with 9 original acceptance criteria covering copy mechanics, ownership transfer, freemium limits, and attribution preservation. Prerequisites: User viewing shared community recipe.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-2.md</path>
+        <title>Technical Specification: Recipe Management System</title>
+        <section>RecipeAggregate Implementation, Command Handlers</section>
+        <snippet>Detailed evento patterns for Recipe domain: event sourcing with RecipeCreated events, CQRS commands, freemium limit enforcement in create_recipe command (lines 386-419), ownership verification patterns.</snippet>
+      </doc>
+      <doc>
+        <path>docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>Section 3.1: Event Sourcing, Section 3.2: Data Models</section>
+        <snippet>Event sourcing via evento (SQLite backend), CQRS read models, Recipe aggregate lifecycle, evento subscriptions for read model projections. Recipe table schema includes user_id, is_shared, is_favorite fields.</snippet>
+      </doc>
+      <doc>
+        <path>docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>Section 4.2: HTML Endpoints and Form Handling</section>
+        <snippet>Server-rendered HTML with Askama templates, POST/PUT/DELETE form handlers, TwinSpark for AJAX progressive enhancement, PRG (Post-Redirect-Get) pattern for mutations.</snippet>
+      </doc>
+      <doc>
+        <path>docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>Section 5.3: Protected Routes, Section 5.4: Role-Based Access Control</section>
+        <snippet>Auth middleware protects authenticated routes via JWT cookie validation. Freemium enforcement: free tier users limited to 10 recipes, premium users unlimited. Recipe limit check in domain command logic.</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>FR-15: Freemium Access Controls</section>
+        <snippet>Free tier users limited to 10 recipes maximum. Premium users access unlimited recipes. Recipe limit enforced at creation/copy time.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>crates/recipe/src/commands.rs</path>
+        <kind>module</kind>
+        <symbol>create_recipe</symbol>
+        <lines>48-140</lines>
+        <reason>Existing create_recipe command demonstrates freemium limit enforcement pattern (lines 76-99), user tier checking, recipe count queries, and RecipeCreated event emission. Copy command should follow identical patterns.</reason>
+      </file>
+      <file>
+        <path>crates/recipe/src/events.rs</path>
+        <kind>module</kind>
+        <symbol>RecipeCreated, Ingredient, InstructionStep</symbol>
+        <lines>27-38</lines>
+        <reason>RecipeCreated event structure shows all fields needed for full recipe duplication. Copy operation will create new Recipe aggregate using this same event with copied data.</reason>
+      </file>
+      <file>
+        <path>crates/recipe/src/events.rs</path>
+        <kind>module</kind>
+        <symbol>RecipeFavorited</symbol>
+        <lines>58-63</lines>
+        <reason>Pattern for user-specific recipe actions with user_id in event. Copy operation should emit similar event structure for attribution tracking.</reason>
+      </file>
+      <file>
+        <path>crates/recipe/src/aggregate.rs</path>
+        <kind>module</kind>
+        <symbol>RecipeAggregate</symbol>
+        <lines>1-50</lines>
+        <reason>RecipeAggregate definition with all fields that need duplication during copy: title, ingredients, instructions, timing fields, tags, is_favorite, is_shared. Need to add original_recipe_id and original_author fields for attribution.</reason>
+      </file>
+      <file>
+        <path>src/routes/recipes.rs</path>
+        <kind>module</kind>
+        <symbol>post_recipe_handler, RecipeDetailView</symbol>
+        <lines>100-200</lines>
+        <reason>Existing recipe creation route handler shows form parsing, validation, command invocation, and redirect pattern. Copy route will follow same structure but call copy_recipe command instead.</reason>
+      </file>
+      <file>
+        <path>src/routes/recipes.rs</path>
+        <kind>module</kind>
+        <symbol>get_recipe_detail_handler</symbol>
+        <lines>300-400</lines>
+        <reason>Recipe detail query and template rendering pattern. Copy route will redirect to this endpoint after successful copy operation (PRG pattern).</reason>
+      </file>
+      <file>
+        <path>templates/pages/discover-detail.html</path>
+        <kind>template</kind>
+        <symbol>community recipe detail page</symbol>
+        <lines>1-100</lines>
+        <reason>Template where "Add to My Recipes" button needs to be added. Must check if recipe already copied, display appropriate button state, handle freemium limit messaging.</reason>
+      </file>
+      <file>
+        <path>crates/recipe/src/read_model.rs</path>
+        <kind>module</kind>
+        <symbol>query_recipe_by_id</symbol>
+        <lines>50-150</lines>
+        <reason>Existing query function to load recipe from read model. Copy command will use this to load original recipe data before duplicating.</reason>
+      </file>
+      <file>
+        <path>crates/recipe/src/error.rs</path>
+        <kind>module</kind>
+        <symbol>RecipeError enum</symbol>
+        <lines>1-50</lines>
+        <reason>Domain error types including RecipeLimitReached. May need to add RecipeAlreadyCopied or similar for duplicate prevention.</reason>
+      </file>
+    </code>
+    <dependencies>
+      <rust>
+        <evento version="1.4">Event sourcing framework with SQLite backend</evento>
+        <sqlx version="0.8">Async SQLite database queries for read models</sqlx>
+        <axum version="0.8">HTTP server framework for routes</axum>
+        <askama version="0.14">Type-safe HTML template engine</askama>
+        <validator version="0.20">Input validation with derive macros</validator>
+        <serde version="1.0">Serialization for JSON and bincode</serde>
+        <bincode version="2.0">Binary serialization for evento events</bincode>
+        <chrono version="0.4">Date/time handling for timestamps</chrono>
+        <uuid version="1.10">UUID generation for recipe IDs</uuid>
+        <thiserror version="1.0">Error handling derive macros</thiserror>
+        <tracing version="0.1">Structured logging</tracing>
+      </rust>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - Event Sourcing: All state changes must emit immutable events via evento (RecipeCreated for new aggregate)
+    - CQRS Pattern: Commands write events, queries read from materialized views (recipes table)
+    - Domain-Driven Design: All business logic in recipe domain crate (crates/recipe/), no logic in route handlers
+    - Freemium Enforcement: Check user tier and recipe count before copy operation, enforce 10 recipe limit for free users
+    - Ownership Verification: Copied recipe must have user_id set to copying user, not original creator
+    - Attribution Preservation: Store original_recipe_id and original_author in recipe metadata for audit trail
+    - Aggregate Independence: Copy creates new Recipe aggregate with new ID, modifications don't affect original
+    - Duplicate Prevention: Query recipes table to check if user already copied this recipe (user_id + original_recipe_id)
+    - Privacy Defaults: Copied recipe defaults to is_shared=false, user must explicitly share separately
+    - Testing: TDD enforced, minimum 80% code coverage, comprehensive unit/integration/E2E tests
+    - Server-Side Rendering: Use Askama templates, no client-side JavaScript frameworks
+    - Route Pattern: POST /discover/:id/copy → 302 redirect to /recipes/:new_id (PRG pattern)
+    - Error Handling: Map domain errors to user-friendly messages, display inline validation errors
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>create_recipe</name>
+      <kind>function</kind>
+      <signature>pub async fn create_recipe(command: CreateRecipeCommand, user_id: &amp;str, executor: &amp;Sqlite, pool: &amp;SqlitePool) -> RecipeResult&lt;String&gt;</signature>
+      <path>crates/recipe/src/commands.rs:48</path>
+      <description>Existing recipe creation function demonstrating freemium limit checks, evento event emission, and error handling. Copy command should follow identical patterns.</description>
+    </interface>
+    <interface>
+      <name>query_recipe_by_id</name>
+      <kind>function</kind>
+      <signature>pub async fn query_recipe_by_id(recipe_id: &amp;str, pool: &amp;SqlitePool) -> Result&lt;RecipeReadModel, sqlx::Error&gt;</signature>
+      <path>crates/recipe/src/read_model.rs:50</path>
+      <description>Query function to load recipe from read model table. Copy command uses this to fetch original recipe data.</description>
+    </interface>
+    <interface>
+      <name>Auth</name>
+      <kind>struct</kind>
+      <signature>pub struct Auth { pub user_id: String, pub email: String, pub tier: String }</signature>
+      <path>src/middleware/auth.rs</path>
+      <description>Authentication middleware extension providing user_id and tier for authorization checks in route handlers.</description>
+    </interface>
+    <interface>
+      <name>AppState</name>
+      <kind>struct</kind>
+      <signature>pub struct AppState { pub executor: Sqlite, pub pool: SqlitePool }</signature>
+      <path>src/routes/auth.rs</path>
+      <description>Application state containing evento executor and SQLx pool, injected into all route handlers.</description>
+    </interface>
+    <interface>
+      <name>RecipeError</name>
+      <kind>enum</kind>
+      <signature>pub enum RecipeError { RecipeLimitReached, ValidationError(String), ... }</signature>
+      <path>crates/recipe/src/error.rs</path>
+      <description>Domain error types for recipe operations. Copy command returns RecipeResult&lt;String&gt; (recipe ID) or RecipeError.</description>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      TDD approach enforced with minimum 80% code coverage. Unit tests for domain logic (commands, event handlers, business rules) using in-memory or test fixtures. Integration tests for route handlers with test database. E2E tests using framework TBD (possibly Playwright) for full user journeys. Test files located in crates/recipe/tests/ for domain tests, tests/ at root for integration tests. Use shared fixtures from tests/common/fixtures.rs.
+    </standards>
+    <locations>
+      - crates/recipe/tests/ (domain unit tests)
+      - tests/ (integration tests at workspace root)
+      - e2e/ (end-to-end tests, possibly Playwright)
+    </locations>
+    <ideas>
+      <test id="1" ac="2,3,7">Unit test: copy_recipe command loads original recipe, creates new RecipeCreated event with full data duplication, new aggregate has different ID than original</test>
+      <test id="2" ac="4">Unit test: copy_recipe stores original_recipe_id and original_author metadata in new recipe</test>
+      <test id="3" ac="5,11">Unit test: free tier user at 10 recipes gets RecipeLimitReached error when copying</test>
+      <test id="4" ac="5">Unit test: premium user can copy recipe even with 20+ existing recipes (no limit)</test>
+      <test id="5" ac="6">Unit test: copied recipe defaults to is_shared=false regardless of original recipe's sharing status</test>
+      <test id="6" ac="7">Unit test: modify copied recipe (update_recipe command), verify original recipe unchanged by loading both aggregates from event stream</test>
+      <test id="7" ac="10">Unit test or query test: check_recipe_already_copied query returns true if user_id + original_recipe_id exists in recipes table</test>
+      <test id="8" ac="1,12">Integration test: POST /discover/:id/copy with valid auth creates recipe, returns 302 redirect to /recipes/:new_id</test>
+      <test id="9" ac="9">Integration test: POST /discover/:id/copy returns success response with confirmation message or flash</test>
+      <test id="10" ac="10">Integration test: POST /discover/:id/copy twice with same user returns error or disabled button on template</test>
+      <test id="11" ac="11">Integration test: GET /discover/:id renders "Upgrade" message instead of button when free user at limit</test>
+      <test id="12" ac="all">E2E test: User browses community recipe, clicks "Add to My Recipes", recipe appears in personal library, can favorite and use in meal plan</test>
+    </ideas>
+  </tests>
+</story-context>
