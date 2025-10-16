@@ -1,0 +1,210 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>2.9</storyId>
+    <title>Rate and Review Community Recipes</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-16T02:02:40Z</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-2.9.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user who cooked a community recipe</asA>
+    <iWant>rate and review it</iWant>
+    <soThat>I can help others find quality recipes</soThat>
+    <tasks>
+- [ ] Create RecipeRated event and Rating aggregate (AC: #1, #2, #4)
+  - [ ] Define RecipeRated event struct (recipe_id, user_id, stars: i32, review_text: Option&lt;String&gt;)
+  - [ ] Create RatingAggregate with evento pattern
+  - [ ] Implement rating_created and rating_updated event handlers
+  - [ ] Add rating validation logic (1-5 stars, max 500 chars review)
+
+- [ ] Implement ratings database schema and read model (AC: #2, #4, #5)
+  - [ ] Create migration 005_create_ratings_table.sql
+  - [ ] Add UNIQUE constraint on (recipe_id, user_id)
+  - [ ] Create indexes on recipe_id for fast aggregation queries
+  - [ ] Implement read model projection for RecipeRated event
+
+- [ ] Create rating submission route (AC: #1, #2, #3, #10, #11)
+  - [ ] Implement POST /discover/:id/rate handler in src/routes/discover.rs
+  - [ ] Add auth middleware to protect endpoint
+  - [ ] Validate rating form (stars 1-5, review_text &lt;= 500 chars)
+  - [ ] Call recipe::rate_recipe command with RateRecipeCommand
+  - [ ] Handle duplicate ratings (UPDATE vs INSERT via UPSERT logic)
+  - [ ] Return success with updated average rating
+
+- [ ] Implement rating edit/delete routes (AC: #6, #7)
+  - [ ] Add PUT /discover/:id/review handler for editing own review
+  - [ ] Add DELETE /discover/:id/review handler for deleting own review
+  - [ ] Verify ownership (user_id matches rating creator)
+  - [ ] Return 403 Forbidden if user attempts to edit/delete others' ratings
+
+- [ ] Display ratings on recipe pages (AC: #4, #5)
+  - [ ] Update recipe detail template to show average rating and review count
+  - [ ] Add rating widget (star display) to template
+  - [ ] Display reviews list chronologically with username, date, review text
+  - [ ] Show edit/delete buttons only for user's own reviews
+
+- [ ] Update discovery feed with rating highlights (AC: #9)
+  - [ ] Modify discovery query to include avg_rating in recipe cards
+  - [ ] Add "Highly Rated" badge for recipes with avg_rating &gt;= 4.0
+  - [ ] Update sorting options to include "Highest Rated" (ORDER BY avg_rating DESC)
+
+- [ ] Write tests (AC: all)
+  - [ ] Unit tests: RatingAggregate event handlers, validation logic
+  - [ ] Integration tests: POST /discover/:id/rate with valid/invalid inputs, duplicate ratings, edit/delete flows
+  - [ ] Integration tests: Verify aggregation calculation (multiple ratings produce correct average)
+  - [ ] E2E tests: Complete flow - view recipe → rate → see updated rating → edit review → delete review</tasks>
+  </story>
+
+  <acceptanceCriteria>
+1. Rating widget (1-5 stars) visible on shared recipe detail pages (GET /discover/:id)
+2. User can rate recipe only once per recipe_id (can update existing rating)
+3. Optional text review field with 500 character maximum
+4. Ratings aggregate to display average score (e.g., "4.3/5 from 47 reviews") on recipe cards and detail pages
+5. Reviews displayed chronologically (most recent first) with reviewer username and created_at timestamp
+6. User can edit their own review via PUT /discover/:id/review endpoint
+7. User can delete their own review via DELETE /discover/:id/review endpoint
+8. Recipe owner notified of new ratings/reviews (if notification preferences enabled - out of scope for this story)
+9. Highly rated recipes (average &gt;= 4.0 stars) featured/highlighted in discovery feed sorting
+10. Rating submission requires authentication (redirect to /login if not authenticated)
+11. Validation: rating must be integer between 1-5, review text &lt;= 500 chars
+12. Duplicate rating prevention: UPDATE existing rating rather than INSERT new one
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="/home/snapiz/projects/github/timayz/imkitchen/docs/PRD.md" title="Product Requirements Document" section="FR-11">
+        - Recipe Rating and Reviews: Users can rate recipes (1-5 stars) and write text reviews after cooking. Ratings aggregate to show community quality scores on shared recipes.
+      </doc>
+      <doc path="/home/snapiz/projects/github/timayz/imkitchen/docs/PRD.md" title="Product Requirements Document" section="FR-12">
+        - Community Recipe Discovery: Users browse shared recipes from other users, filtered by rating, cuisine, preparation time, and dietary preferences. Discovery interface highlights highly-rated recipes and trending dishes.
+      </doc>
+      <doc path="/home/snapiz/projects/github/timayz/imkitchen/docs/solution-architecture.md" title="Solution Architecture" section="3.2">
+        - ratings table schema with recipe_id, user_id, stars (1-5), review_text, UNIQUE(recipe_id, user_id) constraint
+        - Index on recipe_id for fast aggregation queries
+        - RecipeRated event projection to ratings read model
+      </doc>
+      <doc path="/home/snapiz/projects/github/timayz/imkitchen/docs/solution-architecture.md" title="Solution Architecture" section="4.2">
+        - HTML endpoints pattern: Form-based mutations with POST/PUT/DELETE
+        - TwinSpark for AJAX enhancements (partial HTML fragment responses)
+        - Server-side validation with validator crate
+      </doc>
+      <doc path="/home/snapiz/projects/github/timayz/imkitchen/docs/solution-architecture.md" title="Solution Architecture" section="6.1">
+        - Event sourcing: All state changes via evento events
+        - CQRS: Commands write events, queries read from materialized views
+        - Projections via evento subscriptions
+      </doc>
+      <doc path="/home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-2.md" title="Epic 2 Technical Specification" section="Ratings and Reviews (Stories 13-15)">
+        - Rate recipes 1-5 stars (one rating per user per recipe)
+        - Write text reviews (optional, max 500 chars)
+        - Aggregate ratings display (average score, review count)
+        - Edit/delete own reviews
+        - RatingAggregate in ratings domain crate with evento pattern
+      </doc>
+    </docs>
+    <code>
+      <artifact path="/home/snapiz/projects/github/timayz/imkitchen/crates/recipe/src/aggregate.rs" kind="module" symbol="RecipeAggregate" lines="1-172" reason="RecipeAggregate is the event-sourced aggregate pattern that this story must follow for RatingAggregate. Shows evento pattern usage, event handlers, and aggregate state management."/>
+      <artifact path="/home/snapiz/projects/github/timayz/imkitchen/crates/recipe/src/events.rs" kind="module" symbol="RecipeCreated, RecipeFavorited" lines="1-110" reason="Event definitions using evento AggregatorName, bincode serialization. Template for RecipeRated event structure with proper serialization attributes."/>
+      <artifact path="/home/snapiz/projects/github/timayz/imkitchen/crates/recipe/src/commands.rs" kind="module" symbol="create_recipe, favorite_recipe, share_recipe" lines="1-562" reason="Command handler pattern showing validation, ownership checks, evento event emission, and read model queries. Template for rate_recipe command implementation."/>
+      <artifact path="/home/snapiz/projects/github/timayz/imkitchen/crates/recipe/src/read_model.rs" kind="module" symbol="query_recipe_by_id, query_recipes_by_user" lines="N/A" reason="Read model query functions for recipes table. Template for ratings read model queries and aggregation calculations."/>
+      <artifact path="/home/snapiz/projects/github/timayz/imkitchen/src/routes/recipes.rs" kind="module" symbol="post_create_recipe, get_recipe_detail" lines="1-100" reason="Route handlers showing Axum patterns, form parsing, auth middleware, template rendering. Template for POST /discover/:id/rate handler."/>
+      <artifact path="/home/snapiz/projects/github/timayz/imkitchen/templates/pages/discover.html" kind="template" lines="N/A" reason="Discover page template for community recipes. Needs integration of rating widget and average rating display."/>
+      <artifact path="/home/snapiz/projects/github/timayz/imkitchen/migrations/01_v0.2_recipes.sql" kind="migration" lines="N/A" reason="Example migration showing table creation with indexes and foreign keys. Template for ratings table migration."/>
+    </code>
+    <dependencies>
+      <rust>
+        <crate name="evento" version="1.4" reason="Event sourcing framework for RatingAggregate and RecipeRated event"/>
+        <crate name="bincode" version="1.3" reason="Event serialization for evento compatibility"/>
+        <crate name="serde" version="1.0" reason="JSON serialization for API responses and event data"/>
+        <crate name="validator" version="0.20" reason="Form validation for rating stars (1-5) and review text (max 500 chars)"/>
+        <crate name="sqlx" version="0.8" reason="Database queries for ratings read model and aggregation calculations"/>
+        <crate name="axum" version="0.8" reason="HTTP server for POST/PUT/DELETE rating endpoints"/>
+        <crate name="askama" version="0.14" reason="Server-side template rendering for rating widget and reviews list"/>
+        <crate name="chrono" version="0.4" reason="Timestamp generation for rating created_at/updated_at"/>
+      </rust>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">Event sourcing via evento: All state changes must be captured as immutable events (RecipeRated, RatingUpdated, RatingDeleted). Rating aggregate rebuilt from event stream.</constraint>
+    <constraint type="architecture">CQRS pattern: Commands (rate_recipe, update_rating, delete_rating) write events; queries read from ratings read model table with aggregated avg_rating.</constraint>
+    <constraint type="architecture">Server-side rendering: No client-side JavaScript framework. Use Askama templates for rating widget and reviews list. TwinSpark for AJAX partial updates.</constraint>
+    <constraint type="domain">Duplicate prevention: UNIQUE constraint on (recipe_id, user_id) enforces one rating per user per recipe. Command logic must handle UPDATE vs INSERT (UPSERT pattern).</constraint>
+    <constraint type="domain">Rating validation: Stars must be integer 1-5 (inclusive). Review text optional but max 500 characters if provided. Validation via validator crate in command.</constraint>
+    <constraint type="domain">Ownership verification: Users can only edit/delete their own reviews. Verify user_id matches rating creator before applying RatingUpdated/RatingDeleted events.</constraint>
+    <constraint type="security">Authentication required: All rating endpoints (POST/PUT/DELETE) protected by auth middleware. Public recipe pages (GET /discover/:id) show ratings read-only.</constraint>
+    <constraint type="security">Authorization checks: Verify ownership (user_id) before allowing edit/delete operations. Return 403 Forbidden for unauthorized attempts.</constraint>
+    <constraint type="testing">TDD enforced: Write tests before implementation. Minimum 80% code coverage (unit + integration tests). E2E tests for full rating flow.</constraint>
+    <constraint type="database">Read model projection: ratings table updated via evento subscription on RecipeRated events. Aggregate avg_rating calculated and stored for performance.</constraint>
+    <constraint type="database">Migration: Create migration file migrations/006_create_ratings_table.sql with UNIQUE constraint, indexes, and foreign keys to recipes/users tables.</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="rate_recipe" kind="command_handler" signature="pub async fn rate_recipe(command: RateRecipeCommand, user_id: &amp;str, executor: &amp;Sqlite, pool: &amp;SqlitePool) -&gt; RecipeResult&lt;()&gt;" path="crates/recipe/src/commands.rs" reason="New command handler to create/update recipe ratings following existing recipe command pattern"/>
+    <interface name="query_recipe_ratings" kind="query" signature="pub async fn query_recipe_ratings(recipe_id: &amp;str, pool: &amp;SqlitePool) -&gt; Result&lt;Vec&lt;RatingReadModel&gt;, RecipeError&gt;" path="crates/recipe/src/read_model.rs" reason="Query ratings for a recipe sorted by created_at DESC (most recent first)"/>
+    <interface name="query_average_rating" kind="query" signature="pub async fn query_average_rating(recipe_id: &amp;str, pool: &amp;SqlitePool) -&gt; Result&lt;(f32, i32), RecipeError&gt;" path="crates/recipe/src/read_model.rs" reason="Query aggregate rating statistics (average stars, total review count) for recipe cards and detail pages"/>
+    <interface name="POST /discover/:id/rate" kind="http_route" signature="pub async fn post_rate_recipe(Path(recipe_id): Path&lt;String&gt;, Extension(auth): Extension&lt;Auth&gt;, Form(form): Form&lt;RateRecipeForm&gt;) -&gt; impl IntoResponse" path="src/routes/discover.rs" reason="New authenticated route to submit/update recipe rating"/>
+    <interface name="PUT /discover/:id/review" kind="http_route" signature="pub async fn put_update_review(Path(recipe_id): Path&lt;String&gt;, Extension(auth): Extension&lt;Auth&gt;, Form(form): Form&lt;UpdateReviewForm&gt;) -&gt; impl IntoResponse" path="src/routes/discover.rs" reason="New authenticated route to edit user's own review"/>
+    <interface name="DELETE /discover/:id/review" kind="http_route" signature="pub async fn delete_review(Path(recipe_id): Path&lt;String&gt;, Extension(auth): Extension&lt;Auth&gt;) -&gt; impl IntoResponse" path="src/routes/discover.rs" reason="New authenticated route to delete user's own review"/>
+    <interface name="query_recipe_by_id" kind="query" signature="pub async fn query_recipe_by_id(recipe_id: &amp;str, pool: &amp;SqlitePool) -&gt; Result&lt;RecipeReadModel, RecipeError&gt;" path="crates/recipe/src/read_model.rs" reason="Existing query must be extended to include avg_rating and review_count fields for recipe detail page display"/>
+    <interface name="list_shared_recipes" kind="query" signature="pub async fn list_shared_recipes(filters: RecipeDiscoveryFilters, pool: &amp;SqlitePool) -&gt; Result&lt;Vec&lt;RecipeReadModel&gt;, RecipeError&gt;" path="crates/recipe/src/read_model.rs" reason="Existing discovery query must be extended to support sorting by avg_rating DESC and filtering by min_rating threshold"/>
+  </interfaces>
+
+  <tests>
+    <standards>
+TDD Approach: Write failing tests first, then implement features to pass tests. Minimum 80% code coverage across unit, integration, and E2E tests.
+
+Unit Tests (crates/recipe/tests/rating_tests.rs):
+- Test RatingAggregate event handlers (recipe_rated, rating_updated, rating_deleted)
+- Test validation logic: stars must be 1-5, review_text max 500 chars
+- Test duplicate rating detection and update logic
+- Test aggregate avg_rating calculation accuracy
+
+Integration Tests (tests/rating_integration_tests.rs):
+- Test POST /discover/:id/rate with valid rating (creates new rating)
+- Test POST /discover/:id/rate with duplicate (updates existing rating)
+- Test POST /discover/:id/rate with invalid stars (returns validation error)
+- Test POST /discover/:id/rate with review_text &gt; 500 chars (returns validation error)
+- Test PUT /discover/:id/review (updates own review successfully)
+- Test PUT /discover/:id/review (403 Forbidden when editing others' review)
+- Test DELETE /discover/:id/review (deletes own review successfully)
+- Test DELETE /discover/:id/review (403 Forbidden when deleting others' review)
+- Test aggregate rating calculation with multiple ratings
+
+E2E Tests (e2e/tests/rating.spec.ts):
+- Complete user journey: login → browse discovery → view recipe detail → rate recipe → see updated average → edit review → delete review
+- Verify rating widget displays correctly (1-5 stars)
+- Verify reviews list shows chronologically with username and timestamp
+- Verify edit/delete buttons only appear for user's own reviews
+- Verify "Highly Rated" badge appears for recipes with avg_rating &gt;= 4.0
+
+Playwright Test Framework:
+- Use existing e2e/ directory structure
+- Follow patterns from e2e/tests/recipe-management.spec.ts
+- Use test fixtures for user login and recipe data
+    </standards>
+    <locations>
+- crates/recipe/tests/rating_tests.rs (unit tests for RatingAggregate)
+- tests/rating_integration_tests.rs (integration tests for rating routes)
+- e2e/tests/rating.spec.ts (E2E tests for complete rating flow)
+- tests/common/fixtures.rs (shared test data for users, recipes, ratings)
+    </locations>
+    <ideas>
+      <idea ac="1,2,3,10,11">POST /discover/:id/rate: Test authenticated user submits valid rating (stars=5, review="Excellent!"). Verify RecipeRated event emitted, ratings table updated, avg_rating recalculated.</idea>
+      <idea ac="2,12">POST /discover/:id/rate (duplicate): User submits second rating for same recipe. Verify existing rating updated (not new row inserted), RatingUpdated event emitted.</idea>
+      <idea ac="11">POST /discover/:id/rate (invalid stars): Submit stars=0 or stars=6. Verify 422 Unprocessable Entity returned with validation error message.</idea>
+      <idea ac="3,11">POST /discover/:id/rate (review too long): Submit review_text with 501 characters. Verify 422 Unprocessable Entity with validation error.</idea>
+      <idea ac="6">PUT /discover/:id/review: User edits their own review text. Verify RatingUpdated event emitted, ratings table updated, avg_rating unchanged (only text changed).</idea>
+      <idea ac="6">PUT /discover/:id/review (unauthorized): User attempts to edit another user's review. Verify 403 Forbidden returned, no event emitted.</idea>
+      <idea ac="7">DELETE /discover/:id/review: User deletes their own review. Verify RatingDeleted event emitted, ratings table row deleted, avg_rating recalculated without this rating.</idea>
+      <idea ac="7">DELETE /discover/:id/review (unauthorized): User attempts to delete another user's review. Verify 403 Forbidden returned, no event emitted.</idea>
+      <idea ac="4">Aggregate rating calculation: Submit 3 ratings (5 stars, 4 stars, 3 stars). Verify avg_rating = 4.0, review_count = 3 displayed on recipe card.</idea>
+      <idea ac="5">Reviews list display: Submit 3 reviews at different times. Verify recipe detail page displays reviews chronologically (most recent first) with usernames and timestamps.</idea>
+      <idea ac="9">Discovery feed sorting: Create 5 recipes with avg_ratings [3.5, 4.2, 4.8, 3.0, 4.5]. Verify "Highest Rated" sort returns [4.8, 4.5, 4.2, 3.5, 3.0]. Verify "Highly Rated" badge only on recipes &gt;= 4.0.</idea>
+      <idea ac="1,4,5">E2E: Login → browse /discover → click recipe → see rating widget → submit 5-star rating with review → verify page updates to show new average rating and review in list.</idea>
+      <idea ac="6,7">E2E: Login → view own review on recipe → click "Edit" → update review text → submit → verify updated text displayed → click "Delete" → verify review removed from page.</idea>
+    </ideas>
+  </tests>
+</story-context>

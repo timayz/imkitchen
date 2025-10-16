@@ -24,6 +24,6 @@ pub use profile::{
 pub use recipes::{
     get_discover, get_discover_detail, get_ingredient_row, get_instruction_row, get_recipe_detail,
     get_recipe_edit_form, get_recipe_form, get_recipe_list, post_add_to_library,
-    post_create_recipe, post_delete_recipe, post_favorite_recipe, post_share_recipe,
-    post_update_recipe, post_update_recipe_tags,
+    post_create_recipe, post_delete_recipe, post_delete_review, post_favorite_recipe,
+    post_rate_recipe, post_share_recipe, post_update_recipe, post_update_recipe_tags,
 };
