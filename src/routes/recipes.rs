@@ -6,11 +6,12 @@ use axum::{
     Extension,
 };
 use recipe::{
-    create_recipe, delete_recipe, favorite_recipe, query_collections_by_user,
+    create_recipe, delete_recipe, favorite_recipe, list_shared_recipes, query_collections_by_user,
     query_collections_for_recipe, query_recipe_by_id, query_recipes_by_collection,
     query_recipes_by_user, share_recipe, update_recipe, update_recipe_tags, CollectionReadModel,
     CreateRecipeCommand, DeleteRecipeCommand, FavoriteRecipeCommand, Ingredient, InstructionStep,
-    RecipeError, ShareRecipeCommand, UpdateRecipeCommand, UpdateRecipeTagsCommand,
+    RecipeDiscoveryFilters, RecipeError, ShareRecipeCommand, UpdateRecipeCommand,
+    UpdateRecipeTagsCommand,
 };
 use serde::Deserialize;
 use sqlx::Row;
@@ -1181,103 +1182,152 @@ pub async fn post_share_recipe(
     }
 }
 
+/// Query parameters for /discover route (AC-4, AC-5, AC-6, AC-7)
+#[derive(Debug, Deserialize)]
+pub struct DiscoveryQueryParams {
+    #[serde(default, deserialize_with = "empty_string_as_none")]
+    pub cuisine: Option<String>,
+    #[serde(default, deserialize_with = "empty_string_as_none")]
+    pub min_rating: Option<u8>,
+    #[serde(default, deserialize_with = "empty_string_as_none")]
+    pub max_prep_time: Option<u32>,
+    #[serde(default, deserialize_with = "empty_string_as_none")]
+    pub dietary: Option<String>,
+    #[serde(default, deserialize_with = "empty_string_as_none")]
+    pub search: Option<String>,
+    #[serde(default, deserialize_with = "empty_string_as_none")]
+    pub sort: Option<String>,
+    #[serde(default, deserialize_with = "empty_string_as_none")]
+    pub page: Option<u32>,
+}
+
+/// Helper function to deserialize empty strings as None
+fn empty_string_as_none<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: std::str::FromStr,
+    T::Err: std::fmt::Display,
+{
+    use serde::Deserialize;
+    let s = String::deserialize(deserializer)?;
+    if s.is_empty() {
+        Ok(None)
+    } else {
+        T::from_str(&s).map(Some).map_err(serde::de::Error::custom)
+    }
+}
+
 #[derive(Template)]
 #[template(path = "pages/discover.html")]
 pub struct DiscoverTemplate {
     pub recipes: Vec<RecipeDetailView>,
     pub user: Option<Auth>,
+    pub filters: DiscoveryQueryParams,
+    pub current_page: u32,
+    pub has_next_page: bool,
 }
 
-/// GET /discover - Community discovery feed (AC-3, AC-4, AC-12)
+/// GET /discover - Community discovery feed (AC-1 to AC-7, AC-12)
 ///
 /// Public route showing all shared recipes (no authentication required for read-only)
-/// Filters: WHERE is_shared = TRUE (uses idx_recipes_shared index)
-/// Joins users table for creator attribution (AC-4)
+/// AC-3: Filters by is_shared = TRUE AND deleted_at IS NULL
+/// AC-4: Supports filtering by cuisine, rating, prep time, dietary
+/// AC-5: Search by title or ingredients
+/// AC-6: Sorting by rating, date, alphabetical
+/// AC-7: Pagination (20 recipes per page)
 #[tracing::instrument(skip(state))]
 pub async fn get_discover(
     State(state): State<AppState>,
     user: Option<Extension<Auth>>,
+    Query(params): Query<DiscoveryQueryParams>,
 ) -> impl IntoResponse {
-    // Query all shared recipes from read model with creator email (AC-4)
-    // AC-12: Filter by is_shared = 1 AND deleted_at IS NULL
-    let shared_recipes_query = sqlx::query(
-        r#"
-        SELECT r.id, r.user_id, r.title, r.ingredients, r.instructions,
-               r.prep_time_min, r.cook_time_min, r.advance_prep_hours, r.serving_size,
-               r.is_favorite, r.is_shared, r.complexity, r.cuisine, r.dietary_tags,
-               r.created_at, r.updated_at, u.email as creator_email
-        FROM recipes r
-        LEFT JOIN users u ON r.user_id = u.id
-        WHERE r.is_shared = 1 AND r.deleted_at IS NULL
-        ORDER BY r.created_at DESC
-        LIMIT 100
-        "#,
-    )
-    .fetch_all(&state.db_pool)
-    .await;
+    // Convert query params to RecipeDiscoveryFilters
+    let filters = RecipeDiscoveryFilters {
+        cuisine: params.cuisine.clone(),
+        min_rating: params.min_rating,
+        max_prep_time: params.max_prep_time,
+        dietary: params.dietary.clone(),
+        search: params.search.clone(),
+        sort: params.sort.clone(),
+        page: params.page,
+    };
 
-    match shared_recipes_query {
-        Ok(rows) => {
-            // Convert query results to RecipeDetailView
+    // Query shared recipes using read model function
+    match list_shared_recipes(&state.db_pool, filters).await {
+        Ok(recipes) => {
+            // Convert RecipeReadModel to RecipeDetailView
             let mut recipe_views = Vec::new();
-            for row in rows {
+            for recipe in &recipes {
                 // Parse ingredients and instructions JSON
-                let ingredients_json: String = row.get("ingredients");
-                let instructions_json: String = row.get("instructions");
-
-                let ingredients: Vec<Ingredient> = match serde_json::from_str(&ingredients_json) {
+                let ingredients: Vec<Ingredient> = match serde_json::from_str(&recipe.ingredients) {
                     Ok(ing) => ing,
                     Err(e) => {
                         tracing::error!("Failed to parse ingredients JSON: {:?}", e);
-                        continue; // Skip this recipe
+                        continue;
                     }
                 };
 
                 let instructions: Vec<InstructionStep> =
-                    match serde_json::from_str(&instructions_json) {
+                    match serde_json::from_str(&recipe.instructions) {
                         Ok(inst) => inst,
                         Err(e) => {
                             tracing::error!("Failed to parse instructions JSON: {:?}", e);
-                            continue; // Skip this recipe
+                            continue;
                         }
                     };
 
                 // Parse dietary tags JSON array
-                let dietary_tags_json: Option<String> = row.get("dietary_tags");
-                let dietary_tags = dietary_tags_json
+                let dietary_tags = recipe
+                    .dietary_tags
                     .as_ref()
                     .and_then(|tags_json| serde_json::from_str::<Vec<String>>(tags_json).ok())
                     .unwrap_or_default();
 
+                // Query creator email from users table
+                let creator_email =
+                    sqlx::query_scalar::<_, String>("SELECT email FROM users WHERE id = ?")
+                        .bind(&recipe.user_id)
+                        .fetch_optional(&state.db_pool)
+                        .await
+                        .ok()
+                        .flatten();
+
                 recipe_views.push(RecipeDetailView {
-                    id: row.get("id"),
-                    title: row.get("title"),
+                    id: recipe.id.clone(),
+                    title: recipe.title.clone(),
                     ingredients,
                     instructions,
-                    prep_time_min: row.get::<Option<i32>, _>("prep_time_min").map(|v| v as u32),
-                    cook_time_min: row.get::<Option<i32>, _>("cook_time_min").map(|v| v as u32),
-                    advance_prep_hours: row
-                        .get::<Option<i32>, _>("advance_prep_hours")
-                        .map(|v| v as u32),
-                    serving_size: row.get::<Option<i32>, _>("serving_size").map(|v| v as u32),
-                    is_favorite: row.get("is_favorite"),
-                    is_shared: row.get("is_shared"),
-                    complexity: row.get("complexity"),
-                    cuisine: row.get("cuisine"),
+                    prep_time_min: recipe.prep_time_min.map(|v| v as u32),
+                    cook_time_min: recipe.cook_time_min.map(|v| v as u32),
+                    advance_prep_hours: recipe.advance_prep_hours.map(|v| v as u32),
+                    serving_size: recipe.serving_size.map(|v| v as u32),
+                    is_favorite: recipe.is_favorite,
+                    is_shared: recipe.is_shared,
+                    complexity: recipe.complexity.clone(),
+                    cuisine: recipe.cuisine.clone(),
                     dietary_tags,
-                    created_at: row.get("created_at"),
-                    creator_email: row.get("creator_email"), // AC-4: Recipe attribution
+                    created_at: recipe.created_at.clone(),
+                    creator_email,
                 });
             }
 
             tracing::info!(
                 recipe_count = recipe_views.len(),
+                page = params.page.unwrap_or(1),
+                filters = ?params,
                 "Fetched community discovery feed"
             );
+
+            // Check if there are more pages
+            let current_page = params.page.unwrap_or(1);
+            let has_next_page = recipes.len() == 20; // If we got exactly 20, there might be more
 
             let template = DiscoverTemplate {
                 recipes: recipe_views,
                 user: user.map(|u| u.0),
+                filters: params,
+                current_page,
+                has_next_page,
             };
 
             Html(template.render().unwrap()).into_response()
@@ -1287,6 +1337,264 @@ pub async fn get_discover(
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Failed to load community recipes",
+            )
+                .into_response()
+        }
+    }
+}
+
+#[derive(Template)]
+#[template(path = "pages/discover-detail.html")]
+pub struct DiscoverDetailTemplate {
+    pub recipe: RecipeDetailView,
+    pub user: Option<Auth>,
+}
+
+/// GET /discover/:id - Community recipe detail view (AC-8, AC-9, AC-10, AC-14, AC-15)
+///
+/// Public route showing full recipe details with SEO optimization
+/// AC-9: Full recipe with creator attribution
+/// AC-10: Read-only for non-owners (no edit/delete buttons)
+/// AC-14: SEO meta tags (Open Graph)
+/// AC-15: Schema.org Recipe JSON-LD markup
+#[tracing::instrument(skip(state))]
+pub async fn get_discover_detail(
+    State(state): State<AppState>,
+    Path(recipe_id): Path<String>,
+    user: Option<Extension<Auth>>,
+) -> impl IntoResponse {
+    // Query recipe from read model (AC-3: must be shared and not deleted)
+    let recipe_query = sqlx::query(
+        r#"
+        SELECT r.id, r.user_id, r.title, r.ingredients, r.instructions,
+               r.prep_time_min, r.cook_time_min, r.advance_prep_hours, r.serving_size,
+               r.is_favorite, r.is_shared, r.complexity, r.cuisine, r.dietary_tags,
+               r.created_at, r.updated_at, u.email as creator_email
+        FROM recipes r
+        LEFT JOIN users u ON r.user_id = u.id
+        WHERE r.id = ? AND r.is_shared = 1 AND r.deleted_at IS NULL
+        "#,
+    )
+    .bind(&recipe_id)
+    .fetch_optional(&state.db_pool)
+    .await;
+
+    match recipe_query {
+        Ok(Some(row)) => {
+            // Parse ingredients and instructions JSON
+            let ingredients_json: String = row.get("ingredients");
+            let instructions_json: String = row.get("instructions");
+
+            let ingredients: Vec<Ingredient> = match serde_json::from_str(&ingredients_json) {
+                Ok(ing) => ing,
+                Err(e) => {
+                    tracing::error!("Failed to parse ingredients JSON: {:?}", e);
+                    return (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        "Failed to parse recipe data",
+                    )
+                        .into_response();
+                }
+            };
+
+            let instructions: Vec<InstructionStep> = match serde_json::from_str(&instructions_json)
+            {
+                Ok(inst) => inst,
+                Err(e) => {
+                    tracing::error!("Failed to parse instructions JSON: {:?}", e);
+                    return (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        "Failed to parse recipe data",
+                    )
+                        .into_response();
+                }
+            };
+
+            // Parse dietary tags JSON array
+            let dietary_tags_json: Option<String> = row.get("dietary_tags");
+            let dietary_tags = dietary_tags_json
+                .as_ref()
+                .and_then(|tags_json| serde_json::from_str::<Vec<String>>(tags_json).ok())
+                .unwrap_or_default();
+
+            let recipe = RecipeDetailView {
+                id: row.get("id"),
+                title: row.get("title"),
+                ingredients,
+                instructions,
+                prep_time_min: row.get::<Option<i32>, _>("prep_time_min").map(|v| v as u32),
+                cook_time_min: row.get::<Option<i32>, _>("cook_time_min").map(|v| v as u32),
+                advance_prep_hours: row
+                    .get::<Option<i32>, _>("advance_prep_hours")
+                    .map(|v| v as u32),
+                serving_size: row.get::<Option<i32>, _>("serving_size").map(|v| v as u32),
+                is_favorite: row.get("is_favorite"),
+                is_shared: row.get("is_shared"),
+                complexity: row.get("complexity"),
+                cuisine: row.get("cuisine"),
+                dietary_tags,
+                created_at: row.get("created_at"),
+                creator_email: row.get("creator_email"), // AC-9: Recipe attribution
+            };
+
+            let template = DiscoverDetailTemplate {
+                recipe,
+                user: user.map(|u| u.0),
+            };
+
+            Html(template.render().unwrap()).into_response()
+        }
+        Ok(None) => {
+            // Recipe not found, not shared, or deleted (AC-8)
+            (StatusCode::NOT_FOUND, "Recipe not found").into_response()
+        }
+        Err(e) => {
+            tracing::error!("Failed to query recipe: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, "Failed to load recipe").into_response()
+        }
+    }
+}
+
+/// POST /discover/:id/add - Add community recipe to user's library (AC-11)
+///
+/// Authenticated route that copies a shared recipe to the user's personal library
+/// AC-11: Creates new recipe via evento with copied data
+/// Enforces freemium limit (10 recipes for free tier)
+#[tracing::instrument(skip(state, auth), fields(user_id = %auth.user_id))]
+pub async fn post_add_to_library(
+    State(state): State<AppState>,
+    Path(recipe_id): Path<String>,
+    Extension(auth): Extension<Auth>,
+) -> impl IntoResponse {
+    // Query source recipe from read model
+    let source_recipe_query = sqlx::query(
+        r#"
+        SELECT id, user_id, title, ingredients, instructions, prep_time_min, cook_time_min,
+               advance_prep_hours, serving_size, is_shared, deleted_at
+        FROM recipes
+        WHERE id = ? AND is_shared = 1 AND deleted_at IS NULL
+        "#,
+    )
+    .bind(&recipe_id)
+    .fetch_optional(&state.db_pool)
+    .await;
+
+    let source_row = match source_recipe_query {
+        Ok(Some(row)) => row,
+        Ok(None) => {
+            tracing::warn!(
+                source_recipe_id = %recipe_id,
+                "Attempted to add non-shared or deleted recipe to library"
+            );
+            return (
+                StatusCode::NOT_FOUND,
+                "Recipe not found or not available for copying",
+            )
+                .into_response();
+        }
+        Err(e) => {
+            tracing::error!("Failed to query source recipe: {:?}", e);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to load source recipe",
+            )
+                .into_response();
+        }
+    };
+
+    // Parse source recipe data
+    let ingredients_json: String = source_row.get("ingredients");
+    let instructions_json: String = source_row.get("instructions");
+
+    let ingredients: Vec<Ingredient> = match serde_json::from_str(&ingredients_json) {
+        Ok(ing) => ing,
+        Err(e) => {
+            tracing::error!("Failed to parse ingredients JSON: {:?}", e);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to parse recipe data",
+            )
+                .into_response();
+        }
+    };
+
+    let instructions: Vec<InstructionStep> = match serde_json::from_str(&instructions_json) {
+        Ok(inst) => inst,
+        Err(e) => {
+            tracing::error!("Failed to parse instructions JSON: {:?}", e);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to parse recipe data",
+            )
+                .into_response();
+        }
+    };
+
+    // Create new recipe via domain command (AC-11: copy with attribution)
+    let source_title: String = source_row.get("title");
+    let mut copied_title = source_title.clone();
+    if !copied_title.ends_with("(from community)") {
+        copied_title.push_str(" (from community)");
+    }
+
+    let command = CreateRecipeCommand {
+        title: copied_title,
+        ingredients,
+        instructions,
+        prep_time_min: source_row
+            .get::<Option<i32>, _>("prep_time_min")
+            .map(|v| v as u32),
+        cook_time_min: source_row
+            .get::<Option<i32>, _>("cook_time_min")
+            .map(|v| v as u32),
+        advance_prep_hours: source_row
+            .get::<Option<i32>, _>("advance_prep_hours")
+            .map(|v| v as u32),
+        serving_size: source_row
+            .get::<Option<i32>, _>("serving_size")
+            .map(|v| v as u32),
+    };
+
+    match create_recipe(
+        command,
+        &auth.user_id,
+        &state.evento_executor,
+        &state.db_pool,
+    )
+    .await
+    {
+        Ok(new_recipe_id) => {
+            tracing::info!(
+                user_id = %auth.user_id,
+                source_recipe_id = %recipe_id,
+                new_recipe_id = %new_recipe_id,
+                "Added community recipe to user's library"
+            );
+
+            // Redirect to new recipe detail
+            (
+                StatusCode::SEE_OTHER,
+                [("Location", format!("/recipes/{}", new_recipe_id))],
+            )
+                .into_response()
+        }
+        Err(RecipeError::RecipeLimitReached) => {
+            // Freemium limit enforcement (AC-11)
+            tracing::warn!(
+                user_id = %auth.user_id,
+                "Recipe limit reached when adding community recipe"
+            );
+            (
+                StatusCode::FORBIDDEN,
+                "Recipe limit reached. Upgrade to premium for unlimited recipes.",
+            )
+                .into_response()
+        }
+        Err(e) => {
+            tracing::error!("Failed to create recipe: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to add recipe to library",
             )
                 .into_response()
         }

@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}{{ recipe.title }} - Community Recipe - imkitchen{% endblock %}
+
+{% block head %}
+<!-- AC-14: SEO Meta Tags -->
+{% if recipe.instructions.len() > 0 %}
+<meta name="description" content="{{ recipe.instructions[0].instruction_text }}">
+{% else %}
+<meta name="description" content="{{ recipe.title }} - Shared community recipe on imkitchen">
+{% endif %}
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://imkitchen.app/discover/{{ recipe.id }}">
+
+<!-- AC-14: Open Graph Meta Tags -->
+<meta property="og:title" content="{{ recipe.title }}">
+{% if recipe.instructions.len() > 0 %}
+<meta property="og:description" content="{{ recipe.instructions[0].instruction_text }}">
+{% else %}
+<meta property="og:description" content="{{ recipe.title }} - Shared community recipe on imkitchen">
+{% endif %}
+<meta property="og:url" content="https://imkitchen.app/discover/{{ recipe.id }}">
+<meta property="og:type" content="article">
+{% if recipe.complexity.is_some() %}
+<meta property="og:article:tag" content="{{ recipe.complexity.as_ref().unwrap() }}">
+{% endif %}
+{% if recipe.cuisine.is_some() %}
+<meta property="og:article:tag" content="{{ recipe.cuisine.as_ref().unwrap() }}">
+{% endif %}
+
+<!-- AC-15: Schema.org Recipe JSON-LD -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Recipe",
+  "name": "{{ recipe.title }}",
+  {% if recipe.creator_email.is_some() %}
+  "author": {
+    "@type": "Person",
+    "name": "{{ recipe.creator_email.as_ref().unwrap() }}"
+  },
+  {% endif %}
+  {% if recipe.prep_time_min.is_some() %}
+  "prepTime": "PT{{ recipe.prep_time_min.unwrap() }}M",
+  {% endif %}
+  {% if recipe.cook_time_min.is_some() %}
+  "cookTime": "PT{{ recipe.cook_time_min.unwrap() }}M",
+  {% endif %}
+  {% if recipe.serving_size.is_some() %}
+  "recipeYield": "{{ recipe.serving_size.unwrap() }} servings",
+  {% endif %}
+  "recipeIngredient": [
+    {% for ingredient in recipe.ingredients %}
+    "{{ ingredient.quantity }} {{ ingredient.unit }} {{ ingredient.name }}"{% if !loop.last %},{% endif %}
+    {% endfor %}
+  ],
+  "recipeInstructions": [
+    {% for instruction in recipe.instructions %}
+    {
+      "@type": "HowToStep",
+      "text": "{{ instruction.instruction_text }}"
+    }{% if !loop.last %},{% endif %}
+    {% endfor %}
+  ]{% if recipe.complexity.is_some() %},
+  "recipeCategory": "{{ recipe.complexity.as_ref().unwrap() }}"
+  {% endif %}{% if recipe.cuisine.is_some() %},
+  "recipeCuisine": "{{ recipe.cuisine.as_ref().unwrap() }}"
+  {% endif %}{% if !recipe.dietary_tags.is_empty() %},
+  "suitableForDiet": [
+    {% for tag in recipe.dietary_tags %}
+    "{{ tag }}"{% if !loop.last %},{% endif %}
+    {% endfor %}
+  ]
+  {% endif %}
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="container mx-auto px-4 max-w-4xl">
+        <!-- Back to Discovery Link -->
+        <div class="mb-6">
+            <a href="/discover" class="text-blue-600 hover:text-blue-800 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+                Back to Discovery
+            </a>
+        </div>
+
+        <!-- Recipe Header -->
+        <div class="bg-white rounded-lg shadow-md p-8 mb-6">
+            <h1 class="text-4xl font-bold text-gray-900 mb-4">{{ recipe.title }}</h1>
+
+            <!-- AC-9: Recipe Attribution -->
+            {% if recipe.creator_email.is_some() %}
+            <div class="flex items-center gap-2 text-gray-600 mb-4">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <span>By <strong>{{ recipe.creator_email.as_ref().unwrap() }}</strong></span>
+            </div>
+            {% endif %}
+
+            <!-- Metadata Row -->
+            <div class="flex flex-wrap gap-4 text-sm text-gray-600 mb-4">
+                {% if recipe.prep_time_min.is_some() %}
+                <div class="flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Prep: {{ recipe.prep_time_min.unwrap() }}m</span>
+                </div>
+                {% endif %}
+                {% if recipe.cook_time_min.is_some() %}
+                <div class="flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+                    </svg>
+                    <span>Cook: {{ recipe.cook_time_min.unwrap() }}m</span>
+                </div>
+                {% endif %}
+                {% if recipe.serving_size.is_some() %}
+                <div class="flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <span>Serves: {{ recipe.serving_size.unwrap() }}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Tags -->
+            <div class="flex flex-wrap gap-2 mb-6">
+                {% if recipe.complexity.is_some() %}
+                <span class="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
+                    {{ recipe.complexity.as_ref().unwrap() }}
+                </span>
+                {% endif %}
+                {% if recipe.cuisine.is_some() %}
+                <span class="px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">
+                    {{ recipe.cuisine.as_ref().unwrap() }}
+                </span>
+                {% endif %}
+                {% for tag in recipe.dietary_tags %}
+                <span class="px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full">
+                    {{ tag }}
+                </span>
+                {% endfor %}
+            </div>
+
+            <!-- AC-11, AC-13: Add to My Recipes Button (or Sign Up CTA for guests) -->
+            {% if user.is_some() %}
+            <form method="POST" action="/discover/{{ recipe.id }}/add" class="mb-6">
+                <button type="submit" class="w-full sm:w-auto bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 font-medium flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add to My Recipes
+                </button>
+            </form>
+            {% else %}
+            <a href="/register" class="w-full sm:w-auto bg-green-600 text-white px-6 py-3 rounded-md hover:bg-green-700 font-medium flex items-center justify-center gap-2 inline-flex">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                </svg>
+                Sign Up to Add Recipes
+            </a>
+            {% endif %}
+        </div>
+
+        <!-- Ingredients Section -->
+        <div class="bg-white rounded-lg shadow-md p-8 mb-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Ingredients</h2>
+            <ul class="space-y-2">
+                {% for ingredient in recipe.ingredients %}
+                <li class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="text-gray-700">
+                        <strong>{{ ingredient.quantity }} {{ ingredient.unit }}</strong> {{ ingredient.name }}
+                    </span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <!-- Instructions Section -->
+        <div class="bg-white rounded-lg shadow-md p-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Instructions</h2>
+            <ol class="space-y-4">
+                {% for instruction in recipe.instructions %}
+                <li class="flex gap-4">
+                    <div class="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">
+                        {{ loop.index }}
+                    </div>
+                    <div class="flex-1 pt-1">
+                        <p class="text-gray-700">{{ instruction.instruction_text }}</p>
+                        {% if instruction.timer_minutes.is_some() %}
+                        <div class="mt-2 flex items-center gap-2 text-sm text-blue-600">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>{{ instruction.timer_minutes.unwrap() }} minutes</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </li>
+                {% endfor %}
+            </ol>
+        </div>
+    </div>
+</div>
+{% endblock %}
