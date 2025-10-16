@@ -1,6 +1,6 @@
 # Story 2.8: Community Recipe Discovery
 
-Status: In Progress
+Status: Done
 
 ## Story
 
