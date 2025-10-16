@@ -16,6 +16,9 @@ pub enum RecipeError {
     #[error("Permission denied - you do not own this recipe")]
     PermissionDenied,
 
+    #[error("Recipe already copied - you have already added this recipe to your library")]
+    AlreadyCopied,
+
     #[error("Database error: {0}")]
     DatabaseError(#[from] sqlx::Error),
 

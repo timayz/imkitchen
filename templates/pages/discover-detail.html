@@ -150,23 +150,52 @@
                 {% endfor %}
             </div>
 
-            <!-- AC-11, AC-13: Add to My Recipes Button (or Sign Up CTA for guests) -->
+            <!-- Story 2.10: Add to My Recipes Button (AC-1, AC-9, AC-10, AC-11) -->
             {% if user.is_some() %}
-            <form method="POST" action="/discover/{{ recipe.id }}/add" class="mb-6">
-                <button type="submit" class="w-full sm:w-auto bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 font-medium flex items-center justify-center gap-2">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                    </svg>
-                    Add to My Recipes
-                </button>
-            </form>
+                {% if already_copied %}
+                    <!-- AC-10: User already copied this recipe - show disabled button -->
+                    <div class="mb-6">
+                        <button type="button" disabled class="w-full sm:w-auto bg-gray-300 text-gray-600 px-6 py-3 rounded-md font-medium flex items-center justify-center gap-2 cursor-not-allowed">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            Already in Your Library
+                        </button>
+                        <p class="text-sm text-gray-600 mt-2">You've already added this recipe to your library.</p>
+                    </div>
+                {% else if at_recipe_limit %}
+                    <!-- AC-11: User at recipe limit - show upgrade prompt -->
+                    <div class="mb-6">
+                        <button type="button" disabled class="w-full sm:w-auto bg-gray-300 text-gray-600 px-6 py-3 rounded-md font-medium flex items-center justify-center gap-2 cursor-not-allowed">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                            Recipe Limit Reached
+                        </button>
+                        <p class="text-sm text-gray-600 mt-2">
+                            You've reached the 10 recipe limit for free accounts.
+                            <a href="/subscription" class="text-blue-600 hover:text-blue-800 font-medium">Upgrade to premium</a> for unlimited recipes.
+                        </p>
+                    </div>
+                {% else %}
+                    <!-- AC-1, AC-2, AC-9, AC-12: Normal "Add to My Recipes" button -->
+                    <form method="POST" action="/discover/{{ recipe.id }}/add" class="mb-6">
+                        <button type="submit" class="w-full sm:w-auto bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 font-medium flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                            Add to My Recipes
+                        </button>
+                    </form>
+                {% endif %}
             {% else %}
-            <a href="/register" class="w-full sm:w-auto bg-green-600 text-white px-6 py-3 rounded-md hover:bg-green-700 font-medium flex items-center justify-center gap-2 inline-flex">
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                </svg>
-                Sign Up to Add Recipes
-            </a>
+                <!-- Guest users - prompt to sign up -->
+                <a href="/register" class="w-full sm:w-auto bg-green-600 text-white px-6 py-3 rounded-md hover:bg-green-700 font-medium flex items-center justify-center gap-2 inline-flex">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                    </svg>
+                    Sign Up to Add Recipes
+                </a>
             {% endif %}
         </div>
 

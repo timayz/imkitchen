@@ -6,10 +6,11 @@ use axum::{
     Extension, Form,
 };
 use recipe::{
-    create_recipe, delete_recipe, favorite_recipe, list_shared_recipes, query_collections_by_user,
-    query_collections_for_recipe, query_recipe_by_id, query_recipes_by_collection,
-    query_recipes_by_user, share_recipe, update_recipe, update_recipe_tags, CollectionReadModel,
-    CreateRecipeCommand, DeleteRecipeCommand, FavoriteRecipeCommand, Ingredient, InstructionStep,
+    copy_recipe, create_recipe, delete_recipe, favorite_recipe, list_shared_recipes,
+    query_collections_by_user, query_collections_for_recipe, query_recipe_by_id,
+    query_recipes_by_collection, query_recipes_by_user, share_recipe, update_recipe,
+    update_recipe_tags, CollectionReadModel, CopyRecipeCommand, CreateRecipeCommand,
+    DeleteRecipeCommand, FavoriteRecipeCommand, Ingredient, InstructionStep,
     RecipeDiscoveryFilters, RecipeError, ShareRecipeCommand, UpdateRecipeCommand,
     UpdateRecipeTagsCommand,
 };
@@ -220,11 +221,7 @@ pub async fn post_create_recipe(
                 mode: "create".to_string(),
                 recipe: None,
             };
-            (
-                StatusCode::UNPROCESSABLE_ENTITY,
-                Html(template.render().unwrap()),
-            )
-                .into_response()
+            (StatusCode::OK, Html(template.render().unwrap())).into_response()
         }
         Err(RecipeError::ValidationError(msg)) => {
             tracing::warn!("Recipe validation failed: {}", msg);
@@ -234,11 +231,7 @@ pub async fn post_create_recipe(
                 mode: "create".to_string(),
                 recipe: None,
             };
-            (
-                StatusCode::UNPROCESSABLE_ENTITY,
-                Html(template.render().unwrap()),
-            )
-                .into_response()
+            (StatusCode::OK, Html(template.render().unwrap())).into_response()
         }
         Err(e) => {
             tracing::error!("Failed to create recipe: {:?}", e);
@@ -1374,6 +1367,8 @@ pub struct DiscoverDetailTemplate {
     pub review_count: i32,
     pub ratings: Vec<RatingDisplay>,
     pub user_rating: Option<RatingDisplay>,
+    pub already_copied: bool, // Story 2.10 AC-10: User already has this recipe
+    pub at_recipe_limit: bool, // Story 2.10 AC-11: Free user at 10 recipe limit
 }
 
 #[derive(Debug, Clone)]
@@ -1543,6 +1538,48 @@ pub async fn get_discover_detail(
                 None
             };
 
+            // Story 2.10 AC-10, AC-11: Check if user already copied and if at recipe limit
+            let (already_copied, at_recipe_limit) = if let Some(ref auth) = user {
+                // AC-10: Check if user already copied this recipe
+                let copy_check: Option<i64> = sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM recipes WHERE user_id = ?1 AND original_recipe_id = ?2 AND deleted_at IS NULL"
+                )
+                .bind(&auth.user_id)
+                .bind(&recipe_id)
+                .fetch_optional(&state.db_pool)
+                .await
+                .unwrap_or(Some(0));
+
+                let copied = copy_check.unwrap_or(0) > 0;
+
+                // AC-11: Check if user is at recipe limit (free tier only)
+                // First, get user tier
+                let user_tier: Option<String> =
+                    sqlx::query_scalar("SELECT tier FROM users WHERE id = ?1")
+                        .bind(&auth.user_id)
+                        .fetch_optional(&state.db_pool)
+                        .await
+                        .unwrap_or(None);
+
+                let limit_reached = if user_tier.as_deref() != Some("premium") {
+                    let private_recipe_count: i64 = sqlx::query_scalar(
+                        "SELECT COUNT(*) FROM recipes WHERE user_id = ?1 AND is_shared = 0 AND deleted_at IS NULL"
+                    )
+                    .bind(&auth.user_id)
+                    .fetch_one(&state.db_pool)
+                    .await
+                    .unwrap_or(0);
+
+                    private_recipe_count >= 10
+                } else {
+                    false
+                };
+
+                (copied, limit_reached)
+            } else {
+                (false, false)
+            };
+
             let template = DiscoverDetailTemplate {
                 recipe,
                 user: user.map(|u| u.0),
@@ -1550,6 +1587,8 @@ pub async fn get_discover_detail(
                 review_count: rating_stats.review_count,
                 ratings,
                 user_rating,
+                already_copied,
+                at_recipe_limit,
             };
 
             Html(template.render().unwrap()).into_response()
@@ -1565,107 +1604,22 @@ pub async fn get_discover_detail(
     }
 }
 
-/// POST /discover/:id/add - Add community recipe to user's library (AC-11)
+/// POST /discover/:id/add - Add community recipe to user's library (Story 2.10)
 ///
 /// Authenticated route that copies a shared recipe to the user's personal library
-/// AC-11: Creates new recipe via evento with copied data
-/// Enforces freemium limit (10 recipes for free tier)
-#[tracing::instrument(skip(state, auth), fields(user_id = %auth.user_id))]
+/// AC-2, AC-3, AC-4, AC-5, AC-6, AC-7, AC-9, AC-10, AC-11, AC-12
+#[tracing::instrument(skip(state, auth), fields(user_id = %auth.user_id, recipe_id = %recipe_id))]
 pub async fn post_add_to_library(
     State(state): State<AppState>,
     Path(recipe_id): Path<String>,
     Extension(auth): Extension<Auth>,
 ) -> impl IntoResponse {
-    // Query source recipe from read model
-    let source_recipe_query = sqlx::query(
-        r#"
-        SELECT id, user_id, title, ingredients, instructions, prep_time_min, cook_time_min,
-               advance_prep_hours, serving_size, is_shared, deleted_at
-        FROM recipes
-        WHERE id = ? AND is_shared = 1 AND deleted_at IS NULL
-        "#,
-    )
-    .bind(&recipe_id)
-    .fetch_optional(&state.db_pool)
-    .await;
-
-    let source_row = match source_recipe_query {
-        Ok(Some(row)) => row,
-        Ok(None) => {
-            tracing::warn!(
-                source_recipe_id = %recipe_id,
-                "Attempted to add non-shared or deleted recipe to library"
-            );
-            return (
-                StatusCode::NOT_FOUND,
-                "Recipe not found or not available for copying",
-            )
-                .into_response();
-        }
-        Err(e) => {
-            tracing::error!("Failed to query source recipe: {:?}", e);
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Failed to load source recipe",
-            )
-                .into_response();
-        }
+    // AC-2, AC-3, AC-4, AC-5, AC-6, AC-7, AC-10, AC-11: Use copy_recipe command
+    let command = CopyRecipeCommand {
+        original_recipe_id: recipe_id.clone(),
     };
 
-    // Parse source recipe data
-    let ingredients_json: String = source_row.get("ingredients");
-    let instructions_json: String = source_row.get("instructions");
-
-    let ingredients: Vec<Ingredient> = match serde_json::from_str(&ingredients_json) {
-        Ok(ing) => ing,
-        Err(e) => {
-            tracing::error!("Failed to parse ingredients JSON: {:?}", e);
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Failed to parse recipe data",
-            )
-                .into_response();
-        }
-    };
-
-    let instructions: Vec<InstructionStep> = match serde_json::from_str(&instructions_json) {
-        Ok(inst) => inst,
-        Err(e) => {
-            tracing::error!("Failed to parse instructions JSON: {:?}", e);
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Failed to parse recipe data",
-            )
-                .into_response();
-        }
-    };
-
-    // Create new recipe via domain command (AC-11: copy with attribution)
-    let source_title: String = source_row.get("title");
-    let mut copied_title = source_title.clone();
-    if !copied_title.ends_with("(from community)") {
-        copied_title.push_str(" (from community)");
-    }
-
-    let command = CreateRecipeCommand {
-        title: copied_title,
-        ingredients,
-        instructions,
-        prep_time_min: source_row
-            .get::<Option<i32>, _>("prep_time_min")
-            .map(|v| v as u32),
-        cook_time_min: source_row
-            .get::<Option<i32>, _>("cook_time_min")
-            .map(|v| v as u32),
-        advance_prep_hours: source_row
-            .get::<Option<i32>, _>("advance_prep_hours")
-            .map(|v| v as u32),
-        serving_size: source_row
-            .get::<Option<i32>, _>("serving_size")
-            .map(|v| v as u32),
-    };
-
-    match create_recipe(
+    match copy_recipe(
         command,
         &auth.user_id,
         &state.evento_executor,
@@ -1676,12 +1630,12 @@ pub async fn post_add_to_library(
         Ok(new_recipe_id) => {
             tracing::info!(
                 user_id = %auth.user_id,
-                source_recipe_id = %recipe_id,
+                original_recipe_id = %recipe_id,
                 new_recipe_id = %new_recipe_id,
-                "Added community recipe to user's library"
+                "Recipe copied to user's library"
             );
 
-            // Redirect to new recipe detail
+            // AC-12: Redirect to user's personal recipe detail page
             (
                 StatusCode::SEE_OTHER,
                 [("Location", format!("/recipes/{}", new_recipe_id))],
@@ -1689,19 +1643,73 @@ pub async fn post_add_to_library(
                 .into_response()
         }
         Err(RecipeError::RecipeLimitReached) => {
-            // Freemium limit enforcement (AC-11)
+            // AC-11: Freemium limit enforcement
             tracing::warn!(
                 user_id = %auth.user_id,
-                "Recipe limit reached when adding community recipe"
+                original_recipe_id = %recipe_id,
+                "Recipe limit reached when copying community recipe"
             );
             (
-                StatusCode::FORBIDDEN,
-                "Recipe limit reached. Upgrade to premium for unlimited recipes.",
+                StatusCode::OK,
+                Html(format!(
+                    r#"<div style="padding: 2rem; text-align: center;">
+                        <h2 style="color: #dc2626; margin-bottom: 1rem;">Recipe Limit Reached</h2>
+                        <p>You've reached your recipe limit (10 recipes for free tier).</p>
+                        <p style="margin: 1rem 0;"><a href="/subscription" style="color: #2563eb;">Upgrade to premium</a> for unlimited recipes.</p>
+                        <p><a href="/discover/{}" style="color: #2563eb;">Back to recipe</a></p>
+                    </div>"#,
+                    recipe_id
+                )),
+            )
+                .into_response()
+        }
+        Err(RecipeError::AlreadyCopied) => {
+            // AC-10: Prevent duplicate copies
+            tracing::warn!(
+                user_id = %auth.user_id,
+                original_recipe_id = %recipe_id,
+                "User already copied this recipe"
+            );
+            (
+                StatusCode::OK,
+                Html(format!(
+                    r#"<div style="padding: 2rem; text-align: center;">
+                        <h2 style="color: #f59e0b; margin-bottom: 1rem;">Already in Your Library</h2>
+                        <p>You have already added this recipe to your library.</p>
+                        <p style="margin-top: 1rem;"><a href="/discover/{}" style="color: #2563eb;">Back to recipe</a></p>
+                    </div>"#,
+                    recipe_id
+                )),
+            )
+                .into_response()
+        }
+        Err(RecipeError::ValidationError(msg)) => {
+            tracing::warn!(
+                user_id = %auth.user_id,
+                original_recipe_id = %recipe_id,
+                error = %msg,
+                "Validation error when copying recipe"
+            );
+            (
+                StatusCode::OK,
+                Html(format!(
+                    r#"<div style="padding: 2rem; text-align: center;">
+                        <h2 style="color: #dc2626; margin-bottom: 1rem;">Error</h2>
+                        <p>{}</p>
+                        <p style="margin-top: 1rem;"><a href="/discover/{}" style="color: #2563eb;">Back to recipe</a></p>
+                    </div>"#,
+                    msg, recipe_id
+                )),
             )
                 .into_response()
         }
         Err(e) => {
-            tracing::error!("Failed to create recipe: {:?}", e);
+            tracing::error!(
+                user_id = %auth.user_id,
+                original_recipe_id = %recipe_id,
+                error = ?e,
+                "Failed to copy recipe"
+            );
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Failed to add recipe to library",

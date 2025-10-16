@@ -2,8 +2,8 @@ use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
 use crate::events::{
-    Ingredient, InstructionStep, RatingDeleted, RatingUpdated, RecipeCreated, RecipeDeleted,
-    RecipeFavorited, RecipeRated, RecipeShared, RecipeTagged, RecipeUpdated,
+    Ingredient, InstructionStep, RatingDeleted, RatingUpdated, RecipeCopied, RecipeCreated,
+    RecipeDeleted, RecipeFavorited, RecipeRated, RecipeShared, RecipeTagged, RecipeUpdated,
 };
 use crate::tagging::{Complexity, RecipeTags};
 
@@ -40,6 +40,10 @@ pub struct RecipeAggregate {
     // Tags
     pub tags: RecipeTags,
 
+    // Attribution (for copied recipes)
+    pub original_recipe_id: Option<String>, // ID of original recipe if this is a copy
+    pub original_author: Option<String>,    // User ID of original creator if this is a copy
+
     // Timestamps
     pub created_at: String, // RFC3339 formatted timestamp
 }
@@ -74,6 +78,8 @@ impl RecipeAggregate {
         self.is_deleted = false;
         self.is_shared = false; // Default to private per AC-9
         self.tags = RecipeTags::default();
+        self.original_recipe_id = None;
+        self.original_author = None;
         Ok(())
     }
 
@@ -205,6 +211,19 @@ impl RecipeAggregate {
         _event: evento::EventDetails<RatingDeleted>,
     ) -> anyhow::Result<()> {
         // No-op: ratings managed in separate read model, not in recipe aggregate
+        Ok(())
+    }
+
+    /// Handle RecipeCopied event to store attribution metadata
+    ///
+    /// This event is emitted after RecipeCreated when a recipe is copied.
+    /// It stores the original recipe ID and author for audit trail.
+    async fn recipe_copied(
+        &mut self,
+        event: evento::EventDetails<RecipeCopied>,
+    ) -> anyhow::Result<()> {
+        self.original_recipe_id = Some(event.data.original_recipe_id);
+        self.original_author = Some(event.data.original_author);
         Ok(())
     }
 }

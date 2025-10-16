@@ -6,8 +6,8 @@ use crate::collection_events::{
 };
 use crate::error::{RecipeError, RecipeResult};
 use crate::events::{
-    RatingDeleted, RatingUpdated, RecipeCreated, RecipeDeleted, RecipeFavorited, RecipeRated,
-    RecipeShared, RecipeTagged, RecipeUpdated,
+    RatingDeleted, RatingUpdated, RecipeCopied, RecipeCreated, RecipeDeleted, RecipeFavorited,
+    RecipeRated, RecipeShared, RecipeTagged, RecipeUpdated,
 };
 use evento::{AggregatorName, Context, EventDetails, Executor};
 use serde::{Deserialize, Serialize};
@@ -141,6 +141,30 @@ async fn recipe_shared_handler<E: Executor>(
     // Execute SQL update to toggle share status
     sqlx::query("UPDATE recipes SET is_shared = ?1 WHERE id = ?2")
         .bind(event.data.shared)
+        .bind(&event.aggregator_id)
+        .execute(&pool)
+        .await?;
+
+    Ok(())
+}
+
+/// Async evento subscription handler for RecipeCopied events
+///
+/// This handler updates the recipes read model table to store attribution metadata
+/// for copied recipes. AC-4: Original creator attribution maintained in metadata.
+#[evento::handler(RecipeAggregate)]
+async fn recipe_copied_handler<E: Executor>(
+    context: &Context<'_, E>,
+    event: EventDetails<RecipeCopied>,
+) -> anyhow::Result<()> {
+    // Extract the shared SqlitePool from context
+    let pool: SqlitePool = context.extract();
+
+    // Execute SQL update to store attribution metadata
+    // event.aggregator_id is the NEW recipe ID (the copy)
+    sqlx::query("UPDATE recipes SET original_recipe_id = ?1, original_author = ?2 WHERE id = ?3")
+        .bind(&event.data.original_recipe_id)
+        .bind(&event.data.original_author)
         .bind(&event.aggregator_id)
         .execute(&pool)
         .await?;
@@ -297,6 +321,7 @@ pub fn recipe_projection(pool: SqlitePool) -> evento::SubscribeBuilder<evento::S
         .handler(recipe_deleted_handler())
         .handler(recipe_favorited_handler())
         .handler(recipe_shared_handler())
+        .handler(recipe_copied_handler())
         .handler(recipe_updated_handler())
         .handler(recipe_tagged_handler())
         .handler(recipe_rated_handler())
