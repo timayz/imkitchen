@@ -1,5 +1,8 @@
 use askama::Template;
-use axum::{http::StatusCode, response::{Html, IntoResponse, Response}};
+use axum::{
+    http::StatusCode,
+    response::{Html, IntoResponse, Response},
+};
 use recipe::RecipeError;
 use thiserror::Error;
 
@@ -35,6 +38,7 @@ struct ErrorPageTemplate {
 
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
+        let error_display = self.to_string();
         let (status_code, error_title, error_message) = match self {
             AppError::ValidationError(msg) => (
                 StatusCode::UNPROCESSABLE_ENTITY,
@@ -132,10 +136,7 @@ impl IntoResponse for AppError {
             Ok(html) => (status_code, Html(html)).into_response(),
             Err(e) => {
                 tracing::error!("Failed to render error page: {:?}", e);
-                (
-                    status_code,
-                    format!("An error occurred: {}", self),
-                ).into_response()
+                (status_code, format!("An error occurred: {}", error_display)).into_response()
             }
         }
     }
