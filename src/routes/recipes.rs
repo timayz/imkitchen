@@ -1300,9 +1300,7 @@ pub async fn get_discover(
 
                 // Query rating statistics (Story 2.9 AC-4, AC-9)
                 use recipe::query_rating_stats;
-                let rating_stats = query_rating_stats(&recipe.id, &state.db_pool)
-                    .await
-                    .ok();
+                let rating_stats = query_rating_stats(&recipe.id, &state.db_pool).await.ok();
 
                 let (avg_rating, review_count) = if let Some(stats) = rating_stats {
                     if stats.review_count > 0 {
@@ -1776,11 +1774,7 @@ pub async fn post_rate_recipe(
         }
         Err(e) => {
             tracing::error!("Failed to rate recipe: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Failed to submit rating",
-            )
-                .into_response()
+            (StatusCode::INTERNAL_SERVER_ERROR, "Failed to submit rating").into_response()
         }
     }
 }
@@ -1840,11 +1834,7 @@ pub async fn post_delete_review(
         }
         Err(e) => {
             tracing::error!("Failed to delete review: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Failed to delete review",
-            )
-                .into_response()
+            (StatusCode::INTERNAL_SERVER_ERROR, "Failed to delete review").into_response()
         }
     }
 }

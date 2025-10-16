@@ -116,10 +116,10 @@ pub struct RecipeShared {
 /// Note: recipe_id is provided by event.aggregator_id, not stored in event data
 #[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
 pub struct RecipeRated {
-    pub user_id: String,              // ID of the user who submitted the rating
-    pub stars: i32,                   // Rating value (1-5 inclusive)
-    pub review_text: Option<String>,  // Optional text review (max 500 chars)
-    pub rated_at: String,             // RFC3339 formatted timestamp
+    pub user_id: String,             // ID of the user who submitted the rating
+    pub stars: i32,                  // Rating value (1-5 inclusive)
+    pub review_text: Option<String>, // Optional text review (max 500 chars)
+    pub rated_at: String,            // RFC3339 formatted timestamp
 }
 
 /// RatingUpdated event emitted when a user updates their existing rating/review
@@ -130,10 +130,10 @@ pub struct RecipeRated {
 /// Note: recipe_id is provided by event.aggregator_id, not stored in event data
 #[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
 pub struct RatingUpdated {
-    pub user_id: String,              // ID of the user who updated the rating
-    pub stars: i32,                   // New rating value (1-5 inclusive)
-    pub review_text: Option<String>,  // New review text (max 500 chars)
-    pub updated_at: String,           // RFC3339 formatted timestamp
+    pub user_id: String,             // ID of the user who updated the rating
+    pub stars: i32,                  // New rating value (1-5 inclusive)
+    pub review_text: Option<String>, // New review text (max 500 chars)
+    pub updated_at: String,          // RFC3339 formatted timestamp
 }
 
 /// RatingDeleted event emitted when a user deletes their rating/review

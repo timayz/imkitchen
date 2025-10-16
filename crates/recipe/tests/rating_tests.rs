@@ -91,9 +91,7 @@ async fn create_shared_recipe(
         shared: true,
     };
 
-    share_recipe(share_command, executor, pool)
-        .await
-        .unwrap();
+    share_recipe(share_command, executor, pool).await.unwrap();
 
     run_projections(pool, executor).await;
 
@@ -123,9 +121,7 @@ async fn test_rate_recipe_success() {
     assert!(result.is_ok());
 
     // Verify rating in database
-    let rating = query_user_rating(&recipe_id, "user2", &pool)
-        .await
-        .unwrap();
+    let rating = query_user_rating(&recipe_id, "user2", &pool).await.unwrap();
     assert!(rating.is_some());
     let rating = rating.unwrap();
     assert_eq!(rating.stars, 5);
@@ -151,7 +147,10 @@ async fn test_rate_recipe_validates_stars_range() {
     let result = rate_recipe(command, "user2", &executor, &pool).await;
     run_projections(&pool, &executor).await;
     assert!(result.is_err());
-    assert!(matches!(result.unwrap_err(), RecipeError::ValidationError(_)));
+    assert!(matches!(
+        result.unwrap_err(),
+        RecipeError::ValidationError(_)
+    ));
 
     // Test stars > 5
     let command = RateRecipeCommand {
@@ -163,7 +162,10 @@ async fn test_rate_recipe_validates_stars_range() {
     let result = rate_recipe(command, "user2", &executor, &pool).await;
     run_projections(&pool, &executor).await;
     assert!(result.is_err());
-    assert!(matches!(result.unwrap_err(), RecipeError::ValidationError(_)));
+    assert!(matches!(
+        result.unwrap_err(),
+        RecipeError::ValidationError(_)
+    ));
 }
 
 #[tokio::test]
@@ -187,7 +189,10 @@ async fn test_rate_recipe_validates_review_length() {
     let result = rate_recipe(command, "user2", &executor, &pool).await;
     run_projections(&pool, &executor).await;
     assert!(result.is_err());
-    assert!(matches!(result.unwrap_err(), RecipeError::ValidationError(_)));
+    assert!(matches!(
+        result.unwrap_err(),
+        RecipeError::ValidationError(_)
+    ));
 }
 
 #[tokio::test]
@@ -233,7 +238,10 @@ async fn test_rate_recipe_only_shared_recipes() {
     let result = rate_recipe(rate_command, "user2", &executor, &pool).await;
     run_projections(&pool, &executor).await;
     assert!(result.is_err());
-    assert!(matches!(result.unwrap_err(), RecipeError::ValidationError(_)));
+    assert!(matches!(
+        result.unwrap_err(),
+        RecipeError::ValidationError(_)
+    ));
 }
 
 #[tokio::test]
@@ -252,7 +260,10 @@ async fn test_rate_recipe_nonexistent_recipe() {
     let result = rate_recipe(command, "user1", &executor, &pool).await;
     run_projections(&pool, &executor).await;
     assert!(result.is_err());
-    assert!(matches!(result.unwrap_err(), RecipeError::ValidationError(_)));
+    assert!(matches!(
+        result.unwrap_err(),
+        RecipeError::ValidationError(_)
+    ));
 }
 
 #[tokio::test]
@@ -329,7 +340,6 @@ async fn test_delete_rating_success() {
     run_projections(&pool, &executor).await;
     assert!(result.is_ok());
 
-
     // Verify rating is deleted
     let rating = query_user_rating(&recipe_id, "user2", &pool).await.unwrap();
     assert!(rating.is_none());
@@ -363,7 +373,10 @@ async fn test_delete_rating_ownership_check() {
     let result = delete_rating(delete_command, "user3", &executor, &pool).await;
     run_projections(&pool, &executor).await;
     assert!(result.is_err());
-    assert!(matches!(result.unwrap_err(), RecipeError::ValidationError(_)));
+    assert!(matches!(
+        result.unwrap_err(),
+        RecipeError::ValidationError(_)
+    ));
 }
 
 #[tokio::test]
@@ -483,7 +496,6 @@ async fn test_query_rating_stats_no_ratings() {
 
     insert_test_user(&pool, "user1", "user1@test.com").await;
     let recipe_id = create_shared_recipe(&pool, &executor, "user1").await;
-
 
     // Query stats for recipe with no ratings
     let stats = query_rating_stats(&recipe_id, &pool).await.unwrap();

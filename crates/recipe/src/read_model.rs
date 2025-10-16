@@ -459,12 +459,12 @@ async fn recipe_rated_handler<E: Executor>(
             updated_at = excluded.updated_at
         "#,
     )
-    .bind(&rating_id)              // ?1: id (recipe_id_user_id)
-    .bind(&event.aggregator_id)    // ?2: recipe_id
-    .bind(&event.data.user_id)     // ?3: user_id
-    .bind(event.data.stars)        // ?4: stars
+    .bind(&rating_id) // ?1: id (recipe_id_user_id)
+    .bind(&event.aggregator_id) // ?2: recipe_id
+    .bind(&event.data.user_id) // ?3: user_id
+    .bind(event.data.stars) // ?4: stars
     .bind(&event.data.review_text) // ?5: review_text
-    .bind(&event.data.rated_at)    // ?6: created_at/updated_at
+    .bind(&event.data.rated_at) // ?6: created_at/updated_at
     .execute(&pool)
     .await?;
 
@@ -528,7 +528,6 @@ async fn rating_deleted_handler<E: Executor>(
 
     Ok(())
 }
-
 
 /// Query ratings for a recipe from read model
 ///
@@ -605,10 +604,7 @@ pub async fn query_user_rating(
 ///
 /// AC-4: Returns average rating and total review count for display on recipe cards and detail pages
 /// AC-9: Used to identify "Highly Rated" recipes (avg_rating >= 4.0)
-pub async fn query_rating_stats(
-    recipe_id: &str,
-    pool: &SqlitePool,
-) -> RecipeResult<RatingStats> {
+pub async fn query_rating_stats(recipe_id: &str, pool: &SqlitePool) -> RecipeResult<RatingStats> {
     let result = sqlx::query(
         r#"
         SELECT

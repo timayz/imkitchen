@@ -596,10 +596,11 @@ pub async fn rate_recipe(
         .map_err(|e| RecipeError::ValidationError(e.to_string()))?;
 
     // AC-10: Verify recipe exists and is shared (ratings only on shared/community recipes)
-    let recipe_result = sqlx::query("SELECT is_shared FROM recipes WHERE id = ?1 AND deleted_at IS NULL")
-        .bind(&command.recipe_id)
-        .fetch_optional(pool)
-        .await?;
+    let recipe_result =
+        sqlx::query("SELECT is_shared FROM recipes WHERE id = ?1 AND deleted_at IS NULL")
+            .bind(&command.recipe_id)
+            .fetch_optional(pool)
+            .await?;
 
     match recipe_result {
         Some(row) => {
@@ -679,11 +680,12 @@ pub async fn update_rating(
         .map_err(|e| RecipeError::ValidationError(e.to_string()))?;
 
     // AC-6: Verify rating exists and belongs to the user
-    let rating_result = sqlx::query("SELECT user_id FROM ratings WHERE recipe_id = ?1 AND user_id = ?2")
-        .bind(&command.recipe_id)
-        .bind(user_id)
-        .fetch_optional(pool)
-        .await?;
+    let rating_result =
+        sqlx::query("SELECT user_id FROM ratings WHERE recipe_id = ?1 AND user_id = ?2")
+            .bind(&command.recipe_id)
+            .bind(user_id)
+            .fetch_optional(pool)
+            .await?;
 
     if rating_result.is_none() {
         return Err(RecipeError::ValidationError(
@@ -740,11 +742,12 @@ pub async fn delete_rating(
     pool: &SqlitePool,
 ) -> RecipeResult<()> {
     // AC-7: Verify rating exists and belongs to the user
-    let rating_result = sqlx::query("SELECT user_id FROM ratings WHERE recipe_id = ?1 AND user_id = ?2")
-        .bind(&command.recipe_id)
-        .bind(user_id)
-        .fetch_optional(pool)
-        .await?;
+    let rating_result =
+        sqlx::query("SELECT user_id FROM ratings WHERE recipe_id = ?1 AND user_id = ?2")
+            .bind(&command.recipe_id)
+            .bind(user_id)
+            .fetch_optional(pool)
+            .await?;
 
     if rating_result.is_none() {
         return Err(RecipeError::ValidationError(

@@ -18,8 +18,8 @@ use imkitchen::routes::{
     post_onboarding_step_3, post_onboarding_step_4, post_password_reset,
     post_password_reset_complete, post_profile, post_rate_recipe, post_register,
     post_remove_recipe_from_collection, post_share_recipe, post_stripe_webhook,
-    post_subscription_upgrade, post_update_collection, post_update_recipe,
-    post_update_recipe_tags, ready, AppState, AssetsService,
+    post_subscription_upgrade, post_update_collection, post_update_recipe, post_update_recipe_tags,
+    ready, AppState, AssetsService,
 };
 use recipe::{collection_projection, recipe_projection};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions};
