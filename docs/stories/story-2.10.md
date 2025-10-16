@@ -1,6 +1,6 @@
 # Story 2.10: Copy Community Recipe to Personal Library
 
-Status: Approved
+Status: Done
 
 ## Story
 
