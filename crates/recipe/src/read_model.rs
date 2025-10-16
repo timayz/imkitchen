@@ -6,7 +6,8 @@ use crate::collection_events::{
 };
 use crate::error::{RecipeError, RecipeResult};
 use crate::events::{
-    RecipeCreated, RecipeDeleted, RecipeFavorited, RecipeShared, RecipeTagged, RecipeUpdated,
+    RatingDeleted, RatingUpdated, RecipeCreated, RecipeDeleted, RecipeFavorited, RecipeRated,
+    RecipeShared, RecipeTagged, RecipeUpdated,
 };
 use evento::{AggregatorName, Context, EventDetails, Executor};
 use serde::{Deserialize, Serialize};
@@ -298,6 +299,9 @@ pub fn recipe_projection(pool: SqlitePool) -> evento::SubscribeBuilder<evento::S
         .handler(recipe_shared_handler())
         .handler(recipe_updated_handler())
         .handler(recipe_tagged_handler())
+        .handler(recipe_rated_handler())
+        .handler(rating_updated_handler())
+        .handler(rating_deleted_handler())
 }
 
 /// Query recipe by ID from read model
@@ -405,6 +409,225 @@ pub async fn query_recipes_by_user(
     Ok(recipes)
 }
 
+/// Rating data from read model (ratings table)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RatingReadModel {
+    pub id: String,
+    pub recipe_id: String,
+    pub user_id: String,
+    pub stars: i32,
+    pub review_text: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+/// Aggregate rating statistics for a recipe
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RatingStats {
+    pub avg_rating: f32,
+    pub review_count: i32,
+}
+
+/// Async evento subscription handler for RecipeRated events
+///
+/// This handler projects RecipeRated events from the evento event store
+/// into the ratings read model table for efficient querying.
+/// AC-2, AC-12: UPSERT logic handles duplicate ratings (one rating per user per recipe)
+#[evento::handler(RecipeAggregate)]
+async fn recipe_rated_handler<E: Executor>(
+    context: &Context<'_, E>,
+    event: EventDetails<RecipeRated>,
+) -> anyhow::Result<()> {
+    // Extract the shared SqlitePool from context
+    let pool: SqlitePool = context.extract();
+
+    // AC-2, AC-12: Use INSERT OR REPLACE to handle duplicate ratings
+    // UNIQUE(recipe_id, user_id) constraint ensures one rating per user per recipe
+    // This automatically UPDATES existing rating if present, or INSERTS new one
+    // Use evento's aggregator_id + user_id combo as the rating ID for idempotency
+    let rating_id = format!("{}_{}", &event.aggregator_id, &event.data.user_id);
+
+    sqlx::query(
+        r#"
+        INSERT INTO ratings (
+            id, recipe_id, user_id, stars, review_text, created_at, updated_at
+        )
+        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6)
+        ON CONFLICT(recipe_id, user_id) DO UPDATE SET
+            stars = excluded.stars,
+            review_text = excluded.review_text,
+            updated_at = excluded.updated_at
+        "#,
+    )
+    .bind(&rating_id)              // ?1: id (recipe_id_user_id)
+    .bind(&event.aggregator_id)    // ?2: recipe_id
+    .bind(&event.data.user_id)     // ?3: user_id
+    .bind(event.data.stars)        // ?4: stars
+    .bind(&event.data.review_text) // ?5: review_text
+    .bind(&event.data.rated_at)    // ?6: created_at/updated_at
+    .execute(&pool)
+    .await?;
+
+    Ok(())
+}
+
+/// Async evento subscription handler for RatingUpdated events
+///
+/// This handler updates existing ratings in the ratings read model table.
+/// AC-6: Only the user who created the rating can update it (enforced in command layer)
+#[evento::handler(RecipeAggregate)]
+async fn rating_updated_handler<E: Executor>(
+    context: &Context<'_, E>,
+    event: EventDetails<RatingUpdated>,
+) -> anyhow::Result<()> {
+    // Extract the shared SqlitePool from context
+    let pool: SqlitePool = context.extract();
+
+    // Update the rating (recipe_id from aggregator_id, user_id from event)
+    sqlx::query(
+        r#"
+        UPDATE ratings
+        SET stars = ?1, review_text = ?2, updated_at = ?3
+        WHERE recipe_id = ?4 AND user_id = ?5
+        "#,
+    )
+    .bind(event.data.stars)
+    .bind(&event.data.review_text)
+    .bind(&event.data.updated_at)
+    .bind(&event.aggregator_id) // recipe_id
+    .bind(&event.data.user_id)
+    .execute(&pool)
+    .await?;
+
+    Ok(())
+}
+
+/// Async evento subscription handler for RatingDeleted events
+///
+/// This handler removes ratings from the ratings read model table.
+/// AC-7: Only the user who created the rating can delete it (enforced in command layer)
+#[evento::handler(RecipeAggregate)]
+async fn rating_deleted_handler<E: Executor>(
+    context: &Context<'_, E>,
+    event: EventDetails<RatingDeleted>,
+) -> anyhow::Result<()> {
+    // Extract the shared SqlitePool from context
+    let pool: SqlitePool = context.extract();
+
+    // Delete the rating (recipe_id from aggregator_id, user_id from event)
+    sqlx::query(
+        r#"
+        DELETE FROM ratings
+        WHERE recipe_id = ?1 AND user_id = ?2
+        "#,
+    )
+    .bind(&event.aggregator_id) // recipe_id
+    .bind(&event.data.user_id)
+    .execute(&pool)
+    .await?;
+
+    Ok(())
+}
+
+
+/// Query ratings for a recipe from read model
+///
+/// AC-5: Returns ratings chronologically (most recent first)
+/// Includes reviewer username via JOIN with users table
+pub async fn query_recipe_ratings(
+    recipe_id: &str,
+    pool: &SqlitePool,
+) -> RecipeResult<Vec<RatingReadModel>> {
+    let rows = sqlx::query(
+        r#"
+        SELECT r.id, r.recipe_id, r.user_id, r.stars, r.review_text,
+               r.created_at, r.updated_at
+        FROM ratings r
+        WHERE r.recipe_id = ?1
+        ORDER BY r.created_at DESC
+        "#,
+    )
+    .bind(recipe_id)
+    .fetch_all(pool)
+    .await?;
+
+    let ratings = rows
+        .into_iter()
+        .map(|row| RatingReadModel {
+            id: row.get("id"),
+            recipe_id: row.get("recipe_id"),
+            user_id: row.get("user_id"),
+            stars: row.get("stars"),
+            review_text: row.get("review_text"),
+            created_at: row.get("created_at"),
+            updated_at: row.get("updated_at"),
+        })
+        .collect();
+
+    Ok(ratings)
+}
+
+/// Query user's rating for a specific recipe (if exists)
+///
+/// Used to check if user has already rated a recipe and to prefill edit form
+pub async fn query_user_rating(
+    recipe_id: &str,
+    user_id: &str,
+    pool: &SqlitePool,
+) -> RecipeResult<Option<RatingReadModel>> {
+    let result = sqlx::query(
+        r#"
+        SELECT id, recipe_id, user_id, stars, review_text, created_at, updated_at
+        FROM ratings
+        WHERE recipe_id = ?1 AND user_id = ?2
+        "#,
+    )
+    .bind(recipe_id)
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await?;
+
+    match result {
+        Some(row) => Ok(Some(RatingReadModel {
+            id: row.get("id"),
+            recipe_id: row.get("recipe_id"),
+            user_id: row.get("user_id"),
+            stars: row.get("stars"),
+            review_text: row.get("review_text"),
+            created_at: row.get("created_at"),
+            updated_at: row.get("updated_at"),
+        })),
+        None => Ok(None),
+    }
+}
+
+/// Query aggregate rating statistics for a recipe
+///
+/// AC-4: Returns average rating and total review count for display on recipe cards and detail pages
+/// AC-9: Used to identify "Highly Rated" recipes (avg_rating >= 4.0)
+pub async fn query_rating_stats(
+    recipe_id: &str,
+    pool: &SqlitePool,
+) -> RecipeResult<RatingStats> {
+    let result = sqlx::query(
+        r#"
+        SELECT
+            COALESCE(AVG(stars), 0.0) as avg_rating,
+            COUNT(*) as review_count
+        FROM ratings
+        WHERE recipe_id = ?1
+        "#,
+    )
+    .bind(recipe_id)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(RatingStats {
+        avg_rating: result.get("avg_rating"),
+        review_count: result.get("review_count"),
+    })
+}
+
 /// Filter and sort parameters for community recipe discovery
 #[derive(Debug, Clone, Default)]
 pub struct RecipeDiscoveryFilters {
@@ -486,9 +709,16 @@ pub async fn list_shared_recipes(
         query_str.push_str(&conditions.join(" AND "));
     }
 
-    // AC-6: Sorting (safe - no user input)
+    // AC-6, AC-9 (Story 2.9): Sorting with rating support
     let sort_clause = match filters.sort.as_deref() {
-        Some("rating") => "ORDER BY r.created_at DESC", // TODO: JOIN ratings table when Story 2.9 complete
+        Some("rating") => {
+            // Join ratings table and sort by average rating DESC (highest rated first)
+            query_str = query_str.replace(
+                "FROM recipes r",
+                "FROM recipes r LEFT JOIN (SELECT recipe_id, AVG(stars) as avg_rating FROM ratings GROUP BY recipe_id) rat ON r.id = rat.recipe_id"
+            );
+            "ORDER BY COALESCE(rat.avg_rating, 0) DESC, r.created_at DESC"
+        }
         Some("alphabetical") => "ORDER BY r.title ASC",
         _ => "ORDER BY r.created_at DESC", // "recent" or default
     };

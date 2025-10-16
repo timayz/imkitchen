@@ -7,8 +7,8 @@ use validator::Validate;
 use crate::aggregate::RecipeAggregate;
 use crate::error::{RecipeError, RecipeResult};
 use crate::events::{
-    Ingredient, InstructionStep, RecipeCreated, RecipeDeleted, RecipeFavorited, RecipeShared,
-    RecipeTagged, RecipeUpdated,
+    Ingredient, InstructionStep, RatingDeleted, RatingUpdated, RecipeCreated, RecipeDeleted,
+    RecipeFavorited, RecipeRated, RecipeShared, RecipeTagged, RecipeUpdated,
 };
 use crate::tagging::{CuisineInferenceService, DietaryTagDetector, RecipeComplexityCalculator};
 use serde::{Deserialize, Serialize};
@@ -555,6 +555,222 @@ pub async fn share_recipe(
         recipe_id = %command.recipe_id,
         shared = command.shared,
         "Recipe share status toggled"
+    );
+
+    Ok(())
+}
+
+/// Command to rate a recipe (create or update rating)
+///
+/// AC-1, AC-2, AC-3, AC-10, AC-11
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+pub struct RateRecipeCommand {
+    pub recipe_id: String, // Recipe being rated
+
+    #[validate(range(min = 1, max = 5, message = "Stars must be between 1 and 5"))]
+    pub stars: i32, // Rating value (1-5)
+
+    #[validate(length(max = 500, message = "Review text must not exceed 500 characters"))]
+    pub review_text: Option<String>, // Optional review text
+}
+
+/// Rate a recipe using evento event sourcing pattern
+///
+/// AC-1, AC-2, AC-3, AC-10, AC-11, AC-12:
+/// 1. Validates command fields (stars 1-5, review_text <= 500 chars)
+/// 2. Verifies recipe exists and is shared (public recipes only)
+/// 3. Emits RecipeRated event (evento handles UPSERT via projection)
+/// 4. Event automatically projected to ratings read model via async subscription handler
+/// 5. AC-2, AC-12: Duplicate detection handled in projection layer (UNIQUE constraint + UPSERT)
+///
+/// Authentication: User must be authenticated (enforced by route middleware)
+pub async fn rate_recipe(
+    command: RateRecipeCommand,
+    user_id: &str,
+    executor: &Sqlite,
+    pool: &SqlitePool,
+) -> RecipeResult<()> {
+    // Validate command
+    command
+        .validate()
+        .map_err(|e| RecipeError::ValidationError(e.to_string()))?;
+
+    // AC-10: Verify recipe exists and is shared (ratings only on shared/community recipes)
+    let recipe_result = sqlx::query("SELECT is_shared FROM recipes WHERE id = ?1 AND deleted_at IS NULL")
+        .bind(&command.recipe_id)
+        .fetch_optional(pool)
+        .await?;
+
+    match recipe_result {
+        Some(row) => {
+            let is_shared: bool = row.get("is_shared");
+            if !is_shared {
+                return Err(RecipeError::ValidationError(
+                    "Only shared recipes can be rated".to_string(),
+                ));
+            }
+        }
+        None => {
+            return Err(RecipeError::ValidationError("Recipe not found".to_string()));
+        }
+    }
+
+    let rated_at = Utc::now();
+
+    // Emit RecipeRated event
+    // AC-2, AC-12: Projection handler will UPSERT into ratings table (INSERT or UPDATE existing)
+    // The aggregator_id is the recipe_id (the recipe being rated, not a rating aggregate)
+    evento::save::<RecipeAggregate>(command.recipe_id.clone())
+        .data(&RecipeRated {
+            user_id: user_id.to_string(),
+            stars: command.stars,
+            review_text: command.review_text.clone(),
+            rated_at: rated_at.to_rfc3339(),
+        })
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .metadata(&true)
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .commit(executor)
+        .await
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
+
+    tracing::info!(
+        recipe_id = %command.recipe_id,
+        user_id = %user_id,
+        stars = command.stars,
+        "Recipe rated"
+    );
+
+    Ok(())
+}
+
+/// Command to update an existing rating
+///
+/// AC-6: User can edit their own review
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+pub struct UpdateRatingCommand {
+    pub recipe_id: String, // Recipe being rated
+
+    #[validate(range(min = 1, max = 5, message = "Stars must be between 1 and 5"))]
+    pub stars: i32, // New rating value (1-5)
+
+    #[validate(length(max = 500, message = "Review text must not exceed 500 characters"))]
+    pub review_text: Option<String>, // New review text
+}
+
+/// Update an existing rating using evento event sourcing pattern
+///
+/// AC-6: User can edit their own review
+/// 1. Validates command fields
+/// 2. Verifies rating exists and belongs to the user (ownership check)
+/// 3. Emits RatingUpdated event
+/// 4. Event automatically projected to ratings read model via async subscription handler
+///
+/// Returns 403 Forbidden if user attempts to edit another user's rating (enforced in route layer)
+pub async fn update_rating(
+    command: UpdateRatingCommand,
+    user_id: &str,
+    executor: &Sqlite,
+    pool: &SqlitePool,
+) -> RecipeResult<()> {
+    // Validate command
+    command
+        .validate()
+        .map_err(|e| RecipeError::ValidationError(e.to_string()))?;
+
+    // AC-6: Verify rating exists and belongs to the user
+    let rating_result = sqlx::query("SELECT user_id FROM ratings WHERE recipe_id = ?1 AND user_id = ?2")
+        .bind(&command.recipe_id)
+        .bind(user_id)
+        .fetch_optional(pool)
+        .await?;
+
+    if rating_result.is_none() {
+        return Err(RecipeError::ValidationError(
+            "Rating not found or access denied".to_string(),
+        ));
+    }
+
+    let updated_at = Utc::now();
+
+    // Emit RatingUpdated event
+    evento::save::<RecipeAggregate>(command.recipe_id.clone())
+        .data(&RatingUpdated {
+            user_id: user_id.to_string(),
+            stars: command.stars,
+            review_text: command.review_text.clone(),
+            updated_at: updated_at.to_rfc3339(),
+        })
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .metadata(&true)
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .commit(executor)
+        .await
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
+
+    tracing::info!(
+        recipe_id = %command.recipe_id,
+        user_id = %user_id,
+        "Rating updated"
+    );
+
+    Ok(())
+}
+
+/// Command to delete a rating
+///
+/// AC-7: User can delete their own review
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DeleteRatingCommand {
+    pub recipe_id: String, // Recipe being rated
+}
+
+/// Delete a rating using evento event sourcing pattern
+///
+/// AC-7: User can delete their own review
+/// 1. Verifies rating exists and belongs to the user (ownership check)
+/// 2. Emits RatingDeleted event
+/// 3. Event automatically projected to ratings read model via async subscription handler (DELETE)
+///
+/// Returns 403 Forbidden if user attempts to delete another user's rating (enforced in route layer)
+pub async fn delete_rating(
+    command: DeleteRatingCommand,
+    user_id: &str,
+    executor: &Sqlite,
+    pool: &SqlitePool,
+) -> RecipeResult<()> {
+    // AC-7: Verify rating exists and belongs to the user
+    let rating_result = sqlx::query("SELECT user_id FROM ratings WHERE recipe_id = ?1 AND user_id = ?2")
+        .bind(&command.recipe_id)
+        .bind(user_id)
+        .fetch_optional(pool)
+        .await?;
+
+    if rating_result.is_none() {
+        return Err(RecipeError::ValidationError(
+            "Rating not found or access denied".to_string(),
+        ));
+    }
+
+    let deleted_at = Utc::now();
+
+    // Emit RatingDeleted event
+    evento::save::<RecipeAggregate>(command.recipe_id.clone())
+        .data(&RatingDeleted {
+            user_id: user_id.to_string(),
+            deleted_at: deleted_at.to_rfc3339(),
+        })
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .metadata(&true)
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .commit(executor)
+        .await
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
+
+    tracing::info!(
+        recipe_id = %command.recipe_id,
+        user_id = %user_id,
+        "Rating deleted"
     );
 
     Ok(())

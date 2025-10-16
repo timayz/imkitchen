@@ -2,8 +2,8 @@ use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
 use crate::events::{
-    Ingredient, InstructionStep, RecipeCreated, RecipeDeleted, RecipeFavorited, RecipeShared,
-    RecipeTagged, RecipeUpdated,
+    Ingredient, InstructionStep, RatingDeleted, RatingUpdated, RecipeCreated, RecipeDeleted,
+    RecipeFavorited, RecipeRated, RecipeShared, RecipeTagged, RecipeUpdated,
 };
 use crate::tagging::{Complexity, RecipeTags};
 
@@ -166,6 +166,45 @@ impl RecipeAggregate {
         event: evento::EventDetails<RecipeShared>,
     ) -> anyhow::Result<()> {
         self.is_shared = event.data.shared;
+        Ok(())
+    }
+
+    /// Handle RecipeRated event
+    ///
+    /// Note: Recipe aggregate does not store individual ratings - they are managed
+    /// in the ratings read model table. This handler exists for evento framework
+    /// but performs no aggregate state changes.
+    async fn recipe_rated(
+        &mut self,
+        _event: evento::EventDetails<RecipeRated>,
+    ) -> anyhow::Result<()> {
+        // No-op: ratings managed in separate read model, not in recipe aggregate
+        Ok(())
+    }
+
+    /// Handle RatingUpdated event
+    ///
+    /// Note: Recipe aggregate does not store individual ratings - they are managed
+    /// in the ratings read model table. This handler exists for evento framework
+    /// but performs no aggregate state changes.
+    async fn rating_updated(
+        &mut self,
+        _event: evento::EventDetails<RatingUpdated>,
+    ) -> anyhow::Result<()> {
+        // No-op: ratings managed in separate read model, not in recipe aggregate
+        Ok(())
+    }
+
+    /// Handle RatingDeleted event
+    ///
+    /// Note: Recipe aggregate does not store individual ratings - they are managed
+    /// in the ratings read model table. This handler exists for evento framework
+    /// but performs no aggregate state changes.
+    async fn rating_deleted(
+        &mut self,
+        _event: evento::EventDetails<RatingDeleted>,
+    ) -> anyhow::Result<()> {
+        // No-op: ratings managed in separate read model, not in recipe aggregate
         Ok(())
     }
 }

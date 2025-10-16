@@ -107,3 +107,43 @@ pub struct RecipeShared {
     pub shared: bool,    // true = shared with community, false = private
     pub toggled_at: String, // RFC3339 formatted timestamp
 }
+
+/// RecipeRated event emitted when a user rates and optionally reviews a recipe
+///
+/// This event captures both ratings (1-5 stars) and optional text reviews.
+/// One rating per user per recipe - duplicate submissions update existing rating.
+///
+/// Note: recipe_id is provided by event.aggregator_id, not stored in event data
+#[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
+pub struct RecipeRated {
+    pub user_id: String,              // ID of the user who submitted the rating
+    pub stars: i32,                   // Rating value (1-5 inclusive)
+    pub review_text: Option<String>,  // Optional text review (max 500 chars)
+    pub rated_at: String,             // RFC3339 formatted timestamp
+}
+
+/// RatingUpdated event emitted when a user updates their existing rating/review
+///
+/// This event allows users to edit their stars and/or review text after initial submission.
+/// Only the user who created the rating can update it.
+///
+/// Note: recipe_id is provided by event.aggregator_id, not stored in event data
+#[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
+pub struct RatingUpdated {
+    pub user_id: String,              // ID of the user who updated the rating
+    pub stars: i32,                   // New rating value (1-5 inclusive)
+    pub review_text: Option<String>,  // New review text (max 500 chars)
+    pub updated_at: String,           // RFC3339 formatted timestamp
+}
+
+/// RatingDeleted event emitted when a user deletes their rating/review
+///
+/// This event removes the rating from aggregate calculations and hides it from the UI.
+/// Only the user who created the rating can delete it.
+///
+/// Note: recipe_id is provided by event.aggregator_id, not stored in event data
+#[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
+pub struct RatingDeleted {
+    pub user_id: String,    // ID of the user who deleted the rating
+    pub deleted_at: String, // RFC3339 formatted timestamp
+}

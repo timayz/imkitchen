@@ -3,7 +3,7 @@ use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
     response::{Html, IntoResponse, Response},
-    Extension,
+    Extension, Form,
 };
 use recipe::{
     create_recipe, delete_recipe, favorite_recipe, list_shared_recipes, query_collections_by_user,
@@ -80,6 +80,8 @@ pub struct RecipeDetailView {
     pub dietary_tags: Vec<String>,
     pub created_at: String,
     pub creator_email: Option<String>, // AC-4: Recipe attribution (creator username)
+    pub avg_rating: Option<f32>,       // Story 2.9 AC-4, AC-9: Average rating
+    pub review_count: Option<i32>,     // Story 2.9 AC-4: Number of reviews
 }
 
 /// GET /recipes/new - Display recipe creation form
@@ -327,6 +329,8 @@ pub async fn get_recipe_detail(
                 dietary_tags,
                 created_at: recipe_data.created_at,
                 creator_email: None, // Not needed for owner's own recipe views
+                avg_rating: None,    // Not needed for owner's recipe view
+                review_count: None,  // Not needed for owner's recipe view
             };
 
             // Check if user is the owner
@@ -459,6 +463,8 @@ pub async fn get_recipe_edit_form(
                 dietary_tags,
                 created_at: recipe_data.created_at,
                 creator_email: None, // Not needed for owner's own recipe views
+                avg_rating: None,    // Not needed for owner's recipe view
+                review_count: None,  // Not needed for owner's recipe view
             };
 
             let template = RecipeFormTemplate {
@@ -1292,6 +1298,22 @@ pub async fn get_discover(
                         .ok()
                         .flatten();
 
+                // Query rating statistics (Story 2.9 AC-4, AC-9)
+                use recipe::query_rating_stats;
+                let rating_stats = query_rating_stats(&recipe.id, &state.db_pool)
+                    .await
+                    .ok();
+
+                let (avg_rating, review_count) = if let Some(stats) = rating_stats {
+                    if stats.review_count > 0 {
+                        (Some(stats.avg_rating), Some(stats.review_count))
+                    } else {
+                        (None, None)
+                    }
+                } else {
+                    (None, None)
+                };
+
                 recipe_views.push(RecipeDetailView {
                     id: recipe.id.clone(),
                     title: recipe.title.clone(),
@@ -1308,6 +1330,8 @@ pub async fn get_discover(
                     dietary_tags,
                     created_at: recipe.created_at.clone(),
                     creator_email,
+                    avg_rating,
+                    review_count,
                 });
             }
 
@@ -1348,6 +1372,20 @@ pub async fn get_discover(
 pub struct DiscoverDetailTemplate {
     pub recipe: RecipeDetailView,
     pub user: Option<Auth>,
+    pub avg_rating: f32,
+    pub review_count: i32,
+    pub ratings: Vec<RatingDisplay>,
+    pub user_rating: Option<RatingDisplay>,
+}
+
+#[derive(Debug, Clone)]
+pub struct RatingDisplay {
+    pub user_id: String,
+    pub username: String, // email or username
+    pub stars: i32,
+    pub review_text: Option<String>,
+    pub created_at: String,
+    pub is_own: bool, // true if this rating belongs to the logged-in user
 }
 
 /// GET /discover/:id - Community recipe detail view (AC-8, AC-9, AC-10, AC-14, AC-15)
@@ -1435,11 +1473,85 @@ pub async fn get_discover_detail(
                 dietary_tags,
                 created_at: row.get("created_at"),
                 creator_email: row.get("creator_email"), // AC-9: Recipe attribution
+                avg_rating: None,                        // Populated later
+                review_count: None,                      // Populated later
+            };
+
+            // Query rating statistics (Story 2.9 AC-4)
+            use recipe::{query_rating_stats, query_recipe_ratings, query_user_rating};
+
+            let rating_stats = query_rating_stats(&recipe_id, &state.db_pool)
+                .await
+                .unwrap_or(recipe::RatingStats {
+                    avg_rating: 0.0,
+                    review_count: 0,
+                });
+
+            // Query all ratings for display (Story 2.9 AC-5)
+            let ratings_data = query_recipe_ratings(&recipe_id, &state.db_pool)
+                .await
+                .unwrap_or_default();
+
+            // Get current user's rating if logged in
+            let current_user_id = user.as_ref().map(|u| u.0.user_id.clone());
+            let user_rating_data = if let Some(ref uid) = current_user_id {
+                query_user_rating(&recipe_id, uid, &state.db_pool)
+                    .await
+                    .unwrap_or(None)
+            } else {
+                None
+            };
+
+            // Build rating displays with usernames (Story 2.9 AC-5)
+            let mut ratings = Vec::new();
+            for rating in ratings_data {
+                // Query username/email for each rating
+                let username_result = sqlx::query("SELECT email FROM users WHERE id = ?")
+                    .bind(&rating.user_id)
+                    .fetch_optional(&state.db_pool)
+                    .await;
+
+                let username = username_result
+                    .ok()
+                    .and_then(|row_opt| row_opt.map(|r| r.get::<String, _>("email")))
+                    .unwrap_or_else(|| "Anonymous".to_string());
+
+                let is_own = current_user_id
+                    .as_ref()
+                    .map(|uid| uid == &rating.user_id)
+                    .unwrap_or(false);
+
+                ratings.push(RatingDisplay {
+                    user_id: rating.user_id.clone(),
+                    username,
+                    stars: rating.stars,
+                    review_text: rating.review_text.clone(),
+                    created_at: rating.created_at.clone(),
+                    is_own,
+                });
+            }
+
+            // Build user's own rating display if exists
+            let user_rating = if let Some(rating) = user_rating_data {
+                Some(RatingDisplay {
+                    user_id: rating.user_id.clone(),
+                    username: "You".to_string(),
+                    stars: rating.stars,
+                    review_text: rating.review_text.clone(),
+                    created_at: rating.created_at.clone(),
+                    is_own: true,
+                })
+            } else {
+                None
             };
 
             let template = DiscoverDetailTemplate {
                 recipe,
                 user: user.map(|u| u.0),
+                avg_rating: rating_stats.avg_rating,
+                review_count: rating_stats.review_count,
+                ratings,
+                user_rating,
             };
 
             Html(template.render().unwrap()).into_response()
@@ -1595,6 +1707,142 @@ pub async fn post_add_to_library(
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Failed to add recipe to library",
+            )
+                .into_response()
+        }
+    }
+}
+
+/// Form data for rating submission
+#[derive(Debug, Deserialize)]
+pub struct RateRecipeForm {
+    pub stars: i32,
+    pub review_text: Option<String>,
+}
+
+/// POST /discover/:id/rate - Rate a community recipe (Story 2.9)
+///
+/// AC-1: Rating widget (1-5 stars) visible on shared recipe detail pages
+/// AC-2: User can rate recipe only once per recipe_id (can update existing rating)
+/// AC-3: Optional text review field with 500 character maximum
+/// AC-10: Rating submission requires authentication
+/// AC-11: Validation: rating must be integer between 1-5, review text <= 500 chars
+/// AC-12: Duplicate rating prevention: UPDATE existing rating rather than INSERT new one
+#[tracing::instrument(skip(state, auth), fields(user_id = %auth.user_id, recipe_id = %recipe_id))]
+pub async fn post_rate_recipe(
+    State(state): State<AppState>,
+    Path(recipe_id): Path<String>,
+    Extension(auth): Extension<Auth>,
+    Form(form): Form<RateRecipeForm>,
+) -> impl IntoResponse {
+    use recipe::{rate_recipe, RateRecipeCommand};
+
+    let command = RateRecipeCommand {
+        recipe_id: recipe_id.clone(),
+        stars: form.stars,
+        review_text: form.review_text.clone(),
+    };
+
+    match rate_recipe(
+        command,
+        &auth.user_id,
+        &state.evento_executor,
+        &state.db_pool,
+    )
+    .await
+    {
+        Ok(_) => {
+            tracing::info!(
+                user_id = %auth.user_id,
+                recipe_id = %recipe_id,
+                stars = form.stars,
+                "Recipe rated successfully"
+            );
+
+            (
+                StatusCode::SEE_OTHER,
+                [("Location", format!("/discover/{}", recipe_id))],
+            )
+                .into_response()
+        }
+        Err(RecipeError::ValidationError(msg)) => {
+            tracing::warn!(
+                user_id = %auth.user_id,
+                recipe_id = %recipe_id,
+                error = %msg,
+                "Rating validation failed"
+            );
+            (StatusCode::UNPROCESSABLE_ENTITY, msg).into_response()
+        }
+        Err(e) => {
+            tracing::error!("Failed to rate recipe: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to submit rating",
+            )
+                .into_response()
+        }
+    }
+}
+
+/// Form data for rating update
+#[derive(Debug, Deserialize)]
+pub struct UpdateReviewForm {
+    pub stars: i32,
+    pub review_text: Option<String>,
+}
+
+/// POST /discover/:id/review/delete - Delete own review (Story 2.9)
+///
+/// AC-7: User can delete their own review via POST (creates a RatingDeleted event)
+#[tracing::instrument(skip(state, auth), fields(user_id = %auth.user_id, recipe_id = %recipe_id))]
+pub async fn post_delete_review(
+    State(state): State<AppState>,
+    Path(recipe_id): Path<String>,
+    Extension(auth): Extension<Auth>,
+) -> impl IntoResponse {
+    use recipe::{delete_rating, DeleteRatingCommand};
+
+    let command = DeleteRatingCommand {
+        recipe_id: recipe_id.clone(),
+    };
+
+    match delete_rating(
+        command,
+        &auth.user_id,
+        &state.evento_executor,
+        &state.db_pool,
+    )
+    .await
+    {
+        Ok(_) => {
+            tracing::info!(
+                user_id = %auth.user_id,
+                recipe_id = %recipe_id,
+                "Review deleted successfully"
+            );
+
+            (
+                StatusCode::SEE_OTHER,
+                [("Location", format!("/discover/{}", recipe_id))],
+            )
+                .into_response()
+        }
+        Err(RecipeError::ValidationError(msg)) => {
+            // AC-7: Returns 403 Forbidden if user attempts to delete another user's review
+            tracing::warn!(
+                user_id = %auth.user_id,
+                recipe_id = %recipe_id,
+                error = %msg,
+                "Review deletion forbidden"
+            );
+            (StatusCode::FORBIDDEN, msg).into_response()
+        }
+        Err(e) => {
+            tracing::error!("Failed to delete review: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to delete review",
             )
                 .into_response()
         }
