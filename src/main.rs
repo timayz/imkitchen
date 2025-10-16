@@ -8,17 +8,17 @@ use clap::{Parser, Subcommand};
 use evento::prelude::*;
 use imkitchen::middleware::auth_middleware;
 use imkitchen::routes::{
-    get_collections, get_discover, get_ingredient_row, get_instruction_row, get_login,
-    get_onboarding, get_onboarding_skip, get_password_reset, get_password_reset_complete,
-    get_profile, get_recipe_detail, get_recipe_edit_form, get_recipe_form, get_recipe_list,
-    get_register, get_subscription, get_subscription_success, health,
-    post_add_recipe_to_collection, post_create_collection, post_create_recipe,
-    post_delete_collection, post_delete_recipe, post_favorite_recipe, post_login, post_logout,
-    post_onboarding_step_1, post_onboarding_step_2, post_onboarding_step_3, post_onboarding_step_4,
-    post_password_reset, post_password_reset_complete, post_profile, post_register,
-    post_remove_recipe_from_collection, post_share_recipe, post_stripe_webhook,
-    post_subscription_upgrade, post_update_collection, post_update_recipe, post_update_recipe_tags,
-    ready, AppState, AssetsService,
+    get_collections, get_discover, get_discover_detail, get_ingredient_row, get_instruction_row,
+    get_login, get_onboarding, get_onboarding_skip, get_password_reset,
+    get_password_reset_complete, get_profile, get_recipe_detail, get_recipe_edit_form,
+    get_recipe_form, get_recipe_list, get_register, get_subscription, get_subscription_success,
+    health, post_add_recipe_to_collection, post_add_to_library, post_create_collection,
+    post_create_recipe, post_delete_collection, post_delete_recipe, post_favorite_recipe,
+    post_login, post_logout, post_onboarding_step_1, post_onboarding_step_2,
+    post_onboarding_step_3, post_onboarding_step_4, post_password_reset,
+    post_password_reset_complete, post_profile, post_register, post_remove_recipe_from_collection,
+    post_share_recipe, post_stripe_webhook, post_subscription_upgrade, post_update_collection,
+    post_update_recipe, post_update_recipe_tags, ready, AppState, AssetsService,
 };
 use recipe::{collection_projection, recipe_projection};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions};
@@ -160,6 +160,8 @@ async fn serve_command(
         .route("/recipes", get(get_recipe_list).post(post_create_recipe))
         .route("/recipes/new", get(get_recipe_form))
         .route("/discover", get(get_discover))
+        .route("/discover/{id}", get(get_discover_detail))
+        .route("/discover/{id}/add", post(post_add_to_library))
         .route("/recipes/{id}", get(get_recipe_detail))
         .route("/recipes/{id}/edit", get(get_recipe_edit_form))
         .route("/recipes/{id}", post(post_update_recipe))
