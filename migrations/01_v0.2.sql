@@ -1,19 +1,20 @@
 -- Migration v0.2 - Complete Application Schema
 -- Created: 2025-10-15
 -- Stories: 2.1 Create Recipe, 2.4 Organize Recipes into Collections, 2.5 Automatic Recipe Tagging,
---          2.6 Mark Recipe as Favorite, 2.7 Share Recipe to Community, 2.9 Rate and Review Community Recipes
+--          2.6 Mark Recipe as Favorite, 2.7 Share Recipe to Community, 2.9 Rate and Review Community Recipes,
+--          2.10 Copy Community Recipe to Personal Library
 -- Description: Merged migration containing all application tables and indexes
 
 -- ============================================================================
 -- RECIPES TABLE
 -- ============================================================================
--- Story: 2.1 Create Recipe
+-- Stories: 2.1 Create Recipe, 2.10 Copy Community Recipe
 CREATE TABLE IF NOT EXISTS recipes (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
     title TEXT NOT NULL,
-    ingredients TEXT NOT NULL, -- JSON array of {name, quantity, unit}
-    instructions TEXT NOT NULL, -- JSON array of {step_number, instruction_text, timer_minutes}
+    ingredients TEXT NOT NULL,      -- JSON array of {name, quantity, unit}
+    instructions TEXT NOT NULL,     -- JSON array of {step_number, instruction_text, timer_minutes}
     prep_time_min INTEGER,
     cook_time_min INTEGER,
     advance_prep_hours INTEGER,
@@ -22,8 +23,10 @@ CREATE TABLE IF NOT EXISTS recipes (
     is_shared INTEGER NOT NULL DEFAULT 0,
     complexity TEXT,
     cuisine TEXT,
-    dietary_tags TEXT, -- JSON array (Story 2.5)
-    deleted_at TEXT,   -- Soft delete (Story 2.7)
+    dietary_tags TEXT,              -- JSON array (Story 2.5)
+    original_recipe_id TEXT,        -- ID of original recipe if copied (Story 2.10)
+    original_author TEXT,           -- User ID of original creator if copied (Story 2.10)
+    deleted_at TEXT,                -- Soft delete (Story 2.7)
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id)
@@ -34,6 +37,7 @@ CREATE INDEX IF NOT EXISTS idx_recipes_favorite ON recipes(user_id, is_favorite)
 CREATE INDEX IF NOT EXISTS idx_recipes_shared ON recipes(is_shared, deleted_at) WHERE is_shared = 1 AND deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_recipes_complexity ON recipes(complexity) WHERE complexity IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_recipes_cuisine ON recipes(cuisine) WHERE cuisine IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_recipes_original ON recipes(user_id, original_recipe_id) WHERE original_recipe_id IS NOT NULL AND deleted_at IS NULL;
 
 -- ============================================================================
 -- RECIPE COLLECTIONS

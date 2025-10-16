@@ -7,8 +7,8 @@ use validator::Validate;
 use crate::aggregate::RecipeAggregate;
 use crate::error::{RecipeError, RecipeResult};
 use crate::events::{
-    Ingredient, InstructionStep, RatingDeleted, RatingUpdated, RecipeCreated, RecipeDeleted,
-    RecipeFavorited, RecipeRated, RecipeShared, RecipeTagged, RecipeUpdated,
+    Ingredient, InstructionStep, RatingDeleted, RatingUpdated, RecipeCopied, RecipeCreated,
+    RecipeDeleted, RecipeFavorited, RecipeRated, RecipeShared, RecipeTagged, RecipeUpdated,
 };
 use crate::tagging::{CuisineInferenceService, DietaryTagDetector, RecipeComplexityCalculator};
 use serde::{Deserialize, Serialize};
@@ -777,4 +777,171 @@ pub async fn delete_rating(
     );
 
     Ok(())
+}
+
+/// Command to copy a community recipe to user's personal library
+///
+/// AC-2, AC-3, AC-4, AC-5, AC-6, AC-7, AC-10, AC-11
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CopyRecipeCommand {
+    pub original_recipe_id: String, // ID of the original community recipe to copy
+}
+
+/// Copy a community recipe to user's personal library using evento event sourcing pattern
+///
+/// AC-2: Copies recipe to user's personal library with full recipe data duplicated
+/// AC-3: Copied recipe becomes owned by user (user_id set to current user)
+/// AC-4: Original creator attribution maintained in metadata (original_recipe_id, original_author)
+/// AC-5: Copy counts as new recipe toward free tier limit (10 recipe maximum)
+/// AC-6: Copied recipe defaults to private (is_shared = false)
+/// AC-7: Modifications to copy don't affect original (independent Recipe aggregate created)
+/// AC-10: Prevents duplicate copies (check if user already copied this recipe)
+/// AC-11: Enforces free tier limit (returns RecipeLimitReached error)
+///
+/// Flow:
+/// 1. Verifies original recipe exists and is shared (only community recipes can be copied)
+/// 2. Checks if user already copied this recipe (prevent duplicates)
+/// 3. Checks user tier and recipe count (free tier limited to 10 recipes)
+/// 4. Loads original recipe aggregate from event stream to get full data
+/// 5. Creates new Recipe aggregate with RecipeCreated event (full data duplication)
+/// 6. Emits RecipeCopied event to store attribution metadata
+/// 7. Returns new recipe ID
+pub async fn copy_recipe(
+    command: CopyRecipeCommand,
+    user_id: &str,
+    executor: &Sqlite,
+    pool: &SqlitePool,
+) -> RecipeResult<String> {
+    // AC-10: Verify original recipe exists and is shared (only community recipes can be copied)
+    let original_recipe_result =
+        sqlx::query("SELECT user_id, is_shared FROM recipes WHERE id = ?1 AND deleted_at IS NULL")
+            .bind(&command.original_recipe_id)
+            .fetch_optional(pool)
+            .await?;
+
+    let original_author = match original_recipe_result {
+        Some(row) => {
+            let is_shared: bool = row.get("is_shared");
+            if !is_shared {
+                return Err(RecipeError::ValidationError(
+                    "Only shared recipes can be copied".to_string(),
+                ));
+            }
+            let owner_id: String = row.get("user_id");
+            owner_id
+        }
+        None => {
+            return Err(RecipeError::ValidationError("Recipe not found".to_string()));
+        }
+    };
+
+    // AC-10: Check if user already copied this recipe (prevent duplicates)
+    let duplicate_check: Option<i64> = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM recipes WHERE user_id = ?1 AND original_recipe_id = ?2 AND deleted_at IS NULL"
+    )
+    .bind(user_id)
+    .bind(&command.original_recipe_id)
+    .fetch_optional(pool)
+    .await?;
+
+    if let Some(count) = duplicate_check {
+        if count > 0 {
+            return Err(RecipeError::AlreadyCopied);
+        }
+    }
+
+    // AC-5, AC-11: Check user tier and recipe count for freemium enforcement
+    // Same pattern as create_recipe
+    let user_result = sqlx::query("SELECT tier FROM users WHERE id = ?1")
+        .bind(user_id)
+        .fetch_optional(pool)
+        .await?;
+
+    match user_result {
+        Some(user_row) => {
+            let tier: String = user_row.get("tier");
+
+            // Premium users bypass all limits
+            if tier != "premium" {
+                // Count only private recipes (is_shared = false) that are not deleted
+                let private_recipe_count: i64 = sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM recipes WHERE user_id = ?1 AND is_shared = 0 AND deleted_at IS NULL"
+                )
+                .bind(user_id)
+                .fetch_one(pool)
+                .await?;
+
+                // Free tier users limited to 10 private recipes
+                if private_recipe_count >= 10 {
+                    return Err(RecipeError::RecipeLimitReached);
+                }
+            }
+        }
+        None => {
+            return Err(RecipeError::ValidationError("User not found".to_string()));
+        }
+    }
+
+    // AC-2, AC-7: Load original recipe aggregate to get full recipe data
+    let original_aggregate =
+        evento::load::<RecipeAggregate, _>(executor, &command.original_recipe_id)
+            .await
+            .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
+
+    let copied_at = Utc::now();
+
+    // AC-2, AC-3, AC-6, AC-7: Create new Recipe aggregate with RecipeCreated event
+    // Copy all data from original recipe, but set user_id to copying user
+    // Default to private (is_shared = false) per AC-6
+    let new_recipe_id = evento::create::<RecipeAggregate>()
+        .data(&RecipeCreated {
+            user_id: user_id.to_string(),
+            title: original_aggregate.item.title.clone(),
+            ingredients: original_aggregate.item.ingredients.clone(),
+            instructions: original_aggregate.item.instructions.clone(),
+            prep_time_min: original_aggregate.item.prep_time_min,
+            cook_time_min: original_aggregate.item.cook_time_min,
+            advance_prep_hours: original_aggregate.item.advance_prep_hours,
+            serving_size: original_aggregate.item.serving_size,
+            created_at: copied_at.to_rfc3339(),
+        })
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .metadata(&true)
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .commit(executor)
+        .await
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
+
+    // AC-4: Emit RecipeCopied event to store attribution metadata
+    evento::save::<RecipeAggregate>(new_recipe_id.clone())
+        .data(&RecipeCopied {
+            original_recipe_id: command.original_recipe_id.clone(),
+            original_author: original_author.clone(),
+            copying_user_id: user_id.to_string(),
+            copied_at: copied_at.to_rfc3339(),
+        })
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .metadata(&true)
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .commit(executor)
+        .await
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
+
+    // Calculate and emit RecipeTagged event for automatic tagging
+    // Load the new aggregate to access the recipe data
+    let load_result = evento::load::<RecipeAggregate, _>(executor, &new_recipe_id)
+        .await
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
+
+    emit_recipe_tagged_event(&new_recipe_id, &load_result.item, executor, false).await?;
+
+    tracing::info!(
+        original_recipe_id = %command.original_recipe_id,
+        new_recipe_id = %new_recipe_id,
+        user_id = %user_id,
+        "Recipe copied to user library"
+    );
+
+    // Return the new recipe ID
+    Ok(new_recipe_id)
 }

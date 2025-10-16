@@ -500,6 +500,32 @@ This document provides the detailed epic breakdown for imkitchen, an intelligent
 
 ---
 
+#### Story 2.11: Tech Debt & Enhancements
+**As a** development team
+**I want to** address deferred technical improvements from Stories 2.1 and 1.7
+**So that** code quality, test coverage, and documentation meet production standards
+
+**Prerequisites:** Stories 2.1 and 1.7 completed
+
+**Acceptance Criteria:**
+1. **[Story 2.1 - HIGH]** Instruction reordering UI implemented with drag handles or up/down arrows
+2. **[Story 2.1 - HIGH]** Complete test suite written: unit tests for RecipeAggregate, integration tests for HTTP routes, E2E tests for recipe creation flow with Playwright (target 80% code coverage via `cargo tarpaulin`)
+3. **[Story 2.1 - MEDIUM]** Form parsing refactored to use Axum extractors (`Form<CreateRecipeForm>`) replacing manual `parse_recipe_form()` logic in `src/routes/recipes.rs:292-340`
+4. **[Story 2.1 - MEDIUM]** Structured error handling implemented with AppError enum (DatabaseError, ValidationError, EventStoreError, RecipeLimitError variants) with `IntoResponse` trait for user-friendly error pages
+5. **[Story 1.7 - LOW]** Stripe setup guide documented in `docs/stripe-setup.md` or README with instructions for test keys, price creation, and webhook registration
+6. All tests pass in CI/CD pipeline
+7. Code coverage metrics meet or exceed 80% target (NFR requirement)
+8. Documentation reviewed and approved by tech lead
+
+**Technical Notes:**
+- Instruction reordering: Use TwinSpark or minimal JavaScript for client-side interaction
+- Test framework: Rust `cargo test` for unit/integration, Playwright for E2E
+- Axum extractors: Use `axum::Form` with custom deserializer for array fields (ingredient_name[], etc.)
+- Error handling: Implement `From<DomainError>` traits for AppError conversions
+- Stripe docs: Reference Story 1.7 completion notes for setup instructions
+
+---
+
 **Epic 2 Technical Summary:**
 - **Aggregates:** Recipe, Collection
 - **Events:** RecipeCreated, RecipeUpdated, RecipeDeleted, RecipeTagged, RecipeFavorited, RecipeUnfavorited, RecipeShared, RecipeUnshared, RecipeRated, RecipeCopied, CollectionCreated, RecipeAddedToCollection

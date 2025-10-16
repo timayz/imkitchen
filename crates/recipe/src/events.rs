@@ -147,3 +147,18 @@ pub struct RatingDeleted {
     pub user_id: String,    // ID of the user who deleted the rating
     pub deleted_at: String, // RFC3339 formatted timestamp
 }
+
+/// RecipeCopied event emitted when a user copies a community recipe to their library
+///
+/// This event creates a new Recipe aggregate with full data duplication from the original.
+/// The copy is owned by the copying user and defaults to private (is_shared=false).
+/// Original recipe attribution is preserved for audit trail.
+///
+/// Note: new_recipe_id is provided by event.aggregator_id, not stored in event data
+#[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
+pub struct RecipeCopied {
+    pub original_recipe_id: String, // ID of the original community recipe
+    pub original_author: String,    // User ID of the original recipe creator
+    pub copying_user_id: String,    // ID of the user copying the recipe
+    pub copied_at: String,          // RFC3339 formatted timestamp
+}
