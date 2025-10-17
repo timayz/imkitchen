@@ -1,0 +1,290 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>4</storyId>
+    <title>Visual Week-View Meal Calendar</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-17</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-3.4.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>see my meal plan in calendar format</iWant>
+    <soThat>I can quickly understand my week at a glance</soThat>
+    <tasks>
+### Task 1: Create Meal Calendar Route Handler (AC: 1-10)
+- Implement `show_meal_calendar()` handler in `src/routes/meal_plan.rs`
+- Query active meal plan and assignments
+- Handle empty meal plan state
+- Write integration tests
+
+### Task 2: Create MealCalendarTemplate (Askama) (AC: 1-10)
+- Template already exists at `templates/pages/meal-calendar.html`
+- Enhance with rotation progress indicator
+- Add today/past date highlighting
+- Implement responsive grid layout
+
+### Task 3: Create/Update Meal Slot Component Template (AC: 3-5, 8)
+- Update inline meal slot rendering in meal-calendar.html
+- Add complexity badges with color coding
+- Add advance prep indicators
+- Add "Replace This Meal" button with TwinSpark
+
+### Task 4: Implement Calendar Data Query (AC: 1-2)
+- Create `query_meal_calendar_view()` in read_model.rs
+- Define CalendarView, DayView, MealSlotView structs
+- JOIN meal_assignments with recipes table
+
+### Task 5-10: Additional implementation tasks
+- Responsive layout, highlighting logic, rotation progress display
+- Action buttons, empty state handling, comprehensive test suite
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+1. Calendar displays 7 days (Sunday-Saturday or Monday-Sunday based on locale)
+2. Each day shows 3 meal slots: breakfast, lunch, dinner
+3. Each slot displays: recipe title, recipe image placeholder, prep time indicator
+4. Advance preparation indicator (clock icon) visible on recipes requiring prep
+5. Complexity badge (Simple/Moderate/Complex) displayed per recipe
+6. Today's date highlighted with distinct styling
+7. Past dates dimmed/grayed out
+8. Future dates fully interactive (clickable for details)
+9. Empty slots show "No meal planned" with action to add
+10. Mobile-responsive: stacks vertically on small screens, grid on tablet/desktop
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Intelligent Meal Planning Engine</title>
+        <section>Askama Templates</section>
+        <snippet>Lines 710-890: meal-calendar.html template structure, meal-slot components, responsive grid layout, TwinSpark integration</snippet>
+        <relevance>Authoritative template design for meal calendar UI</relevance>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Intelligent Meal Planning Engine</title>
+        <section>HTTP Routes</section>
+        <snippet>Lines 600-670: GET /plan route definition, query active meal plan, render MealCalendarTemplate</snippet>
+        <relevance>Route handler implementation guidance</relevance>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/solution-architecture.md</path>
+        <title>Solution Architecture</title>
+        <section>Server-Side Rendering</section>
+        <snippet>Askama template patterns, base.html extension, Tailwind CSS integration</snippet>
+        <relevance>Template architecture and rendering patterns</relevance>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/solution-architecture.md</path>
+        <title>Solution Architecture</title>
+        <section>TwinSpark Progressive Enhancement</section>
+        <snippet>TwinSpark AJAX patterns for interactive updates without full page reload</snippet>
+        <relevance>Interactive meal replacement button implementation</relevance>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/epics.md</path>
+        <title>Epic Definitions</title>
+        <section>Story 3.4</section>
+        <snippet>Lines 630-654: Visual Week-View Meal Calendar requirements, acceptance criteria, technical notes</snippet>
+        <relevance>Source requirements and acceptance criteria</relevance>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/src/routes/meal_plan.rs</path>
+        <kind>route_handler</kind>
+        <symbol>get_meal_plan</symbol>
+        <lines>75-120</lines>
+        <reason>Existing GET /plan route handler - calendar rendering logic already implemented, uses MealCalendarTemplate</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/src/routes/meal_plan.rs</path>
+        <kind>struct</kind>
+        <symbol>MealCalendarTemplate</symbol>
+        <lines>66-73</lines>
+        <reason>Askama template struct for meal calendar view - needs enhancement for today/past highlighting and rotation progress</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/src/routes/meal_plan.rs</path>
+        <kind>struct</kind>
+        <symbol>DayData, MealSlotData</symbol>
+        <lines>43-64</lines>
+        <reason>Data structures for template rendering - need fields for is_today, is_past, complexity badge</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/templates/pages/meal-calendar.html</path>
+        <kind>template</kind>
+        <symbol>meal-calendar</symbol>
+        <lines>1-239</lines>
+        <reason>Existing meal calendar template - has 7-day grid, meal slots, empty state, responsive layout. Missing: today highlighting, rotation progress, "Replace Meal" buttons</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/templates/base.html</path>
+        <kind>template</kind>
+        <symbol>base</symbol>
+        <lines>1-155</lines>
+        <reason>Base template with navigation, TwinSpark script, Tailwind CSS - extended by meal-calendar.html</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/read_model.rs</path>
+        <kind>module</kind>
+        <symbol>MealPlanQueries</symbol>
+        <lines>48-122</lines>
+        <reason>Existing query methods for meal plans and assignments - get_active_meal_plan_with_assignments() used by route handler</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/read_model.rs</path>
+        <kind>struct</kind>
+        <symbol>MealPlanReadModel, MealAssignmentReadModel</symbol>
+        <lines>8-35</lines>
+        <reason>Read model data structures - need to extend for rotation progress and recipe details JOIN</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/rotation.rs</path>
+        <kind>module</kind>
+        <symbol>query_rotation_progress</symbol>
+        <lines>from Story 3.3</lines>
+        <reason>Rotation progress query method from Story 3.3 - to be called for rotation display</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <rust>
+        <package name="axum" version="0.8" reason="HTTP server and routing framework"/>
+        <package name="askama" version="0.14" reason="Server-side template rendering"/>
+        <package name="sqlx" version="0.8" reason="Database queries for meal plans and assignments"/>
+        <package name="chrono" version="0.4" reason="Date/time handling for today highlighting and date formatting"/>
+        <package name="serde" version="1.0" reason="JSON serialization for template data"/>
+        <package name="uuid" version="1.10" reason="Meal plan and assignment IDs"/>
+        <package name="tower-http" version="0.6" reason="Static file serving for CSS/JS"/>
+      </rust>
+      <frontend>
+        <library name="TwinSpark" version="included" reason="Progressive enhancement for AJAX interactions"/>
+        <library name="Tailwind CSS" version="3.x" reason="Responsive grid layout and styling"/>
+      </frontend>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <architecture>
+- **Server-Side Rendering**: Full page rendered via Askama templates (no client-side SPA framework)
+- **Progressive Enhancement**: TwinSpark for AJAX updates without full page reload
+- **CQRS Read Model**: Calendar view queries meal_plans + meal_assignments read models
+- **Event Sourcing**: Changes trigger events, read models updated via projections
+- **Domain-Driven Design**: Route handlers in src/, domain logic in crates/meal_planning/
+    </architecture>
+    <testing>
+- **TDD Required**: Write failing test first, then implement
+- **Coverage Target**: ≥80% for meal calendar routes and templates
+- **Test Types**: Unit (route logic), Integration (HTTP flow), E2E (Playwright visual verification)
+- **Test Location**: Integration tests in tests/meal_plan_integration_tests.rs
+    </testing>
+    <patterns>
+- **Template Extension**: meal-calendar.html extends base.html
+- **Responsive Design**: Mobile-first Tailwind classes (grid-cols-1, md:grid-cols-2, lg:grid-cols-7)
+- **Data Flow**: Route → Query Read Model → Render Template → HTML Response
+- **Error Handling**: Result&lt;Html&lt;String&gt;, AppError&gt; return type
+- **Auth Middleware**: Extension&lt;Auth&gt; for authenticated routes
+    </patterns>
+  </constraints>
+
+  <interfaces>
+    <api>
+      <endpoint>
+        <name>GET /plan</name>
+        <kind>HTTP</kind>
+        <signature>async fn get_meal_plan(Extension(auth): Extension&lt;Auth&gt;, State(state): State&lt;AppState&gt;) -&gt; Result&lt;Html&lt;String&gt;, AppError&gt;</signature>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/src/routes/meal_plan.rs</path>
+        <notes>Existing route handler - needs enhancement for today highlighting and rotation progress</notes>
+      </endpoint>
+      <query>
+        <name>MealPlanQueries::get_active_meal_plan_with_assignments</name>
+        <kind>database</kind>
+        <signature>pub async fn get_active_meal_plan_with_assignments(user_id: &amp;str, pool: &amp;SqlitePool) -&gt; Result&lt;Option&lt;MealPlanWithAssignments&gt;, sqlx::Error&gt;</signature>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/read_model.rs</path>
+        <notes>Existing query - returns meal plan with assignments, needs JOIN with recipes table for title/complexity</notes>
+      </query>
+      <query>
+        <name>query_rotation_progress</name>
+        <kind>database</kind>
+        <signature>pub async fn query_rotation_progress(user_id: &amp;str, pool: &amp;SqlitePool) -&gt; Result&lt;(usize, usize), sqlx::Error&gt;</signature>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/read_model.rs</path>
+        <notes>From Story 3.3 - returns (used_count, total_favorites) for rotation display</notes>
+      </query>
+    </api>
+    <templates>
+      <template>
+        <name>MealCalendarTemplate</name>
+        <kind>askama</kind>
+        <signature>#[derive(Template)] #[template(path = "pages/meal-calendar.html")] pub struct MealCalendarTemplate</signature>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/src/routes/meal_plan.rs</path>
+        <notes>Needs fields: rotation_progress, is_today flags, is_past flags</notes>
+      </template>
+      <template>
+        <name>base.html</name>
+        <kind>askama_base</kind>
+        <signature>{% block content %}{% endblock %}</signature>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/templates/base.html</path>
+        <notes>Base template with navigation, TwinSpark, Tailwind CSS - extended by all page templates</notes>
+      </template>
+    </templates>
+  </interfaces>
+
+  <tests>
+    <standards>
+- **Framework**: Rust native testing with tokio::test for async tests
+- **Integration Tests**: Full HTTP request/response cycle with test database
+- **E2E Tests**: Playwright for visual verification and user interaction testing
+- **Test Organization**: Integration tests in tests/ directory, unit tests in src/ modules
+- **Coverage**: cargo-tarpaulin for code coverage reporting, ≥80% target
+- **TDD Workflow**: Red (failing test) → Green (minimal implementation) → Refactor
+    </standards>
+    <locations>
+- tests/meal_plan_integration_tests.rs (existing - 13KB, integration tests for meal plan routes)
+- tests/common/ (test helpers and fixtures)
+- crates/meal_planning/tests/ (domain-level unit tests)
+- e2e/ (Playwright E2E tests - to be created)
+    </locations>
+    <ideas>
+      <test ac="1,2,3">
+        <name>test_calendar_displays_7_days_with_meal_slots</name>
+        <description>Integration test: GET /plan returns HTML with 7 day columns and 21 meal slots (3 per day)</description>
+        <approach>Create test user with active meal plan, make GET request, parse HTML, assert 7 day headers and 21 meal slot elements</approach>
+      </test>
+      <test ac="4,5">
+        <name>test_complexity_badges_and_prep_indicators</name>
+        <description>Integration test: Verify complexity badges (Simple/Moderate/Complex) and advance prep indicators (⏰) rendered correctly</description>
+        <approach>Create meal plan with recipes of varying complexity and prep requirements, assert badge colors and icons in HTML</approach>
+      </test>
+      <test ac="6,7">
+        <name>test_today_highlighting_and_past_dimming</name>
+        <description>Unit test: Verify is_today and is_past flags set correctly based on current date</description>
+        <approach>Mock different dates, call build_day_data(), assert flags set correctly for today, past, and future dates</approach>
+      </test>
+      <test ac="8">
+        <name>test_recipe_links_clickable</name>
+        <description>E2E test: Click recipe title in calendar, verify navigation to recipe detail page</description>
+        <approach>Playwright: navigate to /plan, click recipe link, assert URL is /recipes/{id}</approach>
+      </test>
+      <test ac="9">
+        <name>test_empty_meal_plan_state</name>
+        <description>Integration test: User without active meal plan sees "Generate Meal Plan" CTA</description>
+        <approach>Create user with no meal plan, GET /plan, assert "No Meal Plan Yet" message and generation button</approach>
+      </test>
+      <test ac="10">
+        <name>test_responsive_grid_layout</name>
+        <description>E2E test: Verify grid layout changes on different viewport sizes</description>
+        <approach>Playwright: Test mobile (375px) shows 1 column, tablet (768px) shows 2 columns, desktop (1024px+) shows 7 columns</approach>
+      </test>
+      <test ac="Story 3.3 integration">
+        <name>test_rotation_progress_displayed</name>
+        <description>Integration test: Verify rotation progress "X of Y favorites used" displayed in calendar view</description>
+        <approach>Generate meal plan with 20 favorites using 7 recipes, GET /plan, assert rotation progress shows "7 of 20"</approach>
+      </test>
+    </ideas>
+  </tests>
+</story-context>
