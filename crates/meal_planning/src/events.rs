@@ -108,3 +108,17 @@ pub struct MealReplaced {
     pub new_recipe_id: String, // Replacement recipe
     pub replaced_at: String,   // RFC3339 formatted timestamp
 }
+
+/// MealPlanRegenerated event emitted when user regenerates entire meal plan (Story 3.7)
+///
+/// This event replaces all 21 meal assignments with freshly generated recipes
+/// while preserving rotation state (doesn't reset cycle).
+///
+/// Note: meal_plan_id is provided by event.aggregator_id, not stored in event data
+#[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
+pub struct MealPlanRegenerated {
+    pub new_assignments: Vec<MealAssignment>, // Fresh 21 assignments (7 days × 3 meals)
+    pub rotation_state_json: String,          // Updated rotation state (cycle preserved)
+    pub regeneration_reason: Option<String>,  // Optional reason for regeneration
+    pub regenerated_at: String,               // RFC3339 formatted timestamp
+}

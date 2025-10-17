@@ -1,5 +1,7 @@
 use crate::aggregate::MealPlanAggregate;
-use crate::events::{MealPlanGenerated, MealReplaced, RecipeUsedInRotation, RotationCycleReset};
+use crate::events::{
+    MealPlanGenerated, MealPlanRegenerated, MealReplaced, RecipeUsedInRotation, RotationCycleReset,
+};
 use evento::{AggregatorName, Context, EventDetails, Executor};
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
@@ -568,6 +570,76 @@ pub async fn meal_replaced_handler<E: Executor>(
     Ok(())
 }
 
+/// Async evento subscription handler for MealPlanRegenerated events (Story 3.7)
+///
+/// This handler projects MealPlanRegenerated events to replace all meal_assignments
+/// for the meal plan with freshly generated assignments.
+///
+/// **Critical Operations:**
+/// 1. DELETE all existing assignments for the meal plan
+/// 2. INSERT new assignments from event
+/// 3. UPDATE rotation_state in meal_plans table
+/// 4. All in a single atomic transaction
+#[evento::handler(MealPlanAggregate)]
+pub async fn meal_plan_regenerated_handler<E: Executor>(
+    context: &Context<'_, E>,
+    event: EventDetails<MealPlanRegenerated>,
+) -> anyhow::Result<()> {
+    // Extract the shared SqlitePool from context
+    let pool: SqlitePool = context.extract();
+
+    // Begin transaction for atomic updates
+    let mut tx = pool.begin().await?;
+
+    // DELETE all existing meal assignments for this meal plan
+    sqlx::query(
+        r#"
+        DELETE FROM meal_assignments
+        WHERE meal_plan_id = ?1
+        "#,
+    )
+    .bind(&event.aggregator_id)
+    .execute(&mut *tx)
+    .await?;
+
+    // INSERT new meal assignments from regeneration
+    for assignment in &event.data.new_assignments {
+        let assignment_id = Uuid::new_v4().to_string();
+        sqlx::query(
+            r#"
+            INSERT INTO meal_assignments (id, meal_plan_id, date, meal_type, recipe_id, prep_required)
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+            "#,
+        )
+        .bind(assignment_id)
+        .bind(&event.aggregator_id)
+        .bind(&assignment.date)
+        .bind(&assignment.meal_type)
+        .bind(&assignment.recipe_id)
+        .bind(assignment.prep_required)
+        .execute(&mut *tx)
+        .await?;
+    }
+
+    // UPDATE rotation_state in meal_plans table (cycle preserved)
+    sqlx::query(
+        r#"
+        UPDATE meal_plans
+        SET rotation_state = ?1
+        WHERE id = ?2
+        "#,
+    )
+    .bind(&event.data.rotation_state_json)
+    .bind(&event.aggregator_id)
+    .execute(&mut *tx)
+    .await?;
+
+    // Commit transaction - all or nothing
+    tx.commit().await?;
+
+    Ok(())
+}
+
 /// Create and configure the meal plan projection subscription
 ///
 /// This function sets up evento subscriptions for meal plan read model projections.
@@ -579,6 +651,7 @@ pub fn meal_plan_projection(pool: SqlitePool) -> evento::SubscribeBuilder<evento
         .handler(recipe_used_in_rotation_handler())
         .handler(rotation_cycle_reset_handler())
         .handler(meal_replaced_handler())
+        .handler(meal_plan_regenerated_handler())
 }
 
 // NOTE: Task 7 (AC-6, AC-7) - Favorite Recipe Changes Mid-Rotation

@@ -32,3 +32,14 @@ pub struct ReplaceMealCommand {
 pub struct ArchiveMealPlanCommand {
     pub meal_plan_id: String,
 }
+
+/// RegenerateMealPlanCommand is the command to regenerate entire meal plan (Story 3.7)
+///
+/// This command triggers full regeneration of all 21 meal assignments using the
+/// same algorithm as initial generation, while preserving rotation state.
+#[derive(Debug, Clone)]
+pub struct RegenerateMealPlanCommand {
+    pub meal_plan_id: String,
+    pub user_id: String,
+    pub regeneration_reason: Option<String>, // Optional reason for regeneration
+}

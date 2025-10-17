@@ -49,4 +49,8 @@ pub enum MealPlanningError {
 
     #[error("Rotation state error: {0}")]
     RotationStateError(String),
+
+    // Story 3.7: Regeneration errors
+    #[error("Unauthorized access: user {0} cannot access meal plan {1}")]
+    UnauthorizedAccess(String, String),
 }
