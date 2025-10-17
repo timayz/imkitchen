@@ -15,3 +15,6 @@ can you create all epics as milestone with associeted stories as issue ? epic ti
 
 # before create-story / develop / review
 read 'docs/solution-architecture.md'
+
+in folder fixtures, create recipe json file structured like "example-recipe.json" from
+  [link]

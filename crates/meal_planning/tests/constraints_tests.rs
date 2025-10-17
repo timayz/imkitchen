@@ -1,5 +1,5 @@
-use chrono::{Datelike, NaiveDate, Weekday};
-use meal_planning::algorithm::{Complexity, RecipeForPlanning, UserConstraints};
+use chrono::NaiveDate;
+use meal_planning::algorithm::{RecipeForPlanning, UserConstraints};
 use meal_planning::constraints::*;
 
 fn create_test_recipe(
@@ -41,7 +41,11 @@ fn test_availability_constraint_weeknight_matches() {
     let score = constraint.evaluate(&recipe, &slot, &user_constraints);
 
     // Recipe fits weeknight availability, should score high
-    assert!(score > 0.7, "Expected high score for fitting recipe, got {}", score);
+    assert!(
+        score > 0.7,
+        "Expected high score for fitting recipe, got {}",
+        score
+    );
 }
 
 #[test]
@@ -63,7 +67,11 @@ fn test_availability_constraint_weeknight_too_long() {
     let score = constraint.evaluate(&recipe, &slot, &user_constraints);
 
     // Recipe doesn't fit weeknight availability, should score low
-    assert!(score < 0.3, "Expected low score for long recipe, got {}", score);
+    assert!(
+        score < 0.3,
+        "Expected low score for long recipe, got {}",
+        score
+    );
 }
 
 #[test]
@@ -85,7 +93,11 @@ fn test_availability_constraint_weekend_allows_all() {
     let score = constraint.evaluate(&recipe, &slot, &user_constraints);
 
     // Weekend allows all recipes, should score high
-    assert!(score > 0.8, "Expected high score for weekend slot, got {}", score);
+    assert!(
+        score > 0.8,
+        "Expected high score for weekend slot, got {}",
+        score
+    );
 }
 
 #[test]
@@ -103,7 +115,11 @@ fn test_complexity_constraint_simple_weeknight() {
     let score = constraint.evaluate(&recipe, &slot, &user_constraints);
 
     // Simple recipe on weeknight should score high
-    assert!(score > 0.7, "Expected high score for simple weeknight recipe, got {}", score);
+    assert!(
+        score > 0.7,
+        "Expected high score for simple weeknight recipe, got {}",
+        score
+    );
 }
 
 #[test]
@@ -122,7 +138,11 @@ fn test_complexity_constraint_complex_weekend() {
     let score = constraint.evaluate(&recipe, &slot, &user_constraints);
 
     // Complex recipe on weekend should score high
-    assert!(score > 0.8, "Expected high score for complex weekend recipe, got {}", score);
+    assert!(
+        score > 0.8,
+        "Expected high score for complex weekend recipe, got {}",
+        score
+    );
 }
 
 #[test]
@@ -143,7 +163,11 @@ fn test_complexity_constraint_complex_weeknight() {
     let score = constraint.evaluate(&recipe, &slot, &user_constraints);
 
     // Complex recipe on weeknight should score low
-    assert!(score < 0.4, "Expected low score for complex weeknight recipe, got {}", score);
+    assert!(
+        score < 0.4,
+        "Expected low score for complex weeknight recipe, got {}",
+        score
+    );
 }
 
 #[test]
@@ -161,7 +185,11 @@ fn test_advance_prep_constraint_sufficient_lead_time() {
     let score = constraint.evaluate(&recipe, &slot, &user_constraints);
 
     // Recipe with advance prep has sufficient lead time (can prep Tuesday evening)
-    assert!(score > 0.5, "Expected positive score for sufficient lead time, got {}", score);
+    assert!(
+        score > 0.5,
+        "Expected positive score for sufficient lead time, got {}",
+        score
+    );
 }
 
 #[test]
@@ -179,7 +207,11 @@ fn test_advance_prep_constraint_no_prep_required() {
     let score = constraint.evaluate(&recipe, &slot, &user_constraints);
 
     // No advance prep requirement is neutral/positive
-    assert!(score >= 0.5, "Expected neutral/positive score for no prep, got {}", score);
+    assert!(
+        score >= 0.5,
+        "Expected neutral/positive score for no prep, got {}",
+        score
+    );
 }
 
 #[test]
@@ -204,7 +236,10 @@ fn test_dietary_constraint_shellfish_restriction() {
 
     // For MVP, dietary constraint returns neutral score (future: check recipe tags)
     // Score should be 1.0 (no filtering implemented yet)
-    assert_eq!(score, 1.0, "Expected neutral score for MVP dietary constraint");
+    assert_eq!(
+        score, 1.0,
+        "Expected neutral score for MVP dietary constraint"
+    );
 }
 
 #[test]
@@ -222,7 +257,11 @@ fn test_freshness_constraint_early_week() {
     let score = constraint.evaluate(&recipe, &slot, &user_constraints);
 
     // Early week slot should score well for freshness-sensitive recipes
-    assert!(score >= 0.5, "Expected positive score for early week, got {}", score);
+    assert!(
+        score >= 0.5,
+        "Expected positive score for early week, got {}",
+        score
+    );
 }
 
 #[test]
@@ -243,7 +282,11 @@ fn test_equipment_conflict_constraint_no_conflict() {
     let score = constraint.evaluate(&recipe, &slot, &user_constraints);
 
     // No conflicts, should score high
-    assert!(score >= 0.9, "Expected high score with no conflicts, got {}", score);
+    assert!(
+        score >= 0.9,
+        "Expected high score with no conflicts, got {}",
+        score
+    );
 }
 
 #[test]
@@ -270,7 +313,7 @@ fn test_all_constraints_together() {
     let freshness = FreshnessConstraint;
     let equipment = EquipmentConflictConstraint::new(Vec::new());
 
-    let scores = vec![
+    let scores = [
         availability.evaluate(&recipe, &slot, &user_constraints),
         complexity.evaluate(&recipe, &slot, &user_constraints),
         advance_prep.evaluate(&recipe, &slot, &user_constraints),
@@ -281,6 +324,11 @@ fn test_all_constraints_together() {
 
     // All scores should be positive for a well-matched recipe
     for (i, score) in scores.iter().enumerate() {
-        assert!(*score >= 0.5, "Constraint {} scored {}, expected >= 0.5", i, score);
+        assert!(
+            *score >= 0.5,
+            "Constraint {} scored {}, expected >= 0.5",
+            i,
+            score
+        );
     }
 }

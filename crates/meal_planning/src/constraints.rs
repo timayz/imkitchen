@@ -1,4 +1,6 @@
-use crate::algorithm::{Complexity, RecipeComplexityCalculator, RecipeForPlanning, UserConstraints};
+use crate::algorithm::{
+    Complexity, RecipeComplexityCalculator, RecipeForPlanning, UserConstraints,
+};
 use chrono::{Datelike, NaiveDate, Weekday};
 use serde::{Deserialize, Serialize};
 
@@ -108,7 +110,7 @@ impl Constraint for ComplexityConstraint {
         &self,
         recipe: &RecipeForPlanning,
         slot: &MealSlot,
-        user_constraints: &UserConstraints,
+        _user_constraints: &UserConstraints,
     ) -> f32 {
         let complexity = RecipeComplexityCalculator::calculate_complexity(recipe);
 
@@ -221,9 +223,9 @@ impl Constraint for FreshnessConstraint {
         let day_of_week = slot.day_of_week();
 
         match day_of_week {
-            1..=3 => 1.0,   // Early week: best for fresh ingredients
-            4..=5 => 0.85,  // Mid-week: still good
-            6..=7 => 0.75,  // Weekend: less ideal for freshness
+            1..=3 => 1.0,  // Early week: best for fresh ingredients
+            4..=5 => 0.85, // Mid-week: still good
+            6..=7 => 0.75, // Weekend: less ideal for freshness
             _ => 0.75,
         }
 
@@ -261,6 +263,7 @@ impl EquipmentConflictConstraint {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[allow(dead_code)]
 enum Equipment {
     Oven,
     SlowCooker,
@@ -276,7 +279,7 @@ impl Constraint for EquipmentConflictConstraint {
         _user_constraints: &UserConstraints,
     ) -> f32 {
         // Check if any meals already assigned for this day use conflicting equipment
-        let recipe_equipment = Self::infer_equipment(recipe);
+        let _recipe_equipment = Self::infer_equipment(recipe);
 
         let same_day_assignments: Vec<&DayAssignment> = self
             .day_assignments
@@ -308,6 +311,7 @@ impl Constraint for EquipmentConflictConstraint {
 mod tests {
     use super::*;
 
+    #[allow(dead_code)]
     fn create_test_recipe(
         id: &str,
         ingredients: usize,

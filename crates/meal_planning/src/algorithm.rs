@@ -1,7 +1,7 @@
 use crate::error::MealPlanningError;
-use crate::events::{MealAssignment, MealType};
+use crate::events::MealAssignment;
 use crate::rotation::{RotationState, RotationSystem};
-use chrono::{Datelike, NaiveDate, Weekday};
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
 /// Recipe data needed for meal planning algorithm
@@ -281,7 +281,8 @@ impl MealPlanningAlgorithm {
                     .iter()
                     .filter(|r| !used_recipe_ids.contains(&r.id)) // Skip already-used recipes
                     .map(|r| {
-                        let score = Self::score_recipe_for_slot(r, &slot, &constraints, &day_assignments);
+                        let score =
+                            Self::score_recipe_for_slot(r, &slot, &constraints, &day_assignments);
                         (score, r)
                     })
                     .collect();
@@ -338,7 +339,10 @@ impl MealPlanningAlgorithm {
 
         // Update rotation state with all used recipes from this generation
         rotation_state = RotationSystem::update_after_generation(
-            &assignments.iter().map(|a| a.recipe_id.clone()).collect::<Vec<_>>(),
+            &assignments
+                .iter()
+                .map(|a| a.recipe_id.clone())
+                .collect::<Vec<_>>(),
             favorite_ids.len(),
             rotation_state,
         );
@@ -497,8 +501,13 @@ mod tests {
         let constraints = UserConstraints::default();
         let rotation_state = RotationState::new();
 
-        let result =
-            MealPlanningAlgorithm::generate("2025-10-20", favorites, constraints, rotation_state, Some(12345));
+        let result = MealPlanningAlgorithm::generate(
+            "2025-10-20",
+            favorites,
+            constraints,
+            rotation_state,
+            Some(12345),
+        );
 
         assert!(result.is_err());
         match result {
@@ -523,15 +532,15 @@ mod tests {
             meal_type: MealType::Dinner,
         };
 
-        let score = MealPlanningAlgorithm::score_recipe_for_slot(
-            &recipe,
-            &slot,
-            &user_constraints,
-            &[],
-        );
+        let score =
+            MealPlanningAlgorithm::score_recipe_for_slot(&recipe, &slot, &user_constraints, &[]);
 
         // Simple recipe on weeknight should score high (> 0.7)
-        assert!(score > 0.7, "Expected high score for simple weeknight recipe, got {}", score);
+        assert!(
+            score > 0.7,
+            "Expected high score for simple weeknight recipe, got {}",
+            score
+        );
     }
 
     #[test]
@@ -547,15 +556,15 @@ mod tests {
             meal_type: MealType::Dinner,
         };
 
-        let score = MealPlanningAlgorithm::score_recipe_for_slot(
-            &recipe,
-            &slot,
-            &user_constraints,
-            &[],
-        );
+        let score =
+            MealPlanningAlgorithm::score_recipe_for_slot(&recipe, &slot, &user_constraints, &[]);
 
         // Complex recipe on weekend should score high (> 0.8)
-        assert!(score > 0.8, "Expected high score for complex weekend recipe, got {}", score);
+        assert!(
+            score > 0.8,
+            "Expected high score for complex weekend recipe, got {}",
+            score
+        );
     }
 
     #[test]
@@ -593,9 +602,12 @@ mod tests {
         );
 
         // Monday should score higher or equal to Friday for freshness
-        assert!(score_monday >= score_friday,
+        assert!(
+            score_monday >= score_friday,
             "Expected Monday ({}) >= Friday ({}) for freshness",
-            score_monday, score_friday);
+            score_monday,
+            score_friday
+        );
     }
 
     #[test]
@@ -693,7 +705,10 @@ mod tests {
                 break;
             }
         }
-        assert!(different, "Different seeds should produce different assignments");
+        assert!(
+            different,
+            "Different seeds should produce different assignments"
+        );
     }
 
     #[test]
@@ -715,8 +730,13 @@ mod tests {
         let rotation_state = RotationState::new();
 
         let start = Instant::now();
-        let result =
-            MealPlanningAlgorithm::generate("2025-10-20", favorites, constraints, rotation_state, Some(12345));
+        let result = MealPlanningAlgorithm::generate(
+            "2025-10-20",
+            favorites,
+            constraints,
+            rotation_state,
+            Some(12345),
+        );
         let duration = start.elapsed();
 
         assert!(result.is_ok(), "Algorithm should succeed with 50 recipes");
