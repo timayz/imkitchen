@@ -133,12 +133,14 @@ async fn test_meal_plan_generated_event_projects_to_read_model() {
             meal_type: "breakfast".to_string(),
             recipe_id: "recipe_1".to_string(),
             prep_required: false,
+            assignment_reasoning: None,
         },
         meal_planning::events::MealAssignment {
             date: "2025-10-20".to_string(),
             meal_type: "lunch".to_string(),
             recipe_id: "recipe_2".to_string(),
             prep_required: false,
+            assignment_reasoning: None,
         },
     ];
 
@@ -350,6 +352,7 @@ async fn test_multiple_meal_assignments_projected_correctly() {
                 meal_type: meal_type.to_string(),
                 recipe_id: format!("recipe_{}", (day * 3 + meal_assignments.len() % 3) % 10 + 1),
                 prep_required: false,
+                assignment_reasoning: None,
             });
         }
     }
@@ -442,18 +445,21 @@ async fn test_rotation_progress_displays_correctly() {
             meal_type: "breakfast".to_string(),
             recipe_id: recipe_ids_used[recipe_idx].clone(),
             prep_required: false,
+            assignment_reasoning: None,
         });
         meal_assignments.push(MealAssignment {
             date: date.clone(),
             meal_type: "lunch".to_string(),
             recipe_id: recipe_ids_used[(recipe_idx + 1) % recipe_ids_used.len()].clone(),
             prep_required: false,
+            assignment_reasoning: None,
         });
         meal_assignments.push(MealAssignment {
             date: date.clone(),
             meal_type: "dinner".to_string(),
             recipe_id: recipe_ids_used[(recipe_idx + 2) % recipe_ids_used.len()].clone(),
             prep_required: false,
+            assignment_reasoning: None,
         });
     }
 
@@ -540,6 +546,7 @@ async fn test_meal_replacement_endpoint() {
         meal_type: "breakfast".to_string(),
         recipe_id: recipe_ids_used[0].clone(),
         prep_required: false,
+        assignment_reasoning: None,
     });
 
     let rotation_state = meal_planning::rotation::RotationState::with_favorite_count(15).unwrap();
@@ -660,6 +667,7 @@ async fn test_meal_plan_regeneration_projection() {
                 meal_type: meal_type.to_string(),
                 recipe_id: format!("recipe_{}", (i % 10) + 1),
                 prep_required: false,
+                assignment_reasoning: None,
             }
         })
         .collect();
@@ -721,6 +729,7 @@ async fn test_meal_plan_regeneration_projection() {
                 meal_type: meal_type.to_string(),
                 recipe_id: format!("recipe_{}", ((i + 5) % 10) + 1),
                 prep_required: false,
+                assignment_reasoning: None,
             }
         })
         .collect();
@@ -841,6 +850,7 @@ async fn test_regeneration_preserves_rotation_cycle() {
                 meal_type: meal_type.to_string(),
                 recipe_id: format!("recipe_{}", (i % 8) + 3), // Start from recipe_3 to avoid used ones
                 prep_required: false,
+                assignment_reasoning: None,
             }
         })
         .collect();
@@ -888,6 +898,7 @@ async fn test_regeneration_preserves_rotation_cycle() {
                 meal_type: meal_type.to_string(),
                 recipe_id: format!("recipe_{}", (i % 8) + 3),
                 prep_required: false,
+                assignment_reasoning: None,
             }
         })
         .collect();
@@ -982,6 +993,7 @@ async fn test_regeneration_with_reason() {
                 meal_type: meal_type.to_string(),
                 recipe_id: format!("recipe_{}", (i % 10) + 1),
                 prep_required: false,
+                assignment_reasoning: None,
             }
         })
         .collect();
@@ -1030,6 +1042,7 @@ async fn test_regeneration_with_reason() {
                 meal_type: meal_type.to_string(),
                 recipe_id: format!("recipe_{}", i),
                 prep_required: false,
+                assignment_reasoning: None,
             }
         })
         .collect();
