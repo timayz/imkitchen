@@ -1,7 +1,7 @@
 use crate::error::MealPlanningError;
 use crate::events::MealAssignment;
 use crate::rotation::{RotationState, RotationSystem};
-use chrono::NaiveDate;
+use chrono::{Datelike, NaiveDate};
 use serde::{Deserialize, Serialize};
 
 /// Recipe data needed for meal planning algorithm
@@ -121,6 +121,86 @@ impl RecipeComplexityCalculator {
     pub fn fits_weekend(_recipe: &RecipeForPlanning) -> bool {
         true // All recipes allowed on weekends
     }
+}
+
+/// Generate human-readable reasoning text explaining why a recipe was assigned to a slot
+///
+/// AC-2, AC-3, AC-4, AC-5, AC-6: Generates reasoning based on constraint evaluation
+///
+/// # Arguments
+/// * `recipe` - The recipe assigned
+/// * `slot` - The meal slot (date + meal type)
+/// * `user_constraints` - User profile constraints
+///
+/// # Returns
+/// A human-readable string explaining the assignment decision (max ~100 chars)
+///
+/// # Example Templates
+/// - Weeknight time: "Assigned to Tuesday: Quick weeknight meal (Simple recipe, 30min total time)"
+/// - Weekend complexity: "Assigned to Saturday: More prep time available (Complex recipe, 75min total time)"
+/// - Advance prep: "Prep tonight for tomorrow: Requires 4-hour marinade"
+/// - Default: "Best fit for Wednesday based on your preferences"
+pub fn generate_reasoning_text(
+    recipe: &RecipeForPlanning,
+    slot: &crate::constraints::MealSlot,
+    user_constraints: &UserConstraints,
+) -> String {
+    use chrono::Weekday;
+
+    // Get full day name (Monday, Tuesday, etc.)
+    let day_name = match slot.date.weekday() {
+        Weekday::Mon => "Monday",
+        Weekday::Tue => "Tuesday",
+        Weekday::Wed => "Wednesday",
+        Weekday::Thu => "Thursday",
+        Weekday::Fri => "Friday",
+        Weekday::Sat => "Saturday",
+        Weekday::Sun => "Sunday",
+    };
+
+    let total_time = recipe.prep_time_min.unwrap_or(0) + recipe.cook_time_min.unwrap_or(0);
+    let complexity = RecipeComplexityCalculator::calculate_complexity(recipe);
+
+    // Priority 1: Advance prep (most specific constraint)
+    if let Some(hours) = recipe.advance_prep_hours {
+        if hours > 0 {
+            if hours >= 4 {
+                return format!(
+                    "Prep tonight for tomorrow: Requires {}-hour marinade",
+                    hours
+                );
+            } else {
+                return format!(
+                    "Prep tonight for tomorrow: Requires {}-hour advance prep",
+                    hours
+                );
+            }
+        }
+    }
+
+    // Priority 2: Weekend complexity (distinctive pattern)
+    if slot.is_weekend() && complexity == Complexity::Complex {
+        return format!(
+            "Assigned to {}: More prep time available (Complex recipe, {}min total time)",
+            day_name, total_time
+        );
+    }
+
+    // Priority 3: Weeknight time constraint (most common pattern)
+    if !slot.is_weekend() {
+        let max_minutes = user_constraints
+            .weeknight_availability_minutes
+            .unwrap_or(45);
+        if total_time <= max_minutes && complexity == Complexity::Simple {
+            return format!(
+                "Assigned to {}: Quick weeknight meal (Simple recipe, {}min total time)",
+                day_name, total_time
+            );
+        }
+    }
+
+    // Priority 4: Default fallback
+    format!("Best fit for {} based on your preferences", day_name)
 }
 
 /// MealPlanningAlgorithm service generates meal plans with constraint satisfaction
@@ -310,12 +390,17 @@ impl MealPlanningAlgorithm {
                 let prep_required = selected_recipe.advance_prep_hours.is_some()
                     && selected_recipe.advance_prep_hours.unwrap() > 0;
 
+                // Story 3.8: Generate human-readable reasoning for assignment
+                let assignment_reasoning =
+                    generate_reasoning_text(selected_recipe, &slot, &constraints);
+
                 // Create assignment
                 assignments.push(MealAssignment {
                     date: date_str.clone(),
                     meal_type: meal_type_enum.as_str().to_string(),
                     recipe_id: selected_recipe.id.clone(),
                     prep_required,
+                    assignment_reasoning: Some(assignment_reasoning),
                 });
 
                 // Track day assignments for equipment conflict detection

@@ -8,7 +8,7 @@ pub mod read_model;
 pub mod rotation;
 
 pub use aggregate::MealPlanAggregate;
-pub use algorithm::{MealPlanningAlgorithm, RecipeComplexityCalculator};
+pub use algorithm::{generate_reasoning_text, MealPlanningAlgorithm, RecipeComplexityCalculator};
 pub use commands::{GenerateMealPlanCommand, RegenerateMealPlanCommand, ReplaceMealCommand};
 pub use constraints::{
     AdvancePrepConstraint, AvailabilityConstraint, ComplexityConstraint, Constraint,
