@@ -54,6 +54,63 @@ pub struct MealSlotData {
     pub complexity: Option<String>,
 }
 
+/// Form data for replacing a meal slot (Story 3.6)
+#[derive(Debug, Deserialize)]
+pub struct ReplaceMealSlotForm {
+    pub new_recipe_id: String,
+}
+
+/// Template for meal replacement modal (Story 3.6)
+#[derive(Template, Debug)]
+#[template(path = "components/meal-replacement-modal.html")]
+pub struct MealReplacementModalTemplate {
+    pub assignment_id: String,
+    pub recipes: Vec<AlternativeRecipe>,
+}
+
+/// Alternative recipe for meal replacement
+#[derive(Debug, Clone)]
+pub struct AlternativeRecipe {
+    pub id: String,
+    pub title: String,
+    pub complexity: Option<String>,
+    pub prep_time_min: Option<i32>,
+    pub cook_time_min: Option<i32>,
+}
+
+/// Template for toast notification (Story 3.6)
+#[derive(Template, Debug)]
+#[template(path = "components/toast.html")]
+pub struct ToastTemplate<'a> {
+    pub message: &'a str,
+    pub toast_type: &'a str,
+    pub dismiss_after: u32,
+}
+
+/// Template for no alternatives error modal (Story 3.6)
+#[derive(Template, Debug)]
+#[template(path = "components/no-alternatives-modal.html")]
+pub struct NoAlternativesModalTemplate<'a> {
+    pub meal_type: &'a str,
+}
+
+/// Helper function to render toast notification
+fn render_toast(
+    message: &str,
+    toast_type: &str,
+    dismiss_after_ms: u32,
+) -> Result<String, AppError> {
+    let template = ToastTemplate {
+        message,
+        toast_type,
+        dismiss_after: dismiss_after_ms,
+    };
+
+    template
+        .render()
+        .map_err(|e| AppError::InternalError(format!("Toast template render error: {}", e)))
+}
+
 /// Day with 3 meal slots for template rendering
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DayData {
@@ -509,16 +566,18 @@ fn build_day_data(
     days
 }
 
-/// POST /plan/meal/:assignment_id/replace - Replace a single meal assignment
+/// GET /plan/meal/:assignment_id/alternatives - Get alternative recipes for a meal slot (Story 3.6)
 ///
-/// Story 3.4: "Replace This Meal" button functionality
-/// Respects rotation by only selecting from unused recipes in current cycle
-pub async fn post_replace_meal(
+/// AC-2: System offers 3-5 alternative recipes matching constraints
+/// AC-3: Alternatives respect rotation (only unused recipes)
+///
+/// Returns a modal with selectable alternatives for meal replacement.
+pub async fn get_meal_alternatives(
     Extension(auth): Extension<Auth>,
     State(state): State<AppState>,
     axum::extract::Path(assignment_id): axum::extract::Path<String>,
 ) -> Result<Html<String>, AppError> {
-    // Get the meal assignment to replace
+    // Get the meal assignment to find context
     let assignment = sqlx::query_as::<_, MealAssignmentReadModel>(
         r#"
         SELECT ma.id, ma.meal_plan_id, ma.date, ma.meal_type, ma.recipe_id, ma.prep_required
@@ -541,39 +600,98 @@ pub async fn post_replace_meal(
     )
     .await?;
 
-    if available_recipes.is_empty() {
-        return Err(AppError::InternalError(
-            "No available recipes for replacement. All favorites used in current rotation cycle."
-                .to_string(),
-        ));
+    // Validate minimum 3 alternatives available (AC-2, Review Action Item [L1])
+    if available_recipes.len() < 3 {
+        // Return user-friendly message instead of 500 error
+        let template = NoAlternativesModalTemplate {
+            meal_type: &assignment.meal_type,
+        };
+        let message_html = template
+            .render()
+            .map_err(|e| AppError::InternalError(format!("Template render error: {}", e)))?;
+        return Ok(Html(message_html));
     }
 
-    // Select a random replacement recipe from available pool
-    // Uses assignment_id as seed for deterministic randomization (same assignment = same sequence)
-    use std::collections::hash_map::DefaultHasher;
-    use std::hash::{Hash, Hasher};
+    // Fetch recipe details for alternatives (limit to 3-5 as per AC-2)
+    let recipe_ids_for_fetch: Vec<String> = available_recipes.into_iter().take(5).collect();
+    let recipes = fetch_recipes_by_ids(&recipe_ids_for_fetch, &state.db_pool).await?;
 
-    let mut hasher = DefaultHasher::new();
-    assignment_id.hash(&mut hasher);
-    let hash = hasher.finish();
+    // Map to AlternativeRecipe structs for template
+    let alternative_recipes: Vec<AlternativeRecipe> = recipes
+        .into_iter()
+        .map(|r| AlternativeRecipe {
+            id: r.id,
+            title: r.title,
+            complexity: r.complexity,
+            prep_time_min: r.prep_time_min,
+            cook_time_min: r.cook_time_min,
+        })
+        .collect();
 
-    let index = (hash as usize) % available_recipes.len();
-    let replacement_recipe_id = &available_recipes[index];
+    // Render modal using Askama template
+    let template = MealReplacementModalTemplate {
+        assignment_id,
+        recipes: alternative_recipes,
+    };
 
-    // Update the meal assignment with the new recipe
-    sqlx::query(
+    let modal_html = template
+        .render()
+        .map_err(|e| AppError::InternalError(format!("Template render error: {}", e)))?;
+
+    Ok(Html(modal_html))
+}
+
+/// POST /plan/meal/:assignment_id/replace - Replace a single meal assignment (Story 3.6)
+///
+/// AC-4: Selected recipe immediately replaces meal in calendar (AJAX update)
+/// AC-5: Replaced recipe returned to rotation pool (available again)
+/// AC-7: Confirmation message: "Meal replaced successfully"
+///
+/// This handler follows proper event sourcing:
+/// 1. Query assignment to get meal_plan_id, date, meal_type
+/// 2. Invoke domain command: meal_planning::replace_meal()
+/// 3. Domain emits MealReplaced event
+/// 4. Projection handler updates read model
+/// 5. Return updated meal slot HTML
+pub async fn post_replace_meal(
+    Extension(auth): Extension<Auth>,
+    State(state): State<AppState>,
+    axum::extract::Path(assignment_id): axum::extract::Path<String>,
+    axum::Form(form): axum::Form<ReplaceMealSlotForm>,
+) -> Result<Html<String>, AppError> {
+    // Get the meal assignment to replace
+    let assignment = sqlx::query_as::<_, MealAssignmentReadModel>(
         r#"
-        UPDATE meal_assignments
-        SET recipe_id = ?1
-        WHERE id = ?2
+        SELECT ma.id, ma.meal_plan_id, ma.date, ma.meal_type, ma.recipe_id, ma.prep_required
+        FROM meal_assignments ma
+        JOIN meal_plans mp ON ma.meal_plan_id = mp.id
+        WHERE ma.id = ?1 AND mp.user_id = ?2 AND mp.status = 'active'
         "#,
     )
-    .bind(replacement_recipe_id)
     .bind(&assignment_id)
-    .execute(&state.db_pool)
-    .await?;
+    .bind(&auth.user_id)
+    .fetch_optional(&state.db_pool)
+    .await?
+    .ok_or_else(|| AppError::InternalError("Meal assignment not found".to_string()))?;
 
-    // Fetch the replacement recipe details
+    // Invoke domain command to replace meal (proper event sourcing)
+    let cmd = meal_planning::ReplaceMealCommand {
+        meal_plan_id: assignment.meal_plan_id.clone(),
+        date: assignment.date.clone(),
+        meal_type: assignment.meal_type.clone(),
+        new_recipe_id: form.new_recipe_id.clone(),
+    };
+
+    meal_planning::replace_meal(cmd, &state.evento_executor).await?;
+
+    // Process evento subscription to update read model (use unsafe_oneshot for sync processing)
+    // This ensures the read model is updated before we query it
+    meal_planning::meal_plan_projection(state.db_pool.clone())
+        .unsafe_oneshot(&state.evento_executor)
+        .await
+        .map_err(|e| AppError::EventStoreError(format!("Failed to process projection: {}", e)))?;
+
+    // Fetch the replacement recipe details for rendering
     let replacement_recipe = sqlx::query_as::<_, RecipeReadModel>(
         r#"
         SELECT id, user_id, title, ingredients, instructions, prep_time_min, cook_time_min,
@@ -583,7 +701,7 @@ pub async fn post_replace_meal(
         WHERE id = ?1 AND deleted_at IS NULL
         "#,
     )
-    .bind(replacement_recipe_id)
+    .bind(&form.new_recipe_id)
     .fetch_one(&state.db_pool)
     .await?;
 
@@ -642,6 +760,7 @@ pub async fn post_replace_meal(
         .replace('"', "&quot;")
         .replace('\'', "&#x27;");
 
+    // AC-7: Render updated meal slot + success toast
     let meal_slot_html = format!(
         "<div id=\"meal-slot-{}\" class=\"border-l-4 border-{}-400 pl-3 py-2\">\
     <div class=\"flex items-center justify-between mb-1\">\
@@ -657,10 +776,10 @@ pub async fn post_replace_meal(
         {}\
     </div>\
     <button \
-        ts-req=\"/plan/meal/{}/replace\" \
-        ts-req-method=\"POST\" \
-        ts-target=\"#meal-slot-{}\" \
-        ts-swap=\"outerHTML\" \
+        ts-req=\"/plan/meal/{}/alternatives\" \
+        ts-req-method=\"GET\" \
+        ts-target=\"#modal-container\" \
+        ts-swap=\"inner\" \
         class=\"mt-2 text-xs text-primary-600 hover:text-primary-800 underline\">\
         Replace This Meal\
     </button>\
@@ -675,10 +794,15 @@ pub async fn post_replace_meal(
         cook_time_html,
         prep_indicator,
         assignment_id,
-        assignment_id,
     );
 
-    Ok(Html(meal_slot_html))
+    // Render success toast using component template (include directive for reusable components)
+    let toast_html = render_toast("Meal replaced successfully", "success", 3000)?;
+
+    // Combine meal slot + toast for TwinSpark response
+    let response_html = format!("{}{}", meal_slot_html, toast_html);
+
+    Ok(Html(response_html))
 }
 
 /// Helper: Get next Monday's date as ISO 8601 string

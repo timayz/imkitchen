@@ -194,18 +194,17 @@
                     </div>
 
                     <div class="flex gap-2 ml-4">
-                        <!-- Story 3.5 AC-4: Replace This Meal button (only visible from calendar) -->
+                        <!-- Story 3.6: Replace This Meal button (opens alternatives modal) -->
                         {% if is_from_calendar %}
                         {% if let Some(assignment_id_val) = assignment_id %}
-                        <form method="POST"
-                              ts-req="/plan/meal/{{ assignment_id_val }}/replace"
-                              ts-req-method="POST"
-                              ts-target="#main-content"
-                              class="inline-block">
-                            <button type="submit" class="px-6 py-3 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 font-bold shadow-md transition-all">
-                                🔄 Replace This Meal
-                            </button>
-                        </form>
+                        <button
+                            ts-req="/plan/meal/{{ assignment_id_val }}/alternatives"
+                            ts-req-method="GET"
+                            ts-target="#modal-container"
+                            ts-swap="inner"
+                            class="px-6 py-3 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 font-bold shadow-md transition-all">
+                            🔄 Replace This Meal
+                        </button>
                         {% endif %}
                         {% endif %}
 
@@ -467,6 +466,9 @@
             {% endif %}
         </nav>
     </div>
+
+    <!-- Story 3.6: Modal container for meal replacement modal -->
+    <div id="modal-container"></div>
 </div>
 
 <script>

@@ -10,7 +10,7 @@ create PR:
 run and fix make check than git conventional commits, push
 
 # when working on test
-when doing tests, use unsafe_oneshot that act like run but in sync way for subscribe
+when doing tests, use unsafe_oneshot instead of run for subscribe because its process events in sync
 
 # init milestones / issues from epic
 can you create all epics as milestone with associeted stories as issue ? epic title format
@@ -21,4 +21,10 @@ read 'docs/solution-architecture.md'
 
 in folder fixtures, create recipe json file structured like "example-recipe.json" from
   [link]
+
+# askama template best practices
+- Always use proper Askama templates with #[derive(Template)] instead of inline HTML generation with format!()
+- Use double quotes for string comparisons in templates (e.g., {% if complexity == "simple" %})
+- Avoid reserved Rust keywords in template struct fields (e.g., use toast_type instead of type)
+- Templates should be placed in templates/components/ for reusable components and templates/pages/ for full pages
 

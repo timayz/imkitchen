@@ -1,0 +1,275 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>6</storyId>
+    <title>Replace Individual Meal Slot</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-17</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-3.6.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>replace a single meal in my plan</iWant>
+    <soThat>I can adjust for schedule changes or preferences</soThat>
+    <tasks>
+      <task id="1" acs="1,4,7">Implement POST /plan/meal/:id/replace Route</task>
+      <task id="2" acs="3,5">Implement Domain Command - ReplaceMealSlot</task>
+      <task id="3" acs="3,5">Update Rotation Manager for Meal Replacement</task>
+      <task id="4" acs="2,3">Create Alternative Recipe Selection UI</task>
+      <task id="5" acs="4,6">Update Read Model Projection</task>
+      <task id="6" acs="4,7">Create MealSlotPartial Template</task>
+      <task id="7" acs="4">Wire TwinSpark AJAX Behavior</task>
+      <task id="8" acs="all">Write Comprehensive Test Suite (TDD)</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="1">"Replace This Meal" button visible on each calendar slot</criterion>
+    <criterion id="2">System offers 3-5 alternative recipes matching constraints</criterion>
+    <criterion id="3">Alternatives respect rotation (only unused recipes)</criterion>
+    <criterion id="4">Selected recipe immediately replaces meal in calendar (AJAX update)</criterion>
+    <criterion id="5">Replaced recipe returned to rotation pool (available again)</criterion>
+    <criterion id="6">Shopping list automatically updates</criterion>
+    <criterion id="7">Confirmation message: "Meal replaced successfully"</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/epics.md</path>
+        <title>Epic 3 - Story 3.6: Replace Individual Meal Slot</title>
+        <section>Story 3.6</section>
+        <snippet>Requirements and acceptance criteria for individual meal replacement feature (lines 679-702)</snippet>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Intelligent Meal Planning Engine</title>
+        <section>Story 3.6 - Replace Individual Meal Slot</section>
+        <snippet>Implementation checklist and workflow sequence for meal replacement (lines 1291-1299, 952-999)</snippet>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Intelligent Meal Planning Engine</title>
+        <section>RotationManager - Rotation State Management</section>
+        <snippet>Rotation cycle logic, data structures, and recipe availability tracking (lines 233-275)</snippet>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Intelligent Meal Planning Engine</title>
+        <section>MealSlotReplaced Event Definition</section>
+        <snippet>Event schema and aggregate event handler implementation (lines 300-307, 385-398)</snippet>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>TwinSpark Progressive Enhancement</section>
+        <snippet>AJAX patterns for partial HTML updates without page reload (lines 536-558)</snippet>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>Server-Side Rendering with Askama</section>
+        <snippet>Template rendering patterns and type-safe templating (lines 122-141)</snippet>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>CQRS Implementation</section>
+        <snippet>Command/query segregation pattern with evento (lines 206-249)</snippet>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/PRD.md</path>
+        <title>imkitchen Product Requirements Document</title>
+        <section>FR-7: Meal Plan Regeneration</section>
+        <snippet>Functional requirement for individual meal slot replacement (lines 79-80)</snippet>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-3.5.md</path>
+        <title>Story 3.5 Completion Notes</title>
+        <section>Lessons Learned and Action Items</section>
+        <snippet>Error handling, accessibility, CSP compliance patterns (lines 224-490)</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/events.rs</path>
+        <kind>event</kind>
+        <symbol>MealReplaced</symbol>
+        <lines>103-110</lines>
+        <reason>Event already defined for meal replacement - Story 3.6 implements handler and projection</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/commands.rs</path>
+        <kind>command</kind>
+        <symbol>ReplaceMealCommand</symbol>
+        <lines>15-25</lines>
+        <reason>Command struct already exists - Story 3.6 needs to implement command handler logic</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/rotation.rs</path>
+        <kind>service</kind>
+        <symbol>RotationState</symbol>
+        <lines>11-91</lines>
+        <reason>Rotation state tracking - needs unmark_recipe_used() method for returning recipes to pool (AC-5)</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/rotation.rs</path>
+        <kind>service</kind>
+        <symbol>RotationSystem</symbol>
+        <lines>97-141</lines>
+        <reason>Rotation logic - filter_available_recipes() used for alternative selection (AC-2, AC-3)</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/src/routes/meal_plan.rs</path>
+        <kind>route</kind>
+        <symbol>get_meal_plan</symbol>
+        <lines>85-100</lines>
+        <reason>Existing calendar route - need to add replace_meal_slot() handler as sibling (Task 1)</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/src/routes/meal_plan.rs</path>
+        <kind>struct</kind>
+        <symbol>MealSlotData</symbol>
+        <lines>44-55</lines>
+        <reason>Meal slot template data structure - already includes assignment_id for "Replace This Meal" button</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/aggregate.rs</path>
+        <kind>aggregate</kind>
+        <symbol>MealPlanAggregate</symbol>
+        <lines>1-50</lines>
+        <reason>Event-sourced aggregate - needs meal_replaced() event handler (Task 2)</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/read_model.rs</path>
+        <kind>projection</kind>
+        <symbol>project_meal_plan_generated</symbol>
+        <lines>1-50</lines>
+        <reason>Example projection handler - create sibling project_meal_replaced() for MealReplaced event (Task 5)</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/templates/pages/meal-calendar.html</path>
+        <kind>template</kind>
+        <symbol>meal-calendar</symbol>
+        <lines>1-100</lines>
+        <reason>Main calendar template - contains meal slot components that need "Replace This Meal" button (AC-1)</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/tests/meal_plan_integration_tests.rs</path>
+        <kind>test</kind>
+        <symbol>meal_plan_integration_tests</symbol>
+        <lines>1-50</lines>
+        <reason>Integration test suite - pattern for Story 3.6 meal replacement tests (Task 8)</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <rust>
+        <dependency name="evento" version="1.4" reason="Event sourcing framework - core for aggregate and event handling"/>
+        <dependency name="axum" version="0.8" reason="HTTP framework - route handlers and forms"/>
+        <dependency name="askama" version="0.14" reason="Template engine - render partial HTML for AJAX"/>
+        <dependency name="sqlx" version="0.8" reason="SQL toolkit - read model queries and projections"/>
+        <dependency name="serde" version="1.0" reason="Serialization - command/event/form data"/>
+        <dependency name="serde_json" version="1.0" reason="JSON serialization - rotation state storage"/>
+        <dependency name="chrono" version="0.4" reason="Date/time handling - meal slot dates"/>
+        <dependency name="uuid" version="1.10" reason="Unique IDs - meal plan and assignment IDs"/>
+        <dependency name="tracing" version="0.1" reason="Observability - log replacement operations"/>
+      </rust>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">Event-sourced DDD: MealReplaced event must be persisted to evento stream before updating read model</constraint>
+    <constraint type="architecture">CQRS: Command updates aggregate, read model projection updates meal_assignments table asynchronously</constraint>
+    <constraint type="architecture">Server-Side Rendering: Use Askama templates for modal and partial responses (no client-side framework)</constraint>
+    <constraint type="architecture">Progressive Enhancement: TwinSpark for AJAX - modal and slot replacement without full page reload</constraint>
+    <constraint type="domain">Rotation Integrity: Old recipe must be unmarked (returned to pool) AND new recipe marked as used atomically</constraint>
+    <constraint type="domain">Rotation Constraint: Replacement recipe must NOT be already used in current rotation cycle (AC-3)</constraint>
+    <constraint type="domain">Authorization: User can only replace meals in their own active meal plan</constraint>
+    <constraint type="domain">Cross-Domain Event: Emit ShoppingListUpdateRequested event after MealReplaced to trigger shopping list recalculation</constraint>
+    <constraint type="error-handling">Use proper match statements, not .unwrap() - lesson from Story 3.5 action item #1</constraint>
+    <constraint type="security">Extract inline JS to separate files for CSP compliance - lesson from Story 3.5 action item #2</constraint>
+    <constraint type="accessibility">Add ARIA landmarks (role attributes) for screen reader navigation - lesson from Story 3.5 action item #3</constraint>
+    <constraint type="accessibility">Support keyboard navigation for modal (Escape to close, Enter to select) - lesson from Story 3.5 action item #4</constraint>
+    <constraint type="testing">Maintain 80%+ test coverage with integration tests - Story 3.5 standard (82 passing tests)</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>meal_planning::replace_meal</name>
+      <kind>domain_command</kind>
+      <signature>pub async fn replace_meal(cmd: ReplaceMealCommand, executor: &amp;SqliteEventExecutor) -&gt; Result&lt;(), MealPlanningError&gt;</signature>
+      <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/lib.rs</path>
+      <usage>Route handler invokes this to execute meal replacement command</usage>
+    </interface>
+    <interface>
+      <name>RotationState::mark_recipe_used</name>
+      <kind>method</kind>
+      <signature>pub fn mark_recipe_used(&amp;mut self, recipe_id: String)</signature>
+      <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/rotation.rs:52-54</path>
+      <usage>Mark new recipe as used in rotation after replacement</usage>
+    </interface>
+    <interface>
+      <name>RotationState::unmark_recipe_used (NEW)</name>
+      <kind>method</kind>
+      <signature>pub fn unmark_recipe_used(&amp;mut self, recipe_id: &amp;str) -&gt; Result&lt;(), String&gt;</signature>
+      <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/rotation.rs</path>
+      <usage>Return old recipe to rotation pool after replacement - MUST IMPLEMENT (Task 3)</usage>
+    </interface>
+    <interface>
+      <name>RotationSystem::filter_available_recipes</name>
+      <kind>function</kind>
+      <signature>pub fn filter_available_recipes(all_favorite_ids: &amp;[String], rotation_state: &amp;RotationState) -&gt; Vec&lt;String&gt;</signature>
+      <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/rotation.rs:103-112</path>
+      <usage>Query unused recipes for alternative selection (AC-2, AC-3)</usage>
+    </interface>
+    <interface>
+      <name>MealPlanQueries::get_meal_assignment_by_id</name>
+      <kind>query</kind>
+      <signature>pub async fn get_meal_assignment_by_id(assignment_id: &amp;str, pool: &amp;SqlitePool) -&gt; Result&lt;Option&lt;MealAssignmentReadModel&gt;, sqlx::Error&gt;</signature>
+      <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/read_model.rs</path>
+      <usage>Route handler queries assignment to validate ownership and get context</usage>
+    </interface>
+    <interface>
+      <name>project_meal_replaced (NEW)</name>
+      <kind>evento_subscription</kind>
+      <signature>#[evento::handler(MealPlanAggregate)] pub async fn project_meal_replaced(context: &amp;Context&lt;'_, E&gt;, event: EventDetails&lt;MealReplaced&gt;) -&gt; anyhow::Result&lt;()&gt;</signature>
+      <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/read_model.rs</path>
+      <usage>Evento subscription to update meal_assignments table and emit ShoppingListUpdateRequested - MUST IMPLEMENT (Task 5)</usage>
+    </interface>
+    <interface>
+      <name>TwinSpark Attributes</name>
+      <kind>frontend_ajax</kind>
+      <signature>ts-req, ts-req-method, ts-target, ts-swap</signature>
+      <path>Templates: meal-calendar.html, replace-meal-modal.html</path>
+      <usage>AJAX attributes for modal open (GET /alternatives) and slot replacement (POST /replace) without page reload</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing follows Rust best practices with cargo test framework. Integration tests in /tests directory use real SQLite database with evento event store. Unit tests colocated with domain logic in crates/*/src/*.rs files. Test coverage target: 80%+ via cargo tarpaulin. TDD approach: write tests before implementation. E2E tests (if needed) use Playwright for browser automation.
+    </standards>
+    <locations>
+      <location>/home/snapiz/projects/github/timayz/imkitchen/tests/meal_plan_integration_tests.rs</location>
+      <location>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/rotation.rs (unit tests at bottom)</location>
+      <location>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/aggregate.rs (unit tests at bottom)</location>
+      <location>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/commands.rs (add unit tests)</location>
+    </locations>
+    <ideas>
+      <idea ac="1">[Integration] Test: "Replace This Meal" button visible on calendar - verify MealSlotData includes assignment_id in template</idea>
+      <idea ac="2,3">[Integration] Test: GET /plan/meal/:id/alternatives returns 3-5 unused recipes matching meal type constraints</idea>
+      <idea ac="3">[Unit] Test: RotationState::unmark_recipe_used() removes recipe from used_recipe_ids HashSet and makes it available again</idea>
+      <idea ac="4">[Integration] Test: POST /plan/meal/:id/replace with valid new_recipe_id updates database and returns HTML fragment</idea>
+      <idea ac="4">[E2E] Test: Select alternative recipe from modal, verify calendar slot updates without page reload (TwinSpark AJAX)</idea>
+      <idea ac="5">[Unit] Test: Meal replacement marks old recipe available and new recipe used atomically in rotation state</idea>
+      <idea ac="5">[Integration] Test: MealReplaced event triggers rotation state update in database (recipe_rotation_state table)</idea>
+      <idea ac="6">[Integration] Test: MealReplaced event emits ShoppingListUpdateRequested cross-domain event</idea>
+      <idea ac="7">[Integration] Test: Partial template includes success toast HTML with "Meal replaced successfully" message</idea>
+      <idea ac="all">[Integration] Test: Unauthorized user cannot replace meals in another user's meal plan (403 Forbidden)</idea>
+      <idea ac="all">[Integration] Test: Attempting to replace with already-used recipe returns validation error</idea>
+      <idea ac="all">[Unit] Test: ReplaceMealCommand validates meal_plan_id, date, meal_type, new_recipe_id fields</idea>
+    </ideas>
+  </tests>
+</story-context>

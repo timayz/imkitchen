@@ -1,5 +1,5 @@
 use crate::aggregate::MealPlanAggregate;
-use crate::events::{MealPlanGenerated, RecipeUsedInRotation, RotationCycleReset};
+use crate::events::{MealPlanGenerated, MealReplaced, RecipeUsedInRotation, RotationCycleReset};
 use evento::{AggregatorName, Context, EventDetails, Executor};
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
@@ -472,6 +472,102 @@ pub async fn rotation_cycle_reset_handler<E: Executor>(
     Ok(())
 }
 
+/// Async evento subscription handler for MealReplaced events (Story 3.6)
+///
+/// This handler projects MealReplaced events to update the meal_assignments read model
+/// when a user replaces a single meal slot. It also updates rotation state in the database.
+#[evento::handler(MealPlanAggregate)]
+pub async fn meal_replaced_handler<E: Executor>(
+    context: &Context<'_, E>,
+    event: EventDetails<MealReplaced>,
+) -> anyhow::Result<()> {
+    // Extract the shared SqlitePool from context
+    let pool: SqlitePool = context.extract();
+
+    // Begin transaction for atomic updates
+    let mut tx = pool.begin().await?;
+
+    // Update meal assignment in read model
+    sqlx::query(
+        r#"
+        UPDATE meal_assignments
+        SET recipe_id = ?1
+        WHERE meal_plan_id = ?2 AND date = ?3 AND meal_type = ?4
+        "#,
+    )
+    .bind(&event.data.new_recipe_id)
+    .bind(&event.aggregator_id)
+    .bind(&event.data.date)
+    .bind(&event.data.meal_type)
+    .execute(&mut *tx)
+    .await?;
+
+    // Get user_id from meal plan for rotation state update
+    let user_id: Option<(String,)> = sqlx::query_as("SELECT user_id FROM meal_plans WHERE id = ?1")
+        .bind(&event.aggregator_id)
+        .fetch_optional(&mut *tx)
+        .await?;
+
+    let user_id = match user_id {
+        Some((uid,)) => uid,
+        None => {
+            return Err(anyhow::anyhow!(
+                "Meal plan {} not found for MealReplaced event",
+                event.aggregator_id
+            ));
+        }
+    };
+
+    // Get current cycle number
+    let max_cycle: Option<(i64,)> = sqlx::query_as(
+        r#"
+        SELECT MAX(cycle_number) as max_cycle
+        FROM recipe_rotation_state
+        WHERE user_id = ?1
+        "#,
+    )
+    .bind(&user_id)
+    .fetch_optional(&mut *tx)
+    .await?;
+
+    let current_cycle = max_cycle.map(|(c,)| c).unwrap_or(1);
+
+    // Remove old recipe from rotation state (return to pool)
+    sqlx::query(
+        r#"
+        DELETE FROM recipe_rotation_state
+        WHERE user_id = ?1 AND cycle_number = ?2 AND recipe_id = ?3
+        "#,
+    )
+    .bind(&user_id)
+    .bind(current_cycle)
+    .bind(&event.data.old_recipe_id)
+    .execute(&mut *tx)
+    .await?;
+
+    // Insert new recipe into rotation state (mark as used)
+    let id = Uuid::new_v4().to_string();
+    sqlx::query(
+        r#"
+        INSERT INTO recipe_rotation_state (id, user_id, cycle_number, recipe_id, used_at)
+        VALUES (?1, ?2, ?3, ?4, ?5)
+        ON CONFLICT(user_id, cycle_number, recipe_id) DO NOTHING
+        "#,
+    )
+    .bind(id)
+    .bind(&user_id)
+    .bind(current_cycle)
+    .bind(&event.data.new_recipe_id)
+    .bind(&event.data.replaced_at)
+    .execute(&mut *tx)
+    .await?;
+
+    // Commit transaction
+    tx.commit().await?;
+
+    Ok(())
+}
+
 /// Create and configure the meal plan projection subscription
 ///
 /// This function sets up evento subscriptions for meal plan read model projections.
@@ -482,6 +578,7 @@ pub fn meal_plan_projection(pool: SqlitePool) -> evento::SubscribeBuilder<evento
         .handler(meal_plan_generated_handler())
         .handler(recipe_used_in_rotation_handler())
         .handler(rotation_cycle_reset_handler())
+        .handler(meal_replaced_handler())
 }
 
 // NOTE: Task 7 (AC-6, AC-7) - Favorite Recipe Changes Mid-Rotation
