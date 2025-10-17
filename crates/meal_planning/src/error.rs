@@ -29,5 +29,24 @@ pub enum MealPlanningError {
     DatabaseError(#[from] sqlx::Error),
 
     #[error("Event sourcing error: {0}")]
-    EventoError(#[from] anyhow::Error),
+    EventoError(String),
+
+    // Story 3.6: Meal replacement errors
+    #[error("Meal plan not found: {0}")]
+    MealPlanNotFound(String),
+
+    #[error("Meal plan is not active: {0}")]
+    MealPlanNotActive(String),
+
+    #[error("Meal assignment not found for date {0}, meal type {1}")]
+    MealAssignmentNotFound(String, String),
+
+    #[error("Recipe {0} is already assigned to this meal slot")]
+    RecipeAlreadyAssigned(String),
+
+    #[error("Recipe {0} is already used in rotation cycle {1}")]
+    RecipeAlreadyUsedInRotation(String, u32),
+
+    #[error("Rotation state error: {0}")]
+    RotationStateError(String),
 }

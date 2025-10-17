@@ -14,6 +14,18 @@ button.ts-active::after {
     content: "⏳";
     margin-left: 0.5rem;
 }
+
+/* Toast notification animation */
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
 </style>
 {% endblock %}
 
@@ -116,10 +128,10 @@ button.ts-active::after {
                             {% endif %}
                         </div>
                         <button
-                            ts-req="/plan/meal/{{ breakfast.assignment_id }}/replace"
-                            ts-req-method="POST"
-                            ts-target="#meal-slot-{{ breakfast.assignment_id }}"
-                            ts-swap="outerHTML"
+                            ts-req="/plan/meal/{{ breakfast.assignment_id }}/alternatives"
+                            ts-req-method="GET"
+                            ts-target="#modal-container"
+                            ts-swap="inner"
                             class="mt-2 text-xs text-primary-600 hover:text-primary-800 underline">
                             Replace This Meal
                         </button>
@@ -167,10 +179,10 @@ button.ts-active::after {
                             {% endif %}
                         </div>
                         <button
-                            ts-req="/plan/meal/{{ lunch.assignment_id }}/replace"
-                            ts-req-method="POST"
-                            ts-target="#meal-slot-{{ lunch.assignment_id }}"
-                            ts-swap="outerHTML"
+                            ts-req="/plan/meal/{{ lunch.assignment_id }}/alternatives"
+                            ts-req-method="GET"
+                            ts-target="#modal-container"
+                            ts-swap="inner"
                             class="mt-2 text-xs text-primary-600 hover:text-primary-800 underline">
                             Replace This Meal
                         </button>
@@ -218,10 +230,10 @@ button.ts-active::after {
                             {% endif %}
                         </div>
                         <button
-                            ts-req="/plan/meal/{{ dinner.assignment_id }}/replace"
-                            ts-req-method="POST"
-                            ts-target="#meal-slot-{{ dinner.assignment_id }}"
-                            ts-swap="outerHTML"
+                            ts-req="/plan/meal/{{ dinner.assignment_id }}/alternatives"
+                            ts-req-method="GET"
+                            ts-target="#modal-container"
+                            ts-swap="inner"
                             class="mt-2 text-xs text-primary-600 hover:text-primary-800 underline">
                             Replace This Meal
                         </button>
@@ -291,5 +303,8 @@ button.ts-active::after {
         </div>
         {% endif %}
     </div>
+
+    <!-- Modal Container for meal replacement (Story 3.6) -->
+    <div id="modal-container"></div>
 </main>
 {% endblock %}

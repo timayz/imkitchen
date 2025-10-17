@@ -58,6 +58,21 @@ impl RotationState {
         self.used_recipe_ids.contains(recipe_id)
     }
 
+    /// Remove a recipe from the used set (Story 3.6: return recipe to pool after replacement)
+    ///
+    /// Returns Ok(()) if the recipe was successfully unmarked, or Err if it wasn't in the used set.
+    /// This is used when replacing a meal slot - the old recipe returns to the rotation pool.
+    pub fn unmark_recipe_used(&mut self, recipe_id: &str) -> Result<(), String> {
+        if self.used_recipe_ids.remove(recipe_id) {
+            Ok(())
+        } else {
+            Err(format!(
+                "Recipe {} was not marked as used in cycle {}",
+                recipe_id, self.cycle_number
+            ))
+        }
+    }
+
     /// Reset the cycle when all favorites have been used once
     ///
     /// This allows recipes to be reused in subsequent meal plans.
@@ -310,5 +325,93 @@ mod tests {
         assert_eq!(updated_state.used_count(), 2);
         assert!(updated_state.is_recipe_used("recipe_1"));
         assert!(updated_state.is_recipe_used("recipe_2"));
+    }
+
+    /// Story 3.6 - Test unmark_recipe_used() removes recipe from used set
+    #[test]
+    fn test_unmark_recipe_used_success() {
+        let mut state = RotationState::new();
+        state.mark_recipe_used("recipe_1".to_string());
+        state.mark_recipe_used("recipe_2".to_string());
+
+        assert_eq!(state.used_count(), 2);
+        assert!(state.is_recipe_used("recipe_1"));
+
+        // Unmark recipe_1
+        let result = state.unmark_recipe_used("recipe_1");
+        assert!(result.is_ok());
+
+        // Recipe should be removed from used set
+        assert_eq!(state.used_count(), 1);
+        assert!(!state.is_recipe_used("recipe_1"));
+        assert!(state.is_recipe_used("recipe_2"));
+    }
+
+    /// Story 3.6 - Test unmark_recipe_used() returns error if recipe not in used set
+    #[test]
+    fn test_unmark_recipe_used_not_found() {
+        let mut state = RotationState::new();
+        state.mark_recipe_used("recipe_1".to_string());
+
+        // Try to unmark a recipe that was never marked
+        let result = state.unmark_recipe_used("recipe_2");
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .contains("Recipe recipe_2 was not marked as used"));
+
+        // Original state unchanged
+        assert_eq!(state.used_count(), 1);
+        assert!(state.is_recipe_used("recipe_1"));
+    }
+
+    /// Story 3.6 - Test recipe becomes available after unmarking
+    #[test]
+    fn test_recipe_available_after_unmark() {
+        let all_favorites = vec![
+            "recipe_1".to_string(),
+            "recipe_2".to_string(),
+            "recipe_3".to_string(),
+        ];
+
+        let mut rotation_state = RotationState::new();
+        rotation_state.mark_recipe_used("recipe_1".to_string());
+        rotation_state.mark_recipe_used("recipe_2".to_string());
+
+        // Only recipe_3 available
+        let available = RotationSystem::filter_available_recipes(&all_favorites, &rotation_state);
+        assert_eq!(available.len(), 1);
+        assert!(available.contains(&"recipe_3".to_string()));
+
+        // Unmark recipe_1
+        rotation_state.unmark_recipe_used("recipe_1").unwrap();
+
+        // Now recipe_1 and recipe_3 are available
+        let available = RotationSystem::filter_available_recipes(&all_favorites, &rotation_state);
+        assert_eq!(available.len(), 2);
+        assert!(available.contains(&"recipe_1".to_string()));
+        assert!(available.contains(&"recipe_3".to_string()));
+    }
+
+    /// Story 3.6 - Test replacement maintains rotation cycle integrity
+    #[test]
+    fn test_replacement_maintains_rotation_integrity() {
+        let mut state = RotationState::with_favorite_count(5).unwrap();
+        state.mark_recipe_used("recipe_1".to_string());
+        state.mark_recipe_used("recipe_2".to_string());
+        state.mark_recipe_used("recipe_3".to_string());
+
+        assert_eq!(state.used_count(), 3);
+        assert_eq!(state.cycle_number, 1);
+
+        // Replace recipe_2 with recipe_4 (unmark old, mark new)
+        state.unmark_recipe_used("recipe_2").unwrap();
+        state.mark_recipe_used("recipe_4".to_string());
+
+        // Still 3 recipes used, no cycle reset
+        assert_eq!(state.used_count(), 3);
+        assert_eq!(state.cycle_number, 1);
+        assert!(!state.is_recipe_used("recipe_2"));
+        assert!(state.is_recipe_used("recipe_4"));
     }
 }
