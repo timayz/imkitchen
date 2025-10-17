@@ -1,6 +1,6 @@
 # Story 3.3: Recipe Rotation System
 
-Status: Approved
+Status: Done
 
 ## Story
 
