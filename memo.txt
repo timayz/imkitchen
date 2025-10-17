@@ -22,9 +22,4 @@ read 'docs/solution-architecture.md'
 in folder fixtures, create recipe json file structured like "example-recipe.json" from
   [link]
 
-# askama template best practices
-- Always use proper Askama templates with #[derive(Template)] instead of inline HTML generation with format!()
-- Use double quotes for string comparisons in templates (e.g., {% if complexity == "simple" %})
-- Avoid reserved Rust keywords in template struct fields (e.g., use toast_type instead of type)
-- Templates should be placed in templates/components/ for reusable components and templates/pages/ for full pages
 
