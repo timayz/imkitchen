@@ -65,46 +65,54 @@ struct ErrorPageTemplate {
     error_title: String,
     error_message: String,
     user: Option<crate::middleware::auth::Auth>,
+    error_type: Option<String>, // For custom error styling (e.g., "insufficient_recipes")
 }
 
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let error_display = self.to_string();
-        let (status_code, error_title, error_message) = match self {
+        let (status_code, error_title, error_message, error_type) = match self {
             AppError::ValidationError(msg) => (
                 StatusCode::UNPROCESSABLE_ENTITY,
                 "Validation Error".to_string(),
                 msg,
+                None,
             ),
             AppError::RecipeLimitError => (
                 StatusCode::FORBIDDEN,
                 "Recipe Limit Reached".to_string(),
                 "Free tier users are limited to 10 recipes. Please upgrade to premium to create more recipes.".to_string(),
+                None,
             ),
             AppError::RecipeError(RecipeError::RecipeLimitReached) => (
                 StatusCode::FORBIDDEN,
                 "Recipe Limit Reached".to_string(),
                 "Free tier users are limited to 10 recipes. Please upgrade to premium to create more recipes.".to_string(),
+                None,
             ),
             AppError::RecipeError(RecipeError::NotFound) => (
                 StatusCode::NOT_FOUND,
                 "Recipe Not Found".to_string(),
                 "The requested recipe could not be found.".to_string(),
+                None,
             ),
             AppError::RecipeError(RecipeError::PermissionDenied) => (
                 StatusCode::FORBIDDEN,
                 "Permission Denied".to_string(),
                 "You do not have permission to access this recipe.".to_string(),
+                None,
             ),
             AppError::RecipeError(RecipeError::ValidationError(msg)) => (
                 StatusCode::UNPROCESSABLE_ENTITY,
                 "Validation Error".to_string(),
                 msg,
+                None,
             ),
             AppError::RecipeError(RecipeError::AlreadyCopied) => (
                 StatusCode::CONFLICT,
                 "Recipe Already Copied".to_string(),
                 "You have already added this recipe to your library.".to_string(),
+                None,
             ),
             AppError::DatabaseError(e) => {
                 tracing::error!("Database error: {:?}", e);
@@ -112,6 +120,7 @@ impl IntoResponse for AppError {
                     StatusCode::INTERNAL_SERVER_ERROR,
                     "Internal Server Error".to_string(),
                     "An unexpected error occurred. Please try again later.".to_string(),
+                    None,
                 )
             }
             AppError::EventStoreError(e) => {
@@ -120,6 +129,7 @@ impl IntoResponse for AppError {
                     StatusCode::INTERNAL_SERVER_ERROR,
                     "Internal Server Error".to_string(),
                     "An unexpected error occurred while processing your request.".to_string(),
+                    None,
                 )
             }
             AppError::RecipeError(RecipeError::EventStoreError(e)) => {
@@ -128,6 +138,7 @@ impl IntoResponse for AppError {
                     StatusCode::INTERNAL_SERVER_ERROR,
                     "Internal Server Error".to_string(),
                     "An unexpected error occurred while processing your request.".to_string(),
+                    None,
                 )
             }
             AppError::RecipeError(RecipeError::DatabaseError(e)) => {
@@ -136,6 +147,7 @@ impl IntoResponse for AppError {
                     StatusCode::INTERNAL_SERVER_ERROR,
                     "Internal Server Error".to_string(),
                     "An unexpected error occurred. Please try again later.".to_string(),
+                    None,
                 )
             }
             AppError::RecipeError(RecipeError::SerializationError(e)) => {
@@ -144,6 +156,7 @@ impl IntoResponse for AppError {
                     StatusCode::INTERNAL_SERVER_ERROR,
                     "Internal Server Error".to_string(),
                     "An unexpected error occurred while processing data.".to_string(),
+                    None,
                 )
             }
             AppError::InternalError(msg) => {
@@ -152,6 +165,7 @@ impl IntoResponse for AppError {
                     StatusCode::INTERNAL_SERVER_ERROR,
                     "Internal Server Error".to_string(),
                     "An unexpected error occurred. Please try again later.".to_string(),
+                    None,
                 )
             }
             AppError::MealPlanningError(e) => {
@@ -160,8 +174,10 @@ impl IntoResponse for AppError {
                     StatusCode::INTERNAL_SERVER_ERROR,
                     "Meal Planning Error".to_string(),
                     format!("Failed to generate meal plan: {}", e),
+                    None,
                 )
             }
+            // Story 3.10: AC-5 - Friendly error type for custom styling
             AppError::InsufficientRecipes { current, required } => (
                 StatusCode::UNPROCESSABLE_ENTITY,
                 "Not Enough Recipes".to_string(),
@@ -172,11 +188,13 @@ impl IntoResponse for AppError {
                     required - current,
                     if required - current > 1 { "s" } else { "" }
                 ),
+                Some("insufficient_recipes".to_string()),
             ),
             AppError::ConcurrentGenerationInProgress => (
                 StatusCode::CONFLICT,
                 "Generation In Progress".to_string(),
                 "A meal plan generation is already in progress. Please wait for it to complete before starting a new one.".to_string(),
+                None,
             ),
             AppError::SerializationError(e) => {
                 tracing::error!("Serialization error: {}", e);
@@ -184,6 +202,7 @@ impl IntoResponse for AppError {
                     StatusCode::INTERNAL_SERVER_ERROR,
                     "Internal Server Error".to_string(),
                     "An unexpected error occurred while processing data.".to_string(),
+                    None,
                 )
             }
         };
@@ -193,6 +212,7 @@ impl IntoResponse for AppError {
             error_title,
             error_message,
             user: None, // Can be populated if we have auth context
+            error_type,
         };
 
         match template.render() {

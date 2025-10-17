@@ -149,6 +149,7 @@ button.ts-active::after {
         <!-- Quick Actions Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             <!-- Generate Meal Plan Card (AC-1: Prominently displayed) -->
+            <!-- Story 3.10: AC-7 - Conditional button state and progress display -->
             <div class="bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg shadow-lg p-6 text-white col-span-full lg:col-span-2">
                 <div class="flex items-start justify-between">
                     <div class="flex-1">
@@ -161,6 +162,7 @@ button.ts-active::after {
                             <a href="/plan" class="px-6 py-3 bg-white text-primary-600 rounded-lg hover:bg-primary-50 transition-colors font-semibold">
                                 View Meal Plan
                             </a>
+                            {% if favorite_count >= 7 %}
                             <button
                             ts-req="/plan/generate"
                             ts-req-method="POST"
@@ -168,8 +170,48 @@ button.ts-active::after {
                             class="px-6 py-3 bg-primary-700 text-white rounded-lg hover:bg-primary-800 transition-colors font-semibold border-2 border-white/20">
                                     Regenerate Plan
                                 </button>
+                            {% else %}
+                            <!-- AC-7: Disabled state when insufficient recipes -->
+                            <button
+                            disabled
+                            title="You need at least 7 favorite recipes to generate a meal plan"
+                            class="px-6 py-3 bg-primary-800/50 text-white/60 rounded-lg cursor-not-allowed font-semibold border-2 border-white/10">
+                                    Need More Recipes
+                                </button>
+                            {% endif %}
                         </div>
                         {% else %}
+                        <!-- AC-7: Show progress and conditional button state when no plan exists -->
+                        {% if favorite_count < 7 %}
+                        <!-- Insufficient recipes: Show progress and helpful guidance -->
+                        <div class="mb-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <p class="text-primary-100">
+                                    You have <span class="font-bold text-white">{{ favorite_count }}/7</span> favorite recipes
+                                </p>
+                                <span class="text-sm text-primary-200">
+                                    {{ 7 - favorite_count }} more needed
+                                </span>
+                            </div>
+                            <!-- Progress bar -->
+                            <div class="w-full bg-primary-700 rounded-full h-2 mb-3">
+                                <div class="bg-white h-2 rounded-full transition-all duration-300" style="width: {% let pct = (favorite_count * 100) / 7 %}{{ pct }}%"></div>
+                            </div>
+                            <p class="text-primary-100 text-sm">
+                                Add {{ 7 - favorite_count }} more favorite recipe{% if 7 - favorite_count > 1 %}s{% endif %} to generate your weekly meal plan!
+                            </p>
+                        </div>
+                        <!-- Action buttons to add recipes -->
+                        <div class="flex gap-3">
+                            <a href="/recipes/new" class="px-6 py-3 bg-white text-primary-600 rounded-lg hover:bg-primary-50 transition-colors font-semibold shadow-md">
+                                ➕ Add Recipe
+                            </a>
+                            <a href="/discover" class="px-6 py-3 bg-primary-700 text-white rounded-lg hover:bg-primary-800 transition-colors font-semibold border-2 border-white/20">
+                                🔍 Discover Recipes
+                            </a>
+                        </div>
+                        {% else %}
+                        <!-- Sufficient recipes: Enable generation -->
                         <p class="text-primary-100 mb-4">
                             Let us help you plan your week! Generate a personalized meal plan based on your favorite recipes.
                         </p>
@@ -180,6 +222,7 @@ button.ts-active::after {
                             class="px-8 py-4 bg-white text-primary-600 rounded-lg hover:bg-primary-50 transition-colors font-bold text-lg shadow-md">
                                 Generate Meal Plan
                             </button>
+                        {% endif %}
                         {% endif %}
                     </div>
                     <div class="hidden lg:block">
