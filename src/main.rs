@@ -12,12 +12,13 @@ use imkitchen::routes::{
     get_collections, get_discover, get_discover_detail, get_ingredient_row, get_instruction_row,
     get_login, get_meal_alternatives, get_meal_plan, get_onboarding, get_onboarding_skip,
     get_password_reset, get_password_reset_complete, get_profile, get_recipe_detail,
-    get_recipe_edit_form, get_recipe_form, get_recipe_list, get_register, get_subscription,
-    get_subscription_success, health, post_add_recipe_to_collection, post_add_to_library,
-    post_create_collection, post_create_recipe, post_delete_collection, post_delete_recipe,
-    post_delete_review, post_favorite_recipe, post_generate_meal_plan, post_login, post_logout,
-    post_onboarding_step_1, post_onboarding_step_2, post_onboarding_step_3, post_onboarding_step_4,
-    post_password_reset, post_password_reset_complete, post_profile, post_rate_recipe,
+    get_recipe_edit_form, get_recipe_form, get_recipe_list, get_regenerate_confirm, get_register,
+    get_subscription, get_subscription_success, health, post_add_recipe_to_collection,
+    post_add_to_library, post_create_collection, post_create_recipe, post_delete_collection,
+    post_delete_recipe, post_delete_review, post_favorite_recipe, post_generate_meal_plan,
+    post_login, post_logout, post_onboarding_step_1, post_onboarding_step_2,
+    post_onboarding_step_3, post_onboarding_step_4, post_password_reset,
+    post_password_reset_complete, post_profile, post_rate_recipe, post_regenerate_meal_plan,
     post_register, post_remove_recipe_from_collection, post_replace_meal, post_share_recipe,
     post_stripe_webhook, post_subscription_upgrade, post_update_collection, post_update_recipe,
     post_update_recipe_tags, ready, AppState, AssetsService,
@@ -214,6 +215,8 @@ async fn serve_command(
         // Meal planning routes
         .route("/plan", get(get_meal_plan))
         .route("/plan/generate", post(post_generate_meal_plan))
+        .route("/plan/regenerate/confirm", get(get_regenerate_confirm))
+        .route("/plan/regenerate", post(post_regenerate_meal_plan))
         .route(
             "/plan/meal/{assignment_id}/alternatives",
             get(get_meal_alternatives),
