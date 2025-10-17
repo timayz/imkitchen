@@ -805,6 +805,161 @@ pub async fn post_replace_meal(
     Ok(Html(response_html))
 }
 
+/// Form data for regenerating meal plan (Story 3.7)
+#[derive(Debug, Deserialize)]
+pub struct RegenerateMealPlanForm {
+    pub regeneration_reason: Option<String>,
+}
+
+/// Template for regeneration confirmation modal (Story 3.7)
+#[derive(Template, Debug)]
+#[template(path = "components/regenerate-confirmation-modal.html")]
+pub struct RegenerateConfirmationModalTemplate {
+    pub meal_plan_id: String,
+}
+
+/// GET /plan/regenerate/confirm - Get confirmation modal for regeneration (Story 3.7)
+///
+/// AC-2: Confirmation dialog: "This will replace your entire meal plan. Continue?"
+///
+/// Returns a modal with confirmation message and optional reason field.
+pub async fn get_regenerate_confirm(
+    Extension(auth): Extension<Auth>,
+    State(state): State<AppState>,
+) -> Result<Html<String>, AppError> {
+    // Query active meal plan for user
+    let meal_plan = MealPlanQueries::get_active_meal_plan(&auth.user_id, &state.db_pool)
+        .await?
+        .ok_or_else(|| AppError::InternalError("No active meal plan found".to_string()))?;
+
+    // Render confirmation modal
+    let template = RegenerateConfirmationModalTemplate {
+        meal_plan_id: meal_plan.id,
+    };
+
+    let modal_html = template
+        .render()
+        .map_err(|e| AppError::InternalError(format!("Template render error: {}", e)))?;
+
+    Ok(Html(modal_html))
+}
+
+/// POST /plan/regenerate - Regenerate entire meal plan (Story 3.7)
+///
+/// AC-3: Clicking confirm triggers full meal plan regeneration
+/// AC-4: Algorithm runs with same logic as initial generation
+/// AC-5: Rotation state preserved (doesn't reset cycle)
+/// AC-6: New plan fills all slots with different recipe assignments
+/// AC-7: Calendar updates to show new plan
+/// AC-8: Shopping list regenerated for new plan (cross-domain event)
+/// AC-9: Old meal plan archived for audit trail (event sourcing)
+/// AC-10: Generation respects same optimization factors
+pub async fn post_regenerate_meal_plan(
+    Extension(auth): Extension<Auth>,
+    State(state): State<AppState>,
+    axum::Form(form): axum::Form<RegenerateMealPlanForm>,
+) -> Result<impl IntoResponse, AppError> {
+    // Acquire generation lock to prevent concurrent regeneration
+    let _lock_guard = {
+        let mut locks = state.generation_locks.lock().await;
+
+        if locks.contains_key(&auth.user_id) {
+            tracing::warn!(
+                "Concurrent regeneration attempt detected for user: {}",
+                auth.user_id
+            );
+            return Err(AppError::ConcurrentGenerationInProgress);
+        }
+
+        locks.insert(auth.user_id.clone(), ());
+        tracing::debug!("Acquired regeneration lock for user: {}", auth.user_id);
+
+        GenerationLockGuard {
+            user_id: auth.user_id.clone(),
+            locks: state.generation_locks.clone(),
+        }
+    };
+
+    // Query active meal plan
+    let meal_plan = MealPlanQueries::get_active_meal_plan(&auth.user_id, &state.db_pool)
+        .await?
+        .ok_or_else(|| AppError::InternalError("No active meal plan to regenerate".to_string()))?;
+
+    // Query user's favorited recipes
+    let favorites = query_recipes_by_user(&auth.user_id, true, &state.db_pool).await?;
+
+    // Validate minimum 7 favorite recipes
+    if favorites.len() < 7 {
+        return Err(AppError::InsufficientRecipes {
+            current: favorites.len(),
+            required: 7,
+        });
+    }
+
+    // Convert RecipeReadModel to RecipeForPlanning
+    let recipes_for_planning: Vec<RecipeForPlanning> = favorites
+        .into_iter()
+        .map(|r| {
+            let ingredients: Vec<serde_json::Value> = serde_json::from_str(&r.ingredients)
+                .unwrap_or_else(|e| {
+                    tracing::warn!(
+                        "Failed to parse ingredients JSON for recipe {}: {}",
+                        r.id,
+                        e
+                    );
+                    Vec::new()
+                });
+            let instructions: Vec<serde_json::Value> = serde_json::from_str(&r.instructions)
+                .unwrap_or_else(|e| {
+                    tracing::warn!(
+                        "Failed to parse instructions JSON for recipe {}: {}",
+                        r.id,
+                        e
+                    );
+                    Vec::new()
+                });
+
+            RecipeForPlanning {
+                id: r.id,
+                title: r.title,
+                ingredients_count: ingredients.len(),
+                instructions_count: instructions.len(),
+                prep_time_min: r.prep_time_min.map(|v| v as u32),
+                cook_time_min: r.cook_time_min.map(|v| v as u32),
+                advance_prep_hours: r.advance_prep_hours.map(|v| v as u32),
+                complexity: r.complexity,
+            }
+        })
+        .collect();
+
+    // Load user profile constraints (future: query from user profile table)
+    let constraints = UserConstraints::default();
+
+    // Invoke domain command to regenerate meal plan
+    let cmd = meal_planning::RegenerateMealPlanCommand {
+        meal_plan_id: meal_plan.id.clone(),
+        user_id: auth.user_id.clone(),
+        regeneration_reason: form.regeneration_reason,
+    };
+
+    meal_planning::regenerate_meal_plan(
+        cmd,
+        &state.evento_executor,
+        recipes_for_planning,
+        constraints,
+    )
+    .await?;
+
+    // Process evento subscription to update read model (use unsafe_oneshot for sync processing)
+    meal_planning::meal_plan_projection(state.db_pool.clone())
+        .unsafe_oneshot(&state.evento_executor)
+        .await
+        .map_err(|e| AppError::EventStoreError(format!("Failed to process projection: {}", e)))?;
+
+    // Redirect to calendar view with success message
+    Ok(Redirect::to("/plan"))
+}
+
 /// Helper: Get next Monday's date as ISO 8601 string
 fn get_next_monday() -> String {
     let today = Utc::now().naive_utc().date();

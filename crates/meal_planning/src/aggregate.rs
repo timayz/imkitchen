@@ -2,8 +2,8 @@ use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
 use crate::events::{
-    MealAssignment, MealPlanArchived, MealPlanGenerated, MealReplaced, RecipeUsedInRotation,
-    RotationCycleReset,
+    MealAssignment, MealPlanArchived, MealPlanGenerated, MealPlanRegenerated, MealReplaced,
+    RecipeUsedInRotation, RotationCycleReset,
 };
 
 /// MealPlanAggregate representing the state of a meal plan entity
@@ -198,6 +198,25 @@ impl MealPlanAggregate {
         self.rotation_state_json = rotation_state.to_json().map_err(|e| {
             anyhow::anyhow!("Failed to serialize rotation state in meal_replaced: {}", e)
         })?;
+
+        Ok(())
+    }
+
+    /// Handle MealPlanRegenerated event to replace all meal assignments (Story 3.7)
+    ///
+    /// This event handler supports the "Regenerate Full Meal Plan" feature by replacing
+    /// all 21 meal assignments with freshly generated recipes while preserving rotation state.
+    ///
+    /// **Rotation Integrity**: Rotation state updated with new recipe usage, cycle preserved.
+    async fn meal_plan_regenerated(
+        &mut self,
+        event: evento::EventDetails<MealPlanRegenerated>,
+    ) -> anyhow::Result<()> {
+        // Replace all meal assignments with new assignments
+        self.meal_assignments = event.data.new_assignments;
+
+        // Update rotation state (preserved, not reset)
+        self.rotation_state_json = event.data.rotation_state_json;
 
         Ok(())
     }

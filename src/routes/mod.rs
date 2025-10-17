@@ -18,7 +18,8 @@ pub use collections::{
 };
 pub use health::{health, ready};
 pub use meal_plan::{
-    get_meal_alternatives, get_meal_plan, post_generate_meal_plan, post_replace_meal,
+    get_meal_alternatives, get_meal_plan, get_regenerate_confirm, post_generate_meal_plan,
+    post_regenerate_meal_plan, post_replace_meal,
 };
 pub use profile::{
     get_onboarding, get_onboarding_skip, get_profile, get_subscription, get_subscription_success,

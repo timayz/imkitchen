@@ -44,10 +44,11 @@ button.ts-active::after {
             <div class="flex gap-4">
                 {% if has_meal_plan %}
                 <button
-                    ts-req="/plan/generate"
-                    ts-req-method="POST"
+                    ts-req="/plan/regenerate/confirm"
+                    ts-req-method="GET"
                     ts-trigger="click"
-                    ts-target="#main-content"
+                    ts-target="#modal-container"
+                    ts-swap="inner"
                     class="px-6 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-medium">
                     Regenerate Meal Plan
                 </button>
