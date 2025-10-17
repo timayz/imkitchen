@@ -1,3 +1,4 @@
+use chrono;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
@@ -10,7 +11,9 @@ use std::collections::HashSet;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RotationState {
     pub cycle_number: u32,
+    pub cycle_started_at: String, // RFC3339 formatted timestamp
     pub used_recipe_ids: HashSet<String>,
+    pub total_favorite_count: usize,
 }
 
 impl RotationState {
@@ -18,8 +21,31 @@ impl RotationState {
     pub fn new() -> Self {
         RotationState {
             cycle_number: 1,
+            cycle_started_at: chrono::Utc::now().to_rfc3339(),
             used_recipe_ids: HashSet::new(),
+            total_favorite_count: 0,
         }
+    }
+
+    /// Create a new rotation state with a specific favorite count
+    ///
+    /// Returns an error if total_favorite_count is 0, as rotation requires at least 1 recipe.
+    pub fn with_favorite_count(total_favorite_count: usize) -> Result<Self, String> {
+        if total_favorite_count == 0 {
+            return Err("total_favorite_count must be greater than 0".to_string());
+        }
+
+        Ok(RotationState {
+            cycle_number: 1,
+            cycle_started_at: chrono::Utc::now().to_rfc3339(),
+            used_recipe_ids: HashSet::new(),
+            total_favorite_count,
+        })
+    }
+
+    /// Check if cycle should reset based on current state
+    pub fn should_reset_cycle(&self) -> bool {
+        self.used_recipe_ids.len() >= self.total_favorite_count && self.total_favorite_count > 0
     }
 
     /// Mark a recipe as used in the current cycle
@@ -35,8 +61,10 @@ impl RotationState {
     /// Reset the cycle when all favorites have been used once
     ///
     /// This allows recipes to be reused in subsequent meal plans.
+    /// Uses saturating_add to prevent overflow if cycle_number reaches u32::MAX.
     pub fn reset_cycle(&mut self) {
-        self.cycle_number += 1;
+        self.cycle_number = self.cycle_number.saturating_add(1);
+        self.cycle_started_at = chrono::Utc::now().to_rfc3339();
         self.used_recipe_ids.clear();
     }
 
@@ -121,6 +149,45 @@ mod tests {
         let state = RotationState::new();
         assert_eq!(state.cycle_number, 1);
         assert_eq!(state.used_count(), 0);
+        assert_eq!(state.total_favorite_count, 0);
+        assert!(!state.cycle_started_at.is_empty());
+    }
+
+    #[test]
+    fn test_rotation_state_with_favorite_count() {
+        let state = RotationState::with_favorite_count(15).unwrap();
+        assert_eq!(state.cycle_number, 1);
+        assert_eq!(state.used_count(), 0);
+        assert_eq!(state.total_favorite_count, 15);
+        assert!(!state.cycle_started_at.is_empty());
+    }
+
+    #[test]
+    fn test_rotation_state_with_favorite_count_validation() {
+        // Should fail with 0 favorites
+        let result = RotationState::with_favorite_count(0);
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err(),
+            "total_favorite_count must be greater than 0"
+        );
+
+        // Should succeed with valid count
+        let state = RotationState::with_favorite_count(5).unwrap();
+        assert_eq!(state.total_favorite_count, 5);
+    }
+
+    #[test]
+    fn test_should_reset_cycle_method() {
+        let mut state = RotationState::with_favorite_count(3).unwrap();
+        assert!(!state.should_reset_cycle());
+
+        state.mark_recipe_used("recipe_1".to_string());
+        state.mark_recipe_used("recipe_2".to_string());
+        assert!(!state.should_reset_cycle());
+
+        state.mark_recipe_used("recipe_3".to_string());
+        assert!(state.should_reset_cycle());
     }
 
     #[test]
@@ -149,6 +216,17 @@ mod tests {
         assert_eq!(state.cycle_number, 2);
         assert_eq!(state.used_count(), 0);
         assert!(!state.is_recipe_used("recipe_1"));
+    }
+
+    #[test]
+    fn test_reset_cycle_overflow_protection() {
+        let mut state = RotationState::new();
+        state.cycle_number = u32::MAX;
+
+        // Should saturate at u32::MAX instead of overflowing
+        state.reset_cycle();
+        assert_eq!(state.cycle_number, u32::MAX);
+        assert_eq!(state.used_count(), 0);
     }
 
     #[test]

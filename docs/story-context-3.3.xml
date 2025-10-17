@@ -1,0 +1,252 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>3</storyId>
+    <title>Recipe Rotation System</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-16</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-3.3.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>recipes to rotate without duplicates</iWant>
+    <soThat>I experience maximum variety before repeating meals</soThat>
+    <tasks>
+      <task id="1" ac="1-4">Implement RotationState Data Model</task>
+      <task id="2" ac="1-3">Create Domain Events for Rotation Tracking</task>
+      <task id="3" ac="4,8">Create recipe_rotation_state Read Model Table</task>
+      <task id="4" ac="4">Implement Evento Projection for Rotation Events</task>
+      <task id="5" ac="1-2">Integrate Rotation Logic into MealPlanningAlgorithm</task>
+      <task id="6" ac="5">Integrate Rotation into Meal Replacement Flow</task>
+      <task id="7" ac="6-7">Handle Favorite Recipe Changes Mid-Rotation</task>
+      <task id="8" ac="8">Display Rotation Progress in UI</task>
+      <task id="9" ac="4,8">Add Rotation State Queries</task>
+      <task id="10" ac="1-8">Write Comprehensive Test Suite</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="1">Meal planning algorithm tracks which recipes have been used in current rotation cycle</criterion>
+    <criterion id="2">Each favorite recipe used exactly once before any recipe repeats</criterion>
+    <criterion id="3">After all favorites used once, rotation cycle resets and recipes become available again</criterion>
+    <criterion id="4">Rotation state persists across meal plan regenerations</criterion>
+    <criterion id="5">Manually replacing individual meals respects rotation (only offers unused recipes)</criterion>
+    <criterion id="6">Adding new favorite mid-rotation includes it in pool immediately</criterion>
+    <criterion id="7">Un-favoriting recipe removes from rotation without disrupting active plan</criterion>
+    <criterion id="8">Rotation progress visible to user: "12 of 20 favorite recipes used this cycle"</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic 3 Story Definitions</title>
+        <section>Story 3.3: Recipe Rotation System</section>
+        <snippet>Lines 606-628 define rotation requirements: Each favorite recipe used exactly once before repeats, rotation state persists across regenerations, UI displays progress indicator</snippet>
+        <reason>Authoritative source for user requirements and acceptance criteria</reason>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Intelligent Meal Planning Engine</title>
+        <section>RotationManager (Domain Service)</section>
+        <snippet>Lines 233-280 define RotationState data structure with cycle_number, used_recipe_ids HashSet, and methods for tracking/resetting rotation cycles</snippet>
+        <reason>Authoritative technical design for rotation system implementation</reason>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Intelligent Meal Planning Engine</title>
+        <section>Events</section>
+        <snippet>Lines 318-331 define RecipeUsedInRotation and RotationCycleReset events with field specifications and bincode encoding requirements</snippet>
+        <reason>Event schema definitions for rotation tracking</reason>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Intelligent Meal Planning Engine</title>
+        <section>Read Models - recipe_rotation_state table</section>
+        <snippet>Lines 464-479 specify database schema: id, user_id, cycle_number, cycle_started_at, recipe_id, used_at with unique constraint on (user_id, cycle_number, recipe_id)</snippet>
+        <reason>Database schema for rotation state persistence</reason>
+      </doc>
+      <doc>
+        <path>docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>Event Sourcing with evento</section>
+        <snippet>Lines 113-120 describe event sourcing pattern: All state changes captured as events, CQRS projections for read models, aggregate-level consistency</snippet>
+        <reason>Architectural pattern guidance for evento integration</reason>
+      </doc>
+      <doc>
+        <path>docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>Evento Subscription Setup</section>
+        <snippet>Lines 446-453 show evento subscription registration pattern for read model projections</snippet>
+        <reason>Implementation pattern for evento event handlers</reason>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>crates/meal_planning/src/rotation.rs</path>
+        <kind>module</kind>
+        <symbol>RotationState</symbol>
+        <lines>1-237</lines>
+        <reason>EXISTING IMPLEMENTATION - RotationState struct with cycle tracking, mark_recipe_used(), reset_cycle() methods. Story extends this with event-based persistence (currently only JSON serialization in memory)</reason>
+      </artifact>
+      <artifact>
+        <path>crates/meal_planning/src/rotation.rs</path>
+        <kind>module</kind>
+        <symbol>RotationSystem</symbol>
+        <lines>65-113</lines>
+        <reason>EXISTING HELPER - RotationSystem with filter_available_recipes(), should_reset_cycle(), update_after_generation() static methods. Story integrates this with event handlers</reason>
+      </artifact>
+      <artifact>
+        <path>crates/meal_planning/src/aggregate.rs</path>
+        <kind>aggregate</kind>
+        <symbol>MealPlanAggregate</symbol>
+        <lines>1-132</lines>
+        <reason>EXISTING AGGREGATE - Contains rotation_state_json field (line 24). Story adds event handlers for RecipeUsedInRotation tracking</reason>
+      </artifact>
+      <artifact>
+        <path>crates/meal_planning/src/events.rs</path>
+        <kind>events</kind>
+        <symbol>RecipeUsedInRotation</symbol>
+        <lines>64-69</lines>
+        <reason>EXISTING EVENT - Already defined with recipe_id, cycle_number, used_at fields. Story implements event handlers and read model projections</reason>
+      </artifact>
+      <artifact>
+        <path>crates/meal_planning/src/events.rs</path>
+        <kind>events</kind>
+        <symbol>MealPlanGenerated</symbol>
+        <lines>49-56</lines>
+        <reason>EXISTING EVENT - Captures rotation_state_json during generation. Story extends to emit RecipeUsedInRotation events</reason>
+      </artifact>
+      <artifact>
+        <path>migrations/02_meal_plans.sql</path>
+        <kind>migration</kind>
+        <symbol>meal_plans table</symbol>
+        <lines>6-14</lines>
+        <reason>EXISTING TABLE - meal_plans.rotation_state column stores JSON. Story adds recipe_rotation_state table for rotation history tracking</reason>
+      </artifact>
+      <artifact>
+        <path>crates/meal_planning/src/algorithm.rs</path>
+        <kind>module</kind>
+        <symbol>MealPlanningAlgorithm</symbol>
+        <lines>N/A</lines>
+        <reason>Algorithm filters recipes by rotation availability. Story integrates RotationSystem::filter_available_recipes() and emits RecipeUsedInRotation events</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <rust>
+        <package name="evento" version="1.4" features="sqlite-migrator">Event sourcing framework for aggregates and subscriptions</package>
+        <package name="sqlx" version="0.8" features="runtime-tokio,sqlite,chrono,uuid">Database access and migrations</package>
+        <package name="bincode" version="2.0">Event serialization for evento (Encode/Decode traits)</package>
+        <package name="serde" version="1.0" features="derive">JSON serialization for RotationState</package>
+        <package name="serde_json" version="1.0">RotationState JSON serialization to/from database</package>
+        <package name="chrono" version="0.4" features="serde">Timestamp handling for used_at and cycle_started_at</package>
+        <package name="uuid" version="1.10" features="v4,serde">ID generation for rotation state records</package>
+      </rust>
+      <testing>
+        <package name="tokio" version="1.40" features="full">Async runtime for integration tests</package>
+      </testing>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="1" type="event-sourcing">All rotation state changes MUST be captured as events (RecipeUsedInRotation, RotationCycleReset) following evento aggregate pattern</constraint>
+    <constraint id="2" type="cqrs">Read model (recipe_rotation_state table) MUST be updated via evento subscription handlers, not direct writes</constraint>
+    <constraint id="3" type="data-integrity">Unique constraint (user_id, cycle_number, recipe_id) MUST prevent duplicate rotation tracking entries</constraint>
+    <constraint id="4" type="aggregate-consistency">RotationState updates MUST occur within aggregate event handlers to ensure aggregate-level consistency</constraint>
+    <constraint id="5" type="serialization">RotationState serialized as JSON in meal_plans.rotation_state column (existing pattern). Story adds event-based tracking in recipe_rotation_state table</constraint>
+    <constraint id="6" type="testing">TDD required: Write failing tests first, then implement. Target 80% code coverage per NFRs</constraint>
+    <constraint id="7" type="performance">Rotation state queries MUST use index on (user_id, cycle_number) for <50ms query times</constraint>
+    <constraint id="8" type="migration">New recipe_rotation_state table MAY be added to existing migrations/02_meal_plans.sql OR as new migration file 03_recipe_rotation_state.sql</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>RotationState::mark_recipe_used</name>
+      <kind>method</kind>
+      <signature>pub fn mark_recipe_used(&amp;mut self, recipe_id: String)</signature>
+      <path>crates/meal_planning/src/rotation.rs:26</path>
+      <reason>Existing method to mark recipe as used in current cycle. Call during meal plan generation</reason>
+    </interface>
+    <interface>
+      <name>RotationState::is_recipe_used</name>
+      <kind>method</kind>
+      <signature>pub fn is_recipe_used(&amp;self, recipe_id: &amp;str) -> bool</signature>
+      <path>crates/meal_planning/src/rotation.rs:31</path>
+      <reason>Check if recipe already used in current cycle. Use for filtering available recipes</reason>
+    </interface>
+    <interface>
+      <name>RotationState::reset_cycle</name>
+      <kind>method</kind>
+      <signature>pub fn reset_cycle(&amp;mut self)</signature>
+      <path>crates/meal_planning/src/rotation.rs:38</path>
+      <reason>Reset rotation cycle when all favorites used. Increments cycle_number and clears used_recipe_ids</reason>
+    </interface>
+    <interface>
+      <name>RotationSystem::filter_available_recipes</name>
+      <kind>static-method</kind>
+      <signature>pub fn filter_available_recipes(all_favorite_ids: &amp;[String], rotation_state: &amp;RotationState) -> Vec&lt;String&gt;</signature>
+      <path>crates/meal_planning/src/rotation.rs:75-84</path>
+      <reason>Filter favorite recipes to only unused ones. Use in algorithm before assignment</reason>
+    </interface>
+    <interface>
+      <name>RotationSystem::should_reset_cycle</name>
+      <kind>static-method</kind>
+      <signature>pub fn should_reset_cycle(total_favorite_count: usize, rotation_state: &amp;RotationState) -> bool</signature>
+      <path>crates/meal_planning/src/rotation.rs:89-91</path>
+      <reason>Determine if cycle should reset (all favorites used). Check after meal plan generation</reason>
+    </interface>
+    <interface>
+      <name>evento::create</name>
+      <kind>function</kind>
+      <signature>evento::create::&lt;MealPlan&gt;().data(&amp;event).metadata(&amp;user_id).commit(&amp;executor).await</signature>
+      <path>evento crate</path>
+      <reason>Create new aggregate and emit event. Use for RecipeUsedInRotation event emission</reason>
+    </interface>
+    <interface>
+      <name>evento::handler macro</name>
+      <kind>macro</kind>
+      <signature>#[evento::handler(MealPlan)] async fn project_recipe_used_in_rotation(...)</signature>
+      <path>evento crate</path>
+      <reason>Define evento subscription handler for read model projection. Pattern from tech spec lines 490-541</reason>
+    </interface>
+    <interface>
+      <name>sqlx::query!</name>
+      <kind>macro</kind>
+      <signature>sqlx::query!("INSERT INTO recipe_rotation_state ...", params).execute(pool).await</signature>
+      <path>sqlx crate</path>
+      <reason>Execute parameterized SQL queries in projection handlers. Use ON CONFLICT DO NOTHING for idempotency</reason>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing follows TDD approach with 80% coverage target. Test types:
+      - Unit tests: RotationState methods (mark_used, reset_cycle, JSON serialization) in rotation.rs #[cfg(test)] module
+      - Integration tests: Evento projection handlers, rotation state persistence, cross-aggregate event subscriptions
+      - E2E tests: UI rotation progress display, meal generation with rotation filtering, cycle reset behavior
+      - Property-based tests: Rotation invariants (no duplicates before reset, conservation of total favorites)
+
+      Test framework: Rust standard #[test] and #[tokio::test] macros. Run with `cargo test` and coverage with `cargo tarpaulin`.
+      Existing pattern: rotation.rs already has comprehensive unit tests (lines 115-236). Extend for new event handlers.
+    </standards>
+
+    <locations>
+      <location>crates/meal_planning/src/rotation.rs</location>
+      <location>crates/meal_planning/tests/integration_tests.rs (create if missing)</location>
+      <location>e2e/tests/meal-planning.spec.ts (Playwright E2E)</location>
+    </locations>
+
+    <ideas>
+      <idea ac="1,2">Unit test: Mark 3 recipes as used, verify all 3 in used_recipe_ids, verify 4th recipe returns is_recipe_used() == false</idea>
+      <idea ac="3">Unit test: Use all favorites, call should_reset_cycle(), verify returns true, call reset_cycle(), verify cycle_number incremented and used_recipe_ids cleared</idea>
+      <idea ac="4">Integration test: Emit RecipeUsedInRotation event, verify recipe_rotation_state table row inserted with correct user_id/cycle_number/recipe_id</idea>
+      <idea ac="4">Integration test: Generate meal plan, load aggregate from event stream, verify rotation_state reconstructed correctly from events</idea>
+      <idea ac="5">Integration test: Replace meal, verify RecipeUsedInRotation emitted for new recipe, verify old recipe no longer in used_recipe_ids</idea>
+      <idea ac="6,7">Integration test: Favorite new recipe mid-cycle, verify included in next meal plan generation. Un-favorite recipe, verify removed from rotation but active plan unchanged</idea>
+      <idea ac="8">E2E test: Generate meal plan, inspect calendar page HTML for rotation progress text "7 of 20 favorites used this cycle"</idea>
+      <idea ac="1-8">Property test: Generate random favorite counts (7-50), use recipes until cycle reset, verify no duplicates before reset and all available after reset</idea>
+    </ideas>
+  </tests>
+</story-context>

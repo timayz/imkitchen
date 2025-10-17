@@ -8,6 +8,9 @@ use axum::{
 };
 use serde::Deserialize;
 use sqlx::SqlitePool;
+use std::collections::HashMap;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 use user::{
     generate_jwt, generate_reset_token, query_user_by_email, query_user_for_login, register_user,
     reset_password, validate_jwt, verify_password, RegisterUserCommand, ResetPasswordCommand,
@@ -16,6 +19,9 @@ use user::{
 
 use crate::middleware::auth::Auth;
 
+/// Application state shared across all request handlers
+///
+/// **Critical Fix 1.4:** Added generation_locks for concurrent meal plan generation protection
 #[derive(Clone)]
 pub struct AppState {
     pub db_pool: SqlitePool,
@@ -26,6 +32,8 @@ pub struct AppState {
     pub stripe_secret_key: String,
     pub stripe_webhook_secret: String,
     pub stripe_price_id: String,
+    /// Locks for preventing concurrent meal plan generation per user
+    pub generation_locks: Arc<Mutex<HashMap<String, ()>>>,
 }
 
 #[derive(Debug, Deserialize)]
