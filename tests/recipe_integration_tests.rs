@@ -49,20 +49,11 @@ async fn test_create_recipe_integration_with_read_model_projection() {
     let executor = setup_evento_executor(pool.clone()).await;
     insert_test_user(&pool, "user1", "user1@test.com", "free").await;
 
-    // Start recipe projection subscription
-    tokio::spawn({
-        let pool = pool.clone();
-        let executor = executor.clone();
-        async move {
-            recipe_projection(pool)
-                .run(&executor)
-                .await
-                .expect("Projection failed");
-        }
-    });
-
-    // Give subscription time to start
-    tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
+    // Process events synchronously for deterministic tests (unsafe_oneshot instead of run)
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .expect("Projection failed");
 
     // Create recipe command
     let command = CreateRecipeCommand {
@@ -146,14 +137,7 @@ async fn test_query_recipes_by_user() {
     insert_test_user(&pool, "user1", "user1@test.com", "free").await;
 
     // Start projection
-    tokio::spawn({
-        let pool = pool.clone();
-        let executor = executor.clone();
-        async move {
-            recipe_projection(pool).run(&executor).await.ok();
-        }
-    });
-
+    // Process events synchronously for deterministic tests
     recipe_projection(pool.clone())
         .unsafe_oneshot(&executor)
         .await
@@ -183,7 +167,11 @@ async fn test_query_recipes_by_user() {
             .unwrap();
     }
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
+    // Process projection to sync read model
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
 
     // Query all recipes for user1
     let recipes = query_recipes_by_user("user1", false, &pool).await.unwrap();
@@ -202,14 +190,7 @@ async fn test_delete_recipe_integration() {
     insert_test_user(&pool, "user1", "user1@test.com", "free").await;
 
     // Start projection
-    tokio::spawn({
-        let pool = pool.clone();
-        let executor = executor.clone();
-        async move {
-            recipe_projection(pool).run(&executor).await.ok();
-        }
-    });
-
+    // Process events synchronously for deterministic tests
     recipe_projection(pool.clone())
         .unsafe_oneshot(&executor)
         .await
@@ -274,14 +255,7 @@ async fn test_delete_recipe_permission_denied() {
     insert_test_user(&pool, "user2", "user2@test.com", "free").await;
 
     // Start projection
-    tokio::spawn({
-        let pool = pool.clone();
-        let executor = executor.clone();
-        async move {
-            recipe_projection(pool).run(&executor).await.ok();
-        }
-    });
-
+    // Process events synchronously for deterministic tests
     recipe_projection(pool.clone())
         .unsafe_oneshot(&executor)
         .await
@@ -343,14 +317,7 @@ async fn test_post_recipe_update_success_returns_ts_location() {
     insert_test_user(&pool, "user1", "user1@test.com", "free").await;
 
     // Start projection
-    tokio::spawn({
-        let pool = pool.clone();
-        let executor = executor.clone();
-        async move {
-            recipe_projection(pool).run(&executor).await.ok();
-        }
-    });
-
+    // Process events synchronously for deterministic tests
     recipe_projection(pool.clone())
         .unsafe_oneshot(&executor)
         .await
@@ -378,7 +345,11 @@ async fn test_post_recipe_update_success_returns_ts_location() {
         .await
         .unwrap();
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
+    // Process projection to sync read model
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
 
     // Create Axum app with recipe routes
     let app = imkitchen::create_app(pool.clone(), executor.clone())
@@ -417,7 +388,11 @@ async fn test_post_recipe_update_success_returns_ts_location() {
         format!("/recipes/{}", recipe_id).as_str()
     );
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
+    // Process projection to sync read model
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
 
     // Verify recipe updated in read model
     let updated_recipe = query_recipe_by_id(&recipe_id, &pool)
@@ -443,14 +418,7 @@ async fn test_post_recipe_update_unauthorized_returns_403() {
     insert_test_user(&pool, "user2", "user2@test.com", "free").await;
 
     // Start projection
-    tokio::spawn({
-        let pool = pool.clone();
-        let executor = executor.clone();
-        async move {
-            recipe_projection(pool).run(&executor).await.ok();
-        }
-    });
-
+    // Process events synchronously for deterministic tests
     recipe_projection(pool.clone())
         .unsafe_oneshot(&executor)
         .await
@@ -478,7 +446,11 @@ async fn test_post_recipe_update_unauthorized_returns_403() {
         .await
         .unwrap();
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
+    // Process projection to sync read model
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
 
     // Create Axum app
     let app = imkitchen::create_app(pool.clone(), executor.clone())
@@ -525,14 +497,7 @@ async fn test_post_recipe_update_invalid_data_returns_422() {
     insert_test_user(&pool, "user1", "user1@test.com", "free").await;
 
     // Start projection
-    tokio::spawn({
-        let pool = pool.clone();
-        let executor = executor.clone();
-        async move {
-            recipe_projection(pool).run(&executor).await.ok();
-        }
-    });
-
+    // Process events synchronously for deterministic tests
     recipe_projection(pool.clone())
         .unsafe_oneshot(&executor)
         .await
@@ -560,7 +525,11 @@ async fn test_post_recipe_update_invalid_data_returns_422() {
         .await
         .unwrap();
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
+    // Process projection to sync read model
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
 
     // Create Axum app
     let app = imkitchen::create_app(pool.clone(), executor.clone())
@@ -608,14 +577,7 @@ async fn test_get_recipe_edit_form_prepopulated() {
     insert_test_user(&pool, "user1", "user1@test.com", "free").await;
 
     // Start projection
-    tokio::spawn({
-        let pool = pool.clone();
-        let executor = executor.clone();
-        async move {
-            recipe_projection(pool).run(&executor).await.ok();
-        }
-    });
-
+    // Process events synchronously for deterministic tests
     recipe_projection(pool.clone())
         .unsafe_oneshot(&executor)
         .await
@@ -643,7 +605,11 @@ async fn test_get_recipe_edit_form_prepopulated() {
         .await
         .unwrap();
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
+    // Process projection to sync read model
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
 
     // Create Axum app
     let app = imkitchen::create_app(pool.clone(), executor.clone())
@@ -695,14 +661,7 @@ async fn test_recipe_update_syncs_to_read_model() {
     insert_test_user(&pool, "user1", "user1@test.com", "free").await;
 
     // Start projection
-    tokio::spawn({
-        let pool = pool.clone();
-        let executor = executor.clone();
-        async move {
-            recipe_projection(pool).run(&executor).await.ok();
-        }
-    });
-
+    // Process events synchronously for deterministic tests
     recipe_projection(pool.clone())
         .unsafe_oneshot(&executor)
         .await
@@ -730,7 +689,11 @@ async fn test_recipe_update_syncs_to_read_model() {
         .await
         .unwrap();
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
+    // Process projection to sync read model
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
 
     // Update recipe via command
     let update_command = recipe::UpdateRecipeCommand {
@@ -770,7 +733,11 @@ async fn test_recipe_update_syncs_to_read_model() {
         .await
         .unwrap();
 
-    tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
+    // Process projection to sync read model
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
 
     // Verify read model updated
     let updated_recipe = query_recipe_by_id(&recipe_id, &pool)
@@ -808,14 +775,7 @@ async fn test_delete_recipe_integration_removes_from_read_model() {
     insert_test_user(&pool, "user1", "user1@test.com", "free").await;
 
     // Start projection
-    tokio::spawn({
-        let pool = pool.clone();
-        let executor = executor.clone();
-        async move {
-            recipe_projection(pool).run(&executor).await.ok();
-        }
-    });
-
+    // Process events synchronously for deterministic tests
     recipe_projection(pool.clone())
         .unsafe_oneshot(&executor)
         .await
@@ -889,14 +849,7 @@ async fn test_delete_recipe_integration_unauthorized_returns_403() {
     insert_test_user(&pool, "user2", "user2@test.com", "free").await;
 
     // Start projection
-    tokio::spawn({
-        let pool = pool.clone();
-        let executor = executor.clone();
-        async move {
-            recipe_projection(pool).run(&executor).await.ok();
-        }
-    });
-
+    // Process events synchronously for deterministic tests
     recipe_projection(pool.clone())
         .unsafe_oneshot(&executor)
         .await
@@ -958,14 +911,7 @@ async fn test_delete_recipe_integration_excluded_from_user_queries() {
     insert_test_user(&pool, "user1", "user1@test.com", "free").await;
 
     // Start projection
-    tokio::spawn({
-        let pool = pool.clone();
-        let executor = executor.clone();
-        async move {
-            recipe_projection(pool).run(&executor).await.ok();
-        }
-    });
-
+    // Process events synchronously for deterministic tests
     recipe_projection(pool.clone())
         .unsafe_oneshot(&executor)
         .await

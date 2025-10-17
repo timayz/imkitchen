@@ -94,8 +94,13 @@ button.ts-active::after {
                             </span>
                             {% when None %}{% endmatch %}
                         </div>
-                        <a href="/recipes/{{ breakfast.recipe_id }}" class="text-gray-900 hover:text-primary-500 font-medium">
+                        <!-- Story 3.5: Add calendar context to recipe link -->
+                        <a href="/recipes/{{ breakfast.recipe_id }}?from=calendar&meal_plan_id={{ day.meal_plan_id }}&assignment_id={{ breakfast.assignment_id }}" class="text-gray-900 hover:text-primary-500 font-medium block">
                             {{ breakfast.recipe_title }}
+                        </a>
+                        <!-- Story 3.5 AC-6: Kitchen Mode Link -->
+                        <a href="/recipes/{{ breakfast.recipe_id }}?from=calendar&meal_plan_id={{ day.meal_plan_id }}&assignment_id={{ breakfast.assignment_id }}&kitchen_mode=true" class="text-xs text-gray-500 hover:text-gray-700 underline">
+                            👨‍🍳 Kitchen Mode
                         </a>
                         <div class="flex items-center gap-2 mt-1 text-xs text-gray-500">
                             {% match breakfast.prep_time_min %}
@@ -140,8 +145,13 @@ button.ts-active::after {
                             </span>
                             {% when None %}{% endmatch %}
                         </div>
-                        <a href="/recipes/{{ lunch.recipe_id }}" class="text-gray-900 hover:text-primary-500 font-medium">
+                        <!-- Story 3.5: Add calendar context to recipe link -->
+                        <a href="/recipes/{{ lunch.recipe_id }}?from=calendar&meal_plan_id={{ day.meal_plan_id }}&assignment_id={{ lunch.assignment_id }}" class="text-gray-900 hover:text-primary-500 font-medium block">
                             {{ lunch.recipe_title }}
+                        </a>
+                        <!-- Story 3.5 AC-6: Kitchen Mode Link -->
+                        <a href="/recipes/{{ lunch.recipe_id }}?from=calendar&meal_plan_id={{ day.meal_plan_id }}&assignment_id={{ lunch.assignment_id }}&kitchen_mode=true" class="text-xs text-gray-500 hover:text-gray-700 underline">
+                            👨‍🍳 Kitchen Mode
                         </a>
                         <div class="flex items-center gap-2 mt-1 text-xs text-gray-500">
                             {% match lunch.prep_time_min %}
@@ -186,8 +196,13 @@ button.ts-active::after {
                             </span>
                             {% when None %}{% endmatch %}
                         </div>
-                        <a href="/recipes/{{ dinner.recipe_id }}" class="text-gray-900 hover:text-primary-500 font-medium">
+                        <!-- Story 3.5: Add calendar context to recipe link -->
+                        <a href="/recipes/{{ dinner.recipe_id }}?from=calendar&meal_plan_id={{ day.meal_plan_id }}&assignment_id={{ dinner.assignment_id }}" class="text-gray-900 hover:text-primary-500 font-medium block">
                             {{ dinner.recipe_title }}
+                        </a>
+                        <!-- Story 3.5 AC-6: Kitchen Mode Link -->
+                        <a href="/recipes/{{ dinner.recipe_id }}?from=calendar&meal_plan_id={{ day.meal_plan_id }}&assignment_id={{ dinner.assignment_id }}&kitchen_mode=true" class="text-xs text-gray-500 hover:text-gray-700 underline">
+                            👨‍🍳 Kitchen Mode
                         </a>
                         <div class="flex items-center gap-2 mt-1 text-xs text-gray-500">
                             {% match dinner.prep_time_min %}
