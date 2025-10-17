@@ -1,26 +1,29 @@
 use anyhow::Result;
 use axum::{
+    extract::State,
     middleware as axum_middleware,
     routing::{get, post},
-    Router,
+    Extension, Router,
 };
 use clap::{Parser, Subcommand};
 use evento::prelude::*;
 use imkitchen::middleware::auth_middleware;
 use imkitchen::routes::{
     get_collections, get_discover, get_discover_detail, get_ingredient_row, get_instruction_row,
-    get_login, get_onboarding, get_onboarding_skip, get_password_reset,
+    get_login, get_meal_plan, get_onboarding, get_onboarding_skip, get_password_reset,
     get_password_reset_complete, get_profile, get_recipe_detail, get_recipe_edit_form,
     get_recipe_form, get_recipe_list, get_register, get_subscription, get_subscription_success,
     health, post_add_recipe_to_collection, post_add_to_library, post_create_collection,
     post_create_recipe, post_delete_collection, post_delete_recipe, post_delete_review,
-    post_favorite_recipe, post_login, post_logout, post_onboarding_step_1, post_onboarding_step_2,
-    post_onboarding_step_3, post_onboarding_step_4, post_password_reset,
+    post_favorite_recipe, post_generate_meal_plan, post_login, post_logout, post_onboarding_step_1,
+    post_onboarding_step_2, post_onboarding_step_3, post_onboarding_step_4, post_password_reset,
     post_password_reset_complete, post_profile, post_rate_recipe, post_register,
     post_remove_recipe_from_collection, post_share_recipe, post_stripe_webhook,
     post_subscription_upgrade, post_update_collection, post_update_recipe, post_update_recipe_tags,
     ready, AppState, AssetsService,
 };
+use imkitchen::{middleware, routes};
+use meal_planning::meal_plan_projection;
 use recipe::{collection_projection, recipe_projection};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions};
 use tower_http::trace::TraceLayer;
@@ -55,6 +58,16 @@ enum Commands {
     Migrate,
     /// Drop database if exists and recreate with migrations
     Reset,
+    /// Import recipe from JSON file
+    ImportRecipe {
+        /// Path to JSON file containing recipe data
+        #[arg(long)]
+        file: String,
+
+        /// User email address who will own the recipe
+        #[arg(long)]
+        email: String,
+    },
 }
 
 #[tokio::main]
@@ -77,6 +90,7 @@ async fn main() -> Result<()> {
         Commands::Serve { host, port } => serve_command(config, host, port).await,
         Commands::Migrate => migrate_command(config).await,
         Commands::Reset => reset_command(config).await,
+        Commands::ImportRecipe { file, email } => import_recipe_command(config, file, email).await,
     };
 
     // Graceful shutdown of observability
@@ -121,6 +135,11 @@ async fn serve_command(
         .run(&evento_executor)
         .await?;
     tracing::info!("Evento subscription 'collection-read-model' started");
+
+    meal_plan_projection(db_pool.clone())
+        .run(&evento_executor)
+        .await?;
+    tracing::info!("Evento subscription 'meal-plan-read-model' started");
 
     // Create app state
     let email_config = imkitchen::email::EmailConfig {
@@ -189,6 +208,9 @@ async fn serve_command(
             "/collections/{collection_id}/recipes/{recipe_id}/remove",
             post(post_remove_recipe_from_collection),
         )
+        // Meal planning routes
+        .route("/plan", get(get_meal_plan))
+        .route("/plan/generate", post(post_generate_meal_plan))
         .route_layer(axum_middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,
@@ -280,6 +302,86 @@ async fn reset_command(config: imkitchen::config::Config) -> Result<()> {
     Ok(())
 }
 
+#[tracing::instrument(skip(config))]
+async fn import_recipe_command(
+    config: imkitchen::config::Config,
+    file_path: String,
+    user_email: String,
+) -> Result<()> {
+    use recipe::commands::CreateRecipeCommand;
+    use recipe::events::{Ingredient, InstructionStep};
+    use serde::Deserialize;
+
+    tracing::info!("Importing recipe from file: {}", file_path);
+
+    // Read and parse JSON file
+    #[derive(Deserialize)]
+    struct RecipeJson {
+        title: String,
+        ingredients: Vec<Ingredient>,
+        instructions: Vec<InstructionStep>,
+        prep_time_min: Option<u32>,
+        cook_time_min: Option<u32>,
+        advance_prep_hours: Option<u32>,
+        serving_size: Option<u32>,
+    }
+
+    let json_content = std::fs::read_to_string(&file_path)
+        .map_err(|e| anyhow::anyhow!("Failed to read file {}: {}", file_path, e))?;
+
+    let recipe_data: RecipeJson = serde_json::from_str(&json_content)
+        .map_err(|e| anyhow::anyhow!("Failed to parse JSON: {}", e))?;
+
+    tracing::info!("Parsed recipe: {}", recipe_data.title);
+
+    // Set up database connection pool
+    let db_pool = SqlitePoolOptions::new()
+        .max_connections(config.database.max_connections)
+        .connect(&config.database.url)
+        .await?;
+
+    // Set up evento executor
+    let evento_executor: evento::Sqlite = db_pool.clone().into();
+
+    // Query user by email
+    let user = sqlx::query_as::<_, (String, String)>(
+        r#"SELECT id, email FROM users WHERE email = ? LIMIT 1"#,
+    )
+    .bind(&user_email)
+    .fetch_optional(&db_pool)
+    .await?
+    .ok_or_else(|| anyhow::anyhow!("User with email '{}' not found", user_email))?;
+
+    tracing::info!("Found user: {} ({})", user.1, user.0);
+
+    // Create command
+    let command = CreateRecipeCommand {
+        title: recipe_data.title,
+        ingredients: recipe_data.ingredients,
+        instructions: recipe_data.instructions,
+        prep_time_min: recipe_data.prep_time_min,
+        cook_time_min: recipe_data.cook_time_min,
+        advance_prep_hours: recipe_data.advance_prep_hours,
+        serving_size: recipe_data.serving_size,
+    };
+
+    // Import recipe using the create_recipe command
+    let recipe_id = recipe::commands::create_recipe(
+        command,
+        &user.0, // user_id
+        &evento_executor,
+        &db_pool,
+    )
+    .await?;
+
+    tracing::info!("✅ Recipe imported successfully with ID: {}", recipe_id);
+    println!("✅ Recipe imported successfully!");
+    println!("   Recipe ID: {}", recipe_id);
+    println!("   User: {} ({})", user.1, user.0);
+
+    Ok(())
+}
+
 #[tracing::instrument(skip(pool))]
 async fn run_migrations(pool: &sqlx::SqlitePool) -> Result<()> {
     // 1. Run SQLx migrations for read models
@@ -296,6 +398,62 @@ async fn run_migrations(pool: &sqlx::SqlitePool) -> Result<()> {
 }
 
 // Placeholder dashboard handler
-async fn dashboard_handler() -> &'static str {
-    "Dashboard - Welcome!"
+async fn dashboard_handler(
+    Extension(auth): Extension<middleware::auth::Auth>,
+    State(state): State<routes::AppState>,
+) -> Result<axum::response::Html<String>, (axum::http::StatusCode, String)> {
+    use askama::Template;
+
+    #[derive(Template)]
+    #[template(path = "pages/dashboard.html")]
+    struct DashboardTemplate {
+        user: Option<()>,
+        has_meal_plan: bool,
+        recipe_count: usize,
+        favorite_count: usize,
+    }
+
+    // Query user's recipes count
+    let recipe_count =
+        match recipe::read_model::query_recipes_by_user(&auth.user_id, false, &state.db_pool).await
+        {
+            Ok(recipes) => recipes.len(),
+            Err(_) => 0,
+        };
+
+    // Query user's favorite recipes count
+    let favorite_count = match recipe::read_model::query_recipes_by_user(
+        &auth.user_id,
+        true,
+        &state.db_pool,
+    )
+    .await
+    {
+        Ok(favorites) => favorites.len(),
+        Err(_) => 0,
+    };
+
+    // Check if user has active meal plan
+    let has_meal_plan = matches!(
+        meal_planning::read_model::MealPlanQueries::get_active_meal_plan(
+            &auth.user_id,
+            &state.db_pool,
+        )
+        .await,
+        Ok(Some(_))
+    );
+
+    let template = DashboardTemplate {
+        user: Some(()),
+        has_meal_plan,
+        recipe_count,
+        favorite_count,
+    };
+
+    template.render().map(axum::response::Html).map_err(|e| {
+        (
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Template error: {}", e),
+        )
+    })
 }

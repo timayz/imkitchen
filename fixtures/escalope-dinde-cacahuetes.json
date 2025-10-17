@@ -1,0 +1,151 @@
+{
+  "title": "Escalope de Dinde Panée aux Cacahuètes MADIVIAL (Peanut-Crusted Turkey Escalope)",
+  "ingredients": [
+    {
+      "name": "turkey fillets",
+      "quantity": 4.0,
+      "unit": "fillets"
+    },
+    {
+      "name": "lime juice",
+      "quantity": 45.0,
+      "unit": "g (3 limes)"
+    },
+    {
+      "name": "garlic cloves",
+      "quantity": 4.5,
+      "unit": "cloves (20g)"
+    },
+    {
+      "name": "salt",
+      "quantity": 1.0,
+      "unit": "g"
+    },
+    {
+      "name": "pepper",
+      "quantity": 1.0,
+      "unit": "unit"
+    },
+    {
+      "name": "wheat flour (T55)",
+      "quantity": 100.0,
+      "unit": "g"
+    },
+    {
+      "name": "eggs",
+      "quantity": 2.0,
+      "unit": "medium"
+    },
+    {
+      "name": "roasted unsalted peanuts",
+      "quantity": 300.0,
+      "unit": "g"
+    },
+    {
+      "name": "white cheese",
+      "quantity": 200.0,
+      "unit": "g"
+    },
+    {
+      "name": "dried green pepper",
+      "quantity": 15.0,
+      "unit": "g"
+    },
+    {
+      "name": "local onion",
+      "quantity": 10.0,
+      "unit": "g"
+    },
+    {
+      "name": "flat-leaf parsley",
+      "quantity": 5.0,
+      "unit": "g"
+    },
+    {
+      "name": "thyme",
+      "quantity": 1.0,
+      "unit": "branch (3g)"
+    },
+    {
+      "name": "olive oil for sauce",
+      "quantity": 10.0,
+      "unit": "g"
+    },
+    {
+      "name": "salt for sauce",
+      "quantity": 2.0,
+      "unit": "g"
+    },
+    {
+      "name": "frying oil",
+      "quantity": 1.0,
+      "unit": "unit"
+    }
+  ],
+  "instructions": [
+    {
+      "step_number": 1,
+      "instruction_text": "Marinate the turkey fillets in lime juice with crushed garlic. Add 1g salt and pepper to taste. Let rest for at least 20 minutes.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 2,
+      "instruction_text": "Prepare the herb sauce: finely chop the parsley and local onion. Strip the thyme leaves from the branch. Crush the dried green pepper.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 3,
+      "instruction_text": "Mix the white cheese with the chopped herbs, crushed green pepper, olive oil, and salt. Refrigerate the sauce until serving.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 4,
+      "instruction_text": "Pulse the roasted peanuts in a food processor to create coarse crumbs (not too fine, leave some texture).",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 5,
+      "instruction_text": "Set up three breading stations: one bowl with flour, one with beaten eggs, and one with crushed peanuts.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 6,
+      "instruction_text": "Remove the turkey fillets from the marinade and pat dry. Coat each fillet first in flour, shaking off excess.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 7,
+      "instruction_text": "Dip the floured fillets in the beaten eggs, ensuring complete coverage.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 8,
+      "instruction_text": "Press the egg-coated fillets firmly into the crushed peanuts, coating all sides thoroughly.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 9,
+      "instruction_text": "Heat 3-4 cm of oil in a deep pan. Test the temperature by dropping in a small piece of onion skin - it should sizzle immediately.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 10,
+      "instruction_text": "Carefully place the breaded fillets in the hot oil. Fry until golden brown on both sides and cooked through, about 3-4 minutes per side.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 11,
+      "instruction_text": "Remove the escalopes from the oil and drain on paper towels. Cover loosely with foil to keep warm until serving.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 12,
+      "instruction_text": "Serve the peanut-crusted turkey escalopes hot with the chilled herb sauce on the side.",
+      "timer_minutes": null
+    }
+  ],
+  "prep_time_min": 30,
+  "cook_time_min": 15,
+  "advance_prep_hours": null,
+  "serving_size": 4
+}

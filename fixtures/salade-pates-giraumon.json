@@ -1,0 +1,116 @@
+{
+  "title": "Salade de Pâtes au Giraumon (Pasta Salad with Giraumon Squash)",
+  "ingredients": [
+    {
+      "name": "short pasta (fusili, penne rigate)",
+      "quantity": 200.0,
+      "unit": "g"
+    },
+    {
+      "name": "giraumon squash",
+      "quantity": 140.0,
+      "unit": "g"
+    },
+    {
+      "name": "zucchini",
+      "quantity": 80.0,
+      "unit": "g"
+    },
+    {
+      "name": "red onion",
+      "quantity": 30.0,
+      "unit": "g"
+    },
+    {
+      "name": "olive oil",
+      "quantity": 30.0,
+      "unit": "g"
+    },
+    {
+      "name": "vegetarian peppers",
+      "quantity": 20.0,
+      "unit": "g"
+    },
+    {
+      "name": "sun-dried tomatoes",
+      "quantity": 20.0,
+      "unit": "g"
+    },
+    {
+      "name": "salt",
+      "quantity": 1.0,
+      "unit": "unit"
+    }
+  ],
+  "instructions": [
+    {
+      "step_number": 1,
+      "instruction_text": "Cook the pasta al dente according to package instructions in salted boiling water.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 2,
+      "instruction_text": "While pasta cooks, wash and dry all vegetables and peppers.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 3,
+      "instruction_text": "Peel the giraumon squash and cut into small dice (less than 1 cm cubes).",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 4,
+      "instruction_text": "Cut the zucchini in half lengthwise, then slice into thin half-moon shapes.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 5,
+      "instruction_text": "Finely slice the red onion into thin rings or strips.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 6,
+      "instruction_text": "Roughly chop the sun-dried tomatoes into small pieces.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 7,
+      "instruction_text": "Remove stems from the peppers and slice them thinly.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 8,
+      "instruction_text": "Before draining the pasta, reserve 60g (about 1/4 cup) of the pasta cooking water.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 9,
+      "instruction_text": "Drain the pasta and return it to the hot pot immediately.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 10,
+      "instruction_text": "Add all the raw vegetables (giraumon, zucchini, red onion, peppers) and sun-dried tomatoes to the hot pasta.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 11,
+      "instruction_text": "Pour the olive oil over the pasta and vegetables. Mix well to combine.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 12,
+      "instruction_text": "Cover the pot with a lid and let sit for 2-3 minutes, allowing the vegetables to cook slightly in the residual heat from the pasta.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 13,
+      "instruction_text": "Taste and adjust seasoning with salt. Serve warm, or let cool to room temperature for a refreshing pasta salad.",
+      "timer_minutes": null
+    }
+  ],
+  "prep_time_min": 15,
+  "cook_time_min": 12,
+  "advance_prep_hours": null,
+  "serving_size": 3
+}

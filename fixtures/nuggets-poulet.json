@@ -1,0 +1,156 @@
+{
+  "title": "Nuggets de Poulet MADIVIAL, Sauce Curry-Miel",
+  "ingredients": [
+    {
+      "name": "chicken fillets",
+      "quantity": 4.0,
+      "unit": "fillets (120-150g each)"
+    },
+    {
+      "name": "lemon juice",
+      "quantity": 1.0,
+      "unit": "lemon"
+    },
+    {
+      "name": "garlic cloves",
+      "quantity": 3.0,
+      "unit": "cloves"
+    },
+    {
+      "name": "pepper",
+      "quantity": 1.0,
+      "unit": "unit"
+    },
+    {
+      "name": "salt",
+      "quantity": 1.0,
+      "unit": "unit"
+    },
+    {
+      "name": "mixed herbs",
+      "quantity": 1.0,
+      "unit": "unit"
+    },
+    {
+      "name": "eggs",
+      "quantity": 2.0,
+      "unit": "whole"
+    },
+    {
+      "name": "seasoned flour (with paprika)",
+      "quantity": 80.0,
+      "unit": "g"
+    },
+    {
+      "name": "breadcrumbs",
+      "quantity": 80.0,
+      "unit": "g"
+    },
+    {
+      "name": "potatoes",
+      "quantity": 800.0,
+      "unit": "g"
+    },
+    {
+      "name": "oil for potatoes",
+      "quantity": 20.0,
+      "unit": "g"
+    },
+    {
+      "name": "paprika for potatoes",
+      "quantity": 4.0,
+      "unit": "g"
+    },
+    {
+      "name": "salt for potatoes",
+      "quantity": 4.0,
+      "unit": "g"
+    },
+    {
+      "name": "curry paste",
+      "quantity": 32.0,
+      "unit": "g"
+    },
+    {
+      "name": "honey",
+      "quantity": 110.0,
+      "unit": "g"
+    },
+    {
+      "name": "cornstarch",
+      "quantity": 12.0,
+      "unit": "g"
+    },
+    {
+      "name": "salt for sauce",
+      "quantity": 6.0,
+      "unit": "g"
+    },
+    {
+      "name": "water",
+      "quantity": 200.0,
+      "unit": "ml"
+    },
+    {
+      "name": "cider vinegar",
+      "quantity": 4.0,
+      "unit": "tsp"
+    }
+  ],
+  "instructions": [
+    {
+      "step_number": 1,
+      "instruction_text": "Cut each chicken fillet into 5-7 bite-sized pieces.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 2,
+      "instruction_text": "Marinate the chicken pieces with lemon juice, crushed garlic, salt, pepper, and mixed herbs. Refrigerate for at least 1 hour.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 3,
+      "instruction_text": "Set up three breading stations: one with seasoned flour (mixed with paprika), one with beaten eggs, and one with breadcrumbs.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 4,
+      "instruction_text": "Remove chicken from marinade. Coat each piece first in flour, then dip in egg, and finally coat thoroughly with breadcrumbs.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 5,
+      "instruction_text": "Heat oil in a deep pan to medium-high temperature. Fry the breaded chicken nuggets for 3-4 minutes until golden brown and cooked through.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 6,
+      "instruction_text": "Remove nuggets from oil and drain on absorbent paper towels.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 7,
+      "instruction_text": "For the potatoes: cut into quarters, toss with oil, salt, and paprika. Bake at 180°C for 30-40 minutes until crispy.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 8,
+      "instruction_text": "For the honey-curry sauce: mix curry paste, honey, cornstarch, salt, water, and cider vinegar in a small saucepan.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 9,
+      "instruction_text": "Cook the sauce over low heat for 2-3 minutes, stirring constantly until thickened.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 10,
+      "instruction_text": "Serve the hot nuggets with baked potato wedges and honey-curry sauce on the side.",
+      "timer_minutes": null
+    }
+  ],
+  "prep_time_min": 35,
+  "cook_time_min": 40,
+  "advance_prep_hours": 1,
+  "serving_size": 4
+}

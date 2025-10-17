@@ -1,0 +1,76 @@
+{
+  "title": "Classic Spaghetti Carbonara",
+  "ingredients": [
+    {
+      "name": "spaghetti",
+      "quantity": 400.0,
+      "unit": "g"
+    },
+    {
+      "name": "pancetta or guanciale",
+      "quantity": 200.0,
+      "unit": "g"
+    },
+    {
+      "name": "eggs",
+      "quantity": 4.0,
+      "unit": "whole"
+    },
+    {
+      "name": "Pecorino Romano cheese",
+      "quantity": 100.0,
+      "unit": "g"
+    },
+    {
+      "name": "black pepper",
+      "quantity": 1.0,
+      "unit": "unit"
+    },
+    {
+      "name": "salt",
+      "quantity": 1.0,
+      "unit": "unit"
+    }
+  ],
+  "instructions": [
+    {
+      "step_number": 1,
+      "instruction_text": "Bring a large pot of salted water to boil for the pasta.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 2,
+      "instruction_text": "Cut the pancetta into small cubes and cook in a large pan over medium heat until crispy, about 5-7 minutes.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 3,
+      "instruction_text": "In a bowl, whisk together eggs and grated Pecorino Romano cheese. Add freshly ground black pepper.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 4,
+      "instruction_text": "Cook the spaghetti according to package directions until al dente. Reserve 1 cup of pasta water before draining.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 5,
+      "instruction_text": "Add the drained pasta to the pan with pancetta. Remove from heat.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 6,
+      "instruction_text": "Quickly pour the egg mixture over the pasta, tossing continuously. Add pasta water a little at a time to create a creamy sauce.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 7,
+      "instruction_text": "Serve immediately with extra Pecorino and black pepper on top.",
+      "timer_minutes": null
+    }
+  ],
+  "prep_time_min": 10,
+  "cook_time_min": 20,
+  "advance_prep_hours": null,
+  "serving_size": 4
+}

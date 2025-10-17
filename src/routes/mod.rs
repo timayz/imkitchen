@@ -2,6 +2,7 @@ pub mod assets;
 pub mod auth;
 pub mod collections;
 pub mod health;
+pub mod meal_plan;
 pub mod profile;
 pub mod recipes;
 
@@ -16,6 +17,7 @@ pub use collections::{
     post_remove_recipe_from_collection, post_update_collection,
 };
 pub use health::{health, ready};
+pub use meal_plan::{get_meal_plan, post_generate_meal_plan};
 pub use profile::{
     get_onboarding, get_onboarding_skip, get_profile, get_subscription, get_subscription_success,
     post_onboarding_step_1, post_onboarding_step_2, post_onboarding_step_3, post_onboarding_step_4,

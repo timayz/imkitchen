@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block title %}Meal Plan - imkitchen{% endblock %}
+
+{% block extra_head %}
+<style>
+/* TwinSpark loading state */
+button.ts-active {
+    opacity: 0.6;
+    cursor: wait;
+    position: relative;
+}
+button.ts-active::after {
+    content: "⏳";
+    margin-left: 0.5rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<main id="main-content" class="container mx-auto px-4 py-8">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Weekly Meal Plan</h1>
+                {% if has_meal_plan %}
+                <p class="text-gray-600 mt-2">Week of {{ start_date }}</p>
+                {% endif %}
+            </div>
+
+            <div class="flex gap-4">
+                {% if has_meal_plan %}
+                <button
+                    ts-req="/plan/generate"
+                    ts-req-method="POST"
+                    ts-trigger="click"
+                    ts-target="#main-content"
+                    class="px-6 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-medium">
+                    Regenerate Meal Plan
+                </button>
+                {% else %}
+                <button
+                    ts-req="/plan/generate"
+                    ts-req-method="POST"
+                    ts-trigger="click"
+                    ts-target="#main-content"
+                    class="px-8 py-4 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-bold text-lg">
+                    Generate Meal Plan
+                </button>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if has_meal_plan %}
+        <!-- Meal Calendar Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-7 gap-4">
+            {% for day in days %}
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <!-- Day Header -->
+                <div class="bg-primary-500 text-white px-4 py-3">
+                    <h2 class="font-bold text-lg">{{ day.day_name }}</h2>
+                    <p class="text-sm text-primary-100">{{ day.date }}</p>
+                </div>
+
+                <!-- Meal Slots -->
+                <div class="p-4 space-y-4">
+                    <!-- Breakfast -->
+                    {% match day.breakfast %}
+                    {% when Some with (breakfast) %}
+                    <div class="border-l-4 border-yellow-400 pl-3 py-2">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-semibold text-gray-500 uppercase">Breakfast</span>
+                            {% match breakfast.complexity %}
+                            {% when Some with (complexity) %}
+                            <span class="text-xs px-2 py-1 rounded bg-gray-100 text-gray-600">
+                                {{ complexity }}
+                            </span>
+                            {% when None %}{% endmatch %}
+                        </div>
+                        <a href="/recipes/{{ breakfast.recipe_id }}" class="text-gray-900 hover:text-primary-500 font-medium">
+                            {{ breakfast.recipe_title }}
+                        </a>
+                        <div class="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                            {% match breakfast.prep_time_min %}
+                            {% when Some with (prep) %}
+                            <span>🔪 {{ prep }}m</span>
+                            {% when None %}{% endmatch %}
+                            {% match breakfast.cook_time_min %}
+                            {% when Some with (cook) %}
+                            <span>🔥 {{ cook }}m</span>
+                            {% when None %}{% endmatch %}
+                            {% if breakfast.prep_required %}
+                            <span class="text-orange-600 font-semibold" title="Advance prep required">⏰</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% when None %}
+                    <div class="border-l-4 border-gray-200 pl-3 py-2">
+                        <span class="text-xs font-semibold text-gray-400 uppercase">Breakfast</span>
+                        <p class="text-gray-400 text-sm">No meal planned</p>
+                    </div>
+                    {% endmatch %}
+
+                    <!-- Lunch -->
+                    {% match day.lunch %}
+                    {% when Some with (lunch) %}
+                    <div class="border-l-4 border-green-400 pl-3 py-2">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-semibold text-gray-500 uppercase">Lunch</span>
+                            {% match lunch.complexity %}
+                            {% when Some with (complexity) %}
+                            <span class="text-xs px-2 py-1 rounded bg-gray-100 text-gray-600">
+                                {{ complexity }}
+                            </span>
+                            {% when None %}{% endmatch %}
+                        </div>
+                        <a href="/recipes/{{ lunch.recipe_id }}" class="text-gray-900 hover:text-primary-500 font-medium">
+                            {{ lunch.recipe_title }}
+                        </a>
+                        <div class="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                            {% match lunch.prep_time_min %}
+                            {% when Some with (prep) %}
+                            <span>🔪 {{ prep }}m</span>
+                            {% when None %}{% endmatch %}
+                            {% match lunch.cook_time_min %}
+                            {% when Some with (cook) %}
+                            <span>🔥 {{ cook }}m</span>
+                            {% when None %}{% endmatch %}
+                            {% if lunch.prep_required %}
+                            <span class="text-orange-600 font-semibold" title="Advance prep required">⏰</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% when None %}
+                    <div class="border-l-4 border-gray-200 pl-3 py-2">
+                        <span class="text-xs font-semibold text-gray-400 uppercase">Lunch</span>
+                        <p class="text-gray-400 text-sm">No meal planned</p>
+                    </div>
+                    {% endmatch %}
+
+                    <!-- Dinner -->
+                    {% match day.dinner %}
+                    {% when Some with (dinner) %}
+                    <div class="border-l-4 border-blue-400 pl-3 py-2">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-semibold text-gray-500 uppercase">Dinner</span>
+                            {% match dinner.complexity %}
+                            {% when Some with (complexity) %}
+                            <span class="text-xs px-2 py-1 rounded bg-gray-100 text-gray-600">
+                                {{ complexity }}
+                            </span>
+                            {% when None %}{% endmatch %}
+                        </div>
+                        <a href="/recipes/{{ dinner.recipe_id }}" class="text-gray-900 hover:text-primary-500 font-medium">
+                            {{ dinner.recipe_title }}
+                        </a>
+                        <div class="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                            {% match dinner.prep_time_min %}
+                            {% when Some with (prep) %}
+                            <span>🔪 {{ prep }}m</span>
+                            {% when None %}{% endmatch %}
+                            {% match dinner.cook_time_min %}
+                            {% when Some with (cook) %}
+                            <span>🔥 {{ cook }}m</span>
+                            {% when None %}{% endmatch %}
+                            {% if dinner.prep_required %}
+                            <span class="text-orange-600 font-semibold" title="Advance prep required">⏰</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% when None %}
+                    <div class="border-l-4 border-gray-200 pl-3 py-2">
+                        <span class="text-xs font-semibold text-gray-400 uppercase">Dinner</span>
+                        <p class="text-gray-400 text-sm">No meal planned</p>
+                    </div>
+                    {% endmatch %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Legend -->
+        <div class="mt-8 bg-white rounded-lg shadow-sm p-6">
+            <h3 class="font-semibold text-gray-900 mb-3">Legend</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div class="flex items-center gap-2">
+                    <span class="text-lg">🔪</span>
+                    <span class="text-gray-600">Prep time</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-lg">🔥</span>
+                    <span class="text-gray-600">Cook time</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-lg text-orange-600">⏰</span>
+                    <span class="text-gray-600">Advance prep required</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="px-2 py-1 rounded bg-gray-100 text-gray-600 text-xs">complexity</span>
+                    <span class="text-gray-600">Recipe difficulty</span>
+                </div>
+            </div>
+        </div>
+
+        {% else %}
+        <!-- Empty State -->
+        <div class="bg-white rounded-lg shadow-md p-12 text-center">
+            <div class="max-w-md mx-auto">
+                <svg class="w-24 h-24 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">No Meal Plan Yet</h2>
+                <p class="text-gray-600 mb-6">
+                    Generate your first weekly meal plan based on your favorite recipes. You'll need at least 7 favorite recipes to get started.
+                </p>
+                <div class="space-y-3 text-left bg-blue-50 p-4 rounded-lg mb-6">
+                    <p class="font-semibold text-blue-900">To get started:</p>
+                    <ol class="list-decimal list-inside space-y-2 text-blue-800">
+                        <li>Add recipes to your library at <a href="/recipes/new" class="underline font-medium">Create Recipe</a></li>
+                        <li>Mark recipes as favorites by clicking the ⭐ icon</li>
+                        <li>Come back here and click "Generate Meal Plan"</li>
+                    </ol>
+                </div>
+                <div class="flex gap-4 justify-center">
+                    <a href="/recipes/new" class="px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-lg hover:border-gray-400 transition-colors font-medium">
+                        Create Recipe
+                    </a>
+                    <a href="/discover" class="px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-lg hover:border-gray-400 transition-colors font-medium">
+                        Browse Community
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</main>
+{% endblock %}
