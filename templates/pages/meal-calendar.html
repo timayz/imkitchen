@@ -98,7 +98,18 @@ button.ts-active::after {
                     {% when Some with (breakfast) %}
                     <div id="meal-slot-{{ breakfast.assignment_id }}" class="border-l-4 border-yellow-400 pl-3 py-2">
                         <div class="flex items-center justify-between mb-1">
-                            <span class="text-xs font-semibold text-gray-500 uppercase">Breakfast</span>
+                            <div class="flex items-center">
+                                <span class="text-xs font-semibold text-gray-500 uppercase">Breakfast</span>
+                                <!-- Story 3.8: Assignment Reasoning Tooltip -->
+                                {% match breakfast.assignment_reasoning %}
+                                {% when Some with (reasoning) %}
+                                <button type="button" class="info-icon text-gray-400 hover:text-primary-500 transition-colors cursor-help ml-1" aria-label="Why this meal was assigned" title="{{ reasoning }}">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                    </svg>
+                                </button>
+                                {% when None %}{% endmatch %}
+                            </div>
                             {% match breakfast.complexity %}
                             {% when Some with (complexity) %}
                             <!-- AC-5: Color-coded complexity badges -->
@@ -149,7 +160,18 @@ button.ts-active::after {
                     {% when Some with (lunch) %}
                     <div id="meal-slot-{{ lunch.assignment_id }}" class="border-l-4 border-green-400 pl-3 py-2">
                         <div class="flex items-center justify-between mb-1">
-                            <span class="text-xs font-semibold text-gray-500 uppercase">Lunch</span>
+                            <div class="flex items-center">
+                                <span class="text-xs font-semibold text-gray-500 uppercase">Lunch</span>
+                                <!-- Story 3.8: Assignment Reasoning Tooltip -->
+                                {% match lunch.assignment_reasoning %}
+                                {% when Some with (reasoning) %}
+                                <button type="button" class="info-icon text-gray-400 hover:text-primary-500 transition-colors cursor-help ml-1" aria-label="Why this meal was assigned" title="{{ reasoning }}">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                    </svg>
+                                </button>
+                                {% when None %}{% endmatch %}
+                            </div>
                             {% match lunch.complexity %}
                             {% when Some with (complexity) %}
                             <!-- AC-5: Color-coded complexity badges -->
@@ -200,7 +222,18 @@ button.ts-active::after {
                     {% when Some with (dinner) %}
                     <div id="meal-slot-{{ dinner.assignment_id }}" class="border-l-4 border-blue-400 pl-3 py-2">
                         <div class="flex items-center justify-between mb-1">
-                            <span class="text-xs font-semibold text-gray-500 uppercase">Dinner</span>
+                            <div class="flex items-center">
+                                <span class="text-xs font-semibold text-gray-500 uppercase">Dinner</span>
+                                <!-- Story 3.8: Assignment Reasoning Tooltip -->
+                                {% match dinner.assignment_reasoning %}
+                                {% when Some with (reasoning) %}
+                                <button type="button" class="info-icon text-gray-400 hover:text-primary-500 transition-colors cursor-help ml-1" aria-label="Why this meal was assigned" title="{{ reasoning }}">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                    </svg>
+                                </button>
+                                {% when None %}{% endmatch %}
+                            </div>
                             {% match dinner.complexity %}
                             {% when Some with (complexity) %}
                             <!-- AC-5: Color-coded complexity badges -->
