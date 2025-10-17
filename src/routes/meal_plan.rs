@@ -162,11 +162,13 @@ pub async fn post_generate_meal_plan(
     let start_date = get_next_monday();
 
     // AC-2, AC-3, AC-4, AC-6: Generate meal plan using algorithm
+    // AC-9: Pass None for seed to get random variety (timestamp-based)
     let (meal_assignments, updated_rotation_state) = MealPlanningAlgorithm::generate(
         &start_date,
         recipes_for_planning,
         constraints,
         rotation_state,
+        None, // None = use timestamp for variety
     )?;
 
     // Create MealPlanGenerated event via evento

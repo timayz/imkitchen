@@ -223,7 +223,7 @@ async fn test_insufficient_recipes_returns_error() {
     let rotation_state = RotationState::new();
 
     let result =
-        MealPlanningAlgorithm::generate("2025-10-20", favorites, constraints, rotation_state);
+        MealPlanningAlgorithm::generate("2025-10-20", favorites, constraints, rotation_state, Some(42));
 
     assert!(result.is_err());
     match result {
