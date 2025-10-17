@@ -1,0 +1,190 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>9</storyId>
+    <title>Home Dashboard with Today's Meals</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-17</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-3.9.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>see today's meals on my dashboard</iWant>
+    <soThat>I immediately know what to cook without navigating</soThat>
+    <tasks>
+      <task id="1" title="Create Dashboard Route and Query Logic" acs="1,2,3,4,8">
+        <subtask>Create src/routes/dashboard.rs module with GET /dashboard route handler</subtask>
+        <subtask>Add authentication middleware requirement and extract user ID from JWT claims</subtask>
+        <subtask>Add get_todays_meals(user_id, date) query to crates/meal_planning/src/read_model.rs</subtask>
+        <subtask>SELECT from meal_assignments WHERE user_id=? AND date=TODAY() with JOIN to recipes table</subtask>
+        <subtask>Handle no active meal plan case (query returns empty → template shows CTA)</subtask>
+        <subtask>Map query results to TodaysMealsData view struct with breakfast/lunch/dinner slots</subtask>
+        <subtask>Write unit tests for query and authentication</subtask>
+      </task>
+      <task id="2" title="Update Dashboard Template" acs="1,2,3,4,5,8">
+        <subtask>Update templates/pages/dashboard.html with Today's Meals section</subtask>
+        <subtask>Display 3 meal cards (breakfast, lunch, dinner) with recipe details</subtask>
+        <subtask>Add View Full Calendar link and recipe navigation</subtask>
+        <subtask>Use Tailwind CSS for responsive styling and accessibility</subtask>
+      </task>
+      <task id="3" title="Implement No Meal Plan State" acs="6">
+        <subtask>Conditional template rendering for empty state</subtask>
+        <subtask>Generate Meal Plan CTA button linking to /plan/generate</subtask>
+        <subtask>Write integration test for CTA flow</subtask>
+      </task>
+      <task id="4" title="Automatic Date Update Logic" acs="7">
+        <subtask>Server-side date filtering with CURRENT_DATE SQL function</subtask>
+        <subtask>Test date filtering behavior</subtask>
+      </task>
+      <task id="5" title="Recipe Navigation Integration" acs="8">
+        <subtask>Link meal cards to /recipes/{recipe_id} route</subtask>
+        <subtask>Test navigation flow</subtask>
+      </task>
+      <task id="6" title="Integration with Meal Plan Generation" acs="6">
+        <subtask>Verify /plan/generate route integration</subtask>
+        <subtask>Test end-to-end CTA flow</subtask>
+      </task>
+      <task id="7" title="Write Comprehensive Test Suite">
+        <subtask>Unit tests for dashboard route handler (authentication, data structure)</subtask>
+        <subtask>Integration tests for database queries</subtask>
+        <subtask>Optional E2E tests with Playwright</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="1">Home dashboard prominently displays "Today's Meals" section at top</ac>
+    <ac id="2">Shows breakfast, lunch, and dinner assigned for today</ac>
+    <ac id="3">Each meal displays: recipe title, image placeholder, prep time</ac>
+    <ac id="4">Advance prep indicator if preparation required today for future meal</ac>
+    <ac id="5">"View Full Calendar" link to navigate to week view</ac>
+    <ac id="6">If no meal plan active, displays "Generate Meal Plan" call-to-action</ac>
+    <ac id="7">Today's meals update automatically at midnight (new day)</ac>
+    <ac id="8">Click recipe navigates to full recipe detail</ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/solution-architecture.md" title="Route Structure" section="2.3 Page Routing and Navigation">
+        Dashboard route defined as: GET /dashboard → Today's meals + prep tasks (line 160)
+        Route is authenticated - requires JWT cookie validation via auth middleware
+        Pattern: Traditional server-side rendering with Askama templates, no client-side routing
+      </doc>
+      <doc path="docs/solution-architecture.md" title="Authentication Middleware" section="5.3 Protected Routes">
+        Auth middleware extracts JWT cookie and validates claims (lines 656-672)
+        Route protection applied to /dashboard, /recipes, /plan, /shopping, /profile routes
+        JWT claims include: user_id (sub), email, tier, expiration
+        Returns 401 UNAUTHORIZED if token missing or invalid
+      </doc>
+      <doc path="docs/solution-architecture.md" title="Server-Side Rendering" section="2.2 Server-Side Rendering Strategy">
+        Request flow: Route handler → Domain crate query → Askama template → HTML response (lines 126-141)
+        Askama templates compiled at build time with type safety (zero runtime overhead)
+        Data passed to template via view structs
+      </doc>
+      <doc path="docs/solution-architecture.md" title="Data Fetching - CQRS Queries" section="2.4 Data Fetching Approach">
+        Queries execute in route handlers before template rendering (line 217)
+        Read from CQRS read models (SQLite tables) not event streams
+        Data passed to Askama template for rendering (line 220)
+      </doc>
+      <doc path="docs/tech-spec-epic-3.md" title="Meal Planning Read Models" section="Detailed Design">
+        Read models: meal_plans, meal_assignments tables
+        Query pattern: SELECT from meal_assignments with JOIN to recipes
+        Meal assignments include: date, meal_type, recipe_id, advance_prep indicators
+      </doc>
+      <doc path="docs/epics.md" title="Story 3.9 Requirements" section="Epic 3: Story 3.9">
+        Dashboard displays Today's Meals section with breakfast/lunch/dinner (lines 754-776)
+        Query: SELECT * FROM meal_plan_calendar WHERE user_id = ? AND date = TODAY()
+        Empty state shows "Generate Meal Plan" CTA if no active meal plan
+      </doc>
+    </docs>
+    <code>
+      <artifact path="src/routes/meal_plan.rs" kind="route_handler" symbol="MealSlotData" lines="44-56">
+        Existing view struct for meal slot display - reuse pattern for TodaysMealsData
+        Includes: recipe_id, recipe_title, prep_time_min, cook_time_min, prep_required, assignment_reasoning
+      </artifact>
+      <artifact path="crates/meal_planning/src/read_model.rs" kind="query" symbol="MealPlanQueries" lines="51-100">
+        Existing query infrastructure for meal plans and assignments
+        Pattern: query_as with SQLitePool, returns ReadModel structs
+        Reference for implementing get_todays_meals() query
+      </artifact>
+      <artifact path="crates/meal_planning/src/read_model.rs" kind="struct" symbol="MealAssignmentReadModel" lines="22-31">
+        Read model for meal assignments with all required fields
+        Includes assignment_reasoning from Story 3.8
+      </artifact>
+      <artifact path="src/middleware/auth.rs" kind="middleware" symbol="Auth" lines="14-15">
+        Auth extension struct with user_id field
+        Extract in route handler: Extension(auth): Extension&lt;Auth&gt;
+      </artifact>
+      <artifact path="templates/pages/dashboard.html" kind="template" symbol="dashboard" lines="1-164">
+        Existing dashboard template with meal plan CTA
+        Need to add Today's Meals section at top (before line 30)
+        Already has has_meal_plan conditional logic (lines 36-63)
+      </artifact>
+      <artifact path="templates/components/recipe-card.html" kind="component" symbol="recipe_card">
+        Reusable recipe card component for displaying recipes
+        Reference for meal card styling and structure
+      </artifact>
+    </code>
+    <dependencies>
+      <rust>
+        <package name="axum" version="0.8" features="macros">HTTP server framework</package>
+        <package name="askama" version="0.14">Template engine with compile-time type safety</package>
+        <package name="sqlx" version="0.8" features="runtime-tokio,sqlite,chrono,uuid">Async SQL toolkit</package>
+        <package name="chrono" version="0.4" features="serde">Date and time library</package>
+        <package name="serde" version="1.0" features="derive">Serialization framework</package>
+      </rust>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">Follow server-side rendering pattern: Route handler → Domain query → Askama template → HTML response</constraint>
+    <constraint type="architecture">Use CQRS read models for queries - never query event streams directly</constraint>
+    <constraint type="authentication">Dashboard route must be protected with auth middleware - extract user_id from Extension&lt;Auth&gt;</constraint>
+    <constraint type="query">Use SQLx query_as! macro with compile-time verification or query_as with struct binding</constraint>
+    <constraint type="template">Extend existing templates/pages/dashboard.html - do not create new template</constraint>
+    <constraint type="testing">TDD enforced - write tests before implementation (unit tests, integration tests)</constraint>
+    <constraint type="testing">Minimum 80% code coverage required (cargo tarpaulin)</constraint>
+    <constraint type="date">Use CURRENT_DATE SQL function for server-side date filtering - no client-side JavaScript</constraint>
+    <constraint type="responsive">Use Tailwind CSS with mobile-first responsive design (grid: 1 col mobile, 3 cols desktop)</constraint>
+    <constraint type="accessibility">Follow WCAG 2.1 Level AA - semantic HTML, ARIA labels, keyboard navigation</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="MealPlanQueries::get_todays_meals" kind="query" signature="pub async fn get_todays_meals(user_id: &amp;str, date: NaiveDate, pool: &amp;SqlitePool) -&gt; Result&lt;Vec&lt;MealAssignmentWithRecipe&gt;, sqlx::Error&gt;" path="crates/meal_planning/src/read_model.rs">
+      New query method to add to MealPlanQueries impl block
+      Returns today's meal assignments with recipe details via JOIN
+    </interface>
+    <interface name="Auth" kind="extractor" signature="Extension(auth): Extension&lt;Auth&gt;" path="src/middleware/auth.rs">
+      Axum extension for extracting authenticated user_id from JWT
+      Access via: auth.user_id
+    </interface>
+    <interface name="dashboard_handler" kind="route" signature="pub async fn dashboard_handler(Extension(auth): Extension&lt;Auth&gt;, State(state): State&lt;AppState&gt;) -&gt; Result&lt;impl IntoResponse, AppError&gt;" path="src/routes/dashboard.rs">
+      New dashboard route handler to create
+      Protected route requiring Auth extension
+    </interface>
+    <interface name="query_recipes_by_user" kind="query" signature="pub async fn query_recipes_by_user(user_id: &amp;str, pool: &amp;SqlitePool) -&gt; Result&lt;Vec&lt;RecipeReadModel&gt;, sqlx::Error&gt;" path="crates/recipe/src/read_model.rs">
+      Existing query for user's recipes - may need for recipe details JOIN
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      TDD enforced with Rust test framework (cargo test). Unit tests in same file as implementation with #[cfg(test)] module. Integration tests in tests/ directory. Minimum 80% code coverage via cargo tarpaulin. Test naming: test_&lt;function&gt;_&lt;condition&gt;_&lt;expected_result&gt;. Mock database queries using sqlx::test with test database. Playwright E2E tests optional/deferrable for MVP.
+    </standards>
+    <locations>
+      - src/routes/dashboard.rs: #[cfg(test)] mod tests (unit tests for route handler)
+      - crates/meal_planning/src/read_model.rs: #[cfg(test)] mod tests (unit tests for query)
+      - tests/dashboard_integration_test.rs: Integration test for full flow
+    </locations>
+    <ideas>
+      <test ac="1,2,3,4">Test get_todays_meals query returns correct meal assignments for today's date with recipe details</test>
+      <test ac="1,2,3,8">Test dashboard route handler renders template with today's meals data</test>
+      <test ac="6">Test dashboard displays Generate Meal Plan CTA when no active meal plan exists</test>
+      <test ac="7">Test query filters meals by CURRENT_DATE correctly (mock different dates)</test>
+      <test ac="8">Test meal cards link to correct recipe detail URLs</test>
+      <test ac="all">Test authentication: unauthenticated request returns 401 redirect to login</test>
+    </ideas>
+  </tests>
+</story-context>

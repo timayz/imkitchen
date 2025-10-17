@@ -4,7 +4,7 @@ use axum::{
     response::{Html, IntoResponse, Redirect},
     Extension,
 };
-use chrono::{Datelike, Duration, NaiveDate, Utc, Weekday};
+use chrono::{Datelike, NaiveDate, Utc};
 use meal_planning::{
     algorithm::{MealPlanningAlgorithm, RecipeForPlanning, UserConstraints},
     events::MealPlanGenerated,
@@ -320,8 +320,8 @@ pub async fn post_generate_meal_plan(
     let old_cycle_number = rotation_state.cycle_number;
     let favorite_count = recipes_for_planning.len();
 
-    // Calculate start date (next Monday)
-    let start_date = get_next_monday();
+    // Calculate start date (today) - Story 3.9: Meal plans should start today for dashboard
+    let start_date = Utc::now().naive_utc().date().format("%Y-%m-%d").to_string();
 
     // AC-2, AC-3, AC-4, AC-6: Generate meal plan using algorithm
     // AC-9: Pass None for seed to get random variety (timestamp-based)
@@ -960,23 +960,6 @@ pub async fn post_regenerate_meal_plan(
 
     // Redirect to calendar view with success message
     Ok(Redirect::to("/plan"))
-}
-
-/// Helper: Get next Monday's date as ISO 8601 string
-fn get_next_monday() -> String {
-    let today = Utc::now().naive_utc().date();
-    let days_until_monday = match today.weekday() {
-        Weekday::Mon => 7, // If today is Monday, next Monday is 7 days away
-        Weekday::Tue => 6,
-        Weekday::Wed => 5,
-        Weekday::Thu => 4,
-        Weekday::Fri => 3,
-        Weekday::Sat => 2,
-        Weekday::Sun => 1,
-    };
-
-    let next_monday = today + Duration::days(days_until_monday);
-    next_monday.format("%Y-%m-%d").to_string()
 }
 
 #[cfg(test)]
