@@ -1,0 +1,263 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>8</storyId>
+    <title>Algorithm Transparency (Show Reasoning)</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-17</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-3.8.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>understand why meals were assigned to specific days</iWant>
+    <soThat>I trust the automated system</soThat>
+    <tasks>
+      - Task 1: Capture Assignment Reasoning in Algorithm (AC: 2, 3, 4, 5)
+      - Task 2: Store Reasoning in Read Model (AC: 5)
+      - Task 3: Add Info Icon to Meal Slot UI (AC: 1)
+      - Task 4: Implement Tooltip Display Logic (AC: 1, 6)
+      - Task 5: Update Meal Calendar Template (AC: 1, 7)
+      - Task 6: Mobile-Specific Tooltip Behavior (AC: 1)
+      - Task 7: Write Comprehensive Test Suite (TDD)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    1. Hovering over (or tapping) info icon on meal slot shows reasoning tooltip
+    2. Reasoning displays: "Assigned to Saturday: more prep time available (Complex recipe, 75min total time)"
+    3. Or: "Assigned to Tuesday: Quick weeknight meal (Simple recipe, 30min total time)"
+    4. Or: "Prep tonight for tomorrow: Requires 4-hour marinade"
+    5. Reasoning adapts to actual assignment factors used by algorithm
+    6. Clear, human-readable language (no technical jargon)
+    7. Builds user trust in intelligent automation
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/epics.md</path>
+        <title>Story 3.8 Requirements</title>
+        <section>Epic 3: Intelligent Meal Planning Engine - Story 3.8</section>
+        <snippet>Algorithm transparency feature requiring info icons on meal slots with reasoning tooltips explaining assignment decisions</snippet>
+        <relevance>Defines acceptance criteria and user expectations for algorithm transparency</relevance>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-3.md</path>
+        <title>Meal Planning Engine Technical Specification</title>
+        <section>MealPlanningAlgorithm - Constraint Types</section>
+        <snippet>Defines 7 constraint types: Availability, Complexity, Advance Prep, Dietary, Freshness, Equipment Conflict, Rotation. Each constraint has specific scoring logic that should be explained in reasoning text.</snippet>
+        <relevance>Provides constraint types and scoring factors that drive reasoning generation</relevance>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>Progressive Enhancement</section>
+        <snippet>TwinSpark attributes for interactive behaviors (ts-req, ts-target, ts-swap, ts-trigger). Fallback to CSS :hover for tooltips without JavaScript.</snippet>
+        <relevance>Defines progressive enhancement strategy for tooltip interactions</relevance>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>Accessibility</section>
+        <snippet>WCAG 2.1 Level AA compliance: ARIA attributes (aria-label, aria-describedby, role="tooltip"), keyboard navigation (Enter/Escape), 44x44px touch targets, 4.5:1 color contrast</snippet>
+        <relevance>Defines accessibility requirements for info icon and tooltip</relevance>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-3.7.md</path>
+        <title>Story 3.7 Completion Notes</title>
+        <section>Senior Developer Review - Action Items</section>
+        <snippet>Lessons learned: CSP compliance requires external JavaScript files (no inline), keyboard navigation (Escape/Enter), ARIA landmarks, focus management, proper error handling</snippet>
+        <relevance>Provides best practices learned from previous story implementation</relevance>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/algorithm.rs</path>
+        <kind>module</kind>
+        <symbol>MealPlanningAlgorithm, RecipeComplexityCalculator</symbol>
+        <lines>1-200</lines>
+        <reason>Core algorithm that assigns recipes to slots. Must be extended to capture reasoning during scoring process.</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/events.rs</path>
+        <kind>module</kind>
+        <symbol>MealPlanGenerated, MealAssignment</symbol>
+        <lines>N/A</lines>
+        <reason>Event definitions must be extended to include assignment_reasoning field in MealAssignment struct</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/read_model.rs</path>
+        <kind>module</kind>
+        <symbol>meal_plan_generated_handler</symbol>
+        <lines>N/A</lines>
+        <reason>Projection handler must store assignment_reasoning in meal_assignments table</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/templates/pages/meal-calendar.html</path>
+        <kind>template</kind>
+        <symbol>meal-calendar</symbol>
+        <lines>N/A</lines>
+        <reason>Calendar template must include info icons and reasoning data for each meal slot</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/templates/components/meal-slot.html</path>
+        <kind>template</kind>
+        <symbol>meal-slot component</symbol>
+        <lines>N/A</lines>
+        <reason>Meal slot component must render info icon with tooltip trigger</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/constraints.rs</path>
+        <kind>module</kind>
+        <symbol>Constraint types and scoring</symbol>
+        <lines>N/A</lines>
+        <reason>Constraint evaluation logic provides factors for reasoning text generation</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <rust>
+        <evento version="1.4">Event sourcing framework with SQLite backend</evento>
+        <sqlx version="0.8">Database query builder for read model updates</sqlx>
+        <askama version="0.14">Template engine for rendering HTML with reasoning data</askama>
+        <serde version="1.0">Serialization for reasoning data in events</serde>
+        <chrono version="0.4">Date/time handling for meal assignments</chrono>
+      </rust>
+      <frontend>
+        <tailwind-css version="4.1+">Styling for info icon and tooltip</tailwind-css>
+        <twinspark version="latest">Progressive enhancement for tooltip interactions (optional)</twinspark>
+      </frontend>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <architecture>
+      - Event Sourcing: All changes must flow through evento events (MealPlanGenerated)
+      - CQRS: Commands write events, queries read from meal_assignments table
+      - No inline JavaScript: CSP compliance requires external .js files (static/js/reasoning-tooltip.js)
+      - Progressive Enhancement: Tooltips must work with CSS :hover fallback
+      - Server-Side Rendering: All HTML rendered via Askama templates
+    </architecture>
+    <patterns>
+      - Store reasoning as human-readable string (not structured data) in database
+      - Generate reasoning during algorithm execution (not retroactively)
+      - Reasoning templates map to constraint types (7 templates minimum)
+      - Prioritize primary constraint when multiple factors apply
+      - Tooltip positioning: relative to icon (desktop), modal overlay (mobile)
+    </patterns>
+    <testing>
+      - TDD enforced: Write tests before implementation
+      - Unit tests: generate_reasoning_text() for each constraint type
+      - Integration tests: Reasoning persisted to database and queried
+      - E2E tests: Tooltip display, hover/tap interactions, keyboard navigation
+      - Accessibility tests: ARIA attributes, screen reader, keyboard support
+      - Minimum 80% code coverage required
+    </testing>
+    <accessibility>
+      - WCAG 2.1 Level AA compliance mandatory
+      - Info icon: aria-label="View assignment reasoning", role="button", tabindex="0"
+      - Tooltip: role="tooltip", linked via aria-describedby
+      - Keyboard: Enter shows tooltip, Escape hides tooltip
+      - Touch targets: Minimum 44x44px for mobile info icon
+      - Color contrast: 4.5:1 for text, 3:1 for large elements
+      - Focus management: Visible focus ring on info icon
+    </accessibility>
+    <mobile>
+      - Viewport detection: <768px = mobile, >=768px = desktop
+      - Mobile: Tap icon shows modal overlay with dark backdrop (bg-black/50)
+      - Desktop: Hover icon shows positioned tooltip with arrow pointer
+      - Tooltip dismissal: Tap outside (mobile), mouse leave + 500ms delay (desktop)
+      - Close button (X) in top-right for mobile modal
+    </mobile>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>generate_reasoning_text</name>
+      <kind>function</kind>
+      <signature>fn generate_reasoning_text(recipe: &RecipeForPlanning, slot: &MealSlot, user_profile: &UserConstraints, score_factors: &ScoreFactors) -> String</signature>
+      <path>crates/meal_planning/src/algorithm.rs</path>
+      <description>Generates human-readable reasoning string explaining why recipe assigned to slot. Returns template-based string with constraint factors filled in.</description>
+    </interface>
+    <interface>
+      <name>MealAssignment</name>
+      <kind>struct</kind>
+      <signature>struct MealAssignment { date: NaiveDate, meal_type: String, recipe_id: String, assignment_reasoning: Option<String> }</signature>
+      <path>crates/meal_planning/src/events.rs</path>
+      <description>Must add assignment_reasoning field (Option<String>) to store reasoning text in event payload</description>
+    </interface>
+    <interface>
+      <name>meal_assignments table</name>
+      <kind>database</kind>
+      <signature>ALTER TABLE meal_assignments ADD COLUMN assignment_reasoning TEXT</signature>
+      <path>migrations/009_add_assignment_reasoning.sql</path>
+      <description>Read model table must store reasoning string for display in calendar tooltips</description>
+    </interface>
+    <interface>
+      <name>reasoning-tooltip.html</name>
+      <kind>template-component</kind>
+      <signature>{% macro reasoning_tooltip(reasoning_text) %}</signature>
+      <path>templates/components/reasoning-tooltip.html</path>
+      <description>Askama template partial for rendering tooltip with reasoning text. Includes aria attributes and positioning styles.</description>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      TDD approach required per solution architecture. Use Rust's built-in test framework for unit tests (#[test], #[tokio::test]).
+      Integration tests in tests/ directory with in-memory SQLite database for evento projections.
+      E2E tests using Playwright (TypeScript) for browser interactions (hover, tap, keyboard).
+      Mock RecipeForPlanning and UserConstraints data for algorithm tests.
+      Minimum 80% code coverage enforced by CI (cargo-tarpaulin).
+    </standards>
+    <locations>
+      - crates/meal_planning/tests/algorithm_reasoning_tests.rs (unit tests for generate_reasoning_text)
+      - crates/meal_planning/tests/mod.rs (aggregate and projection integration tests)
+      - tests/meal_planning_reasoning_tests.rs (HTTP route integration tests)
+      - e2e/tests/algorithm-transparency.spec.ts (Playwright E2E tests for tooltip interactions)
+    </locations>
+    <ideas>
+      <test ac="2">
+        Unit test: generate_reasoning_text() for weekend complexity constraint
+        Expected: "Assigned to Saturday: more prep time available (Complex recipe, 75min total time)"
+      </test>
+      <test ac="3">
+        Unit test: generate_reasoning_text() for weeknight time constraint
+        Expected: "Assigned to Tuesday: Quick weeknight meal (Simple recipe, 30min total time)"
+      </test>
+      <test ac="4">
+        Unit test: generate_reasoning_text() for advance prep constraint
+        Expected: "Prep tonight for tomorrow: Requires 4-hour marinade"
+      </test>
+      <test ac="5">
+        Integration test: MealPlanGenerated event includes assignment_reasoning
+        Verify: Reasoning stored in meal_assignments table via projection
+      </test>
+      <test ac="1">
+        E2E test: Info icon visible on meal slots, hover shows tooltip
+        Playwright: page.hover('.info-icon'), expect('.reasoning-tooltip').toBeVisible()
+      </test>
+      <test ac="1">
+        E2E test: Tap info icon on mobile shows modal tooltip
+        Playwright: Mobile viewport, page.tap('.info-icon'), expect('.reasoning-modal').toBeVisible()
+      </test>
+      <test ac="6">
+        Unit test: Reasoning text is human-readable (no jargon)
+        Verify: No terms like "CSP", "constraint satisfaction", "score factors"
+      </test>
+      <test ac="7">
+        Integration test: Query meal_assignments returns reasoning with calendar data
+        Verify: GET /plan includes reasoning in response for tooltip display
+      </test>
+      <test ac="accessibility">
+        E2E test: Keyboard navigation - focus icon, press Enter, tooltip shows, press Escape, tooltip hides
+        Playwright: page.focus('.info-icon'), page.keyboard.press('Enter'), expect('.reasoning-tooltip').toBeVisible()
+      </test>
+      <test ac="accessibility">
+        E2E test: Screen reader announces reasoning when focus on icon
+        Verify: aria-label and aria-describedby attributes present, role="tooltip"
+      </test>
+    </ideas>
+  </tests>
+</story-context>
