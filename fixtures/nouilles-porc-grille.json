@@ -1,0 +1,141 @@
+{
+  "title": "Nouilles au Porc Grillé MADIVIAL (Grilled Pork Noodles)",
+  "ingredients": [
+    {
+      "name": "pork côte-échine (pork chops)",
+      "quantity": 450.0,
+      "unit": "g"
+    },
+    {
+      "name": "egg noodles",
+      "quantity": 170.0,
+      "unit": "g"
+    },
+    {
+      "name": "carrots",
+      "quantity": 115.0,
+      "unit": "g"
+    },
+    {
+      "name": "red bell pepper",
+      "quantity": 115.0,
+      "unit": "g"
+    },
+    {
+      "name": "button mushrooms",
+      "quantity": 90.0,
+      "unit": "g"
+    },
+    {
+      "name": "lime juice",
+      "quantity": 55.0,
+      "unit": "g"
+    },
+    {
+      "name": "battery syrup",
+      "quantity": 40.0,
+      "unit": "g"
+    },
+    {
+      "name": "semi-salted butter",
+      "quantity": 36.0,
+      "unit": "g"
+    },
+    {
+      "name": "soy sauce",
+      "quantity": 30.0,
+      "unit": "g"
+    },
+    {
+      "name": "sunflower oil",
+      "quantity": 20.0,
+      "unit": "g"
+    },
+    {
+      "name": "red onion",
+      "quantity": 30.0,
+      "unit": "g"
+    },
+    {
+      "name": "local onion",
+      "quantity": 14.0,
+      "unit": "g"
+    },
+    {
+      "name": "garlic",
+      "quantity": 12.0,
+      "unit": "g"
+    },
+    {
+      "name": "vegetarian chili peppers",
+      "quantity": 12.0,
+      "unit": "g"
+    },
+    {
+      "name": "parsley",
+      "quantity": 11.0,
+      "unit": "g"
+    },
+    {
+      "name": "coarse salt",
+      "quantity": 1.0,
+      "unit": "unit"
+    }
+  ],
+  "instructions": [
+    {
+      "step_number": 1,
+      "instruction_text": "Marinate the pork in lime juice, soy sauce, and battery syrup for at least 1 hour in the refrigerator.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 2,
+      "instruction_text": "Prepare the vegetables: slice bell peppers, carrots, and mushrooms into strips or bite-sized pieces.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 3,
+      "instruction_text": "Prepare the herbs: peel and mince the garlic, chili peppers, parsley, red onion, and local onion.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 4,
+      "instruction_text": "Mix the semi-salted butter with the minced herbs and refrigerate to set.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 5,
+      "instruction_text": "Grill the vegetables on medium-high heat until tender and slightly charred.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 6,
+      "instruction_text": "Remove the pork from the marinade and grill until cooked through, seasoning with coarse salt to taste.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 7,
+      "instruction_text": "Cook the egg noodles according to package instructions until al dente, then drain.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 8,
+      "instruction_text": "Toss the hot cooked noodles with the herbed butter until well coated.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 9,
+      "instruction_text": "Slice the grilled pork into thick pieces.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 10,
+      "instruction_text": "Mix the pork slices, grilled vegetables, and buttered noodles together. Serve immediately while hot.",
+      "timer_minutes": null
+    }
+  ],
+  "prep_time_min": 25,
+  "cook_time_min": 30,
+  "advance_prep_hours": 1,
+  "serving_size": 3
+}

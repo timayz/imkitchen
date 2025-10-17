@@ -1,0 +1,106 @@
+{
+  "title": "Cuisson des Haricots Rouges (Caribbean Red Beans)",
+  "ingredients": [
+    {
+      "name": "red beans",
+      "quantity": 500.0,
+      "unit": "g"
+    },
+    {
+      "name": "cive (green onion)",
+      "quantity": 2.0,
+      "unit": "branches"
+    },
+    {
+      "name": "bay leaves",
+      "quantity": 2.0,
+      "unit": "leaves"
+    },
+    {
+      "name": "thyme",
+      "quantity": 4.0,
+      "unit": "branches"
+    },
+    {
+      "name": "parsley",
+      "quantity": 2.5,
+      "unit": "branches"
+    },
+    {
+      "name": "garlic cloves",
+      "quantity": 2.0,
+      "unit": "cloves"
+    },
+    {
+      "name": "olive oil",
+      "quantity": 20.0,
+      "unit": "g"
+    },
+    {
+      "name": "four-spice mix (quatre épices)",
+      "quantity": 2.0,
+      "unit": "g"
+    },
+    {
+      "name": "water",
+      "quantity": 2.0,
+      "unit": "liters"
+    },
+    {
+      "name": "salt",
+      "quantity": 12.0,
+      "unit": "g"
+    }
+  ],
+  "instructions": [
+    {
+      "step_number": 1,
+      "instruction_text": "Soak the red beans in cold water overnight (at least 12 hours) to soften them and reduce cooking time.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 2,
+      "instruction_text": "Drain the soaking water completely and rinse the beans.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 3,
+      "instruction_text": "Heat the olive oil in a pressure cooker over medium heat.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 4,
+      "instruction_text": "Add the chopped cive (green onion), bay leaves, and thyme branches. Sauté for 2-3 minutes until fragrant.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 5,
+      "instruction_text": "Add the drained red beans and pour in 2 liters of water.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 6,
+      "instruction_text": "Add the garlic cloves (whole or crushed) and the four-spice mix (quatre épices). Stir to combine.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 7,
+      "instruction_text": "Close the pressure cooker lid securely and cook for 45 minutes from the moment the valve starts whistling.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 8,
+      "instruction_text": "Carefully open the pressure cooker following manufacturer's instructions. Crush the garlic cloves with a fork, add the salt and chopped parsley, and stir well.",
+      "timer_minutes": null
+    },
+    {
+      "step_number": 9,
+      "instruction_text": "Let the beans rest for 15 minutes before serving to allow flavors to meld. Serve hot as a side dish or main course.",
+      "timer_minutes": null
+    }
+  ],
+  "prep_time_min": 15,
+  "cook_time_min": 45,
+  "advance_prep_hours": 12,
+  "serving_size": 6
+}

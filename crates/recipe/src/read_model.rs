@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{Row, SqlitePool};
 
 /// Recipe data from read model (recipes table)
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct RecipeReadModel {
     pub id: String,
     pub user_id: String,

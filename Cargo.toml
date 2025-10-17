@@ -2,6 +2,7 @@
 members = [
 	"crates/user",
 	"crates/recipe",
+	"crates/meal_planning",
 ]
 resolver = "2"
 
@@ -67,6 +68,9 @@ sqlx = { workspace = true }
 evento = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+bincode = { workspace = true }
 anyhow = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
@@ -84,6 +88,7 @@ urlencoding = { workspace = true }
 async-stripe = { workspace = true }
 user = { path = "crates/user", version = "0.2.0" }
 recipe = { path = "crates/recipe", version = "0.2.0" }
+meal_planning = { path = "crates/meal_planning", version = "0.2.0" }
 
 [dev-dependencies]
 http-body-util = "0.1"

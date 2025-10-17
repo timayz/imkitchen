@@ -23,8 +23,36 @@ pub enum AppError {
     #[error("Recipe error: {0}")]
     RecipeError(#[from] RecipeError),
 
+    #[error("Meal planning error: {0}")]
+    MealPlanningError(#[from] meal_planning::MealPlanningError),
+
+    #[error("Insufficient recipes: need at least {required}, have {current}")]
+    InsufficientRecipes { current: usize, required: usize },
+
+    #[error("Serialization error: {0}")]
+    SerializationError(String),
+
     #[error("Internal server error")]
     InternalError(String),
+}
+
+// Manual From implementations for errors that don't have automatic derives
+impl From<bincode::error::EncodeError> for AppError {
+    fn from(err: bincode::error::EncodeError) -> Self {
+        AppError::SerializationError(err.to_string())
+    }
+}
+
+impl From<anyhow::Error> for AppError {
+    fn from(err: anyhow::Error) -> Self {
+        AppError::EventStoreError(err.to_string())
+    }
+}
+
+impl From<serde_json::Error> for AppError {
+    fn from(err: serde_json::Error) -> Self {
+        AppError::SerializationError(err.to_string())
+    }
 }
 
 #[derive(Template)]
@@ -121,6 +149,33 @@ impl IntoResponse for AppError {
                     StatusCode::INTERNAL_SERVER_ERROR,
                     "Internal Server Error".to_string(),
                     "An unexpected error occurred. Please try again later.".to_string(),
+                )
+            }
+            AppError::MealPlanningError(e) => {
+                tracing::error!("Meal planning error: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Meal Planning Error".to_string(),
+                    format!("Failed to generate meal plan: {}", e),
+                )
+            }
+            AppError::InsufficientRecipes { current, required } => (
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "Not Enough Recipes".to_string(),
+                format!(
+                    "You need at least {} favorite recipes to generate a meal plan. You currently have {}. Add {} more recipe{} to get started!",
+                    required,
+                    current,
+                    required - current,
+                    if required - current > 1 { "s" } else { "" }
+                ),
+            ),
+            AppError::SerializationError(e) => {
+                tracing::error!("Serialization error: {}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Internal Server Error".to_string(),
+                    "An unexpected error occurred while processing data.".to_string(),
                 )
             }
         };
