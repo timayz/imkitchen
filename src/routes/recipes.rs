@@ -53,6 +53,15 @@ pub struct RecipeFormTemplate {
     pub recipe: Option<RecipeDetailView>, // Pre-populated data for edit mode
 }
 
+/// Query parameters for calendar context (Story 3.5)
+#[derive(Debug, Deserialize)]
+pub struct CalendarContext {
+    pub from: Option<String>,
+    pub meal_plan_id: Option<String>,
+    pub assignment_id: Option<String>,
+    pub kitchen_mode: Option<bool>,
+}
+
 #[derive(Template)]
 #[template(path = "pages/recipe-detail.html")]
 pub struct RecipeDetailTemplate {
@@ -61,6 +70,10 @@ pub struct RecipeDetailTemplate {
     pub user: Option<Auth>,
     pub all_collections: Vec<CollectionReadModel>,
     pub recipe_collections: Vec<CollectionReadModel>,
+    pub is_from_calendar: bool,        // Story 3.5 AC-1, AC-5
+    pub kitchen_mode: bool,            // Story 3.5 AC-6
+    pub meal_plan_id: Option<String>,  // Story 3.5 AC-4 (Replace button context)
+    pub assignment_id: Option<String>, // Story 3.5 AC-4 (Replace button context)
 }
 
 /// Recipe detail view model for template
@@ -251,12 +264,14 @@ pub async fn post_create_recipe(
 }
 
 /// GET /recipes/:id - Display recipe detail page
+/// Story 3.5: Added calendar context query parameters for navigation and kitchen mode
 /// AC-10: Returns 404 for private recipes when accessed by non-owners
 #[tracing::instrument(skip(state, auth), fields(recipe_id = %recipe_id))]
 pub async fn get_recipe_detail(
     State(state): State<AppState>,
     Extension(auth): Extension<Auth>,
     Path(recipe_id): Path<String>,
+    Query(context): Query<CalendarContext>, // Story 3.5: Calendar context query params
 ) -> Response {
     // Query recipe from read model
     match query_recipe_by_id(&recipe_id, &state.db_pool).await {
@@ -343,15 +358,30 @@ pub async fn get_recipe_detail(
                 (Vec::new(), Vec::new())
             };
 
+            // Story 3.5: Parse calendar context from query params
+            let is_from_calendar = context.from.as_deref() == Some("calendar");
+            let kitchen_mode = context.kitchen_mode.unwrap_or(false);
+
             let template = RecipeDetailTemplate {
                 recipe: recipe_view,
                 is_owner,
                 user: Some(auth),
                 all_collections,
                 recipe_collections,
+                is_from_calendar,                     // Story 3.5 AC-1, AC-5
+                kitchen_mode,                         // Story 3.5 AC-6
+                meal_plan_id: context.meal_plan_id,   // Story 3.5 AC-4
+                assignment_id: context.assignment_id, // Story 3.5 AC-4
             };
 
-            Html(template.render().unwrap()).into_response()
+            // Action Item 1: Proper error handling for template rendering
+            match template.render() {
+                Ok(html) => Html(html).into_response(),
+                Err(e) => {
+                    tracing::error!("Template render error: {:?}", e);
+                    (StatusCode::INTERNAL_SERVER_ERROR, "Failed to render page").into_response()
+                }
+            }
         }
         Ok(None) => {
             tracing::warn!("Recipe not found: {}", recipe_id);

@@ -58,9 +58,10 @@ pub struct MealSlotData {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DayData {
     pub date: String,
-    pub day_name: String, // "Monday", "Tuesday", etc.
-    pub is_today: bool,   // AC-6: Today's date highlighted
-    pub is_past: bool,    // AC-7: Past dates dimmed
+    pub day_name: String,     // "Monday", "Tuesday", etc.
+    pub is_today: bool,       // AC-6: Today's date highlighted
+    pub is_past: bool,        // AC-7: Past dates dimmed
+    pub meal_plan_id: String, // Story 3.5: Needed for calendar context links
     pub breakfast: Option<MealSlotData>,
     pub lunch: Option<MealSlotData>,
     pub dinner: Option<MealSlotData>,
@@ -106,7 +107,7 @@ pub async fn get_meal_plan(
                 MealPlanQueries::query_rotation_progress(&auth.user_id, &state.db_pool).await?;
 
             // Group assignments by date into DayData with today/past flags
-            let days = build_day_data(&plan_data.assignments, &recipes);
+            let days = build_day_data(&plan_data.assignments, &recipes, &plan_data.meal_plan.id);
 
             let template = MealCalendarTemplate {
                 user: Some(()),
@@ -436,6 +437,7 @@ async fn fetch_recipes_by_ids(
 fn build_day_data(
     assignments: &[MealAssignmentReadModel],
     recipes: &[RecipeReadModel],
+    meal_plan_id: &str, // Story 3.5: Pass meal_plan_id for calendar context
 ) -> Vec<DayData> {
     use std::collections::HashMap;
 
@@ -469,6 +471,7 @@ fn build_day_data(
             day_name,
             is_today,
             is_past,
+            meal_plan_id: meal_plan_id.to_string(), // Story 3.5: Include for calendar context
             breakfast: None,
             lunch: None,
             dinner: None,
@@ -794,7 +797,7 @@ mod tests {
         ];
 
         // Execute
-        let days = build_day_data(&assignments, &recipes);
+        let days = build_day_data(&assignments, &recipes, "test_meal_plan_id");
 
         // Assert
         assert_eq!(days.len(), 3, "Should have 3 days");

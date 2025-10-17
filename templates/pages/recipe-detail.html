@@ -2,8 +2,95 @@
 
 {% block title %}{{ recipe.title }} - imkitchen{% endblock %}
 
+{% block extra_head %}
+<!-- Story 3.5 AC-6: Kitchen Mode Styles -->
+{% if kitchen_mode %}
+<style>
+/* Kitchen Mode: Large text, high contrast, touch-friendly */
+.kitchen-mode-container {
+    font-size: 1.25rem; /* 20px base */
+    background-color: #ffffff;
+    padding: 2rem;
+}
+.kitchen-mode-title {
+    font-size: 3rem; /* 48px */
+    font-weight: bold;
+    color: #1a202c;
+    margin-bottom: 1.5rem;
+}
+.kitchen-mode-section-title {
+    font-size: 2rem; /* 32px */
+    font-weight: bold;
+    color: #2d3748;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+}
+.kitchen-mode-ingredient {
+    font-size: 1.5rem; /* 24px */
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    border-left: 4px solid #4299e1;
+    background-color: #f7fafc;
+}
+.kitchen-mode-instruction {
+    font-size: 1.5rem; /* 24px */
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    background-color: #edf2f7;
+    border-radius: 0.5rem;
+}
+.kitchen-mode-step-number {
+    width: 3rem;
+    height: 3rem;
+    font-size: 1.75rem;
+    font-weight: bold;
+    background-color: #3182ce;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+}
+.kitchen-mode-timer {
+    font-size: 1.25rem;
+    padding: 1rem 1.5rem;
+    background-color: #bee3f8;
+    border: 2px solid #3182ce;
+    color: #1a365d;
+    border-radius: 0.5rem;
+    font-weight: bold;
+    margin-top: 1rem;
+}
+.kitchen-mode-checkbox {
+    width: 2rem;
+    height: 2rem;
+    margin-right: 1rem;
+}
+.kitchen-mode-back-btn {
+    font-size: 1.5rem;
+    padding: 1rem 2rem;
+    background-color: #3182ce;
+    color: white;
+    border-radius: 0.5rem;
+    font-weight: bold;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 2rem;
+}
+/* Hide non-essential elements in kitchen mode */
+.kitchen-mode .hide-in-kitchen-mode {
+    display: none;
+}
+</style>
+{% endif %}
+{% endblock %}
+
 {% block content %}
-<div class="min-h-screen py-12">
+<!-- Action Item 2: Add kitchen-mode class to body for external JS detection -->
+{% if kitchen_mode %}<script>document.body.classList.add('kitchen-mode');</script>{% endif %}
+<div class="min-h-screen py-12 {% if kitchen_mode %}kitchen-mode{% endif %}"  >
     <div class="container mx-auto px-4 max-w-4xl">
         <div class="bg-white rounded-lg shadow-md overflow-hidden">
             <!-- Header -->
@@ -11,16 +98,16 @@
                 <div class="flex items-start justify-between">
                     <div class="flex-1">
                         <div class="flex items-start justify-between mb-4">
-                            <h1 class="text-4xl font-bold text-gray-900">{{ recipe.title }}</h1>
+                            <h1 class="{% if kitchen_mode %}kitchen-mode-title{% else %}text-4xl font-bold text-gray-900{% endif %}">{{ recipe.title }}</h1>
 
-                            <!-- Favorite Icon (TwinSpark AJAX toggle) -->
+                            <!-- Favorite Icon (TwinSpark AJAX toggle) - Hidden in kitchen mode -->
                             {% if is_owner %}
                             <form
                               id="favorite-form-{{ recipe.id }}"
                               ts-req="/recipes/{{ recipe.id }}/favorite"
                               ts-req-method="POST"
                               ts-target="#favorite-form-{{ recipe.id }}"
-                              class="inline-block ml-4"
+                              class="inline-block ml-4 hide-in-kitchen-mode"
                             >
                               <button
                                 type="submit"
@@ -106,8 +193,23 @@
                         {% endif %}
                     </div>
 
-                    {% if is_owner %}
                     <div class="flex gap-2 ml-4">
+                        <!-- Story 3.5 AC-4: Replace This Meal button (only visible from calendar) -->
+                        {% if is_from_calendar %}
+                        {% if let Some(assignment_id_val) = assignment_id %}
+                        <form method="POST"
+                              ts-req="/plan/meal/{{ assignment_id_val }}/replace"
+                              ts-req-method="POST"
+                              ts-target="#main-content"
+                              class="inline-block">
+                            <button type="submit" class="px-6 py-3 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 font-bold shadow-md transition-all">
+                                🔄 Replace This Meal
+                            </button>
+                        </form>
+                        {% endif %}
+                        {% endif %}
+
+                        {% if is_owner %}
                         <a href="/recipes/{{ recipe.id }}/edit" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 font-medium">
                             Edit
                         </a>
@@ -118,18 +220,18 @@
                                 Delete
                             </button>
                         </form>
+                        {% endif %}
                     </div>
-                    {% endif %}
                 </div>
             </div>
 
-            <!-- Ingredients Section -->
-            <div class="p-8 border-b border-gray-200">
-                <h2 class="text-2xl font-bold text-gray-900 mb-4">Ingredients</h2>
-                <ul class="space-y-2">
+            <!-- Ingredients Section - Action Item 3: ARIA landmark -->
+            <section class="p-8 border-b border-gray-200" role="region" aria-labelledby="ingredients-heading">
+                <h2 id="ingredients-heading" class="{% if kitchen_mode %}kitchen-mode-section-title{% else %}text-2xl font-bold text-gray-900 mb-4{% endif %}">Ingredients</h2>
+                <ul class="{% if kitchen_mode %}space-y-3{% else %}space-y-2{% endif %}">
                     {% for ingredient in recipe.ingredients %}
-                    <li class="flex items-center gap-3">
-                        <input type="checkbox" class="w-5 h-5 text-blue-600 rounded focus:ring-blue-500" />
+                    <li class="{% if kitchen_mode %}kitchen-mode-ingredient flex items-center{% else %}flex items-center gap-3{% endif %}">
+                        <input type="checkbox" class="{% if kitchen_mode %}kitchen-mode-checkbox{% else %}w-5 h-5{% endif %} text-blue-600 rounded focus:ring-blue-500" />
                         <span class="text-gray-700">
                             <span class="font-medium">{{ ingredient.quantity }} {{ ingredient.unit }}</span>
                             {{ ingredient.name }}
@@ -137,21 +239,21 @@
                     </li>
                     {% endfor %}
                 </ul>
-            </div>
+            </section>
 
-            <!-- Instructions Section -->
-            <div class="p-8 border-b border-gray-200">
-                <h2 class="text-2xl font-bold text-gray-900 mb-4">Instructions</h2>
-                <ol class="space-y-4">
+            <!-- Instructions Section - Action Item 3: ARIA landmark -->
+            <section class="p-8 border-b border-gray-200" role="region" aria-labelledby="instructions-heading">
+                <h2 id="instructions-heading" class="{% if kitchen_mode %}kitchen-mode-section-title{% else %}text-2xl font-bold text-gray-900 mb-4{% endif %}">Instructions</h2>
+                <ol class="{% if kitchen_mode %}space-y-6{% else %}space-y-4{% endif %}">
                     {% for instruction in recipe.instructions %}
-                    <li class="flex gap-4">
-                        <div class="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold">
+                    <li class="{% if kitchen_mode %}kitchen-mode-instruction{% endif %} flex gap-4">
+                        <div class="{% if kitchen_mode %}kitchen-mode-step-number{% else %}flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold{% endif %}">
                             {{ instruction.step_number }}
                         </div>
                         <div class="flex-1">
                             <p class="text-gray-700 leading-relaxed">{{ instruction.instruction_text }}</p>
                             {% if let Some(timer) = instruction.timer_minutes %}
-                            <div class="mt-2 inline-flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-800 px-3 py-1 rounded-md text-sm">
+                            <div class="{% if kitchen_mode %}kitchen-mode-timer{% else %}mt-2 inline-flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-800 px-3 py-1 rounded-md text-sm{% endif %}">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
@@ -162,11 +264,11 @@
                     </li>
                     {% endfor %}
                 </ol>
-            </div>
+            </section>
 
             {% if is_owner %}
-            <!-- Collections Section -->
-            <div class="p-8 border-b border-gray-200">
+            <!-- Collections Section - Hidden in kitchen mode -->
+            <div class="p-8 border-b border-gray-200 hide-in-kitchen-mode">
                 <h2 class="text-2xl font-bold text-gray-900 mb-4">Collections</h2>
 
                 {% if !recipe_collections.is_empty() %}
@@ -216,8 +318,8 @@
                 {% endif %}
             </div>
 
-            <!-- Manual Tag Override Section -->
-            <div class="p-8 border-b border-gray-200">
+            <!-- Manual Tag Override Section - Hidden in kitchen mode -->
+            <div class="p-8 border-b border-gray-200 hide-in-kitchen-mode">
                 <h2 class="text-2xl font-bold text-gray-900 mb-4">Recipe Tags</h2>
 
                 <p class="text-sm text-gray-600 mb-4">
@@ -324,8 +426,8 @@
             </div>
             {% endif %}
 
-            <!-- Actions Footer -->
-            <div class="bg-gray-50 px-8 py-4 border-t border-gray-200">
+            <!-- Actions Footer - Hidden in kitchen mode -->
+            <div class="bg-gray-50 px-8 py-4 border-t border-gray-200 hide-in-kitchen-mode">
                 <div class="flex items-center justify-between">
                     <div class="text-sm text-gray-500">
                         Created: {{ recipe.created_at }}
@@ -346,15 +448,24 @@
             </div>
         </div>
 
-        <!-- Back Button -->
-        <div class="mt-6">
-            <a href="/dashboard" class="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <!-- Back Button (Story 3.5 AC-5: Context-aware navigation) - Action Item 3: ARIA navigation landmark -->
+        <nav class="mt-6" role="navigation" aria-label="Return navigation">
+            {% if is_from_calendar %}
+            <a href="/plan" class="{% if kitchen_mode %}kitchen-mode-back-btn{% else %}inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium{% endif %}" aria-label="Return to meal calendar">
+                <svg class="{% if kitchen_mode %}w-6 h-6{% else %}w-5 h-5{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Back to Calendar
+            </a>
+            {% else %}
+            <a href="/dashboard" class="{% if kitchen_mode %}kitchen-mode-back-btn{% else %}inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium{% endif %}" aria-label="Return to dashboard">
+                <svg class="{% if kitchen_mode %}w-6 h-6{% else %}w-5 h-5{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                 </svg>
                 Back to Dashboard
             </a>
-        </div>
+            {% endif %}
+        </nav>
     </div>
 </div>
 
@@ -394,6 +505,12 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     });
+
 });
 </script>
+
+<!-- Action Item 2 & 4: External JavaScript for kitchen mode (CSP compliant + keyboard nav) -->
+{% if kitchen_mode %}
+<script src="/static/js/kitchen-mode.js"></script>
+{% endif %}
 {% endblock %}
