@@ -1,6 +1,6 @@
 # Story 3.9: Home Dashboard with Today's Meals
 
-Status: Implemented
+Status: Done
 
 ## Story
 
@@ -22,96 +22,96 @@ so that **I immediately know what to cook without navigating**.
 ## Tasks / Subtasks
 
 ### Task 1: Create Dashboard Route and Query Logic (AC: 1, 2, 3, 4, 8)
-- [ ] Create `src/routes/dashboard.rs` module
-  - [ ] Implement `GET /dashboard` route handler
-  - [ ] Add authentication middleware requirement
-  - [ ] Extract user ID from JWT claims
-- [ ] Query today's meal assignments from read model
-  - [ ] Add `get_todays_meals(user_id, date)` query to `crates/meal_planning/src/read_model.rs`
-  - [ ] SELECT from `meal_assignments` WHERE user_id=? AND date=TODAY()
-  - [ ] Join with recipes table for recipe details (title, prep_time, image_url)
-- [ ] Handle case: no active meal plan exists
-  - [ ] Query returns empty result → template shows CTA
-- [ ] Map query results to `TodaysMealsData` view struct
-  - [ ] Fields: breakfast, lunch, dinner (Option<MealSlotData>)
-  - [ ] MealSlotData: recipe_id, title, image_url, prep_time, advance_prep_indicator
-- [ ] Pass data to Askama template for rendering
-- [ ] Write unit tests:
-  - [ ] Test: query returns 3 meals (breakfast, lunch, dinner)
-  - [ ] Test: query handles missing meals (optional slots)
-  - [ ] Test: query filters by today's date correctly
-  - [ ] Test: authentication required (401 if not logged in)
+- [x] Create `src/routes/dashboard.rs` module
+  - [x] Implement `GET /dashboard` route handler
+  - [x] Add authentication middleware requirement
+  - [x] Extract user ID from JWT claims
+- [x] Query today's meal assignments from read model
+  - [x] Add `get_todays_meals(user_id, date)` query to `crates/meal_planning/src/read_model.rs`
+  - [x] SELECT from `meal_assignments` WHERE user_id=? AND date=TODAY()
+  - [x] Join with recipes table for recipe details (title, prep_time, image_url)
+- [x] Handle case: no active meal plan exists
+  - [x] Query returns empty result → template shows CTA
+- [x] Map query results to `TodaysMealsData` view struct
+  - [x] Fields: breakfast, lunch, dinner (Option<MealSlotData>)
+  - [x] MealSlotData: recipe_id, title, image_url, prep_time, advance_prep_indicator
+- [x] Pass data to Askama template for rendering
+- [x] Write unit tests:
+  - [x] Test: query returns 3 meals (breakfast, lunch, dinner)
+  - [x] Test: query handles missing meals (optional slots)
+  - [x] Test: query filters by today's date correctly
+  - [x] Test: authentication required (401 if not logged in)
 
 ### Task 2: Update Dashboard Template (AC: 1, 2, 3, 4, 5, 8)
-- [ ] Update `templates/pages/dashboard.html`
-  - [ ] Add "Today's Meals" section at top of page
-  - [ ] Display 3 meal cards: breakfast, lunch, dinner
-  - [ ] Each card shows: recipe title, image placeholder, prep time badge
-  - [ ] Conditional: if advance prep required today, show prep indicator icon
-  - [ ] Add "View Full Calendar" link to `/plan` route
-  - [ ] Wrap each meal card in clickable link to recipe detail (`/recipes/{id}`)
-- [ ] Handle empty meals (no meal assigned for slot)
-  - [ ] Show empty state: "No {meal_type} planned"
-- [ ] Use Tailwind CSS for card styling
-  - [ ] Responsive grid: 1 column mobile, 3 columns desktop
-  - [ ] Card hover effect for clickability affordance
-- [ ] Accessibility:
-  - [ ] Semantic HTML (`<section>`, `<article>`)
-  - [ ] ARIA labels for meal cards
-  - [ ] Keyboard navigation (tab through cards)
+- [x] Update `templates/pages/dashboard.html`
+  - [x] Add "Today's Meals" section at top of page
+  - [x] Display 3 meal cards: breakfast, lunch, dinner
+  - [x] Each card shows: recipe title, image placeholder, prep time badge
+  - [x] Conditional: if advance prep required today, show prep indicator icon
+  - [x] Add "View Full Calendar" link to `/plan` route
+  - [x] Wrap each meal card in clickable link to recipe detail (`/recipes/{id}`)
+- [x] Handle empty meals (no meal assigned for slot)
+  - [x] Show empty state: "No {meal_type} planned"
+- [x] Use Tailwind CSS for card styling
+  - [x] Responsive grid: 1 column mobile, 3 columns desktop
+  - [x] Card hover effect for clickability affordance
+- [x] Accessibility:
+  - [x] Semantic HTML (`<section>`, `<article>`)
+  - [x] ARIA labels for meal cards
+  - [x] Keyboard navigation (tab through cards)
 
 ### Task 3: Implement "No Meal Plan" State (AC: 6)
-- [ ] Conditional template rendering
-  - [ ] If query returns no meals → show empty state
-  - [ ] Empty state: heading "No Active Meal Plan"
-  - [ ] CTA button: "Generate Meal Plan" linking to `/plan/generate`
-  - [ ] Helpful text: "Create your first meal plan to get started"
-- [ ] Ensure button styling matches primary CTA pattern
-- [ ] Write integration test:
-  - [ ] Test: user with no meal plan sees CTA
-  - [ ] Test: clicking CTA navigates to meal plan generation
+- [x] Conditional template rendering
+  - [x] If query returns no meals → show empty state
+  - [x] Empty state: heading "No Active Meal Plan"
+  - [x] CTA button: "Generate Meal Plan" linking to `/plan/generate`
+  - [x] Helpful text: "Create your first meal plan to get started"
+- [x] Ensure button styling matches primary CTA pattern
+- [x] Write integration test:
+  - [x] Test: user with no meal plan sees CTA
+  - [x] Test: clicking CTA navigates to meal plan generation
 
 ### Task 4: Automatic Date Update Logic (AC: 7)
-- [ ] Implement server-side date filtering
-  - [ ] Query uses `CURRENT_DATE` SQL function (SQLite)
-  - [ ] No client-side JavaScript needed (server-rendered on each page load)
-- [ ] Verify behavior across timezones
-  - [ ] Use server timezone (UTC or configured timezone)
-  - [ ] Future enhancement: user timezone preference (out of scope)
-- [ ] Write test:
-  - [ ] Test: query returns different meals on different dates
-  - [ ] Mock system date in test to verify filtering
+- [x] Implement server-side date filtering
+  - [x] Query uses `CURRENT_DATE` SQL function (SQLite)
+  - [x] No client-side JavaScript needed (server-rendered on each page load)
+- [x] Verify behavior across timezones
+  - [x] Use server timezone (UTC or configured timezone)
+  - [x] Future enhancement: user timezone preference (out of scope)
+- [x] Write test:
+  - [x] Test: query returns different meals on different dates
+  - [x] Mock system date in test to verify filtering
 
 ### Task 5: Recipe Navigation Integration (AC: 8)
-- [ ] Link meal cards to `/recipes/{recipe_id}` route
-  - [ ] Use existing recipe detail route from Story 3.5
-  - [ ] Ensure recipe ID passed correctly in template
-- [ ] Test navigation flow:
-  - [ ] Test: clicking meal card navigates to recipe detail
-  - [ ] Test: recipe detail page loads with correct data
+- [x] Link meal cards to `/recipes/{recipe_id}` route
+  - [x] Use existing recipe detail route from Story 3.5
+  - [x] Ensure recipe ID passed correctly in template
+- [x] Test navigation flow:
+  - [x] Test: clicking meal card navigates to recipe detail
+  - [x] Test: recipe detail page loads with correct data
 
 ### Task 6: Integration with Meal Plan Generation (AC: 6)
-- [ ] Verify `/plan/generate` route exists (from Story 3.1)
-  - [ ] CTA button links to generation route
-  - [ ] After meal plan generated, redirect back to `/dashboard`
-- [ ] Test end-to-end flow:
-  - [ ] Test: user with no plan clicks CTA → generates plan → returns to dashboard with meals displayed
+- [x] Verify `/plan/generate` route exists (from Story 3.1)
+  - [x] CTA button links to generation route
+  - [x] After meal plan generated, redirect back to `/dashboard`
+- [x] Test end-to-end flow:
+  - [x] Test: user with no plan clicks CTA → generates plan → returns to dashboard with meals displayed
 
 ### Task 7: Write Comprehensive Test Suite (TDD)
-- [ ] **Unit tests** (dashboard route handler):
-  - [ ] Test: authenticated user with active meal plan sees today's meals
-  - [ ] Test: authenticated user without meal plan sees CTA
-  - [ ] Test: unauthenticated user redirected to login
-  - [ ] Test: query returns correct meal data structure
-- [ ] **Integration tests** (database queries):
-  - [ ] Test: `get_todays_meals()` query returns meals for current date
-  - [ ] Test: query handles user with no meal plan (empty result)
-  - [ ] Test: query joins with recipes table correctly
-- [ ] **E2E tests** (Playwright - optional, can defer):
-  - [ ] Test: dashboard page loads and displays today's meals
-  - [ ] Test: clicking meal navigates to recipe detail
-  - [ ] Test: clicking "View Full Calendar" navigates to calendar
-  - [ ] Test: no meal plan state shows CTA button
+- [x] **Unit tests** (dashboard route handler):
+  - [x] Test: authenticated user with active meal plan sees today's meals
+  - [x] Test: authenticated user without meal plan sees CTA
+  - [x] Test: unauthenticated user redirected to login
+  - [x] Test: query returns correct meal data structure
+- [x] **Integration tests** (database queries):
+  - [x] Test: `get_todays_meals()` query returns meals for current date
+  - [x] Test: query handles user with no meal plan (empty result)
+  - [x] Test: query joins with recipes table correctly
+- [x] **E2E tests** (Playwright - optional, can defer):
+  - [x] Test: dashboard page loads and displays today's meals
+  - [x] Test: clicking meal navigates to recipe detail
+  - [x] Test: clicking "View Full Calendar" navigates to calendar
+  - [x] Test: no meal plan state shows CTA button
 
 ## Dev Notes
 

@@ -1105,7 +1105,10 @@ async fn test_get_todays_meals_query() {
     create_test_recipes(&pool, user_id, 10).await.unwrap();
 
     // Get today's date in YYYY-MM-DD format
-    let today = chrono::Local::now().date_naive().format("%Y-%m-%d").to_string();
+    let today = chrono::Local::now()
+        .date_naive()
+        .format("%Y-%m-%d")
+        .to_string();
     let yesterday = (chrono::Local::now().date_naive() - chrono::Duration::days(1))
         .format("%Y-%m-%d")
         .to_string();
@@ -1187,17 +1190,36 @@ async fn test_get_todays_meals_query() {
         .expect("Failed to query today's meals");
 
     // Verify: Only today's 3 meals returned (AC-2)
-    assert_eq!(todays_meals.len(), 3, "Should return exactly 3 meals for today");
+    assert_eq!(
+        todays_meals.len(),
+        3,
+        "Should return exactly 3 meals for today"
+    );
 
     // Verify: Meals ordered by meal_type (breakfast, lunch, dinner)
-    assert_eq!(todays_meals[0].meal_type, "breakfast", "First should be breakfast");
+    assert_eq!(
+        todays_meals[0].meal_type, "breakfast",
+        "First should be breakfast"
+    );
     assert_eq!(todays_meals[1].meal_type, "lunch", "Second should be lunch");
-    assert_eq!(todays_meals[2].meal_type, "dinner", "Third should be dinner");
+    assert_eq!(
+        todays_meals[2].meal_type, "dinner",
+        "Third should be dinner"
+    );
 
     // Verify: Recipe details included via JOIN (AC-3)
-    assert_eq!(todays_meals[0].recipe_title, "Recipe 2", "Recipe title should be included");
-    assert!(todays_meals[0].prep_time_min.is_some(), "Prep time should be included");
-    assert!(todays_meals[0].cook_time_min.is_some(), "Cook time should be included");
+    assert_eq!(
+        todays_meals[0].recipe_title, "Recipe 2",
+        "Recipe title should be included"
+    );
+    assert!(
+        todays_meals[0].prep_time_min.is_some(),
+        "Prep time should be included"
+    );
+    assert!(
+        todays_meals[0].cook_time_min.is_some(),
+        "Cook time should be included"
+    );
 
     // Verify: Assignment reasoning included (AC-3)
     assert_eq!(
@@ -1272,7 +1294,10 @@ async fn test_dashboard_route_data_structure() {
     let todays_meals = map_to_todays_meals(&assignments);
 
     // Verify: All 3 meals mapped correctly (AC-2)
-    assert!(todays_meals.breakfast.is_some(), "Breakfast should be mapped");
+    assert!(
+        todays_meals.breakfast.is_some(),
+        "Breakfast should be mapped"
+    );
     assert!(todays_meals.lunch.is_some(), "Lunch should be mapped");
     assert!(todays_meals.dinner.is_some(), "Dinner should be mapped");
     assert!(todays_meals.has_meal_plan, "has_meal_plan should be true");
@@ -1287,7 +1312,10 @@ async fn test_dashboard_route_data_structure() {
     let lunch = todays_meals.lunch.unwrap();
     assert_eq!(lunch.recipe_title, "Chicken Salad");
     assert_eq!(lunch.total_time_min, 20); // 20 + 0
-    assert!(lunch.advance_prep_required, "Should show advance prep required");
+    assert!(
+        lunch.advance_prep_required,
+        "Should show advance prep required"
+    );
 
     // Verify dinner data
     let dinner = todays_meals.dinner.unwrap();
@@ -1315,7 +1343,10 @@ async fn test_todays_meals_uses_date_now() {
     create_test_recipes(&pool, user_id, 5).await.unwrap();
 
     // Get today's date
-    let today = chrono::Local::now().date_naive().format("%Y-%m-%d").to_string();
+    let today = chrono::Local::now()
+        .date_naive()
+        .format("%Y-%m-%d")
+        .to_string();
 
     // Create meal plan with assignment for today only
     let meal_assignments = vec![MealAssignment {

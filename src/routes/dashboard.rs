@@ -60,8 +60,7 @@ pub async fn dashboard_handler(
         MealPlanQueries::get_todays_meals(&auth.user_id, &state.db_pool).await?;
 
     // Query recipe stats for dashboard cards
-    let (recipe_count, favorite_count) =
-        query_recipe_count(&auth.user_id, &state.db_pool).await?;
+    let (recipe_count, favorite_count) = query_recipe_count(&auth.user_id, &state.db_pool).await?;
 
     // Map assignments to TodaysMealsData structure
     let todays_meals = if todays_meal_assignments.is_empty() {

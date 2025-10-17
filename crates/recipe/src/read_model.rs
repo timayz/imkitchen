@@ -437,10 +437,7 @@ pub async fn query_recipes_by_user(
 /// Query recipe count for dashboard (Story 3.9)
 ///
 /// Returns (total_count, favorite_count) tuple for dashboard stats display.
-pub async fn query_recipe_count(
-    user_id: &str,
-    pool: &SqlitePool,
-) -> RecipeResult<(usize, usize)> {
+pub async fn query_recipe_count(user_id: &str, pool: &SqlitePool) -> RecipeResult<(usize, usize)> {
     // Count total recipes
     let total_count: (i64,) = sqlx::query_as(
         r#"

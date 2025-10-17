@@ -4,7 +4,7 @@ use axum::{
     response::{Html, IntoResponse, Redirect},
     Extension,
 };
-use chrono::{Datelike, Duration, NaiveDate, Utc, Weekday};
+use chrono::{Datelike, NaiveDate, Utc};
 use meal_planning::{
     algorithm::{MealPlanningAlgorithm, RecipeForPlanning, UserConstraints},
     events::MealPlanGenerated,
@@ -960,23 +960,6 @@ pub async fn post_regenerate_meal_plan(
 
     // Redirect to calendar view with success message
     Ok(Redirect::to("/plan"))
-}
-
-/// Helper: Get next Monday's date as ISO 8601 string
-fn get_next_monday() -> String {
-    let today = Utc::now().naive_utc().date();
-    let days_until_monday = match today.weekday() {
-        Weekday::Mon => 7, // If today is Monday, next Monday is 7 days away
-        Weekday::Tue => 6,
-        Weekday::Wed => 5,
-        Weekday::Thu => 4,
-        Weekday::Fri => 3,
-        Weekday::Sat => 2,
-        Weekday::Sun => 1,
-    };
-
-    let next_monday = today + Duration::days(days_until_monday);
-    next_monday.format("%Y-%m-%d").to_string()
 }
 
 #[cfg(test)]

@@ -105,11 +105,7 @@ async fn test_dashboard_requires_authentication() {
         .headers()
         .get("location")
         .and_then(|h| h.to_str().ok());
-    assert_eq!(
-        location,
-        Some("/login"),
-        "Should redirect to /login page"
-    );
+    assert_eq!(location, Some("/login"), "Should redirect to /login page");
 }
 
 /// Test: Dashboard route rejects invalid JWT tokens
@@ -172,9 +168,5 @@ async fn test_dashboard_rejects_invalid_jwt() {
         .headers()
         .get("location")
         .and_then(|h| h.to_str().ok());
-    assert_eq!(
-        location,
-        Some("/login"),
-        "Should redirect to /login page"
-    );
+    assert_eq!(location, Some("/login"), "Should redirect to /login page");
 }
