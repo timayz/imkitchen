@@ -27,6 +27,7 @@ pub struct MealAssignmentReadModel {
     pub meal_type: String, // "breakfast", "lunch", "dinner"
     pub recipe_id: String,
     pub prep_required: bool,
+    pub assignment_reasoning: Option<String>, // Story 3.8: Human-readable assignment explanation
 }
 
 /// MealPlanWithAssignments combines meal plan with its assignments for queries
@@ -93,7 +94,7 @@ impl MealPlanQueries {
     ) -> Result<Vec<MealAssignmentReadModel>, sqlx::Error> {
         sqlx::query_as::<_, MealAssignmentReadModel>(
             r#"
-            SELECT id, meal_plan_id, date, meal_type, recipe_id, prep_required
+            SELECT id, meal_plan_id, date, meal_type, recipe_id, prep_required, assignment_reasoning
             FROM meal_assignments
             WHERE meal_plan_id = ?1
             ORDER BY date, meal_type
@@ -378,8 +379,8 @@ pub async fn meal_plan_generated_handler<E: Executor>(
         let assignment_id = Uuid::new_v4().to_string();
         sqlx::query(
             r#"
-            INSERT INTO meal_assignments (id, meal_plan_id, date, meal_type, recipe_id, prep_required)
-            VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+            INSERT INTO meal_assignments (id, meal_plan_id, date, meal_type, recipe_id, prep_required, assignment_reasoning)
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
             "#,
         )
         .bind(assignment_id)
@@ -388,6 +389,7 @@ pub async fn meal_plan_generated_handler<E: Executor>(
         .bind(assignment.meal_type.as_str())
         .bind(&assignment.recipe_id)
         .bind(assignment.prep_required)
+        .bind(&assignment.assignment_reasoning)
         .execute(&mut *tx)
         .await?;
     }
@@ -607,8 +609,8 @@ pub async fn meal_plan_regenerated_handler<E: Executor>(
         let assignment_id = Uuid::new_v4().to_string();
         sqlx::query(
             r#"
-            INSERT INTO meal_assignments (id, meal_plan_id, date, meal_type, recipe_id, prep_required)
-            VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+            INSERT INTO meal_assignments (id, meal_plan_id, date, meal_type, recipe_id, prep_required, assignment_reasoning)
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
             "#,
         )
         .bind(assignment_id)
@@ -617,6 +619,7 @@ pub async fn meal_plan_regenerated_handler<E: Executor>(
         .bind(&assignment.meal_type)
         .bind(&assignment.recipe_id)
         .bind(assignment.prep_required)
+        .bind(&assignment.assignment_reasoning)
         .execute(&mut *tx)
         .await?;
     }
