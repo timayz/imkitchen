@@ -77,6 +77,9 @@ pub async fn create_test_app(pool: SqlitePool) -> TestApp {
         stripe_secret_key: "sk_test_mock_key".to_string(),
         stripe_webhook_secret: "whsec_test_mock_secret".to_string(),
         stripe_price_id: "price_test_mock_id".to_string(),
+        generation_locks: std::sync::Arc::new(tokio::sync::Mutex::new(
+            std::collections::HashMap::new(),
+        )),
     };
 
     // Create protected routes with auth middleware

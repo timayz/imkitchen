@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::events::{
     MealAssignment, MealPlanArchived, MealPlanGenerated, MealReplaced, RecipeUsedInRotation,
+    RotationCycleReset,
 };
 
 /// MealPlanAggregate representing the state of a meal plan entity
@@ -68,10 +69,23 @@ impl MealPlanAggregate {
     ///
     /// This is called when replaying events from the event store to rebuild
     /// the aggregate's current state.
+    ///
+    /// **Critical Fix 1.2:** Added validation for rotation state JSON
     async fn meal_plan_generated(
         &mut self,
         event: evento::EventDetails<MealPlanGenerated>,
     ) -> anyhow::Result<()> {
+        // Validate rotation state JSON is parseable
+        use crate::rotation::RotationState;
+        let _rotation_state =
+            RotationState::from_json(&event.data.rotation_state_json).map_err(|e| {
+                anyhow::anyhow!(
+                    "Invalid rotation state in MealPlanGenerated event for meal_plan_id={}: {}",
+                    event.aggregator_id,
+                    e
+                )
+            })?;
+
         self.meal_plan_id = event.aggregator_id.clone();
         self.user_id = event.data.user_id;
         self.start_date = event.data.start_date;
@@ -97,6 +111,38 @@ impl MealPlanAggregate {
         Ok(())
     }
 
+    /// Handle RotationCycleReset event to reset rotation cycle
+    ///
+    /// This event is emitted when all favorite recipes have been used once,
+    /// triggering a new rotation cycle. The rotation state in the aggregate
+    /// is updated via the rotation_state_json field.
+    ///
+    /// **Critical Fix 1.2:** Replaced silent error handling with explicit error propagation
+    async fn rotation_cycle_reset(
+        &mut self,
+        event: evento::EventDetails<RotationCycleReset>,
+    ) -> anyhow::Result<()> {
+        // Parse current rotation state with explicit error handling
+        use crate::rotation::RotationState;
+        let mut rotation_state =
+            RotationState::from_json(&self.rotation_state_json).map_err(|e| {
+                anyhow::anyhow!(
+                    "Failed to parse rotation state for meal_plan_id={}: {}",
+                    self.meal_plan_id,
+                    e
+                )
+            })?;
+
+        // Reset the cycle
+        rotation_state.reset_cycle();
+        rotation_state.total_favorite_count = event.data.favorite_count;
+
+        // Update aggregate state
+        self.rotation_state_json = rotation_state.to_json()?;
+
+        Ok(())
+    }
+
     /// Handle MealPlanArchived event to mark meal plan as archived
     ///
     /// Archiving a meal plan makes it inactive so a new plan can be generated.
@@ -114,6 +160,9 @@ impl MealPlanAggregate {
     ///
     /// This event handler supports the "Replace Individual Meal" feature (Story 3.2)
     /// by swapping out a single recipe while preserving the rest of the plan.
+    ///
+    /// **Major Fix 2.3**: Updates rotation state to mark new recipe as used and
+    /// remove old recipe from used set, maintaining rotation integrity.
     async fn meal_replaced(
         &mut self,
         event: evento::EventDetails<MealReplaced>,
@@ -126,6 +175,30 @@ impl MealPlanAggregate {
         {
             assignment.recipe_id = event.data.new_recipe_id.clone();
         }
+
+        // Update rotation state to reflect the recipe swap
+        let mut rotation_state =
+            crate::rotation::RotationState::from_json(&self.rotation_state_json).map_err(|e| {
+                anyhow::anyhow!(
+                    "Failed to parse rotation state in meal_replaced for meal_plan_id={}: {}",
+                    self.meal_plan_id,
+                    e
+                )
+            })?;
+
+        // Remove old recipe from used set (if present)
+        rotation_state
+            .used_recipe_ids
+            .remove(&event.data.old_recipe_id);
+
+        // Mark new recipe as used
+        rotation_state.mark_recipe_used(event.data.new_recipe_id.clone());
+
+        // Save updated rotation state back to JSON
+        self.rotation_state_json = rotation_state.to_json().map_err(|e| {
+            anyhow::anyhow!("Failed to serialize rotation state in meal_replaced: {}", e)
+        })?;
+
         Ok(())
     }
 }

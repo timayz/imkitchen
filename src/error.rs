@@ -29,6 +29,9 @@ pub enum AppError {
     #[error("Insufficient recipes: need at least {required}, have {current}")]
     InsufficientRecipes { current: usize, required: usize },
 
+    #[error("Concurrent generation in progress")]
+    ConcurrentGenerationInProgress,
+
     #[error("Serialization error: {0}")]
     SerializationError(String),
 
@@ -169,6 +172,11 @@ impl IntoResponse for AppError {
                     required - current,
                     if required - current > 1 { "s" } else { "" }
                 ),
+            ),
+            AppError::ConcurrentGenerationInProgress => (
+                StatusCode::CONFLICT,
+                "Generation In Progress".to_string(),
+                "A meal plan generation is already in progress. Please wait for it to complete before starting a new one.".to_string(),
             ),
             AppError::SerializationError(e) => {
                 tracing::error!("Serialization error: {}", e);

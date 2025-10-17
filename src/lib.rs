@@ -46,6 +46,9 @@ pub async fn create_app(
         stripe_secret_key: "sk_test_".to_string(),
         stripe_webhook_secret: "whsec_test".to_string(),
         stripe_price_id: "price_test".to_string(),
+        generation_locks: std::sync::Arc::new(tokio::sync::Mutex::new(
+            std::collections::HashMap::new(),
+        )),
     };
 
     // Build protected routes with auth middleware

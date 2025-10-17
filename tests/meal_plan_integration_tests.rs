@@ -142,7 +142,7 @@ async fn test_meal_plan_generated_event_projects_to_read_model() {
         user_id: user_id.to_string(),
         start_date: start_date.clone(),
         meal_assignments: meal_assignments.clone(),
-        rotation_state_json: r#"{"cycle_number":1,"used_recipe_ids":["recipe_1","recipe_2"]}"#
+        rotation_state_json: r#"{"cycle_number":1,"cycle_started_at":"2025-10-17T00:00:00Z","used_recipe_ids":["recipe_1","recipe_2"],"total_favorite_count":2}"#
             .to_string(),
         generated_at: Utc::now().to_rfc3339(),
     };
@@ -258,7 +258,7 @@ async fn test_rotation_state_persists_across_generations() {
         start_date: "2025-10-20".to_string(),
         meal_assignments: vec![],
         rotation_state_json:
-            r#"{"cycle_number":1,"used_recipe_ids":["r1","r2","r3","r4","r5","r6","r7"]}"#
+            r#"{"cycle_number":1,"cycle_started_at":"2025-10-17T00:00:00Z","used_recipe_ids":["r1","r2","r3","r4","r5","r6","r7"],"total_favorite_count":7}"#
                 .to_string(),
         generated_at: Utc::now().to_rfc3339(),
     };
@@ -291,7 +291,7 @@ async fn test_rotation_state_persists_across_generations() {
         user_id: user_id.to_string(),
         start_date: "2025-10-27".to_string(),
         meal_assignments: vec![],
-        rotation_state_json: r#"{"cycle_number":2,"used_recipe_ids":[]}"#.to_string(),
+        rotation_state_json: r#"{"cycle_number":2,"cycle_started_at":"2025-10-24T00:00:00Z","used_recipe_ids":[],"total_favorite_count":7}"#.to_string(),
         generated_at: Utc::now().to_rfc3339(),
     };
 
@@ -354,7 +354,7 @@ async fn test_multiple_meal_assignments_projected_correctly() {
         user_id: user_id.to_string(),
         start_date: "2025-10-20".to_string(),
         meal_assignments: meal_assignments.clone(),
-        rotation_state_json: r#"{"cycle_number":1,"used_recipe_ids":[]}"#.to_string(),
+        rotation_state_json: r#"{"cycle_number":1,"cycle_started_at":"2025-10-17T00:00:00Z","used_recipe_ids":[],"total_favorite_count":10}"#.to_string(),
         generated_at: Utc::now().to_rfc3339(),
     };
 

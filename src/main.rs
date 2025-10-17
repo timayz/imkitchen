@@ -160,6 +160,9 @@ async fn serve_command(
         stripe_secret_key: config.stripe.secret_key,
         stripe_webhook_secret: config.stripe.webhook_secret,
         stripe_price_id: config.stripe.price_id,
+        generation_locks: std::sync::Arc::new(tokio::sync::Mutex::new(
+            std::collections::HashMap::new(),
+        )),
     };
 
     // Build protected routes with auth middleware

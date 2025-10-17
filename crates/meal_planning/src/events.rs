@@ -68,6 +68,21 @@ pub struct RecipeUsedInRotation {
     pub used_at: String,   // RFC3339 formatted timestamp
 }
 
+/// RotationCycleReset event emitted when all favorites have been used once
+///
+/// This event triggers the start of a new rotation cycle, allowing all favorite
+/// recipes to be used again in subsequent meal plans.
+///
+/// Note: meal_plan_id is provided by event.aggregator_id, not stored in event data
+#[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
+pub struct RotationCycleReset {
+    pub user_id: String,       // User whose rotation is resetting
+    pub old_cycle_number: u32, // Previous cycle number
+    pub new_cycle_number: u32, // New cycle number (old + 1)
+    pub favorite_count: usize, // Total number of favorite recipes
+    pub reset_at: String,      // RFC3339 formatted timestamp
+}
+
 /// MealPlanArchived event emitted when a meal plan is archived
 ///
 /// Meal plans are archived when a new plan is generated or when the week ends.
