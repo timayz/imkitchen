@@ -52,6 +52,7 @@ pub struct MealSlotData {
     pub cook_time_min: Option<i32>,
     pub prep_required: bool,
     pub complexity: Option<String>,
+    pub assignment_reasoning: Option<String>, // Story 3.8: Assignment reasoning tooltip
 }
 
 /// Form data for replacing a meal slot (Story 3.6)
@@ -548,6 +549,7 @@ fn build_day_data(
                 cook_time_min: recipe.cook_time_min,
                 prep_required: assignment.prep_required,
                 complexity: recipe.complexity.clone(),
+                assignment_reasoning: assignment.assignment_reasoning.clone(), // Story 3.8: Reasoning tooltip
             };
 
             // Assign to appropriate meal slot
@@ -999,6 +1001,7 @@ mod tests {
                 meal_type: "breakfast".to_string(),
                 recipe_id: "recipe1".to_string(),
                 prep_required: false,
+                assignment_reasoning: None,
             },
             MealAssignmentReadModel {
                 id: "assignment_today".to_string(),
@@ -1007,6 +1010,7 @@ mod tests {
                 meal_type: "breakfast".to_string(),
                 recipe_id: "recipe2".to_string(),
                 prep_required: false,
+                assignment_reasoning: None,
             },
             MealAssignmentReadModel {
                 id: "assignment_tomorrow".to_string(),
@@ -1015,6 +1019,7 @@ mod tests {
                 meal_type: "breakfast".to_string(),
                 recipe_id: "recipe3".to_string(),
                 prep_required: false,
+                assignment_reasoning: None,
             },
         ];
 

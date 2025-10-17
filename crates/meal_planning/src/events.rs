@@ -34,10 +34,11 @@ impl MealType {
 /// Note: meal_type stored as String for bincode compatibility (like complexity in RecipeTagged)
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 pub struct MealAssignment {
-    pub date: String,        // ISO 8601 date (YYYY-MM-DD)
-    pub meal_type: String,   // "breakfast", "lunch", or "dinner"
-    pub recipe_id: String,   // Recipe assigned to this slot
-    pub prep_required: bool, // True if recipe has advance_prep_hours > 0
+    pub date: String,                         // ISO 8601 date (YYYY-MM-DD)
+    pub meal_type: String,                    // "breakfast", "lunch", or "dinner"
+    pub recipe_id: String,                    // Recipe assigned to this slot
+    pub prep_required: bool,                  // True if recipe has advance_prep_hours > 0
+    pub assignment_reasoning: Option<String>, // Human-readable explanation of assignment (Story 3.8)
 }
 
 /// MealPlanGenerated event emitted when a new meal plan is generated
