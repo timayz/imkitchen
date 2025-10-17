@@ -1,0 +1,188 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>7</storyId>
+    <title>Regenerate Full Meal Plan</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-17</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-3.7.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>completely regenerate my meal plan</iWant>
+    <soThat>I can get fresh variety or restart after disruptions</soThat>
+    <tasks>
+      <task id="1" ac="1,2,3,7">Implement POST /plan/regenerate Route</task>
+      <task id="2" ac="4,5,6,9,10">Implement Domain Command - RegenerateMealPlan</task>
+      <task id="3" ac="2">Add Confirmation Modal for Regeneration</task>
+      <task id="4" ac="9">Archive Old Meal Plan</task>
+      <task id="5" ac="5">Preserve Rotation State Across Regeneration</task>
+      <task id="6" ac="8">Trigger Shopping List Regeneration</task>
+      <task id="7" ac="1,7">Update Meal Calendar Template</task>
+      <task id="8">Write Comprehensive Test Suite (TDD)</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="1">"Regenerate Meal Plan" button visible on calendar page</ac>
+    <ac id="2">Confirmation dialog: "This will replace your entire meal plan. Continue?"</ac>
+    <ac id="3">Clicking confirm triggers full meal plan regeneration</ac>
+    <ac id="4">Algorithm runs with same logic as initial generation</ac>
+    <ac id="5">Rotation state preserved (doesn't reset cycle)</ac>
+    <ac id="6">New plan fills all slots with different recipe assignments</ac>
+    <ac id="7">Calendar updates to show new plan</ac>
+    <ac id="8">Shopping list regenerated for new plan</ac>
+    <ac id="9">Old meal plan archived for audit trail</ac>
+    <ac id="10">Generation respects same optimization factors (availability, complexity, prep timing)</ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="/home/snapiz/projects/github/timayz/imkitchen/docs/epics.md" title="Epic Breakdown" section="Story 3.7">
+        Lines 706-728: Full requirements for regenerate meal plan feature including confirmation dialog, rotation preservation, and shopping list update trigger.
+      </doc>
+      <doc path="/home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-3.md" title="Technical Specification Epic 3" section="MealPlanRegenerated Event">
+        Lines 308-314: MealPlanRegenerated event definition with new_assignments, rotation_state, regeneration_reason fields.
+        Lines 399-407: Aggregate handler for meal_plan_regenerated event showing how to replace assignments and update rotation state.
+      </doc>
+      <doc path="/home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-3.md" title="Technical Specification Epic 3" section="MealPlanningAlgorithm">
+        Lines 69-167: Core algorithm implementation that must be reused for regeneration with same constraints as initial generation.
+      </doc>
+      <doc path="/home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-3.md" title="Technical Specification Epic 3" section="RotationManager">
+        Lines 232-274: Rotation state management - must preserve cycle_number and not reset during regeneration.
+      </doc>
+      <doc path="/home/snapiz/projects/github/timayz/imkitchen/docs/solution-architecture.md" title="Solution Architecture" section="Server-Side Rendering">
+        Lines 122-141: Askama template patterns for confirmation modal and calendar view rendering.
+      </doc>
+      <doc path="/home/snapiz/projects/github/timayz/imkitchen/docs/solution-architecture.md" title="Solution Architecture" section="CQRS">
+        Lines 206-249: Command/query segregation pattern - regenerate_meal_plan() command updates aggregate, projections update read models.
+      </doc>
+      <doc path="/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-3.6.md" title="Story 3.6 Completion Notes" section="Lessons Learned">
+        Lines 224-473: CSP compliance (extract inline JS), keyboard navigation (Escape/Enter), ARIA landmarks, error handling without .unwrap(), test coverage 80%+.
+      </doc>
+    </docs>
+    <code>
+      <artifact path="/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/lib.rs" kind="module" symbol="replace_meal" lines="26-137">
+        REFERENCE PATTERN: Story 3.6 meal replacement function shows evento aggregate loading, validation, event emission pattern to replicate for regeneration.
+      </artifact>
+      <artifact path="/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/events.rs" kind="events" symbol="MealPlanGenerated" lines="43-56">
+        EXISTING EVENT: MealPlanGenerated event structure - regenerate should emit similar event (MealPlanRegenerated) with new_assignments field.
+      </artifact>
+      <artifact path="/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/events.rs" kind="events" symbol="RecipeUsedInRotation" lines="58-69">
+        ROTATION TRACKING: RecipeUsedInRotation event emitted for each new recipe assignment during regeneration to update rotation state.
+      </artifact>
+      <artifact path="/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/commands.rs" kind="commands" symbol="ReplaceMealCommand" lines="15-25">
+        COMMAND PATTERN: ReplaceMealCommand shows command structure - create RegenerateMealPlanCommand with meal_plan_id, user_id, regeneration_reason fields.
+      </artifact>
+      <artifact path="/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/algorithm.rs" kind="algorithm" symbol="MealPlanningAlgorithm">
+        ALGORITHM REUSE: This module contains generate_meal_plan() function used in Story 3.1 - MUST reuse same logic for regeneration with preserved rotation state.
+      </artifact>
+      <artifact path="/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/rotation.rs" kind="rotation" symbol="RotationState">
+        ROTATION STATE: RotationState::from_json() and to_json() methods - load current rotation state, pass to algorithm, DO NOT reset cycle_number during regeneration.
+      </artifact>
+      <artifact path="/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/aggregate.rs" kind="aggregate" symbol="MealPlanAggregate">
+        AGGREGATE PATTERN: Must add meal_plan_regenerated() event handler to replace assignments field and update rotation_state_json.
+      </artifact>
+      <artifact path="/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/read_model.rs" kind="projection" symbol="meal_plan_projection">
+        READ MODEL UPDATE: Add meal_plan_regenerated_handler() subscription - DELETE old meal_assignments, INSERT new assignments from event.
+      </artifact>
+      <artifact path="/home/snapiz/projects/github/timayz/imkitchen/src/routes/meal_plan.rs" kind="routes" symbol="post_replace_meal">
+        ROUTE PATTERN: Shows evento integration, authorization validation, domain command invocation - replicate for post_regenerate_meal_plan().
+      </artifact>
+      <artifact path="/home/snapiz/projects/github/timayz/imkitchen/templates/pages/meal-calendar.html" kind="template">
+        TEMPLATE UPDATE: Add "Regenerate Meal Plan" button with TwinSpark modal trigger (ts-req="/plan/regenerate/confirm").
+      </artifact>
+      <artifact path="/home/snapiz/projects/github/timayz/imkitchen/static/js/meal-replacement.js" kind="javascript">
+        JS PATTERN: CSP-compliant modal interactions (keyboard nav, focus trap, Escape to close) - create meal-regeneration.js following same patterns.
+      </artifact>
+    </code>
+    <dependencies>
+      <rust>
+        <dependency name="evento" version="1.4">Event sourcing library - use evento::load() to load aggregate, evento::save() to emit MealPlanRegenerated event</dependency>
+        <dependency name="axum" version="0.8">HTTP framework - POST /plan/regenerate route handler, Form extractor for RegenerateMealPlanForm</dependency>
+        <dependency name="askama" version="0.14">Template engine - render confirmation modal and updated calendar view</dependency>
+        <dependency name="sqlx" version="0.8">Database - read model projection updates meal_assignments and meal_plans tables</dependency>
+        <dependency name="chrono" version="0.4">Date/time - RFC3339 timestamp for regenerated_at field</dependency>
+        <dependency name="serde" version="1.0">Serialization - RotationState JSON serialization/deserialization</dependency>
+        <dependency name="validator" version="0.20">Form validation - validate optional regeneration_reason field (max 500 chars)</dependency>
+      </rust>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">Event Sourcing: ALL state changes via evento events (MealPlanRegenerated event required)</constraint>
+    <constraint type="architecture">CQRS: Domain command regenerate_meal_plan() writes to aggregate, read model projection updates meal_assignments table</constraint>
+    <constraint type="algorithm">MUST reuse MealPlanningAlgorithm from Story 3.1 with IDENTICAL constraint logic (availability, complexity, rotation)</constraint>
+    <constraint type="rotation">Rotation state MUST be preserved - DO NOT reset cycle_number, DO NOT call rotation.reset_cycle()</constraint>
+    <constraint type="rotation">Previously used recipes in current cycle MUST NOT be reassigned during regeneration</constraint>
+    <constraint type="data">Old meal plan assignments MUST be archived via event sourcing (event history provides audit trail)</constraint>
+    <constraint type="ui">Confirmation modal REQUIRED before regeneration (prevent accidental data loss)</constraint>
+    <constraint type="security">Authorization: Validate meal plan belongs to authenticated user before regeneration</constraint>
+    <constraint type="validation">Minimum 7 favorite recipes required for regeneration (same as initial generation)</constraint>
+    <constraint type="performance">Regeneration algorithm MUST complete in <5 seconds for 50 favorite recipes</constraint>
+    <constraint type="cross-domain">Emit ShoppingListRegenerationRequested domain event for Epic 4 shopping list update</constraint>
+    <constraint type="testing">TDD enforced - unit tests for regenerate_meal_plan(), integration tests for HTTP routes, 80%+ code coverage</constraint>
+    <constraint type="csp">CSP Compliance: NO inline JavaScript - extract to static/js/meal-regeneration.js (lesson from Story 3.6)</constraint>
+    <constraint type="accessibility">Keyboard Navigation: Escape to close modal, Enter to confirm, Tab focus trap (lesson from Story 3.6)</constraint>
+    <constraint type="accessibility">ARIA Landmarks: role="dialog", aria-labelledby, aria-describedby, focus management (lesson from Story 3.6)</constraint>
+    <constraint type="error-handling">Proper match statements - NO .unwrap() calls (lesson from Story 3.6)</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="MealPlanningAlgorithm::generate_meal_plan" kind="function" signature="async fn generate_meal_plan(&self, user_profile: &UserProfile, favorite_recipes: Vec<Recipe>, rotation_state: RotationState) -> Result<MealPlanAssignments, MealPlanningError>" path="crates/meal_planning/src/algorithm.rs">
+      CRITICAL: REUSE this function for regeneration - pass current rotation_state (DO NOT create new/reset)
+    </interface>
+    <interface name="RotationState::from_json" kind="method" signature="pub fn from_json(json: &str) -> Result<Self, serde_json::Error>" path="crates/meal_planning/src/rotation.rs">
+      Load current rotation state from aggregate.rotation_state_json field before calling algorithm
+    </interface>
+    <interface name="RotationState::to_json" kind="method" signature="pub fn to_json(&self) -> Result<String, serde_json::Error>" path="crates/meal_planning/src/rotation.rs">
+      Serialize updated rotation state for MealPlanRegenerated event rotation_state_json field
+    </interface>
+    <interface name="evento::load" kind="function" signature="async fn load<A: Aggregator, E: Executor>(executor: &E, aggregator_id: &str) -> Result<LoadedAggregate<A>, EventoError>" path="evento crate">
+      Load MealPlan aggregate from event stream to access current state and rotation_state_json
+    </interface>
+    <interface name="evento::save" kind="builder" signature="fn save<A: Aggregator>(aggregator_id: &str) -> SaveBuilder<A>" path="evento crate">
+      Emit MealPlanRegenerated event: evento::save::&lt;MealPlanAggregate&gt;(meal_plan_id).data(&event).commit(executor).await
+    </interface>
+    <interface name="MealPlanQueries::get_active_meal_plan" kind="method" signature="async fn get_active_meal_plan(&self, user_id: &str) -> Result<Option<MealPlanReadModel>, Error>" path="crates/meal_planning/src/read_model.rs">
+      Query user's active meal plan from read model before regeneration
+    </interface>
+    <interface name="RecipeQueries::get_favorite_recipes" kind="method" signature="async fn get_favorite_recipes(&self, user_id: &str) -> Result<Vec<Recipe>, Error>" path="crates/recipe/src/read_model.rs">
+      Query all favorite recipes (>= 7 minimum) to pass to algorithm
+    </interface>
+    <interface name="UserQueries::get_user_profile" kind="method" signature="async fn get_user_profile(&self, user_id: &str) -> Result<UserProfile, Error>" path="crates/user/src/read_model.rs">
+      Query user profile for algorithm constraints (availability, skill_level, dietary_restrictions)
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      TDD enforced per NFRs. Testing framework: Rust `cargo test` for unit/integration tests. Unit tests in crates/meal_planning/src/*.rs files using #[cfg(test)] modules. Integration tests in tests/meal_plan_integration_tests.rs. Test coverage target: 80%+ measured via `cargo tarpaulin`. Use evento::unsafe_oneshot() in tests for synchronous event processing. All tests must pass before story completion.
+    </standards>
+    <locations>
+      - crates/meal_planning/src/lib.rs - unit tests for regenerate_meal_plan() function
+      - crates/meal_planning/src/rotation.rs - unit tests for rotation state preservation
+      - crates/meal_planning/src/aggregate.rs - unit tests for meal_plan_regenerated() event handler
+      - tests/meal_plan_integration_tests.rs - integration tests for GET/POST /plan/regenerate routes
+    </locations>
+    <ideas>
+      <test ac="4,5,6,10" type="unit">Test: regenerate_meal_plan() creates different assignments from current plan</test>
+      <test ac="5" type="unit">Test: Rotation cycle_number unchanged after regeneration</test>
+      <test ac="5" type="unit">Test: Previously used recipes not reassigned in new plan</test>
+      <test ac="4,10" type="unit">Test: All constraints satisfied (availability, complexity, rotation)</test>
+      <test ac="3" type="unit">Test: Insufficient recipes validation (&lt;7 favorites returns error)</test>
+      <test ac="3" type="unit">Test: No active meal plan returns error</test>
+      <test ac="4" type="unit">Test: Algorithm determinism with seed variation produces different valid plans</test>
+      <test ac="2" type="integration">Test: GET /plan/regenerate/confirm returns modal HTML with form</test>
+      <test ac="3,7" type="integration">Test: POST /plan/regenerate updates database and redirects to calendar</test>
+      <test ac="6" type="integration">Test: Meal assignments replaced with new recipes (no duplicates from old plan)</test>
+      <test ac="9" type="integration">Test: Old assignments not present in new plan (event sourcing preserves history)</test>
+      <test ac="3" type="integration">Test: Authorization check prevents cross-user regeneration</test>
+      <test ac="2,3" type="integration">Test: Optional regeneration reason field persisted to event</test>
+      <test ac="1,2,3,7" type="e2e">Test: Full regeneration flow from calendar button to confirmation modal to updated view</test>
+      <test ac="2" type="e2e">Test: Cancel button dismisses modal without regeneration</test>
+    </ideas>
+  </tests>
+</story-context>
