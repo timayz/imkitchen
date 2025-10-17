@@ -53,14 +53,29 @@ button.ts-active::after {
         </div>
 
         {% if has_meal_plan %}
+        <!-- Rotation Progress Display (Story 3.3) -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="font-semibold text-blue-900 mb-1">Recipe Variety Progress</h3>
+                    <p class="text-blue-700">{{ rotation_used }} of {{ rotation_total }} favorites used this cycle</p>
+                </div>
+                <div class="text-right">
+                    <div class="text-3xl font-bold text-blue-600">{{ rotation_used }}/{{ rotation_total }}</div>
+                    <div class="text-xs text-blue-500">recipes used</div>
+                </div>
+            </div>
+        </div>
+
         <!-- Meal Calendar Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-7 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
             {% for day in days %}
-            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <!-- AC-6: Today highlighted, AC-7: Past dates dimmed -->
+            <div class="rounded-lg shadow-md overflow-hidden {% if day.is_today %}bg-yellow-50 border-2 border-yellow-400{% else %}bg-white{% endif %} {% if day.is_past %}opacity-50{% endif %}">
                 <!-- Day Header -->
-                <div class="bg-primary-500 text-white px-4 py-3">
+                <div class="{% if day.is_today %}bg-yellow-500{% else %}bg-primary-500{% endif %} text-white px-4 py-3">
                     <h2 class="font-bold text-lg">{{ day.day_name }}</h2>
-                    <p class="text-sm text-primary-100">{{ day.date }}</p>
+                    <p class="text-sm {% if day.is_today %}text-yellow-100{% else %}text-primary-100{% endif %}">{{ day.date }}</p>
                 </div>
 
                 <!-- Meal Slots -->
@@ -68,12 +83,13 @@ button.ts-active::after {
                     <!-- Breakfast -->
                     {% match day.breakfast %}
                     {% when Some with (breakfast) %}
-                    <div class="border-l-4 border-yellow-400 pl-3 py-2">
+                    <div id="meal-slot-{{ breakfast.assignment_id }}" class="border-l-4 border-yellow-400 pl-3 py-2">
                         <div class="flex items-center justify-between mb-1">
                             <span class="text-xs font-semibold text-gray-500 uppercase">Breakfast</span>
                             {% match breakfast.complexity %}
                             {% when Some with (complexity) %}
-                            <span class="text-xs px-2 py-1 rounded bg-gray-100 text-gray-600">
+                            <!-- AC-5: Color-coded complexity badges -->
+                            <span class="text-xs px-2 py-1 rounded {% if complexity == "simple" %}bg-green-100 text-green-800{% else %}{% if complexity == "moderate" %}bg-yellow-100 text-yellow-800{% else %}bg-red-100 text-red-800{% endif %}{% endif %}">
                                 {{ complexity }}
                             </span>
                             {% when None %}{% endmatch %}
@@ -94,6 +110,14 @@ button.ts-active::after {
                             <span class="text-orange-600 font-semibold" title="Advance prep required">⏰</span>
                             {% endif %}
                         </div>
+                        <button
+                            ts-req="/plan/meal/{{ breakfast.assignment_id }}/replace"
+                            ts-req-method="POST"
+                            ts-target="#meal-slot-{{ breakfast.assignment_id }}"
+                            ts-swap="outerHTML"
+                            class="mt-2 text-xs text-primary-600 hover:text-primary-800 underline">
+                            Replace This Meal
+                        </button>
                     </div>
                     {% when None %}
                     <div class="border-l-4 border-gray-200 pl-3 py-2">
@@ -105,12 +129,13 @@ button.ts-active::after {
                     <!-- Lunch -->
                     {% match day.lunch %}
                     {% when Some with (lunch) %}
-                    <div class="border-l-4 border-green-400 pl-3 py-2">
+                    <div id="meal-slot-{{ lunch.assignment_id }}" class="border-l-4 border-green-400 pl-3 py-2">
                         <div class="flex items-center justify-between mb-1">
                             <span class="text-xs font-semibold text-gray-500 uppercase">Lunch</span>
                             {% match lunch.complexity %}
                             {% when Some with (complexity) %}
-                            <span class="text-xs px-2 py-1 rounded bg-gray-100 text-gray-600">
+                            <!-- AC-5: Color-coded complexity badges -->
+                            <span class="text-xs px-2 py-1 rounded {% if complexity == "simple" %}bg-green-100 text-green-800{% else %}{% if complexity == "moderate" %}bg-yellow-100 text-yellow-800{% else %}bg-red-100 text-red-800{% endif %}{% endif %}">
                                 {{ complexity }}
                             </span>
                             {% when None %}{% endmatch %}
@@ -131,6 +156,14 @@ button.ts-active::after {
                             <span class="text-orange-600 font-semibold" title="Advance prep required">⏰</span>
                             {% endif %}
                         </div>
+                        <button
+                            ts-req="/plan/meal/{{ lunch.assignment_id }}/replace"
+                            ts-req-method="POST"
+                            ts-target="#meal-slot-{{ lunch.assignment_id }}"
+                            ts-swap="outerHTML"
+                            class="mt-2 text-xs text-primary-600 hover:text-primary-800 underline">
+                            Replace This Meal
+                        </button>
                     </div>
                     {% when None %}
                     <div class="border-l-4 border-gray-200 pl-3 py-2">
@@ -142,12 +175,13 @@ button.ts-active::after {
                     <!-- Dinner -->
                     {% match day.dinner %}
                     {% when Some with (dinner) %}
-                    <div class="border-l-4 border-blue-400 pl-3 py-2">
+                    <div id="meal-slot-{{ dinner.assignment_id }}" class="border-l-4 border-blue-400 pl-3 py-2">
                         <div class="flex items-center justify-between mb-1">
                             <span class="text-xs font-semibold text-gray-500 uppercase">Dinner</span>
                             {% match dinner.complexity %}
                             {% when Some with (complexity) %}
-                            <span class="text-xs px-2 py-1 rounded bg-gray-100 text-gray-600">
+                            <!-- AC-5: Color-coded complexity badges -->
+                            <span class="text-xs px-2 py-1 rounded {% if complexity == "simple" %}bg-green-100 text-green-800{% else %}{% if complexity == "moderate" %}bg-yellow-100 text-yellow-800{% else %}bg-red-100 text-red-800{% endif %}{% endif %}">
                                 {{ complexity }}
                             </span>
                             {% when None %}{% endmatch %}
@@ -168,6 +202,14 @@ button.ts-active::after {
                             <span class="text-orange-600 font-semibold" title="Advance prep required">⏰</span>
                             {% endif %}
                         </div>
+                        <button
+                            ts-req="/plan/meal/{{ dinner.assignment_id }}/replace"
+                            ts-req-method="POST"
+                            ts-target="#meal-slot-{{ dinner.assignment_id }}"
+                            ts-swap="outerHTML"
+                            class="mt-2 text-xs text-primary-600 hover:text-primary-800 underline">
+                            Replace This Meal
+                        </button>
                     </div>
                     {% when None %}
                     <div class="border-l-4 border-gray-200 pl-3 py-2">

@@ -18,7 +18,7 @@ use imkitchen::routes::{
     post_favorite_recipe, post_generate_meal_plan, post_login, post_logout, post_onboarding_step_1,
     post_onboarding_step_2, post_onboarding_step_3, post_onboarding_step_4, post_password_reset,
     post_password_reset_complete, post_profile, post_rate_recipe, post_register,
-    post_remove_recipe_from_collection, post_share_recipe, post_stripe_webhook,
+    post_remove_recipe_from_collection, post_replace_meal, post_share_recipe, post_stripe_webhook,
     post_subscription_upgrade, post_update_collection, post_update_recipe, post_update_recipe_tags,
     ready, AppState, AssetsService,
 };
@@ -214,6 +214,10 @@ async fn serve_command(
         // Meal planning routes
         .route("/plan", get(get_meal_plan))
         .route("/plan/generate", post(post_generate_meal_plan))
+        .route(
+            "/plan/meal/{assignment_id}/replace",
+            post(post_replace_meal),
+        )
         .route_layer(axum_middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,

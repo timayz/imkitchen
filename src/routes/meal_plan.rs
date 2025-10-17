@@ -43,6 +43,7 @@ impl Drop for GenerationLockGuard {
 /// Recipe with meal assignment for template rendering
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MealSlotData {
+    pub assignment_id: String, // Story 3.4: Needed for "Replace This Meal" button
     pub date: String,
     pub meal_type: String,
     pub recipe_id: String,
@@ -58,6 +59,8 @@ pub struct MealSlotData {
 pub struct DayData {
     pub date: String,
     pub day_name: String, // "Monday", "Tuesday", etc.
+    pub is_today: bool,   // AC-6: Today's date highlighted
+    pub is_past: bool,    // AC-7: Past dates dimmed
     pub breakfast: Option<MealSlotData>,
     pub lunch: Option<MealSlotData>,
     pub dinner: Option<MealSlotData>,
@@ -70,6 +73,8 @@ pub struct MealCalendarTemplate {
     pub days: Vec<DayData>,
     pub start_date: String,
     pub has_meal_plan: bool,
+    pub rotation_used: usize,  // AC (Story 3.3): Rotation progress display
+    pub rotation_total: usize, // AC (Story 3.3): Total favorites
 }
 
 /// GET /plan - Display meal calendar view
@@ -96,7 +101,11 @@ pub async fn get_meal_plan(
 
             let recipes = fetch_recipes_by_ids(&recipe_ids, &state.db_pool).await?;
 
-            // Group assignments by date into DayData
+            // AC (Story 3.3): Query rotation progress for display
+            let (rotation_used, rotation_total) =
+                MealPlanQueries::query_rotation_progress(&auth.user_id, &state.db_pool).await?;
+
+            // Group assignments by date into DayData with today/past flags
             let days = build_day_data(&plan_data.assignments, &recipes);
 
             let template = MealCalendarTemplate {
@@ -104,6 +113,8 @@ pub async fn get_meal_plan(
                 days,
                 start_date: plan_data.meal_plan.start_date,
                 has_meal_plan: true,
+                rotation_used,
+                rotation_total,
             };
             template.render().map(Html).map_err(|e| {
                 tracing::error!("Failed to render meal calendar template: {:?}", e);
@@ -117,6 +128,8 @@ pub async fn get_meal_plan(
                 days: Vec::new(),
                 start_date: String::new(),
                 has_meal_plan: false,
+                rotation_used: 0,
+                rotation_total: 0,
             };
             template.render().map(Html).map_err(|e| {
                 tracing::error!("Failed to render empty meal calendar template: {:?}", e);
@@ -426,6 +439,9 @@ fn build_day_data(
 ) -> Vec<DayData> {
     use std::collections::HashMap;
 
+    // AC-6, AC-7: Get today's date for highlighting logic
+    let today = chrono::Local::now().date_naive();
+
     // Create recipe lookup map
     let recipe_map: HashMap<String, &RecipeReadModel> =
         recipes.iter().map(|r| (r.id.clone(), r)).collect();
@@ -436,17 +452,23 @@ fn build_day_data(
     for assignment in assignments {
         let date = assignment.date.clone();
 
-        // Parse date to get day name
-        let day_name = if let Ok(parsed_date) = NaiveDate::parse_from_str(&date, "%Y-%m-%d") {
-            parsed_date.weekday().to_string()
-        } else {
-            String::new()
-        };
+        // Parse date to get day name and compute is_today/is_past flags
+        let (day_name, is_today, is_past) =
+            if let Ok(parsed_date) = NaiveDate::parse_from_str(&date, "%Y-%m-%d") {
+                let day_name = parsed_date.weekday().to_string();
+                let is_today = parsed_date == today;
+                let is_past = parsed_date < today;
+                (day_name, is_today, is_past)
+            } else {
+                (String::new(), false, false)
+            };
 
         // Get or create DayData
         let day_data = days_map.entry(date.clone()).or_insert(DayData {
             date: date.clone(),
             day_name,
+            is_today,
+            is_past,
             breakfast: None,
             lunch: None,
             dinner: None,
@@ -457,6 +479,7 @@ fn build_day_data(
 
         if let Some(recipe) = recipe {
             let slot_data = MealSlotData {
+                assignment_id: assignment.id.clone(), // Story 3.4: Include for replacement
                 date: assignment.date.clone(),
                 meal_type: assignment.meal_type.clone(),
                 recipe_id: recipe.id.clone(),
@@ -483,6 +506,178 @@ fn build_day_data(
     days
 }
 
+/// POST /plan/meal/:assignment_id/replace - Replace a single meal assignment
+///
+/// Story 3.4: "Replace This Meal" button functionality
+/// Respects rotation by only selecting from unused recipes in current cycle
+pub async fn post_replace_meal(
+    Extension(auth): Extension<Auth>,
+    State(state): State<AppState>,
+    axum::extract::Path(assignment_id): axum::extract::Path<String>,
+) -> Result<Html<String>, AppError> {
+    // Get the meal assignment to replace
+    let assignment = sqlx::query_as::<_, MealAssignmentReadModel>(
+        r#"
+        SELECT ma.id, ma.meal_plan_id, ma.date, ma.meal_type, ma.recipe_id, ma.prep_required
+        FROM meal_assignments ma
+        JOIN meal_plans mp ON ma.meal_plan_id = mp.id
+        WHERE ma.id = ?1 AND mp.user_id = ?2 AND mp.status = 'active'
+        "#,
+    )
+    .bind(&assignment_id)
+    .bind(&auth.user_id)
+    .fetch_optional(&state.db_pool)
+    .await?
+    .ok_or_else(|| AppError::InternalError("Meal assignment not found".to_string()))?;
+
+    // Query rotation-aware replacement candidates (unused recipes in current cycle)
+    let available_recipes = MealPlanQueries::query_replacement_candidates(
+        &auth.user_id,
+        &assignment.meal_type,
+        &state.db_pool,
+    )
+    .await?;
+
+    if available_recipes.is_empty() {
+        return Err(AppError::InternalError(
+            "No available recipes for replacement. All favorites used in current rotation cycle."
+                .to_string(),
+        ));
+    }
+
+    // Select a random replacement recipe from available pool
+    // Uses assignment_id as seed for deterministic randomization (same assignment = same sequence)
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+
+    let mut hasher = DefaultHasher::new();
+    assignment_id.hash(&mut hasher);
+    let hash = hasher.finish();
+
+    let index = (hash as usize) % available_recipes.len();
+    let replacement_recipe_id = &available_recipes[index];
+
+    // Update the meal assignment with the new recipe
+    sqlx::query(
+        r#"
+        UPDATE meal_assignments
+        SET recipe_id = ?1
+        WHERE id = ?2
+        "#,
+    )
+    .bind(replacement_recipe_id)
+    .bind(&assignment_id)
+    .execute(&state.db_pool)
+    .await?;
+
+    // Fetch the replacement recipe details
+    let replacement_recipe = sqlx::query_as::<_, RecipeReadModel>(
+        r#"
+        SELECT id, user_id, title, ingredients, instructions, prep_time_min, cook_time_min,
+               advance_prep_hours, serving_size, is_favorite, is_shared, complexity, cuisine,
+               dietary_tags, created_at, updated_at
+        FROM recipes
+        WHERE id = ?1 AND deleted_at IS NULL
+        "#,
+    )
+    .bind(replacement_recipe_id)
+    .fetch_one(&state.db_pool)
+    .await?;
+
+    // Check if advance prep required
+    let prep_required = replacement_recipe
+        .advance_prep_hours
+        .map(|hours| hours > 0)
+        .unwrap_or(false);
+
+    // Render the updated meal slot HTML to return via TwinSpark
+    let border_color = match assignment.meal_type.as_str() {
+        "breakfast" => "yellow",
+        "lunch" => "green",
+        "dinner" => "blue",
+        _ => "gray",
+    };
+
+    let complexity_badge = replacement_recipe
+        .complexity
+        .as_ref()
+        .map(|c| {
+            let badge_class = match c.as_str() {
+                "simple" => "bg-green-100 text-green-800",
+                "moderate" => "bg-yellow-100 text-yellow-800",
+                _ => "bg-red-100 text-red-800",
+            };
+            format!(
+                r#"<span class="text-xs px-2 py-1 rounded {}">{}</span>"#,
+                badge_class, c
+            )
+        })
+        .unwrap_or_default();
+
+    let prep_time_html = replacement_recipe
+        .prep_time_min
+        .map(|p| format!(r#"<span>🔪 {}m</span>"#, p))
+        .unwrap_or_default();
+
+    let cook_time_html = replacement_recipe
+        .cook_time_min
+        .map(|c| format!(r#"<span>🔥 {}m</span>"#, c))
+        .unwrap_or_default();
+
+    let prep_indicator = if prep_required {
+        r#"<span class="text-orange-600 font-semibold" title="Advance prep required">⏰</span>"#
+    } else {
+        ""
+    };
+
+    // HTML escape user-controlled data (recipe title) for XSS prevention
+    let escaped_title = replacement_recipe
+        .title
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&#x27;");
+
+    let meal_slot_html = format!(
+        "<div id=\"meal-slot-{}\" class=\"border-l-4 border-{}-400 pl-3 py-2\">\
+    <div class=\"flex items-center justify-between mb-1\">\
+        <span class=\"text-xs font-semibold text-gray-500 uppercase\">{}</span>\
+        {}\
+    </div>\
+    <a href=\"/recipes/{}\" class=\"text-gray-900 hover:text-primary-500 font-medium\">\
+        {}\
+    </a>\
+    <div class=\"flex items-center gap-2 mt-1 text-xs text-gray-500\">\
+        {}\
+        {}\
+        {}\
+    </div>\
+    <button \
+        ts-req=\"/plan/meal/{}/replace\" \
+        ts-req-method=\"POST\" \
+        ts-target=\"#meal-slot-{}\" \
+        ts-swap=\"outerHTML\" \
+        class=\"mt-2 text-xs text-primary-600 hover:text-primary-800 underline\">\
+        Replace This Meal\
+    </button>\
+</div>",
+        assignment_id,
+        border_color,
+        assignment.meal_type,
+        complexity_badge,
+        replacement_recipe.id,
+        escaped_title,
+        prep_time_html,
+        cook_time_html,
+        prep_indicator,
+        assignment_id,
+        assignment_id,
+    );
+
+    Ok(Html(meal_slot_html))
+}
+
 /// Helper: Get next Monday's date as ISO 8601 string
 fn get_next_monday() -> String {
     let today = Utc::now().naive_utc().date();
@@ -498,4 +693,143 @@ fn get_next_monday() -> String {
 
     let next_monday = today + Duration::days(days_until_monday);
     next_monday.format("%Y-%m-%d").to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Test: build_day_data() correctly sets is_today and is_past flags (Story 3.4 Review Action Item #5)
+    #[test]
+    fn test_build_day_data_date_highlighting() {
+        use recipe::read_model::RecipeReadModel;
+
+        // Mock data
+        let today = chrono::Local::now().date_naive();
+        let yesterday = today - chrono::Duration::days(1);
+        let tomorrow = today + chrono::Duration::days(1);
+
+        let assignments = vec![
+            MealAssignmentReadModel {
+                id: "assignment_yesterday".to_string(),
+                meal_plan_id: "plan1".to_string(),
+                date: yesterday.format("%Y-%m-%d").to_string(),
+                meal_type: "breakfast".to_string(),
+                recipe_id: "recipe1".to_string(),
+                prep_required: false,
+            },
+            MealAssignmentReadModel {
+                id: "assignment_today".to_string(),
+                meal_plan_id: "plan1".to_string(),
+                date: today.format("%Y-%m-%d").to_string(),
+                meal_type: "breakfast".to_string(),
+                recipe_id: "recipe2".to_string(),
+                prep_required: false,
+            },
+            MealAssignmentReadModel {
+                id: "assignment_tomorrow".to_string(),
+                meal_plan_id: "plan1".to_string(),
+                date: tomorrow.format("%Y-%m-%d").to_string(),
+                meal_type: "breakfast".to_string(),
+                recipe_id: "recipe3".to_string(),
+                prep_required: false,
+            },
+        ];
+
+        let recipes = vec![
+            RecipeReadModel {
+                id: "recipe1".to_string(),
+                user_id: "user1".to_string(),
+                title: "Recipe 1".to_string(),
+                ingredients: "[]".to_string(),
+                instructions: "[]".to_string(),
+                prep_time_min: Some(10),
+                cook_time_min: Some(20),
+                advance_prep_hours: None,
+                serving_size: Some(4),
+                is_favorite: true,
+                is_shared: false,
+                complexity: Some("simple".to_string()),
+                cuisine: None,
+                dietary_tags: None,
+                created_at: "2025-01-01T00:00:00Z".to_string(),
+                updated_at: "2025-01-01T00:00:00Z".to_string(),
+            },
+            RecipeReadModel {
+                id: "recipe2".to_string(),
+                user_id: "user1".to_string(),
+                title: "Recipe 2".to_string(),
+                ingredients: "[]".to_string(),
+                instructions: "[]".to_string(),
+                prep_time_min: Some(15),
+                cook_time_min: Some(25),
+                advance_prep_hours: None,
+                serving_size: Some(4),
+                is_favorite: true,
+                is_shared: false,
+                complexity: Some("moderate".to_string()),
+                cuisine: None,
+                dietary_tags: None,
+                created_at: "2025-01-01T00:00:00Z".to_string(),
+                updated_at: "2025-01-01T00:00:00Z".to_string(),
+            },
+            RecipeReadModel {
+                id: "recipe3".to_string(),
+                user_id: "user1".to_string(),
+                title: "Recipe 3".to_string(),
+                ingredients: "[]".to_string(),
+                instructions: "[]".to_string(),
+                prep_time_min: Some(20),
+                cook_time_min: Some(30),
+                advance_prep_hours: None,
+                serving_size: Some(4),
+                is_favorite: true,
+                is_shared: false,
+                complexity: Some("complex".to_string()),
+                cuisine: None,
+                dietary_tags: None,
+                created_at: "2025-01-01T00:00:00Z".to_string(),
+                updated_at: "2025-01-01T00:00:00Z".to_string(),
+            },
+        ];
+
+        // Execute
+        let days = build_day_data(&assignments, &recipes);
+
+        // Assert
+        assert_eq!(days.len(), 3, "Should have 3 days");
+
+        // Find days by date
+        let yesterday_day = days
+            .iter()
+            .find(|d| d.date == yesterday.format("%Y-%m-%d").to_string())
+            .expect("Yesterday not found");
+        let today_day = days
+            .iter()
+            .find(|d| d.date == today.format("%Y-%m-%d").to_string())
+            .expect("Today not found");
+        let tomorrow_day = days
+            .iter()
+            .find(|d| d.date == tomorrow.format("%Y-%m-%d").to_string())
+            .expect("Tomorrow not found");
+
+        // Verify is_past flag (yesterday should be past, others not)
+        assert!(yesterday_day.is_past, "Yesterday should be marked as past");
+        assert!(!today_day.is_past, "Today should NOT be marked as past");
+        assert!(
+            !tomorrow_day.is_past,
+            "Tomorrow should NOT be marked as past"
+        );
+
+        // Verify is_today flag (only today should be marked)
+        assert!(
+            !yesterday_day.is_today,
+            "Yesterday should NOT be marked as today"
+        );
+        assert!(today_day.is_today, "Today should be marked as today");
+        assert!(
+            !tomorrow_day.is_today,
+            "Tomorrow should NOT be marked as today"
+        );
+    }
 }
