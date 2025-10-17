@@ -668,7 +668,10 @@ async fn test_meal_plan_regeneration_projection() {
         user_id: user_id.to_string(),
         start_date: Utc::now().naive_utc().date().to_string(),
         meal_assignments: initial_assignments.clone(),
-        rotation_state_json: r#"{"cycle_number":1,"used_recipe_ids":[],"total_favorite_count":10}"#.to_string(),
+        rotation_state_json: format!(
+            r#"{{"cycle_number":1,"cycle_started_at":"{}","used_recipe_ids":[],"total_favorite_count":10}}"#,
+            Utc::now().to_rfc3339()
+        ),
         generated_at: Utc::now().to_rfc3339(),
     };
 
@@ -688,13 +691,12 @@ async fn test_meal_plan_regeneration_projection() {
         .unwrap();
 
     // Verify initial assignments exist
-    let initial_count: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM meal_assignments WHERE meal_plan_id = ?1",
-    )
-    .bind(&meal_plan_id)
-    .fetch_one(&pool)
-    .await
-    .unwrap();
+    let initial_count: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM meal_assignments WHERE meal_plan_id = ?1")
+            .bind(&meal_plan_id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
     assert_eq!(initial_count, 21, "Should have 21 initial assignments");
 
     // Now emit MealPlanRegenerated event with different assignments
@@ -725,7 +727,9 @@ async fn test_meal_plan_regeneration_projection() {
 
     let regenerated_event = MealPlanRegenerated {
         new_assignments: new_assignments.clone(),
-        rotation_state_json: r#"{"cycle_number":1,"used_recipe_ids":["recipe_1"],"total_favorite_count":10}"#.to_string(),
+        rotation_state_json:
+            r#"{"cycle_number":1,"used_recipe_ids":["recipe_1"],"total_favorite_count":10}"#
+                .to_string(),
         regeneration_reason: Some("Testing regeneration".to_string()),
         regenerated_at: Utc::now().to_rfc3339(),
     };
@@ -746,23 +750,21 @@ async fn test_meal_plan_regeneration_projection() {
         .unwrap();
 
     // Verify assignments replaced (still 21 total)
-    let final_count: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM meal_assignments WHERE meal_plan_id = ?1",
-    )
-    .bind(&meal_plan_id)
-    .fetch_one(&pool)
-    .await
-    .unwrap();
+    let final_count: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM meal_assignments WHERE meal_plan_id = ?1")
+            .bind(&meal_plan_id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
     assert_eq!(final_count, 21, "Should still have exactly 21 assignments");
 
     // Verify assignments are NEW recipes (not from initial set)
-    let sample_assignment: (String,) = sqlx::query_as(
-        "SELECT recipe_id FROM meal_assignments WHERE meal_plan_id = ?1 LIMIT 1",
-    )
-    .bind(&meal_plan_id)
-    .fetch_one(&pool)
-    .await
-    .unwrap();
+    let sample_assignment: (String,) =
+        sqlx::query_as("SELECT recipe_id FROM meal_assignments WHERE meal_plan_id = ?1 LIMIT 1")
+            .bind(&meal_plan_id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
 
     // Verify it's from the NEW set (offset by 5)
     let expected_new_recipes: Vec<String> = new_assignments
@@ -783,7 +785,9 @@ async fn test_meal_plan_regeneration_projection() {
             .unwrap();
 
     assert!(
-        rotation_state.0.contains("\"used_recipe_ids\":[\"recipe_1\"]"),
+        rotation_state
+            .0
+            .contains("\"used_recipe_ids\":[\"recipe_1\"]"),
         "Rotation state should be updated with new usage"
     );
 }
@@ -1061,5 +1065,8 @@ async fn test_regeneration_with_reason() {
 
     // Note: This verifies event can be loaded, reason field is part of event data
     // Full event data inspection would require evento event stream query
-    assert!(!loaded.item.meal_plan_id.is_empty(), "Aggregate should exist");
+    assert!(
+        !loaded.item.meal_plan_id.is_empty(),
+        "Aggregate should exist"
+    );
 }

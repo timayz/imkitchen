@@ -259,8 +259,8 @@ mod tests {
     use super::*;
     use algorithm::{RecipeForPlanning, UserConstraints};
     use commands::RegenerateMealPlanCommand;
-    use events::MealPlanGenerated;
     use evento::prelude::{Migrate, Plan};
+    use events::MealPlanGenerated;
     use rotation::RotationState;
     use sqlx::sqlite::SqlitePoolOptions;
 
@@ -317,9 +317,14 @@ mod tests {
 
         // Generate initial meal plan using algorithm
         let constraints = UserConstraints::default();
-        let (initial_assignments, initial_rotation_state) =
-            MealPlanningAlgorithm::generate(start_date, favorites.clone(), constraints.clone(), rotation_state, Some(42))
-                .expect("Initial generation failed");
+        let (initial_assignments, initial_rotation_state) = MealPlanningAlgorithm::generate(
+            start_date,
+            favorites.clone(),
+            constraints.clone(),
+            rotation_state,
+            Some(42),
+        )
+        .expect("Initial generation failed");
 
         // Emit MealPlanGenerated event
         let generated_at = chrono::Utc::now().to_rfc3339();
@@ -350,7 +355,13 @@ mod tests {
             regeneration_reason: Some("Testing regeneration".to_string()),
         };
 
-        let result = regenerate_meal_plan(regenerate_cmd, &executor, favorites.clone(), constraints.clone()).await;
+        let result = regenerate_meal_plan(
+            regenerate_cmd,
+            &executor,
+            favorites.clone(),
+            constraints.clone(),
+        )
+        .await;
         assert!(result.is_ok(), "Regeneration should succeed");
 
         // Load aggregate and verify state
@@ -360,7 +371,11 @@ mod tests {
         let aggregate = loaded.item;
 
         // AC-6: Verify all 21 slots filled
-        assert_eq!(aggregate.meal_assignments.len(), 21, "Should have 21 meal assignments");
+        assert_eq!(
+            aggregate.meal_assignments.len(),
+            21,
+            "Should have 21 meal assignments"
+        );
 
         // AC-5: Verify rotation state preserved (cycle number unchanged or incremented if reset)
         let new_rotation_state = RotationState::from_json(&aggregate.rotation_state_json).unwrap();
@@ -394,7 +409,13 @@ mod tests {
             regeneration_reason: None,
         };
 
-        let result = regenerate_meal_plan(regenerate_cmd, &executor, favorites, UserConstraints::default()).await;
+        let result = regenerate_meal_plan(
+            regenerate_cmd,
+            &executor,
+            favorites,
+            UserConstraints::default(),
+        )
+        .await;
         assert!(result.is_err(), "Should fail when meal plan not found");
 
         // evento::load returns EventoError("not found") instead of custom error
@@ -431,9 +452,14 @@ mod tests {
         ];
 
         let constraints = UserConstraints::default();
-        let (assignments, rotation_state) =
-            MealPlanningAlgorithm::generate(start_date, favorites.clone(), constraints.clone(), rotation_state, Some(42))
-                .unwrap();
+        let (assignments, rotation_state) = MealPlanningAlgorithm::generate(
+            start_date,
+            favorites.clone(),
+            constraints.clone(),
+            rotation_state,
+            Some(42),
+        )
+        .unwrap();
 
         let event_data = MealPlanGenerated {
             user_id: user_id.to_string(),
@@ -465,7 +491,13 @@ mod tests {
             regeneration_reason: None,
         };
 
-        let result = regenerate_meal_plan(regenerate_cmd, &executor, insufficient_favorites, constraints).await;
+        let result = regenerate_meal_plan(
+            regenerate_cmd,
+            &executor,
+            insufficient_favorites,
+            constraints,
+        )
+        .await;
         assert!(result.is_err(), "Should fail with insufficient recipes");
 
         match result {
@@ -487,12 +519,19 @@ mod tests {
         let start_date = "2025-10-20";
         let rotation_state = RotationState::new();
 
-        let favorites = (1..=10).map(|i| create_test_recipe(&format!("{}", i))).collect::<Vec<_>>();
+        let favorites = (1..=10)
+            .map(|i| create_test_recipe(&format!("{}", i)))
+            .collect::<Vec<_>>();
 
         let constraints = UserConstraints::default();
-        let (assignments, rotation_state) =
-            MealPlanningAlgorithm::generate(start_date, favorites.clone(), constraints.clone(), rotation_state, Some(42))
-                .unwrap();
+        let (assignments, rotation_state) = MealPlanningAlgorithm::generate(
+            start_date,
+            favorites.clone(),
+            constraints.clone(),
+            rotation_state,
+            Some(42),
+        )
+        .unwrap();
 
         let event_data = MealPlanGenerated {
             user_id: user_id_1.to_string(),
