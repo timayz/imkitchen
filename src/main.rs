@@ -1,29 +1,24 @@
 use anyhow::Result;
-use axum::{
-    extract::State,
-    middleware as axum_middleware,
-    routing::{get, post},
-    Extension, Router,
-};
+use axum::{middleware as axum_middleware, routing::{get, post}, Router};
 use clap::{Parser, Subcommand};
 use evento::prelude::*;
 use imkitchen::middleware::auth_middleware;
 use imkitchen::routes::{
-    get_collections, get_discover, get_discover_detail, get_ingredient_row, get_instruction_row,
-    get_login, get_meal_alternatives, get_meal_plan, get_onboarding, get_onboarding_skip,
-    get_password_reset, get_password_reset_complete, get_profile, get_recipe_detail,
-    get_recipe_edit_form, get_recipe_form, get_recipe_list, get_regenerate_confirm, get_register,
-    get_subscription, get_subscription_success, health, post_add_recipe_to_collection,
-    post_add_to_library, post_create_collection, post_create_recipe, post_delete_collection,
-    post_delete_recipe, post_delete_review, post_favorite_recipe, post_generate_meal_plan,
-    post_login, post_logout, post_onboarding_step_1, post_onboarding_step_2,
-    post_onboarding_step_3, post_onboarding_step_4, post_password_reset,
-    post_password_reset_complete, post_profile, post_rate_recipe, post_regenerate_meal_plan,
-    post_register, post_remove_recipe_from_collection, post_replace_meal, post_share_recipe,
+    dashboard_handler, get_collections, get_discover, get_discover_detail, get_ingredient_row,
+    get_instruction_row, get_login, get_meal_alternatives, get_meal_plan, get_onboarding,
+    get_onboarding_skip, get_password_reset, get_password_reset_complete, get_profile,
+    get_recipe_detail, get_recipe_edit_form, get_recipe_form, get_recipe_list,
+    get_regenerate_confirm, get_register, get_subscription, get_subscription_success, health,
+    post_add_recipe_to_collection, post_add_to_library, post_create_collection,
+    post_create_recipe, post_delete_collection, post_delete_recipe, post_delete_review,
+    post_favorite_recipe, post_generate_meal_plan, post_login, post_logout,
+    post_onboarding_step_1, post_onboarding_step_2, post_onboarding_step_3,
+    post_onboarding_step_4, post_password_reset, post_password_reset_complete, post_profile,
+    post_rate_recipe, post_regenerate_meal_plan, post_register,
+    post_remove_recipe_from_collection, post_replace_meal, post_share_recipe,
     post_stripe_webhook, post_subscription_upgrade, post_update_collection, post_update_recipe,
     post_update_recipe_tags, ready, AppState, AssetsService,
 };
-use imkitchen::{middleware, routes};
 use meal_planning::meal_plan_projection;
 use recipe::{collection_projection, recipe_projection};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions};
@@ -409,65 +404,4 @@ async fn run_migrations(pool: &sqlx::SqlitePool) -> Result<()> {
     drop(conn);
 
     Ok(())
-}
-
-// Placeholder dashboard handler
-async fn dashboard_handler(
-    Extension(auth): Extension<middleware::auth::Auth>,
-    State(state): State<routes::AppState>,
-) -> Result<axum::response::Html<String>, (axum::http::StatusCode, String)> {
-    use askama::Template;
-
-    #[derive(Template)]
-    #[template(path = "pages/dashboard.html")]
-    struct DashboardTemplate {
-        user: Option<()>,
-        has_meal_plan: bool,
-        recipe_count: usize,
-        favorite_count: usize,
-    }
-
-    // Query user's recipes count
-    let recipe_count =
-        match recipe::read_model::query_recipes_by_user(&auth.user_id, false, &state.db_pool).await
-        {
-            Ok(recipes) => recipes.len(),
-            Err(_) => 0,
-        };
-
-    // Query user's favorite recipes count
-    let favorite_count = match recipe::read_model::query_recipes_by_user(
-        &auth.user_id,
-        true,
-        &state.db_pool,
-    )
-    .await
-    {
-        Ok(favorites) => favorites.len(),
-        Err(_) => 0,
-    };
-
-    // Check if user has active meal plan
-    let has_meal_plan = matches!(
-        meal_planning::read_model::MealPlanQueries::get_active_meal_plan(
-            &auth.user_id,
-            &state.db_pool,
-        )
-        .await,
-        Ok(Some(_))
-    );
-
-    let template = DashboardTemplate {
-        user: Some(()),
-        has_meal_plan,
-        recipe_count,
-        favorite_count,
-    };
-
-    template.render().map(axum::response::Html).map_err(|e| {
-        (
-            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Template error: {}", e),
-        )
-    })
 }

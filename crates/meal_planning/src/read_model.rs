@@ -316,6 +316,68 @@ impl MealPlanQueries {
 
         Ok((used_count.0 as usize, total_favorites.0 as usize))
     }
+
+    /// Get today's meals with recipe details (Story 3.9)
+    ///
+    /// Returns meal assignments for the current date with recipe details via JOIN.
+    /// Used for dashboard "Today's Meals" section display.
+    ///
+    /// Query returns assignments ordered by meal_type (breakfast, lunch, dinner).
+    pub async fn get_todays_meals(
+        user_id: &str,
+        pool: &SqlitePool,
+    ) -> Result<Vec<MealAssignmentWithRecipe>, sqlx::Error> {
+        sqlx::query_as::<_, MealAssignmentWithRecipe>(
+            r#"
+            SELECT
+                ma.id,
+                ma.meal_plan_id,
+                ma.date,
+                ma.meal_type,
+                ma.recipe_id,
+                ma.prep_required,
+                ma.assignment_reasoning,
+                r.title as recipe_title,
+                r.prep_time_min,
+                r.cook_time_min,
+                r.advance_prep_hours,
+                r.complexity
+            FROM meal_assignments ma
+            INNER JOIN recipes r ON ma.recipe_id = r.id
+            INNER JOIN meal_plans mp ON ma.meal_plan_id = mp.id
+            WHERE mp.user_id = ?1
+              AND mp.status = 'active'
+              AND ma.date = DATE('now')
+            ORDER BY
+              CASE ma.meal_type
+                WHEN 'breakfast' THEN 1
+                WHEN 'lunch' THEN 2
+                WHEN 'dinner' THEN 3
+                ELSE 4
+              END
+            "#,
+        )
+        .bind(user_id)
+        .fetch_all(pool)
+        .await
+    }
+}
+
+/// MealAssignment with Recipe details for today's meals display (Story 3.9)
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct MealAssignmentWithRecipe {
+    pub id: String,
+    pub meal_plan_id: String,
+    pub date: String,
+    pub meal_type: String,
+    pub recipe_id: String,
+    pub prep_required: bool,
+    pub assignment_reasoning: Option<String>,
+    pub recipe_title: String,
+    pub prep_time_min: Option<i32>,
+    pub cook_time_min: Option<i32>,
+    pub advance_prep_hours: Option<i32>,
+    pub complexity: Option<String>,
 }
 
 /// Async evento subscription handler for MealPlanGenerated events

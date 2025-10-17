@@ -434,6 +434,40 @@ pub async fn query_recipes_by_user(
     Ok(recipes)
 }
 
+/// Query recipe count for dashboard (Story 3.9)
+///
+/// Returns (total_count, favorite_count) tuple for dashboard stats display.
+pub async fn query_recipe_count(
+    user_id: &str,
+    pool: &SqlitePool,
+) -> RecipeResult<(usize, usize)> {
+    // Count total recipes
+    let total_count: (i64,) = sqlx::query_as(
+        r#"
+        SELECT COUNT(*) as count
+        FROM recipes
+        WHERE user_id = ?1 AND deleted_at IS NULL
+        "#,
+    )
+    .bind(user_id)
+    .fetch_one(pool)
+    .await?;
+
+    // Count favorite recipes
+    let favorite_count: (i64,) = sqlx::query_as(
+        r#"
+        SELECT COUNT(*) as count
+        FROM recipes
+        WHERE user_id = ?1 AND is_favorite = 1 AND deleted_at IS NULL
+        "#,
+    )
+    .bind(user_id)
+    .fetch_one(pool)
+    .await?;
+
+    Ok((total_count.0 as usize, favorite_count.0 as usize))
+}
+
 /// Rating data from read model (ratings table)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RatingReadModel {

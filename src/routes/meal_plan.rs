@@ -320,8 +320,8 @@ pub async fn post_generate_meal_plan(
     let old_cycle_number = rotation_state.cycle_number;
     let favorite_count = recipes_for_planning.len();
 
-    // Calculate start date (next Monday)
-    let start_date = get_next_monday();
+    // Calculate start date (today) - Story 3.9: Meal plans should start today for dashboard
+    let start_date = Utc::now().naive_utc().date().format("%Y-%m-%d").to_string();
 
     // AC-2, AC-3, AC-4, AC-6: Generate meal plan using algorithm
     // AC-9: Pass None for seed to get random variety (timestamp-based)
