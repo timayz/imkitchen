@@ -2,7 +2,7 @@ use chrono::{Datelike, Duration, Utc};
 use evento::prelude::{Migrate, Plan};
 use shopping::{
     generate_shopping_list, recalculate_shopping_list_on_meal_replacement, shopping_projection,
-    GenerateShoppingListCommand, RecalculateShoppingListCommand, ShoppingListError,
+    GenerateShoppingListCommand, RecalculateShoppingListCommand,
 };
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::SqlitePool;

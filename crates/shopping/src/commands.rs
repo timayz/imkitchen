@@ -113,12 +113,10 @@ pub async fn recalculate_shopping_list_on_meal_replacement(
     executor: &impl evento::Executor,
 ) -> Result<(), ShoppingListError> {
     // 1. Load current shopping list aggregate from event store
-    let loaded = evento::load::<crate::aggregate::ShoppingListAggregate, _>(
-        executor,
-        &cmd.shopping_list_id,
-    )
-    .await
-    .map_err(|e| ShoppingListError::EventStoreError(e.into()))?;
+    let loaded =
+        evento::load::<crate::aggregate::ShoppingListAggregate, _>(executor, &cmd.shopping_list_id)
+            .await
+            .map_err(|e| ShoppingListError::EventStoreError(e.into()))?;
 
     let shopping_list = loaded.item;
 

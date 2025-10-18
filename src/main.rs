@@ -21,8 +21,7 @@ use imkitchen::routes::{
     post_regenerate_meal_plan, post_register, post_remove_recipe_from_collection,
     post_replace_meal, post_share_recipe, post_stripe_webhook, post_subscription_upgrade,
     post_update_collection, post_update_recipe, post_update_recipe_tags, ready,
-    refresh_shopping_list, show_shopping_list,
-    AppState, AssetsService,
+    refresh_shopping_list, show_shopping_list, AppState, AssetsService,
 };
 use meal_planning::meal_plan_projection;
 use recipe::{collection_projection, recipe_projection};

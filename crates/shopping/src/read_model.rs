@@ -111,7 +111,10 @@ pub async fn project_shopping_list_recalculated<E: Executor>(
         let item_id = format!("{}-{}", shopping_list_id, index);
 
         // Preserve is_collected status if item existed before recalculation
-        let is_collected = collected_map.get(&item.ingredient_name).copied().unwrap_or(false);
+        let is_collected = collected_map
+            .get(&item.ingredient_name)
+            .copied()
+            .unwrap_or(false);
 
         sqlx::query(
             r#"

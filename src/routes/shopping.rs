@@ -285,9 +285,9 @@ pub async fn refresh_shopping_list(
     let user_id = &auth.user_id;
 
     // Week parameter is required for refresh endpoint
-    let selected_week = query.week.ok_or_else(|| {
-        AppError::ValidationError("week query parameter is required".to_string())
-    })?;
+    let selected_week = query
+        .week
+        .ok_or_else(|| AppError::ValidationError("week query parameter is required".to_string()))?;
 
     // Validate week parameter
     shopping::validate_week_date(&selected_week)?;
