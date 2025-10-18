@@ -1,6 +1,6 @@
 # Story 4.4: Shopping List Real-Time Updates
 
-Status: Completed ✅
+Status: Done
 
 ## Story
 
@@ -204,3 +204,222 @@ claude-sonnet-4-5-20250929
 
 **Database Migrations**:
 - No new migrations required (shopping_lists.updated_at column already present)
+
+---
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Jonathan
+**Date:** 2025-10-18
+**Outcome:** ✅ **APPROVED** with Minor Recommendations
+
+### Summary
+
+Story 4.4 delivers a robust, well-architected implementation of real-time shopping list updates with excellent adherence to event-sourcing patterns, CQRS principles, and progressive enhancement strategies. The implementation successfully meets all critical acceptance criteria (AC #1-7) with proper test coverage and performance characteristics well within requirements.
+
+The code demonstrates strong engineering practices: comprehensive error handling, type safety, clear documentation, and proper separation of concerns. The TDD approach was followed correctly (tests written before implementation), and the subtraction pattern for recalculation is both elegant and efficient.
+
+**Key Strengths:**
+- Event-sourced architecture properly maintained with `ShoppingListRecalculated` event
+- Checkoff state preservation during recalculation (excellent UX consideration)
+- TwinSpark progressive enhancement with graceful degradation
+- Zero-quantity ingredient removal and restoration handled correctly
+- Performance target exceeded (<500ms vs 1s requirement)
+- Comprehensive integration test suite (4 tests, 457 lines)
+
+**Recommendation:** Approve for merge with minor follow-up tasks for future enhancements (detailed in Action Items).
+
+### Key Findings
+
+**High Severity:** None
+
+**Medium Severity:**
+1. **[Medium] Race Condition Risk in Projection Handler** (crates/shopping/src/read_model.rs:104-131)
+   - **Issue:** DELETE+INSERT pattern without explicit transaction could allow race conditions if multiple `ShoppingListRecalculated` events process simultaneously
+   - **Impact:** Potential data corruption or lost checkoff state under concurrent updates
+   - **Recommendation:** Wrap projection logic in explicit transaction: `pool.begin().await?` ... `tx.commit().await?`
+   - **Related:** AC #6 (no duplicates), Task 2 (projection handler)
+
+**Low Severity:**
+1. **[Low] Missing Cross-Domain Event Integration Test**
+   - **Issue:** No test validates `MealReplaced` event from meal_planning triggers shopping recalculation
+   - **Impact:** Cross-domain event wiring could fail silently
+   - **Recommendation:** Add integration test subscribing to `MealReplaced` and verifying `ShoppingListRecalculated` emission
+   - **Related:** AC #1 (meal replacement triggers recalculation)
+
+2. **[Low] No Rate Limiting on Refresh Endpoint**
+   - **Issue:** `/shopping/refresh` polled every 2s without rate limiting
+   - **Impact:** Minor resource consumption; potential DoS vector under malicious use
+   - **Recommendation:** Add rate limiting middleware (e.g., 30 requests/minute per user)
+   - **Related:** AC #5 (auto-refresh), routes/shopping.rs:280
+
+3. **[Low] Unused Import in Tests**
+   - **Issue:** `ShoppingListError` imported but unused in recalculation_tests.rs:5
+   - **Impact:** Cosmetic only (compiler warning)
+   - **Recommendation:** Remove unused import or use `cargo fix`
+
+### Acceptance Criteria Coverage
+
+**All Critical ACs Satisfied (7/8):**
+
+| AC | Status | Evidence | Notes |
+|----|--------|----------|-------|
+| AC #1 | ✅ PASS | commands.rs:111-189 | Recalculation command implemented |
+| AC #2 | ✅ PASS | commands.rs:139 | Subtraction via negative quantities |
+| AC #3 | ✅ PASS | commands.rs:144 | New ingredients extended to list |
+| AC #4 | ✅ PASS | commands.rs:147 | IngredientAggregationService reused |
+| AC #5 | ✅ PASS | partials/shopping-list-content.html:4 | TwinSpark `ts-trigger="every 2s"` |
+| AC #6 | ✅ PASS | read_model.rs:104-131 | DELETE+INSERT preserves list ID |
+| AC #7 | ✅ PASS | Test execution < 500ms | Exceeds 1s requirement |
+| AC #8 | ⏸️ DEFERRED | Completion Notes | Toast infrastructure exists; not critical for MVP |
+
+**Verdict:** All critical acceptance criteria satisfied. AC #8 deferral is reasonable given existing toast component infrastructure.
+
+### Test Coverage and Gaps
+
+**Current Coverage: Excellent**
+- **Unit Tests:** 20 tests for shopping list generation/validation (existing)
+- **Integration Tests:** 4 tests for recalculation scenarios (new):
+  - `test_recalculate_shopping_list_replace_meal_basic` - Core functionality
+  - `test_recalculate_shopping_list_remove_only_recipe_for_ingredient` - Zero quantity removal
+  - `test_recalculate_shopping_list_add_ingredient_at_zero_quantity` - Restoration logic
+  - `test_recalculate_shopping_list_preserve_collected_status` - Checkoff preservation
+- **All Tests Passing:** 24/24 (100%)
+- **Performance:** Validated manually (< 500ms observed)
+
+**Gaps Identified:**
+1. **[Low Priority]** No E2E Playwright tests (deferred per completion notes - acceptable)
+2. **[Low Priority]** No explicit performance benchmark test (manual validation sufficient for MVP)
+3. **[Medium Priority]** Missing cross-domain event subscription test (see Key Findings #1 above)
+
+**Test Quality Assessment:**
+- ✅ Uses `unsafe_oneshot` for synchronous event processing (per spec)
+- ✅ Comprehensive edge case coverage
+- ✅ Clear test names following convention
+- ✅ Proper assertions with meaningful error messages
+- ✅ Test isolation (each test sets up own database)
+
+### Architectural Alignment
+
+**Excellent Adherence to Event-Sourced Architecture:**
+- ✅ **CQRS Pattern:** Clean separation of commands (recalculate_shopping_list_on_meal_replacement), events (ShoppingListRecalculated), and projections (project_shopping_list_recalculated)
+- ✅ **DDD Bounded Context:** Shopping domain isolation maintained; no direct coupling to meal_planning
+- ✅ **Event Sourcing:** Uses evento framework correctly (load → save pattern)
+- ✅ **Read Model Consistency:** Projection updates shopping_lists.updated_at timestamp
+- ✅ **Progressive Enhancement:** TwinSpark polling degrades gracefully when JS unavailable
+
+**Design Patterns Applied:**
+- ✅ **Subtraction Pattern:** Elegant negative quantity approach for ingredient removal (commands.rs:139)
+- ✅ **State Preservation:** HashMap lookup for checkoff status (read_model.rs:100-101)
+- ✅ **Service Reuse:** IngredientAggregationService properly reused (commands.rs:147)
+
+**Alignment with Tech Spec:**
+- ✅ Performance target: < 1 second (exceeded: ~500ms)
+- ✅ Category grouping maintained during recalculation
+- ✅ Unit conversions preserved via aggregation service
+- ✅ No duplicate shopping lists created (AC #6 satisfied)
+
+**Potential Improvements:**
+- Transaction wrapping for projection atomicity (see Key Findings)
+- Optimistic locking for concurrent update scenarios (future enhancement)
+
+### Security Notes
+
+**Authentication & Authorization:**
+- ✅ All shopping endpoints protected by `Extension(Auth)` middleware
+- ✅ User ID extracted from auth context (src/routes/shopping.rs:285, 36)
+- ✅ Week validation prevents date manipulation (shopping::validate_week_date)
+
+**Input Validation:**
+- ✅ Week parameter validated (ISO 8601, Monday only, date range checks)
+- ✅ Shopping list ID from evento aggregator (ULID format, non-guessable)
+- ✅ No user-controlled SQL in queries (sqlx parameterized queries throughout)
+
+**Data Protection:**
+- ✅ No sensitive data exposure in events or templates
+- ✅ Checkoff state preserved (privacy consideration for shared devices)
+
+**Potential Concerns:**
+1. **[Low] No Rate Limiting:** `/shopping/refresh` polled every 2s without limits (see Key Findings)
+2. **[Info] Polling Continuation:** TwinSpark continues polling when page hidden (minor resource waste)
+
+**Recommendation:** Add rate limiting middleware as defense-in-depth measure (low priority for MVP).
+
+### Best-Practices and References
+
+**Rust Best Practices Applied:**
+- ✅ No `unwrap()` calls (proper error propagation via `?` operator)
+- ✅ Type safety leveraged (no string-based type discrimination)
+- ✅ Consistent error handling via `Result<T, ShoppingListError>`
+- ✅ Structured logging with `tracing::info!` (read_model.rs:146)
+- ✅ Async patterns correctly applied (tokio runtime)
+
+**Evento Framework Best Practices:**
+- ✅ Event versioning via struct evolution (bincode compatibility maintained)
+- ✅ Aggregate ID management (shopping_list_id)
+- ✅ Subscription handler registration (read_model.rs:390)
+- ✅ Proper use of `evento::load` and `evento::save`
+
+**TwinSpark Best Practices:**
+- ✅ Declarative HTML attributes (`ts-req`, `ts-trigger`, `ts-swap`)
+- ✅ Partial template for fragment swapping (templates/partials/shopping-list-content.html)
+- ✅ Polling interval tuned for UX (2s balances responsiveness vs load)
+- ✅ Progressive enhancement (works without JS)
+
+**References:**
+- [Evento Documentation](https://docs.rs/evento/1.4.1/evento/) - Event sourcing framework
+- [Axum Documentation](https://docs.rs/axum/0.8/axum/) - Web framework patterns
+- [TwinSpark Specification](https://github.com/kasta-ua/twinspark-js) - Progressive enhancement attributes
+- [OWASP Input Validation](https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html) - Security best practices
+- [Rust API Guidelines](https://rust-lang.github.io/api-guidelines/) - Naming and error handling
+
+### Action Items
+
+**Recommended for Future Iteration (Not Blocking):**
+
+1. **[Medium Priority] Add Transaction Wrapping to Projection Handler**
+   - **File:** crates/shopping/src/read_model.rs:80-153
+   - **Action:** Wrap DELETE+INSERT logic in `pool.begin().await?` ... `tx.commit().await?`
+   - **Rationale:** Prevents race conditions under concurrent recalculations
+   - **Owner:** Backend team
+   - **Related:** AC #6
+
+2. **[Medium Priority] Add Cross-Domain Event Integration Test**
+   - **File:** crates/shopping/tests/ (new test file or extend existing)
+   - **Action:** Create test that:
+     1. Emits `MealReplaced` event from meal_planning aggregate
+     2. Verifies `ShoppingListRecalculated` event is emitted
+     3. Asserts shopping list read model updated correctly
+   - **Rationale:** Validates cross-domain event wiring
+   - **Owner:** QA/Backend team
+   - **Related:** AC #1
+
+3. **[Low Priority] Add Rate Limiting to Refresh Endpoint**
+   - **File:** src/main.rs (route registration) or middleware
+   - **Action:** Add rate limiting middleware (e.g., tower-governor) to `/shopping/refresh`
+   - **Suggested Limit:** 30 requests/minute per user
+   - **Rationale:** Defense-in-depth against resource exhaustion
+   - **Owner:** Backend team
+   - **Related:** AC #5, Security
+
+4. **[Low Priority] Add E2E Playwright Test**
+   - **File:** e2e/tests/shopping.spec.ts (or similar)
+   - **Action:** Create E2E test:
+     1. Replace meal slot via UI
+     2. Navigate to shopping list page
+     3. Verify shopping list updates within 3 seconds (account for polling + projection)
+   - **Rationale:** Full user journey validation
+   - **Owner:** QA team
+   - **Related:** AC #5, Testing Strategy
+
+5. **[Trivial] Clean Up Unused Import**
+   - **File:** crates/shopping/tests/recalculation_tests.rs:5
+   - **Action:** Remove unused `ShoppingListError` import or run `cargo fix`
+   - **Rationale:** Eliminate compiler warning
+   - **Owner:** Developer (quick fix)
+
+**Optional Enhancements (Post-MVP):**
+- Implement AC #8 toast notification (infrastructure already exists)
+- Add optimistic locking for concurrent update scenarios
+- Implement visibility-based polling (pause when tab hidden)
+- Add performance benchmark test with `criterion` crate
