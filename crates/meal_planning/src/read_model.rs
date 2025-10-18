@@ -553,15 +553,32 @@ pub async fn meal_replaced_handler<E: Executor>(
     // Begin transaction for atomic updates
     let mut tx = pool.begin().await?;
 
-    // Update meal assignment in read model
-    sqlx::query(
+    // Fetch recipe details for the new recipe to update prep_required and assignment_reasoning
+    let recipe: Option<(i64,)> = sqlx::query_as(
         r#"
-        UPDATE meal_assignments
-        SET recipe_id = ?1
-        WHERE meal_plan_id = ?2 AND date = ?3 AND meal_type = ?4
+        SELECT advance_prep_hours
+        FROM recipes
+        WHERE id = ?1
         "#,
     )
     .bind(&event.data.new_recipe_id)
+    .fetch_optional(&mut *tx)
+    .await?;
+
+    let prep_required = recipe.map(|(hours,)| hours > 0).unwrap_or(false);
+
+    // Update meal assignment in read model
+    // Note: assignment_reasoning is set to NULL when manually replaced (Story 3.6)
+    // Only AI-generated assignments have reasoning (Story 3.8)
+    sqlx::query(
+        r#"
+        UPDATE meal_assignments
+        SET recipe_id = ?1, prep_required = ?2, assignment_reasoning = NULL
+        WHERE meal_plan_id = ?3 AND date = ?4 AND meal_type = ?5
+        "#,
+    )
+    .bind(&event.data.new_recipe_id)
+    .bind(prep_required)
     .bind(&event.aggregator_id)
     .bind(&event.data.date)
     .bind(&event.data.meal_type)
