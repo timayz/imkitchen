@@ -1,0 +1,256 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>1</storyId>
+    <title>Generate Weekly Shopping List</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-17</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-4.1.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user with an active meal plan</asA>
+    <iWant>an automated shopping list for the week</iWant>
+    <soThat>I can efficiently shop for all required ingredients</soThat>
+    <tasks>
+      <task id="1" ac="1,2,3,8">Implement ShoppingList aggregate and domain logic</task>
+      <task id="2" ac="4,5">Implement ingredient aggregation service</task>
+      <task id="3" ac="6,7">Implement category-based grouping</task>
+      <task id="4" ac="9">Create database migrations and read models</task>
+      <task id="5" ac="1,2,10">Create HTTP routes and handlers</task>
+      <task id="6" ac="6,7,10">Create shopping list templates</task>
+      <task id="7" ac="1-10">Comprehensive testing</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="1">"Shopping List" button visible on dashboard and calendar pages</criterion>
+    <criterion id="2">Clicking button generates shopping list for current week</criterion>
+    <criterion id="3">System aggregates all ingredients from week's recipes</criterion>
+    <criterion id="4">Duplicate ingredients combined with quantities summed (e.g., "onions 2" + "onions 3" = "onions 5")</criterion>
+    <criterion id="5">Units normalized for aggregation (convert 1 cup to 240ml, combine with ml measurements)</criterion>
+    <criterion id="6">Ingredients grouped by category: Produce, Dairy, Meat, Pantry, Frozen, Bakery, Other</criterion>
+    <criterion id="7">Shopping list displays item count per category</criterion>
+    <criterion id="8">Generation completes within 2 seconds</criterion>
+    <criterion id="9">Shopping list persists and accessible for offline use</criterion>
+    <criterion id="10">Confirmation: "Shopping list generated for Week of {date}"</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-4.md</path>
+        <title>Epic 4 Technical Specification - Shopping and Preparation Orchestration</title>
+        <section>Story 1: Shopping List Generation</section>
+        <snippet>Authoritative acceptance criteria: Shopping list automatically generated for the week with ingredient aggregation, unit normalization, category grouping. Generation must complete within 2 seconds for meal plans with up to 14 recipes.</snippet>
+        <relevance>Primary technical specification for this story</relevance>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-4.md</path>
+        <title>Epic 4 Technical Specification</title>
+        <section>Domain Services - IngredientAggregationService</section>
+        <snippet>IngredientAggregationService: Stateless domain service for normalizing ingredient names, converting units, and summing quantities. Handles complex aggregation logic like "2 cups flour + 240ml milk".</snippet>
+        <relevance>Design specification for ingredient aggregation logic</relevance>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-4.md</path>
+        <title>Epic 4 Technical Specification</title>
+        <section>Domain Services - CategorizationService</section>
+        <snippet>CategorizationService: Maps ingredients to grocery store categories using predefined mappings. Categories: Produce, Dairy, Meat, Pantry, Frozen, Bakery, Other. Extensible for future AI-based categorization.</snippet>
+        <relevance>Design specification for category-based grouping</relevance>
+      </doc>
+      <doc>
+        <path>docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>3.2 Data Models and Relationships - shopping_lists table</section>
+        <snippet>shopping_lists table: (id, user_id, meal_plan_id, week_start_date, generated_at). shopping_list_items table: (id, shopping_list_id, ingredient_name, quantity, unit, category, is_collected). Indexes on user_id, meal_plan_id, week_start_date.</snippet>
+        <relevance>Database schema design for shopping lists</relevance>
+      </doc>
+      <doc>
+        <path>docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>11.1 Domain Crate Structure - Shopping domain</section>
+        <snippet>crates/shopping/: lib.rs, aggregate.rs (ShoppingListAggregate), commands.rs (GenerateShoppingList, MarkItemCollected), events.rs (ShoppingListGenerated, ItemCollected), aggregation.rs (ingredient aggregation logic), categorization.rs (category assignment), read_model.rs (shopping list query projections)</snippet>
+        <relevance>Expected source tree structure for shopping domain</relevance>
+      </doc>
+      <doc>
+        <path>docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>15. Testing Strategy</section>
+        <snippet>Unit tests: Domain aggregate logic (evento commands/events) in crates/*/tests/. Integration tests: HTTP routes, database projections in tests/*.rs. E2E tests: Playwright for critical user flows in e2e/tests/*.spec.ts. Coverage target: 80% via cargo tarpaulin. TDD enforced.</snippet>
+        <relevance>Testing standards and requirements</relevance>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic Breakdown</title>
+        <section>Story 4.1: Generate Weekly Shopping List</section>
+        <snippet>User story: As a user with an active meal plan, I want an automated shopping list for the week, so that I can efficiently shop for all required ingredients. 10 acceptance criteria covering generation, aggregation, categorization, performance.</snippet>
+        <relevance>Source epic requirements</relevance>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>FR-8: Shopping List Generation</section>
+        <snippet>System automatically generates weekly shopping lists from meal plan with ingredients grouped by category (produce, dairy, pantry, etc.) and quantities aggregated across multiple recipes.</snippet>
+        <relevance>Business requirement for shopping list feature</relevance>
+      </doc>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>crates/meal_planning/src/aggregate.rs</path>
+        <kind>aggregate</kind>
+        <symbol>MealPlanAggregate</symbol>
+        <lines>Full file</lines>
+        <reason>Reference implementation of evento aggregate pattern. Shopping aggregate should follow same structure: evento::aggregator macro, command handlers, event handlers.</reason>
+      </artifact>
+      <artifact>
+        <path>crates/meal_planning/src/events.rs</path>
+        <kind>events</kind>
+        <symbol>MealPlanGenerated, MealReplaced</symbol>
+        <lines>Full file</lines>
+        <reason>Event schema examples. ShoppingListGenerated event should follow same bincode serialization pattern with evento::AggregatorName derive.</reason>
+      </artifact>
+      <artifact>
+        <path>crates/meal_planning/src/read_model.rs</path>
+        <kind>read_model</kind>
+        <symbol>project_meal_plan, evento::handler macro</symbol>
+        <lines>Full file</lines>
+        <reason>Read model projection pattern. Shopping list projections should use same evento::handler pattern to subscribe to ShoppingListGenerated events and update shopping_lists/shopping_list_items tables.</reason>
+      </artifact>
+      <artifact>
+        <path>crates/recipe/src/aggregate.rs</path>
+        <kind>aggregate</kind>
+        <symbol>RecipeAggregate, Ingredient struct</symbol>
+        <lines>Ingredient struct definition</lines>
+        <reason>Ingredient data structure used in recipes. Shopping list aggregation must parse recipe ingredients from this structure (quantity, unit, name fields).</reason>
+      </artifact>
+      <artifact>
+        <path>src/routes/meal_plan.rs</path>
+        <kind>route</kind>
+        <symbol>GET /meal-plan routes</symbol>
+        <lines>Route handler examples</lines>
+        <reason>Reference for Axum route structure. Shopping list routes (GET /shopping, POST /shopping/generate) should follow same pattern: auth middleware, domain command invocation, template rendering.</reason>
+      </artifact>
+      <artifact>
+        <path>src/routes/dashboard.rs</path>
+        <kind>route</kind>
+        <symbol>dashboard handler</symbol>
+        <lines>Template rendering with Askama</lines>
+        <reason>Dashboard template will need "Shopping List" button added. Reference for how to pass data to Askama templates.</reason>
+      </artifact>
+      <artifact>
+        <path>templates/pages/dashboard.html</path>
+        <kind>template</kind>
+        <symbol>Dashboard template</symbol>
+        <lines>Full file</lines>
+        <reason>Add "Shopping List" navigation button to dashboard per AC #1.</reason>
+      </artifact>
+      <artifact>
+        <path>templates/pages/meal-calendar.html</path>
+        <kind>template</kind>
+        <symbol>Meal calendar template</symbol>
+        <lines>Full file</lines>
+        <reason>Add "Shopping List" navigation button to meal calendar per AC #1.</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <rust>
+        <dependency name="evento" version="1.4" features="sqlite-migrator">Event sourcing framework for aggregates, commands, events, subscriptions</dependency>
+        <dependency name="sqlx" version="0.8" features="runtime-tokio, sqlite, chrono, uuid">Database queries for read models</dependency>
+        <dependency name="axum" version="0.8" features="macros">HTTP server and routing</dependency>
+        <dependency name="askama" version="0.14">Type-safe HTML templating</dependency>
+        <dependency name="serde" version="1.0" features="derive">Serialization for events and DTOs</dependency>
+        <dependency name="chrono" version="0.4" features="serde">Date/time handling for week_start_date</dependency>
+        <dependency name="uuid" version="1.10" features="v4, serde">Unique IDs for aggregates</dependency>
+        <dependency name="bincode" version="2.0">Binary serialization for evento events</dependency>
+        <dependency name="thiserror" version="1.0">Custom error types</dependency>
+        <dependency name="anyhow" version="1.0">Error handling</dependency>
+      </rust>
+      <dev>
+        <dependency name="tokio" features="test-util">Async test runtime</dependency>
+        <dependency name="cargo-tarpaulin">Code coverage tool (80% target)</dependency>
+      </dev>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="arch-1">Event Sourcing: All state changes via evento events (ShoppingListGenerated). No direct database writes in command handlers. [Source: solution-architecture.md#Event Sourcing]</constraint>
+    <constraint id="arch-2">CQRS: Commands write events, queries read from materialized views (shopping_lists, shopping_list_items tables). [Source: solution-architecture.md#CQRS Pattern]</constraint>
+    <constraint id="arch-3">Domain Services: IngredientAggregationService and CategorizationService are stateless pure functions. No dependencies on infrastructure. [Source: solution-architecture.md#Domain Services]</constraint>
+    <constraint id="perf-1">Performance: Shopping list generation must complete within 2 seconds for meal plans with up to 14 recipes (140 ingredients typical). [Source: tech-spec-epic-4.md#Story 1 AC]</constraint>
+    <constraint id="test-1">TDD: Write tests first (red), implement (green), refactor (maintain green). 80% code coverage required. [Source: PRD.md#Non-Functional Requirements]</constraint>
+    <constraint id="test-2">Test Pyramid: Unit tests for domain logic (aggregation, categorization), integration tests for routes/projections, E2E tests for user flows. [Source: solution-architecture.md#15. Testing Strategy]</constraint>
+    <constraint id="db-1">Read Model Indexes: shopping_lists table must have indexes on user_id, meal_plan_id, week_start_date for fast queries. [Source: solution-architecture.md#3.2 Data Models]</constraint>
+    <constraint id="route-1">Thin Route Handlers: Routes orchestrate domain logic, no business rules in handlers. All logic in domain crates. [Source: solution-architecture.md#Best Practices]</constraint>
+    <constraint id="offline-1">Offline Access: Shopping lists must be cached by service worker for PWA offline functionality (Epic 5 dependency). [Source: story AC #9]</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>MealPlan::get_recipes</name>
+      <kind>query</kind>
+      <signature>async fn get_recipes(meal_plan_id: Uuid, executor: &amp;impl evento::Executor) -> Result&lt;Vec&lt;Recipe&gt;&gt;</signature>
+      <path>crates/meal_planning/src/read_model.rs</path>
+      <usage>Query all recipes assigned to a meal plan for ingredient aggregation</usage>
+    </interface>
+    <interface>
+      <name>Recipe::ingredients</name>
+      <kind>struct_field</kind>
+      <signature>pub ingredients: Vec&lt;Ingredient&gt; where Ingredient { quantity: f64, unit: String, name: String }</signature>
+      <path>crates/recipe/src/aggregate.rs</path>
+      <usage>Parse ingredient data from recipe aggregate for shopping list aggregation</usage>
+    </interface>
+    <interface>
+      <name>evento::create</name>
+      <kind>command</kind>
+      <signature>evento::create::&lt;ShoppingList&gt;().data(&amp;ShoppingListGenerated).commit(&amp;executor).await</signature>
+      <path>evento crate</path>
+      <usage>Create new ShoppingList aggregate and emit ShoppingListGenerated event</usage>
+    </interface>
+    <interface>
+      <name>evento::handler</name>
+      <kind>macro</kind>
+      <signature>#[evento::handler(ShoppingList)] async fn project_shopping_list(context: &amp;evento::Context, event: EventDetails&lt;ShoppingListGenerated&gt;)</signature>
+      <path>evento crate</path>
+      <usage>Subscribe to ShoppingListGenerated events and project to read models (shopping_lists, shopping_list_items tables)</usage>
+    </interface>
+    <interface>
+      <name>Askama Template</name>
+      <kind>template</kind>
+      <signature>#[derive(Template)] #[template(path = "pages/shopping-list.html")] struct ShoppingListTemplate { categories: Vec&lt;CategoryGroup&gt; }</signature>
+      <path>askama crate</path>
+      <usage>Render shopping list page with categorized ingredients</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      <p>Unit Tests: Test domain logic in isolation using crates/shopping/tests/. Focus on IngredientAggregationService (quantity summing, unit conversion) and CategorizationService (ingredient-to-category mapping). Use evento in-memory executor for aggregate tests.</p>
+      <p>Integration Tests: Test full command/event/projection flow in tests/shopping_tests.rs. Verify ShoppingListGenerated event triggers read model updates. Test route handlers with in-memory SQLite database. Measure performance (2-second target for 14 recipes).</p>
+      <p>E2E Tests: Playwright tests in e2e/tests/shopping.spec.ts. Test user journey: navigate to dashboard, click "Shopping List", verify categorized ingredients displayed. Verify multi-week access, item checkoff (Story 4.2+).</p>
+      <p>Coverage: Run cargo tarpaulin to verify 80% code coverage. Focus on domain service logic and command handlers.</p>
+      <p>TDD Workflow: Write failing test first (red), implement minimum code to pass (green), refactor for quality (maintain green).</p>
+    </standards>
+
+    <locations>
+      <location>crates/shopping/tests/*.rs</location>
+      <location>tests/shopping_tests.rs</location>
+      <location>e2e/tests/shopping.spec.ts</location>
+    </locations>
+
+    <ideas>
+      <test ac="3,4" type="unit">Test IngredientAggregationService with 3 recipes containing overlapping ingredients (e.g., "chicken 2lbs" + "chicken 1lb" = "chicken 3lbs")</test>
+      <test ac="5" type="unit">Test unit conversion: "milk 1 cup" + "milk 240ml" = "milk 2 cups" (480ml converted to cups)</test>
+      <test ac="5" type="unit">Test incompatible units kept separate: "onion 1 whole" + "onion 1 cup diced" = 2 separate line items</test>
+      <test ac="6" type="unit">Test CategorizationService with 50 common ingredients: tomato→Produce, milk→Dairy, chicken→Meat, flour→Pantry</test>
+      <test ac="3,8" type="integration">Test shopping list generation from meal plan with 14 recipes (7 days × 2 meals). Verify all 140 ingredients aggregated and generation completes <2 seconds</test>
+      <test ac="1,2" type="integration">Test POST /shopping/generate handler: invoke command, verify ShoppingListGenerated event emitted, read model updated</test>
+      <test ac="9" type="integration">Test shopping list persistence: generate list, query from database, verify all items present</test>
+      <test ac="1,6,7" type="e2e">Navigate to dashboard, click "Shopping List" button, verify redirect to /shopping with categorized ingredients (Produce, Dairy, Meat sections with item counts)</test>
+      <test ac="10" type="e2e">Generate shopping list, verify confirmation message displays "Shopping list generated for Week of {date}"</test>
+    </ideas>
+  </tests>
+</story-context>
