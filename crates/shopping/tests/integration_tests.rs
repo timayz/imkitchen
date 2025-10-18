@@ -282,15 +282,144 @@ async fn test_generate_shopping_list_categorization() {
     // Assertions
     assert_eq!(shopping_list.items.len(), 7);
 
-    // Check categories
+    // Check categories using group_by_category (returns Vec, not HashMap)
     let categories = shopping_list.group_by_category();
-    assert!(categories.contains_key("Produce"));
-    assert!(categories.contains_key("Dairy"));
-    assert!(categories.contains_key("Meat"));
-    assert!(categories.contains_key("Pantry"));
-    assert!(categories.contains_key("Frozen"));
-    assert!(categories.contains_key("Bakery"));
-    assert!(categories.contains_key("Other"));
+
+    // Verify all 7 categories are present
+    let category_names: Vec<&str> = categories.iter().map(|(name, _)| name.as_str()).collect();
+    assert!(category_names.contains(&"Produce"));
+    assert!(category_names.contains(&"Dairy"));
+    assert!(category_names.contains(&"Meat"));
+    assert!(category_names.contains(&"Pantry"));
+    assert!(category_names.contains(&"Frozen"));
+    assert!(category_names.contains(&"Bakery"));
+    assert!(category_names.contains(&"Other"));
+}
+
+#[tokio::test]
+async fn test_category_ordering_and_alphabetical_sorting() {
+    let (pool, executor) = setup_test_db().await;
+
+    // Prepare test ingredients with intentional disorder
+    let ingredients = vec![
+        // Bakery items (should be category 5)
+        ("bread".to_string(), 1.0, "loaf".to_string()),
+        ("bagels".to_string(), 6.0, "whole".to_string()),
+        // Produce items (should be category 0 - first)
+        ("zucchini".to_string(), 2.0, "whole".to_string()),
+        ("tomato".to_string(), 3.0, "whole".to_string()),
+        ("apple".to_string(), 5.0, "whole".to_string()),
+        // Meat items (should be category 2)
+        ("salmon".to_string(), 1.0, "lb".to_string()),
+        ("chicken".to_string(), 2.0, "lb".to_string()),
+        // Dairy items (should be category 1)
+        ("yogurt".to_string(), 1.0, "cup".to_string()),
+        ("milk".to_string(), 2.0, "cups".to_string()),
+    ];
+
+    let command = GenerateShoppingListCommand {
+        user_id: "user-1".to_string(),
+        meal_plan_id: "meal-plan-1".to_string(),
+        week_start_date: "2025-10-13".to_string(),
+        ingredients,
+    };
+
+    let shopping_list_id = generate_shopping_list(command, &executor)
+        .await
+        .expect("Failed to generate shopping list");
+
+    process_projections(&pool, &executor).await;
+
+    let shopping_list = shopping::read_model::get_shopping_list(&shopping_list_id, &pool)
+        .await
+        .expect("Failed to query shopping list")
+        .expect("Shopping list not found");
+
+    // Group by category (returns sorted Vec)
+    let categories = shopping_list.group_by_category();
+
+    // AC #7: Verify category order matches grocery store layout
+    // Order: Produce(0), Dairy(1), Meat(2), Frozen(3), Pantry(4), Bakery(5), Other(6)
+    assert_eq!(
+        categories[0].0, "Produce",
+        "First category should be Produce"
+    );
+    assert_eq!(categories[1].0, "Dairy", "Second category should be Dairy");
+    assert_eq!(categories[2].0, "Meat", "Third category should be Meat");
+    assert_eq!(
+        categories[3].0, "Bakery",
+        "Fourth category should be Bakery"
+    );
+
+    // AC #4: Verify items within each category are sorted alphabetically
+    let produce_items = &categories[0].1;
+    assert_eq!(produce_items.len(), 3);
+    assert_eq!(produce_items[0].ingredient_name, "apple");
+    assert_eq!(produce_items[1].ingredient_name, "tomato");
+    assert_eq!(produce_items[2].ingredient_name, "zucchini");
+
+    let dairy_items = &categories[1].1;
+    assert_eq!(dairy_items.len(), 2);
+    assert_eq!(dairy_items[0].ingredient_name, "milk");
+    assert_eq!(dairy_items[1].ingredient_name, "yogurt");
+
+    let meat_items = &categories[2].1;
+    assert_eq!(meat_items.len(), 2);
+    assert_eq!(meat_items[0].ingredient_name, "chicken");
+    assert_eq!(meat_items[1].ingredient_name, "salmon");
+
+    let bakery_items = &categories[3].1;
+    assert_eq!(bakery_items.len(), 2);
+    assert_eq!(bakery_items[0].ingredient_name, "bagels");
+    assert_eq!(bakery_items[1].ingredient_name, "bread");
+}
+
+#[tokio::test]
+async fn test_empty_categories_filtered() {
+    let (pool, executor) = setup_test_db().await;
+
+    // Prepare test ingredients from only Produce category
+    let ingredients = vec![
+        ("tomato".to_string(), 2.0, "whole".to_string()),
+        ("onion".to_string(), 1.0, "whole".to_string()),
+        ("garlic".to_string(), 3.0, "cloves".to_string()),
+    ];
+
+    let command = GenerateShoppingListCommand {
+        user_id: "user-1".to_string(),
+        meal_plan_id: "meal-plan-1".to_string(),
+        week_start_date: "2025-10-13".to_string(),
+        ingredients,
+    };
+
+    let shopping_list_id = generate_shopping_list(command, &executor)
+        .await
+        .expect("Failed to generate shopping list");
+
+    process_projections(&pool, &executor).await;
+
+    let shopping_list = shopping::read_model::get_shopping_list(&shopping_list_id, &pool)
+        .await
+        .expect("Failed to query shopping list")
+        .expect("Shopping list not found");
+
+    // Group by category
+    let categories = shopping_list.group_by_category();
+
+    // AC #8: Empty categories should be hidden from view
+    // Only Produce category should be present (all items are produce)
+    assert_eq!(categories.len(), 1, "Only one category should be present");
+    assert_eq!(categories[0].0, "Produce");
+    assert_eq!(categories[0].1.len(), 3);
+
+    // Verify no Dairy, Meat, Frozen, Pantry, Bakery, or Other categories
+    let category_names: Vec<&str> = categories.iter().map(|(name, _)| name.as_str()).collect();
+    assert!(!category_names.contains(&"Dairy"));
+    assert!(!category_names.contains(&"Meat"));
+    assert!(!category_names.contains(&"Frozen"));
+    assert!(!category_names.contains(&"Pantry"));
+    assert!(!category_names.contains(&"Bakery"));
+    assert!(!category_names.contains(&"Other"));
 }
 
 #[tokio::test]

@@ -177,18 +177,54 @@ pub struct ShoppingListItemRow {
 impl ShoppingListData {
     /// Group items by category for display
     ///
-    /// Returns a map of category name -> items in that category
-    pub fn group_by_category(
-        &self,
-    ) -> std::collections::HashMap<String, Vec<&ShoppingListItemRow>> {
-        let mut groups: std::collections::HashMap<String, Vec<&ShoppingListItemRow>> =
-            std::collections::HashMap::new();
+    /// Returns items grouped by category in a sorted vector where:
+    /// - Categories are ordered by grocery store layout (Produce first, Other last)
+    /// - Items within each category are sorted alphabetically by ingredient_name
+    /// - Empty categories are excluded from the result
+    ///
+    /// Returns: Vec<(category_name, Vec<ShoppingListItemRow>)>
+    pub fn group_by_category(&self) -> Vec<(String, Vec<&ShoppingListItemRow>)> {
+        use std::collections::HashMap;
 
+        // Group items by category
+        let mut groups: HashMap<String, Vec<&ShoppingListItemRow>> = HashMap::new();
         for item in &self.items {
             groups.entry(item.category.clone()).or_default().push(item);
         }
 
-        groups
+        // Convert to vector and sort by category order
+        let mut result: Vec<(String, Vec<&ShoppingListItemRow>)> = groups.into_iter().collect();
+
+        // Sort categories by grocery store layout order
+        result.sort_by(|a, b| {
+            let order_a = Self::category_order(&a.0);
+            let order_b = Self::category_order(&b.0);
+            order_a.cmp(&order_b)
+        });
+
+        // Sort items within each category alphabetically
+        for (_, items) in &mut result {
+            items.sort_by(|a, b| a.ingredient_name.cmp(&b.ingredient_name));
+        }
+
+        result
+    }
+
+    /// Get the sort order for a category (lower = displayed first)
+    ///
+    /// Order matches typical grocery store layout:
+    /// Produce(0), Dairy(1), Meat(2), Frozen(3), Pantry(4), Bakery(5), Other(6)
+    fn category_order(category: &str) -> usize {
+        match category {
+            "Produce" => 0,
+            "Dairy" => 1,
+            "Meat" => 2,
+            "Frozen" => 3,
+            "Pantry" => 4,
+            "Bakery" => 5,
+            "Other" => 6,
+            _ => 999, // Unknown categories go to the end
+        }
     }
 }
 

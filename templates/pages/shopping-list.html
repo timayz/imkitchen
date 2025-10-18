@@ -22,6 +22,30 @@
     border-left-width: 4px;
 }
 
+/* Details/Summary styling for collapsible categories */
+details {
+    border-radius: 0.5rem;
+}
+
+details summary {
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+}
+
+details summary::-webkit-details-marker {
+    display: none;
+}
+
+/* Chevron icon rotation animation */
+details summary .chevron {
+    transition: transform 0.2s ease;
+}
+
+details[open] summary .chevron {
+    transform: rotate(180deg);
+}
+
 /* Print styles */
 @media print {
     .no-print {
@@ -62,39 +86,46 @@
         </div>
 
         {% if has_items %}
-        <!-- Shopping List Categories -->
-        <div class="space-y-6">
+        <!-- Shopping List Categories (Collapsible with Details/Summary) -->
+        <div class="space-y-4">
             {% for category in categories %}
-            <section class="category-card bg-white rounded-lg shadow-md p-6 border-l-4 {% match category.name.as_str() %}{% when "Produce" %}border-green-500{% when "Dairy" %}border-blue-500{% when "Meat" %}border-red-500{% when "Bakery" %}border-yellow-500{% when "Pantry" %}border-amber-600{% when "Frozen" %}border-cyan-500{% else %}border-gray-500{% endmatch %}">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-xl font-bold text-gray-900">{{ category.name }}</h2>
+            <details open class="category-card bg-white rounded-lg shadow-md border-l-4 {% match category.name.as_str() %}{% when "Produce" %}border-green-500{% when "Dairy" %}border-blue-500{% when "Meat" %}border-red-500{% when "Bakery" %}border-yellow-500{% when "Pantry" %}border-amber-600{% when "Frozen" %}border-cyan-500{% else %}border-gray-500{% endmatch %}">
+                <summary class="p-6 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <svg class="chevron w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                        <h2 class="text-xl font-bold text-gray-900">{{ category.name }}</h2>
+                    </div>
                     <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm font-medium">
                         {{ category.item_count }} items
                     </span>
-                </div>
+                </summary>
 
-                <ul class="space-y-3">
-                    {% for item in category.items %}
-                    <li class="flex items-center gap-3 p-2 hover:bg-gray-50 rounded transition-colors">
-                        <input
-                            type="checkbox"
-                            id="item-{{ item.id }}"
-                            class="shopping-checkbox"
-                            {% if item.is_collected %}checked{% endif %}
-                            disabled
-                        >
-                        <label for="item-{{ item.id }}" class="flex-1 cursor-pointer {% if item.is_collected %}collected{% endif %}">
-                            <span class="font-medium text-gray-900">{{ item.ingredient_name }}</span>
-                            <span class="text-gray-600 ml-2">
-                                {% if item.quantity != 0.0 %}
-                                    {{ item.quantity }} {{ item.unit }}
-                                {% endif %}
-                            </span>
-                        </label>
-                    </li>
-                    {% endfor %}
-                </ul>
-            </section>
+                <div class="px-6 pb-6">
+                    <ul class="space-y-3">
+                        {% for item in category.items %}
+                        <li class="flex items-center gap-3 p-2 hover:bg-gray-50 rounded transition-colors">
+                            <input
+                                type="checkbox"
+                                id="item-{{ item.id }}"
+                                class="shopping-checkbox"
+                                {% if item.is_collected %}checked{% endif %}
+                                disabled
+                            >
+                            <label for="item-{{ item.id }}" class="flex-1 cursor-pointer {% if item.is_collected %}collected{% endif %}">
+                                <span class="font-medium text-gray-900">{{ item.ingredient_name }}</span>
+                                <span class="text-gray-600 ml-2">
+                                    {% if item.quantity != 0.0 %}
+                                        {{ item.quantity }} {{ item.unit }}
+                                    {% endif %}
+                                </span>
+                            </label>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </details>
             {% endfor %}
         </div>
 
