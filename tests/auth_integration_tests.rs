@@ -10,8 +10,8 @@ mod common;
 
 #[tokio::test]
 async fn test_register_with_valid_inputs_creates_user() {
-    let pool = common::setup_test_db().await;
-    let test_app = common::create_test_app(pool.clone()).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool.clone(), _executor)).await;
 
     let response = test_app
         .router
@@ -52,8 +52,8 @@ async fn test_register_with_valid_inputs_creates_user() {
 
 #[tokio::test]
 async fn test_register_with_duplicate_email_returns_error() {
-    let pool = common::setup_test_db().await;
-    let test_app = common::create_test_app(pool.clone()).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool.clone(), _executor)).await;
 
     // First registration
     test_app
@@ -102,8 +102,8 @@ async fn test_register_with_duplicate_email_returns_error() {
 
 #[tokio::test]
 async fn test_register_with_short_password_returns_error() {
-    let pool = common::setup_test_db().await;
-    let test_app = common::create_test_app(pool).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool, _executor)).await;
 
     let response = test_app
         .router
@@ -131,8 +131,8 @@ async fn test_register_with_short_password_returns_error() {
 
 #[tokio::test]
 async fn test_register_with_invalid_email_returns_error() {
-    let pool = common::setup_test_db().await;
-    let test_app = common::create_test_app(pool).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool, _executor)).await;
 
     let response = test_app
         .router
@@ -160,8 +160,8 @@ async fn test_register_with_invalid_email_returns_error() {
 
 #[tokio::test]
 async fn test_successful_registration_sets_jwt_cookie() {
-    let pool = common::setup_test_db().await;
-    let test_app = common::create_test_app(pool).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool, _executor)).await;
 
     let response = test_app
         .router
@@ -194,8 +194,8 @@ async fn test_successful_registration_sets_jwt_cookie() {
 
 #[tokio::test]
 async fn test_successful_registration_redirects_to_dashboard() {
-    let pool = common::setup_test_db().await;
-    let test_app = common::create_test_app(pool).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool, _executor)).await;
 
     let response = test_app
         .router
@@ -228,8 +228,8 @@ async fn test_successful_registration_redirects_to_dashboard() {
 
 #[tokio::test]
 async fn test_get_login_renders_form() {
-    let pool = common::setup_test_db().await;
-    let test_app = common::create_test_app(pool).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool, _executor)).await;
 
     let response = test_app
         .router
@@ -257,8 +257,8 @@ async fn test_get_login_renders_form() {
 
 #[tokio::test]
 async fn test_login_with_valid_credentials_succeeds() {
-    let pool = common::setup_test_db().await;
-    let test_app = common::create_test_app(pool).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool, _executor)).await;
 
     // Pre-create user via registration
     test_app
@@ -315,8 +315,8 @@ async fn test_login_with_valid_credentials_succeeds() {
 
 #[tokio::test]
 async fn test_login_with_invalid_email_returns_generic_error() {
-    let pool = common::setup_test_db().await;
-    let test_app = common::create_test_app(pool).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool, _executor)).await;
 
     // Attempt login with non-existent email (AC: 4)
     let response = test_app
@@ -350,8 +350,8 @@ async fn test_login_with_invalid_email_returns_generic_error() {
 
 #[tokio::test]
 async fn test_login_with_incorrect_password_returns_generic_error() {
-    let pool = common::setup_test_db().await;
-    let test_app = common::create_test_app(pool).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool, _executor)).await;
 
     // Pre-create user
     test_app
@@ -402,8 +402,8 @@ async fn test_login_with_incorrect_password_returns_generic_error() {
 
 #[tokio::test]
 async fn test_login_jwt_includes_correct_claims() {
-    let pool = common::setup_test_db().await;
-    let test_app = common::create_test_app(pool).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool, _executor)).await;
 
     // Pre-create user
     test_app
@@ -468,8 +468,8 @@ async fn test_login_jwt_includes_correct_claims() {
 
 #[tokio::test]
 async fn test_logout_clears_cookie_and_redirects() {
-    let pool = common::setup_test_db().await;
-    let test_app = common::create_test_app(pool).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool, _executor)).await;
 
     // Pre-create and login user
     test_app
@@ -554,8 +554,8 @@ async fn test_logout_clears_cookie_and_redirects() {
 
 #[tokio::test]
 async fn test_logout_confirmation_displays_on_login_page() {
-    let pool = common::setup_test_db().await;
-    let test_app = common::create_test_app(pool).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool, _executor)).await;
 
     // GET /login?logout=success (AC: 7)
     let response = test_app
@@ -583,8 +583,8 @@ async fn test_logout_confirmation_displays_on_login_page() {
 
 #[tokio::test]
 async fn test_accessing_protected_route_after_logout_redirects_to_login() {
-    let pool = common::setup_test_db().await;
-    let test_app = common::create_test_app(pool).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool, _executor)).await;
 
     // Pre-create and login user
     test_app

@@ -52,8 +52,8 @@ async fn create_test_user(pool: &sqlx::SqlitePool, executor: &evento::Sqlite) ->
 
 #[tokio::test]
 async fn test_get_subscription_renders_free_tier_page() {
-    let pool = common::setup_test_db().await;
-    let test_app = common::create_test_app(pool.clone()).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool.clone(), _executor)).await;
 
     let (_user_id, token) = create_test_user(&pool, &test_app.evento_executor).await;
 
@@ -86,8 +86,8 @@ async fn test_get_subscription_renders_free_tier_page() {
 
 #[tokio::test]
 async fn test_get_subscription_renders_premium_tier_page() {
-    let pool = common::setup_test_db().await;
-    let test_app = common::create_test_app(pool.clone()).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool.clone(), _executor)).await;
 
     let (user_id, _token) = create_test_user(&pool, &test_app.evento_executor).await;
 
@@ -142,8 +142,8 @@ async fn test_get_subscription_renders_premium_tier_page() {
 
 #[tokio::test]
 async fn test_post_subscription_upgrade_requires_authentication() {
-    let pool = common::setup_test_db().await;
-    let test_app = common::create_test_app(pool.clone()).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool.clone(), _executor)).await;
 
     // POST /subscription/upgrade without auth cookie
     let response = test_app
@@ -167,8 +167,8 @@ async fn test_post_subscription_upgrade_requires_authentication() {
 
 #[tokio::test]
 async fn test_validate_recipe_creation_free_tier_enforces_limit() {
-    let pool = common::setup_test_db().await;
-    let test_app = common::create_test_app(pool.clone()).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool.clone(), _executor)).await;
 
     let (user_id, _token) = create_test_user(&pool, &test_app.evento_executor).await;
 
@@ -193,8 +193,8 @@ async fn test_validate_recipe_creation_free_tier_enforces_limit() {
 
 #[tokio::test]
 async fn test_validate_recipe_creation_premium_tier_bypasses_limit() {
-    let pool = common::setup_test_db().await;
-    let test_app = common::create_test_app(pool.clone()).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool.clone(), _executor)).await;
 
     let (user_id, _token) = create_test_user(&pool, &test_app.evento_executor).await;
 
@@ -228,8 +228,8 @@ async fn test_validate_recipe_creation_premium_tier_bypasses_limit() {
 
 #[tokio::test]
 async fn test_validate_recipe_creation_free_tier_under_limit_succeeds() {
-    let pool = common::setup_test_db().await;
-    let test_app = common::create_test_app(pool.clone()).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool.clone(), _executor)).await;
 
     let (user_id, _token) = create_test_user(&pool, &test_app.evento_executor).await;
 
@@ -248,8 +248,8 @@ async fn test_validate_recipe_creation_free_tier_under_limit_succeeds() {
 
 #[tokio::test]
 async fn test_upgrade_subscription_command_creates_event() {
-    let pool = common::setup_test_db().await;
-    let test_app = common::create_test_app(pool.clone()).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool.clone(), _executor)).await;
 
     let (user_id, _token) = create_test_user(&pool, &test_app.evento_executor).await;
 
@@ -289,8 +289,8 @@ async fn test_upgrade_subscription_command_creates_event() {
 
 #[tokio::test]
 async fn test_downgrade_subscription_removes_stripe_metadata() {
-    let pool = common::setup_test_db().await;
-    let test_app = common::create_test_app(pool.clone()).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool.clone(), _executor)).await;
 
     let (user_id, _token) = create_test_user(&pool, &test_app.evento_executor).await;
 

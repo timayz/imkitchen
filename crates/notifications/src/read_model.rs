@@ -253,7 +253,7 @@ pub async fn get_user_pending_notifications(
 ) -> anyhow::Result<Vec<UserNotification>> {
     let notifications = sqlx::query_as::<_, UserNotification>(
         r#"
-        SELECT id, user_id, recipe_id, meal_date, scheduled_time, reminder_type, prep_hours, prep_task, status
+        SELECT id, user_id, recipe_id, meal_date, scheduled_time, reminder_type, prep_hours, prep_task, status, message_body
         FROM notifications
         WHERE user_id = ? AND status IN ('pending', 'sent')
         ORDER BY scheduled_time ASC
@@ -273,7 +273,7 @@ pub async fn get_notification_by_id(
 ) -> anyhow::Result<Option<UserNotification>> {
     let notification = sqlx::query_as::<_, UserNotification>(
         r#"
-        SELECT id, user_id, recipe_id, meal_date, scheduled_time, reminder_type, prep_hours, prep_task, status
+        SELECT id, user_id, recipe_id, meal_date, scheduled_time, reminder_type, prep_hours, prep_task, status, message_body
         FROM notifications
         WHERE id = ?
         "#,
@@ -321,6 +321,7 @@ pub struct UserNotification {
     pub prep_hours: i32,
     pub prep_task: Option<String>,
     pub status: String,
+    pub message_body: Option<String>,
 }
 
 /// Create subscription builder for all notification projections
