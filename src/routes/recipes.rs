@@ -71,12 +71,12 @@ pub struct RecipeDetailTemplate {
     pub user: Option<Auth>,
     pub all_collections: Vec<CollectionReadModel>,
     pub recipe_collections: Vec<CollectionReadModel>,
-    pub is_from_calendar: bool,        // Story 3.5 AC-1, AC-5
-    pub kitchen_mode: bool,            // Story 3.5 AC-6
-    pub meal_plan_id: Option<String>,  // Story 3.5 AC-4 (Replace button context)
-    pub assignment_id: Option<String>, // Story 3.5 AC-4 (Replace button context)
+    pub is_from_calendar: bool,          // Story 3.5 AC-1, AC-5
+    pub kitchen_mode: bool,              // Story 3.5 AC-6
+    pub meal_plan_id: Option<String>,    // Story 3.5 AC-4 (Replace button context)
+    pub assignment_id: Option<String>,   // Story 3.5 AC-4 (Replace button context)
     pub notification_id: Option<String>, // Story 4.6 AC-7 (Deep link from notification)
-    pub highlight_prep: bool,          // Story 4.6 AC-7 (Highlight prep instructions)
+    pub highlight_prep: bool,            // Story 4.6 AC-7 (Highlight prep instructions)
 }
 
 /// Recipe detail view model for template

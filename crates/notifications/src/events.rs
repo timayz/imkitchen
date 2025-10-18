@@ -8,14 +8,14 @@ use serde::{Deserialize, Serialize};
 /// Uses String types for bincode compatibility (UUID and timestamps serialized as strings).
 #[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
 pub struct ReminderScheduled {
-    pub notification_id: String,     // UUID of the notification
-    pub user_id: String,             // Owner of the reminder
-    pub recipe_id: String,           // Recipe requiring advance prep
-    pub meal_date: String,           // ISO 8601 date of the meal
-    pub scheduled_time: String,      // RFC3339 formatted timestamp when reminder should fire
-    pub reminder_type: String,       // "advance_prep", "morning", "day_of"
-    pub prep_hours: i32,             // Hours of advance prep required (from recipe)
-    pub prep_task: Option<String>,   // Specific task: "marinate", "rise", "chill", etc.
+    pub notification_id: String,   // UUID of the notification
+    pub user_id: String,           // Owner of the reminder
+    pub recipe_id: String,         // Recipe requiring advance prep
+    pub meal_date: String,         // ISO 8601 date of the meal
+    pub scheduled_time: String,    // RFC3339 formatted timestamp when reminder should fire
+    pub reminder_type: String,     // "advance_prep", "morning", "day_of"
+    pub prep_hours: i32,           // Hours of advance prep required (from recipe)
+    pub prep_task: Option<String>, // Specific task: "marinate", "rise", "chill", etc.
 }
 
 /// ReminderSent event emitted when a notification is delivered to the user
@@ -43,8 +43,8 @@ pub struct ReminderDismissed {
 /// User action to delay the reminder by a specified duration (1h, 2h, 4h).
 #[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
 pub struct ReminderSnoozed {
-    pub notification_id: String, // UUID of the notification
-    pub snoozed_until: String,   // RFC3339 formatted timestamp when reminder should refire
+    pub notification_id: String,    // UUID of the notification
+    pub snoozed_until: String,      // RFC3339 formatted timestamp when reminder should refire
     pub snooze_duration_hours: i32, // Duration of snooze (1, 2, or 4)
 }
 

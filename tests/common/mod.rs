@@ -77,6 +77,7 @@ pub async fn create_test_app(pool: SqlitePool) -> TestApp {
         stripe_secret_key: "sk_test_mock_key".to_string(),
         stripe_webhook_secret: "whsec_test_mock_secret".to_string(),
         stripe_price_id: "price_test_mock_id".to_string(),
+        vapid_public_key: "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nqm50g".to_string(),
         generation_locks: std::sync::Arc::new(tokio::sync::Mutex::new(
             std::collections::HashMap::new(),
         )),

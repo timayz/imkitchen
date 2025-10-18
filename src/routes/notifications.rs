@@ -5,7 +5,10 @@ use axum::{
     Extension, Form,
 };
 use notifications::{
-    commands::{dismiss_reminder, snooze_reminder, subscribe_to_push, DismissReminderCommand, SnoozeReminderCommand, SubscribeToPushCommand},
+    commands::{
+        dismiss_reminder, snooze_reminder, subscribe_to_push, DismissReminderCommand,
+        SnoozeReminderCommand, SubscribeToPushCommand,
+    },
     read_model::{get_notification_by_id, get_user_pending_notifications, UserNotification},
 };
 use serde::Deserialize;

@@ -6,7 +6,6 @@ use axum::{
 };
 use clap::{Parser, Subcommand};
 use evento::prelude::*;
-use std::sync::Arc;
 use imkitchen::middleware::auth_middleware;
 use imkitchen::routes::{
     check_shopping_item, dashboard_handler, dismiss_notification, generate_shopping_list_handler,
@@ -30,6 +29,7 @@ use notifications::{meal_plan_subscriptions, notification_projections};
 use recipe::{collection_projection, recipe_projection};
 use shopping::shopping_projection;
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions};
+use std::sync::Arc;
 use tower_http::trace::TraceLayer;
 use user::user_projection;
 
@@ -259,7 +259,10 @@ async fn serve_command(
         // Notification routes
         .route("/notifications", get(notifications_page))
         .route("/api/notifications", get(list_notifications))
-        .route("/api/notifications/{id}/dismiss", post(dismiss_notification))
+        .route(
+            "/api/notifications/{id}/dismiss",
+            post(dismiss_notification),
+        )
         .route("/api/notifications/{id}/snooze", post(snooze_notification))
         .route("/api/notifications/subscribe", post(subscribe_push))
         .route_layer(axum_middleware::from_fn_with_state(
@@ -302,16 +305,17 @@ async fn serve_command(
     tracing::info!("Starting notification background worker...");
 
     // Convert VAPID config to WebPushConfig if keys are provided
-    let web_push_config = if !config.vapid.public_key.is_empty() && !config.vapid.private_key.is_empty() {
-        Some(notifications::WebPushConfig {
-            vapid_public_key: config.vapid.public_key.clone(),
-            vapid_private_key: config.vapid.private_key.clone(),
-            subject: config.vapid.subject.clone(),
-        })
-    } else {
-        tracing::warn!("VAPID keys not configured - push notifications will be disabled");
-        None
-    };
+    let web_push_config =
+        if !config.vapid.public_key.is_empty() && !config.vapid.private_key.is_empty() {
+            Some(notifications::WebPushConfig {
+                vapid_public_key: config.vapid.public_key.clone(),
+                vapid_private_key: config.vapid.private_key.clone(),
+                subject: config.vapid.subject.clone(),
+            })
+        } else {
+            tracing::warn!("VAPID keys not configured - push notifications will be disabled");
+            None
+        };
 
     let notification_worker = Arc::new(notifications::NotificationWorker::new(
         worker_pool,

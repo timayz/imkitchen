@@ -11,11 +11,11 @@ use crate::events::{
 pub struct ScheduleReminderCommand {
     pub user_id: String,
     pub recipe_id: String,
-    pub meal_date: String,           // ISO 8601 date
-    pub scheduled_time: String,      // RFC3339 timestamp
-    pub reminder_type: String,       // "advance_prep", "morning", "day_of"
-    pub prep_hours: i32,             // Hours of advance prep required
-    pub prep_task: Option<String>,   // "marinate", "rise", "chill", etc.
+    pub meal_date: String,         // ISO 8601 date
+    pub scheduled_time: String,    // RFC3339 timestamp
+    pub reminder_type: String,     // "advance_prep", "morning", "day_of"
+    pub prep_hours: i32,           // Hours of advance prep required
+    pub prep_task: Option<String>, // "marinate", "rise", "chill", etc.
 }
 
 /// Command to send a reminder (triggered by background worker)
@@ -223,14 +223,14 @@ pub async fn subscribe_to_push<E: evento::Executor>(
     // Security: Validate endpoint URL format (must be HTTPS)
     if !cmd.endpoint.starts_with("https://") {
         return Err(NotificationError::InvalidInput(
-            "Push endpoint must use HTTPS protocol".to_string()
+            "Push endpoint must use HTTPS protocol".to_string(),
         ));
     }
 
     // Security: Validate endpoint is a valid URL
     if url::Url::parse(&cmd.endpoint).is_err() {
         return Err(NotificationError::InvalidInput(
-            "Invalid push endpoint URL format".to_string()
+            "Invalid push endpoint URL format".to_string(),
         ));
     }
 
@@ -240,7 +240,7 @@ pub async fn subscribe_to_push<E: evento::Executor>(
         .is_err()
     {
         return Err(NotificationError::InvalidInput(
-            "Invalid p256dh_key: must be valid base64".to_string()
+            "Invalid p256dh_key: must be valid base64".to_string(),
         ));
     }
 
@@ -250,7 +250,7 @@ pub async fn subscribe_to_push<E: evento::Executor>(
         .is_err()
     {
         return Err(NotificationError::InvalidInput(
-            "Invalid auth_key: must be valid base64".to_string()
+            "Invalid auth_key: must be valid base64".to_string(),
         ));
     }
 

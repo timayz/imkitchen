@@ -2284,7 +2284,6 @@ dependencies = [
  "bincode",
  "chrono",
  "evento",
- "isahc",
  "meal_planning",
  "serde",
  "serde_json",

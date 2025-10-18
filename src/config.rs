@@ -266,6 +266,7 @@ mod tests {
             email: EmailConfig::default(),
             observability: ObservabilityConfig::default(),
             stripe: StripeConfig::default(),
+            vapid: VapidConfig::default(),
         };
 
         assert!(config.validate().is_err());

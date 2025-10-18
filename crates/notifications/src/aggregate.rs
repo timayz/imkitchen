@@ -19,10 +19,10 @@ pub struct NotificationAggregate {
     pub recipe_id: String,
 
     // Scheduling metadata
-    pub meal_date: String,        // ISO 8601 date
-    pub scheduled_time: String,   // RFC3339 timestamp when reminder should fire
-    pub reminder_type: String,    // "advance_prep", "morning", "day_of"
-    pub prep_hours: i32,          // Hours of advance prep required
+    pub meal_date: String,         // ISO 8601 date
+    pub scheduled_time: String,    // RFC3339 timestamp when reminder should fire
+    pub reminder_type: String,     // "advance_prep", "morning", "day_of"
+    pub prep_hours: i32,           // Hours of advance prep required
     pub prep_task: Option<String>, // "marinate", "rise", "chill", etc.
 
     // Delivery status

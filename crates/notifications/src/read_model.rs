@@ -230,7 +230,6 @@ pub async fn get_push_subscription_by_user(
     pool: &sqlx::SqlitePool,
     user_id: &str,
 ) -> anyhow::Result<Option<PushSubscription>> {
-
     let subscription = sqlx::query_as::<_, PushSubscription>(
         r#"
         SELECT id, user_id, endpoint, p256dh_key, auth_key, created_at
@@ -252,7 +251,6 @@ pub async fn get_user_pending_notifications(
     pool: &sqlx::SqlitePool,
     user_id: &str,
 ) -> anyhow::Result<Vec<UserNotification>> {
-
     let notifications = sqlx::query_as::<_, UserNotification>(
         r#"
         SELECT id, user_id, recipe_id, meal_date, scheduled_time, reminder_type, prep_hours, prep_task, status
@@ -328,7 +326,9 @@ pub struct UserNotification {
 /// Create subscription builder for all notification projections
 ///
 /// This sets up all read model projections for the notification domain.
-pub fn notification_projections(pool: sqlx::SqlitePool) -> evento::SubscribeBuilder<evento::Sqlite> {
+pub fn notification_projections(
+    pool: sqlx::SqlitePool,
+) -> evento::SubscribeBuilder<evento::Sqlite> {
     evento::subscribe("notification-projections")
         .aggregator::<NotificationAggregate>()
         .aggregator::<PushSubscriptionAggregate>()

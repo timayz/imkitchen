@@ -1,7 +1,9 @@
-use chrono::{Datelike, Duration, NaiveDate, NaiveTime, Utc};
-use crate::commands::{schedule_reminder, send_reminder, ScheduleReminderCommand, SendReminderCommand};
+use crate::commands::{
+    schedule_reminder, send_reminder, ScheduleReminderCommand, SendReminderCommand,
+};
 use crate::push::{create_push_payload, send_push_notification, WebPushConfig};
 use crate::read_model::{get_pending_notifications_due, get_push_subscription_by_user};
+use chrono::{Datelike, Duration, NaiveDate, NaiveTime, Utc};
 use evento::AggregatorName;
 use meal_planning::{events::MealPlanGenerated, MealPlanAggregate};
 use std::sync::Arc;
@@ -18,7 +20,7 @@ use tokio::time::{interval, Duration as TokioDuration};
 /// - If calculated time is in the past, schedule immediately (now + 1 minute)
 /// - If meal_time is unknown, default to 6pm (18:00)
 pub fn calculate_reminder_time(
-    meal_date: &str,           // ISO 8601 date e.g. "2025-10-20"
+    meal_date: &str,             // ISO 8601 date e.g. "2025-10-20"
     meal_time_opt: Option<&str>, // Optional time e.g. "18:00" (24h format)
     prep_hours: i32,
 ) -> Result<String, SchedulerError> {
@@ -35,9 +37,7 @@ pub fn calculate_reminder_time(
     };
 
     // Combine date and time to get meal datetime
-    let meal_datetime = meal_date_naive
-        .and_time(meal_time_naive)
-        .and_utc();
+    let meal_datetime = meal_date_naive.and_time(meal_time_naive).and_utc();
 
     // Calculate reminder time based on prep_hours
     let reminder_time = if prep_hours >= 24 {
@@ -72,9 +72,9 @@ pub fn calculate_reminder_time(
 /// - For <4h prep: "Start cooking in 1 hour: {recipe_title}"
 pub fn generate_notification_body(
     recipe_title: &str,
-    meal_date: &str,           // ISO 8601 date e.g. "2025-10-20"
+    meal_date: &str, // ISO 8601 date e.g. "2025-10-20"
     prep_hours: i32,
-    prep_task: Option<&str>,   // e.g. "marinate", "rise", "chill"
+    prep_task: Option<&str>, // e.g. "marinate", "rise", "chill"
 ) -> Result<String, SchedulerError> {
     // Parse meal date to get day of week
     let meal_date_naive = NaiveDate::parse_from_str(meal_date, "%Y-%m-%d")
@@ -166,12 +166,11 @@ pub async fn schedule_reminders_on_meal_plan_generated<E: evento::Executor>(
         }
 
         // Query recipe to get advance_prep_hours
-        let recipe_row = sqlx::query(
-            "SELECT id, title, advance_prep_hours FROM recipes WHERE id = ?"
-        )
-        .bind(&meal.recipe_id)
-        .fetch_optional(&pool)
-        .await?;
+        let recipe_row =
+            sqlx::query("SELECT id, title, advance_prep_hours FROM recipes WHERE id = ?")
+                .bind(&meal.recipe_id)
+                .fetch_optional(&pool)
+                .await?;
 
         let Some(recipe) = recipe_row else {
             tracing::warn!(
@@ -271,10 +270,7 @@ impl<E: evento::Executor> NotificationWorker<E> {
             return Ok(());
         }
 
-        tracing::info!(
-            "Processing {} due notifications",
-            due_notifications.len()
-        );
+        tracing::info!("Processing {} due notifications", due_notifications.len());
 
         for notification in due_notifications {
             // Attempt to send notification with exponential backoff retry
@@ -419,6 +415,93 @@ impl<E: evento::Executor> NotificationWorker<E> {
     }
 }
 
+/// Manual handler wrapper for schedule_reminders_on_meal_plan_generated
+///
+/// This wraps the async function in a SubscribeHandler trait implementation.
+/// Needed because evento::handler macro doesn't support cross-crate aggregates.
+struct MealPlanGeneratedHandler;
+
+impl evento::SubscribeHandler<evento::Sqlite> for MealPlanGeneratedHandler {
+    fn handle<'async_trait>(
+        &'async_trait self,
+        context: &'async_trait evento::Context<'_, evento::Sqlite>,
+    ) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = anyhow::Result<()>> + Send + 'async_trait>,
+    >
+    where
+        Self: Sync + 'async_trait,
+    {
+        Box::pin(async move {
+            // Decode the event from context
+            let event_data: MealPlanGenerated =
+                bincode::decode_from_slice(&context.event.data, bincode::config::standard())
+                    .map_err(|e| {
+                        anyhow::anyhow!("Failed to decode MealPlanGenerated event: {}", e)
+                    })?
+                    .0;
+
+            // Create EventDetails - we need to use the Event from context and wrap it with our decoded data
+            //
+            // SAFETY: This transmute is required for cross-crate evento subscriptions.
+            //
+            // Safety Invariants:
+            // 1. Memory Layout: EventDetails<T> has same layout as (Event, T, bool) tuple
+            // 2. Type Matching: MealPlanGenerated type matches evento generic parameter
+            // 3. Lifetime Safety: Event is cloned (owned), no dangling references
+            // 4. evento Version: This assumes evento 1.4.x internal representation
+            //
+            // Verification: If this fails at runtime, evento's EventDetails layout has changed.
+            // Action: Update to use safe evento API or consult evento maintainers.
+            //
+            // Static assertion to catch layout changes at compile time:
+            const _: () = {
+                let _size_check = std::mem::size_of::<(evento::Event, MealPlanGenerated, bool)>()
+                    == std::mem::size_of::<evento::EventDetails<MealPlanGenerated>>();
+                let _align_check = std::mem::align_of::<(evento::Event, MealPlanGenerated, bool)>()
+                    == std::mem::align_of::<evento::EventDetails<MealPlanGenerated>>();
+            };
+
+            let event = unsafe {
+                std::mem::transmute::<
+                    (evento::Event, MealPlanGenerated, bool),
+                    evento::EventDetails<MealPlanGenerated>,
+                >((context.event.clone(), event_data, false))
+            };
+
+            schedule_reminders_on_meal_plan_generated(context, event).await
+        })
+    }
+
+    fn aggregator_type(&self) -> &'static str {
+        MealPlanAggregate::name()
+    }
+
+    fn event_name(&self) -> &'static str {
+        MealPlanGenerated::name()
+    }
+}
+
+/// Create subscription builder for meal plan event listeners
+///
+/// This sets up the subscription that automatically schedules reminders when a meal plan is generated.
+/// We explicitly skip events we don't need to handle to avoid "Not handled" error logs.
+pub fn meal_plan_subscriptions(pool: sqlx::SqlitePool) -> evento::SubscribeBuilder<evento::Sqlite> {
+    use meal_planning::{
+        MealPlanArchived, MealPlanRegenerated, MealReplaced, RecipeUsedInRotation,
+        RotationCycleReset,
+    };
+
+    evento::subscribe("notification-meal-plan-listeners")
+        .aggregator::<MealPlanAggregate>()
+        .data(pool)
+        .handler(MealPlanGeneratedHandler)
+        .skip::<MealPlanAggregate, MealPlanRegenerated>()
+        .skip::<MealPlanAggregate, MealPlanArchived>()
+        .skip::<MealPlanAggregate, MealReplaced>()
+        .skip::<MealPlanAggregate, RecipeUsedInRotation>()
+        .skip::<MealPlanAggregate, RotationCycleReset>()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -499,7 +582,8 @@ mod tests {
         let prep_task = Some("Marinate chicken");
 
         // When: Generate notification message
-        let result = generate_notification_body(recipe_title, meal_date, prep_hours, prep_task).unwrap();
+        let result =
+            generate_notification_body(recipe_title, meal_date, prep_hours, prep_task).unwrap();
 
         // Then: Message mentions tonight and Thursday
         assert!(result.contains("Marinate chicken tonight"));
@@ -546,91 +630,4 @@ mod tests {
         assert_eq!(determine_reminder_type(2), "day_of");
         assert_eq!(determine_reminder_type(1), "day_of");
     }
-}
-
-/// Manual handler wrapper for schedule_reminders_on_meal_plan_generated
-///
-/// This wraps the async function in a SubscribeHandler trait implementation.
-/// Needed because evento::handler macro doesn't support cross-crate aggregates.
-struct MealPlanGeneratedHandler;
-
-impl evento::SubscribeHandler<evento::Sqlite> for MealPlanGeneratedHandler {
-    fn handle<'async_trait>(
-        &'async_trait self,
-        context: &'async_trait evento::Context<'_, evento::Sqlite>,
-    ) -> std::pin::Pin<
-        Box<dyn std::future::Future<Output = anyhow::Result<()>> + Send + 'async_trait>,
-    >
-    where
-        Self: Sync + 'async_trait,
-    {
-        Box::pin(async move {
-            // Decode the event from context
-            let event_data: MealPlanGenerated = bincode::decode_from_slice(
-                &context.event.data,
-                bincode::config::standard(),
-            )
-            .map_err(|e| anyhow::anyhow!("Failed to decode MealPlanGenerated event: {}", e))?
-            .0;
-
-            // Create EventDetails - we need to use the Event from context and wrap it with our decoded data
-            //
-            // SAFETY: This transmute is required for cross-crate evento subscriptions.
-            //
-            // Safety Invariants:
-            // 1. Memory Layout: EventDetails<T> has same layout as (Event, T, bool) tuple
-            // 2. Type Matching: MealPlanGenerated type matches evento generic parameter
-            // 3. Lifetime Safety: Event is cloned (owned), no dangling references
-            // 4. evento Version: This assumes evento 1.4.x internal representation
-            //
-            // Verification: If this fails at runtime, evento's EventDetails layout has changed.
-            // Action: Update to use safe evento API or consult evento maintainers.
-            //
-            // Static assertion to catch layout changes at compile time:
-            const _: () = {
-                let _size_check = std::mem::size_of::<(evento::Event, MealPlanGenerated, bool)>()
-                    == std::mem::size_of::<evento::EventDetails<MealPlanGenerated>>();
-                let _align_check = std::mem::align_of::<(evento::Event, MealPlanGenerated, bool)>()
-                    == std::mem::align_of::<evento::EventDetails<MealPlanGenerated>>();
-            };
-
-            let event = unsafe {
-                std::mem::transmute::<(evento::Event, MealPlanGenerated, bool), evento::EventDetails<MealPlanGenerated>>(
-                    (context.event.clone(), event_data, false)
-                )
-            };
-
-            schedule_reminders_on_meal_plan_generated(context, event).await
-        })
-    }
-
-    fn aggregator_type(&self) -> &'static str {
-        MealPlanAggregate::name()
-    }
-
-    fn event_name(&self) -> &'static str {
-        MealPlanGenerated::name()
-    }
-}
-
-/// Create subscription builder for meal plan event listeners
-///
-/// This sets up the subscription that automatically schedules reminders when a meal plan is generated.
-/// We explicitly skip events we don't need to handle to avoid "Not handled" error logs.
-pub fn meal_plan_subscriptions(pool: sqlx::SqlitePool) -> evento::SubscribeBuilder<evento::Sqlite> {
-    use meal_planning::{
-        MealPlanArchived, MealPlanRegenerated, MealReplaced, RecipeUsedInRotation,
-        RotationCycleReset,
-    };
-
-    evento::subscribe("notification-meal-plan-listeners")
-        .aggregator::<MealPlanAggregate>()
-        .data(pool)
-        .handler(MealPlanGeneratedHandler)
-        // Skip events we don't need to handle
-        .skip::<MealPlanAggregate, RecipeUsedInRotation>()
-        .skip::<MealPlanAggregate, RotationCycleReset>()
-        .skip::<MealPlanAggregate, MealPlanArchived>()
-        .skip::<MealPlanAggregate, MealReplaced>()
-        .skip::<MealPlanAggregate, MealPlanRegenerated>()
 }

@@ -25,6 +25,10 @@ pub use meal_plan::{
     get_meal_alternatives, get_meal_plan, get_regenerate_confirm, post_generate_meal_plan,
     post_regenerate_meal_plan, post_replace_meal,
 };
+pub use notifications::{
+    dismiss_notification, list_notifications, notifications_page, snooze_notification,
+    subscribe_push,
+};
 pub use profile::{
     get_onboarding, get_onboarding_skip, get_profile, get_subscription, get_subscription_success,
     post_onboarding_step_1, post_onboarding_step_2, post_onboarding_step_3, post_onboarding_step_4,
@@ -39,7 +43,4 @@ pub use recipes::{
 pub use shopping::{
     check_shopping_item, generate_shopping_list_handler, refresh_shopping_list,
     reset_shopping_list_handler, show_shopping_list,
-};
-pub use notifications::{
-    dismiss_notification, list_notifications, notifications_page, snooze_notification, subscribe_push,
 };

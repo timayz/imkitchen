@@ -85,8 +85,8 @@ pub async fn send_push_notification(
     };
 
     // Serialize payload to JSON
-    let payload_json = serde_json::to_string(payload)
-        .map_err(|e| PushError::SerializationError(e.to_string()))?;
+    let payload_json =
+        serde_json::to_string(payload).map_err(|e| PushError::SerializationError(e.to_string()))?;
 
     // Create subscription info from stored subscription data
     let subscription_info = SubscriptionInfo::new(
@@ -96,11 +96,11 @@ pub async fn send_push_notification(
     );
 
     // Build VAPID signature
-    let mut sig_builder = VapidSignatureBuilder::from_pem(
-        config.vapid_private_key.as_bytes(),
-        &subscription_info,
-    )
-    .map_err(|e| PushError::VapidError(format!("Failed to build VAPID signature: {:?}", e)))?;
+    let mut sig_builder =
+        VapidSignatureBuilder::from_pem(config.vapid_private_key.as_bytes(), &subscription_info)
+            .map_err(|e| {
+                PushError::VapidError(format!("Failed to build VAPID signature: {:?}", e))
+            })?;
 
     sig_builder.add_claim("sub", config.subject.as_str());
 
@@ -110,7 +110,10 @@ pub async fn send_push_notification(
 
     // Build the Web Push message
     let mut message_builder = WebPushMessageBuilder::new(&subscription_info);
-    message_builder.set_payload(web_push::ContentEncoding::Aes128Gcm, payload_json.as_bytes());
+    message_builder.set_payload(
+        web_push::ContentEncoding::Aes128Gcm,
+        payload_json.as_bytes(),
+    );
     message_builder.set_vapid_signature(signature);
 
     let message = message_builder
@@ -124,7 +127,10 @@ pub async fn send_push_notification(
     // Send the notification
     match client.send(message).await {
         Ok(()) => {
-            tracing::info!("Web Push notification sent successfully to user_id={}", subscription.user_id);
+            tracing::info!(
+                "Web Push notification sent successfully to user_id={}",
+                subscription.user_id
+            );
             Ok(())
         }
         Err(web_push::WebPushError::EndpointNotValid) => {
@@ -154,11 +160,10 @@ pub async fn send_push_notification(
         }
         Err(web_push::WebPushError::ServerError(None)) => {
             // Server error without retry-after
-            tracing::error!(
-                "Web Push server error for user_id={}",
-                subscription.user_id
-            );
-            Err(PushError::ServerError("Server error without retry-after".to_string()))
+            tracing::error!("Web Push server error for user_id={}", subscription.user_id);
+            Err(PushError::ServerError(
+                "Server error without retry-after".to_string(),
+            ))
         }
         Err(e) => {
             tracing::error!(
