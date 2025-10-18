@@ -1,0 +1,297 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>4</storyId>
+    <title>Shopping List Real-Time Updates</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-18T00:00:00Z</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-4.4.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>my shopping list to update when I change meals</iWant>
+    <soThat>it always reflects my current meal plan</soThat>
+    <tasks>
+      <task id="1" acceptanceCriteria="1,2,3,4">
+        <description>Implement shopping list recalculation on meal slot replacement</description>
+        <subtasks>
+          <subtask id="1.1">Create evento subscription in crates/shopping/src/read_model.rs listening for MealSlotReplaced event</subtask>
+          <subtask id="1.2">Implement recalculation handler that loads current shopping list for the affected week</subtask>
+          <subtask id="1.3">Extract ingredients from removed recipe (old_recipe_id) and subtract from shopping list</subtask>
+          <subtask id="1.4">Extract ingredients from new recipe (new_recipe_id) and add to shopping list</subtask>
+          <subtask id="1.5">Re-run ingredient aggregation logic to recalculate combined quantities</subtask>
+          <subtask id="1.6">Emit ShoppingListRecalculated event with updated ingredient list</subtask>
+          <subtask id="1.7">Write unit tests for recalculation logic (add/remove scenarios, edge cases)</subtask>
+        </subtasks>
+      </task>
+      <task id="2" acceptanceCriteria="6">
+        <description>Update shopping list read model via projection</description>
+        <subtasks>
+          <subtask id="2.1">Create project_shopping_list_recalculated handler in crates/shopping/src/read_model.rs</subtask>
+          <subtask id="2.2">Update shopping_list_items table rows for affected shopping list (UPDATE instead of INSERT)</subtask>
+          <subtask id="2.3">Remove items with zero quantity after subtraction</subtask>
+          <subtask id="2.4">Add new items from new recipe if not previously present</subtask>
+          <subtask id="2.5">Update aggregated quantities for existing items</subtask>
+          <subtask id="2.6">Preserve item checkoff state during recalculation (don't reset checked items)</subtask>
+          <subtask id="2.7">Update shopping_lists.updated_at timestamp</subtask>
+          <subtask id="2.8">Write integration tests for projection logic</subtask>
+        </subtasks>
+      </task>
+      <task id="3" acceptanceCriteria="5">
+        <description>Implement real-time UI updates with TwinSpark</description>
+        <subtasks>
+          <subtask id="3.1">Add TwinSpark polling or server-sent events to shopping list page template</subtask>
+          <subtask id="3.2">Create partial template templates/partials/shopping-list-content.html for shopping list content</subtask>
+          <subtask id="3.3">Implement route GET /shopping/refresh that returns updated shopping list fragment</subtask>
+          <subtask id="3.4">Configure TwinSpark to poll /shopping/refresh every 2 seconds when shopping list page is active</subtask>
+          <subtask id="3.5">Add visual indicator (e.g., pulse animation) when shopping list is updating</subtask>
+          <subtask id="3.6">Ensure smooth UI transition without jarring full-page reload</subtask>
+        </subtasks>
+      </task>
+      <task id="4" acceptanceCriteria="8">
+        <description>Add user notification for shopping list updates</description>
+        <subtasks>
+          <subtask id="4.1">Create toast notification component in templates/components/toast.html</subtask>
+          <subtask id="4.2">Trigger toast notification when ShoppingListRecalculated event detected (via TwinSpark response header or embedded flag)</subtask>
+          <subtask id="4.3">Display message: "Shopping list updated" with success styling</subtask>
+          <subtask id="4.4">Auto-dismiss toast after 3 seconds</subtask>
+          <subtask id="4.5">Ensure toast does not block interaction with shopping list</subtask>
+        </subtasks>
+      </task>
+      <task id="5" acceptanceCriteria="7">
+        <description>Performance optimization for &lt;1 second updates</description>
+        <subtasks>
+          <subtask id="5.1">Profile recalculation handler execution time with sample meal plan (14 recipes, 100+ ingredients)</subtask>
+          <subtask id="5.2">Optimize ingredient aggregation algorithm if needed (batch queries, index optimization)</subtask>
+          <subtask id="5.3">Add database index on shopping_list_items.shopping_list_id if not present</subtask>
+          <subtask id="5.4">Add database index on shopping_list_items.ingredient_name for faster lookups</subtask>
+          <subtask id="5.5">Implement caching for recipe ingredient lists (avoid repeated database queries)</subtask>
+          <subtask id="5.6">Write performance test verifying &lt;1 second total time from MealSlotReplaced event to read model update</subtask>
+        </subtasks>
+      </task>
+      <task id="6">
+        <description>Handle edge cases and error scenarios</description>
+        <subtasks>
+          <subtask id="6.1">Handle scenario: removed recipe was the only recipe requiring an ingredient → remove ingredient from list</subtask>
+          <subtask id="6.2">Handle scenario: new recipe adds ingredient already at zero quantity → restore to list with new quantity</subtask>
+          <subtask id="6.3">Handle scenario: shopping list page not open → updates still processed, visible on next page load</subtask>
+          <subtask id="6.4">Handle scenario: multiple meal slots replaced rapidly → queue recalculations, process sequentially</subtask>
+          <subtask id="6.5">Add error handling for recalculation failures → log error, notify user, retain old shopping list</subtask>
+          <subtask id="6.6">Write integration tests for edge cases</subtask>
+        </subtasks>
+      </task>
+      <task id="7">
+        <description>Testing strategy (TDD enforced)</description>
+        <subtasks>
+          <subtask id="7.1">Unit tests for shopping list recalculation logic in crates/shopping/src/aggregation.rs</subtask>
+          <subtask id="7.2">Integration tests for evento subscription handler and projection</subtask>
+          <subtask id="7.3">E2E Playwright test: Replace meal slot → Verify shopping list page updates within 1 second</subtask>
+          <subtask id="7.4">E2E test: Navigate to shopping list while meal replacement occurs → Verify live update appears</subtask>
+          <subtask id="7.5">Ensure 80% code coverage target met for shopping list recalculation code</subtask>
+        </subtasks>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="1">Replacing a meal slot triggers shopping list recalculation</criterion>
+    <criterion id="2">Removed recipe's ingredients subtracted from list</criterion>
+    <criterion id="3">New recipe's ingredients added to list</criterion>
+    <criterion id="4">Quantity aggregation recalculated</criterion>
+    <criterion id="5">Shopping list page auto-refreshes to show changes (if open)</criterion>
+    <criterion id="6">No duplicate shopping lists created - existing list updated</criterion>
+    <criterion id="7">Updates complete within 1 second of meal replacement</criterion>
+    <criterion id="8">User notification: "Shopping list updated"</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="/home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-4.md" section="Story 4.4">
+        <title>Shopping List Real-Time Updates - Technical Specification</title>
+        <snippet>Story 4.4 implements real-time shopping list updates when meal plan changes occur. When a user replaces a meal slot, the system automatically recalculates the shopping list by subtracting removed recipe ingredients and adding new recipe ingredients, then updates the read model via evento projection.</snippet>
+        <relevance>Authoritative AC for shopping list real-time updates, defines evento subscription pattern for MealSlotReplaced event</relevance>
+      </doc>
+      <doc path="/home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-4.md" section="Domain Services">
+        <title>IngredientAggregationService - Reusable Aggregation Logic</title>
+        <snippet>IngredientAggregationService domain service normalizes ingredient names, converts units, and sums quantities for shopping list generation. Reuse this service for recalculation in Story 4.4.</snippet>
+        <relevance>Defines aggregation algorithm to reuse for shopping list recalculation logic</relevance>
+      </doc>
+      <doc path="/home/snapiz/projects/github/timayz/imkitchen/docs/solution-architecture.md" section="3.2 Data Models">
+        <title>Shopping Lists Database Schema</title>
+        <snippet>shopping_lists table: (id, user_id, meal_plan_id, week_start_date, generated_at). shopping_list_items table: (id, shopping_list_id, ingredient_name, quantity, unit, category, is_collected).</snippet>
+        <relevance>Database schema for shopping list storage and read model projection targets</relevance>
+      </doc>
+      <doc path="/home/snapiz/projects/github/timayz/imkitchen/docs/solution-architecture.md" section="11.3 Key Integrations">
+        <title>Cross-Domain Event Communication</title>
+        <snippet>Cross-domain event communication via evento subscriptions. Example: MealSlotReplaced event from meal_planning domain triggers ShoppingListRecalculated in shopping domain via subscription handler.</snippet>
+        <relevance>Pattern for evento subscription to MealSlotReplaced event for cross-domain updates</relevance>
+      </doc>
+      <doc path="/home/snapiz/projects/github/timayz/imkitchen/docs/solution-architecture.md" section="7.1 Component Structure">
+        <title>TwinSpark Progressive Enhancement Pattern</title>
+        <snippet>TwinSpark provides AJAX behaviors via HTML attributes without React/Vue complexity. Use ts-req for AJAX requests, ts-target for DOM update targets, ts-swap for content replacement strategies.</snippet>
+        <relevance>TwinSpark implementation pattern for live shopping list updates without full page reload</relevance>
+      </doc>
+      <doc path="/home/snapiz/projects/github/timayz/imkitchen/docs/solution-architecture.md" section="8.4 Database Performance">
+        <title>Performance Optimization Guidelines</title>
+        <snippet>Database indexes on all foreign keys and filter columns. Read model queries favor materialized views over event stream traversal. Target &lt;500ms query response for 95th percentile.</snippet>
+        <relevance>Performance optimization guidelines for &lt;1 second update requirement (AC #7)</relevance>
+      </doc>
+      <doc path="/home/snapiz/projects/github/timayz/imkitchen/docs/epics.md" section="Story 4.4">
+        <title>User Story and AC for Shopping List Real-Time Updates</title>
+        <snippet>As a user, I want my shopping list to update when I change meals, so that it always reflects my current meal plan. AC: (1) Replacing meal slot triggers recalculation, (2) Removed ingredients subtracted, (3) New ingredients added, (4) Quantity aggregation recalculated, (5) Page auto-refreshes, (6) No duplicates, (7) &lt;1 second updates, (8) User notification.</snippet>
+        <relevance>Complete user story definition with acceptance criteria</relevance>
+      </doc>
+      <doc path="/home/snapiz/projects/github/timayz/imkitchen/docs/epics.md" section="Epic 4 Technical Summary">
+        <title>Epic 4 Events and Domain Services</title>
+        <snippet>Events: ShoppingListGenerated, ShoppingListRecalculated, ShoppingListItemChecked. Domain Services: IngredientAggregationService, PrepReminderScheduler. External Integrations: Web Push API for notifications.</snippet>
+        <relevance>Lists ShoppingListRecalculated event to be defined in Story 4.4</relevance>
+      </doc>
+      <doc path="/home/snapiz/projects/github/timayz/imkitchen/docs/PRD.md" section="FR-8: Shopping List Generation">
+        <title>Functional Requirement - Automated Shopping List Updates</title>
+        <snippet>System automatically generates weekly shopping lists from meal plan with ingredients grouped by category and quantities aggregated across multiple recipes. Lists update automatically when meal plans change.</snippet>
+        <relevance>FR requirement for automated shopping list updates when meal plan changes</relevance>
+      </doc>
+      <doc path="/home/snapiz/projects/github/timayz/imkitchen/docs/PRD.md" section="NFR-1: Performance">
+        <title>Performance Requirements</title>
+        <snippet>Shopping list generation completes within 2 seconds for weekly meal plans. HTML response times &lt;500ms for 95th percentile requests.</snippet>
+        <relevance>Performance target for shopping list recalculation (&lt;1 second for updates, stricter than initial generation)</relevance>
+      </doc>
+      <doc path="/home/snapiz/projects/github/timayz/imkitchen/docs/PRD.md" section="NFR-10: Maintainability">
+        <title>TDD and Code Coverage Requirements</title>
+        <snippet>Test-Driven Development (TDD) enforced with minimum 80% code coverage. Write failing test before implementing feature.</snippet>
+        <relevance>TDD enforcement and coverage target for Story 4.4 implementation</relevance>
+      </doc>
+    </docs>
+    <code>
+      <artifact path="/home/snapiz/projects/github/timayz/imkitchen/crates/shopping/src/events.rs" kind="event" symbol="ShoppingListGenerated" lines="14-25">
+        <snippet>ShoppingListGenerated event structure with user_id, meal_plan_id, week_start_date, items (Vec&lt;ShoppingListItem&gt;), generated_at. Uses String types for bincode compatibility.</snippet>
+        <reason>Template for defining new ShoppingListRecalculated event in same file</reason>
+      </artifact>
+      <artifact path="/home/snapiz/projects/github/timayz/imkitchen/crates/shopping/src/aggregate.rs" kind="aggregate" symbol="ShoppingListAggregate" lines="12-25">
+        <snippet>ShoppingListAggregate with fields: shopping_list_id, user_id, meal_plan_id, week_start_date, items, generated_at. All String types for bincode compatibility.</snippet>
+        <reason>Aggregate to extend with shopping_list_recalculated event handler</reason>
+      </artifact>
+      <artifact path="/home/snapiz/projects/github/timayz/imkitchen/crates/shopping/src/read_model.rs" kind="projection" symbol="project_shopping_list_generated" lines="16-66">
+        <snippet>Evento subscription handler that inserts shopping_list_generated event data into shopping_lists and shopping_list_items tables. Pattern: extract pool from context, execute INSERT queries, log projection.</snippet>
+        <reason>Pattern for creating project_shopping_list_recalculated projection handler (UPDATE instead of INSERT)</reason>
+      </artifact>
+      <artifact path="/home/snapiz/projects/github/timayz/imkitchen/crates/shopping/src/aggregation.rs" kind="service" symbol="IngredientAggregationService" lines="1-100">
+        <snippet>IngredientAggregationService::aggregate(ingredients) normalizes names, converts units, sums quantities. Returns Vec&lt;(String, f32, String)&gt; with (name, quantity, unit) tuples. Supports unit conversions: volume (ml), weight (g), count (item).</snippet>
+        <reason>Reuse this service for recalculating shopping list when meal replaced (subtract old, add new, re-aggregate)</reason>
+      </artifact>
+      <artifact path="/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/events.rs" kind="event" symbol="MealReplaced" lines="98-111">
+        <snippet>MealReplaced event with date, meal_type, old_recipe_id, new_recipe_id, replaced_at. Emitted when user replaces meal slot via Story 3.6.</snippet>
+        <reason>Event to subscribe to in shopping crate for triggering recalculation</reason>
+      </artifact>
+      <artifact path="/home/snapiz/projects/github/timayz/imkitchen/crates/shopping/src/read_model.rs" kind="function" symbol="shopping_projection" lines="293-302">
+        <snippet>Function creates evento subscription: evento::subscribe("shopping-read-model").aggregator::&lt;ShoppingListAggregate&gt;().data(pool).handler(project_shopping_list_generated())</snippet>
+        <reason>Pattern for registering new projection handlers for ShoppingListRecalculated event</reason>
+      </artifact>
+      <artifact path="/home/snapiz/projects/github/timayz/imkitchen/src/routes/shopping.rs" kind="route" symbol="show_shopping_list" lines="31-100">
+        <snippet>GET /shopping route handler: validates week param, queries shopping list by week, groups items by category, renders ShoppingListTemplate with Askama.</snippet>
+        <reason>Route to extend with /shopping/refresh endpoint for TwinSpark polling</reason>
+      </artifact>
+      <artifact path="/home/snapiz/projects/github/timayz/imkitchen/templates/pages/shopping-list.html" kind="template" lines="1-193">
+        <snippet>Shopping list page template with collapsible category sections, item checkboxes, week selector dropdown. Uses details/summary for category expansion.</snippet>
+        <reason>Template to reference when creating templates/partials/shopping-list-content.html partial for TwinSpark updates</reason>
+      </artifact>
+      <artifact path="/home/snapiz/projects/github/timayz/imkitchen/templates/components/toast.html" kind="template">
+        <snippet>Existing toast notification component for displaying success/error messages with auto-dismiss.</snippet>
+        <reason>Reuse or reference this component for "Shopping list updated" notification (AC #8)</reason>
+      </artifact>
+      <artifact path="/home/snapiz/projects/github/timayz/imkitchen/migrations/03_shopping_lists.sql" kind="migration" lines="1-52">
+        <snippet>Shopping lists schema: shopping_lists table (id, user_id, meal_plan_id, week_start_date, generated_at), shopping_list_items table (id, shopping_list_id, ingredient_name, quantity, unit, category, is_collected). Indexes: user_id, meal_plan_id, week, shopping_list_id, category.</snippet>
+        <reason>Database schema for shopping list storage. May need to add updated_at timestamp column for AC #6 (tracking recalculation time)</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <rust>
+        <package name="evento" version="1.3+" reason="Event sourcing framework for ShoppingListAggregate and evento subscriptions" />
+        <package name="sqlx" version="0.8+" reason="Database queries for read model projections (shopping_lists, shopping_list_items tables)" />
+        <package name="axum" version="0.8+" reason="HTTP server for /shopping/refresh route endpoint" />
+        <package name="askama" version="0.14+" reason="Server-side HTML templating for shopping list partial template" />
+        <package name="chrono" version="latest" reason="Date/time parsing for week validation and timestamp handling" />
+        <package name="serde" version="1.0+" reason="JSON serialization for ShoppingListRecalculated event data" />
+        <package name="bincode" version="latest" reason="Event serialization for evento event store (Encode/Decode traits)" />
+        <package name="anyhow" version="latest" reason="Error handling for event handlers and projections" />
+        <package name="tracing" version="0.1+" reason="Structured logging for recalculation event processing" />
+      </rust>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">
+      <description>Event-driven architecture: MealSlotReplaced event from meal planning domain triggers shopping list recalculation in shopping domain via evento subscription (cross-domain event communication pattern from solution-architecture.md#11.3)</description>
+    </constraint>
+    <constraint type="architecture">
+      <description>CQRS pattern: ShoppingListRecalculated event updates read model via projection, no direct database writes from event handler (evento subscription updates shopping_lists and shopping_list_items tables)</description>
+    </constraint>
+    <constraint type="performance">
+      <description>Performance requirement: &lt;1 second total time from MealSlotReplaced event emission to read model update (including network latency). Requires optimized queries, database indexes, and minimal computation in event handlers.</description>
+    </constraint>
+    <constraint type="ui">
+      <description>TwinSpark progressive enhancement: Shopping list updates without full page reload using TwinSpark polling (/shopping/refresh endpoint returns HTML fragment). Graceful degradation if JavaScript unavailable (updates still processed, visible on next page load).</description>
+    </constraint>
+    <constraint type="data-integrity">
+      <description>No duplicate shopping lists: UPDATE existing shopping_list_items rows instead of creating new shopping list aggregate. Preserve is_collected checkoff state during recalculation (AC #6).</description>
+    </constraint>
+    <constraint type="testing">
+      <description>TDD enforced: Write failing test before implementing feature. 80% code coverage target for shopping list recalculation code (unit tests, integration tests, E2E Playwright tests).</description>
+    </constraint>
+    <constraint type="error-handling">
+      <description>Error handling: Recalculation failures logged, user notified, old shopping list retained. No silent failures. Edge cases: single ingredient recipes, zero quantity items, rapid meal replacements (queue processing).</description>
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="evento subscription" kind="event-handler" signature="async fn on_meal_replaced(context, event: EventDetails&lt;MealReplaced&gt;) -&gt; anyhow::Result&lt;()&gt;" path="/home/snapiz/projects/github/timayz/imkitchen/crates/shopping/src/read_model.rs">
+      <description>Evento subscription handler for MealReplaced event from meal_planning crate. Triggers shopping list recalculation when meal slot replaced. Extract pool from context, query current shopping list, subtract old recipe ingredients, add new recipe ingredients, re-aggregate, emit ShoppingListRecalculated event.</description>
+    </interface>
+    <interface name="IngredientAggregationService::aggregate" kind="domain-service" signature="pub fn aggregate(ingredients: Vec&lt;(String, f32, String)&gt;) -&gt; Result&lt;Vec&lt;(String, f32, String)&gt;, String&gt;" path="/home/snapiz/projects/github/timayz/imkitchen/crates/shopping/src/aggregation.rs">
+      <description>Reusable domain service for ingredient aggregation. Normalizes names, converts units, sums quantities. Use for recalculating shopping list after meal replacement.</description>
+    </interface>
+    <interface name="GET /shopping/refresh" kind="http-route" signature="pub async fn refresh_shopping_list(Extension(auth), State(state), Query(query)) -&gt; Result&lt;impl IntoResponse, AppError&gt;" path="/home/snapiz/projects/github/timayz/imkitchen/src/routes/shopping.rs">
+      <description>New HTTP route for TwinSpark polling. Returns shopping list content HTML fragment (not full page). Query param: ?week=YYYY-MM-DD. Renders templates/partials/shopping-list-content.html partial template.</description>
+    </interface>
+    <interface name="project_shopping_list_recalculated" kind="evento-projection" signature="pub async fn project_shopping_list_recalculated&lt;E: Executor&gt;(context: &amp;Context&lt;'_, E&gt;, event: EventDetails&lt;ShoppingListRecalculated&gt;) -&gt; anyhow::Result&lt;()&gt;" path="/home/snapiz/projects/github/timayz/imkitchen/crates/shopping/src/read_model.rs">
+      <description>Evento projection handler for ShoppingListRecalculated event. UPDATE shopping_list_items rows (not INSERT). Delete rows with zero quantity, add new items, preserve is_collected status. Update shopping_lists.updated_at timestamp.</description>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      <paragraph>TDD enforced: Write failing test before implementing feature. Test pyramid: unit tests for domain logic (IngredientAggregationService recalculation, event handlers), integration tests for evento subscription and projection (database updates), E2E Playwright tests for full user flow (replace meal → shopping list updates within 1 second). Target: 80% code coverage via cargo tarpaulin. All tests must pass in CI/CD pipeline before merge.</paragraph>
+    </standards>
+    <locations>
+      <location>crates/shopping/tests/aggregation_tests.rs - Unit tests for IngredientAggregationService recalculation logic</location>
+      <location>crates/shopping/tests/integration_tests.rs - Integration tests for evento subscription handler and projection</location>
+      <location>tests/shopping_list_integration_tests.rs - Integration tests for shopping list recalculation API</location>
+      <location>e2e/tests/shopping.spec.ts - E2E Playwright tests for meal replacement → shopping list update flow</location>
+    </locations>
+    <ideas>
+      <idea acceptanceCriteriaId="1,2,3,4">
+        <description>Unit test: Replace meal slot with new recipe → verify shopping list recalculated with old ingredients subtracted, new ingredients added, quantities re-aggregated. Test scenario: meal plan has 2 recipes both requiring "chicken 1lb", replace one with recipe requiring "beef 2lbs" → shopping list should show "chicken 1lb" (reduced from 2lbs) and "beef 2lbs" (new).</description>
+      </idea>
+      <idea acceptanceCriteriaId="6">
+        <description>Integration test: Verify UPDATE queries instead of INSERT for shopping_list_items. Replace meal, check database: no duplicate rows, is_collected status preserved for unchanged items.</description>
+      </idea>
+      <idea acceptanceCriteriaId="7">
+        <description>Performance test: Profile recalculation handler with sample meal plan (14 recipes, 100+ ingredients). Measure time from MealReplaced event emission to read model update completion. Verify &lt;1 second total time. Identify bottlenecks (database queries, aggregation algorithm).</description>
+      </idea>
+      <idea acceptanceCriteriaId="5">
+        <description>E2E Playwright test: Navigate to shopping list page, replace meal slot in another tab, verify shopping list auto-refreshes within 2 seconds (TwinSpark polling). Check for updated ingredient list without full page reload.</description>
+      </idea>
+      <idea acceptanceCriteriaId="8">
+        <description>E2E test: Replace meal slot, verify toast notification "Shopping list updated" appears and auto-dismisses after 3 seconds. Ensure notification does not block shopping list interaction.</description>
+      </idea>
+      <idea>
+        <description>Edge case test: Remove recipe that was only source of ingredient → verify ingredient removed from shopping list (zero quantity items deleted). Add recipe with ingredient that was previously at zero → verify ingredient restored to list.</description>
+      </idea>
+      <idea>
+        <description>Edge case test: Replace multiple meal slots rapidly (within 1 second) → verify recalculations queued and processed sequentially, final shopping list reflects all changes, no race conditions.</description>
+      </idea>
+    </ideas>
+  </tests>
+</story-context>
