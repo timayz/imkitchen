@@ -21,6 +21,15 @@ pub enum ShoppingListError {
 
     #[error("Event store error: {0}")]
     EventStoreError(#[from] anyhow::Error),
+
+    #[error("Invalid week: {0}")]
+    InvalidWeekError(String),
+
+    #[error("Past weeks are not accessible (out of scope for MVP)")]
+    PastWeekNotAccessibleError,
+
+    #[error("Future week out of range: Maximum 4 weeks ahead allowed")]
+    FutureWeekOutOfRangeError,
 }
 
 /// Generate a shopping list from a meal plan

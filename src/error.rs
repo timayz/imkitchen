@@ -4,6 +4,7 @@ use axum::{
     response::{Html, IntoResponse, Response},
 };
 use recipe::RecipeError;
+use shopping::ShoppingListError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -25,6 +26,9 @@ pub enum AppError {
 
     #[error("Meal planning error: {0}")]
     MealPlanningError(#[from] meal_planning::MealPlanningError),
+
+    #[error("Shopping list error: {0}")]
+    ShoppingListError(#[from] ShoppingListError),
 
     #[error("Insufficient recipes: need at least {required}, have {current}")]
     InsufficientRecipes { current: usize, required: usize },
@@ -174,6 +178,34 @@ impl IntoResponse for AppError {
                     StatusCode::INTERNAL_SERVER_ERROR,
                     "Meal Planning Error".to_string(),
                     format!("Failed to generate meal plan: {}", e),
+                    None,
+                )
+            }
+            // Story 4.3: Week validation errors (AC #7, #5)
+            AppError::ShoppingListError(ShoppingListError::PastWeekNotAccessibleError) => (
+                StatusCode::NOT_FOUND,
+                "Past Week Not Accessible".to_string(),
+                "Past weeks are not accessible in the current version. Please select the current week or a future week (up to 4 weeks ahead).".to_string(),
+                None,
+            ),
+            AppError::ShoppingListError(ShoppingListError::FutureWeekOutOfRangeError) => (
+                StatusCode::BAD_REQUEST,
+                "Future Week Out of Range".to_string(),
+                "You can only access shopping lists up to 4 weeks ahead. Please select a week within the allowed range.".to_string(),
+                None,
+            ),
+            AppError::ShoppingListError(ShoppingListError::InvalidWeekError(msg)) => (
+                StatusCode::BAD_REQUEST,
+                "Invalid Week".to_string(),
+                format!("Invalid week parameter: {}", msg),
+                None,
+            ),
+            AppError::ShoppingListError(e) => {
+                tracing::error!("Shopping list error: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Shopping List Error".to_string(),
+                    format!("An error occurred while processing your shopping list: {}", e),
                     None,
                 )
             }
