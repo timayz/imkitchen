@@ -1104,15 +1104,12 @@ async fn test_get_todays_meals_query() {
     // Create 10 favorite recipes
     create_test_recipes(&pool, user_id, 10).await.unwrap();
 
-    // Get today's date in YYYY-MM-DD format
-    let today = chrono::Local::now()
-        .date_naive()
+    // Get today's date in YYYY-MM-DD format (UTC to match SQLite DATE('now'))
+    let today = Utc::now().date_naive().format("%Y-%m-%d").to_string();
+    let yesterday = (Utc::now().date_naive() - chrono::Duration::days(1))
         .format("%Y-%m-%d")
         .to_string();
-    let yesterday = (chrono::Local::now().date_naive() - chrono::Duration::days(1))
-        .format("%Y-%m-%d")
-        .to_string();
-    let tomorrow = (chrono::Local::now().date_naive() + chrono::Duration::days(1))
+    let tomorrow = (Utc::now().date_naive() + chrono::Duration::days(1))
         .format("%Y-%m-%d")
         .to_string();
 
@@ -1342,11 +1339,8 @@ async fn test_todays_meals_uses_date_now() {
     // Create recipes
     create_test_recipes(&pool, user_id, 5).await.unwrap();
 
-    // Get today's date
-    let today = chrono::Local::now()
-        .date_naive()
-        .format("%Y-%m-%d")
-        .to_string();
+    // Get today's date (UTC to match SQLite DATE('now'))
+    let today = Utc::now().date_naive().format("%Y-%m-%d").to_string();
 
     // Create meal plan with assignment for today only
     let meal_assignments = vec![MealAssignment {
