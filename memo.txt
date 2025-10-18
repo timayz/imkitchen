@@ -7,7 +7,7 @@ create PR:
     - closed issue id (use story title to search)
 
 # after develop/review
-run and fix make check than git conventional commits, push
+fix make check than git conventional commits, push
 
 # when working on test
 when doing tests, use unsafe_oneshot instead of run for subscribe because its process events in sync

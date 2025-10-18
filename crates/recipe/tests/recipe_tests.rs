@@ -725,6 +725,223 @@ async fn test_update_recipe_ownership_denied() {
     assert_eq!(aggregate.title, "User1's Recipe");
 }
 
+/// Test: recipe update automatically recalculates complexity
+/// Story 3.12 AC-7
+#[tokio::test]
+async fn test_update_recipe_recalculates_complexity() {
+    let pool = setup_test_db().await;
+    let executor = setup_evento_executor(pool.clone()).await;
+    insert_test_user(&pool, "user1", "free", 0).await;
+
+    // Create recipe with simple complexity (5 ingredients, 4 steps, no advance prep)
+    let create_command = CreateRecipeCommand {
+        title: "Simple Recipe".to_string(),
+        ingredients: vec![
+            Ingredient {
+                name: "ingredient1".to_string(),
+                quantity: 1.0,
+                unit: "cup".to_string(),
+            },
+            Ingredient {
+                name: "ingredient2".to_string(),
+                quantity: 1.0,
+                unit: "cup".to_string(),
+            },
+            Ingredient {
+                name: "ingredient3".to_string(),
+                quantity: 1.0,
+                unit: "cup".to_string(),
+            },
+            Ingredient {
+                name: "ingredient4".to_string(),
+                quantity: 1.0,
+                unit: "cup".to_string(),
+            },
+            Ingredient {
+                name: "ingredient5".to_string(),
+                quantity: 1.0,
+                unit: "cup".to_string(),
+            },
+        ],
+        instructions: vec![
+            InstructionStep {
+                step_number: 1,
+                instruction_text: "Step 1".to_string(),
+                timer_minutes: None,
+            },
+            InstructionStep {
+                step_number: 2,
+                instruction_text: "Step 2".to_string(),
+                timer_minutes: None,
+            },
+            InstructionStep {
+                step_number: 3,
+                instruction_text: "Step 3".to_string(),
+                timer_minutes: None,
+            },
+            InstructionStep {
+                step_number: 4,
+                instruction_text: "Step 4".to_string(),
+                timer_minutes: None,
+            },
+        ],
+        prep_time_min: Some(5),
+        cook_time_min: Some(10),
+        advance_prep_hours: None,
+        serving_size: Some(2),
+    };
+
+    let recipe_id = create_recipe(create_command, "user1", &executor, &pool)
+        .await
+        .unwrap();
+
+    // Run projection to sync read model with initial complexity
+    use recipe::recipe_projection;
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+
+    // Verify initial complexity is "simple" (score = 5*0.3 + 4*0.4 + 0*0.3 = 3.1)
+    let recipe = sqlx::query("SELECT complexity FROM recipes WHERE id = ?1")
+        .bind(&recipe_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    let complexity: Option<String> = recipe.get("complexity");
+    assert_eq!(
+        complexity.as_deref(),
+        Some("simple"),
+        "Initial complexity should be simple"
+    );
+
+    // Update recipe to add many ingredients and steps (change to complex)
+    let mut new_ingredients = vec![];
+    for i in 1..=20 {
+        new_ingredients.push(Ingredient {
+            name: format!("ingredient{}", i),
+            quantity: 1.0,
+            unit: "cup".to_string(),
+        });
+    }
+
+    let mut new_instructions = vec![];
+    for i in 1..=15 {
+        new_instructions.push(InstructionStep {
+            step_number: i,
+            instruction_text: format!("Step {}", i),
+            timer_minutes: None,
+        });
+    }
+
+    let update_command = UpdateRecipeCommand {
+        recipe_id: recipe_id.clone(),
+        user_id: "user1".to_string(),
+        title: None,
+        ingredients: Some(new_ingredients),
+        instructions: Some(new_instructions),
+        prep_time_min: None,
+        cook_time_min: None,
+        advance_prep_hours: None,
+        serving_size: None,
+    };
+
+    update_recipe(update_command, &executor, &pool)
+        .await
+        .unwrap();
+
+    // Run projection to sync complexity recalculation
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+
+    // Verify complexity updated to "complex" (score = 20*0.3 + 15*0.4 + 0*0.3 = 12 > 60? NO = 6 + 6 = 12, still moderate)
+    // Let's check the actual value - with 20 ingredients and 15 steps: (20 * 0.3) + (15 * 0.4) = 6 + 6 = 12, which is still < 30 (simple)
+    // Need more to get to complex. Let's add advance prep.
+    let update_with_prep = UpdateRecipeCommand {
+        recipe_id: recipe_id.clone(),
+        user_id: "user1".to_string(),
+        title: None,
+        ingredients: None,
+        instructions: None,
+        prep_time_min: None,
+        cook_time_min: None,
+        advance_prep_hours: Some(Some(4)), // Add 4-hour advance prep (multiplier = 100)
+        serving_size: None,
+    };
+
+    update_recipe(update_with_prep, &executor, &pool)
+        .await
+        .unwrap();
+
+    // Run projection again
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+
+    // Now complexity should be "complex" (score = 20*0.3 + 15*0.4 + 100*0.3 = 6 + 6 + 30 = 42, still < 60)
+    // Hmm, need even more. Let me recalculate: to get score > 60, with advance_prep=100:
+    // (ingredients * 0.3) + (steps * 0.4) + (100 * 0.3) = X > 60
+    // (ingredients * 0.3) + (steps * 0.4) + 30 > 60
+    // (ingredients * 0.3) + (steps * 0.4) > 30
+    // With 50 ingredients and 50 steps: (50 * 0.3) + (50 * 0.4) = 15 + 20 = 35 > 30. Then 35 + 30 = 65 > 60 ✓
+
+    let mut complex_ingredients = vec![];
+    for i in 1..=50 {
+        complex_ingredients.push(Ingredient {
+            name: format!("ingredient{}", i),
+            quantity: 1.0,
+            unit: "cup".to_string(),
+        });
+    }
+
+    let mut complex_instructions = vec![];
+    for i in 1..=50 {
+        complex_instructions.push(InstructionStep {
+            step_number: i,
+            instruction_text: format!("Step {}", i),
+            timer_minutes: None,
+        });
+    }
+
+    let update_to_complex = UpdateRecipeCommand {
+        recipe_id: recipe_id.clone(),
+        user_id: "user1".to_string(),
+        title: None,
+        ingredients: Some(complex_ingredients),
+        instructions: Some(complex_instructions),
+        prep_time_min: None,
+        cook_time_min: None,
+        advance_prep_hours: None, // Keep the 4-hour prep
+        serving_size: None,
+    };
+
+    update_recipe(update_to_complex, &executor, &pool)
+        .await
+        .unwrap();
+
+    // Run projection again
+    recipe_projection(pool.clone())
+        .unsafe_oneshot(&executor)
+        .await
+        .unwrap();
+
+    // Verify complexity is now "complex"
+    let recipe_final = sqlx::query("SELECT complexity FROM recipes WHERE id = ?1")
+        .bind(&recipe_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    let final_complexity: Option<String> = recipe_final.get("complexity");
+    assert_eq!(
+        final_complexity.as_deref(),
+        Some("complex"),
+        "Final complexity should be complex after update (50 ingredients + 50 steps + 4hr prep)"
+    );
+}
+
 /// Test updating recipe with Option<Option<T>> nullable fields
 ///
 /// Tests that we can correctly set timing fields to None (clearing existing values)

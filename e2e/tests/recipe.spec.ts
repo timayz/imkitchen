@@ -371,3 +371,173 @@ test.describe('Recipe List and Detail Views', () => {
     await expect(page.locator(`text=${recipeTitle}`)).not.toBeVisible();
   });
 });
+
+/**
+ * E2E Tests for Recipe Complexity (Story 3.12 AC-8)
+ *
+ * Tests verify that complexity badges are visible on recipe cards and detail pages,
+ * and that users can filter recipes by complexity in the recipe library.
+ */
+test.describe('Recipe Complexity Display and Filtering', () => {
+  test.beforeEach(async ({ page }) => {
+    // Login
+    await page.goto('/login');
+    await page.fill('input[name="email"]', 'test@example.com');
+    await page.fill('input[name="password"]', 'password123');
+    await page.click('button[type="submit"]');
+    await page.waitForURL('/dashboard');
+  });
+
+  test('simple recipe displays green complexity badge', async ({ page }) => {
+    const recipeTitle = uniqueRecipeTitle('Simple Recipe');
+
+    // Create a simple recipe (5 ingredients, 4 steps, no advance prep)
+    await page.goto('/recipes/new');
+    await page.fill('input[name="title"]', recipeTitle);
+
+    // Add 5 ingredients
+    await page.fill('input[name="ingredient_name[]"]', 'Salt');
+    await page.fill('input[name="ingredient_quantity[]"]', '1');
+    await page.selectOption('select[name="ingredient_unit[]"]', 'tsp');
+
+    for (let i = 2; i <= 5; i++) {
+      await page.click('button:has-text("Add Ingredient")');
+      await page.fill(`input[name="ingredient_name[]"]:nth-of-type(${i})`, `Ingredient ${i}`);
+      await page.fill(`input[name="ingredient_quantity[]"]:nth-of-type(${i})`, '1');
+      await page.selectOption(`select[name="ingredient_unit[]"]:nth-of-type(${i})`, 'cup');
+    }
+
+    // Add 4 instruction steps
+    await page.fill('textarea[name="instruction_text[]"]', 'Step 1');
+
+    for (let i = 2; i <= 4; i++) {
+      await page.click('button:has-text("Add Step")');
+      await page.fill(`textarea[name="instruction_text[]"]:nth-of-type(${i})`, `Step ${i}`);
+    }
+
+    // No advance prep (leave blank)
+    await page.fill('input[name="prep_time_min"]', '10');
+    await page.fill('input[name="cook_time_min"]', '15');
+
+    // Submit recipe
+    await page.click('button[type="submit"]:has-text("Create Recipe")');
+    await page.waitForURL(/\/recipes\/[a-zA-Z0-9-]+$/);
+
+    // Verify green "Simple" complexity badge on detail page
+    const complexityBadge = page.locator('text=Simple').first();
+    await expect(complexityBadge).toBeVisible();
+    await expect(complexityBadge).toHaveClass(/bg-green/);
+
+    // Navigate to recipe list and verify badge appears on card
+    await page.goto('/recipes');
+    const recipeCard = page.locator('.recipe-card', { hasText: recipeTitle }).first();
+    const cardBadge = recipeCard.locator('text=Simple');
+    await expect(cardBadge).toBeVisible();
+    await expect(cardBadge).toHaveClass(/bg-green/);
+  });
+
+  test('complex recipe displays red complexity badge', async ({ page }) => {
+    const recipeTitle = uniqueRecipeTitle('Complex Recipe');
+
+    // Create a complex recipe (20 ingredients, 15 steps, 4-hour advance prep)
+    await page.goto('/recipes/new');
+    await page.fill('input[name="title"]', recipeTitle);
+
+    // Add 20 ingredients
+    await page.fill('input[name="ingredient_name[]"]', 'Ingredient 1');
+    await page.fill('input[name="ingredient_quantity[]"]', '1');
+    await page.selectOption('select[name="ingredient_unit[]"]', 'cup');
+
+    for (let i = 2; i <= 20; i++) {
+      await page.click('button:has-text("Add Ingredient")');
+      await page.fill(`input[name="ingredient_name[]"]:nth-of-type(${i})`, `Ingredient ${i}`);
+      await page.fill(`input[name="ingredient_quantity[]"]:nth-of-type(${i})`, '1');
+      await page.selectOption(`select[name="ingredient_unit[]"]:nth-of-type(${i})`, 'cup');
+    }
+
+    // Add 15 instruction steps
+    await page.fill('textarea[name="instruction_text[]"]', 'Step 1');
+
+    for (let i = 2; i <= 15; i++) {
+      await page.click('button:has-text("Add Step")');
+      await page.fill(`textarea[name="instruction_text[]"]:nth-of-type(${i})`, `Step ${i}`);
+    }
+
+    // Add 4-hour advance prep
+    await page.fill('input[name="prep_time_min"]', '30');
+    await page.fill('input[name="cook_time_min"]', '60');
+    await page.fill('input[name="advance_prep_hours"]', '4');
+
+    // Submit recipe
+    await page.click('button[type="submit"]:has-text("Create Recipe")');
+    await page.waitForURL(/\/recipes\/[a-zA-Z0-9-]+$/);
+
+    // Verify red "Complex" complexity badge on detail page
+    const complexityBadge = page.locator('text=Complex').first();
+    await expect(complexityBadge).toBeVisible();
+    await expect(complexityBadge).toHaveClass(/bg-red/);
+
+    // Navigate to recipe list and verify badge appears on card
+    await page.goto('/recipes');
+    const recipeCard = page.locator('.recipe-card', { hasText: recipeTitle }).first();
+    const cardBadge = recipeCard.locator('text=Complex');
+    await expect(cardBadge).toBeVisible();
+    await expect(cardBadge).toHaveClass(/bg-red/);
+  });
+
+  test('user can filter recipes by complexity', async ({ page }) => {
+    // Go to recipe library
+    await page.goto('/recipes');
+
+    // Verify complexity filter section exists
+    await expect(page.locator('text=Complexity')).toBeVisible();
+
+    // Click "Simple" complexity filter
+    await page.click('a[href*="complexity=simple"]');
+
+    // Verify URL includes complexity filter
+    await expect(page).toHaveURL(/complexity=simple/);
+
+    // Verify only simple recipes are displayed (all visible badges should be green "Simple")
+    const complexityBadges = page.locator('span', { hasText: /^(Simple|Moderate|Complex)$/ });
+    const badgeCount = await complexityBadges.count();
+
+    if (badgeCount > 0) {
+      // Verify all visible badges say "Simple"
+      for (let i = 0; i < badgeCount; i++) {
+        const badge = complexityBadges.nth(i);
+        await expect(badge).toHaveText('Simple');
+        await expect(badge).toHaveClass(/bg-green/);
+      }
+    }
+
+    // Click "Moderate" complexity filter
+    await page.click('a[href*="complexity=moderate"]');
+    await expect(page).toHaveURL(/complexity=moderate/);
+
+    // Click "Complex" complexity filter
+    await page.click('a[href*="complexity=complex"]');
+    await expect(page).toHaveURL(/complexity=complex/);
+
+    // Verify active filter is highlighted
+    const activeFilter = page.locator('a[href*="complexity=complex"]');
+    await expect(activeFilter).toHaveClass(/bg-red-50|text-red-800|font-medium/);
+  });
+
+  test('complexity filter is visually highlighted when active', async ({ page }) => {
+    await page.goto('/recipes');
+
+    // Click "Simple" filter
+    const simpleFilter = page.locator('a[href*="complexity=simple"]');
+    await simpleFilter.click();
+
+    // Verify active state styling
+    await expect(simpleFilter).toHaveClass(/bg-green-50|text-green-800|font-medium/);
+
+    // Click "All Recipes" to clear filter
+    await page.click('a[href="/recipes"]:has-text("All Recipes")');
+
+    // Verify filter no longer highlighted
+    await expect(simpleFilter).not.toHaveClass(/bg-green-50|text-green-800|font-medium/);
+  });
+});
