@@ -53,13 +53,14 @@ pub struct RecipeFormTemplate {
     pub recipe: Option<RecipeDetailView>, // Pre-populated data for edit mode
 }
 
-/// Query parameters for calendar context (Story 3.5)
+/// Query parameters for calendar context (Story 3.5) and notification deep linking (Story 4.6)
 #[derive(Debug, Deserialize)]
 pub struct CalendarContext {
     pub from: Option<String>,
     pub meal_plan_id: Option<String>,
     pub assignment_id: Option<String>,
     pub kitchen_mode: Option<bool>,
+    pub notification_id: Option<String>, // Story 4.6: Deep link from notification
 }
 
 #[derive(Template)]
@@ -74,6 +75,8 @@ pub struct RecipeDetailTemplate {
     pub kitchen_mode: bool,            // Story 3.5 AC-6
     pub meal_plan_id: Option<String>,  // Story 3.5 AC-4 (Replace button context)
     pub assignment_id: Option<String>, // Story 3.5 AC-4 (Replace button context)
+    pub notification_id: Option<String>, // Story 4.6 AC-7 (Deep link from notification)
+    pub highlight_prep: bool,          // Story 4.6 AC-7 (Highlight prep instructions)
 }
 
 /// Recipe detail view model for template
@@ -362,6 +365,9 @@ pub async fn get_recipe_detail(
             let is_from_calendar = context.from.as_deref() == Some("calendar");
             let kitchen_mode = context.kitchen_mode.unwrap_or(false);
 
+            // Story 4.6: Parse notification context for prep highlighting
+            let highlight_prep = context.notification_id.is_some();
+
             let template = RecipeDetailTemplate {
                 recipe: recipe_view,
                 is_owner,
@@ -372,6 +378,8 @@ pub async fn get_recipe_detail(
                 kitchen_mode,                         // Story 3.5 AC-6
                 meal_plan_id: context.meal_plan_id,   // Story 3.5 AC-4
                 assignment_id: context.assignment_id, // Story 3.5 AC-4
+                notification_id: context.notification_id.clone(), // Story 4.6 AC-7
+                highlight_prep,                       // Story 4.6 AC-7
             };
 
             // Action Item 1: Proper error handling for template rendering

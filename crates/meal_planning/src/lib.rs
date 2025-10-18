@@ -15,7 +15,10 @@ pub use constraints::{
     DietaryConstraint, EquipmentConflictConstraint, FreshnessConstraint, MealSlot, MealType,
 };
 pub use error::MealPlanningError;
-pub use events::{MealPlanGenerated, MealPlanRegenerated, MealReplaced, RecipeUsedInRotation};
+pub use events::{
+    MealPlanArchived, MealPlanGenerated, MealPlanRegenerated, MealReplaced, RecipeUsedInRotation,
+    RotationCycleReset,
+};
 pub use read_model::{
     meal_plan_projection, MealAssignmentReadModel, MealPlanQueries, MealPlanReadModel,
 };
