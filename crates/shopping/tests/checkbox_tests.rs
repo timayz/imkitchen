@@ -371,7 +371,7 @@ async fn test_projection_shopping_list_item_collected() {
             .fetch_one(&pool)
             .await
             .unwrap();
-    assert_eq!(item_0.0, true, "Item 0 should be collected");
+    assert!(item_0.0, "Item 0 should be collected");
 
     let item_1: (bool,) =
         sqlx::query_as("SELECT is_collected FROM shopping_list_items WHERE id = ?")
@@ -379,7 +379,7 @@ async fn test_projection_shopping_list_item_collected() {
             .fetch_one(&pool)
             .await
             .unwrap();
-    assert_eq!(item_1.0, false, "Item 1 should not be collected");
+    assert!(!item_1.0, "Item 1 should not be collected");
 
     // Uncheck first item
     mark_item_collected(
@@ -406,7 +406,7 @@ async fn test_projection_shopping_list_item_collected() {
             .fetch_one(&pool)
             .await
             .unwrap();
-    assert_eq!(item_0_uncollected.0, false, "Item 0 should be uncollected");
+    assert!(!item_0_uncollected.0, "Item 0 should be uncollected");
 }
 
 /// Test projection: project_shopping_list_reset unchecks all items

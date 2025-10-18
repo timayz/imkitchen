@@ -7,7 +7,10 @@ use axum::{
 use chrono::{Datelike, Duration, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use shopping::{
-    commands::{mark_item_collected, reset_shopping_list, MarkItemCollectedCommand, ResetShoppingListCommand},
+    commands::{
+        mark_item_collected, reset_shopping_list, MarkItemCollectedCommand,
+        ResetShoppingListCommand,
+    },
     generate_shopping_list,
     read_model::get_shopping_list_by_week,
     GenerateShoppingListCommand,
@@ -434,16 +437,13 @@ pub async fn check_shopping_item(
     let shopping_list_id = parts[0..parts.len() - 1].join("-");
 
     // Verify user owns this shopping list (permission check)
-    let shopping_list =
-        shopping::read_model::get_shopping_list(&shopping_list_id, &state.db_pool)
-            .await
-            .map_err(|e| AppError::EventStoreError(format!("Database error: {}", e)))?;
+    let shopping_list = shopping::read_model::get_shopping_list(&shopping_list_id, &state.db_pool)
+        .await
+        .map_err(|e| AppError::EventStoreError(format!("Database error: {}", e)))?;
 
     let list = if let Some(list) = shopping_list {
         if list.header.user_id != *user_id {
-            return Err(AppError::ValidationError(
-                "Permission denied".to_string(),
-            ));
+            return Err(AppError::ValidationError("Permission denied".to_string()));
         }
         list
     } else {

@@ -42,7 +42,7 @@ machete:
 	fi
 
 # Run all checks: format, lint, machete, and test (CI-ready)
-check: fmt lint machete test
+check: test lint fmt machete
 	@echo "✓ All checks passed!"
 
 # Show help
