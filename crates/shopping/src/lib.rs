@@ -9,6 +9,11 @@ pub mod read_model;
 pub use aggregate::ShoppingListAggregate;
 pub use aggregation::IngredientAggregationService;
 pub use categorization::{CategorizationService, Category};
-pub use commands::{generate_shopping_list, GenerateShoppingListCommand, ShoppingListError};
-pub use events::{ShoppingListGenerated, ShoppingListItem, ShoppingListItemCollected};
+pub use commands::{
+    generate_shopping_list, recalculate_shopping_list_on_meal_replacement,
+    GenerateShoppingListCommand, RecalculateShoppingListCommand, ShoppingListError,
+};
+pub use events::{
+    ShoppingListGenerated, ShoppingListItem, ShoppingListItemCollected, ShoppingListRecalculated,
+};
 pub use read_model::{shopping_projection, validate_week_date};

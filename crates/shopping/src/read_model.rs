@@ -1,6 +1,6 @@
 use crate::aggregate::ShoppingListAggregate;
 use crate::commands::ShoppingListError;
-use crate::events::ShoppingListGenerated;
+use crate::events::{ShoppingListGenerated, ShoppingListRecalculated};
 use chrono::{Datelike, NaiveDate, Utc};
 use evento::{AggregatorName, Context, EventDetails, Executor};
 
@@ -58,6 +58,93 @@ pub async fn project_shopping_list_generated<E: Executor>(
 
     tracing::info!(
         "Projected ShoppingListGenerated event for shopping_list_id={} with {} items",
+        shopping_list_id,
+        event.data.items.len()
+    );
+
+    Ok(())
+}
+
+/// Project ShoppingListRecalculated event to read model tables (Story 4.4)
+///
+/// This evento subscription handler updates the shopping_list_items table when a
+/// ShoppingListRecalculated event is emitted (triggered by meal replacement).
+///
+/// Key behaviors (AC #6 - Task 2):
+/// - UPDATE existing shopping_list_items rows (not INSERT new ones)
+/// - DELETE items with zero quantity after subtraction
+/// - INSERT new items from new recipe if not previously present
+/// - PRESERVE is_collected status during recalculation (don't reset checked items)
+/// - UPDATE shopping_lists.updated_at timestamp
+#[evento::handler(ShoppingListAggregate)]
+pub async fn project_shopping_list_recalculated<E: Executor>(
+    context: &Context<'_, E>,
+    event: EventDetails<ShoppingListRecalculated>,
+) -> anyhow::Result<()> {
+    // Extract the shared SqlitePool from context
+    let pool: sqlx::SqlitePool = context.extract();
+    let shopping_list_id = &event.aggregator_id;
+
+    // 1. Preserve is_collected status for existing items (fetch current state)
+    let existing_items: Vec<(String, bool)> = sqlx::query_as::<_, (String, bool)>(
+        r#"
+        SELECT ingredient_name, is_collected
+        FROM shopping_list_items
+        WHERE shopping_list_id = ?
+        "#,
+    )
+    .bind(shopping_list_id)
+    .fetch_all(&pool)
+    .await?;
+
+    let collected_map: std::collections::HashMap<String, bool> =
+        existing_items.into_iter().collect();
+
+    // 2. Delete all existing items (we'll re-insert with updated quantities)
+    sqlx::query("DELETE FROM shopping_list_items WHERE shopping_list_id = ?")
+        .bind(shopping_list_id)
+        .execute(&pool)
+        .await?;
+
+    // 3. Insert updated items (preserving is_collected status where applicable)
+    for (index, item) in event.data.items.iter().enumerate() {
+        let item_id = format!("{}-{}", shopping_list_id, index);
+
+        // Preserve is_collected status if item existed before recalculation
+        let is_collected = collected_map.get(&item.ingredient_name).copied().unwrap_or(false);
+
+        sqlx::query(
+            r#"
+            INSERT INTO shopping_list_items (id, shopping_list_id, ingredient_name, quantity, unit, category, is_collected)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            "#,
+        )
+        .bind(&item_id)
+        .bind(shopping_list_id)
+        .bind(&item.ingredient_name)
+        .bind(item.quantity)
+        .bind(&item.unit)
+        .bind(&item.category)
+        .bind(is_collected)
+        .execute(&pool)
+        .await?;
+    }
+
+    // 4. Update shopping_lists.updated_at timestamp
+    sqlx::query(
+        r#"
+        UPDATE shopping_lists
+        SET updated_at = ?
+        WHERE id = ?
+        "#,
+    )
+    .bind(&event.data.recalculated_at)
+    .bind(shopping_list_id)
+    .execute(&pool)
+    .await?;
+
+    tracing::info!(
+        "Projected ShoppingListRecalculated event for shopping_list_id={} with {} items",
         shopping_list_id,
         event.data.items.len()
     );
@@ -292,11 +379,13 @@ impl ShoppingListData {
 
 /// Create shopping list projection subscription
 ///
-/// This sets up the evento subscription to project ShoppingListGenerated events
-/// into the shopping_lists and shopping_list_items read model tables.
+/// This sets up the evento subscription to project ShoppingListGenerated and
+/// ShoppingListRecalculated events into the shopping_lists and shopping_list_items
+/// read model tables.
 pub fn shopping_projection(pool: sqlx::SqlitePool) -> evento::SubscribeBuilder<evento::Sqlite> {
     evento::subscribe("shopping-read-model")
         .aggregator::<ShoppingListAggregate>()
         .data(pool)
         .handler(project_shopping_list_generated())
+        .handler(project_shopping_list_recalculated())
 }

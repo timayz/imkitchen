@@ -33,3 +33,13 @@ pub struct ShoppingListItemCollected {
     pub collected: bool,      // true = collected, false = uncollected
     pub collected_at: String, // RFC3339 formatted timestamp
 }
+
+/// ShoppingListRecalculated event emitted when shopping list is recalculated due to meal replacement
+///
+/// This event is emitted in Story 4.4 when a meal slot is replaced, triggering recalculation
+/// of the shopping list by subtracting old recipe ingredients and adding new recipe ingredients.
+#[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
+pub struct ShoppingListRecalculated {
+    pub items: Vec<ShoppingListItem>, // Updated aggregated and categorized shopping items
+    pub recalculated_at: String,      // RFC3339 formatted timestamp
+}
