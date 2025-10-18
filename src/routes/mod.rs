@@ -6,6 +6,7 @@ pub mod health;
 pub mod meal_plan;
 pub mod profile;
 pub mod recipes;
+pub mod shopping;
 
 pub use assets::AssetsService;
 pub use auth::{
@@ -34,3 +35,4 @@ pub use recipes::{
     post_create_recipe, post_delete_recipe, post_delete_review, post_favorite_recipe,
     post_rate_recipe, post_share_recipe, post_update_recipe, post_update_recipe_tags,
 };
+pub use shopping::{generate_shopping_list_handler, show_shopping_list};

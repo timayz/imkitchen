@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Shopping List - imkitchen{% endblock %}
+
+{% block extra_head %}
+<style>
+/* Checkbox styling */
+.shopping-checkbox {
+    width: 1.5rem;
+    height: 1.5rem;
+    cursor: pointer;
+}
+
+/* Strikethrough for collected items */
+.collected {
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
+/* Category card styling */
+.category-card {
+    border-left-width: 4px;
+}
+
+/* Print styles */
+@media print {
+    .no-print {
+        display: none;
+    }
+    .category-card {
+        page-break-inside: avoid;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<main id="main-content" class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Shopping List</h1>
+                <p class="text-gray-600 mt-2">Week of {{ week_start_date }}</p>
+            </div>
+            <div class="flex gap-3 no-print">
+                <button onclick="window.print()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                    </svg>
+                    Print
+                </button>
+                <form action="/shopping/generate" method="post">
+                    <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        Regenerate
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        {% if has_items %}
+        <!-- Shopping List Categories -->
+        <div class="space-y-6">
+            {% for category in categories %}
+            <section class="category-card bg-white rounded-lg shadow-md p-6 border-l-4 {% match category.name.as_str() %}{% when "Produce" %}border-green-500{% when "Dairy" %}border-blue-500{% when "Meat" %}border-red-500{% when "Bakery" %}border-yellow-500{% when "Pantry" %}border-amber-600{% when "Frozen" %}border-cyan-500{% else %}border-gray-500{% endmatch %}">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-gray-900">{{ category.name }}</h2>
+                    <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm font-medium">
+                        {{ category.item_count }} items
+                    </span>
+                </div>
+
+                <ul class="space-y-3">
+                    {% for item in category.items %}
+                    <li class="flex items-center gap-3 p-2 hover:bg-gray-50 rounded transition-colors">
+                        <input
+                            type="checkbox"
+                            id="item-{{ item.id }}"
+                            class="shopping-checkbox"
+                            {% if item.is_collected %}checked{% endif %}
+                            disabled
+                        >
+                        <label for="item-{{ item.id }}" class="flex-1 cursor-pointer {% if item.is_collected %}collected{% endif %}">
+                            <span class="font-medium text-gray-900">{{ item.ingredient_name }}</span>
+                            <span class="text-gray-600 ml-2">
+                                {% if item.quantity != 0.0 %}
+                                    {{ item.quantity }} {{ item.unit }}
+                                {% endif %}
+                            </span>
+                        </label>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </section>
+            {% endfor %}
+        </div>
+
+        <!-- Back to Dashboard -->
+        <div class="mt-8 no-print">
+            <a href="/dashboard" class="inline-flex items-center text-primary-600 hover:text-primary-700 font-medium">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Back to Dashboard
+            </a>
+        </div>
+
+        {% else %}
+        <!-- No Shopping List -->
+        <div class="bg-white rounded-lg shadow-md p-12 text-center">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                </svg>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">No Shopping List Yet</h2>
+            <p class="text-gray-600 mb-6">Generate a shopping list from your active meal plan</p>
+            <form action="/shopping/generate" method="post">
+                <button type="submit" class="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors inline-flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Generate Shopping List
+                </button>
+            </form>
+            <div class="mt-6">
+                <a href="/dashboard" class="text-gray-600 hover:text-gray-900">
+                    Back to Dashboard
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</main>
+{% endblock %}

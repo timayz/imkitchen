@@ -3,6 +3,7 @@ members = [
 	"crates/user",
 	"crates/recipe",
 	"crates/meal_planning",
+	"crates/shopping",
 ]
 resolver = "2"
 
@@ -89,6 +90,7 @@ async-stripe = { workspace = true }
 user = { path = "crates/user", version = "0.3.0" }
 recipe = { path = "crates/recipe", version = "0.3.0" }
 meal_planning = { path = "crates/meal_planning", version = "0.3.0" }
+shopping = { path = "crates/shopping", version = "0.3.0" }
 
 [dev-dependencies]
 http-body-util = "0.1"
