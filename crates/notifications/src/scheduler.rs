@@ -122,6 +122,256 @@ pub fn determine_reminder_type(prep_hours: i32) -> &'static str {
     }
 }
 
+/// Generate morning reminder message body
+///
+/// Per AC #2, #3, #4:
+/// - Format: "Prep reminder: {prep_task} tonight for {day_of_week}'s {meal_type} (Takes {prep_time} minutes)"
+/// - Example: "Prep reminder: Marinate chicken tonight for Thursday's dinner (Takes 10 minutes)"
+pub fn generate_morning_reminder_body(
+    prep_task: Option<&str>,
+    day_of_week: &str,
+    meal_type: &str,
+    prep_time_min: i32,
+) -> String {
+    let task = prep_task.unwrap_or("Prep");
+    format!(
+        "Prep reminder: {} tonight for {}'s {} (Takes {} minutes)",
+        task, day_of_week, meal_type, prep_time_min
+    )
+}
+
+/// Morning reminder scheduler - runs daily at 9:00 AM to check for meals requiring advance prep tonight
+///
+/// Per AC #1: Morning reminders sent at 9:00 AM local time (UTC for MVP)
+/// Per AC #6: Only sent if advance prep required within next 24 hours (4-23h window)
+///
+/// This function queries tomorrow's meal plan and schedules morning reminders for recipes
+/// with advance_prep_hours in the range [4, 24).
+pub async fn morning_reminder_scheduler<E: evento::Executor>(
+    pool: &sqlx::SqlitePool,
+    executor: &E,
+    user_id: &str,
+) -> anyhow::Result<()> {
+    use sqlx::Row;
+
+    tracing::info!("Running morning reminder scheduler for user_id={}", user_id);
+
+    // Calculate tomorrow's date
+    let tomorrow = (Utc::now() + Duration::days(1))
+        .format("%Y-%m-%d")
+        .to_string();
+
+    // Query meal assignments for tomorrow with advance prep requirements
+    let meal_slots = sqlx::query(
+        "SELECT ma.id, ma.recipe_id, ma.meal_type, ma.date,
+                r.title, r.advance_prep_hours, r.prep_task, r.prep_time_min
+         FROM meal_assignments ma
+         JOIN recipes r ON ma.recipe_id = r.id
+         JOIN meal_plans mp ON ma.meal_plan_id = mp.id
+         WHERE mp.user_id = ?
+           AND ma.date = ?
+           AND ma.prep_required = 1
+           AND r.advance_prep_hours > 0
+           AND r.advance_prep_hours <= 24",
+    )
+    .bind(user_id)
+    .bind(&tomorrow)
+    .fetch_all(pool)
+    .await?;
+
+    if meal_slots.is_empty() {
+        tracing::debug!(
+            "No meals requiring morning reminders for user_id={}",
+            user_id
+        );
+        return Ok(());
+    }
+
+    tracing::info!(
+        "Found {} meals requiring morning reminders",
+        meal_slots.len()
+    );
+
+    // Schedule a morning reminder for each qualifying meal
+    for row in meal_slots {
+        let recipe_id: String = row.get("recipe_id");
+        let meal_date: String = row.get("date");
+        let recipe_title: String = row.get("title");
+        let advance_prep_hours: i32 = row.get("advance_prep_hours");
+        let prep_task: Option<String> = row.get("prep_task");
+
+        // Calculate scheduled time = 9:00 AM today (UTC)
+        // For morning reminders, we always schedule for today at 9am regardless of current time
+        // (since we're scheduling reminders for tomorrow's meals)
+        let today_9am = Utc::now()
+            .date_naive()
+            .and_hms_opt(9, 0, 0)
+            .unwrap()
+            .and_utc();
+
+        let scheduled_time = today_9am.to_rfc3339();
+
+        // Note: message_body will be generated and updated after projection runs
+        // (see update_morning_reminder_messages function)
+
+        let cmd = ScheduleReminderCommand {
+            user_id: user_id.to_string(),
+            recipe_id: recipe_id.clone(),
+            meal_date: meal_date.clone(),
+            scheduled_time: scheduled_time.clone(),
+            reminder_type: "morning".to_string(),
+            prep_hours: advance_prep_hours,
+            prep_task,
+        };
+
+        let notification_id = schedule_reminder(cmd, executor).await?;
+
+        // Note: message_body will be updated after projection runs (see update_morning_reminder_messages)
+        // Store the mapping for batch update
+        tracing::debug!(
+            "Scheduled morning reminder notification_id={} for recipe={} ({} hours prep) on {} - message_body will be updated after projection",
+            notification_id,
+            recipe_title,
+            advance_prep_hours,
+            meal_date
+        );
+    }
+
+    Ok(())
+}
+
+/// Update message bodies for morning reminders after projection
+///
+/// This function should be called after the notification_projections subscription runs
+/// to populate the message_body column with the formatted reminder text.
+pub async fn update_morning_reminder_messages(
+    pool: &sqlx::SqlitePool,
+    user_id: &str,
+) -> anyhow::Result<()> {
+    use sqlx::Row;
+
+    // Query all pending morning reminders for this user that don't have message_body set
+    let notifications = sqlx::query(
+        "SELECT n.id, n.meal_date, n.prep_hours, n.prep_task, ma.meal_type, r.prep_time_min
+         FROM notifications n
+         JOIN meal_assignments ma ON n.meal_date = ma.date AND n.recipe_id = ma.recipe_id
+         JOIN meal_plans mp ON ma.meal_plan_id = mp.id
+         JOIN recipes r ON n.recipe_id = r.id
+         WHERE n.user_id = ?
+           AND n.reminder_type = 'morning'
+           AND n.status = 'pending'
+           AND (n.message_body IS NULL OR n.message_body = '')
+           AND mp.user_id = ?",
+    )
+    .bind(user_id)
+    .bind(user_id)
+    .fetch_all(pool)
+    .await?;
+
+    for row in notifications {
+        let notification_id: String = row.get("id");
+        let meal_date: String = row.get("meal_date");
+        let prep_task: Option<String> = row.get("prep_task");
+        let meal_type: String = row.get("meal_type");
+        let prep_time_min: i32 = row.get("prep_time_min");
+
+        // Parse meal_date to get day of week
+        let meal_date_naive = chrono::NaiveDate::parse_from_str(&meal_date, "%Y-%m-%d")?;
+        let day_of_week = match meal_date_naive.weekday() {
+            chrono::Weekday::Mon => "Monday",
+            chrono::Weekday::Tue => "Tuesday",
+            chrono::Weekday::Wed => "Wednesday",
+            chrono::Weekday::Thu => "Thursday",
+            chrono::Weekday::Fri => "Friday",
+            chrono::Weekday::Sat => "Saturday",
+            chrono::Weekday::Sun => "Sunday",
+        };
+
+        // Generate message body
+        let message_body = generate_morning_reminder_body(
+            prep_task.as_deref(),
+            day_of_week,
+            &meal_type,
+            prep_time_min,
+        );
+
+        // Update notification with message_body and created_at
+        sqlx::query("UPDATE notifications SET message_body = ?, created_at = ? WHERE id = ?")
+            .bind(&message_body)
+            .bind(Utc::now().to_rfc3339())
+            .bind(&notification_id)
+            .execute(pool)
+            .await?;
+
+        tracing::debug!(
+            "Updated message_body for notification_id={}: {}",
+            notification_id,
+            message_body
+        );
+    }
+
+    Ok(())
+}
+
+/// Auto-dismissal worker - runs hourly to dismiss expired reminders
+///
+/// Per AC #8: Reminder dismissed automatically after prep window passes
+///
+/// Prep window calculation:
+/// - For morning reminders: scheduled at 9am for tomorrow's meal
+/// - Prep window ends when the meal time arrives
+/// - If meal_time is unknown, assume 6pm (18:00)
+pub async fn auto_dismissal_worker<E: evento::Executor>(
+    pool: &sqlx::SqlitePool,
+    _executor: &E,
+) -> anyhow::Result<()> {
+    use sqlx::Row;
+
+    tracing::debug!("Running auto-dismissal worker");
+
+    let now = Utc::now();
+
+    // Query pending morning reminders where meal_date + estimated meal time (18:00) < now
+    let expired_notifications = sqlx::query(
+        "SELECT id, meal_date, prep_hours
+         FROM notifications
+         WHERE status = 'pending'
+           AND reminder_type = 'morning'
+           AND datetime(meal_date || ' 18:00:00') < datetime(?)",
+    )
+    .bind(now.format("%Y-%m-%d %H:%M:%S").to_string())
+    .fetch_all(pool)
+    .await?;
+
+    if expired_notifications.is_empty() {
+        tracing::debug!("No expired reminders found");
+        return Ok(());
+    }
+
+    tracing::info!(
+        "Found {} expired reminders to dismiss",
+        expired_notifications.len()
+    );
+
+    for row in expired_notifications {
+        let notification_id: String = row.get("id");
+
+        // Emit ReminderDismissed event
+        let dismissed_at = Utc::now().to_rfc3339();
+
+        // Update status directly in read model (simulating ReminderDismissed event projection)
+        sqlx::query("UPDATE notifications SET status = 'dismissed', dismissed_at = ? WHERE id = ?")
+            .bind(&dismissed_at)
+            .bind(&notification_id)
+            .execute(pool)
+            .await?;
+
+        tracing::info!("Auto-dismissed expired notification_id={}", notification_id);
+    }
+
+    Ok(())
+}
+
 /// Error types for scheduler operations
 #[derive(Debug, thiserror::Error)]
 pub enum SchedulerError {

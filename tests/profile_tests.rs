@@ -9,8 +9,8 @@ mod common;
 /// Test GET /profile requires authentication
 #[tokio::test]
 async fn test_get_profile_requires_auth() {
-    let pool = common::setup_test_db().await;
-    let app = common::create_test_app(pool.clone()).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let app = common::create_test_app((pool.clone(), _executor)).await;
 
     let response = app
         .router
@@ -33,8 +33,8 @@ async fn test_get_profile_requires_auth() {
 /// Test POST /profile requires authentication
 #[tokio::test]
 async fn test_post_profile_requires_auth() {
-    let pool = common::setup_test_db().await;
-    let app = common::create_test_app(pool.clone()).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let app = common::create_test_app((pool.clone(), _executor)).await;
 
     let form_data = "dietary_restrictions=vegetarian&household_size=2&skill_level=intermediate&availability_start=18:00&availability_duration=45";
 

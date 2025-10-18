@@ -45,8 +45,8 @@ async fn register_and_get_cookie(test_app: &common::TestApp) -> String {
 #[tokio::test]
 async fn test_post_register_redirects_to_onboarding() {
     // AC #1: Onboarding wizard displays after first registration
-    let pool = common::setup_test_db().await;
-    let test_app = common::create_test_app(pool.clone()).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool.clone(), _executor)).await;
 
     let response = test_app
         .router
@@ -74,8 +74,8 @@ async fn test_post_register_redirects_to_onboarding() {
 #[tokio::test]
 async fn test_get_onboarding_renders_wizard_for_new_user() {
     // AC #1: Onboarding wizard displays for new user
-    let pool = common::setup_test_db().await;
-    let test_app = common::create_test_app(pool.clone()).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool.clone(), _executor)).await;
 
     let cookie = register_and_get_cookie(&test_app).await;
 
@@ -113,8 +113,8 @@ async fn test_get_onboarding_renders_wizard_for_new_user() {
 #[tokio::test]
 async fn test_get_onboarding_redirects_if_already_completed() {
     // AC #1: User who already completed onboarding gets redirected to dashboard
-    let pool = common::setup_test_db().await;
-    let test_app = common::create_test_app(pool.clone()).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool.clone(), _executor)).await;
 
     let cookie = register_and_get_cookie(&test_app).await;
 
@@ -158,8 +158,8 @@ async fn test_get_onboarding_redirects_if_already_completed() {
 async fn test_post_onboarding_with_valid_data_creates_profile() {
     // AC #8: Completed profile stored
     // AC #9: Profile data feeds meal planning algorithm
-    let pool = common::setup_test_db().await;
-    let test_app = common::create_test_app(pool.clone()).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool.clone(), _executor)).await;
 
     let cookie = register_and_get_cookie(&test_app).await;
 
@@ -286,8 +286,8 @@ async fn test_post_onboarding_with_valid_data_creates_profile() {
 #[tokio::test]
 async fn test_post_onboarding_applies_defaults_for_skipped_fields() {
     // AC #7: User can skip onboarding - defaults applied
-    let pool = common::setup_test_db().await;
-    let test_app = common::create_test_app(pool.clone()).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool.clone(), _executor)).await;
 
     let cookie = register_and_get_cookie(&test_app).await;
 
@@ -389,8 +389,8 @@ async fn test_post_onboarding_applies_defaults_for_skipped_fields() {
 #[tokio::test]
 async fn test_post_onboarding_validates_household_size_min() {
     // AC #6: Each step validates inputs before allowing progression
-    let pool = common::setup_test_db().await;
-    let test_app = common::create_test_app(pool.clone()).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool.clone(), _executor)).await;
 
     let cookie = register_and_get_cookie(&test_app).await;
 
@@ -421,8 +421,8 @@ async fn test_post_onboarding_validates_household_size_min() {
 #[tokio::test]
 async fn test_post_onboarding_validates_household_size_max() {
     // AC #6: Each step validates inputs before allowing progression
-    let pool = common::setup_test_db().await;
-    let test_app = common::create_test_app(pool.clone()).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool.clone(), _executor)).await;
 
     let cookie = register_and_get_cookie(&test_app).await;
 
@@ -453,8 +453,8 @@ async fn test_post_onboarding_validates_household_size_max() {
 #[tokio::test]
 async fn test_get_onboarding_skip_applies_all_defaults() {
     // AC #7: User can skip onboarding (optional) - defaults applied
-    let pool = common::setup_test_db().await;
-    let test_app = common::create_test_app(pool.clone()).await;
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool.clone(), _executor)).await;
 
     let cookie = register_and_get_cookie(&test_app).await;
 

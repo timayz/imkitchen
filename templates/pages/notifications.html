@@ -71,14 +71,20 @@ button.ts-active::after {
                             </span>
                         </div>
 
-                        <!-- Recipe Title (would be fetched in real implementation) -->
+                        <!-- Reminder Title -->
                         <h3 class="text-lg font-semibold text-gray-900 mb-2">
-                            Recipe Prep Reminder
+                            {% if notification.reminder_type == "morning" %}
+                            Morning Prep Reminder
+                            {% else %}
+                            Prep Reminder
+                            {% endif %}
                         </h3>
 
-                        <!-- Message Body -->
+                        <!-- Message Body (AC #2, #3, #4: Display formatted message with prep task, day, and time estimate) -->
                         <p class="text-gray-700 mb-3">
-                            {% if let Some(task) = notification.prep_task %}
+                            {% if let Some(msg) = notification.message_body %}
+                            {{ msg }}
+                            {% else if let Some(task) = notification.prep_task %}
                             {{ task }} for {{ notification.meal_date }}
                             {% else %}
                             Prepare for meal on {{ notification.meal_date }}
@@ -87,11 +93,11 @@ button.ts-active::after {
 
                         <!-- Scheduled Time -->
                         <p class="text-sm text-gray-500">
-                            Scheduled: {{ notification.scheduled_time }}
+                            Reminder scheduled for: {{ notification.scheduled_time }}
                         </p>
 
-                        <!-- View Recipe Link -->
-                        <a href="/recipes/{{ notification.recipe_id }}?notification_id={{ notification.id }}"
+                        <!-- View Recipe Link (AC #5: Deep link with highlight=prep parameter) -->
+                        <a href="/recipes/{{ notification.recipe_id }}?highlight=prep&notification_id={{ notification.id }}"
                            class="inline-flex items-center mt-3 text-primary-600 hover:text-primary-700 font-medium">
                             View Recipe
                             <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

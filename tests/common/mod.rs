@@ -6,7 +6,7 @@ use evento::prelude::*;
 use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
 use user::user_projection;
 
-pub async fn setup_test_db() -> SqlitePool {
+pub async fn setup_test_db() -> (SqlitePool, evento::Sqlite) {
     let pool = SqlitePoolOptions::new()
         .max_connections(1)
         .connect(":memory:")
@@ -25,7 +25,10 @@ pub async fn setup_test_db() -> SqlitePool {
         .unwrap();
     drop(conn);
 
-    pool
+    // Create evento executor
+    let executor: evento::Sqlite = pool.clone().into();
+
+    (pool, executor)
 }
 
 #[allow(dead_code)]
@@ -46,7 +49,8 @@ impl TestApp {
     }
 }
 
-pub async fn create_test_app(pool: SqlitePool) -> TestApp {
+#[allow(dead_code)]
+pub async fn create_test_app((pool, evento_executor): (SqlitePool, evento::Sqlite)) -> TestApp {
     use axum::middleware as axum_middleware;
     use imkitchen::middleware::auth_middleware;
     use imkitchen::routes::{
@@ -55,9 +59,6 @@ pub async fn create_test_app(pool: SqlitePool) -> TestApp {
         post_onboarding_step_1, post_onboarding_step_2, post_onboarding_step_3,
         post_onboarding_step_4, post_profile, post_register, post_subscription_upgrade, AppState,
     };
-
-    // Create evento executor
-    let evento_executor: evento::Sqlite = pool.clone().into();
 
     let email_config = imkitchen::email::EmailConfig {
         smtp_host: "localhost".to_string(),

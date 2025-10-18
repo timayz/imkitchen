@@ -61,7 +61,10 @@ pub fn create_push_payload(
         data: NotificationData {
             recipe_id: recipe_id.to_string(),
             notification_id: notification_id.to_string(),
-            url: format!("/recipes/{}?notification_id={}", recipe_id, notification_id),
+            url: format!(
+                "/recipes/{}?highlight=prep&notification_id={}",
+                recipe_id, notification_id
+            ),
         },
     }
 }
