@@ -1,0 +1,19 @@
+[package]
+name = "shopping"
+version = "0.3.0"
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+tokio = { workspace = true }
+sqlx = { workspace = true }
+evento = { workspace = true }
+serde = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+bincode = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }

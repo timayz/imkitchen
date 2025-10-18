@@ -8,22 +8,24 @@ use clap::{Parser, Subcommand};
 use evento::prelude::*;
 use imkitchen::middleware::auth_middleware;
 use imkitchen::routes::{
-    dashboard_handler, get_collections, get_discover, get_discover_detail, get_ingredient_row,
-    get_instruction_row, get_login, get_meal_alternatives, get_meal_plan, get_onboarding,
-    get_onboarding_skip, get_password_reset, get_password_reset_complete, get_profile,
-    get_recipe_detail, get_recipe_edit_form, get_recipe_form, get_recipe_list,
-    get_regenerate_confirm, get_register, get_subscription, get_subscription_success, health,
-    post_add_recipe_to_collection, post_add_to_library, post_create_collection, post_create_recipe,
-    post_delete_collection, post_delete_recipe, post_delete_review, post_favorite_recipe,
-    post_generate_meal_plan, post_login, post_logout, post_onboarding_step_1,
-    post_onboarding_step_2, post_onboarding_step_3, post_onboarding_step_4, post_password_reset,
-    post_password_reset_complete, post_profile, post_rate_recipe, post_regenerate_meal_plan,
-    post_register, post_remove_recipe_from_collection, post_replace_meal, post_share_recipe,
-    post_stripe_webhook, post_subscription_upgrade, post_update_collection, post_update_recipe,
-    post_update_recipe_tags, ready, AppState, AssetsService,
+    dashboard_handler, generate_shopping_list_handler, get_collections, get_discover,
+    get_discover_detail, get_ingredient_row, get_instruction_row, get_login, get_meal_alternatives,
+    get_meal_plan, get_onboarding, get_onboarding_skip, get_password_reset,
+    get_password_reset_complete, get_profile, get_recipe_detail, get_recipe_edit_form,
+    get_recipe_form, get_recipe_list, get_regenerate_confirm, get_register, get_subscription,
+    get_subscription_success, health, post_add_recipe_to_collection, post_add_to_library,
+    post_create_collection, post_create_recipe, post_delete_collection, post_delete_recipe,
+    post_delete_review, post_favorite_recipe, post_generate_meal_plan, post_login, post_logout,
+    post_onboarding_step_1, post_onboarding_step_2, post_onboarding_step_3, post_onboarding_step_4,
+    post_password_reset, post_password_reset_complete, post_profile, post_rate_recipe,
+    post_regenerate_meal_plan, post_register, post_remove_recipe_from_collection,
+    post_replace_meal, post_share_recipe, post_stripe_webhook, post_subscription_upgrade,
+    post_update_collection, post_update_recipe, post_update_recipe_tags, ready, show_shopping_list,
+    AppState, AssetsService,
 };
 use meal_planning::meal_plan_projection;
 use recipe::{collection_projection, recipe_projection};
+use shopping::shopping_projection;
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions};
 use tower_http::trace::TraceLayer;
 use user::user_projection;
@@ -140,6 +142,11 @@ async fn serve_command(
         .await?;
     tracing::info!("Evento subscription 'meal-plan-read-model' started");
 
+    shopping_projection(db_pool.clone())
+        .run(&evento_executor)
+        .await?;
+    tracing::info!("Evento subscription 'shopping-read-model' started");
+
     // Create app state
     let email_config = imkitchen::email::EmailConfig {
         smtp_host: config.email.smtp_host,
@@ -223,6 +230,9 @@ async fn serve_command(
             "/plan/meal/{assignment_id}/replace",
             post(post_replace_meal),
         )
+        // Shopping list routes
+        .route("/shopping", get(show_shopping_list))
+        .route("/shopping/generate", post(generate_shopping_list_handler))
         .route_layer(axum_middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,
@@ -385,6 +395,11 @@ async fn import_recipe_command(
         &db_pool,
     )
     .await?;
+
+    // Run projections to persist event to read model
+    recipe::read_model::recipe_projection(db_pool.clone())
+        .unsafe_oneshot(&evento_executor)
+        .await?;
 
     tracing::info!("✅ Recipe imported successfully with ID: {}", recipe_id);
     println!("✅ Recipe imported successfully!");
