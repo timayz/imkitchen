@@ -30,6 +30,15 @@ pub enum AppError {
     #[error("Shopping list error: {0}")]
     ShoppingListError(#[from] ShoppingListError),
 
+    #[error("Notification error: {0}")]
+    NotificationError(#[from] notifications::commands::NotificationError),
+
+    #[error("Permission denied")]
+    PermissionDenied,
+
+    #[error("Notification not found")]
+    NotificationNotFound,
+
     #[error("Insufficient recipes: need at least {required}, have {current}")]
     InsufficientRecipes { current: usize, required: usize },
 
@@ -209,6 +218,27 @@ impl IntoResponse for AppError {
                     None,
                 )
             }
+            AppError::NotificationError(e) => {
+                tracing::error!("Notification error: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Notification Error".to_string(),
+                    format!("An error occurred while processing your notification: {}", e),
+                    None,
+                )
+            }
+            AppError::PermissionDenied => (
+                StatusCode::FORBIDDEN,
+                "Permission Denied".to_string(),
+                "You do not have permission to access this resource.".to_string(),
+                None,
+            ),
+            AppError::NotificationNotFound => (
+                StatusCode::NOT_FOUND,
+                "Notification Not Found".to_string(),
+                "The requested notification could not be found.".to_string(),
+                None,
+            ),
             // Story 3.10: AC-5 - Friendly error type for custom styling
             AppError::InsufficientRecipes { current, required } => (
                 StatusCode::UNPROCESSABLE_ENTITY,

@@ -67,6 +67,7 @@ async fn test_dashboard_requires_authentication() {
         stripe_secret_key: "sk_test_fake".to_string(),
         stripe_webhook_secret: "whsec_test_fake".to_string(),
         stripe_price_id: "price_test_fake".to_string(),
+        vapid_public_key: "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nqm50g".to_string(),
         generation_locks: std::sync::Arc::new(tokio::sync::Mutex::new(
             std::collections::HashMap::new(),
         )),
@@ -132,6 +133,7 @@ async fn test_dashboard_rejects_invalid_jwt() {
         stripe_secret_key: "sk_test_fake".to_string(),
         stripe_webhook_secret: "whsec_test_fake".to_string(),
         stripe_price_id: "price_test_fake".to_string(),
+        vapid_public_key: "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nqm50g".to_string(),
         generation_locks: std::sync::Arc::new(tokio::sync::Mutex::new(
             std::collections::HashMap::new(),
         )),

@@ -4,6 +4,7 @@ pub mod collections;
 pub mod dashboard;
 pub mod health;
 pub mod meal_plan;
+pub mod notifications;
 pub mod profile;
 pub mod recipes;
 pub mod shopping;
@@ -23,6 +24,10 @@ pub use health::{health, ready};
 pub use meal_plan::{
     get_meal_alternatives, get_meal_plan, get_regenerate_confirm, post_generate_meal_plan,
     post_regenerate_meal_plan, post_replace_meal,
+};
+pub use notifications::{
+    dismiss_notification, list_notifications, notifications_page, snooze_notification,
+    subscribe_push,
 };
 pub use profile::{
     get_onboarding, get_onboarding_skip, get_profile, get_subscription, get_subscription_success,

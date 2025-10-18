@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications - imkitchen{% endblock %}
+
+{% block extra_head %}
+<style>
+/* TwinSpark loading state */
+button.ts-active {
+    opacity: 0.6;
+    cursor: wait;
+    position: relative;
+}
+button.ts-active::after {
+    content: "⏳";
+    margin-left: 0.5rem;
+}
+
+/* Notification card animations */
+.notification-card {
+    transition: all 0.3s ease;
+}
+.notification-card:hover {
+    transform: translateX(4px);
+}
+.notification-dismissed {
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<main id="main-content" class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+        <!-- Page Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">Prep Reminders</h1>
+            <p class="text-gray-600 mt-2">Stay on track with your advance preparation tasks</p>
+        </div>
+
+        <!-- Notifications List -->
+        <div id="notifications-list" class="space-y-4">
+            {% if notifications.is_empty() %}
+            <!-- Empty State -->
+            <div class="bg-white rounded-lg shadow-md p-12 text-center">
+                <div class="text-6xl mb-4">🔔</div>
+                <h2 class="text-xl font-semibold text-gray-900 mb-2">All caught up!</h2>
+                <p class="text-gray-600">You don't have any pending prep reminders.</p>
+                <a href="/plan" class="mt-6 inline-block text-primary-600 hover:text-primary-700 font-medium">
+                    View Meal Plan →
+                </a>
+            </div>
+            {% else %}
+            <!-- Notification Cards -->
+            {% for notification in notifications %}
+            <article id="notification-{{ notification.id }}"
+                     class="notification-card bg-white rounded-lg shadow-md p-6 border-l-4 border-orange-500"
+                     role="article"
+                     aria-label="Prep reminder for {{ notification.recipe_id }}">
+
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <!-- Reminder Type Badge -->
+                        <div class="flex items-center mb-2">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                ⏰ {{ notification.reminder_type }}
+                            </span>
+                            <span class="ml-3 text-sm text-gray-500">
+                                {{ notification.prep_hours }}h prep required
+                            </span>
+                        </div>
+
+                        <!-- Recipe Title (would be fetched in real implementation) -->
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                            Recipe Prep Reminder
+                        </h3>
+
+                        <!-- Message Body -->
+                        <p class="text-gray-700 mb-3">
+                            {% if let Some(task) = notification.prep_task %}
+                            {{ task }} for {{ notification.meal_date }}
+                            {% else %}
+                            Prepare for meal on {{ notification.meal_date }}
+                            {% endif %}
+                        </p>
+
+                        <!-- Scheduled Time -->
+                        <p class="text-sm text-gray-500">
+                            Scheduled: {{ notification.scheduled_time }}
+                        </p>
+
+                        <!-- View Recipe Link -->
+                        <a href="/recipes/{{ notification.recipe_id }}?notification_id={{ notification.id }}"
+                           class="inline-flex items-center mt-3 text-primary-600 hover:text-primary-700 font-medium">
+                            View Recipe
+                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </a>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="ml-4 flex-shrink-0 flex flex-col space-y-2">
+                        <!-- Dismiss Button -->
+                        <form method="POST"
+                              action="/api/notifications/{{ notification.id }}/dismiss"
+                              ts-req
+                              ts-req-selector="#notification-{{ notification.id }}"
+                              ts-req-method="POST">
+                            <button type="submit"
+                                    class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                                ✓ Done
+                            </button>
+                        </form>
+
+                        <!-- Snooze Dropdown -->
+                        <div class="relative inline-block text-left">
+                            <select onchange="this.form.submit()"
+                                    name="duration_hours"
+                                    form="snooze-form-{{ notification.id }}"
+                                    class="block w-full pl-3 pr-10 py-2 text-sm border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 rounded-md">
+                                <option value="" selected disabled>Snooze...</option>
+                                <option value="1">1 hour</option>
+                                <option value="2">2 hours</option>
+                                <option value="4">4 hours</option>
+                            </select>
+                        </div>
+                        <form id="snooze-form-{{ notification.id }}"
+                              method="POST"
+                              action="/api/notifications/{{ notification.id }}/snooze"
+                              ts-req
+                              ts-req-selector="#notification-{{ notification.id }}"
+                              ts-req-method="POST">
+                        </form>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+            {% endif %}
+        </div>
+
+        <!-- Push Notification Permission Banner (if not enabled) -->
+        {% if !push_enabled %}
+        <div class="mt-8 bg-blue-50 border-l-4 border-blue-400 p-6 rounded-lg">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <svg class="h-6 w-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                    </svg>
+                </div>
+                <div class="ml-3 flex-1">
+                    <h3 class="text-sm font-medium text-blue-800">
+                        Enable Push Notifications
+                    </h3>
+                    <p class="mt-2 text-sm text-blue-700">
+                        Get notified when it's time to start prep tasks. We'll send you browser notifications at the scheduled times.
+                    </p>
+                    <div class="mt-4">
+                        <button id="enable-push-btn"
+                                onclick="enablePushNotifications()"
+                                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            Enable Notifications
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</main>
+
+<script>
+// TwinSpark handler for dismissed notifications
+document.addEventListener('ts:after-swap', function(e) {
+    if (e.detail.requestUrl && e.detail.requestUrl.includes('/dismiss')) {
+        const target = e.detail.target;
+        if (target) {
+            target.classList.add('notification-dismissed');
+            setTimeout(() => {
+                target.remove();
+                // Check if list is empty
+                const list = document.getElementById('notifications-list');
+                if (list && list.querySelectorAll('.notification-card').length === 0) {
+                    location.reload(); // Reload to show empty state
+                }
+            }, 300);
+        }
+    }
+});
+
+// Push notification enablement - Story 4.6 AC-5
+async function enablePushNotifications() {
+    const btn = document.getElementById('enable-push-btn');
+    btn.disabled = true;
+    btn.textContent = 'Requesting permission...';
+
+    try {
+        // Request notification permission
+        const permission = await Notification.requestPermission();
+
+        if (permission !== 'granted') {
+            btn.textContent = 'Permission Denied';
+            btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            btn.classList.add('bg-red-600');
+            btn.disabled = false;
+            return;
+        }
+
+        // Register service worker
+        if (!('serviceWorker' in navigator)) {
+            throw new Error('Service Worker not supported');
+        }
+
+        btn.textContent = 'Registering service worker...';
+        const registration = await navigator.serviceWorker.register('/static/sw.js');
+        await navigator.serviceWorker.ready;
+
+        // Get push subscription
+        btn.textContent = 'Setting up push notifications...';
+
+        // Public VAPID key from server configuration
+        const vapidPublicKey = '{{ vapid_public_key }}';
+
+        const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+        });
+
+        // Send subscription to backend
+        btn.textContent = 'Saving subscription...';
+        const response = await fetch('/api/notifications/subscribe', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                endpoint: subscription.endpoint,
+                p256dh_key: arrayBufferToBase64(subscription.getKey('p256dh')),
+                auth_key: arrayBufferToBase64(subscription.getKey('auth'))
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to save subscription');
+        }
+
+        btn.textContent = 'Notifications Enabled!';
+        btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+        btn.classList.add('bg-green-600');
+
+        setTimeout(() => {
+            location.reload();
+        }, 1500);
+
+    } catch (error) {
+        console.error('Error enabling push notifications:', error);
+        btn.textContent = 'Error - Try Again';
+        btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+        btn.classList.add('bg-red-600');
+        btn.disabled = false;
+    }
+}
+
+// Helper: Convert URL-safe base64 to Uint8Array
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+        .replace(/\-/g, '+')
+        .replace(/_/g, '/');
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
+// Helper: Convert ArrayBuffer to base64
+function arrayBufferToBase64(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return window.btoa(binary);
+}
+</script>
+{% endblock %}
