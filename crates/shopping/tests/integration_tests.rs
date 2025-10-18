@@ -1,5 +1,9 @@
+use chrono::{Datelike, Duration, Utc};
 use evento::prelude::{Migrate, Plan};
-use shopping::{generate_shopping_list, shopping_projection, GenerateShoppingListCommand};
+use shopping::{
+    generate_shopping_list, shopping_projection, validate_week_date, GenerateShoppingListCommand,
+    ShoppingListError,
+};
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::SqlitePool;
 
@@ -539,4 +543,189 @@ async fn test_generate_shopping_list_large_dataset() {
     );
 
     println!("✓ Generated shopping list with 140 items in {:?}", elapsed);
+}
+
+// ==================== Story 4.3: Week Validation Tests ====================
+
+/// Helper to get the Monday of the current week
+fn get_current_week_monday() -> String {
+    let today = Utc::now().date_naive();
+    let monday = today - Duration::days(today.weekday().num_days_from_monday() as i64);
+    monday.format("%Y-%m-%d").to_string()
+}
+
+/// Helper to get a future week's Monday (offset in weeks)
+fn get_future_week_monday(weeks_ahead: i64) -> String {
+    let today = Utc::now().date_naive();
+    let monday = today - Duration::days(today.weekday().num_days_from_monday() as i64);
+    let future_monday = monday + Duration::weeks(weeks_ahead);
+    future_monday.format("%Y-%m-%d").to_string()
+}
+
+/// Helper to get a past week's Monday (offset in weeks, negative)
+fn get_past_week_monday(weeks_ago: i64) -> String {
+    let today = Utc::now().date_naive();
+    let monday = today - Duration::days(today.weekday().num_days_from_monday() as i64);
+    let past_monday = monday - Duration::weeks(weeks_ago);
+    past_monday.format("%Y-%m-%d").to_string()
+}
+
+#[test]
+fn test_validate_week_date_current_week() {
+    // AC #3: Current week should be valid
+    let current_week = get_current_week_monday();
+    let result = validate_week_date(&current_week);
+    assert!(result.is_ok(), "Current week should be valid");
+}
+
+#[test]
+fn test_validate_week_date_next_week() {
+    // AC #5: Future weeks up to +4 weeks should be valid
+    let next_week = get_future_week_monday(1);
+    let result = validate_week_date(&next_week);
+    assert!(result.is_ok(), "Next week (+1) should be valid");
+}
+
+#[test]
+fn test_validate_week_date_four_weeks_ahead() {
+    // AC #5: +4 weeks is at the boundary, should be valid
+    let four_weeks_ahead = get_future_week_monday(4);
+    let result = validate_week_date(&four_weeks_ahead);
+    assert!(
+        result.is_ok(),
+        "Four weeks ahead (+4) should be valid (boundary)"
+    );
+}
+
+#[test]
+fn test_validate_week_date_five_weeks_ahead_rejected() {
+    // AC #5: +5 weeks exceeds the limit, should be rejected
+    let five_weeks_ahead = get_future_week_monday(5);
+    let result = validate_week_date(&five_weeks_ahead);
+    assert!(matches!(
+        result,
+        Err(ShoppingListError::FutureWeekOutOfRangeError)
+    ));
+}
+
+#[test]
+fn test_validate_week_date_past_week_rejected() {
+    // AC #7: Past weeks should be rejected
+    let last_week = get_past_week_monday(1);
+    let result = validate_week_date(&last_week);
+    assert!(matches!(
+        result,
+        Err(ShoppingListError::PastWeekNotAccessibleError)
+    ));
+}
+
+#[test]
+fn test_validate_week_date_two_weeks_ago_rejected() {
+    // AC #7: Past weeks should be rejected
+    let two_weeks_ago = get_past_week_monday(2);
+    let result = validate_week_date(&two_weeks_ago);
+    assert!(matches!(
+        result,
+        Err(ShoppingListError::PastWeekNotAccessibleError)
+    ));
+}
+
+#[test]
+fn test_validate_week_date_invalid_format() {
+    // Invalid date format should be rejected
+    let result = validate_week_date("invalid-date");
+    assert!(matches!(
+        result,
+        Err(ShoppingListError::InvalidWeekError(_))
+    ));
+}
+
+#[test]
+fn test_validate_week_date_not_monday() {
+    // Non-Monday dates should be rejected
+    // 2025-10-22 is a Tuesday
+    let result = validate_week_date("2025-10-22");
+    assert!(
+        matches!(result, Err(ShoppingListError::InvalidWeekError(_))),
+        "Tuesday should be rejected, only Mondays allowed"
+    );
+}
+
+#[test]
+fn test_validate_week_date_invalid_date_format() {
+    // Invalid ISO 8601 format should be rejected
+    let result = validate_week_date("2025-13-99");
+    assert!(matches!(
+        result,
+        Err(ShoppingListError::InvalidWeekError(_))
+    ));
+}
+
+#[tokio::test]
+async fn test_get_shopping_list_by_week_with_validation() {
+    let (pool, executor) = setup_test_db().await;
+
+    // Generate a shopping list for current week
+    let current_week = get_current_week_monday();
+    let ingredients = vec![("tomato".to_string(), 2.0, "whole".to_string())];
+
+    let command = GenerateShoppingListCommand {
+        user_id: "user-1".to_string(),
+        meal_plan_id: "meal-plan-1".to_string(),
+        week_start_date: current_week.clone(),
+        ingredients,
+    };
+
+    generate_shopping_list(command, &executor)
+        .await
+        .expect("Failed to generate shopping list");
+
+    process_projections(&pool, &executor).await;
+
+    // Query with valid current week - should succeed
+    let result =
+        shopping::read_model::get_shopping_list_by_week("user-1", &current_week, &pool).await;
+    assert!(result.is_ok());
+    assert!(result.unwrap().is_some());
+
+    // Query with past week - should fail validation
+    let past_week = get_past_week_monday(1);
+    let result = shopping::read_model::get_shopping_list_by_week("user-1", &past_week, &pool).await;
+    assert!(matches!(
+        result,
+        Err(ShoppingListError::PastWeekNotAccessibleError)
+    ));
+
+    // Query with invalid date format - should fail validation
+    let result =
+        shopping::read_model::get_shopping_list_by_week("user-1", "invalid-date", &pool).await;
+    assert!(matches!(
+        result,
+        Err(ShoppingListError::InvalidWeekError(_))
+    ));
+
+    // Query with non-Monday - should fail validation
+    let result =
+        shopping::read_model::get_shopping_list_by_week("user-1", "2025-10-22", &pool).await;
+    assert!(matches!(
+        result,
+        Err(ShoppingListError::InvalidWeekError(_))
+    ));
+}
+
+#[tokio::test]
+async fn test_get_shopping_list_by_week_returns_none_for_nonexistent_week() {
+    let (pool, _executor) = setup_test_db().await;
+
+    // Query a valid future week that has no shopping list yet
+    let next_week = get_future_week_monday(1);
+    let result = shopping::read_model::get_shopping_list_by_week("user-1", &next_week, &pool)
+        .await
+        .expect("Query should succeed even if no list exists");
+
+    // Should return None, not an error (week is valid but no list exists yet)
+    assert!(
+        result.is_none(),
+        "Should return None when no shopping list exists for valid week"
+    );
 }

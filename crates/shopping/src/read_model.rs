@@ -1,5 +1,7 @@
 use crate::aggregate::ShoppingListAggregate;
+use crate::commands::ShoppingListError;
 use crate::events::ShoppingListGenerated;
+use chrono::{Datelike, NaiveDate, Utc};
 use evento::{AggregatorName, Context, EventDetails, Executor};
 
 /// Project ShoppingListGenerated event to read model tables
@@ -63,6 +65,49 @@ pub async fn project_shopping_list_generated<E: Executor>(
     Ok(())
 }
 
+/// Validate week_start_date parameter for shopping list queries
+///
+/// Validates that:
+/// 1. The date is a valid ISO 8601 date
+/// 2. The date is a Monday (ISO week start)
+/// 3. The week is not in the past (current week or future only)
+/// 4. The week is not more than 4 weeks in the future
+///
+/// Returns Ok(NaiveDate) if valid, otherwise ShoppingListError
+pub fn validate_week_date(week_start_date: &str) -> Result<NaiveDate, ShoppingListError> {
+    // Parse ISO 8601 date
+    let date = NaiveDate::parse_from_str(week_start_date, "%Y-%m-%d")
+        .map_err(|e| ShoppingListError::InvalidWeekError(format!("Invalid date format: {}", e)))?;
+
+    // Check if date is a Monday (ISO week start)
+    if date.weekday().num_days_from_monday() != 0 {
+        return Err(ShoppingListError::InvalidWeekError(
+            "Week start must be a Monday".to_string(),
+        ));
+    }
+
+    // Get current week's Monday
+    let today = Utc::now().date_naive();
+    let current_week_monday =
+        today - chrono::Duration::days(today.weekday().num_days_from_monday() as i64);
+
+    // Calculate week difference
+    let days_diff = (date - current_week_monday).num_days();
+    let weeks_diff = days_diff / 7;
+
+    // Reject past weeks (MVP limitation per AC #7)
+    if weeks_diff < 0 {
+        return Err(ShoppingListError::PastWeekNotAccessibleError);
+    }
+
+    // Reject weeks more than 4 weeks in the future (AC #5)
+    if weeks_diff > 4 {
+        return Err(ShoppingListError::FutureWeekOutOfRangeError);
+    }
+
+    Ok(date)
+}
+
 /// Query shopping list by ID
 ///
 /// Returns the shopping list header and all items.
@@ -105,11 +150,25 @@ pub async fn get_shopping_list(
 /// Query shopping list by user and week
 ///
 /// Returns the shopping list for a specific user and week (if exists).
+///
+/// This function validates the week_start_date before querying the database:
+/// - Must be a valid ISO 8601 date (YYYY-MM-DD)
+/// - Must be a Monday (ISO week start)
+/// - Must not be in the past (current week or future only)
+/// - Must not be more than 4 weeks in the future
+///
+/// Returns:
+/// - Ok(Some(ShoppingListData)) if shopping list exists for the week
+/// - Ok(None) if no shopping list exists for the week (but week is valid)
+/// - Err if week validation fails (see ShoppingListError variants)
 pub async fn get_shopping_list_by_week(
     user_id: &str,
     week_start_date: &str,
     pool: &sqlx::SqlitePool,
-) -> Result<Option<ShoppingListData>, sqlx::Error> {
+) -> Result<Option<ShoppingListData>, ShoppingListError> {
+    // Validate week_start_date (AC #3, #5, #7)
+    validate_week_date(week_start_date)?;
+
     // Query shopping list header by user_id and week_start_date
     let header: Option<ShoppingListHeaderRow> = sqlx::query_as::<_, ShoppingListHeaderRow>(
         r#"
@@ -123,7 +182,8 @@ pub async fn get_shopping_list_by_week(
     .bind(user_id)
     .bind(week_start_date)
     .fetch_optional(pool)
-    .await?;
+    .await
+    .map_err(|e| ShoppingListError::EventStoreError(e.into()))?;
 
     if let Some(header) = header {
         // Query all items
@@ -137,10 +197,12 @@ pub async fn get_shopping_list_by_week(
         )
         .bind(&header.id)
         .fetch_all(pool)
-        .await?;
+        .await
+        .map_err(|e| ShoppingListError::EventStoreError(e.into()))?;
 
         Ok(Some(ShoppingListData { header, items }))
     } else {
+        // No shopping list exists for this week (but week is valid) - AC #4
         Ok(None)
     }
 }
