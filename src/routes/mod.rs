@@ -35,4 +35,7 @@ pub use recipes::{
     post_create_recipe, post_delete_recipe, post_delete_review, post_favorite_recipe,
     post_rate_recipe, post_share_recipe, post_update_recipe, post_update_recipe_tags,
 };
-pub use shopping::{generate_shopping_list_handler, refresh_shopping_list, show_shopping_list};
+pub use shopping::{
+    check_shopping_item, generate_shopping_list_handler, refresh_shopping_list,
+    reset_shopping_list_handler, show_shopping_list,
+};

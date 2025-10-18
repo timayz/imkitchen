@@ -7,7 +7,13 @@ use axum::{
 use chrono::{Datelike, Duration, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use shopping::{
-    generate_shopping_list, read_model::get_shopping_list_by_week, GenerateShoppingListCommand,
+    commands::{
+        mark_item_collected, reset_shopping_list, MarkItemCollectedCommand,
+        ResetShoppingListCommand,
+    },
+    generate_shopping_list,
+    read_model::get_shopping_list_by_week,
+    GenerateShoppingListCommand,
 };
 
 use crate::error::AppError;
@@ -390,4 +396,127 @@ pub struct ShoppingItem {
     pub quantity: f32,
     pub unit: String,
     pub is_collected: bool,
+}
+
+/// Form data for checkbox toggle
+#[derive(Deserialize)]
+pub struct CheckItemForm {
+    pub is_collected: bool,
+}
+
+/// Template for checkbox item response
+#[derive(Template)]
+#[template(path = "partials/shopping-item-checkbox.html")]
+pub struct ShoppingItemCheckboxTemplate {
+    pub item_id: String,
+    pub ingredient_name: String,
+    pub quantity: f32,
+    pub unit: String,
+    pub is_collected: bool,
+}
+
+/// POST /shopping/items/{id}/check - Toggle checkbox for shopping list item (Story 4.5 AC #2)
+///
+/// This endpoint marks a shopping list item as collected or uncollected.
+/// Returns an HTML fragment for TwinSpark to swap into the DOM.
+pub async fn check_shopping_item(
+    Extension(auth): Extension<Auth>,
+    State(state): State<AppState>,
+    axum::extract::Path(item_id): axum::extract::Path<String>,
+    Form(form): Form<CheckItemForm>,
+) -> Result<impl IntoResponse, AppError> {
+    let user_id = &auth.user_id;
+
+    // Extract shopping_list_id from item_id (format: {shopping_list_id}-{index})
+    let parts: Vec<&str> = item_id.split('-').collect();
+    if parts.len() < 2 {
+        return Err(AppError::ValidationError(
+            "Invalid item ID format".to_string(),
+        ));
+    }
+    let shopping_list_id = parts[0..parts.len() - 1].join("-");
+
+    // Verify user owns this shopping list (permission check)
+    let shopping_list = shopping::read_model::get_shopping_list(&shopping_list_id, &state.db_pool)
+        .await
+        .map_err(|e| AppError::EventStoreError(format!("Database error: {}", e)))?;
+
+    let list = if let Some(list) = shopping_list {
+        if list.header.user_id != *user_id {
+            return Err(AppError::ValidationError("Permission denied".to_string()));
+        }
+        list
+    } else {
+        return Err(AppError::ValidationError(
+            "Shopping list not found".to_string(),
+        ));
+    };
+
+    // Fetch item details before executing command
+    let item = list
+        .items
+        .iter()
+        .find(|item| item.id == item_id)
+        .ok_or_else(|| AppError::ValidationError("Item not found in list".to_string()))?;
+
+    // Execute command
+    let cmd = MarkItemCollectedCommand {
+        shopping_list_id: shopping_list_id.clone(),
+        item_id: item_id.clone(),
+        is_collected: form.is_collected,
+    };
+
+    mark_item_collected(cmd, &state.evento_executor)
+        .await
+        .map_err(|e| AppError::EventStoreError(format!("Command execution failed: {}", e)))?;
+
+    // Return HTML fragment with updated item using template
+    let template = ShoppingItemCheckboxTemplate {
+        item_id: item_id.clone(),
+        ingredient_name: item.ingredient_name.clone(),
+        quantity: item.quantity,
+        unit: item.unit.clone(),
+        is_collected: form.is_collected,
+    };
+
+    Ok(Html(template.render().map_err(|e| {
+        AppError::EventStoreError(format!("Template render error: {}", e))
+    })?))
+}
+
+/// POST /shopping/{week}/reset - Reset all checkboxes (uncheck all items) - Story 4.5 AC #8
+///
+/// This endpoint unchecks all items in a shopping list for the selected week.
+/// Redirects back to the shopping list page after reset.
+pub async fn reset_shopping_list_handler(
+    Extension(auth): Extension<Auth>,
+    State(state): State<AppState>,
+    axum::extract::Path(week): axum::extract::Path<String>,
+) -> Result<impl IntoResponse, AppError> {
+    let user_id = &auth.user_id;
+
+    // Validate week format
+    shopping::validate_week_date(&week)?;
+
+    // Get shopping list for this week
+    let shopping_list = get_shopping_list_by_week(user_id, &week, &state.db_pool).await?;
+
+    if let Some(list) = shopping_list {
+        // Execute reset command
+        let cmd = ResetShoppingListCommand {
+            shopping_list_id: list.header.id.clone(),
+        };
+
+        reset_shopping_list(cmd, &state.evento_executor)
+            .await
+            .map_err(|e| AppError::EventStoreError(format!("Command execution failed: {}", e)))?;
+
+        // Redirect back to shopping list page for this week
+        Ok(Redirect::to(&format!("/shopping?week={}", week)))
+    } else {
+        Err(AppError::ValidationError(format!(
+            "No shopping list found for week {}",
+            week
+        )))
+    }
 }

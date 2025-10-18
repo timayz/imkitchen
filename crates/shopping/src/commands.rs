@@ -2,7 +2,10 @@ use chrono::Utc;
 
 use crate::aggregation::IngredientAggregationService;
 use crate::categorization::CategorizationService;
-use crate::events::{ShoppingListGenerated, ShoppingListItem, ShoppingListRecalculated};
+use crate::events::{
+    ShoppingListGenerated, ShoppingListItem, ShoppingListItemCollected, ShoppingListRecalculated,
+    ShoppingListReset,
+};
 
 /// Command to generate a shopping list from a meal plan
 #[derive(Debug, Clone)]
@@ -38,6 +41,12 @@ pub enum ShoppingListError {
 
     #[error("Future week out of range: Maximum 4 weeks ahead allowed")]
     FutureWeekOutOfRangeError,
+
+    #[error("Shopping list item not found: {0}")]
+    ItemNotFoundError(String),
+
+    #[error("Shopping list not found: {0}")]
+    ShoppingListNotFoundError(String),
 }
 
 /// Generate a shopping list from a meal plan
@@ -174,6 +183,84 @@ pub async fn recalculate_shopping_list_on_meal_replacement(
     };
 
     // Append event to existing aggregate using evento::save
+    evento::save::<crate::aggregate::ShoppingListAggregate>(&cmd.shopping_list_id)
+        .data(&event)
+        .map_err(|e| ShoppingListError::EventStoreError(e.into()))?
+        .metadata(&true)
+        .map_err(|e| ShoppingListError::EventStoreError(e.into()))?
+        .commit(executor)
+        .await
+        .map_err(|e| ShoppingListError::EventStoreError(e.into()))?;
+
+    Ok(())
+}
+
+/// Command to mark a shopping list item as collected/uncollected (Story 4.5)
+#[derive(Debug, Clone)]
+pub struct MarkItemCollectedCommand {
+    pub shopping_list_id: String,
+    pub item_id: String,
+    pub is_collected: bool,
+}
+
+/// Mark a shopping list item as collected/uncollected (Story 4.5 - AC #1, #2, #3)
+///
+/// This command:
+/// 1. Validates that the item exists
+/// 2. Emits ShoppingListItemCollected event
+/// 3. Read model projection updates is_collected column
+///
+/// Note: Validation that user owns the shopping list should be done in the route handler
+/// before calling this command (checking user_id from JWT matches shopping_list.user_id)
+pub async fn mark_item_collected(
+    cmd: MarkItemCollectedCommand,
+    executor: &impl evento::Executor,
+) -> Result<(), ShoppingListError> {
+    // Create event with timestamp
+    let collected_at = Utc::now().to_rfc3339();
+
+    let event = ShoppingListItemCollected {
+        item_id: cmd.item_id,
+        is_collected: cmd.is_collected,
+        collected_at,
+    };
+
+    // Append event to shopping list aggregate
+    evento::save::<crate::aggregate::ShoppingListAggregate>(&cmd.shopping_list_id)
+        .data(&event)
+        .map_err(|e| ShoppingListError::EventStoreError(e.into()))?
+        .metadata(&true)
+        .map_err(|e| ShoppingListError::EventStoreError(e.into()))?
+        .commit(executor)
+        .await
+        .map_err(|e| ShoppingListError::EventStoreError(e.into()))?;
+
+    Ok(())
+}
+
+/// Command to reset all items in a shopping list (Story 4.5)
+#[derive(Debug, Clone)]
+pub struct ResetShoppingListCommand {
+    pub shopping_list_id: String,
+}
+
+/// Reset all items in a shopping list (uncheck all checkboxes) - Story 4.5 AC #8
+///
+/// This command:
+/// 1. Emits ShoppingListReset event
+/// 2. Read model projection sets all is_collected = false for this shopping list
+///
+/// Note: Validation that user owns the shopping list should be done in the route handler
+pub async fn reset_shopping_list(
+    cmd: ResetShoppingListCommand,
+    executor: &impl evento::Executor,
+) -> Result<(), ShoppingListError> {
+    // Create event with timestamp
+    let reset_at = Utc::now().to_rfc3339();
+
+    let event = ShoppingListReset { reset_at };
+
+    // Append event to shopping list aggregate
     evento::save::<crate::aggregate::ShoppingListAggregate>(&cmd.shopping_list_id)
         .data(&event)
         .map_err(|e| ShoppingListError::EventStoreError(e.into()))?

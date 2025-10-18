@@ -23,22 +23,30 @@
         <div class="px-6 pb-6">
             <ul class="space-y-3">
                 {% for item in category.items %}
-                <li class="flex items-center gap-3 p-2 hover:bg-gray-50 rounded transition-colors">
-                    <input
-                        type="checkbox"
-                        id="item-{{ item.id }}"
-                        class="shopping-checkbox"
-                        {% if item.is_collected %}checked{% endif %}
-                        disabled
-                    >
-                    <label for="item-{{ item.id }}" class="flex-1 cursor-pointer {% if item.is_collected %}collected{% endif %}">
-                        <span class="font-medium text-gray-900">{{ item.ingredient_name }}</span>
-                        <span class="text-gray-600 ml-2">
-                            {% if item.quantity != 0.0 %}
-                                {{ item.quantity }} {{ item.unit }}
-                            {% endif %}
-                        </span>
-                    </label>
+                <li class="shopping-item flex items-center gap-3 p-2 hover:bg-gray-50 rounded transition-colors {% if item.is_collected %}collected-item{% endif %}" data-item-id="{{ item.id }}" data-collected="{{ item.is_collected }}" id="shopping-item-{{ item.id }}">
+                    <form class="flex items-center gap-3 flex-1"
+                          ts-req="/shopping/items/{{ item.id }}/check"
+                          ts-req-method="POST"
+                          ts-trigger="change"
+                          ts-target="#shopping-item-{{ item.id }}">
+                        <input
+                            type="checkbox"
+                            id="item-{{ item.id }}"
+                            name="is_collected"
+                            value="{% if item.is_collected %}false{% else %}true{% endif %}"
+                            class="shopping-checkbox"
+                            {% if item.is_collected %}checked{% endif %}
+                            onchange="toggleItemCollected(this, '{{ item.id }}', this.checked);"
+                        >
+                        <label for="item-{{ item.id }}" class="flex-1 cursor-pointer {% if item.is_collected %}collected{% endif %}">
+                            <span class="font-medium text-gray-900">{{ item.ingredient_name }}</span>
+                            <span class="text-gray-600 ml-2">
+                                {% if item.quantity != 0.0 %}
+                                    {{ item.quantity }} {{ item.unit }}
+                                {% endif %}
+                            </span>
+                        </label>
+                    </form>
                 </li>
                 {% endfor %}
             </ul>

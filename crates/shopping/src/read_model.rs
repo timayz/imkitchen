@@ -1,6 +1,8 @@
 use crate::aggregate::ShoppingListAggregate;
 use crate::commands::ShoppingListError;
-use crate::events::{ShoppingListGenerated, ShoppingListRecalculated};
+use crate::events::{
+    ShoppingListGenerated, ShoppingListItemCollected, ShoppingListRecalculated, ShoppingListReset,
+};
 use chrono::{Datelike, NaiveDate, Utc};
 use evento::{AggregatorName, Context, EventDetails, Executor};
 
@@ -150,6 +152,76 @@ pub async fn project_shopping_list_recalculated<E: Executor>(
         "Projected ShoppingListRecalculated event for shopping_list_id={} with {} items",
         shopping_list_id,
         event.data.items.len()
+    );
+
+    Ok(())
+}
+
+/// Project ShoppingListItemCollected event to read model (Story 4.5)
+///
+/// This evento subscription handler updates the is_collected column in shopping_list_items
+/// when a ShoppingListItemCollected event is emitted.
+///
+/// Note: This projection is idempotent - if the same event is processed multiple times,
+/// the result is the same (UPDATE with same value).
+#[evento::handler(ShoppingListAggregate)]
+pub async fn project_shopping_list_item_collected<E: Executor>(
+    context: &Context<'_, E>,
+    event: EventDetails<ShoppingListItemCollected>,
+) -> anyhow::Result<()> {
+    // Extract the shared SqlitePool from context
+    let pool: sqlx::SqlitePool = context.extract();
+
+    // Update is_collected status for the specific item
+    sqlx::query(
+        r#"
+        UPDATE shopping_list_items
+        SET is_collected = ?
+        WHERE id = ?
+        "#,
+    )
+    .bind(event.data.is_collected)
+    .bind(&event.data.item_id)
+    .execute(&pool)
+    .await?;
+
+    tracing::debug!(
+        "Projected ShoppingListItemCollected event for item_id={}, is_collected={}",
+        event.data.item_id,
+        event.data.is_collected
+    );
+
+    Ok(())
+}
+
+/// Project ShoppingListReset event to read model (Story 4.5)
+///
+/// This evento subscription handler unchecks all items in a shopping list
+/// when a ShoppingListReset event is emitted.
+#[evento::handler(ShoppingListAggregate)]
+pub async fn project_shopping_list_reset<E: Executor>(
+    context: &Context<'_, E>,
+    event: EventDetails<ShoppingListReset>,
+) -> anyhow::Result<()> {
+    // Extract the shared SqlitePool from context
+    let pool: sqlx::SqlitePool = context.extract();
+    let shopping_list_id = &event.aggregator_id;
+
+    // Uncheck all items in this shopping list
+    sqlx::query(
+        r#"
+        UPDATE shopping_list_items
+        SET is_collected = 0
+        WHERE shopping_list_id = ?
+        "#,
+    )
+    .bind(shopping_list_id)
+    .execute(&pool)
+    .await?;
+
+    tracing::info!(
+        "Projected ShoppingListReset event for shopping_list_id={}",
+        shopping_list_id
     );
 
     Ok(())
@@ -382,13 +454,20 @@ impl ShoppingListData {
 
 /// Create shopping list projection subscription
 ///
-/// This sets up the evento subscription to project ShoppingListGenerated and
-/// ShoppingListRecalculated events into the shopping_lists and shopping_list_items
-/// read model tables.
+/// This sets up the evento subscription to project shopping list events into the
+/// shopping_lists and shopping_list_items read model tables.
+///
+/// Projections:
+/// - ShoppingListGenerated: Create shopping list and items
+/// - ShoppingListRecalculated: Update items after meal replacement
+/// - ShoppingListItemCollected: Update is_collected status (Story 4.5)
+/// - ShoppingListReset: Uncheck all items (Story 4.5)
 pub fn shopping_projection(pool: sqlx::SqlitePool) -> evento::SubscribeBuilder<evento::Sqlite> {
     evento::subscribe("shopping-read-model")
         .aggregator::<ShoppingListAggregate>()
         .data(pool)
         .handler(project_shopping_list_generated())
         .handler(project_shopping_list_recalculated())
+        .handler(project_shopping_list_item_collected())
+        .handler(project_shopping_list_reset())
 }
