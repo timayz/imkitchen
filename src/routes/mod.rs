@@ -4,6 +4,7 @@ pub mod collections;
 pub mod dashboard;
 pub mod health;
 pub mod meal_plan;
+pub mod notifications;
 pub mod profile;
 pub mod recipes;
 pub mod shopping;
@@ -38,4 +39,7 @@ pub use recipes::{
 pub use shopping::{
     check_shopping_item, generate_shopping_list_handler, refresh_shopping_list,
     reset_shopping_list_handler, show_shopping_list,
+};
+pub use notifications::{
+    dismiss_notification, list_notifications, notifications_page, snooze_notification, subscribe_push,
 };
