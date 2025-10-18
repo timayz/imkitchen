@@ -3,6 +3,22 @@
 {% block title %}{{ recipe.title }} - imkitchen{% endblock %}
 
 {% block extra_head %}
+<!-- Story 4.6: Prep Highlighting Styles -->
+{% if highlight_prep %}
+<style>
+.prep-highlighted {
+    background-color: #fef3c7; /* yellow-100 */
+    border: 2px solid #f59e0b; /* yellow-500 */
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1);
+    animation: highlight-pulse 2s ease-in-out 3;
+}
+@keyframes highlight-pulse {
+    0%, 100% { box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1); }
+    50% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0.2); }
+}
+</style>
+{% endif %}
+
 <!-- Story 3.5 AC-6: Kitchen Mode Styles -->
 {% if kitchen_mode %}
 <style>
@@ -240,8 +256,8 @@
                 </ul>
             </section>
 
-            <!-- Instructions Section - Action Item 3: ARIA landmark -->
-            <section class="p-8 border-b border-gray-200" role="region" aria-labelledby="instructions-heading">
+            <!-- Instructions Section - Action Item 3: ARIA landmark, Story 4.6: Prep highlighting -->
+            <section id="prep-instructions" class="p-8 border-b border-gray-200 {% if highlight_prep %}prep-highlighted{% endif %}" role="region" aria-labelledby="instructions-heading">
                 <h2 id="instructions-heading" class="{% if kitchen_mode %}kitchen-mode-section-title{% else %}text-2xl font-bold text-gray-900 mb-4{% endif %}">Instructions</h2>
                 <ol class="{% if kitchen_mode %}space-y-6{% else %}space-y-4{% endif %}">
                     {% for instruction in recipe.instructions %}
@@ -510,6 +526,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
 });
 </script>
+
+<!-- Story 4.6: Auto-scroll to prep instructions when opened from notification -->
+{% if highlight_prep %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const prepSection = document.getElementById('prep-instructions');
+    if (prepSection) {
+        // Smooth scroll to prep section
+        prepSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+});
+</script>
+{% endif %}
 
 <!-- Action Item 2 & 4: External JavaScript for kitchen mode (CSP compliant + keyboard nav) -->
 {% if kitchen_mode %}
