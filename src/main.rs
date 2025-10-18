@@ -8,7 +8,8 @@ use clap::{Parser, Subcommand};
 use evento::prelude::*;
 use imkitchen::middleware::auth_middleware;
 use imkitchen::routes::{
-    dashboard_handler, generate_shopping_list_handler, get_collections, get_discover,
+    check_shopping_item, dashboard_handler, generate_shopping_list_handler, get_collections,
+    get_discover, reset_shopping_list_handler,
     get_discover_detail, get_ingredient_row, get_instruction_row, get_login, get_meal_alternatives,
     get_meal_plan, get_onboarding, get_onboarding_skip, get_password_reset,
     get_password_reset_complete, get_profile, get_recipe_detail, get_recipe_edit_form,
@@ -234,6 +235,8 @@ async fn serve_command(
         .route("/shopping", get(show_shopping_list))
         .route("/shopping/generate", post(generate_shopping_list_handler))
         .route("/shopping/refresh", get(refresh_shopping_list))
+        .route("/shopping/items/{id}/check", post(check_shopping_item))
+        .route("/shopping/{week}/reset", post(reset_shopping_list_handler))
         .route_layer(axum_middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,

@@ -26,11 +26,12 @@ pub struct ShoppingListGenerated {
 
 /// ShoppingListItemCollected event emitted when a user marks an item as collected
 ///
-/// Note: This is for Story 4.2 (future), but we define it here for completeness
+/// Story 4.5: This event captures checkbox state changes for shopping list items.
+/// The event maintains full audit trail of checkbox toggles in the event store.
 #[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
 pub struct ShoppingListItemCollected {
-    pub item_index: usize,    // Index of the item in the items list
-    pub collected: bool,      // true = collected, false = uncollected
+    pub item_id: String,      // Shopping list item ID
+    pub is_collected: bool,   // true = collected, false = uncollected
     pub collected_at: String, // RFC3339 formatted timestamp
 }
 
@@ -42,4 +43,13 @@ pub struct ShoppingListItemCollected {
 pub struct ShoppingListRecalculated {
     pub items: Vec<ShoppingListItem>, // Updated aggregated and categorized shopping items
     pub recalculated_at: String,      // RFC3339 formatted timestamp
+}
+
+/// ShoppingListReset event emitted when user resets all checkboxes for next shopping trip
+///
+/// Story 4.5: This event unchecks all items in a shopping list (AC #8).
+/// Used when the user has completed shopping and wants to prepare the list for the next trip.
+#[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
+pub struct ShoppingListReset {
+    pub reset_at: String, // RFC3339 formatted timestamp
 }

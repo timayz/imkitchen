@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::events::{
     ShoppingListGenerated, ShoppingListItem, ShoppingListItemCollected, ShoppingListRecalculated,
+    ShoppingListReset,
 };
 
 /// ShoppingListAggregate representing the state of a shopping list entity
@@ -51,17 +52,17 @@ impl ShoppingListAggregate {
         Ok(())
     }
 
-    /// Handle ShoppingListItemCollected event to update item collected status
+    /// Handle ShoppingListItemCollected event (Story 4.5)
     ///
-    /// Note: This is for Story 4.2 (future), but we define the handler here for completeness.
-    /// In the current story (4.1), we don't persist collected status in the aggregate.
+    /// This handler exists for evento framework but performs no aggregate state changes.
+    /// The checkbox state (is_collected) is managed in the read model, not in the aggregate.
+    /// The aggregate doesn't need to track checkbox state for business logic.
     async fn shopping_list_item_collected(
         &mut self,
         event: evento::EventDetails<ShoppingListItemCollected>,
     ) -> anyhow::Result<()> {
-        // For Story 4.2: Update item collected status in read model
-        // This handler exists for evento framework but performs no aggregate state changes
-        // (collected status managed in read model, not in aggregate)
+        // Checkbox state is managed in read model via projection
+        // No aggregate state changes needed
         let _ = event; // Suppress unused warning
         Ok(())
     }
@@ -76,6 +77,20 @@ impl ShoppingListAggregate {
         event: evento::EventDetails<ShoppingListRecalculated>,
     ) -> anyhow::Result<()> {
         self.items = event.data.items;
+        Ok(())
+    }
+
+    /// Handle ShoppingListReset event (Story 4.5)
+    ///
+    /// This handler exists for evento framework but performs no aggregate state changes.
+    /// The reset operation (unchecking all items) is managed in the read model via projection.
+    async fn shopping_list_reset(
+        &mut self,
+        event: evento::EventDetails<ShoppingListReset>,
+    ) -> anyhow::Result<()> {
+        // Reset state is managed in read model via projection
+        // No aggregate state changes needed
+        let _ = event; // Suppress unused warning
         Ok(())
     }
 }
