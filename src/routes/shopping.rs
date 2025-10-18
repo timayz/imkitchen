@@ -268,6 +268,83 @@ fn get_week_start(date: NaiveDate) -> NaiveDate {
     date - chrono::Duration::days(weekday as i64)
 }
 
+/// GET /shopping/refresh - Return shopping list content fragment for TwinSpark polling (Story 4.4)
+///
+/// This endpoint returns only the shopping list content (without page chrome) for
+/// TwinSpark to poll and update the shopping list in real-time when meal replacements occur.
+///
+/// Query parameters:
+/// - ?week=YYYY-MM-DD (required) - Week start date (must be Monday)
+///
+/// Returns HTML fragment that TwinSpark swaps into #shopping-list-content
+pub async fn refresh_shopping_list(
+    Extension(auth): Extension<Auth>,
+    State(state): State<AppState>,
+    Query(query): Query<ShoppingListQuery>,
+) -> Result<impl IntoResponse, AppError> {
+    let user_id = &auth.user_id;
+
+    // Week parameter is required for refresh endpoint
+    let selected_week = query
+        .week
+        .ok_or_else(|| AppError::ValidationError("week query parameter is required".to_string()))?;
+
+    // Validate week parameter
+    shopping::validate_week_date(&selected_week)?;
+
+    // Query shopping list for this week
+    let shopping_list = get_shopping_list_by_week(user_id, &selected_week, &state.db_pool).await?;
+
+    if let Some(list) = shopping_list {
+        // Group items by category for display
+        let grouped = list.group_by_category();
+
+        // Prepare category data for template
+        let categories: Vec<CategoryGroup> = grouped
+            .into_iter()
+            .map(|(category_name, items)| {
+                let items_data: Vec<ShoppingItem> = items
+                    .iter()
+                    .map(|item| ShoppingItem {
+                        id: item.id.clone(),
+                        ingredient_name: item.ingredient_name.clone(),
+                        quantity: item.quantity,
+                        unit: item.unit.clone(),
+                        is_collected: item.is_collected,
+                    })
+                    .collect();
+
+                CategoryGroup {
+                    name: category_name,
+                    item_count: items_data.len(),
+                    items: items_data,
+                }
+            })
+            .collect();
+
+        let template = ShoppingListContentPartial {
+            categories,
+            has_items: true,
+            selected_week: selected_week.clone(),
+        };
+
+        Ok(Html(template.render().map_err(|e| {
+            AppError::InternalError(format!("Template render error: {}", e))
+        })?))
+    } else {
+        // No shopping list for this week
+        let template = ShoppingListContentPartial {
+            categories: vec![],
+            has_items: false,
+            selected_week: selected_week.clone(),
+        };
+
+        Ok(Html(template.render().map_err(|e| {
+            AppError::InternalError(format!("Template render error: {}", e))
+        })?))
+    }
+}
+
 /// Template data for shopping list page
 #[derive(Template)]
 #[template(path = "pages/shopping-list.html")]
@@ -278,6 +355,15 @@ pub struct ShoppingListTemplate {
     pub week_options: Vec<WeekOption>, // Dropdown options (current + 4 future weeks)
     pub categories: Vec<CategoryGroup>,
     pub has_items: bool,
+}
+
+/// Partial template for shopping list content (TwinSpark polling - Story 4.4)
+#[derive(Template)]
+#[template(path = "partials/shopping-list-content.html")]
+pub struct ShoppingListContentPartial {
+    pub categories: Vec<CategoryGroup>,
+    pub has_items: bool,
+    pub selected_week: String, // Needed for "generate" button in no-items state
 }
 
 /// Week option for dropdown selector

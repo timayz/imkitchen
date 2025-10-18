@@ -1,7 +1,9 @@
 use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
-use crate::events::{ShoppingListGenerated, ShoppingListItem, ShoppingListItemCollected};
+use crate::events::{
+    ShoppingListGenerated, ShoppingListItem, ShoppingListItemCollected, ShoppingListRecalculated,
+};
 
 /// ShoppingListAggregate representing the state of a shopping list entity
 ///
@@ -61,6 +63,19 @@ impl ShoppingListAggregate {
         // This handler exists for evento framework but performs no aggregate state changes
         // (collected status managed in read model, not in aggregate)
         let _ = event; // Suppress unused warning
+        Ok(())
+    }
+
+    /// Handle ShoppingListRecalculated event to update aggregate state
+    ///
+    /// This is called when a meal replacement triggers shopping list recalculation (Story 4.4).
+    /// The event contains the newly calculated shopping list items after subtracting old recipe
+    /// ingredients and adding new recipe ingredients.
+    async fn shopping_list_recalculated(
+        &mut self,
+        event: evento::EventDetails<ShoppingListRecalculated>,
+    ) -> anyhow::Result<()> {
+        self.items = event.data.items;
         Ok(())
     }
 }

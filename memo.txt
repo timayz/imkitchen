@@ -9,15 +9,15 @@ create PR:
 # after develop/review
 fix make check than git conventional commits, push
 
-# when working on test
-when doing tests, use unsafe_oneshot instead of run for subscribe because its process events in sync
-
 # init milestones / issues from epic
 can you create all epics as milestone with associeted stories as issue ? epic title format
   "v0.{epic_num}", issue title format "{story_title}" with label story.
 
 # before create-story / develop / review
 read 'docs/solution-architecture.md'
+read 'docs/twinspark.md'
+
+when doing tests, use unsafe_oneshot instead of run for subscribe because its process events in sync
 
 in folder fixtures, create recipe json file structured like "example-recipe.json" from
   [link]

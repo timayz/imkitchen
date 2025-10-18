@@ -107,6 +107,12 @@ details[open] summary .chevron {
             </select>
         </div>
 
+        <!-- Shopping List Content (Auto-refreshes with TwinSpark - Story 4.4) -->
+        <div id="shopping-list-content"
+             ts-req="/shopping/refresh?week={{ selected_week }}"
+             ts-req-method="GET"
+             ts-trigger="every 2s"
+             ts-swap="outerHTML">
         {% if has_items %}
         <!-- Shopping List Categories (Collapsible with Details/Summary) -->
         <div class="space-y-4">
@@ -187,6 +193,7 @@ details[open] summary .chevron {
             </div>
         </div>
         {% endif %}
+        </div>
     </div>
 </main>
 {% endblock %}

@@ -20,8 +20,8 @@ use imkitchen::routes::{
     post_password_reset, post_password_reset_complete, post_profile, post_rate_recipe,
     post_regenerate_meal_plan, post_register, post_remove_recipe_from_collection,
     post_replace_meal, post_share_recipe, post_stripe_webhook, post_subscription_upgrade,
-    post_update_collection, post_update_recipe, post_update_recipe_tags, ready, show_shopping_list,
-    AppState, AssetsService,
+    post_update_collection, post_update_recipe, post_update_recipe_tags, ready,
+    refresh_shopping_list, show_shopping_list, AppState, AssetsService,
 };
 use meal_planning::meal_plan_projection;
 use recipe::{collection_projection, recipe_projection};
@@ -233,6 +233,7 @@ async fn serve_command(
         // Shopping list routes
         .route("/shopping", get(show_shopping_list))
         .route("/shopping/generate", post(generate_shopping_list_handler))
+        .route("/shopping/refresh", get(refresh_shopping_list))
         .route_layer(axum_middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,
