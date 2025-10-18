@@ -6,25 +6,27 @@ use axum::{
 };
 use clap::{Parser, Subcommand};
 use evento::prelude::*;
+use std::sync::Arc;
 use imkitchen::middleware::auth_middleware;
 use imkitchen::routes::{
-    check_shopping_item, dashboard_handler, generate_shopping_list_handler, get_collections,
-    get_discover, get_discover_detail, get_ingredient_row, get_instruction_row, get_login,
-    get_meal_alternatives, get_meal_plan, get_onboarding, get_onboarding_skip, get_password_reset,
-    get_password_reset_complete, get_profile, get_recipe_detail, get_recipe_edit_form,
-    get_recipe_form, get_recipe_list, get_regenerate_confirm, get_register, get_subscription,
-    get_subscription_success, health, post_add_recipe_to_collection, post_add_to_library,
-    post_create_collection, post_create_recipe, post_delete_collection, post_delete_recipe,
-    post_delete_review, post_favorite_recipe, post_generate_meal_plan, post_login, post_logout,
-    post_onboarding_step_1, post_onboarding_step_2, post_onboarding_step_3, post_onboarding_step_4,
-    post_password_reset, post_password_reset_complete, post_profile, post_rate_recipe,
-    post_regenerate_meal_plan, post_register, post_remove_recipe_from_collection,
-    post_replace_meal, post_share_recipe, post_stripe_webhook, post_subscription_upgrade,
-    post_update_collection, post_update_recipe, post_update_recipe_tags, ready,
-    refresh_shopping_list, reset_shopping_list_handler, show_shopping_list, AppState,
-    AssetsService,
+    check_shopping_item, dashboard_handler, dismiss_notification, generate_shopping_list_handler,
+    get_collections, get_discover, get_discover_detail, get_ingredient_row, get_instruction_row,
+    get_login, get_meal_alternatives, get_meal_plan, get_onboarding, get_onboarding_skip,
+    get_password_reset, get_password_reset_complete, get_profile, get_recipe_detail,
+    get_recipe_edit_form, get_recipe_form, get_recipe_list, get_regenerate_confirm, get_register,
+    get_subscription, get_subscription_success, health, list_notifications, notifications_page,
+    post_add_recipe_to_collection, post_add_to_library, post_create_collection, post_create_recipe,
+    post_delete_collection, post_delete_recipe, post_delete_review, post_favorite_recipe,
+    post_generate_meal_plan, post_login, post_logout, post_onboarding_step_1,
+    post_onboarding_step_2, post_onboarding_step_3, post_onboarding_step_4, post_password_reset,
+    post_password_reset_complete, post_profile, post_rate_recipe, post_regenerate_meal_plan,
+    post_register, post_remove_recipe_from_collection, post_replace_meal, post_share_recipe,
+    post_stripe_webhook, post_subscription_upgrade, post_update_collection, post_update_recipe,
+    post_update_recipe_tags, ready, refresh_shopping_list, reset_shopping_list_handler,
+    show_shopping_list, snooze_notification, subscribe_push, AppState, AssetsService,
 };
 use meal_planning::meal_plan_projection;
+use notifications::{meal_plan_subscriptions, notification_projections};
 use recipe::{collection_projection, recipe_projection};
 use shopping::shopping_projection;
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions};
@@ -148,6 +150,22 @@ async fn serve_command(
         .await?;
     tracing::info!("Evento subscription 'shopping-read-model' started");
 
+    // Notification projections
+    notification_projections(db_pool.clone())
+        .run(&evento_executor)
+        .await?;
+    tracing::info!("Evento subscription 'notification-projections' started");
+
+    // Notification event subscriptions (business logic)
+    meal_plan_subscriptions(db_pool.clone())
+        .run(&evento_executor)
+        .await?;
+    tracing::info!("Evento subscription 'notification-meal-plan-listeners' started");
+
+    // Clone references for background worker before moving into state
+    let worker_pool = db_pool.clone();
+    let worker_executor = evento_executor.clone();
+
     // Create app state
     let email_config = imkitchen::email::EmailConfig {
         smtp_host: config.email.smtp_host,
@@ -167,6 +185,7 @@ async fn serve_command(
         stripe_secret_key: config.stripe.secret_key,
         stripe_webhook_secret: config.stripe.webhook_secret,
         stripe_price_id: config.stripe.price_id,
+        vapid_public_key: config.vapid.public_key.clone(),
         generation_locks: std::sync::Arc::new(tokio::sync::Mutex::new(
             std::collections::HashMap::new(),
         )),
@@ -237,6 +256,12 @@ async fn serve_command(
         .route("/shopping/refresh", get(refresh_shopping_list))
         .route("/shopping/items/{id}/check", post(check_shopping_item))
         .route("/shopping/{week}/reset", post(reset_shopping_list_handler))
+        // Notification routes
+        .route("/notifications", get(notifications_page))
+        .route("/api/notifications", get(list_notifications))
+        .route("/api/notifications/{id}/dismiss", post(dismiss_notification))
+        .route("/api/notifications/{id}/snooze", post(snooze_notification))
+        .route("/api/notifications/subscribe", post(subscribe_push))
         .route_layer(axum_middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,
@@ -272,6 +297,31 @@ async fn serve_command(
                 .with_state(state),
         )
         .layer(TraceLayer::new_for_http());
+
+    // Start background notification worker
+    tracing::info!("Starting notification background worker...");
+
+    // Convert VAPID config to WebPushConfig if keys are provided
+    let web_push_config = if !config.vapid.public_key.is_empty() && !config.vapid.private_key.is_empty() {
+        Some(notifications::WebPushConfig {
+            vapid_public_key: config.vapid.public_key.clone(),
+            vapid_private_key: config.vapid.private_key.clone(),
+            subject: config.vapid.subject.clone(),
+        })
+    } else {
+        tracing::warn!("VAPID keys not configured - push notifications will be disabled");
+        None
+    };
+
+    let notification_worker = Arc::new(notifications::NotificationWorker::new(
+        worker_pool,
+        Arc::new(worker_executor),
+        web_push_config,
+    ));
+    tokio::spawn(async move {
+        notification_worker.run().await;
+    });
+    tracing::info!("Notification worker started");
 
     // Start server
     let addr = format!("{}:{}", host, port);

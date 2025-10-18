@@ -77,13 +77,32 @@ webhook_secret = ""  # REQUIRED: Add your webhook secret
 # Override with: IMKITCHEN__STRIPE__PRICE_ID or STRIPE_PRICE_ID
 price_id = ""  # REQUIRED: Add your price ID
 
+# Web Push Notifications (VAPID) - Story 4.6
+# Generate keys with: npx web-push generate-vapid-keys
+# Or use: openssl ecparam -genkey -name prime256v1 -out vapid_private.pem
+[vapid]
+# VAPID public key (base64url encoded)
+# This is included in the push subscription request from the browser
+# Override with: IMKITCHEN__VAPID__PUBLIC_KEY
+public_key = "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nqm50g"
+
+# VAPID private key (PEM format)
+# Keep this secret! Never commit to version control in production
+# Override with: IMKITCHEN__VAPID__PRIVATE_KEY
+private_key = """-----BEGIN EC PRIVATE KEY-----
+MHcCAQEEIBnY0u6XvJ8R3z6aKOvN3cTwLxMjKKdW8YVJqV9LKqAVoAoGCCqGSM49
+AwEHoUQDQgAEEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjS
+gSnfckjBJuBkr3qBUYIHBQFLXYp5Nqm50g==
+-----END EC PRIVATE KEY-----"""
+
+# VAPID subject (mailto: or https: URL)
+# Identifies your application to push services
+# Override with: IMKITCHEN__VAPID__SUBJECT
+subject = "mailto:contact@imkitchen.local"
+
 # Future configuration sections (not yet implemented):
 #
 # [minio]
 # endpoint = "http://localhost:9000"
 # access_key = "minioadmin"
 # secret_key = ""  # Override with IMKITCHEN__MINIO__SECRET_KEY
-#
-# [vapid]
-# public_key = ""
-# private_key = ""

@@ -32,6 +32,7 @@ pub struct AppState {
     pub stripe_secret_key: String,
     pub stripe_webhook_secret: String,
     pub stripe_price_id: String,
+    pub vapid_public_key: String, // Story 4.6: VAPID public key for push notifications
     /// Locks for preventing concurrent meal plan generation per user
     pub generation_locks: Arc<Mutex<HashMap<String, ()>>>,
 }

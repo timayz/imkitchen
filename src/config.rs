@@ -13,6 +13,8 @@ pub struct Config {
     pub observability: ObservabilityConfig,
     #[serde(default)]
     pub stripe: StripeConfig,
+    #[serde(default)]
+    pub vapid: VapidConfig,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -124,6 +126,30 @@ pub struct StripeConfig {
     pub price_id: String, // Stripe Price ID for $9.99/month subscription
 }
 
+#[derive(Debug, Deserialize, Clone)]
+pub struct VapidConfig {
+    #[serde(default)]
+    pub public_key: String,
+    #[serde(default)]
+    pub private_key: String,
+    #[serde(default = "default_vapid_subject")]
+    pub subject: String,
+}
+
+impl Default for VapidConfig {
+    fn default() -> Self {
+        Self {
+            public_key: String::new(),
+            private_key: String::new(),
+            subject: default_vapid_subject(),
+        }
+    }
+}
+
+fn default_vapid_subject() -> String {
+    "mailto:contact@imkitchen.local".to_string()
+}
+
 impl Config {
     /// Load configuration from file and environment variables
     ///
@@ -216,6 +242,7 @@ mod tests {
             email: EmailConfig::default(),
             observability: ObservabilityConfig::default(),
             stripe: StripeConfig::default(),
+            vapid: VapidConfig::default(),
         };
 
         assert!(config.validate().is_err());
@@ -262,6 +289,7 @@ mod tests {
             email: EmailConfig::default(),
             observability: ObservabilityConfig::default(),
             stripe: StripeConfig::default(),
+            vapid: VapidConfig::default(),
         };
 
         assert!(config.validate().is_err());
@@ -285,6 +313,7 @@ mod tests {
             email: EmailConfig::default(),
             observability: ObservabilityConfig::default(),
             stripe: StripeConfig::default(),
+            vapid: VapidConfig::default(),
         };
 
         assert!(config.validate().is_ok());
