@@ -582,7 +582,7 @@ pub async fn get_meal_alternatives(
     // Get the meal assignment to find context
     let assignment = sqlx::query_as::<_, MealAssignmentReadModel>(
         r#"
-        SELECT ma.id, ma.meal_plan_id, ma.date, ma.meal_type, ma.recipe_id, ma.prep_required
+        SELECT ma.id, ma.meal_plan_id, ma.date, ma.meal_type, ma.recipe_id, ma.prep_required, ma.assignment_reasoning
         FROM meal_assignments ma
         JOIN meal_plans mp ON ma.meal_plan_id = mp.id
         WHERE ma.id = ?1 AND mp.user_id = ?2 AND mp.status = 'active'
@@ -664,7 +664,7 @@ pub async fn post_replace_meal(
     // Get the meal assignment to replace
     let assignment = sqlx::query_as::<_, MealAssignmentReadModel>(
         r#"
-        SELECT ma.id, ma.meal_plan_id, ma.date, ma.meal_type, ma.recipe_id, ma.prep_required
+        SELECT ma.id, ma.meal_plan_id, ma.date, ma.meal_type, ma.recipe_id, ma.prep_required, ma.assignment_reasoning
         FROM meal_assignments ma
         JOIN meal_plans mp ON ma.meal_plan_id = mp.id
         WHERE ma.id = ?1 AND mp.user_id = ?2 AND mp.status = 'active'
