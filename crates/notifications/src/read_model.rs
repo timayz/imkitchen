@@ -1,6 +1,7 @@
 use crate::aggregate::{NotificationAggregate, PushSubscriptionAggregate};
 use crate::events::{
-    PushSubscriptionCreated, ReminderDismissed, ReminderScheduled, ReminderSent, ReminderSnoozed,
+    PrepTaskCompleted, PushSubscriptionCreated, ReminderDismissed, ReminderScheduled,
+    ReminderSent, ReminderSnoozed,
 };
 use evento::{AggregatorName, Context, EventDetails, Executor};
 use serde::{Deserialize, Serialize};
@@ -163,6 +164,42 @@ pub async fn project_reminder_snoozed<E: Executor>(
     Ok(())
 }
 
+/// Project PrepTaskCompleted event to notifications table
+///
+/// This evento subscription handler updates the completed_at and status columns
+/// when a PrepTaskCompleted event is emitted (user clicks "Mark Complete" button).
+/// AC #2, #5, #6
+#[evento::handler(NotificationAggregate)]
+pub async fn project_prep_task_completed<E: Executor>(
+    context: &Context<'_, E>,
+    event: EventDetails<PrepTaskCompleted>,
+) -> anyhow::Result<()> {
+    // Extract the shared SqlitePool from context
+    let pool: sqlx::SqlitePool = context.extract();
+    let notification_id = &event.aggregator_id;
+
+    // Update notifications table
+    sqlx::query(
+        r#"
+        UPDATE notifications
+        SET completed_at = ?, status = 'completed'
+        WHERE id = ?
+        "#,
+    )
+    .bind(&event.data.completed_at)
+    .bind(notification_id)
+    .execute(&pool)
+    .await?;
+
+    tracing::info!(
+        "Projected PrepTaskCompleted event for notification_id={}, recipe_id={}",
+        notification_id,
+        event.data.recipe_id
+    );
+
+    Ok(())
+}
+
 /// Project PushSubscriptionCreated event to push_subscriptions table
 ///
 /// This evento subscription handler inserts a new row into the push_subscriptions table
@@ -267,6 +304,34 @@ pub async fn get_user_pending_notifications(
     Ok(notifications)
 }
 
+/// Query to get user's prep tasks for today
+///
+/// This is used for the dashboard "Prep Tasks for Today" section.
+/// AC #3, #4: Shows both pending and completed prep tasks for today's meals.
+pub async fn get_user_prep_tasks_for_today(
+    pool: &sqlx::SqlitePool,
+    user_id: &str,
+) -> anyhow::Result<Vec<UserNotification>> {
+    let today = chrono::Utc::now().format("%Y-%m-%d").to_string();
+
+    let notifications = sqlx::query_as::<_, UserNotification>(
+        r#"
+        SELECT id, user_id, recipe_id, meal_date, scheduled_time, reminder_type, prep_hours, prep_task, status, message_body
+        FROM notifications
+        WHERE user_id = ?
+          AND reminder_type IN ('advance_prep', 'morning')
+          AND meal_date = ?
+        ORDER BY status ASC, scheduled_time ASC
+        "#,
+    )
+    .bind(user_id)
+    .bind(&today)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(notifications)
+}
+
 /// Query to get a single notification by ID (for ownership validation)
 pub async fn get_notification_by_id(
     pool: &sqlx::SqlitePool,
@@ -280,6 +345,34 @@ pub async fn get_notification_by_id(
         "#,
     )
     .bind(notification_id)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(notification)
+}
+
+/// Query to get prep status for a specific recipe (Story 4.9 AC #8)
+///
+/// Returns the most recent prep task notification for the recipe.
+/// Used on recipe detail page to show prep completion status.
+pub async fn get_prep_status_for_recipe(
+    pool: &sqlx::SqlitePool,
+    user_id: &str,
+    recipe_id: &str,
+) -> anyhow::Result<Option<UserNotification>> {
+    let notification = sqlx::query_as::<_, UserNotification>(
+        r#"
+        SELECT id, user_id, recipe_id, meal_date, scheduled_time, reminder_type, prep_hours, prep_task, status, message_body
+        FROM notifications
+        WHERE user_id = ?
+          AND recipe_id = ?
+          AND reminder_type IN ('advance_prep', 'morning')
+        ORDER BY scheduled_time DESC
+        LIMIT 1
+        "#,
+    )
+    .bind(user_id)
+    .bind(recipe_id)
     .fetch_optional(pool)
     .await?;
 
@@ -339,5 +432,6 @@ pub fn notification_projections(
         .handler(project_reminder_sent())
         .handler(project_reminder_dismissed())
         .handler(project_reminder_snoozed())
+        .handler(project_prep_task_completed())
         .handler(project_push_subscription_created())
 }

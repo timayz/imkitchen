@@ -2,7 +2,8 @@ use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
 use crate::events::{
-    PushSubscriptionCreated, ReminderDismissed, ReminderScheduled, ReminderSent, ReminderSnoozed,
+    PrepTaskCompleted, PushSubscriptionCreated, ReminderDismissed, ReminderScheduled,
+    ReminderSent, ReminderSnoozed,
 };
 
 /// NotificationAggregate representing the state of a notification/reminder entity
@@ -26,11 +27,12 @@ pub struct NotificationAggregate {
     pub prep_task: Option<String>, // "marinate", "rise", "chill", etc.
 
     // Delivery status
-    pub status: String, // "pending", "sent", "failed", "dismissed", "snoozed"
+    pub status: String, // "pending", "sent", "failed", "dismissed", "snoozed", "completed"
     pub sent_at: Option<String>,
     pub delivery_status: Option<String>,
     pub dismissed_at: Option<String>,
     pub snoozed_until: Option<String>, // RFC3339 timestamp when snoozed notification should refire
+    pub completed_at: Option<String>,  // RFC3339 timestamp when prep task was completed
 }
 
 /// PushSubscriptionAggregate representing a user's Web Push subscription
@@ -117,6 +119,19 @@ impl NotificationAggregate {
         self.scheduled_time = event.data.snoozed_until;
         // Mark as snoozed so UI can distinguish from regular pending
         self.status = "snoozed".to_string();
+        Ok(())
+    }
+
+    /// Handle PrepTaskCompleted event to mark prep task as complete
+    ///
+    /// This is called when the user marks a prep task as complete.
+    /// Distinguishes from dismiss: completed means user finished the task.
+    async fn prep_task_completed(
+        &mut self,
+        event: evento::EventDetails<PrepTaskCompleted>,
+    ) -> anyhow::Result<()> {
+        self.completed_at = Some(event.data.completed_at);
+        self.status = "completed".to_string();
         Ok(())
     }
 }
