@@ -252,9 +252,10 @@ async fn test_post_onboarding_with_valid_data_creates_profile() {
         .unwrap();
 
     assert_eq!(response4.status(), StatusCode::OK);
+    // Step 4 now redirects to step 5 (Story 4.10: Push Notification Permission Flow)
     assert_eq!(
         response4.headers().get("ts-location").unwrap(),
-        "/dashboard"
+        "/onboarding?step=5"
     );
 
     // Process events to project to read model
@@ -280,7 +281,8 @@ async fn test_post_onboarding_with_valid_data_creates_profile() {
     assert_eq!(skill_level, "expert");
     assert!(weeknight_availability.contains("18:00")); // Default start time
     assert!(weeknight_availability.contains("45")); // Default duration
-    assert_eq!(onboarding_completed, 1);
+                                                    // Story 4.10: Onboarding now has 5 steps, so after step 4 it's not complete
+    assert_eq!(onboarding_completed, 0);
 }
 
 #[tokio::test]

@@ -2,9 +2,9 @@ use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
 use crate::events::{
-    DietaryRestrictionsSet, HouseholdSizeSet, PasswordChanged, ProfileCompleted, ProfileUpdated,
-    RecipeCreated, RecipeDeleted, SkillLevelSet, SubscriptionUpgraded, UserCreated,
-    WeeknightAvailabilitySet,
+    DietaryRestrictionsSet, HouseholdSizeSet, NotificationPermissionChanged, PasswordChanged,
+    ProfileCompleted, ProfileUpdated, RecipeCreated, RecipeDeleted, SkillLevelSet,
+    SubscriptionUpgraded, UserCreated, WeeknightAvailabilitySet,
 };
 
 /// User aggregate representing the state of a user entity
@@ -35,6 +35,10 @@ pub struct UserAggregate {
     // Stripe integration fields
     pub stripe_customer_id: Option<String>,
     pub stripe_subscription_id: Option<String>,
+
+    // Notification permission fields (Story 4.10)
+    pub notification_permission_status: String, // "not_asked", "granted", "denied", "skipped"
+    pub last_permission_denial_at: Option<String>, // RFC3339 timestamp for grace period tracking
 }
 
 /// Implement evento aggregator pattern for UserAggregate
@@ -66,6 +70,8 @@ impl UserAggregate {
         self.onboarding_completed = false;
         self.stripe_customer_id = None;
         self.stripe_subscription_id = None;
+        self.notification_permission_status = "not_asked".to_string();
+        self.last_permission_denial_at = None;
         Ok(())
     }
 
@@ -190,6 +196,19 @@ impl UserAggregate {
         self.tier = event.data.new_tier;
         self.stripe_customer_id = event.data.stripe_customer_id;
         self.stripe_subscription_id = event.data.stripe_subscription_id;
+        Ok(())
+    }
+
+    /// Handle NotificationPermissionChanged event - update notification permission status
+    ///
+    /// This handler is called when a user grants, denies, or skips notification permission.
+    /// It tracks the permission status and denial timestamp for grace period enforcement (AC #8).
+    async fn notification_permission_changed(
+        &mut self,
+        event: evento::EventDetails<NotificationPermissionChanged>,
+    ) -> anyhow::Result<()> {
+        self.notification_permission_status = event.data.permission_status;
+        self.last_permission_denial_at = event.data.last_permission_denial_at;
         Ok(())
     }
 }
