@@ -1,0 +1,209 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>5</epicId>
+    <storyId>2</storyId>
+    <title>Service Worker for Offline Support</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-19</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-5.2.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>app to work offline</iWant>
+    <soThat>I can access recipes in kitchen without internet</soThat>
+    <tasks>
+      - Implement service worker registration (AC: 1)
+      - Create service worker with Workbox (AC: 2, 4, 5, 8)
+      - Configure caching strategies (AC: 3, 4, 5)
+      - Implement offline fallback page (AC: 6)
+      - Add Background Sync for offline mutations (AC: 7)
+      - Implement cache versioning strategy (AC: 8)
+      - Serve service worker from Axum (AC: 1, 2)
+      - Add offline indicator UI (AC: 6)
+      - Create Workbox configuration file (AC: 2, 8)
+      - Add unit tests for service worker (AC: all)
+      - Add integration tests (AC: all)
+      - Add E2E tests with Playwright (AC: all)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    1. Service worker registered on first app visit
+    2. Service worker caches critical assets: HTML, CSS, JS, fonts, images
+    3. Recipe pages cached after first view
+    4. Offline-first strategy: serve from cache, fallback to network
+    5. Network-first for HTML requests with cache fallback
+    6. Graceful offline indicator when network unavailable
+    7. Background sync queues actions taken offline (favorite recipe, mark prep complete) for later sync
+    8. Cache versioning ensures updates deployed without breaking offline experience
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>8.3 PWA Offline Strategy</section>
+        <snippet>Service Worker (Workbox): Precache static assets, network-first for HTML, cache-first for images. Background sync queues mutations (create recipe, rate recipe) when offline, sync on reconnect</snippet>
+        <relevance>Defines caching strategies and offline-first architecture for PWA</relevance>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-5.md</path>
+        <title>Technical Specification: Progressive Web App &amp; Mobile Experience</title>
+        <section>Module 2: Service Worker Implementation</section>
+        <snippet>Service worker using Workbox 7.1+ with precaching, runtime caching strategies (NetworkFirst for HTML, CacheFirst for images), Background Sync API for offline mutations</snippet>
+        <relevance>Detailed technical specification for service worker configuration and caching patterns</relevance>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic Breakdown</title>
+        <section>Story 5.2</section>
+        <snippet>Service worker registered, caches critical assets, offline-first strategy, background sync for offline actions</snippet>
+        <relevance>Acceptance criteria source and epic context</relevance>
+      </doc>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>static/sw.js</path>
+        <kind>JavaScript - Service Worker</kind>
+        <symbol>N/A - Existing basic service worker from Story 4.6</symbol>
+        <lines>1-100+</lines>
+        <reason>Existing service worker handles push notifications (Story 4.6). Story 5.2 will expand this to add Workbox caching strategies, offline support, and background sync. Current implementation has basic install/activate handlers and push event listener.</reason>
+      </artifact>
+      <artifact>
+        <path>static/js/pwa-install.js</path>
+        <kind>JavaScript - PWA Installation Logic</kind>
+        <symbol>beforeinstallprompt event handler</symbol>
+        <lines>1-100+</lines>
+        <reason>Handles PWA installation prompts (Story 5.1). Service worker registration will integrate with this existing PWA infrastructure.</reason>
+      </artifact>
+      <artifact>
+        <path>templates/base.html</path>
+        <kind>Askama Template - Base Layout</kind>
+        <symbol>HTML head section with PWA meta tags and scripts</symbol>
+        <lines>1-100</lines>
+        <reason>Base template already includes PWA manifest link, meta tags, and PWA-related scripts. Service worker registration script will be added here via new sw-register.js script tag.</reason>
+      </artifact>
+      <artifact>
+        <path>src/routes/assets.rs</path>
+        <kind>Rust - Static Asset Serving</kind>
+        <symbol>AssetsService, RustEmbed Assets struct</symbol>
+        <lines>1-85</lines>
+        <reason>Existing static asset service using RustEmbed. Service worker (sw.js) is already served via this mechanism. Confirms sw.js is accessible at root path with correct MIME type via mime_guess.</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <rust>
+        <dependency name="axum" version="0.8" purpose="HTTP server framework, serves static assets including service worker" />
+        <dependency name="rust-embed" version="8.7" purpose="Embeds static files (including sw.js) in binary for efficient serving" />
+        <dependency name="mime_guess" version="2.0" purpose="Determines correct MIME types for static assets (application/javascript for sw.js)" />
+        <dependency name="askama" version="0.14" purpose="Template engine for base.html where service worker registration script will be added" />
+      </rust>
+      <javascript>
+        <note>No package.json exists yet. Story 5.2 will create package.json with workbox-cli devDependency for service worker build process.</note>
+        <planned-dependency name="workbox-cli" version="7.1+" purpose="Generates service worker with precaching manifest and caching strategies" />
+        <planned-dependency name="workbox-core" version="7.1+" purpose="Core Workbox runtime for service worker functionality" />
+        <planned-dependency name="workbox-precaching" version="7.1+" purpose="Precaches critical assets during service worker install" />
+        <planned-dependency name="workbox-routing" version="7.1+" purpose="Routes requests to appropriate caching strategies" />
+        <planned-dependency name="workbox-strategies" version="7.1+" purpose="Provides NetworkFirst, CacheFirst, StaleWhileRevalidate strategies" />
+      </javascript>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">
+      <rule>Service worker must use Workbox 7.1+ framework per Solution Architecture §8.3</rule>
+      <rule>Caching strategies: Network-First for HTML pages, Cache-First for images/static assets, Stale-While-Revalidate for API data</rule>
+      <rule>Background Sync API for queueing offline mutations (favorite recipe, mark prep complete) with replay on reconnect</rule>
+      <rule>Service worker scope must be root (/) to intercept all app requests</rule>
+      <rule>Cache versioning via cacheId to ensure old caches deleted on service worker update</rule>
+    </constraint>
+    <constraint type="testing">
+      <rule>TDD enforced: Write tests before implementing service worker logic</rule>
+      <rule>Unit tests for caching strategies, precaching, background sync queue</rule>
+      <rule>Integration tests for service worker lifecycle (install, activate, fetch interception)</rule>
+      <rule>E2E tests with Playwright: offline scenarios (load cached pages, background sync, update flow)</rule>
+      <rule>Cross-browser testing: iOS Safari 14+, Android Chrome 90+, desktop Chrome/Firefox</rule>
+      <rule>Coverage target: 80% via workbox-testing + integration tests</rule>
+    </constraint>
+    <constraint type="implementation">
+      <rule>Existing sw.js from Story 4.6 (push notifications) must be preserved and extended, not replaced</rule>
+      <rule>Service worker registration in sw-register.js with feature detection: if ('serviceWorker' in navigator)</rule>
+      <rule>CSP compliance: No inline scripts in service worker, use importScripts for Workbox runtime</rule>
+      <rule>Service worker served via existing RustEmbed AssetsService (src/routes/assets.rs) with correct MIME type</rule>
+      <rule>Offline fallback page (templates/offline.html) with Tailwind CSS styling consistency</rule>
+      <rule>Workbox CLI build step generates sw.js from sw-source.js, outputs to static/sw.js (gitignored compiled file)</rule>
+    </constraint>
+    <constraint type="performance">
+      <rule>Service worker registration <100ms overhead on page load</rule>
+      <rule>Cache lookup <50ms for cached resources</rule>
+      <rule>Precaching manifest size <1MB for critical assets</rule>
+      <rule>Background sync retries with exponential backoff (max 3 attempts)</rule>
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>Service Worker API - Registration</name>
+      <kind>Browser API</kind>
+      <signature>navigator.serviceWorker.register(scriptURL, options)</signature>
+      <path>Web Platform API</path>
+      <usage>Register service worker at /sw.js with scope: '/'</usage>
+    </interface>
+    <interface>
+      <name>Workbox Precaching</name>
+      <kind>Library API</kind>
+      <signature>workbox.precaching.precacheAndRoute(self.__WB_MANIFEST)</signature>
+      <path>Workbox Library</path>
+      <usage>Precache critical assets (HTML, CSS, JS, fonts, images) during service worker install</usage>
+    </interface>
+    <interface>
+      <name>Workbox Routing</name>
+      <kind>Library API</kind>
+      <signature>workbox.routing.registerRoute(matchCallback, handler)</signature>
+      <path>Workbox Library</path>
+      <usage>Register runtime caching strategies for different asset types (HTML: NetworkFirst, Images: CacheFirst)</usage>
+    </interface>
+    <interface>
+      <name>Background Sync API</name>
+      <kind>Browser API</kind>
+      <signature>self.addEventListener('sync', event =&gt; { ... })</signature>
+      <path>Web Platform API</path>
+      <usage>Queue offline mutations and replay on connectivity restore</usage>
+    </interface>
+    <interface>
+      <name>RustEmbed Assets - Existing Static File Serving</name>
+      <kind>Rust Service</kind>
+      <signature>Assets::get(uri.path())</signature>
+      <path>src/routes/assets.rs:44-57</path>
+      <usage>Service worker (sw.js) already served via this mechanism with correct MIME type detection</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      TDD enforced per solution architecture §15. Testing framework: Playwright 1.56+ for E2E tests, Rust cargo test for integration tests, workbox-testing for service worker unit tests. Test structure: unit tests in tests/ directory, integration tests in tests/integration/, E2E tests in e2e/tests/. Coverage target: 80% via cargo tarpaulin (Rust) and Playwright code coverage (JavaScript). Cross-browser testing matrix: iOS Safari 14+, Android Chrome 90+, desktop Chrome/Firefox.
+    </standards>
+    <locations>
+      - Unit tests: tests/service_worker_tests.rs (Rust integration), static/js/__tests__/sw.test.js (JavaScript service worker logic)
+      - Integration tests: tests/integration/service_worker_lifecycle_tests.rs
+      - E2E tests: e2e/tests/service-worker.spec.ts (Playwright)
+      - Test fixtures: e2e/fixtures/offline-scenarios.ts
+    </locations>
+    <ideas>
+      <test ac="1" idea="Unit test: Verify service worker registration succeeds with feature detection check" />
+      <test ac="2" idea="Unit test: Verify critical assets (CSS, JS, fonts, images) precached during install event" />
+      <test ac="3" idea="Integration test: Load recipe page online, verify cached after first view, access offline successfully" />
+      <test ac="4" idea="E2E test: Go offline, navigate app, verify cached pages load from cache (offline-first strategy)" />
+      <test ac="5" idea="Integration test: Network-first strategy serves fresh HTML when online, falls back to cache when offline" />
+      <test ac="6" idea="E2E test: Disconnect network, verify offline indicator displays, reconnect, verify indicator dismisses" />
+      <test ac="7" idea="E2E test: Favorite recipe while offline, reconnect, verify background sync replays request to server" />
+      <test ac="8" idea="Integration test: Update service worker version, verify old caches deleted on activation" />
+      <test ac="all" idea="E2E cross-browser test: Run offline scenarios on iOS Safari, Android Chrome, desktop Chrome/Firefox" />
+    </ideas>
+  </tests>
+</story-context>
