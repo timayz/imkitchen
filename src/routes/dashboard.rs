@@ -1,6 +1,7 @@
 use askama::Template;
 use axum::{extract::State, response::Html, Extension};
 use meal_planning::read_model::{MealAssignmentWithRecipe, MealPlanQueries};
+use notifications::read_model::{get_user_prep_tasks_for_today, UserNotification};
 use recipe::read_model::query_recipe_count;
 use serde::{Deserialize, Serialize};
 
@@ -39,9 +40,10 @@ pub struct DashboardTemplate {
     pub has_meal_plan: bool,
     pub recipe_count: usize,
     pub favorite_count: usize,
+    pub prep_tasks: Vec<UserNotification>, // Story 4.9: AC #3, #4
 }
 
-/// GET /dashboard - Display dashboard with today's meals (Story 3.9)
+/// GET /dashboard - Display dashboard with today's meals (Story 3.9 + Story 4.9)
 ///
 /// AC-1: Home dashboard prominently displays "Today's Meals" section at top
 /// AC-2: Shows breakfast, lunch, and dinner assigned for today
@@ -51,6 +53,8 @@ pub struct DashboardTemplate {
 /// AC-6: If no meal plan active, displays "Generate Meal Plan" call-to-action
 /// AC-7: Today's meals update automatically at midnight (new day)
 /// AC-8: Click recipe navigates to full recipe detail
+///
+/// Story 4.9 AC #3, #4: Display "Prep Tasks for Today" with completion status
 pub async fn dashboard_handler(
     Extension(auth): Extension<Auth>,
     State(state): State<AppState>,
@@ -61,6 +65,9 @@ pub async fn dashboard_handler(
 
     // Query recipe stats for dashboard cards
     let (recipe_count, favorite_count) = query_recipe_count(&auth.user_id, &state.db_pool).await?;
+
+    // Query today's prep tasks (Story 4.9 AC #4)
+    let prep_tasks = get_user_prep_tasks_for_today(&state.db_pool, &auth.user_id).await?;
 
     // Map assignments to TodaysMealsData structure
     let todays_meals = if todays_meal_assignments.is_empty() {
@@ -78,6 +85,7 @@ pub async fn dashboard_handler(
         has_meal_plan,
         recipe_count,
         favorite_count,
+        prep_tasks,
     };
 
     template.render().map(Html).map_err(|e| {
