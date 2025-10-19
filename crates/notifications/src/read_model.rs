@@ -1,7 +1,7 @@
 use crate::aggregate::{NotificationAggregate, PushSubscriptionAggregate};
 use crate::events::{
-    PrepTaskCompleted, PushSubscriptionCreated, ReminderDismissed, ReminderScheduled,
-    ReminderSent, ReminderSnoozed,
+    PrepTaskCompleted, PushSubscriptionCreated, ReminderDismissed, ReminderScheduled, ReminderSent,
+    ReminderSnoozed,
 };
 use evento::{AggregatorName, Context, EventDetails, Executor};
 use serde::{Deserialize, Serialize};
