@@ -129,4 +129,137 @@
       font-size: max(16px, 1rem);
     }
   }
+
+  /* Story 5.6: Kitchen Mode - High contrast, large text, simplified UI */
+  body.kitchen-mode {
+    font-size: 20px; /* AC2: 20px body text */
+    color: #1a1a1a; /* AC3: Near-black text for 7:1 contrast ratio */
+    background-color: #ffffff; /* AC3: White background */
+    box-shadow: none; /* AC3: Remove decorative shadows */
+  }
+
+  body.kitchen-mode h1,
+  body.kitchen-mode h2 {
+    font-size: 28px; /* AC2: 28px headings */
+    font-weight: 700;
+    color: #1a1a1a;
+  }
+
+  body.kitchen-mode h3 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+
+  /* AC4: Hide non-essential elements in kitchen mode */
+  body.kitchen-mode nav,
+  body.kitchen-mode footer,
+  body.kitchen-mode .hide-in-kitchen-mode,
+  body.kitchen-mode [data-testid="kitchen-mode-toggle"] {
+    display: none !important;
+  }
+
+  /* Kitchen Mode: Increased whitespace for visual clarity (AC4) */
+  body.kitchen-mode .kitchen-mode-section {
+    padding: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  /* Kitchen Mode: Ingredient styling */
+  body.kitchen-mode .kitchen-mode-ingredient {
+    font-size: 1.5rem; /* 24px */
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    border-left: 4px solid #4299e1;
+    background-color: #f7fafc;
+  }
+
+  /* Kitchen Mode: Instruction styling */
+  body.kitchen-mode .kitchen-mode-instruction {
+    font-size: 1.5rem; /* 24px */
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    background-color: #edf2f7;
+    border-radius: 0.5rem;
+  }
+
+  /* Kitchen Mode: Step number indicator */
+  body.kitchen-mode .kitchen-mode-step-number {
+    width: 3rem;
+    height: 3rem;
+    font-size: 1.75rem;
+    font-weight: bold;
+    background-color: #3182ce;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    flex-shrink: 0;
+  }
+
+  /* Kitchen Mode: Timer display */
+  body.kitchen-mode .kitchen-mode-timer {
+    font-size: 1.25rem;
+    padding: 1rem 1.5rem;
+    background-color: #bee3f8;
+    border: 2px solid #3182ce;
+    color: #1a365d;
+    border-radius: 0.5rem;
+    font-weight: bold;
+    margin-top: 1rem;
+  }
+
+  /* Kitchen Mode: Checkbox sizing (32x32px) */
+  body.kitchen-mode .kitchen-mode-checkbox {
+    width: 32px;
+    height: 32px;
+    margin-right: 1rem;
+  }
+
+  /* Kitchen Mode: Title styling */
+  body.kitchen-mode .kitchen-mode-title {
+    font-size: 3rem; /* 48px for recipe title */
+    font-weight: bold;
+    color: #1a202c;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Kitchen Mode: Section titles */
+  body.kitchen-mode .kitchen-mode-section-title {
+    font-size: 2rem; /* 32px */
+    font-weight: bold;
+    color: #2d3748;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  /* Kitchen Mode: Back button */
+  body.kitchen-mode .kitchen-mode-back-btn {
+    font-size: 1.5rem;
+    padding: 1rem 2rem;
+    background-color: #3182ce;
+    color: white;
+    border-radius: 0.5rem;
+    font-weight: bold;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 2rem;
+  }
+
+  /* AC3: Remove all decorative shadows and gradients in Kitchen Mode */
+  body.kitchen-mode * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* AC3: Increase border weights for high contrast */
+  body.kitchen-mode button,
+  body.kitchen-mode .btn-primary,
+  body.kitchen-mode .btn-secondary {
+    border-width: 2px;
+    border-color: #1a1a1a;
+  }
 }
