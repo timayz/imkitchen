@@ -7,7 +7,7 @@ create PR:
     - closed issue id (use story title to search)
 
 # after develop/review
-fix make check then git conventional commits, push
+[make check] must succeed then git conventional commits, push
 
 # init milestones / issues from epic
 can you create all epics as milestone with associeted stories as issue ? epic title format
