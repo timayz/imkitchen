@@ -146,6 +146,58 @@ button.ts-active::after {
         </section>
         {% endif %}
 
+        <!-- Prep Tasks for Today Section (Story 4.9 - AC #3, #4) -->
+        {% if !prep_tasks.is_empty() %}
+        <section class="mb-8" aria-label="Prep Tasks for Today">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Prep Tasks for Today</h2>
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="space-y-4">
+                    {% for task in prep_tasks %}
+                    <div id="prep-task-{{ task.id }}" class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <div class="flex items-center flex-1">
+                            <!-- Completion Status Icon (AC #3: Checkmark for completed) -->
+                            {% if task.status == "completed" %}
+                            <span class="text-green-600 text-2xl mr-4" aria-label="Completed">✓</span>
+                            {% else %}
+                            <span class="text-gray-400 text-2xl mr-4" aria-label="Pending">○</span>
+                            {% endif %}
+
+                            <div class="flex-1">
+                                <h3 class="font-semibold text-gray-900">
+                                    {% if let Some(prep_task) = task.prep_task %}
+                                    {{ prep_task|capitalize }} for {{ task.recipe_id }}
+                                    {% else %}
+                                    Prep for {{ task.recipe_id }}
+                                    {% endif %}
+                                </h3>
+                                <p class="text-sm text-gray-600">
+                                    {{ task.prep_hours }} hours advance prep required
+                                </p>
+                                {% if task.status == "completed" %}
+                                <p class="text-xs text-green-600 mt-1">Completed</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Mark Complete Button (AC #1, #2: Only show if not completed) -->
+                        {% if task.status != "completed" %}
+                        <button
+                            ts-req="/api/notifications/{{ task.id }}/complete"
+                            ts-req-method="POST"
+                            ts-target="#prep-task-{{ task.id }}"
+                            ts-swap="outerHTML"
+                            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                            aria-label="Mark prep task as complete">
+                            Mark Complete
+                        </button>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+        {% endif %}
+
         <!-- Quick Actions Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             <!-- Generate Meal Plan Card (AC-1: Prominently displayed) -->

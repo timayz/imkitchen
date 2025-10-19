@@ -108,6 +108,20 @@ button.ts-active::after {
 
                     <!-- Actions -->
                     <div class="ml-4 flex-shrink-0 flex flex-col space-y-2">
+                        <!-- Mark Complete Button (Story 4.9 AC #1, #2) -->
+                        {% if notification.reminder_type == "advance_prep" || notification.reminder_type == "morning" %}
+                        <form method="POST"
+                              action="/api/notifications/{{ notification.id }}/complete"
+                              ts-req
+                              ts-req-selector="#notification-{{ notification.id }}"
+                              ts-req-method="POST">
+                            <button type="submit"
+                                    class="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                                ✓ Mark Complete
+                            </button>
+                        </form>
+                        {% endif %}
+
                         <!-- Dismiss Button -->
                         <form method="POST"
                               action="/api/notifications/{{ notification.id }}/dismiss"
@@ -116,7 +130,7 @@ button.ts-active::after {
                               ts-req-method="POST">
                             <button type="submit"
                                     class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                                ✓ Done
+                                Dismiss
                             </button>
                         </form>
 
