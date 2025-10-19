@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width="640" height="640">
+  <!-- Maskable icon with safe zone padding (20% = 64px on each side for 512px content area) -->
+  <!-- Total viewBox is 640x640, content centered in 512x512 area -->
+
+  <!-- Background extends to full canvas for maskable support -->
+  <rect x="0" y="0" width="640" height="640" fill="#2563eb"/>
+
+  <!-- Content centered with padding -->
+  <g transform="translate(64, 64)">
+    <!-- Chef hat icon in white -->
+    <g fill="#ffffff">
+      <!-- Hat top -->
+      <path d="M256 120c-30 0-55 18-66 44-8-4-17-6-26-6-35 0-64 29-64 64 0 3 0 6 1 9h318c1-3 1-6 1-9 0-35-29-64-64-64-9 0-18 2-26 6-11-26-36-44-66-44z"/>
+      <!-- Hat base -->
+      <rect x="140" y="240" width="232" height="140" rx="10"/>
+      <!-- Simple utensil decoration -->
+      <circle cx="220" cy="310" r="8"/>
+      <circle cx="256" cy="310" r="8"/>
+      <circle cx="292" cy="310" r="8"/>
+    </g>
+
+    <!-- "ik" monogram -->
+    <text x="256" y="340" font-family="Arial, sans-serif" font-size="80" font-weight="bold" fill="#ffffff" text-anchor="middle">ik</text>
+  </g>
+</svg>

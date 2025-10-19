@@ -1,0 +1,166 @@
+<story-context id="story-5.1-pwa-manifest-installation" v="1.0">
+  <metadata>
+    <epicId>5</epicId>
+    <storyId>1</storyId>
+    <title>PWA Manifest and Installation</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-19</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-5.1.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user on mobile device</asA>
+    <iWant>to install imkitchen as an app</iWant>
+    <soThat>I can access it like a native app from my home screen</soThat>
+    <tasks>
+      - Create PWA manifest.json file with app metadata
+      - Create app icons in multiple sizes (192x192, 512x512, maskable variants)
+      - Create app screenshots for installation prompts
+      - Add app shortcuts to manifest
+      - Link manifest in base HTML template
+      - Configure Axum to serve manifest.json
+      - Implement installation prompt logic
+      - Verify standalone mode functionality
+      - Create and configure splash screen
+      - Cross-browser testing (iOS Safari 14+, Android Chrome 90+)
+      - Add E2E tests with Playwright
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="1">PWA manifest file (manifest.json) configured with app metadata</criterion>
+    <criterion id="2">Manifest includes: app name, short_name, description, icons (192x192, 512x512), start_url, display mode (standalone), theme_color, background_color</criterion>
+    <criterion id="3">Browser prompts user to install app after engagement threshold met (2+ visits)</criterion>
+    <criterion id="4">User can manually trigger installation via browser menu or in-app prompt</criterion>
+    <criterion id="5">Installed app opens in standalone mode (no browser chrome)</criterion>
+    <criterion id="6">App icon appears on device home screen with correct branding</criterion>
+    <criterion id="7">Splash screen displays while app loading (uses background_color and icon)</criterion>
+    <criterion id="8">Works on iOS Safari 14+ and Android Chrome 90+</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-5.md</path>
+        <title>Technical Specification: Progressive Web App &amp; Mobile Experience</title>
+        <section>Module 1: PWA Manifest Configuration</section>
+        <snippet>Complete manifest.json structure with all required fields: name, short_name, description, start_url ("/dashboard"), display ("standalone"), background_color ("#ffffff"), theme_color ("#2563eb"), orientation ("portrait-primary"), icons (192x192 and 512x512 with maskable variants), screenshots, categories, and shortcuts</snippet>
+        <reason>Primary technical specification for Epic 5, contains exact manifest.json structure and configuration requirements</reason>
+      </doc>
+      <doc>
+        <path>docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>9.2 PWA Manifest</section>
+        <snippet>PWA manifest requirements: installable on iOS Safari 14+ and Android Chrome 90+, standalone display mode, proper app icons, splash screens. Served via Axum static file route.</snippet>
+        <reason>Architecture-level PWA requirements and deployment strategy</reason>
+      </doc>
+      <doc>
+        <path>docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>14. Proposed Source Tree</section>
+        <snippet>Static assets structure: static/manifest.json, static/icons/ directory, templates/base.html for manifest linking, src/routes/static_files.rs for serving static assets</snippet>
+        <reason>Defines file locations and routing structure for PWA assets</reason>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>imkitchen - Epic Breakdown</title>
+        <section>Story 5.1: PWA Manifest and Installation</section>
+        <snippet>Technical notes: manifest.json served from root with correct MIME type (application/manifest+json), Apple touch icons for iOS support, service worker required for PWA installation (Story 5.2), Axum static file serving</snippet>
+        <reason>Epic-level acceptance criteria and technical prerequisites</reason>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>src/routes/assets.rs</path>
+        <kind>route_handler</kind>
+        <symbol>static file serving</symbol>
+        <lines>entire file</lines>
+        <reason>Existing static asset serving route that needs to be extended to serve manifest.json with proper MIME type (application/manifest+json)</reason>
+      </artifact>
+      <artifact>
+        <path>src/routes/mod.rs</path>
+        <kind>router_config</kind>
+        <symbol>router setup</symbol>
+        <lines>entire file</lines>
+        <reason>Main router configuration where manifest.json route needs to be registered</reason>
+      </artifact>
+      <artifact>
+        <path>Cargo.toml</path>
+        <kind>dependency_manifest</kind>
+        <symbol>rust-embed, mime_guess</symbol>
+        <lines>45-46, 90</lines>
+        <reason>Existing dependencies for static asset embedding and MIME type detection, can be reused for manifest.json serving</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <rust>
+        <package name="axum" version="0.8" reason="HTTP server framework, serves static files via tower-http" />
+        <package name="tower-http" version="0.6" features="fs" reason="Static file serving middleware for manifest.json and icons" />
+        <package name="askama" version="0.14" reason="Template engine for base.html where manifest link will be added" />
+        <package name="rust-embed" version="8.7" reason="Embeds static assets at compile time, useful for manifest.json" />
+        <package name="mime_guess" version="2.0" reason="MIME type detection for static files including application/manifest+json" />
+      </rust>
+      <nodejs>
+        <package name="playwright" version="1.56+" context="e2e/package.json" reason="E2E testing framework for PWA installation flows on iOS Safari and Android Chrome" />
+      </nodejs>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Server-side rendering architecture: Askama templates render full HTML, manifest link added to templates/base.html <head> section</constraint>
+    <constraint>Static file serving via Axum: manifest.json must be served from root path / with MIME type application/manifest+json</constraint>
+    <constraint>HTTPS requirement: PWA installation only works over HTTPS (development: localhost exception)</constraint>
+    <constraint>Service worker prerequisite: Full PWA installability requires service worker (Story 5.2), but manifest can be created and validated independently</constraint>
+    <constraint>Icon specifications: Must provide 192x192 and 512x512 PNG icons, plus maskable variants with safe zone padding for Android adaptive icons</constraint>
+    <constraint>iOS-specific requirements: Apple touch icon (180x180px), apple-mobile-web-app-* meta tags in base.html</constraint>
+    <constraint>Cross-browser compatibility: Test on iOS Safari 14+, Android Chrome 90+, desktop Chrome as defined in NFRs</constraint>
+    <constraint>TDD enforcement: Write unit tests for manifest schema validation, integration tests for Axum route, E2E tests for installation flow BEFORE implementation</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>Axum Router</name>
+      <kind>http_routing</kind>
+      <signature>Router::new().route("/manifest.json", get(serve_manifest))</signature>
+      <path>src/routes/mod.rs</path>
+      <reason>Register manifest.json route in main Axum router</reason>
+    </interface>
+    <interface>
+      <name>tower_http::services::ServeFile</name>
+      <kind>static_file_service</kind>
+      <signature>ServeFile::new("static/manifest.json").with_content_type("application/manifest+json")</signature>
+      <path>tower-http crate</path>
+      <reason>Serve manifest.json with correct MIME type header</reason>
+    </interface>
+    <interface>
+      <name>Askama Template: base.html</name>
+      <kind>html_template</kind>
+      <signature>&lt;link rel="manifest" href="/manifest.json"&gt; in &lt;head&gt;</signature>
+      <path>templates/base.html</path>
+      <reason>Link to manifest.json must be in HTML head for browser PWA detection</reason>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      TDD enforced per architecture requirements. Test pyramid: Unit tests for manifest schema validation (JSON schema validator), Integration tests for Axum routes (verify MIME type and response), E2E tests with Playwright for PWA installation flows (iOS Safari, Android Chrome). Target 80% code coverage via cargo tarpaulin. All tests must pass in CI/CD before merge.
+    </standards>
+    <locations>
+      - Unit tests: inline tests in src/routes/assets.rs or dedicated tests/ directory
+      - Integration tests: tests/ directory at project root
+      - E2E tests: e2e/tests/ directory (TypeScript with Playwright)
+      - Playwright config: e2e/playwright.config.ts
+    </locations>
+    <ideas>
+      <testIdea ac="1">Unit: Validate manifest.json against W3C Web App Manifest JSON schema (use serde_json::from_str to parse and validate structure)</testIdea>
+      <testIdea ac="2">Unit: Verify manifest.json contains required fields: name, short_name, description, start_url, display, theme_color, background_color, icons array with 192x192 and 512x512 entries</testIdea>
+      <testIdea ac="1,2">Integration: GET /manifest.json returns 200 OK with Content-Type: application/manifest+json header</testIdea>
+      <testIdea ac="3,4">E2E (Playwright): Simulate 2 page visits, verify beforeinstallprompt event fires, click install button, verify app installed</testIdea>
+      <testIdea ac="5">E2E (Playwright): Launch installed app, verify display mode is standalone (window.matchMedia('(display-mode: standalone)').matches returns true)</testIdea>
+      <testIdea ac="6">E2E (Playwright): Verify app icon visible on home screen (manual verification or use ADB for Android, Simulator for iOS)</testIdea>
+      <testIdea ac="7">E2E (Playwright): Verify splash screen displays on app launch (check background color and icon rendering)</testIdea>
+      <testIdea ac="8">E2E (Playwright): Run PWA installation test suite on iOS Safari 14+ and Android Chrome 90+ using Playwright device emulation</testIdea>
+    </ideas>
+  </tests>
+</story-context>
