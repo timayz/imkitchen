@@ -1,6 +1,18 @@
-use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
+use axum::{
+    extract::State,
+    http::StatusCode,
+    response::{Html, IntoResponse},
+    Json,
+};
 use serde_json::json;
 use sqlx::SqlitePool;
+
+/// GET /offline - Offline fallback page for service worker
+/// Returns a cached HTML page when the user is offline
+pub async fn offline() -> impl IntoResponse {
+    let html = include_str!("../../templates/offline.html");
+    Html(html)
+}
 
 /// GET /health - Liveness probe
 /// Returns 200 OK if the process is alive
