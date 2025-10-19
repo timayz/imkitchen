@@ -3,8 +3,8 @@ use chrono::Utc;
 use uuid::Uuid;
 
 use crate::events::{
-    PrepTaskCompleted, PushSubscriptionCreated, ReminderDismissed, ReminderScheduled,
-    ReminderSent, ReminderSnoozed,
+    PrepTaskCompleted, PushSubscriptionCreated, ReminderDismissed, ReminderScheduled, ReminderSent,
+    ReminderSnoozed,
 };
 
 /// Command to schedule a preparation reminder

@@ -2,8 +2,8 @@ use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
 use crate::events::{
-    PrepTaskCompleted, PushSubscriptionCreated, ReminderDismissed, ReminderScheduled,
-    ReminderSent, ReminderSnoozed,
+    PrepTaskCompleted, PushSubscriptionCreated, ReminderDismissed, ReminderScheduled, ReminderSent,
+    ReminderSnoozed,
 };
 
 /// NotificationAggregate representing the state of a notification/reminder entity
