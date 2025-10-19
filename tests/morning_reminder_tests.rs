@@ -467,7 +467,7 @@ async fn test_expired_reminders_auto_dismissed() {
     .bind(notification_id)
     .bind(user_id)
     .bind("recipe-test")
-    .bind((Utc::now()).format("%Y-%m-%d").to_string()) // Meal was today
+    .bind((Utc::now() - Duration::days(1)).format("%Y-%m-%d").to_string()) // Meal was yesterday (expired)
     .bind(&yesterday_9am)
     .bind("morning")
     .bind(12)

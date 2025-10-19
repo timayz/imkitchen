@@ -69,6 +69,57 @@ pub fn create_push_payload(
     }
 }
 
+/// Create a notification payload for day-of cooking reminders
+///
+/// Per AC #4: Reminder displays recipe image and key info
+/// Per AC #5: Tapping opens recipe detail in cooking mode
+/// Per AC #6: User can dismiss or snooze (30 min, 1 hour)
+///
+/// This function generates a Web Push notification payload with:
+/// - Recipe image as icon
+/// - Cooking mode deep link (/recipes/{id}?mode=cooking)
+/// - Action buttons: Snooze 30min, Snooze 1hour, Dismiss
+pub fn create_cooking_push_payload(
+    notification_id: &str,
+    recipe_id: &str,
+    _recipe_title: &str,
+    recipe_image_url: &str,
+    message_body: &str,
+) -> NotificationPayload {
+    NotificationPayload {
+        title: "Cooking Reminder".to_string(),
+        body: message_body.to_string(),
+        // AC #4: Use recipe image as notification icon
+        icon: if recipe_image_url.is_empty() {
+            "/static/icons/icon-192.png".to_string()
+        } else {
+            recipe_image_url.to_string()
+        },
+        badge: "/static/icons/badge-72.png".to_string(),
+        // AC #6: Action buttons for snooze (30min, 1hour) and dismiss
+        actions: vec![
+            NotificationAction {
+                action: "snooze_30".to_string(),
+                title: "Snooze 30 min".to_string(),
+            },
+            NotificationAction {
+                action: "snooze_60".to_string(),
+                title: "Snooze 1 hour".to_string(),
+            },
+            NotificationAction {
+                action: "dismiss".to_string(),
+                title: "Dismiss".to_string(),
+            },
+        ],
+        data: NotificationData {
+            recipe_id: recipe_id.to_string(),
+            notification_id: notification_id.to_string(),
+            // AC #5: Deep link with mode=cooking parameter
+            url: format!("/recipes/{}?mode=cooking", recipe_id),
+        },
+    }
+}
+
 /// Send a push notification using Web Push API
 ///
 /// This function:

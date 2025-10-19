@@ -129,7 +129,7 @@ pub async fn project_reminder_dismissed<E: Executor>(
 
 /// Project ReminderSnoozed event to notifications table
 ///
-/// This evento subscription handler updates the scheduled_time and resets status to 'pending'
+/// This evento subscription handler updates the scheduled_time, snoozed_until, and status
 /// when a ReminderSnoozed event is emitted (user clicks "Snooze" button).
 #[evento::handler(NotificationAggregate)]
 pub async fn project_reminder_snoozed<E: Executor>(
@@ -144,10 +144,11 @@ pub async fn project_reminder_snoozed<E: Executor>(
     sqlx::query(
         r#"
         UPDATE notifications
-        SET scheduled_time = ?, status = 'pending'
+        SET scheduled_time = ?, snoozed_until = ?, status = 'snoozed'
         WHERE id = ?
         "#,
     )
+    .bind(&event.data.snoozed_until)
     .bind(&event.data.snoozed_until)
     .bind(notification_id)
     .execute(&pool)
