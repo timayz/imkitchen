@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - imkitchen</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+<main id="main-content" class="flex-1">
+<div class="container mx-auto px-4 py-12">
+    <div class="max-w-2xl mx-auto text-center">
+        <!-- Offline Icon -->
+        <div class="mb-8">
+            <svg class="mx-auto h-24 w-24 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414"></path>
+            </svg>
+        </div>
+
+        <!-- Offline Message -->
+        <h1 class="text-4xl font-bold text-gray-900 mb-4">
+            You're Offline
+        </h1>
+        <p class="text-lg text-gray-600 mb-8">
+            No internet connection available. Don't worry—your cached recipes are still accessible below.
+        </p>
+
+        <!-- Helpful Info -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8 text-left">
+            <h2 class="text-lg font-semibold text-blue-900 mb-3">
+                What you can still do offline:
+            </h2>
+            <ul class="space-y-2 text-blue-800">
+                <li class="flex items-start">
+                    <svg class="h-6 w-6 text-blue-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span>View recipes you've accessed before</span>
+                </li>
+                <li class="flex items-start">
+                    <svg class="h-6 w-6 text-blue-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span>Check your saved meal plans</span>
+                </li>
+                <li class="flex items-start">
+                    <svg class="h-6 w-6 text-blue-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span>Browse cached shopping lists</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <button onclick="window.location.reload()" class="bg-primary-500 text-white px-6 py-3 rounded-lg hover:bg-primary-600 font-medium transition-colors">
+                Try Again
+            </button>
+            <a href="/dashboard" class="bg-gray-200 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-300 font-medium transition-colors inline-block">
+                Go to Dashboard
+            </a>
+        </div>
+
+        <!-- Connection Status -->
+        <div class="mt-12 text-sm text-gray-500">
+            <p id="connection-status">
+                Waiting for connection...
+            </p>
+        </div>
+    </div>
+
+    <!-- Cached Recipes Section (Optional) -->
+    <div class="mt-16 max-w-4xl mx-auto">
+        <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">
+            Recently Viewed Recipes
+        </h2>
+        <div id="cached-recipes" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Will be populated by JavaScript if cached recipes exist -->
+            <p class="col-span-full text-center text-gray-500">
+                Loading cached recipes...
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Inline script for connection monitoring (CSP-compliant via nonce if needed) -->
+<script>
+    // Monitor connection status
+    window.addEventListener('online', function() {
+        document.getElementById('connection-status').textContent = 'Connection restored! Refreshing...';
+        setTimeout(function() {
+            window.location.reload();
+        }, 1000);
+    });
+
+    // Update status text periodically
+    setInterval(function() {
+        if (!navigator.onLine) {
+            document.getElementById('connection-status').textContent = 'Still offline. Will auto-refresh when connected.';
+        }
+    }, 5000);
+
+    // Attempt to load cached recipes from IndexedDB or localStorage
+    // (Implementation can be expanded in future stories)
+    setTimeout(function() {
+        document.getElementById('cached-recipes').innerHTML = '<p class="col-span-full text-center text-gray-500">No cached recipes available yet.</p>';
+    }, 1000);
+</script>
+</main>
+</body>
+</html>
