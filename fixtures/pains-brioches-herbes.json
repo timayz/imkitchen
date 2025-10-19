@@ -49,7 +49,7 @@
     {
       "name": "wine vinegar",
       "quantity": 10.0,
-      "unit": "g"
+      "unit": "ml"
     },
     {
       "name": "vegetarian peppers",
@@ -74,7 +74,7 @@
     {
       "name": "olive oil",
       "quantity": 10.0,
-      "unit": "g"
+      "unit": "ml"
     },
     {
       "name": "sweetened condensed milk for béchamel",

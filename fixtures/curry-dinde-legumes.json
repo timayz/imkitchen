@@ -9,7 +9,7 @@
     {
       "name": "liquid cream",
       "quantity": 230.0,
-      "unit": "g"
+      "unit": "ml"
     },
     {
       "name": "chayote",
@@ -84,7 +84,7 @@
     {
       "name": "water",
       "quantity": 240.0,
-      "unit": "g"
+      "unit": "ml"
     },
     {
       "name": "cornstarch",
@@ -94,7 +94,7 @@
     {
       "name": "sunflower oil",
       "quantity": 1.0,
-      "unit": "unit"
+      "unit": ""
     }
   ],
   "instructions": [

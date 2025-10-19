@@ -59,22 +59,22 @@
     {
       "name": "pepper",
       "quantity": 1.0,
-      "unit": "unit"
+      "unit": ""
     },
     {
       "name": "salt",
       "quantity": 1.0,
-      "unit": "unit"
+      "unit": ""
     },
     {
       "name": "Provence herbs",
       "quantity": 1.0,
-      "unit": "unit"
+      "unit": ""
     },
     {
       "name": "olive oil",
       "quantity": 30.0,
-      "unit": "g"
+      "unit": "ml"
     },
     {
       "name": "semi-salted butter",

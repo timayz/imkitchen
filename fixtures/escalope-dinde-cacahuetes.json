@@ -24,7 +24,7 @@
     {
       "name": "pepper",
       "quantity": 1.0,
-      "unit": "unit"
+      "unit": ""
     },
     {
       "name": "wheat flour (T55)",
@@ -69,7 +69,7 @@
     {
       "name": "olive oil for sauce",
       "quantity": 10.0,
-      "unit": "g"
+      "unit": "ml"
     },
     {
       "name": "salt for sauce",
@@ -79,7 +79,7 @@
     {
       "name": "frying oil",
       "quantity": 1.0,
-      "unit": "unit"
+      "unit": ""
     }
   ],
   "instructions": [

@@ -1,5 +1,28 @@
 use std::collections::HashMap;
 
+use fraction::Fraction;
+
+use crate::ambiguous::is_ambiguous_quantity;
+use crate::fraction_utils::{format_quantity, parse_quantity, round_to_practical_value};
+
+/// Ingredient with enhanced fraction support
+#[derive(Debug, Clone)]
+pub struct Ingredient {
+    pub name: String,
+    pub quantity: Fraction,
+    pub unit: String,
+}
+
+/// Aggregated ingredient with metadata
+#[derive(Debug, Clone)]
+pub struct AggregatedIngredient {
+    pub name: String,
+    pub quantity: Fraction,
+    pub formatted_quantity: String,
+    pub unit: String,
+    pub is_ambiguous: bool,
+}
+
 /// Ingredient Aggregation Service
 ///
 /// Stateless domain service that normalizes ingredient names, converts units,
@@ -12,6 +35,72 @@ use std::collections::HashMap;
 pub struct IngredientAggregationService;
 
 impl IngredientAggregationService {
+    /// Enhanced aggregate with fractional support, rounding, and ambiguous detection
+    ///
+    /// # Arguments
+    /// * `ingredients` - List of ingredients with fractional quantities
+    ///
+    /// # Returns
+    /// * Ok(Vec<AggregatedIngredient>) - Aggregated ingredients with metadata
+    /// * Err(String) - Aggregation error
+    pub fn aggregate_enhanced(
+        ingredients: Vec<(String, String, String)>,
+    ) -> Result<Vec<AggregatedIngredient>, String> {
+        let mut groups: HashMap<(String, String), (Fraction, bool)> = HashMap::new();
+
+        for (name, quantity_str, unit) in ingredients {
+            // Normalize ingredient name (lowercase, trim whitespace)
+            let normalized_name = Self::normalize_name(&name);
+
+            // Check if quantity is ambiguous
+            let is_ambiguous = is_ambiguous_quantity(&quantity_str);
+
+            // Parse quantity
+            let quantity = if is_ambiguous {
+                // For ambiguous quantities, store as 0 and flag
+                Fraction::new(0u64, 1u64)
+            } else {
+                parse_quantity(&quantity_str)
+                    .map_err(|e| format!("Failed to parse quantity '{}': {}", quantity_str, e))?
+            };
+
+            // Normalize unit and convert quantity to base unit
+            let (normalized_unit, normalized_quantity) =
+                Self::normalize_unit_fraction(&unit, quantity)?;
+
+            // Group by (name, unit) and sum quantities
+            let key = (normalized_name, normalized_unit);
+            let entry = groups
+                .entry(key)
+                .or_insert((Fraction::new(0u64, 1u64), false));
+            entry.0 += normalized_quantity;
+            entry.1 = entry.1 || is_ambiguous; // Flag if any ingredient is ambiguous
+        }
+
+        // Convert back to list
+        let mut result: Vec<AggregatedIngredient> = groups
+            .into_iter()
+            .map(|((name, unit), (quantity, is_ambiguous))| {
+                // Round to practical value
+                let rounded = round_to_practical_value(quantity);
+                let formatted = format_quantity(rounded);
+
+                AggregatedIngredient {
+                    name,
+                    quantity: rounded,
+                    formatted_quantity: formatted,
+                    unit,
+                    is_ambiguous,
+                }
+            })
+            .collect();
+
+        // Sort by name for consistent ordering
+        result.sort_by(|a, b| a.name.cmp(&b.name));
+
+        Ok(result)
+    }
+
     /// Aggregate ingredients by normalizing names, converting units, and summing quantities
     ///
     /// Returns a list of (name, quantity, unit) tuples
@@ -55,6 +144,57 @@ impl IngredientAggregationService {
     /// Normalize ingredient name (lowercase, trim whitespace)
     fn normalize_name(name: &str) -> String {
         name.trim().to_lowercase()
+    }
+
+    /// Normalize unit and convert Fraction quantity to base unit
+    ///
+    /// Conversion table:
+    /// - Volume: cups ↔ ml, tbsp ↔ tsp
+    /// - Weight: lbs ↔ oz, g ↔ kg
+    ///
+    /// Base units:
+    /// - Volume: ml
+    /// - Weight: grams (g)
+    /// - Count: item/whole/piece
+    ///
+    /// Incompatible units are kept separate (e.g., "1 whole" vs "1 cup diced")
+    fn normalize_unit_fraction(
+        unit: &str,
+        quantity: Fraction,
+    ) -> Result<(String, Fraction), String> {
+        let normalized_unit = unit.trim().to_lowercase();
+
+        // Convert Fraction to f64 for conversion calculation
+        let qty_f64 = *quantity.numer().unwrap() as f64 / *quantity.denom().unwrap() as f64;
+
+        // Volume conversions to ml (base unit)
+        let (base_unit, base_quantity_f64) = match normalized_unit.as_str() {
+            // Volume units -> ml
+            "cup" | "cups" => ("ml".to_string(), qty_f64 * 240.0),
+            "tbsp" | "tablespoon" | "tablespoons" => ("ml".to_string(), qty_f64 * 15.0),
+            "tsp" | "teaspoon" | "teaspoons" => ("ml".to_string(), qty_f64 * 5.0),
+            "ml" | "milliliter" | "milliliters" => ("ml".to_string(), qty_f64),
+            "l" | "liter" | "liters" => ("ml".to_string(), qty_f64 * 1000.0),
+
+            // Weight units -> grams
+            "g" | "gram" | "grams" => ("g".to_string(), qty_f64),
+            "kg" | "kilogram" | "kilograms" => ("g".to_string(), qty_f64 * 1000.0),
+            "oz" | "ounce" | "ounces" => ("g".to_string(), qty_f64 * 28.35),
+            "lb" | "lbs" | "pound" | "pounds" => ("g".to_string(), qty_f64 * 453.59),
+
+            // Count units (no conversion)
+            "whole" | "item" | "items" | "piece" | "pieces" | "clove" | "cloves" | "" => {
+                ("item".to_string(), qty_f64)
+            }
+
+            // Unknown units kept as-is (incompatible with others)
+            other => (other.to_string(), qty_f64),
+        };
+
+        // Convert back to Fraction
+        let base_quantity = Fraction::from(base_quantity_f64);
+
+        Ok((base_unit, base_quantity))
     }
 
     /// Normalize unit and convert quantity to base unit

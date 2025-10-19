@@ -1,8 +1,10 @@
 pub mod aggregate;
 pub mod aggregation;
+pub mod ambiguous;
 pub mod categorization;
 pub mod commands;
 pub mod events;
+pub mod fraction_utils;
 pub mod read_model;
 
 // Re-export commonly used types

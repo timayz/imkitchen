@@ -19,22 +19,22 @@
     {
       "name": "pepper",
       "quantity": 1.0,
-      "unit": "unit"
+      "unit": ""
     },
     {
       "name": "salt",
       "quantity": 1.0,
-      "unit": "unit"
+      "unit": ""
     },
     {
       "name": "mixed herbs",
       "quantity": 1.0,
-      "unit": "unit"
+      "unit": ""
     },
     {
       "name": "eggs",
       "quantity": 2.0,
-      "unit": "whole"
+      "unit": ""
     },
     {
       "name": "seasoned flour (with paprika)",

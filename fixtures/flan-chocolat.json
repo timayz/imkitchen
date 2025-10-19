@@ -9,32 +9,32 @@
     {
       "name": "unsweetened condensed milk",
       "quantity": 220.0,
-      "unit": "g"
+      "unit": "ml"
     },
     {
       "name": "sweetened condensed milk",
       "quantity": 80.0,
-      "unit": "g"
+      "unit": "ml"
     },
     {
       "name": "egg",
       "quantity": 1.0,
-      "unit": "whole"
+      "unit": ""
     },
     {
       "name": "lime zest",
       "quantity": 1.0,
-      "unit": "unit"
+      "unit": ""
     },
     {
       "name": "ground cinnamon",
       "quantity": 1.0,
-      "unit": "unit"
+      "unit": ""
     },
     {
       "name": "vanilla extract",
       "quantity": 1.0,
-      "unit": "unit"
+      "unit": ""
     }
   ],
   "instructions": [
