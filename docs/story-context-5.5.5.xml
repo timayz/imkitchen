@@ -1,0 +1,204 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>5</epicId>
+    <storyId>5.5</storyId>
+    <title>Touch-Optimized Interface</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-19</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-5.5.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a user interacting via touchscreen</asA>
+    <iWant>touch targets large enough to tap accurately</iWant>
+    <soThat>I avoid mis-taps and frustration</soThat>
+    <tasks>
+      - Task 1: Audit and enforce 44x44px minimum touch targets across all interactive elements
+      - Task 2: Implement adequate spacing between adjacent touch targets
+      - Task 3: Remove hover-dependent critical functionality
+      - Task 4: Implement intuitive touch gestures
+      - Task 5: Add haptic feedback for button taps
+      - Task 6: Implement long-press contextual menus
+      - Task 7: Optimize scrolling performance
+      - Task 8: Configure pinch-to-zoom behavior
+      - Task 9: Comprehensive touch interaction testing
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    1. All interactive elements (buttons, links, checkboxes) minimum 44x44px tap target
+    2. Adequate spacing between adjacent tap targets (8px minimum)
+    3. No hover-dependent interactions (avoid :hover for critical functionality)
+    4. Touch gestures intuitive: swipe to dismiss, pull to refresh (where appropriate)
+    5. Haptic feedback on button taps (where browser supports)
+    6. Long-press menus for contextual actions
+    7. Scrolling smooth and responsive (no janky scroll performance)
+    8. Pinch-to-zoom disabled for app UI, enabled for recipe images
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-5.md</path>
+        <title>Technical Specification: Progressive Web App &amp; Mobile Experience</title>
+        <section>Module 3: Responsive Design System - Touch Target Optimization</section>
+        <snippet>Touch target minimum: 44x44px per WCAG 2.1 Level AA. Tailwind config defines min-h-touch-target and min-w-touch-target utilities. All buttons, links, inputs sized with these utilities. Icon buttons explicitly 44x44px (w-11 h-11). Kitchen mode increases to 60x60px.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-5.md</path>
+        <title>Technical Specification: Progressive Web App &amp; Mobile Experience</title>
+        <section>Story 5: Touch Optimization - Acceptance Criteria</section>
+        <snippet>All interactive elements meet 44x44px minimum. Buttons/links/inputs use min-h-touch-target and min-w-touch-target. Icon buttons 44x44px explicit sizing. Checkbox/radio 24x24px minimum with clickable label. Form inputs 0.75rem vertical, 1rem horizontal padding. No hover-only interactions. Swipe gestures for mobile calendar. Tap feedback via :active states or haptic. No accidental taps due to insufficient spacing.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-5.md</path>
+        <title>Technical Specification: Progressive Web App &amp; Mobile Experience</title>
+        <section>E2E Tests (Playwright) - Touch Target Sizing</section>
+        <snippet>Playwright test verifies all interactive elements meet 44x44px touch target. Test on mobile viewport (375x812). Use boundingBox() to measure width/height, assert &gt;= 44px.</snippet>
+      </doc>
+      <doc>
+        <path>docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>Section 7.2 - CSS Framework (Tailwind CSS)</section>
+        <snippet>Tailwind CSS 4.1+ with custom configuration. Design tokens in tailwind.config.js. Utility-first approach. Responsive variants for mobile/tablet/desktop breakpoints. Production bundle purged via PurgeCSS.</snippet>
+      </doc>
+      <doc>
+        <path>docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>Section 7.4 - Accessibility (WCAG 2.1 Level AA)</section>
+        <snippet>WCAG 2.1 Level AA compliance required. Touch targets minimum 44x44px. High contrast ratios. Keyboard navigation support. Screen reader compatibility.</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>NFR-5: Progressive Web App Requirements</section>
+        <snippet>Mobile-responsive PWA with offline capabilities. Touch-optimized interface for mobile/tablet. Installable on iOS Safari 14+ and Android Chrome 90+. Responsive breakpoints: mobile &lt;768px, tablet 768-1024px, desktop &gt;1024px.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>templates/components/button.html</path>
+        <kind>template-component</kind>
+        <symbol>button.html</symbol>
+        <lines>1-29</lines>
+        <reason>Button component already implements inline min-height:44px and min-width:44px. Story 5.5 will enhance with Tailwind utility classes (min-h-touch-target, min-w-touch-target) and ensure all button variants meet WCAG requirements.</reason>
+      </artifact>
+      <artifact>
+        <path>templates/components/form-field.html</path>
+        <kind>template-component</kind>
+        <symbol>form-field.html</symbol>
+        <lines>1-65</lines>
+        <reason>Form input component already has inline min-height:44px (line 50). Story 5.5 will enhance with proper touch target spacing, checkbox/radio sizing (24x24px minimum), and ensure label clickable area meets WCAG.</reason>
+      </artifact>
+      <artifact>
+        <path>templates/components/nav-tabs.html</path>
+        <kind>template-component</kind>
+        <symbol>nav-tabs.html (mobile bottom navigation)</symbol>
+        <lines>1-52</lines>
+        <reason>Mobile bottom navigation (h-16 = 64px) already exceeds 44px minimum. Story 5.5 will verify adequate spacing between tabs (currently flex justify-around) and ensure tap targets don't overlap.</reason>
+      </artifact>
+      <artifact>
+        <path>e2e/tests/responsive-design.spec.ts</path>
+        <kind>test-file</kind>
+        <symbol>responsive-design.spec.ts</symbol>
+        <lines>1-50</lines>
+        <reason>Existing Playwright test structure for responsive design (Story 5.4). Story 5.5 will create similar test file (touch-optimization.spec.ts) to measure touch target dimensions using boundingBox() API.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="workbox-cli" version="^7.1.0" devDependency="true" />
+        <package name="@playwright/test" version="latest" devDependency="true" inferred="true" />
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - Touch targets MUST be minimum 44x44px per WCAG 2.1 Level AA (Section 2.5.5 - Target Size)
+    - Use Tailwind utility classes min-h-touch-target and min-w-touch-target (defined in tailwind.config.js per tech spec)
+    - Avoid inline styles where possible; prefer Tailwind utilities for consistency
+    - All critical functionality must work without :hover (touch-first design)
+    - Haptic feedback (Vibration API) is optional; feature detection required
+    - Passive event listeners required for scroll performance ({ passive: true })
+    - Test on physical devices (iPhone SE, Pixel 6) as browser emulation may not accurately reflect touch target accuracy
+    - Kitchen mode increases touch targets to 60x60px minimum (body.kitchen-mode selector)
+    - Spacing between adjacent tap targets minimum 8px to prevent accidental taps
+    - Follow TDD approach: Write Playwright test first, implement feature, verify test passes
+  </constraints>
+  <interfaces>
+    <interface>
+      <name>Vibration API</name>
+      <kind>browser-api</kind>
+      <signature>navigator.vibrate(pattern: number | number[]): boolean</signature>
+      <path>Web Platform API</path>
+      <notes>Optional haptic feedback for button taps. Feature detection required: 'vibrate' in navigator. Typical pattern: vibrate(50) for subtle 50ms vibration on tap.</notes>
+    </interface>
+    <interface>
+      <name>Playwright boundingBox API</name>
+      <kind>testing-api</kind>
+      <signature>locator.boundingBox(): Promise&lt;{x, y, width, height} | null&gt;</signature>
+      <path>@playwright/test</path>
+      <notes>Used in E2E tests to measure rendered element dimensions. Assert width &gt;= 44 and height &gt;= 44 for all interactive elements.</notes>
+    </interface>
+    <interface>
+      <name>Tailwind CSS Utility Classes</name>
+      <kind>css-framework</kind>
+      <signature>min-h-touch-target, min-w-touch-target</signature>
+      <path>tailwind.config.js (defined in theme.extend)</path>
+      <notes>Custom Tailwind utilities for 44px minimum dimensions. Apply to all buttons, links, form inputs, and interactive elements.</notes>
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>
+Testing follows TDD approach with Playwright E2E tests for touch interaction verification. Unit tests not applicable (pure CSS/HTML touch targets). Integration tests verify rendered HTML dimensions. E2E tests use Playwright's boundingBox() API to measure interactive element dimensions programmatically and assert width/height &gt;= 44px. Tests run on multiple viewports (mobile 375px, tablet 768px, desktop 1024px). Manual testing required on physical devices (iPhone SE, Pixel 6) as browser emulation may not accurately reflect touch target usability. Test framework: Playwright 1.56+ with TypeScript. Coverage goal: 80% for any touch gesture JavaScript (haptic feedback, long-press, swipe). Follow existing test structure in e2e/tests/responsive-design.spec.ts.
+    </standards>
+    <locations>
+      - e2e/tests/ (Playwright E2E tests)
+      - e2e/tests/touch-optimization.spec.ts (new file for Story 5.5)
+      - e2e/tests/responsive-design.spec.ts (reference pattern)
+    </locations>
+    <ideas>
+      <test-idea ac="1" priority="high">
+        Test: Verify all interactive elements meet 44x44px minimum touch target
+        Approach: Use Playwright boundingBox() on mobile viewport (375x812). Query all buttons, links, inputs. Assert box.width &gt;= 44 and box.height &gt;= 44 for each element.
+      </test-idea>
+      <test-idea ac="2" priority="high">
+        Test: Verify adequate spacing between adjacent tap targets (8px minimum)
+        Approach: Measure bounding boxes of adjacent interactive elements. Calculate distance between edges. Assert spacing &gt;= 8px. Test on button groups, navigation tabs, form field stacks.
+      </test-idea>
+      <test-idea ac="3" priority="medium">
+        Test: Verify no hover-dependent critical functionality
+        Approach: Audit templates for :hover-only CSS. Verify all actions work via click/tap handlers. Test on touch-only device (no mouse). Ensure tooltips appear on tap/long-press.
+      </test-idea>
+      <test-idea ac="4" priority="medium">
+        Test: Verify touch gestures (swipe navigation, pull-to-refresh)
+        Approach: Use Playwright touch actions (page.touchscreen.swipe). Test mobile meal calendar swipe-to-navigate. Verify native pull-to-refresh works (no custom implementation needed).
+      </test-idea>
+      <test-idea ac="5" priority="low">
+        Test: Verify haptic feedback on button taps (where supported)
+        Approach: Feature detection test for Vibration API. Mock navigator.vibrate() in test. Verify vibrate(50) called on button click. Provide user setting to disable haptic.
+      </test-idea>
+      <test-idea ac="6" priority="medium">
+        Test: Verify long-press contextual menus
+        Approach: Simulate long-press (300ms threshold) on recipe card. Verify contextual menu appears with Edit/Delete/View options. Test dismiss on tap outside or scroll.
+      </test-idea>
+      <test-idea ac="7" priority="medium">
+        Test: Verify scroll performance (no jank)
+        Approach: Use Chrome DevTools Performance tab. Record scroll event. Measure FPS (target 60fps). Verify passive event listeners used. Test on lower-end Android device emulation.
+      </test-idea>
+      <test-idea ac="8" priority="high">
+        Test: Verify pinch-to-zoom disabled on app UI, enabled on recipe images
+        Approach: Check viewport meta tag has user-scalable=no. Verify recipe image modals/overlays use user-scalable=yes or touch-action:pinch-zoom CSS. Test on iOS Safari and Android Chrome.
+      </test-idea>
+      <test-idea ac="all" priority="high">
+        Test: Visual regression for :active states (touch feedback)
+        Approach: Use Playwright screenshot comparison. Capture button :active state on tap. Verify visual feedback visible (color change, scale effect). Ensure no layout shift.
+      </test-idea>
+      <test-idea ac="all" priority="high">
+        Test: Accessibility audit with screen reader + touch
+        Approach: Manual testing with VoiceOver (iOS) and TalkBack (Android). Verify all touch targets accessible via screen reader gestures. Test label associations, ARIA attributes.
+      </test-idea>
+    </ideas>
+  </tests>
+</story-context>

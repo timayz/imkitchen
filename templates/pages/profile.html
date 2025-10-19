@@ -180,6 +180,36 @@
                 </div>
             </div>
 
+            <!-- Touch & Accessibility Settings (Story 5.5) -->
+            <div>
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Touch & Accessibility</h2>
+                <div class="space-y-4">
+                    <!-- Haptic Feedback Toggle -->
+                    <div class="flex items-start p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                        <div class="flex-shrink-0">
+                            <svg class="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3 flex-1">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-sm font-medium text-gray-900">Haptic Feedback</h3>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="haptic-toggle" class="sr-only peer" checked>
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                </label>
+                            </div>
+                            <p class="mt-1 text-sm text-gray-600">
+                                Enable subtle vibrations when tapping buttons and interacting with the app (requires browser support).
+                            </p>
+                            <p class="mt-1 text-xs text-gray-500" id="haptic-status">
+                                Loading...
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Notification Settings (Story 4.10 AC #7) -->
             <div>
                 <h2 class="text-xl font-semibold text-gray-900 mb-4">Notification Settings</h2>
@@ -238,9 +268,42 @@
 
 <!-- Story 4.10 AC #7: Push subscription JavaScript for settings -->
 <script src="/static/js/push-subscription.js"></script>
+<script src="/static/js/touch-enhancements.js"></script>
 <script>
     // Initialize with VAPID public key
     PushSubscription.init('{{ vapid_public_key }}');
+
+    // Haptic Feedback Settings (Story 5.5)
+    document.addEventListener('DOMContentLoaded', () => {
+        const hapticToggle = document.getElementById('haptic-toggle');
+        const hapticStatus = document.getElementById('haptic-status');
+
+        // Load current haptic preference
+        Haptic.loadPreference();
+
+        // Update toggle to match saved preference
+        hapticToggle.checked = Haptic.enabled;
+
+        // Update status text
+        if (Haptic.isSupported()) {
+            hapticStatus.textContent = Haptic.enabled ? 'Enabled (vibration supported)' : 'Disabled';
+        } else {
+            hapticStatus.textContent = 'Not supported on this device';
+            hapticToggle.disabled = true;
+            hapticToggle.checked = false;
+        }
+
+        // Handle toggle changes
+        hapticToggle.addEventListener('change', (e) => {
+            Haptic.savePreference(e.target.checked);
+            hapticStatus.textContent = e.target.checked ? 'Enabled (vibration supported)' : 'Disabled';
+
+            // Give haptic feedback when enabling
+            if (e.target.checked && Haptic.isSupported()) {
+                Haptic.tap();
+            }
+        });
+    });
 
     async function enablePushNotifications() {
         const btn = document.getElementById('enable-notifications-btn');

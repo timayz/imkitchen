@@ -9,11 +9,11 @@
             id="item-{{ item_id }}"
             name="is_collected"
             value="{% if is_collected %}false{% else %}true{% endif %}"
-            class="shopping-checkbox"
+            class="shopping-checkbox text-blue-600 border-gray-300 rounded focus:ring-blue-500"
             {% if is_collected %}checked{% endif %}
             onchange="toggleItemCollected(this, '{{ item_id }}', this.checked);"
         >
-        <label for="item-{{ item_id }}" class="flex-1 cursor-pointer {% if is_collected %}collected{% endif %}">
+        <label for="item-{{ item_id }}" class="flex-1 cursor-pointer py-2 {% if is_collected %}collected{% endif %}">
             <span class="font-medium text-gray-900">{{ ingredient_name }}</span>
             <span class="text-gray-600 ml-2">
                 {% if quantity != 0.0 %}
