@@ -25,20 +25,22 @@
 
     /**
      * Show offline banner at top of page
+     * Story 5.3 AC-8, AC-9 - Neutral styling with reassuring messaging
      */
     function showOfflineBanner() {
         // Remove existing banner if present
         dismissBanner();
 
-        // Create offline banner
+        // Create offline banner with neutral styling (AC-9: doesn't alarm user)
         offlineBanner = document.createElement('div');
         offlineBanner.id = 'offline-indicator';
-        offlineBanner.className = 'fixed top-0 left-0 right-0 bg-gray-600 text-white p-3 flex items-center justify-center z-50 shadow-lg';
+        offlineBanner.className = 'fixed top-0 left-0 right-0 bg-blue-50 text-blue-900 border-b border-blue-200 p-3 flex items-center justify-center z-50 shadow-sm';
         offlineBanner.innerHTML = `
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414"></path>
+            <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
-            <span class="font-medium">You're offline. Some features may be unavailable.</span>
+            <span class="font-medium">Viewing cached content</span>
+            <span class="ml-2 text-sm text-blue-700">— Your changes will sync when you're back online</span>
         `;
 
         document.body.insertBefore(offlineBanner, document.body.firstChild);

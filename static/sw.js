@@ -1,5 +1,6 @@
-// Service Worker Source - Story 5.2
+// Service Worker Source - Story 5.2 + 5.3
 // Combined service worker with Workbox caching + Push notifications (Story 4.6)
+// + IndexedDB offline data persistence (Story 5.3)
 // This file is processed by Workbox CLI to generate static/sw.js
 
 // Note: SRI (Subresource Integrity) is not supported for importScripts() in service workers
@@ -7,6 +8,7 @@
 // For additional security, consider migrating to npm-installed Workbox modules in future.
 // Reference: https://developers.google.com/web/tools/workbox/guides/using-bundlers
 importScripts('https://storage.googleapis.com/workbox-cdn/releases/7.1.0/workbox-sw.js');
+importScripts('/static/js/offline-db.js');
 
 // Initialize Workbox
 if (workbox) {
@@ -44,26 +46,180 @@ if (workbox) {
     })
   );
 
-  // Images: Cache-first for fast offline access
+  // Recipe images: Cache-first for fast offline access (Story 5.3 AC-2)
+  workbox.routing.registerRoute(
+    ({request, url}) => {
+      // Match recipe images specifically
+      return request.destination === 'image' &&
+             (url.pathname.includes('/recipes/') || url.pathname.includes('/recipe-images/'));
+    },
+    new workbox.strategies.CacheFirst({
+      cacheName: 'recipe-images-cache',
+      plugins: [
+        new workbox.expiration.ExpirationPlugin({
+          maxEntries: 100,
+          maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+          purgeOnQuotaError: true // Auto-purge on storage quota errors
+        }),
+        new workbox.cacheableResponse.CacheableResponsePlugin({
+          statuses: [0, 200] // Cache opaque and successful responses
+        })
+      ]
+    })
+  );
+
+  // Other images: Cache-first with shorter expiration
   workbox.routing.registerRoute(
     ({request}) => request.destination === 'image',
     new workbox.strategies.CacheFirst({
       cacheName: 'images-v1',
       plugins: [
         new workbox.expiration.ExpirationPlugin({
-          maxEntries: 100,
-          maxAgeSeconds: 30 * 24 * 60 * 60 // 30 days
+          maxEntries: 60,
+          maxAgeSeconds: 14 * 24 * 60 * 60 // 14 days
         })
+      ]
+    })
+  );
+
+  // Recipe pages: Stale-while-revalidate with IndexedDB caching (Story 5.3)
+  workbox.routing.registerRoute(
+    ({url}) => url.pathname.match(/^\/recipes\/[^/]+$/),
+    new workbox.strategies.StaleWhileRevalidate({
+      cacheName: 'pages-cache',
+      plugins: [
+        new workbox.expiration.ExpirationPlugin({
+          maxEntries: 50,
+          maxAgeSeconds: 7 * 24 * 60 * 60 // 7 days
+        }),
+        {
+          // Cache recipe data in IndexedDB after successful fetch
+          fetchDidSucceed: async ({request, response}) => {
+            try {
+              // Clone response to read body without consuming original
+              const responseClone = response.clone();
+              const html = await responseClone.text();
+
+              // Extract recipe ID from URL
+              const recipeId = request.url.match(/\/recipes\/([^/]+)$/)?.[1];
+
+              if (recipeId && html) {
+                // Parse recipe data from HTML (server-rendered)
+                // This is a simplified extraction - in production, consider embedding JSON-LD
+                const titleMatch = html.match(/<h1[^>]*>(.*?)<\/h1>/);
+                const title = titleMatch ? titleMatch[1] : 'Unknown Recipe';
+
+                // Store in IndexedDB for offline access
+                await offlineDB.cacheRecipe({
+                  id: recipeId,
+                  title: title,
+                  html: html,
+                  url: request.url
+                });
+
+                console.log('Recipe cached in IndexedDB:', recipeId);
+              }
+            } catch (error) {
+              console.error('Failed to cache recipe in IndexedDB:', error);
+            }
+
+            return response;
+          }
+        }
+      ]
+    })
+  );
+
+  // Meal plan page: Network-first with IndexedDB caching (Story 5.3 AC-4)
+  workbox.routing.registerRoute(
+    ({url}) => url.pathname === '/plan' || url.pathname.startsWith('/plan/'),
+    new workbox.strategies.NetworkFirst({
+      cacheName: 'pages-cache',
+      plugins: [
+        new workbox.expiration.ExpirationPlugin({
+          maxEntries: 20,
+          maxAgeSeconds: 24 * 60 * 60 // 1 day
+        }),
+        {
+          // Cache meal plan data in IndexedDB after successful fetch
+          fetchDidSucceed: async ({request, response}) => {
+            try {
+              const responseClone = response.clone();
+              const html = await responseClone.text();
+
+              // Extract meal plan data from HTML or embedded JSON
+              // Look for data-meal-plan attribute or script tag with JSON-LD
+              const mealPlanMatch = html.match(/data-meal-plan='([^']+)'/);
+              if (mealPlanMatch) {
+                const mealPlanData = JSON.parse(mealPlanMatch[1].replace(/&quot;/g, '"'));
+
+                // Store in IndexedDB
+                await offlineDB.cacheMealPlan(mealPlanData);
+                console.log('Meal plan cached in IndexedDB:', mealPlanData.id);
+
+                // Pre-cache all assigned recipes
+                if (mealPlanData.meals) {
+                  for (const meal of mealPlanData.meals) {
+                    if (meal.recipe_id) {
+                      // Trigger recipe caching in background
+                      fetch(`/recipes/${meal.recipe_id}`).catch(err => {
+                        console.log('Failed to pre-cache recipe:', meal.recipe_id, err);
+                      });
+                    }
+                  }
+                }
+              }
+            } catch (error) {
+              console.error('Failed to cache meal plan in IndexedDB:', error);
+            }
+
+            return response;
+          }
+        }
+      ]
+    })
+  );
+
+  // Shopping list page: Network-first with IndexedDB caching (Story 5.3 AC-5)
+  workbox.routing.registerRoute(
+    ({url}) => url.pathname === '/shopping' || url.pathname.startsWith('/shopping/'),
+    new workbox.strategies.NetworkFirst({
+      cacheName: 'pages-cache',
+      plugins: [
+        new workbox.expiration.ExpirationPlugin({
+          maxEntries: 10,
+          maxAgeSeconds: 7 * 24 * 60 * 60 // 7 days
+        }),
+        {
+          // Cache shopping list data in IndexedDB after successful fetch
+          fetchDidSucceed: async ({request, response}) => {
+            try {
+              const responseClone = response.clone();
+              const html = await responseClone.text();
+
+              // Extract shopping list data from HTML
+              const shoppingListMatch = html.match(/data-shopping-list='([^']+)'/);
+              if (shoppingListMatch) {
+                const shoppingListData = JSON.parse(shoppingListMatch[1].replace(/&quot;/g, '"'));
+
+                // Store in IndexedDB
+                await offlineDB.cacheShoppingList(shoppingListData);
+                console.log('Shopping list cached in IndexedDB:', shoppingListData.id);
+              }
+            } catch (error) {
+              console.error('Failed to cache shopping list in IndexedDB:', error);
+            }
+
+            return response;
+          }
+        }
       ]
     })
   );
 
   // API/Data endpoints: Network-first with cache fallback
   workbox.routing.registerRoute(
-    ({url}) => url.pathname.startsWith('/api') ||
-               url.pathname.startsWith('/recipes') ||
-               url.pathname.startsWith('/plan') ||
-               url.pathname.startsWith('/shopping'),
+    ({url}) => url.pathname.startsWith('/api'),
     new workbox.strategies.NetworkFirst({
       cacheName: 'api-v1',
       plugins: [
@@ -243,29 +399,57 @@ self.addEventListener('sync', (event) => {
 /**
  * Sync queued offline actions with server
  * Retrieves queued requests from IndexedDB and replays them
+ * Story 5.3 AC-7 - Enhanced with sync status notifications
  */
 async function syncOfflineActions() {
   try {
-    // Open IndexedDB to retrieve queued requests
-    const db = await openSyncDatabase();
-    const requests = await getAllQueuedRequests(db);
+    // Use the new offlineDB utility
+    const requests = await offlineDB.getQueuedRequests();
 
     console.log(`Syncing ${requests.length} queued requests`);
+
+    if (requests.length === 0) {
+      console.log('No queued requests to sync');
+      return;
+    }
+
+    let successCount = 0;
+    let failureCount = 0;
 
     // Replay each request with exponential backoff
     for (const queuedRequest of requests) {
       try {
         await replayRequest(queuedRequest);
-        await removeQueuedRequest(db, queuedRequest.id);
-        console.log('Successfully synced request:', queuedRequest.id);
+        await offlineDB.removeQueuedRequest(queuedRequest.request_id);
+        console.log('Successfully synced request:', queuedRequest.request_id);
+        successCount++;
       } catch (error) {
-        console.error('Failed to sync request:', queuedRequest.id, error);
-        // Keep in queue for next sync attempt
-        await incrementRetryCount(db, queuedRequest.id);
+        console.error('Failed to sync request:', queuedRequest.request_id, error);
+        failureCount++;
+
+        // Increment retry count
+        const retryCount = (queuedRequest.retry_count || 0) + 1;
+
+        if (retryCount >= 3) {
+          // Max retries exceeded, remove from queue
+          await offlineDB.removeQueuedRequest(queuedRequest.request_id);
+          console.warn('Max retries exceeded, removing request:', queuedRequest.request_id);
+        } else {
+          // Update retry count
+          await offlineDB.put('sync_queue', {
+            ...queuedRequest,
+            retry_count: retryCount
+          });
+        }
       }
     }
 
-    console.log('Background sync completed');
+    console.log(`Background sync completed: ${successCount} succeeded, ${failureCount} failed`);
+
+    // Notify user of sync completion
+    if (successCount > 0) {
+      await showSyncNotification(successCount);
+    }
   } catch (error) {
     console.error('Background sync failed:', error);
     throw error; // Retry sync on next trigger
@@ -273,38 +457,31 @@ async function syncOfflineActions() {
 }
 
 /**
- * Open IndexedDB for sync queue
+ * Show notification to user about sync completion
+ * @param {number} syncedCount - Number of requests successfully synced
  */
-function openSyncDatabase() {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open('imkitchen-sync', 1);
+async function showSyncNotification(syncedCount) {
+  try {
+    const title = 'Changes Synced';
+    const body = `${syncedCount} ${syncedCount === 1 ? 'change' : 'changes'} synced to server`;
 
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
-
-    request.onupgradeneeded = (event) => {
-      const db = event.target.result;
-      if (!db.objectStoreNames.contains('queue')) {
-        const store = db.createObjectStore('queue', { keyPath: 'id', autoIncrement: true });
-        store.createIndex('timestamp', 'timestamp', { unique: false });
-        store.createIndex('retryCount', 'retryCount', { unique: false });
+    await self.registration.showNotification(title, {
+      body,
+      icon: '/static/icons/icon-192.png',
+      badge: '/static/icons/badge-72.png',
+      tag: 'sync-complete',
+      requireInteraction: false,
+      vibrate: [100],
+      data: {
+        type: 'sync-complete',
+        count: syncedCount
       }
-    };
-  });
-}
+    });
 
-/**
- * Get all queued requests from IndexedDB
- */
-function getAllQueuedRequests(db) {
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(['queue'], 'readonly');
-    const store = transaction.objectStore('queue');
-    const request = store.getAll();
-
-    request.onsuccess = () => resolve(request.result || []);
-    request.onerror = () => reject(request.error);
-  });
+    console.log('Sync notification shown');
+  } catch (error) {
+    console.error('Failed to show sync notification:', error);
+  }
 }
 
 /**
@@ -315,7 +492,7 @@ async function replayRequest(queuedRequest) {
 
   const response = await fetch(url, {
     method,
-    headers: headers || {},
+    headers: headers || { 'Content-Type': 'application/json' },
     body: body ? JSON.stringify(body) : undefined
   });
 
@@ -324,48 +501,4 @@ async function replayRequest(queuedRequest) {
   }
 
   return response;
-}
-
-/**
- * Remove successfully synced request from queue
- */
-function removeQueuedRequest(db, id) {
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(['queue'], 'readwrite');
-    const store = transaction.objectStore('queue');
-    const request = store.delete(id);
-
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
-}
-
-/**
- * Increment retry count for failed request
- * Remove if max retries (3) exceeded
- */
-function incrementRetryCount(db, id) {
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(['queue'], 'readwrite');
-    const store = transaction.objectStore('queue');
-    const getRequest = store.get(id);
-
-    getRequest.onsuccess = () => {
-      const record = getRequest.result;
-      if (record) {
-        record.retryCount = (record.retryCount || 0) + 1;
-
-        // Remove if max retries exceeded
-        if (record.retryCount >= 3) {
-          store.delete(id);
-          console.warn('Max retries exceeded for request:', id);
-        } else {
-          store.put(record);
-        }
-      }
-      resolve();
-    };
-
-    getRequest.onerror = () => reject(getRequest.error);
-  });
 }
