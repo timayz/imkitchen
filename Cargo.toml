@@ -9,7 +9,6 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.1.0"
 edition = "2021"
 rust-version = "1.90"
 authors = ["imkitchen team"]
@@ -46,8 +45,10 @@ bincode = "2.0"
 rust-embed = "8.7"
 mime_guess = "2.0"
 urlencoding = "2.1"
-web-push = "0.10"
+web-push = { version = "0.11", features = ["hyper-client"] }
 fraction = "0.15"
+base64 = "0.22"
+url = "2.5"
 
 [package]
 name = "imkitchen"

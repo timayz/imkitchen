@@ -187,7 +187,7 @@ pub async fn send_push_notification(
             );
             Ok(())
         }
-        Err(web_push::WebPushError::EndpointNotValid) => {
+        Err(web_push::WebPushError::EndpointNotValid(_)) => {
             // Endpoint no longer valid (410 Gone) - subscription should be deleted
             tracing::warn!(
                 "Web Push endpoint invalid (410 Gone) for user_id={}",
@@ -195,7 +195,7 @@ pub async fn send_push_notification(
             );
             Err(PushError::EndpointInvalid)
         }
-        Err(web_push::WebPushError::EndpointNotFound) => {
+        Err(web_push::WebPushError::EndpointNotFound(_)) => {
             // Endpoint not found (404) - subscription should be deleted
             tracing::warn!(
                 "Web Push endpoint not found (404) for user_id={}",
@@ -203,7 +203,10 @@ pub async fn send_push_notification(
             );
             Err(PushError::EndpointInvalid)
         }
-        Err(web_push::WebPushError::ServerError(Some(retry_after))) => {
+        Err(web_push::WebPushError::ServerError {
+            retry_after: Some(retry_after),
+            ..
+        }) => {
             // Server error with retry-after duration (could be 429 or 5xx)
             tracing::warn!(
                 "Web Push server error for user_id={}, retry after: {:?}",
@@ -212,7 +215,9 @@ pub async fn send_push_notification(
             );
             Err(PushError::RateLimited)
         }
-        Err(web_push::WebPushError::ServerError(None)) => {
+        Err(web_push::WebPushError::ServerError {
+            retry_after: None, ..
+        }) => {
             // Server error without retry-after
             tracing::error!("Web Push server error for user_id={}", subscription.user_id);
             Err(PushError::ServerError(
