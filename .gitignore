@@ -25,3 +25,4 @@ static/css/main.css
 # OS
 .DS_Store
 Thumbs.db
+# Generated service worker\nstatic/sw.js
