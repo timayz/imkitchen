@@ -24,8 +24,9 @@ pub async fn create_app(
     use routes::{
         get_ingredient_row, get_instruction_row, get_login, get_password_reset,
         get_password_reset_complete, get_recipe_detail, get_recipe_edit_form, get_recipe_form,
-        get_register, health, post_create_recipe, post_login, post_logout, post_password_reset,
-        post_password_reset_complete, post_register, post_update_recipe, ready, AssetsService,
+        get_register, health, offline, post_create_recipe, post_login, post_logout,
+        post_password_reset, post_password_reset_complete, post_register, post_update_recipe,
+        ready, AssetsService,
     };
 
     let email_config = email::EmailConfig {
@@ -75,6 +76,8 @@ pub async fn create_app(
         .with_state(db_pool)
         .merge(
             Router::new()
+                // Offline fallback page (public, no auth)
+                .route("/offline", get(offline))
                 .route("/register", get(get_register))
                 .route("/register", post(post_register))
                 .route("/login", get(get_login))

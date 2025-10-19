@@ -14,7 +14,7 @@ use imkitchen::routes::{
     get_notification_status, get_onboarding, get_onboarding_skip, get_password_reset,
     get_password_reset_complete, get_profile, get_recipe_detail, get_recipe_edit_form,
     get_recipe_form, get_recipe_list, get_regenerate_confirm, get_register, get_subscription,
-    get_subscription_success, health, list_notifications, notifications_page,
+    get_subscription_success, health, list_notifications, notifications_page, offline,
     post_add_recipe_to_collection, post_add_to_library, post_create_collection, post_create_recipe,
     post_delete_collection, post_delete_recipe, post_delete_review, post_favorite_recipe,
     post_generate_meal_plan, post_login, post_logout, post_onboarding_step_1,
@@ -287,6 +287,12 @@ async fn serve_command(
         .route("/health", get(health))
         .route("/ready", get(ready))
         .with_state(state.db_pool.clone())
+        .merge(
+            Router::new()
+                // Offline fallback page (public, no auth)
+                .route("/offline", get(offline))
+                .with_state(state.clone()),
+        )
         .merge(
             Router::new()
                 // Auth routes (public)
