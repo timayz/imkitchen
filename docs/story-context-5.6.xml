@@ -1,0 +1,301 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>5</epicId>
+    <storyId>5.6</storyId>
+    <title>Kitchen-Friendly Display Modes</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-19</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-5.6.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user cooking in kitchen</asA>
+    <iWant>high-contrast, large-text display option</iWant>
+    <soThat>I can read recipes in various lighting conditions</soThat>
+    <tasks>
+      <task id="1" ac="1">
+        <description>Implement Kitchen Mode toggle UI</description>
+        <subtasks>
+          <subtask id="1.1">Add toggle button to recipe detail page header</subtask>
+          <subtask id="1.2">Design toggle icon (chef hat or kitchen icon + text label)</subtask>
+          <subtask id="1.3">Position toggle prominently for easy thumb access on mobile</subtask>
+          <subtask id="1.4">Add aria-label and role attributes for accessibility</subtask>
+          <subtask id="1.5">Create E2E test for toggle button presence and functionality</subtask>
+        </subtasks>
+      </task>
+      <task id="2" ac="2">
+        <description>Increase text sizing in Kitchen Mode</description>
+        <subtasks>
+          <subtask id="2.1">Create .kitchen-mode CSS class in Tailwind config</subtask>
+          <subtask id="2.2">Define typography scale: body 20px, headings 28px</subtask>
+          <subtask id="2.3">Apply .kitchen-mode to body element on toggle</subtask>
+          <subtask id="2.4">Test text legibility at 3-5 feet distance (kitchen counter scenario)</subtask>
+          <subtask id="2.5">Verify responsive scaling on mobile/tablet/desktop</subtask>
+        </subtasks>
+      </task>
+      <task id="3" ac="3">
+        <description>Implement high-contrast color scheme</description>
+        <subtasks>
+          <subtask id="3.1">Define high-contrast palette: near-black text (#1a1a1a) on white background</subtask>
+          <subtask id="3.2">Increase border weights and button outlines</subtask>
+          <subtask id="3.3">Calculate and verify 7:1 contrast ratio with color contrast tool</subtask>
+          <subtask id="3.4">Remove decorative elements (shadows, gradients) that reduce contrast</subtask>
+          <subtask id="3.5">Test in various lighting: bright kitchen, dim evening, outdoor daylight</subtask>
+        </subtasks>
+      </task>
+      <task id="4" ac="4">
+        <description>Simplify UI for focused cooking experience</description>
+        <subtasks>
+          <subtask id="4.1">Hide navigation sidebar/header in Kitchen Mode</subtask>
+          <subtask id="4.2">Remove non-essential recipe metadata (ratings, tags, sharing buttons)</subtask>
+          <subtask id="4.3">Prioritize ingredients list and instructions only</subtask>
+          <subtask id="4.4">Increase whitespace between elements for visual clarity</subtask>
+          <subtask id="4.5">Create simplified template partial for kitchen mode view</subtask>
+        </subtasks>
+      </task>
+      <task id="5" ac="5">
+        <description>Build step-by-step instruction mode</description>
+        <subtasks>
+          <subtask id="5.1">Create step navigator component (current step indicator, total steps)</subtask>
+          <subtask id="5.2">Display one instruction step at a time in large type</subtask>
+          <subtask id="5.3">Add large "Next" button (min 60x60px for easy thumb tap)</subtask>
+          <subtask id="5.4">Add "Previous" button for navigation back</subtask>
+          <subtask id="5.5">Support keyboard navigation (arrow keys, spacebar for next)</subtask>
+          <subtask id="5.6">Add step completion checkmarks for progress tracking</subtask>
+          <subtask id="5.7">Show ingredient list reference panel (collapsible)</subtask>
+        </subtasks>
+      </task>
+      <task id="6" ac="6">
+        <description>Implement Keep-Awake functionality</description>
+        <subtasks>
+          <subtask id="6.1">Detect Wake Lock API support with feature detection</subtask>
+          <subtask id="6.2">Request wake lock when Kitchen Mode enabled</subtask>
+          <subtask id="6.3">Release wake lock when Kitchen Mode disabled or user navigates away</subtask>
+          <subtask id="6.4">Handle wake lock errors gracefully (permission denied, battery saver)</subtask>
+          <subtask id="6.5">Show visual indicator when wake lock is active</subtask>
+          <subtask id="6.6">Test on iOS Safari and Android Chrome for wake lock behavior</subtask>
+        </subtasks>
+      </task>
+      <task id="7" ac="7">
+        <description>Persist Kitchen Mode preference</description>
+        <subtasks>
+          <subtask id="7.1">Store kitchen_mode_enabled in localStorage</subtask>
+          <subtask id="7.2">Auto-enable Kitchen Mode on recipe view if preference set</subtask>
+          <subtask id="7.3">Persist across browser sessions and device switches</subtask>
+          <subtask id="7.4">Add user setting in Profile page to set default Kitchen Mode</subtask>
+          <subtask id="7.5">Clear preference on explicit toggle off</subtask>
+        </subtasks>
+      </task>
+      <task id="8" ac="8">
+        <description>Easy toggle to return to normal mode</description>
+        <subtasks>
+          <subtask id="8.1">Display "Exit Kitchen Mode" button prominently</subtask>
+          <subtask id="8.2">Clicking exit restores normal recipe view instantly</subtask>
+          <subtask id="8.3">Preserve scroll position when toggling modes</subtask>
+          <subtask id="8.4">Add confirmation dialog if user has progress in step-by-step mode</subtask>
+          <subtask id="8.5">Test toggle experience for smooth transition</subtask>
+        </subtasks>
+      </task>
+      <task id="9" ac="all">
+        <description>Comprehensive Kitchen Mode testing</description>
+        <subtasks>
+          <subtask id="9.1">Create Playwright tests for Kitchen Mode toggle and UI changes</subtask>
+          <subtask id="9.2">Test text size increases (measure font sizes programmatically)</subtask>
+          <subtask id="9.3">Test contrast ratios with accessibility tools</subtask>
+          <subtask id="9.4">Test step-by-step navigation (next/previous buttons)</subtask>
+          <subtask id="9.5">Test Wake Lock API integration (mock API for CI)</subtask>
+          <subtask id="9.6">Test localStorage persistence across sessions</subtask>
+          <subtask id="9.7">Manual testing in real kitchen environment (lighting variations)</subtask>
+        </subtasks>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="1">"Kitchen Mode" toggle in recipe detail view</criterion>
+    <criterion id="2">Kitchen mode increases text size (20px body, 28px headings)</criterion>
+    <criterion id="3">High contrast styling: dark text on light background, increased contrast ratio (7:1)</criterion>
+    <criterion id="4">Simplified UI: hide non-essential elements, focus on instructions</criterion>
+    <criterion id="5">Step-by-step mode: display one instruction at a time with large "Next" button</criterion>
+    <criterion id="6">Keep-awake functionality prevents screen from sleeping while cooking</criterion>
+    <criterion id="7">Mode persists across recipe views (stored in user preference)</criterion>
+    <criterion id="8">Easy toggle to return to normal mode</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-5.md</path>
+        <title>Technical Specification - Epic 5: Progressive Web App and Mobile Experience</title>
+        <section>Module 4: Kitchen Mode CSS</section>
+        <snippet>Kitchen Mode implementation with high-contrast colors (7:1 ratio), large text sizing (+4px from base, 20px body text), enlarged interactive elements (60x60px), timer displays (4rem/64px), and simplified UI. Database field: kitchen_mode_enabled. CSS class applied to body tag. Event: KitchenModeToggled.</snippet>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-5.md</path>
+        <title>Technical Specification - Epic 5</title>
+        <section>Story 6: Kitchen Mode CSS Implementation</section>
+        <snippet>Acceptance criteria: Kitchen mode toggle in /profile, persists to kitchen_mode_enabled field, body tag includes kitchen-mode class, 7:1 contrast ratio, +4px text sizing, recipe instructions 1.5rem (28px), 60x60px interactive elements, 4rem timer displays.</snippet>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-5.md</path>
+        <title>Technical Specification - Epic 5</title>
+        <section>Data Models - User Profile Kitchen Mode Setting</section>
+        <snippet>Database migration: ALTER TABLE users ADD COLUMN kitchen_mode_enabled BOOLEAN DEFAULT FALSE. Domain event: KitchenModeToggled with enabled boolean. Read model projection updates users.kitchen_mode_enabled field.</snippet>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/solution-architecture.md</path>
+        <title>Solution Architecture</title>
+        <section>Section 7.4 - Accessibility</section>
+        <snippet>WCAG 2.1 Level AA compliance required. Kitchen Mode toggle provides high contrast variant with 7:1 color ratios, large text (+4px on headings/body), activated via /profile settings. Touch targets minimum 44x44px.</snippet>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/solution-architecture.md</path>
+        <title>Solution Architecture</title>
+        <section>Section 8.3 - PWA Offline Strategy</section>
+        <snippet>Kitchen Mode must work offline when recipe cached. Service worker caches CSS and templates for offline Kitchen Mode functionality.</snippet>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/epics.md</path>
+        <title>Epic Breakdown</title>
+        <section>Epic 5 - Story 5.6: Kitchen-Friendly Display Modes</section>
+        <snippet>User story: As user cooking in kitchen, want high-contrast large-text display, to read recipes in various lighting. ACs: Kitchen Mode toggle, 20px body/28px headings, 7:1 contrast, simplified UI, step-by-step mode with large Next button, Keep-awake (Wake Lock API), preference persistence, easy toggle to exit.</snippet>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>Epic 5: Progressive Web App and Mobile Experience</section>
+        <snippet>Kitchen-friendly display modes with high contrast and large text options. PWA must work offline. Touch-optimized UI. Cross-browser compatibility (iOS Safari 14+, Android Chrome 90+).</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact kind="javascript" path="/home/snapiz/projects/github/timayz/imkitchen/static/js/kitchen-mode.js" lines="1-110">
+        <symbol>kitchen-mode.js</symbol>
+        <reason>EXISTING Kitchen Mode step-by-step navigation logic for progressive disclosure. Already implements step navigation, keyboard controls, and button states. May need enhancement for Wake Lock API, toggle UI, and localStorage persistence.</reason>
+      </artifact>
+      <artifact kind="template" path="/home/snapiz/projects/github/timayz/imkitchen/templates/pages/recipe-detail.html" lines="22-103">
+        <symbol>Kitchen Mode inline styles</symbol>
+        <reason>EXISTING Kitchen Mode styles defined inline. Shows kitchen-mode-container, kitchen-mode-title, kitchen-mode-section-title, kitchen-mode-ingredient, kitchen-mode-instruction classes. Needs refactoring to Tailwind CSS utilities per tech spec.</reason>
+      </artifact>
+      <artifact kind="template" path="/home/snapiz/projects/github/timayz/imkitchen/templates/pages/recipe-detail.html" lines="108-110">
+        <symbol>Kitchen Mode class application</symbol>
+        <reason>EXISTING logic to add kitchen-mode class to body via inline script. Shows conditional application based on kitchen_mode template variable. Needs refactoring to base.html per architecture.</reason>
+      </artifact>
+      <artifact kind="template" path="/home/snapiz/projects/github/timayz/imkitchen/templates/base.html" lines="1-191">
+        <symbol>base.html</symbol>
+        <reason>Base template for all pages. Currently does NOT conditionally apply kitchen-mode class to body tag. Must be modified to apply class based on user.kitchen_mode_enabled profile setting.</reason>
+      </artifact>
+      <artifact kind="css" path="/home/snapiz/projects/github/timayz/imkitchen/static/css/tailwind.css" lines="111-125">
+        <symbol>Kitchen Mode touch target styles</symbol>
+        <reason>EXISTING Kitchen Mode touch target sizing (60x60px for buttons, 32x32px for checkboxes). Shows body.kitchen-mode selector pattern. Reference for consistent styling approach.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <rust>
+        <package name="evento" version="1.4.1" purpose="Event sourcing framework for KitchenModeToggled domain event" />
+        <package name="askama" version="0.12" purpose="Template engine for server-side HTML rendering with kitchen_mode variable" />
+        <package name="axum" version="0.8" purpose="Web framework for Kitchen Mode toggle route handler" />
+        <package name="sqlx" version="0.8" purpose="Database access for users.kitchen_mode_enabled field" />
+      </rust>
+      <frontend>
+        <technology name="Tailwind CSS" version="4.1" purpose="CSS framework for Kitchen Mode utility classes and responsive design" />
+        <technology name="TwinSpark" version="latest" purpose="Progressive enhancement for Kitchen Mode toggle AJAX interaction" />
+        <technology name="Wake Lock API" browser_support="Chrome 84+, Safari 16.4+, no Firefox" purpose="Prevent screen sleep during cooking in Kitchen Mode" />
+      </frontend>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture" priority="critical">
+      Kitchen Mode must work offline when recipe cached (PWA requirement per solution-architecture.md Section 8.3). CSS and JavaScript must be cached by service worker.
+    </constraint>
+    <constraint type="architecture" priority="critical">
+      Kitchen Mode CSS must use Tailwind CSS v4.1 @layer components and @theme approach, NOT inline styles. Refactor existing inline styles in recipe-detail.html.
+    </constraint>
+    <constraint type="architecture" priority="high">
+      Kitchen Mode toggle must emit KitchenModeToggled domain event in User aggregate (evento pattern). Database field: users.kitchen_mode_enabled BOOLEAN.
+    </constraint>
+    <constraint type="ux" priority="high">
+      Kitchen Mode must apply to ALL pages when enabled (body tag in base.html), not just recipe detail page. Current implementation is page-specific and needs refactoring.
+    </constraint>
+    <constraint type="accessibility" priority="critical">
+      WCAG 2.1 Level AAA compliance required: 7:1 contrast ratio minimum, 60x60px touch targets in Kitchen Mode (per solution-architecture.md Section 7.4).
+    </constraint>
+    <constraint type="performance" priority="medium">
+      Wake Lock API must use feature detection (not supported in Firefox). Graceful degradation required with visual feedback when wake lock active.
+    </constraint>
+    <constraint type="testing" priority="high">
+      TDD enforced: Write Playwright tests FIRST for Kitchen Mode toggle, CSS class application, text size verification, Wake Lock API mock. Minimum 80% code coverage for kitchen-mode.js.
+    </constraint>
+  </constraints>
+  <interfaces>
+    <interface kind="database" name="users table">
+      <signature>ALTER TABLE users ADD COLUMN kitchen_mode_enabled BOOLEAN DEFAULT FALSE</signature>
+      <path>Database migration (not yet created)</path>
+      <usage>Store user's Kitchen Mode preference. Read on page load to conditionally apply kitchen-mode class to body tag in base.html template.</usage>
+    </interface>
+    <interface kind="domain_event" name="KitchenModeToggled">
+      <signature>pub struct KitchenModeToggled { pub enabled: bool }</signature>
+      <path>crates/user/src/events.rs (NOT YET IMPLEMENTED)</path>
+      <usage>Event emitted when user toggles Kitchen Mode in profile settings. Projected to users.kitchen_mode_enabled via read model handler.</usage>
+    </interface>
+    <interface kind="route" name="POST /profile/kitchen-mode-toggle">
+      <signature>async fn toggle_kitchen_mode(user_id, enabled: bool) -> Result<(), AppError></signature>
+      <path>src/routes/profile.rs (NOT YET IMPLEMENTED)</path>
+      <usage>Endpoint to toggle Kitchen Mode. Emits KitchenModeToggled event, updates read model, returns success/error response.</usage>
+    </interface>
+    <interface kind="browser_api" name="Wake Lock API">
+      <signature>navigator.wakeLock.request('screen')</signature>
+      <path>Browser API (Chrome 84+, Safari 16.4+)</path>
+      <usage>Prevent screen from sleeping while Kitchen Mode active. Feature detection required: if ('wakeLock' in navigator). Release on mode exit or page unload.</usage>
+    </interface>
+    <interface kind="template_variable" name="kitchen_mode">
+      <signature>{% if kitchen_mode %}</signature>
+      <path>templates/pages/recipe-detail.html (CURRENT IMPLEMENTATION)</path>
+      <usage>Template variable passed to recipe-detail.html to conditionally apply Kitchen Mode styles. NEEDS REFACTORING: should derive from user.kitchen_mode_enabled in base.html instead.</usage>
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>
+      TDD enforced with minimum 80% code coverage. Testing framework: Playwright for E2E tests, Rust cargo test for backend unit/integration tests. Test-first approach: write Playwright tests before implementing Kitchen Mode features. Kitchen Mode tests must verify CSS class application, text size increases (measured programmatically), contrast ratios (accessibility tools), step-by-step navigation, Wake Lock API (mocked in CI), and localStorage persistence across sessions. Manual testing required in real kitchen environment with varying lighting conditions (bright kitchen, dim evening, outdoor daylight). Browser compatibility testing on iOS Safari 14+, Android Chrome 90+. Accessibility testing with VoiceOver/TalkBack screen readers. Performance target: instant visual update on Kitchen Mode toggle (CSS class only, no page reload).
+    </standards>
+    <locations>
+      E2E tests: e2e/tests/kitchen-mode.spec.ts (NEW - create comprehensive test suite)
+      Unit tests: Not applicable (CSS/HTML/localStorage-focused story, no backend logic)
+      Integration tests: crates/user/tests/aggregate_tests.rs (for KitchenModeToggled event, NOT YET IMPLEMENTED)
+      Existing E2E pattern reference: e2e/tests/touch-optimization.spec.ts (Story 5.5, shows mobile viewport config, boundingBox() for dimension assertions)
+    </locations>
+    <ideas>
+      <test id="1" ac="1" priority="high">
+        Test Kitchen Mode toggle button presence and functionality. Navigate to /profile, verify toggle exists with proper aria-label. Click toggle, verify POST /profile/kitchen-mode-toggle called, verify body element gains kitchen-mode class on next page load.
+      </test>
+      <test id="2" ac="2" priority="high">
+        Test text size increases in Kitchen Mode. Enable Kitchen Mode, navigate to recipe detail page. Measure computed font-size using page.locator('body').evaluate(el => getComputedStyle(el).fontSize). Assert body text >= 20px, h1 >= 28px. Compare to normal mode baseline.
+      </test>
+      <test id="3" ac="3" priority="high">
+        Test high-contrast color scheme. Enable Kitchen Mode, use Playwright accessibility tools to measure contrast ratios. Assert text-to-background contrast >= 7:1 (WCAG Level AAA). Verify no decorative shadows/gradients applied.
+      </test>
+      <test id="4" ac="4" priority="medium">
+        Test simplified UI in Kitchen Mode. Enable mode, verify navigation sidebar has display:none. Verify .hide-in-kitchen-mode elements not visible. Assert only ingredients and instructions sections remain visible.
+      </test>
+      <test id="5" ac="5" priority="high">
+        Test step-by-step navigation. Enable Kitchen Mode on recipe with 5 instructions. Verify only first instruction visible initially. Click Next button, verify second instruction shown. Test Previous button. Verify keyboard navigation (ArrowRight/ArrowLeft). Assert step indicator updates (Step 2 of 5).
+      </test>
+      <test id="6" ac="6" priority="medium">
+        Test Wake Lock API integration (mocked). Enable Kitchen Mode, verify navigator.wakeLock.request('screen') called. Mock API to return success. Verify visual indicator shown. Disable Kitchen Mode, verify wakeLock.release() called. Test error handling (permission denied).
+      </test>
+      <test id="7" ac="7" priority="high">
+        Test localStorage persistence. Enable Kitchen Mode, verify localStorage.getItem('kitchen_mode_enabled') === 'true'. Refresh page, verify body still has kitchen-mode class. Disable mode, verify localStorage cleared. Test across browser sessions.
+      </test>
+      <test id="8" ac="8" priority="medium">
+        Test exit Kitchen Mode toggle. Enable mode, verify Exit Kitchen Mode button visible. Click button, verify kitchen-mode class removed from body. Verify localStorage preference cleared. Test scroll position preserved on toggle.
+      </test>
+      <test id="9" ac="all" priority="high">
+        Visual regression test for Kitchen Mode. Take screenshot in normal mode, enable Kitchen Mode, take screenshot. Compare for expected differences (larger text, high contrast, simplified UI). Store golden screenshots for CI comparison.
+      </test>
+      <test id="10" priority="medium">
+        Manual testing checklist: Test recipe readability at 3-5 feet distance. Test touch targets with wet/messy hands. Test in bright kitchen lighting, dim evening, outdoor daylight. Test on physical iPhone SE and Pixel 6 devices. Test with VoiceOver (iOS) and TalkBack (Android) screen readers.
+      </test>
+    </ideas>
+  </tests>
+</story-context>
