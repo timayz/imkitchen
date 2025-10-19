@@ -10,9 +10,16 @@ use notifications::{
         CompletePrepTaskCommand, DismissReminderCommand, SnoozeReminderCommand,
         SubscribeToPushCommand,
     },
-    read_model::{get_notification_by_id, get_user_pending_notifications, UserNotification},
+    read_model::{
+        get_notification_by_id, get_push_subscription_status, get_user_pending_notifications,
+        UserNotification,
+    },
 };
 use serde::Deserialize;
+use user::{
+    commands::{change_notification_permission, ChangeNotificationPermissionCommand},
+    read_model::can_prompt_for_notification_permission,
+};
 
 use crate::error::AppError;
 use crate::middleware::auth::Auth;
@@ -206,5 +213,55 @@ pub async fn subscribe_push(
     Ok(Json(serde_json::json!({
         "status": "success",
         "subscription_id": subscription_id
+    })))
+}
+
+/// POST /api/notifications/permission - Record notification permission change
+///
+/// AC #3, #5, #8: Track user's permission decision and denial timestamp for grace period
+pub async fn record_permission_change(
+    Extension(auth): Extension<Auth>,
+    State(state): State<AppState>,
+    Json(body): Json<serde_json::Value>,
+) -> Result<impl IntoResponse, AppError> {
+    let permission_status = body
+        .get("permission_status")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| AppError::BadRequest("permission_status is required".to_string()))?;
+
+    // Validate permission_status
+    if !["granted", "denied", "skipped"].contains(&permission_status) {
+        return Err(AppError::BadRequest(
+            "permission_status must be 'granted', 'denied', or 'skipped'".to_string(),
+        ));
+    }
+
+    let cmd = ChangeNotificationPermissionCommand {
+        user_id: auth.user_id.clone(),
+        permission_status: permission_status.to_string(),
+    };
+
+    change_notification_permission(cmd, &state.evento_executor).await?;
+
+    Ok(Json(serde_json::json!({
+        "status": "success"
+    })))
+}
+
+/// GET /api/notifications/status - Get push notification status
+///
+/// AC #7: Settings page shows current notification status and subscription count
+pub async fn get_notification_status(
+    Extension(auth): Extension<Auth>,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let push_status = get_push_subscription_status(&state.db_pool, &auth.user_id).await?;
+
+    let can_prompt = can_prompt_for_notification_permission(&auth.user_id, &state.db_pool).await?;
+
+    Ok(Json(serde_json::json!({
+        "enabled": push_status.enabled,
+        "subscription_count": push_status.subscription_count,
+        "can_prompt": can_prompt
     })))
 }

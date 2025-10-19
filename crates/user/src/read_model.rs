@@ -1,9 +1,9 @@
 use crate::aggregate::UserAggregate;
 use crate::error::UserResult;
 use crate::events::{
-    DietaryRestrictionsSet, HouseholdSizeSet, PasswordChanged, ProfileCompleted, ProfileUpdated,
-    RecipeCreated, RecipeDeleted, RecipeFavorited, SkillLevelSet, SubscriptionUpgraded,
-    UserCreated, WeeknightAvailabilitySet,
+    DietaryRestrictionsSet, HouseholdSizeSet, NotificationPermissionChanged, PasswordChanged,
+    ProfileCompleted, ProfileUpdated, RecipeCreated, RecipeDeleted, RecipeFavorited, SkillLevelSet,
+    SubscriptionUpgraded, UserCreated, WeeknightAvailabilitySet,
 };
 use evento::{AggregatorName, Context, EventDetails, Executor};
 use sqlx::{Row, SqlitePool};
@@ -314,6 +314,36 @@ async fn subscription_upgraded_handler<E: Executor>(
     Ok(())
 }
 
+/// Handler for NotificationPermissionChanged event - update notification permission in users table
+///
+/// AC #3, #5, #8: Tracks notification permission status and denial timestamp for grace period
+///
+/// This handler projects NotificationPermissionChanged events from the evento event store
+/// into the users read model table, updating the notification_permission_status and
+/// last_permission_denial_at fields.
+#[evento::handler(UserAggregate)]
+async fn notification_permission_changed_handler<E: Executor>(
+    context: &Context<'_, E>,
+    event: EventDetails<NotificationPermissionChanged>,
+) -> anyhow::Result<()> {
+    let pool: SqlitePool = context.extract();
+
+    sqlx::query(
+        r#"
+        UPDATE users
+        SET notification_permission_status = ?1, last_permission_denial_at = ?2
+        WHERE id = ?3
+        "#,
+    )
+    .bind(&event.data.permission_status)
+    .bind(&event.data.last_permission_denial_at)
+    .bind(&event.aggregator_id)
+    .execute(&pool)
+    .await?;
+
+    Ok(())
+}
+
 /// Create user event subscription for read model projection
 ///
 /// Returns a subscription builder that can be run with `.run(&executor).await`
@@ -343,6 +373,7 @@ pub fn user_projection(pool: SqlitePool) -> evento::SubscribeBuilder<evento::Sql
         .handler(recipe_deleted_handler())
         .handler(recipe_favorited_handler())
         .handler(subscription_upgraded_handler())
+        .handler(notification_permission_changed_handler())
 }
 
 /// Query user by email for uniqueness check in read model
@@ -400,5 +431,77 @@ pub async fn query_user_for_login(
             Ok(Some(user_data))
         }
         None => Ok(None),
+    }
+}
+
+/// User notification permission data for grace period check (AC #8)
+pub struct UserNotificationPermission {
+    pub permission_status: String, // "not_asked", "granted", "denied", "skipped"
+    pub last_permission_denial_at: Option<String>, // RFC3339 timestamp
+}
+
+/// Query user notification permission status for grace period check
+///
+/// AC #8: Check if user can be prompted for permission (30-day grace period)
+///
+/// Returns UserNotificationPermission if user exists, None otherwise
+pub async fn query_user_notification_permission(
+    user_id: &str,
+    pool: &SqlitePool,
+) -> UserResult<Option<UserNotificationPermission>> {
+    let result = sqlx::query(
+        "SELECT notification_permission_status, last_permission_denial_at FROM users WHERE id = ?1",
+    )
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await?;
+
+    match result {
+        Some(row) => {
+            let permission_data = UserNotificationPermission {
+                permission_status: row.get("notification_permission_status"),
+                last_permission_denial_at: row.get("last_permission_denial_at"),
+            };
+            Ok(Some(permission_data))
+        }
+        None => Ok(None),
+    }
+}
+
+/// Check if grace period allows prompting user for notification permission
+///
+/// AC #8: Don't re-prompt if user denied within last 30 days
+///
+/// Returns true if user can be prompted (grace period expired or never denied)
+pub async fn can_prompt_for_notification_permission(
+    user_id: &str,
+    pool: &SqlitePool,
+) -> UserResult<bool> {
+    let permission = query_user_notification_permission(user_id, pool).await?;
+
+    match permission {
+        Some(perm) => {
+            // If status is "denied" and denial timestamp exists, check grace period
+            if perm.permission_status == "denied" {
+                if let Some(denial_timestamp_str) = perm.last_permission_denial_at {
+                    // Parse denial timestamp
+                    if let Ok(denial_timestamp) =
+                        chrono::DateTime::parse_from_rfc3339(&denial_timestamp_str)
+                    {
+                        let now = chrono::Utc::now();
+                        let grace_period_days = chrono::Duration::days(30);
+
+                        // Check if 30 days have elapsed since denial
+                        if now.signed_duration_since(denial_timestamp) < grace_period_days {
+                            return Ok(false); // Grace period active, cannot prompt
+                        }
+                    }
+                }
+            }
+
+            // Can prompt if: status != "denied" OR grace period expired OR no denial timestamp
+            Ok(true)
+        }
+        None => Ok(false), // User not found
     }
 }

@@ -418,6 +418,43 @@ pub struct UserNotification {
     pub message_body: Option<String>,
 }
 
+/// Get push subscription count for user (AC #7)
+///
+/// Returns the number of active push subscriptions the user has (multiple devices)
+pub async fn get_push_subscription_count(
+    pool: &sqlx::SqlitePool,
+    user_id: &str,
+) -> anyhow::Result<i64> {
+    let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM push_subscriptions WHERE user_id = ?")
+        .bind(user_id)
+        .fetch_one(pool)
+        .await?;
+
+    Ok(count.0)
+}
+
+/// Push subscription status for settings page (AC #7)
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PushSubscriptionStatus {
+    pub enabled: bool,
+    pub subscription_count: i64,
+}
+
+/// Get push subscription status for user (AC #7)
+///
+/// Returns whether push notifications are enabled and count of active subscriptions
+pub async fn get_push_subscription_status(
+    pool: &sqlx::SqlitePool,
+    user_id: &str,
+) -> anyhow::Result<PushSubscriptionStatus> {
+    let count = get_push_subscription_count(pool, user_id).await?;
+
+    Ok(PushSubscriptionStatus {
+        enabled: count > 0,
+        subscription_count: count,
+    })
+}
+
 /// Create subscription builder for all notification projections
 ///
 /// This sets up all read model projections for the notification domain.

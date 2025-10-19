@@ -6,6 +6,7 @@ use axum::{
 use recipe::RecipeError;
 use shopping::ShoppingListError;
 use thiserror::Error;
+use user::error::UserError;
 
 #[derive(Error, Debug)]
 pub enum AppError {
@@ -32,6 +33,12 @@ pub enum AppError {
 
     #[error("Notification error: {0}")]
     NotificationError(#[from] notifications::commands::NotificationError),
+
+    #[error("User error: {0}")]
+    UserError(#[from] UserError),
+
+    #[error("Bad request: {0}")]
+    BadRequest(String),
 
     #[error("Permission denied")]
     PermissionDenied,
@@ -227,6 +234,21 @@ impl IntoResponse for AppError {
                     None,
                 )
             }
+            AppError::UserError(e) => {
+                tracing::error!("User error: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "User Error".to_string(),
+                    format!("An error occurred: {}", e),
+                    None,
+                )
+            }
+            AppError::BadRequest(msg) => (
+                StatusCode::BAD_REQUEST,
+                "Bad Request".to_string(),
+                msg,
+                None,
+            ),
             AppError::PermissionDenied => (
                 StatusCode::FORBIDDEN,
                 "Permission Denied".to_string(),

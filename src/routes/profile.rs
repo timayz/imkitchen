@@ -24,6 +24,7 @@ pub struct OnboardingPageTemplate {
     pub skill_level: String,
     pub availability_start: String,
     pub availability_duration: String,
+    pub vapid_public_key: String, // Story 4.10: VAPID key for push notifications
 }
 
 #[derive(Debug, Default)]
@@ -147,7 +148,8 @@ pub async fn get_onboarding(
                 .unwrap_or((String::from("18:00"), String::from("45")));
 
             // Determine which step to show (from query param or default to 1)
-            let current_step = query.step.unwrap_or(1).clamp(1, 4);
+            // Story 4.10: Added step 5 for notification permission
+            let current_step = query.step.unwrap_or(1).clamp(1, 5);
 
             let template = OnboardingPageTemplate {
                 error: String::new(),
@@ -159,6 +161,7 @@ pub async fn get_onboarding(
                 skill_level,
                 availability_start,
                 availability_duration,
+                vapid_public_key: std::env::var("VAPID_PUBLIC_KEY").unwrap_or_default(),
             };
             Html(template.render().unwrap()).into_response()
         }
@@ -282,7 +285,7 @@ pub async fn post_onboarding_step_3(
     }
 }
 
-/// POST /onboarding/step/4 - Save availability and complete onboarding
+/// POST /onboarding/step/4 - Save availability and advance to notification permission (Story 4.10)
 #[tracing::instrument(skip(state, auth, body))]
 pub async fn post_onboarding_step_4(
     State(state): State<AppState>,
@@ -311,21 +314,8 @@ pub async fn post_onboarding_step_4(
 
     match user::set_weeknight_availability(availability_command, &state.evento_executor).await {
         Ok(_) => {
-            // Now mark profile as completed
-            let complete_command = user::CompleteProfileCommand {
-                user_id: auth.user_id,
-            };
-
-            match user::complete_profile(complete_command, &state.evento_executor).await {
-                Ok(_) => {
-                    // Redirect to dashboard
-                    (StatusCode::OK, [("ts-location", "/dashboard")]).into_response()
-                }
-                Err(e) => {
-                    tracing::error!("Failed to complete profile: {:?}", e);
-                    (StatusCode::OK, [("ts-location", "/onboarding?step=4")]).into_response()
-                }
-            }
+            // Story 4.10: Advance to step 5 (notification permission) instead of completing
+            (StatusCode::OK, [("ts-location", "/onboarding?step=5")]).into_response()
         }
         Err(e) => {
             tracing::error!("Failed to set weeknight availability: {:?}", e);
@@ -413,7 +403,10 @@ pub struct ProfilePageTemplate {
     pub availability_start: String,
     pub availability_duration: String,
     pub favorite_count: i64,
-    pub shared_recipe_count: i64, // AC-8: Display shared recipe count
+    pub shared_recipe_count: i64,   // AC-8: Display shared recipe count
+    pub notification_enabled: bool, // Story 4.10 AC #7: Push notification status
+    pub subscription_count: i64,    // Story 4.10 AC #7: Number of devices subscribed
+    pub vapid_public_key: String,   // Story 4.10: VAPID key for push notifications
 }
 
 /// GET /profile - Display profile editing page
@@ -472,6 +465,15 @@ pub async fn get_profile(
             // Get favorite_count from users table (O(1) query via subscription)
             let favorite_count: i32 = row.get("favorite_count");
 
+            // Story 4.10 AC #7: Query push notification status
+            let push_status =
+                notifications::get_push_subscription_status(&state.db_pool, &auth.user_id)
+                    .await
+                    .unwrap_or(notifications::read_model::PushSubscriptionStatus {
+                        enabled: false,
+                        subscription_count: 0,
+                    });
+
             let template = ProfilePageTemplate {
                 error: String::new(),
                 success: query.updated.unwrap_or(false),
@@ -484,6 +486,9 @@ pub async fn get_profile(
                 availability_duration,
                 favorite_count: favorite_count as i64,
                 shared_recipe_count: shared_count, // AC-8
+                notification_enabled: push_status.enabled,
+                subscription_count: push_status.subscription_count,
+                vapid_public_key: std::env::var("VAPID_PUBLIC_KEY").unwrap_or_default(),
             };
 
             Html(template.render().unwrap()).into_response()
@@ -591,6 +596,15 @@ pub async fn post_profile(
             .await
             .unwrap_or(0);
 
+            // Story 4.10 AC #7: Query push notification status
+            let push_status =
+                notifications::get_push_subscription_status(&state.db_pool, &auth.user_id)
+                    .await
+                    .unwrap_or(notifications::read_model::PushSubscriptionStatus {
+                        enabled: false,
+                        subscription_count: 0,
+                    });
+
             let template = ProfilePageTemplate {
                 error: String::new(),
                 success: true,
@@ -603,6 +617,9 @@ pub async fn post_profile(
                 availability_duration: form_availability_duration,
                 favorite_count: favorite_count as i64,
                 shared_recipe_count: shared_count, // AC-8
+                notification_enabled: push_status.enabled,
+                subscription_count: push_status.subscription_count,
+                vapid_public_key: std::env::var("VAPID_PUBLIC_KEY").unwrap_or_default(),
             };
 
             Html(template.render().unwrap()).into_response()
@@ -625,6 +642,15 @@ pub async fn post_profile(
             .await
             .unwrap_or(0);
 
+            // Story 4.10 AC #7: Query push notification status (error path)
+            let push_status =
+                notifications::get_push_subscription_status(&state.db_pool, &auth.user_id)
+                    .await
+                    .unwrap_or(notifications::read_model::PushSubscriptionStatus {
+                        enabled: false,
+                        subscription_count: 0,
+                    });
+
             // Validation error - re-render form with error
             let template = ProfilePageTemplate {
                 error: msg,
@@ -638,6 +664,9 @@ pub async fn post_profile(
                 availability_duration: form_availability_duration,
                 favorite_count: favorite_count as i64,
                 shared_recipe_count: shared_count, // AC-8
+                notification_enabled: push_status.enabled,
+                subscription_count: push_status.subscription_count,
+                vapid_public_key: std::env::var("VAPID_PUBLIC_KEY").unwrap_or_default(),
             };
             (
                 StatusCode::UNPROCESSABLE_ENTITY,

@@ -6,8 +6,9 @@ use validator::Validate;
 use crate::aggregate::UserAggregate;
 use crate::error::{UserError, UserResult};
 use crate::events::{
-    DietaryRestrictionsSet, HouseholdSizeSet, PasswordChanged, ProfileCompleted, ProfileUpdated,
-    SkillLevelSet, SubscriptionUpgraded, UserCreated, WeeknightAvailabilitySet,
+    DietaryRestrictionsSet, HouseholdSizeSet, NotificationPermissionChanged, PasswordChanged,
+    ProfileCompleted, ProfileUpdated, SkillLevelSet, SubscriptionUpgraded, UserCreated,
+    WeeknightAvailabilitySet,
 };
 use crate::password::hash_password;
 use serde::{Deserialize, Serialize};
@@ -418,6 +419,69 @@ pub async fn upgrade_subscription(
             stripe_customer_id: command.stripe_customer_id,
             stripe_subscription_id: command.stripe_subscription_id,
             upgraded_at: upgraded_at.to_rfc3339(),
+        })
+        .map_err(|e| UserError::EventStoreError(e.to_string()))?
+        .metadata(&true)
+        .map_err(|e| UserError::EventStoreError(e.to_string()))?
+        .commit(executor)
+        .await
+        .map_err(|e| UserError::EventStoreError(e.to_string()))?;
+
+    Ok(())
+}
+
+/// Command to change notification permission status
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+pub struct ChangeNotificationPermissionCommand {
+    #[validate(length(min = 1))]
+    pub user_id: String,
+
+    #[validate(custom(function = "validate_permission_status"))]
+    pub permission_status: String, // "granted", "denied", "skipped"
+}
+
+/// Validate permission_status is one of allowed values
+fn validate_permission_status(status: &str) -> Result<(), validator::ValidationError> {
+    if !["granted", "denied", "skipped"].contains(&status) {
+        return Err(validator::ValidationError::new("invalid_permission_status"));
+    }
+    Ok(())
+}
+
+/// Change notification permission status via evento event sourcing pattern
+///
+/// AC #3, #5, #8: Track user's permission decision and denial timestamp for grace period
+///
+/// This command:
+/// 1. Validates permission_status is "granted", "denied", or "skipped"
+/// 2. Emits NotificationPermissionChanged event
+/// 3. If denied, stores timestamp for 30-day grace period tracking
+/// 4. Event automatically projected to read model via async subscription handler
+pub async fn change_notification_permission(
+    command: ChangeNotificationPermissionCommand,
+    executor: &Sqlite,
+) -> UserResult<()> {
+    // Validate command
+    command
+        .validate()
+        .map_err(|e| UserError::ValidationError(e.to_string()))?;
+
+    let changed_at = Utc::now();
+
+    // Calculate denial timestamp (only if status is "denied")
+    let last_permission_denial_at = if command.permission_status == "denied" {
+        Some(changed_at.to_rfc3339())
+    } else {
+        None
+    };
+
+    // Emit NotificationPermissionChanged event
+    // evento::save() automatically loads the aggregate before appending the event
+    evento::save::<UserAggregate>(command.user_id.clone())
+        .data(&NotificationPermissionChanged {
+            permission_status: command.permission_status,
+            last_permission_denial_at,
+            changed_at: changed_at.to_rfc3339(),
         })
         .map_err(|e| UserError::EventStoreError(e.to_string()))?
         .metadata(&true)

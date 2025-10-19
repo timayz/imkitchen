@@ -26,8 +26,8 @@ pub use meal_plan::{
     post_regenerate_meal_plan, post_replace_meal,
 };
 pub use notifications::{
-    complete_prep_task_handler, dismiss_notification, list_notifications, notifications_page,
-    snooze_notification, subscribe_push,
+    complete_prep_task_handler, dismiss_notification, get_notification_status, list_notifications,
+    notifications_page, record_permission_change, snooze_notification, subscribe_push,
 };
 pub use profile::{
     get_onboarding, get_onboarding_skip, get_profile, get_subscription, get_subscription_success,

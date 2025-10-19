@@ -132,3 +132,16 @@ pub struct SubscriptionUpgraded {
     pub stripe_subscription_id: Option<String>, // Stripe Subscription ID for cancellation
     pub upgraded_at: String,                    // RFC3339 formatted timestamp
 }
+
+/// NotificationPermissionChanged event emitted when user changes notification permission
+///
+/// This event tracks notification permission status and denial timestamp for grace period (AC #8).
+/// Emitted when user grants, denies, or skips notification permission in onboarding or settings.
+///
+/// Note: user_id is provided by event.aggregator_id, not stored in event data
+#[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
+pub struct NotificationPermissionChanged {
+    pub permission_status: String, // "granted", "denied", "skipped"
+    pub last_permission_denial_at: Option<String>, // RFC3339 timestamp when denied (for grace period)
+    pub changed_at: String,                        // RFC3339 formatted timestamp
+}

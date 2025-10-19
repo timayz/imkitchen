@@ -170,6 +170,80 @@ For production, you can:
 |----------|---------|-------------|
 | `JWT_SECRET` or `IMKITCHEN__JWT__SECRET` | development_secret... | JWT signing secret (min 32 chars) |
 
+### Push Notification Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `IMKITCHEN__VAPID__PUBLIC_KEY` | (generated) | VAPID public key for web push |
+| `IMKITCHEN__VAPID__PRIVATE_KEY` | (generated) | VAPID private key for web push |
+
+#### Generating VAPID Keys
+
+VAPID (Voluntary Application Server Identification) keys are required for sending web push notifications. These keys allow push services to verify that your server is authorized to send notifications to users.
+
+**For Development:**
+
+1. Install the `web-push` CLI tool:
+   ```bash
+   npm install -g web-push
+   ```
+
+2. Generate VAPID keys:
+   ```bash
+   web-push generate-vapid-keys
+   ```
+
+   This will output something like:
+   ```
+   =======================================
+   Public Key:
+   BNxSJ...your_public_key...xyz
+
+   Private Key:
+   abc123...your_private_key...xyz
+   =======================================
+   ```
+
+3. Set the environment variables:
+   ```bash
+   export IMKITCHEN__VAPID__PUBLIC_KEY="BNxSJ...your_public_key...xyz"
+   export IMKITCHEN__VAPID__PRIVATE_KEY="abc123...your_private_key...xyz"
+   ```
+
+**For Production:**
+
+1. Generate VAPID keys once using the method above
+2. Store them securely (e.g., in your secrets manager)
+3. Set them as environment variables in your deployment configuration
+4. **IMPORTANT**: Keep the private key secret and never commit it to version control
+
+**Example: Setting VAPID keys in production**
+
+```bash
+export IMKITCHEN__VAPID__PUBLIC_KEY=$(cat /secrets/vapid_public.key)
+export IMKITCHEN__VAPID__PRIVATE_KEY=$(cat /secrets/vapid_private.key)
+cargo run --release -- serve
+```
+
+**Deployment Checklist:**
+
+- [ ] Generate VAPID keys using `web-push generate-vapid-keys`
+- [ ] Store private key securely (never commit to repository)
+- [ ] Set `IMKITCHEN__VAPID__PUBLIC_KEY` environment variable
+- [ ] Set `IMKITCHEN__VAPID__PRIVATE_KEY` environment variable
+- [ ] Ensure service worker file exists at `/static/sw.js` (or configure custom path)
+- [ ] Verify push notifications work in production environment
+- [ ] Document key rotation procedure for your team
+
+**Service Worker Configuration:**
+
+The push notification system uses a service worker located at `/sw.js` by default. To use a custom path:
+
+```javascript
+// In your template, initialize with custom path
+PushSubscription.init('{{ vapid_public_key }}', '/custom/path/to/sw.js');
+```
+
 ## Future Services
 
 The compose.yml includes commented-out configurations for:
