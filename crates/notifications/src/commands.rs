@@ -70,8 +70,10 @@ pub enum NotificationError {
 ///
 /// This command:
 /// 1. Validates reminder_type is one of: "advance_prep", "morning", "day_of"
-/// 2. Generates notification_id (UUID)
-/// 3. Creates NotificationAggregate and emits ReminderScheduled event
+/// 2. Creates NotificationAggregate and emits ReminderScheduled event
+/// 3. Returns the notification_id (which is the evento aggregator_id)
+///
+/// Note: evento::create() generates a ULID for the aggregator_id, which becomes the notification_id
 pub async fn schedule_reminder<E: evento::Executor>(
     cmd: ScheduleReminderCommand,
     executor: &E,
@@ -81,12 +83,12 @@ pub async fn schedule_reminder<E: evento::Executor>(
         return Err(NotificationError::InvalidReminderType(cmd.reminder_type));
     }
 
-    // Generate notification_id
-    let notification_id = Uuid::new_v4().to_string();
+    // Note: We don't generate notification_id here - evento::create() will generate it
+    // The notification_id will be set to the aggregator_id in the event handler
 
-    // Create event
+    // Create event (notification_id will be populated from aggregator_id in the aggregate handler)
     let event = ReminderScheduled {
-        notification_id: notification_id.clone(),
+        notification_id: String::new(), // Will be overwritten by aggregator_id
         user_id: cmd.user_id,
         recipe_id: cmd.recipe_id,
         meal_date: cmd.meal_date,
@@ -96,8 +98,8 @@ pub async fn schedule_reminder<E: evento::Executor>(
         prep_task: cmd.prep_task,
     };
 
-    // Use evento::create to emit the event
-    evento::create::<crate::aggregate::NotificationAggregate>()
+    // Use evento::create to emit the event and get the aggregator_id
+    let notification_id = evento::create::<crate::aggregate::NotificationAggregate>()
         .data(&event)
         .map_err(|e| NotificationError::EventStoreError(e.into()))?
         .metadata(&true)

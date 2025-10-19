@@ -69,12 +69,6 @@ pub async fn list_notifications(
     Ok(Json(notifications))
 }
 
-/// Form data for dismissing a notification
-#[derive(Deserialize)]
-pub struct DismissForm {
-    // No additional fields needed - notification_id comes from path
-}
-
 /// POST /api/notifications/:id/dismiss - Mark reminder as complete
 ///
 /// AC #7: User can dismiss notifications
@@ -85,7 +79,6 @@ pub async fn dismiss_notification(
     Extension(auth): Extension<Auth>,
     State(state): State<AppState>,
     Path(notification_id): Path<String>,
-    Form(_form): Form<DismissForm>,
 ) -> Result<impl IntoResponse, AppError> {
     // Validate that notification belongs to user
     // Security: Always return PermissionDenied (not NotificationNotFound) to prevent enumeration
@@ -102,10 +95,8 @@ pub async fn dismiss_notification(
 
     dismiss_reminder(cmd, &state.evento_executor).await?;
 
-    Ok(Json(serde_json::json!({
-        "status": "success",
-        "message": "Notification dismissed"
-    })))
+    // Return empty HTML to remove the element (TwinSpark will swap the target with this)
+    Ok(Html(""))
 }
 
 /// Form data for snoozing a notification
@@ -145,10 +136,9 @@ pub async fn snooze_notification(
 
     snooze_reminder(cmd, &state.evento_executor).await?;
 
-    Ok(Json(serde_json::json!({
-        "status": "success",
-        "message": format!("Notification snoozed for {} hours", form.duration_hours)
-    })))
+    // Return empty HTML to remove the element (snoozed notifications are hidden from pending view)
+    // TwinSpark will swap the target with this empty response
+    Ok(Html(""))
 }
 
 /// JSON body for push subscription

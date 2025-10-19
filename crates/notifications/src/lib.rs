@@ -8,6 +8,6 @@ pub mod scheduler;
 pub use aggregate::{NotificationAggregate, PushSubscriptionAggregate};
 pub use commands::*;
 pub use events::*;
-pub use push::WebPushConfig;
+pub use push::{create_cooking_push_payload, WebPushConfig};
 pub use read_model::*;
 pub use scheduler::*;

@@ -313,6 +313,177 @@ pub async fn update_morning_reminder_messages(
     Ok(())
 }
 
+/// Day-of cooking reminder scheduler - runs every 15 minutes to check for today's meals
+///
+/// Per AC #1: Cooking reminder sent 1 hour before typical meal time
+/// Per AC #2: Default meal times: Breakfast 8am, Lunch 12pm, Dinner 6pm
+///
+/// This function queries today's meal plan and schedules cooking reminders for all meals
+/// 1 hour before their scheduled meal time.
+pub async fn day_of_cooking_reminder_scheduler<E: evento::Executor>(
+    pool: &sqlx::SqlitePool,
+    executor: &E,
+    user_id: &str,
+) -> anyhow::Result<()> {
+    use sqlx::Row;
+
+    tracing::info!(
+        "Running day-of cooking reminder scheduler for user_id={}",
+        user_id
+    );
+
+    // Calculate today's date
+    let today = Utc::now().format("%Y-%m-%d").to_string();
+
+    // Query meal assignments for today
+    let meal_slots = sqlx::query(
+        "SELECT ma.id, ma.recipe_id, ma.meal_type, ma.date,
+                r.title, r.prep_time_min, r.cook_time_min, r.advance_prep_hours
+         FROM meal_assignments ma
+         JOIN recipes r ON ma.recipe_id = r.id
+         JOIN meal_plans mp ON ma.meal_plan_id = mp.id
+         WHERE mp.user_id = ?
+           AND ma.date = ?",
+    )
+    .bind(user_id)
+    .bind(&today)
+    .fetch_all(pool)
+    .await?;
+
+    if meal_slots.is_empty() {
+        tracing::debug!("No meals scheduled for today for user_id={}", user_id);
+        return Ok(());
+    }
+
+    tracing::info!(
+        "Found {} meals for today requiring cooking reminders",
+        meal_slots.len()
+    );
+
+    // Schedule a day-of cooking reminder for each meal
+    for row in meal_slots {
+        let recipe_id: String = row.get("recipe_id");
+        let meal_date: String = row.get("date");
+        let recipe_title: String = row.get("title");
+        let meal_type: String = row.get("meal_type");
+        let _advance_prep_hours: i32 = row.get("advance_prep_hours");
+
+        // Determine default meal time based on meal_type (AC #2)
+        let default_meal_time = match meal_type.as_str() {
+            "breakfast" => "08:00", // 8am
+            "lunch" => "12:00",     // 12pm
+            "dinner" => "18:00",    // 6pm
+            _ => "18:00",           // Default to dinner time
+        };
+
+        // Calculate reminder time: meal_time - 1 hour (AC #1)
+        // Parse the meal date and time to create a proper datetime
+        let meal_date_naive = chrono::NaiveDate::parse_from_str(&meal_date, "%Y-%m-%d")?;
+        let meal_time_naive = chrono::NaiveTime::parse_from_str(default_meal_time, "%H:%M")?;
+        let meal_datetime = meal_date_naive.and_time(meal_time_naive).and_utc();
+
+        // Subtract 1 hour for the reminder
+        let reminder_datetime = meal_datetime - Duration::hours(1);
+        let scheduled_time = reminder_datetime.to_rfc3339();
+
+        let cmd = ScheduleReminderCommand {
+            user_id: user_id.to_string(),
+            recipe_id: recipe_id.clone(),
+            meal_date: meal_date.clone(),
+            scheduled_time: scheduled_time.clone(),
+            reminder_type: "day_of".to_string(),
+            prep_hours: 0, // Day-of cooking reminders don't use prep_hours
+            prep_task: None,
+        };
+
+        let notification_id = schedule_reminder(cmd, executor).await?;
+
+        tracing::debug!(
+            "Scheduled day-of cooking reminder notification_id={} for recipe={} (meal_type={}) on {}",
+            notification_id,
+            recipe_title,
+            meal_type,
+            meal_date
+        );
+    }
+
+    Ok(())
+}
+
+/// Update message bodies for day-of cooking reminders after projection
+///
+/// This function should be called after the notification_projections subscription runs
+/// to populate the message_body column with the formatted reminder text.
+///
+/// Message format per AC #3:
+/// - Breakfast: "This morning's breakfast: {recipe_name} - Ready in {total_time}"
+/// - Lunch: "Today's lunch: {recipe_name} - Ready in {total_time}"
+/// - Dinner: "Tonight's dinner: {recipe_name} - Ready in {total_time}"
+pub async fn update_day_of_reminder_messages(
+    pool: &sqlx::SqlitePool,
+    user_id: &str,
+) -> anyhow::Result<()> {
+    use sqlx::Row;
+
+    // Query all pending day-of reminders for this user that don't have message_body set
+    let notifications = sqlx::query(
+        "SELECT n.id, n.meal_date, ma.meal_type, r.title, r.prep_time_min, r.cook_time_min
+         FROM notifications n
+         JOIN meal_assignments ma ON n.meal_date = ma.date AND n.recipe_id = ma.recipe_id
+         JOIN meal_plans mp ON ma.meal_plan_id = mp.id
+         JOIN recipes r ON n.recipe_id = r.id
+         WHERE n.user_id = ?
+           AND n.reminder_type = 'day_of'
+           AND n.status = 'pending'
+           AND (n.message_body IS NULL OR n.message_body = '')
+           AND mp.user_id = ?",
+    )
+    .bind(user_id)
+    .bind(user_id)
+    .fetch_all(pool)
+    .await?;
+
+    for row in notifications {
+        let notification_id: String = row.get("id");
+        let meal_type: String = row.get("meal_type");
+        let recipe_title: String = row.get("title");
+        let prep_time_min: i32 = row.get("prep_time_min");
+        let cook_time_min: i32 = row.get("cook_time_min");
+
+        // Calculate total time (prep + cook)
+        let total_time_min = prep_time_min + cook_time_min;
+
+        // Generate message based on meal type (AC #3)
+        let time_label = match meal_type.as_str() {
+            "breakfast" => "This morning's breakfast",
+            "lunch" => "Today's lunch",
+            "dinner" => "Tonight's dinner",
+            _ => "Today's meal",
+        };
+
+        let message_body = format!(
+            "{}: {} - Ready in {} minutes",
+            time_label, recipe_title, total_time_min
+        );
+
+        // Update notification with message_body and created_at
+        sqlx::query("UPDATE notifications SET message_body = ?, created_at = ? WHERE id = ?")
+            .bind(&message_body)
+            .bind(Utc::now().to_rfc3339())
+            .bind(&notification_id)
+            .execute(pool)
+            .await?;
+
+        tracing::debug!(
+            "Updated message_body for notification_id={}: {}",
+            notification_id,
+            message_body
+        );
+    }
+
+    Ok(())
+}
+
 /// Auto-dismissal worker - runs hourly to dismiss expired reminders
 ///
 /// Per AC #8: Reminder dismissed automatically after prep window passes

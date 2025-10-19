@@ -26,10 +26,11 @@ pub struct NotificationAggregate {
     pub prep_task: Option<String>, // "marinate", "rise", "chill", etc.
 
     // Delivery status
-    pub status: String, // "pending", "sent", "failed", "dismissed"
+    pub status: String, // "pending", "sent", "failed", "dismissed", "snoozed"
     pub sent_at: Option<String>,
     pub delivery_status: Option<String>,
     pub dismissed_at: Option<String>,
+    pub snoozed_until: Option<String>, // RFC3339 timestamp when snoozed notification should refire
 }
 
 /// PushSubscriptionAggregate representing a user's Web Push subscription
@@ -112,9 +113,10 @@ impl NotificationAggregate {
         &mut self,
         event: evento::EventDetails<ReminderSnoozed>,
     ) -> anyhow::Result<()> {
+        self.snoozed_until = Some(event.data.snoozed_until.clone());
         self.scheduled_time = event.data.snoozed_until;
-        // Reset status to pending so background worker will pick it up again
-        self.status = "pending".to_string();
+        // Mark as snoozed so UI can distinguish from regular pending
+        self.status = "snoozed".to_string();
         Ok(())
     }
 }
