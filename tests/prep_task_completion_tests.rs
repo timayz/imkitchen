@@ -1,25 +1,27 @@
-/// Story 4.9: Prep Task Completion Tracking
-/// Integration tests for all acceptance criteria
-///
-/// Test coverage for:
-/// - AC #1, #2: Mark Complete button creates PrepTaskCompleted event
-/// - AC #3: Completed tasks show checkmark on dashboard
-/// - AC #4: Dashboard displays pending prep tasks correctly
-/// - AC #5: Completed tasks removed from active notifications
-/// - AC #6: Completion tracked per meal_plan_slot_id
-/// - AC #7: Uncompleted tasks carried over to next cycle (tested in scheduler)
-/// - AC #8: Recipe detail shows prep completion status
+//! Story 4.9: Prep Task Completion Tracking
+//! Integration tests for all acceptance criteria
+//!
+//! Test coverage for:
+//! - AC #1, #2: Mark Complete button creates PrepTaskCompleted event
+//! - AC #3: Completed tasks show checkmark on dashboard
+//! - AC #4: Dashboard displays pending prep tasks correctly
+//! - AC #5: Completed tasks removed from active notifications
+//! - AC #6: Completion tracked per meal_plan_slot_id
+//! - AC #7: Uncompleted tasks carried over to next cycle (tested in scheduler)
+//! - AC #8: Recipe detail shows prep completion status
 
 use evento::prelude::*;
 use notifications::{
-    commands::{complete_prep_task, schedule_reminder, CompletePrepTaskCommand, ScheduleReminderCommand},
+    commands::{
+        complete_prep_task, schedule_reminder, CompletePrepTaskCommand, ScheduleReminderCommand,
+    },
     read_model::{get_notification_by_id, get_user_prep_tasks_for_today},
 };
 use sqlx::{sqlite::SqlitePoolOptions, Row, SqlitePool};
 
 /// Helper: Set up test database and evento executor
 async fn setup_test_db() -> (SqlitePool, evento::Sqlite) {
-    let db_url = format!("sqlite::memory:");
+    let db_url = "sqlite::memory:".to_string();
     let pool = SqlitePoolOptions::new()
         .connect(&db_url)
         .await
@@ -177,7 +179,10 @@ async fn test_dashboard_displays_prep_tasks_with_completion() {
     assert_eq!(prep_tasks.len(), 2);
 
     // Verify one is completed, one is pending
-    let completed_count = prep_tasks.iter().filter(|t| t.status == "completed").count();
+    let completed_count = prep_tasks
+        .iter()
+        .filter(|t| t.status == "completed")
+        .count();
     let pending_count = prep_tasks.iter().filter(|t| t.status == "pending").count();
 
     assert_eq!(completed_count, 1);
@@ -491,14 +496,13 @@ async fn test_max_reminder_count_prevents_infinite_reminders() {
     assert_eq!(final_notif.status, "expired");
 
     // Verify: No new notification was created
-    let new_notifications = sqlx::query(
-        "SELECT id FROM notifications WHERE user_id = ? AND id != ?",
-    )
-    .bind(user_id)
-    .bind(&notification_id)
-    .fetch_all(&pool)
-    .await
-    .expect("Failed to query new notifications");
+    let new_notifications =
+        sqlx::query("SELECT id FROM notifications WHERE user_id = ? AND id != ?")
+            .bind(user_id)
+            .bind(&notification_id)
+            .fetch_all(&pool)
+            .await
+            .expect("Failed to query new notifications");
 
     assert_eq!(new_notifications.len(), 0);
 }
