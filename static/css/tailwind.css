@@ -20,6 +20,12 @@
   /* Desktop: >1024px (lg: prefix) */
   --breakpoint-md: 48rem;  /* 768px */
   --breakpoint-lg: 64rem;  /* 1024px */
+
+  /* Touch target sizing (Story 5.5 - WCAG 2.1 Level AA compliance) */
+  --min-height-touch-target: 44px;
+  --min-width-touch-target: 44px;
+  --min-height-touch-target-kitchen: 60px;
+  --min-width-touch-target-kitchen: 60px;
 }
 
 /* Custom component layer */
@@ -36,6 +42,12 @@
     @apply bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow;
   }
 
+  /* Recipe image zoom support (Story 5.5 - enable pinch-to-zoom on images) */
+  .recipe-image-modal img,
+  .zoomable-image {
+    touch-action: pinch-zoom;
+  }
+
   .input-field {
     @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-colors;
   }
@@ -47,12 +59,68 @@
   .error-message {
     @apply text-error-500 text-sm mt-1;
   }
+
+  /* Touch target spacing (Story 5.5 - AC2: 8px minimum spacing) */
+  .button-group {
+    @apply flex gap-2; /* gap-2 = 8px minimum spacing between buttons */
+  }
+
+  .button-group-vertical {
+    @apply flex flex-col gap-2; /* 8px vertical spacing for stacked buttons */
+  }
 }
 
 /* Custom utility layer */
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  /* Touch target utilities (Story 5.5 - WCAG 2.1 Level AA) */
+  .min-h-touch-target {
+    min-height: var(--min-height-touch-target);
+  }
+
+  .min-w-touch-target {
+    min-width: var(--min-width-touch-target);
+  }
+
+  .touch-target {
+    min-height: var(--min-height-touch-target);
+    min-width: var(--min-width-touch-target);
+  }
+
+  /* Checkbox and radio button sizing (Story 5.5 - 24x24px minimum with clickable label) */
+  input[type="checkbox"],
+  input[type="radio"] {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+  }
+
+  /* Label for checkbox/radio must be clickable and have adequate touch area */
+  input[type="checkbox"] + label,
+  input[type="radio"] + label {
+    cursor: pointer;
+    min-height: var(--min-height-touch-target);
+    display: flex;
+    align-items: center;
+  }
+
+  /* Kitchen mode: larger touch targets (60x60px) */
+  body.kitchen-mode .touch-target,
+  body.kitchen-mode button,
+  body.kitchen-mode a[role="button"],
+  body.kitchen-mode .btn-primary,
+  body.kitchen-mode .btn-secondary {
+    min-height: var(--min-height-touch-target-kitchen);
+    min-width: var(--min-width-touch-target-kitchen);
+  }
+
+  body.kitchen-mode input[type="checkbox"],
+  body.kitchen-mode input[type="radio"] {
+    width: 32px;
+    height: 32px;
   }
 
   /* Mobile-first typography: 16px minimum body text (Story 5.4 - prevents iOS zoom on input focus) */

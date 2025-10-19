@@ -13,7 +13,7 @@
      - is_favorite: Boolean
 #}
 
-<div class="recipe-card bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+<div class="recipe-card bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow" data-recipe-id="{{ recipe.id }}">
     <!-- Recipe Image - Responsive via CSS (Story 5.4) -->
     <a href="/recipes/{{ recipe.id }}" class="block">
         {% if recipe.image_url %}
@@ -54,7 +54,7 @@
                 >
                   <button
                     type="submit"
-                    class="text-2xl focus:outline-none hover:scale-110 transition-transform"
+                    class="touch-target inline-flex items-center justify-center text-2xl focus:outline-none hover:scale-110 active:scale-95 transition-transform"
                     aria-label="{% if recipe.is_favorite %}Remove from favorites{% else %}Add to favorites{% endif %}"
                     title="{% if recipe.is_favorite %}Remove from favorites{% else %}Add to favorites{% endif %}"
                   >
