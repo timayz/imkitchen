@@ -48,6 +48,17 @@ pub struct ReminderSnoozed {
     pub snooze_duration_hours: i32, // Duration of snooze (1, 2, or 4)
 }
 
+/// PrepTaskCompleted event emitted when user marks a prep task as complete
+///
+/// Distinguishes from ReminderDismissed: Complete means user finished the prep task,
+/// Dismiss means user ignored/acknowledged the reminder without completing.
+#[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
+pub struct PrepTaskCompleted {
+    pub notification_id: String, // UUID of the notification
+    pub recipe_id: String,       // Recipe ID for tracking completion per recipe
+    pub completed_at: String,    // RFC3339 formatted timestamp
+}
+
 /// PushSubscriptionCreated event emitted when user subscribes to Web Push notifications
 ///
 /// This event stores the browser push subscription details for future notification delivery.

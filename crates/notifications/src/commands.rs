@@ -3,7 +3,8 @@ use chrono::Utc;
 use uuid::Uuid;
 
 use crate::events::{
-    PushSubscriptionCreated, ReminderDismissed, ReminderScheduled, ReminderSent, ReminderSnoozed,
+    PrepTaskCompleted, PushSubscriptionCreated, ReminderDismissed, ReminderScheduled, ReminderSent,
+    ReminderSnoozed,
 };
 
 /// Command to schedule a preparation reminder
@@ -29,6 +30,13 @@ pub struct SendReminderCommand {
 #[derive(Debug, Clone)]
 pub struct DismissReminderCommand {
     pub notification_id: String,
+}
+
+/// Command to complete a prep task
+#[derive(Debug, Clone)]
+pub struct CompletePrepTaskCommand {
+    pub notification_id: String,
+    pub recipe_id: String,
 }
 
 /// Command to snooze a reminder
@@ -155,6 +163,37 @@ pub async fn dismiss_reminder<E: evento::Executor>(
     let event = ReminderDismissed {
         notification_id: cmd.notification_id.clone(),
         dismissed_at,
+    };
+
+    // Append event to existing aggregate
+    evento::save::<crate::aggregate::NotificationAggregate>(&cmd.notification_id)
+        .data(&event)
+        .map_err(|e| NotificationError::EventStoreError(e.into()))?
+        .metadata(&true)
+        .map_err(|e| NotificationError::EventStoreError(e.into()))?
+        .commit(executor)
+        .await
+        .map_err(|e| NotificationError::EventStoreError(e.into()))?;
+
+    Ok(())
+}
+
+/// Complete a prep task
+///
+/// This command:
+/// 1. Emits PrepTaskCompleted event
+/// 2. User clicks "Mark Complete" button in UI
+/// 3. Distinguishes from dismiss: complete means user actually finished the prep task
+pub async fn complete_prep_task<E: evento::Executor>(
+    cmd: CompletePrepTaskCommand,
+    executor: &E,
+) -> Result<(), NotificationError> {
+    let completed_at = Utc::now().to_rfc3339();
+
+    let event = PrepTaskCompleted {
+        notification_id: cmd.notification_id.clone(),
+        recipe_id: cmd.recipe_id,
+        completed_at,
     };
 
     // Append event to existing aggregate

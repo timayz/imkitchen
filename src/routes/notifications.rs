@@ -6,8 +6,9 @@ use axum::{
 };
 use notifications::{
     commands::{
-        dismiss_reminder, snooze_reminder, subscribe_to_push, DismissReminderCommand,
-        SnoozeReminderCommand, SubscribeToPushCommand,
+        complete_prep_task, dismiss_reminder, snooze_reminder, subscribe_to_push,
+        CompletePrepTaskCommand, DismissReminderCommand, SnoozeReminderCommand,
+        SubscribeToPushCommand,
     },
     read_model::{get_notification_by_id, get_user_pending_notifications, UserNotification},
 };
@@ -94,6 +95,40 @@ pub async fn dismiss_notification(
     let cmd = DismissReminderCommand { notification_id };
 
     dismiss_reminder(cmd, &state.evento_executor).await?;
+
+    // Return empty HTML to remove the element (TwinSpark will swap the target with this)
+    Ok(Html(""))
+}
+
+/// POST /api/notifications/:id/complete - Mark prep task as complete
+///
+/// AC #1, #2: User can mark prep tasks as complete via "Mark Complete" button
+/// AC #5, #6: Completion tracked per recipe/meal slot, removes from active reminders
+///
+/// **Security**: Returns PermissionDenied for both not found and unauthorized to prevent
+/// notification ID enumeration via timing side-channel.
+pub async fn complete_prep_task_handler(
+    Extension(auth): Extension<Auth>,
+    State(state): State<AppState>,
+    Path(notification_id): Path<String>,
+) -> Result<impl IntoResponse, AppError> {
+    // Validate that notification belongs to user
+    // Security: Always return PermissionDenied (not NotificationNotFound) to prevent enumeration
+    let notification = get_notification_by_id(&state.db_pool, &notification_id)
+        .await
+        .map_err(|_| AppError::PermissionDenied)?
+        .ok_or(AppError::PermissionDenied)?;
+
+    if notification.user_id != auth.user_id {
+        return Err(AppError::PermissionDenied);
+    }
+
+    let cmd = CompletePrepTaskCommand {
+        notification_id,
+        recipe_id: notification.recipe_id,
+    };
+
+    complete_prep_task(cmd, &state.evento_executor).await?;
 
     // Return empty HTML to remove the element (TwinSpark will swap the target with this)
     Ok(Html(""))

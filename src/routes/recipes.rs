@@ -77,6 +77,7 @@ pub struct RecipeDetailTemplate {
     pub assignment_id: Option<String>,   // Story 3.5 AC-4 (Replace button context)
     pub notification_id: Option<String>, // Story 4.6 AC-7 (Deep link from notification)
     pub highlight_prep: bool,            // Story 4.6 AC-7 (Highlight prep instructions)
+    pub prep_status: Option<notifications::read_model::UserNotification>, // Story 4.9 AC-8
 }
 
 /// Recipe detail view model for template
@@ -368,6 +369,15 @@ pub async fn get_recipe_detail(
             // Story 4.6: Parse notification context for prep highlighting
             let highlight_prep = context.notification_id.is_some();
 
+            // Story 4.9 AC-8: Query prep status for this recipe
+            let prep_status = notifications::read_model::get_prep_status_for_recipe(
+                &state.db_pool,
+                &auth.user_id,
+                &recipe_id,
+            )
+            .await
+            .unwrap_or(None);
+
             let template = RecipeDetailTemplate {
                 recipe: recipe_view,
                 is_owner,
@@ -380,6 +390,7 @@ pub async fn get_recipe_detail(
                 assignment_id: context.assignment_id, // Story 3.5 AC-4
                 notification_id: context.notification_id.clone(), // Story 4.6 AC-7
                 highlight_prep,                       // Story 4.6 AC-7
+                prep_status,                          // Story 4.9 AC-8
             };
 
             // Action Item 1: Proper error handling for template rendering

@@ -240,6 +240,70 @@
                 </div>
             </div>
 
+            <!-- Prep Status Section (Story 4.9 AC #8) -->
+            {% if let Some(prep) = prep_status %}
+            <section class="p-6 bg-gradient-to-r from-orange-50 to-yellow-50 border-b border-orange-200" role="region" aria-label="Prep Task Status">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                            <span class="text-2xl">📋</span>
+                            Prep Task Status
+                        </h3>
+
+                        {% if prep.status == "completed" %}
+                        <!-- Completed Status -->
+                        <div class="flex items-center gap-3">
+                            <span class="text-green-600 text-3xl" aria-label="Completed">✓</span>
+                            <div>
+                                <p class="text-green-700 font-medium">
+                                    {% if let Some(task) = prep.prep_task %}
+                                    {{ task|capitalize }} - Completed!
+                                    {% else %}
+                                    Prep task completed!
+                                    {% endif %}
+                                </p>
+                                <p class="text-sm text-gray-600">
+                                    Ready for {{ prep.meal_date }}
+                                </p>
+                            </div>
+                        </div>
+                        {% else %}
+                        <!-- Pending/Sent Status -->
+                        <div class="flex items-center gap-3">
+                            <span class="text-orange-500 text-3xl" aria-label="Pending">⏰</span>
+                            <div>
+                                <p class="text-gray-900 font-medium">
+                                    {% if let Some(task) = prep.prep_task %}
+                                    {{ task|capitalize }} required
+                                    {% else %}
+                                    Prep required
+                                    {% endif %}
+                                </p>
+                                <p class="text-sm text-gray-600">
+                                    {{ prep.prep_hours }} hours advance prep for {{ prep.meal_date }}
+                                </p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Mark Complete Button (only if not completed) -->
+                    {% if prep.status != "completed" %}
+                    <button
+                        ts-req="/api/notifications/{{ prep.id }}/complete"
+                        ts-req-method="POST"
+                        ts-target="[aria-label='Prep Task Status']"
+                        ts-swap="outerHTML"
+                        class="ml-4 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-md flex items-center gap-2"
+                        aria-label="Mark prep task as complete">
+                        <span class="text-xl">✓</span>
+                        Mark Complete
+                    </button>
+                    {% endif %}
+                </div>
+            </section>
+            {% endif %}
+
             <!-- Ingredients Section - Action Item 3: ARIA landmark -->
             <section class="p-8 border-b border-gray-200" role="region" aria-labelledby="ingredients-heading">
                 <h2 id="ingredients-heading" class="{% if kitchen_mode %}kitchen-mode-section-title{% else %}text-2xl font-bold text-gray-900 mb-4{% endif %}">Ingredients</h2>
