@@ -72,30 +72,13 @@
                                     value="{{ ingredient.quantity }}"
                                     required
                                 />
-                                <select
+                                <input
+                                    type="text"
                                     name="ingredient_unit[]"
+                                    placeholder="Unit (optional)"
                                     class="ingredient-unit w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    required
-                                >
-                                    <option value="">Unit</option>
-                                    <option value="cup" {% if ingredient.unit == "cup" %}selected{% endif %}>cup</option>
-                                    <option value="cups" {% if ingredient.unit == "cups" %}selected{% endif %}>cups</option>
-                                    <option value="tbsp" {% if ingredient.unit == "tbsp" %}selected{% endif %}>tbsp</option>
-                                    <option value="tsp" {% if ingredient.unit == "tsp" %}selected{% endif %}>tsp</option>
-                                    <option value="oz" {% if ingredient.unit == "oz" %}selected{% endif %}>oz</option>
-                                    <option value="lb" {% if ingredient.unit == "lb" %}selected{% endif %}>lb</option>
-                                    <option value="g" {% if ingredient.unit == "g" %}selected{% endif %}>g</option>
-                                    <option value="kg" {% if ingredient.unit == "kg" %}selected{% endif %}>kg</option>
-                                    <option value="ml" {% if ingredient.unit == "ml" %}selected{% endif %}>ml</option>
-                                    <option value="L" {% if ingredient.unit == "L" %}selected{% endif %}>L</option>
-                                    <option value="fl oz" {% if ingredient.unit == "fl oz" %}selected{% endif %}>fl oz</option>
-                                    <option value="piece" {% if ingredient.unit == "piece" %}selected{% endif %}>piece</option>
-                                    <option value="whole" {% if ingredient.unit == "whole" %}selected{% endif %}>whole</option>
-                                    <option value="can" {% if ingredient.unit == "can" %}selected{% endif %}>can</option>
-                                    <option value="package" {% if ingredient.unit == "package" %}selected{% endif %}>package</option>
-                                    <option value="pinch" {% if ingredient.unit == "pinch" %}selected{% endif %}>pinch</option>
-                                    <option value="to taste" {% if ingredient.unit == "to taste" %}selected{% endif %}>to taste</option>
-                                </select>
+                                    value="{{ ingredient.unit }}"
+                                />
                                 <button type="button" class="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600" ts-action="remove .ingredient-row">
                                     Remove
                                 </button>
@@ -119,30 +102,12 @@
                                     class="ingredient-quantity w-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     required
                                 />
-                                <select
+                                <input
+                                    type="text"
                                     name="ingredient_unit[]"
+                                    placeholder="Unit (optional)"
                                     class="ingredient-unit w-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    required
-                                >
-                                    <option value="">Unit</option>
-                                    <option value="cup">cup</option>
-                                    <option value="cups">cups</option>
-                                    <option value="tbsp">tbsp</option>
-                                    <option value="tsp">tsp</option>
-                                    <option value="oz">oz</option>
-                                    <option value="lb">lb</option>
-                                    <option value="g">g</option>
-                                    <option value="kg">kg</option>
-                                    <option value="ml">ml</option>
-                                    <option value="L">L</option>
-                                    <option value="fl oz">fl oz</option>
-                                    <option value="piece">piece</option>
-                                    <option value="whole">whole</option>
-                                    <option value="can">can</option>
-                                    <option value="package">package</option>
-                                    <option value="pinch">pinch</option>
-                                    <option value="to taste">to taste</option>
-                                </select>
+                                />
                                 <button type="button" class="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600" ts-action="remove .ingredient-row">
                                     Remove
                                 </button>
