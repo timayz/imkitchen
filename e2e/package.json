@@ -5,8 +5,19 @@
   "scripts": {
     "test": "playwright test",
     "test:headed": "playwright test --headed",
-    "test:debug": "playwright test --debug"
+    "test:debug": "playwright test --debug",
+    "test:chromium": "playwright test --project=chromium",
+    "test:firefox": "playwright test --project=firefox",
+    "test:webkit": "playwright test --project=webkit",
+    "test:mobile": "playwright test --project=iphone-12 --project=samsung-galaxy",
+    "test:cross-browser": "playwright test e2e/tests/cross-browser.spec.ts"
   },
+  "browserslist": [
+    "iOS >= 14",
+    "Chrome >= 90",
+    "Firefox >= 88",
+    "Safari >= 14"
+  ],
   "devDependencies": {
     "@playwright/test": "^1.56.0",
     "@types/node": "^24.0.0",
