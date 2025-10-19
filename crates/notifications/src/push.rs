@@ -134,7 +134,7 @@ pub async fn send_push_notification(
     config: &WebPushConfig,
 ) -> Result<(), PushError> {
     use web_push::{
-        IsahcWebPushClient, SubscriptionInfo, VapidSignatureBuilder, WebPushClient,
+        HyperWebPushClient, SubscriptionInfo, VapidSignatureBuilder, WebPushClient,
         WebPushMessageBuilder,
     };
 
@@ -175,8 +175,7 @@ pub async fn send_push_notification(
         .map_err(|e| PushError::MessageBuildError(format!("Failed to build message: {:?}", e)))?;
 
     // Create HTTP client and send
-    let client = IsahcWebPushClient::new()
-        .map_err(|e| PushError::ClientError(format!("Failed to create client: {:?}", e)))?;
+    let client = HyperWebPushClient::new();
 
     // Send the notification
     match client.send(message).await {
