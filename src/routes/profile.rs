@@ -25,6 +25,7 @@ pub struct OnboardingPageTemplate {
     pub availability_start: String,
     pub availability_duration: String,
     pub vapid_public_key: String, // Story 4.10: VAPID key for push notifications
+    pub current_path: String,
 }
 
 #[derive(Debug, Default)]
@@ -162,6 +163,7 @@ pub async fn get_onboarding(
                 availability_start,
                 availability_duration,
                 vapid_public_key: std::env::var("VAPID_PUBLIC_KEY").unwrap_or_default(),
+                current_path: "/onboarding".to_string(),
             };
             Html(template.render().unwrap()).into_response()
         }
@@ -407,6 +409,7 @@ pub struct ProfilePageTemplate {
     pub notification_enabled: bool, // Story 4.10 AC #7: Push notification status
     pub subscription_count: i64,    // Story 4.10 AC #7: Number of devices subscribed
     pub vapid_public_key: String,   // Story 4.10: VAPID key for push notifications
+    pub current_path: String,
 }
 
 /// GET /profile - Display profile editing page
@@ -489,6 +492,7 @@ pub async fn get_profile(
                 notification_enabled: push_status.enabled,
                 subscription_count: push_status.subscription_count,
                 vapid_public_key: std::env::var("VAPID_PUBLIC_KEY").unwrap_or_default(),
+                current_path: "/profile".to_string(),
             };
 
             Html(template.render().unwrap()).into_response()
@@ -620,6 +624,7 @@ pub async fn post_profile(
                 notification_enabled: push_status.enabled,
                 subscription_count: push_status.subscription_count,
                 vapid_public_key: std::env::var("VAPID_PUBLIC_KEY").unwrap_or_default(),
+                current_path: "/profile".to_string(),
             };
 
             Html(template.render().unwrap()).into_response()
@@ -667,6 +672,7 @@ pub async fn post_profile(
                 notification_enabled: push_status.enabled,
                 subscription_count: push_status.subscription_count,
                 vapid_public_key: std::env::var("VAPID_PUBLIC_KEY").unwrap_or_default(),
+                current_path: "/profile".to_string(),
             };
             (
                 StatusCode::UNPROCESSABLE_ENTITY,
@@ -693,6 +699,7 @@ pub struct SubscriptionPageTemplate {
     pub tier: String,      // "free" or "premium"
     pub recipe_count: i32, // Current recipe count for free tier
     pub is_premium: bool,  // Derived: tier == "premium"
+    pub current_path: String,
 }
 
 /// GET /subscription - Display subscription management page
@@ -721,6 +728,7 @@ pub async fn get_subscription(
                 tier,
                 recipe_count,
                 is_premium,
+                current_path: "/subscription".to_string(),
             };
 
             Html(template.render().unwrap()).into_response()
@@ -834,6 +842,7 @@ pub async fn post_subscription_upgrade(
 #[template(path = "pages/subscription-success.html")]
 pub struct SubscriptionSuccessTemplate {
     pub user: Option<()>,
+    pub current_path: String,
 }
 
 /// GET /subscription/success - Payment confirmation page
@@ -841,7 +850,10 @@ pub struct SubscriptionSuccessTemplate {
 /// AC #7: User redirected back to /subscription/success after successful payment
 #[tracing::instrument(skip(_auth))]
 pub async fn get_subscription_success(Extension(_auth): Extension<Auth>) -> Response {
-    let template = SubscriptionSuccessTemplate { user: Some(()) };
+    let template = SubscriptionSuccessTemplate {
+        user: Some(()),
+        current_path: "/subscription/success".to_string(),
+    };
 
     Html(template.render().unwrap()).into_response()
 }

@@ -109,6 +109,7 @@ pub async fn show_shopping_list(
             week_options: week_options.clone(),
             categories,
             has_items: true,
+            current_path: "/shopping".to_string(),
         };
 
         Ok(Html(template.render().map_err(|e| {
@@ -123,6 +124,7 @@ pub async fn show_shopping_list(
             week_options: week_options.clone(),
             categories: vec![],
             has_items: false,
+            current_path: "/shopping".to_string(),
         };
 
         Ok(Html(template.render().map_err(|e| {
@@ -361,6 +363,7 @@ pub struct ShoppingListTemplate {
     pub week_options: Vec<WeekOption>, // Dropdown options (current + 4 future weeks)
     pub categories: Vec<CategoryGroup>,
     pub has_items: bool,
+    pub current_path: String,
 }
 
 /// Partial template for shopping list content (TwinSpark polling - Story 4.4)

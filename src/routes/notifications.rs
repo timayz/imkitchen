@@ -33,6 +33,7 @@ pub struct NotificationsTemplate {
     notifications: Vec<UserNotification>,
     push_enabled: bool,
     vapid_public_key: String,
+    pub current_path: String,
 }
 
 /// GET /notifications - Show notifications page
@@ -55,6 +56,7 @@ pub async fn notifications_page(
         notifications,
         push_enabled,
         vapid_public_key: state.vapid_public_key.clone(),
+        current_path: "/notifications".to_string(),
     };
 
     Ok(Html(template.render().map_err(|e| {

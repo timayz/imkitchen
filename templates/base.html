@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="text-base">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -49,18 +49,18 @@
         Skip to main content
     </a>
 
-    <!-- Navigation -->
+    <!-- Navigation - Desktop/Tablet Top Bar -->
     {% block navigation %}
     <nav class="bg-white shadow-sm border-b border-gray-200">
-        <div class="container mx-auto px-4 py-4">
+        <div class="container mx-auto px-4 py-3 md:py-4">
             <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-8">
-                    <a href="/" class="text-2xl font-bold text-primary-500">
+                <div class="flex items-center space-x-4 md:space-x-8">
+                    <a href="/" class="text-xl md:text-2xl font-bold text-primary-500">
                         imkitchen
                     </a>
 
                     {% if user.is_some() %}
-                    <!-- Authenticated navigation -->
+                    <!-- Authenticated navigation - hidden on mobile, shown on tablet+ -->
                     <div class="hidden md:flex space-x-6">
                         <a href="/dashboard" class="text-gray-700 hover:text-primary-500 font-medium">
                             Dashboard
@@ -88,25 +88,25 @@
                     {% endif %}
                 </div>
 
-                <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-3 md:space-x-4">
                     {% if user.is_some() %}
-                    <!-- User menu -->
-                    <div class="flex items-center space-x-4">
-                        <a href="/profile" class="text-gray-700 hover:text-primary-500 font-medium">
+                    <!-- User menu - responsive sizing -->
+                    <div class="flex items-center space-x-2 md:space-x-4">
+                        <a href="/profile" class="hidden md:inline text-gray-700 hover:text-primary-500 font-medium">
                             Profile
                         </a>
                         <form method="POST" action="/logout" class="inline">
-                            <button type="submit" class="text-gray-700 hover:text-primary-500 font-medium">
+                            <button type="submit" class="text-sm md:text-base text-gray-700 hover:text-primary-500 font-medium">
                                 Logout
                             </button>
                         </form>
                     </div>
                     {% else %}
-                    <!-- Auth links -->
-                    <a href="/login" class="text-gray-700 hover:text-primary-500 font-medium">
+                    <!-- Auth links - responsive sizing -->
+                    <a href="/login" class="text-sm md:text-base text-gray-700 hover:text-primary-500 font-medium">
                         Login
                     </a>
-                    <a href="/register" class="bg-primary-500 text-white px-4 py-2 rounded-lg hover:bg-primary-600 font-medium">
+                    <a href="/register" class="bg-primary-500 text-white px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base rounded-lg hover:bg-primary-600 font-medium">
                         Sign Up
                     </a>
                     {% endif %}
@@ -116,8 +116,8 @@
     </nav>
     {% endblock %}
 
-    <!-- Main Content -->
-    <main id="main-content" class="flex-1">
+    <!-- Main Content - Add bottom padding on mobile for bottom navigation -->
+    <main id="main-content" class="flex-1 pb-20 md:pb-0">
         {% block content %}{% endblock %}
     </main>
 
@@ -169,6 +169,14 @@
         </div>
     </footer>
     {% endblock %}
+
+    <!-- Mobile Bottom Navigation (Story 5.4) - Only shown on mobile for authenticated users -->
+    {% if user.is_some() %}
+    {% include "components/nav-tabs.html" %}
+    {% endif %}
+
+    <!-- Back to Top Button (Story 5.4) - Shows on long pages -->
+    {% include "components/back-to-top.html" %}
 
     {% block extra_scripts %}{% endblock %}
 </body>

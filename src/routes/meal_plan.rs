@@ -134,6 +134,7 @@ pub struct MealCalendarTemplate {
     pub has_meal_plan: bool,
     pub rotation_used: usize,  // AC (Story 3.3): Rotation progress display
     pub rotation_total: usize, // AC (Story 3.3): Total favorites
+    pub current_path: String,
 }
 
 /// GET /plan - Display meal calendar view
@@ -174,6 +175,7 @@ pub async fn get_meal_plan(
                 has_meal_plan: true,
                 rotation_used,
                 rotation_total,
+                current_path: "/plan".to_string(),
             };
             template.render().map(Html).map_err(|e| {
                 tracing::error!("Failed to render meal calendar template: {:?}", e);
@@ -189,6 +191,7 @@ pub async fn get_meal_plan(
                 has_meal_plan: false,
                 rotation_used: 0,
                 rotation_total: 0,
+                current_path: "/plan".to_string(),
             };
             template.render().map(Html).map_err(|e| {
                 tracing::error!("Failed to render empty meal calendar template: {:?}", e);

@@ -49,6 +49,7 @@ pub struct RegisterForm {
 pub struct RegisterPageTemplate {
     pub error: String,
     pub user: Option<()>, // None for public pages
+    pub current_path: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -63,6 +64,7 @@ pub struct LoginPageTemplate {
     pub error: String,
     pub success: String,
     pub user: Option<()>, // None for public pages
+    pub current_path: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -82,6 +84,7 @@ pub struct PasswordResetRequestTemplate {
     pub success: bool,
     pub email: String,
     pub user: Option<()>, // None for public pages
+    pub current_path: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -96,6 +99,7 @@ pub struct PasswordResetCompleteTemplate {
     pub error: String,
     pub token: String,
     pub user: Option<()>, // None for public pages
+    pub current_path: String,
 }
 
 #[derive(Template)]
@@ -104,6 +108,7 @@ pub struct PasswordResetErrorTemplate {
     pub title: String,
     pub message: String,
     pub user: Option<()>,
+    pub current_path: String,
 }
 
 /// GET /register - Display registration form
@@ -112,6 +117,7 @@ pub async fn get_register() -> impl IntoResponse {
     let template = RegisterPageTemplate {
         error: String::new(),
         user: None,
+        current_path: "/register".to_string(),
     };
     Html(template.render().unwrap())
 }
@@ -127,6 +133,7 @@ pub async fn post_register(
         let template = RegisterPageTemplate {
             error: "Passwords do not match".to_string(),
             user: None,
+            current_path: "/register".to_string(),
         };
         // Return 200 OK for TwinSpark form swap (progressive enhancement)
         return Html(template.render().unwrap()).into_response();
@@ -155,6 +162,7 @@ pub async fn post_register(
                     let template = RegisterPageTemplate {
                         error: "Registration succeeded but failed to generate session token. Please try logging in.".to_string(),
                         user: None,
+                        current_path: "/register".to_string(),
                     };
                     // Return 200 OK for TwinSpark form swap (progressive enhancement)
                     return Html(template.render().unwrap()).into_response();
@@ -196,6 +204,7 @@ pub async fn post_register(
             let template = RegisterPageTemplate {
                 error: error_message,
                 user: None,
+                current_path: "/register".to_string(),
             };
 
             Html(template.render().unwrap()).into_response()
@@ -216,6 +225,7 @@ pub async fn get_login(Query(params): Query<LoginQueryParams>) -> impl IntoRespo
         error: String::new(),
         success,
         user: None,
+        current_path: "/login".to_string(),
     };
     Html(template.render().unwrap())
 }
@@ -233,6 +243,7 @@ pub async fn post_login(State(state): State<AppState>, Form(form): Form<LoginFor
                 error: "Invalid credentials".to_string(),
                 success: String::new(),
                 user: None,
+                current_path: "/login".to_string(),
             };
             return Html(template.render().unwrap()).into_response();
         }
@@ -242,6 +253,7 @@ pub async fn post_login(State(state): State<AppState>, Form(form): Form<LoginFor
                 error: "An error occurred. Please try again.".to_string(),
                 success: String::new(),
                 user: None,
+                current_path: "/login".to_string(),
             };
             return Html(template.render().unwrap()).into_response();
         }
@@ -256,6 +268,7 @@ pub async fn post_login(State(state): State<AppState>, Form(form): Form<LoginFor
                 error: "An error occurred. Please try again.".to_string(),
                 success: String::new(),
                 user: None,
+                current_path: "/login".to_string(),
             };
             return Html(template.render().unwrap()).into_response();
         }
@@ -271,6 +284,7 @@ pub async fn post_login(State(state): State<AppState>, Form(form): Form<LoginFor
             error: "Invalid credentials".to_string(),
             success: String::new(),
             user: None,
+            current_path: "/login".to_string(),
         };
         return Html(template.render().unwrap()).into_response();
     }
@@ -285,6 +299,7 @@ pub async fn post_login(State(state): State<AppState>, Form(form): Form<LoginFor
                     .to_string(),
                 success: String::new(),
                 user: None,
+                current_path: "/login".to_string(),
             };
             return Html(template.render().unwrap()).into_response();
         }
@@ -343,6 +358,7 @@ pub async fn get_password_reset() -> impl IntoResponse {
         success: false,
         email: String::new(),
         user: None,
+        current_path: "/password-reset".to_string(),
     };
     Html(template.render().unwrap())
 }
@@ -366,6 +382,7 @@ pub async fn post_password_reset(
                 success: true,
                 email: form.email.clone(),
                 user: None,
+                current_path: "/password-reset".to_string(),
             };
             return Html(template.render().unwrap()).into_response();
         }
@@ -411,6 +428,7 @@ pub async fn post_password_reset(
         success: true,
         email: form.email,
         user: None,
+        current_path: "/password-reset".to_string(),
     };
     Html(template.render().unwrap()).into_response()
 }
@@ -433,6 +451,7 @@ pub async fn get_password_reset_complete(
                         "This password reset link is invalid. Please request a new password reset."
                             .to_string(),
                     user: None,
+                    current_path: format!("/password-reset/{}", token),
                 };
                 return Html(template.render().unwrap()).into_response();
             }
@@ -440,8 +459,9 @@ pub async fn get_password_reset_complete(
             // Token valid - render form
             let template = PasswordResetCompleteTemplate {
                 error: String::new(),
-                token,
+                token: token.clone(),
                 user: None,
+                current_path: format!("/password-reset/{}", token),
             };
             Html(template.render().unwrap()).into_response()
         }
@@ -452,6 +472,7 @@ pub async fn get_password_reset_complete(
                 title: "Invalid or Expired Reset Token".to_string(),
                 message: "This password reset link has expired or is invalid. Reset tokens are valid for 1 hour. Please request a new password reset.".to_string(),
                 user: None,
+                current_path: format!("/password-reset/{}", token),
             };
             Html(template.render().unwrap()).into_response()
         }
@@ -477,6 +498,7 @@ pub async fn post_password_reset_complete(
                 title: "Invalid or Expired Reset Token".to_string(),
                 message: "This password reset link has expired or is invalid. Please request a new password reset.".to_string(),
                 user: None,
+                current_path: format!("/password-reset/{}", token),
             };
             return Html(template.render().unwrap()).into_response();
         }
@@ -490,6 +512,7 @@ pub async fn post_password_reset_complete(
             message: "This password reset link is invalid. Please request a new password reset."
                 .to_string(),
             user: None,
+            current_path: format!("/password-reset/{}", token),
         };
         return Html(template.render().unwrap()).into_response();
     }
@@ -498,8 +521,9 @@ pub async fn post_password_reset_complete(
     if form.new_password.len() < 8 {
         let template = PasswordResetCompleteTemplate {
             error: "Password must be at least 8 characters long".to_string(),
-            token,
+            token: token.clone(),
             user: None,
+            current_path: format!("/password-reset/{}", token),
         };
         return Html(template.render().unwrap()).into_response();
     }
@@ -508,8 +532,9 @@ pub async fn post_password_reset_complete(
     if form.new_password != form.password_confirm {
         let template = PasswordResetCompleteTemplate {
             error: "Passwords do not match".to_string(),
-            token,
+            token: token.clone(),
             user: None,
+            current_path: format!("/password-reset/{}", token),
         };
         return Html(template.render().unwrap()).into_response();
     }
@@ -540,8 +565,9 @@ pub async fn post_password_reset_complete(
             tracing::error!("Failed to reset password: {:?}", e);
             let template = PasswordResetCompleteTemplate {
                 error: "An error occurred. Please try again.".to_string(),
-                token,
+                token: token.clone(),
                 user: None,
+                current_path: format!("/password-reset/{}", token),
             };
             Html(template.render().unwrap()).into_response()
         }

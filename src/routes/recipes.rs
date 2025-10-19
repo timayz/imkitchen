@@ -51,6 +51,7 @@ pub struct RecipeFormTemplate {
     pub user: Option<Auth>,               // Some(Auth) for authenticated pages
     pub mode: String,                     // "create" or "edit"
     pub recipe: Option<RecipeDetailView>, // Pre-populated data for edit mode
+    pub current_path: String,
 }
 
 /// Query parameters for calendar context (Story 3.5) and notification deep linking (Story 4.6)
@@ -78,6 +79,7 @@ pub struct RecipeDetailTemplate {
     pub notification_id: Option<String>, // Story 4.6 AC-7 (Deep link from notification)
     pub highlight_prep: bool,            // Story 4.6 AC-7 (Highlight prep instructions)
     pub prep_status: Option<notifications::read_model::UserNotification>, // Story 4.9 AC-8
+    pub current_path: String,
 }
 
 /// Recipe detail view model for template
@@ -110,6 +112,7 @@ pub async fn get_recipe_form(Extension(auth): Extension<Auth>) -> impl IntoRespo
         user: Some(auth),
         mode: "create".to_string(),
         recipe: None,
+        current_path: "/recipes/new".to_string(),
     };
     Html(template.render().unwrap())
 }
@@ -131,6 +134,7 @@ pub async fn post_create_recipe(
                 user: Some(auth),
                 mode: "create".to_string(),
                 recipe: None,
+                current_path: "/recipes/new".to_string(),
             };
             return (StatusCode::BAD_REQUEST, Html(template.render().unwrap())).into_response();
         }
@@ -237,6 +241,7 @@ pub async fn post_create_recipe(
                 user: Some(auth),
                 mode: "create".to_string(),
                 recipe: None,
+                current_path: "/recipes/new".to_string(),
             };
             (StatusCode::OK, Html(template.render().unwrap())).into_response()
         }
@@ -247,6 +252,7 @@ pub async fn post_create_recipe(
                 user: Some(auth),
                 mode: "create".to_string(),
                 recipe: None,
+                current_path: "/recipes/new".to_string(),
             };
             (StatusCode::OK, Html(template.render().unwrap())).into_response()
         }
@@ -257,6 +263,7 @@ pub async fn post_create_recipe(
                 user: Some(auth),
                 mode: "create".to_string(),
                 recipe: None,
+                current_path: "/recipes/new".to_string(),
             };
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -391,6 +398,7 @@ pub async fn get_recipe_detail(
                 notification_id: context.notification_id.clone(), // Story 4.6 AC-7
                 highlight_prep,                       // Story 4.6 AC-7
                 prep_status,                          // Story 4.9 AC-8
+                current_path: format!("/recipes/{}", recipe_id),
             };
 
             // Action Item 1: Proper error handling for template rendering
@@ -514,6 +522,7 @@ pub async fn get_recipe_edit_form(
                 user: Some(auth),
                 mode: "edit".to_string(),
                 recipe: Some(recipe_view),
+                current_path: format!("/recipes/{}/edit", recipe_id),
             };
 
             Html(template.render().unwrap()).into_response()
@@ -868,6 +877,7 @@ pub struct RecipeListTemplate {
     pub favorite_only: bool,
     pub favorite_count: i64,
     pub user: Option<Auth>,
+    pub current_path: String,
 }
 
 /// GET /recipes - Display recipe library with optional collection filter
@@ -987,6 +997,7 @@ pub async fn get_recipe_list(
         favorite_only,
         favorite_count: favorite_count as i64,
         user: Some(auth),
+        current_path: "/recipes".to_string(),
     };
 
     Html(template.render().unwrap())
@@ -1275,6 +1286,7 @@ pub struct DiscoverTemplate {
     pub filters: DiscoveryQueryParams,
     pub current_page: u32,
     pub has_next_page: bool,
+    pub current_path: String,
 }
 
 /// GET /discover - Community discovery feed (AC-1 to AC-7, AC-12)
@@ -1394,6 +1406,7 @@ pub async fn get_discover(
                 filters: params,
                 current_page,
                 has_next_page,
+                current_path: "/discover".to_string(),
             };
 
             Html(template.render().unwrap()).into_response()
@@ -1420,6 +1433,7 @@ pub struct DiscoverDetailTemplate {
     pub user_rating: Option<RatingDisplay>,
     pub already_copied: bool, // Story 2.10 AC-10: User already has this recipe
     pub at_recipe_limit: bool, // Story 2.10 AC-11: Free user at 10 recipe limit
+    pub current_path: String,
 }
 
 #[derive(Debug, Clone)]
@@ -1640,6 +1654,7 @@ pub async fn get_discover_detail(
                 user_rating,
                 already_copied,
                 at_recipe_limit,
+                current_path: format!("/discover/{}", recipe_id),
             };
 
             Html(template.render().unwrap()).into_response()

@@ -1,0 +1,362 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>5</epicId>
+    <storyId>5.4</storyId>
+    <title>Mobile-Responsive Design</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-19</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-5.4.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user on mobile device</asA>
+    <iWant>optimized interface for small screens</iWant>
+    <soThat>I can use app comfortably on phone</soThat>
+    <tasks>
+- Task 1: Configure Tailwind responsive breakpoints and viewport meta tag (AC: 1)
+  - Subtask 1.1: Update tailwind.config.js with custom breakpoints (sm: 768px, md: 1024px)
+  - Subtask 1.2: Add viewport meta tag to base.html template (width=device-width, initial-scale=1)
+  - Subtask 1.3: Test breakpoints across devices using browser DevTools
+
+- Task 2: Implement mobile-first layout patterns (AC: 2, 5)
+  - Subtask 2.1: Refactor base.html template to use mobile-first single-column layout
+  - Subtask 2.2: Convert recipe cards to full-width on mobile (<768px)
+  - Subtask 2.3: Implement bottom navigation bar component for mobile (fixed position)
+  - Subtask 2.4: Set minimum text size to 16px for body text on mobile (prevents zoom on iOS)
+  - Subtask 2.5: Test stacking behavior on iPhone SE (375px width) and Pixel 5 (393px width)
+
+- Task 3: Create tablet-specific layout adaptations (AC: 3)
+  - Subtask 3.1: Implement 2-column grid for recipe cards on tablet (768-1024px breakpoint)
+  - Subtask 3.2: Add side navigation component for tablet view (replaces bottom nav)
+  - Subtask 3.3: Adjust padding and margins for tablet screen real estate
+  - Subtask 3.4: Test on iPad (768px) and Surface Pro (912px)
+
+- Task 4: Build desktop multi-column layouts (AC: 4)
+  - Subtask 4.1: Implement 3-4 column grid for recipe library on desktop (>1024px)
+  - Subtask 4.2: Create persistent sidebar navigation component for desktop
+  - Subtask 4.3: Optimize meal calendar for horizontal week view on desktop
+  - Subtask 4.4: Test on 1920x1080 and 2560x1440 resolutions
+
+- Task 5: Implement responsive image loading strategies (AC: 6)
+  - Subtask 5.1: Add srcset attributes to recipe images with 1x, 2x, 3x variants
+  - Subtask 5.2: Generate image variants during recipe upload (thumbnail, medium, large)
+  - Subtask 5.3: Use picture element with media queries for art direction (square on mobile, landscape on desktop)
+  - Subtask 5.4: Implement lazy loading (loading="lazy") for below-fold images
+  - Subtask 5.5: Test on retina displays (iPhone 13, MacBook Pro)
+
+- Task 6: Optimize form inputs for mobile interaction (AC: 7)
+  - Subtask 6.1: Increase input field height to minimum 44px on mobile
+  - Subtask 6.2: Add appropriate input types (type="tel", type="email") for mobile keyboards
+  - Subtask 6.3: Implement larger touch targets for dropdowns and selects (44x44px minimum)
+  - Subtask 6.4: Add autocomplete attributes for autofill support
+  - Subtask 6.5: Test thumb typing ergonomics on various device sizes
+
+- Task 7: Ensure navigation accessibility without scrolling (AC: 8)
+  - Subtask 7.1: Implement sticky header on mobile with key nav links
+  - Subtask 7.2: Ensure bottom navigation (mobile) is always visible (fixed position)
+  - Subtask 7.3: Add "back to top" button for long pages on mobile
+  - Subtask 7.4: Test navigation reach on iPhone SE (smallest supported device)
+
+- Task 8: Cross-device testing and refinement (All ACs)
+  - Subtask 8.1: Test on physical devices (iPhone, Android, iPad)
+  - Subtask 8.2: Run Playwright tests with mobile viewport emulation
+  - Subtask 8.3: Validate using Chrome DevTools responsive mode (all breakpoints)
+  - Subtask 8.4: Address layout bugs and edge cases discovered during testing
+  - Subtask 8.5: Verify text readability and touch target sizes meet WCAG 2.1 Level AA
+</tasks>
+  </story>
+
+  <acceptanceCriteria>
+1. Responsive breakpoints: mobile (<768px), tablet (768-1024px), desktop (>1024px)
+2. Mobile layout: single-column stacking, full-width cards, bottom navigation
+3. Tablet layout: 2-column grid for recipe cards, side navigation
+4. Desktop layout: multi-column grid, persistent sidebar navigation
+5. Text sizes scale appropriately (16px minimum for body text on mobile)
+6. Images responsive with srcset for different screen densities
+7. Form inputs sized appropriately for thumb typing
+8. Navigation accessible without excessive scrolling
+</acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>Section 7.3 - Responsive Design</section>
+        <snippet>
+          Breakpoints: Mobile 0-767px (default, no prefix), Tablet 768px-1023px (`md:` prefix), Desktop 1024px+ (`lg:` prefix)
+          Mobile-first approach with Tailwind responsive utilities
+          Navigation Adaptation: Mobile (Bottom tab bar, fixed position), Desktop (Left sidebar with icons + labels)
+          Layout Adaptation: Calendar (Mobile: 1 day per screen swipe, Desktop: full week view), Recipe library (Mobile: list or 2-col grid, Desktop: 4-col grid)
+        </snippet>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>Section 7.1 - Component Structure</section>
+        <snippet>
+          Template hierarchy: base.html → components/ → pages/
+          Askama template composition with Tailwind CSS utility classes
+          Mobile-first responsive patterns: base styles for mobile (&lt;768px), enhance for larger screens with `md:`, `lg:` prefixes
+          Progressive enhancement: HTML works without CSS, responsive CSS enhances experience
+        </snippet>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-5.md</path>
+        <title>Technical Specification: Progressive Web App &amp; Mobile Experience</title>
+        <section>Module 3 - Responsive Design System (Tailwind CSS)</section>
+        <snippet>
+          Tailwind configuration with custom breakpoints: sm: 640px, md: 768px (tablet portrait), lg: 1024px (desktop), xl: 1280px
+          Responsive pattern examples: Navigation (Bottom tab bar mobile → sidebar desktop), Recipe grid (1 col mobile → 2 col tablet → 4 col desktop)
+          Meal calendar: Mobile (single day view with swipe), Tablet/Desktop (full week grid)
+          Touch target optimization: 44x44px minimum per WCAG 2.1 Level AA
+        </snippet>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/ux-specification.md</path>
+        <title>imkitchen UX/UI Specification</title>
+        <section>Section 6 - Responsive Design</section>
+        <snippet>
+          Breakpoints: Mobile (&lt;768px), Tablet (768-1024px), Desktop (1024px+)
+          Navigation: Mobile (Bottom tab bar, 5 primary items, thumb-friendly), Tablet/Desktop (Left sidebar, collapsible)
+          Layout adaptations: Dashboard (Mobile: single column stack, Tablet: 2-col grid, Desktop: 3-col grid)
+          Recipe library: Mobile (1-2 col grid), Tablet (3 cols), Desktop (4 cols + filters sidebar)
+          Shopping list: Mobile (full-screen list), Tablet/Desktop (split view with categories sidebar)
+        </snippet>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/ux-specification.md</path>
+        <title>imkitchen UX/UI Specification</title>
+        <section>Section 5 - Visual Design Foundation</section>
+        <snippet>
+          Color palette: Primary-500 (#2563eb blue), Secondary-500 (#f59e0b amber), Success/Warning/Error semantic colors
+          Typography: System font stack, 16px base, mobile-first type scale (H1: 28px, H2: 24px, H3: 20px, Body: 16px)
+          Spacing: 8px grid system (4, 8, 16, 24, 32, 48, 64, 96px), Container widths (Mobile: 16px margins, Tablet: 24px, Desktop: 1280px max)
+          Touch targets: 44x44px minimum (WCAG AAA), 48x48px recommended, 8px spacing between adjacent targets
+        </snippet>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-5.md</path>
+        <title>Technical Specification: Progressive Web App &amp; Mobile Experience</title>
+        <section>Module 1 - PWA Manifest Configuration</section>
+        <snippet>
+          Manifest includes viewport meta tag: width=device-width, initial-scale=1 (prevents zoom on iOS)
+          Orientation preference: portrait-primary for mobile (kitchen use case)
+          Display mode: standalone (hides browser UI chrome for native app feel)
+        </snippet>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/epics.md</path>
+        <title>Epic Breakdown</title>
+        <section>Story 5.4 - Mobile-Responsive Design</section>
+        <snippet>
+          Responsive breakpoints: mobile (&lt;768px), tablet (768-1024px), desktop (&gt;1024px)
+          Mobile layout: single-column stacking, full-width cards, bottom navigation
+          Tablet layout: 2-column grid for recipe cards, side navigation
+          Desktop layout: multi-column grid, persistent sidebar navigation
+          Text sizes scale appropriately (16px minimum for body text on mobile)
+          Images responsive with srcset for different screen densities
+          Form inputs sized appropriately for thumb typing (44x44px minimum)
+        </snippet>
+      </doc>
+    </docs>
+    <code>
+      <code_ref>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/templates/base.html</path>
+        <kind>Template</kind>
+        <symbol>base.html (Askama template)</symbol>
+        <lines>1-100</lines>
+        <reason>Base template includes viewport meta tag, PWA manifest link, and navigation structure that needs responsive breakpoint adaptation</reason>
+      </code_ref>
+      <code_ref>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/templates/pages/dashboard.html</path>
+        <kind>Template</kind>
+        <symbol>dashboard.html</symbol>
+        <lines>N/A</lines>
+        <reason>Dashboard layout needs responsive grid adaptation (single column mobile, 2-col tablet, 3-col desktop)</reason>
+      </code_ref>
+      <code_ref>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/templates/pages/recipe-list.html</path>
+        <kind>Template</kind>
+        <symbol>recipe-list.html</symbol>
+        <lines>N/A</lines>
+        <reason>Recipe library grid requires responsive column adaptation (1-2 col mobile, 3 col tablet, 4 col desktop)</reason>
+      </code_ref>
+      <code_ref>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/templates/pages/meal-calendar.html</path>
+        <kind>Template</kind>
+        <symbol>meal-calendar.html</symbol>
+        <lines>N/A</lines>
+        <reason>Meal calendar needs adaptive layout (vertical stack single day mobile, full week grid desktop)</reason>
+      </code_ref>
+      <code_ref>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/templates/pages/shopping-list.html</path>
+        <kind>Template</kind>
+        <symbol>shopping-list.html</symbol>
+        <lines>N/A</lines>
+        <reason>Shopping list requires responsive layout (full-screen mobile, split view with categories sidebar on tablet/desktop)</reason>
+      </code_ref>
+      <code_ref>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/templates/components/recipe-card.html</path>
+        <kind>Component</kind>
+        <symbol>recipe-card.html</symbol>
+        <lines>N/A</lines>
+        <reason>Recipe card component needs responsive styling variants (full-width mobile, proportional sizing tablet/desktop)</reason>
+      </code_ref>
+      <code_ref>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/static/manifest.json</path>
+        <kind>Config</kind>
+        <symbol>manifest.json</symbol>
+        <lines>1-90</lines>
+        <reason>PWA manifest includes orientation preference (portrait-primary) and viewport configuration relevant to mobile-responsive design</reason>
+      </code_ref>
+    </code>
+    <dependencies>
+      <dependency ecosystem="frontend">
+        <package>Tailwind CSS</package>
+        <version>4.1+</version>
+        <reason>Utility-first CSS framework providing responsive breakpoint utilities (sm:, md:, lg:, xl:) and mobile-first design patterns</reason>
+      </dependency>
+      <dependency ecosystem="frontend">
+        <package>Askama</package>
+        <version>0.14+</version>
+        <reason>Compile-time type-safe templates for server-side rendering with Tailwind responsive classes</reason>
+      </dependency>
+      <dependency ecosystem="frontend">
+        <package>TwinSpark</package>
+        <version>latest</version>
+        <reason>Progressive enhancement for AJAX behaviors without heavy JavaScript, maintains responsive functionality</reason>
+      </dependency>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint category="architecture">
+      Server-Side Rendering: Askama templates compile responsive classes at build time. All responsive behavior must use Tailwind CSS utility classes in templates, not JavaScript-based layout calculations.
+    </constraint>
+    <constraint category="architecture">
+      Mobile-First Approach: Base styles target mobile (&lt;768px) with no prefix. Tablet (md:) and desktop (lg:) styles progressively enhance. Do NOT write desktop-first CSS.
+    </constraint>
+    <constraint category="architecture">
+      Progressive Enhancement: HTML must work without CSS. Responsive CSS enhances experience but core functionality (navigation, forms, content) accessible without styling.
+    </constraint>
+    <constraint category="architecture">
+      No Client-Side Routing: Traditional multi-page app with server-rendered HTML. TwinSpark provides AJAX enhancements but navigation defaults to standard browser behavior.
+    </constraint>
+    <constraint category="design">
+      Breakpoints Fixed: Mobile (&lt;768px), Tablet (768-1024px), Desktop (&gt;1024px). Do NOT add custom breakpoints without architecture approval. Use Tailwind's sm:, md:, lg:, xl: prefixes.
+    </constraint>
+    <constraint category="design">
+      Touch Targets: Minimum 44x44px per WCAG 2.1 Level AA. All interactive elements (buttons, links, form inputs, checkboxes) must meet this requirement on mobile.
+    </constraint>
+    <constraint category="design">
+      Typography Scaling: 16px minimum body text on mobile (prevents iOS Safari zoom on input focus). Use mobile-first type scale from UX specification.
+    </constraint>
+    <constraint category="accessibility">
+      WCAG 2.1 Level AA Compliance: Color contrast 4.5:1 (normal text), 3:1 (large text), keyboard navigation, screen reader compatibility, semantic HTML required.
+    </constraint>
+    <constraint category="performance">
+      Tailwind CSS Purged: Production builds must purge unused CSS. Only utility classes actually used in templates should be in final CSS bundle.
+    </constraint>
+    <constraint category="testing">
+      Cross-Device Testing: Playwright tests must verify responsive behavior across mobile (375px iPhone SE), tablet (768px iPad), desktop (1920px) viewports.
+    </constraint>
+  </constraints>
+  <interfaces>
+    <interface name="Tailwind CSS Responsive Utilities">
+      <kind>CSS Framework API</kind>
+      <signature>Tailwind responsive prefixes: sm:, md:, lg:, xl:, 2xl: applied to utility classes</signature>
+      <example>
+        &lt;div class="flex flex-col md:flex-row lg:grid lg:grid-cols-3"&gt;
+          &lt;!-- Mobile: stack vertically --&gt;
+          &lt;!-- Tablet: horizontal flex --&gt;
+          &lt;!-- Desktop: 3-column grid --&gt;
+        &lt;/div&gt;
+      </example>
+      <reason>Core responsive pattern for adaptive layouts. Must use Tailwind breakpoint prefixes in all templates to ensure consistent responsive behavior.</reason>
+    </interface>
+    <interface name="Askama Template Responsive Patterns">
+      <kind>Template Composition</kind>
+      <signature>Responsive Tailwind classes embedded in Askama templates, compiled at build time</signature>
+      <example>
+        &lt;nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200
+                    md:relative md:border-t-0 md:border-r md:w-64 lg:w-72"&gt;
+          &lt;ul class="flex md:flex-col justify-around md:justify-start"&gt;
+            &lt;!-- Mobile: bottom tab bar, Desktop: sidebar --&gt;
+          &lt;/ul&gt;
+        &lt;/nav&gt;
+      </example>
+      <reason>Templates must include responsive classes for navigation, grids, typography to adapt per viewport. No JavaScript-based responsive logic allowed.</reason>
+    </interface>
+    <interface name="Viewport Meta Tag">
+      <kind>HTML Meta Configuration</kind>
+      <signature>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</signature>
+      <path>/home/snapiz/projects/github/timayz/imkitchen/templates/base.html</path>
+      <reason>Already present in base.html. Prevents iOS Safari zoom on form inputs, enables proper responsive breakpoint behavior on mobile devices.</reason>
+    </interface>
+    <interface name="PWA Manifest Orientation">
+      <kind>PWA Configuration</kind>
+      <signature>"orientation": "portrait-primary" in manifest.json</signature>
+      <path>/home/snapiz/projects/github/timayz/imkitchen/static/manifest.json</path>
+      <reason>Locks PWA to portrait mode on mobile (kitchen use case). Ensures responsive layouts designed for portrait don't break in landscape.</reason>
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>
+      Testing Standards (from Solution Architecture Section 15):
+      - Unit Tests: Not applicable (pure CSS/HTML changes, no domain logic)
+      - Integration Tests: Verify responsive breakpoints render correctly at different viewport widths (375px mobile, 768px tablet, 1920px desktop)
+      - E2E Tests (Playwright): Test user flows on mobile (iPhone SE 375px), tablet (iPad 768px), desktop (1920px)
+        * Navigate recipe library and verify card layout adapts (1-2 cols mobile, 3 cols tablet, 4 cols desktop)
+        * Test bottom navigation on mobile, sidebar navigation on desktop
+        * Verify form inputs are usable on mobile (thumb typing, 44x44px touch targets)
+        * Validate image srcset loads appropriate resolution (1x, 2x, 3x variants)
+      - Coverage Goal: 80% code coverage (applies to route handlers and domain logic, not pure CSS)
+      - TDD Approach: Write Playwright test verifying mobile layout (single column, bottom nav), run test (should fail), implement Tailwind responsive classes, run test (should pass), refactor
+    </standards>
+    <locations>
+      - E2E Tests: /home/snapiz/projects/github/timayz/imkitchen/e2e/tests/ (Playwright TypeScript tests)
+      - Integration Tests: /home/snapiz/projects/github/timayz/imkitchen/tests/ (Rust integration tests for route handlers)
+      - Visual Regression: /home/snapiz/projects/github/timayz/imkitchen/e2e/tests/ (Playwright screenshot comparisons)
+    </locations>
+    <ideas>
+      <test_idea ac="AC-1">
+        Playwright test: Set viewport to 375px (iPhone SE), navigate to /recipes, verify grid has 1-2 columns (gridTemplateColumns contains '1fr' or '1fr 1fr'), verify bottom tab navigation visible and fixed position.
+      </test_idea>
+      <test_idea ac="AC-1">
+        Playwright test: Set viewport to 768px (iPad), navigate to /recipes, verify grid has 3 columns (gridTemplateColumns.split(' ').length === 3), verify side navigation visible (not bottom tab bar).
+      </test_idea>
+      <test_idea ac="AC-1">
+        Playwright test: Set viewport to 1920px (desktop), navigate to /recipes, verify grid has 4 columns, verify sidebar navigation with icons + labels, verify no bottom tab bar.
+      </test_idea>
+      <test_idea ac="AC-2">
+        Playwright test: Mobile viewport (375px), navigate to /dashboard, verify single-column stack layout (today's meals, prep tasks, quick actions all stacked vertically), verify bottom navigation present.
+      </test_idea>
+      <test_idea ac="AC-3">
+        Playwright test: Tablet viewport (768px), navigate to /plan, verify 2-column grid for recipe cards, verify side navigation visible, verify meal calendar shows multiple days (not single day swipe view).
+      </test_idea>
+      <test_idea ac="AC-4">
+        Playwright test: Desktop viewport (1920px), navigate to /plan, verify multi-column grid for recipe library, verify persistent sidebar navigation, verify full week meal calendar view (7 days visible).
+      </test_idea>
+      <test_idea ac="AC-5">
+        Playwright test: Mobile viewport, verify body text fontSize &gt;= 16px (computed style), verify headings scale appropriately (H1 28px, H2 24px, H3 20px per UX spec).
+      </test_idea>
+      <test_idea ac="AC-6">
+        Playwright test: Verify recipe images have srcset attribute with 1x, 2x, 3x variants, verify browser loads appropriate resolution based on device pixel ratio (test on retina emulation).
+      </test_idea>
+      <test_idea ac="AC-7">
+        Playwright test: Mobile viewport, verify all interactive elements (buttons, links, form inputs) meet 44x44px minimum touch target (boundingBox width/height &gt;= 44), verify 8px spacing between adjacent targets.
+      </test_idea>
+      <test_idea ac="AC-8">
+        Playwright test: Mobile viewport, verify navigation accessible without scrolling (bottom tab bar fixed position, visible at all times), verify "back to top" button on long pages (scroll &gt; 500px).
+      </test_idea>
+      <test_idea ac="ALL">
+        Visual regression test: Take screenshots at mobile (375px), tablet (768px), desktop (1920px) viewports for key pages (dashboard, recipes, meal calendar, shopping list), compare against baseline snapshots.
+      </test_idea>
+      <test_idea ac="ALL">
+        Accessibility test: Run axe-core accessibility audit on all pages at all viewports, verify WCAG 2.1 Level AA compliance (color contrast, keyboard navigation, touch targets, semantic HTML).
+      </test_idea>
+    </ideas>
+  </tests>
+</story-context>

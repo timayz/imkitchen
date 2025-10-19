@@ -86,6 +86,7 @@ struct ErrorPageTemplate {
     error_message: String,
     user: Option<crate::middleware::auth::Auth>,
     error_type: Option<String>, // For custom error styling (e.g., "insufficient_recipes")
+    current_path: String,
 }
 
 impl IntoResponse for AppError {
@@ -297,6 +298,7 @@ impl IntoResponse for AppError {
             error_message,
             user: None, // Can be populated if we have auth context
             error_type,
+            current_path: String::new(), // Error pages don't have meaningful path context
         };
 
         match template.render() {
