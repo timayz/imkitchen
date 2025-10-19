@@ -19,6 +19,7 @@ export default defineConfig({
   },
 
   projects: [
+    // Desktop browsers
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
@@ -30,6 +31,22 @@ export default defineConfig({
     {
       name: 'webkit',
       use: { ...devices['Desktop Safari'] },
+    },
+
+    // Mobile devices - iOS Safari 14+
+    {
+      name: 'iphone-12',
+      use: { ...devices['iPhone 12'] },
+    },
+    {
+      name: 'ipad-pro',
+      use: { ...devices['iPad Pro'] },
+    },
+
+    // Mobile devices - Android Chrome 90+
+    {
+      name: 'samsung-galaxy',
+      use: { ...devices['Galaxy S9+'] },
     },
   ],
 

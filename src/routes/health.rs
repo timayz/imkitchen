@@ -14,6 +14,14 @@ pub async fn offline() -> impl IntoResponse {
     Html(html)
 }
 
+/// GET /browser-support - Browser compatibility information page
+/// Returns browser support and compatibility documentation for users
+/// Story 5.7: Cross-Browser Compatibility (AC-2: Graceful degradation)
+pub async fn browser_support() -> impl IntoResponse {
+    let html = include_str!("../../templates/pages/browser-support.html");
+    Html(html)
+}
+
 /// GET /health - Liveness probe
 /// Returns 200 OK if the process is alive
 /// Used by Kubernetes liveness probe
@@ -64,5 +72,22 @@ mod tests {
 
         let response = ready(State(pool)).await.into_response();
         assert_eq!(response.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn test_browser_support_endpoint() {
+        let response = browser_support().await.into_response();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        // Verify HTML content is served
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let html = String::from_utf8(body.to_vec()).unwrap();
+
+        // Verify key content is present
+        assert!(html.contains("Browser Support"));
+        assert!(html.contains("iOS Safari 14+"));
+        assert!(html.contains("Android Chrome 90+"));
     }
 }

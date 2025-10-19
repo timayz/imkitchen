@@ -20,7 +20,7 @@ pub use collections::{
     post_remove_recipe_from_collection, post_update_collection,
 };
 pub use dashboard::dashboard_handler;
-pub use health::{health, offline, ready};
+pub use health::{browser_support, health, offline, ready};
 pub use meal_plan::{
     get_meal_alternatives, get_meal_plan, get_regenerate_confirm, post_generate_meal_plan,
     post_regenerate_meal_plan, post_replace_meal,
