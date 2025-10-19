@@ -31,6 +31,7 @@ pub struct CollectionsTemplate {
     pub collections: Vec<CollectionReadModel>,
     pub error: String,
     pub user: Option<Auth>,
+    pub current_path: String,
 }
 
 /// GET /collections - Display collections management page
@@ -51,6 +52,7 @@ pub async fn get_collections(
                 collections,
                 error: String::new(),
                 user: Some(auth),
+                current_path: "/collections".to_string(),
             };
             Html(template.render().unwrap()).into_response()
         }

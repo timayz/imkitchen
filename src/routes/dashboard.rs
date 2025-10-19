@@ -41,6 +41,7 @@ pub struct DashboardTemplate {
     pub recipe_count: usize,
     pub favorite_count: usize,
     pub prep_tasks: Vec<UserNotification>, // Story 4.9: AC #3, #4
+    pub current_path: String,
 }
 
 /// GET /dashboard - Display dashboard with today's meals (Story 3.9 + Story 4.9)
@@ -86,6 +87,7 @@ pub async fn dashboard_handler(
         recipe_count,
         favorite_count,
         prep_tasks,
+        current_path: "/dashboard".to_string(),
     };
 
     template.render().map(Html).map_err(|e| {
