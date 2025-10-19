@@ -29,12 +29,12 @@
     {
       "name": "lime juice",
       "quantity": 55.0,
-      "unit": "g"
+      "unit": "ml"
     },
     {
       "name": "battery syrup",
       "quantity": 40.0,
-      "unit": "g"
+      "unit": "ml"
     },
     {
       "name": "semi-salted butter",
@@ -44,12 +44,12 @@
     {
       "name": "soy sauce",
       "quantity": 30.0,
-      "unit": "g"
+      "unit": "ml"
     },
     {
       "name": "sunflower oil",
       "quantity": 20.0,
-      "unit": "g"
+      "unit": "ml"
     },
     {
       "name": "red onion",
@@ -79,7 +79,7 @@
     {
       "name": "coarse salt",
       "quantity": 1.0,
-      "unit": "unit"
+      "unit": ""
     }
   ],
   "instructions": [

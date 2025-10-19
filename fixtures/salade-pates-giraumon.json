@@ -24,7 +24,7 @@
     {
       "name": "olive oil",
       "quantity": 30.0,
-      "unit": "g"
+      "unit": "ml"
     },
     {
       "name": "vegetarian peppers",
@@ -39,7 +39,7 @@
     {
       "name": "salt",
       "quantity": 1.0,
-      "unit": "unit"
+      "unit": ""
     }
   ],
   "instructions": [

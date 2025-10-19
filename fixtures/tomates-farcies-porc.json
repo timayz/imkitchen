@@ -24,7 +24,7 @@
     {
       "name": "olive oil",
       "quantity": 1.0,
-      "unit": "unit"
+      "unit": ""
     },
     {
       "name": "vinegar",
@@ -44,12 +44,12 @@
     {
       "name": "salt",
       "quantity": 1.0,
-      "unit": "unit"
+      "unit": ""
     },
     {
       "name": "pepper",
       "quantity": 1.0,
-      "unit": "unit"
+      "unit": ""
     }
   ],
   "instructions": [
