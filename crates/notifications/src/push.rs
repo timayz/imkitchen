@@ -177,7 +177,6 @@ pub async fn send_push_notification(
     // Create HTTP client and send
     let client = HyperWebPushClient::new();
 
-
     // Send the notification
     match client.send(message).await {
         Ok(()) => {
