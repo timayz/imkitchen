@@ -484,6 +484,117 @@ pub async fn update_day_of_reminder_messages(
     Ok(())
 }
 
+/// Carry-over uncompleted prep tasks to next reminder cycle (Story 4.9 AC #7)
+///
+/// This function runs daily to check for uncompleted prep tasks that were sent
+/// but not completed. It re-schedules them for the next reminder cycle.
+///
+/// Logic:
+/// - Query prep tasks with status='sent' (delivered but not completed/dismissed)
+/// - Check reminder_count < max_reminder_count (default 3)
+/// - Re-schedule for next morning (9am) with incremented reminder_count
+/// - Mark as 'expired' if max_reminder_count reached
+pub async fn carry_over_uncompleted_tasks<E: evento::Executor>(
+    pool: &sqlx::SqlitePool,
+    executor: &E,
+) -> anyhow::Result<()> {
+    use sqlx::Row;
+
+    tracing::info!("Running carry-over for uncompleted prep tasks");
+
+    let now = Utc::now();
+    let today = now.format("%Y-%m-%d").to_string();
+
+    // Query uncompleted prep tasks (status='sent', meal_date < today)
+    let uncompleted_tasks = sqlx::query(
+        "SELECT id, user_id, recipe_id, meal_date, prep_hours, prep_task,
+                reminder_count, max_reminder_count
+         FROM notifications
+         WHERE status = 'sent'
+           AND reminder_type IN ('advance_prep', 'morning')
+           AND meal_date < ?",
+    )
+    .bind(&today)
+    .fetch_all(pool)
+    .await?;
+
+    if uncompleted_tasks.is_empty() {
+        tracing::debug!("No uncompleted prep tasks found");
+        return Ok(());
+    }
+
+    tracing::info!(
+        "Found {} uncompleted prep tasks to process",
+        uncompleted_tasks.len()
+    );
+
+    for row in uncompleted_tasks {
+        let notification_id: String = row.get("id");
+        let user_id: String = row.get("user_id");
+        let recipe_id: String = row.get("recipe_id");
+        let meal_date: String = row.get("meal_date");
+        let prep_hours: i32 = row.get("prep_hours");
+        let prep_task: Option<String> = row.get("prep_task");
+        let reminder_count: i32 = row.get("reminder_count");
+        let max_reminder_count: i32 = row.get("max_reminder_count");
+
+        // Check if max reminders reached
+        if reminder_count >= max_reminder_count {
+            // Mark as expired (stop sending reminders)
+            sqlx::query("UPDATE notifications SET status = 'expired' WHERE id = ?")
+                .bind(&notification_id)
+                .execute(pool)
+                .await?;
+
+            tracing::info!(
+                "Marked notification_id={} as expired (reached max_reminder_count={})",
+                notification_id,
+                max_reminder_count
+            );
+            continue;
+        }
+
+        // Increment reminder_count
+        let new_reminder_count = reminder_count + 1;
+        sqlx::query("UPDATE notifications SET reminder_count = ? WHERE id = ?")
+            .bind(new_reminder_count)
+            .bind(&notification_id)
+            .execute(pool)
+            .await?;
+
+        // Re-schedule for tomorrow morning (9am)
+        let tomorrow_9am = (now + Duration::days(1))
+            .date_naive()
+            .and_hms_opt(9, 0, 0)
+            .unwrap()
+            .and_utc();
+
+        let scheduled_time = tomorrow_9am.to_rfc3339();
+
+        let cmd = ScheduleReminderCommand {
+            user_id,
+            recipe_id: recipe_id.clone(),
+            meal_date,
+            scheduled_time: scheduled_time.clone(),
+            reminder_type: "morning".to_string(), // Carry-over as morning reminder
+            prep_hours,
+            prep_task,
+        };
+
+        let new_notification_id = schedule_reminder(cmd, executor).await?;
+
+        tracing::info!(
+            "Re-scheduled uncompleted task: old_notification_id={}, new_notification_id={}, reminder_count={}/{}",
+            notification_id,
+            new_notification_id,
+            new_reminder_count,
+            max_reminder_count
+        );
+    }
+
+    Ok(())
+}
+
 /// Auto-dismissal worker - runs hourly to dismiss expired reminders
 ///
 /// Per AC #8: Reminder dismissed automatically after prep window passes
