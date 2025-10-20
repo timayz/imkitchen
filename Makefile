@@ -27,6 +27,7 @@ fmt-fix:
 # Run tests for each workspace crate in parallel
 test:
 	@echo "Running tests in parallel for each workspace crate..."
+	cargo test --workspace --no-run
 	@printf "%s\n" "user" "recipe" "meal_planning" "shopping" "notifications" "imkitchen" | \
 		xargs -P 6 -I {} sh -c 'echo "[{}] Running tests..." && \
 		if cargo test -p {} --color=always 2>&1 | sed "s/^/[{}] /"; then \
