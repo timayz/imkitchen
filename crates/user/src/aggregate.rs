@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::events::{
     DietaryRestrictionsSet, HouseholdSizeSet, NotificationPermissionChanged, PasswordChanged,
-    ProfileCompleted, ProfileUpdated, RecipeCreated, RecipeDeleted, SkillLevelSet,
+    ProfileCompleted, ProfileUpdated, RecipeCreated, RecipeDeleted, RecipeShared, SkillLevelSet,
     SubscriptionUpgraded, UserCreated, WeeknightAvailabilitySet,
 };
 
@@ -181,6 +181,26 @@ impl UserAggregate {
         _event: evento::EventDetails<RecipeDeleted>,
     ) -> anyhow::Result<()> {
         self.recipe_count = (self.recipe_count - 1).max(0); // Prevent negative counts
+        Ok(())
+    }
+
+    /// Handle RecipeShared event (cross-domain) - adjust recipe_count
+    ///
+    /// This handler is called when a recipe is shared/unshared in the recipe domain.
+    /// Shared recipes do NOT count toward the freemium limit.
+    /// - When shared=true: decrement count (recipe no longer counts toward limit)
+    /// - When shared=false: increment count (recipe now counts toward limit)
+    async fn recipe_shared(
+        &mut self,
+        event: evento::EventDetails<RecipeShared>,
+    ) -> anyhow::Result<()> {
+        if event.data.shared {
+            // Recipe was shared - decrement count (shared recipes don't count)
+            self.recipe_count = (self.recipe_count - 1).max(0);
+        } else {
+            // Recipe was unshared - increment count (now counts toward limit)
+            self.recipe_count += 1;
+        }
         Ok(())
     }
 

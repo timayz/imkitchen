@@ -19,7 +19,7 @@ pub use commands::{
 pub use error::{UserError, UserResult};
 pub use events::{
     DietaryRestrictionsSet, HouseholdSizeSet, PasswordChanged, ProfileCompleted, ProfileUpdated,
-    RecipeCreated, RecipeDeleted, SkillLevelSet, SubscriptionUpgraded, UserCreated,
+    RecipeCreated, RecipeDeleted, RecipeShared, SkillLevelSet, SubscriptionUpgraded, UserCreated,
     WeeknightAvailabilitySet,
 };
 pub use jwt::{generate_jwt, generate_reset_token, validate_jwt, Claims};

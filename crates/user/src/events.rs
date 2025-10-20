@@ -106,6 +106,20 @@ pub struct RecipeDeleted {
     pub deleted_at: String, // RFC3339 formatted timestamp
 }
 
+/// RecipeShared event (cross-domain event from recipe domain)
+///
+/// User domain listens to this event to decrement recipe_count when a recipe is shared.
+/// Shared recipes do NOT count toward the freemium limit.
+/// This event is emitted by the recipe domain when a user shares a recipe.
+///
+/// Note: user_id stored in event data, recipe_id in aggregator_id
+#[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
+pub struct RecipeShared {
+    pub user_id: String,   // ID of the user who shared the recipe
+    pub shared: bool,      // true = shared (decrement count), false = unshared (increment count)
+    pub shared_at: String, // RFC3339 formatted timestamp
+}
+
 /// RecipeFavorited event (cross-domain event from recipe domain)
 ///
 /// User domain listens to this event to update favorite_count for performance optimization.

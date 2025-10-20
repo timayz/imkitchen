@@ -34,7 +34,11 @@ async fn setup_evento_executor(pool: Pool<Sqlite>) -> evento::Sqlite {
 }
 
 /// Create test user for collection tests using proper evento commands
-async fn create_test_user_for_tests(pool: &SqlitePool, executor: &evento::Sqlite, email: &str) -> String {
+async fn create_test_user_for_tests(
+    pool: &SqlitePool,
+    executor: &evento::Sqlite,
+    email: &str,
+) -> String {
     use user::commands::{register_user, RegisterUserCommand};
 
     // Register user via command (creates aggregate + events)

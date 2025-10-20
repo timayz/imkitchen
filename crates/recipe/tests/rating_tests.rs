@@ -114,10 +114,10 @@ async fn test_rate_recipe_success() {
     let executor = setup_evento_executor(pool.clone()).await;
 
     // Setup test data
-    insert_test_user(&pool, "user1", "user1@test.com").await;
-    let recipe_id = create_shared_recipe(&pool, &executor, "user1").await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
+    let recipe_id = create_shared_recipe(&pool, &executor, &user1_id).await;
 
-    insert_test_user(&pool, "user2", "user2@test.com").await;
+    let user2_id = create_test_user(&pool, &executor, "user2@test.com").await;
 
     // Rate recipe
     let command = RateRecipeCommand {
@@ -126,12 +126,14 @@ async fn test_rate_recipe_success() {
         review_text: Some("Great recipe!".to_string()),
     };
 
-    let result = rate_recipe(command, "user2", &executor, &pool).await;
+    let result = rate_recipe(command, &user2_id, &executor, &pool).await;
     run_projections(&pool, &executor).await;
     assert!(result.is_ok());
 
     // Verify rating in database
-    let rating = query_user_rating(&recipe_id, "user2", &pool).await.unwrap();
+    let rating = query_user_rating(&recipe_id, &user2_id, &pool)
+        .await
+        .unwrap();
     assert!(rating.is_some());
     let rating = rating.unwrap();
     assert_eq!(rating.stars, 5);
@@ -143,9 +145,9 @@ async fn test_rate_recipe_validates_stars_range() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
 
-    insert_test_user(&pool, "user1", "user1@test.com").await;
-    let recipe_id = create_shared_recipe(&pool, &executor, "user1").await;
-    insert_test_user(&pool, "user2", "user2@test.com").await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
+    let recipe_id = create_shared_recipe(&pool, &executor, &user1_id).await;
+    let user2_id = create_test_user(&pool, &executor, "user2@test.com").await;
 
     // Test stars < 1
     let command = RateRecipeCommand {
@@ -154,7 +156,7 @@ async fn test_rate_recipe_validates_stars_range() {
         review_text: None,
     };
 
-    let result = rate_recipe(command, "user2", &executor, &pool).await;
+    let result = rate_recipe(command, &user2_id, &executor, &pool).await;
     run_projections(&pool, &executor).await;
     assert!(result.is_err());
     assert!(matches!(
@@ -169,7 +171,7 @@ async fn test_rate_recipe_validates_stars_range() {
         review_text: None,
     };
 
-    let result = rate_recipe(command, "user2", &executor, &pool).await;
+    let result = rate_recipe(command, &user2_id, &executor, &pool).await;
     run_projections(&pool, &executor).await;
     assert!(result.is_err());
     assert!(matches!(
@@ -183,9 +185,9 @@ async fn test_rate_recipe_validates_review_length() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
 
-    insert_test_user(&pool, "user1", "user1@test.com").await;
-    let recipe_id = create_shared_recipe(&pool, &executor, "user1").await;
-    insert_test_user(&pool, "user2", "user2@test.com").await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
+    let recipe_id = create_shared_recipe(&pool, &executor, &user1_id).await;
+    let user2_id = create_test_user(&pool, &executor, "user2@test.com").await;
 
     // Create review text longer than 500 characters
     let long_review = "a".repeat(501);
@@ -196,7 +198,7 @@ async fn test_rate_recipe_validates_review_length() {
         review_text: Some(long_review),
     };
 
-    let result = rate_recipe(command, "user2", &executor, &pool).await;
+    let result = rate_recipe(command, &user2_id, &executor, &pool).await;
     run_projections(&pool, &executor).await;
     assert!(result.is_err());
     assert!(matches!(
@@ -210,8 +212,8 @@ async fn test_rate_recipe_only_shared_recipes() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
 
-    insert_test_user(&pool, "user1", "user1@test.com").await;
-    insert_test_user(&pool, "user2", "user2@test.com").await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
+    let user2_id = create_test_user(&pool, &executor, "user2@test.com").await;
 
     // Create recipe but don't share it
     let command = CreateRecipeCommand {
@@ -245,7 +247,7 @@ async fn test_rate_recipe_only_shared_recipes() {
         review_text: None,
     };
 
-    let result = rate_recipe(rate_command, "user2", &executor, &pool).await;
+    let result = rate_recipe(rate_command, &user2_id, &executor, &pool).await;
     run_projections(&pool, &executor).await;
     assert!(result.is_err());
     assert!(matches!(
@@ -259,7 +261,7 @@ async fn test_rate_recipe_nonexistent_recipe() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
 
-    insert_test_user(&pool, "user1", "user1@test.com").await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
 
     let command = RateRecipeCommand {
         recipe_id: "nonexistent".to_string(),
@@ -267,12 +269,13 @@ async fn test_rate_recipe_nonexistent_recipe() {
         review_text: None,
     };
 
-    let result = rate_recipe(command, "user1", &executor, &pool).await;
+    let result = rate_recipe(command, &user1_id, &executor, &pool).await;
     run_projections(&pool, &executor).await;
     assert!(result.is_err());
+    // Expects EventStoreError since recipe doesn't exist in event store
     assert!(matches!(
         result.unwrap_err(),
-        RecipeError::ValidationError(_)
+        RecipeError::EventStoreError(_)
     ));
 }
 
@@ -281,9 +284,9 @@ async fn test_rate_recipe_upsert_behavior() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
 
-    insert_test_user(&pool, "user1", "user1@test.com").await;
-    let recipe_id = create_shared_recipe(&pool, &executor, "user1").await;
-    insert_test_user(&pool, "user2", "user2@test.com").await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
+    let recipe_id = create_shared_recipe(&pool, &executor, &user1_id).await;
+    let user2_id = create_test_user(&pool, &executor, "user2@test.com").await;
 
     // First rating
     let command = RateRecipeCommand {
@@ -292,7 +295,7 @@ async fn test_rate_recipe_upsert_behavior() {
         review_text: Some("Okay".to_string()),
     };
 
-    rate_recipe(command, "user2", &executor, &pool)
+    rate_recipe(command, &user2_id, &executor, &pool)
         .await
         .unwrap();
     run_projections(&pool, &executor).await;
@@ -304,13 +307,13 @@ async fn test_rate_recipe_upsert_behavior() {
         review_text: Some("Actually great!".to_string()),
     };
 
-    rate_recipe(command, "user2", &executor, &pool)
+    rate_recipe(command, &user2_id, &executor, &pool)
         .await
         .unwrap();
     run_projections(&pool, &executor).await;
 
     // Verify only one rating exists
-    let rating = query_user_rating(&recipe_id, "user2", &pool)
+    let rating = query_user_rating(&recipe_id, &user2_id, &pool)
         .await
         .unwrap()
         .unwrap();
@@ -327,9 +330,9 @@ async fn test_delete_rating_success() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
 
-    insert_test_user(&pool, "user1", "user1@test.com").await;
-    let recipe_id = create_shared_recipe(&pool, &executor, "user1").await;
-    insert_test_user(&pool, "user2", "user2@test.com").await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
+    let recipe_id = create_shared_recipe(&pool, &executor, &user1_id).await;
+    let user2_id = create_test_user(&pool, &executor, "user2@test.com").await;
 
     // Create rating
     let command = RateRecipeCommand {
@@ -337,7 +340,7 @@ async fn test_delete_rating_success() {
         stars: 5,
         review_text: Some("Great!".to_string()),
     };
-    rate_recipe(command, "user2", &executor, &pool)
+    rate_recipe(command, &user2_id, &executor, &pool)
         .await
         .unwrap();
     run_projections(&pool, &executor).await;
@@ -346,12 +349,14 @@ async fn test_delete_rating_success() {
     let delete_command = DeleteRatingCommand {
         recipe_id: recipe_id.clone(),
     };
-    let result = delete_rating(delete_command, "user2", &executor, &pool).await;
+    let result = delete_rating(delete_command, &user2_id, &executor, &pool).await;
     run_projections(&pool, &executor).await;
     assert!(result.is_ok());
 
     // Verify rating is deleted
-    let rating = query_user_rating(&recipe_id, "user2", &pool).await.unwrap();
+    let rating = query_user_rating(&recipe_id, &user2_id, &pool)
+        .await
+        .unwrap();
     assert!(rating.is_none());
 }
 
@@ -360,10 +365,10 @@ async fn test_delete_rating_ownership_check() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
 
-    insert_test_user(&pool, "user1", "user1@test.com").await;
-    let recipe_id = create_shared_recipe(&pool, &executor, "user1").await;
-    insert_test_user(&pool, "user2", "user2@test.com").await;
-    insert_test_user(&pool, "user3", "user3@test.com").await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
+    let recipe_id = create_shared_recipe(&pool, &executor, &user1_id).await;
+    let user2_id = create_test_user(&pool, &executor, "user2@test.com").await;
+    let user3_id = create_test_user(&pool, &executor, "user3@test.com").await;
 
     // User2 creates rating
     let command = RateRecipeCommand {
@@ -371,7 +376,7 @@ async fn test_delete_rating_ownership_check() {
         stars: 5,
         review_text: Some("Great!".to_string()),
     };
-    rate_recipe(command, "user2", &executor, &pool)
+    rate_recipe(command, &user2_id, &executor, &pool)
         .await
         .unwrap();
     run_projections(&pool, &executor).await;
@@ -380,7 +385,7 @@ async fn test_delete_rating_ownership_check() {
     let delete_command = DeleteRatingCommand {
         recipe_id: recipe_id.clone(),
     };
-    let result = delete_rating(delete_command, "user3", &executor, &pool).await;
+    let result = delete_rating(delete_command, &user3_id, &executor, &pool).await;
     run_projections(&pool, &executor).await;
     assert!(result.is_err());
     assert!(matches!(
@@ -394,12 +399,12 @@ async fn test_query_rating_stats_average() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
 
-    insert_test_user(&pool, "user1", "user1@test.com").await;
-    let recipe_id = create_shared_recipe(&pool, &executor, "user1").await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
+    let recipe_id = create_shared_recipe(&pool, &executor, &user1_id).await;
 
-    insert_test_user(&pool, "user2", "user2@test.com").await;
-    insert_test_user(&pool, "user3", "user3@test.com").await;
-    insert_test_user(&pool, "user4", "user4@test.com").await;
+    let user2_id = create_test_user(&pool, &executor, "user2@test.com").await;
+    let user3_id = create_test_user(&pool, &executor, "user3@test.com").await;
+    let user4_id = create_test_user(&pool, &executor, "user4@test.com").await;
 
     // Multiple ratings
     rate_recipe(
@@ -408,7 +413,7 @@ async fn test_query_rating_stats_average() {
             stars: 5,
             review_text: None,
         },
-        "user2",
+        &user2_id,
         &executor,
         &pool,
     )
@@ -422,7 +427,7 @@ async fn test_query_rating_stats_average() {
             stars: 4,
             review_text: None,
         },
-        "user3",
+        &user3_id,
         &executor,
         &pool,
     )
@@ -436,7 +441,7 @@ async fn test_query_rating_stats_average() {
             stars: 3,
             review_text: None,
         },
-        "user4",
+        &user4_id,
         &executor,
         &pool,
     )
@@ -455,11 +460,11 @@ async fn test_query_recipe_ratings_chronological() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
 
-    insert_test_user(&pool, "user1", "user1@test.com").await;
-    let recipe_id = create_shared_recipe(&pool, &executor, "user1").await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
+    let recipe_id = create_shared_recipe(&pool, &executor, &user1_id).await;
 
-    insert_test_user(&pool, "user2", "user2@test.com").await;
-    insert_test_user(&pool, "user3", "user3@test.com").await;
+    let user2_id = create_test_user(&pool, &executor, "user2@test.com").await;
+    let user3_id = create_test_user(&pool, &executor, "user3@test.com").await;
 
     // Create ratings with delays to ensure different timestamps
     rate_recipe(
@@ -468,7 +473,7 @@ async fn test_query_recipe_ratings_chronological() {
             stars: 5,
             review_text: Some("First review".to_string()),
         },
-        "user2",
+        &user2_id,
         &executor,
         &pool,
     )
@@ -482,7 +487,7 @@ async fn test_query_recipe_ratings_chronological() {
             stars: 4,
             review_text: Some("Second review".to_string()),
         },
-        "user3",
+        &user3_id,
         &executor,
         &pool,
     )
@@ -495,8 +500,8 @@ async fn test_query_recipe_ratings_chronological() {
     assert_eq!(ratings.len(), 2);
 
     // Verify chronological order (most recent first)
-    assert_eq!(ratings[0].user_id, "user3");
-    assert_eq!(ratings[1].user_id, "user2");
+    assert_eq!(ratings[0].user_id, user3_id);
+    assert_eq!(ratings[1].user_id, user2_id);
 }
 
 #[tokio::test]
@@ -504,8 +509,8 @@ async fn test_query_rating_stats_no_ratings() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
 
-    insert_test_user(&pool, "user1", "user1@test.com").await;
-    let recipe_id = create_shared_recipe(&pool, &executor, "user1").await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
+    let recipe_id = create_shared_recipe(&pool, &executor, &user1_id).await;
 
     // Query stats for recipe with no ratings
     let stats = query_rating_stats(&recipe_id, &pool).await.unwrap();
@@ -518,9 +523,9 @@ async fn test_rate_recipe_with_optional_review_text() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
 
-    insert_test_user(&pool, "user1", "user1@test.com").await;
-    let recipe_id = create_shared_recipe(&pool, &executor, "user1").await;
-    insert_test_user(&pool, "user2", "user2@test.com").await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
+    let recipe_id = create_shared_recipe(&pool, &executor, &user1_id).await;
+    let user2_id = create_test_user(&pool, &executor, "user2@test.com").await;
 
     // Rating without review text
     let command = RateRecipeCommand {
@@ -529,12 +534,12 @@ async fn test_rate_recipe_with_optional_review_text() {
         review_text: None,
     };
 
-    rate_recipe(command, "user2", &executor, &pool)
+    rate_recipe(command, &user2_id, &executor, &pool)
         .await
         .unwrap();
     run_projections(&pool, &executor).await;
 
-    let rating = query_user_rating(&recipe_id, "user2", &pool)
+    let rating = query_user_rating(&recipe_id, &user2_id, &pool)
         .await
         .unwrap()
         .unwrap();

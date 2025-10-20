@@ -39,7 +39,9 @@ async fn create_test_user_for_tests(
     email: &str,
     tier: &str,
 ) -> String {
-    use user::commands::{register_user, upgrade_subscription, RegisterUserCommand, UpgradeSubscriptionCommand};
+    use user::commands::{
+        register_user, upgrade_subscription, RegisterUserCommand, UpgradeSubscriptionCommand,
+    };
 
     // Register user via command (creates aggregate + events)
     let user_id = register_user(

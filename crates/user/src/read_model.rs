@@ -2,8 +2,8 @@ use crate::aggregate::UserAggregate;
 use crate::error::UserResult;
 use crate::events::{
     DietaryRestrictionsSet, HouseholdSizeSet, NotificationPermissionChanged, PasswordChanged,
-    ProfileCompleted, ProfileUpdated, RecipeCreated, RecipeDeleted, RecipeFavorited, SkillLevelSet,
-    SubscriptionUpgraded, UserCreated, WeeknightAvailabilitySet,
+    ProfileCompleted, ProfileUpdated, RecipeCreated, RecipeDeleted, RecipeFavorited, RecipeShared,
+    SkillLevelSet, SubscriptionUpgraded, UserCreated, WeeknightAvailabilitySet,
 };
 use evento::{AggregatorName, Context, EventDetails, Executor};
 use sqlx::{Row, SqlitePool};
@@ -256,6 +256,35 @@ async fn recipe_deleted_handler<E: Executor>(
     Ok(())
 }
 
+/// Handler for RecipeShared event - adjust recipe_count in users table
+///
+/// This handler listens to RecipeShared events from the recipe domain and
+/// adjusts the recipe_count based on whether the recipe was shared or unshared.
+/// Shared recipes do NOT count toward the freemium limit.
+#[evento::handler(UserAggregate)]
+async fn recipe_shared_handler<E: Executor>(
+    context: &Context<'_, E>,
+    event: EventDetails<RecipeShared>,
+) -> anyhow::Result<()> {
+    let pool: SqlitePool = context.extract();
+
+    if event.data.shared {
+        // Recipe was shared - decrement count (shared recipes don't count toward limit)
+        sqlx::query("UPDATE users SET recipe_count = MAX(0, recipe_count - 1) WHERE id = ?1")
+            .bind(&event.data.user_id)
+            .execute(&pool)
+            .await?;
+    } else {
+        // Recipe was unshared - increment count (now counts toward limit)
+        sqlx::query("UPDATE users SET recipe_count = recipe_count + 1 WHERE id = ?1")
+            .bind(&event.data.user_id)
+            .execute(&pool)
+            .await?;
+    }
+
+    Ok(())
+}
+
 /// Handler for RecipeFavorited event - update favorite_count in users table
 ///
 /// This handler listens to RecipeFavorited events from the recipe domain and
@@ -371,6 +400,7 @@ pub fn user_projection(pool: SqlitePool) -> evento::SubscribeBuilder<evento::Sql
         .handler(profile_updated_handler())
         .handler(recipe_created_handler())
         .handler(recipe_deleted_handler())
+        .handler(recipe_shared_handler())
         .handler(recipe_favorited_handler())
         .handler(subscription_upgraded_handler())
         .handler(notification_permission_changed_handler())

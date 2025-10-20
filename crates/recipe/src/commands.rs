@@ -547,6 +547,21 @@ pub async fn share_recipe(
         .await
         .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
 
+    // Emit user::events::RecipeShared to update UserAggregate.recipe_count
+    // Shared recipes do NOT count toward the freemium limit
+    evento::save::<user::aggregate::UserAggregate>(command.user_id.clone())
+        .data(&user::events::RecipeShared {
+            user_id: command.user_id.clone(),
+            shared: command.shared,
+            shared_at: toggled_at.to_rfc3339(),
+        })
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .metadata(&true)
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .commit(executor)
+        .await
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
+
     tracing::info!(
         recipe_id = %command.recipe_id,
         shared = command.shared,
@@ -810,9 +825,10 @@ pub async fn copy_recipe(
     pool: &SqlitePool,
 ) -> RecipeResult<String> {
     // AC-10: Load original recipe aggregate to verify it exists and is shared
-    let original_load_result = evento::load::<RecipeAggregate, _>(executor, &command.original_recipe_id)
-        .await
-        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
+    let original_load_result =
+        evento::load::<RecipeAggregate, _>(executor, &command.original_recipe_id)
+            .await
+            .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
 
     // Check if recipe exists
     if original_load_result.item.recipe_id.is_empty() {

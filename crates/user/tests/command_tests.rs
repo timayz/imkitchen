@@ -33,7 +33,9 @@ async fn create_test_user_with_recipes(
     tier: &str,
     recipe_count: i32,
 ) -> String {
-    use user::commands::{register_user, upgrade_subscription, RegisterUserCommand, UpgradeSubscriptionCommand};
+    use user::commands::{
+        register_user, upgrade_subscription, RegisterUserCommand, UpgradeSubscriptionCommand,
+    };
 
     // Register user via command
     let user_id = register_user(
@@ -112,7 +114,8 @@ async fn create_test_user_with_recipes(
 async fn test_free_user_with_9_recipes_can_create() {
     let pool = setup_test_db().await;
     let executor: evento::Sqlite = pool.clone().into();
-    let user_id = create_test_user_with_recipes(&pool, &executor, "user1@test.com", "free", 9).await;
+    let user_id =
+        create_test_user_with_recipes(&pool, &executor, "user1@test.com", "free", 9).await;
 
     let command = recipe::CreateRecipeCommand {
         title: "Recipe #10".to_string(),
@@ -145,7 +148,8 @@ async fn test_free_user_with_9_recipes_can_create() {
 async fn test_free_user_with_10_recipes_cannot_create() {
     let pool = setup_test_db().await;
     let executor: evento::Sqlite = pool.clone().into();
-    let user_id = create_test_user_with_recipes(&pool, &executor, "user2@test.com", "free", 10).await;
+    let user_id =
+        create_test_user_with_recipes(&pool, &executor, "user2@test.com", "free", 10).await;
 
     let command = recipe::CreateRecipeCommand {
         title: "Recipe #11".to_string(),
@@ -184,7 +188,8 @@ async fn test_free_user_with_10_recipes_cannot_create() {
 async fn test_premium_user_unlimited_recipes() {
     let pool = setup_test_db().await;
     let executor: evento::Sqlite = pool.clone().into();
-    let user_id = create_test_user_with_recipes(&pool, &executor, "premium50@test.com", "premium", 50).await;
+    let user_id =
+        create_test_user_with_recipes(&pool, &executor, "premium50@test.com", "premium", 50).await;
 
     let command = recipe::CreateRecipeCommand {
         title: "Recipe #51".to_string(),
@@ -217,7 +222,9 @@ async fn test_premium_user_unlimited_recipes() {
 async fn test_premium_user_100_recipes() {
     let pool = setup_test_db().await;
     let executor: evento::Sqlite = pool.clone().into();
-    let user_id = create_test_user_with_recipes(&pool, &executor, "premium100@test.com", "premium", 100).await;
+    let user_id =
+        create_test_user_with_recipes(&pool, &executor, "premium100@test.com", "premium", 100)
+            .await;
 
     let command = recipe::CreateRecipeCommand {
         title: "Recipe #101".to_string(),
@@ -250,7 +257,8 @@ async fn test_premium_user_100_recipes() {
 async fn test_free_user_with_0_recipes_can_create() {
     let pool = setup_test_db().await;
     let executor: evento::Sqlite = pool.clone().into();
-    let user_id = create_test_user_with_recipes(&pool, &executor, "user0@test.com", "free", 0).await;
+    let user_id =
+        create_test_user_with_recipes(&pool, &executor, "user0@test.com", "free", 0).await;
 
     let command = recipe::CreateRecipeCommand {
         title: "Recipe #1".to_string(),
@@ -283,7 +291,8 @@ async fn test_free_user_with_0_recipes_can_create() {
 async fn test_free_user_with_5_recipes_can_create() {
     let pool = setup_test_db().await;
     let executor: evento::Sqlite = pool.clone().into();
-    let user_id = create_test_user_with_recipes(&pool, &executor, "user5@test.com", "free", 5).await;
+    let user_id =
+        create_test_user_with_recipes(&pool, &executor, "user5@test.com", "free", 5).await;
 
     let command = recipe::CreateRecipeCommand {
         title: "Recipe #6".to_string(),
@@ -316,7 +325,8 @@ async fn test_free_user_with_5_recipes_can_create() {
 async fn test_free_user_exactly_at_limit() {
     let pool = setup_test_db().await;
     let executor: evento::Sqlite = pool.clone().into();
-    let user_id = create_test_user_with_recipes(&pool, &executor, "user10@test.com", "free", 10).await;
+    let user_id =
+        create_test_user_with_recipes(&pool, &executor, "user10@test.com", "free", 10).await;
 
     let command = recipe::CreateRecipeCommand {
         title: "Recipe #11".to_string(),
@@ -349,7 +359,8 @@ async fn test_free_user_exactly_at_limit() {
 async fn test_free_user_over_limit() {
     let pool = setup_test_db().await;
     let executor: evento::Sqlite = pool.clone().into();
-    let user_id = create_test_user_with_recipes(&pool, &executor, "user15@test.com", "free", 10).await;
+    let user_id =
+        create_test_user_with_recipes(&pool, &executor, "user15@test.com", "free", 10).await;
 
     let command = recipe::CreateRecipeCommand {
         title: "Recipe #16".to_string(),
@@ -382,7 +393,8 @@ async fn test_free_user_over_limit() {
 async fn test_premium_user_with_0_recipes() {
     let pool = setup_test_db().await;
     let executor: evento::Sqlite = pool.clone().into();
-    let user_id = create_test_user_with_recipes(&pool, &executor, "premium0@test.com", "premium", 0).await;
+    let user_id =
+        create_test_user_with_recipes(&pool, &executor, "premium0@test.com", "premium", 0).await;
 
     let command = recipe::CreateRecipeCommand {
         title: "Recipe #1".to_string(),
@@ -506,7 +518,8 @@ fn test_recipe_deleted_event() {
 async fn test_recipe_count_query() {
     let pool = setup_test_db().await;
     let executor: evento::Sqlite = pool.clone().into();
-    let user_id = create_test_user_with_recipes(&pool, &executor, "user7@test.com", "free", 7).await;
+    let user_id =
+        create_test_user_with_recipes(&pool, &executor, "user7@test.com", "free", 7).await;
 
     // Process user projection to populate read model
     user::user_projection(pool.clone())
@@ -530,7 +543,8 @@ async fn test_recipe_count_query() {
 async fn test_tier_query() {
     let pool = setup_test_db().await;
     let executor: evento::Sqlite = pool.clone().into();
-    let user_id = create_test_user_with_recipes(&pool, &executor, "premium20@test.com", "premium", 20).await;
+    let user_id =
+        create_test_user_with_recipes(&pool, &executor, "premium20@test.com", "premium", 20).await;
 
     // Process user projection to populate read model
     user::user_projection(pool.clone())
