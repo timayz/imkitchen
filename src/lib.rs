@@ -22,11 +22,11 @@ pub async fn create_app(
     };
     use middleware::auth_middleware;
     use routes::{
-        browser_support, get_ingredient_row, get_instruction_row, get_login, get_password_reset,
-        get_password_reset_complete, get_recipe_detail, get_recipe_edit_form, get_recipe_form,
-        get_register, health, offline, post_create_recipe, post_login, post_logout,
-        post_password_reset, post_password_reset_complete, post_register, post_update_recipe,
-        ready, AssetsService,
+        browser_support, check_recipe_exists, get_ingredient_row, get_instruction_row, get_login,
+        get_password_reset, get_password_reset_complete, get_recipe_detail, get_recipe_edit_form,
+        get_recipe_form, get_recipe_waiting, get_register, health, offline, post_create_recipe,
+        post_login, post_logout, post_password_reset, post_password_reset_complete, post_register,
+        post_update_recipe, ready, AssetsService,
     };
 
     let email_config = email::EmailConfig {
@@ -59,6 +59,8 @@ pub async fn create_app(
         // Recipe routes
         .route("/recipes/new", get(get_recipe_form))
         .route("/recipes", post(post_create_recipe))
+        .route("/recipes/{id}/waiting", get(get_recipe_waiting))
+        .route("/recipes/{id}/check", get(check_recipe_exists))
         .route("/recipes/{id}", get(get_recipe_detail))
         .route("/recipes/{id}/edit", get(get_recipe_edit_form))
         .route("/recipes/{id}", post(post_update_recipe))

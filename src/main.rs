@@ -8,12 +8,12 @@ use clap::{Parser, Subcommand};
 use evento::prelude::*;
 use imkitchen::middleware::auth_middleware;
 use imkitchen::routes::{
-    browser_support, check_shopping_item, complete_prep_task_handler, dashboard_handler,
-    dismiss_notification, generate_shopping_list_handler, get_check_user, get_collections,
-    get_discover, get_discover_detail, get_ingredient_row, get_instruction_row, get_login,
-    get_meal_alternatives, get_meal_plan, get_notification_status, get_onboarding,
+    browser_support, check_recipe_exists, check_shopping_item, complete_prep_task_handler,
+    dashboard_handler, dismiss_notification, generate_shopping_list_handler, get_check_user,
+    get_collections, get_discover, get_discover_detail, get_ingredient_row, get_instruction_row,
+    get_login, get_meal_alternatives, get_meal_plan, get_notification_status, get_onboarding,
     get_onboarding_skip, get_password_reset, get_password_reset_complete, get_profile,
-    get_recipe_detail, get_recipe_edit_form, get_recipe_form, get_recipe_list,
+    get_recipe_detail, get_recipe_edit_form, get_recipe_form, get_recipe_list, get_recipe_waiting,
     get_regenerate_confirm, get_register, get_subscription, get_subscription_success, health,
     list_notifications, notifications_page, offline, post_add_recipe_to_collection,
     post_add_to_library, post_create_collection, post_create_recipe, post_delete_collection,
@@ -228,6 +228,8 @@ async fn serve_command(
         .route("/discover/{id}/add", post(post_add_to_library))
         .route("/discover/{id}/rate", post(post_rate_recipe))
         .route("/discover/{id}/review/delete", post(post_delete_review))
+        .route("/recipes/{id}/waiting", get(get_recipe_waiting))
+        .route("/recipes/{id}/check", get(check_recipe_exists))
         .route("/recipes/{id}", get(get_recipe_detail))
         .route("/recipes/{id}/edit", get(get_recipe_edit_form))
         .route("/recipes/{id}", post(post_update_recipe))

@@ -25,6 +25,14 @@ use crate::routes::auth::AppState;
 struct IngredientRowTemplate;
 
 #[derive(Template)]
+#[template(path = "pages/recipe-waiting.html")]
+struct RecipeWaitingTemplate {
+    recipe_id: String,
+    user: Option<Auth>,
+    current_path: String,
+}
+
+#[derive(Template)]
 #[template(path = "components/instruction-row.html")]
 struct InstructionRowTemplate {
     step_number: usize,
@@ -225,11 +233,14 @@ pub async fn post_create_recipe(
     {
         Ok(recipe_id) => {
             tracing::info!("Recipe created successfully: {}", recipe_id);
-            // Redirect to recipe detail page using TwinSpark (progressive enhancement)
+            // Redirect to waiting page to poll for read model sync
             // Returns 200 OK with ts-location header for client-side navigation
             (
                 StatusCode::OK,
-                [("ts-location", format!("/recipes/{}", recipe_id).as_str())],
+                [(
+                    "ts-location",
+                    format!("/recipes/{}/waiting", recipe_id).as_str(),
+                )],
                 (),
             )
                 .into_response()
@@ -270,6 +281,63 @@ pub async fn post_create_recipe(
                 Html(template.render().unwrap()),
             )
                 .into_response()
+        }
+    }
+}
+
+/// GET /recipes/:id/waiting - Display waiting page with polling
+/// Shown after recipe creation/copy to wait for read model synchronization
+#[tracing::instrument(skip(auth), fields(recipe_id = %recipe_id))]
+pub async fn get_recipe_waiting(
+    Extension(auth): Extension<Auth>,
+    Path(recipe_id): Path<String>,
+) -> impl IntoResponse {
+    let template = RecipeWaitingTemplate {
+        recipe_id: recipe_id.clone(),
+        user: Some(auth),
+        current_path: format!("/recipes/{}/waiting", recipe_id),
+    };
+    Html(template.render().unwrap())
+}
+
+/// GET /recipes/:id/check - Check if recipe exists in read model
+/// Used by waiting page to poll for recipe availability after creation/copy
+/// Follows same pattern as register flow - returns HTML that continues polling
+#[tracing::instrument(skip(state, auth), fields(recipe_id = %recipe_id))]
+pub async fn check_recipe_exists(
+    State(state): State<AppState>,
+    Extension(auth): Extension<Auth>,
+    Path(recipe_id): Path<String>,
+) -> Response {
+    // Query recipe from read model
+    match query_recipe_by_id(&recipe_id, &state.db_pool).await {
+        Ok(Some(recipe_data)) => {
+            // Check if user has permission to view this recipe
+            if !recipe_data.is_shared && recipe_data.user_id != auth.user_id {
+                // Recipe exists but user doesn't have access - return 404
+                (StatusCode::NOT_FOUND, "Recipe not found").into_response()
+            } else {
+                // Recipe exists and user has access - redirect to recipe detail
+                (
+                    StatusCode::OK,
+                    [("ts-location", format!("/recipes/{}", recipe_id).as_str())],
+                    (),
+                )
+                    .into_response()
+            }
+        }
+        Ok(None) => {
+            // Recipe not yet in read model - return HTML that continues polling
+            // TwinSpark requires at least one element to swap, so we return a div that continues polling
+            let polling_html = format!(
+                r#"<div ts-req="/recipes/{}/check" ts-trigger="load delay:500ms"></div>"#,
+                recipe_id
+            );
+            (StatusCode::OK, Html(polling_html)).into_response()
+        }
+        Err(e) => {
+            tracing::error!("Failed to query recipe: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, "Failed to check recipe").into_response()
         }
     }
 }
@@ -1701,10 +1769,10 @@ pub async fn post_add_to_library(
                 "Recipe copied to user's library"
             );
 
-            // AC-12: Redirect to user's personal recipe detail page
+            // AC-12: Redirect to waiting page to poll for read model sync
             (
                 StatusCode::SEE_OTHER,
-                [("Location", format!("/recipes/{}", new_recipe_id))],
+                [("Location", format!("/recipes/{}/waiting", new_recipe_id))],
             )
                 .into_response()
         }
