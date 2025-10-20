@@ -30,17 +30,27 @@ async fn setup_evento_executor(pool: Pool<Sqlite>) -> evento::Sqlite {
     pool.into()
 }
 
-/// Insert a test user into the database
-async fn insert_test_user(pool: &SqlitePool, user_id: &str, email: &str) {
-    sqlx::query(
-        "INSERT INTO users (id, email, password_hash, tier, recipe_count, created_at)
-         VALUES (?1, ?2, 'hash', 'free', 0, datetime('now'))",
+/// Create a test user using proper evento commands
+async fn create_test_user(pool: &SqlitePool, executor: &evento::Sqlite, email: &str) -> String {
+    use user::commands::{register_user, RegisterUserCommand};
+
+    let user_id = register_user(
+        RegisterUserCommand {
+            email: email.to_string(),
+            password: "testpassword".to_string(),
+        },
+        executor,
+        pool,
     )
-    .bind(user_id)
-    .bind(email)
-    .execute(pool)
     .await
     .unwrap();
+
+    user::user_projection(pool.clone())
+        .unsafe_oneshot(executor)
+        .await
+        .unwrap();
+
+    user_id
 }
 
 /// Helper to run projections after events
@@ -222,7 +232,7 @@ async fn test_rate_recipe_only_shared_recipes() {
         serving_size: Some(4),
     };
 
-    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
         .await
         .unwrap();
 

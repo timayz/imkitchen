@@ -31,26 +31,34 @@ async fn setup_evento_executor(pool: Pool<Sqlite>) -> evento::Sqlite {
     pool.into()
 }
 
-/// Insert a test user into the database
-async fn insert_test_user(pool: &SqlitePool, user_id: &str, tier: &str, recipe_count: i32) {
-    sqlx::query(
-        "INSERT INTO users (id, email, password_hash, tier, recipe_count, created_at)
-         VALUES (?1, ?2, 'hash', ?3, ?4, datetime('now'))",
+/// Create a test user using proper evento commands
+async fn create_test_user(pool: &SqlitePool, executor: &evento::Sqlite, email: &str) -> String {
+    use user::commands::{register_user, RegisterUserCommand};
+
+    let user_id = register_user(
+        RegisterUserCommand {
+            email: email.to_string(),
+            password: "testpassword".to_string(),
+        },
+        executor,
+        pool,
     )
-    .bind(user_id)
-    .bind(format!("{}@test.com", user_id))
-    .bind(tier)
-    .bind(recipe_count)
-    .execute(pool)
     .await
     .unwrap();
+
+    user::user_projection(pool.clone())
+        .unsafe_oneshot(executor)
+        .await
+        .unwrap();
+
+    user_id
 }
 
 #[tokio::test]
 async fn test_create_recipe_validates_title_length() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "free", 0).await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
 
     // Test title too short (< 3 chars)
     let command = CreateRecipeCommand {
@@ -71,7 +79,7 @@ async fn test_create_recipe_validates_title_length() {
         serving_size: Some(4),
     };
 
-    let result = create_recipe(command, "user1", &executor, &pool).await;
+    let result = create_recipe(command, &user1_id, &executor, &pool).await;
     assert!(matches!(result, Err(RecipeError::ValidationError(_))));
     assert!(result
         .unwrap_err()
@@ -83,7 +91,7 @@ async fn test_create_recipe_validates_title_length() {
 async fn test_create_recipe_requires_at_least_one_ingredient() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "free", 0).await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
 
     let command = CreateRecipeCommand {
         title: "Test Recipe".to_string(),
@@ -99,7 +107,7 @@ async fn test_create_recipe_requires_at_least_one_ingredient() {
         serving_size: Some(4),
     };
 
-    let result = create_recipe(command, "user1", &executor, &pool).await;
+    let result = create_recipe(command, &user1_id, &executor, &pool).await;
     assert!(matches!(result, Err(RecipeError::ValidationError(_))));
     assert!(result
         .unwrap_err()
@@ -111,7 +119,7 @@ async fn test_create_recipe_requires_at_least_one_ingredient() {
 async fn test_create_recipe_requires_at_least_one_instruction() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "free", 0).await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
 
     let command = CreateRecipeCommand {
         title: "Test Recipe".to_string(),
@@ -127,7 +135,7 @@ async fn test_create_recipe_requires_at_least_one_instruction() {
         serving_size: Some(4),
     };
 
-    let result = create_recipe(command, "user1", &executor, &pool).await;
+    let result = create_recipe(command, &user1_id, &executor, &pool).await;
     assert!(matches!(result, Err(RecipeError::ValidationError(_))));
     assert!(result
         .unwrap_err()
@@ -141,7 +149,7 @@ async fn test_free_tier_recipe_limit_enforced() {
     let executor = setup_evento_executor(pool.clone()).await;
 
     // User already has 10 private recipes (at free tier limit)
-    insert_test_user(&pool, "user1", "free", 10).await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
 
     // AC-11: Create 10 private recipes (is_shared = 0)
     for i in 1..=10 {
@@ -172,7 +180,7 @@ async fn test_free_tier_recipe_limit_enforced() {
         serving_size: Some(4),
     };
 
-    let result = create_recipe(command, "user1", &executor, &pool).await;
+    let result = create_recipe(command, &user1_id, &executor, &pool).await;
     assert!(matches!(result, Err(RecipeError::RecipeLimitReached)));
 }
 
@@ -182,7 +190,7 @@ async fn test_premium_tier_bypasses_recipe_limit() {
     let executor = setup_evento_executor(pool.clone()).await;
 
     // Premium user already has 100 recipes (way over free tier limit)
-    insert_test_user(&pool, "premium_user", "premium", 100).await;
+    let premium_user_id = create_test_user(&pool, &executor, "premium_user@test.com").await;
 
     let command = CreateRecipeCommand {
         title: "101st Recipe".to_string(),
@@ -212,7 +220,7 @@ async fn test_shared_recipes_dont_count_toward_limit() {
     let executor = setup_evento_executor(pool.clone()).await;
 
     // AC-11: Shared recipes should NOT count toward free tier limit
-    insert_test_user(&pool, "user1", "free", 0).await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
 
     // Create 10 private recipes (at limit)
     for i in 1..=10 {
@@ -259,7 +267,7 @@ async fn test_shared_recipes_dont_count_toward_limit() {
         serving_size: Some(4),
     };
 
-    let result = create_recipe(command, "user1", &executor, &pool).await;
+    let result = create_recipe(command, &user1_id, &executor, &pool).await;
     assert!(
         matches!(result, Err(RecipeError::RecipeLimitReached)),
         "Creating 11th private recipe should fail even with shared recipes"
@@ -270,7 +278,7 @@ async fn test_shared_recipes_dont_count_toward_limit() {
 async fn test_create_recipe_success_returns_recipe_id() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "free", 0).await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
 
     let command = CreateRecipeCommand {
         title: "Chicken Tikka Masala".to_string(),
@@ -304,7 +312,7 @@ async fn test_create_recipe_success_returns_recipe_id() {
         serving_size: Some(4),
     };
 
-    let result = create_recipe(command, "user1", &executor, &pool).await;
+    let result = create_recipe(command, &user1_id, &executor, &pool).await;
     assert!(result.is_ok());
 
     let recipe_id = result.unwrap();
@@ -320,7 +328,7 @@ async fn test_create_recipe_success_returns_recipe_id() {
 async fn test_recipe_created_event_stored_and_loaded() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "free", 0).await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
 
     // Create a recipe (which writes RecipeCreated event)
     let command = CreateRecipeCommand {
@@ -341,7 +349,7 @@ async fn test_recipe_created_event_stored_and_loaded() {
         serving_size: Some(2),
     };
 
-    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
         .await
         .unwrap();
 
@@ -388,22 +396,25 @@ async fn insert_test_recipe(pool: &SqlitePool, recipe_id: &str, user_id: &str, t
     }])
     .unwrap();
 
-    sqlx::query(
-        "INSERT INTO recipes (id, user_id, title, ingredients, instructions, prep_time_min, cook_time_min, advance_prep_hours, serving_size, is_favorite, is_shared, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 0, 0, datetime('now'), datetime('now'))",
+    use user::commands::{register_user, RegisterUserCommand};
+
+    let user_id = register_user(
+        RegisterUserCommand {
+            email: email.to_string(),
+            password: "testpassword".to_string(),
+        },
+        executor,
+        pool,
     )
-    .bind(recipe_id)
-    .bind(user_id)
-    .bind(title)
-    .bind(ingredients_json)
-    .bind(instructions_json)
-    .bind(10)
-    .bind(20)
-    .bind(2)
-    .bind(4)
-    .execute(pool)
     .await
     .unwrap();
+
+    user::user_projection(pool.clone())
+        .unsafe_oneshot(executor)
+        .await
+        .unwrap();
+
+    user_id
 }
 
 /// Test that RecipeUpdated event applies delta changes correctly
@@ -414,7 +425,7 @@ async fn insert_test_recipe(pool: &SqlitePool, recipe_id: &str, user_id: &str, t
 async fn test_recipe_updated_event_applies_delta_changes() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "free", 0).await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
 
     // Create initial recipe
     let create_command = CreateRecipeCommand {
@@ -445,7 +456,7 @@ async fn test_recipe_updated_event_applies_delta_changes() {
     // Update only title and ingredients (delta update)
     let update_command = UpdateRecipeCommand {
         recipe_id: recipe_id.clone(),
-        user_id: "user1".to_string(),
+        user_id: user1_id.clone(),
         title: Some("Updated Title".to_string()),
         ingredients: Some(vec![
             Ingredient {
@@ -501,7 +512,7 @@ async fn test_recipe_updated_event_applies_delta_changes() {
 async fn test_update_recipe_validates_empty_ingredients() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "free", 0).await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
 
     // Create initial recipe
     let create_command = CreateRecipeCommand {
@@ -532,7 +543,7 @@ async fn test_update_recipe_validates_empty_ingredients() {
     // Attempt to update with empty ingredients list
     let update_command = UpdateRecipeCommand {
         recipe_id: recipe_id.clone(),
-        user_id: "user1".to_string(),
+        user_id: user1_id.clone(),
         title: None,
         ingredients: Some(vec![]), // Empty ingredients - should fail
         instructions: None,
@@ -558,7 +569,7 @@ async fn test_update_recipe_validates_empty_ingredients() {
 async fn test_update_recipe_validates_empty_instructions() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "free", 0).await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
 
     // Create initial recipe
     let create_command = CreateRecipeCommand {
@@ -589,7 +600,7 @@ async fn test_update_recipe_validates_empty_instructions() {
     // Attempt to update with empty instructions list
     let update_command = UpdateRecipeCommand {
         recipe_id: recipe_id.clone(),
-        user_id: "user1".to_string(),
+        user_id: user1_id.clone(),
         title: None,
         ingredients: None,
         instructions: Some(vec![]), // Empty instructions - should fail
@@ -615,7 +626,7 @@ async fn test_update_recipe_validates_empty_instructions() {
 async fn test_update_recipe_validates_title_length() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "free", 0).await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
 
     // Create initial recipe
     let create_command = CreateRecipeCommand {
@@ -646,7 +657,7 @@ async fn test_update_recipe_validates_title_length() {
     // Attempt to update with title too short (< 3 chars)
     let update_command = UpdateRecipeCommand {
         recipe_id: recipe_id.clone(),
-        user_id: "user1".to_string(),
+        user_id: user1_id.clone(),
         title: Some("ab".to_string()), // Only 2 characters
         ingredients: None,
         instructions: None,
@@ -672,8 +683,8 @@ async fn test_update_recipe_validates_title_length() {
 async fn test_update_recipe_ownership_denied() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "free", 0).await;
-    insert_test_user(&pool, "user2", "free", 0).await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
+    let user2_id = create_test_user(&pool, &executor, "user2@test.com").await;
 
     // User1 creates a recipe
     let create_command = CreateRecipeCommand {
@@ -704,7 +715,7 @@ async fn test_update_recipe_ownership_denied() {
     // User2 attempts to update user1's recipe
     let update_command = UpdateRecipeCommand {
         recipe_id: recipe_id.clone(),
-        user_id: "user2".to_string(), // Different user!
+        user_id: user2_id.clone(), // Different user!
         title: Some("Hijacked Title".to_string()),
         ingredients: None,
         instructions: None,
@@ -731,7 +742,7 @@ async fn test_update_recipe_ownership_denied() {
 async fn test_update_recipe_recalculates_complexity() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "free", 0).await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
 
     // Create recipe with simple complexity (5 ingredients, 4 steps, no advance prep)
     let create_command = CreateRecipeCommand {
@@ -836,7 +847,7 @@ async fn test_update_recipe_recalculates_complexity() {
 
     let update_command = UpdateRecipeCommand {
         recipe_id: recipe_id.clone(),
-        user_id: "user1".to_string(),
+        user_id: user1_id.clone(),
         title: None,
         ingredients: Some(new_ingredients),
         instructions: Some(new_instructions),
@@ -861,7 +872,7 @@ async fn test_update_recipe_recalculates_complexity() {
     // Need more to get to complex. Let's add advance prep.
     let update_with_prep = UpdateRecipeCommand {
         recipe_id: recipe_id.clone(),
-        user_id: "user1".to_string(),
+        user_id: user1_id.clone(),
         title: None,
         ingredients: None,
         instructions: None,
@@ -908,7 +919,7 @@ async fn test_update_recipe_recalculates_complexity() {
 
     let update_to_complex = UpdateRecipeCommand {
         recipe_id: recipe_id.clone(),
-        user_id: "user1".to_string(),
+        user_id: user1_id.clone(),
         title: None,
         ingredients: Some(complex_ingredients),
         instructions: Some(complex_instructions),
@@ -949,7 +960,7 @@ async fn test_update_recipe_recalculates_complexity() {
 async fn test_update_recipe_clears_optional_fields() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "free", 0).await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
 
     // Create recipe with timing fields set
     let create_command = CreateRecipeCommand {
@@ -980,7 +991,7 @@ async fn test_update_recipe_clears_optional_fields() {
     // Update to clear prep_time_min and advance_prep_hours
     let update_command = UpdateRecipeCommand {
         recipe_id: recipe_id.clone(),
-        user_id: "user1".to_string(),
+        user_id: user1_id.clone(),
         title: None,
         ingredients: None,
         instructions: None,
@@ -1015,7 +1026,7 @@ async fn test_update_recipe_clears_optional_fields() {
 async fn test_recipe_deleted_event_sets_is_deleted_flag() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "free", 0).await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
 
     // Create a recipe
     let create_command = CreateRecipeCommand {
@@ -1046,7 +1057,7 @@ async fn test_recipe_deleted_event_sets_is_deleted_flag() {
     // Delete the recipe
     let delete_command = DeleteRecipeCommand {
         recipe_id: recipe_id.clone(),
-        user_id: "user1".to_string(),
+        user_id: user1_id.clone(),
     };
 
     delete_recipe(delete_command, &executor, &pool)
@@ -1068,8 +1079,8 @@ async fn test_recipe_deleted_event_sets_is_deleted_flag() {
 async fn test_delete_recipe_validates_ownership() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "free", 0).await;
-    insert_test_user(&pool, "user2", "free", 0).await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
+    let user2_id = create_test_user(&pool, &executor, "user2@test.com").await;
 
     // User1 creates a recipe
     let create_command = CreateRecipeCommand {
@@ -1100,7 +1111,7 @@ async fn test_delete_recipe_validates_ownership() {
     // User2 attempts to delete user1's recipe
     let delete_command = DeleteRecipeCommand {
         recipe_id: recipe_id.clone(),
-        user_id: "user2".to_string(), // Different user!
+        user_id: user2_id.clone(), // Different user!
     };
 
     let result = delete_recipe(delete_command, &executor, &pool).await;
@@ -1122,12 +1133,12 @@ async fn test_delete_recipe_validates_ownership() {
 async fn test_delete_recipe_not_found() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "free", 0).await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
 
     // Attempt to delete recipe that doesn't exist
     let delete_command = DeleteRecipeCommand {
         recipe_id: "non_existent_id".to_string(),
-        user_id: "user1".to_string(),
+        user_id: user1_id.clone(),
     };
 
     let result = delete_recipe(delete_command, &executor, &pool).await;
@@ -1147,7 +1158,7 @@ async fn test_favorite_recipe_toggles_status() {
     let executor = setup_evento_executor(pool.clone()).await;
 
     // Setup: Create a test user
-    insert_test_user(&pool, "user1", "free", 0).await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
 
     // Create a recipe
     let command = CreateRecipeCommand {
@@ -1168,7 +1179,7 @@ async fn test_favorite_recipe_toggles_status() {
         serving_size: Some(4),
     };
 
-    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
         .await
         .unwrap();
 
@@ -1192,7 +1203,7 @@ async fn test_favorite_recipe_toggles_status() {
     use recipe::{favorite_recipe, FavoriteRecipeCommand};
     let fav_command = FavoriteRecipeCommand {
         recipe_id: recipe_id.clone(),
-        user_id: "user1".to_string(),
+        user_id: user1_id.clone(),
     };
     let new_status = favorite_recipe(fav_command, &executor, &pool)
         .await
@@ -1217,7 +1228,7 @@ async fn test_favorite_recipe_toggles_status() {
     // Un-favorite the recipe
     let unfav_command = FavoriteRecipeCommand {
         recipe_id: recipe_id.clone(),
-        user_id: "user1".to_string(),
+        user_id: user1_id.clone(),
     };
     let new_status = favorite_recipe(unfav_command, &executor, &pool)
         .await
@@ -1249,8 +1260,8 @@ async fn test_favorite_recipe_ownership_check() {
     let executor = setup_evento_executor(pool.clone()).await;
 
     // Setup: Create two users
-    insert_test_user(&pool, "user1", "free", 0).await;
-    insert_test_user(&pool, "user2", "free", 0).await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
+    let user2_id = create_test_user(&pool, &executor, "user2@test.com").await;
 
     // User1 creates a recipe
     let command = CreateRecipeCommand {
@@ -1271,7 +1282,7 @@ async fn test_favorite_recipe_ownership_check() {
         serving_size: Some(2),
     };
 
-    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
         .await
         .unwrap();
 
@@ -1286,7 +1297,7 @@ async fn test_favorite_recipe_ownership_check() {
     use recipe::{favorite_recipe, FavoriteRecipeCommand};
     let fav_command = FavoriteRecipeCommand {
         recipe_id: recipe_id.clone(),
-        user_id: "user2".to_string(),
+        user_id: user2_id.clone(),
     };
     let result = favorite_recipe(fav_command, &executor, &pool).await;
 
@@ -1304,13 +1315,13 @@ async fn test_favorite_recipe_not_found() {
     let executor = setup_evento_executor(pool.clone()).await;
 
     // Setup: Create a test user
-    insert_test_user(&pool, "user1", "free", 0).await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
 
     // Try to favorite non-existent recipe
     use recipe::{favorite_recipe, FavoriteRecipeCommand};
     let fav_command = FavoriteRecipeCommand {
         recipe_id: "nonexistent-recipe-id".to_string(),
-        user_id: "user1".to_string(),
+        user_id: user1_id.clone(),
     };
     let result = favorite_recipe(fav_command, &executor, &pool).await;
 
@@ -1328,7 +1339,7 @@ async fn test_query_recipes_favorite_only_filter() {
     let executor = setup_evento_executor(pool.clone()).await;
 
     // Setup: Create a test user
-    insert_test_user(&pool, "user1", "free", 0).await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
 
     // Create 3 recipes
     let command1 = CreateRecipeCommand {
@@ -1409,7 +1420,7 @@ async fn test_query_recipes_favorite_only_filter() {
 
     let fav_command_1 = FavoriteRecipeCommand {
         recipe_id: recipe_id_1.clone(),
-        user_id: "user1".to_string(),
+        user_id: user1_id.clone(),
     };
     favorite_recipe(fav_command_1, &executor, &pool)
         .await
@@ -1417,7 +1428,7 @@ async fn test_query_recipes_favorite_only_filter() {
 
     let fav_command_3 = FavoriteRecipeCommand {
         recipe_id: recipe_id_3.clone(),
-        user_id: "user1".to_string(),
+        user_id: user1_id.clone(),
     };
     favorite_recipe(fav_command_3, &executor, &pool)
         .await
@@ -1465,7 +1476,7 @@ async fn test_query_recipes_favorite_only_filter() {
 async fn test_share_recipe_emits_event() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "free", 0).await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
 
     // Create a test recipe
     let command = CreateRecipeCommand {
@@ -1486,7 +1497,7 @@ async fn test_share_recipe_emits_event() {
         serving_size: Some(4),
     };
 
-    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
         .await
         .unwrap();
 
@@ -1500,7 +1511,7 @@ async fn test_share_recipe_emits_event() {
     // Share the recipe
     let share_command = ShareRecipeCommand {
         recipe_id: recipe_id.clone(),
-        user_id: "user1".to_string(),
+        user_id: user1_id.clone(),
         shared: true,
     };
 
@@ -1523,7 +1534,7 @@ async fn test_share_recipe_emits_event() {
 async fn test_unshare_recipe_emits_event() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "free", 0).await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
 
     // Create and share a recipe
     let command = CreateRecipeCommand {
@@ -1544,7 +1555,7 @@ async fn test_unshare_recipe_emits_event() {
         serving_size: None,
     };
 
-    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
         .await
         .unwrap();
 
@@ -1559,7 +1570,7 @@ async fn test_unshare_recipe_emits_event() {
     share_recipe(
         ShareRecipeCommand {
             recipe_id: recipe_id.clone(),
-            user_id: "user1".to_string(),
+            user_id: user1_id.clone(),
             shared: true,
         },
         &executor,
@@ -1571,7 +1582,7 @@ async fn test_unshare_recipe_emits_event() {
     // Now unshare it
     let unshare_command = ShareRecipeCommand {
         recipe_id: recipe_id.clone(),
-        user_id: "user1".to_string(),
+        user_id: user1_id.clone(),
         shared: false,
     };
 
@@ -1594,8 +1605,8 @@ async fn test_unshare_recipe_emits_event() {
 async fn test_share_recipe_ownership_check() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "free", 0).await;
-    insert_test_user(&pool, "user2", "free", 0).await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
+    let user2_id = create_test_user(&pool, &executor, "user2@test.com").await;
 
     // User1 creates a recipe
     let command = CreateRecipeCommand {
@@ -1616,7 +1627,7 @@ async fn test_share_recipe_ownership_check() {
         serving_size: None,
     };
 
-    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
         .await
         .unwrap();
 
@@ -1630,7 +1641,7 @@ async fn test_share_recipe_ownership_check() {
     // User2 attempts to share User1's recipe
     let share_command = ShareRecipeCommand {
         recipe_id: recipe_id.clone(),
-        user_id: "user2".to_string(), // Different user!
+        user_id: user2_id.clone(), // Different user!
         shared: true,
     };
 
@@ -1647,12 +1658,12 @@ async fn test_share_recipe_ownership_check() {
 async fn test_share_recipe_not_found() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "free", 0).await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
 
     // Attempt to share a non-existent recipe
     let share_command = ShareRecipeCommand {
         recipe_id: "nonexistent-recipe-id".to_string(),
-        user_id: "user1".to_string(),
+        user_id: user1_id.clone(),
         shared: true,
     };
 
@@ -1669,7 +1680,7 @@ async fn test_share_recipe_not_found() {
 async fn test_recipe_shared_event_applied_to_aggregate() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "free", 0).await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
 
     // Create recipe
     let command = CreateRecipeCommand {
@@ -1690,7 +1701,7 @@ async fn test_recipe_shared_event_applied_to_aggregate() {
         serving_size: None,
     };
 
-    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
         .await
         .unwrap();
 
@@ -1714,7 +1725,7 @@ async fn test_recipe_shared_event_applied_to_aggregate() {
     share_recipe(
         ShareRecipeCommand {
             recipe_id: recipe_id.clone(),
-            user_id: "user1".to_string(),
+            user_id: user1_id.clone(),
             shared: true,
         },
         &executor,
@@ -1736,7 +1747,7 @@ async fn test_recipe_shared_event_applied_to_aggregate() {
     share_recipe(
         ShareRecipeCommand {
             recipe_id: recipe_id.clone(),
-            user_id: "user1".to_string(),
+            user_id: user1_id.clone(),
             shared: false,
         },
         &executor,
@@ -1761,7 +1772,7 @@ async fn test_recipe_shared_event_applied_to_aggregate() {
 async fn test_deleted_recipe_excluded_from_query() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "free", 0).await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
 
     // Create and share a recipe
     let command = CreateRecipeCommand {
@@ -1782,7 +1793,7 @@ async fn test_deleted_recipe_excluded_from_query() {
         serving_size: Some(4),
     };
 
-    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
         .await
         .unwrap();
 
@@ -1796,7 +1807,7 @@ async fn test_deleted_recipe_excluded_from_query() {
     // Share the recipe (after projection so it exists in read model for ownership check)
     let share_command = ShareRecipeCommand {
         recipe_id: recipe_id.clone(),
-        user_id: "user1".to_string(),
+        user_id: user1_id.clone(),
         shared: true,
     };
     share_recipe(share_command, &executor, &pool).await.unwrap();
@@ -1818,7 +1829,7 @@ async fn test_deleted_recipe_excluded_from_query() {
     // Delete the recipe
     let delete_command = DeleteRecipeCommand {
         recipe_id: recipe_id.clone(),
-        user_id: "user1".to_string(),
+        user_id: user1_id.clone(),
     };
     delete_recipe(delete_command, &executor, &pool)
         .await
@@ -1843,7 +1854,7 @@ async fn test_deleted_recipe_excluded_from_query() {
 async fn test_deleted_recipe_excluded_from_user_list() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "free", 0).await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
 
     // Create two recipes
     let recipe_id_1 = create_recipe(
@@ -1915,7 +1926,7 @@ async fn test_deleted_recipe_excluded_from_user_list() {
     delete_recipe(
         DeleteRecipeCommand {
             recipe_id: recipe_id_1.clone(),
-            user_id: "user1".to_string(),
+            user_id: user1_id.clone(),
         },
         &executor,
         &pool,
@@ -1947,7 +1958,7 @@ async fn test_deleted_recipe_excluded_from_user_list() {
 async fn test_deleted_recipes_excluded_from_limit() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "free", 0).await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
 
     // Create 10 recipes (free tier limit)
     for i in 0..10 {
@@ -2019,7 +2030,7 @@ async fn test_deleted_recipes_excluded_from_limit() {
     delete_recipe(
         DeleteRecipeCommand {
             recipe_id: recipes[0].id.clone(),
-            user_id: "user1".to_string(),
+            user_id: user1_id.clone(),
         },
         &executor,
         &pool,
@@ -2073,8 +2084,8 @@ async fn test_deleted_recipes_excluded_from_limit() {
 async fn test_copy_recipe_success() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "creator", "free", 0).await;
-    insert_test_user(&pool, "copier", "free", 0).await;
+    let creator_id = create_test_user(&pool, &executor, "creator@test.com").await;
+    let copier_id = create_test_user(&pool, &executor, "copier@test.com").await;
 
     // Creator creates and shares a recipe
     let create_command = CreateRecipeCommand {
@@ -2131,7 +2142,7 @@ async fn test_copy_recipe_success() {
         original_recipe_id: original_recipe_id.clone(),
     };
 
-    let new_recipe_id = copy_recipe(copy_command, "copier", &executor, &pool)
+    let new_recipe_id = copy_recipe(copy_command, &copier_id, &executor, &pool)
         .await
         .unwrap();
 
@@ -2176,8 +2187,8 @@ async fn test_copy_recipe_success() {
 async fn test_copy_recipe_prevents_duplicates() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "creator", "free", 0).await;
-    insert_test_user(&pool, "copier", "free", 0).await;
+    let creator_id = create_test_user(&pool, &executor, "creator@test.com").await;
+    let copier_id = create_test_user(&pool, &executor, "copier@test.com").await;
 
     // Creator creates and shares a recipe
     let original_recipe_id = create_recipe(
@@ -2267,8 +2278,8 @@ async fn test_copy_recipe_prevents_duplicates() {
 async fn test_copy_recipe_enforces_freemium_limit() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "creator", "free", 0).await;
-    insert_test_user(&pool, "copier", "free", 0).await;
+    let creator_id = create_test_user(&pool, &executor, "creator@test.com").await;
+    let copier_id = create_test_user(&pool, &executor, "copier@test.com").await;
 
     // Creator creates and shares a recipe
     let original_recipe_id = create_recipe(
@@ -2365,7 +2376,7 @@ async fn test_copy_recipe_enforces_freemium_limit() {
     let copy_command = CopyRecipeCommand {
         original_recipe_id: original_recipe_id.clone(),
     };
-    let result = copy_recipe(copy_command, "copier", &executor, &pool).await;
+    let result = copy_recipe(copy_command, &copier_id, &executor, &pool).await;
 
     assert!(
         matches!(result, Err(RecipeError::RecipeLimitReached)),
@@ -2379,8 +2390,8 @@ async fn test_copy_recipe_enforces_freemium_limit() {
 async fn test_copy_recipe_requires_shared_recipe() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "creator", "free", 0).await;
-    insert_test_user(&pool, "copier", "free", 0).await;
+    let creator_id = create_test_user(&pool, &executor, "creator@test.com").await;
+    let copier_id = create_test_user(&pool, &executor, "copier@test.com").await;
 
     // Creator creates a PRIVATE recipe (not shared)
     let private_recipe_id = create_recipe(
@@ -2420,7 +2431,7 @@ async fn test_copy_recipe_requires_shared_recipe() {
     let copy_command = CopyRecipeCommand {
         original_recipe_id: private_recipe_id.clone(),
     };
-    let result = copy_recipe(copy_command, "copier", &executor, &pool).await;
+    let result = copy_recipe(copy_command, &copier_id, &executor, &pool).await;
 
     assert!(
         matches!(result, Err(RecipeError::ValidationError(_))),
@@ -2437,14 +2448,14 @@ async fn test_copy_recipe_requires_shared_recipe() {
 async fn test_copy_recipe_validates_recipe_exists() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "copier", "free", 0).await;
+    let copier_id = create_test_user(&pool, &executor, "copier@test.com").await;
 
     // Attempt to copy non-existent recipe
     use recipe::{copy_recipe, CopyRecipeCommand};
     let copy_command = CopyRecipeCommand {
         original_recipe_id: "nonexistent-recipe-id".to_string(),
     };
-    let result = copy_recipe(copy_command, "copier", &executor, &pool).await;
+    let result = copy_recipe(copy_command, &copier_id, &executor, &pool).await;
 
     assert!(
         matches!(result, Err(RecipeError::ValidationError(_))),
@@ -2460,8 +2471,8 @@ async fn test_copy_recipe_validates_recipe_exists() {
 async fn test_copy_recipe_modifications_independent() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "creator", "free", 0).await;
-    insert_test_user(&pool, "copier", "free", 0).await;
+    let creator_id = create_test_user(&pool, &executor, "creator@test.com").await;
+    let copier_id = create_test_user(&pool, &executor, "copier@test.com").await;
 
     // Creator creates and shares a recipe
     let original_recipe_id = create_recipe(
@@ -2520,7 +2531,7 @@ async fn test_copy_recipe_modifications_independent() {
     let copy_command = CopyRecipeCommand {
         original_recipe_id: original_recipe_id.clone(),
     };
-    let copied_recipe_id = copy_recipe(copy_command, "copier", &executor, &pool)
+    let copied_recipe_id = copy_recipe(copy_command, &copier_id, &executor, &pool)
         .await
         .unwrap();
 
