@@ -75,6 +75,16 @@ enum Commands {
         #[arg(long)]
         email: String,
     },
+    /// Upgrade or downgrade user subscription tier
+    SetTier {
+        /// User email address
+        #[arg(long)]
+        email: String,
+
+        /// New subscription tier (free or premium)
+        #[arg(long)]
+        tier: String,
+    },
 }
 
 #[tokio::main]
@@ -98,6 +108,7 @@ async fn main() -> Result<()> {
         Commands::Migrate => migrate_command(config).await,
         Commands::Reset => reset_command(config).await,
         Commands::ImportRecipe { file, email } => import_recipe_command(config, file, email).await,
+        Commands::SetTier { email, tier } => set_tier_command(config, email, tier).await,
     };
 
     // Graceful shutdown of observability
@@ -485,6 +496,86 @@ async fn import_recipe_command(
     println!("✅ Recipe imported successfully!");
     println!("   Recipe ID: {}", recipe_id);
     println!("   User: {} ({})", user.1, user.0);
+
+    Ok(())
+}
+
+#[tracing::instrument(skip(config))]
+async fn set_tier_command(
+    config: imkitchen::config::Config,
+    user_email: String,
+    tier: String,
+) -> Result<()> {
+    use user::commands::{upgrade_subscription, UpgradeSubscriptionCommand};
+    use user::types::SubscriptionTier;
+
+    tracing::info!("Setting subscription tier for user: {}", user_email);
+
+    // Validate and parse tier
+    let subscription_tier: SubscriptionTier = tier
+        .parse()
+        .map_err(|e: String| anyhow::anyhow!("Invalid tier: {}", e))?;
+
+    tracing::info!("Parsed tier: {} ({})", subscription_tier, subscription_tier.as_str());
+
+    // Set up database connection pool
+    let db_pool = SqlitePoolOptions::new()
+        .max_connections(config.database.max_connections)
+        .connect(&config.database.url)
+        .await?;
+
+    // Set up evento executor
+    let evento_executor: evento::Sqlite = db_pool.clone().into();
+
+    // Query user by email
+    let user = sqlx::query_as::<_, (String, String, String)>(
+        r#"SELECT id, email, tier FROM users WHERE email = ? LIMIT 1"#,
+    )
+    .bind(&user_email)
+    .fetch_optional(&db_pool)
+    .await?
+    .ok_or_else(|| anyhow::anyhow!("User with email '{}' not found", user_email))?;
+
+    let (user_id, email, current_tier) = user;
+    tracing::info!("Found user: {} ({})", email, user_id);
+    tracing::info!("Current tier: {}", current_tier);
+
+    // Check if tier is already set
+    if current_tier == subscription_tier.as_str() {
+        tracing::warn!(
+            "User {} is already on {} tier. No changes made.",
+            email,
+            subscription_tier
+        );
+        println!("⚠️  User {} is already on {} tier", email, subscription_tier);
+        return Ok(());
+    }
+
+    // Create upgrade command (works for both upgrade and downgrade)
+    let command = UpgradeSubscriptionCommand {
+        user_id: user_id.clone(),
+        new_tier: subscription_tier.as_str().to_string(),
+        stripe_customer_id: None, // No Stripe metadata for manual tier changes
+        stripe_subscription_id: None,
+    };
+
+    // Execute subscription upgrade command
+    upgrade_subscription(command, &evento_executor).await?;
+
+    // Run projections to persist event to read model
+    user::read_model::user_projection(db_pool.clone())
+        .unsafe_oneshot(&evento_executor)
+        .await?;
+
+    tracing::info!(
+        "✅ Subscription tier updated successfully: {} -> {}",
+        current_tier,
+        subscription_tier
+    );
+    println!("✅ Subscription tier updated successfully!");
+    println!("   User: {} ({})", email, user_id);
+    println!("   Old tier: {}", current_tier);
+    println!("   New tier: {}", subscription_tier);
 
     Ok(())
 }
