@@ -2272,15 +2272,17 @@ async fn test_copy_recipe_prevents_duplicates() {
 
     // Verify the copied recipe was created with attribution metadata in database
     let copied_recipe_id = result_1.unwrap();
-    let attribution_check: Option<String> = sqlx::query_scalar(
-        "SELECT original_recipe_id FROM recipes WHERE id = ?1"
-    )
-    .bind(&copied_recipe_id)
-    .fetch_optional(&pool)
-    .await
-    .unwrap();
-    assert_eq!(attribution_check, Some(original_recipe_id.clone()),
-        "Attribution metadata (original_recipe_id) should be set in read model after projection");
+    let attribution_check: Option<String> =
+        sqlx::query_scalar("SELECT original_recipe_id FROM recipes WHERE id = ?1")
+            .bind(&copied_recipe_id)
+            .fetch_optional(&pool)
+            .await
+            .unwrap();
+    assert_eq!(
+        attribution_check,
+        Some(original_recipe_id.clone()),
+        "Attribution metadata (original_recipe_id) should be set in read model after projection"
+    );
 
     // AC-10: Second copy should fail with AlreadyCopied error
     let copy_command_2 = CopyRecipeCommand {
@@ -2289,7 +2291,8 @@ async fn test_copy_recipe_prevents_duplicates() {
     let result_2 = copy_recipe(copy_command_2, &copier_id, &executor, &pool).await;
     assert!(
         matches!(result_2, Err(RecipeError::AlreadyCopied)),
-        "Second copy should fail with AlreadyCopied error, got: {:?}", result_2
+        "Second copy should fail with AlreadyCopied error, got: {:?}",
+        result_2
     );
 }
 
