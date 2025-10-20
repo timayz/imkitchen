@@ -516,7 +516,11 @@ async fn set_tier_command(
         .parse()
         .map_err(|e: String| anyhow::anyhow!("Invalid tier: {}", e))?;
 
-    tracing::info!("Parsed tier: {} ({})", subscription_tier, subscription_tier.as_str());
+    tracing::info!(
+        "Parsed tier: {} ({})",
+        subscription_tier,
+        subscription_tier.as_str()
+    );
 
     // Set up database connection pool
     let db_pool = SqlitePoolOptions::new()
@@ -547,7 +551,10 @@ async fn set_tier_command(
             email,
             subscription_tier
         );
-        println!("⚠️  User {} is already on {} tier", email, subscription_tier);
+        println!(
+            "⚠️  User {} is already on {} tier",
+            email, subscription_tier
+        );
         return Ok(());
     }
 
