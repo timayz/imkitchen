@@ -343,42 +343,6 @@ pub async fn update_profile(command: UpdateProfileCommand, executor: &Sqlite) ->
     Ok(())
 }
 
-/// Validate whether a user can create a new recipe based on tier and recipe_count
-///
-/// DEPRECATED: This function is no longer used. Recipe commands now load the UserAggregate
-/// directly using evento::load to get tier and recipe_count from the event store.
-///
-/// This ensures consistency by using evento::load instead of querying the read model.
-///
-/// See: crates/recipe/src/commands.rs - create_recipe() and copy_recipe()
-#[deprecated(
-    since = "0.5.0",
-    note = "Use evento::load<UserAggregate> directly in recipe commands instead"
-)]
-pub async fn validate_recipe_creation(user_id: &str, executor: &evento::Sqlite) -> UserResult<()> {
-    // Load user aggregate from event store to get tier and recipe_count
-    let user_load_result = evento::load::<UserAggregate, _>(executor, user_id)
-        .await
-        .map_err(|e| UserError::EventStoreError(e.to_string()))?;
-
-    // Check if user exists
-    if user_load_result.item.user_id.is_empty() {
-        return Err(UserError::ValidationError("User not found".to_string()));
-    }
-
-    // Premium users bypass all limits
-    if user_load_result.item.tier == "premium" {
-        return Ok(());
-    }
-
-    // Free tier users limited to 10 recipes
-    if user_load_result.item.recipe_count >= 10 {
-        return Err(UserError::RecipeLimitReached);
-    }
-
-    Ok(())
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub struct UpgradeSubscriptionCommand {
     pub user_id: String,

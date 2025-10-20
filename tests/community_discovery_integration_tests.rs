@@ -515,7 +515,7 @@ async fn test_sorting_alphabetical() {
 async fn test_pagination() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "free").await;
+    let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "premium").await;
 
     // Create 25 recipes
     let mut recipe_ids = Vec::new();

@@ -12,7 +12,7 @@ pub use aggregate::UserAggregate;
 pub use commands::{
     complete_profile, register_user, reset_password, set_dietary_restrictions, set_household_size,
     set_skill_level, set_weeknight_availability, update_profile, upgrade_subscription,
-    validate_recipe_creation, CompleteProfileCommand, RegisterUserCommand, ResetPasswordCommand,
+    CompleteProfileCommand, RegisterUserCommand, ResetPasswordCommand,
     SetDietaryRestrictionsCommand, SetHouseholdSizeCommand, SetSkillLevelCommand,
     SetWeeknightAvailabilityCommand, UpdateProfileCommand, UpgradeSubscriptionCommand,
 };

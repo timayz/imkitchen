@@ -172,26 +172,26 @@ async fn test_validate_recipe_creation_free_tier_enforces_limit() {
 
     let (user_id, _token) = create_test_user(&pool, &test_app.evento_executor).await;
 
-    // Create 10 recipes to reach the limit via events (proper event sourcing way)
+    // Create 10 recipes to reach the limit via create_recipe command
     for i in 0..10 {
-        // Emit RecipeCreated event (user aggregate listens to this)
-        // evento::create generates the aggregator_id automatically
-        evento::create::<recipe::aggregate::RecipeAggregate>()
-            .data(&recipe::events::RecipeCreated {
-                user_id: user_id.clone(),
-                title: format!("Test Recipe {}", i),
-                ingredients: vec![],
-                instructions: vec![],
-                prep_time_min: None,
-                cook_time_min: None,
-                advance_prep_hours: None,
-                serving_size: None,
-                created_at: chrono::Utc::now().to_rfc3339(),
-            })
-            .unwrap()
-            .metadata(&true)
-            .unwrap()
-            .commit(&test_app.evento_executor)
+        let command = recipe::CreateRecipeCommand {
+            title: format!("Test Recipe {}", i),
+            ingredients: vec![recipe::Ingredient {
+                name: "Test".to_string(),
+                quantity: 1.0,
+                unit: "cup".to_string(),
+            }],
+            instructions: vec![recipe::InstructionStep {
+                step_number: 1,
+                instruction_text: "Test".to_string(),
+                timer_minutes: None,
+            }],
+            prep_time_min: None,
+            cook_time_min: None,
+            advance_prep_hours: None,
+            serving_size: None,
+        };
+        recipe::create_recipe(command, &user_id, &test_app.evento_executor, &test_app.pool)
             .await
             .unwrap();
     }
@@ -199,12 +199,29 @@ async fn test_validate_recipe_creation_free_tier_enforces_limit() {
     // Process events so UserAggregate updates recipe_count
     test_app.process_events().await;
 
-    // Attempt to validate recipe creation (should fail)
-    let result = user::commands::validate_recipe_creation(&user_id, &test_app.evento_executor).await;
+    // Attempt to create recipe #11 (should fail)
+    let command = recipe::CreateRecipeCommand {
+        title: "Recipe #11".to_string(),
+        ingredients: vec![recipe::Ingredient {
+            name: "Test".to_string(),
+            quantity: 1.0,
+            unit: "cup".to_string(),
+        }],
+        instructions: vec![recipe::InstructionStep {
+            step_number: 1,
+            instruction_text: "Test".to_string(),
+            timer_minutes: None,
+        }],
+        prep_time_min: None,
+        cook_time_min: None,
+        advance_prep_hours: None,
+        serving_size: None,
+    };
+    let result = recipe::create_recipe(command, &user_id, &test_app.evento_executor, &test_app.pool).await;
 
     assert!(result.is_err());
     match result {
-        Err(user::error::UserError::RecipeLimitReached) => {
+        Err(recipe::RecipeError::RecipeLimitReached) => {
             // Expected error
         }
         _ => panic!("Expected RecipeLimitReached error"),
@@ -233,26 +250,26 @@ async fn test_validate_recipe_creation_premium_tier_bypasses_limit() {
     // Process events
     test_app.process_events().await;
 
-    // Create 15 recipes to go over free limit via events (proper event sourcing way)
+    // Create 15 recipes to go over free limit via create_recipe command
     for i in 0..15 {
-        // Emit RecipeCreated event (user aggregate listens to this)
-        // evento::create generates the aggregator_id automatically
-        evento::create::<recipe::aggregate::RecipeAggregate>()
-            .data(&recipe::events::RecipeCreated {
-                user_id: user_id.clone(),
-                title: format!("Test Recipe {}", i),
-                ingredients: vec![],
-                instructions: vec![],
-                prep_time_min: None,
-                cook_time_min: None,
-                advance_prep_hours: None,
-                serving_size: None,
-                created_at: chrono::Utc::now().to_rfc3339(),
-            })
-            .unwrap()
-            .metadata(&true)
-            .unwrap()
-            .commit(&test_app.evento_executor)
+        let command = recipe::CreateRecipeCommand {
+            title: format!("Test Recipe {}", i),
+            ingredients: vec![recipe::Ingredient {
+                name: "Test".to_string(),
+                quantity: 1.0,
+                unit: "cup".to_string(),
+            }],
+            instructions: vec![recipe::InstructionStep {
+                step_number: 1,
+                instruction_text: "Test".to_string(),
+                timer_minutes: None,
+            }],
+            prep_time_min: None,
+            cook_time_min: None,
+            advance_prep_hours: None,
+            serving_size: None,
+        };
+        recipe::create_recipe(command, &user_id, &test_app.evento_executor, &test_app.pool)
             .await
             .unwrap();
     }
@@ -260,8 +277,25 @@ async fn test_validate_recipe_creation_premium_tier_bypasses_limit() {
     // Process events so UserAggregate updates recipe_count
     test_app.process_events().await;
 
-    // Attempt to validate recipe creation (should succeed for premium)
-    let result = user::commands::validate_recipe_creation(&user_id, &test_app.evento_executor).await;
+    // Attempt to create recipe #51 (should succeed for premium)
+    let command = recipe::CreateRecipeCommand {
+        title: "Recipe #51".to_string(),
+        ingredients: vec![recipe::Ingredient {
+            name: "Test".to_string(),
+            quantity: 1.0,
+            unit: "cup".to_string(),
+        }],
+        instructions: vec![recipe::InstructionStep {
+            step_number: 1,
+            instruction_text: "Test".to_string(),
+            timer_minutes: None,
+        }],
+        prep_time_min: None,
+        cook_time_min: None,
+        advance_prep_hours: None,
+        serving_size: None,
+    };
+    let result = recipe::create_recipe(command, &user_id, &test_app.evento_executor, &test_app.pool).await;
 
     assert!(result.is_ok());
 }
@@ -273,26 +307,26 @@ async fn test_validate_recipe_creation_free_tier_under_limit_succeeds() {
 
     let (user_id, _token) = create_test_user(&pool, &test_app.evento_executor).await;
 
-    // Create 5 recipes (under limit) via events (proper event sourcing way)
+    // Create 5 recipes (under limit) via create_recipe command
     for i in 0..5 {
-        // Emit RecipeCreated event (user aggregate listens to this)
-        // evento::create generates the aggregator_id automatically
-        evento::create::<recipe::aggregate::RecipeAggregate>()
-            .data(&recipe::events::RecipeCreated {
-                user_id: user_id.clone(),
-                title: format!("Test Recipe {}", i),
-                ingredients: vec![],
-                instructions: vec![],
-                prep_time_min: None,
-                cook_time_min: None,
-                advance_prep_hours: None,
-                serving_size: None,
-                created_at: chrono::Utc::now().to_rfc3339(),
-            })
-            .unwrap()
-            .metadata(&true)
-            .unwrap()
-            .commit(&test_app.evento_executor)
+        let command = recipe::CreateRecipeCommand {
+            title: format!("Test Recipe {}", i),
+            ingredients: vec![recipe::Ingredient {
+                name: "Test".to_string(),
+                quantity: 1.0,
+                unit: "cup".to_string(),
+            }],
+            instructions: vec![recipe::InstructionStep {
+                step_number: 1,
+                instruction_text: "Test".to_string(),
+                timer_minutes: None,
+            }],
+            prep_time_min: None,
+            cook_time_min: None,
+            advance_prep_hours: None,
+            serving_size: None,
+        };
+        recipe::create_recipe(command, &user_id, &test_app.evento_executor, &test_app.pool)
             .await
             .unwrap();
     }
@@ -300,8 +334,25 @@ async fn test_validate_recipe_creation_free_tier_under_limit_succeeds() {
     // Process events so UserAggregate updates recipe_count
     test_app.process_events().await;
 
-    // Attempt to validate recipe creation (should succeed)
-    let result = user::commands::validate_recipe_creation(&user_id, &test_app.evento_executor).await;
+    // Attempt to create recipe #6 (should succeed)
+    let command = recipe::CreateRecipeCommand {
+        title: "Recipe #6".to_string(),
+        ingredients: vec![recipe::Ingredient {
+            name: "Test".to_string(),
+            quantity: 1.0,
+            unit: "cup".to_string(),
+        }],
+        instructions: vec![recipe::InstructionStep {
+            step_number: 1,
+            instruction_text: "Test".to_string(),
+            timer_minutes: None,
+        }],
+        prep_time_min: None,
+        cook_time_min: None,
+        advance_prep_hours: None,
+        serving_size: None,
+    };
+    let result = recipe::create_recipe(command, &user_id, &test_app.evento_executor, &test_app.pool).await;
 
     assert!(result.is_ok());
 }

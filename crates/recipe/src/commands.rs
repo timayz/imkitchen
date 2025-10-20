@@ -125,6 +125,20 @@ pub async fn create_recipe(
 
     emit_recipe_tagged_event(&aggregator_id, &load_result.item, executor, false).await?;
 
+    // Emit user::events::RecipeCreated to update UserAggregate.recipe_count
+    evento::save::<user::aggregate::UserAggregate>(user_id.to_string())
+        .data(&user::events::RecipeCreated {
+            user_id: user_id.to_string(),
+            title: load_result.item.title.clone(),
+            created_at: created_at.to_rfc3339(),
+        })
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .metadata(&true)
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .commit(executor)
+        .await
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
+
     // Return the generated aggregator_id as the recipe_id
     Ok(aggregator_id)
 }
@@ -219,6 +233,19 @@ pub async fn delete_recipe(
     // evento::save() automatically loads the aggregate before appending the event
     evento::save::<RecipeAggregate>(command.recipe_id.clone())
         .data(&RecipeDeleted {
+            user_id: command.user_id.clone(),
+            deleted_at: deleted_at.to_rfc3339(),
+        })
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .metadata(&true)
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .commit(executor)
+        .await
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
+
+    // Emit user::events::RecipeDeleted to update UserAggregate.recipe_count
+    evento::save::<user::aggregate::UserAggregate>(command.user_id.clone())
+        .data(&user::events::RecipeDeleted {
             user_id: command.user_id,
             deleted_at: deleted_at.to_rfc3339(),
         })
