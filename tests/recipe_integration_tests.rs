@@ -218,7 +218,6 @@ async fn test_query_recipes_by_user() {
 
 // Note: Delete tests temporarily disabled as delete functionality is out of scope for Story 2.1 (Create Recipe only)
 #[tokio::test]
-#[ignore]
 async fn test_delete_recipe_integration() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
@@ -265,7 +264,7 @@ async fn test_delete_recipe_integration() {
     // Delete recipe
     let delete_command = DeleteRecipeCommand {
         recipe_id: recipe_id.clone(),
-        user_id: "user1".to_string(),
+        user_id: user1_id.to_string(),
     };
     delete_recipe(delete_command, &executor, &pool)
         .await
@@ -282,12 +281,11 @@ async fn test_delete_recipe_integration() {
 }
 
 #[tokio::test]
-#[ignore]
 async fn test_delete_recipe_permission_denied() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
     let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "free").await;
-    let _user2_id = create_test_user_for_tests(&pool, &executor, "user2@test.com", "free").await;
+    let user2_id = create_test_user_for_tests(&pool, &executor, "user2@test.com", "free").await;
 
     // Start projection
     // Process events synchronously for deterministic tests
@@ -326,7 +324,7 @@ async fn test_delete_recipe_permission_denied() {
     // User2 tries to delete user1's recipe
     let delete_command = DeleteRecipeCommand {
         recipe_id: recipe_id.clone(),
-        user_id: "user2".to_string(), // Different user!
+        user_id: user2_id.to_string(), // Different user!
     };
     let result = delete_recipe(delete_command, &executor, &pool).await;
 

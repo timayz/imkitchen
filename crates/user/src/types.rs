@@ -13,7 +13,9 @@ use std::str::FromStr;
 /// preventing typos and invalid tier assignments.
 ///
 /// ## Usage
-/// ```ignore
+/// ```
+/// use user::types::SubscriptionTier;
+///
 /// let tier = SubscriptionTier::Free;
 /// assert_eq!(tier.as_str(), "free");
 ///
