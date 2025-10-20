@@ -1,0 +1,276 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>5</epicId>
+    <storyId>5.9</storyId>
+    <title>App Performance Optimization</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-19</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-5.9.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a user on a slower connection</asA>
+    <iWant>fast load times</iWant>
+    <soThat>I'm not waiting for pages</soThat>
+    <tasks>
+      <task id="1">Measure and establish performance baselines (AC: 1, 2)</task>
+      <task id="2">Optimize initial load time to &lt;3s on 3G (AC: 1, 4, 6, 7)</task>
+      <task id="3">Implement image lazy loading (AC: 3)</task>
+      <task id="4">Optimize subsequent navigation to &lt;1s (AC: 2)</task>
+      <task id="5">Implement JavaScript code splitting (AC: 5)</task>
+      <task id="6">Validate performance targets with Lighthouse CI (AC: All)</task>
+      <task id="7">Write comprehensive performance tests (AC: All)</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="1">Initial load &lt;3 seconds on 3G connection</criterion>
+    <criterion id="2">Subsequent page navigation &lt;1 second (cached resources)</criterion>
+    <criterion id="3">Images lazy-loaded below fold</criterion>
+    <criterion id="4">Critical CSS inlined in HTML head</criterion>
+    <criterion id="5">JavaScript bundles split for code splitting</criterion>
+    <criterion id="6">Server-side rendering for initial page load (Askama templates)</criterion>
+    <criterion id="7">Brotli compression for all text assets</criterion>
+    <criterion id="8">CDN for static assets (future: out of MVP scope)</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-5.md</path>
+        <title>Technical Specification: Progressive Web App &amp; Mobile Experience</title>
+        <section>Non-Functional Requirements → Performance (lines 1486-1527)</section>
+        <snippet>PWA Performance Targets: Initial load &lt;3s on 3G, LCP &lt;2.5s, FID &lt;100ms, CLS &lt;0.1. Service worker precaching reduces repeat loads by 80%. Tailwind CSS purged to &lt;20KB gzipped.</snippet>
+        <relevance>Defines authoritative performance targets and optimization techniques for Epic 5</relevance>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-5.md</path>
+        <title>Technical Specification: Progressive Web App &amp; Mobile Experience</title>
+        <section>Performance Tests (lines 2287-2354)</section>
+        <snippet>Lighthouse CI Integration with GitHub Actions workflow example. Configuration includes PWA ≥90, Performance ≥80, Accessibility ≥90 score thresholds. Automated daily audits.</snippet>
+        <relevance>Provides complete Lighthouse CI configuration and integration pattern</relevance>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-5.md</path>
+        <title>Technical Specification: Progressive Web App &amp; Mobile Experience</title>
+        <section>Module 2: Service Worker Implementation (lines 256-416)</section>
+        <snippet>Workbox caching strategies: stale-while-revalidate for HTML, cache-first for images (30-day expiration), network-first with 5s timeout for API data. Service worker version updates via CI/CD triggers browser update.</snippet>
+        <relevance>Existing service worker caching strategies that support performance optimization (Story 5.2/5.3 already implemented)</relevance>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>Section 8: Performance Optimization</section>
+        <snippet>Server-side rendering performance via Askama templates. Cache strategies for static assets. HTTP/2 support. Brotli compression for text assets.</snippet>
+        <relevance>Architecture decisions for performance optimization approach</relevance>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-5.md</path>
+        <title>Technical Specification: Progressive Web App &amp; Mobile Experience</title>
+        <section>Module 3: Responsive Design System (Tailwind CSS) (lines 493-671)</section>
+        <snippet>Tailwind configuration with PurgeCSS content scanning: templates/**/*.html and src/**/*.rs. Build command for minification: npx tailwindcss --minify. Target: &lt;20KB gzipped.</snippet>
+        <relevance>Tailwind CSS build process and optimization configuration</relevance>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/epics.md</path>
+        <title>Product Epics Document</title>
+        <section>Story 5.9 (lines 1373-1395)</section>
+        <snippet>App Performance Optimization acceptance criteria and prerequisites. Depends on Stories 5.2 (Service Worker), 5.3 (Offline Caching), 5.4 (Responsive Design) being completed.</snippet>
+        <relevance>Epic-level context and story dependencies</relevance>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/templates/base.html</path>
+        <kind>template</kind>
+        <symbol>base.html</symbol>
+        <lines>1-210</lines>
+        <reason>Base HTML template where critical CSS inlining (AC 4) will be added in &lt;head&gt;. Contains existing script tags with defer attributes. Location for prefetch link tags (Task 4.2).</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/templates/components/recipe-card.html</path>
+        <kind>component</kind>
+        <symbol>recipe-card</symbol>
+        <reason>Recipe card component where image lazy loading (AC 3) will be implemented. Add loading="lazy" and srcset attributes to &lt;img&gt; tags.</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/src/main.rs</path>
+        <kind>module</kind>
+        <symbol>main</symbol>
+        <reason>Axum server entry point where Brotli compression middleware (AC 7) will be added via tower-http CompressionLayer.</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/src/routes/assets.rs</path>
+        <kind>module</kind>
+        <symbol>assets routes</symbol>
+        <reason>Static asset serving routes. Verify Cache-Control headers and compression configuration for optimal performance.</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/static/sw.js</path>
+        <kind>service-worker</kind>
+        <symbol>Service Worker</symbol>
+        <reason>Service worker from Stories 5.2/5.3 with caching strategies already implemented. Supports subsequent navigation &lt;1s (AC 2) via cache-first and stale-while-revalidate strategies.</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/static/js/sw-register.js</path>
+        <kind>script</kind>
+        <symbol>sw-register</symbol>
+        <reason>Service worker registration script. Already uses defer attribute. Verify non-blocking registration timing.</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/static/js/sync-ui.js</path>
+        <kind>script</kind>
+        <symbol>sync-ui</symbol>
+        <lines>~480 lines</lines>
+        <reason>Large sync UI module from Story 5.8. Candidate for code splitting (AC 5, Task 5.2) - defer load until sync needed.</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/e2e/tests/service-worker-offline.spec.ts</path>
+        <kind>test</kind>
+        <symbol>service-worker-offline tests</symbol>
+        <reason>Existing E2E test suite for service worker offline functionality. Reference for performance test patterns (Task 7).</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/.github/workflows/ci.yaml</path>
+        <kind>ci-workflow</kind>
+        <symbol>CI workflow</symbol>
+        <reason>Existing CI workflow where Lighthouse CI integration (Task 1.1) will be added as new job.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <rust>
+        <dep name="tower-http" version="0.6" features="fs, trace">Compression middleware for Brotli (AC 7). Add 'compression-br' feature.</dep>
+        <dep name="axum" version="0.8">Web framework. Verify HTTP/2 support for performance optimization.</dep>
+        <dep name="askama" version="0.14">Template engine for server-side rendering (AC 6). Already implemented.</dep>
+      </rust>
+      <node>
+        <dep name="workbox-cli" version="^7.1.0">Service worker generation. Already installed (Story 5.2).</dep>
+        <dep name="@lhci/cli" version="latest">NEW: Lighthouse CI command-line tool for automated performance audits (Task 1.1).</dep>
+      </node>
+      <playwright>
+        <dep name="@playwright/test" version="^1.56.0">E2E testing framework. Network throttling support for 3G simulation (Task 7.1).</dep>
+      </playwright>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="1">
+      <rule>Performance Budgets (NFR-1)</rule>
+      <description>Initial load &lt;3s on 3G, LCP &lt;2.5s, FID &lt;100ms, CLS &lt;0.1, TTI &lt;3.8s, TBT &lt;200ms per tech spec lines 1486-1527.</description>
+    </constraint>
+    <constraint id="2">
+      <rule>Service Worker Dependency</rule>
+      <description>Story 5.9 depends on Stories 5.2 (Service Worker Registration) and 5.3 (Offline Caching) being completed. Verify service worker active before performance testing.</description>
+    </constraint>
+    <constraint id="3">
+      <rule>Tailwind CSS Build Process</rule>
+      <description>Tailwind CSS must be purged via content scanning of templates/**/*.html and src/**/*.rs. Target: &lt;20KB gzipped (tech spec line 1524). Build command: npx tailwindcss --minify.</description>
+    </constraint>
+    <constraint id="4">
+      <rule>Server-Side Rendering (Askama)</rule>
+      <description>All initial page loads must render full HTML via Askama templates before client JavaScript loads (AC 6, architecture decision). No client-side rendering for initial content.</description>
+    </constraint>
+    <constraint id="5">
+      <rule>Progressive Enhancement</rule>
+      <description>Performance optimizations must maintain progressive enhancement. Pages must work without JavaScript, be faster with service worker, and remain accessible (architecture principle).</description>
+    </constraint>
+    <constraint id="6">
+      <rule>Lighthouse CI Thresholds</rule>
+      <description>PWA score ≥90, Performance score ≥80, Accessibility score ≥90 (tech spec lines 2337-2351). CI build fails if thresholds not met.</description>
+    </constraint>
+    <constraint id="7">
+      <rule>Image Optimization</rule>
+      <description>All images must use loading="lazy" for below-fold images and srcset for responsive sizing (tech spec line 1501). Locations: recipe cards, meal slots, profile images.</description>
+    </constraint>
+    <constraint id="8">
+      <rule>No Backend Domain Changes</rule>
+      <description>Story 5.9 is purely frontend/infrastructure optimization. No new domain events, aggregates, or crate modifications. Only touch: templates, static assets, CI/CD, middleware configuration.</description>
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>tower_http::CompressionLayer</name>
+      <kind>middleware</kind>
+      <signature>CompressionLayer::new().br(true).gzip(true)</signature>
+      <path>tower-http crate</path>
+      <usage>Enable Brotli compression in Axum server (Task 2.2). Add to middleware stack in src/main.rs.</usage>
+    </interface>
+    <interface>
+      <name>Lighthouse CI CLI</name>
+      <kind>tool</kind>
+      <signature>lhci autorun --config=lighthouserc.json</signature>
+      <path>@lhci/cli npm package</path>
+      <usage>Run automated Lighthouse audits in CI/CD workflow (Task 1.1, Task 6).</usage>
+    </interface>
+    <interface>
+      <name>Playwright Network Emulation</name>
+      <kind>api</kind>
+      <signature>page.route('**/*', route => route.continue({ /* throttle config */ }))</signature>
+      <path>@playwright/test</path>
+      <usage>Simulate Slow 3G network (400ms RTT, 400kbps down) for performance testing (Task 7.1).</usage>
+    </interface>
+    <interface>
+      <name>HTML img loading attribute</name>
+      <kind>html-attribute</kind>
+      <signature>&lt;img loading="lazy" srcset="..." sizes="..."&gt;</signature>
+      <path>Standard HTML5 API</path>
+      <usage>Native browser lazy loading for images below fold (Task 3, AC 3).</usage>
+    </interface>
+    <interface>
+      <name>HTML link prefetch</name>
+      <kind>html-element</kind>
+      <signature>&lt;link rel="prefetch" href="/recipes" as="document"&gt;</signature>
+      <path>Standard HTML5 API</path>
+      <usage>Prefetch next-page resources to optimize subsequent navigation (Task 4.2).</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing framework: Playwright 1.56+ for E2E tests (e2e/tests/*.spec.ts). Rust integration tests in tests/ directory (not applicable for this story). Performance testing via Lighthouse CI with automated thresholds. Test structure: Arrange-Act-Assert pattern. Cross-browser testing: Chromium, Firefox, WebKit (iOS Safari). Network throttling support for 3G simulation. Visual regression testing for critical CSS rendering (prevent FOUC). All performance tests must be deterministic and repeatable.
+    </standards>
+    <locations>
+      <location>e2e/tests/performance.spec.ts (NEW)</location>
+      <location>.github/workflows/lighthouse.yml (NEW)</location>
+      <location>lighthouserc.json (NEW)</location>
+      <location>e2e/tests/service-worker-offline.spec.ts (reference pattern)</location>
+      <location>e2e/tests/responsive-design.spec.ts (reference pattern)</location>
+    </locations>
+    <ideas>
+      <idea ac="1">
+        <testName>initial_load_3g_network</testName>
+        <description>Playwright test with Slow 3G network throttling (400ms RTT, 400kbps). Navigate to /, /dashboard, /recipes. Assert load time &lt;3000ms via Date.now() timing.</description>
+      </idea>
+      <idea ac="2">
+        <testName>subsequent_navigation_cached</testName>
+        <description>Playwright test: Load /dashboard with service worker active, navigate to /recipes. Measure navigation time via performance.now(). Assert &lt;1000ms for cached navigation.</description>
+      </idea>
+      <idea ac="3">
+        <testName>image_lazy_loading_below_fold</testName>
+        <description>Playwright test: Navigate to /recipes, capture network requests. Verify images below viewport not loaded initially. Scroll down, verify images load on scroll into viewport.</description>
+      </idea>
+      <idea ac="4">
+        <testName>critical_css_inline_no_fouc</testName>
+        <description>Visual regression test: Navigate to / with network throttled. Capture screenshot at DOMContentLoaded (before full CSS loads). Verify above-fold content renders correctly without Flash of Unstyled Content.</description>
+      </idea>
+      <idea ac="5">
+        <testName>javascript_bundle_size_audit</testName>
+        <description>Integration test: Parse network log after page load. Assert total JavaScript bundle size &lt;50KB gzipped. Verify sync-ui.js deferred until needed (not in initial bundle).</description>
+      </idea>
+      <idea ac="6">
+        <testName>server_side_rendering_no_client_render</testName>
+        <description>Playwright test: Disable JavaScript, navigate to /dashboard. Verify full HTML content rendered server-side (Askama). Assert no client-side rendering required for initial view.</description>
+      </idea>
+      <idea ac="7">
+        <testName>brotli_compression_enabled</testName>
+        <description>Integration test: Make HTTP request to / with Accept-Encoding: br header. Assert response header Content-Encoding: br. Verify compressed size significantly smaller than uncompressed.</description>
+      </idea>
+      <idea ac="all">
+        <testName>lighthouse_ci_performance_budget</testName>
+        <description>Lighthouse CI automated test in GitHub Actions. Run audits on /, /dashboard, /recipes, /plan, /shopping. Assert PWA ≥90, Performance ≥80, Accessibility ≥90. Fail build if thresholds not met.</description>
+      </idea>
+    </ideas>
+  </tests>
+</story-context>
