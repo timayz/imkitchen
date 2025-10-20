@@ -786,8 +786,12 @@ fn parse_recipe_form(body: &str) -> Result<CreateRecipeForm, String> {
     // Parse URL-encoded body
     for pair in body.split('&') {
         if let Some((key, value)) = pair.split_once('=') {
-            let key = urlencoding::decode(key).map_err(|e| e.to_string())?;
-            let value = urlencoding::decode(value).map_err(|e| e.to_string())?;
+            // First replace '+' with space, then decode percent-encoded characters
+            let key_with_spaces = key.replace('+', " ");
+            let value_with_spaces = value.replace('+', " ");
+
+            let key = urlencoding::decode(&key_with_spaces).map_err(|e| e.to_string())?;
+            let value = urlencoding::decode(&value_with_spaces).map_err(|e| e.to_string())?;
 
             fields
                 .entry(key.to_string())
