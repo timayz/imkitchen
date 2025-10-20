@@ -2194,7 +2194,6 @@ async fn test_copy_recipe_success() {
 /// Test: copy_recipe prevents duplicate copies
 /// AC-10
 #[tokio::test]
-#[ignore = "Projection timing issues - needs investigation"]
 async fn test_copy_recipe_prevents_duplicates() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
@@ -2261,15 +2260,27 @@ async fn test_copy_recipe_prevents_duplicates() {
     let result_1 = copy_recipe(copy_command_1, &copier_id, &executor, &pool).await;
     assert!(result_1.is_ok(), "First copy should succeed");
 
-    // Run projection (may need multiple passes for all events)
-    recipe_projection(pool.clone())
-        .unsafe_oneshot(&executor)
-        .await
-        .unwrap();
-    recipe_projection(pool.clone())
-        .unsafe_oneshot(&executor)
-        .await
-        .unwrap();
+    // Run projection multiple times to ensure ALL events are processed
+    // copy_recipe emits TWO separate events: RecipeCreated (new recipe) and RecipeCopied (attribution)
+    // unsafe_oneshot processes events in batches, so we need multiple calls
+    for _ in 0..3 {
+        recipe_projection(pool.clone())
+            .unsafe_oneshot(&executor)
+            .await
+            .unwrap();
+    }
+
+    // Verify the copied recipe was created with attribution metadata in database
+    let copied_recipe_id = result_1.unwrap();
+    let attribution_check: Option<String> = sqlx::query_scalar(
+        "SELECT original_recipe_id FROM recipes WHERE id = ?1"
+    )
+    .bind(&copied_recipe_id)
+    .fetch_optional(&pool)
+    .await
+    .unwrap();
+    assert_eq!(attribution_check, Some(original_recipe_id.clone()),
+        "Attribution metadata (original_recipe_id) should be set in read model after projection");
 
     // AC-10: Second copy should fail with AlreadyCopied error
     let copy_command_2 = CopyRecipeCommand {
@@ -2278,14 +2289,13 @@ async fn test_copy_recipe_prevents_duplicates() {
     let result_2 = copy_recipe(copy_command_2, &copier_id, &executor, &pool).await;
     assert!(
         matches!(result_2, Err(RecipeError::AlreadyCopied)),
-        "Second copy should fail with AlreadyCopied error"
+        "Second copy should fail with AlreadyCopied error, got: {:?}", result_2
     );
 }
 
 /// Test: copy_recipe enforces freemium limit
 /// AC-5, AC-11
 #[tokio::test]
-#[ignore = "Projection timing issues - needs investigation"]
 async fn test_copy_recipe_enforces_freemium_limit() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
@@ -2372,12 +2382,12 @@ async fn test_copy_recipe_enforces_freemium_limit() {
         .unwrap();
     }
 
-    // Run projection (may need multiple passes for all events)
+    // Run projection to sync all created recipes to read model (updates user's recipe_count)
     recipe_projection(pool.clone())
         .unsafe_oneshot(&executor)
         .await
         .unwrap();
-    recipe_projection(pool.clone())
+    user::user_projection(pool.clone())
         .unsafe_oneshot(&executor)
         .await
         .unwrap();
@@ -2477,7 +2487,6 @@ async fn test_copy_recipe_validates_recipe_exists() {
 /// Test: copied recipe modifications don't affect original
 /// AC-7
 #[tokio::test]
-#[ignore = "Projection timing issues - needs investigation"]
 async fn test_copy_recipe_modifications_independent() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
@@ -2545,11 +2554,7 @@ async fn test_copy_recipe_modifications_independent() {
         .await
         .unwrap();
 
-    // Run projection to update read model with copied recipe (may need multiple passes)
-    recipe_projection(pool.clone())
-        .unsafe_oneshot(&executor)
-        .await
-        .unwrap();
+    // Run projection to sync the copied recipe to read model
     recipe_projection(pool.clone())
         .unsafe_oneshot(&executor)
         .await
