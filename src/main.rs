@@ -31,7 +31,7 @@ use meal_planning::meal_plan_projection;
 use notifications::{meal_plan_subscriptions, notification_projections};
 use recipe::{collection_projection, recipe_projection};
 use shopping::shopping_projection;
-use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions};
+use sqlx::migrate::MigrateDatabase;
 use std::sync::Arc;
 use tower_http::compression::CompressionLayer;
 use tower_http::trace::TraceLayer;
@@ -130,55 +130,59 @@ async fn serve_command(
     let host = host_override.unwrap_or(config.server.host);
     let port = port_override.unwrap_or(config.server.port);
 
-    // Set up database connection pool
-    let db_pool = SqlitePoolOptions::new()
-        .max_connections(config.database.max_connections)
-        .connect(&config.database.url)
-        .await?;
+    // Set up database connection pools with optimized PRAGMAs
+    // Write pool: 1 connection for evento and all write operations
+    let write_pool = imkitchen::db::create_write_pool(&config.database.url).await?;
 
-    // Create evento executor
-    let evento_executor: evento::Sqlite = db_pool.clone().into();
+    // Read pool: Multiple connections for read-only queries
+    // Use CPU cores as a reasonable default for max connections
+    let read_pool_size = config.database.max_connections;
+    let read_pool = imkitchen::db::create_read_pool(&config.database.url, read_pool_size).await?;
+
+    // Create evento executor using the write pool (single connection for writes)
+    let evento_executor: evento::Sqlite = write_pool.clone().into();
 
     // Set up evento subscription for read model projections
-    user_projection(db_pool.clone())
+    // Projections write to read models, so they use the write pool
+    user_projection(write_pool.clone())
         .run(&evento_executor)
         .await?;
     tracing::info!("Evento subscription 'user-read-model' started");
 
-    recipe_projection(db_pool.clone())
+    recipe_projection(write_pool.clone())
         .run(&evento_executor)
         .await?;
     tracing::info!("Evento subscription 'recipe-read-model' started");
 
-    collection_projection(db_pool.clone())
+    collection_projection(write_pool.clone())
         .run(&evento_executor)
         .await?;
     tracing::info!("Evento subscription 'collection-read-model' started");
 
-    meal_plan_projection(db_pool.clone())
+    meal_plan_projection(write_pool.clone())
         .run(&evento_executor)
         .await?;
     tracing::info!("Evento subscription 'meal-plan-read-model' started");
 
-    shopping_projection(db_pool.clone())
+    shopping_projection(write_pool.clone())
         .run(&evento_executor)
         .await?;
     tracing::info!("Evento subscription 'shopping-read-model' started");
 
     // Notification projections
-    notification_projections(db_pool.clone())
+    notification_projections(write_pool.clone())
         .run(&evento_executor)
         .await?;
     tracing::info!("Evento subscription 'notification-projections' started");
 
     // Notification event subscriptions (business logic)
-    meal_plan_subscriptions(db_pool.clone())
+    meal_plan_subscriptions(write_pool.clone())
         .run(&evento_executor)
         .await?;
     tracing::info!("Evento subscription 'notification-meal-plan-listeners' started");
 
     // Clone references for background worker before moving into state
-    let worker_pool = db_pool.clone();
+    let worker_pool = write_pool.clone();
     let worker_executor = evento_executor.clone();
 
     // Create app state
@@ -192,7 +196,7 @@ async fn serve_command(
     };
 
     let state = AppState {
-        db_pool,
+        db_pool: read_pool.clone(), // Read pool for queries
         evento_executor,
         jwt_secret: config.jwt.secret,
         email_config,
@@ -296,12 +300,12 @@ async fn serve_command(
             auth_middleware,
         ));
 
-    // Build router with health checks using db_pool state
+    // Build router with health checks using read pool state
     let app = Router::new()
         // Health check endpoints (no auth required)
         .route("/health", get(health))
         .route("/ready", get(ready))
-        .with_state(state.db_pool.clone())
+        .with_state(read_pool.clone())
         .merge(
             Router::new()
                 // Offline fallback page (public, no auth)
@@ -384,11 +388,8 @@ async fn migrate_command(config: imkitchen::config::Config) -> Result<()> {
         sqlx::Sqlite::create_database(&config.database.url).await?;
     }
 
-    // Set up database connection pool
-    let db_pool = SqlitePoolOptions::new()
-        .max_connections(1)
-        .connect(&config.database.url)
-        .await?;
+    // Set up database connection pool with optimized PRAGMAs
+    let db_pool = imkitchen::db::create_pool(&config.database.url, 1).await?;
 
     // Run migrations
     run_migrations(&db_pool).await?;
@@ -451,11 +452,9 @@ async fn import_recipe_command(
 
     tracing::info!("Parsed recipe: {}", recipe_data.title);
 
-    // Set up database connection pool
-    let db_pool = SqlitePoolOptions::new()
-        .max_connections(config.database.max_connections)
-        .connect(&config.database.url)
-        .await?;
+    // Set up database connection pool with optimized PRAGMAs
+    let db_pool =
+        imkitchen::db::create_pool(&config.database.url, config.database.max_connections).await?;
 
     // Set up evento executor
     let evento_executor: evento::Sqlite = db_pool.clone().into();
@@ -526,11 +525,9 @@ async fn set_tier_command(
         subscription_tier.as_str()
     );
 
-    // Set up database connection pool
-    let db_pool = SqlitePoolOptions::new()
-        .max_connections(config.database.max_connections)
-        .connect(&config.database.url)
-        .await?;
+    // Set up database connection pool with optimized PRAGMAs
+    let db_pool =
+        imkitchen::db::create_pool(&config.database.url, config.database.max_connections).await?;
 
     // Set up evento executor
     let evento_executor: evento::Sqlite = db_pool.clone().into();
