@@ -145,6 +145,12 @@ async fn serve_command(
         .await?;
     tracing::info!("Evento subscription 'user-read-model' started");
 
+    // Cross-domain subscription: user domain listening to recipe events
+    user::user_recipe_projection::<recipe::aggregate::RecipeAggregate>(db_pool.clone())
+        .run(&evento_executor)
+        .await?;
+    tracing::info!("Evento subscription 'user-recipe-events' started");
+
     recipe_projection(db_pool.clone())
         .run(&evento_executor)
         .await?;

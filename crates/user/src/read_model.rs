@@ -398,12 +398,40 @@ pub fn user_projection(pool: SqlitePool) -> evento::SubscribeBuilder<evento::Sql
         .handler(weeknight_availability_set_handler())
         .handler(profile_completed_handler())
         .handler(profile_updated_handler())
+        .handler(subscription_upgraded_handler())
+        .handler(notification_permission_changed_handler())
+}
+
+/// Cross-domain event handlers for Recipe events
+///
+/// This subscription listens to RecipeAggregate events (from recipe domain)
+/// and updates the user read model accordingly (recipe_count, favorite_count).
+/// Must be registered separately from user_projection since it listens to a different aggregate.
+///
+/// NOTE: This function must be called from the main application which has access
+/// to both user and recipe crates, as RecipeAggregate type is needed as a generic parameter.
+///
+/// # Example (in main.rs)
+/// ```no_run
+/// use evento::prelude::*;
+/// use recipe::aggregate::RecipeAggregate;
+///
+/// user::user_recipe_projection::<RecipeAggregate>(pool.clone())
+///     .run(&executor).await?;
+/// ```
+pub fn user_recipe_projection<A>(
+    pool: SqlitePool,
+) -> evento::SubscribeBuilder<evento::Sqlite>
+where
+    A: evento::AggregatorName + evento::Aggregator,
+{
+    evento::subscribe("user-recipe-events")
+        .aggregator::<A>()
+        .data(pool)
         .handler(recipe_created_handler())
         .handler(recipe_deleted_handler())
         .handler(recipe_shared_handler())
         .handler(recipe_favorited_handler())
-        .handler(subscription_upgraded_handler())
-        .handler(notification_permission_changed_handler())
 }
 
 /// Query user by email for uniqueness check in read model
