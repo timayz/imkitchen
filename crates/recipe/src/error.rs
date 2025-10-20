@@ -10,7 +10,7 @@ pub enum RecipeError {
     #[error("Recipe not found")]
     NotFound,
 
-    #[error("Recipe limit reached - free tier users are limited to 10 recipes")]
+    #[error("Recipe limit reached - free tier users are limited to 10 recipes. Upgrade to premium for unlimited recipes.")]
     RecipeLimitReached,
 
     #[error("Permission denied - you do not own this recipe")]

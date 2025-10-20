@@ -12,14 +12,14 @@ pub use aggregate::UserAggregate;
 pub use commands::{
     complete_profile, register_user, reset_password, set_dietary_restrictions, set_household_size,
     set_skill_level, set_weeknight_availability, update_profile, upgrade_subscription,
-    validate_recipe_creation, CompleteProfileCommand, RegisterUserCommand, ResetPasswordCommand,
+    CompleteProfileCommand, RegisterUserCommand, ResetPasswordCommand,
     SetDietaryRestrictionsCommand, SetHouseholdSizeCommand, SetSkillLevelCommand,
     SetWeeknightAvailabilityCommand, UpdateProfileCommand, UpgradeSubscriptionCommand,
 };
 pub use error::{UserError, UserResult};
 pub use events::{
     DietaryRestrictionsSet, HouseholdSizeSet, PasswordChanged, ProfileCompleted, ProfileUpdated,
-    RecipeCreated, RecipeDeleted, SkillLevelSet, SubscriptionUpgraded, UserCreated,
+    RecipeCreated, RecipeDeleted, RecipeShared, SkillLevelSet, SubscriptionUpgraded, UserCreated,
     WeeknightAvailabilitySet,
 };
 pub use jwt::{generate_jwt, generate_reset_token, validate_jwt, Claims};

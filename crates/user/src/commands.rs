@@ -1,6 +1,6 @@
 use chrono::Utc;
 use evento::Sqlite;
-use sqlx::{Row, SqlitePool};
+use sqlx::SqlitePool;
 use validator::Validate;
 
 use crate::aggregate::UserAggregate;
@@ -341,46 +341,6 @@ pub async fn update_profile(command: UpdateProfileCommand, executor: &Sqlite) ->
         .map_err(|e| UserError::EventStoreError(e.to_string()))?;
 
     Ok(())
-}
-
-/// Validate whether a user can create a new recipe based on tier and recipe_count
-///
-/// This function enforces the freemium tier limit: free users are limited to 10 recipes maximum.
-/// Premium users have unlimited recipe creation.
-///
-/// Returns Ok(()) if user can create a recipe (premium or under limit)
-/// Returns Err(UserError::RecipeLimitReached) if free user has reached the 10 recipe limit
-///
-/// This validation should be called BEFORE emitting RecipeCreated event in the recipe domain.
-pub async fn validate_recipe_creation(user_id: &str, pool: &SqlitePool) -> UserResult<()> {
-    // Query user tier and recipe_count from read model
-    let result = sqlx::query("SELECT tier, recipe_count FROM users WHERE id = ?1")
-        .bind(user_id)
-        .fetch_optional(pool)
-        .await?;
-
-    match result {
-        Some(row) => {
-            let tier: String = row.get("tier");
-            let recipe_count: i32 = row.get("recipe_count");
-
-            // Premium users bypass all limits
-            if tier == "premium" {
-                return Ok(());
-            }
-
-            // Free tier users limited to 10 recipes
-            if tier == "free" && recipe_count >= 10 {
-                return Err(UserError::RecipeLimitReached);
-            }
-
-            Ok(())
-        }
-        None => {
-            // User not found - should not happen in normal flow
-            Err(UserError::ValidationError("User not found".to_string()))
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]

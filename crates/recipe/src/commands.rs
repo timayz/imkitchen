@@ -1,6 +1,6 @@
 use chrono::Utc;
 use evento::Sqlite;
-use sqlx::{Row, SqlitePool};
+use sqlx::SqlitePool;
 use tracing;
 use validator::Validate;
 
@@ -12,6 +12,9 @@ use crate::events::{
 };
 use crate::tagging::{CuisineInferenceService, DietaryTagDetector, RecipeComplexityCalculator};
 use serde::{Deserialize, Serialize};
+
+// Import UserAggregate for recipe limit checks
+use user::aggregate::UserAggregate;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub struct CreateRecipeCommand {
@@ -49,7 +52,7 @@ pub async fn create_recipe(
     command: CreateRecipeCommand,
     user_id: &str,
     executor: &Sqlite,
-    pool: &SqlitePool,
+    _pool: &SqlitePool,
 ) -> RecipeResult<String> {
     // Validate command
     command
@@ -70,36 +73,23 @@ pub async fn create_recipe(
         ));
     }
 
-    // Check user tier and recipe count for freemium enforcement
-    // AC-11: Count only private recipes (shared recipes don't count toward limit)
-    // Query users table to get tier, then count private recipes
-    let user_result = sqlx::query("SELECT tier FROM users WHERE id = ?1")
-        .bind(user_id)
-        .fetch_optional(pool)
-        .await?;
+    // Check user tier and recipe count for freemium enforcement using evento::load
+    // AC-11: recipe_count is tracked in UserAggregate via RecipeCreated/RecipeDeleted events
+    let user_load_result = evento::load::<UserAggregate, _>(executor, user_id)
+        .await
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
 
-    match user_result {
-        Some(user_row) => {
-            let tier: String = user_row.get("tier");
+    // Check if user exists
+    if user_load_result.item.user_id.is_empty() {
+        return Err(RecipeError::ValidationError("User not found".to_string()));
+    }
 
-            // Premium users bypass all limits
-            if tier != "premium" {
-                // AC-11: Count only private recipes (is_shared = false) that are not deleted
-                let private_recipe_count: i64 = sqlx::query_scalar(
-                    "SELECT COUNT(*) FROM recipes WHERE user_id = ?1 AND is_shared = 0 AND deleted_at IS NULL"
-                )
-                .bind(user_id)
-                .fetch_one(pool)
-                .await?;
-
-                // Free tier users limited to 10 private recipes
-                if private_recipe_count >= 10 {
-                    return Err(RecipeError::RecipeLimitReached);
-                }
-            }
-        }
-        None => {
-            return Err(RecipeError::ValidationError("User not found".to_string()));
+    // Premium users bypass all limits
+    if user_load_result.item.tier != "premium" {
+        // Free tier users limited to 10 recipes
+        // recipe_count is tracked in UserAggregate and represents all non-deleted recipes
+        if user_load_result.item.recipe_count >= 10 {
+            return Err(RecipeError::RecipeLimitReached);
         }
     }
 
@@ -134,6 +124,20 @@ pub async fn create_recipe(
         .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
 
     emit_recipe_tagged_event(&aggregator_id, &load_result.item, executor, false).await?;
+
+    // Emit user::events::RecipeCreated to update UserAggregate.recipe_count
+    evento::save::<user::aggregate::UserAggregate>(user_id.to_string())
+        .data(&user::events::RecipeCreated {
+            user_id: user_id.to_string(),
+            title: load_result.item.title.clone(),
+            created_at: created_at.to_rfc3339(),
+        })
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .metadata(&true)
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .commit(executor)
+        .await
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
 
     // Return the generated aggregator_id as the recipe_id
     Ok(aggregator_id)
@@ -196,34 +200,31 @@ pub struct DeleteRecipeCommand {
 
 /// Delete a recipe using evento event sourcing pattern
 ///
-/// 1. Verifies recipe ownership by checking read model
+/// 1. Loads recipe aggregate from event store to verify ownership
 /// 2. Creates and commits RecipeDeleted event to evento event store
 /// 3. Event automatically projected to read model via async subscription handler (soft delete)
 /// 4. User domain also listens to decrement recipe_count
 ///
 /// Permission check: Only the recipe owner can delete their recipe.
-/// Note: Ownership is verified via read model query, not aggregate load
+/// Ownership is verified by loading the aggregate from the event store (consistent data).
 pub async fn delete_recipe(
     command: DeleteRecipeCommand,
     executor: &Sqlite,
-    pool: &SqlitePool,
+    _pool: &SqlitePool,
 ) -> RecipeResult<()> {
-    // Verify recipe exists and check ownership via read model
-    let recipe_result = sqlx::query("SELECT user_id FROM recipes WHERE id = ?1")
-        .bind(&command.recipe_id)
-        .fetch_optional(pool)
-        .await?;
+    // Load recipe aggregate from event store to verify ownership
+    let load_result = evento::load::<RecipeAggregate, _>(executor, &command.recipe_id)
+        .await
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
 
-    match recipe_result {
-        Some(row) => {
-            let owner_id: String = row.get("user_id");
-            if owner_id != command.user_id {
-                return Err(RecipeError::PermissionDenied);
-            }
-        }
-        None => {
-            return Err(RecipeError::NotFound);
-        }
+    // Check if recipe exists (aggregate has data)
+    if load_result.item.recipe_id.is_empty() {
+        return Err(RecipeError::NotFound);
+    }
+
+    // Check ownership
+    if load_result.item.user_id != command.user_id {
+        return Err(RecipeError::PermissionDenied);
     }
 
     let deleted_at = Utc::now();
@@ -232,6 +233,19 @@ pub async fn delete_recipe(
     // evento::save() automatically loads the aggregate before appending the event
     evento::save::<RecipeAggregate>(command.recipe_id.clone())
         .data(&RecipeDeleted {
+            user_id: command.user_id.clone(),
+            deleted_at: deleted_at.to_rfc3339(),
+        })
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .metadata(&true)
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .commit(executor)
+        .await
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
+
+    // Emit user::events::RecipeDeleted to update UserAggregate.recipe_count
+    evento::save::<user::aggregate::UserAggregate>(command.user_id.clone())
+        .data(&user::events::RecipeDeleted {
             user_id: command.user_id,
             deleted_at: deleted_at.to_rfc3339(),
         })
@@ -272,17 +286,17 @@ pub struct UpdateRecipeCommand {
 /// Update an existing recipe using evento event sourcing pattern
 ///
 /// 1. Validates command fields
-/// 2. Verifies recipe ownership via read model
+/// 2. Loads recipe aggregate from event store to verify ownership
 /// 3. Creates and commits RecipeUpdated event with delta (changed fields only)
 /// 4. Event automatically projected to read model via async subscription handler
 /// 5. Returns () on success
 ///
 /// Permission check: Only the recipe owner can update their recipe.
-/// Note: Ownership is verified via read model query, not aggregate load
+/// Ownership is verified by loading the aggregate from the event store (consistent data).
 pub async fn update_recipe(
     command: UpdateRecipeCommand,
     executor: &Sqlite,
-    pool: &SqlitePool,
+    _pool: &SqlitePool,
 ) -> RecipeResult<()> {
     // Validate command
     command
@@ -307,22 +321,19 @@ pub async fn update_recipe(
         }
     }
 
-    // Verify recipe exists and check ownership via read model
-    let recipe_result = sqlx::query("SELECT user_id FROM recipes WHERE id = ?1")
-        .bind(&command.recipe_id)
-        .fetch_optional(pool)
-        .await?;
+    // Load recipe aggregate from event store to verify ownership
+    let load_result = evento::load::<RecipeAggregate, _>(executor, &command.recipe_id)
+        .await
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
 
-    match recipe_result {
-        Some(row) => {
-            let owner_id: String = row.get("user_id");
-            if owner_id != command.user_id {
-                return Err(RecipeError::PermissionDenied);
-            }
-        }
-        None => {
-            return Err(RecipeError::NotFound);
-        }
+    // Check if recipe exists
+    if load_result.item.recipe_id.is_empty() {
+        return Err(RecipeError::NotFound);
+    }
+
+    // Check ownership
+    if load_result.item.user_id != command.user_id {
+        return Err(RecipeError::PermissionDenied);
     }
 
     let updated_at = Utc::now();
@@ -374,24 +385,21 @@ pub struct UpdateRecipeTagsCommand {
 pub async fn update_recipe_tags(
     command: UpdateRecipeTagsCommand,
     executor: &Sqlite,
-    pool: &SqlitePool,
+    _pool: &SqlitePool,
 ) -> RecipeResult<()> {
-    // Verify recipe exists and check ownership via read model
-    let recipe_result = sqlx::query("SELECT user_id FROM recipes WHERE id = ?1")
-        .bind(&command.recipe_id)
-        .fetch_optional(pool)
-        .await?;
+    // Load recipe aggregate from event store to verify ownership
+    let load_result = evento::load::<RecipeAggregate, _>(executor, &command.recipe_id)
+        .await
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
 
-    match recipe_result {
-        Some(row) => {
-            let owner_id: String = row.get("user_id");
-            if owner_id != command.user_id {
-                return Err(RecipeError::PermissionDenied);
-            }
-        }
-        None => {
-            return Err(RecipeError::NotFound);
-        }
+    // Check if recipe exists
+    if load_result.item.recipe_id.is_empty() {
+        return Err(RecipeError::NotFound);
+    }
+
+    // Check ownership
+    if load_result.item.user_id != command.user_id {
+        return Err(RecipeError::PermissionDenied);
     }
 
     let tagged_at = Utc::now();
@@ -423,42 +431,33 @@ pub struct FavoriteRecipeCommand {
 
 /// Toggle favorite status of a recipe using evento event sourcing pattern
 ///
-/// 1. Verifies recipe ownership via read model
-/// 2. Loads recipe aggregate from event stream to get current is_favorite status
-/// 3. Creates and commits RecipeFavorited event with toggled status
-/// 4. Event automatically projected to read model via async subscription handler
-/// 5. Returns the new favorite status (true/false)
+/// 1. Loads recipe aggregate from event store to verify ownership and get current is_favorite status
+/// 2. Creates and commits RecipeFavorited event with toggled status
+/// 3. Event automatically projected to read model via async subscription handler
+/// 4. Returns the new favorite status (true/false)
 ///
 /// Permission check: Only the recipe owner can favorite/unfavorite their recipe.
-/// Note: Ownership is verified via read model query before loading aggregate
-#[tracing::instrument(skip(executor, pool), fields(recipe_id = %command.recipe_id, user_id = %command.user_id))]
+/// Ownership is verified by loading the aggregate from the event store (consistent data).
+#[tracing::instrument(skip(executor, _pool), fields(recipe_id = %command.recipe_id, user_id = %command.user_id))]
 pub async fn favorite_recipe(
     command: FavoriteRecipeCommand,
     executor: &Sqlite,
-    pool: &SqlitePool,
+    _pool: &SqlitePool,
 ) -> RecipeResult<bool> {
-    // Verify recipe exists and check ownership via read model
-    let recipe_result = sqlx::query("SELECT user_id FROM recipes WHERE id = ?1")
-        .bind(&command.recipe_id)
-        .fetch_optional(pool)
-        .await?;
-
-    match recipe_result {
-        Some(row) => {
-            let owner_id: String = row.get("user_id");
-            if owner_id != command.user_id {
-                return Err(RecipeError::PermissionDenied);
-            }
-        }
-        None => {
-            return Err(RecipeError::NotFound);
-        }
-    }
-
-    // Load recipe aggregate to get current is_favorite status
+    // Load recipe aggregate to verify ownership and get current is_favorite status
     let load_result = evento::load::<RecipeAggregate, _>(executor, &command.recipe_id)
         .await
         .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
+
+    // Check if recipe exists
+    if load_result.item.recipe_id.is_empty() {
+        return Err(RecipeError::NotFound);
+    }
+
+    // Check ownership
+    if load_result.item.user_id != command.user_id {
+        return Err(RecipeError::PermissionDenied);
+    }
 
     // Toggle the favorite status
     let new_favorited_status = !load_result.item.is_favorite;
@@ -499,39 +498,36 @@ pub struct ShareRecipeCommand {
 
 /// Toggle share status of a recipe using evento event sourcing pattern
 ///
-/// 1. Verifies recipe ownership via read model
+/// 1. Loads recipe aggregate from event store to verify ownership
 /// 2. Creates and commits RecipeShared event with shared boolean parameter
 /// 3. Event automatically projected to read model via async subscription handler
 /// 4. Returns () on success
 ///
 /// Permission check: Only the recipe owner can share/unshare their recipe.
-/// Note: Ownership is verified via read model query, not aggregate load
+/// Ownership is verified by loading the aggregate from the event store (consistent data).
 ///
 /// This command handles both sharing (shared=true) and unsharing (shared=false).
 /// AC-2: Toggle changes privacy from "private" to "shared" (RecipeShared event)
 /// AC-6: Owner can revert to private at any time (removes from community discovery)
-#[tracing::instrument(skip(executor, pool), fields(recipe_id = %command.recipe_id, user_id = %command.user_id, shared = %command.shared))]
+#[tracing::instrument(skip(executor, _pool), fields(recipe_id = %command.recipe_id, user_id = %command.user_id, shared = %command.shared))]
 pub async fn share_recipe(
     command: ShareRecipeCommand,
     executor: &Sqlite,
-    pool: &SqlitePool,
+    _pool: &SqlitePool,
 ) -> RecipeResult<()> {
-    // Verify recipe exists and check ownership via read model
-    let recipe_result = sqlx::query("SELECT user_id FROM recipes WHERE id = ?1")
-        .bind(&command.recipe_id)
-        .fetch_optional(pool)
-        .await?;
+    // Load recipe aggregate from event store to verify ownership
+    let load_result = evento::load::<RecipeAggregate, _>(executor, &command.recipe_id)
+        .await
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
 
-    match recipe_result {
-        Some(row) => {
-            let owner_id: String = row.get("user_id");
-            if owner_id != command.user_id {
-                return Err(RecipeError::PermissionDenied);
-            }
-        }
-        None => {
-            return Err(RecipeError::NotFound);
-        }
+    // Check if recipe exists
+    if load_result.item.recipe_id.is_empty() {
+        return Err(RecipeError::NotFound);
+    }
+
+    // Check ownership
+    if load_result.item.user_id != command.user_id {
+        return Err(RecipeError::PermissionDenied);
     }
 
     let toggled_at = Utc::now();
@@ -543,6 +539,21 @@ pub async fn share_recipe(
             user_id: command.user_id.clone(),
             shared: command.shared,
             toggled_at: toggled_at.to_rfc3339(),
+        })
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .metadata(&true)
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
+        .commit(executor)
+        .await
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
+
+    // Emit user::events::RecipeShared to update UserAggregate.recipe_count
+    // Shared recipes do NOT count toward the freemium limit
+    evento::save::<user::aggregate::UserAggregate>(command.user_id.clone())
+        .data(&user::events::RecipeShared {
+            user_id: command.user_id.clone(),
+            shared: command.shared,
+            shared_at: toggled_at.to_rfc3339(),
         })
         .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
         .metadata(&true)
@@ -588,32 +599,33 @@ pub async fn rate_recipe(
     command: RateRecipeCommand,
     user_id: &str,
     executor: &Sqlite,
-    pool: &SqlitePool,
+    _pool: &SqlitePool,
 ) -> RecipeResult<()> {
     // Validate command
     command
         .validate()
         .map_err(|e| RecipeError::ValidationError(e.to_string()))?;
 
-    // AC-10: Verify recipe exists and is shared (ratings only on shared/community recipes)
-    let recipe_result =
-        sqlx::query("SELECT is_shared FROM recipes WHERE id = ?1 AND deleted_at IS NULL")
-            .bind(&command.recipe_id)
-            .fetch_optional(pool)
-            .await?;
+    // AC-10: Load recipe aggregate to verify it exists and is shared (ratings only on shared/community recipes)
+    let load_result = evento::load::<RecipeAggregate, _>(executor, &command.recipe_id)
+        .await
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
 
-    match recipe_result {
-        Some(row) => {
-            let is_shared: bool = row.get("is_shared");
-            if !is_shared {
-                return Err(RecipeError::ValidationError(
-                    "Only shared recipes can be rated".to_string(),
-                ));
-            }
-        }
-        None => {
-            return Err(RecipeError::ValidationError("Recipe not found".to_string()));
-        }
+    // Check if recipe exists
+    if load_result.item.recipe_id.is_empty() {
+        return Err(RecipeError::ValidationError("Recipe not found".to_string()));
+    }
+
+    // Check if recipe is deleted
+    if load_result.item.is_deleted {
+        return Err(RecipeError::ValidationError("Recipe not found".to_string()));
+    }
+
+    // Check if recipe is shared (only shared recipes can be rated)
+    if !load_result.item.is_shared {
+        return Err(RecipeError::ValidationError(
+            "Only shared recipes can be rated".to_string(),
+        ));
     }
 
     let rated_at = Utc::now();
@@ -812,28 +824,30 @@ pub async fn copy_recipe(
     executor: &Sqlite,
     pool: &SqlitePool,
 ) -> RecipeResult<String> {
-    // AC-10: Verify original recipe exists and is shared (only community recipes can be copied)
-    let original_recipe_result =
-        sqlx::query("SELECT user_id, is_shared FROM recipes WHERE id = ?1 AND deleted_at IS NULL")
-            .bind(&command.original_recipe_id)
-            .fetch_optional(pool)
-            .await?;
+    // AC-10: Load original recipe aggregate to verify it exists and is shared
+    let original_load_result =
+        evento::load::<RecipeAggregate, _>(executor, &command.original_recipe_id)
+            .await
+            .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
 
-    let original_author = match original_recipe_result {
-        Some(row) => {
-            let is_shared: bool = row.get("is_shared");
-            if !is_shared {
-                return Err(RecipeError::ValidationError(
-                    "Only shared recipes can be copied".to_string(),
-                ));
-            }
-            let owner_id: String = row.get("user_id");
-            owner_id
-        }
-        None => {
-            return Err(RecipeError::ValidationError("Recipe not found".to_string()));
-        }
-    };
+    // Check if recipe exists
+    if original_load_result.item.recipe_id.is_empty() {
+        return Err(RecipeError::ValidationError("Recipe not found".to_string()));
+    }
+
+    // Check if recipe is deleted
+    if original_load_result.item.is_deleted {
+        return Err(RecipeError::ValidationError("Recipe not found".to_string()));
+    }
+
+    // Check if recipe is shared (only shared recipes can be copied)
+    if !original_load_result.item.is_shared {
+        return Err(RecipeError::ValidationError(
+            "Only shared recipes can be copied".to_string(),
+        ));
+    }
+
+    let original_author = original_load_result.item.user_id.clone();
 
     // AC-10: Check if user already copied this recipe (prevent duplicates)
     let duplicate_check: Option<i64> = sqlx::query_scalar(
@@ -850,35 +864,22 @@ pub async fn copy_recipe(
         }
     }
 
-    // AC-5, AC-11: Check user tier and recipe count for freemium enforcement
-    // Same pattern as create_recipe
-    let user_result = sqlx::query("SELECT tier FROM users WHERE id = ?1")
-        .bind(user_id)
-        .fetch_optional(pool)
-        .await?;
+    // AC-5, AC-11: Load user aggregate to check tier and recipe count for freemium enforcement
+    let user_load_result = evento::load::<UserAggregate, _>(executor, user_id)
+        .await
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
 
-    match user_result {
-        Some(user_row) => {
-            let tier: String = user_row.get("tier");
+    // Check if user exists
+    if user_load_result.item.user_id.is_empty() {
+        return Err(RecipeError::ValidationError("User not found".to_string()));
+    }
 
-            // Premium users bypass all limits
-            if tier != "premium" {
-                // Count only private recipes (is_shared = false) that are not deleted
-                let private_recipe_count: i64 = sqlx::query_scalar(
-                    "SELECT COUNT(*) FROM recipes WHERE user_id = ?1 AND is_shared = 0 AND deleted_at IS NULL"
-                )
-                .bind(user_id)
-                .fetch_one(pool)
-                .await?;
-
-                // Free tier users limited to 10 private recipes
-                if private_recipe_count >= 10 {
-                    return Err(RecipeError::RecipeLimitReached);
-                }
-            }
-        }
-        None => {
-            return Err(RecipeError::ValidationError("User not found".to_string()));
+    // Premium users bypass all limits
+    if user_load_result.item.tier != "premium" {
+        // Free tier users limited to 10 private recipes
+        // recipe_count is tracked in UserAggregate via RecipeCreated/RecipeDeleted events
+        if user_load_result.item.recipe_count >= 10 {
+            return Err(RecipeError::RecipeLimitReached);
         }
     }
 

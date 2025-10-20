@@ -33,17 +33,29 @@ async fn setup_evento_executor(pool: Pool<Sqlite>) -> evento::Sqlite {
     pool.into()
 }
 
-/// Insert a test user into the database
-async fn insert_test_user(pool: &SqlitePool, user_id: &str) {
-    sqlx::query(
-        "INSERT INTO users (id, email, password_hash, tier, recipe_count, created_at)
-         VALUES (?1, ?2, 'hash', 'free', 0, datetime('now'))",
+/// Create a test user using proper evento commands
+async fn create_test_user(pool: &SqlitePool, executor: &evento::Sqlite, email: &str) -> String {
+    use user::commands::{register_user, RegisterUserCommand};
+
+    // Register user via command (creates aggregate + events)
+    let user_id = register_user(
+        RegisterUserCommand {
+            email: email.to_string(),
+            password: "testpassword".to_string(),
+        },
+        executor,
+        pool,
     )
-    .bind(user_id)
-    .bind(format!("{}@test.com", user_id))
-    .execute(pool)
     .await
     .unwrap();
+
+    // Process user projection to populate read model
+    user::user_projection(pool.clone())
+        .unsafe_oneshot(executor)
+        .await
+        .unwrap();
+
+    user_id
 }
 
 /// Test CollectionCreated event application via create_collection command
@@ -51,14 +63,14 @@ async fn insert_test_user(pool: &SqlitePool, user_id: &str) {
 async fn test_collection_created_event_sets_name_and_description() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1").await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
 
     let command = CreateCollectionCommand {
         name: "Weeknight Favorites".to_string(),
         description: Some("Quick meals for busy nights".to_string()),
     };
 
-    let collection_id = create_collection(command, "user1", &executor)
+    let collection_id = create_collection(command, &user1_id, &executor)
         .await
         .unwrap();
 
@@ -75,7 +87,7 @@ async fn test_collection_created_event_sets_name_and_description() {
         .item;
 
     assert_eq!(aggregate.collection_id, collection_id);
-    assert_eq!(aggregate.user_id, "user1");
+    assert_eq!(aggregate.user_id, user1_id);
     assert_eq!(aggregate.name, "Weeknight Favorites");
     assert_eq!(
         aggregate.description,
@@ -89,7 +101,7 @@ async fn test_collection_created_event_sets_name_and_description() {
 async fn test_collection_name_validation_min_length() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1").await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
 
     // Test name too short (< 3 chars)
     let command = CreateCollectionCommand {
@@ -97,7 +109,7 @@ async fn test_collection_name_validation_min_length() {
         description: None,
     };
 
-    let result = create_collection(command, "user1", &executor).await;
+    let result = create_collection(command, &user1_id, &executor).await;
     assert!(matches!(result, Err(RecipeError::ValidationError(_))));
 }
 
@@ -105,7 +117,7 @@ async fn test_collection_name_validation_min_length() {
 async fn test_collection_name_validation_max_length() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1").await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
 
     // Test name too long (> 100 chars)
     let command = CreateCollectionCommand {
@@ -113,7 +125,7 @@ async fn test_collection_name_validation_max_length() {
         description: None,
     };
 
-    let result = create_collection(command, "user1", &executor).await;
+    let result = create_collection(command, &user1_id, &executor).await;
     assert!(matches!(result, Err(RecipeError::ValidationError(_))));
 }
 
@@ -122,15 +134,15 @@ async fn test_collection_name_validation_max_length() {
 async fn test_ownership_verification_prevents_unauthorized_deletion() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1").await;
-    insert_test_user(&pool, "user2").await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
+    let user2_id = create_test_user(&pool, &executor, "user2@test.com").await;
 
     // User1 creates a collection
     let command = CreateCollectionCommand {
         name: "User1 Collection".to_string(),
         description: None,
     };
-    let collection_id = create_collection(command, "user1", &executor)
+    let collection_id = create_collection(command, &user1_id, &executor)
         .await
         .unwrap();
 
@@ -143,7 +155,7 @@ async fn test_ownership_verification_prevents_unauthorized_deletion() {
     // User2 tries to delete user1's collection (should fail)
     let delete_command = DeleteCollectionCommand {
         collection_id: collection_id.clone(),
-        user_id: "user2".to_string(),
+        user_id: user2_id.clone(),
     };
 
     let result = delete_collection(delete_command, &executor, &pool).await;
@@ -155,14 +167,14 @@ async fn test_ownership_verification_prevents_unauthorized_deletion() {
 async fn test_recipe_assignment_and_unassignment() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1").await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
 
     // Create a collection
     let collection_command = CreateCollectionCommand {
         name: "Test Collection".to_string(),
         description: None,
     };
-    let collection_id = create_collection(collection_command, "user1", &executor)
+    let collection_id = create_collection(collection_command, &user1_id, &executor)
         .await
         .unwrap();
 
@@ -184,7 +196,7 @@ async fn test_recipe_assignment_and_unassignment() {
         advance_prep_hours: None,
         serving_size: None,
     };
-    let recipe_id = create_recipe(recipe_command, "user1", &executor, &pool)
+    let recipe_id = create_recipe(recipe_command, &user1_id, &executor, &pool)
         .await
         .unwrap();
 
@@ -202,7 +214,7 @@ async fn test_recipe_assignment_and_unassignment() {
     let add_command = AddRecipeToCollectionCommand {
         collection_id: collection_id.clone(),
         recipe_id: recipe_id.clone(),
-        user_id: "user1".to_string(),
+        user_id: user1_id.clone(),
     };
     add_recipe_to_collection(add_command, &executor, &pool)
         .await
@@ -225,7 +237,7 @@ async fn test_recipe_assignment_and_unassignment() {
     let remove_command = RemoveRecipeFromCollectionCommand {
         collection_id: collection_id.clone(),
         recipe_id: recipe_id.clone(),
-        user_id: "user1".to_string(),
+        user_id: user1_id.clone(),
     };
     remove_recipe_from_collection(remove_command, &executor, &pool)
         .await
@@ -248,14 +260,14 @@ async fn test_recipe_assignment_and_unassignment() {
 async fn test_collection_deletion_preserves_recipes() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1").await;
+    let user1_id = create_test_user(&pool, &executor, "user1@test.com").await;
 
     // Create a collection
     let collection_command = CreateCollectionCommand {
         name: "Test Collection".to_string(),
         description: None,
     };
-    let collection_id = create_collection(collection_command, "user1", &executor)
+    let collection_id = create_collection(collection_command, &user1_id, &executor)
         .await
         .unwrap();
 
@@ -277,7 +289,7 @@ async fn test_collection_deletion_preserves_recipes() {
         advance_prep_hours: None,
         serving_size: None,
     };
-    let recipe_id = create_recipe(recipe_command, "user1", &executor, &pool)
+    let recipe_id = create_recipe(recipe_command, &user1_id, &executor, &pool)
         .await
         .unwrap();
 
@@ -295,7 +307,7 @@ async fn test_collection_deletion_preserves_recipes() {
     let add_command = AddRecipeToCollectionCommand {
         collection_id: collection_id.clone(),
         recipe_id: recipe_id.clone(),
-        user_id: "user1".to_string(),
+        user_id: user1_id.clone(),
     };
     add_recipe_to_collection(add_command, &executor, &pool)
         .await
@@ -310,7 +322,7 @@ async fn test_collection_deletion_preserves_recipes() {
     // Delete collection
     let delete_command = DeleteCollectionCommand {
         collection_id: collection_id.clone(),
-        user_id: "user1".to_string(),
+        user_id: user1_id.clone(),
     };
     delete_collection(delete_command, &executor, &pool)
         .await

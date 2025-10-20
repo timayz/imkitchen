@@ -29,18 +29,51 @@ async fn setup_evento_executor(pool: Pool<Sqlite>) -> evento::Sqlite {
     pool.into()
 }
 
-/// Insert test user
-async fn insert_test_user(pool: &SqlitePool, user_id: &str, email: &str, tier: &str) {
-    sqlx::query(
-        "INSERT INTO users (id, email, password_hash, tier, recipe_count, created_at)
-         VALUES (?1, ?2, 'hash', ?3, 0, datetime('now'))",
+/// Create test user using proper evento commands
+async fn create_test_user_for_tests(
+    pool: &SqlitePool,
+    executor: &evento::Sqlite,
+    email: &str,
+    tier: &str,
+) -> String {
+    use user::commands::{
+        register_user, upgrade_subscription, RegisterUserCommand, UpgradeSubscriptionCommand,
+    };
+
+    // Register user via command (creates aggregate + events)
+    let user_id = register_user(
+        RegisterUserCommand {
+            email: email.to_string(),
+            password: "testpassword".to_string(),
+        },
+        executor,
+        pool,
     )
-    .bind(user_id)
-    .bind(email)
-    .bind(tier)
-    .execute(pool)
     .await
     .unwrap();
+
+    // If premium tier, upgrade subscription
+    if tier == "premium" {
+        upgrade_subscription(
+            UpgradeSubscriptionCommand {
+                user_id: user_id.clone(),
+                new_tier: "premium".to_string(),
+                stripe_customer_id: Some("cus_test".to_string()),
+                stripe_subscription_id: Some("sub_test".to_string()),
+            },
+            executor,
+        )
+        .await
+        .unwrap();
+    }
+
+    // Process user projection to populate read model synchronously
+    user::user_projection(pool.clone())
+        .unsafe_oneshot(executor)
+        .await
+        .unwrap();
+
+    user_id
 }
 
 /// Helper to create a test recipe - returns recipe_id
@@ -153,13 +186,13 @@ async fn test_list_shared_recipes_empty() {
 async fn test_list_shared_recipes_basic() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+    let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "free").await;
 
     // Create recipe
     let recipe_id = create_test_recipe(
         &pool,
         &executor,
-        "user1",
+        &user1_id,
         "Shared Recipe",
         Some("Italian".to_string()),
         vec!["vegetarian".to_string()],
@@ -181,7 +214,7 @@ async fn test_list_shared_recipes_basic() {
     .await;
 
     // Share recipe
-    share_recipe_helper(&pool, &executor, &recipe_id, "user1").await;
+    share_recipe_helper(&pool, &executor, &recipe_id, &user1_id).await;
 
     // Query shared recipes
     let filters = RecipeDiscoveryFilters::default();
@@ -198,13 +231,13 @@ async fn test_list_shared_recipes_basic() {
 async fn test_filter_by_cuisine() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+    let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "free").await;
 
     // Create multiple recipes with different cuisines
     let recipe1 = create_test_recipe(
         &pool,
         &executor,
-        "user1",
+        &user1_id,
         "Italian Pasta",
         Some("Italian".to_string()),
         vec![],
@@ -216,7 +249,7 @@ async fn test_filter_by_cuisine() {
     let recipe2 = create_test_recipe(
         &pool,
         &executor,
-        "user1",
+        &user1_id,
         "Asian Stir Fry",
         Some("Asian".to_string()),
         vec![],
@@ -233,8 +266,8 @@ async fn test_filter_by_cuisine() {
     set_recipe_tags(&pool, &recipe2, Some("Asian".to_string()), vec![]).await;
 
     // Share both recipes
-    share_recipe_helper(&pool, &executor, &recipe1, "user1").await;
-    share_recipe_helper(&pool, &executor, &recipe2, "user1").await;
+    share_recipe_helper(&pool, &executor, &recipe1, &user1_id).await;
+    share_recipe_helper(&pool, &executor, &recipe2, &user1_id).await;
 
     // Filter by Italian cuisine
     let filters = RecipeDiscoveryFilters {
@@ -252,13 +285,13 @@ async fn test_filter_by_cuisine() {
 async fn test_filter_by_prep_time() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+    let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "free").await;
 
     // Create recipes with different prep times
     let recipe1 = create_test_recipe(
         &pool,
         &executor,
-        "user1",
+        &user1_id,
         "Quick Recipe",
         None,
         vec![],
@@ -270,7 +303,7 @@ async fn test_filter_by_prep_time() {
     let recipe2 = create_test_recipe(
         &pool,
         &executor,
-        "user1",
+        &user1_id,
         "Slow Recipe",
         None,
         vec![],
@@ -283,8 +316,8 @@ async fn test_filter_by_prep_time() {
     process_projections(&pool, &executor).await;
 
     // Share both
-    share_recipe_helper(&pool, &executor, &recipe1, "user1").await;
-    share_recipe_helper(&pool, &executor, &recipe2, "user1").await;
+    share_recipe_helper(&pool, &executor, &recipe1, &user1_id).await;
+    share_recipe_helper(&pool, &executor, &recipe2, &user1_id).await;
 
     // Filter by max 30 minutes total time
     let filters = RecipeDiscoveryFilters {
@@ -301,13 +334,13 @@ async fn test_filter_by_prep_time() {
 async fn test_filter_by_dietary() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+    let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "free").await;
 
     // Create recipes with different dietary tags
     let recipe1 = create_test_recipe(
         &pool,
         &executor,
-        "user1",
+        &user1_id,
         "Vegan Salad",
         None,
         vec!["vegan".to_string(), "gluten-free".to_string()],
@@ -319,7 +352,7 @@ async fn test_filter_by_dietary() {
     let recipe2 = create_test_recipe(
         &pool,
         &executor,
-        "user1",
+        &user1_id,
         "Meat Dish",
         None,
         vec![],
@@ -342,8 +375,8 @@ async fn test_filter_by_dietary() {
     set_recipe_tags(&pool, &recipe2, None, vec![]).await;
 
     // Share both
-    share_recipe_helper(&pool, &executor, &recipe1, "user1").await;
-    share_recipe_helper(&pool, &executor, &recipe2, "user1").await;
+    share_recipe_helper(&pool, &executor, &recipe1, &user1_id).await;
+    share_recipe_helper(&pool, &executor, &recipe2, &user1_id).await;
 
     // Filter by vegan
     let filters = RecipeDiscoveryFilters {
@@ -373,13 +406,13 @@ async fn test_filter_by_dietary() {
 async fn test_search_by_title() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+    let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "free").await;
 
     // Create recipes with searchable titles
     let recipe1 = create_test_recipe(
         &pool,
         &executor,
-        "user1",
+        &user1_id,
         "Chocolate Cake",
         None,
         vec![],
@@ -391,7 +424,7 @@ async fn test_search_by_title() {
     let recipe2 = create_test_recipe(
         &pool,
         &executor,
-        "user1",
+        &user1_id,
         "Vanilla Cookies",
         None,
         vec![],
@@ -404,8 +437,8 @@ async fn test_search_by_title() {
     process_projections(&pool, &executor).await;
 
     // Share both
-    share_recipe_helper(&pool, &executor, &recipe1, "user1").await;
-    share_recipe_helper(&pool, &executor, &recipe2, "user1").await;
+    share_recipe_helper(&pool, &executor, &recipe1, &user1_id).await;
+    share_recipe_helper(&pool, &executor, &recipe2, &user1_id).await;
 
     // Search for "chocolate"
     let filters = RecipeDiscoveryFilters {
@@ -422,13 +455,13 @@ async fn test_search_by_title() {
 async fn test_sorting_alphabetical() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+    let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "free").await;
 
     // Create recipes in non-alphabetical order
     let recipe1 = create_test_recipe(
         &pool,
         &executor,
-        "user1",
+        &user1_id,
         "Zebra Cake",
         None,
         vec![],
@@ -439,7 +472,7 @@ async fn test_sorting_alphabetical() {
     let recipe2 = create_test_recipe(
         &pool,
         &executor,
-        "user1",
+        &user1_id,
         "Apple Pie",
         None,
         vec![],
@@ -450,7 +483,7 @@ async fn test_sorting_alphabetical() {
     let recipe3 = create_test_recipe(
         &pool,
         &executor,
-        "user1",
+        &user1_id,
         "Mango Smoothie",
         None,
         vec![],
@@ -463,9 +496,9 @@ async fn test_sorting_alphabetical() {
     process_projections(&pool, &executor).await;
 
     // Share all
-    share_recipe_helper(&pool, &executor, &recipe1, "user1").await;
-    share_recipe_helper(&pool, &executor, &recipe2, "user1").await;
-    share_recipe_helper(&pool, &executor, &recipe3, "user1").await;
+    share_recipe_helper(&pool, &executor, &recipe1, &user1_id).await;
+    share_recipe_helper(&pool, &executor, &recipe2, &user1_id).await;
+    share_recipe_helper(&pool, &executor, &recipe3, &user1_id).await;
 
     // Sort alphabetically
     let filters = RecipeDiscoveryFilters {
@@ -484,7 +517,7 @@ async fn test_sorting_alphabetical() {
 async fn test_pagination() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+    let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "premium").await;
 
     // Create 25 recipes
     let mut recipe_ids = Vec::new();
@@ -492,7 +525,7 @@ async fn test_pagination() {
         let recipe_id = create_test_recipe(
             &pool,
             &executor,
-            "user1",
+            &user1_id,
             &format!("Recipe {}", i),
             None,
             vec![],
@@ -508,7 +541,7 @@ async fn test_pagination() {
 
     // Share all
     for recipe_id in &recipe_ids {
-        share_recipe_helper(&pool, &executor, recipe_id, "user1").await;
+        share_recipe_helper(&pool, &executor, recipe_id, &user1_id).await;
     }
 
     // Page 1 (should return 20)
@@ -532,13 +565,13 @@ async fn test_pagination() {
 async fn test_sql_injection_prevention_cuisine() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+    let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "free").await;
 
     // Create a test recipe
     let recipe_id = create_test_recipe(
         &pool,
         &executor,
-        "user1",
+        &user1_id,
         "Test Recipe",
         Some("Italian".to_string()),
         vec![],
@@ -550,7 +583,7 @@ async fn test_sql_injection_prevention_cuisine() {
     // Process creation events
     process_projections(&pool, &executor).await;
 
-    share_recipe_helper(&pool, &executor, &recipe_id, "user1").await;
+    share_recipe_helper(&pool, &executor, &recipe_id, &user1_id).await;
 
     // Attempt SQL injection via cuisine filter
     let filters = RecipeDiscoveryFilters {
@@ -567,12 +600,12 @@ async fn test_sql_injection_prevention_cuisine() {
 async fn test_sql_injection_prevention_search() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+    let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "free").await;
 
     let recipe_id = create_test_recipe(
         &pool,
         &executor,
-        "user1",
+        &user1_id,
         "Safe Recipe",
         None,
         vec![],
@@ -584,7 +617,7 @@ async fn test_sql_injection_prevention_search() {
     // Process creation events
     process_projections(&pool, &executor).await;
 
-    share_recipe_helper(&pool, &executor, &recipe_id, "user1").await;
+    share_recipe_helper(&pool, &executor, &recipe_id, &user1_id).await;
 
     // Attempt SQL injection via search filter
     let filters = RecipeDiscoveryFilters {
@@ -608,13 +641,13 @@ async fn test_sql_injection_prevention_search() {
 async fn test_combined_filters() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+    let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "free").await;
 
     // Create diverse recipes
     let recipe1 = create_test_recipe(
         &pool,
         &executor,
-        "user1",
+        &user1_id,
         "Quick Italian Vegan Pasta",
         Some("Italian".to_string()),
         vec!["vegan".to_string()],
@@ -626,7 +659,7 @@ async fn test_combined_filters() {
     let recipe2 = create_test_recipe(
         &pool,
         &executor,
-        "user1",
+        &user1_id,
         "Slow Italian Meat Lasagna",
         Some("Italian".to_string()),
         vec![],
@@ -638,7 +671,7 @@ async fn test_combined_filters() {
     let recipe3 = create_test_recipe(
         &pool,
         &executor,
-        "user1",
+        &user1_id,
         "Quick Asian Vegan Stir Fry",
         Some("Asian".to_string()),
         vec!["vegan".to_string()],
@@ -668,9 +701,9 @@ async fn test_combined_filters() {
     .await;
 
     // Share all
-    share_recipe_helper(&pool, &executor, &recipe1, "user1").await;
-    share_recipe_helper(&pool, &executor, &recipe2, "user1").await;
-    share_recipe_helper(&pool, &executor, &recipe3, "user1").await;
+    share_recipe_helper(&pool, &executor, &recipe1, &user1_id).await;
+    share_recipe_helper(&pool, &executor, &recipe2, &user1_id).await;
+    share_recipe_helper(&pool, &executor, &recipe3, &user1_id).await;
 
     // Filter: Italian + Vegan + Under 30 mins
     let filters = RecipeDiscoveryFilters {
@@ -689,13 +722,13 @@ async fn test_combined_filters() {
 async fn test_only_shared_recipes_visible() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+    let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "free").await;
 
     // Create one shared and one private recipe
     let recipe1 = create_test_recipe(
         &pool,
         &executor,
-        "user1",
+        &user1_id,
         "Shared Recipe",
         None,
         vec![],
@@ -706,7 +739,7 @@ async fn test_only_shared_recipes_visible() {
     let _recipe2 = create_test_recipe(
         &pool,
         &executor,
-        "user1",
+        &user1_id,
         "Private Recipe",
         None,
         vec![],
@@ -719,7 +752,7 @@ async fn test_only_shared_recipes_visible() {
     process_projections(&pool, &executor).await;
 
     // Share only recipe1
-    share_recipe_helper(&pool, &executor, &recipe1, "user1").await;
+    share_recipe_helper(&pool, &executor, &recipe1, &user1_id).await;
 
     // Query all shared recipes
     let filters = RecipeDiscoveryFilters::default();
@@ -734,12 +767,12 @@ async fn test_only_shared_recipes_visible() {
 async fn test_deleted_recipes_not_visible() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+    let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "free").await;
 
     let recipe_id = create_test_recipe(
         &pool,
         &executor,
-        "user1",
+        &user1_id,
         "To Delete",
         None,
         vec![],
@@ -752,7 +785,7 @@ async fn test_deleted_recipes_not_visible() {
     process_projections(&pool, &executor).await;
 
     // Share recipe
-    share_recipe_helper(&pool, &executor, &recipe_id, "user1").await;
+    share_recipe_helper(&pool, &executor, &recipe_id, &user1_id).await;
 
     // Verify it's visible
     let filters = RecipeDiscoveryFilters::default();
