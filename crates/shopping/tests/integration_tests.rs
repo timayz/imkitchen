@@ -430,12 +430,22 @@ async fn test_empty_categories_filtered() {
 async fn test_query_shopping_list_by_week() {
     let (pool, executor) = setup_test_db().await;
 
+    // Use next Monday to avoid past week validation errors
+    let next_monday = chrono::Utc::now()
+        .date_naive()
+        .week(chrono::Weekday::Mon)
+        .first_day()
+        .checked_add_days(chrono::Days::new(7))
+        .unwrap()
+        .format("%Y-%m-%d")
+        .to_string();
+
     let ingredients = vec![("tomato".to_string(), 2.0, "whole".to_string())];
 
     let command = GenerateShoppingListCommand {
         user_id: "user-1".to_string(),
         meal_plan_id: "meal-plan-1".to_string(),
-        week_start_date: "2025-10-13".to_string(),
+        week_start_date: next_monday.clone(),
         ingredients,
     };
 
@@ -449,14 +459,14 @@ async fn test_query_shopping_list_by_week() {
 
     // Query by week
     let shopping_list =
-        shopping::read_model::get_shopping_list_by_week("user-1", "2025-10-13", &pool)
+        shopping::read_model::get_shopping_list_by_week("user-1", &next_monday, &pool)
             .await
             .expect("Failed to query shopping list by week")
             .expect("Shopping list not found");
 
     // Assertions
     assert_eq!(shopping_list.header.user_id, "user-1");
-    assert_eq!(shopping_list.header.week_start_date, "2025-10-13");
+    assert_eq!(shopping_list.header.week_start_date, next_monday);
     assert_eq!(shopping_list.items.len(), 1);
 }
 
