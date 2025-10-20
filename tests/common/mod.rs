@@ -54,7 +54,7 @@ pub async fn create_test_app((pool, evento_executor): (SqlitePool, evento::Sqlit
     use axum::middleware as axum_middleware;
     use imkitchen::middleware::auth_middleware;
     use imkitchen::routes::{
-        get_login, get_onboarding, get_onboarding_skip, get_profile, get_register,
+        get_check_user, get_login, get_onboarding, get_onboarding_skip, get_profile, get_register,
         get_subscription, get_subscription_success, post_login, post_logout,
         post_onboarding_step_1, post_onboarding_step_2, post_onboarding_step_3,
         post_onboarding_step_4, post_profile, post_register, post_subscription_upgrade, AppState,
@@ -108,6 +108,7 @@ pub async fn create_test_app((pool, evento_executor): (SqlitePool, evento::Sqlit
     let router = Router::new()
         .route("/register", get(get_register))
         .route("/register", post(post_register))
+        .route("/register/check-user/{user_id}", get(get_check_user))
         .route("/login", get(get_login))
         .route("/login", post(post_login))
         .merge(protected_router)

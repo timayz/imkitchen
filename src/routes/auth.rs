@@ -52,6 +52,14 @@ pub struct RegisterPageTemplate {
     pub current_path: String,
 }
 
+#[derive(Template)]
+#[template(path = "pages/register-success.html")]
+pub struct RegisterSuccessTemplate {
+    pub user_id: String,
+    pub user: Option<()>, // None for public pages
+    pub current_path: String,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct LoginForm {
     pub email: String,
@@ -122,6 +130,44 @@ pub async fn get_register() -> impl IntoResponse {
     Html(template.render().unwrap())
 }
 
+/// GET /register/check-user/:user_id - Check if user exists in read model
+///
+/// This endpoint is used by TwinSpark polling after registration to wait for
+/// the evento subscription to project the UserCreated event into the read model.
+/// Once the user exists in the read model, redirect to onboarding.
+#[tracing::instrument(skip(state))]
+pub async fn get_check_user(
+    State(state): State<AppState>,
+    Path(user_id): Path<String>,
+) -> Response {
+    // Query read model to check if user exists
+    let user_exists = match sqlx::query("SELECT id FROM users WHERE id = ?1")
+        .bind(&user_id)
+        .fetch_optional(&state.db_pool)
+        .await
+    {
+        Ok(Some(_)) => true,
+        Ok(None) => false,
+        Err(e) => {
+            tracing::error!("Failed to check user in read model: {:?}", e);
+            false
+        }
+    };
+
+    if user_exists {
+        // User exists in read model - redirect to onboarding using ts-location header
+        (StatusCode::OK, [("ts-location", "/onboarding")], ()).into_response()
+    } else {
+        // User not yet in read model - return minimal HTML with polling continuation
+        // TwinSpark requires at least one element to swap, so we return a div that continues polling
+        let polling_html = format!(
+            r#"<div ts-req="/register/check-user/{}" ts-trigger="load delay:500ms"></div>"#,
+            user_id
+        );
+        (StatusCode::OK, Html(polling_html)).into_response()
+    }
+}
+
 /// POST /register - Handle registration form submission
 #[tracing::instrument(skip(state, form), fields(email = %form.email))]
 pub async fn post_register(
@@ -151,7 +197,7 @@ pub async fn post_register(
         Ok(aggregator_id) => {
             // Generate JWT token
             let token = match generate_jwt(
-                aggregator_id,
+                aggregator_id.clone(),
                 form.email,
                 "free".to_string(),
                 &state.jwt_secret,
@@ -176,15 +222,18 @@ pub async fn post_register(
                 7 * 24 * 60 * 60 // 7 days in seconds
             );
 
-            // Redirect to onboarding using TwinSpark (Story 1.4 AC #1: onboarding wizard displays after registration)
-            // Returns 200 OK for proper form swap, ts-location triggers client-side navigation
+            // Render polling page that checks if user exists in read model
+            // TwinSpark polling will redirect to onboarding once read model is synced
+            let template = RegisterSuccessTemplate {
+                user_id: aggregator_id,
+                user: None,
+                current_path: "/register".to_string(),
+            };
+
             (
                 StatusCode::OK,
-                [
-                    ("Set-Cookie", cookie.as_str()),
-                    ("ts-location", "/onboarding"),
-                ],
-                (),
+                [("Set-Cookie", cookie.as_str())],
+                Html(template.render().unwrap()),
             )
                 .into_response()
         }

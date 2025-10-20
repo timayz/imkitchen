@@ -29,13 +29,14 @@ async fn test_register_with_valid_inputs_creates_user() {
         .await
         .unwrap();
 
-    // TwinSpark returns 200 OK with ts-location header (progressive enhancement)
-    // Story 1.4: Registration now redirects to /onboarding instead of /dashboard
+    // Registration now returns 200 OK with polling page (no ts-location header yet)
     assert_eq!(response.status(), StatusCode::OK);
-    assert_eq!(
-        response.headers().get("ts-location").unwrap(),
-        "/onboarding"
-    );
+
+    // Check that response contains the polling page HTML
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let body_str = String::from_utf8(body.to_vec()).unwrap();
+    assert!(body_str.contains("Completing Registration"));
+    assert!(body_str.contains("/register/check-user/"));
 
     // Process pending events to project to read model
     test_app.process_events().await;
@@ -98,6 +99,101 @@ async fn test_register_with_duplicate_email_returns_error() {
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
     assert!(body_str.contains("Email already registered"));
+}
+
+#[tokio::test]
+async fn test_check_user_returns_polling_element_when_user_not_in_read_model() {
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool.clone(), _executor)).await;
+
+    // Try to check a non-existent user
+    let response = test_app
+        .router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/register/check-user/non-existent-user-id")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    // Should return 200 OK with polling element (keep polling)
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // Should NOT have ts-location header
+    assert!(response.headers().get("ts-location").is_none());
+
+    // Body should contain polling element that continues the polling
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let body_str = String::from_utf8(body.to_vec()).unwrap();
+    assert!(body_str.contains("ts-req=\"/register/check-user/non-existent-user-id\""));
+    assert!(body_str.contains("ts-trigger=\"load delay:500ms\""));
+}
+
+#[tokio::test]
+async fn test_check_user_redirects_when_user_exists_in_read_model() {
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool.clone(), _executor)).await;
+
+    // Register a user
+    let register_response = test_app
+        .router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/register")
+                .header("content-type", "application/x-www-form-urlencoded")
+                .body(Body::from(
+                    "email=test@example.com&password=password123&password_confirm=password123",
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    // Extract user_id from response body
+    let body = register_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
+    let body_str = String::from_utf8(body.to_vec()).unwrap();
+
+    // Find the user_id in the polling URL - look for ts-req attribute
+    let ts_req_start = body_str.find("ts-req=\"/register/check-user/").unwrap()
+        + "ts-req=\"/register/check-user/".len();
+    let user_id_end = body_str[ts_req_start..].find('"').unwrap();
+    let user_id = body_str[ts_req_start..ts_req_start + user_id_end].to_string();
+
+    // Process events to project user to read model
+    test_app.process_events().await;
+
+    // Now check if user exists
+    let check_uri = format!("/register/check-user/{}", user_id);
+    let response = test_app
+        .router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri(check_uri)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    // Should return 200 OK with ts-location header to redirect to onboarding
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(
+        response.headers().get("ts-location").unwrap(),
+        "/onboarding"
+    );
 }
 
 #[tokio::test]
@@ -193,7 +289,7 @@ async fn test_successful_registration_sets_jwt_cookie() {
 }
 
 #[tokio::test]
-async fn test_successful_registration_redirects_to_dashboard() {
+async fn test_successful_registration_returns_polling_page() {
     let (pool, _executor) = common::setup_test_db().await;
     let test_app = common::create_test_app((pool, _executor)).await;
 
@@ -213,13 +309,17 @@ async fn test_successful_registration_redirects_to_dashboard() {
         .await
         .unwrap();
 
-    // TwinSpark returns 200 OK with ts-location header (progressive enhancement)
-    // Story 1.4: Registration now redirects to /onboarding instead of /dashboard
+    // Registration now returns polling page (waits for read model sync)
     assert_eq!(response.status(), StatusCode::OK);
-    assert_eq!(
-        response.headers().get("ts-location").unwrap(),
-        "/onboarding"
-    );
+
+    // Should NOT have ts-location header yet (that comes from check-user endpoint)
+    assert!(response.headers().get("ts-location").is_none());
+
+    // Response should contain polling page HTML
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let body_str = String::from_utf8(body.to_vec()).unwrap();
+    assert!(body_str.contains("Completing Registration"));
+    assert!(body_str.contains("/register/check-user/"));
 }
 
 // ============================================================================

@@ -11,8 +11,8 @@ pub mod shopping;
 
 pub use assets::AssetsService;
 pub use auth::{
-    get_login, get_password_reset, get_password_reset_complete, get_register, post_login,
-    post_logout, post_password_reset, post_password_reset_complete, post_register,
+    get_check_user, get_login, get_password_reset, get_password_reset_complete, get_register,
+    post_login, post_logout, post_password_reset, post_password_reset_complete, post_register,
     post_stripe_webhook, AppState,
 };
 pub use collections::{
