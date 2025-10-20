@@ -43,8 +43,8 @@ async fn register_and_get_cookie(test_app: &common::TestApp) -> String {
 }
 
 #[tokio::test]
-async fn test_post_register_redirects_to_onboarding() {
-    // AC #1: Onboarding wizard displays after first registration
+async fn test_post_register_shows_polling_page() {
+    // AC #1: Registration shows polling page that waits for read model sync
     let (pool, _executor) = common::setup_test_db().await;
     let test_app = common::create_test_app((pool.clone(), _executor)).await;
 
@@ -65,10 +65,15 @@ async fn test_post_register_redirects_to_onboarding() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::OK);
-    assert_eq!(
-        response.headers().get("ts-location").unwrap(),
-        "/onboarding"
-    );
+
+    // Registration now returns polling page (no immediate redirect)
+    assert!(response.headers().get("ts-location").is_none());
+
+    // Check response contains polling page
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let body_str = String::from_utf8(body.to_vec()).unwrap();
+    assert!(body_str.contains("Completing Registration"));
+    assert!(body_str.contains("/register/check-user/"));
 }
 
 #[tokio::test]

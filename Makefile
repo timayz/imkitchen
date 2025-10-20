@@ -24,9 +24,19 @@ fmt:
 fmt-fix:
 	cargo fmt --all
 
-# Run tests
+# Run tests for each workspace crate in parallel
 test:
-	cargo test --workspace
+	@echo "Running tests in parallel for each workspace crate..."
+	@printf "%s\n" "user" "recipe" "meal_planning" "shopping" "notifications" "imkitchen" | \
+		xargs -P 6 -I {} sh -c 'echo "[{}] Running tests..." && \
+		if cargo test -p {} --color=always 2>&1 | sed "s/^/[{}] /"; then \
+			echo "[{}] ✓ Tests passed"; \
+		else \
+			echo "[{}] ✗ Tests failed"; \
+			exit 1; \
+		fi'
+	@echo ""
+	@echo "✓ All workspace tests completed!"
 
 # Build the project
 build:
@@ -64,14 +74,14 @@ check: test lint fmt machete
 # Show help
 help:
 	@echo "Available commands:"
-	@echo "  make css        - Build Tailwind CSS (minified)"
-	@echo "  make css-watch  - Watch and rebuild CSS on changes"
-	@echo "  make dev        - Watch and run server on code changes"
-	@echo "  make fmt        - Check code formatting (fails if not formatted)"
-	@echo "  make fmt-fix    - Auto-fix code formatting"
-	@echo "  make lint       - Run Clippy linter (deny warnings)"
-	@echo "  make machete    - Check for unused dependencies"
-	@echo "  make test       - Run all tests"
-	@echo "  make build      - Build the project"
-	@echo "  make lighthouse - Run Lighthouse performance audits (Docker required)"
-	@echo "  make check      - Run fmt + lint + machete + test (CI-ready)"
+	@echo "  make css           - Build Tailwind CSS (minified)"
+	@echo "  make css-watch     - Watch and rebuild CSS on changes"
+	@echo "  make dev           - Watch and run server on code changes"
+	@echo "  make fmt           - Check code formatting (fails if not formatted)"
+	@echo "  make fmt-fix       - Auto-fix code formatting"
+	@echo "  make lint          - Run Clippy linter (deny warnings)"
+	@echo "  make machete       - Check for unused dependencies"
+	@echo "  make test          - Run tests for each workspace crate in parallel"
+	@echo "  make build         - Build the project"
+	@echo "  make lighthouse    - Run Lighthouse performance audits (Docker required)"
+	@echo "  make check         - Run fmt + lint + machete + test (CI-ready)"
