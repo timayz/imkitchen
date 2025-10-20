@@ -3,15 +3,12 @@ use axum::{
     Router,
 };
 use evento::prelude::*;
-use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
+use sqlx::SqlitePool;
 use user::user_projection;
 
 pub async fn setup_test_db() -> (SqlitePool, evento::Sqlite) {
-    let pool = SqlitePoolOptions::new()
-        .max_connections(1)
-        .connect(":memory:")
-        .await
-        .unwrap();
+    // Use the optimized pool creation from db module
+    let pool = imkitchen::db::create_pool(":memory:", 1).await.unwrap();
 
     // Run SQLx migrations for read models
     sqlx::migrate!("./migrations").run(&pool).await.unwrap();

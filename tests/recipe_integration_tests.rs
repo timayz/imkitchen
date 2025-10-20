@@ -448,7 +448,7 @@ async fn test_post_recipe_update_unauthorized_returns_403() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
     let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "free").await;
-    let _user2_id = create_test_user_for_tests(&pool, &executor, "user2@test.com", "free").await;
+    let user2_id = create_test_user_for_tests(&pool, &executor, "user2@test.com", "free").await;
 
     // Start projection
     // Process events synchronously for deterministic tests
@@ -490,9 +490,9 @@ async fn test_post_recipe_update_unauthorized_returns_403() {
         .await
         .unwrap();
 
-    // Create JWT token for user2
+    // Create JWT token for user2 (using actual user2_id, not the recipe owner)
     let token = user::generate_jwt(
-        "user2".to_string(),
+        user2_id.clone(), // Use actual user2_id UUID
         "user2@test.com".to_string(),
         "free".to_string(),
         "test-secret-key-32-bytes-long!!",
@@ -569,9 +569,9 @@ async fn test_post_recipe_update_invalid_data_returns_422() {
         .await
         .unwrap();
 
-    // Create JWT token for user1
+    // Create JWT token for user1 (using actual user1_id UUID)
     let token = user::generate_jwt(
-        "user1".to_string(),
+        user1_id.clone(), // Use actual user1_id UUID
         "user1@test.com".to_string(),
         "free".to_string(),
         "test-secret-key-32-bytes-long!!",
