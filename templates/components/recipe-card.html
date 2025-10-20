@@ -20,6 +20,10 @@
         <img
             src="{{ recipe.image_url }}"
             alt="{{ recipe.title }}"
+            srcset="{{ recipe.image_url }}?w=320 320w,
+                    {{ recipe.image_url }}?w=640 640w,
+                    {{ recipe.image_url }}?w=1280 1280w"
+            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
             class="w-full h-48 md:h-56 object-cover"
             loading="lazy"
             width="400"

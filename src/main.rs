@@ -32,6 +32,7 @@ use recipe::{collection_projection, recipe_projection};
 use shopping::shopping_projection;
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions};
 use std::sync::Arc;
+use tower_http::compression::CompressionLayer;
 use tower_http::trace::TraceLayer;
 use user::user_projection;
 
@@ -318,6 +319,8 @@ async fn serve_command(
                 .nest_service("/static", AssetsService::new())
                 .with_state(state),
         )
+        // Enable Brotli and Gzip compression for all text assets (Story 5.9)
+        .layer(CompressionLayer::new().br(true).gzip(true))
         .layer(TraceLayer::new_for_http());
 
     // Start background notification worker

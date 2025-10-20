@@ -1,0 +1,44 @@
+{
+  "ci": {
+    "collect": {
+      "url": [
+        "http://localhost:8080/",
+        "http://localhost:8080/dashboard",
+        "http://localhost:8080/recipes",
+        "http://localhost:8080/plan",
+        "http://localhost:8080/shopping"
+      ],
+      "numberOfRuns": 3,
+      "settings": {
+        "preset": "desktop",
+        "onlyCategories": ["pwa", "performance", "accessibility"],
+        "throttlingMethod": "simulate",
+        "throttling": {
+          "rttMs": 40,
+          "throughputKbps": 10240,
+          "cpuSlowdownMultiplier": 1
+        }
+      }
+    },
+    "assert": {
+      "assertions": {
+        "categories:pwa": ["error", {"minScore": 0.9}],
+        "categories:performance": ["warn", {"minScore": 0.8}],
+        "categories:accessibility": ["error", {"minScore": 0.9}],
+        "installable-manifest": "error",
+        "service-worker": "error",
+        "splash-screen": "error",
+        "themed-omnibox": "error",
+        "viewport": "error",
+        "without-javascript": "warn",
+        "first-contentful-paint": ["warn", {"maxNumericValue": 2500}],
+        "largest-contentful-paint": ["warn", {"maxNumericValue": 2500}],
+        "cumulative-layout-shift": ["warn", {"maxNumericValue": 0.1}],
+        "total-blocking-time": ["warn", {"maxNumericValue": 200}]
+      }
+    },
+    "upload": {
+      "target": "temporary-public-storage"
+    }
+  }
+}

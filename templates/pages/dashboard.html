@@ -3,6 +3,11 @@
 {% block title %}Dashboard - imkitchen{% endblock %}
 
 {% block extra_head %}
+<!-- Prefetch critical next-page resources for faster navigation (Story 5.9) -->
+<link rel="prefetch" href="/recipes" as="document">
+<link rel="prefetch" href="/plan" as="document">
+<link rel="prefetch" href="/shopping" as="document">
+
 <style>
 /* TwinSpark loading state */
 button.ts-active {
