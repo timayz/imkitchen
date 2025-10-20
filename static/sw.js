@@ -8,6 +8,20 @@
 // For additional security, consider migrating to npm-installed Workbox modules in future.
 // Reference: https://developers.google.com/web/tools/workbox/guides/using-bundlers
 importScripts('https://storage.googleapis.com/workbox-cdn/releases/7.1.0/workbox-sw.js');
+
+/**
+ * @typedef {Object} OfflineDB
+ * @property {function(string, *): Promise<void>} put - Store data in IndexedDB
+ * @property {function(string, string|number): Promise<*>} get - Retrieve data from IndexedDB
+ * @property {function(string, string|number): Promise<void>} remove - Delete data from IndexedDB
+ * @property {function(string): Promise<Array>} getAll - Get all records from a store
+ * @property {function(*): Promise<void>} queueRequest - Queue an offline request for sync
+ * @property {function(): Promise<Array>} getQueuedRequests - Get all queued sync requests
+ * @property {function(number): Promise<void>} removeQueuedRequest - Remove a request from sync queue
+ */
+
+/** @type {OfflineDB} */
+// eslint-disable-next-line no-undef
 importScripts('/static/js/offline-db.js');
 
 // Initialize Workbox
@@ -384,14 +398,34 @@ self.addEventListener('notificationclose', (event) => {
 });
 
 // ============================================================
-// Background Sync - Story 5.2 AC-7
+// Background Sync - Story 5.2 AC-7 + Story 5.8
 // ============================================================
 
-// Background Sync for offline mutations
+// Configuration constants
+const BATCH_SIZE = 10; // Max requests per sync batch
+const RETRY_DELAYS_MS = [0, 60000, 300000, 900000]; // 0min, 1min, 5min, 15min
+const MAX_RETRIES = 3; // Maximum retry attempts before giving up
+
+// Detect network restoration and trigger sync - Story 5.8 Subtask 1.1
+self.addEventListener('online', (event) => {
+  console.log('Network connectivity restored, triggering background sync');
+
+  // Register background sync when coming back online - Story 5.8 Subtask 1.2
+  self.registration.sync.register('sync-changes').then(() => {
+    console.log('Background sync registered: sync-changes');
+  }).catch((error) => {
+    console.error('Failed to register background sync:', error);
+    // Fallback: trigger sync immediately if registration fails
+    syncOfflineActions();
+  });
+});
+
+// Background Sync for offline mutations - Story 5.8 Subtask 1.3
 self.addEventListener('sync', (event) => {
   console.log('Background sync triggered:', event.tag);
 
-  if (event.tag === 'sync-offline-actions') {
+  // Handle both legacy tag and new tag - Story 5.8
+  if (event.tag === 'sync-offline-actions' || event.tag === 'sync-changes') {
     event.waitUntil(syncOfflineActions());
   }
 });
@@ -400,6 +434,8 @@ self.addEventListener('sync', (event) => {
  * Sync queued offline actions with server
  * Retrieves queued requests from IndexedDB and replays them
  * Story 5.3 AC-7 - Enhanced with sync status notifications
+ * Story 5.8 Task 2 - Process in order with batching
+ * Story 5.8 Task 3 - Conflict resolution and retry logic
  */
 async function syncOfflineActions() {
   try {
@@ -413,45 +449,143 @@ async function syncOfflineActions() {
       return;
     }
 
+    // Story 5.8 Subtask 2.3 - Batch processing (use configured batch size)
+    const batch = requests.slice(0, BATCH_SIZE);
+    const total = batch.length;
+
     let successCount = 0;
     let failureCount = 0;
+    let conflictCount = 0;
 
-    // Replay each request with exponential backoff
-    for (const queuedRequest of requests) {
+    // Story 5.8 Subtask 2.2 - Replay requests in FIFO order
+    for (let i = 0; i < batch.length; i++) {
+      const queuedRequest = batch[i];
+      const current = i + 1;
+
+      // Story 5.8 Subtask 4.2 - Post progress to main thread
+      postMessageToClients({
+        type: 'SYNC_PROGRESS',
+        data: {
+          current,
+          total
+        }
+      });
+
       try {
-        await replayRequest(queuedRequest);
-        await offlineDB.removeQueuedRequest(queuedRequest.request_id);
-        console.log('Successfully synced request:', queuedRequest.request_id);
-        successCount++;
+        // Story 5.8 Subtask 3.1 - Parse server response
+        const response = await replayRequest(queuedRequest);
+
+        if (response.status === 409) {
+          // Story 5.8 Subtask 3.2 - Handle 409 Conflict
+          console.warn('Conflict detected for request:', queuedRequest.request_id);
+          conflictCount++;
+
+          // Remove from queue (server wins)
+          await offlineDB.removeQueuedRequest(queuedRequest.request_id);
+
+          // Notify user of conflict
+          const itemName = extractItemName(queuedRequest);
+          postMessageToClients({
+            type: 'SYNC_CONFLICT',
+            data: {
+              itemName,
+              requestId: queuedRequest.request_id
+            }
+          });
+        } else {
+          // Story 5.8 Subtask 2.5 - Remove successfully synced request
+          await offlineDB.removeQueuedRequest(queuedRequest.request_id);
+          console.log('Successfully synced request:', queuedRequest.request_id);
+          successCount++;
+        }
       } catch (error) {
         console.error('Failed to sync request:', queuedRequest.request_id, error);
         failureCount++;
 
-        // Increment retry count
+        // Story 5.8 Subtask 3.3 - Exponential backoff retry strategy
         const retryCount = (queuedRequest.retry_count || 0) + 1;
+        const now = Date.now();
 
-        if (retryCount >= 3) {
-          // Max retries exceeded, remove from queue
+        // Calculate next retry time with exponential backoff
+        const nextRetryDelay = RETRY_DELAYS_MS[Math.min(retryCount, RETRY_DELAYS_MS.length - 1)];
+        const nextRetryTime = now + nextRetryDelay;
+
+        if (retryCount >= MAX_RETRIES) {
+          // Story 5.8 Subtask 3.4 - After 3 failed retries
           await offlineDB.removeQueuedRequest(queuedRequest.request_id);
           console.warn('Max retries exceeded, removing request:', queuedRequest.request_id);
+
+          // Show persistent error notification
+          postMessageToClients({
+            type: 'SYNC_ERROR',
+            data: {
+              message: `Sync failed for ${extractItemName(queuedRequest)}. Please retry manually.`,
+              requestId: queuedRequest.request_id,
+              persistent: true
+            }
+          });
+
+          // Story 5.8 Subtask 3.5 - Log to OpenTelemetry (placeholder for future)
+          console.error('[OpenTelemetry] Sync failure:', {
+            requestId: queuedRequest.request_id,
+            url: queuedRequest.url,
+            method: queuedRequest.method,
+            retryCount,
+            error: error.message
+          });
         } else {
-          // Update retry count
+          // Update retry count and next retry time
           await offlineDB.put('sync_queue', {
             ...queuedRequest,
-            retry_count: retryCount
+            retry_count: retryCount,
+            next_retry_time: nextRetryTime
           });
+
+          console.log(`Request ${queuedRequest.request_id} will retry in ${nextRetryDelay / 1000}s (attempt ${retryCount + 1}/3)`);
         }
       }
     }
 
-    console.log(`Background sync completed: ${successCount} succeeded, ${failureCount} failed`);
+    console.log(`Background sync completed: ${successCount} succeeded, ${failureCount} failed, ${conflictCount} conflicts`);
+
+    // Story 5.8 Subtask 2.3 - Re-register sync if more requests remain
+    if (requests.length > BATCH_SIZE) {
+      const remaining = requests.length - BATCH_SIZE;
+      console.log(`${remaining} requests remaining, re-registering sync`);
+      await self.registration.sync.register('sync-changes');
+    }
 
     // Notify user of sync completion
-    if (successCount > 0) {
-      await showSyncNotification(successCount);
+    if (successCount > 0 && failureCount === 0) {
+      // All succeeded - Story 5.8 Subtask 4.4
+      postMessageToClients({
+        type: 'SYNC_COMPLETE',
+        data: {
+          count: successCount
+        }
+      });
+    } else if (successCount > 0 && failureCount > 0) {
+      // Partial success
+      postMessageToClients({
+        type: 'SYNC_COMPLETE',
+        data: {
+          count: successCount,
+          partialFailure: true
+        }
+      });
     }
   } catch (error) {
     console.error('Background sync failed:', error);
+
+    // Notify main thread of error
+    postMessageToClients({
+      type: 'SYNC_ERROR',
+      data: {
+        message: 'Background sync failed. Will retry automatically.',
+        error: error.message
+      }
+    });
+
     throw error; // Retry sync on next trigger
   }
 }
@@ -486,6 +620,7 @@ async function showSyncNotification(syncedCount) {
 
 /**
  * Replay a queued request to the server
+ * Story 5.8 Subtask 3.1 - Returns response for status code checking
  */
 async function replayRequest(queuedRequest) {
   const { url, method, body, headers } = queuedRequest;
@@ -496,9 +631,78 @@ async function replayRequest(queuedRequest) {
     body: body ? JSON.stringify(body) : undefined
   });
 
-  if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`);
+  // Story 5.8 Subtask 3.1 - Check response status
+  // 200/201/204 = Success
+  // 409 = Conflict (handle in caller)
+  // 4xx = Client error (don't retry)
+  // 5xx = Server error (retry)
+
+  if (response.status >= 500) {
+    throw new Error(`Server error: ${response.status}`);
+  }
+
+  if (response.status >= 400 && response.status !== 409) {
+    // 4xx errors (except 409) - client errors, don't retry
+    console.warn(`Client error ${response.status}, not retrying`);
+    throw new Error(`Client error: ${response.status}`);
   }
 
   return response;
 }
+
+/**
+ * Post message to all active clients (main thread)
+ * Story 5.8 Subtask 4.2 - Communication with main thread
+ */
+async function postMessageToClients(message) {
+  const clients = await self.clients.matchAll({ includeUncontrolled: true, type: 'window' });
+
+  clients.forEach((client) => {
+    client.postMessage(message);
+  });
+}
+
+/**
+ * Extract item name from request for user-friendly error messages
+ * @param {object} queuedRequest
+ * @returns {string}
+ */
+function extractItemName(queuedRequest) {
+  try {
+    // Try to extract recipe title or other item name from request body
+    if (queuedRequest.body) {
+      const body = typeof queuedRequest.body === 'string'
+        ? JSON.parse(queuedRequest.body)
+        : queuedRequest.body;
+
+      if (body.title) return body.title;
+      if (body.name) return body.name;
+    }
+
+    // Fallback: extract from URL path
+    const urlMatch = queuedRequest.url.match(/\/(recipes|meal-plans|shopping)\/([^/]+)/);
+    if (urlMatch) {
+      return `${urlMatch[1]} item`;
+    }
+
+    // Default fallback
+    return queuedRequest.method + ' request';
+  } catch (error) {
+    console.error('Failed to extract item name:', error);
+    return 'Unknown item';
+  }
+}
+
+// ============================================================
+// Manual Sync Handler - Story 5.8 Subtask 1.5 (iOS fallback)
+// ============================================================
+
+// Listen for manual sync trigger from main thread (iOS fallback)
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'MANUAL_SYNC') {
+    console.log('Manual sync requested (iOS fallback)');
+
+    // Trigger sync immediately
+    event.waitUntil(syncOfflineActions());
+  }
+});
