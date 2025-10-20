@@ -17,8 +17,12 @@ pub struct Auth {
 
 /// Authentication middleware that validates JWT from cookie
 ///
-/// Extracts auth_token cookie, validates JWT, and inserts Auth extension with user_id
-/// Redirects to /login if token is missing or invalid
+/// Extracts auth_token cookie, validates JWT, verifies user exists in read model,
+/// and inserts Auth extension with user_id
+/// Redirects to /login if:
+/// - Token is missing
+/// - Token is invalid
+/// - User does not exist in read model (deleted or not yet synced)
 pub async fn auth_middleware(
     State(state): State<AppState>,
     jar: CookieJar,
@@ -35,17 +39,45 @@ pub async fn auth_middleware(
     };
 
     // Validate JWT and extract claims
-    match validate_jwt(token, &state.jwt_secret) {
-        Ok(claims) => {
-            // Insert Auth extension with user_id for downstream handlers
+    let claims = match validate_jwt(token, &state.jwt_secret) {
+        Ok(c) => c,
+        Err(e) => {
+            tracing::warn!("Invalid JWT token: {:?}, redirecting to login", e);
+            return (StatusCode::SEE_OTHER, [("Location", "/login")]).into_response();
+        }
+    };
+
+    // Verify user exists in read model database
+    // This catches:
+    // 1. Deleted users (removed from read model)
+    // 2. Users not yet synced from event store to read model
+    let user_exists = sqlx::query("SELECT id FROM users WHERE id = ?1")
+        .bind(&claims.sub)
+        .fetch_optional(&state.db_pool)
+        .await;
+
+    match user_exists {
+        Ok(Some(_)) => {
+            // User exists in read model - allow access
             req.extensions_mut().insert(Auth {
                 user_id: claims.sub,
             });
-
             next.run(req).await
         }
+        Ok(None) => {
+            // User not found or deleted - redirect to login
+            tracing::warn!(
+                "User {} not found in read model (deleted or not synced), redirecting to login",
+                claims.sub
+            );
+            (StatusCode::SEE_OTHER, [("Location", "/login")]).into_response()
+        }
         Err(e) => {
-            tracing::warn!("Invalid JWT token: {:?}, redirecting to login", e);
+            // Database error - redirect to login for safety
+            tracing::error!(
+                "Database error checking user existence: {:?}, redirecting to login",
+                e
+            );
             (StatusCode::SEE_OTHER, [("Location", "/login")]).into_response()
         }
     }
