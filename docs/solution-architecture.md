@@ -1003,14 +1003,25 @@ registerRoute(
 ### 8.4 Database Performance
 
 **SQLite Optimizations**:
-- WAL mode enabled: `PRAGMA journal_mode=WAL`
-- Synchronous=NORMAL: `PRAGMA synchronous=NORMAL`
-- Foreign keys enabled: `PRAGMA foreign_keys=ON`
-- Analyze statistics: `ANALYZE` on startup
+All database connections are configured with optimized PRAGMAs via `src/db.rs` module:
+- `PRAGMA journal_mode = WAL` - Write-Ahead Logging enables concurrent reads and writes
+- `PRAGMA busy_timeout = 5000` - Wait 5 seconds for locks to reduce SQLITE_BUSY errors
+- `PRAGMA synchronous = NORMAL` - Safe with WAL mode, improves write performance
+- `PRAGMA cache_size = -20000` - 20MB memory cache for better performance
+- `PRAGMA foreign_keys = true` - Explicitly enable foreign key constraints (disabled by default)
+- `PRAGMA temp_store = memory` - Use RAM for temporary tables, speeds up operations
+
+**Connection Pool Architecture**:
+- **Write Pool**: 1 connection maximum (prevents SQLITE_BUSY errors on writes)
+  - Used for: evento operations, read model projections (writes to read models), all write operations
+  - Critical: Single connection ensures SQLite write serialization
+- **Read Pool**: Multiple connections (configurable, default based on CPU cores)
+  - Used for: Direct read-only queries to read models
+  - Enables concurrent read throughput
+- **Best Practice**: Avoid `cache=shared` mode (causes SQLITE_BUSY errors)
+- **Transactions**: Use `BEGIN IMMEDIATE` for write transactions to avoid SQLITE_BUSY
 
 **Read Model Indexes**: All foreign keys, user_id columns, frequently filtered columns.
-
-**Connection Pooling**: SQLx pool (max 5 connections for MVP, sufficient for 10K users).
 
 **Query Patterns**:
 - Favor read models over event stream queries
@@ -1734,6 +1745,7 @@ imkitchen/
 │   ├── main.rs                         # CLI entry point (Clap)
 │   ├── server.rs                       # Axum server setup
 │   ├── config.rs                       # Configuration loading (config crate)
+│   ├── db.rs                           # Database pool creation with optimized PRAGMAs
 │   ├── error.rs                        # Global error types
 │   │
 │   ├── routes/                         # HTTP route handlers
