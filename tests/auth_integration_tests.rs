@@ -766,3 +766,121 @@ async fn test_accessing_protected_route_after_logout_redirects_to_login() {
         "/login"
     );
 }
+
+#[tokio::test]
+async fn test_deleted_user_with_valid_jwt_redirects_to_login() {
+    let (pool, _executor) = common::setup_test_db().await;
+    let test_app = common::create_test_app((pool.clone(), _executor)).await;
+
+    // Register and login user
+    test_app
+        .router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/register")
+                .header("content-type", "application/x-www-form-urlencoded")
+                .body(Body::from(
+                    "email=test@example.com&password=password123&password_confirm=password123",
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    test_app.process_events().await;
+
+    let login_response = test_app
+        .router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/login")
+                .header("content-type", "application/x-www-form-urlencoded")
+                .body(Body::from("email=test@example.com&password=password123"))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let auth_cookie = login_response
+        .headers()
+        .get("set-cookie")
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .split(';')
+        .next()
+        .unwrap()
+        .to_string();
+
+    // Remove the user from read model (simulate deleted user)
+    sqlx::query("DELETE FROM users WHERE email = 'test@example.com'")
+        .execute(&pool)
+        .await
+        .unwrap();
+
+    // Try to access protected route with valid JWT but deleted user
+    let dashboard_response = test_app
+        .router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/dashboard")
+                .header("cookie", auth_cookie)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    // Auth middleware should redirect to /login because user is deleted
+    assert_eq!(dashboard_response.status(), StatusCode::SEE_OTHER);
+    assert_eq!(
+        dashboard_response.headers().get("location").unwrap(),
+        "/login"
+    );
+}
+
+#[tokio::test]
+async fn test_user_not_in_read_model_with_valid_jwt_redirects_to_login() {
+    let (pool, executor) = common::setup_test_db().await;
+
+    // Manually create a JWT for a non-existent user
+    let fake_user_id = "550e8400-e29b-41d4-a716-446655440000".to_string();
+    let jwt_secret = "test_secret_key_minimum_32_characters_long";
+    let token = user::generate_jwt(
+        fake_user_id.clone(),
+        "fake@example.com".to_string(),
+        "free".to_string(),
+        jwt_secret,
+    )
+    .unwrap();
+
+    let test_app = common::create_test_app((pool.clone(), executor)).await;
+
+    // Try to access protected route with valid JWT but user not in read model
+    let dashboard_response = test_app
+        .router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/dashboard")
+                .header("cookie", format!("auth_token={}", token))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    // Auth middleware should redirect to /login because user doesn't exist in read model
+    assert_eq!(dashboard_response.status(), StatusCode::SEE_OTHER);
+    assert_eq!(
+        dashboard_response.headers().get("location").unwrap(),
+        "/login"
+    );
+}
