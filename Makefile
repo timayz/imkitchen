@@ -1,4 +1,4 @@
-.PHONY: css css-watch dev lint fmt fmt-fix test build check machete help
+.PHONY: css css-watch dev lint fmt fmt-fix test build check machete lighthouse help
 
 # Build CSS once
 css:
@@ -41,6 +41,22 @@ machete:
 		echo "  Install with: cargo install cargo-machete"; \
 	fi
 
+# Run Lighthouse performance audits using Docker
+lighthouse:
+	@echo "Building application..."
+	@cargo build --release
+	@echo "Starting server in background..."
+	@./target/release/imkitchen serve & echo $$! > /tmp/imkitchen.pid
+	@sleep 5
+	@echo "Waiting for server to be ready..."
+	@timeout 30 bash -c 'until curl -f http://localhost:8080/health >/dev/null 2>&1; do sleep 1; done' || (kill $$(cat /tmp/imkitchen.pid) 2>/dev/null; rm -f /tmp/imkitchen.pid; echo "❌ Server failed to start"; exit 1)
+	@echo "Running Lighthouse CI..."
+	@docker run --rm --network=host -v $(PWD):/workspace -w /workspace patrickhulce/lhci-client:0.15.0 lhci autorun --config=lighthouserc.json || true
+	@echo "Stopping server..."
+	@kill $$(cat /tmp/imkitchen.pid) 2>/dev/null || true
+	@rm -f /tmp/imkitchen.pid
+	@echo "✓ Lighthouse audit complete! Check .lighthouseci/ for results."
+
 # Run all checks: format, lint, machete, and test (CI-ready)
 check: test lint fmt machete
 	@echo "✓ All checks passed!"
@@ -57,4 +73,5 @@ help:
 	@echo "  make machete    - Check for unused dependencies"
 	@echo "  make test       - Run all tests"
 	@echo "  make build      - Build the project"
+	@echo "  make lighthouse - Run Lighthouse performance audits (Docker required)"
 	@echo "  make check      - Run fmt + lint + machete + test (CI-ready)"
