@@ -892,6 +892,7 @@ pub async fn copy_recipe(
     let copied_at = Utc::now();
 
     // AC-2, AC-3, AC-6, AC-7: Create new Recipe aggregate with RecipeCreated event
+    // AC-4: Also emit RecipeCopied event in same transaction for attribution metadata
     // Copy all data from original recipe, but set user_id to copying user
     // Default to private (is_shared = false) per AC-6
     let new_recipe_id = evento::create::<RecipeAggregate>()
@@ -907,14 +908,6 @@ pub async fn copy_recipe(
             created_at: copied_at.to_rfc3339(),
         })
         .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
-        .metadata(&true)
-        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
-        .commit(executor)
-        .await
-        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
-
-    // AC-4: Emit RecipeCopied event to store attribution metadata
-    evento::save::<RecipeAggregate>(new_recipe_id.clone())
         .data(&RecipeCopied {
             original_recipe_id: command.original_recipe_id.clone(),
             original_author: original_author.clone(),
