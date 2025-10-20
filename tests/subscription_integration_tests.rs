@@ -172,15 +172,35 @@ async fn test_validate_recipe_creation_free_tier_enforces_limit() {
 
     let (user_id, _token) = create_test_user(&pool, &test_app.evento_executor).await;
 
-    // Update user recipe_count to 10 (at limit)
-    sqlx::query("UPDATE users SET recipe_count = 10 WHERE id = ?1")
-        .bind(&user_id)
-        .execute(&pool)
-        .await
-        .unwrap();
+    // Create 10 recipes to reach the limit via events (proper event sourcing way)
+    for i in 0..10 {
+        // Emit RecipeCreated event (user aggregate listens to this)
+        // evento::create generates the aggregator_id automatically
+        evento::create::<recipe::aggregate::RecipeAggregate>()
+            .data(&recipe::events::RecipeCreated {
+                user_id: user_id.clone(),
+                title: format!("Test Recipe {}", i),
+                ingredients: vec![],
+                instructions: vec![],
+                prep_time_min: None,
+                cook_time_min: None,
+                advance_prep_hours: None,
+                serving_size: None,
+                created_at: chrono::Utc::now().to_rfc3339(),
+            })
+            .unwrap()
+            .metadata(&true)
+            .unwrap()
+            .commit(&test_app.evento_executor)
+            .await
+            .unwrap();
+    }
+
+    // Process events so UserAggregate updates recipe_count
+    test_app.process_events().await;
 
     // Attempt to validate recipe creation (should fail)
-    let result = user::commands::validate_recipe_creation(&user_id, &pool).await;
+    let result = user::commands::validate_recipe_creation(&user_id, &test_app.evento_executor).await;
 
     assert!(result.is_err());
     match result {
@@ -213,15 +233,35 @@ async fn test_validate_recipe_creation_premium_tier_bypasses_limit() {
     // Process events
     test_app.process_events().await;
 
-    // Set recipe_count to 15 (over free limit)
-    sqlx::query("UPDATE users SET recipe_count = 15 WHERE id = ?1")
-        .bind(&user_id)
-        .execute(&pool)
-        .await
-        .unwrap();
+    // Create 15 recipes to go over free limit via events (proper event sourcing way)
+    for i in 0..15 {
+        // Emit RecipeCreated event (user aggregate listens to this)
+        // evento::create generates the aggregator_id automatically
+        evento::create::<recipe::aggregate::RecipeAggregate>()
+            .data(&recipe::events::RecipeCreated {
+                user_id: user_id.clone(),
+                title: format!("Test Recipe {}", i),
+                ingredients: vec![],
+                instructions: vec![],
+                prep_time_min: None,
+                cook_time_min: None,
+                advance_prep_hours: None,
+                serving_size: None,
+                created_at: chrono::Utc::now().to_rfc3339(),
+            })
+            .unwrap()
+            .metadata(&true)
+            .unwrap()
+            .commit(&test_app.evento_executor)
+            .await
+            .unwrap();
+    }
+
+    // Process events so UserAggregate updates recipe_count
+    test_app.process_events().await;
 
     // Attempt to validate recipe creation (should succeed for premium)
-    let result = user::commands::validate_recipe_creation(&user_id, &pool).await;
+    let result = user::commands::validate_recipe_creation(&user_id, &test_app.evento_executor).await;
 
     assert!(result.is_ok());
 }
@@ -233,15 +273,35 @@ async fn test_validate_recipe_creation_free_tier_under_limit_succeeds() {
 
     let (user_id, _token) = create_test_user(&pool, &test_app.evento_executor).await;
 
-    // Update user recipe_count to 5 (under limit)
-    sqlx::query("UPDATE users SET recipe_count = 5 WHERE id = ?1")
-        .bind(&user_id)
-        .execute(&pool)
-        .await
-        .unwrap();
+    // Create 5 recipes (under limit) via events (proper event sourcing way)
+    for i in 0..5 {
+        // Emit RecipeCreated event (user aggregate listens to this)
+        // evento::create generates the aggregator_id automatically
+        evento::create::<recipe::aggregate::RecipeAggregate>()
+            .data(&recipe::events::RecipeCreated {
+                user_id: user_id.clone(),
+                title: format!("Test Recipe {}", i),
+                ingredients: vec![],
+                instructions: vec![],
+                prep_time_min: None,
+                cook_time_min: None,
+                advance_prep_hours: None,
+                serving_size: None,
+                created_at: chrono::Utc::now().to_rfc3339(),
+            })
+            .unwrap()
+            .metadata(&true)
+            .unwrap()
+            .commit(&test_app.evento_executor)
+            .await
+            .unwrap();
+    }
+
+    // Process events so UserAggregate updates recipe_count
+    test_app.process_events().await;
 
     // Attempt to validate recipe creation (should succeed)
-    let result = user::commands::validate_recipe_creation(&user_id, &pool).await;
+    let result = user::commands::validate_recipe_creation(&user_id, &test_app.evento_executor).await;
 
     assert!(result.is_ok());
 }

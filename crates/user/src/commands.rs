@@ -1,6 +1,6 @@
 use chrono::Utc;
 use evento::Sqlite;
-use sqlx::{Row, SqlitePool};
+use sqlx::SqlitePool;
 use validator::Validate;
 
 use crate::aggregate::UserAggregate;
@@ -345,42 +345,38 @@ pub async fn update_profile(command: UpdateProfileCommand, executor: &Sqlite) ->
 
 /// Validate whether a user can create a new recipe based on tier and recipe_count
 ///
-/// This function enforces the freemium tier limit: free users are limited to 10 recipes maximum.
-/// Premium users have unlimited recipe creation.
+/// DEPRECATED: This function is no longer used. Recipe commands now load the UserAggregate
+/// directly using evento::load to get tier and recipe_count from the event store.
 ///
-/// Returns Ok(()) if user can create a recipe (premium or under limit)
-/// Returns Err(UserError::RecipeLimitReached) if free user has reached the 10 recipe limit
+/// This ensures consistency by using evento::load instead of querying the read model.
 ///
-/// This validation should be called BEFORE emitting RecipeCreated event in the recipe domain.
-pub async fn validate_recipe_creation(user_id: &str, pool: &SqlitePool) -> UserResult<()> {
-    // Query user tier and recipe_count from read model
-    let result = sqlx::query("SELECT tier, recipe_count FROM users WHERE id = ?1")
-        .bind(user_id)
-        .fetch_optional(pool)
-        .await?;
+/// See: crates/recipe/src/commands.rs - create_recipe() and copy_recipe()
+#[deprecated(
+    since = "0.5.0",
+    note = "Use evento::load<UserAggregate> directly in recipe commands instead"
+)]
+pub async fn validate_recipe_creation(user_id: &str, executor: &evento::Sqlite) -> UserResult<()> {
+    // Load user aggregate from event store to get tier and recipe_count
+    let user_load_result = evento::load::<UserAggregate, _>(executor, user_id)
+        .await
+        .map_err(|e| UserError::EventStoreError(e.to_string()))?;
 
-    match result {
-        Some(row) => {
-            let tier: String = row.get("tier");
-            let recipe_count: i32 = row.get("recipe_count");
-
-            // Premium users bypass all limits
-            if tier == "premium" {
-                return Ok(());
-            }
-
-            // Free tier users limited to 10 recipes
-            if tier == "free" && recipe_count >= 10 {
-                return Err(UserError::RecipeLimitReached);
-            }
-
-            Ok(())
-        }
-        None => {
-            // User not found - should not happen in normal flow
-            Err(UserError::ValidationError("User not found".to_string()))
-        }
+    // Check if user exists
+    if user_load_result.item.user_id.is_empty() {
+        return Err(UserError::ValidationError("User not found".to_string()));
     }
+
+    // Premium users bypass all limits
+    if user_load_result.item.tier == "premium" {
+        return Ok(());
+    }
+
+    // Free tier users limited to 10 recipes
+    if user_load_result.item.recipe_count >= 10 {
+        return Err(UserError::RecipeLimitReached);
+    }
+
+    Ok(())
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]

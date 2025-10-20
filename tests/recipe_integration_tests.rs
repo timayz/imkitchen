@@ -29,25 +29,51 @@ async fn setup_evento_executor(pool: Pool<Sqlite>) -> evento::Sqlite {
     pool.into()
 }
 
-/// Insert test user
-async fn insert_test_user(pool: &SqlitePool, user_id: &str, email: &str, tier: &str) {
-    sqlx::query(
-        "INSERT INTO users (id, email, password_hash, tier, recipe_count, created_at)
-         VALUES (?1, ?2, 'hash', ?3, 0, datetime('now'))",
+/// Create test user using proper evento commands
+async fn create_test_user_for_tests(pool: &SqlitePool, executor: &evento::Sqlite, email: &str, tier: &str) -> String {
+    use user::commands::{register_user, upgrade_subscription, RegisterUserCommand, UpgradeSubscriptionCommand};
+
+    // Register user via command (creates aggregate + events)
+    let user_id = register_user(
+        RegisterUserCommand {
+            email: email.to_string(),
+            password: "testpassword".to_string(),
+        },
+        executor,
+        pool,
     )
-    .bind(user_id)
-    .bind(email)
-    .bind(tier)
-    .execute(pool)
     .await
     .unwrap();
+
+    // If premium tier, upgrade subscription
+    if tier == "premium" {
+        upgrade_subscription(
+            UpgradeSubscriptionCommand {
+                user_id: user_id.clone(),
+                new_tier: "premium".to_string(),
+                stripe_customer_id: Some("cus_test".to_string()),
+                stripe_subscription_id: Some("sub_test".to_string()),
+            },
+            executor,
+        )
+        .await
+        .unwrap();
+    }
+
+    // Process user projection to populate read model synchronously
+    user::user_projection(pool.clone())
+        .unsafe_oneshot(executor)
+        .await
+        .unwrap();
+
+    user_id
 }
 
 #[tokio::test]
 async fn test_create_recipe_integration_with_read_model_projection() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+    let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "free").await;
 
     // Process events synchronously for deterministic tests (unsafe_oneshot instead of run)
     recipe_projection(pool.clone())
@@ -89,7 +115,7 @@ async fn test_create_recipe_integration_with_read_model_projection() {
     };
 
     // Execute recipe creation
-    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
         .await
         .unwrap();
 
@@ -105,7 +131,7 @@ async fn test_create_recipe_integration_with_read_model_projection() {
 
     let recipe_data = recipe.unwrap();
     assert_eq!(recipe_data.id, recipe_id);
-    assert_eq!(recipe_data.user_id, "user1");
+    assert_eq!(recipe_data.user_id, user1_id);
     assert_eq!(recipe_data.title, "Integration Test Recipe");
     assert_eq!(recipe_data.prep_time_min, Some(15));
     assert_eq!(recipe_data.cook_time_min, Some(30));
@@ -134,7 +160,7 @@ async fn test_create_recipe_integration_with_read_model_projection() {
 async fn test_query_recipes_by_user() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+    let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "free").await;
 
     // Start projection
     // Process events synchronously for deterministic tests
@@ -162,7 +188,7 @@ async fn test_query_recipes_by_user() {
             advance_prep_hours: None,
             serving_size: Some(2),
         };
-        create_recipe(command, "user1", &executor, &pool)
+        create_recipe(command, &user1_id, &executor, &pool)
             .await
             .unwrap();
     }
@@ -174,7 +200,7 @@ async fn test_query_recipes_by_user() {
         .unwrap();
 
     // Query all recipes for user1
-    let recipes = query_recipes_by_user("user1", false, &pool).await.unwrap();
+    let recipes = query_recipes_by_user(&user1_id, false, &pool).await.unwrap();
     assert_eq!(recipes.len(), 3, "Should have 3 recipes");
 
     // Verify sorted by created_at DESC (most recent first)
@@ -187,7 +213,7 @@ async fn test_query_recipes_by_user() {
 async fn test_delete_recipe_integration() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+    let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "free").await;
 
     // Start projection
     // Process events synchronously for deterministic tests
@@ -214,7 +240,7 @@ async fn test_delete_recipe_integration() {
         advance_prep_hours: None,
         serving_size: Some(2),
     };
-    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
         .await
         .unwrap();
 
@@ -251,8 +277,8 @@ async fn test_delete_recipe_integration() {
 async fn test_delete_recipe_permission_denied() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
-    insert_test_user(&pool, "user2", "user2@test.com", "free").await;
+    let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "free").await;
+    let _user2_id = create_test_user_for_tests(&pool, &executor, "user2@test.com", "free").await;
 
     // Start projection
     // Process events synchronously for deterministic tests
@@ -279,7 +305,7 @@ async fn test_delete_recipe_permission_denied() {
         advance_prep_hours: None,
         serving_size: Some(2),
     };
-    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
         .await
         .unwrap();
 
@@ -314,7 +340,7 @@ async fn test_post_recipe_update_success_returns_ts_location() {
 
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+    let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "free").await;
 
     // Start projection
     // Process events synchronously for deterministic tests
@@ -341,7 +367,7 @@ async fn test_post_recipe_update_success_returns_ts_location() {
         advance_prep_hours: None,
         serving_size: Some(2),
     };
-    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
         .await
         .unwrap();
 
@@ -414,8 +440,8 @@ async fn test_post_recipe_update_unauthorized_returns_403() {
 
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
-    insert_test_user(&pool, "user2", "user2@test.com", "free").await;
+    let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "free").await;
+    let _user2_id = create_test_user_for_tests(&pool, &executor, "user2@test.com", "free").await;
 
     // Start projection
     // Process events synchronously for deterministic tests
@@ -442,7 +468,7 @@ async fn test_post_recipe_update_unauthorized_returns_403() {
         advance_prep_hours: None,
         serving_size: Some(2),
     };
-    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
         .await
         .unwrap();
 
@@ -494,7 +520,7 @@ async fn test_post_recipe_update_invalid_data_returns_422() {
 
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+    let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "free").await;
 
     // Start projection
     // Process events synchronously for deterministic tests
@@ -521,7 +547,7 @@ async fn test_post_recipe_update_invalid_data_returns_422() {
         advance_prep_hours: None,
         serving_size: Some(2),
     };
-    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
         .await
         .unwrap();
 
@@ -574,7 +600,7 @@ async fn test_get_recipe_edit_form_prepopulated() {
 
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+    let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "free").await;
 
     // Start projection
     // Process events synchronously for deterministic tests
@@ -601,7 +627,7 @@ async fn test_get_recipe_edit_form_prepopulated() {
         advance_prep_hours: Some(2),
         serving_size: Some(4),
     };
-    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
         .await
         .unwrap();
 
@@ -658,7 +684,7 @@ async fn test_get_recipe_edit_form_prepopulated() {
 async fn test_recipe_update_syncs_to_read_model() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+    let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "free").await;
 
     // Start projection
     // Process events synchronously for deterministic tests
@@ -685,7 +711,7 @@ async fn test_recipe_update_syncs_to_read_model() {
         advance_prep_hours: Some(1),
         serving_size: Some(2),
     };
-    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
         .await
         .unwrap();
 
@@ -772,7 +798,7 @@ async fn test_recipe_update_syncs_to_read_model() {
 async fn test_delete_recipe_integration_removes_from_read_model() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+    let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "free").await;
 
     // Start projection
     // Process events synchronously for deterministic tests
@@ -800,7 +826,7 @@ async fn test_delete_recipe_integration_removes_from_read_model() {
         serving_size: Some(2),
     };
 
-    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
         .await
         .unwrap();
 
@@ -845,8 +871,8 @@ async fn test_delete_recipe_integration_removes_from_read_model() {
 async fn test_delete_recipe_integration_unauthorized_returns_403() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
-    insert_test_user(&pool, "user2", "user2@test.com", "free").await;
+    let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "free").await;
+    let _user2_id = create_test_user_for_tests(&pool, &executor, "user2@test.com", "free").await;
 
     // Start projection
     // Process events synchronously for deterministic tests
@@ -874,7 +900,7 @@ async fn test_delete_recipe_integration_unauthorized_returns_403() {
         serving_size: Some(2),
     };
 
-    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
         .await
         .unwrap();
 
@@ -908,7 +934,7 @@ async fn test_delete_recipe_integration_unauthorized_returns_403() {
 async fn test_delete_recipe_integration_excluded_from_user_queries() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+    let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "free").await;
 
     // Start projection
     // Process events synchronously for deterministic tests
@@ -938,7 +964,7 @@ async fn test_delete_recipe_integration_excluded_from_user_queries() {
             serving_size: Some(2),
         };
 
-        let recipe_id = create_recipe(command, "user1", &executor, &pool)
+        let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
             .await
             .unwrap();
         recipe_ids.push(recipe_id);
@@ -951,7 +977,7 @@ async fn test_delete_recipe_integration_excluded_from_user_queries() {
         .unwrap();
 
     // Verify all 3 recipes exist
-    let recipes_before = query_recipes_by_user("user1", false, &pool).await.unwrap();
+    let recipes_before = query_recipes_by_user(&user1_id, false, &pool).await.unwrap();
     assert_eq!(
         recipes_before.len(),
         3,
@@ -975,7 +1001,7 @@ async fn test_delete_recipe_integration_excluded_from_user_queries() {
         .unwrap();
 
     // Verify only 2 recipes remain
-    let recipes_after = query_recipes_by_user("user1", false, &pool).await.unwrap();
+    let recipes_after = query_recipes_by_user(&user1_id, false, &pool).await.unwrap();
     assert_eq!(
         recipes_after.len(),
         2,
@@ -997,7 +1023,7 @@ async fn test_delete_recipe_integration_excluded_from_user_queries() {
 async fn test_favorite_recipe_integration_full_cycle() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+    let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "free").await;
 
     // Run projection once to catch up
     recipe_projection(pool.clone())
@@ -1024,7 +1050,7 @@ async fn test_favorite_recipe_integration_full_cycle() {
         serving_size: Some(4),
     };
 
-    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
         .await
         .unwrap();
 
@@ -1070,8 +1096,8 @@ async fn test_favorite_recipe_integration_full_cycle() {
     );
 
     // Query all recipes vs favorites
-    let all_recipes = query_recipes_by_user("user1", false, &pool).await.unwrap();
-    let fav_recipes = query_recipes_by_user("user1", true, &pool).await.unwrap();
+    let all_recipes = query_recipes_by_user(&user1_id, false, &pool).await.unwrap();
+    let fav_recipes = query_recipes_by_user(&user1_id, true, &pool).await.unwrap();
 
     assert_eq!(all_recipes.len(), 1, "Should have 1 recipe total");
     assert_eq!(fav_recipes.len(), 1, "Should have 1 favorite recipe");
@@ -1102,7 +1128,7 @@ async fn test_favorite_recipe_integration_full_cycle() {
     );
 
     // Query favorites (should be empty now)
-    let fav_recipes = query_recipes_by_user("user1", true, &pool).await.unwrap();
+    let fav_recipes = query_recipes_by_user(&user1_id, true, &pool).await.unwrap();
     assert_eq!(fav_recipes.len(), 0, "Should have 0 favorite recipes");
 }
 
@@ -1110,7 +1136,7 @@ async fn test_favorite_recipe_integration_full_cycle() {
 async fn test_favorite_filter_with_multiple_recipes() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "user1@test.com", "premium").await;
+    let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "premium").await;
 
     // Run projection once to catch up
     recipe_projection(pool.clone())
@@ -1139,7 +1165,7 @@ async fn test_favorite_filter_with_multiple_recipes() {
             serving_size: Some(2),
         };
 
-        let recipe_id = create_recipe(command, "user1", &executor, &pool)
+        let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
             .await
             .unwrap();
         recipe_ids.push(recipe_id);
@@ -1168,11 +1194,11 @@ async fn test_favorite_filter_with_multiple_recipes() {
         .unwrap();
 
     // Query all recipes
-    let all_recipes = query_recipes_by_user("user1", false, &pool).await.unwrap();
+    let all_recipes = query_recipes_by_user(&user1_id, false, &pool).await.unwrap();
     assert_eq!(all_recipes.len(), 5, "Should have 5 recipes total");
 
     // Query favorite recipes only
-    let fav_recipes = query_recipes_by_user("user1", true, &pool).await.unwrap();
+    let fav_recipes = query_recipes_by_user(&user1_id, true, &pool).await.unwrap();
     assert_eq!(fav_recipes.len(), 3, "Should have 3 favorite recipes");
 
     // Verify the correct recipes are favorited
@@ -1195,8 +1221,8 @@ async fn test_favorite_filter_with_multiple_recipes() {
 async fn test_favorite_permission_denied_for_other_users_recipe() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
-    insert_test_user(&pool, "user2", "user2@test.com", "free").await;
+    let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "free").await;
+    let _user2_id = create_test_user_for_tests(&pool, &executor, "user2@test.com", "free").await;
 
     // Run projection once to catch up
     recipe_projection(pool.clone())
@@ -1223,7 +1249,7 @@ async fn test_favorite_permission_denied_for_other_users_recipe() {
         serving_size: Some(2),
     };
 
-    let recipe_id = create_recipe(command, "user1", &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
         .await
         .unwrap();
 

@@ -7,7 +7,18 @@ use user::{validate_recipe_creation, UserError};
 
 /// Helper function to create in-memory SQLite database for testing
 async fn setup_test_db() -> SqlitePool {
+    use evento::prelude::*;
+
     let pool = SqlitePool::connect(":memory:").await.unwrap();
+
+    // Run evento migrations for event store tables
+    let mut conn = pool.acquire().await.unwrap();
+    evento::sql_migrator::new_migrator::<sqlx::Sqlite>()
+        .unwrap()
+        .run(&mut *conn, &Plan::apply_all())
+        .await
+        .unwrap();
+    drop(conn);
 
     // Run SQLx migrations for read model tables (same as production)
     sqlx::migrate!("../../migrations").run(&pool).await.unwrap();
@@ -15,29 +26,79 @@ async fn setup_test_db() -> SqlitePool {
     pool
 }
 
-/// Helper function to insert a test user
-async fn insert_test_user(pool: &SqlitePool, user_id: &str, tier: &str, recipe_count: i32) {
-    sqlx::query(
-        "INSERT INTO users (id, email, password_hash, tier, recipe_count, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-    )
-    .bind(user_id)
-    .bind(format!("{}@example.com", user_id))
-    .bind("hashed_password")
-    .bind(tier)
-    .bind(recipe_count)
-    .bind("2025-01-01T00:00:00Z")
-    .execute(pool)
-    .await
-    .unwrap();
+/// Helper function to create a test user via evento with specific user_id and recipe_count
+async fn create_test_user_with_recipes(
+    user_id: &str,
+    tier: &str,
+    recipe_count: i32,
+    executor: &evento::Sqlite,
+) {
+    use user::events::UserCreated;
+
+    // Create UserCreated event
+    evento::save::<user::aggregate::UserAggregate>(user_id.to_string())
+        .data(&UserCreated {
+            email: format!("{}@example.com", user_id),
+            password_hash: "hashed_password".to_string(),
+            created_at: chrono::Utc::now().to_rfc3339(),
+        })
+        .unwrap()
+        .metadata(&true)
+        .unwrap()
+        .commit(executor)
+        .await
+        .unwrap();
+
+    // If premium tier, emit SubscriptionUpgraded event
+    if tier == "premium" {
+        use user::events::SubscriptionUpgraded;
+        evento::save::<user::aggregate::UserAggregate>(user_id.to_string())
+            .data(&SubscriptionUpgraded {
+                new_tier: "premium".to_string(),
+                stripe_customer_id: Some("cus_test".to_string()),
+                stripe_subscription_id: Some("sub_test".to_string()),
+                upgraded_at: chrono::Utc::now().to_rfc3339(),
+            })
+            .unwrap()
+            .metadata(&true)
+            .unwrap()
+            .commit(executor)
+            .await
+            .unwrap();
+    }
+
+    // Simulate recipe_count by emitting RecipeCreated events
+    for i in 0..recipe_count {
+        use recipe::events::RecipeCreated;
+        evento::save::<recipe::aggregate::RecipeAggregate>(format!("recipe_{}", i))
+            .data(&RecipeCreated {
+                user_id: user_id.to_string(),
+                title: format!("Recipe {}", i),
+                ingredients: vec![],
+                instructions: vec![],
+                prep_time_min: None,
+                cook_time_min: None,
+                advance_prep_hours: None,
+                serving_size: None,
+                created_at: chrono::Utc::now().to_rfc3339(),
+            })
+            .unwrap()
+            .metadata(&true)
+            .unwrap()
+            .commit(executor)
+            .await
+            .unwrap();
+    }
 }
 
 /// Test AC-2: Free user with 9 recipes can create recipe #10 (validation passes)
 #[tokio::test]
 async fn test_free_user_with_9_recipes_can_create() {
     let pool = setup_test_db().await;
-    insert_test_user(&pool, "user1", "free", 9).await;
+    let executor: evento::Sqlite = pool.clone().into();
+    create_test_user_with_recipes("user1", "free", 9, &executor).await;
 
-    let result = validate_recipe_creation("user1", &pool).await;
+    let result = validate_recipe_creation("user1", &executor).await;
 
     assert!(
         result.is_ok(),
@@ -49,9 +110,10 @@ async fn test_free_user_with_9_recipes_can_create() {
 #[tokio::test]
 async fn test_free_user_with_10_recipes_cannot_create() {
     let pool = setup_test_db().await;
-    insert_test_user(&pool, "user1", "free", 10).await;
+    let executor: evento::Sqlite = pool.clone().into();
+    create_test_user_with_recipes("user1", "free", 10, &executor).await;
 
-    let result = validate_recipe_creation("user1", &pool).await;
+    let result = validate_recipe_creation("user1", &executor).await;
 
     assert!(
         result.is_err(),
@@ -69,9 +131,10 @@ async fn test_free_user_with_10_recipes_cannot_create() {
 #[tokio::test]
 async fn test_premium_user_unlimited_recipes() {
     let pool = setup_test_db().await;
-    insert_test_user(&pool, "premium_user", "premium", 50).await;
+    let executor: evento::Sqlite = pool.clone().into();
+    create_test_user_with_recipes("premium_user", "premium", 50, &executor).await;
 
-    let result = validate_recipe_creation("premium_user", &pool).await;
+    let result = validate_recipe_creation("premium_user", &executor).await;
 
     assert!(
         result.is_ok(),
@@ -83,9 +146,10 @@ async fn test_premium_user_unlimited_recipes() {
 #[tokio::test]
 async fn test_premium_user_100_recipes() {
     let pool = setup_test_db().await;
-    insert_test_user(&pool, "premium_user", "premium", 100).await;
+    let executor: evento::Sqlite = pool.clone().into();
+    create_test_user_with_recipes("premium_user", "premium",100, &executor).await;
 
-    let result = validate_recipe_creation("premium_user", &pool).await;
+    let result = validate_recipe_creation("premium_user", &executor).await;
 
     assert!(
         result.is_ok(),
@@ -97,9 +161,10 @@ async fn test_premium_user_100_recipes() {
 #[tokio::test]
 async fn test_free_user_with_0_recipes_can_create() {
     let pool = setup_test_db().await;
-    insert_test_user(&pool, "user1", "free", 0).await;
+    let executor: evento::Sqlite = pool.clone().into();
+    create_test_user_with_recipes("user1", "free",0, &executor).await;
 
-    let result = validate_recipe_creation("user1", &pool).await;
+    let result = validate_recipe_creation("user1", &executor).await;
 
     assert!(
         result.is_ok(),
@@ -111,9 +176,10 @@ async fn test_free_user_with_0_recipes_can_create() {
 #[tokio::test]
 async fn test_free_user_with_5_recipes_can_create() {
     let pool = setup_test_db().await;
-    insert_test_user(&pool, "user1", "free", 5).await;
+    let executor: evento::Sqlite = pool.clone().into();
+    create_test_user_with_recipes("user1", "free",5, &executor).await;
 
-    let result = validate_recipe_creation("user1", &pool).await;
+    let result = validate_recipe_creation("user1", &executor).await;
 
     assert!(
         result.is_ok(),
@@ -125,9 +191,10 @@ async fn test_free_user_with_5_recipes_can_create() {
 #[tokio::test]
 async fn test_free_user_exactly_at_limit() {
     let pool = setup_test_db().await;
-    insert_test_user(&pool, "user1", "free", 10).await;
+    let executor: evento::Sqlite = pool.clone().into();
+    create_test_user_with_recipes("user1", "free", 10, &executor).await;
 
-    let result = validate_recipe_creation("user1", &pool).await;
+    let result = validate_recipe_creation("user1", &executor).await;
 
     assert!(
         result.is_err(),
@@ -139,9 +206,10 @@ async fn test_free_user_exactly_at_limit() {
 #[tokio::test]
 async fn test_free_user_over_limit() {
     let pool = setup_test_db().await;
-    insert_test_user(&pool, "user1", "free", 15).await;
+    let executor: evento::Sqlite = pool.clone().into();
+    create_test_user_with_recipes("user1", "free",15, &executor).await;
 
-    let result = validate_recipe_creation("user1", &pool).await;
+    let result = validate_recipe_creation("user1", &executor).await;
 
     assert!(
         result.is_err(),
@@ -153,9 +221,10 @@ async fn test_free_user_over_limit() {
 #[tokio::test]
 async fn test_premium_user_with_0_recipes() {
     let pool = setup_test_db().await;
-    insert_test_user(&pool, "premium_user", "premium", 0).await;
+    let executor: evento::Sqlite = pool.clone().into();
+    create_test_user_with_recipes("premium_user", "premium",0, &executor).await;
 
-    let result = validate_recipe_creation("premium_user", &pool).await;
+    let result = validate_recipe_creation("premium_user", &executor).await;
 
     assert!(
         result.is_ok(),
@@ -167,8 +236,9 @@ async fn test_premium_user_with_0_recipes() {
 #[tokio::test]
 async fn test_validation_fails_for_nonexistent_user() {
     let pool = setup_test_db().await;
+    let executor: evento::Sqlite = pool.clone().into();
 
-    let result = validate_recipe_creation("nonexistent_user", &pool).await;
+    let result = validate_recipe_creation("nonexistent_user", &executor).await;
 
     assert!(
         result.is_err(),
@@ -238,7 +308,8 @@ fn test_recipe_deleted_event() {
 #[tokio::test]
 async fn test_recipe_count_query() {
     let pool = setup_test_db().await;
-    insert_test_user(&pool, "user1", "free", 7).await;
+    let executor: evento::Sqlite = pool.clone().into();
+    create_test_user_with_recipes("user1", "free",7, &executor).await;
 
     // Query recipe_count directly to verify it's stored correctly
     let row = sqlx::query("SELECT recipe_count FROM users WHERE id = ?")
@@ -255,7 +326,8 @@ async fn test_recipe_count_query() {
 #[tokio::test]
 async fn test_tier_query() {
     let pool = setup_test_db().await;
-    insert_test_user(&pool, "premium_user", "premium", 20).await;
+    let executor: evento::Sqlite = pool.clone().into();
+    create_test_user_with_recipes("premium_user", "premium",20, &executor).await;
 
     // Query tier directly to verify it's stored correctly
     let row = sqlx::query("SELECT tier FROM users WHERE id = ?")

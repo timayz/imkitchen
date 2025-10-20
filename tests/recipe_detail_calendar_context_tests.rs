@@ -32,17 +32,49 @@ async fn setup_evento_executor(pool: Pool<Sqlite>) -> evento::Sqlite {
 }
 
 /// Insert test user
-async fn insert_test_user(pool: &SqlitePool, user_id: &str, email: &str, tier: &str) {
-    sqlx::query(
-        "INSERT INTO users (id, email, password_hash, tier, recipe_count, created_at)
-         VALUES (?1, ?2, 'hash', ?3, 0, datetime('now'))",
+/// Create test user using proper evento commands
+async fn create_test_user_for_tests(
+    pool: &SqlitePool,
+    executor: &evento::Sqlite,
+    email: &str,
+    tier: &str,
+) -> String {
+    use user::commands::{register_user, upgrade_subscription, RegisterUserCommand, UpgradeSubscriptionCommand};
+
+    // Register user via command (creates aggregate + events)
+    let user_id = register_user(
+        RegisterUserCommand {
+            email: email.to_string(),
+            password: "testpassword".to_string(),
+        },
+        executor,
+        pool,
     )
-    .bind(user_id)
-    .bind(email)
-    .bind(tier)
-    .execute(pool)
     .await
     .unwrap();
+
+    // If premium tier, upgrade subscription
+    if tier == "premium" {
+        upgrade_subscription(
+            UpgradeSubscriptionCommand {
+                user_id: user_id.clone(),
+                new_tier: "premium".to_string(),
+                stripe_customer_id: Some("cus_test".to_string()),
+                stripe_subscription_id: Some("sub_test".to_string()),
+            },
+            executor,
+        )
+        .await
+        .unwrap();
+    }
+
+    // Process user projection to populate read model synchronously
+    user::user_projection(pool.clone())
+        .unsafe_oneshot(executor)
+        .await
+        .unwrap();
+
+    user_id
 }
 
 /// Helper to create a test recipe and return its ID
@@ -95,9 +127,9 @@ async fn create_test_recipe(
 async fn test_recipe_detail_with_calendar_context_query_params() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
-    insert_test_user(&pool, "user1", "user1@test.com", "free").await;
+    let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "free").await;
 
-    let recipe_id = create_test_recipe(&pool, &executor, "user1", "Test Recipe").await;
+    let recipe_id = create_test_recipe(&pool, &executor, &user1_id, "Test Recipe").await;
 
     // Query recipe detail with calendar context parameters
     let recipe = query_recipe_by_id(&recipe_id, &pool)
@@ -107,7 +139,7 @@ async fn test_recipe_detail_with_calendar_context_query_params() {
 
     // Verify recipe exists (foundation for context param testing)
     assert_eq!(recipe.title, "Test Recipe");
-    assert_eq!(recipe.user_id, "user1");
+    assert_eq!(recipe.user_id, user1_id);
 }
 
 /// Test: Recipe detail template receives is_from_calendar flag when accessed from calendar
