@@ -455,11 +455,11 @@ checksum = "0669d5a35b64fdb5ab7fb19cae13148b6b5cbdf4b8247faf54ece47f699c8cef"
 
 [[package]]
 name = "bitflags"
-version = "2.9.4"
+version = "2.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2261d10cca569e4643e526d8dc2e62e433cc8aba21ab764233731f8d369bf394"
+checksum = "812e12b5285cc515a9c72a5c1d3b6d46a19dac5acfef5265968c166106e31dd3"
 dependencies = [
- "serde",
+ "serde_core",
 ]
 
 [[package]]
@@ -1894,7 +1894,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "anyhow",
  "askama",
@@ -2216,7 +2216,7 @@ dependencies = [
 
 [[package]]
 name = "meal_planning"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "anyhow",
  "bincode",
@@ -2302,7 +2302,7 @@ dependencies = [
 
 [[package]]
 name = "notifications"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -2997,7 +2997,7 @@ dependencies = [
 
 [[package]]
 name = "recipe"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "anyhow",
  "bincode",
@@ -3480,7 +3480,7 @@ checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 
 [[package]]
 name = "shopping"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "anyhow",
  "bincode",
@@ -4459,7 +4459,7 @@ checksum = "daf8dba3b7eb870caf1ddeed7bc9d2a049f3cfdfae7cb521b087cc33ae4c49da"
 
 [[package]]
 name = "user"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "anyhow",
  "argon2",
