@@ -30,8 +30,15 @@ async fn setup_evento_executor(pool: Pool<Sqlite>) -> evento::Sqlite {
 }
 
 /// Create test user using proper evento commands
-async fn create_test_user_for_tests(pool: &SqlitePool, executor: &evento::Sqlite, email: &str, tier: &str) -> String {
-    use user::commands::{register_user, upgrade_subscription, RegisterUserCommand, UpgradeSubscriptionCommand};
+async fn create_test_user_for_tests(
+    pool: &SqlitePool,
+    executor: &evento::Sqlite,
+    email: &str,
+    tier: &str,
+) -> String {
+    use user::commands::{
+        register_user, upgrade_subscription, RegisterUserCommand, UpgradeSubscriptionCommand,
+    };
 
     // Register user via command (creates aggregate + events)
     let user_id = register_user(
@@ -200,7 +207,9 @@ async fn test_query_recipes_by_user() {
         .unwrap();
 
     // Query all recipes for user1
-    let recipes = query_recipes_by_user(&user1_id, false, &pool).await.unwrap();
+    let recipes = query_recipes_by_user(&user1_id, false, &pool)
+        .await
+        .unwrap();
     assert_eq!(recipes.len(), 3, "Should have 3 recipes");
 
     // Verify sorted by created_at DESC (most recent first)
@@ -384,7 +393,7 @@ async fn test_post_recipe_update_success_returns_ts_location() {
 
     // Create JWT token for user1
     let token = user::generate_jwt(
-        "user1".to_string(),
+        user1_id.to_string(),
         "user1@test.com".to_string(),
         "free".to_string(),
         "test-secret-key-32-bytes-long!!",
@@ -644,7 +653,7 @@ async fn test_get_recipe_edit_form_prepopulated() {
 
     // Create JWT token for user1
     let token = user::generate_jwt(
-        "user1".to_string(),
+        user1_id.to_string(),
         "user1@test.com".to_string(),
         "free".to_string(),
         "test-secret-key-32-bytes-long!!",
@@ -724,7 +733,7 @@ async fn test_recipe_update_syncs_to_read_model() {
     // Update recipe via command
     let update_command = recipe::UpdateRecipeCommand {
         recipe_id: recipe_id.clone(),
-        user_id: "user1".to_string(),
+        user_id: user1_id.to_string(),
         title: Some("Updated Recipe".to_string()),
         ingredients: Some(vec![
             Ingredient {
@@ -846,7 +855,7 @@ async fn test_delete_recipe_integration_removes_from_read_model() {
     // Delete the recipe
     let delete_command = DeleteRecipeCommand {
         recipe_id: recipe_id.clone(),
-        user_id: "user1".to_string(),
+        user_id: user1_id.to_string(),
     };
 
     delete_recipe(delete_command, &executor, &pool)
@@ -872,7 +881,7 @@ async fn test_delete_recipe_integration_unauthorized_returns_403() {
     let pool = setup_test_db().await;
     let executor = setup_evento_executor(pool.clone()).await;
     let user1_id = create_test_user_for_tests(&pool, &executor, "user1@test.com", "free").await;
-    let _user2_id = create_test_user_for_tests(&pool, &executor, "user2@test.com", "free").await;
+    let user2_id = create_test_user_for_tests(&pool, &executor, "user2@test.com", "free").await;
 
     // Start projection
     // Process events synchronously for deterministic tests
@@ -913,7 +922,7 @@ async fn test_delete_recipe_integration_unauthorized_returns_403() {
     // User2 attempts to delete user1's recipe
     let delete_command = DeleteRecipeCommand {
         recipe_id: recipe_id.clone(),
-        user_id: "user2".to_string(), // Different user!
+        user_id: user2_id.to_string(), // Different user!
     };
 
     let result = delete_recipe(delete_command, &executor, &pool).await;
@@ -977,7 +986,9 @@ async fn test_delete_recipe_integration_excluded_from_user_queries() {
         .unwrap();
 
     // Verify all 3 recipes exist
-    let recipes_before = query_recipes_by_user(&user1_id, false, &pool).await.unwrap();
+    let recipes_before = query_recipes_by_user(&user1_id, false, &pool)
+        .await
+        .unwrap();
     assert_eq!(
         recipes_before.len(),
         3,
@@ -987,7 +998,7 @@ async fn test_delete_recipe_integration_excluded_from_user_queries() {
     // Delete the second recipe
     let delete_command = DeleteRecipeCommand {
         recipe_id: recipe_ids[1].clone(),
-        user_id: "user1".to_string(),
+        user_id: user1_id.to_string(),
     };
 
     delete_recipe(delete_command, &executor, &pool)
@@ -1001,7 +1012,9 @@ async fn test_delete_recipe_integration_excluded_from_user_queries() {
         .unwrap();
 
     // Verify only 2 recipes remain
-    let recipes_after = query_recipes_by_user(&user1_id, false, &pool).await.unwrap();
+    let recipes_after = query_recipes_by_user(&user1_id, false, &pool)
+        .await
+        .unwrap();
     assert_eq!(
         recipes_after.len(),
         2,
@@ -1073,7 +1086,7 @@ async fn test_favorite_recipe_integration_full_cycle() {
     use recipe::{favorite_recipe, FavoriteRecipeCommand};
     let fav_command = FavoriteRecipeCommand {
         recipe_id: recipe_id.clone(),
-        user_id: "user1".to_string(),
+        user_id: user1_id.to_string(),
     };
     let new_status = favorite_recipe(fav_command, &executor, &pool)
         .await
@@ -1096,7 +1109,9 @@ async fn test_favorite_recipe_integration_full_cycle() {
     );
 
     // Query all recipes vs favorites
-    let all_recipes = query_recipes_by_user(&user1_id, false, &pool).await.unwrap();
+    let all_recipes = query_recipes_by_user(&user1_id, false, &pool)
+        .await
+        .unwrap();
     let fav_recipes = query_recipes_by_user(&user1_id, true, &pool).await.unwrap();
 
     assert_eq!(all_recipes.len(), 1, "Should have 1 recipe total");
@@ -1105,7 +1120,7 @@ async fn test_favorite_recipe_integration_full_cycle() {
     // Un-favorite the recipe
     let unfav_command = FavoriteRecipeCommand {
         recipe_id: recipe_id.clone(),
-        user_id: "user1".to_string(),
+        user_id: user1_id.to_string(),
     };
     let new_status = favorite_recipe(unfav_command, &executor, &pool)
         .await
@@ -1181,7 +1196,7 @@ async fn test_favorite_filter_with_multiple_recipes() {
     for i in &[0, 2, 4] {
         let fav_command = FavoriteRecipeCommand {
             recipe_id: recipe_ids[*i].clone(),
-            user_id: "user1".to_string(),
+            user_id: user1_id.to_string(),
         };
         favorite_recipe(fav_command, &executor, &pool)
             .await
@@ -1194,7 +1209,9 @@ async fn test_favorite_filter_with_multiple_recipes() {
         .unwrap();
 
     // Query all recipes
-    let all_recipes = query_recipes_by_user(&user1_id, false, &pool).await.unwrap();
+    let all_recipes = query_recipes_by_user(&user1_id, false, &pool)
+        .await
+        .unwrap();
     assert_eq!(all_recipes.len(), 5, "Should have 5 recipes total");
 
     // Query favorite recipes only
