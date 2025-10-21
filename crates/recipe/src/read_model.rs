@@ -19,6 +19,7 @@ pub struct RecipeReadModel {
     pub id: String,
     pub user_id: String,
     pub title: String,
+    pub recipe_type: String, // AC-2: Course type - "appetizer", "main_course", or "dessert"
     pub ingredients: String,  // JSON
     pub instructions: String, // JSON
     pub prep_time_min: Option<i32>,
@@ -53,19 +54,21 @@ async fn recipe_created_handler<E: Executor>(
     // Execute SQL insert to project event into read model
     // Use event.aggregator_id as the primary key (recipe id)
     // Default is_shared to false (private) per AC-10
+    // AC-2: Include recipe_type in projection
     sqlx::query(
         r#"
         INSERT INTO recipes (
-            id, user_id, title, ingredients, instructions,
+            id, user_id, title, recipe_type, ingredients, instructions,
             prep_time_min, cook_time_min, advance_prep_hours, serving_size,
             is_favorite, is_shared, created_at, updated_at
         )
-        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 0, 0, ?10, ?10)
+        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, 0, 0, ?11, ?11)
         "#,
     )
     .bind(&event.aggregator_id)
     .bind(&event.data.user_id)
     .bind(&event.data.title)
+    .bind(&event.data.recipe_type) // AC-2: Recipe type
     .bind(&ingredients_json)
     .bind(&instructions_json)
     .bind(event.data.prep_time_min.map(|v| v as i32))
@@ -195,6 +198,10 @@ async fn recipe_updated_handler<E: Executor>(
     if event.data.title.is_some() {
         updates.push("title = ?");
     }
+    // AC-3: Support updating recipe_type
+    if event.data.recipe_type.is_some() {
+        updates.push("recipe_type = ?");
+    }
     if event.data.ingredients.is_some() {
         updates.push("ingredients = ?");
     }
@@ -225,6 +232,10 @@ async fn recipe_updated_handler<E: Executor>(
 
     if let Some(ref title) = event.data.title {
         query = query.bind(title);
+    }
+    // AC-3: Bind recipe_type if present
+    if let Some(ref recipe_type) = event.data.recipe_type {
+        query = query.bind(recipe_type);
     }
     if let Some(ref ingredients) = event.data.ingredients {
         let ingredients_json = serde_json::to_string(ingredients)?;
@@ -338,7 +349,7 @@ pub async fn query_recipe_by_id(
 ) -> RecipeResult<Option<RecipeReadModel>> {
     let result = sqlx::query(
         r#"
-        SELECT id, user_id, title, ingredients, instructions,
+        SELECT id, user_id, title, recipe_type, ingredients, instructions,
                prep_time_min, cook_time_min, advance_prep_hours, serving_size,
                is_favorite, is_shared, complexity, cuisine, dietary_tags,
                created_at, updated_at
@@ -356,6 +367,7 @@ pub async fn query_recipe_by_id(
                 id: row.get("id"),
                 user_id: row.get("user_id"),
                 title: row.get("title"),
+                recipe_type: row.get("recipe_type"), // AC-2: Add recipe_type
                 ingredients: row.get("ingredients"),
                 instructions: row.get("instructions"),
                 prep_time_min: row.get("prep_time_min"),
@@ -387,7 +399,7 @@ pub async fn query_recipes_by_user(
 ) -> RecipeResult<Vec<RecipeReadModel>> {
     let query_str = if favorite_only {
         r#"
-        SELECT id, user_id, title, ingredients, instructions,
+        SELECT id, user_id, title, recipe_type, ingredients, instructions,
                prep_time_min, cook_time_min, advance_prep_hours, serving_size,
                is_favorite, is_shared, complexity, cuisine, dietary_tags,
                created_at, updated_at
@@ -397,7 +409,7 @@ pub async fn query_recipes_by_user(
         "#
     } else {
         r#"
-        SELECT id, user_id, title, ingredients, instructions,
+        SELECT id, user_id, title, recipe_type, ingredients, instructions,
                prep_time_min, cook_time_min, advance_prep_hours, serving_size,
                is_favorite, is_shared, complexity, cuisine, dietary_tags,
                created_at, updated_at
@@ -415,6 +427,7 @@ pub async fn query_recipes_by_user(
             id: row.get("id"),
             user_id: row.get("user_id"),
             title: row.get("title"),
+            recipe_type: row.get("recipe_type"), // AC-2: Add recipe_type
             ingredients: row.get("ingredients"),
             instructions: row.get("instructions"),
             prep_time_min: row.get("prep_time_min"),
@@ -708,7 +721,7 @@ pub async fn list_shared_recipes(
     // Build base query with parameterized conditions
     let mut query_str = String::from(
         r#"
-        SELECT r.id, r.user_id, r.title, r.ingredients, r.instructions,
+        SELECT r.id, r.user_id, r.title, r.recipe_type, r.ingredients, r.instructions,
                r.prep_time_min, r.cook_time_min, r.advance_prep_hours, r.serving_size,
                r.is_favorite, r.is_shared, r.complexity, r.cuisine, r.dietary_tags,
                r.created_at, r.updated_at
@@ -814,6 +827,7 @@ pub async fn list_shared_recipes(
             id: row.get("id"),
             user_id: row.get("user_id"),
             title: row.get("title"),
+            recipe_type: row.get("recipe_type"), // AC-2: Add recipe_type
             ingredients: row.get("ingredients"),
             instructions: row.get("instructions"),
             prep_time_min: row.get("prep_time_min"),
@@ -1135,6 +1149,7 @@ pub async fn query_recipes_by_collection(
             id: row.get("id"),
             user_id: row.get("user_id"),
             title: row.get("title"),
+            recipe_type: row.get("recipe_type"), // AC-2: Add recipe_type
             ingredients: row.get("ingredients"),
             instructions: row.get("instructions"),
             prep_time_min: row.get("prep_time_min"),

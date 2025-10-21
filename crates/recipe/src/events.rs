@@ -28,6 +28,7 @@ pub struct InstructionStep {
 pub struct RecipeCreated {
     pub user_id: String,                    // Owner of the recipe
     pub title: String,                      // Recipe title
+    pub recipe_type: String,                // Course type: "appetizer", "main_course", or "dessert"
     pub ingredients: Vec<Ingredient>,       // List of ingredients with quantities
     pub instructions: Vec<InstructionStep>, // Step-by-step cooking instructions
     pub prep_time_min: Option<u32>,         // Preparation time in minutes
@@ -71,6 +72,7 @@ pub struct RecipeFavorited {
 #[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
 pub struct RecipeUpdated {
     pub title: Option<String>,
+    pub recipe_type: Option<String>,        // Allow updating course type: "appetizer", "main_course", or "dessert"
     pub ingredients: Option<Vec<Ingredient>>,
     pub instructions: Option<Vec<InstructionStep>>,
     pub prep_time_min: Option<Option<u32>>, // Option<Option<>> to differentiate between "not changed" and "set to None"

@@ -21,6 +21,7 @@ pub struct RecipeAggregate {
 
     // Recipe details
     pub title: String,
+    pub recipe_type: String, // Course type: "appetizer", "main_course", or "dessert"
     pub ingredients: Vec<Ingredient>,
     pub instructions: Vec<InstructionStep>,
 
@@ -60,6 +61,8 @@ impl RecipeAggregate {
     ///
     /// This is called when replaying events from the event store to rebuild
     /// the aggregate's current state.
+    ///
+    /// AC-9: Backward compatibility - old events without recipe_type default to "main_course"
     async fn recipe_created(
         &mut self,
         event: evento::EventDetails<RecipeCreated>,
@@ -67,6 +70,12 @@ impl RecipeAggregate {
         self.recipe_id = event.aggregator_id.clone();
         self.user_id = event.data.user_id;
         self.title = event.data.title;
+        // AC-9: Handle old events without recipe_type field (backward compatibility)
+        self.recipe_type = if event.data.recipe_type.is_empty() {
+            "main_course".to_string() // Default for old events
+        } else {
+            event.data.recipe_type
+        };
         self.ingredients = event.data.ingredients;
         self.instructions = event.data.instructions;
         self.prep_time_min = event.data.prep_time_min;
@@ -111,12 +120,18 @@ impl RecipeAggregate {
     ///
     /// This event handler updates only the fields that were changed (delta pattern).
     /// Fields that are None in the event are not modified in the aggregate.
+    ///
+    /// AC-3: Support updating recipe_type
     async fn recipe_updated(
         &mut self,
         event: evento::EventDetails<RecipeUpdated>,
     ) -> anyhow::Result<()> {
         if let Some(title) = event.data.title {
             self.title = title;
+        }
+        // AC-3: Allow updating recipe_type
+        if let Some(recipe_type) = event.data.recipe_type {
+            self.recipe_type = recipe_type;
         }
         if let Some(ingredients) = event.data.ingredients {
             self.ingredients = ingredients;
