@@ -68,6 +68,7 @@ pub async fn create_test_app((pool, evento_executor): (SqlitePool, evento::Sqlit
 
     let state = AppState {
         db_pool: pool.clone(),
+        write_pool: pool.clone(),
         evento_executor: evento_executor.clone(),
         jwt_secret: "test_secret_key_minimum_32_characters_long".to_string(),
         email_config,

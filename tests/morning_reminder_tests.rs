@@ -71,13 +71,13 @@ async fn test_morning_reminder_scheduled_at_9am_for_tomorrows_meal() {
     .unwrap();
 
     sqlx::query(
-        "INSERT INTO meal_assignments (id, meal_plan_id, date, meal_type, recipe_id, prep_required)
+        "INSERT INTO meal_assignments (id, meal_plan_id, date, course_type, recipe_id, prep_required)
          VALUES (?, ?, ?, ?, ?, ?)",
     )
     .bind("assignment-001")
     .bind(meal_plan_id)
     .bind(&tomorrow)
-    .bind("dinner")
+    .bind("dessert")
     .bind(recipe_id)
     .bind(1)
     .execute(&pool)
@@ -194,13 +194,13 @@ async fn test_morning_reminder_message_format() {
     .unwrap();
 
     sqlx::query(
-        "INSERT INTO meal_assignments (id, meal_plan_id, date, meal_type, recipe_id, prep_required)
+        "INSERT INTO meal_assignments (id, meal_plan_id, date, course_type, recipe_id, prep_required)
          VALUES (?, ?, ?, ?, ?, ?)",
     )
     .bind("assignment-002")
     .bind(meal_plan_id)
     .bind(&tomorrow_str)
-    .bind("dinner")
+    .bind("dessert")
     .bind(recipe_id)
     .bind(1)
     .execute(&pool)
@@ -262,7 +262,7 @@ async fn test_morning_reminder_message_format() {
         "Should mention day of week ({})",
         day_of_week
     );
-    assert!(message.contains("dinner"), "Should mention meal type");
+    assert!(message.contains("dessert"), "Should mention course type");
 }
 
 /// AC #4: Reminder includes estimated prep time
@@ -314,13 +314,13 @@ async fn test_morning_reminder_includes_prep_time() {
     .unwrap();
 
     sqlx::query(
-        "INSERT INTO meal_assignments (id, meal_plan_id, date, meal_type, recipe_id, prep_required)
+        "INSERT INTO meal_assignments (id, meal_plan_id, date, course_type, recipe_id, prep_required)
          VALUES (?, ?, ?, ?, ?, ?)",
     )
     .bind("assignment-003")
     .bind(meal_plan_id)
     .bind(&tomorrow)
-    .bind("dinner")
+    .bind("dessert")
     .bind(recipe_id)
     .bind(1)
     .execute(&pool)
@@ -410,13 +410,13 @@ async fn test_no_morning_reminder_for_24h_plus_prep() {
     .unwrap();
 
     sqlx::query(
-        "INSERT INTO meal_assignments (id, meal_plan_id, date, meal_type, recipe_id, prep_required)
+        "INSERT INTO meal_assignments (id, meal_plan_id, date, course_type, recipe_id, prep_required)
          VALUES (?, ?, ?, ?, ?, ?)",
     )
     .bind("assignment-004")
     .bind(meal_plan_id)
     .bind(&tomorrow)
-    .bind("dinner")
+    .bind("dessert")
     .bind(recipe_id)
     .bind(1)
     .execute(&pool)

@@ -1,5 +1,6 @@
 use chrono::NaiveDate;
 use meal_planning::algorithm::{RecipeForPlanning, UserConstraints};
+use meal_planning::constraints::CourseType;
 use meal_planning::constraints::*;
 
 fn create_test_recipe(
@@ -19,6 +20,7 @@ fn create_test_recipe(
         cook_time_min: Some(cook_time),
         advance_prep_hours: advance_prep,
         complexity: None,
+        recipe_type: "main_course".to_string(),
     }
 }
 
@@ -34,7 +36,7 @@ fn test_availability_constraint_weeknight_matches() {
     let monday = NaiveDate::from_ymd_opt(2025, 10, 20).unwrap(); // Monday
     let slot = MealSlot {
         date: monday,
-        meal_type: MealType::Dinner,
+        course_type: CourseType::Dessert,
     };
 
     let constraint = AvailabilityConstraint;
@@ -60,7 +62,7 @@ fn test_availability_constraint_weeknight_too_long() {
     let monday = NaiveDate::from_ymd_opt(2025, 10, 20).unwrap(); // Monday
     let slot = MealSlot {
         date: monday,
-        meal_type: MealType::Dinner,
+        course_type: CourseType::Dessert,
     };
 
     let constraint = AvailabilityConstraint;
@@ -86,7 +88,7 @@ fn test_availability_constraint_weekend_allows_all() {
     let saturday = NaiveDate::from_ymd_opt(2025, 10, 25).unwrap(); // Saturday
     let slot = MealSlot {
         date: saturday,
-        meal_type: MealType::Dinner,
+        course_type: CourseType::Dessert,
     };
 
     let constraint = AvailabilityConstraint;
@@ -108,7 +110,7 @@ fn test_complexity_constraint_simple_weeknight() {
     let tuesday = NaiveDate::from_ymd_opt(2025, 10, 21).unwrap(); // Tuesday
     let slot = MealSlot {
         date: tuesday,
-        meal_type: MealType::Dinner,
+        course_type: CourseType::Dessert,
     };
 
     let constraint = ComplexityConstraint;
@@ -131,7 +133,7 @@ fn test_complexity_constraint_complex_weekend() {
     let saturday = NaiveDate::from_ymd_opt(2025, 10, 25).unwrap(); // Saturday
     let slot = MealSlot {
         date: saturday,
-        meal_type: MealType::Dinner,
+        course_type: CourseType::Dessert,
     };
 
     let constraint = ComplexityConstraint;
@@ -156,7 +158,7 @@ fn test_complexity_constraint_complex_weeknight() {
     let tuesday = NaiveDate::from_ymd_opt(2025, 10, 21).unwrap(); // Tuesday
     let slot = MealSlot {
         date: tuesday,
-        meal_type: MealType::Dinner,
+        course_type: CourseType::Dessert,
     };
 
     let constraint = ComplexityConstraint;
@@ -178,7 +180,7 @@ fn test_advance_prep_constraint_sufficient_lead_time() {
     let wednesday = NaiveDate::from_ymd_opt(2025, 10, 22).unwrap(); // Wednesday
     let slot = MealSlot {
         date: wednesday,
-        meal_type: MealType::Dinner,
+        course_type: CourseType::Dessert,
     };
 
     let constraint = AdvancePrepConstraint;
@@ -200,7 +202,7 @@ fn test_advance_prep_constraint_no_prep_required() {
     let monday = NaiveDate::from_ymd_opt(2025, 10, 20).unwrap(); // Monday
     let slot = MealSlot {
         date: monday,
-        meal_type: MealType::Dinner,
+        course_type: CourseType::Dessert,
     };
 
     let constraint = AdvancePrepConstraint;
@@ -228,7 +230,7 @@ fn test_dietary_constraint_shellfish_restriction() {
     let monday = NaiveDate::from_ymd_opt(2025, 10, 20).unwrap();
     let slot = MealSlot {
         date: monday,
-        meal_type: MealType::Dinner,
+        course_type: CourseType::Dessert,
     };
 
     let constraint = DietaryConstraint;
@@ -250,7 +252,7 @@ fn test_freshness_constraint_early_week() {
     let monday = NaiveDate::from_ymd_opt(2025, 10, 20).unwrap(); // Monday (day 1)
     let slot = MealSlot {
         date: monday,
-        meal_type: MealType::Dinner,
+        course_type: CourseType::Dessert,
     };
 
     let constraint = FreshnessConstraint;
@@ -272,7 +274,7 @@ fn test_equipment_conflict_constraint_no_conflict() {
     let monday = NaiveDate::from_ymd_opt(2025, 10, 20).unwrap();
     let slot = MealSlot {
         date: monday,
-        meal_type: MealType::Dinner,
+        course_type: CourseType::Dessert,
     };
 
     // Empty day assignments (no conflicts)
@@ -302,7 +304,7 @@ fn test_all_constraints_together() {
     let tuesday = NaiveDate::from_ymd_opt(2025, 10, 21).unwrap();
     let slot = MealSlot {
         date: tuesday,
-        meal_type: MealType::Dinner,
+        course_type: CourseType::Dessert,
     };
 
     // Test all constraints

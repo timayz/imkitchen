@@ -41,6 +41,7 @@ struct InstructionRowTemplate {
 #[derive(Debug, Deserialize)]
 pub struct CreateRecipeForm {
     pub title: String,
+    pub recipe_type: String, // AC-2: "appetizer", "main_course", or "dessert"
     pub ingredient_name: Vec<String>,
     pub ingredient_quantity: Vec<String>,
     pub ingredient_unit: Vec<String>,
@@ -95,6 +96,7 @@ pub struct RecipeDetailTemplate {
 pub struct RecipeDetailView {
     pub id: String,
     pub title: String,
+    pub recipe_type: String, // AC-2: Recipe type (appetizer, main_course, dessert)
     pub ingredients: Vec<Ingredient>,
     pub instructions: Vec<InstructionStep>,
     pub prep_time_min: Option<u32>,
@@ -214,6 +216,7 @@ pub async fn post_create_recipe(
     // Create command
     let command = CreateRecipeCommand {
         title: form.title.clone(),
+        recipe_type: form.recipe_type.clone(), // AC-2: Recipe type classification
         ingredients,
         instructions,
         prep_time_min,
@@ -403,6 +406,7 @@ pub async fn get_recipe_detail(
             let recipe_view = RecipeDetailView {
                 id: recipe_data.id.clone(),
                 title: recipe_data.title,
+                recipe_type: recipe_data.recipe_type, // AC-2: Include recipe_type
                 ingredients,
                 instructions,
                 prep_time_min: recipe_data.prep_time_min.map(|v| v as u32),
@@ -568,6 +572,7 @@ pub async fn get_recipe_edit_form(
             let recipe_view = RecipeDetailView {
                 id: recipe_data.id.clone(),
                 title: recipe_data.title,
+                recipe_type: recipe_data.recipe_type, // AC-2: Include recipe_type
                 ingredients,
                 instructions,
                 prep_time_min: recipe_data.prep_time_min.map(|v| v as u32),
@@ -696,6 +701,7 @@ pub async fn post_update_recipe(
         recipe_id: recipe_id.clone(),
         user_id: auth.user_id.clone(),
         title: Some(form.title.clone()),
+        recipe_type: Some(form.recipe_type.clone()), // AC-3: Allow updating recipe type
         ingredients: Some(ingredients),
         instructions: Some(instructions),
         prep_time_min,
@@ -807,6 +813,12 @@ fn parse_recipe_form(body: &str) -> Result<CreateRecipeForm, String> {
         .ok_or("Missing title")?
         .clone();
 
+    let recipe_type = fields
+        .get("recipe_type")
+        .and_then(|v| v.first())
+        .ok_or("Missing recipe_type")? // AC-2: recipe_type is required
+        .clone();
+
     let ingredient_name = fields.get("ingredient_name[]").cloned().unwrap_or_default();
     let ingredient_quantity = fields
         .get("ingredient_quantity[]")
@@ -832,6 +844,7 @@ fn parse_recipe_form(body: &str) -> Result<CreateRecipeForm, String> {
 
     Ok(CreateRecipeForm {
         title,
+        recipe_type, // AC-2: Include recipe_type in form
         ingredient_name,
         ingredient_quantity,
         ingredient_unit,
@@ -918,6 +931,7 @@ pub struct RecipeListQuery {
     pub cuisine: Option<String>,     // e.g., "Italian", "Asian"
     pub dietary: Option<String>,     // e.g., "vegetarian", "vegan", "gluten-free"
     pub favorite_only: Option<bool>, // Filter for favorited recipes only
+    pub recipe_type: Option<String>, // "appetizer", "main_course", "dessert"
 }
 
 /// View model for recipe list with parsed ingredient/instruction counts
@@ -926,6 +940,7 @@ pub struct RecipeListView {
     pub id: String,
     pub user_id: String,
     pub title: String,
+    pub recipe_type: String,
     pub prep_time_min: Option<i32>,
     pub cook_time_min: Option<i32>,
     pub advance_prep_hours: Option<i32>,
@@ -946,6 +961,7 @@ pub struct RecipeListTemplate {
     pub collections: Vec<CollectionReadModel>,
     pub active_collection: Option<String>,
     pub complexity_filter: Option<String>,
+    pub recipe_type_filter: Option<String>,
     pub favorite_only: bool,
     pub favorite_count: i64,
     pub user: Option<Auth>,
@@ -1001,6 +1017,7 @@ pub async fn get_recipe_list(
                 id: r.id,
                 user_id: r.user_id,
                 title: r.title,
+                recipe_type: r.recipe_type,
                 prep_time_min: r.prep_time_min,
                 cook_time_min: r.cook_time_min,
                 advance_prep_hours: r.advance_prep_hours,
@@ -1024,6 +1041,10 @@ pub async fn get_recipe_list(
                 .map(|c| c.eq_ignore_ascii_case(complexity_filter))
                 .unwrap_or(false)
         });
+    }
+
+    if let Some(ref recipe_type_filter) = query.recipe_type {
+        recipe_views.retain(|r| r.recipe_type.eq_ignore_ascii_case(recipe_type_filter));
     }
 
     if let Some(ref cuisine_filter) = query.cuisine {
@@ -1066,6 +1087,7 @@ pub async fn get_recipe_list(
         collections,
         active_collection: query.collection,
         complexity_filter: query.complexity,
+        recipe_type_filter: query.recipe_type,
         favorite_only,
         favorite_count: favorite_count as i64,
         user: Some(auth),
@@ -1443,6 +1465,7 @@ pub async fn get_discover(
                 recipe_views.push(RecipeDetailView {
                     id: recipe.id.clone(),
                     title: recipe.title.clone(),
+                    recipe_type: recipe.recipe_type.clone(), // AC-2: Include recipe_type
                     ingredients,
                     instructions,
                     prep_time_min: recipe.prep_time_min.map(|v| v as u32),
@@ -1534,7 +1557,7 @@ pub async fn get_discover_detail(
     // Query recipe from read model (AC-3: must be shared and not deleted)
     let recipe_query = sqlx::query(
         r#"
-        SELECT r.id, r.user_id, r.title, r.ingredients, r.instructions,
+        SELECT r.id, r.user_id, r.title, r.recipe_type, r.ingredients, r.instructions,
                r.prep_time_min, r.cook_time_min, r.advance_prep_hours, r.serving_size,
                r.is_favorite, r.is_shared, r.complexity, r.cuisine, r.dietary_tags,
                r.created_at, r.updated_at, u.email as creator_email
@@ -1588,6 +1611,7 @@ pub async fn get_discover_detail(
             let recipe = RecipeDetailView {
                 id: row.get("id"),
                 title: row.get("title"),
+                recipe_type: row.get("recipe_type"), // AC-2: Include recipe_type
                 ingredients,
                 instructions,
                 prep_time_min: row.get::<Option<i32>, _>("prep_time_min").map(|v| v as u32),

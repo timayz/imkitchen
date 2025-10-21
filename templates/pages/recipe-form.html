@@ -46,6 +46,26 @@
                     />
                 </div>
 
+                <!-- Recipe Type (AC-2: Required for course-based meal planning) -->
+                <div>
+                    <label for="recipe_type" class="block text-sm font-medium text-gray-700 mb-1">
+                        Recipe Type *
+                    </label>
+                    <select
+                        id="recipe_type"
+                        name="recipe_type"
+                        required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">-- Select Recipe Type --</option>
+                        <option value="appetizer" {% if mode == "edit" && recipe.as_ref().unwrap().recipe_type == "appetizer" %}selected{% endif %}>Appetizer / Starter</option>
+                        <option value="main_course" {% if mode == "edit" && recipe.as_ref().unwrap().recipe_type == "main_course" %}selected{% endif %}>Main Course</option>
+                        <option value="dessert" {% if mode == "edit" && recipe.as_ref().unwrap().recipe_type == "dessert" %}selected{% endif %}>Dessert</option>
+                    </select>
+                    <p class="mt-1 text-sm text-gray-500">
+                        This helps the meal planner assign recipes to the correct course (appetizer, main, or dessert).
+                    </p>
+                </div>
+
                 <!-- Ingredients Section -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">

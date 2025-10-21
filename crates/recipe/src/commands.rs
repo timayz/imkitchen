@@ -25,6 +25,9 @@ pub struct CreateRecipeCommand {
     ))]
     pub title: String,
 
+    #[validate(custom(function = "validate_recipe_type"))]
+    pub recipe_type: String, // AC-2: Must be "appetizer", "main_course", or "dessert"
+
     #[validate(length(min = 1, message = "At least 1 ingredient is required"))]
     pub ingredients: Vec<Ingredient>,
 
@@ -35,6 +38,21 @@ pub struct CreateRecipeCommand {
     pub cook_time_min: Option<u32>,
     pub advance_prep_hours: Option<u32>,
     pub serving_size: Option<u32>,
+}
+
+/// AC-2: Validate recipe_type field
+/// Only accepts: "appetizer", "main_course", or "dessert"
+fn validate_recipe_type(recipe_type: &str) -> Result<(), validator::ValidationError> {
+    match recipe_type {
+        "appetizer" | "main_course" | "dessert" => Ok(()),
+        _ => {
+            let mut error = validator::ValidationError::new("invalid_recipe_type");
+            error.message = Some(std::borrow::Cow::from(
+                "Recipe type must be 'appetizer', 'main_course', or 'dessert'",
+            ));
+            Err(error)
+        }
+    }
 }
 
 /// Create a new recipe using evento event sourcing pattern
@@ -98,10 +116,12 @@ pub async fn create_recipe(
     // Create RecipeCreated event and commit to evento event store
     // The async subscription handler will project to read model
     // evento::create() generates a ULID for the aggregator_id (recipe_id)
+    // AC-2: Include recipe_type in event
     let aggregator_id = evento::create::<RecipeAggregate>()
         .data(&RecipeCreated {
             user_id: user_id.to_string(),
             title: command.title,
+            recipe_type: command.recipe_type, // AC-2: Course type
             ingredients: command.ingredients,
             instructions: command.instructions,
             prep_time_min: command.prep_time_min,
@@ -271,6 +291,9 @@ pub struct UpdateRecipeCommand {
     ))]
     pub title: Option<String>,
 
+    #[validate(custom(function = "validate_optional_recipe_type"))]
+    pub recipe_type: Option<String>, // AC-3: Allow updating recipe type
+
     #[validate(length(min = 1, message = "At least 1 ingredient is required"))]
     pub ingredients: Option<Vec<Ingredient>>,
 
@@ -281,6 +304,12 @@ pub struct UpdateRecipeCommand {
     pub cook_time_min: Option<Option<u32>>,
     pub advance_prep_hours: Option<Option<u32>>,
     pub serving_size: Option<Option<u32>>,
+}
+
+/// AC-3: Validate optional recipe_type field in updates
+/// Note: validator automatically unwraps Option fields, so this receives &String
+fn validate_optional_recipe_type(recipe_type: &str) -> Result<(), validator::ValidationError> {
+    validate_recipe_type(recipe_type)
 }
 
 /// Update an existing recipe using evento event sourcing pattern
@@ -340,9 +369,11 @@ pub async fn update_recipe(
 
     // Create RecipeUpdated event with only changed fields (delta pattern)
     // evento::save() automatically loads the aggregate before appending the event
+    // AC-3: Include recipe_type in update event
     evento::save::<RecipeAggregate>(command.recipe_id.clone())
         .data(&RecipeUpdated {
             title: command.title,
+            recipe_type: command.recipe_type, // AC-3: Allow updating recipe type
             ingredients: command.ingredients,
             instructions: command.instructions,
             prep_time_min: command.prep_time_min,
@@ -895,10 +926,12 @@ pub async fn copy_recipe(
     // AC-4: Also emit RecipeCopied event in same transaction for attribution metadata
     // Copy all data from original recipe, but set user_id to copying user
     // Default to private (is_shared = false) per AC-6
+    // AC-2: Include recipe_type from original recipe
     let new_recipe_id = evento::create::<RecipeAggregate>()
         .data(&RecipeCreated {
             user_id: user_id.to_string(),
             title: original_aggregate.item.title.clone(),
+            recipe_type: original_aggregate.item.recipe_type.clone(), // AC-2: Copy recipe type
             ingredients: original_aggregate.item.ingredients.clone(),
             instructions: original_aggregate.item.instructions.clone(),
             prep_time_min: original_aggregate.item.prep_time_min,

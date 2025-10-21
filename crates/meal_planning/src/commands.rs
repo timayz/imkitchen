@@ -17,15 +17,15 @@ pub struct GenerateMealPlanCommand {
     pub rotation_state_json: String, // JSON serialized RotationState
 }
 
-/// ReplaceMealCommand is the command to replace a single meal slot
+/// ReplaceMealCommand is the command to replace a single course slot (AC-5)
 ///
-/// This command allows users to swap out one meal while keeping the rest of the plan intact.
+/// This command allows users to swap out one course while keeping the rest of the plan intact.
 /// Used in Story 3.2 "Replace Individual Meal" feature.
 #[derive(Debug, Clone)]
 pub struct ReplaceMealCommand {
     pub meal_plan_id: String,
     pub date: String,          // ISO 8601 date
-    pub meal_type: String,     // "breakfast", "lunch", or "dinner"
+    pub course_type: String, // AC-5: "appetizer", "main_course", or "dessert" (renamed from meal_type)
     pub new_recipe_id: String, // Replacement recipe
 }
 
@@ -94,16 +94,16 @@ pub async fn replace_meal<E: evento::Executor>(
         ));
     }
 
-    // Validate: Check that the assignment exists for given date/meal_type
+    // Validate: Check that the assignment exists for given date/course_type (AC-5)
     let assignment_exists = aggregate
         .meal_assignments
         .iter()
-        .any(|a| a.date == cmd.date && a.meal_type == cmd.meal_type);
+        .any(|a| a.date == cmd.date && a.course_type == cmd.course_type);
 
     if !assignment_exists {
         return Err(MealPlanningError::MealAssignmentNotFound(
             cmd.date.clone(),
-            cmd.meal_type.clone(),
+            cmd.course_type.clone(),
         ));
     }
 
@@ -111,10 +111,10 @@ pub async fn replace_meal<E: evento::Executor>(
     let old_recipe_id = aggregate
         .meal_assignments
         .iter()
-        .find(|a| a.date == cmd.date && a.meal_type == cmd.meal_type)
+        .find(|a| a.date == cmd.date && a.course_type == cmd.course_type)
         .map(|a| a.recipe_id.clone())
         .ok_or_else(|| {
-            MealPlanningError::MealAssignmentNotFound(cmd.date.clone(), cmd.meal_type.clone())
+            MealPlanningError::MealAssignmentNotFound(cmd.date.clone(), cmd.course_type.clone())
         })?;
 
     // Validate: Check that new recipe is not already the current recipe
@@ -136,11 +136,11 @@ pub async fn replace_meal<E: evento::Executor>(
         ));
     }
 
-    // Emit MealReplaced event
+    // Emit MealReplaced event (AC-5)
     let replaced_at = Utc::now().to_rfc3339();
     let event_data = MealReplaced {
         date: cmd.date,
-        meal_type: cmd.meal_type,
+        course_type: cmd.course_type, // AC-5: Use course_type
         old_recipe_id,
         new_recipe_id: cmd.new_recipe_id,
         replaced_at,

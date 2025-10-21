@@ -74,6 +74,7 @@ async fn create_test_user_with_recipes(
     for i in 0..recipe_count {
         let command = recipe::CreateRecipeCommand {
             title: format!("Recipe {}", i),
+            recipe_type: "main_course".to_string(),
             ingredients: vec![recipe::Ingredient {
                 name: "Test".to_string(),
                 quantity: 1.0,
@@ -119,6 +120,7 @@ async fn test_free_user_with_9_recipes_can_create() {
 
     let command = recipe::CreateRecipeCommand {
         title: "Recipe #10".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![recipe::Ingredient {
             name: "Test".to_string(),
             quantity: 1.0,
@@ -153,6 +155,7 @@ async fn test_free_user_with_10_recipes_cannot_create() {
 
     let command = recipe::CreateRecipeCommand {
         title: "Recipe #11".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![recipe::Ingredient {
             name: "Test".to_string(),
             quantity: 1.0,
@@ -193,6 +196,7 @@ async fn test_premium_user_unlimited_recipes() {
 
     let command = recipe::CreateRecipeCommand {
         title: "Recipe #51".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![recipe::Ingredient {
             name: "Test".to_string(),
             quantity: 1.0,
@@ -228,6 +232,7 @@ async fn test_premium_user_100_recipes() {
 
     let command = recipe::CreateRecipeCommand {
         title: "Recipe #101".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![recipe::Ingredient {
             name: "Test".to_string(),
             quantity: 1.0,
@@ -262,6 +267,7 @@ async fn test_free_user_with_0_recipes_can_create() {
 
     let command = recipe::CreateRecipeCommand {
         title: "Recipe #1".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![recipe::Ingredient {
             name: "Test".to_string(),
             quantity: 1.0,
@@ -296,6 +302,7 @@ async fn test_free_user_with_5_recipes_can_create() {
 
     let command = recipe::CreateRecipeCommand {
         title: "Recipe #6".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![recipe::Ingredient {
             name: "Test".to_string(),
             quantity: 1.0,
@@ -330,6 +337,7 @@ async fn test_free_user_exactly_at_limit() {
 
     let command = recipe::CreateRecipeCommand {
         title: "Recipe #11".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![recipe::Ingredient {
             name: "Test".to_string(),
             quantity: 1.0,
@@ -364,6 +372,7 @@ async fn test_free_user_over_limit() {
 
     let command = recipe::CreateRecipeCommand {
         title: "Recipe #16".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![recipe::Ingredient {
             name: "Test".to_string(),
             quantity: 1.0,
@@ -398,6 +407,7 @@ async fn test_premium_user_with_0_recipes() {
 
     let command = recipe::CreateRecipeCommand {
         title: "Recipe #1".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![recipe::Ingredient {
             name: "Test".to_string(),
             quantity: 1.0,
@@ -430,6 +440,7 @@ async fn test_validation_fails_for_nonexistent_user() {
 
     let command = recipe::CreateRecipeCommand {
         title: "Recipe #1".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![recipe::Ingredient {
             name: "Test".to_string(),
             quantity: 1.0,

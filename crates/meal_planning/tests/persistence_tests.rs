@@ -12,7 +12,7 @@ use chrono::Utc;
 use evento::prelude::{Migrate, Plan};
 use meal_planning::{
     aggregate::MealPlanAggregate,
-    constraints::MealType,
+    constraints::CourseType,
     events::{MealAssignment, MealPlanGenerated},
     read_model::{meal_plan_projection, MealPlanQueries},
 };
@@ -105,7 +105,7 @@ async fn setup_test_db() -> (evento::Sqlite, sqlx::SqlitePool) {
             id TEXT PRIMARY KEY NOT NULL,
             meal_plan_id TEXT NOT NULL,
             date TEXT NOT NULL,
-            meal_type TEXT NOT NULL CHECK(meal_type IN ('breakfast', 'lunch', 'dinner')),
+            course_type TEXT NOT NULL CHECK(course_type IN ('appetizer', 'main_course', 'dessert')),
             recipe_id TEXT NOT NULL,
             prep_required INTEGER NOT NULL DEFAULT 0,
             assignment_reasoning TEXT,
@@ -173,10 +173,14 @@ fn create_sample_assignments(start_date: &str) -> Vec<MealAssignment> {
         let date = start + chrono::Duration::days(day_offset);
         let date_str = date.format("%Y-%m-%d").to_string();
 
-        for meal_type in [MealType::Breakfast, MealType::Lunch, MealType::Dinner] {
+        for course_type in [
+            CourseType::Appetizer,
+            CourseType::MainCourse,
+            CourseType::Dessert,
+        ] {
             assignments.push(MealAssignment {
                 date: date_str.clone(),
-                meal_type: meal_type.as_str().to_string(),
+                course_type: course_type.as_str().to_string(),
                 recipe_id: format!("recipe_{}", assignments.len() + 1),
                 prep_required: false,
                 assignment_reasoning: None,

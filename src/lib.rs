@@ -40,7 +40,8 @@ pub async fn create_app(
     };
 
     let state = AppState {
-        db_pool: db_pool.clone(),
+        db_pool: db_pool.clone(),        // For testing, use same pool for both
+        write_pool: db_pool.clone(),     // For testing, use same pool for both
         evento_executor,
         jwt_secret: "test-secret-key-32-bytes-long!!".to_string(),
         email_config,

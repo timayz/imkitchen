@@ -208,6 +208,7 @@ async fn test_add_recipe_to_collection_integration() {
     // Create recipe
     let recipe_command = CreateRecipeCommand {
         title: "Test Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -282,6 +283,7 @@ async fn test_remove_recipe_from_collection_integration() {
 
     let recipe_command = CreateRecipeCommand {
         title: "Test Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,

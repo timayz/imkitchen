@@ -130,14 +130,14 @@ async fn test_meal_plan_generated_event_projects_to_read_model() {
     let meal_assignments = vec![
         meal_planning::events::MealAssignment {
             date: "2025-10-20".to_string(),
-            meal_type: "breakfast".to_string(),
+            course_type: "appetizer".to_string(),
             recipe_id: "recipe_1".to_string(),
             prep_required: false,
             assignment_reasoning: None,
         },
         meal_planning::events::MealAssignment {
             date: "2025-10-20".to_string(),
-            meal_type: "lunch".to_string(),
+            course_type: "main_course".to_string(),
             recipe_id: "recipe_2".to_string(),
             prep_required: false,
             assignment_reasoning: None,
@@ -189,8 +189,8 @@ async fn test_meal_plan_generated_event_projects_to_read_model() {
         .expect("Failed to query meal assignments");
 
     assert_eq!(assignments.len(), 2, "Should have 2 meal assignments");
-    assert_eq!(assignments[0].meal_type, "breakfast");
-    assert_eq!(assignments[1].meal_type, "lunch");
+    assert_eq!(assignments[0].course_type, "appetizer");
+    assert_eq!(assignments[1].course_type, "main_course");
 }
 
 #[tokio::test]
@@ -212,6 +212,7 @@ async fn test_insufficient_recipes_returns_error() {
             cook_time_min: Some(30),
             advance_prep_hours: None,
             complexity: None,
+            recipe_type: "main_course".to_string(),
         },
         RecipeForPlanning {
             id: "2".to_string(),
@@ -222,6 +223,7 @@ async fn test_insufficient_recipes_returns_error() {
             cook_time_min: Some(40),
             advance_prep_hours: None,
             complexity: None,
+            recipe_type: "main_course".to_string(),
         },
     ];
 
@@ -346,10 +348,10 @@ async fn test_multiple_meal_assignments_projected_correctly() {
     let mut meal_assignments = Vec::new();
     for day in 0..7 {
         let date = format!("2025-10-{}", 20 + day);
-        for meal_type in ["breakfast", "lunch", "dinner"] {
+        for course_type in ["appetizer", "main_course", "dessert"] {
             meal_assignments.push(meal_planning::events::MealAssignment {
                 date: date.clone(),
-                meal_type: meal_type.to_string(),
+                course_type: course_type.to_string(),
                 recipe_id: format!("recipe_{}", (day * 3 + meal_assignments.len() % 3) % 10 + 1),
                 prep_required: false,
                 assignment_reasoning: None,
@@ -395,23 +397,23 @@ async fn test_multiple_meal_assignments_projected_correctly() {
         "Should have 21 meal assignments (7 days × 3 meals)"
     );
 
-    // Verify we have assignments for all meal types
-    let breakfast_count = assignments
+    // Verify we have assignments for all course types
+    let appetizer_count = assignments
         .iter()
-        .filter(|a| a.meal_type == "breakfast")
+        .filter(|a| a.course_type == "appetizer")
         .count();
-    let lunch_count = assignments
+    let main_course_count = assignments
         .iter()
-        .filter(|a| a.meal_type == "lunch")
+        .filter(|a| a.course_type == "main_course")
         .count();
-    let dinner_count = assignments
+    let dessert_count = assignments
         .iter()
-        .filter(|a| a.meal_type == "dinner")
+        .filter(|a| a.course_type == "dessert")
         .count();
 
-    assert_eq!(breakfast_count, 7);
-    assert_eq!(lunch_count, 7);
-    assert_eq!(dinner_count, 7);
+    assert_eq!(appetizer_count, 7);
+    assert_eq!(main_course_count, 7);
+    assert_eq!(dessert_count, 7);
 }
 
 /// Test: Rotation progress displays correct counts (Story 3.3, Story 3.4 AC)
@@ -442,21 +444,21 @@ async fn test_rotation_progress_displays_correctly() {
 
         meal_assignments.push(MealAssignment {
             date: date.clone(),
-            meal_type: "breakfast".to_string(),
+            course_type: "appetizer".to_string(),
             recipe_id: recipe_ids_used[recipe_idx].clone(),
             prep_required: false,
             assignment_reasoning: None,
         });
         meal_assignments.push(MealAssignment {
             date: date.clone(),
-            meal_type: "lunch".to_string(),
+            course_type: "main_course".to_string(),
             recipe_id: recipe_ids_used[(recipe_idx + 1) % recipe_ids_used.len()].clone(),
             prep_required: false,
             assignment_reasoning: None,
         });
         meal_assignments.push(MealAssignment {
             date: date.clone(),
-            meal_type: "dinner".to_string(),
+            course_type: "dessert".to_string(),
             recipe_id: recipe_ids_used[(recipe_idx + 2) % recipe_ids_used.len()].clone(),
             prep_required: false,
             assignment_reasoning: None,
@@ -543,7 +545,7 @@ async fn test_meal_replacement_endpoint() {
 
     meal_assignments.push(MealAssignment {
         date: "2025-01-06".to_string(),
-        meal_type: "breakfast".to_string(),
+        course_type: "appetizer".to_string(),
         recipe_id: recipe_ids_used[0].clone(),
         prep_required: false,
         assignment_reasoning: None,
@@ -601,7 +603,7 @@ async fn test_meal_replacement_endpoint() {
     let original_recipe_id = &assignments[0].recipe_id;
 
     // Query replacement candidates to verify rotation logic
-    let candidates = MealPlanQueries::query_replacement_candidates(user_id, "breakfast", &pool)
+    let candidates = MealPlanQueries::query_replacement_candidates(user_id, "appetizer", &pool)
         .await
         .expect("Failed to query replacement candidates");
 
@@ -650,10 +652,10 @@ async fn test_meal_plan_regeneration_projection() {
     let initial_assignments: Vec<MealAssignment> = (1..=21)
         .map(|i| {
             let day_offset = (i - 1) / 3;
-            let meal_type = match (i - 1) % 3 {
-                0 => "breakfast",
-                1 => "lunch",
-                _ => "dinner",
+            let course_type = match (i - 1) % 3 {
+                0 => "appetizer",
+                1 => "main_course",
+                _ => "dessert",
             };
             let date = Utc::now()
                 .naive_utc()
@@ -664,7 +666,7 @@ async fn test_meal_plan_regeneration_projection() {
 
             MealAssignment {
                 date,
-                meal_type: meal_type.to_string(),
+                course_type: course_type.to_string(),
                 recipe_id: format!("recipe_{}", (i % 10) + 1),
                 prep_required: false,
                 assignment_reasoning: None,
@@ -711,10 +713,10 @@ async fn test_meal_plan_regeneration_projection() {
     let new_assignments: Vec<MealAssignment> = (1..=21)
         .map(|i| {
             let day_offset = (i - 1) / 3;
-            let meal_type = match (i - 1) % 3 {
-                0 => "breakfast",
-                1 => "lunch",
-                _ => "dinner",
+            let course_type = match (i - 1) % 3 {
+                0 => "appetizer",
+                1 => "main_course",
+                _ => "dessert",
             };
             let date = Utc::now()
                 .naive_utc()
@@ -726,7 +728,7 @@ async fn test_meal_plan_regeneration_projection() {
             // Use different recipes (offset by 5)
             MealAssignment {
                 date,
-                meal_type: meal_type.to_string(),
+                course_type: course_type.to_string(),
                 recipe_id: format!("recipe_{}", ((i + 5) % 10) + 1),
                 prep_required: false,
                 assignment_reasoning: None,
@@ -833,10 +835,10 @@ async fn test_regeneration_preserves_rotation_cycle() {
     let initial_assignments: Vec<MealAssignment> = (1..=21)
         .map(|i| {
             let day_offset = (i - 1) / 3;
-            let meal_type = match (i - 1) % 3 {
-                0 => "breakfast",
-                1 => "lunch",
-                _ => "dinner",
+            let course_type = match (i - 1) % 3 {
+                0 => "appetizer",
+                1 => "main_course",
+                _ => "dessert",
             };
             let date = Utc::now()
                 .naive_utc()
@@ -847,7 +849,7 @@ async fn test_regeneration_preserves_rotation_cycle() {
 
             MealAssignment {
                 date,
-                meal_type: meal_type.to_string(),
+                course_type: course_type.to_string(),
                 recipe_id: format!("recipe_{}", (i % 8) + 3), // Start from recipe_3 to avoid used ones
                 prep_required: false,
                 assignment_reasoning: None,
@@ -881,10 +883,10 @@ async fn test_regeneration_preserves_rotation_cycle() {
     let new_assignments: Vec<MealAssignment> = (1..=21)
         .map(|i| {
             let day_offset = (i - 1) / 3;
-            let meal_type = match (i - 1) % 3 {
-                0 => "breakfast",
-                1 => "lunch",
-                _ => "dinner",
+            let course_type = match (i - 1) % 3 {
+                0 => "appetizer",
+                1 => "main_course",
+                _ => "dessert",
             };
             let date = Utc::now()
                 .naive_utc()
@@ -895,7 +897,7 @@ async fn test_regeneration_preserves_rotation_cycle() {
 
             MealAssignment {
                 date,
-                meal_type: meal_type.to_string(),
+                course_type: course_type.to_string(),
                 recipe_id: format!("recipe_{}", (i % 8) + 3),
                 prep_required: false,
                 assignment_reasoning: None,
@@ -976,10 +978,10 @@ async fn test_regeneration_with_reason() {
     let initial_assignments: Vec<MealAssignment> = (1..=21)
         .map(|i| {
             let day_offset = (i - 1) / 3;
-            let meal_type = match (i - 1) % 3 {
-                0 => "breakfast",
-                1 => "lunch",
-                _ => "dinner",
+            let course_type = match (i - 1) % 3 {
+                0 => "appetizer",
+                1 => "main_course",
+                _ => "dessert",
             };
             let date = Utc::now()
                 .naive_utc()
@@ -990,7 +992,7 @@ async fn test_regeneration_with_reason() {
 
             MealAssignment {
                 date,
-                meal_type: meal_type.to_string(),
+                course_type: course_type.to_string(),
                 recipe_id: format!("recipe_{}", (i % 10) + 1),
                 prep_required: false,
                 assignment_reasoning: None,
@@ -1025,10 +1027,10 @@ async fn test_regeneration_with_reason() {
     let new_assignments: Vec<MealAssignment> = (1..=21)
         .map(|i| {
             let day_offset = (i - 1) / 3;
-            let meal_type = match (i - 1) % 3 {
-                0 => "breakfast",
-                1 => "lunch",
-                _ => "dinner",
+            let course_type = match (i - 1) % 3 {
+                0 => "appetizer",
+                1 => "main_course",
+                _ => "dessert",
             };
             let date = Utc::now()
                 .naive_utc()
@@ -1039,7 +1041,7 @@ async fn test_regeneration_with_reason() {
 
             MealAssignment {
                 date,
-                meal_type: meal_type.to_string(),
+                course_type: course_type.to_string(),
                 recipe_id: format!("recipe_{}", i),
                 prep_required: false,
                 assignment_reasoning: None,
@@ -1118,7 +1120,7 @@ async fn test_get_todays_meals_query() {
         // Yesterday
         MealAssignment {
             date: yesterday.clone(),
-            meal_type: "breakfast".to_string(),
+            course_type: "appetizer".to_string(),
             recipe_id: "recipe_1".to_string(),
             prep_required: false,
             assignment_reasoning: None,
@@ -1126,21 +1128,21 @@ async fn test_get_todays_meals_query() {
         // Today - all 3 meals
         MealAssignment {
             date: today.clone(),
-            meal_type: "breakfast".to_string(),
+            course_type: "appetizer".to_string(),
             recipe_id: "recipe_2".to_string(),
             prep_required: false,
             assignment_reasoning: Some("Great morning meal".to_string()),
         },
         MealAssignment {
             date: today.clone(),
-            meal_type: "lunch".to_string(),
+            course_type: "main_course".to_string(),
             recipe_id: "recipe_3".to_string(),
             prep_required: false,
             assignment_reasoning: None,
         },
         MealAssignment {
             date: today.clone(),
-            meal_type: "dinner".to_string(),
+            course_type: "dessert".to_string(),
             recipe_id: "recipe_4".to_string(),
             prep_required: false,
             assignment_reasoning: None,
@@ -1148,7 +1150,7 @@ async fn test_get_todays_meals_query() {
         // Tomorrow
         MealAssignment {
             date: tomorrow.clone(),
-            meal_type: "breakfast".to_string(),
+            course_type: "appetizer".to_string(),
             recipe_id: "recipe_5".to_string(),
             prep_required: false,
             assignment_reasoning: None,
@@ -1193,15 +1195,18 @@ async fn test_get_todays_meals_query() {
         "Should return exactly 3 meals for today"
     );
 
-    // Verify: Meals ordered by meal_type (breakfast, lunch, dinner)
+    // Verify: Meals ordered by course_type (appetizer, main_course, dessert)
     assert_eq!(
-        todays_meals[0].meal_type, "breakfast",
-        "First should be breakfast"
+        todays_meals[0].course_type, "appetizer",
+        "First should be appetizer"
     );
-    assert_eq!(todays_meals[1].meal_type, "lunch", "Second should be lunch");
     assert_eq!(
-        todays_meals[2].meal_type, "dinner",
-        "Third should be dinner"
+        todays_meals[1].course_type, "main_course",
+        "Second should be main_course"
+    );
+    assert_eq!(
+        todays_meals[2].course_type, "dessert",
+        "Third should be dessert"
     );
 
     // Verify: Recipe details included via JOIN (AC-3)
@@ -1248,7 +1253,7 @@ async fn test_dashboard_route_data_structure() {
             id: "assignment_breakfast".to_string(),
             meal_plan_id: "plan1".to_string(),
             date: "2025-01-15".to_string(),
-            meal_type: "breakfast".to_string(),
+            course_type: "appetizer".to_string(),
             recipe_id: "recipe1".to_string(),
             prep_required: false,
             assignment_reasoning: None,
@@ -1262,7 +1267,7 @@ async fn test_dashboard_route_data_structure() {
             id: "assignment_lunch".to_string(),
             meal_plan_id: "plan1".to_string(),
             date: "2025-01-15".to_string(),
-            meal_type: "lunch".to_string(),
+            course_type: "main_course".to_string(),
             recipe_id: "recipe2".to_string(),
             prep_required: true,
             assignment_reasoning: Some("Marinated overnight".to_string()),
@@ -1276,7 +1281,7 @@ async fn test_dashboard_route_data_structure() {
             id: "assignment_dinner".to_string(),
             meal_plan_id: "plan1".to_string(),
             date: "2025-01-15".to_string(),
-            meal_type: "dinner".to_string(),
+            course_type: "dessert".to_string(),
             recipe_id: "recipe3".to_string(),
             prep_required: false,
             assignment_reasoning: None,
@@ -1292,33 +1297,36 @@ async fn test_dashboard_route_data_structure() {
 
     // Verify: All 3 meals mapped correctly (AC-2)
     assert!(
-        todays_meals.breakfast.is_some(),
-        "Breakfast should be mapped"
+        todays_meals.appetizer.is_some(),
+        "Appetizer should be mapped"
     );
-    assert!(todays_meals.lunch.is_some(), "Lunch should be mapped");
-    assert!(todays_meals.dinner.is_some(), "Dinner should be mapped");
+    assert!(
+        todays_meals.main_course.is_some(),
+        "Main course should be mapped"
+    );
+    assert!(todays_meals.dessert.is_some(), "Dessert should be mapped");
     assert!(todays_meals.has_meal_plan, "has_meal_plan should be true");
 
-    // Verify breakfast data (AC-3)
-    let breakfast = todays_meals.breakfast.unwrap();
-    assert_eq!(breakfast.recipe_title, "Pancakes");
-    assert_eq!(breakfast.total_time_min, 25); // 10 + 15
-    assert!(!breakfast.advance_prep_required);
+    // Verify appetizer data (AC-3)
+    let appetizer = todays_meals.appetizer.unwrap();
+    assert_eq!(appetizer.recipe_title, "Pancakes");
+    assert_eq!(appetizer.total_time_min, 25); // 10 + 15
+    assert!(!appetizer.advance_prep_required);
 
-    // Verify lunch data with advance prep indicator (AC-4)
-    let lunch = todays_meals.lunch.unwrap();
-    assert_eq!(lunch.recipe_title, "Chicken Salad");
-    assert_eq!(lunch.total_time_min, 20); // 20 + 0
+    // Verify main course data with advance prep indicator (AC-4)
+    let main_course = todays_meals.main_course.unwrap();
+    assert_eq!(main_course.recipe_title, "Chicken Salad");
+    assert_eq!(main_course.total_time_min, 20); // 20 + 0
     assert!(
-        lunch.advance_prep_required,
+        main_course.advance_prep_required,
         "Should show advance prep required"
     );
 
-    // Verify dinner data
-    let dinner = todays_meals.dinner.unwrap();
-    assert_eq!(dinner.recipe_title, "Pasta");
-    assert_eq!(dinner.total_time_min, 35); // 15 + 20
-    assert!(!dinner.advance_prep_required);
+    // Verify dessert data
+    let dessert = todays_meals.dessert.unwrap();
+    assert_eq!(dessert.recipe_title, "Pasta");
+    assert_eq!(dessert.total_time_min, 35); // 15 + 20
+    assert!(!dessert.advance_prep_required);
 }
 
 /// Test: Today's meals automatically update at midnight (Story 3.9 - AC-7)
@@ -1345,7 +1353,7 @@ async fn test_todays_meals_uses_date_now() {
     // Create meal plan with assignment for today only
     let meal_assignments = vec![MealAssignment {
         date: today.clone(),
-        meal_type: "breakfast".to_string(),
+        course_type: "appetizer".to_string(),
         recipe_id: "recipe_1".to_string(),
         prep_required: false,
         assignment_reasoning: None,

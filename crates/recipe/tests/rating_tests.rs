@@ -72,6 +72,7 @@ async fn create_shared_recipe(
     // Create recipe
     let command = CreateRecipeCommand {
         title: "Test Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -218,6 +219,7 @@ async fn test_rate_recipe_only_shared_recipes() {
     // Create recipe but don't share it
     let command = CreateRecipeCommand {
         title: "Private Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,

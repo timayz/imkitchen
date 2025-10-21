@@ -176,6 +176,7 @@ async fn test_validate_recipe_creation_free_tier_enforces_limit() {
     for i in 0..10 {
         let command = recipe::CreateRecipeCommand {
             title: format!("Test Recipe {}", i),
+            recipe_type: "main_course".to_string(),
             ingredients: vec![recipe::Ingredient {
                 name: "Test".to_string(),
                 quantity: 1.0,
@@ -202,6 +203,7 @@ async fn test_validate_recipe_creation_free_tier_enforces_limit() {
     // Attempt to create recipe #11 (should fail)
     let command = recipe::CreateRecipeCommand {
         title: "Recipe #11".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![recipe::Ingredient {
             name: "Test".to_string(),
             quantity: 1.0,
@@ -255,6 +257,7 @@ async fn test_validate_recipe_creation_premium_tier_bypasses_limit() {
     for i in 0..15 {
         let command = recipe::CreateRecipeCommand {
             title: format!("Test Recipe {}", i),
+            recipe_type: "main_course".to_string(),
             ingredients: vec![recipe::Ingredient {
                 name: "Test".to_string(),
                 quantity: 1.0,
@@ -281,6 +284,7 @@ async fn test_validate_recipe_creation_premium_tier_bypasses_limit() {
     // Attempt to create recipe #51 (should succeed for premium)
     let command = recipe::CreateRecipeCommand {
         title: "Recipe #51".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![recipe::Ingredient {
             name: "Test".to_string(),
             quantity: 1.0,
@@ -313,6 +317,7 @@ async fn test_validate_recipe_creation_free_tier_under_limit_succeeds() {
     for i in 0..5 {
         let command = recipe::CreateRecipeCommand {
             title: format!("Test Recipe {}", i),
+            recipe_type: "main_course".to_string(),
             ingredients: vec![recipe::Ingredient {
                 name: "Test".to_string(),
                 quantity: 1.0,
@@ -339,6 +344,7 @@ async fn test_validate_recipe_creation_free_tier_under_limit_succeeds() {
     // Attempt to create recipe #6 (should succeed)
     let command = recipe::CreateRecipeCommand {
         title: "Recipe #6".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![recipe::Ingredient {
             name: "Test".to_string(),
             quantity: 1.0,

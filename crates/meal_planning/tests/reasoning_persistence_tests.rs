@@ -38,7 +38,7 @@ async fn setup_test_db() -> (evento::Sqlite, sqlx::SqlitePool) {
             id TEXT PRIMARY KEY NOT NULL,
             meal_plan_id TEXT NOT NULL,
             date TEXT NOT NULL,
-            meal_type TEXT NOT NULL CHECK(meal_type IN ('breakfast', 'lunch', 'dinner')),
+            course_type TEXT NOT NULL CHECK(course_type IN ('appetizer', 'main_course', 'dessert')),
             recipe_id TEXT NOT NULL,
             prep_required INTEGER NOT NULL DEFAULT 0,
             assignment_reasoning TEXT,
@@ -54,7 +54,11 @@ async fn setup_test_db() -> (evento::Sqlite, sqlx::SqlitePool) {
     (executor, pool)
 }
 
-fn create_test_recipe(id: &str, complexity_score: (usize, usize)) -> RecipeForPlanning {
+fn create_test_recipe(
+    id: &str,
+    complexity_score: (usize, usize),
+    recipe_type: &str,
+) -> RecipeForPlanning {
     RecipeForPlanning {
         id: id.to_string(),
         title: format!("Recipe {}", id),
@@ -64,6 +68,7 @@ fn create_test_recipe(id: &str, complexity_score: (usize, usize)) -> RecipeForPl
         cook_time_min: Some(30),
         advance_prep_hours: None,
         complexity: None,
+        recipe_type: recipe_type.to_string(),
     }
 }
 
@@ -75,15 +80,23 @@ async fn test_reasoning_persisted_to_database() {
     // Create executor for committing events
     let commit_executor: evento::Sqlite = pool.clone().into();
 
-    // Create test recipes
+    // Create test recipes with different course types
     let favorites = vec![
-        create_test_recipe("r1", (6, 4)),   // Simple
-        create_test_recipe("r2", (8, 6)),   // Simple
-        create_test_recipe("r3", (10, 8)),  // Moderate
-        create_test_recipe("r4", (12, 10)), // Moderate
-        create_test_recipe("r5", (15, 12)), // Moderate
-        create_test_recipe("r6", (18, 14)), // Moderate
-        create_test_recipe("r7", (20, 16)), // Moderate
+        // Appetizers
+        create_test_recipe("r1", (6, 4), "appetizer"),
+        create_test_recipe("r2", (8, 6), "appetizer"),
+        // Main courses (need at least 7)
+        create_test_recipe("r3", (10, 8), "main_course"),
+        create_test_recipe("r4", (12, 10), "main_course"),
+        create_test_recipe("r5", (15, 12), "main_course"),
+        create_test_recipe("r6", (18, 14), "main_course"),
+        create_test_recipe("r7", (20, 16), "main_course"),
+        create_test_recipe("r8", (10, 8), "main_course"),
+        create_test_recipe("r9", (12, 10), "main_course"),
+        create_test_recipe("r10", (15, 12), "main_course"),
+        // Desserts
+        create_test_recipe("r11", (8, 6), "dessert"),
+        create_test_recipe("r12", (10, 8), "dessert"),
     ];
 
     // Generate meal plan
@@ -142,9 +155,9 @@ async fn test_reasoning_persisted_to_database() {
     for stored in &stored_assignments {
         assert!(
             stored.assignment_reasoning.is_some(),
-            "Stored assignment should have reasoning for date={} meal_type={}",
+            "Stored assignment should have reasoning for date={} course_type={}",
             stored.date,
-            stored.meal_type
+            stored.course_type
         );
 
         let reasoning = stored.assignment_reasoning.as_ref().unwrap();
@@ -167,8 +180,8 @@ async fn test_reasoning_persisted_to_database() {
     // Verify specific reasoning examples
     let tuesday_dinner = stored_assignments
         .iter()
-        .find(|a| a.date == "2025-10-21" && a.meal_type == "dinner")
-        .expect("Should find Tuesday dinner");
+        .find(|a| a.date == "2025-10-21" && a.course_type == "dessert")
+        .expect("Should find Tuesday dessert");
 
     let reasoning = tuesday_dinner.assignment_reasoning.as_ref().unwrap();
     assert!(
@@ -186,10 +199,32 @@ async fn test_reasoning_query_returns_with_assignments() {
     // Create executor for committing events
     let commit_executor: evento::Sqlite = pool.clone().into();
 
-    // Create and generate meal plan
-    let favorites = (1..=10)
-        .map(|i| create_test_recipe(&format!("r{}", i), (5 + i, 4 + i)))
-        .collect();
+    // Create and generate meal plan with different course types
+    let mut favorites = vec![];
+    // Appetizers
+    for i in 1..=2 {
+        favorites.push(create_test_recipe(
+            &format!("r{}", i),
+            (5 + i, 4 + i),
+            "appetizer",
+        ));
+    }
+    // Main courses (need at least 7)
+    for i in 3..=10 {
+        favorites.push(create_test_recipe(
+            &format!("r{}", i),
+            (5 + i, 4 + i),
+            "main_course",
+        ));
+    }
+    // Desserts
+    for i in 11..=12 {
+        favorites.push(create_test_recipe(
+            &format!("r{}", i),
+            (5 + i, 4 + i),
+            "dessert",
+        ));
+    }
 
     let (assignments, rotation_state) = MealPlanningAlgorithm::generate(
         "2025-10-20",

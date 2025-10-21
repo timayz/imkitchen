@@ -196,7 +196,8 @@ async fn serve_command(
     };
 
     let state = AppState {
-        db_pool: read_pool.clone(), // Read pool for queries
+        db_pool: read_pool.clone(),     // Read pool for queries
+        write_pool: write_pool.clone(), // Write pool for inserts/updates
         evento_executor,
         jwt_secret: config.jwt.secret,
         email_config,
@@ -436,6 +437,7 @@ async fn import_recipe_command(
     #[derive(Deserialize)]
     struct RecipeJson {
         title: String,
+        recipe_type: String,
         ingredients: Vec<Ingredient>,
         instructions: Vec<InstructionStep>,
         prep_time_min: Option<u32>,
@@ -473,6 +475,7 @@ async fn import_recipe_command(
     // Create command
     let command = CreateRecipeCommand {
         title: recipe_data.title,
+        recipe_type: recipe_data.recipe_type,
         ingredients: recipe_data.ingredients,
         instructions: recipe_data.instructions,
         prep_time_min: recipe_data.prep_time_min,

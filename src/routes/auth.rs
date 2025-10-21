@@ -24,7 +24,8 @@ use crate::middleware::auth::Auth;
 /// **Critical Fix 1.4:** Added generation_locks for concurrent meal plan generation protection
 #[derive(Clone)]
 pub struct AppState {
-    pub db_pool: SqlitePool,
+    pub db_pool: SqlitePool,    // Read-only pool for queries
+    pub write_pool: SqlitePool, // Write pool for inserts/updates
     pub evento_executor: evento::Sqlite,
     pub jwt_secret: String,
     pub email_config: crate::email::EmailConfig,
@@ -193,7 +194,7 @@ pub async fn post_register(
 
     // Execute registration (evento event sourcing)
     // Email uniqueness is enforced in the command via user_email_uniqueness table
-    match register_user(command, &state.evento_executor, &state.db_pool).await {
+    match register_user(command, &state.evento_executor, &state.write_pool).await {
         Ok(aggregator_id) => {
             // Generate JWT token
             let token = match generate_jwt(

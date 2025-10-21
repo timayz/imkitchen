@@ -91,6 +91,7 @@ async fn test_create_recipe_integration_with_read_model_projection() {
     // Create recipe command
     let command = CreateRecipeCommand {
         title: "Integration Test Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![
             Ingredient {
                 name: "Chicken".to_string(),
@@ -180,6 +181,7 @@ async fn test_query_recipes_by_user() {
     for i in 1..=3 {
         let command = CreateRecipeCommand {
             title: format!("Recipe {}", i),
+            recipe_type: "main_course".to_string(),
             ingredients: vec![Ingredient {
                 name: "Salt".to_string(),
                 quantity: 1.0,
@@ -233,6 +235,7 @@ async fn test_delete_recipe_integration() {
     // Create recipe
     let command = CreateRecipeCommand {
         title: "Recipe to Delete".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -297,6 +300,7 @@ async fn test_delete_recipe_permission_denied() {
     // User1 creates recipe
     let command = CreateRecipeCommand {
         title: "User1 Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -359,6 +363,7 @@ async fn test_post_recipe_update_success_returns_ts_location() {
     // Create recipe via command
     let command = CreateRecipeCommand {
         title: "Original Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -407,7 +412,7 @@ async fn test_post_recipe_update_success_returns_ts_location() {
                 .header("content-type", "application/x-www-form-urlencoded")
                 .header("cookie", format!("auth_token={}", token))
                 .body(Body::from(
-                    "title=Updated Recipe&ingredient_name[]=Pepper&ingredient_quantity[]=2&ingredient_unit[]=tsp&instruction_text[]=Season it&instruction_timer[]=&prep_time_min=15&cook_time_min=25",
+                    "title=Updated Recipe&recipe_type=main_course&ingredient_name[]=Pepper&ingredient_quantity[]=2&ingredient_unit[]=tsp&instruction_text[]=Season it&instruction_timer[]=&prep_time_min=15&cook_time_min=25",
                 ))
                 .unwrap(),
         )
@@ -460,6 +465,7 @@ async fn test_post_recipe_update_unauthorized_returns_403() {
     // User1 creates recipe
     let command = CreateRecipeCommand {
         title: "User1 Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -507,7 +513,7 @@ async fn test_post_recipe_update_unauthorized_returns_403() {
                 .uri(format!("/recipes/{}", recipe_id))
                 .header("content-type", "application/x-www-form-urlencoded")
                 .header("cookie", format!("auth_token={}", token))
-                .body(Body::from("title=Hijacked Recipe&ingredient_name[]=Salt&ingredient_quantity[]=1&ingredient_unit[]=tsp&instruction_text[]=Hack it&instruction_timer[]="))
+                .body(Body::from("title=Hijacked Recipe&recipe_type=main_course&ingredient_name[]=Salt&ingredient_quantity[]=1&ingredient_unit[]=tsp&instruction_text[]=Hack it&instruction_timer[]="))
                 .unwrap(),
         )
         .await
@@ -539,6 +545,7 @@ async fn test_post_recipe_update_invalid_data_returns_422() {
     // Create recipe
     let command = CreateRecipeCommand {
         title: "Original Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -586,7 +593,7 @@ async fn test_post_recipe_update_invalid_data_returns_422() {
                 .uri(format!("/recipes/{}", recipe_id))
                 .header("content-type", "application/x-www-form-urlencoded")
                 .header("cookie", format!("auth_token={}", token))
-                .body(Body::from("title=Ab")) // Title < 3 characters
+                .body(Body::from("title=Ab&recipe_type=main_course")) // Title < 3 characters
                 .unwrap(),
         )
         .await
@@ -619,6 +626,7 @@ async fn test_get_recipe_edit_form_prepopulated() {
     // Create recipe
     let command = CreateRecipeCommand {
         title: "Test Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -703,6 +711,7 @@ async fn test_recipe_update_syncs_to_read_model() {
     // Create recipe
     let command = CreateRecipeCommand {
         title: "Original Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -733,6 +742,7 @@ async fn test_recipe_update_syncs_to_read_model() {
         recipe_id: recipe_id.clone(),
         user_id: user1_id.to_string(),
         title: Some("Updated Recipe".to_string()),
+        recipe_type: Some("main_course".to_string()),
         ingredients: Some(vec![
             Ingredient {
                 name: "Pepper".to_string(),
@@ -817,6 +827,7 @@ async fn test_delete_recipe_integration_removes_from_read_model() {
     // Create a recipe
     let command = CreateRecipeCommand {
         title: "Recipe to Delete".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -891,6 +902,7 @@ async fn test_delete_recipe_integration_unauthorized_returns_403() {
     // User1 creates a recipe
     let command = CreateRecipeCommand {
         title: "User1's Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -955,6 +967,7 @@ async fn test_delete_recipe_integration_excluded_from_user_queries() {
     for i in 1..=3 {
         let command = CreateRecipeCommand {
             title: format!("Recipe {}", i),
+            recipe_type: "main_course".to_string(),
             ingredients: vec![Ingredient {
                 name: "Salt".to_string(),
                 quantity: 1.0,
@@ -1045,6 +1058,7 @@ async fn test_favorite_recipe_integration_full_cycle() {
     // Create a recipe
     let command = CreateRecipeCommand {
         title: "Integration Test Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Test Ingredient".to_string(),
             quantity: 1.0,
@@ -1162,6 +1176,7 @@ async fn test_favorite_filter_with_multiple_recipes() {
     for i in 1..=5 {
         let command = CreateRecipeCommand {
             title: format!("Recipe {}", i),
+            recipe_type: "main_course".to_string(),
             ingredients: vec![Ingredient {
                 name: "Ingredient".to_string(),
                 quantity: 1.0,
@@ -1248,6 +1263,7 @@ async fn test_favorite_permission_denied_for_other_users_recipe() {
     // User1 creates a recipe
     let command = CreateRecipeCommand {
         title: "User1 Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Ingredient".to_string(),
             quantity: 1.0,

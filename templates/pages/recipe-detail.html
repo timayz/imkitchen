@@ -89,6 +89,23 @@
 
                         <!-- Recipe Tags -->
                         <div class="flex flex-wrap gap-2 items-center">
+                            <span class="px-3 py-1 text-sm font-medium rounded
+                                         {% if recipe.recipe_type == "appetizer" %}
+                                             bg-purple-100 text-purple-800
+                                         {% elif recipe.recipe_type == "main_course" %}
+                                             bg-orange-100 text-orange-800
+                                         {% else %}
+                                             bg-pink-100 text-pink-800
+                                         {% endif %}">
+                                {% if recipe.recipe_type == "appetizer" %}
+                                    🥗 Appetizer
+                                {% elif recipe.recipe_type == "main_course" %}
+                                    🍽️ Main Course
+                                {% else %}
+                                    🍰 Dessert
+                                {% endif %}
+                            </span>
+
                             {% if let Some(complexity) = recipe.complexity %}
                             <span class="px-3 py-1 text-sm font-medium rounded
                                          {% if complexity == "simple" %}

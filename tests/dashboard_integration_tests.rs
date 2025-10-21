@@ -53,6 +53,7 @@ async fn test_dashboard_requires_authentication() {
     // Create app state
     let state = imkitchen::routes::AppState {
         db_pool: pool.clone(),
+        write_pool: pool.clone(),
         evento_executor,
         jwt_secret: "test-secret-key-for-testing-only".to_string(),
         email_config: imkitchen::email::EmailConfig {
@@ -119,6 +120,7 @@ async fn test_dashboard_rejects_invalid_jwt() {
 
     let state = imkitchen::routes::AppState {
         db_pool: pool.clone(),
+        write_pool: pool.clone(),
         evento_executor,
         jwt_secret: "test-secret-key-for-testing-only".to_string(),
         email_config: imkitchen::email::EmailConfig {
