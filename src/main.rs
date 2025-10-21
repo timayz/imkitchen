@@ -348,11 +348,19 @@ async fn serve_command(
     // Convert VAPID config to WebPushConfig if keys are provided
     let web_push_config =
         if !config.vapid.public_key.is_empty() && !config.vapid.private_key.is_empty() {
-            Some(notifications::WebPushConfig {
-                vapid_public_key: config.vapid.public_key.clone(),
-                vapid_private_key: config.vapid.private_key.clone(),
-                subject: config.vapid.subject.clone(),
-            })
+            // Convert base64url private key to PEM format (required by web-push crate)
+            match config.vapid.private_key_as_pem() {
+                Ok(private_key_pem) => Some(notifications::WebPushConfig {
+                    vapid_public_key: config.vapid.public_key.clone(),
+                    vapid_private_key: private_key_pem,
+                    subject: config.vapid.subject.clone(),
+                }),
+                Err(e) => {
+                    tracing::error!("Failed to convert VAPID private key to PEM format: {}", e);
+                    tracing::warn!("Push notifications will be disabled");
+                    None
+                }
+            }
         } else {
             tracing::warn!("VAPID keys not configured - push notifications will be disabled");
             None

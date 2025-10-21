@@ -1,3 +1,4 @@
+use base64::{engine::general_purpose::STANDARD, Engine as _};
 use config::{Config as ConfigBuilder, ConfigError, Environment, File};
 use serde::Deserialize;
 use std::env;
@@ -143,6 +144,87 @@ impl Default for VapidConfig {
             private_key: String::new(),
             subject: default_vapid_subject(),
         }
+    }
+}
+
+impl VapidConfig {
+    /// Convert base64url-encoded private key to PEM format
+    /// The web-push crate requires PEM format for VAPID signatures
+    pub fn private_key_as_pem(&self) -> Result<String, String> {
+        if self.private_key.is_empty() {
+            return Err("VAPID private key is empty".to_string());
+        }
+
+        // Check if already in PEM format
+        if self.private_key.starts_with("-----BEGIN") {
+            return Ok(self.private_key.clone());
+        }
+
+        // Convert base64url to base64 standard
+        let base64_standard = self.private_key.replace('-', "+").replace('_', "/");
+
+        // Decode base64 to raw bytes
+        let raw_key = STANDARD
+            .decode(&base64_standard)
+            .map_err(|e| format!("Failed to decode VAPID private key: {}", e))?;
+
+        // Verify key length (should be 32 bytes for P-256)
+        if raw_key.len() != 32 {
+            return Err(format!(
+                "Invalid VAPID private key length: expected 32 bytes, got {}",
+                raw_key.len()
+            ));
+        }
+
+        // Build PEM-encoded EC private key (PKCS#8 format)
+        // EC private key structure for P-256:
+        // SEQUENCE {
+        //   INTEGER 1 (version)
+        //   OCTET STRING (32-byte private key)
+        //   [0] OBJECT IDENTIFIER prime256v1 (1.2.840.10045.3.1.7)
+        //   [1] BIT STRING (65-byte public key, uncompressed)
+        // }
+
+        // For simplicity, we'll construct the DER encoding manually
+        let mut der = Vec::new();
+
+        // SEQUENCE tag + length (will be calculated)
+        der.push(0x30); // SEQUENCE
+
+        // Version: INTEGER 1
+        der.extend_from_slice(&[0x02, 0x01, 0x01]); // INTEGER 1
+
+        // Private key: OCTET STRING (32 bytes)
+        der.push(0x04); // OCTET STRING
+        der.push(32); // length
+        der.extend_from_slice(&raw_key);
+
+        // Curve OID: [0] EXPLICIT (prime256v1)
+        der.extend_from_slice(&[
+            0xa0, 0x0a, // [0] EXPLICIT, length 10
+            0x06, 0x08, // OBJECT IDENTIFIER, length 8
+            0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07, // prime256v1 OID
+        ]);
+
+        // Calculate and insert total length at position 1
+        let total_length = der.len() - 1;
+        der.insert(1, total_length as u8);
+
+        // Encode DER as base64
+        let base64_der = STANDARD.encode(&der);
+
+        // Format as PEM
+        let pem = format!(
+            "-----BEGIN EC PRIVATE KEY-----\n{}\n-----END EC PRIVATE KEY-----",
+            base64_der
+                .as_bytes()
+                .chunks(64)
+                .map(|chunk| std::str::from_utf8(chunk).unwrap())
+                .collect::<Vec<&str>>()
+                .join("\n")
+        );
+
+        Ok(pem)
     }
 }
 

@@ -81,19 +81,16 @@ price_id = ""  # REQUIRED: Add your price ID
 # Generate keys with: npx web-push generate-vapid-keys
 # Or use: openssl ecparam -genkey -name prime256v1 -out vapid_private.pem
 [vapid]
-# VAPID public key (base64url encoded)
+# VAPID public key (base64url encoded, uncompressed P-256)
 # This is included in the push subscription request from the browser
 # Override with: IMKITCHEN__VAPID__PUBLIC_KEY
-public_key = "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nqm50g"
+public_key = "BB8rIhib51reZc8Yy_MNyeWlTNpYKumwCoB5m1Sd4ggjvo_w3QtfO8XXrzxHPkoVkoVNvCdD50mbl75FYthMnN0"
 
-# VAPID private key (PEM format)
+# VAPID private key (base64url encoded raw key)
 # Keep this secret! Never commit to version control in production
 # Override with: IMKITCHEN__VAPID__PRIVATE_KEY
-private_key = """-----BEGIN EC PRIVATE KEY-----
-MHcCAQEEIBnY0u6XvJ8R3z6aKOvN3cTwLxMjKKdW8YVJqV9LKqAVoAoGCCqGSM49
-AwEHoUQDQgAEEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjS
-gSnfckjBJuBkr3qBUYIHBQFLXYp5Nqm50g==
------END EC PRIVATE KEY-----"""
+# Note: web-push crate expects PEM format, we'll need to convert this on load
+private_key = "gQbVG-hmJgxI1hVm3RkXGEbA_B0mC-Z7vCmy4l5EUrk"
 
 # VAPID subject (mailto: or https: URL)
 # Identifies your application to push services

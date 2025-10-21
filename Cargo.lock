@@ -1902,6 +1902,7 @@ dependencies = [
  "async-stripe",
  "axum",
  "axum-extra",
+ "base64 0.22.1",
  "bincode",
  "chrono",
  "clap",

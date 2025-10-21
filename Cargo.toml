@@ -91,6 +91,7 @@ mime_guess = { workspace = true }
 lettre = { workspace = true }
 urlencoding = { workspace = true }
 async-stripe = { workspace = true }
+base64 = { workspace = true }
 user = { path = "crates/user", version = "0.6.0" }
 recipe = { path = "crates/recipe", version = "0.6.0" }
 meal_planning = { path = "crates/meal_planning", version = "0.6.0" }
