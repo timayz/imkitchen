@@ -45,7 +45,7 @@ impl Drop for GenerationLockGuard {
 pub struct MealSlotData {
     pub assignment_id: String, // Story 3.4: Needed for "Replace This Meal" button
     pub date: String,
-    pub meal_type: String,
+    pub course_type: String, // AC-5: Renamed from meal_type
     pub recipe_id: String,
     pub recipe_title: String,
     pub prep_time_min: Option<i32>,
@@ -92,7 +92,7 @@ pub struct ToastTemplate<'a> {
 #[derive(Template, Debug)]
 #[template(path = "components/no-alternatives-modal.html")]
 pub struct NoAlternativesModalTemplate<'a> {
-    pub meal_type: &'a str,
+    pub course_type: &'a str, // AC-5: Renamed from meal_type
 }
 
 /// Helper function to render toast notification
@@ -120,9 +120,9 @@ pub struct DayData {
     pub is_today: bool,       // AC-6: Today's date highlighted
     pub is_past: bool,        // AC-7: Past dates dimmed
     pub meal_plan_id: String, // Story 3.5: Needed for calendar context links
-    pub breakfast: Option<MealSlotData>,
-    pub lunch: Option<MealSlotData>,
-    pub dinner: Option<MealSlotData>,
+    pub appetizer: Option<MealSlotData>,   // AC-5: Course-based model (renamed from breakfast)
+    pub main_course: Option<MealSlotData>, // AC-5: Course-based model (renamed from lunch)
+    pub dessert: Option<MealSlotData>,     // AC-5: Course-based model (renamed from dinner)
 }
 
 #[derive(Template)]
@@ -279,6 +279,7 @@ pub async fn post_generate_meal_plan(
             RecipeForPlanning {
                 id: r.id,
                 title: r.title,
+                recipe_type: r.recipe_type, // AC-4: Add recipe_type for course matching
                 ingredients_count: ingredients.len(),
                 instructions_count: instructions.len(),
                 prep_time_min: r.prep_time_min.map(|v| v as u32),
@@ -482,7 +483,7 @@ async fn fetch_recipes_by_ids(
     // Build placeholders for IN clause
     let placeholders = recipe_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
     let query_str = format!(
-        "SELECT id, user_id, title, ingredients, instructions, prep_time_min, cook_time_min, advance_prep_hours, serving_size, is_favorite, is_shared, complexity, cuisine, dietary_tags, created_at, updated_at FROM recipes WHERE id IN ({}) AND deleted_at IS NULL",
+        "SELECT id, user_id, title, recipe_type, ingredients, instructions, prep_time_min, cook_time_min, advance_prep_hours, serving_size, is_favorite, is_shared, complexity, cuisine, dietary_tags, created_at, updated_at FROM recipes WHERE id IN ({}) AND deleted_at IS NULL",
         placeholders
     );
 
@@ -533,9 +534,9 @@ fn build_day_data(
             is_today,
             is_past,
             meal_plan_id: meal_plan_id.to_string(), // Story 3.5: Include for calendar context
-            breakfast: None,
-            lunch: None,
-            dinner: None,
+            appetizer: None,   // AC-5: Course-based model
+            main_course: None, // AC-5: Course-based model
+            dessert: None,     // AC-5: Course-based model
         });
 
         // Get recipe details
@@ -545,7 +546,7 @@ fn build_day_data(
             let slot_data = MealSlotData {
                 assignment_id: assignment.id.clone(), // Story 3.4: Include for replacement
                 date: assignment.date.clone(),
-                meal_type: assignment.meal_type.clone(),
+                course_type: assignment.course_type.clone(), // AC-5: Use course_type
                 recipe_id: recipe.id.clone(),
                 recipe_title: recipe.title.clone(),
                 prep_time_min: recipe.prep_time_min,
@@ -555,11 +556,15 @@ fn build_day_data(
                 assignment_reasoning: assignment.assignment_reasoning.clone(), // Story 3.8: Reasoning tooltip
             };
 
-            // Assign to appropriate meal slot
-            match assignment.meal_type.as_str() {
-                "breakfast" => day_data.breakfast = Some(slot_data),
-                "lunch" => day_data.lunch = Some(slot_data),
-                "dinner" => day_data.dinner = Some(slot_data),
+            // Assign to appropriate course slot (AC-5)
+            match assignment.course_type.as_str() {
+                "appetizer" => day_data.appetizer = Some(slot_data),
+                "main_course" => day_data.main_course = Some(slot_data),
+                "dessert" => day_data.dessert = Some(slot_data),
+                // Backward compatibility for old data
+                "breakfast" => day_data.appetizer = Some(slot_data),
+                "lunch" => day_data.main_course = Some(slot_data),
+                "dinner" => day_data.dessert = Some(slot_data),
                 _ => {}
             }
         }
@@ -585,7 +590,7 @@ pub async fn get_meal_alternatives(
     // Get the meal assignment to find context
     let assignment = sqlx::query_as::<_, MealAssignmentReadModel>(
         r#"
-        SELECT ma.id, ma.meal_plan_id, ma.date, ma.meal_type, ma.recipe_id, ma.prep_required, ma.assignment_reasoning
+        SELECT ma.id, ma.meal_plan_id, ma.date, ma.course_type, ma.recipe_id, ma.prep_required, ma.assignment_reasoning
         FROM meal_assignments ma
         JOIN meal_plans mp ON ma.meal_plan_id = mp.id
         WHERE ma.id = ?1 AND mp.user_id = ?2 AND mp.status = 'active'
@@ -600,7 +605,7 @@ pub async fn get_meal_alternatives(
     // Query rotation-aware replacement candidates (unused recipes in current cycle)
     let available_recipes = MealPlanQueries::query_replacement_candidates(
         &auth.user_id,
-        &assignment.meal_type,
+        &assignment.course_type,
         &state.db_pool,
     )
     .await?;
@@ -609,7 +614,7 @@ pub async fn get_meal_alternatives(
     if available_recipes.len() < 3 {
         // Return user-friendly message instead of 500 error
         let template = NoAlternativesModalTemplate {
-            meal_type: &assignment.meal_type,
+            course_type: &assignment.course_type, // AC-5: Use course_type
         };
         let message_html = template
             .render()
@@ -653,7 +658,7 @@ pub async fn get_meal_alternatives(
 /// AC-7: Confirmation message: "Meal replaced successfully"
 ///
 /// This handler follows proper event sourcing:
-/// 1. Query assignment to get meal_plan_id, date, meal_type
+/// 1. Query assignment to get meal_plan_id, date, course_type (AC-5)
 /// 2. Invoke domain command: meal_planning::replace_meal()
 /// 3. Domain emits MealReplaced event
 /// 4. Projection handler updates read model
@@ -667,7 +672,7 @@ pub async fn post_replace_meal(
     // Get the meal assignment to replace
     let assignment = sqlx::query_as::<_, MealAssignmentReadModel>(
         r#"
-        SELECT ma.id, ma.meal_plan_id, ma.date, ma.meal_type, ma.recipe_id, ma.prep_required, ma.assignment_reasoning
+        SELECT ma.id, ma.meal_plan_id, ma.date, ma.course_type, ma.recipe_id, ma.prep_required, ma.assignment_reasoning
         FROM meal_assignments ma
         JOIN meal_plans mp ON ma.meal_plan_id = mp.id
         WHERE ma.id = ?1 AND mp.user_id = ?2 AND mp.status = 'active'
@@ -683,7 +688,7 @@ pub async fn post_replace_meal(
     let cmd = meal_planning::ReplaceMealCommand {
         meal_plan_id: assignment.meal_plan_id.clone(),
         date: assignment.date.clone(),
-        meal_type: assignment.meal_type.clone(),
+        course_type: assignment.course_type.clone(), // AC-5: Use course_type
         new_recipe_id: form.new_recipe_id.clone(),
     };
 
@@ -716,8 +721,12 @@ pub async fn post_replace_meal(
         .map(|hours| hours > 0)
         .unwrap_or(false);
 
-    // Render the updated meal slot HTML to return via TwinSpark
-    let border_color = match assignment.meal_type.as_str() {
+    // Render the updated meal slot HTML to return via TwinSpark (AC-5)
+    let border_color = match assignment.course_type.as_str() {
+        "appetizer" => "yellow",
+        "main_course" => "green",
+        "dessert" => "blue",
+        // Backward compatibility
         "breakfast" => "yellow",
         "lunch" => "green",
         "dinner" => "blue",
@@ -791,7 +800,7 @@ pub async fn post_replace_meal(
 </div>",
         assignment_id,
         border_color,
-        assignment.meal_type,
+        assignment.course_type,
         complexity_badge,
         replacement_recipe.id,
         escaped_title,
@@ -927,6 +936,7 @@ pub async fn post_regenerate_meal_plan(
             RecipeForPlanning {
                 id: r.id,
                 title: r.title,
+                recipe_type: r.recipe_type, // AC-4: Add recipe_type for course matching
                 ingredients_count: ingredients.len(),
                 instructions_count: instructions.len(),
                 prep_time_min: r.prep_time_min.map(|v| v as u32),
@@ -984,7 +994,7 @@ mod tests {
                 id: "assignment_yesterday".to_string(),
                 meal_plan_id: "plan1".to_string(),
                 date: yesterday.format("%Y-%m-%d").to_string(),
-                meal_type: "breakfast".to_string(),
+                course_type: "appetizer".to_string(), // AC-5: Use course_type instead of meal_type
                 recipe_id: "recipe1".to_string(),
                 prep_required: false,
                 assignment_reasoning: None,
@@ -993,7 +1003,7 @@ mod tests {
                 id: "assignment_today".to_string(),
                 meal_plan_id: "plan1".to_string(),
                 date: today.format("%Y-%m-%d").to_string(),
-                meal_type: "breakfast".to_string(),
+                course_type: "appetizer".to_string(), // AC-5: Use course_type instead of meal_type
                 recipe_id: "recipe2".to_string(),
                 prep_required: false,
                 assignment_reasoning: None,
@@ -1002,7 +1012,7 @@ mod tests {
                 id: "assignment_tomorrow".to_string(),
                 meal_plan_id: "plan1".to_string(),
                 date: tomorrow.format("%Y-%m-%d").to_string(),
-                meal_type: "breakfast".to_string(),
+                course_type: "appetizer".to_string(), // AC-5: Use course_type instead of meal_type
                 recipe_id: "recipe3".to_string(),
                 prep_required: false,
                 assignment_reasoning: None,

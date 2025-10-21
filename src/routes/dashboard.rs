@@ -26,9 +26,9 @@ pub struct TodayMealSlotData {
 /// Today's meals data for dashboard template (Story 3.9)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TodaysMealsData {
-    pub breakfast: Option<TodayMealSlotData>,
-    pub lunch: Option<TodayMealSlotData>,
-    pub dinner: Option<TodayMealSlotData>,
+    pub appetizer: Option<TodayMealSlotData>,   // AC-5: Course-based model
+    pub main_course: Option<TodayMealSlotData>, // AC-5: Course-based model
+    pub dessert: Option<TodayMealSlotData>,     // AC-5: Course-based model
     pub has_meal_plan: bool,
 }
 
@@ -99,9 +99,9 @@ pub async fn dashboard_handler(
 /// Helper: Map meal assignments to TodaysMealsData
 pub fn map_to_todays_meals(assignments: &[MealAssignmentWithRecipe]) -> TodaysMealsData {
     let mut data = TodaysMealsData {
-        breakfast: None,
-        lunch: None,
-        dinner: None,
+        appetizer: None,   // AC-5: Course-based model
+        main_course: None, // AC-5: Course-based model
+        dessert: None,     // AC-5: Course-based model
         has_meal_plan: true,
     };
 
@@ -126,10 +126,15 @@ pub fn map_to_todays_meals(assignments: &[MealAssignmentWithRecipe]) -> TodaysMe
             assignment_reasoning: assignment.assignment_reasoning.clone(),
         };
 
-        match assignment.meal_type.as_str() {
-            "breakfast" => data.breakfast = Some(slot_data),
-            "lunch" => data.lunch = Some(slot_data),
-            "dinner" => data.dinner = Some(slot_data),
+        // AC-5: Map course_type to slots (with backward compatibility)
+        match assignment.course_type.as_str() {
+            "appetizer" => data.appetizer = Some(slot_data),
+            "main_course" => data.main_course = Some(slot_data),
+            "dessert" => data.dessert = Some(slot_data),
+            // Backward compatibility for old data
+            "breakfast" => data.appetizer = Some(slot_data),
+            "lunch" => data.main_course = Some(slot_data),
+            "dinner" => data.dessert = Some(slot_data),
             _ => {}
         }
     }
