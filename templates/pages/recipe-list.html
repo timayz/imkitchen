@@ -135,10 +135,28 @@
                                 {% endif %}
                             {% endmatch %}
                         </h1>
-                        <a href="/recipes/new" class="px-3 py-2 md:px-4 md:py-2 text-sm md:text-base bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium">
-                            + New Recipe
-                        </a>
+                        <div class="flex gap-2 md:gap-3">
+                            {# Story 2.12 AC-1: Import Recipes button #}
+                            <button
+                                ts-req="/recipes/import-modal"
+                                ts-target="#import-modal"
+                                ts-swap="inner"
+                                class="px-3 py-2 md:px-4 md:py-2 text-sm md:text-base bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 font-medium inline-flex items-center gap-1 md:gap-2"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                                <span class="max-md:hidden">Import Recipes</span>
+                                <span class="md:hidden">Import</span>
+                            </button>
+                            <a href="/recipes/new" class="px-3 py-2 md:px-4 md:py-2 text-sm md:text-base bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium">
+                                + New Recipe
+                            </a>
+                        </div>
                     </div>
+
+                    {# Story 2.12 AC-2: Modal container for batch import #}
+                    <div id="import-modal"></div>
 
                     {% match active_collection %}
                     {% when Some with (collection_id) %}

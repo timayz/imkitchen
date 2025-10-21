@@ -17,3 +17,8 @@ pub use error::{RecipeError, RecipeResult};
 pub use events::*;
 pub use read_model::*;
 pub use tagging::*;
+
+// Re-export batch import types for convenience
+pub use commands::{
+    batch_import_recipes, BatchImportRecipe, BatchImportRecipesCommand, BatchImportResult,
+};
