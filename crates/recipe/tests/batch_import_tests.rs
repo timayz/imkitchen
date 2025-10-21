@@ -1,6 +1,6 @@
 use recipe::{
     batch_import_recipes, BatchImportRecipe, BatchImportRecipesCommand, Ingredient,
-    InstructionStep, RecipeAggregate, RecipeError,
+    InstructionStep, RecipeError,
 };
 use sqlx::{Pool, Sqlite, SqlitePool};
 
@@ -218,10 +218,7 @@ async fn test_batch_import_empty_array() {
 
     let result = batch_import_recipes(command, &user_id, &executor, &pool).await;
     assert!(matches!(result, Err(RecipeError::ValidationError(_))));
-    assert!(result
-        .unwrap_err()
-        .to_string()
-        .contains("No recipes found"));
+    assert!(result.unwrap_err().to_string().contains("No recipes found"));
 }
 
 /// AC-6: Test invalid recipe_type validation
