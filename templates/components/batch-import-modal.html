@@ -1,0 +1,100 @@
+{# Batch Import Modal - Story 2.12 AC-2, AC-3, AC-4 #}
+
+<!-- Modal Wrapper with backdrop -->
+<div class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="import-modal-title">
+    <!-- Backdrop -->
+    <div class="fixed inset-0 bg-gray-900/50 transition-opacity" aria-hidden="true"></div>
+
+    <!-- Modal Container -->
+    <div class="flex min-h-screen items-center justify-center p-4">
+    <div class="relative bg-white rounded-lg shadow-xl max-w-lg w-full">
+        <!-- Header -->
+        <div class="flex items-center justify-between p-6 border-b border-gray-200">
+            <h3 class="text-xl font-semibold text-gray-900">
+                Import Recipes
+            </h3>
+            <button
+                type="button"
+                class="touch-target inline-flex items-center justify-center text-gray-400 hover:text-gray-600 active:text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500 rounded transition-colors"
+                onclick="document.getElementById('import-modal').innerHTML = ''"
+                aria-label="Close modal"
+            >
+                <span class="sr-only">Close</span>
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6 space-y-4">
+            <p class="text-gray-700">
+                Upload a JSON file containing an array of recipes to import multiple recipes at once.
+            </p>
+
+            <!-- AC-3: Link to download example recipe JSON -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p class="text-sm text-blue-800 mb-2">
+                    <strong>Format Reference:</strong> Your file must contain a JSON array of recipe objects.
+                </p>
+                <a
+                    href="/static/example-recipe.json"
+                    download="example-recipe.json"
+                    class="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 underline"
+                >
+                    <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Download example-recipe.json
+                </a>
+            </div>
+
+            <!-- Upload Form -->
+            <form
+                ts-req="/recipes/import"
+                ts-req-method="POST"
+                ts-target="#import-modal"
+                ts-swap="inner"
+                enctype="multipart/form-data"
+            >
+                <!-- AC-4: File input accepts .json files only -->
+                <label for="recipes_file" class="block text-sm font-medium text-gray-700 mb-2">
+                    Select JSON file
+                </label>
+                <input
+                    type="file"
+                    id="recipes_file"
+                    name="recipes_file"
+                    accept=".json,application/json"
+                    required
+                    class="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    aria-describedby="file-help"
+                />
+                <p id="file-help" class="mt-2 text-sm text-gray-500">
+                    Only .json files are accepted
+                </p>
+
+                <!-- Actions -->
+                <div class="flex items-center justify-end space-x-3 mt-6">
+                    <button
+                        type="button"
+                        class="btn-secondary"
+                        onclick="document.getElementById('import-modal').innerHTML = ''"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="submit"
+                        class="btn-primary inline-flex items-center"
+                    >
+                        <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        Upload and Import
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    </div>
+</div>

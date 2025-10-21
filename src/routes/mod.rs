@@ -39,11 +39,11 @@ pub use profile::{
     post_profile, post_subscription_upgrade,
 };
 pub use recipes::{
-    check_recipe_exists, get_discover, get_discover_detail, get_ingredient_row,
+    check_recipe_exists, get_discover, get_discover_detail, get_import_modal, get_ingredient_row,
     get_instruction_row, get_recipe_detail, get_recipe_edit_form, get_recipe_form, get_recipe_list,
     get_recipe_waiting, post_add_to_library, post_create_recipe, post_delete_recipe,
-    post_delete_review, post_favorite_recipe, post_rate_recipe, post_share_recipe,
-    post_update_recipe, post_update_recipe_tags,
+    post_delete_review, post_favorite_recipe, post_import_recipes, post_rate_recipe,
+    post_share_recipe, post_update_recipe, post_update_recipe_tags,
 };
 pub use shopping::{
     check_shopping_item, generate_shopping_list_handler, refresh_shopping_list,

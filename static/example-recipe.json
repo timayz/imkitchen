@@ -1,0 +1,198 @@
+[
+  {
+    "title": "Classic Spaghetti Carbonara",
+    "recipe_type": "main_course",
+    "ingredients": [
+      {
+        "name": "Spaghetti",
+        "quantity": 400,
+        "unit": "g"
+      },
+      {
+        "name": "Pancetta",
+        "quantity": 150,
+        "unit": "g"
+      },
+      {
+        "name": "Egg yolks",
+        "quantity": 4,
+        "unit": "whole"
+      },
+      {
+        "name": "Parmesan cheese",
+        "quantity": 100,
+        "unit": "g"
+      },
+      {
+        "name": "Black pepper",
+        "quantity": 1,
+        "unit": "tsp"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Bring a large pot of salted water to boil and cook spaghetti according to package directions",
+        "timer_minutes": 10
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "While pasta cooks, fry pancetta in a large pan until crispy",
+        "timer_minutes": 5
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "In a bowl, whisk together egg yolks, grated Parmesan, and black pepper",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Reserve 1 cup pasta water, then drain pasta. Add pasta to pancetta pan",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 5,
+        "instruction_text": "Remove from heat, add egg mixture, toss quickly, adding pasta water to create creamy sauce",
+        "timer_minutes": null
+      }
+    ],
+    "prep_time_min": 10,
+    "cook_time_min": 15,
+    "advance_prep_hours": null,
+    "serving_size": 4
+  },
+  {
+    "title": "Caprese Salad",
+    "recipe_type": "appetizer",
+    "ingredients": [
+      {
+        "name": "Fresh mozzarella",
+        "quantity": 250,
+        "unit": "g"
+      },
+      {
+        "name": "Tomatoes",
+        "quantity": 3,
+        "unit": "whole"
+      },
+      {
+        "name": "Fresh basil",
+        "quantity": 1,
+        "unit": "bunch"
+      },
+      {
+        "name": "Extra virgin olive oil",
+        "quantity": 3,
+        "unit": "tbsp"
+      },
+      {
+        "name": "Balsamic glaze",
+        "quantity": 2,
+        "unit": "tbsp"
+      },
+      {
+        "name": "Salt",
+        "quantity": 1,
+        "unit": "tsp"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Slice tomatoes and mozzarella into 1/4 inch thick rounds",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "Arrange tomato and mozzarella slices alternating on a plate",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Tuck fresh basil leaves between slices",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Drizzle with olive oil and balsamic glaze, season with salt",
+        "timer_minutes": null
+      }
+    ],
+    "prep_time_min": 10,
+    "cook_time_min": null,
+    "advance_prep_hours": null,
+    "serving_size": 4
+  },
+  {
+    "title": "Chocolate Lava Cake",
+    "recipe_type": "dessert",
+    "ingredients": [
+      {
+        "name": "Dark chocolate",
+        "quantity": 200,
+        "unit": "g"
+      },
+      {
+        "name": "Butter",
+        "quantity": 100,
+        "unit": "g"
+      },
+      {
+        "name": "Eggs",
+        "quantity": 2,
+        "unit": "whole"
+      },
+      {
+        "name": "Egg yolks",
+        "quantity": 2,
+        "unit": "whole"
+      },
+      {
+        "name": "Sugar",
+        "quantity": 60,
+        "unit": "g"
+      },
+      {
+        "name": "All-purpose flour",
+        "quantity": 40,
+        "unit": "g"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Preheat oven to 425°F (220°C). Butter and flour 4 ramekins",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "Melt chocolate and butter together in a double boiler",
+        "timer_minutes": 5
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Whisk eggs, egg yolks, and sugar until thick and pale",
+        "timer_minutes": 3
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Fold chocolate mixture into eggs, then gently fold in flour",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 5,
+        "instruction_text": "Divide batter among ramekins and bake until edges are set but center jiggles",
+        "timer_minutes": 12
+      },
+      {
+        "step_number": 6,
+        "instruction_text": "Let cool 1 minute, then invert onto plates and serve immediately",
+        "timer_minutes": 1
+      }
+    ],
+    "prep_time_min": 15,
+    "cook_time_min": 12,
+    "advance_prep_hours": null,
+    "serving_size": 4
+  }
+]

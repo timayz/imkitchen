@@ -830,6 +830,51 @@ pub struct CopyRecipeCommand {
     pub original_recipe_id: String, // ID of the original community recipe to copy
 }
 
+/// BatchImportRecipe represents a single recipe in a batch import
+///
+/// Identical structure to CreateRecipeCommand but used for JSON deserialization
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+pub struct BatchImportRecipe {
+    #[validate(length(
+        min = 3,
+        max = 200,
+        message = "Title must be between 3 and 200 characters"
+    ))]
+    pub title: String,
+
+    #[validate(custom(function = "validate_recipe_type"))]
+    pub recipe_type: String,
+
+    #[validate(length(min = 1, message = "At least 1 ingredient is required"))]
+    pub ingredients: Vec<Ingredient>,
+
+    #[validate(length(min = 1, message = "At least 1 instruction step is required"))]
+    pub instructions: Vec<InstructionStep>,
+
+    pub prep_time_min: Option<u32>,
+    pub cook_time_min: Option<u32>,
+    pub advance_prep_hours: Option<u32>,
+    pub serving_size: Option<u32>,
+}
+
+/// BatchImportRecipesCommand represents a batch import operation
+///
+/// AC-5: Contains array of recipes (not single recipe)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BatchImportRecipesCommand {
+    pub recipes: Vec<BatchImportRecipe>,
+}
+
+/// BatchImportResult contains the outcome of a batch import operation
+///
+/// AC-9, AC-10: Tracks successful imports and failures with error details
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BatchImportResult {
+    pub successful_recipe_ids: Vec<String>, // Recipe IDs that were successfully imported
+    pub failed_imports: Vec<(usize, String)>, // (index, error_message) for failed recipes
+    pub total_attempted: usize,             // Total number of recipes in the batch
+}
+
 /// Copy a community recipe to user's personal library using evento event sourcing pattern
 ///
 /// AC-2: Copies recipe to user's personal library with full recipe data duplicated
@@ -971,4 +1016,90 @@ pub async fn copy_recipe(
 
     // Return the new recipe ID
     Ok(new_recipe_id)
+}
+
+/// Batch import multiple recipes using evento event sourcing pattern
+///
+/// AC-5, AC-6, AC-7, AC-8, AC-9, AC-12:
+/// 1. Validates array is non-empty
+/// 2. Checks free tier limit upfront (current_count + import_count <= 10)
+/// 3. Loops through recipes, validates each, calls create_recipe()
+/// 4. Collects successful recipe IDs and failures with error messages
+/// 5. Returns BatchImportResult with counts and details
+/// 6. Partial success: some recipes can succeed while others fail (no rollback)
+///
+/// Free tier enforcement: Checks total count upfront to prevent partial success with limit exceeded.
+/// If the batch would exceed the limit, the entire batch is rejected with RecipeLimitReached error.
+pub async fn batch_import_recipes(
+    command: BatchImportRecipesCommand,
+    user_id: &str,
+    executor: &Sqlite,
+    pool: &SqlitePool,
+) -> RecipeResult<BatchImportResult> {
+    // AC-5: Validate array is non-empty
+    if command.recipes.is_empty() {
+        return Err(RecipeError::ValidationError(
+            "No recipes found in file".to_string(),
+        ));
+    }
+
+    // AC-8: Check free tier limit upfront
+    // Load user aggregate to check tier and recipe count
+    let user_load_result = evento::load::<UserAggregate, _>(executor, user_id)
+        .await
+        .map_err(|e| RecipeError::EventStoreError(e.to_string()))?;
+
+    // Check if user exists
+    if user_load_result.item.user_id.is_empty() {
+        return Err(RecipeError::ValidationError("User not found".to_string()));
+    }
+
+    // Premium users bypass all limits
+    if user_load_result.item.tier != "premium" {
+        // Free tier users limited to 10 recipes
+        // Check if (current_count + import_count) > 10
+        let current_count = user_load_result.item.recipe_count;
+        let import_count = command.recipes.len() as i32;
+
+        if current_count + import_count > 10 {
+            return Err(RecipeError::RecipeLimitReached);
+        }
+    }
+
+    let total_attempted = command.recipes.len();
+    let mut successful_recipe_ids = Vec::new();
+    let mut failed_imports: Vec<(usize, String)> = Vec::new();
+
+    // AC-6, AC-9, AC-12: Loop through recipes and import each
+    for (index, recipe) in command.recipes.into_iter().enumerate() {
+        // Convert BatchImportRecipe to CreateRecipeCommand
+        let create_cmd = CreateRecipeCommand {
+            title: recipe.title,
+            recipe_type: recipe.recipe_type,
+            ingredients: recipe.ingredients,
+            instructions: recipe.instructions,
+            prep_time_min: recipe.prep_time_min,
+            cook_time_min: recipe.cook_time_min,
+            advance_prep_hours: recipe.advance_prep_hours,
+            serving_size: recipe.serving_size,
+        };
+
+        // Attempt to create recipe using existing create_recipe function
+        match create_recipe(create_cmd, user_id, executor, pool).await {
+            Ok(recipe_id) => {
+                successful_recipe_ids.push(recipe_id);
+            }
+            Err(e) => {
+                // Collect error with recipe index for user feedback
+                failed_imports.push((index, e.to_string()));
+            }
+        }
+    }
+
+    // AC-9: Return result with success/failure counts
+    Ok(BatchImportResult {
+        successful_recipe_ids,
+        failed_imports,
+        total_attempted,
+    })
 }

@@ -1,18 +1,18 @@
 use askama::Template;
 use axum::{
-    extract::{Path, Query, State},
+    extract::{Multipart, Path, Query, State},
     http::StatusCode,
     response::{Html, IntoResponse, Response},
     Extension, Form,
 };
 use recipe::{
-    copy_recipe, create_recipe, delete_recipe, favorite_recipe, list_shared_recipes,
-    query_collections_by_user, query_collections_for_recipe, query_recipe_by_id,
-    query_recipes_by_collection, query_recipes_by_user, share_recipe, update_recipe,
-    update_recipe_tags, CollectionReadModel, CopyRecipeCommand, CreateRecipeCommand,
-    DeleteRecipeCommand, FavoriteRecipeCommand, Ingredient, InstructionStep,
-    RecipeDiscoveryFilters, RecipeError, ShareRecipeCommand, UpdateRecipeCommand,
-    UpdateRecipeTagsCommand,
+    batch_import_recipes, copy_recipe, create_recipe, delete_recipe, favorite_recipe,
+    list_shared_recipes, query_collections_by_user, query_collections_for_recipe,
+    query_recipe_by_id, query_recipes_by_collection, query_recipes_by_user, share_recipe,
+    update_recipe, update_recipe_tags, BatchImportRecipe, BatchImportRecipesCommand,
+    CollectionReadModel, CopyRecipeCommand, CreateRecipeCommand, DeleteRecipeCommand,
+    FavoriteRecipeCommand, Ingredient, InstructionStep, RecipeDiscoveryFilters, RecipeError,
+    ShareRecipeCommand, UpdateRecipeCommand, UpdateRecipeTagsCommand,
 };
 use serde::Deserialize;
 use sqlx::Row;
@@ -2005,6 +2005,167 @@ pub async fn post_delete_review(
         Err(e) => {
             tracing::error!("Failed to delete review: {:?}", e);
             (StatusCode::INTERNAL_SERVER_ERROR, "Failed to delete review").into_response()
+        }
+    }
+}
+
+// ============================================================================
+// Batch Import Routes (Story 2.12)
+// ============================================================================
+
+/// Template for batch import modal (AC-2, AC-3, AC-4)
+#[derive(Template)]
+#[template(path = "components/batch-import-modal.html")]
+pub struct BatchImportModalTemplate {
+    pub user: Option<Auth>,
+}
+
+/// Template for batch import results (AC-10)
+#[derive(Template)]
+#[template(path = "components/batch-import-results.html")]
+pub struct BatchImportResultsTemplate {
+    pub successful_count: usize,
+    pub failed_count: usize,
+    pub total_attempted: usize,
+    pub failures: Vec<(usize, String)>,
+    pub user: Option<Auth>,
+}
+
+/// GET /recipes/import-modal - Render batch import modal (AC-2)
+#[tracing::instrument(skip(auth))]
+pub async fn get_import_modal(Extension(auth): Extension<Auth>) -> impl IntoResponse {
+    let template = BatchImportModalTemplate {
+        user: Some(auth),
+    };
+    Html(template.render().unwrap())
+}
+
+/// POST /recipes/import - Handle batch recipe import (AC-4, AC-5, AC-6, AC-7, AC-8, AC-9, AC-10)
+#[tracing::instrument(skip(state, auth, multipart), fields(user_id = %auth.user_id))]
+pub async fn post_import_recipes(
+    State(state): State<AppState>,
+    Extension(auth): Extension<Auth>,
+    mut multipart: Multipart,
+) -> Response {
+    // AC-4: Extract file contents from multipart form data
+    let mut file_content: Option<String> = None;
+
+    while let Ok(Some(field)) = multipart.next_field().await {
+        if field.name() == Some("recipes_file") {
+            // Read file bytes
+            match field.bytes().await {
+                Ok(bytes) => {
+                    // Convert bytes to string
+                    match String::from_utf8(bytes.to_vec()) {
+                        Ok(content) => {
+                            file_content = Some(content);
+                        }
+                        Err(e) => {
+                            tracing::error!("Failed to parse file as UTF-8: {:?}", e);
+                            return (
+                                StatusCode::UNPROCESSABLE_ENTITY,
+                                "File must be valid UTF-8 text",
+                            )
+                                .into_response();
+                        }
+                    }
+                }
+                Err(e) => {
+                    tracing::error!("Failed to read file bytes: {:?}", e);
+                    return (
+                        StatusCode::UNPROCESSABLE_ENTITY,
+                        "Failed to read file contents",
+                    )
+                        .into_response();
+                }
+            }
+        }
+    }
+
+    let file_content = match file_content {
+        Some(content) => content,
+        None => {
+            return (StatusCode::BAD_REQUEST, "No file uploaded").into_response();
+        }
+    };
+
+    // AC-5: Parse JSON to Vec<BatchImportRecipe>
+    let recipes: Vec<BatchImportRecipe> = match serde_json::from_str(&file_content) {
+        Ok(r) => r,
+        Err(e) => {
+            tracing::error!("Failed to parse JSON: {:?}", e);
+            return (
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "Invalid JSON format. Please check your file syntax.",
+            )
+                .into_response();
+        }
+    };
+
+    // AC-5: Validate root is array (not single object) - already handled by Vec deserialization
+    // AC-5: Validate array is non-empty
+    if recipes.is_empty() {
+        return (StatusCode::UNPROCESSABLE_ENTITY, "No recipes found in file").into_response();
+    }
+
+    // Create batch import command
+    let command = BatchImportRecipesCommand { recipes };
+
+    // AC-6, AC-7, AC-8, AC-9, AC-12: Execute batch import
+    match batch_import_recipes(command, &auth.user_id, &state.evento_executor, &state.db_pool)
+        .await
+    {
+        Ok(result) => {
+            // AC-10: Render results modal with success/failure counts
+            let successful_count = result.successful_recipe_ids.len();
+            let failed_count = result.failed_imports.len();
+
+            tracing::info!(
+                user_id = %auth.user_id,
+                successful = successful_count,
+                failed = failed_count,
+                "Batch import completed"
+            );
+
+            let template = BatchImportResultsTemplate {
+                successful_count,
+                failed_count,
+                total_attempted: result.total_attempted,
+                failures: result.failed_imports,
+                user: Some(auth.clone()),
+            };
+
+            (StatusCode::OK, Html(template.render().unwrap())).into_response()
+        }
+        Err(RecipeError::RecipeLimitReached) => {
+            // AC-8: Free tier limit exceeded
+            tracing::warn!(
+                user_id = %auth.user_id,
+                "Batch import rejected: free tier limit exceeded"
+            );
+            (
+                StatusCode::FORBIDDEN,
+                "Import would exceed free tier limit (10 recipes maximum)",
+            )
+                .into_response()
+        }
+        Err(RecipeError::ValidationError(msg)) => {
+            // AC-5: Validation error (empty array, etc.)
+            tracing::warn!(
+                user_id = %auth.user_id,
+                error = %msg,
+                "Batch import validation failed"
+            );
+            (StatusCode::UNPROCESSABLE_ENTITY, msg).into_response()
+        }
+        Err(e) => {
+            // Database error or other unexpected error
+            tracing::error!("Batch import failed: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Server error during import. Please try again.",
+            )
+                .into_response()
         }
     }
 }
