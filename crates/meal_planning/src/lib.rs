@@ -14,8 +14,8 @@ pub use commands::{
     ReplaceMealCommand,
 };
 pub use constraints::{
-    AdvancePrepConstraint, AvailabilityConstraint, ComplexityConstraint, Constraint,
-    DietaryConstraint, EquipmentConflictConstraint, FreshnessConstraint, MealSlot, MealType,
+    AdvancePrepConstraint, AvailabilityConstraint, ComplexityConstraint, Constraint, CourseType,
+    DietaryConstraint, EquipmentConflictConstraint, FreshnessConstraint, MealSlot,
 };
 pub use error::MealPlanningError;
 pub use events::{
@@ -61,6 +61,7 @@ mod tests {
         RecipeForPlanning {
             id: id.to_string(),
             title: format!("Test Recipe {}", id),
+            recipe_type: "main_course".to_string(), // AC-4: Add recipe_type
             ingredients_count: 5,
             instructions_count: 4,
             prep_time_min: Some(15),

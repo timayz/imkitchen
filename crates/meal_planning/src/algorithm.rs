@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 pub struct RecipeForPlanning {
     pub id: String,
     pub title: String,
+    pub recipe_type: String,       // AC-4: "appetizer", "main_course", or "dessert"
     pub ingredients_count: usize,  // Count of ingredients
     pub instructions_count: usize, // Count of instruction steps
     pub prep_time_min: Option<u32>,
@@ -349,17 +350,19 @@ impl MealPlanningAlgorithm {
             let date = start + chrono::Duration::days(day_offset);
             let date_str = date.format("%Y-%m-%d").to_string();
 
-            // Assign breakfast, lunch, dinner for this day
-            for meal_type_enum in [MealType::Breakfast, MealType::Lunch, MealType::Dinner] {
+            // AC-4: Assign appetizer, main_course, dessert for this day
+            use crate::constraints::CourseType;
+            for course_type_enum in [CourseType::Appetizer, CourseType::MainCourse, CourseType::Dessert] {
                 let slot = MealSlot {
                     date,
-                    meal_type: meal_type_enum.clone(),
+                    course_type: course_type_enum.clone(),
                 };
 
-                // Score all available recipes for this slot
+                // AC-4: Filter recipes by matching course type
                 let mut scored_recipes: Vec<(f32, &RecipeForPlanning)> = available_recipes
                     .iter()
                     .filter(|r| !used_recipe_ids.contains(&r.id)) // Skip already-used recipes
+                    .filter(|r| r.recipe_type == course_type_enum.as_str()) // AC-4: Match course type
                     .map(|r| {
                         let score =
                             Self::score_recipe_for_slot(r, &slot, &constraints, &day_assignments);
@@ -375,13 +378,24 @@ impl MealPlanningAlgorithm {
                     Some((score, recipe)) if *score > 0.0 => recipe,
                     _ => {
                         // Fallback: no recipe scores > 0 (all disqualified by hard constraints)
-                        // Use first available recipe anyway (soft constraint violation acceptable)
+                        // Try to find unused recipe of matching type
                         available_recipes
                             .iter()
-                            .find(|r| !used_recipe_ids.contains(&r.id))
+                            .find(|r| !used_recipe_ids.contains(&r.id) && r.recipe_type == course_type_enum.as_str())
+                            .or_else(|| {
+                                // Main courses must be unique - never allow reuse
+                                if course_type_enum.as_str() == "main_course" {
+                                    None
+                                } else {
+                                    // For appetizers and desserts, allow reuse if needed
+                                    available_recipes
+                                        .iter()
+                                        .find(|r| r.recipe_type == course_type_enum.as_str())
+                                }
+                            })
                             .ok_or(MealPlanningError::InsufficientRecipes {
-                                minimum: 21,
-                                current: available_recipes.len(),
+                                minimum: if course_type_enum.as_str() == "main_course" { 7 } else { 1 },
+                                current: available_recipes.iter().filter(|r| r.recipe_type == course_type_enum.as_str()).count(),
                             })?
                     }
                 };
@@ -394,10 +408,10 @@ impl MealPlanningAlgorithm {
                 let assignment_reasoning =
                     generate_reasoning_text(selected_recipe, &slot, &constraints);
 
-                // Create assignment
+                // Create assignment (AC-4: use course_type)
                 assignments.push(MealAssignment {
                     date: date_str.clone(),
-                    meal_type: meal_type_enum.as_str().to_string(),
+                    course_type: course_type_enum.as_str().to_string(),
                     recipe_id: selected_recipe.id.clone(),
                     prep_required,
                     assignment_reasoning: Some(assignment_reasoning),
@@ -406,7 +420,7 @@ impl MealPlanningAlgorithm {
                 // Track day assignments for equipment conflict detection
                 day_assignments.push(DayAssignment {
                     date,
-                    meal_type: meal_type_enum.clone(),
+                    course_type: course_type_enum.clone(),
                     recipe_id: selected_recipe.id.clone(),
                 });
 
@@ -449,6 +463,7 @@ mod tests {
         RecipeForPlanning {
             id: id.to_string(),
             title: format!("Recipe {}", id),
+            recipe_type: "dessert".to_string(), // AC-4: Add recipe_type (default to dessert for tests)
             ingredients_count: ingredients,
             instructions_count: steps,
             prep_time_min: Some(15),
@@ -614,7 +629,7 @@ mod tests {
         let tuesday = chrono::NaiveDate::from_ymd_opt(2025, 10, 21).unwrap();
         let slot = MealSlot {
             date: tuesday,
-            meal_type: MealType::Dinner,
+            course_type: CourseType::Dessert, // AC-4: Dinner → Dessert
         };
 
         let score =
@@ -638,7 +653,7 @@ mod tests {
         let saturday = chrono::NaiveDate::from_ymd_opt(2025, 10, 25).unwrap();
         let slot = MealSlot {
             date: saturday,
-            meal_type: MealType::Dinner,
+            course_type: CourseType::Dessert, // AC-4: Dinner → Dessert
         };
 
         let score =
@@ -664,7 +679,7 @@ mod tests {
         let monday = chrono::NaiveDate::from_ymd_opt(2025, 10, 20).unwrap();
         let slot_monday = MealSlot {
             date: monday,
-            meal_type: MealType::Dinner,
+            course_type: CourseType::Dessert, // AC-4: Dinner → Dessert
         };
         let score_monday = MealPlanningAlgorithm::score_recipe_for_slot(
             &recipe,
@@ -677,7 +692,7 @@ mod tests {
         let friday = chrono::NaiveDate::from_ymd_opt(2025, 10, 24).unwrap();
         let slot_friday = MealSlot {
             date: friday,
-            meal_type: MealType::Dinner,
+            course_type: CourseType::Dessert, // AC-4: Dinner → Dessert
         };
         let score_friday = MealPlanningAlgorithm::score_recipe_for_slot(
             &recipe,

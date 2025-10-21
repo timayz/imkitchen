@@ -24,7 +24,7 @@ pub struct MealAssignmentReadModel {
     pub id: String,
     pub meal_plan_id: String,
     pub date: String,
-    pub meal_type: String, // "breakfast", "lunch", "dinner"
+    pub course_type: String, // AC-5: "appetizer", "main_course", "dessert" (renamed from meal_type)
     pub recipe_id: String,
     pub prep_required: bool,
     pub assignment_reasoning: Option<String>, // Story 3.8: Human-readable assignment explanation
@@ -94,10 +94,10 @@ impl MealPlanQueries {
     ) -> Result<Vec<MealAssignmentReadModel>, sqlx::Error> {
         sqlx::query_as::<_, MealAssignmentReadModel>(
             r#"
-            SELECT id, meal_plan_id, date, meal_type, recipe_id, prep_required, assignment_reasoning
+            SELECT id, meal_plan_id, date, course_type, recipe_id, prep_required, assignment_reasoning
             FROM meal_assignments
             WHERE meal_plan_id = ?1
-            ORDER BY date, meal_type
+            ORDER BY date, course_type
             "#,
         )
         .bind(meal_plan_id)
@@ -333,7 +333,7 @@ impl MealPlanQueries {
                 ma.id,
                 ma.meal_plan_id,
                 ma.date,
-                ma.meal_type,
+                ma.course_type,
                 ma.recipe_id,
                 ma.prep_required,
                 ma.assignment_reasoning,
@@ -349,7 +349,10 @@ impl MealPlanQueries {
               AND mp.status = 'active'
               AND ma.date = DATE('now')
             ORDER BY
-              CASE ma.meal_type
+              CASE ma.course_type
+                WHEN 'appetizer' THEN 1
+                WHEN 'main_course' THEN 2
+                WHEN 'dessert' THEN 3
                 WHEN 'breakfast' THEN 1
                 WHEN 'lunch' THEN 2
                 WHEN 'dinner' THEN 3
@@ -369,7 +372,7 @@ pub struct MealAssignmentWithRecipe {
     pub id: String,
     pub meal_plan_id: String,
     pub date: String,
-    pub meal_type: String,
+    pub course_type: String, // AC-5: Renamed from meal_type
     pub recipe_id: String,
     pub prep_required: bool,
     pub assignment_reasoning: Option<String>,
@@ -441,14 +444,14 @@ pub async fn meal_plan_generated_handler<E: Executor>(
         let assignment_id = Uuid::new_v4().to_string();
         sqlx::query(
             r#"
-            INSERT INTO meal_assignments (id, meal_plan_id, date, meal_type, recipe_id, prep_required, assignment_reasoning)
+            INSERT INTO meal_assignments (id, meal_plan_id, date, course_type, recipe_id, prep_required, assignment_reasoning)
             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
             "#,
         )
         .bind(assignment_id)
         .bind(&event.aggregator_id)
         .bind(&assignment.date)
-        .bind(assignment.meal_type.as_str())
+        .bind(&assignment.course_type) // AC-4: Changed from meal_type
         .bind(&assignment.recipe_id)
         .bind(assignment.prep_required)
         .bind(&assignment.assignment_reasoning)
@@ -574,14 +577,14 @@ pub async fn meal_replaced_handler<E: Executor>(
         r#"
         UPDATE meal_assignments
         SET recipe_id = ?1, prep_required = ?2, assignment_reasoning = NULL
-        WHERE meal_plan_id = ?3 AND date = ?4 AND meal_type = ?5
+        WHERE meal_plan_id = ?3 AND date = ?4 AND course_type = ?5
         "#,
     )
     .bind(&event.data.new_recipe_id)
     .bind(prep_required)
     .bind(&event.aggregator_id)
     .bind(&event.data.date)
-    .bind(&event.data.meal_type)
+    .bind(&event.data.course_type) // AC-5: Changed from meal_type
     .execute(&mut *tx)
     .await?;
 
@@ -688,14 +691,14 @@ pub async fn meal_plan_regenerated_handler<E: Executor>(
         let assignment_id = Uuid::new_v4().to_string();
         sqlx::query(
             r#"
-            INSERT INTO meal_assignments (id, meal_plan_id, date, meal_type, recipe_id, prep_required, assignment_reasoning)
+            INSERT INTO meal_assignments (id, meal_plan_id, date, course_type, recipe_id, prep_required, assignment_reasoning)
             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
             "#,
         )
         .bind(assignment_id)
         .bind(&event.aggregator_id)
         .bind(&assignment.date)
-        .bind(&assignment.meal_type)
+        .bind(&assignment.course_type) // AC-4: Changed from meal_type
         .bind(&assignment.recipe_id)
         .bind(assignment.prep_required)
         .bind(&assignment.assignment_reasoning)

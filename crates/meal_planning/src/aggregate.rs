@@ -156,8 +156,9 @@ impl MealPlanAggregate {
         Ok(())
     }
 
-    /// Handle MealReplaced event to update a specific meal assignment
+    /// Handle MealReplaced event to update a specific course assignment
     ///
+    /// AC-5: Updated to use course_type instead of meal_type
     /// This event handler supports the "Replace Individual Meal" feature (Story 3.2)
     /// by swapping out a single recipe while preserving the rest of the plan.
     ///
@@ -167,11 +168,11 @@ impl MealPlanAggregate {
         &mut self,
         event: evento::EventDetails<MealReplaced>,
     ) -> anyhow::Result<()> {
-        // Find the meal assignment matching the date and meal_type
+        // Find the meal assignment matching the date and course_type (AC-5)
         if let Some(assignment) = self
             .meal_assignments
             .iter_mut()
-            .find(|a| a.date == event.data.date && a.meal_type == event.data.meal_type)
+            .find(|a| a.date == event.data.date && a.course_type == event.data.course_type)
         {
             assignment.recipe_id = event.data.new_recipe_id.clone();
         }

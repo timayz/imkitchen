@@ -2,40 +2,50 @@ use bincode::{Decode, Encode};
 use evento::AggregatorName;
 use serde::{Deserialize, Serialize};
 
-/// MealType enum for meal slot classification
+/// CourseType enum for course slot classification (AC-4)
+/// Renamed from MealType to reflect new course-based meal planning model
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-pub enum MealType {
-    Breakfast,
-    Lunch,
-    Dinner,
+pub enum CourseType {
+    Appetizer,
+    MainCourse,
+    Dessert,
 }
 
-impl MealType {
+impl CourseType {
     pub fn as_str(&self) -> &str {
         match self {
-            MealType::Breakfast => "breakfast",
-            MealType::Lunch => "lunch",
-            MealType::Dinner => "dinner",
+            CourseType::Appetizer => "appetizer",
+            CourseType::MainCourse => "main_course",
+            CourseType::Dessert => "dessert",
         }
     }
 
     pub fn parse(s: &str) -> Result<Self, String> {
         match s.to_lowercase().as_str() {
-            "breakfast" => Ok(MealType::Breakfast),
-            "lunch" => Ok(MealType::Lunch),
-            "dinner" => Ok(MealType::Dinner),
-            _ => Err(format!("Invalid meal type: {}", s)),
+            "appetizer" => Ok(CourseType::Appetizer),
+            "main_course" => Ok(CourseType::MainCourse),
+            "dessert" => Ok(CourseType::Dessert),
+            // AC-9: Backward compatibility for old data
+            "breakfast" => Ok(CourseType::Appetizer),
+            "lunch" => Ok(CourseType::MainCourse),
+            "dinner" => Ok(CourseType::Dessert),
+            _ => Err(format!("Invalid course type: {}", s)),
         }
     }
 }
 
-/// Meal assignment representing a single recipe assigned to a meal slot
+// Keep old MealType as deprecated alias for backward compatibility
+#[deprecated(since = "0.5.0", note = "Use CourseType instead")]
+pub type MealType = CourseType;
+
+/// Meal assignment representing a single recipe assigned to a course slot
 ///
-/// Note: meal_type stored as String for bincode compatibility (like complexity in RecipeTagged)
+/// AC-4: Renamed meal_type to course_type to reflect course-based model
+/// Note: course_type stored as String for bincode compatibility (like complexity in RecipeTagged)
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 pub struct MealAssignment {
     pub date: String,                         // ISO 8601 date (YYYY-MM-DD)
-    pub meal_type: String,                    // "breakfast", "lunch", or "dinner"
+    pub course_type: String,                  // AC-4: "appetizer", "main_course", or "dessert" (renamed from meal_type)
     pub recipe_id: String,                    // Recipe assigned to this slot
     pub prep_required: bool,                  // True if recipe has advance_prep_hours > 0
     pub assignment_reasoning: Option<String>, // Human-readable explanation of assignment (Story 3.8)
@@ -95,16 +105,17 @@ pub struct MealPlanArchived {
     pub archived_at: String, // RFC3339 formatted timestamp
 }
 
-/// MealReplaced event emitted when a user replaces a specific meal slot
+/// MealReplaced event emitted when a user replaces a specific course slot
 ///
+/// AC-5: Updated to use course_type instead of meal_type
 /// This event supports the "Replace Meal" feature (Story 3.2) allowing users
-/// to swap out a single meal while preserving the rest of the plan.
+/// to swap out a single course while preserving the rest of the plan.
 ///
 /// Note: meal_plan_id is provided by event.aggregator_id, not stored in event data
 #[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
 pub struct MealReplaced {
-    pub date: String,          // ISO 8601 date of the meal slot
-    pub meal_type: String,     // "breakfast", "lunch", or "dinner"
+    pub date: String,          // ISO 8601 date of the course slot
+    pub course_type: String,   // AC-5: "appetizer", "main_course", or "dessert" (renamed from meal_type)
     pub old_recipe_id: String, // Recipe being replaced
     pub new_recipe_id: String, // Replacement recipe
     pub replaced_at: String,   // RFC3339 formatted timestamp

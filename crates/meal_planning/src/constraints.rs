@@ -4,30 +4,34 @@ use crate::algorithm::{
 use chrono::{Datelike, NaiveDate, Weekday};
 use serde::{Deserialize, Serialize};
 
-/// Meal slot represents a specific meal on a specific date
+/// Course slot represents a specific course on a specific date (AC-4)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MealSlot {
     pub date: NaiveDate,
-    pub meal_type: MealType,
+    pub course_type: CourseType, // AC-4: Renamed from meal_type
 }
 
-/// Meal type enum
+/// Course type enum (AC-4)
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub enum MealType {
-    Breakfast,
-    Lunch,
-    Dinner,
+pub enum CourseType {
+    Appetizer,
+    MainCourse,
+    Dessert,
 }
 
-impl MealType {
+impl CourseType {
     pub fn as_str(&self) -> &str {
         match self {
-            MealType::Breakfast => "breakfast",
-            MealType::Lunch => "lunch",
-            MealType::Dinner => "dinner",
+            CourseType::Appetizer => "appetizer",
+            CourseType::MainCourse => "main_course",
+            CourseType::Dessert => "dessert",
         }
     }
 }
+
+// Deprecated alias for backward compatibility
+#[deprecated(since = "0.5.0", note = "Use CourseType instead")]
+pub type MealType = CourseType;
 
 impl MealSlot {
     pub fn is_weekend(&self) -> bool {
@@ -45,7 +49,7 @@ impl MealSlot {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DayAssignment {
     pub date: NaiveDate,
-    pub meal_type: MealType,
+    pub course_type: CourseType, // AC-4: Renamed from meal_type
     pub recipe_id: String,
 }
 
