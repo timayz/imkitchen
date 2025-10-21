@@ -2034,9 +2034,7 @@ pub struct BatchImportResultsTemplate {
 /// GET /recipes/import-modal - Render batch import modal (AC-2)
 #[tracing::instrument(skip(auth))]
 pub async fn get_import_modal(Extension(auth): Extension<Auth>) -> impl IntoResponse {
-    let template = BatchImportModalTemplate {
-        user: Some(auth),
-    };
+    let template = BatchImportModalTemplate { user: Some(auth) };
     Html(template.render().unwrap())
 }
 
@@ -2112,8 +2110,13 @@ pub async fn post_import_recipes(
     let command = BatchImportRecipesCommand { recipes };
 
     // AC-6, AC-7, AC-8, AC-9, AC-12: Execute batch import
-    match batch_import_recipes(command, &auth.user_id, &state.evento_executor, &state.db_pool)
-        .await
+    match batch_import_recipes(
+        command,
+        &auth.user_id,
+        &state.evento_executor,
+        &state.db_pool,
+    )
+    .await
     {
         Ok(result) => {
             // AC-10: Render results modal with success/failure counts
