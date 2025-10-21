@@ -221,7 +221,7 @@ pub async fn generate_shopping_list_handler(
         let recipe: Option<recipe::read_model::RecipeReadModel> =
             sqlx::query_as::<_, recipe::read_model::RecipeReadModel>(
                 r#"
-                SELECT id, user_id, title, ingredients, instructions, prep_time_min, cook_time_min,
+                SELECT id, user_id, title, recipe_type, ingredients, instructions, prep_time_min, cook_time_min,
                        advance_prep_hours, serving_size, is_favorite, is_shared, complexity, cuisine,
                        dietary_tags, created_at, updated_at
                 FROM recipes
