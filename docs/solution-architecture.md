@@ -71,6 +71,22 @@ imkitchen is an intelligent meal planning platform built as a Progressive Web Ap
 
 ## 2. Application Architecture
 
+### 2.0 Meal Planning Model
+
+**Updated Model (v2.0)**: Each day has a **single lunch** composed of three courses:
+- **Appetizer**: Starter/first course
+- **Main Course**: Primary dish (main entrée)
+- **Dessert**: Sweet course
+
+**Recipe Classification**: Every recipe must specify its `recipe_type` (appetizer, main_course, or dessert) at creation/editing time. This type determines which course slot it can fill in the meal plan.
+
+**Meal Plan Structure**: 7 days × 3 courses = **21 course assignments** (previously 21 meal assignments for breakfast/lunch/dinner)
+
+**Algorithm Changes**: The meal planning algorithm assigns recipes based on:
+1. Course type matching (appetizer recipes → appetizer slots, main_course recipes → main_course slots, dessert recipes → dessert slots)
+2. Rotation logic (favorites used once before repeating)
+3. User constraints (dietary restrictions, prep time availability)
+
 ### 2.1 Architecture Pattern: Event-Sourced Monolith
 
 **Pattern**: Event-sourced monolithic application with DDD bounded contexts
@@ -303,6 +319,7 @@ CREATE TABLE recipes (
   cook_time_min INTEGER,
   advance_prep_hours INTEGER,    -- NULL if no advance prep
   serving_size INTEGER,
+  recipe_type TEXT NOT NULL,     -- "appetizer"|"main_course"|"dessert" (REQUIRED for meal planning)
   is_favorite BOOLEAN DEFAULT FALSE,
   is_shared BOOLEAN DEFAULT FALSE,
   complexity TEXT,               -- simple|moderate|complex
@@ -315,6 +332,7 @@ CREATE TABLE recipes (
 CREATE INDEX idx_recipes_user_id ON recipes(user_id);
 CREATE INDEX idx_recipes_favorite ON recipes(user_id, is_favorite);
 CREATE INDEX idx_recipes_shared ON recipes(is_shared) WHERE is_shared = TRUE;
+CREATE INDEX idx_recipes_type ON recipes(recipe_type); -- New index for course-based queries
 ```
 
 **meal_plans table:**
@@ -333,7 +351,7 @@ CREATE TABLE meal_assignments (
   id TEXT PRIMARY KEY,
   meal_plan_id TEXT NOT NULL,
   date TEXT NOT NULL,            -- ISO 8601 date
-  meal_type TEXT NOT NULL,       -- breakfast|lunch|dinner
+  course_type TEXT NOT NULL,     -- "appetizer"|"main_course"|"dessert" (changed from meal_type)
   recipe_id TEXT NOT NULL,
   prep_required BOOLEAN,
   FOREIGN KEY (meal_plan_id) REFERENCES meal_plans(id),
@@ -389,6 +407,7 @@ CREATE INDEX idx_ratings_recipe ON ratings(recipe_id);
 struct RecipeCreated {
     title: String,
     ingredients: Vec<Ingredient>,
+    recipe_type: String, // "appetizer", "main_course", or "dessert"
     // ...
 }
 
@@ -400,6 +419,7 @@ struct RecipeFavorited { favorited: bool }
 struct Recipe {
     title: String,
     ingredients: Vec<Ingredient>,
+    recipe_type: String, // Course classification
     is_favorite: bool,
     // ...
 }
@@ -410,6 +430,7 @@ impl Recipe {
     async fn recipe_created(&mut self, event: EventDetails<RecipeCreated>) -> anyhow::Result<()> {
         self.title = event.data.title;
         self.ingredients = event.data.ingredients;
+        self.recipe_type = event.data.recipe_type;
         Ok(())
     }
 
