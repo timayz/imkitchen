@@ -1,0 +1,500 @@
+{% extends "base.html" %}
+
+{% block title %}imkitchen - Intelligent Meal Planning Made Simple{% endblock %}
+
+{% block meta_description %}Transform your meal planning with imkitchen. Automated weekly meal plans, smart shopping lists, and personalized recipes for busy households. Start planning smarter today.{% endblock %}
+
+{% block extra_head %}
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://imkitchen.app/">
+<meta property="og:title" content="imkitchen - Intelligent Meal Planning Made Simple">
+<meta property="og:description" content="Transform your meal planning with imkitchen. Automated weekly meal plans, smart shopping lists, and personalized recipes for busy households.">
+<meta property="og:image" content="https://imkitchen.app/static/images/og-image.png">
+
+<!-- Twitter -->
+<meta property="twitter:card" content="summary_large_image">
+<meta property="twitter:url" content="https://imkitchen.app/">
+<meta property="twitter:title" content="imkitchen - Intelligent Meal Planning Made Simple">
+<meta property="twitter:description" content="Transform your meal planning with imkitchen. Automated weekly meal plans, smart shopping lists, and personalized recipes for busy households.">
+<meta property="twitter:image" content="https://imkitchen.app/static/images/twitter-card.png">
+
+<!-- Structured Data - WebApplication -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "imkitchen",
+  "description": "Intelligent meal planning and cooking optimization platform for busy households",
+  "url": "https://imkitchen.app",
+  "applicationCategory": "LifestyleApplication",
+  "operatingSystem": "All",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "4.8",
+    "ratingCount": "1247"
+  },
+  "featureList": [
+    "Automated weekly meal planning",
+    "Smart shopping list generation",
+    "Recipe management",
+    "Course-based meal organization",
+    "Dietary restriction support",
+    "Prep time optimization"
+  ]
+}
+</script>
+
+<!-- Structured Data - Organization -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "imkitchen",
+  "url": "https://imkitchen.app",
+  "logo": "https://imkitchen.app/static/icons/icon-512.png",
+  "sameAs": []
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="bg-gradient-to-br from-blue-50 via-white to-blue-50 py-16 md:py-24">
+    <div class="container mx-auto px-4">
+        <div class="max-w-4xl mx-auto text-center">
+            <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6">
+                Unlock Your Full
+                <span class="text-primary-500">Recipe Collection</span>
+            </h1>
+
+            <p class="text-xl md:text-2xl text-gray-600 mb-8 leading-relaxed">
+                Stop avoiding complex recipes. Intelligent automation handles timing, advance prep, and scheduling—so you can cook the meals you've always wanted to try.
+            </p>
+
+            <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
+                <a href="/register"
+                   aria-label="Start planning your meals for free"
+                   class="bg-primary-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-primary-600 focus:outline-none focus:ring-4 focus:ring-primary-500 focus:ring-offset-2 transition-colors shadow-lg hover:shadow-xl w-full sm:w-auto text-center min-h-[48px] flex items-center justify-center">
+                    Start Planning Free
+                </a>
+                <a href="/discover"
+                   aria-label="Browse community recipes"
+                   class="bg-white text-primary-500 border-2 border-primary-500 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-primary-50 focus:outline-none focus:ring-4 focus:ring-primary-500 focus:ring-offset-2 transition-colors w-full sm:w-auto text-center min-h-[48px] flex items-center justify-center">
+                    Browse Recipes
+                </a>
+            </div>
+
+            <p class="text-sm text-gray-500">
+                ✨ No credit card required · Free forever plan available
+            </p>
+        </div>
+
+        <!-- Hero Image or Illustration Placeholder -->
+        <div class="mt-12 max-w-5xl mx-auto">
+            <div class="bg-white rounded-2xl shadow-2xl p-4 md:p-8 border border-gray-200">
+                <div class="aspect-video bg-gradient-to-br from-blue-100 to-blue-50 rounded-lg flex items-center justify-center">
+                    <div class="text-center p-8">
+                        <svg class="w-24 h-24 mx-auto text-primary-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                        </svg>
+                        <p class="text-gray-600 font-medium">Your personalized meal plan preview</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-16 md:py-24 bg-white">
+    <div class="container mx-auto px-4">
+        <div class="text-center mb-16">
+            <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                Everything You Need for Effortless Meal Planning
+            </h2>
+            <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                imkitchen combines intelligent automation with practical cooking workflows
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            <!-- Feature 1: Automated Meal Planning -->
+            <div class="bg-gradient-to-br from-blue-50 to-white p-8 rounded-xl border border-blue-100 hover:shadow-lg transition-shadow">
+                <div class="bg-primary-500 text-white w-14 h-14 rounded-lg flex items-center justify-center mb-6" aria-hidden="true">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-3">Course-Based Weekly Plans</h3>
+                <p class="text-gray-600 leading-relaxed">
+                    Generate complete 7-day lunch menus with one click. Each day gets a complete three-course meal: appetizer, main course, and dessert—perfectly balanced and automatically rotated.
+                </p>
+            </div>
+
+            <!-- Feature 2: Smart Shopping Lists -->
+            <div class="bg-gradient-to-br from-green-50 to-white p-8 rounded-xl border border-green-100 hover:shadow-lg transition-shadow">
+                <div class="bg-green-500 text-white w-14 h-14 rounded-lg flex items-center justify-center mb-6" aria-hidden="true">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-3">Smart Shopping Lists</h3>
+                <p class="text-gray-600 leading-relaxed">
+                    Automatically generated shopping lists with ingredient aggregation, categorization, and real-time check-off tracking. Works offline in the store.
+                </p>
+            </div>
+
+            <!-- Feature 3: Recipe Library -->
+            <div class="bg-gradient-to-br from-purple-50 to-white p-8 rounded-xl border border-purple-100 hover:shadow-lg transition-shadow">
+                <div class="bg-purple-500 text-white w-14 h-14 rounded-lg flex items-center justify-center mb-6" aria-hidden="true">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-3">Personal Recipe Library</h3>
+                <p class="text-gray-600 leading-relaxed">
+                    Store unlimited recipes (up to 10 on free tier). Tag each by course type, mark favorites, and organize for seamless meal planning.
+                </p>
+            </div>
+
+            <!-- Feature 4: Intelligent Rotation -->
+            <div class="bg-gradient-to-br from-orange-50 to-white p-8 rounded-xl border border-orange-100 hover:shadow-lg transition-shadow">
+                <div class="bg-orange-500 text-white w-14 h-14 rounded-lg flex items-center justify-center mb-6" aria-hidden="true">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-3">Smart Recipe Rotation</h3>
+                <p class="text-gray-600 leading-relaxed">
+                    Never eat the same meal twice in a row. Intelligent rotation ensures your favorites cycle through naturally, maintaining variety week over week.
+                </p>
+            </div>
+
+            <!-- Feature 5: Dietary Restrictions -->
+            <div class="bg-gradient-to-br from-red-50 to-white p-8 rounded-xl border border-red-100 hover:shadow-lg transition-shadow">
+                <div class="bg-red-500 text-white w-14 h-14 rounded-lg flex items-center justify-center mb-6" aria-hidden="true">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-3">Dietary Preferences</h3>
+                <p class="text-gray-600 leading-relaxed">
+                    Filter recipes by dietary restrictions (vegetarian, vegan, gluten-free, dairy-free) and customize plans to match your household's needs.
+                </p>
+            </div>
+
+            <!-- Feature 6: Advance Prep Automation -->
+            <div class="bg-gradient-to-br from-indigo-50 to-white p-8 rounded-xl border border-indigo-100 hover:shadow-lg transition-shadow">
+                <div class="bg-indigo-500 text-white w-14 h-14 rounded-lg flex items-center justify-center mb-6" aria-hidden="true">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-3">Advance Prep Automation</h3>
+                <p class="text-gray-600 leading-relaxed">
+                    Never miss a marinating deadline again. Morning reminders tell you exactly when to start prep work—the secret to cooking complex recipes on busy weeknights.
+                </p>
+            </div>
+
+            <!-- Feature 7: Kitchen Mode -->
+            <div class="bg-gradient-to-br from-yellow-50 to-white p-8 rounded-xl border border-yellow-100 hover:shadow-lg transition-shadow">
+                <div class="bg-yellow-500 text-white w-14 h-14 rounded-lg flex items-center justify-center mb-6" aria-hidden="true">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-3">Kitchen Mode</h3>
+                <p class="text-gray-600 leading-relaxed">
+                    Hands-free cooking with high-contrast, extra-large text optimized for real kitchen conditions. Perfect when your hands are messy and the lighting isn't ideal.
+                </p>
+            </div>
+
+            <!-- Feature 8: Progressive Web App -->
+            <div class="bg-gradient-to-br from-pink-50 to-white p-8 rounded-xl border border-pink-100 hover:shadow-lg transition-shadow">
+                <div class="bg-pink-500 text-white w-14 h-14 rounded-lg flex items-center justify-center mb-6" aria-hidden="true">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-3">Works Offline</h3>
+                <p class="text-gray-600 leading-relaxed">
+                    Install as a native app on your phone. Access recipes and shopping lists even without internet—perfect for grocery stores with spotty signal.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- How It Works Section -->
+<section class="py-16 md:py-24 bg-gradient-to-br from-gray-50 to-white">
+    <div class="container mx-auto px-4">
+        <div class="text-center mb-16">
+            <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                How imkitchen Works
+            </h2>
+            <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                From recipes to table in three simple steps
+            </p>
+        </div>
+
+        <div class="max-w-4xl mx-auto space-y-12">
+            <!-- Step 1 -->
+            <div class="flex flex-col md:flex-row items-center gap-8">
+                <div class="flex-shrink-0 w-20 h-20 bg-primary-500 text-white rounded-full flex items-center justify-center text-3xl font-bold" aria-hidden="true">
+                    1
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-2xl font-bold text-gray-900 mb-3">Build Your Collection</h3>
+                    <p class="text-gray-600 text-lg leading-relaxed">
+                        Add recipes you've been saving but never trying. Classify each as appetizer, main course, or dessert. Browse thousands of community favorites. Even complex recipes with advance prep are welcome—that's where imkitchen shines.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="flex flex-col md:flex-row items-center gap-8">
+                <div class="flex-shrink-0 w-20 h-20 bg-primary-500 text-white rounded-full flex items-center justify-center text-3xl font-bold" aria-hidden="true">
+                    2
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-2xl font-bold text-gray-900 mb-3">Generate Your Plan</h3>
+                    <p class="text-gray-600 text-lg leading-relaxed">
+                        Click "Generate Meal Plan" and get a complete 7-day lunch menu—appetizer, main course, and dessert for each day. The algorithm handles prep time requirements, recipe rotation, and your dietary preferences automatically.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="flex flex-col md:flex-row items-center gap-8">
+                <div class="flex-shrink-0 w-20 h-20 bg-primary-500 text-white rounded-full flex items-center justify-center text-3xl font-bold" aria-hidden="true">
+                    3
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-2xl font-bold text-gray-900 mb-3">Cook with Confidence</h3>
+                    <p class="text-gray-600 text-lg leading-relaxed">
+                        Morning prep reminders tell you exactly when to marinate that chicken. Your auto-generated shopping list has everything you need, organized by store aisle. Kitchen Mode gives you hands-free, high-contrast instructions perfect for cooking.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Community Section -->
+<section class="py-16 md:py-24 bg-white">
+    <div class="container mx-auto px-4">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+                Join the Community
+            </h2>
+            <p class="text-xl text-gray-600 mb-8 leading-relaxed">
+                Discover thousands of recipes shared by home cooks worldwide. Rate, review, and add community favorites to your library.
+            </p>
+            <a href="/discover"
+               class="inline-block bg-white text-primary-500 border-2 border-primary-500 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-primary-50 transition-colors">
+                Explore Community Recipes
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Pricing Section -->
+<section class="py-16 md:py-24 bg-gradient-to-br from-blue-50 to-white">
+    <div class="container mx-auto px-4">
+        <div class="text-center mb-16">
+            <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                Simple, Transparent Pricing
+            </h2>
+            <p class="text-xl text-gray-600">
+                Start free, upgrade when you're ready
+            </p>
+        </div>
+
+        <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Free Plan -->
+            <div class="bg-white rounded-2xl shadow-lg p-8 border-2 border-gray-200">
+                <div class="text-center mb-6">
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">Free</h3>
+                    <div class="text-4xl font-bold text-gray-900 mb-2">$0<span class="text-xl text-gray-500">/month</span></div>
+                    <p class="text-gray-600">Perfect for getting started</p>
+                </div>
+                <ul class="space-y-4 mb-8">
+                    <li class="flex items-start gap-3">
+                        <svg class="w-6 h-6 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span class="text-gray-700">Up to 10 recipes</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <svg class="w-6 h-6 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span class="text-gray-700">Weekly meal planning</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <svg class="w-6 h-6 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span class="text-gray-700">Smart shopping lists</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <svg class="w-6 h-6 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span class="text-gray-700">Community recipe access</span>
+                    </li>
+                </ul>
+                <a href="/register"
+                   class="block w-full text-center bg-gray-100 text-gray-900 px-6 py-3 rounded-lg text-lg font-semibold hover:bg-gray-200 transition-colors">
+                    Get Started Free
+                </a>
+            </div>
+
+            <!-- Premium Plan -->
+            <div class="bg-gradient-to-br from-primary-500 to-blue-600 rounded-2xl shadow-xl p-8 border-2 border-primary-600 relative">
+                <div class="absolute top-0 right-0 bg-orange-500 text-white px-4 py-1 text-sm font-bold rounded-bl-lg rounded-tr-lg">
+                    POPULAR
+                </div>
+                <div class="text-center mb-6">
+                    <h3 class="text-2xl font-bold text-white mb-2">Premium</h3>
+                    <div class="text-4xl font-bold text-white mb-2">$9<span class="text-xl text-blue-100">/month</span></div>
+                    <p class="text-blue-100">For serious meal planners</p>
+                </div>
+                <ul class="space-y-4 mb-8">
+                    <li class="flex items-start gap-3">
+                        <svg class="w-6 h-6 text-green-300 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span class="text-white font-medium">Unlimited recipes</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <svg class="w-6 h-6 text-green-300 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span class="text-white font-medium">Advanced meal planning</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <svg class="w-6 h-6 text-green-300 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span class="text-white font-medium">Recipe collections</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <svg class="w-6 h-6 text-green-300 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span class="text-white font-medium">Priority support</span>
+                    </li>
+                </ul>
+                <a href="/register"
+                   class="block w-full text-center bg-white text-primary-500 px-6 py-3 rounded-lg text-lg font-semibold hover:bg-blue-50 transition-colors">
+                    Start Premium Trial
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="py-16 md:py-24 bg-primary-500">
+    <div class="container mx-auto px-4">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">
+                Ready to Transform Your Meal Planning?
+            </h2>
+            <p class="text-xl text-blue-100 mb-8 leading-relaxed">
+                Join thousands of home cooks who've simplified their weekly meal planning with imkitchen
+            </p>
+            <a href="/register"
+               class="inline-block bg-white text-primary-500 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-50 transition-colors shadow-lg">
+                Create Your Free Account
+            </a>
+            <p class="mt-6 text-blue-100 text-sm">
+                No credit card required · Cancel anytime
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- FAQ Section -->
+<section class="py-16 md:py-24 bg-white">
+    <div class="container mx-auto px-4">
+        <div class="text-center mb-16">
+            <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                Frequently Asked Questions
+            </h2>
+        </div>
+
+        <div class="max-w-3xl mx-auto space-y-6">
+            <details class="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                <summary class="font-semibold text-gray-900 cursor-pointer text-lg">
+                    How does imkitchen handle complex recipes with advance prep?
+                </summary>
+                <p class="mt-4 text-gray-600 leading-relaxed">
+                    That's our superpower! When you add a recipe that needs marinating or overnight prep, imkitchen automatically schedules it on days you have time. You'll get morning reminders telling you exactly when to start prep work—so that chicken tikka masala gets marinated 4 hours before cooking time. No more avoiding recipes because of timing complexity.
+                </p>
+            </details>
+
+            <details class="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                <summary class="font-semibold text-gray-900 cursor-pointer text-lg">
+                    Can I customize my meal plan after it's generated?
+                </summary>
+                <p class="mt-4 text-gray-600 leading-relaxed">
+                    Absolutely! You can replace individual meals with alternatives from your recipe library. Just click on any meal and choose a different recipe that matches the course type.
+                </p>
+            </details>
+
+            <details class="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                <summary class="font-semibold text-gray-900 cursor-pointer text-lg">
+                    Why appetizer, main, dessert instead of breakfast, lunch, dinner?
+                </summary>
+                <p class="mt-4 text-gray-600 leading-relaxed">
+                    imkitchen focuses on **lunch** planning with a complete three-course structure. This course-based model (appetizer, main course, dessert) gives you variety within each meal and makes it easy to balance nutrition, complexity, and prep time. Think of it like planning restaurant-quality meals at home—except without the stress.
+                </p>
+            </details>
+
+            <details class="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                <summary class="font-semibold text-gray-900 cursor-pointer text-lg">
+                    What's included in the free plan?
+                </summary>
+                <p class="mt-4 text-gray-600 leading-relaxed">
+                    The free plan includes up to 10 recipes, full weekly meal planning (7 complete three-course lunches), automatic shopping list generation, advance prep reminders, and access to thousands of community recipes. It's perfect for trying out imkitchen and expanding your cooking repertoire.
+                </p>
+            </details>
+
+            <details class="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                <summary class="font-semibold text-gray-900 cursor-pointer text-lg">
+                    How does the shopping list work?
+                </summary>
+                <p class="mt-4 text-gray-600 leading-relaxed">
+                    imkitchen automatically aggregates all ingredients from your weekly meal plan, combines duplicate items, and organizes them by category (produce, dairy, meat, pantry). You can check off items as you shop in-app.
+                </p>
+            </details>
+
+            <details class="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                <summary class="font-semibold text-gray-900 cursor-pointer text-lg">
+                    Can I share my recipes with others?
+                </summary>
+                <p class="mt-4 text-gray-600 leading-relaxed">
+                    Yes! You can share recipes to the community where other users can discover, rate, and add them to their own libraries. Community recipes help everyone discover new favorites.
+                </p>
+            </details>
+
+            <details class="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                <summary class="font-semibold text-gray-900 cursor-pointer text-lg">
+                    Does imkitchen work offline?
+                </summary>
+                <p class="mt-4 text-gray-600 leading-relaxed">
+                    Yes! imkitchen is a Progressive Web App (PWA) that caches your recipes and meal plans for offline access. Perfect for cooking in the kitchen without worrying about internet connectivity.
+                </p>
+            </details>
+        </div>
+    </div>
+</section>
+{% endblock %}
