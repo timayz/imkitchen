@@ -30,6 +30,12 @@ button.ts-active::after {
 </style>
 {% endblock %}
 
+{% block page_scripts %}
+<!-- Push notification subscription -->
+<script src={{ "/static/js/push-subscription.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
+<script src={{ "/static/js/sync-ui.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
+{% endblock %}
+
 {% block content %}
 <main id="main-content" class="container mx-auto px-4 py-8">
     <div class="max-w-4xl mx-auto">

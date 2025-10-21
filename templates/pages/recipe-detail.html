@@ -20,6 +20,12 @@
 {% endif %}
 {% endblock %}
 
+{% block page_scripts %}
+<!-- Kitchen mode for recipe view -->
+<script src={{ "/static/js/kitchen-mode.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
+<script src={{ "/static/js/touch-enhancements.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
+{% endblock %}
+
 {% block content %}
 <div class="min-h-screen py-12">
     <div class="container mx-auto px-4 max-w-4xl">
