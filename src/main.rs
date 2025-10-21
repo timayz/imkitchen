@@ -10,22 +10,22 @@ use imkitchen::middleware::auth_middleware;
 use imkitchen::routes::{
     browser_support, check_recipe_exists, check_shopping_item, complete_prep_task_handler,
     dashboard_handler, dismiss_notification, generate_shopping_list_handler, get_check_user,
-    get_collections, get_discover, get_discover_detail, get_ingredient_row, get_instruction_row,
-    get_landing, get_login, get_meal_alternatives, get_meal_plan, get_notification_status,
-    get_onboarding, get_onboarding_skip, get_password_reset, get_password_reset_complete,
-    get_privacy, get_profile, get_recipe_detail, get_recipe_edit_form, get_recipe_form,
-    get_recipe_list, get_recipe_waiting, get_regenerate_confirm, get_register, get_subscription,
-    get_subscription_success, get_terms, health, list_notifications, notifications_page, offline,
-    post_add_recipe_to_collection, post_add_to_library, post_create_collection, post_create_recipe,
-    post_delete_collection, post_delete_recipe, post_delete_review, post_favorite_recipe,
-    post_generate_meal_plan, post_login, post_logout, post_onboarding_step_1,
-    post_onboarding_step_2, post_onboarding_step_3, post_onboarding_step_4, post_password_reset,
-    post_password_reset_complete, post_profile, post_rate_recipe, post_regenerate_meal_plan,
-    post_register, post_remove_recipe_from_collection, post_replace_meal, post_share_recipe,
-    post_stripe_webhook, post_subscription_upgrade, post_update_collection, post_update_recipe,
-    post_update_recipe_tags, ready, record_permission_change, refresh_shopping_list,
-    reset_shopping_list_handler, show_shopping_list, snooze_notification, subscribe_push, AppState,
-    AssetsService,
+    get_collections, get_discover, get_discover_detail, get_import_modal, get_ingredient_row,
+    get_instruction_row, get_landing, get_login, get_meal_alternatives, get_meal_plan,
+    get_notification_status, get_onboarding, get_onboarding_skip, get_password_reset,
+    get_password_reset_complete, get_privacy, get_profile, get_recipe_detail, get_recipe_edit_form,
+    get_recipe_form, get_recipe_list, get_recipe_waiting, get_regenerate_confirm, get_register,
+    get_subscription, get_subscription_success, get_terms, health, list_notifications,
+    notifications_page, offline, post_add_recipe_to_collection, post_add_to_library,
+    post_create_collection, post_create_recipe, post_delete_collection, post_delete_recipe,
+    post_delete_review, post_favorite_recipe, post_generate_meal_plan, post_import_recipes,
+    post_login, post_logout, post_onboarding_step_1, post_onboarding_step_2, post_onboarding_step_3,
+    post_onboarding_step_4, post_password_reset, post_password_reset_complete, post_profile,
+    post_rate_recipe, post_regenerate_meal_plan, post_register, post_remove_recipe_from_collection,
+    post_replace_meal, post_share_recipe, post_stripe_webhook, post_subscription_upgrade,
+    post_update_collection, post_update_recipe, post_update_recipe_tags, ready,
+    record_permission_change, refresh_shopping_list, reset_shopping_list_handler, show_shopping_list,
+    snooze_notification, subscribe_push, AppState, AssetsService,
 };
 use meal_planning::meal_plan_projection;
 use notifications::{meal_plan_subscriptions, notification_projections};
@@ -66,16 +66,6 @@ enum Commands {
     Migrate,
     /// Drop database if exists and recreate with migrations
     Reset,
-    /// Import recipe from JSON file
-    ImportRecipe {
-        /// Path to JSON file containing recipe data
-        #[arg(long)]
-        file: String,
-
-        /// User email address who will own the recipe
-        #[arg(long)]
-        email: String,
-    },
     /// Upgrade or downgrade user subscription tier
     SetTier {
         /// User email address
@@ -108,7 +98,6 @@ async fn main() -> Result<()> {
         Commands::Serve { host, port } => serve_command(config, host, port).await,
         Commands::Migrate => migrate_command(config).await,
         Commands::Reset => reset_command(config).await,
-        Commands::ImportRecipe { file, email } => import_recipe_command(config, file, email).await,
         Commands::SetTier { email, tier } => set_tier_command(config, email, tier).await,
     };
 
@@ -228,6 +217,8 @@ async fn serve_command(
         // Recipe routes
         .route("/recipes", get(get_recipe_list).post(post_create_recipe))
         .route("/recipes/new", get(get_recipe_form))
+        .route("/recipes/import-modal", get(get_import_modal)) // Story 2.12: Batch import modal
+        .route("/recipes/import", post(post_import_recipes)) // Story 2.12: Batch import handler
         .route("/discover", get(get_discover))
         .route("/discover/{id}", get(get_discover_detail))
         .route("/discover/{id}/add", post(post_add_to_library))
@@ -422,91 +413,6 @@ async fn reset_command(config: imkitchen::config::Config) -> Result<()> {
     migrate_command(config).await?;
 
     tracing::info!("Database reset completed successfully");
-
-    Ok(())
-}
-
-#[tracing::instrument(skip(config))]
-async fn import_recipe_command(
-    config: imkitchen::config::Config,
-    file_path: String,
-    user_email: String,
-) -> Result<()> {
-    use recipe::commands::CreateRecipeCommand;
-    use recipe::events::{Ingredient, InstructionStep};
-    use serde::Deserialize;
-
-    tracing::info!("Importing recipe from file: {}", file_path);
-
-    // Read and parse JSON file
-    #[derive(Deserialize)]
-    struct RecipeJson {
-        title: String,
-        recipe_type: String,
-        ingredients: Vec<Ingredient>,
-        instructions: Vec<InstructionStep>,
-        prep_time_min: Option<u32>,
-        cook_time_min: Option<u32>,
-        advance_prep_hours: Option<u32>,
-        serving_size: Option<u32>,
-    }
-
-    let json_content = std::fs::read_to_string(&file_path)
-        .map_err(|e| anyhow::anyhow!("Failed to read file {}: {}", file_path, e))?;
-
-    let recipe_data: RecipeJson = serde_json::from_str(&json_content)
-        .map_err(|e| anyhow::anyhow!("Failed to parse JSON: {}", e))?;
-
-    tracing::info!("Parsed recipe: {}", recipe_data.title);
-
-    // Set up database connection pool with optimized PRAGMAs
-    let db_pool =
-        imkitchen::db::create_pool(&config.database.url, config.database.max_connections).await?;
-
-    // Set up evento executor
-    let evento_executor: evento::Sqlite = db_pool.clone().into();
-
-    // Query user by email
-    let user = sqlx::query_as::<_, (String, String)>(
-        r#"SELECT id, email FROM users WHERE email = ? LIMIT 1"#,
-    )
-    .bind(&user_email)
-    .fetch_optional(&db_pool)
-    .await?
-    .ok_or_else(|| anyhow::anyhow!("User with email '{}' not found", user_email))?;
-
-    tracing::info!("Found user: {} ({})", user.1, user.0);
-
-    // Create command
-    let command = CreateRecipeCommand {
-        title: recipe_data.title,
-        recipe_type: recipe_data.recipe_type,
-        ingredients: recipe_data.ingredients,
-        instructions: recipe_data.instructions,
-        prep_time_min: recipe_data.prep_time_min,
-        cook_time_min: recipe_data.cook_time_min,
-        advance_prep_hours: recipe_data.advance_prep_hours,
-        serving_size: recipe_data.serving_size,
-    };
-
-    // Import recipe using the create_recipe command
-    let recipe_id = recipe::commands::create_recipe(
-        command,
-        &user.0, // user_id
-        &evento_executor,
-        &db_pool,
-    )
-    .await?;
-
-    // Run projections to persist event to read model
-    recipe::read_model::recipe_projection(db_pool.clone())
-        .unsafe_oneshot(&evento_executor)
-        .await?;
-
-    tracing::info!("✅ Recipe imported successfully with ID: {}", recipe_id);
-    println!("✅ Recipe imported successfully!");
-    println!("   Recipe ID: {}", recipe_id);
-    println!("   User: {} ({})", user.1, user.0);
 
     Ok(())
 }
