@@ -20,6 +20,7 @@ The JSON file must follow this structure:
 ```json
 {
   "title": "Recipe Name",
+  "recipe_type": "main_course",
   "ingredients": [
     {
       "name": "ingredient name",
@@ -43,6 +44,7 @@ The JSON file must follow this structure:
 ### Field Descriptions
 
 - **title** (required, string): Recipe name (3-200 characters)
+- **recipe_type** (required, string): Recipe type - must be one of: "appetizer", "main_course", or "dessert"
 - **ingredients** (required, array): List of ingredients
   - **name** (required, string): Ingredient name
   - **amount** (required, string): Quantity
