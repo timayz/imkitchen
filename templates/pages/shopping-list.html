@@ -58,6 +58,12 @@ details[open] summary .chevron {
 </style>
 {% endblock %}
 
+{% block page_scripts %}
+<!-- Shopping list interactions -->
+<script src={{ "/static/js/touch-enhancements.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
+<script src={{ "/static/js/sync-ui.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
+{% endblock %}
+
 {% block content %}
 <main id="main-content" class="container mx-auto px-4 py-8">
     <div class="max-w-4xl mx-auto">
