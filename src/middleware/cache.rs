@@ -42,9 +42,7 @@ pub async fn cache_control_middleware(req: Request<Body>, next: Next) -> Respons
         // Cache static files aggressively (1 year)
         headers.insert(
             header::CACHE_CONTROL,
-            "public, max-age=31536000, immutable"
-                .parse()
-                .unwrap(),
+            "public, max-age=31536000, immutable".parse().unwrap(),
         );
     } else {
         // Don't cache HTML pages and API responses
