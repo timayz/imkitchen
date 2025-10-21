@@ -1,7 +1,7 @@
 use chrono::NaiveDate;
 use meal_planning::algorithm::{RecipeForPlanning, UserConstraints};
-use meal_planning::constraints::*;
 use meal_planning::constraints::CourseType;
+use meal_planning::constraints::*;
 
 fn create_test_recipe(
     id: &str,

@@ -196,7 +196,7 @@ async fn serve_command(
     };
 
     let state = AppState {
-        db_pool: read_pool.clone(),   // Read pool for queries
+        db_pool: read_pool.clone(),     // Read pool for queries
         write_pool: write_pool.clone(), // Write pool for inserts/updates
         evento_executor,
         jwt_secret: config.jwt.secret,

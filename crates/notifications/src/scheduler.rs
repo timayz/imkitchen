@@ -370,10 +370,10 @@ pub async fn day_of_cooking_reminder_scheduler<E: evento::Executor>(
 
         // Determine default meal time based on course_type (AC #2)
         let default_meal_time = match course_type.as_str() {
-            "appetizer" => "08:00",    // 8am
-            "main_course" => "12:00",  // 12pm
-            "dessert" => "18:00",      // 6pm
-            _ => "18:00",              // Default to dessert time
+            "appetizer" => "08:00",   // 8am
+            "main_course" => "12:00", // 12pm
+            "dessert" => "18:00",     // 6pm
+            _ => "18:00",             // Default to dessert time
         };
 
         // Calculate reminder time: meal_time - 1 hour (AC #1)

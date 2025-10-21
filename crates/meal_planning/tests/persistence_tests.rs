@@ -173,7 +173,11 @@ fn create_sample_assignments(start_date: &str) -> Vec<MealAssignment> {
         let date = start + chrono::Duration::days(day_offset);
         let date_str = date.format("%Y-%m-%d").to_string();
 
-        for course_type in [CourseType::Appetizer, CourseType::MainCourse, CourseType::Dessert] {
+        for course_type in [
+            CourseType::Appetizer,
+            CourseType::MainCourse,
+            CourseType::Dessert,
+        ] {
             assignments.push(MealAssignment {
                 date: date_str.clone(),
                 course_type: course_type.as_str().to_string(),

@@ -20,7 +20,7 @@ pub struct RecipeReadModel {
     pub user_id: String,
     pub title: String,
     pub recipe_type: String, // AC-2: Course type - "appetizer", "main_course", or "dessert"
-    pub ingredients: String,  // JSON
+    pub ingredients: String, // JSON
     pub instructions: String, // JSON
     pub prep_time_min: Option<i32>,
     pub cook_time_min: Option<i32>,

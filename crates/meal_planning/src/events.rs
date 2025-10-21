@@ -45,9 +45,9 @@ pub type MealType = CourseType;
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 pub struct MealAssignment {
     pub date: String,                         // ISO 8601 date (YYYY-MM-DD)
-    pub course_type: String,                  // AC-4: "appetizer", "main_course", or "dessert" (renamed from meal_type)
-    pub recipe_id: String,                    // Recipe assigned to this slot
-    pub prep_required: bool,                  // True if recipe has advance_prep_hours > 0
+    pub course_type: String, // AC-4: "appetizer", "main_course", or "dessert" (renamed from meal_type)
+    pub recipe_id: String,   // Recipe assigned to this slot
+    pub prep_required: bool, // True if recipe has advance_prep_hours > 0
     pub assignment_reasoning: Option<String>, // Human-readable explanation of assignment (Story 3.8)
 }
 
@@ -115,10 +115,10 @@ pub struct MealPlanArchived {
 #[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
 pub struct MealReplaced {
     pub date: String,          // ISO 8601 date of the course slot
-    pub course_type: String,   // AC-5: "appetizer", "main_course", or "dessert" (renamed from meal_type)
+    pub course_type: String, // AC-5: "appetizer", "main_course", or "dessert" (renamed from meal_type)
     pub old_recipe_id: String, // Recipe being replaced
     pub new_recipe_id: String, // Replacement recipe
-    pub replaced_at: String,   // RFC3339 formatted timestamp
+    pub replaced_at: String, // RFC3339 formatted timestamp
 }
 
 /// MealPlanRegenerated event emitted when user regenerates entire meal plan (Story 3.7)

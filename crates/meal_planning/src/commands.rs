@@ -25,7 +25,7 @@ pub struct GenerateMealPlanCommand {
 pub struct ReplaceMealCommand {
     pub meal_plan_id: String,
     pub date: String,          // ISO 8601 date
-    pub course_type: String,   // AC-5: "appetizer", "main_course", or "dessert" (renamed from meal_type)
+    pub course_type: String, // AC-5: "appetizer", "main_course", or "dessert" (renamed from meal_type)
     pub new_recipe_id: String, // Replacement recipe
 }
 

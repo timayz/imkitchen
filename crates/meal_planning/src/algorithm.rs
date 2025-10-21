@@ -9,8 +9,8 @@ use serde::{Deserialize, Serialize};
 pub struct RecipeForPlanning {
     pub id: String,
     pub title: String,
-    pub recipe_type: String,       // AC-4: "appetizer", "main_course", or "dessert"
-    pub ingredients_count: usize,  // Count of ingredients
+    pub recipe_type: String, // AC-4: "appetizer", "main_course", or "dessert"
+    pub ingredients_count: usize, // Count of ingredients
     pub instructions_count: usize, // Count of instruction steps
     pub prep_time_min: Option<u32>,
     pub cook_time_min: Option<u32>,
@@ -352,7 +352,11 @@ impl MealPlanningAlgorithm {
 
             // AC-4: Assign appetizer, main_course, dessert for this day
             use crate::constraints::CourseType;
-            for course_type_enum in [CourseType::Appetizer, CourseType::MainCourse, CourseType::Dessert] {
+            for course_type_enum in [
+                CourseType::Appetizer,
+                CourseType::MainCourse,
+                CourseType::Dessert,
+            ] {
                 let slot = MealSlot {
                     date,
                     course_type: course_type_enum.clone(),
@@ -381,7 +385,10 @@ impl MealPlanningAlgorithm {
                         // Try to find unused recipe of matching type
                         available_recipes
                             .iter()
-                            .find(|r| !used_recipe_ids.contains(&r.id) && r.recipe_type == course_type_enum.as_str())
+                            .find(|r| {
+                                !used_recipe_ids.contains(&r.id)
+                                    && r.recipe_type == course_type_enum.as_str()
+                            })
                             .or_else(|| {
                                 // Main courses must be unique - never allow reuse
                                 if course_type_enum.as_str() == "main_course" {
@@ -394,8 +401,15 @@ impl MealPlanningAlgorithm {
                                 }
                             })
                             .ok_or(MealPlanningError::InsufficientRecipes {
-                                minimum: if course_type_enum.as_str() == "main_course" { 7 } else { 1 },
-                                current: available_recipes.iter().filter(|r| r.recipe_type == course_type_enum.as_str()).count(),
+                                minimum: if course_type_enum.as_str() == "main_course" {
+                                    7
+                                } else {
+                                    1
+                                },
+                                current: available_recipes
+                                    .iter()
+                                    .filter(|r| r.recipe_type == course_type_enum.as_str())
+                                    .count(),
                             })?
                     }
                 };
@@ -463,7 +477,7 @@ mod tests {
         // Extract numeric part from ID
         let num = id
             .split('_')
-            .last()
+            .next_back()
             .and_then(|s| s.parse::<usize>().ok())
             .or_else(|| id.parse::<usize>().ok())
             .unwrap_or(0);

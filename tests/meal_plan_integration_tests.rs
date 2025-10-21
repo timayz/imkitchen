@@ -1200,7 +1200,10 @@ async fn test_get_todays_meals_query() {
         todays_meals[0].course_type, "appetizer",
         "First should be appetizer"
     );
-    assert_eq!(todays_meals[1].course_type, "main_course", "Second should be main_course");
+    assert_eq!(
+        todays_meals[1].course_type, "main_course",
+        "Second should be main_course"
+    );
     assert_eq!(
         todays_meals[2].course_type, "dessert",
         "Third should be dessert"
@@ -1297,7 +1300,10 @@ async fn test_dashboard_route_data_structure() {
         todays_meals.appetizer.is_some(),
         "Appetizer should be mapped"
     );
-    assert!(todays_meals.main_course.is_some(), "Main course should be mapped");
+    assert!(
+        todays_meals.main_course.is_some(),
+        "Main course should be mapped"
+    );
     assert!(todays_meals.dessert.is_some(), "Dessert should be mapped");
     assert!(todays_meals.has_meal_plan, "has_meal_plan should be true");
 

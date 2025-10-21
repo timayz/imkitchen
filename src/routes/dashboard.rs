@@ -26,9 +26,9 @@ pub struct TodayMealSlotData {
 /// Today's meals data for dashboard template (Story 3.9)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TodaysMealsData {
-    pub appetizer: Option<TodayMealSlotData>,   // AC-5: Course-based model
+    pub appetizer: Option<TodayMealSlotData>, // AC-5: Course-based model
     pub main_course: Option<TodayMealSlotData>, // AC-5: Course-based model
-    pub dessert: Option<TodayMealSlotData>,     // AC-5: Course-based model
+    pub dessert: Option<TodayMealSlotData>,   // AC-5: Course-based model
     pub has_meal_plan: bool,
 }
 

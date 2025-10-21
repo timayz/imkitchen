@@ -61,7 +61,7 @@ mod tests {
         // Extract numeric part from id (e.g., "recipe_1" -> 1)
         let num = id
             .split('_')
-            .last()
+            .next_back()
             .and_then(|s| s.parse::<usize>().ok())
             .unwrap_or(0);
 

@@ -54,7 +54,11 @@ async fn setup_test_db() -> (evento::Sqlite, sqlx::SqlitePool) {
     (executor, pool)
 }
 
-fn create_test_recipe(id: &str, complexity_score: (usize, usize), recipe_type: &str) -> RecipeForPlanning {
+fn create_test_recipe(
+    id: &str,
+    complexity_score: (usize, usize),
+    recipe_type: &str,
+) -> RecipeForPlanning {
     RecipeForPlanning {
         id: id.to_string(),
         title: format!("Recipe {}", id),
@@ -199,15 +203,27 @@ async fn test_reasoning_query_returns_with_assignments() {
     let mut favorites = vec![];
     // Appetizers
     for i in 1..=2 {
-        favorites.push(create_test_recipe(&format!("r{}", i), (5 + i, 4 + i), "appetizer"));
+        favorites.push(create_test_recipe(
+            &format!("r{}", i),
+            (5 + i, 4 + i),
+            "appetizer",
+        ));
     }
     // Main courses (need at least 7)
     for i in 3..=10 {
-        favorites.push(create_test_recipe(&format!("r{}", i), (5 + i, 4 + i), "main_course"));
+        favorites.push(create_test_recipe(
+            &format!("r{}", i),
+            (5 + i, 4 + i),
+            "main_course",
+        ));
     }
     // Desserts
     for i in 11..=12 {
-        favorites.push(create_test_recipe(&format!("r{}", i), (5 + i, 4 + i), "dessert"));
+        favorites.push(create_test_recipe(
+            &format!("r{}", i),
+            (5 + i, 4 + i),
+            "dessert",
+        ));
     }
 
     let (assignments, rotation_state) = MealPlanningAlgorithm::generate(

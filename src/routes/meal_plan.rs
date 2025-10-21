@@ -116,10 +116,10 @@ fn render_toast(
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DayData {
     pub date: String,
-    pub day_name: String,     // "Monday", "Tuesday", etc.
-    pub is_today: bool,       // AC-6: Today's date highlighted
-    pub is_past: bool,        // AC-7: Past dates dimmed
-    pub meal_plan_id: String, // Story 3.5: Needed for calendar context links
+    pub day_name: String,                  // "Monday", "Tuesday", etc.
+    pub is_today: bool,                    // AC-6: Today's date highlighted
+    pub is_past: bool,                     // AC-7: Past dates dimmed
+    pub meal_plan_id: String,              // Story 3.5: Needed for calendar context links
     pub appetizer: Option<MealSlotData>,   // AC-5: Course-based model (renamed from breakfast)
     pub main_course: Option<MealSlotData>, // AC-5: Course-based model (renamed from lunch)
     pub dessert: Option<MealSlotData>,     // AC-5: Course-based model (renamed from dinner)
@@ -534,9 +534,9 @@ fn build_day_data(
             is_today,
             is_past,
             meal_plan_id: meal_plan_id.to_string(), // Story 3.5: Include for calendar context
-            appetizer: None,   // AC-5: Course-based model
-            main_course: None, // AC-5: Course-based model
-            dessert: None,     // AC-5: Course-based model
+            appetizer: None,                        // AC-5: Course-based model
+            main_course: None,                      // AC-5: Course-based model
+            dessert: None,                          // AC-5: Course-based model
         });
 
         // Get recipe details
