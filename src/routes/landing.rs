@@ -1,5 +1,8 @@
 use askama::Template;
-use axum::{extract::State, response::{Html, IntoResponse}};
+use axum::{
+    extract::State,
+    response::{Html, IntoResponse},
+};
 use axum_extra::extract::CookieJar;
 use user::validate_jwt;
 
@@ -8,15 +11,12 @@ use crate::routes::AppState;
 #[derive(Template)]
 #[template(path = "pages/landing.html")]
 struct LandingTemplate {
-    pub user: Option<()>,     // Some(()) if authenticated, None if not
+    pub user: Option<()>, // Some(()) if authenticated, None if not
     pub current_path: String,
 }
 
 /// GET / - Landing page (public, but shows different content if authenticated)
-pub async fn get_landing(
-    State(state): State<AppState>,
-    jar: CookieJar,
-) -> impl IntoResponse {
+pub async fn get_landing(State(state): State<AppState>, jar: CookieJar) -> impl IntoResponse {
     // Try to extract authentication from cookie (optional - no redirect on failure)
     let user = if let Some(cookie) = jar.get("auth_token") {
         // Validate JWT
