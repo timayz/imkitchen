@@ -69,13 +69,13 @@ async fn test_cooking_reminder_scheduled_1_hour_before_dinner() {
     .unwrap();
 
     sqlx::query(
-        "INSERT INTO meal_assignments (id, meal_plan_id, date, meal_type, recipe_id, prep_required)
+        "INSERT INTO meal_assignments (id, meal_plan_id, date, course_type, recipe_id, prep_required)
          VALUES (?, ?, ?, ?, ?, ?)",
     )
     .bind("assignment-day-of-001")
     .bind(meal_plan_id)
     .bind(&today)
-    .bind("dinner")
+    .bind("dessert")
     .bind(recipe_id)
     .bind(1)
     .execute(&pool)
@@ -171,13 +171,13 @@ async fn test_cooking_reminder_for_breakfast_default_time() {
     .unwrap();
 
     sqlx::query(
-        "INSERT INTO meal_assignments (id, meal_plan_id, date, meal_type, recipe_id, prep_required)
+        "INSERT INTO meal_assignments (id, meal_plan_id, date, course_type, recipe_id, prep_required)
          VALUES (?, ?, ?, ?, ?, ?)",
     )
     .bind("assignment-day-of-002")
     .bind(meal_plan_id)
     .bind(&today)
-    .bind("breakfast")
+    .bind("appetizer")
     .bind(recipe_id)
     .bind(0) // No prep required
     .execute(&pool)
@@ -256,13 +256,13 @@ async fn test_cooking_reminder_message_format_dinner() {
     .unwrap();
 
     sqlx::query(
-        "INSERT INTO meal_assignments (id, meal_plan_id, date, meal_type, recipe_id, prep_required)
+        "INSERT INTO meal_assignments (id, meal_plan_id, date, course_type, recipe_id, prep_required)
          VALUES (?, ?, ?, ?, ?, ?)",
     )
     .bind("assignment-day-of-003")
     .bind(meal_plan_id)
     .bind(&today)
-    .bind("dinner")
+    .bind("dessert")
     .bind(recipe_id)
     .bind(1)
     .execute(&pool)
@@ -299,8 +299,8 @@ async fn test_cooking_reminder_message_format_dinner() {
     eprintln!("DEBUG: message_body = '{}'", msg);
 
     assert!(
-        msg.contains("Tonight's dinner") || msg.contains("This evening's dinner"),
-        "Should mention dinner time period"
+        msg.contains("Tonight's dessert") || msg.contains("This evening's dessert"),
+        "Should mention dessert time period"
     );
     assert!(
         msg.contains("Chicken Tikka Masala"),
@@ -355,13 +355,13 @@ async fn test_cooking_reminder_message_format_breakfast() {
     .unwrap();
 
     sqlx::query(
-        "INSERT INTO meal_assignments (id, meal_plan_id, date, meal_type, recipe_id, prep_required)
+        "INSERT INTO meal_assignments (id, meal_plan_id, date, course_type, recipe_id, prep_required)
          VALUES (?, ?, ?, ?, ?, ?)",
     )
     .bind("assignment-day-of-004")
     .bind(meal_plan_id)
     .bind(&today)
-    .bind("breakfast")
+    .bind("appetizer")
     .bind(recipe_id)
     .bind(0)
     .execute(&pool)
@@ -395,8 +395,8 @@ async fn test_cooking_reminder_message_format_breakfast() {
     let msg = message.unwrap();
 
     assert!(
-        msg.contains("This morning's breakfast") || msg.contains("breakfast"),
-        "Should mention breakfast"
+        msg.contains("This morning's appetizer") || msg.contains("appetizer"),
+        "Should mention appetizer"
     );
     assert!(msg.contains("Oatmeal"), "Should mention recipe name");
     assert!(msg.contains("10 minutes"), "Should mention total time");

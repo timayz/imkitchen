@@ -125,18 +125,18 @@ pub fn determine_reminder_type(prep_hours: i32) -> &'static str {
 /// Generate morning reminder message body
 ///
 /// Per AC #2, #3, #4:
-/// - Format: "Prep reminder: {prep_task} tonight for {day_of_week}'s {meal_type} (Takes {prep_time} minutes)"
-/// - Example: "Prep reminder: Marinate chicken tonight for Thursday's dinner (Takes 10 minutes)"
+/// - Format: "Prep reminder: {prep_task} tonight for {day_of_week}'s {course_type} (Takes {prep_time} minutes)"
+/// - Example: "Prep reminder: Marinate chicken tonight for Thursday's dessert (Takes 10 minutes)"
 pub fn generate_morning_reminder_body(
     prep_task: Option<&str>,
     day_of_week: &str,
-    meal_type: &str,
+    course_type: &str,
     prep_time_min: i32,
 ) -> String {
     let task = prep_task.unwrap_or("Prep");
     format!(
         "Prep reminder: {} tonight for {}'s {} (Takes {} minutes)",
-        task, day_of_week, meal_type, prep_time_min
+        task, day_of_week, course_type, prep_time_min
     )
 }
 
@@ -163,7 +163,7 @@ pub async fn morning_reminder_scheduler<E: evento::Executor>(
 
     // Query meal assignments for tomorrow with advance prep requirements
     let meal_slots = sqlx::query(
-        "SELECT ma.id, ma.recipe_id, ma.meal_type, ma.date,
+        "SELECT ma.id, ma.recipe_id, ma.course_type, ma.date,
                 r.title, r.advance_prep_hours, r.prep_task, r.prep_time_min
          FROM meal_assignments ma
          JOIN recipes r ON ma.recipe_id = r.id
@@ -252,7 +252,7 @@ pub async fn update_morning_reminder_messages(
 
     // Query all pending morning reminders for this user that don't have message_body set
     let notifications = sqlx::query(
-        "SELECT n.id, n.meal_date, n.prep_hours, n.prep_task, ma.meal_type, r.prep_time_min
+        "SELECT n.id, n.meal_date, n.prep_hours, n.prep_task, ma.course_type, r.prep_time_min
          FROM notifications n
          JOIN meal_assignments ma ON n.meal_date = ma.date AND n.recipe_id = ma.recipe_id
          JOIN meal_plans mp ON ma.meal_plan_id = mp.id
@@ -272,7 +272,7 @@ pub async fn update_morning_reminder_messages(
         let notification_id: String = row.get("id");
         let meal_date: String = row.get("meal_date");
         let prep_task: Option<String> = row.get("prep_task");
-        let meal_type: String = row.get("meal_type");
+        let course_type: String = row.get("course_type");
         let prep_time_min: i32 = row.get("prep_time_min");
 
         // Parse meal_date to get day of week
@@ -291,7 +291,7 @@ pub async fn update_morning_reminder_messages(
         let message_body = generate_morning_reminder_body(
             prep_task.as_deref(),
             day_of_week,
-            &meal_type,
+            &course_type,
             prep_time_min,
         );
 
@@ -337,7 +337,7 @@ pub async fn day_of_cooking_reminder_scheduler<E: evento::Executor>(
 
     // Query meal assignments for today
     let meal_slots = sqlx::query(
-        "SELECT ma.id, ma.recipe_id, ma.meal_type, ma.date,
+        "SELECT ma.id, ma.recipe_id, ma.course_type, ma.date,
                 r.title, r.prep_time_min, r.cook_time_min, r.advance_prep_hours
          FROM meal_assignments ma
          JOIN recipes r ON ma.recipe_id = r.id
@@ -365,15 +365,15 @@ pub async fn day_of_cooking_reminder_scheduler<E: evento::Executor>(
         let recipe_id: String = row.get("recipe_id");
         let meal_date: String = row.get("date");
         let recipe_title: String = row.get("title");
-        let meal_type: String = row.get("meal_type");
+        let course_type: String = row.get("course_type");
         let _advance_prep_hours: i32 = row.get("advance_prep_hours");
 
-        // Determine default meal time based on meal_type (AC #2)
-        let default_meal_time = match meal_type.as_str() {
-            "breakfast" => "08:00", // 8am
-            "lunch" => "12:00",     // 12pm
-            "dinner" => "18:00",    // 6pm
-            _ => "18:00",           // Default to dinner time
+        // Determine default meal time based on course_type (AC #2)
+        let default_meal_time = match course_type.as_str() {
+            "appetizer" => "08:00",    // 8am
+            "main_course" => "12:00",  // 12pm
+            "dessert" => "18:00",      // 6pm
+            _ => "18:00",              // Default to dessert time
         };
 
         // Calculate reminder time: meal_time - 1 hour (AC #1)
@@ -399,10 +399,10 @@ pub async fn day_of_cooking_reminder_scheduler<E: evento::Executor>(
         let notification_id = schedule_reminder(cmd, executor).await?;
 
         tracing::debug!(
-            "Scheduled day-of cooking reminder notification_id={} for recipe={} (meal_type={}) on {}",
+            "Scheduled day-of cooking reminder notification_id={} for recipe={} (course_type={}) on {}",
             notification_id,
             recipe_title,
-            meal_type,
+            course_type,
             meal_date
         );
     }
@@ -427,7 +427,7 @@ pub async fn update_day_of_reminder_messages(
 
     // Query all pending day-of reminders for this user that don't have message_body set
     let notifications = sqlx::query(
-        "SELECT n.id, n.meal_date, ma.meal_type, r.title, r.prep_time_min, r.cook_time_min
+        "SELECT n.id, n.meal_date, ma.course_type, r.title, r.prep_time_min, r.cook_time_min
          FROM notifications n
          JOIN meal_assignments ma ON n.meal_date = ma.date AND n.recipe_id = ma.recipe_id
          JOIN meal_plans mp ON ma.meal_plan_id = mp.id
@@ -445,7 +445,7 @@ pub async fn update_day_of_reminder_messages(
 
     for row in notifications {
         let notification_id: String = row.get("id");
-        let meal_type: String = row.get("meal_type");
+        let course_type: String = row.get("course_type");
         let recipe_title: String = row.get("title");
         let prep_time_min: i32 = row.get("prep_time_min");
         let cook_time_min: i32 = row.get("cook_time_min");
@@ -453,11 +453,11 @@ pub async fn update_day_of_reminder_messages(
         // Calculate total time (prep + cook)
         let total_time_min = prep_time_min + cook_time_min;
 
-        // Generate message based on meal type (AC #3)
-        let time_label = match meal_type.as_str() {
-            "breakfast" => "This morning's breakfast",
-            "lunch" => "Today's lunch",
-            "dinner" => "Tonight's dinner",
+        // Generate message based on course type (AC #3)
+        let time_label = match course_type.as_str() {
+            "appetizer" => "This morning's appetizer",
+            "main_course" => "Today's main course",
+            "dessert" => "Tonight's dessert",
             _ => "Today's meal",
         };
 

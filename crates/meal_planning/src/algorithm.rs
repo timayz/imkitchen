@@ -460,10 +460,26 @@ mod tests {
         steps: usize,
         advance_prep: Option<u32>,
     ) -> RecipeForPlanning {
+        // Extract numeric part from ID
+        let num = id
+            .split('_')
+            .last()
+            .and_then(|s| s.parse::<usize>().ok())
+            .or_else(|| id.parse::<usize>().ok())
+            .unwrap_or(0);
+
+        // Distribute types evenly to ensure variety for tests:
+        // Use modulo 3 to distribute evenly across all types
+        let recipe_type = match num % 3 {
+            0 => "dessert",     // Every 3rd recipe
+            1 => "appetizer",   // Recipes 1, 4, 7, 10, 13...
+            _ => "main_course", // Recipes 2, 3, 5, 6, 8, 9...
+        };
+
         RecipeForPlanning {
             id: id.to_string(),
             title: format!("Recipe {}", id),
-            recipe_type: "dessert".to_string(), // AC-4: Add recipe_type (default to dessert for tests)
+            recipe_type: recipe_type.to_string(),
             ingredients_count: ingredients,
             instructions_count: steps,
             prep_time_min: Some(15),
@@ -538,6 +554,7 @@ mod tests {
         let quick_recipe = RecipeForPlanning {
             id: "1".to_string(),
             title: "Quick Meal".to_string(),
+            recipe_type: "main_course".to_string(),
             ingredients_count: 5,
             instructions_count: 4,
             prep_time_min: Some(10),
@@ -558,15 +575,16 @@ mod tests {
 
     #[test]
     fn test_generate_meal_plan_success() {
-        let favorites = vec![
-            create_test_recipe("1", 5, 4, None),
-            create_test_recipe("2", 8, 6, None),
-            create_test_recipe("3", 10, 8, Some(2)),
-            create_test_recipe("4", 6, 5, None),
-            create_test_recipe("5", 12, 10, None),
-            create_test_recipe("6", 7, 5, None),
-            create_test_recipe("7", 9, 7, None),
-        ];
+        // Create more recipes to ensure we have enough of each type
+        let mut favorites = vec![];
+        for i in 1..=15 {
+            favorites.push(create_test_recipe(
+                &i.to_string(),
+                5 + (i % 8),
+                4 + (i % 6),
+                if i % 5 == 0 { Some(2) } else { None },
+            ));
+        }
 
         let constraints = UserConstraints::default();
         let rotation_state = RotationState::new();
@@ -585,7 +603,7 @@ mod tests {
         // Should have 21 assignments (7 days × 3 meals)
         assert_eq!(assignments.len(), 21);
 
-        // All 7 recipes used, so cycle should have reset (cycle_number increments, used_count = 0)
+        // All 15 recipes used, so cycle should have reset (cycle_number increments, used_count = 0)
         assert_eq!(updated_state.cycle_number, 2);
         assert_eq!(updated_state.used_count(), 0);
     }
@@ -752,7 +770,7 @@ mod tests {
         assert_eq!(assignments1.len(), assignments2.len());
         for (a1, a2) in assignments1.iter().zip(assignments2.iter()) {
             assert_eq!(a1.date, a2.date);
-            assert_eq!(a1.meal_type, a2.meal_type);
+            assert_eq!(a1.course_type, a2.course_type);
             assert_eq!(a1.recipe_id, a2.recipe_id);
         }
     }

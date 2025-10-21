@@ -1129,7 +1129,7 @@ pub async fn query_recipes_by_collection(
 ) -> RecipeResult<Vec<RecipeReadModel>> {
     let rows = sqlx::query(
         r#"
-        SELECT r.id, r.user_id, r.title, r.ingredients, r.instructions,
+        SELECT r.id, r.user_id, r.title, r.recipe_type, r.ingredients, r.instructions,
                r.prep_time_min, r.cook_time_min, r.advance_prep_hours, r.serving_size,
                r.is_favorite, r.is_shared, r.complexity, r.cuisine, r.dietary_tags,
                r.created_at, r.updated_at

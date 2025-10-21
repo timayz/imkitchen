@@ -1,6 +1,6 @@
 use chrono::NaiveDate;
 use meal_planning::algorithm::{generate_reasoning_text, RecipeForPlanning, UserConstraints};
-use meal_planning::constraints::{MealSlot, MealType};
+use meal_planning::constraints::{CourseType, MealSlot};
 
 fn create_test_recipe(
     id: &str,
@@ -19,6 +19,7 @@ fn create_test_recipe(
         cook_time_min: Some(cook_time),
         advance_prep_hours: advance_prep,
         complexity: None,
+        recipe_type: "main_course".to_string(),
     }
 }
 
@@ -29,7 +30,7 @@ fn test_generate_reasoning_weeknight_time_constraint() {
     let tuesday = NaiveDate::from_ymd_opt(2025, 10, 21).unwrap();
     let slot = MealSlot {
         date: tuesday,
-        meal_type: MealType::Dinner,
+        course_type: CourseType::Dessert,
     };
     let user_constraints = UserConstraints::default();
 
@@ -65,7 +66,7 @@ fn test_generate_reasoning_weekend_complexity() {
     let saturday = NaiveDate::from_ymd_opt(2025, 10, 25).unwrap();
     let slot = MealSlot {
         date: saturday,
-        meal_type: MealType::Dinner,
+        course_type: CourseType::Dessert,
     };
     let user_constraints = UserConstraints::default();
 
@@ -101,7 +102,7 @@ fn test_generate_reasoning_advance_prep() {
     let wednesday = NaiveDate::from_ymd_opt(2025, 10, 22).unwrap();
     let slot = MealSlot {
         date: wednesday,
-        meal_type: MealType::Dinner,
+        course_type: CourseType::Dessert,
     };
     let user_constraints = UserConstraints::default();
 
@@ -132,7 +133,7 @@ fn test_generate_reasoning_advance_prep_short() {
     let thursday = NaiveDate::from_ymd_opt(2025, 10, 23).unwrap();
     let slot = MealSlot {
         date: thursday,
-        meal_type: MealType::Dinner,
+        course_type: CourseType::Dessert,
     };
     let user_constraints = UserConstraints::default();
 
@@ -153,7 +154,7 @@ fn test_generate_reasoning_freshness_early_week() {
     let monday = NaiveDate::from_ymd_opt(2025, 10, 20).unwrap();
     let slot = MealSlot {
         date: monday,
-        meal_type: MealType::Dinner,
+        course_type: CourseType::Dessert,
     };
     let user_constraints = UserConstraints::default();
 
@@ -176,7 +177,7 @@ fn test_generate_reasoning_default_fallback() {
     let wednesday = NaiveDate::from_ymd_opt(2025, 10, 22).unwrap();
     let slot = MealSlot {
         date: wednesday,
-        meal_type: MealType::Dinner,
+        course_type: CourseType::Dessert,
     };
     let user_constraints = UserConstraints::default();
 
@@ -202,7 +203,7 @@ fn test_reasoning_human_readable_no_jargon() {
     let saturday = NaiveDate::from_ymd_opt(2025, 10, 25).unwrap();
     let slot = MealSlot {
         date: saturday,
-        meal_type: MealType::Dinner,
+        course_type: CourseType::Dessert,
     };
     let user_constraints = UserConstraints::default();
 
@@ -238,7 +239,7 @@ fn test_reasoning_concise_max_length() {
     let friday = NaiveDate::from_ymd_opt(2025, 10, 24).unwrap();
     let slot = MealSlot {
         date: friday,
-        meal_type: MealType::Dinner,
+        course_type: CourseType::Dessert,
     };
     let user_constraints = UserConstraints::default();
 
@@ -275,7 +276,7 @@ fn test_reasoning_day_name_formatting() {
     for (date, expected_day_name) in days {
         let slot = MealSlot {
             date,
-            meal_type: MealType::Dinner,
+            course_type: CourseType::Dessert,
         };
         let user_constraints = UserConstraints::default();
         let reasoning = generate_reasoning_text(&recipe, &slot, &user_constraints);

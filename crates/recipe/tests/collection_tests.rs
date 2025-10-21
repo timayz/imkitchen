@@ -181,6 +181,7 @@ async fn test_recipe_assignment_and_unassignment() {
     // Create a recipe
     let recipe_command = CreateRecipeCommand {
         title: "Test Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -274,6 +275,7 @@ async fn test_collection_deletion_preserves_recipes() {
     // Create a recipe
     let recipe_command = CreateRecipeCommand {
         title: "Test Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,

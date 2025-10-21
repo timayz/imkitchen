@@ -58,10 +58,25 @@ mod tests {
     }
 
     fn create_test_recipe(id: &str) -> RecipeForPlanning {
+        // Extract numeric part from id (e.g., "recipe_1" -> 1)
+        let num = id
+            .split('_')
+            .last()
+            .and_then(|s| s.parse::<usize>().ok())
+            .unwrap_or(0);
+
+        // Distribute types evenly to ensure variety for regeneration:
+        // Use modulo 3 to distribute evenly across all types
+        let recipe_type = match num % 3 {
+            0 => "dessert",     // Every 3rd recipe
+            1 => "appetizer",   // Recipes 1, 4, 7, 10, 13...
+            _ => "main_course", // Recipes 2, 3, 5, 6, 8, 9...
+        };
+
         RecipeForPlanning {
             id: id.to_string(),
             title: format!("Test Recipe {}", id),
-            recipe_type: "main_course".to_string(), // AC-4: Add recipe_type
+            recipe_type: recipe_type.to_string(),
             ingredients_count: 5,
             instructions_count: 4,
             prep_time_min: Some(15),
@@ -81,11 +96,11 @@ mod tests {
         let user_id = "test_user_1";
         let start_date = "2025-10-20"; // Monday
         let mut rotation_state = RotationState::new();
-        rotation_state.total_favorite_count = 10;
+        rotation_state.total_favorite_count = 30;
 
-        // Create 10 test recipes
+        // Create 30 test recipes (enough for variety and rotation)
         let mut favorites = Vec::new();
-        for i in 1..=10 {
+        for i in 1..=30 {
             favorites.push(create_test_recipe(&format!("recipe_{}", i)));
         }
 
@@ -215,15 +230,11 @@ mod tests {
         let start_date = "2025-10-20";
         let rotation_state = RotationState::new();
 
-        let favorites = vec![
-            create_test_recipe("1"),
-            create_test_recipe("2"),
-            create_test_recipe("3"),
-            create_test_recipe("4"),
-            create_test_recipe("5"),
-            create_test_recipe("6"),
-            create_test_recipe("7"),
-        ];
+        // Create 15 initial recipes for successful generation
+        let mut favorites = Vec::new();
+        for i in 1..=15 {
+            favorites.push(create_test_recipe(&format!("recipe_{}", i)));
+        }
 
         let constraints = UserConstraints::default();
         let (assignments, rotation_state) = MealPlanningAlgorithm::generate(
@@ -293,7 +304,7 @@ mod tests {
         let start_date = "2025-10-20";
         let rotation_state = RotationState::new();
 
-        let favorites = (1..=10)
+        let favorites = (1..=20)
             .map(|i| create_test_recipe(&format!("{}", i)))
             .collect::<Vec<_>>();
 

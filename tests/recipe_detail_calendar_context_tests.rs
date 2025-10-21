@@ -94,6 +94,7 @@ async fn create_test_recipe(
 
     let command = CreateRecipeCommand {
         title: title.to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Test Ingredient".to_string(),
             quantity: 1.0,

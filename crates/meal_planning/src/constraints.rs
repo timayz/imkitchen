@@ -327,6 +327,7 @@ mod tests {
         RecipeForPlanning {
             id: id.to_string(),
             title: format!("Recipe {}", id),
+            recipe_type: "main_course".to_string(),
             ingredients_count: ingredients,
             instructions_count: steps,
             prep_time_min: Some(prep_time),
@@ -341,14 +342,14 @@ mod tests {
         let saturday = NaiveDate::from_ymd_opt(2025, 10, 25).unwrap();
         let slot = MealSlot {
             date: saturday,
-            meal_type: MealType::Dinner,
+            course_type: CourseType::Dessert,
         };
         assert!(slot.is_weekend());
 
         let monday = NaiveDate::from_ymd_opt(2025, 10, 20).unwrap();
         let slot = MealSlot {
             date: monday,
-            meal_type: MealType::Dinner,
+            course_type: CourseType::Dessert,
         };
         assert!(!slot.is_weekend());
     }
@@ -358,14 +359,14 @@ mod tests {
         let monday = NaiveDate::from_ymd_opt(2025, 10, 20).unwrap();
         let slot = MealSlot {
             date: monday,
-            meal_type: MealType::Dinner,
+            course_type: CourseType::Dessert,
         };
         assert_eq!(slot.day_of_week(), 1);
 
         let sunday = NaiveDate::from_ymd_opt(2025, 10, 26).unwrap();
         let slot = MealSlot {
             date: sunday,
-            meal_type: MealType::Dinner,
+            course_type: CourseType::Dessert,
         };
         assert_eq!(slot.day_of_week(), 7);
     }

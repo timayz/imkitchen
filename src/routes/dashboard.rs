@@ -155,7 +155,7 @@ mod tests {
                 id: "assignment_breakfast".to_string(),
                 meal_plan_id: "plan1".to_string(),
                 date: "2025-01-15".to_string(),
-                meal_type: "breakfast".to_string(),
+                course_type: "appetizer".to_string(),
                 recipe_id: "recipe1".to_string(),
                 prep_required: false,
                 assignment_reasoning: None,
@@ -169,7 +169,7 @@ mod tests {
                 id: "assignment_lunch".to_string(),
                 meal_plan_id: "plan1".to_string(),
                 date: "2025-01-15".to_string(),
-                meal_type: "lunch".to_string(),
+                course_type: "main_course".to_string(),
                 recipe_id: "recipe2".to_string(),
                 prep_required: true,
                 assignment_reasoning: Some("Marinated chicken".to_string()),
@@ -183,7 +183,7 @@ mod tests {
                 id: "assignment_dinner".to_string(),
                 meal_plan_id: "plan1".to_string(),
                 date: "2025-01-15".to_string(),
-                meal_type: "dinner".to_string(),
+                course_type: "dessert".to_string(),
                 recipe_id: "recipe3".to_string(),
                 prep_required: false,
                 assignment_reasoning: None,
@@ -198,27 +198,27 @@ mod tests {
         let result = map_to_todays_meals(&assignments);
 
         assert!(result.has_meal_plan);
-        assert!(result.breakfast.is_some());
-        assert!(result.lunch.is_some());
-        assert!(result.dinner.is_some());
+        assert!(result.appetizer.is_some());
+        assert!(result.main_course.is_some());
+        assert!(result.dessert.is_some());
 
-        // Verify breakfast
-        let breakfast = result.breakfast.unwrap();
-        assert_eq!(breakfast.recipe_title, "Pancakes");
-        assert_eq!(breakfast.total_time_min, 25);
-        assert!(!breakfast.advance_prep_required);
+        // Verify appetizer
+        let appetizer = result.appetizer.unwrap();
+        assert_eq!(appetizer.recipe_title, "Pancakes");
+        assert_eq!(appetizer.total_time_min, 25);
+        assert!(!appetizer.advance_prep_required);
 
-        // Verify lunch
-        let lunch = result.lunch.unwrap();
-        assert_eq!(lunch.recipe_title, "Chicken Salad");
-        assert_eq!(lunch.total_time_min, 20);
-        assert!(lunch.advance_prep_required);
+        // Verify main course
+        let main_course = result.main_course.unwrap();
+        assert_eq!(main_course.recipe_title, "Chicken Salad");
+        assert_eq!(main_course.total_time_min, 20);
+        assert!(main_course.advance_prep_required);
 
-        // Verify dinner
-        let dinner = result.dinner.unwrap();
-        assert_eq!(dinner.recipe_title, "Pasta Carbonara");
-        assert_eq!(dinner.total_time_min, 35);
-        assert!(!dinner.advance_prep_required);
+        // Verify dessert
+        let dessert = result.dessert.unwrap();
+        assert_eq!(dessert.recipe_title, "Pasta Carbonara");
+        assert_eq!(dessert.total_time_min, 35);
+        assert!(!dessert.advance_prep_required);
     }
 
     /// Test: map_to_todays_meals() handles missing meal slots
@@ -228,7 +228,7 @@ mod tests {
             id: "assignment_breakfast".to_string(),
             meal_plan_id: "plan1".to_string(),
             date: "2025-01-15".to_string(),
-            meal_type: "breakfast".to_string(),
+            course_type: "appetizer".to_string(),
             recipe_id: "recipe1".to_string(),
             prep_required: false,
             assignment_reasoning: None,
@@ -242,9 +242,9 @@ mod tests {
         let result = map_to_todays_meals(&assignments);
 
         assert!(result.has_meal_plan);
-        assert!(result.breakfast.is_some());
-        assert!(result.lunch.is_none());
-        assert!(result.dinner.is_none());
+        assert!(result.appetizer.is_some());
+        assert!(result.main_course.is_none());
+        assert!(result.dessert.is_none());
     }
 
     /// Test: map_to_todays_meals() handles zero times gracefully
@@ -254,7 +254,7 @@ mod tests {
             id: "assignment_breakfast".to_string(),
             meal_plan_id: "plan1".to_string(),
             date: "2025-01-15".to_string(),
-            meal_type: "breakfast".to_string(),
+            course_type: "appetizer".to_string(),
             recipe_id: "recipe1".to_string(),
             prep_required: false,
             assignment_reasoning: None,
@@ -267,8 +267,8 @@ mod tests {
 
         let result = map_to_todays_meals(&assignments);
 
-        let breakfast = result.breakfast.unwrap();
-        assert_eq!(breakfast.total_time_min, 0);
-        assert!(!breakfast.advance_prep_required);
+        let appetizer = result.appetizer.unwrap();
+        assert_eq!(appetizer.total_time_min, 0);
+        assert!(!appetizer.advance_prep_required);
     }
 }

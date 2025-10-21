@@ -63,6 +63,7 @@ async fn test_create_recipe_validates_title_length() {
     // Test title too short (< 3 chars)
     let command = CreateRecipeCommand {
         title: "ab".to_string(), // Only 2 characters
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -95,6 +96,7 @@ async fn test_create_recipe_requires_at_least_one_ingredient() {
 
     let command = CreateRecipeCommand {
         title: "Test Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![], // Empty ingredients
         instructions: vec![InstructionStep {
             step_number: 1,
@@ -123,6 +125,7 @@ async fn test_create_recipe_requires_at_least_one_instruction() {
 
     let command = CreateRecipeCommand {
         title: "Test Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -165,6 +168,7 @@ async fn test_free_tier_recipe_limit_enforced() {
 
     let command = CreateRecipeCommand {
         title: "11th Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -210,6 +214,7 @@ async fn test_premium_tier_bypasses_recipe_limit() {
 
     let command = CreateRecipeCommand {
         title: "101st Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -283,6 +288,7 @@ async fn test_shared_recipes_dont_count_toward_limit() {
     // Should be able to create 5 more private recipes before hitting limit again
     let command = CreateRecipeCommand {
         title: "Recipe 11 - Should Succeed".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -314,6 +320,7 @@ async fn test_create_recipe_success_returns_recipe_id() {
 
     let command = CreateRecipeCommand {
         title: "Chicken Tikka Masala".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![
             Ingredient {
                 name: "Chicken".to_string(),
@@ -365,6 +372,7 @@ async fn test_recipe_created_event_stored_and_loaded() {
     // Create a recipe (which writes RecipeCreated event)
     let command = CreateRecipeCommand {
         title: "Event Test Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -422,6 +430,7 @@ async fn insert_test_recipe(
 ) -> String {
     let command = CreateRecipeCommand {
         title: title.to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -456,6 +465,7 @@ async fn test_recipe_updated_event_applies_delta_changes() {
     // Create initial recipe
     let create_command = CreateRecipeCommand {
         title: "Original Title".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -481,6 +491,7 @@ async fn test_recipe_updated_event_applies_delta_changes() {
         recipe_id: recipe_id.clone(),
         user_id: user1_id.clone(),
         title: Some("Updated Title".to_string()),
+        recipe_type: Some("main_course".to_string()),
         ingredients: Some(vec![
             Ingredient {
                 name: "Salt".to_string(),
@@ -540,6 +551,7 @@ async fn test_update_recipe_validates_empty_ingredients() {
     // Create initial recipe
     let create_command = CreateRecipeCommand {
         title: "Test Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -565,6 +577,7 @@ async fn test_update_recipe_validates_empty_ingredients() {
         recipe_id: recipe_id.clone(),
         user_id: user1_id.clone(),
         title: None,
+        recipe_type: Some("main_course".to_string()),
         ingredients: Some(vec![]), // Empty ingredients - should fail
         instructions: None,
         prep_time_min: None,
@@ -594,6 +607,7 @@ async fn test_update_recipe_validates_empty_instructions() {
     // Create initial recipe
     let create_command = CreateRecipeCommand {
         title: "Test Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -619,6 +633,7 @@ async fn test_update_recipe_validates_empty_instructions() {
         recipe_id: recipe_id.clone(),
         user_id: user1_id.clone(),
         title: None,
+        recipe_type: Some("main_course".to_string()),
         ingredients: None,
         instructions: Some(vec![]), // Empty instructions - should fail
         prep_time_min: None,
@@ -648,6 +663,7 @@ async fn test_update_recipe_validates_title_length() {
     // Create initial recipe
     let create_command = CreateRecipeCommand {
         title: "Original Title".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -673,6 +689,7 @@ async fn test_update_recipe_validates_title_length() {
         recipe_id: recipe_id.clone(),
         user_id: user1_id.clone(),
         title: Some("ab".to_string()), // Only 2 characters
+        recipe_type: Some("main_course".to_string()),
         ingredients: None,
         instructions: None,
         prep_time_min: None,
@@ -703,6 +720,7 @@ async fn test_update_recipe_ownership_denied() {
     // User1 creates a recipe
     let create_command = CreateRecipeCommand {
         title: "User1's Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -728,6 +746,7 @@ async fn test_update_recipe_ownership_denied() {
         recipe_id: recipe_id.clone(),
         user_id: user2_id.clone(), // Different user!
         title: Some("Hijacked Title".to_string()),
+        recipe_type: Some("main_course".to_string()),
         ingredients: None,
         instructions: None,
         prep_time_min: None,
@@ -758,6 +777,7 @@ async fn test_update_recipe_recalculates_complexity() {
     // Create recipe with simple complexity (5 ingredients, 4 steps, no advance prep)
     let create_command = CreateRecipeCommand {
         title: "Simple Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![
             Ingredient {
                 name: "ingredient1".to_string(),
@@ -860,6 +880,7 @@ async fn test_update_recipe_recalculates_complexity() {
         recipe_id: recipe_id.clone(),
         user_id: user1_id.clone(),
         title: None,
+        recipe_type: Some("main_course".to_string()),
         ingredients: Some(new_ingredients),
         instructions: Some(new_instructions),
         prep_time_min: None,
@@ -885,6 +906,7 @@ async fn test_update_recipe_recalculates_complexity() {
         recipe_id: recipe_id.clone(),
         user_id: user1_id.clone(),
         title: None,
+        recipe_type: Some("main_course".to_string()),
         ingredients: None,
         instructions: None,
         prep_time_min: None,
@@ -932,6 +954,7 @@ async fn test_update_recipe_recalculates_complexity() {
         recipe_id: recipe_id.clone(),
         user_id: user1_id.clone(),
         title: None,
+        recipe_type: Some("main_course".to_string()),
         ingredients: Some(complex_ingredients),
         instructions: Some(complex_instructions),
         prep_time_min: None,
@@ -976,6 +999,7 @@ async fn test_update_recipe_clears_optional_fields() {
     // Create recipe with timing fields set
     let create_command = CreateRecipeCommand {
         title: "Recipe with Timing".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -1001,6 +1025,7 @@ async fn test_update_recipe_clears_optional_fields() {
         recipe_id: recipe_id.clone(),
         user_id: user1_id.clone(),
         title: None,
+        recipe_type: Some("main_course".to_string()),
         ingredients: None,
         instructions: None,
         prep_time_min: Some(None), // Option<Option<u32>>: explicitly set to None
@@ -1039,6 +1064,7 @@ async fn test_recipe_deleted_event_sets_is_deleted_flag() {
     // Create a recipe
     let create_command = CreateRecipeCommand {
         title: "Recipe to Delete".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -1090,6 +1116,7 @@ async fn test_delete_recipe_validates_ownership() {
     // User1 creates a recipe
     let create_command = CreateRecipeCommand {
         title: "User1's Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -1165,6 +1192,7 @@ async fn test_favorite_recipe_toggles_status() {
     // Create a recipe
     let command = CreateRecipeCommand {
         title: "Test Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Flour".to_string(),
             quantity: 2.0,
@@ -1268,6 +1296,7 @@ async fn test_favorite_recipe_ownership_check() {
     // User1 creates a recipe
     let command = CreateRecipeCommand {
         title: "User1 Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -1346,6 +1375,7 @@ async fn test_query_recipes_favorite_only_filter() {
     // Create 3 recipes
     let command1 = CreateRecipeCommand {
         title: "Recipe 1".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Ingredient 1".to_string(),
             quantity: 1.0,
@@ -1368,6 +1398,7 @@ async fn test_query_recipes_favorite_only_filter() {
 
     let command2 = CreateRecipeCommand {
         title: "Recipe 2".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Ingredient 2".to_string(),
             quantity: 2.0,
@@ -1390,6 +1421,7 @@ async fn test_query_recipes_favorite_only_filter() {
 
     let command3 = CreateRecipeCommand {
         title: "Recipe 3".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Ingredient 3".to_string(),
             quantity: 3.0,
@@ -1485,6 +1517,7 @@ async fn test_share_recipe_emits_event() {
     // Create a test recipe
     let command = CreateRecipeCommand {
         title: "Test Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -1543,6 +1576,7 @@ async fn test_unshare_recipe_emits_event() {
     // Create and share a recipe
     let command = CreateRecipeCommand {
         title: "Test Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -1615,6 +1649,7 @@ async fn test_share_recipe_ownership_check() {
     // User1 creates a recipe
     let command = CreateRecipeCommand {
         title: "User1's Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -1689,6 +1724,7 @@ async fn test_recipe_shared_event_applied_to_aggregate() {
     // Create recipe
     let command = CreateRecipeCommand {
         title: "Test Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -1781,6 +1817,7 @@ async fn test_deleted_recipe_excluded_from_query() {
     // Create and share a recipe
     let command = CreateRecipeCommand {
         title: "Recipe to Delete".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Salt".to_string(),
             quantity: 1.0,
@@ -1864,6 +1901,7 @@ async fn test_deleted_recipe_excluded_from_user_list() {
     let recipe_id_1 = create_recipe(
         CreateRecipeCommand {
             title: "Recipe 1".to_string(),
+            recipe_type: "main_course".to_string(),
             ingredients: vec![Ingredient {
                 name: "Salt".to_string(),
                 quantity: 1.0,
@@ -1889,6 +1927,7 @@ async fn test_deleted_recipe_excluded_from_user_list() {
     let recipe_id_2 = create_recipe(
         CreateRecipeCommand {
             title: "Recipe 2".to_string(),
+            recipe_type: "main_course".to_string(),
             ingredients: vec![Ingredient {
                 name: "Pepper".to_string(),
                 quantity: 1.0,
@@ -1973,6 +2012,7 @@ async fn test_deleted_recipes_excluded_from_limit() {
         create_recipe(
             CreateRecipeCommand {
                 title: format!("Recipe {}", i + 1),
+                recipe_type: "main_course".to_string(),
                 ingredients: vec![Ingredient {
                     name: "Salt".to_string(),
                     quantity: 1.0,
@@ -2007,6 +2047,7 @@ async fn test_deleted_recipes_excluded_from_limit() {
     let result_at_limit = create_recipe(
         CreateRecipeCommand {
             title: "Recipe 11".to_string(),
+            recipe_type: "main_course".to_string(),
             ingredients: vec![Ingredient {
                 name: "Salt".to_string(),
                 quantity: 1.0,
@@ -2062,6 +2103,7 @@ async fn test_deleted_recipes_excluded_from_limit() {
     let result_after_delete = create_recipe(
         CreateRecipeCommand {
             title: "Recipe after delete".to_string(),
+            recipe_type: "main_course".to_string(),
             ingredients: vec![Ingredient {
                 name: "Salt".to_string(),
                 quantity: 1.0,
@@ -2104,6 +2146,7 @@ async fn test_copy_recipe_success() {
     // Creator creates and shares a recipe
     let create_command = CreateRecipeCommand {
         title: "Awesome Community Recipe".to_string(),
+        recipe_type: "main_course".to_string(),
         ingredients: vec![Ingredient {
             name: "Flour".to_string(),
             quantity: 2.0,
@@ -2205,6 +2248,7 @@ async fn test_copy_recipe_prevents_duplicates() {
     let original_recipe_id = create_recipe(
         CreateRecipeCommand {
             title: "Recipe to Copy".to_string(),
+            recipe_type: "main_course".to_string(),
             ingredients: vec![Ingredient {
                 name: "Salt".to_string(),
                 quantity: 1.0,
@@ -2294,6 +2338,7 @@ async fn test_copy_recipe_enforces_freemium_limit() {
     let original_recipe_id = create_recipe(
         CreateRecipeCommand {
             title: "Recipe to Copy".to_string(),
+            recipe_type: "main_course".to_string(),
             ingredients: vec![Ingredient {
                 name: "Salt".to_string(),
                 quantity: 1.0,
@@ -2347,6 +2392,7 @@ async fn test_copy_recipe_enforces_freemium_limit() {
         create_recipe(
             CreateRecipeCommand {
                 title: format!("Recipe {}", i + 1),
+                recipe_type: "main_course".to_string(),
                 ingredients: vec![Ingredient {
                     name: "Pepper".to_string(),
                     quantity: 1.0,
@@ -2406,6 +2452,7 @@ async fn test_copy_recipe_requires_shared_recipe() {
     let private_recipe_id = create_recipe(
         CreateRecipeCommand {
             title: "Private Recipe".to_string(),
+            recipe_type: "main_course".to_string(),
             ingredients: vec![Ingredient {
                 name: "Salt".to_string(),
                 quantity: 1.0,
@@ -2485,6 +2532,7 @@ async fn test_copy_recipe_modifications_independent() {
     let original_recipe_id = create_recipe(
         CreateRecipeCommand {
             title: "Original Recipe".to_string(),
+            recipe_type: "main_course".to_string(),
             ingredients: vec![Ingredient {
                 name: "Original Ingredient".to_string(),
                 quantity: 1.0,
@@ -2554,6 +2602,7 @@ async fn test_copy_recipe_modifications_independent() {
         recipe_id: copied_recipe_id.clone(),
         user_id: copier_id.clone(),
         title: Some("Modified Copy".to_string()),
+        recipe_type: Some("main_course".to_string()),
         ingredients: Some(vec![Ingredient {
             name: "Modified Ingredient".to_string(),
             quantity: 2.0,
