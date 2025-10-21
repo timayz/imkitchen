@@ -6,7 +6,7 @@ use axum::{
 };
 use clap::{Parser, Subcommand};
 use evento::prelude::*;
-use imkitchen::middleware::auth_middleware;
+use imkitchen::middleware::{auth_middleware, cache_control_middleware};
 use imkitchen::routes::{
     browser_support, check_recipe_exists, check_shopping_item, complete_prep_task_handler,
     dashboard_handler, dismiss_notification, generate_shopping_list_handler, get_check_user,
@@ -336,6 +336,8 @@ async fn serve_command(
                 .nest_service("/static", AssetsService::new())
                 .with_state(state),
         )
+        // Add cache control middleware (no-cache for HTML, cache for static files)
+        .layer(axum_middleware::from_fn(cache_control_middleware))
         // Enable Brotli and Gzip compression for all text assets (Story 5.9)
         .layer(CompressionLayer::new().br(true).gzip(true))
         .layer(TraceLayer::new_for_http());
