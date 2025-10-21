@@ -4,6 +4,7 @@ pub mod collections;
 pub mod dashboard;
 pub mod health;
 pub mod landing;
+pub mod legal;
 pub mod meal_plan;
 pub mod notifications;
 pub mod profile;
@@ -23,6 +24,7 @@ pub use collections::{
 pub use dashboard::dashboard_handler;
 pub use health::{browser_support, health, offline, ready};
 pub use landing::get_landing;
+pub use legal::{get_privacy, get_terms};
 pub use meal_plan::{
     get_meal_alternatives, get_meal_plan, get_regenerate_confirm, post_generate_meal_plan,
     post_regenerate_meal_plan, post_replace_meal,

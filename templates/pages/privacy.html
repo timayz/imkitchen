@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}Privacy Policy - imkitchen{% endblock %}
+
+{% block meta_description %}imkitchen Privacy Policy - How we collect, use, and protect your personal information.{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 md:py-12 max-w-4xl">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 md:p-10">
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Privacy Policy</h1>
+
+        <p class="text-sm text-gray-600 mb-8">
+            <strong>Last Updated:</strong> January 21, 2025
+        </p>
+
+        <div class="prose prose-lg max-w-none space-y-8">
+            <!-- Introduction -->
+            <section>
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">1. Introduction</h2>
+                <p class="text-gray-700 leading-relaxed mb-4">
+                    Welcome to imkitchen ("we," "our," or "us"). We are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our intelligent meal planning platform.
+                </p>
+                <p class="text-gray-700 leading-relaxed">
+                    By using imkitchen, you agree to the collection and use of information in accordance with this policy. If you do not agree with our policies and practices, please do not use our service.
+                </p>
+            </section>
+
+            <!-- Information We Collect -->
+            <section>
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">2. Information We Collect</h2>
+
+                <h3 class="text-xl font-semibold text-gray-900 mb-3">2.1 Information You Provide</h3>
+                <p class="text-gray-700 leading-relaxed mb-3">We collect information that you voluntarily provide when using our service:</p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-700 mb-4">
+                    <li><strong>Account Information:</strong> Email address, password (hashed with Argon2), and account preferences</li>
+                    <li><strong>Profile Information:</strong> Dietary restrictions, household size, cooking skill level, weeknight availability</li>
+                    <li><strong>Recipe Data:</strong> Recipes you create, including titles, ingredients, instructions, images, preparation times, and course classifications</li>
+                    <li><strong>Usage Data:</strong> Meal plans you generate, recipes you favorite, shopping lists, and meal replacements</li>
+                    <li><strong>Community Content:</strong> Recipes you share publicly, ratings, and reviews you submit</li>
+                    <li><strong>Subscription Information:</strong> Premium subscription status and payment details (processed securely via Stripe)</li>
+                </ul>
+
+                <h3 class="text-xl font-semibold text-gray-900 mb-3">2.2 Automatically Collected Information</h3>
+                <p class="text-gray-700 leading-relaxed mb-3">We automatically collect certain information when you use our service:</p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-700 mb-4">
+                    <li><strong>Device Information:</strong> Browser type, operating system, device identifiers</li>
+                    <li><strong>Usage Analytics:</strong> Pages visited, features used, time spent on platform, interaction patterns</li>
+                    <li><strong>Performance Data:</strong> Application errors, performance metrics, feature usage statistics</li>
+                    <li><strong>Location Data:</strong> General geographic location (city/region level) derived from IP address for service optimization</li>
+                </ul>
+
+                <h3 class="text-xl font-semibold text-gray-900 mb-3">2.3 Cookies and Tracking Technologies</h3>
+                <p class="text-gray-700 leading-relaxed mb-3">We use the following technologies:</p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-700">
+                    <li><strong>Authentication Cookies:</strong> HTTP-only, secure cookies for session management (JWT tokens, 7-day expiration)</li>
+                    <li><strong>Local Storage:</strong> Offline data caching for PWA functionality (recipes, meal plans, shopping lists)</li>
+                    <li><strong>Service Workers:</strong> Background sync and offline support</li>
+                    <li><strong>Analytics:</strong> OpenTelemetry for performance monitoring (anonymized)</li>
+                </ul>
+            </section>
+
+            <!-- How We Use Your Information -->
+            <section>
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">3. How We Use Your Information</h2>
+                <p class="text-gray-700 leading-relaxed mb-3">We use the collected information for the following purposes:</p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-700">
+                    <li><strong>Service Delivery:</strong> Generate personalized meal plans, create shopping lists, provide recipe recommendations</li>
+                    <li><strong>Account Management:</strong> Authenticate users, manage subscriptions, enforce free tier limits (10 recipes)</li>
+                    <li><strong>Communication:</strong> Send preparation reminders, cooking notifications, important service updates</li>
+                    <li><strong>Improvement:</strong> Analyze usage patterns to improve meal planning algorithms, enhance user experience</li>
+                    <li><strong>Community Features:</strong> Display shared recipes, aggregate ratings, facilitate recipe discovery</li>
+                    <li><strong>Security:</strong> Detect fraud, prevent abuse, ensure platform integrity</li>
+                    <li><strong>Legal Compliance:</strong> Comply with applicable laws and regulations</li>
+                </ul>
+            </section>
+
+            <!-- Data Sharing and Disclosure -->
+            <section>
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">4. Data Sharing and Disclosure</h2>
+
+                <h3 class="text-xl font-semibold text-gray-900 mb-3">4.1 Public Information</h3>
+                <p class="text-gray-700 leading-relaxed mb-4">
+                    When you share recipes to the community, the following information becomes publicly visible: recipe title, ingredients, instructions, images, your username, ratings, and reviews. Shared recipes are indexed by search engines for community discovery.
+                </p>
+
+                <h3 class="text-xl font-semibold text-gray-900 mb-3">4.2 Service Providers</h3>
+                <p class="text-gray-700 leading-relaxed mb-3">We share data with trusted third-party service providers:</p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-700 mb-4">
+                    <li><strong>Payment Processing:</strong> Stripe (for premium subscriptions) - credit card data handled exclusively by Stripe, we never store payment details</li>
+                    <li><strong>Email Services:</strong> SMTP provider (for password reset emails, notifications) - only email addresses shared</li>
+                    <li><strong>Image Storage:</strong> MinIO S3-compatible storage (for recipe images) - images only, no personal data</li>
+                    <li><strong>Infrastructure:</strong> Cloud hosting providers (servers, databases) - encrypted data at rest and in transit</li>
+                </ul>
+
+                <h3 class="text-xl font-semibold text-gray-900 mb-3">4.3 Legal Requirements</h3>
+                <p class="text-gray-700 leading-relaxed">
+                    We may disclose your information if required by law, court order, or government regulation, or if we believe disclosure is necessary to protect our rights, your safety, or the safety of others.
+                </p>
+            </section>
+
+            <!-- Data Retention -->
+            <section>
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">5. Data Retention</h2>
+                <p class="text-gray-700 leading-relaxed mb-3">We retain your information as follows:</p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-700">
+                    <li><strong>Account Data:</strong> Retained while your account is active</li>
+                    <li><strong>Event Sourcing:</strong> Domain events stored permanently for audit trail (anonymized on account deletion)</li>
+                    <li><strong>Community Content:</strong> Shared recipes retained indefinitely (anonymized author on account deletion)</li>
+                    <li><strong>Analytics Data:</strong> Aggregated, anonymized analytics retained for service improvement</li>
+                    <li><strong>Deleted Accounts:</strong> Personal identifiers replaced with anonymized values within 30 days of deletion request</li>
+                </ul>
+            </section>
+
+            <!-- Your Rights (GDPR/CCPA) -->
+            <section>
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">6. Your Privacy Rights</h2>
+                <p class="text-gray-700 leading-relaxed mb-3">
+                    Depending on your location, you may have the following rights regarding your personal information:
+                </p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-700 mb-4">
+                    <li><strong>Access:</strong> Request a copy of your personal data in JSON format (available via Profile settings)</li>
+                    <li><strong>Correction:</strong> Update inaccurate or incomplete information via Profile page</li>
+                    <li><strong>Deletion:</strong> Request account deletion (anonymizes personal data, retains anonymized events)</li>
+                    <li><strong>Portability:</strong> Export your recipes, meal plans, and profile data (future feature)</li>
+                    <li><strong>Opt-Out:</strong> Unsubscribe from notifications via Notification Settings</li>
+                    <li><strong>Objection:</strong> Object to certain data processing activities</li>
+                </ul>
+                <p class="text-gray-700 leading-relaxed">
+                    To exercise these rights, contact us at <a href="mailto:privacy@imkitchen.app" class="text-primary-500 hover:underline">privacy@imkitchen.app</a> or use the Profile settings page.
+                </p>
+            </section>
+
+            <!-- Data Security -->
+            <section>
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">7. Data Security</h2>
+                <p class="text-gray-700 leading-relaxed mb-3">
+                    We implement industry-standard security measures to protect your information:
+                </p>
+                <ul class="list-disc pl-6 space-y-2 text-gray-700">
+                    <li><strong>Encryption:</strong> TLS 1.3 for data in transit, encrypted database storage</li>
+                    <li><strong>Authentication:</strong> Argon2 password hashing (OWASP-recommended), JWT tokens with HTTP-only cookies</li>
+                    <li><strong>Infrastructure:</strong> Regular security updates, vulnerability scanning, penetration testing</li>
+                    <li><strong>Access Control:</strong> Role-based access, least-privilege principle</li>
+                    <li><strong>Monitoring:</strong> Real-time security alerts, audit logging via OpenTelemetry</li>
+                </ul>
+                <p class="text-gray-700 leading-relaxed mt-4">
+                    However, no method of transmission over the Internet is 100% secure. While we strive to protect your data, we cannot guarantee absolute security.
+                </p>
+            </section>
+
+            <!-- Children's Privacy -->
+            <section>
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">8. Children's Privacy</h2>
+                <p class="text-gray-700 leading-relaxed">
+                    imkitchen is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13. If you believe we have collected information from a child under 13, please contact us immediately at <a href="mailto:privacy@imkitchen.app" class="text-primary-500 hover:underline">privacy@imkitchen.app</a>.
+                </p>
+            </section>
+
+            <!-- International Data Transfers -->
+            <section>
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">9. International Data Transfers</h2>
+                <p class="text-gray-700 leading-relaxed">
+                    Your information may be transferred to and processed in countries other than your country of residence. These countries may have different data protection laws. By using imkitchen, you consent to the transfer of your information to our servers and service providers globally. We ensure appropriate safeguards are in place for such transfers.
+                </p>
+            </section>
+
+            <!-- Third-Party Links -->
+            <section>
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">10. Third-Party Links</h2>
+                <p class="text-gray-700 leading-relaxed">
+                    Our service may contain links to third-party websites (e.g., community recipe sources, payment processors). We are not responsible for the privacy practices of these external sites. We encourage you to review their privacy policies before providing any personal information.
+                </p>
+            </section>
+
+            <!-- Changes to This Policy -->
+            <section>
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">11. Changes to This Privacy Policy</h2>
+                <p class="text-gray-700 leading-relaxed">
+                    We may update this Privacy Policy from time to time to reflect changes in our practices or legal requirements. We will notify you of material changes by posting the updated policy on this page and updating the "Last Updated" date. Your continued use of imkitchen after changes indicates acceptance of the updated policy.
+                </p>
+            </section>
+
+            <!-- Contact Us -->
+            <section>
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">12. Contact Us</h2>
+                <p class="text-gray-700 leading-relaxed mb-4">
+                    If you have questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us:
+                </p>
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-6">
+                    <p class="text-gray-700 mb-2"><strong>Email:</strong> <a href="mailto:privacy@imkitchen.app" class="text-primary-500 hover:underline">privacy@imkitchen.app</a></p>
+                    <p class="text-gray-700 mb-2"><strong>Data Protection Officer:</strong> <a href="mailto:dpo@imkitchen.app" class="text-primary-500 hover:underline">dpo@imkitchen.app</a></p>
+                    <p class="text-gray-700"><strong>Response Time:</strong> We aim to respond to all inquiries within 30 days</p>
+                </div>
+            </section>
+
+            <!-- GDPR/CCPA Compliance Statement -->
+            <section class="bg-blue-50 border border-blue-200 rounded-lg p-6 mt-8">
+                <h3 class="text-lg font-bold text-gray-900 mb-3">GDPR & CCPA Compliance</h3>
+                <p class="text-gray-700 leading-relaxed">
+                    imkitchen complies with the General Data Protection Regulation (GDPR) for users in the European Economic Area and the California Consumer Privacy Act (CCPA) for California residents. You have the right to access, correct, delete, and port your personal data. For GDPR or CCPA-specific requests, contact <a href="mailto:privacy@imkitchen.app" class="text-primary-500 hover:underline">privacy@imkitchen.app</a> with "GDPR Request" or "CCPA Request" in the subject line.
+                </p>
+            </section>
+        </div>
+
+        <!-- Back to Home -->
+        <div class="mt-12 pt-8 border-t border-gray-200">
+            <a href="/" class="inline-flex items-center text-primary-500 hover:text-primary-600 font-medium">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Back to Home
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
