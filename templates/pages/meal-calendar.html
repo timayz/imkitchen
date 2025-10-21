@@ -99,15 +99,15 @@ button.ts-active::after {
 
                 <!-- Meal Slots -->
                 <div class="p-4 space-y-4">
-                    <!-- Breakfast -->
-                    {% match day.breakfast %}
-                    {% when Some with (breakfast) %}
-                    <div id="meal-slot-{{ breakfast.assignment_id }}" class="border-l-4 border-yellow-400 pl-3 py-2">
+                    <!-- Appetizer (AC-5: Course-based model, renamed from Appetizer) -->
+                    {% match day.appetizer %}
+                    {% when Some with (appetizer) %}
+                    <div id="meal-slot-{{ appetizer.assignment_id }}" class="border-l-4 border-yellow-400 pl-3 py-2">
                         <div class="flex items-center justify-between mb-1">
                             <div class="flex items-center">
-                                <span class="text-xs font-semibold text-gray-500 uppercase">Breakfast</span>
+                                <span class="text-xs font-semibold text-gray-500 uppercase">Appetizer</span>
                                 <!-- Story 3.8: Assignment Reasoning Tooltip -->
-                                {% match breakfast.assignment_reasoning %}
+                                {% match appetizer.assignment_reasoning %}
                                 {% when Some with (reasoning) %}
                                 <button type="button" class="info-icon text-gray-400 hover:text-primary-500 transition-colors cursor-help ml-1" aria-label="Why this meal was assigned" title="{{ reasoning }}">
                                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -116,7 +116,7 @@ button.ts-active::after {
                                 </button>
                                 {% when None %}{% endmatch %}
                             </div>
-                            {% match breakfast.complexity %}
+                            {% match appetizer.complexity %}
                             {% when Some with (complexity) %}
                             <!-- AC-5: Color-coded complexity badges -->
                             <span class="text-xs px-2 py-1 rounded {% if complexity == "simple" %}bg-green-100 text-green-800{% else %}{% if complexity == "moderate" %}bg-yellow-100 text-yellow-800{% else %}bg-red-100 text-red-800{% endif %}{% endif %}">
@@ -125,28 +125,28 @@ button.ts-active::after {
                             {% when None %}{% endmatch %}
                         </div>
                         <!-- Story 3.5: Add calendar context to recipe link -->
-                        <a href="/recipes/{{ breakfast.recipe_id }}?from=calendar&meal_plan_id={{ day.meal_plan_id }}&assignment_id={{ breakfast.assignment_id }}" class="text-gray-900 hover:text-primary-500 font-medium block">
-                            {{ breakfast.recipe_title }}
+                        <a href="/recipes/{{ appetizer.recipe_id }}?from=calendar&meal_plan_id={{ day.meal_plan_id }}&assignment_id={{ appetizer.assignment_id }}" class="text-gray-900 hover:text-primary-500 font-medium block">
+                            {{ appetizer.recipe_title }}
                         </a>
                         <!-- Story 3.5 AC-6: Kitchen Mode Link -->
-                        <a href="/recipes/{{ breakfast.recipe_id }}?from=calendar&meal_plan_id={{ day.meal_plan_id }}&assignment_id={{ breakfast.assignment_id }}&kitchen_mode=true" class="text-xs text-gray-500 hover:text-gray-700 underline">
+                        <a href="/recipes/{{ appetizer.recipe_id }}?from=calendar&meal_plan_id={{ day.meal_plan_id }}&assignment_id={{ appetizer.assignment_id }}&kitchen_mode=true" class="text-xs text-gray-500 hover:text-gray-700 underline">
                             👨‍🍳 Kitchen Mode
                         </a>
                         <div class="flex items-center gap-2 mt-1 text-xs text-gray-500">
-                            {% match breakfast.prep_time_min %}
+                            {% match appetizer.prep_time_min %}
                             {% when Some with (prep) %}
                             <span>🔪 {{ prep }}m</span>
                             {% when None %}{% endmatch %}
-                            {% match breakfast.cook_time_min %}
+                            {% match appetizer.cook_time_min %}
                             {% when Some with (cook) %}
                             <span>🔥 {{ cook }}m</span>
                             {% when None %}{% endmatch %}
-                            {% if breakfast.prep_required %}
+                            {% if appetizer.prep_required %}
                             <span class="text-orange-600 font-semibold" title="Advance prep required">⏰</span>
                             {% endif %}
                         </div>
                         <button
-                            ts-req="/plan/meal/{{ breakfast.assignment_id }}/alternatives"
+                            ts-req="/plan/meal/{{ appetizer.assignment_id }}/alternatives"
                             ts-req-method="GET"
                             ts-target="#modal-container"
                             ts-swap="inner"
@@ -156,20 +156,20 @@ button.ts-active::after {
                     </div>
                     {% when None %}
                     <div class="border-l-4 border-gray-200 pl-3 py-2">
-                        <span class="text-xs font-semibold text-gray-400 uppercase">Breakfast</span>
+                        <span class="text-xs font-semibold text-gray-400 uppercase">Appetizer</span>
                         <p class="text-gray-400 text-sm">No meal planned</p>
                     </div>
                     {% endmatch %}
 
-                    <!-- Lunch -->
-                    {% match day.lunch %}
-                    {% when Some with (lunch) %}
-                    <div id="meal-slot-{{ lunch.assignment_id }}" class="border-l-4 border-green-400 pl-3 py-2">
+                    <!-- Main Course -->
+                    {% match day.main_course %}
+                    {% when Some with (main_course) %}
+                    <div id="meal-slot-{{ main_course.assignment_id }}" class="border-l-4 border-green-400 pl-3 py-2">
                         <div class="flex items-center justify-between mb-1">
                             <div class="flex items-center">
-                                <span class="text-xs font-semibold text-gray-500 uppercase">Lunch</span>
+                                <span class="text-xs font-semibold text-gray-500 uppercase">Main Course</span>
                                 <!-- Story 3.8: Assignment Reasoning Tooltip -->
-                                {% match lunch.assignment_reasoning %}
+                                {% match main_course.assignment_reasoning %}
                                 {% when Some with (reasoning) %}
                                 <button type="button" class="info-icon text-gray-400 hover:text-primary-500 transition-colors cursor-help ml-1" aria-label="Why this meal was assigned" title="{{ reasoning }}">
                                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -178,7 +178,7 @@ button.ts-active::after {
                                 </button>
                                 {% when None %}{% endmatch %}
                             </div>
-                            {% match lunch.complexity %}
+                            {% match main_course.complexity %}
                             {% when Some with (complexity) %}
                             <!-- AC-5: Color-coded complexity badges -->
                             <span class="text-xs px-2 py-1 rounded {% if complexity == "simple" %}bg-green-100 text-green-800{% else %}{% if complexity == "moderate" %}bg-yellow-100 text-yellow-800{% else %}bg-red-100 text-red-800{% endif %}{% endif %}">
@@ -187,28 +187,28 @@ button.ts-active::after {
                             {% when None %}{% endmatch %}
                         </div>
                         <!-- Story 3.5: Add calendar context to recipe link -->
-                        <a href="/recipes/{{ lunch.recipe_id }}?from=calendar&meal_plan_id={{ day.meal_plan_id }}&assignment_id={{ lunch.assignment_id }}" class="text-gray-900 hover:text-primary-500 font-medium block">
-                            {{ lunch.recipe_title }}
+                        <a href="/recipes/{{ main_course.recipe_id }}?from=calendar&meal_plan_id={{ day.meal_plan_id }}&assignment_id={{ main_course.assignment_id }}" class="text-gray-900 hover:text-primary-500 font-medium block">
+                            {{ main_course.recipe_title }}
                         </a>
                         <!-- Story 3.5 AC-6: Kitchen Mode Link -->
-                        <a href="/recipes/{{ lunch.recipe_id }}?from=calendar&meal_plan_id={{ day.meal_plan_id }}&assignment_id={{ lunch.assignment_id }}&kitchen_mode=true" class="text-xs text-gray-500 hover:text-gray-700 underline">
+                        <a href="/recipes/{{ main_course.recipe_id }}?from=calendar&meal_plan_id={{ day.meal_plan_id }}&assignment_id={{ main_course.assignment_id }}&kitchen_mode=true" class="text-xs text-gray-500 hover:text-gray-700 underline">
                             👨‍🍳 Kitchen Mode
                         </a>
                         <div class="flex items-center gap-2 mt-1 text-xs text-gray-500">
-                            {% match lunch.prep_time_min %}
+                            {% match main_course.prep_time_min %}
                             {% when Some with (prep) %}
                             <span>🔪 {{ prep }}m</span>
                             {% when None %}{% endmatch %}
-                            {% match lunch.cook_time_min %}
+                            {% match main_course.cook_time_min %}
                             {% when Some with (cook) %}
                             <span>🔥 {{ cook }}m</span>
                             {% when None %}{% endmatch %}
-                            {% if lunch.prep_required %}
+                            {% if main_course.prep_required %}
                             <span class="text-orange-600 font-semibold" title="Advance prep required">⏰</span>
                             {% endif %}
                         </div>
                         <button
-                            ts-req="/plan/meal/{{ lunch.assignment_id }}/alternatives"
+                            ts-req="/plan/meal/{{ main_course.assignment_id }}/alternatives"
                             ts-req-method="GET"
                             ts-target="#modal-container"
                             ts-swap="inner"
@@ -218,20 +218,20 @@ button.ts-active::after {
                     </div>
                     {% when None %}
                     <div class="border-l-4 border-gray-200 pl-3 py-2">
-                        <span class="text-xs font-semibold text-gray-400 uppercase">Lunch</span>
+                        <span class="text-xs font-semibold text-gray-400 uppercase">Main Course</span>
                         <p class="text-gray-400 text-sm">No meal planned</p>
                     </div>
                     {% endmatch %}
 
-                    <!-- Dinner -->
-                    {% match day.dinner %}
-                    {% when Some with (dinner) %}
-                    <div id="meal-slot-{{ dinner.assignment_id }}" class="border-l-4 border-blue-400 pl-3 py-2">
+                    <!-- Dessert -->
+                    {% match day.dessert %}
+                    {% when Some with (dessert) %}
+                    <div id="meal-slot-{{ dessert.assignment_id }}" class="border-l-4 border-blue-400 pl-3 py-2">
                         <div class="flex items-center justify-between mb-1">
                             <div class="flex items-center">
-                                <span class="text-xs font-semibold text-gray-500 uppercase">Dinner</span>
+                                <span class="text-xs font-semibold text-gray-500 uppercase">Dessert</span>
                                 <!-- Story 3.8: Assignment Reasoning Tooltip -->
-                                {% match dinner.assignment_reasoning %}
+                                {% match dessert.assignment_reasoning %}
                                 {% when Some with (reasoning) %}
                                 <button type="button" class="info-icon text-gray-400 hover:text-primary-500 transition-colors cursor-help ml-1" aria-label="Why this meal was assigned" title="{{ reasoning }}">
                                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -240,7 +240,7 @@ button.ts-active::after {
                                 </button>
                                 {% when None %}{% endmatch %}
                             </div>
-                            {% match dinner.complexity %}
+                            {% match dessert.complexity %}
                             {% when Some with (complexity) %}
                             <!-- AC-5: Color-coded complexity badges -->
                             <span class="text-xs px-2 py-1 rounded {% if complexity == "simple" %}bg-green-100 text-green-800{% else %}{% if complexity == "moderate" %}bg-yellow-100 text-yellow-800{% else %}bg-red-100 text-red-800{% endif %}{% endif %}">
@@ -249,28 +249,28 @@ button.ts-active::after {
                             {% when None %}{% endmatch %}
                         </div>
                         <!-- Story 3.5: Add calendar context to recipe link -->
-                        <a href="/recipes/{{ dinner.recipe_id }}?from=calendar&meal_plan_id={{ day.meal_plan_id }}&assignment_id={{ dinner.assignment_id }}" class="text-gray-900 hover:text-primary-500 font-medium block">
-                            {{ dinner.recipe_title }}
+                        <a href="/recipes/{{ dessert.recipe_id }}?from=calendar&meal_plan_id={{ day.meal_plan_id }}&assignment_id={{ dessert.assignment_id }}" class="text-gray-900 hover:text-primary-500 font-medium block">
+                            {{ dessert.recipe_title }}
                         </a>
                         <!-- Story 3.5 AC-6: Kitchen Mode Link -->
-                        <a href="/recipes/{{ dinner.recipe_id }}?from=calendar&meal_plan_id={{ day.meal_plan_id }}&assignment_id={{ dinner.assignment_id }}&kitchen_mode=true" class="text-xs text-gray-500 hover:text-gray-700 underline">
+                        <a href="/recipes/{{ dessert.recipe_id }}?from=calendar&meal_plan_id={{ day.meal_plan_id }}&assignment_id={{ dessert.assignment_id }}&kitchen_mode=true" class="text-xs text-gray-500 hover:text-gray-700 underline">
                             👨‍🍳 Kitchen Mode
                         </a>
                         <div class="flex items-center gap-2 mt-1 text-xs text-gray-500">
-                            {% match dinner.prep_time_min %}
+                            {% match dessert.prep_time_min %}
                             {% when Some with (prep) %}
                             <span>🔪 {{ prep }}m</span>
                             {% when None %}{% endmatch %}
-                            {% match dinner.cook_time_min %}
+                            {% match dessert.cook_time_min %}
                             {% when Some with (cook) %}
                             <span>🔥 {{ cook }}m</span>
                             {% when None %}{% endmatch %}
-                            {% if dinner.prep_required %}
+                            {% if dessert.prep_required %}
                             <span class="text-orange-600 font-semibold" title="Advance prep required">⏰</span>
                             {% endif %}
                         </div>
                         <button
-                            ts-req="/plan/meal/{{ dinner.assignment_id }}/alternatives"
+                            ts-req="/plan/meal/{{ dessert.assignment_id }}/alternatives"
                             ts-req-method="GET"
                             ts-target="#modal-container"
                             ts-swap="inner"
@@ -280,7 +280,7 @@ button.ts-active::after {
                     </div>
                     {% when None %}
                     <div class="border-l-4 border-gray-200 pl-3 py-2">
-                        <span class="text-xs font-semibold text-gray-400 uppercase">Dinner</span>
+                        <span class="text-xs font-semibold text-gray-400 uppercase">Dessert</span>
                         <p class="text-gray-400 text-sm">No meal planned</p>
                     </div>
                     {% endmatch %}

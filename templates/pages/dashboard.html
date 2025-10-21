@@ -46,27 +46,27 @@ button.ts-active::after {
 
             <!-- Meal Cards Grid - 1 column mobile, 3 columns desktop -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Breakfast Card -->
-                {% if let Some(breakfast) = meals.breakfast %}
+                <!-- Appetizer Card -->
+                {% if let Some(appetizer) = meals.appetizer %}
                 <article class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow border-l-4 border-yellow-400">
                     <div class="flex items-center justify-between mb-3">
-                        <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Breakfast</span>
-                        {% if breakfast.advance_prep_required %}
+                        <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Appetizer</span>
+                        {% if appetizer.advance_prep_required %}
                         <span class="text-orange-600 text-xl" title="Advance prep required" aria-label="Advance prep required">⏰</span>
                         {% endif %}
                     </div>
-                    <a href="/recipes/{{ breakfast.recipe_id }}" class="block group">
+                    <a href="/recipes/{{ appetizer.recipe_id }}" class="block group">
                         <h3 class="text-lg font-semibold text-gray-900 group-hover:text-primary-600 transition-colors mb-2">
-                            {{ breakfast.recipe_title }}
+                            {{ appetizer.recipe_title }}
                         </h3>
                         <div class="flex items-center gap-3 text-sm text-gray-600">
                             <span class="flex items-center">
                                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
-                                {{ breakfast.total_time_min }}m
+                                {{ appetizer.total_time_min }}m
                             </span>
-                            {% if let Some(complexity) = breakfast.complexity %}
+                            {% if let Some(complexity) = appetizer.complexity %}
                             <span class="px-2 py-1 rounded text-xs {% match complexity.as_str() %}{% when "simple" %}bg-green-100 text-green-800{% when "moderate" %}bg-yellow-100 text-yellow-800{% else %}bg-red-100 text-red-800{% endmatch %}">
                                 {{ complexity }}
                             </span>
@@ -76,31 +76,31 @@ button.ts-active::after {
                 </article>
                 {% else %}
                 <div class="bg-gray-50 rounded-lg shadow-md p-6 border-l-4 border-gray-300 flex items-center justify-center">
-                    <p class="text-gray-500">No breakfast planned</p>
+                    <p class="text-gray-500">No appetizer planned</p>
                 </div>
                 {% endif %}
 
-                <!-- Lunch Card -->
-                {% if let Some(lunch) = meals.lunch %}
+                <!-- Main Course Card -->
+                {% if let Some(main_course) = meals.main_course %}
                 <article class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow border-l-4 border-green-400">
                     <div class="flex items-center justify-between mb-3">
-                        <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Lunch</span>
-                        {% if lunch.advance_prep_required %}
+                        <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Main Course</span>
+                        {% if main_course.advance_prep_required %}
                         <span class="text-orange-600 text-xl" title="Advance prep required" aria-label="Advance prep required">⏰</span>
                         {% endif %}
                     </div>
-                    <a href="/recipes/{{ lunch.recipe_id }}" class="block group">
+                    <a href="/recipes/{{ main_course.recipe_id }}" class="block group">
                         <h3 class="text-lg font-semibold text-gray-900 group-hover:text-primary-600 transition-colors mb-2">
-                            {{ lunch.recipe_title }}
+                            {{ main_course.recipe_title }}
                         </h3>
                         <div class="flex items-center gap-3 text-sm text-gray-600">
                             <span class="flex items-center">
                                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
-                                {{ lunch.total_time_min }}m
+                                {{ main_course.total_time_min }}m
                             </span>
-                            {% if let Some(complexity) = lunch.complexity %}
+                            {% if let Some(complexity) = main_course.complexity %}
                             <span class="px-2 py-1 rounded text-xs {% match complexity.as_str() %}{% when "simple" %}bg-green-100 text-green-800{% when "moderate" %}bg-yellow-100 text-yellow-800{% else %}bg-red-100 text-red-800{% endmatch %}">
                                 {{ complexity }}
                             </span>
@@ -110,31 +110,31 @@ button.ts-active::after {
                 </article>
                 {% else %}
                 <div class="bg-gray-50 rounded-lg shadow-md p-6 border-l-4 border-gray-300 flex items-center justify-center">
-                    <p class="text-gray-500">No lunch planned</p>
+                    <p class="text-gray-500">No main_course planned</p>
                 </div>
                 {% endif %}
 
-                <!-- Dinner Card -->
-                {% if let Some(dinner) = meals.dinner %}
+                <!-- Dessert Card -->
+                {% if let Some(dessert) = meals.dessert %}
                 <article class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow border-l-4 border-blue-400">
                     <div class="flex items-center justify-between mb-3">
-                        <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Dinner</span>
-                        {% if dinner.advance_prep_required %}
+                        <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Dessert</span>
+                        {% if dessert.advance_prep_required %}
                         <span class="text-orange-600 text-xl" title="Advance prep required" aria-label="Advance prep required">⏰</span>
                         {% endif %}
                     </div>
-                    <a href="/recipes/{{ dinner.recipe_id }}" class="block group">
+                    <a href="/recipes/{{ dessert.recipe_id }}" class="block group">
                         <h3 class="text-lg font-semibold text-gray-900 group-hover:text-primary-600 transition-colors mb-2">
-                            {{ dinner.recipe_title }}
+                            {{ dessert.recipe_title }}
                         </h3>
                         <div class="flex items-center gap-3 text-sm text-gray-600">
                             <span class="flex items-center">
                                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
-                                {{ dinner.total_time_min }}m
+                                {{ dessert.total_time_min }}m
                             </span>
-                            {% if let Some(complexity) = dinner.complexity %}
+                            {% if let Some(complexity) = dessert.complexity %}
                             <span class="px-2 py-1 rounded text-xs {% match complexity.as_str() %}{% when "simple" %}bg-green-100 text-green-800{% when "moderate" %}bg-yellow-100 text-yellow-800{% else %}bg-red-100 text-red-800{% endmatch %}">
                                 {{ complexity }}
                             </span>
@@ -144,7 +144,7 @@ button.ts-active::after {
                 </article>
                 {% else %}
                 <div class="bg-gray-50 rounded-lg shadow-md p-6 border-l-4 border-gray-300 flex items-center justify-center">
-                    <p class="text-gray-500">No dinner planned</p>
+                    <p class="text-gray-500">No dessert planned</p>
                 </div>
                 {% endif %}
             </div>
