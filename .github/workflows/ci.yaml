@@ -12,3 +12,5 @@ on:
 jobs:
   test:
     uses: timayz/.github/.github/workflows/rust-test.yml@v3
+    with:
+      tests: '["-p user", "-p meal_planning", "-p notifications", "-p recipe", "-p shopping", "-p imkitchen"]'

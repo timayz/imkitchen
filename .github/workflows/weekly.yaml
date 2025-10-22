@@ -8,6 +8,8 @@ on:
 jobs:
   audit:
     uses: timayz/.github/.github/workflows/rust-audit.yml@v3
+    with:
+      name: imkitchen
 
   renovate:
     uses: timayz/.github/.github/workflows/renovate.yml@v3
