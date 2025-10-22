@@ -11,9 +11,7 @@ use shopping::{
         mark_item_collected, reset_shopping_list, MarkItemCollectedCommand,
         ResetShoppingListCommand,
     },
-    generate_shopping_list,
     read_model::get_shopping_list_by_week,
-    GenerateShoppingListCommand,
 };
 
 use crate::error::AppError;
@@ -162,112 +160,6 @@ fn generate_week_options(current_week_monday: NaiveDate) -> Vec<WeekOption> {
     }
 
     options
-}
-
-/// Form data for shopping list generation
-#[derive(Deserialize)]
-pub struct GenerateShoppingListForm {
-    /// Week to generate shopping list for (optional, defaults to current week)
-    week: Option<String>,
-}
-
-/// POST /shopping/generate - Generate shopping list for selected week
-///
-/// Accepts optional week parameter via form data. If not provided, generates for current week.
-pub async fn generate_shopping_list_handler(
-    Extension(auth): Extension<Auth>,
-    State(state): State<AppState>,
-    Form(form): Form<GenerateShoppingListForm>,
-) -> Result<impl IntoResponse, AppError> {
-    let user_id = &auth.user_id;
-
-    // Get selected week or default to current week
-    let today = Utc::now().date_naive();
-    let current_week_monday = get_week_start(today);
-
-    let week_start_str = if let Some(week_param) = form.week {
-        // Validate the week parameter
-        shopping::validate_week_date(&week_param)?;
-        week_param
-    } else {
-        // Default to current week
-        current_week_monday.format("%Y-%m-%d").to_string()
-    };
-
-    // Query active meal plan for user
-    let meal_plan =
-        meal_planning::read_model::MealPlanQueries::get_active_meal_plan(user_id, &state.db_pool)
-            .await?
-            .ok_or_else(|| AppError::ValidationError("No active meal plan found".to_string()))?;
-
-    // Query all meal assignments for the meal plan
-    let assignments = meal_planning::read_model::MealPlanQueries::get_meal_assignments(
-        &meal_plan.id,
-        &state.db_pool,
-    )
-    .await?;
-
-    if assignments.is_empty() {
-        return Err(AppError::ValidationError(
-            "Meal plan has no recipes assigned".to_string(),
-        ));
-    }
-
-    // Query all recipes from meal assignments and extract ingredients
-    let mut all_ingredients: Vec<(String, f32, String)> = Vec::new();
-
-    for assignment in &assignments {
-        // Query recipe to get ingredients
-        let recipe: Option<recipe::read_model::RecipeReadModel> =
-            sqlx::query_as::<_, recipe::read_model::RecipeReadModel>(
-                r#"
-                SELECT id, user_id, title, recipe_type, ingredients, instructions, prep_time_min, cook_time_min,
-                       advance_prep_hours, serving_size, is_favorite, is_shared, complexity, cuisine,
-                       dietary_tags, created_at, updated_at
-                FROM recipes
-                WHERE id = ?
-                "#,
-            )
-            .bind(&assignment.recipe_id)
-            .fetch_optional(&state.db_pool)
-            .await?;
-
-        if let Some(recipe) = recipe {
-            // Parse ingredients JSON
-            let ingredients: Vec<recipe::events::Ingredient> =
-                serde_json::from_str(&recipe.ingredients).map_err(|e| {
-                    AppError::InternalError(format!(
-                        "Failed to parse ingredients for recipe {}: {}",
-                        recipe.id, e
-                    ))
-                })?;
-
-            // Add ingredients to list
-            for ing in ingredients {
-                all_ingredients.push((ing.name, ing.quantity, ing.unit));
-            }
-        }
-    }
-
-    // Generate shopping list command
-    let cmd = GenerateShoppingListCommand {
-        user_id: user_id.to_string(),
-        meal_plan_id: meal_plan.id.clone(),
-        week_start_date: week_start_str.clone(),
-        ingredients: all_ingredients,
-    };
-
-    // Execute command
-    let _shopping_list_id = generate_shopping_list(cmd, &state.evento_executor)
-        .await
-        .map_err(|e| AppError::InternalError(format!("Failed to generate shopping list: {}", e)))?;
-
-    // Wait for projection (simple delay since we're using unsafe_oneshot in tests, but run() in production)
-    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-
-    // Redirect back to shopping list page for the selected week
-    let redirect_url = format!("/shopping?week={}", week_start_str);
-    Ok(Redirect::to(&redirect_url))
 }
 
 /// Helper function to get the Monday of the current week
