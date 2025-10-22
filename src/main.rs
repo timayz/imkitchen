@@ -135,38 +135,45 @@ async fn serve_command(
     // Set up evento subscription for read model projections
     // Projections write to read models, so they use the write pool
     user_projection(write_pool.clone())
+        .delay(std::time::Duration::from_secs(10))
         .run(&evento_executor)
         .await?;
     tracing::info!("Evento subscription 'user-read-model' started");
 
     recipe_projection(write_pool.clone())
+        .delay(std::time::Duration::from_secs(10))
         .run(&evento_executor)
         .await?;
     tracing::info!("Evento subscription 'recipe-read-model' started");
 
     collection_projection(write_pool.clone())
+        .delay(std::time::Duration::from_secs(10))
         .run(&evento_executor)
         .await?;
     tracing::info!("Evento subscription 'collection-read-model' started");
 
     meal_plan_projection(write_pool.clone())
+        .delay(std::time::Duration::from_secs(10))
         .run(&evento_executor)
         .await?;
     tracing::info!("Evento subscription 'meal-plan-read-model' started");
 
     shopping_projection(write_pool.clone())
+        .delay(std::time::Duration::from_secs(10))
         .run(&evento_executor)
         .await?;
     tracing::info!("Evento subscription 'shopping-read-model' started");
 
     // Notification projections
     notification_projections(write_pool.clone())
+        .delay(std::time::Duration::from_secs(10))
         .run(&evento_executor)
         .await?;
     tracing::info!("Evento subscription 'notification-projections' started");
 
     // Notification event subscriptions (business logic)
     meal_plan_subscriptions(write_pool.clone())
+        .delay(std::time::Duration::from_secs(10))
         .run(&evento_executor)
         .await?;
     tracing::info!("Evento subscription 'notification-meal-plan-listeners' started");
