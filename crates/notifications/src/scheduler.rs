@@ -1084,9 +1084,9 @@ mod tests {
     fn test_calculate_reminder_time_1h_prep() {
         use chrono::Local;
 
-        // Given: Dinner at 11pm today with 1h prep (using dynamic date, late enough to avoid past time)
-        let today = Local::now().date_naive();
-        let meal_date = today.format("%Y-%m-%d").to_string();
+        // Given: Dinner at 11pm tomorrow with 1h prep (using tomorrow to ensure reminder is never in past)
+        let tomorrow = Local::now().date_naive() + chrono::Duration::days(1);
+        let meal_date = tomorrow.format("%Y-%m-%d").to_string();
         let meal_time = Some("23:00"); // 11pm
         let prep_hours = 1;
 
@@ -1095,7 +1095,7 @@ mod tests {
 
         // Then: Reminder scheduled for 1 hour before meal (10pm)
         let reminder_dt = DateTime::parse_from_rfc3339(&result).unwrap();
-        assert_eq!(reminder_dt.day(), today.day());
+        assert_eq!(reminder_dt.day(), tomorrow.day());
         assert_eq!(reminder_dt.hour(), 22); // 10pm
         assert_eq!(reminder_dt.minute(), 0);
     }
