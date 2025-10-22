@@ -1064,18 +1064,18 @@ mod tests {
     fn test_calculate_reminder_time_4h_prep() {
         use chrono::Local;
 
-        // Given: Dinner at 10pm today with 4h prep (using dynamic date, late enough to avoid past time)
-        let today = Local::now().date_naive();
-        let meal_date = today.format("%Y-%m-%d").to_string();
+        // Given: Dinner with 4h prep (always use tomorrow to ensure reminder is in the future)
+        let tomorrow = Local::now().date_naive() + chrono::Duration::days(1);
+        let meal_date = tomorrow.format("%Y-%m-%d").to_string();
         let meal_time = Some("22:00"); // 10pm
         let prep_hours = 4;
 
         // When: Calculate reminder time
         let result = calculate_reminder_time(&meal_date, meal_time, prep_hours).unwrap();
 
-        // Then: Reminder scheduled for today at 6pm (10pm - 4h)
+        // Then: Reminder scheduled for 6pm (10pm - 4h)
         let reminder_dt = DateTime::parse_from_rfc3339(&result).unwrap();
-        assert_eq!(reminder_dt.day(), today.day());
+        assert_eq!(reminder_dt.day(), tomorrow.day());
         assert_eq!(reminder_dt.hour(), 18); // 6pm
         assert_eq!(reminder_dt.minute(), 0);
     }
