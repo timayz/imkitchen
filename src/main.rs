@@ -59,7 +59,7 @@ enum Commands {
         #[arg(long)]
         host: Option<String>,
 
-        /// Server port (overrides config file )
+        /// Server port (overrides config file)
         #[arg(long)]
         port: Option<u16>,
     },
