@@ -12,5 +12,7 @@ on:
 jobs:
   test:
     uses: timayz/.github/.github/workflows/rust-test.yml@feat/rust-test/test-matrix
+    with:
+      tests: '["-p user"]'
     #uses: timayz/.github/.github/workflows/rust-test.yml@v3
     #
