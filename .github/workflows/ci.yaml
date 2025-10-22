@@ -13,6 +13,6 @@ jobs:
   test:
     uses: timayz/.github/.github/workflows/rust-test.yml@feat/rust-test/test-matrix
     with:
-      tests: '["-p user", "-p meal_planning", "-p notifications", "-p recipe", "-p shopping"]'
+      tests: '["-p user", "-p meal_planning", "-p notifications", "-p recipe", "-p shopping", "-p imkitchen"]'
     #uses: timayz/.github/.github/workflows/rust-test.yml@v3
     #
