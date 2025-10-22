@@ -1,15 +1,4 @@
 # syntax=docker/dockerfile:1
-
-FROM node:24-alpine AS node
-
-WORKDIR /app
-
-COPY . .
-
-RUN npm install tailwindcss @tailwindcss/cli
-
-RUN npx @tailwindcss/cli -i ./static/css/tailwind.css -o ./static/css/main.css --minify
-
 FROM rust:1.90-alpine AS chef
 
 RUN apk add --no-cache musl-dev tzdata \
@@ -45,6 +34,16 @@ WORKDIR /app
 FROM chef AS planner
 COPY . .
 RUN cargo chef prepare --recipe-path recipe.json
+
+FROM node:25-alpine AS node
+
+WORKDIR /app
+
+COPY . .
+
+RUN npm install tailwindcss @tailwindcss/cli
+
+RUN npx @tailwindcss/cli -i ./static/css/tailwind.css -o ./static/css/main.css --minify
 
 FROM chef AS builder
 COPY --from=planner /app/recipe.json recipe.json
