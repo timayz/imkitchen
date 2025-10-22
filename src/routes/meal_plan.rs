@@ -135,6 +135,7 @@ pub struct MealCalendarTemplate {
     pub rotation_used: usize,  // AC (Story 3.3): Rotation progress display
     pub rotation_total: usize, // AC (Story 3.3): Total favorites
     pub current_path: String,
+    pub error_message: Option<String>, // Issue #130: Display inline error messages
 }
 
 /// GET /plan - Display meal calendar view
@@ -176,6 +177,7 @@ pub async fn get_meal_plan(
                 rotation_used,
                 rotation_total,
                 current_path: "/plan".to_string(),
+                error_message: None,
             };
             template.render().map(Html).map_err(|e| {
                 tracing::error!("Failed to render meal calendar template: {:?}", e);
@@ -192,6 +194,7 @@ pub async fn get_meal_plan(
                 rotation_used: 0,
                 rotation_total: 0,
                 current_path: "/plan".to_string(),
+                error_message: None,
             };
             template.render().map(Html).map_err(|e| {
                 tracing::error!("Failed to render empty meal calendar template: {:?}", e);
@@ -215,7 +218,7 @@ pub async fn get_meal_plan(
 pub async fn post_generate_meal_plan(
     Extension(auth): Extension<Auth>,
     State(state): State<AppState>,
-) -> Result<impl IntoResponse, AppError> {
+) -> Result<Html<String>, AppError> {
     // **Critical Fix 1.4:** Acquire generation lock to prevent concurrent generation
     // This prevents race conditions when multiple requests try to generate plans simultaneously
     let _lock_guard = {
@@ -246,10 +249,32 @@ pub async fn post_generate_meal_plan(
     let favorites = query_recipes_by_user(&auth.user_id, true, &state.db_pool).await?;
 
     // AC-10: Validate minimum 7 favorite recipes
+    // Issue #130: Return inline error message instead of separate error page
     if favorites.len() < 7 {
-        return Err(AppError::InsufficientRecipes {
-            current: favorites.len(),
-            required: 7,
+        let error_msg = format!(
+            "You need at least 7 favorite recipes to generate a meal plan. You currently have {}. Add {} more recipe{} to get started!",
+            favorites.len(),
+            7 - favorites.len(),
+            if 7 - favorites.len() > 1 { "s" } else { "" }
+        );
+
+        let template = MealCalendarTemplate {
+            user: Some(()),
+            days: Vec::new(),
+            start_date: String::new(),
+            has_meal_plan: false,
+            rotation_used: 0,
+            rotation_total: favorites.len(),
+            current_path: "/plan".to_string(),
+            error_message: Some(error_msg),
+        };
+
+        return template.render().map(Html).map_err(|e| {
+            tracing::error!(
+                "Failed to render meal calendar template with error: {:?}",
+                e
+            );
+            AppError::InternalError("Failed to render page".to_string())
         });
     }
 
@@ -329,13 +354,46 @@ pub async fn post_generate_meal_plan(
 
     // AC-2, AC-3, AC-4, AC-6: Generate meal plan using algorithm
     // AC-9: Pass None for seed to get random variety (timestamp-based)
-    let (meal_assignments, updated_rotation_state) = MealPlanningAlgorithm::generate(
+    // Issue #130: Handle algorithm errors inline
+    let (meal_assignments, updated_rotation_state) = match MealPlanningAlgorithm::generate(
         &start_date,
         recipes_for_planning,
         constraints,
         rotation_state,
         None, // None = use timestamp for variety
-    )?;
+    ) {
+        Ok(result) => result,
+        Err(meal_planning::MealPlanningError::InsufficientRecipes { minimum, current }) => {
+            let error_msg = format!(
+                "Cannot generate meal plan: Not enough recipes of each type. Need at least {} recipes per course type, but found only {}. Please add more recipes with different course types (appetizer, main_course, dessert).",
+                minimum,
+                current
+            );
+
+            let template = MealCalendarTemplate {
+                user: Some(()),
+                days: Vec::new(),
+                start_date: String::new(),
+                has_meal_plan: false,
+                rotation_used: 0,
+                rotation_total: current,
+                current_path: "/plan".to_string(),
+                error_message: Some(error_msg),
+            };
+
+            return template.render().map(Html).map_err(|e| {
+                tracing::error!(
+                    "Failed to render meal calendar template with error: {:?}",
+                    e
+                );
+                AppError::InternalError("Failed to render page".to_string())
+            });
+        }
+        Err(e) => {
+            tracing::error!("Meal planning algorithm error: {:?}", e);
+            return Err(AppError::MealPlanningError(e));
+        }
+    };
 
     // Detect if cycle was reset during generation
     let cycle_reset_occurred = updated_rotation_state.cycle_number > old_cycle_number;
@@ -467,8 +525,10 @@ pub async fn post_generate_meal_plan(
             })?;
     }
 
-    // AC-9: Redirect to calendar view
-    Ok(Redirect::to("/plan"))
+    // AC-9: Redirect to calendar view after successful generation
+    // Note: We can't directly return Redirect from Html<String> handler,
+    // so we fetch and render the updated meal plan page
+    get_meal_plan(Extension(auth), State(state)).await
 }
 
 /// Helper: Fetch recipes by IDs
