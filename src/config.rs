@@ -160,8 +160,15 @@ impl VapidConfig {
             return Ok(self.private_key.clone());
         }
 
-        // Convert base64url to base64 standard
-        let base64_standard = self.private_key.replace('-', "+").replace('_', "/");
+        // Convert base64url to base64 standard and add padding
+        let mut base64_standard = self.private_key.replace('-', "+").replace('_', "/");
+
+        // Add padding if needed (base64 strings must be multiple of 4 chars)
+        match base64_standard.len() % 4 {
+            2 => base64_standard.push_str("=="),
+            3 => base64_standard.push('='),
+            _ => {} // 0 or 1 (1 would be invalid, but we'll let decode catch it)
+        }
 
         // Decode base64 to raw bytes
         let raw_key = STANDARD
