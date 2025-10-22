@@ -180,6 +180,12 @@
                         <a href="/recipes/{{ recipe.id }}/edit" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 font-medium">
                             Edit
                         </a>
+
+                        <!-- Story GH-139: Share/Unshare button -->
+                        {%- set recipe_id = recipe.id -%}
+                        {%- set is_shared = recipe.is_shared -%}
+                        {% include "components/share-button.html" %}
+
                         <form method="POST" action="/recipes/{{ recipe.id }}/delete"
                               ts-req="/recipes/{{ recipe.id }}/delete"
                               onsubmit="return confirm('Are you sure? This cannot be undone.');">

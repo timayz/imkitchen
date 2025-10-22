@@ -25,6 +25,13 @@ use crate::routes::auth::AppState;
 struct IngredientRowTemplate;
 
 #[derive(Template)]
+#[template(path = "components/share-button.html")]
+struct ShareButtonTemplate {
+    recipe_id: String,
+    is_shared: bool,
+}
+
+#[derive(Template)]
 #[template(path = "pages/recipe-waiting.html")]
 struct RecipeWaitingTemplate {
     recipe_id: String,
@@ -1284,22 +1291,28 @@ pub async fn post_share_recipe(
                 "Recipe share status toggled"
             );
 
-            // Return success message
-            (
-                StatusCode::OK,
-                Html(format!(
-                    r#"<div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded mb-4" role="alert">
-                    ✓ Recipe {} {}!
-                </div>"#,
-                    if shared { "shared" } else { "made private" },
-                    if shared {
-                        "with community"
-                    } else {
-                        "successfully"
-                    }
-                )),
-            )
-                .into_response()
+            // Story GH-139: Return updated button HTML for TwinSpark swap using Askama template
+            let share_button_template = ShareButtonTemplate {
+                recipe_id: recipe_id.clone(),
+                is_shared: shared,
+            };
+
+            let button_html = share_button_template.render().unwrap();
+
+            // Add success message
+            let success_message = if shared {
+                r#"<div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded mb-4 mt-2" role="alert">
+                    ✓ Recipe shared with community!
+                </div>"#
+            } else {
+                r#"<div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded mb-4 mt-2" role="alert">
+                    ✓ Recipe is now private
+                </div>"#
+            };
+
+            let response_html = format!("{}{}", button_html, success_message);
+
+            (StatusCode::OK, Html(response_html)).into_response()
         }
         Err(RecipeError::PermissionDenied) => {
             tracing::warn!(

@@ -1,0 +1,26 @@
+{# Story GH-139: Share/Unshare button template - expects recipe_id and is_shared variables #}
+<div id="share-button-container-{{ recipe_id }}">
+    {% if is_shared -%}
+    <form method="POST" action="/recipes/{{ recipe_id }}/share"
+          ts-req="/recipes/{{ recipe_id }}/share"
+          ts-target="#share-button-container-{{ recipe_id }}">
+        <input type="hidden" name="shared" value="false" />
+        <button type="submit"
+                class="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 font-medium"
+                aria-label="Make this recipe private (remove from community)">
+            Make Private
+        </button>
+    </form>
+    {%- else -%}
+    <form method="POST" action="/recipes/{{ recipe_id }}/share"
+          ts-req="/recipes/{{ recipe_id }}/share"
+          ts-target="#share-button-container-{{ recipe_id }}">
+        <input type="hidden" name="shared" value="true" />
+        <button type="submit"
+                class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 font-medium"
+                aria-label="Share this recipe with the community">
+            Share with Community
+        </button>
+    </form>
+    {%- endif %}
+</div>
