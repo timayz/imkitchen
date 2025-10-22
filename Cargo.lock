@@ -2027,6 +2027,7 @@ dependencies = [
  "urlencoding",
  "user",
  "uuid 1.18.1",
+ "validator",
 ]
 
 [[package]]

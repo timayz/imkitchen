@@ -1,0 +1,483 @@
+{% extends "base.html" %}
+
+{% block title %}Help Center - imkitchen{% endblock %}
+
+{% block meta_description %}Find answers to common questions about imkitchen meal planning, recipes, shopping lists, and more.{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 md:py-12 max-w-5xl">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 md:p-10">
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Help Center</h1>
+
+        <p class="text-lg text-gray-600 mb-8">
+            Find answers to common questions about using imkitchen for meal planning, recipe management, and more.
+        </p>
+
+        <!-- Search Bar -->
+        <div class="mb-12">
+            <div class="relative">
+                <input
+                    type="text"
+                    id="help-search"
+                    placeholder="Search for help..."
+                    class="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    aria-label="Search help articles"
+                >
+                <svg class="absolute start-4 top-3.5 w-5 h-5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Help Categories -->
+        <div class="space-y-8">
+            <!-- Getting Started -->
+            <section id="getting-started" class="border-b border-gray-200 pb-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                    <svg class="w-6 h-6 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                    Getting Started
+                </h2>
+
+                <div class="space-y-4">
+                    <details class="group rounded-lg border border-gray-200 hover:border-primary-300 transition-colors">
+                        <summary class="cursor-pointer p-4 font-semibold text-gray-900 flex items-center justify-between">
+                            <span>How do I create my first meal plan?</span>
+                            <svg class="w-5 h-5 text-gray-500 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </summary>
+                        <div class="p-4 pt-0 text-gray-700 leading-relaxed space-y-3">
+                            <p>To generate your first meal plan:</p>
+                            <ol class="list-decimal ps-5 space-y-2">
+                                <li>Add at least <strong>7 recipes</strong> to your library and mark them as favorites</li>
+                                <li>Navigate to your <a href="/dashboard" class="text-primary-500 hover:underline">Dashboard</a></li>
+                                <li>Click the <strong>"Generate Meal Plan"</strong> button</li>
+                                <li>The algorithm will assign recipes to the week based on your preferences, prep time requirements, and course types (appetizer, main course, dessert)</li>
+                                <li>Review your meal plan and make any desired changes using the "Replace Meal" option</li>
+                            </ol>
+                            <p class="text-sm text-gray-600 mt-4">
+                                <strong>Tip:</strong> Each day includes lunch with three courses (appetizer, main course, and dessert). Make sure you have recipes for all course types!
+                            </p>
+                        </div>
+                    </details>
+
+                    <details class="group rounded-lg border border-gray-200 hover:border-primary-300 transition-colors">
+                        <summary class="cursor-pointer p-4 font-semibold text-gray-900 flex items-center justify-between">
+                            <span>What are the differences between Free and Premium plans?</span>
+                            <svg class="w-5 h-5 text-gray-500 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </summary>
+                        <div class="p-4 pt-0 text-gray-700 leading-relaxed">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="p-3 text-start">Feature</th>
+                                            <th class="p-3 text-center">Free</th>
+                                            <th class="p-3 text-center">Premium</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-200">
+                                        <tr>
+                                            <td class="p-3">Recipe Library</td>
+                                            <td class="p-3 text-center">Up to 10 recipes</td>
+                                            <td class="p-3 text-center text-success-500 font-semibold">Unlimited</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="p-3">Meal Plan Generation</td>
+                                            <td class="p-3 text-center">✓</td>
+                                            <td class="p-3 text-center">✓</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="p-3">Shopping Lists</td>
+                                            <td class="p-3 text-center">✓</td>
+                                            <td class="p-3 text-center">✓</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="p-3">Community Discovery</td>
+                                            <td class="p-3 text-center">✓</td>
+                                            <td class="p-3 text-center">✓</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="p-3">Advanced Scheduling</td>
+                                            <td class="p-3 text-center">—</td>
+                                            <td class="p-3 text-center text-success-500 font-semibold">✓</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p class="mt-4">
+                                <a href="/subscription" class="text-primary-500 hover:underline font-medium">Upgrade to Premium →</a>
+                            </p>
+                        </div>
+                    </details>
+
+                    <details class="group rounded-lg border border-gray-200 hover:border-primary-300 transition-colors">
+                        <summary class="cursor-pointer p-4 font-semibold text-gray-900 flex items-center justify-between">
+                            <span>How do I set up my dietary preferences?</span>
+                            <svg class="w-5 h-5 text-gray-500 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </summary>
+                        <div class="p-4 pt-0 text-gray-700 leading-relaxed space-y-3">
+                            <p>Set up your preferences during onboarding or update them anytime:</p>
+                            <ol class="list-decimal ps-5 space-y-2">
+                                <li>Go to <a href="/profile" class="text-primary-500 hover:underline">Profile</a></li>
+                                <li>Update your dietary restrictions, household size, skill level, and weeknight availability</li>
+                                <li>Click <strong>Save Changes</strong></li>
+                            </ol>
+                            <p>The meal planning algorithm uses these preferences to assign recipes appropriately.</p>
+                        </div>
+                    </details>
+                </div>
+            </section>
+
+            <!-- Recipes -->
+            <section id="recipes" class="border-b border-gray-200 pb-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                    <svg class="w-6 h-6 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                    </svg>
+                    Recipe Management
+                </h2>
+
+                <div class="space-y-4">
+                    <details class="group rounded-lg border border-gray-200 hover:border-primary-300 transition-colors">
+                        <summary class="cursor-pointer p-4 font-semibold text-gray-900 flex items-center justify-between">
+                            <span>What is the recipe type classification?</span>
+                            <svg class="w-5 h-5 text-gray-500 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </summary>
+                        <div class="p-4 pt-0 text-gray-700 leading-relaxed space-y-3">
+                            <p>Every recipe must specify its <strong>recipe_type</strong> which determines which course slot it can fill:</p>
+                            <ul class="list-disc ps-5 space-y-2">
+                                <li><strong>Appetizer:</strong> Starters and first courses (e.g., soup, salad, bruschetta)</li>
+                                <li><strong>Main Course:</strong> Primary dish/entrée (e.g., grilled chicken, pasta, stir-fry)</li>
+                                <li><strong>Dessert:</strong> Sweet courses (e.g., cake, ice cream, fruit tart)</li>
+                            </ul>
+                            <p class="mt-4">Each day's lunch has 3 courses = <strong>21 course assignments per week</strong> (7 days × 3 courses).</p>
+                            <p class="text-sm text-gray-600">
+                                <strong>Tip:</strong> Make sure you have a balanced number of recipes in each category to allow the algorithm to generate complete meal plans.
+                            </p>
+                        </div>
+                    </details>
+
+                    <details class="group rounded-lg border border-gray-200 hover:border-primary-300 transition-colors">
+                        <summary class="cursor-pointer p-4 font-semibold text-gray-900 flex items-center justify-between">
+                            <span>How do I add a new recipe?</span>
+                            <svg class="w-5 h-5 text-gray-500 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </summary>
+                        <div class="p-4 pt-0 text-gray-700 leading-relaxed space-y-3">
+                            <p>To create a new recipe:</p>
+                            <ol class="list-decimal ps-5 space-y-2">
+                                <li>Navigate to <a href="/recipes" class="text-primary-500 hover:underline">My Recipes</a></li>
+                                <li>Click the <strong>"+ Create Recipe"</strong> button</li>
+                                <li>Fill in the recipe details:
+                                    <ul class="list-disc ps-5 mt-2 space-y-1">
+                                        <li>Title</li>
+                                        <li>Ingredients (quantity, unit, name)</li>
+                                        <li>Instructions (step-by-step)</li>
+                                        <li>Prep and cook times</li>
+                                        <li><strong>Recipe type</strong> (appetizer, main course, or dessert)</li>
+                                        <li>Complexity level</li>
+                                        <li>Advance prep requirements (optional)</li>
+                                    </ul>
+                                </li>
+                                <li>Upload an image (optional)</li>
+                                <li>Mark as <strong>Favorite</strong> to include it in meal planning</li>
+                                <li>Click <strong>Save Recipe</strong></li>
+                            </ol>
+                        </div>
+                    </details>
+
+                    <details class="group rounded-lg border border-gray-200 hover:border-primary-300 transition-colors">
+                        <summary class="cursor-pointer p-4 font-semibold text-gray-900 flex items-center justify-between">
+                            <span>Can I share my recipes with the community?</span>
+                            <svg class="w-5 h-5 text-gray-500 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </summary>
+                        <div class="p-4 pt-0 text-gray-700 leading-relaxed space-y-3">
+                            <p>Yes! To share a recipe with the community:</p>
+                            <ol class="list-decimal ps-5 space-y-2">
+                                <li>Open the recipe detail page</li>
+                                <li>Toggle <strong>"Share to Community"</strong></li>
+                                <li>Your recipe will be publicly visible in the <a href="/discover" class="text-primary-500 hover:underline">Discover</a> section</li>
+                            </ol>
+                            <p class="text-sm text-warning-600 bg-warning-50 border border-warning-200 rounded-lg p-3 mt-4">
+                                <strong>Note:</strong> Shared recipes are publicly indexed by search engines and attributed to your username. You can unshare at any time.
+                            </p>
+                        </div>
+                    </details>
+
+                    <details class="group rounded-lg border border-gray-200 hover:border-primary-300 transition-colors">
+                        <summary class="cursor-pointer p-4 font-semibold text-gray-900 flex items-center justify-between">
+                            <span>What is Kitchen Mode?</span>
+                            <svg class="w-5 h-5 text-gray-500 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </summary>
+                        <div class="p-4 pt-0 text-gray-700 leading-relaxed space-y-3">
+                            <p><strong>Kitchen Mode</strong> is a high-contrast, large-text view optimized for hands-free cooking:</p>
+                            <ul class="list-disc ps-5 space-y-2">
+                                <li>Enhanced text size (+4px) for readability from a distance</li>
+                                <li>High contrast (7:1 ratio) for varied kitchen lighting</li>
+                                <li>Step-by-step instructions with large "Next" buttons</li>
+                                <li>Screen wake-lock to prevent sleep while cooking</li>
+                            </ul>
+                            <p class="mt-4">Enable Kitchen Mode via the toggle button on any recipe detail page.</p>
+                        </div>
+                    </details>
+                </div>
+            </section>
+
+            <!-- Meal Planning -->
+            <section id="meal-planning" class="border-b border-gray-200 pb-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                    <svg class="w-6 h-6 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    Meal Planning
+                </h2>
+
+                <div class="space-y-4">
+                    <details class="group rounded-lg border border-gray-200 hover:border-primary-300 transition-colors">
+                        <summary class="cursor-pointer p-4 font-semibold text-gray-900 flex items-center justify-between">
+                            <span>How does the meal planning algorithm work?</span>
+                            <svg class="w-5 h-5 text-gray-500 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </summary>
+                        <div class="p-4 pt-0 text-gray-700 leading-relaxed space-y-3">
+                            <p>The algorithm assigns recipes based on:</p>
+                            <ol class="list-decimal ps-5 space-y-2">
+                                <li><strong>Course type matching:</strong> Appetizer recipes → appetizer slots, main course → main slots, dessert → dessert slots</li>
+                                <li><strong>Rotation logic:</strong> Favorites are used once before repeating to maximize variety</li>
+                                <li><strong>User constraints:</strong> Dietary restrictions, prep time availability (weeknights vs weekends)</li>
+                                <li><strong>Advance prep timing:</strong> Recipes requiring advance prep (e.g., marinating) are scheduled with sufficient lead time</li>
+                            </ol>
+                            <p class="mt-4 text-sm text-gray-600">
+                                <strong>Tip:</strong> Hover over any meal slot to see the algorithm's reasoning (e.g., "Saturday: more prep time available").
+                            </p>
+                        </div>
+                    </details>
+
+                    <details class="group rounded-lg border border-gray-200 hover:border-primary-300 transition-colors">
+                        <summary class="cursor-pointer p-4 font-semibold text-gray-900 flex items-center justify-between">
+                            <span>Can I replace individual meals?</span>
+                            <svg class="w-5 h-5 text-gray-500 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </summary>
+                        <div class="p-4 pt-0 text-gray-700 leading-relaxed space-y-3">
+                            <p>Yes! To replace a single meal:</p>
+                            <ol class="list-decimal ps-5 space-y-2">
+                                <li>Navigate to your <a href="/plan" class="text-primary-500 hover:underline">Meal Calendar</a></li>
+                                <li>Click on the meal slot you want to change</li>
+                                <li>Click <strong>"Replace This Meal"</strong></li>
+                                <li>Select from suggested alternatives or browse all recipes</li>
+                                <li>Confirm replacement</li>
+                            </ol>
+                            <p class="mt-4 text-sm text-info-600 bg-info-50 border border-info-200 rounded-lg p-3">
+                                <strong>Note:</strong> Your shopping list will automatically update to reflect the new ingredients needed.
+                            </p>
+                        </div>
+                    </details>
+
+                    <details class="group rounded-lg border border-gray-200 hover:border-primary-300 transition-colors">
+                        <summary class="cursor-pointer p-4 font-semibold text-gray-900 flex items-center justify-between">
+                            <span>What happens if I regenerate my meal plan?</span>
+                            <svg class="w-5 h-5 text-gray-500 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </summary>
+                        <div class="p-4 pt-0 text-gray-700 leading-relaxed space-y-3">
+                            <p>Regenerating your meal plan will:</p>
+                            <ul class="list-disc ps-5 space-y-2">
+                                <li>Create an entirely new meal plan for the week</li>
+                                <li>Archive your current meal plan (you'll lose any manual replacements)</li>
+                                <li>Regenerate shopping lists based on the new assignments</li>
+                            </ul>
+                            <p class="text-sm text-warning-600 bg-warning-50 border border-warning-200 rounded-lg p-3 mt-4">
+                                <strong>Warning:</strong> This action cannot be undone. If you only want to change a few meals, use the "Replace Meal" option instead.
+                            </p>
+                        </div>
+                    </details>
+                </div>
+            </section>
+
+            <!-- Shopping Lists -->
+            <section id="shopping" class="border-b border-gray-200 pb-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                    <svg class="w-6 h-6 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    Shopping Lists
+                </h2>
+
+                <div class="space-y-4">
+                    <details class="group rounded-lg border border-gray-200 hover:border-primary-300 transition-colors">
+                        <summary class="cursor-pointer p-4 font-semibold text-gray-900 flex items-center justify-between">
+                            <span>How are shopping lists generated?</span>
+                            <svg class="w-5 h-5 text-gray-500 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </summary>
+                        <div class="p-4 pt-0 text-gray-700 leading-relaxed space-y-3">
+                            <p>Shopping lists are automatically created when you generate a meal plan:</p>
+                            <ol class="list-decimal ps-5 space-y-2">
+                                <li>The system aggregates all ingredients from the week's assigned recipes</li>
+                                <li>Duplicate ingredients are combined (e.g., 2 cups flour + 1 cup flour = 3 cups flour)</li>
+                                <li>Items are categorized: Produce, Dairy, Meat, Pantry, Frozen, Bakery</li>
+                                <li>The list is available at <a href="/shopping" class="text-primary-500 hover:underline">Shopping</a></li>
+                            </ol>
+                            <p class="text-sm text-gray-600 mt-4">
+                                <strong>Tip:</strong> Shopping lists work offline! The PWA caches your list so you can check off items even without internet connection in the store.
+                            </p>
+                        </div>
+                    </details>
+
+                    <details class="group rounded-lg border border-gray-200 hover:border-primary-300 transition-colors">
+                        <summary class="cursor-pointer p-4 font-semibold text-gray-900 flex items-center justify-between">
+                            <span>Can I view shopping lists for future weeks?</span>
+                            <svg class="w-5 h-5 text-gray-500 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </summary>
+                        <div class="p-4 pt-0 text-gray-700 leading-relaxed">
+                            <p>Yes! Use the week selector dropdown on the Shopping page to view lists for different weeks. This is helpful for advance grocery shopping or planning ahead.</p>
+                        </div>
+                    </details>
+                </div>
+            </section>
+
+            <!-- Account & Settings -->
+            <section id="account" class="pb-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                    <svg class="w-6 h-6 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    Account & Settings
+                </h2>
+
+                <div class="space-y-4">
+                    <details class="group rounded-lg border border-gray-200 hover:border-primary-300 transition-colors">
+                        <summary class="cursor-pointer p-4 font-semibold text-gray-900 flex items-center justify-between">
+                            <span>How do I change my password?</span>
+                            <svg class="w-5 h-5 text-gray-500 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </summary>
+                        <div class="p-4 pt-0 text-gray-700 leading-relaxed space-y-3">
+                            <p>To change your password:</p>
+                            <ol class="list-decimal ps-5 space-y-2">
+                                <li>Visit the <a href="/login" class="text-primary-500 hover:underline">Login page</a></li>
+                                <li>Click <strong>"Forgot Password?"</strong></li>
+                                <li>Enter your email address</li>
+                                <li>Check your email for a password reset link</li>
+                                <li>Follow the link and set a new password</li>
+                            </ol>
+                        </div>
+                    </details>
+
+                    <details class="group rounded-lg border border-gray-200 hover:border-primary-300 transition-colors">
+                        <summary class="cursor-pointer p-4 font-semibold text-gray-900 flex items-center justify-between">
+                            <span>How do I manage push notifications?</span>
+                            <svg class="w-5 h-5 text-gray-500 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </summary>
+                        <div class="p-4 pt-0 text-gray-700 leading-relaxed space-y-3">
+                            <p>To manage notification settings:</p>
+                            <ol class="list-decimal ps-5 space-y-2">
+                                <li>Go to <a href="/notifications" class="text-primary-500 hover:underline">Notifications</a></li>
+                                <li>Enable/disable prep reminders and cooking notifications</li>
+                                <li>Customize notification timing</li>
+                            </ol>
+                            <p class="mt-4 text-sm text-gray-600">
+                                <strong>Note:</strong> You must grant browser notification permissions for push notifications to work.
+                            </p>
+                        </div>
+                    </details>
+
+                    <details class="group rounded-lg border border-gray-200 hover:border-primary-300 transition-colors">
+                        <summary class="cursor-pointer p-4 font-semibold text-gray-900 flex items-center justify-between">
+                            <span>How do I delete my account?</span>
+                            <svg class="w-5 h-5 text-gray-500 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </summary>
+                        <div class="p-4 pt-0 text-gray-700 leading-relaxed space-y-3">
+                            <p>To delete your account:</p>
+                            <ol class="list-decimal ps-5 space-y-2">
+                                <li>Navigate to <a href="/profile" class="text-primary-500 hover:underline">Profile</a></li>
+                                <li>Scroll to the bottom and click <strong>"Delete Account"</strong></li>
+                                <li>Confirm the deletion</li>
+                            </ol>
+                            <p class="text-sm text-error-600 bg-error-50 border border-error-200 rounded-lg p-3 mt-4">
+                                <strong>Important:</strong> Account deletion anonymizes your personal data within 30 days. Shared community recipes will remain publicly visible with an anonymized author attribution. This action cannot be undone.
+                            </p>
+                        </div>
+                    </details>
+                </div>
+            </section>
+        </div>
+
+        <!-- Contact Support -->
+        <div class="mt-12 pt-8 border-t border-gray-200">
+            <div class="bg-primary-50 border border-primary-200 rounded-lg p-6">
+                <h3 class="text-lg font-bold text-gray-900 mb-2">Still need help?</h3>
+                <p class="text-gray-700 mb-4">
+                    Can't find the answer you're looking for? Our support team is here to help.
+                </p>
+                <a href="/contact" class="inline-flex items-center gap-2 bg-primary-500 text-white px-6 py-3 rounded-lg hover:bg-primary-600 font-medium transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                    </svg>
+                    Contact Support
+                </a>
+            </div>
+        </div>
+
+        <!-- Back to Home -->
+        <div class="mt-8">
+            <a href="/" class="inline-flex items-center text-primary-500 hover:text-primary-600 font-medium">
+                <svg class="w-5 h-5 me-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Back to Home
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Simple search functionality -->
+<script>
+document.getElementById('help-search')?.addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const details = document.querySelectorAll('details');
+
+    details.forEach(detail => {
+        const summary = detail.querySelector('summary');
+        const content = detail.querySelector('div');
+        const text = (summary?.textContent + ' ' + content?.textContent).toLowerCase();
+
+        if (searchTerm === '' || text.includes(searchTerm)) {
+            detail.style.display = '';
+            if (searchTerm !== '') {
+                detail.setAttribute('open', '');
+            }
+        } else {
+            detail.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}
