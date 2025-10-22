@@ -126,6 +126,32 @@ struct PasswordResetTextTemplate {
     reset_link: String,
 }
 
+/// Contact form notification email HTML template
+#[derive(Template)]
+#[template(path = "emails/contact-form-notification.html")]
+struct ContactFormNotificationHtmlTemplate {
+    submission_id: String,
+    name: String,
+    email: String,
+    subject: String,
+    user_id: String,
+    message: String,
+    submitted_at: String,
+}
+
+/// Contact form notification email plain text template
+#[derive(Template)]
+#[template(path = "emails/contact-form-notification.txt")]
+struct ContactFormNotificationTextTemplate {
+    submission_id: String,
+    name: String,
+    email: String,
+    subject: String,
+    user_id: String,
+    message: String,
+    submitted_at: String,
+}
+
 /// Send a password reset email with a reset token link
 ///
 /// Returns success even if email fails to send (to prevent user enumeration)
@@ -159,6 +185,70 @@ pub async fn send_password_reset_email(
         plain_body,
         config,
         "password_reset",
+    )
+    .await
+}
+
+/// Contact form notification parameters
+pub struct ContactFormNotification<'a> {
+    pub submission_id: &'a str,
+    pub name: &'a str,
+    pub email: &'a str,
+    pub subject: &'a str,
+    pub message: &'a str,
+    pub user_id: Option<&'a str>,
+    pub submitted_at: &'a str,
+}
+
+/// Send a contact form notification email to support
+///
+/// Returns success even if email fails to send
+/// Errors are logged for monitoring
+pub async fn send_contact_form_notification(
+    notification: &ContactFormNotification<'_>,
+    config: &EmailConfig,
+) -> Result<()> {
+    // Convert Option<&str> to String for Askama template
+    let user_id_str = notification.user_id.unwrap_or("").to_string();
+
+    // Render HTML template
+    let html_template = ContactFormNotificationHtmlTemplate {
+        submission_id: notification.submission_id.to_string(),
+        name: notification.name.to_string(),
+        email: notification.email.to_string(),
+        subject: notification.subject.to_string(),
+        user_id: user_id_str.clone(),
+        message: notification.message.to_string(),
+        submitted_at: notification.submitted_at.to_string(),
+    };
+    let html_body = html_template
+        .render()
+        .context("Failed to render contact form HTML email template")?;
+
+    // Render plain text template
+    let text_template = ContactFormNotificationTextTemplate {
+        submission_id: notification.submission_id.to_string(),
+        name: notification.name.to_string(),
+        email: notification.email.to_string(),
+        subject: notification.subject.to_string(),
+        user_id: user_id_str,
+        message: notification.message.to_string(),
+        submitted_at: notification.submitted_at.to_string(),
+    };
+    let plain_body = text_template
+        .render()
+        .context("Failed to render contact form plain text email template")?;
+
+    send_email(
+        "support@imkitchen.app",
+        &format!(
+            "[Contact Form] {}: {}",
+            notification.subject, notification.name
+        ),
+        html_body,
+        plain_body,
+        config,
+        "contact_form",
     )
     .await
 }

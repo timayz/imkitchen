@@ -10,17 +10,17 @@ use imkitchen::middleware::{auth_middleware, cache_control_middleware};
 use imkitchen::routes::{
     browser_support, check_recipe_exists, check_shopping_item, complete_prep_task_handler,
     dashboard_handler, dismiss_notification, generate_shopping_list_handler, get_check_user,
-    get_collections, get_discover, get_discover_detail, get_import_modal, get_ingredient_row,
-    get_instruction_row, get_landing, get_login, get_meal_alternatives, get_meal_plan,
-    get_notification_status, get_onboarding, get_onboarding_skip, get_password_reset,
-    get_password_reset_complete, get_privacy, get_profile, get_recipe_detail, get_recipe_edit_form,
-    get_recipe_form, get_recipe_list, get_recipe_waiting, get_regenerate_confirm, get_register,
-    get_subscription, get_subscription_success, get_terms, health, list_notifications,
-    notifications_page, offline, post_add_recipe_to_collection, post_add_to_library,
-    post_create_collection, post_create_recipe, post_delete_collection, post_delete_recipe,
-    post_delete_review, post_favorite_recipe, post_generate_meal_plan, post_import_recipes,
-    post_login, post_logout, post_onboarding_step_1, post_onboarding_step_2,
-    post_onboarding_step_3, post_onboarding_step_4, post_password_reset,
+    get_collections, get_contact, get_discover, get_discover_detail, get_help, get_import_modal,
+    get_ingredient_row, get_instruction_row, get_landing, get_login, get_meal_alternatives,
+    get_meal_plan, get_notification_status, get_onboarding, get_onboarding_skip,
+    get_password_reset, get_password_reset_complete, get_privacy, get_profile, get_recipe_detail,
+    get_recipe_edit_form, get_recipe_form, get_recipe_list, get_recipe_waiting,
+    get_regenerate_confirm, get_register, get_subscription, get_subscription_success, get_terms,
+    health, list_notifications, notifications_page, offline, post_add_recipe_to_collection,
+    post_add_to_library, post_contact, post_create_collection, post_create_recipe,
+    post_delete_collection, post_delete_recipe, post_delete_review, post_favorite_recipe,
+    post_generate_meal_plan, post_import_recipes, post_login, post_logout, post_onboarding_step_1,
+    post_onboarding_step_2, post_onboarding_step_3, post_onboarding_step_4, post_password_reset,
     post_password_reset_complete, post_profile, post_rate_recipe, post_regenerate_meal_plan,
     post_register, post_remove_recipe_from_collection, post_replace_meal, post_share_recipe,
     post_stripe_webhook, post_subscription_upgrade, post_update_collection, post_update_recipe,
@@ -321,6 +321,9 @@ async fn serve_command(
                 // Legal pages (public)
                 .route("/privacy", get(get_privacy))
                 .route("/terms", get(get_terms))
+                // Support pages (public)
+                .route("/help", get(get_help))
+                .route("/contact", get(get_contact).post(post_contact))
                 // Auth routes (public)
                 .route("/register", get(get_register))
                 .route("/register", post(post_register))

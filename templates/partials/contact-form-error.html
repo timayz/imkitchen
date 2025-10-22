@@ -1,0 +1,127 @@
+{# Error response with toast and form preserved - outerHTML response #}
+
+<div id="contact-form-container">
+    <!-- Error Toast -->
+    <div
+        class="mb-6 bg-error-50 border-l-4 border-error-500 rounded-lg p-4"
+        role="status"
+        aria-live="assertive"
+    >
+        <div class="flex items-start">
+            <div class="shrink-0">
+                <svg class="h-6 w-6 text-error-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <div class="ml-3 flex-1">
+                <p class="text-sm font-medium text-error-800">
+                    {{ error_message }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form with preserved values -->
+    <form
+        id="contact-form"
+        class="space-y-6"
+        method="POST"
+        action="/contact"
+        ts-req
+        ts-req-method="POST"
+        ts-target="#contact-form-container"
+    >
+    <!-- Name -->
+    <div>
+        <label for="name" class="block text-sm font-medium text-gray-900 mb-2">
+            Your Name <span class="text-error-500">*</span>
+        </label>
+        <input
+            type="text"
+            id="name"
+            name="name"
+            required
+            minlength="2"
+            maxlength="100"
+            value="{{ name }}"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 invalid:border-error-500"
+            placeholder="John Doe"
+            aria-required="true"
+        >
+    </div>
+
+    <!-- Email -->
+    <div>
+        <label for="email" class="block text-sm font-medium text-gray-900 mb-2">
+            Email Address <span class="text-error-500">*</span>
+        </label>
+        <input
+            type="email"
+            id="email"
+            name="email"
+            required
+            value="{{ email }}"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 invalid:border-error-500"
+            placeholder="you@example.com"
+            aria-required="true"
+        >
+    </div>
+
+    <!-- Subject -->
+    <div>
+        <label for="subject" class="block text-sm font-medium text-gray-900 mb-2">
+            Subject <span class="text-error-500">*</span>
+        </label>
+        <select
+            id="subject"
+            name="subject"
+            required
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 invalid:border-error-500"
+            aria-required="true"
+        >
+            <option value="">Select a topic...</option>
+            <option value="support" {% if subject == "support" %}selected{% endif %}>General Support</option>
+            <option value="bug" {% if subject == "bug" %}selected{% endif %}>Bug Report</option>
+            <option value="feature" {% if subject == "feature" %}selected{% endif %}>Feature Request</option>
+            <option value="account" {% if subject == "account" %}selected{% endif %}>Account Issues</option>
+            <option value="billing" {% if subject == "billing" %}selected{% endif %}>Billing Question</option>
+            <option value="feedback" {% if subject == "feedback" %}selected{% endif %}>Feedback</option>
+            <option value="other" {% if subject == "other" %}selected{% endif %}>Other</option>
+        </select>
+    </div>
+
+    <!-- Message -->
+    <div>
+        <label for="message" class="block text-sm font-medium text-gray-900 mb-2">
+            Message <span class="text-error-500">*</span>
+        </label>
+        <textarea
+            id="message"
+            name="message"
+            required
+            minlength="10"
+            maxlength="5000"
+            rows="6"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-y invalid:border-error-500"
+            placeholder="Please provide as much detail as possible..."
+            aria-required="true"
+        >{{ message }}</textarea>
+        <p class="text-xs text-gray-500 mt-2">
+            For bug reports, please include steps to reproduce the issue and any error messages.
+        </p>
+    </div>
+
+    <!-- Submit Button -->
+    <div class="flex items-center justify-between">
+        <p class="text-sm text-gray-600">
+            <span class="text-error-500">*</span> Required fields
+        </p>
+        <button
+            type="submit"
+            class="bg-primary-500 text-white px-8 py-3 rounded-lg hover:bg-primary-600 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+            Send Message
+        </button>
+    </div>
+</form>
+</div>
