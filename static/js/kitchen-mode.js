@@ -19,9 +19,19 @@
         }
 
         init() {
-            // Apply Kitchen Mode if enabled from localStorage
-            if (this.enabled) {
+            // Check if kitchen mode should be enabled via URL parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            const kitchenModeParam = urlParams.get('kitchen_mode');
+
+            // Apply Kitchen Mode if enabled from localStorage OR URL parameter
+            if (this.enabled || kitchenModeParam === 'true') {
                 this.applyKitchenMode();
+                // If enabled via URL param but not in localStorage, enable it
+                if (kitchenModeParam === 'true' && !this.enabled) {
+                    this.enabled = true;
+                    this.savePreference(true);
+                    this.requestWakeLock();
+                }
             }
 
             // Create toggle UI

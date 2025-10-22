@@ -61,7 +61,7 @@ button.ts-active::after {
                         <span class="text-orange-600 text-xl" title="Advance prep required" aria-label="Advance prep required">⏰</span>
                         {% endif %}
                     </div>
-                    <a href="/recipes/{{ appetizer.recipe_id }}" class="block group">
+                    <a href="/recipes/{{ appetizer.recipe_id }}?kitchen_mode=true" class="block group">
                         <h3 class="text-lg font-semibold text-gray-900 group-hover:text-primary-600 transition-colors mb-2">
                             {{ appetizer.recipe_title }}
                         </h3>
@@ -95,7 +95,7 @@ button.ts-active::after {
                         <span class="text-orange-600 text-xl" title="Advance prep required" aria-label="Advance prep required">⏰</span>
                         {% endif %}
                     </div>
-                    <a href="/recipes/{{ main_course.recipe_id }}" class="block group">
+                    <a href="/recipes/{{ main_course.recipe_id }}?kitchen_mode=true" class="block group">
                         <h3 class="text-lg font-semibold text-gray-900 group-hover:text-primary-600 transition-colors mb-2">
                             {{ main_course.recipe_title }}
                         </h3>
@@ -129,7 +129,7 @@ button.ts-active::after {
                         <span class="text-orange-600 text-xl" title="Advance prep required" aria-label="Advance prep required">⏰</span>
                         {% endif %}
                     </div>
-                    <a href="/recipes/{{ dessert.recipe_id }}" class="block group">
+                    <a href="/recipes/{{ dessert.recipe_id }}?kitchen_mode=true" class="block group">
                         <h3 class="text-lg font-semibold text-gray-900 group-hover:text-primary-600 transition-colors mb-2">
                             {{ dessert.recipe_title }}
                         </h3>
