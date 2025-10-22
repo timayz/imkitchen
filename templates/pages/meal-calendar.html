@@ -137,10 +137,6 @@ button.ts-active::after {
                         <a href="/recipes/{{ appetizer.recipe_id }}?from=calendar&meal_plan_id={{ day.meal_plan_id }}&assignment_id={{ appetizer.assignment_id }}" class="text-gray-900 hover:text-primary-500 font-medium block">
                             {{ appetizer.recipe_title }}
                         </a>
-                        <!-- Story 3.5 AC-6: Kitchen Mode Link -->
-                        <a href="/recipes/{{ appetizer.recipe_id }}?from=calendar&meal_plan_id={{ day.meal_plan_id }}&assignment_id={{ appetizer.assignment_id }}&kitchen_mode=true" class="text-xs text-gray-500 hover:text-gray-700 underline">
-                            👨‍🍳 Kitchen Mode
-                        </a>
                         <div class="flex items-center gap-2 mt-1 text-xs text-gray-500">
                             {% match appetizer.prep_time_min %}
                             {% when Some with (prep) %}
@@ -199,10 +195,6 @@ button.ts-active::after {
                         <a href="/recipes/{{ main_course.recipe_id }}?from=calendar&meal_plan_id={{ day.meal_plan_id }}&assignment_id={{ main_course.assignment_id }}" class="text-gray-900 hover:text-primary-500 font-medium block">
                             {{ main_course.recipe_title }}
                         </a>
-                        <!-- Story 3.5 AC-6: Kitchen Mode Link -->
-                        <a href="/recipes/{{ main_course.recipe_id }}?from=calendar&meal_plan_id={{ day.meal_plan_id }}&assignment_id={{ main_course.assignment_id }}&kitchen_mode=true" class="text-xs text-gray-500 hover:text-gray-700 underline">
-                            👨‍🍳 Kitchen Mode
-                        </a>
                         <div class="flex items-center gap-2 mt-1 text-xs text-gray-500">
                             {% match main_course.prep_time_min %}
                             {% when Some with (prep) %}
@@ -260,10 +252,6 @@ button.ts-active::after {
                         <!-- Story 3.5: Add calendar context to recipe link -->
                         <a href="/recipes/{{ dessert.recipe_id }}?from=calendar&meal_plan_id={{ day.meal_plan_id }}&assignment_id={{ dessert.assignment_id }}" class="text-gray-900 hover:text-primary-500 font-medium block">
                             {{ dessert.recipe_title }}
-                        </a>
-                        <!-- Story 3.5 AC-6: Kitchen Mode Link -->
-                        <a href="/recipes/{{ dessert.recipe_id }}?from=calendar&meal_plan_id={{ day.meal_plan_id }}&assignment_id={{ dessert.assignment_id }}&kitchen_mode=true" class="text-xs text-gray-500 hover:text-gray-700 underline">
-                            👨‍🍳 Kitchen Mode
                         </a>
                         <div class="flex items-center gap-2 mt-1 text-xs text-gray-500">
                             {% match dessert.prep_time_min %}
