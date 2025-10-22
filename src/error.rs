@@ -189,6 +189,19 @@ impl IntoResponse for AppError {
                     None,
                 )
             }
+            // Issue #130: Handle InsufficientRecipes from meal_planning domain separately
+            AppError::MealPlanningError(meal_planning::MealPlanningError::InsufficientRecipes { minimum, current }) => (
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "Not Enough Recipes".to_string(),
+                format!(
+                    "You need at least {} favorite recipes to generate a meal plan. You currently have {}. Add {} more recipe{} to get started!",
+                    minimum,
+                    current,
+                    minimum - current,
+                    if minimum - current > 1 { "s" } else { "" }
+                ),
+                Some("insufficient_recipes".to_string()),
+            ),
             AppError::MealPlanningError(e) => {
                 tracing::error!("Meal planning error: {:?}", e);
                 (

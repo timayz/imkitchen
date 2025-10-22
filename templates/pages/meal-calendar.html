@@ -71,7 +71,8 @@ button.ts-active::after {
                     ts-req="/plan/generate"
                     ts-req-method="POST"
                     ts-trigger="click"
-                    ts-target="#main-content"
+                    ts-target="body"
+                    ts-swap="inner"
                     class="px-8 py-4 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-bold text-lg">
                     Generate Meal Plan
                 </button>
@@ -328,9 +329,23 @@ button.ts-active::after {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                 </svg>
                 <h2 class="text-2xl font-bold text-gray-900 mb-2">No Meal Plan Yet</h2>
+
+                <!-- Issue #130: Display inline error message -->
+                {% match error_message %}
+                {% when Some with (msg) %}
+                <div class="mb-6 bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-lg">
+                    <div class="flex items-start">
+                        <svg class="h-6 w-6 text-amber-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <p class="text-amber-800 font-medium text-left">{{ msg }}</p>
+                    </div>
+                </div>
+                {% when None %}
                 <p class="text-gray-600 mb-6">
                     Generate your first weekly meal plan based on your favorite recipes. You'll need at least 7 favorite recipes to get started.
                 </p>
+                {% endmatch %}
                 <div class="space-y-3 text-left bg-blue-50 p-4 rounded-lg mb-6">
                     <p class="font-semibold text-blue-900">To get started:</p>
                     <ol class="list-decimal list-inside space-y-2 text-blue-800">
