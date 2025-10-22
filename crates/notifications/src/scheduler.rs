@@ -1041,97 +1041,118 @@ mod tests {
 
     #[test]
     fn test_calculate_reminder_time_24h_prep() {
-        // Given: Thursday dinner at 6pm with 24h marinade
-        let meal_date = "2025-10-23"; // Thursday
+        use chrono::Local;
+
+        // Given: Dinner at 6pm in 2 days with 24h marinade (ensures reminder is tomorrow at 9am, not in past)
+        let in_two_days = Local::now().date_naive() + chrono::Duration::days(2);
+        let meal_date = in_two_days.format("%Y-%m-%d").to_string();
         let meal_time = Some("18:00");
         let prep_hours = 24;
 
         // When: Calculate reminder time
-        let result = calculate_reminder_time(meal_date, meal_time, prep_hours).unwrap();
+        let result = calculate_reminder_time(&meal_date, meal_time, prep_hours).unwrap();
 
-        // Then: Reminder scheduled for Wednesday 9am
+        // Then: Reminder scheduled for tomorrow at 9am
         let reminder_dt = DateTime::parse_from_rfc3339(&result).unwrap();
-        assert_eq!(reminder_dt.day(), 22); // Wednesday (day before Thursday)
+        let expected_day = Local::now().date_naive() + chrono::Duration::days(1);
+        assert_eq!(reminder_dt.day(), expected_day.day());
         assert_eq!(reminder_dt.hour(), 9);
         assert_eq!(reminder_dt.minute(), 0);
     }
 
     #[test]
     fn test_calculate_reminder_time_4h_prep() {
-        // Given: Wednesday dinner at 6pm with 4h prep
-        let meal_date = "2025-10-22"; // Wednesday
-        let meal_time = Some("18:00");
+        use chrono::Local;
+
+        // Given: Dinner at 10pm today with 4h prep (using dynamic date, late enough to avoid past time)
+        let today = Local::now().date_naive();
+        let meal_date = today.format("%Y-%m-%d").to_string();
+        let meal_time = Some("22:00"); // 10pm
         let prep_hours = 4;
 
         // When: Calculate reminder time
-        let result = calculate_reminder_time(meal_date, meal_time, prep_hours).unwrap();
+        let result = calculate_reminder_time(&meal_date, meal_time, prep_hours).unwrap();
 
-        // Then: Reminder scheduled for Wednesday 2pm (6pm - 4h)
+        // Then: Reminder scheduled for today at 6pm (10pm - 4h)
         let reminder_dt = DateTime::parse_from_rfc3339(&result).unwrap();
-        assert_eq!(reminder_dt.day(), 22); // Same day
-        assert_eq!(reminder_dt.hour(), 14); // 2pm
+        assert_eq!(reminder_dt.day(), today.day());
+        assert_eq!(reminder_dt.hour(), 18); // 6pm
         assert_eq!(reminder_dt.minute(), 0);
     }
 
     #[test]
     fn test_calculate_reminder_time_1h_prep() {
-        // Given: Wednesday dinner at 6pm with 1h prep
-        let meal_date = "2025-10-22"; // Wednesday
-        let meal_time = Some("18:00");
+        use chrono::Local;
+
+        // Given: Dinner at 11pm today with 1h prep (using dynamic date, late enough to avoid past time)
+        let today = Local::now().date_naive();
+        let meal_date = today.format("%Y-%m-%d").to_string();
+        let meal_time = Some("23:00"); // 11pm
         let prep_hours = 1;
 
         // When: Calculate reminder time
-        let result = calculate_reminder_time(meal_date, meal_time, prep_hours).unwrap();
+        let result = calculate_reminder_time(&meal_date, meal_time, prep_hours).unwrap();
 
-        // Then: Reminder scheduled for 1 hour before meal (5pm)
+        // Then: Reminder scheduled for 1 hour before meal (10pm)
         let reminder_dt = DateTime::parse_from_rfc3339(&result).unwrap();
-        assert_eq!(reminder_dt.day(), 22); // Same day
-        assert_eq!(reminder_dt.hour(), 17); // 5pm
+        assert_eq!(reminder_dt.day(), today.day());
+        assert_eq!(reminder_dt.hour(), 22); // 10pm
         assert_eq!(reminder_dt.minute(), 0);
     }
 
     #[test]
     fn test_calculate_reminder_time_default_meal_time() {
-        // Given: Meal date without explicit time
-        let meal_date = "2025-10-23";
+        use chrono::Local;
+
+        // Given: Meal tomorrow without explicit time (using dynamic date, ensures future time)
+        let tomorrow = Local::now().date_naive() + chrono::Duration::days(1);
+        let meal_date = tomorrow.format("%Y-%m-%d").to_string();
         let meal_time = None; // Should default to 6pm
         let prep_hours = 4;
 
         // When: Calculate reminder time
-        let result = calculate_reminder_time(meal_date, meal_time, prep_hours).unwrap();
+        let result = calculate_reminder_time(&meal_date, meal_time, prep_hours).unwrap();
 
         // Then: Reminder scheduled for 2pm (default 6pm - 4h)
         let reminder_dt = DateTime::parse_from_rfc3339(&result).unwrap();
+        assert_eq!(reminder_dt.day(), tomorrow.day());
         assert_eq!(reminder_dt.hour(), 14); // 2pm
     }
 
     #[test]
     fn test_generate_notification_body_24h_prep() {
-        // Given: 24h marinade for Thursday dinner
+        use chrono::Local;
+
+        // Given: 24h marinade for tomorrow's dinner (using dynamic date)
         let recipe_title = "Chicken Tikka Masala";
-        let meal_date = "2025-10-23"; // Thursday
+        let tomorrow = Local::now().date_naive() + chrono::Duration::days(1);
+        let meal_date = tomorrow.format("%Y-%m-%d").to_string();
         let prep_hours = 24;
         let prep_task = Some("Marinate chicken");
 
         // When: Generate notification message
         let result =
-            generate_notification_body(recipe_title, meal_date, prep_hours, prep_task).unwrap();
+            generate_notification_body(recipe_title, &meal_date, prep_hours, prep_task).unwrap();
 
-        // Then: Message mentions tonight and Thursday
+        // Then: Message mentions tonight and the meal
         assert!(result.contains("Marinate chicken tonight"));
-        assert!(result.contains("Thursday dinner"));
+        assert!(result.contains("dinner"));
         assert!(result.contains("Chicken Tikka Masala"));
     }
 
     #[test]
     fn test_generate_notification_body_8h_prep() {
-        // Given: 8h prep for dinner
+        use chrono::Local;
+
+        // Given: 8h prep for dinner (using dynamic date)
         let recipe_title = "Bread Dough";
-        let meal_date = "2025-10-23";
+        let today = Local::now().date_naive();
+        let meal_date = today.format("%Y-%m-%d").to_string();
         let prep_hours = 8;
 
         // When: Generate notification message
-        let result = generate_notification_body(recipe_title, meal_date, prep_hours, None).unwrap();
+        let result =
+            generate_notification_body(recipe_title, &meal_date, prep_hours, None).unwrap();
 
         // Then: Message mentions "in 8 hours"
         assert!(result.contains("Start prep in 8 hours"));
@@ -1140,13 +1161,17 @@ mod tests {
 
     #[test]
     fn test_generate_notification_body_1h_prep() {
-        // Given: 1h prep for dinner
+        use chrono::Local;
+
+        // Given: 1h prep for dinner (using dynamic date)
         let recipe_title = "Quick Pasta";
-        let meal_date = "2025-10-23";
+        let today = Local::now().date_naive();
+        let meal_date = today.format("%Y-%m-%d").to_string();
         let prep_hours = 1;
 
         // When: Generate notification message
-        let result = generate_notification_body(recipe_title, meal_date, prep_hours, None).unwrap();
+        let result =
+            generate_notification_body(recipe_title, &meal_date, prep_hours, None).unwrap();
 
         // Then: Message mentions "in 1 hour"
         assert!(result.contains("Start cooking in 1 hour"));

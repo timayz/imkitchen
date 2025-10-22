@@ -1,97 +1,516 @@
 [
   {
-    "title": "Classic Spaghetti Carbonara",
+    "title": "Dombrés haricots rouges boeuf",
     "recipe_type": "main_course",
     "ingredients": [
       {
-        "name": "Spaghetti",
-        "quantity": 400,
+        "name": "Haricots rouges",
+        "quantity": 500,
         "unit": "g"
       },
       {
-        "name": "Pancetta",
-        "quantity": 150,
+        "name": "Eau",
+        "quantity": 2,
+        "unit": "l"
+      },
+      {
+        "name": "Thym",
+        "quantity": 3,
+        "unit": "branches"
+      },
+      {
+        "name": "Huile",
+        "quantity": 18,
         "unit": "g"
       },
       {
-        "name": "Egg yolks",
-        "quantity": 4,
+        "name": "Sel",
+        "quantity": 30,
+        "unit": "g"
+      },
+      {
+        "name": "Bœuf à braiser",
+        "quantity": 600,
+        "unit": "g"
+      },
+      {
+        "name": "Cive",
+        "quantity": 2,
+        "unit": "branches"
+      },
+      {
+        "name": "Pulpe de tomate",
+        "quantity": 350,
+        "unit": "g"
+      },
+      {
+        "name": "Jus de citron",
+        "quantity": 0.25,
         "unit": "whole"
       },
       {
-        "name": "Parmesan cheese",
-        "quantity": 100,
+        "name": "Gousses d'ail",
+        "quantity": 2,
+        "unit": "whole"
+      },
+      {
+        "name": "Quatre-épices",
+        "quantity": 4,
         "unit": "g"
       },
       {
-        "name": "Black pepper",
-        "quantity": 1,
+        "name": "Feuilles de laurier",
+        "quantity": 2,
+        "unit": "whole"
+      },
+      {
+        "name": "Pâte de piment rouge",
+        "quantity": 0.5,
         "unit": "tsp"
+      },
+      {
+        "name": "Piment frais",
+        "quantity": 1,
+        "unit": "whole"
+      },
+      {
+        "name": "Farine",
+        "quantity": 350,
+        "unit": "g"
+      },
+      {
+        "name": "Eau froide",
+        "quantity": 200,
+        "unit": "ml"
+      },
+      {
+        "name": "Sel pour les dombrés",
+        "quantity": 10,
+        "unit": "g"
       }
     ],
     "instructions": [
       {
         "step_number": 1,
-        "instruction_text": "Bring a large pot of salted water to boil and cook spaghetti according to package directions",
-        "timer_minutes": 10
-      },
-      {
-        "step_number": 2,
-        "instruction_text": "While pasta cooks, fry pancetta in a large pan until crispy",
-        "timer_minutes": 5
-      },
-      {
-        "step_number": 3,
-        "instruction_text": "In a bowl, whisk together egg yolks, grated Parmesan, and black pepper",
+        "instruction_text": "Faire tremper les haricots rouges dans l'eau toute la nuit",
         "timer_minutes": null
       },
       {
+        "step_number": 2,
+        "instruction_text": "Couper le bœuf en morceaux de 2 cm",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Faire revenir le bœuf dans l'huile",
+        "timer_minutes": 10
+      },
+      {
         "step_number": 4,
-        "instruction_text": "Reserve 1 cup pasta water, then drain pasta. Add pasta to pancetta pan",
+        "instruction_text": "Ajouter la cive hachée, le quatre-épices, l'ail et le thym",
         "timer_minutes": null
       },
       {
         "step_number": 5,
-        "instruction_text": "Remove from heat, add egg mixture, toss quickly, adding pasta water to create creamy sauce",
+        "instruction_text": "Ajouter les haricots et couvrir d'eau",
         "timer_minutes": null
+      },
+      {
+        "step_number": 6,
+        "instruction_text": "Cuire à la cocotte-minute",
+        "timer_minutes": 45
+      },
+      {
+        "step_number": 7,
+        "instruction_text": "Préparer la pâte à dombrés en mélangeant la farine, le sel et l'eau froide",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 8,
+        "instruction_text": "Former de petites boules de pâte",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 9,
+        "instruction_text": "Ajouter les dombrés aux haricots",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 10,
+        "instruction_text": "Ajouter la pulpe de tomate, la pâte de piment, le sel et le jus de citron",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 11,
+        "instruction_text": "Ajouter le piment frais",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 12,
+        "instruction_text": "Laisser mijoter",
+        "timer_minutes": 25
+      },
+      {
+        "step_number": 13,
+        "instruction_text": "Laisser reposer avant de servir",
+        "timer_minutes": 10
       }
     ],
-    "prep_time_min": 10,
-    "cook_time_min": 15,
-    "advance_prep_hours": null,
-    "serving_size": 4
+    "prep_time_min": 90,
+    "cook_time_min": 80,
+    "advance_prep_hours": 12,
+    "serving_size": 6
   },
   {
-    "title": "Caprese Salad",
-    "recipe_type": "appetizer",
+    "title": "Hachis Parmentier de Banane Jaune",
+    "recipe_type": "main_course",
     "ingredients": [
       {
-        "name": "Fresh mozzarella",
+        "name": "Viande de bœuf hachée",
         "quantity": 250,
         "unit": "g"
       },
       {
-        "name": "Tomatoes",
+        "name": "Oignons",
+        "quantity": 100,
+        "unit": "g"
+      },
+      {
+        "name": "Poivrons végétariens",
+        "quantity": 2,
+        "unit": "whole"
+      },
+      {
+        "name": "Oignon-pays",
+        "quantity": 1,
+        "unit": "branche"
+      },
+      {
+        "name": "Ail",
+        "quantity": 1,
+        "unit": "gousse"
+      },
+      {
+        "name": "Pulpe de tomate en dés",
+        "quantity": 400,
+        "unit": "g"
+      },
+      {
+        "name": "Eau",
+        "quantity": 120,
+        "unit": "ml"
+      },
+      {
+        "name": "Vinaigre de cidre",
+        "quantity": 1,
+        "unit": "tbsp"
+      },
+      {
+        "name": "Poivre",
+        "quantity": 1,
+        "unit": "tsp"
+      },
+      {
+        "name": "Bouquet garni",
+        "quantity": 1,
+        "unit": "tsp"
+      },
+      {
+        "name": "Sel",
+        "quantity": 4,
+        "unit": "g"
+      },
+      {
+        "name": "Banane jaune",
+        "quantity": 890,
+        "unit": "g"
+      },
+      {
+        "name": "Lait concentré non sucré",
+        "quantity": 500,
+        "unit": "g"
+      },
+      {
+        "name": "Ail pour purée",
+        "quantity": 1,
+        "unit": "gousse"
+      },
+      {
+        "name": "Fromage râpé",
+        "quantity": 100,
+        "unit": "g"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Faire bouillir les bananes dans de l'eau salée",
+        "timer_minutes": 25
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "Hacher finement les aromates: oignons, poivrons, oignon-pays",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Cuire le bœuf haché, ajouter les aromates",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Ajouter la pulpe de tomate, l'ail, le sel, le poivre, l'eau et le vinaigre",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 5,
+        "instruction_text": "Laisser mijoter la sauce",
+        "timer_minutes": 15
+      },
+      {
+        "step_number": 6,
+        "instruction_text": "Écraser les bananes, mélanger avec le lait concentré, l'ail et les épices",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 7,
+        "instruction_text": "Disposer en couches dans un plat: purée de banane, viande, purée de banane",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 8,
+        "instruction_text": "Garnir de fromage râpé",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 9,
+        "instruction_text": "Faire gratiner au four",
+        "timer_minutes": 20
+      }
+    ],
+    "prep_time_min": 30,
+    "cook_time_min": 50,
+    "advance_prep_hours": null,
+    "serving_size": 4
+  },
+  {
+    "title": "Nuggets de Poulet Madivial, sauce curry-miel",
+    "recipe_type": "main_course",
+    "ingredients": [
+      {
+        "name": "Filets de poulet",
+        "quantity": 600,
+        "unit": "g"
+      },
+      {
+        "name": "Jus de citron",
+        "quantity": 1,
+        "unit": "whole"
+      },
+      {
+        "name": "Gousses d'ail",
         "quantity": 3,
         "unit": "whole"
       },
       {
-        "name": "Fresh basil",
+        "name": "Poivre",
         "quantity": 1,
-        "unit": "bunch"
+        "unit": "tsp"
       },
       {
-        "name": "Extra virgin olive oil",
-        "quantity": 3,
-        "unit": "tbsp"
+        "name": "Sel",
+        "quantity": 1,
+        "unit": "tsp"
       },
       {
-        "name": "Balsamic glaze",
+        "name": "Herbes mélangées",
+        "quantity": 1,
+        "unit": "tsp"
+      },
+      {
+        "name": "Œufs",
         "quantity": 2,
-        "unit": "tbsp"
+        "unit": "whole"
       },
       {
-        "name": "Salt",
+        "name": "Farine assaisonnée",
+        "quantity": 80,
+        "unit": "g"
+      },
+      {
+        "name": "Chapelure",
+        "quantity": 80,
+        "unit": "g"
+      },
+      {
+        "name": "Pommes de terre",
+        "quantity": 800,
+        "unit": "g"
+      },
+      {
+        "name": "Huile",
+        "quantity": 20,
+        "unit": "g"
+      },
+      {
+        "name": "Paprika",
+        "quantity": 4,
+        "unit": "g"
+      },
+      {
+        "name": "Pâte de curry",
+        "quantity": 32,
+        "unit": "g"
+      },
+      {
+        "name": "Miel",
+        "quantity": 110,
+        "unit": "g"
+      },
+      {
+        "name": "Maïzena",
+        "quantity": 12,
+        "unit": "g"
+      },
+      {
+        "name": "Eau",
+        "quantity": 200,
+        "unit": "ml"
+      },
+      {
+        "name": "Vinaigre de cidre",
+        "quantity": 4,
+        "unit": "tsp"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Couper le poulet en morceaux",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "Faire mariner le poulet avec le jus de citron, l'ail, le sel et les épices",
+        "timer_minutes": 60
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Paner le poulet dans la farine, l'œuf puis la chapelure",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Faire frire le poulet dans l'huile chaude",
+        "timer_minutes": 4
+      },
+      {
+        "step_number": 5,
+        "instruction_text": "Égoutter sur du papier absorbant",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 6,
+        "instruction_text": "Couper les pommes de terre, enrober d'huile et d'épices",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 7,
+        "instruction_text": "Cuire les pommes de terre au four à 180°C",
+        "timer_minutes": 35
+      },
+      {
+        "step_number": 8,
+        "instruction_text": "Préparer la sauce en mélangeant tous les ingrédients et en chauffant jusqu'à épaississement",
+        "timer_minutes": 5
+      }
+    ],
+    "prep_time_min": 35,
+    "cook_time_min": 40,
+    "advance_prep_hours": null,
+    "serving_size": 4
+  },
+  {
+    "title": "Nouilles au porc grillé MADIVIAL",
+    "recipe_type": "main_course",
+    "ingredients": [
+      {
+        "name": "Côte-échine de porc",
+        "quantity": 450,
+        "unit": "g"
+      },
+      {
+        "name": "Nouilles aux œufs",
+        "quantity": 170,
+        "unit": "g"
+      },
+      {
+        "name": "Carotte",
+        "quantity": 115,
+        "unit": "g"
+      },
+      {
+        "name": "Poivron rouge",
+        "quantity": 115,
+        "unit": "g"
+      },
+      {
+        "name": "Champignons de Paris",
+        "quantity": 90,
+        "unit": "g"
+      },
+      {
+        "name": "Jus de citron vert",
+        "quantity": 55,
+        "unit": "g"
+      },
+      {
+        "name": "Sirop de batterie",
+        "quantity": 40,
+        "unit": "g"
+      },
+      {
+        "name": "Beurre demi-sel",
+        "quantity": 36,
+        "unit": "g"
+      },
+      {
+        "name": "Sauce soja",
+        "quantity": 30,
+        "unit": "g"
+      },
+      {
+        "name": "Huile de tournesol",
+        "quantity": 20,
+        "unit": "g"
+      },
+      {
+        "name": "Oignon rouge",
+        "quantity": 30,
+        "unit": "g"
+      },
+      {
+        "name": "Oignon-pays",
+        "quantity": 14,
+        "unit": "g"
+      },
+      {
+        "name": "Ail",
+        "quantity": 12,
+        "unit": "g"
+      },
+      {
+        "name": "Piments végétariens",
+        "quantity": 12,
+        "unit": "g"
+      },
+      {
+        "name": "Persil",
+        "quantity": 11,
+        "unit": "g"
+      },
+      {
+        "name": "Gros sel",
         "quantity": 1,
         "unit": "tsp"
       }
@@ -99,61 +518,268 @@
     "instructions": [
       {
         "step_number": 1,
-        "instruction_text": "Slice tomatoes and mozzarella into 1/4 inch thick rounds",
-        "timer_minutes": null
+        "instruction_text": "Faire mariner le porc dans le jus de citron vert, la sauce soja et le sirop de batterie",
+        "timer_minutes": 60
       },
       {
         "step_number": 2,
-        "instruction_text": "Arrange tomato and mozzarella slices alternating on a plate",
+        "instruction_text": "Préparer et hacher les légumes",
         "timer_minutes": null
       },
       {
         "step_number": 3,
-        "instruction_text": "Tuck fresh basil leaves between slices",
+        "instruction_text": "Griller les légumes",
         "timer_minutes": null
       },
       {
         "step_number": 4,
-        "instruction_text": "Drizzle with olive oil and balsamic glaze, season with salt",
+        "instruction_text": "Griller le porc mariné en le retournant et en le salant",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 5,
+        "instruction_text": "Cuire les nouilles",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 6,
+        "instruction_text": "Mélanger les nouilles avec le beurre aux herbes",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 7,
+        "instruction_text": "Trancher le porc, mélanger avec les légumes grillés et les nouilles",
         "timer_minutes": null
       }
     ],
-    "prep_time_min": 10,
-    "cook_time_min": null,
+    "prep_time_min": 25,
+    "cook_time_min": 30,
     "advance_prep_hours": null,
-    "serving_size": 4
+    "serving_size": 3
   },
   {
-    "title": "Chocolate Lava Cake",
-    "recipe_type": "dessert",
+    "title": "Curry de DINDE Madivial aux légumes-pays",
+    "recipe_type": "main_course",
     "ingredients": [
       {
-        "name": "Dark chocolate",
-        "quantity": 200,
+        "name": "Filets de dinde",
+        "quantity": 350,
         "unit": "g"
       },
       {
-        "name": "Butter",
-        "quantity": 100,
+        "name": "Crème liquide",
+        "quantity": 230,
         "unit": "g"
       },
       {
-        "name": "Eggs",
-        "quantity": 2,
-        "unit": "whole"
+        "name": "Christophine",
+        "quantity": 340,
+        "unit": "g"
       },
       {
-        "name": "Egg yolks",
-        "quantity": 2,
-        "unit": "whole"
+        "name": "Giraumon",
+        "quantity": 175,
+        "unit": "g"
       },
       {
-        "name": "Sugar",
+        "name": "Tomates cerises",
+        "quantity": 125,
+        "unit": "g"
+      },
+      {
+        "name": "Carotte",
         "quantity": 60,
         "unit": "g"
       },
       {
-        "name": "All-purpose flour",
+        "name": "Oignons blancs marinés",
+        "quantity": 60,
+        "unit": "g"
+      },
+      {
+        "name": "Sel de mer",
+        "quantity": 4,
+        "unit": "g"
+      },
+      {
+        "name": "Poivrons végétariens",
+        "quantity": 20,
+        "unit": "g"
+      },
+      {
+        "name": "Grains de poivre vert",
+        "quantity": 20,
+        "unit": "whole"
+      },
+      {
+        "name": "Ail",
+        "quantity": 15,
+        "unit": "g"
+      },
+      {
+        "name": "Feuilles de laurier",
+        "quantity": 3,
+        "unit": "whole"
+      },
+      {
+        "name": "Oignon-pays",
+        "quantity": 3,
+        "unit": "branches"
+      },
+      {
+        "name": "Persil",
+        "quantity": 2,
+        "unit": "branches"
+      },
+      {
+        "name": "Poudre de curry",
+        "quantity": 2,
+        "unit": "tbsp"
+      },
+      {
+        "name": "Jus de citron vert",
+        "quantity": 30,
+        "unit": "g"
+      },
+      {
+        "name": "Eau",
+        "quantity": 240,
+        "unit": "g"
+      },
+      {
+        "name": "Maïzena",
+        "quantity": 5,
+        "unit": "g"
+      },
+      {
+        "name": "Huile de tournesol",
+        "quantity": 20,
+        "unit": "g"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Couper la dinde en gros morceaux, faire mariner avec le jus de citron vert",
+        "timer_minutes": 40
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "Préparer les légumes: éplucher et hacher le giraumon, la christophine, les carottes",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Faire revenir la dinde dans une marmite avec de l'huile",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Ajouter les oignons et les légumes",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 5,
+        "instruction_text": "Verser la crème, l'eau, le curry, les feuilles de laurier et le sel",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 6,
+        "instruction_text": "Laisser mijoter",
+        "timer_minutes": 25
+      },
+      {
+        "step_number": 7,
+        "instruction_text": "Ajouter les tomates, l'ail et les herbes en fin de cuisson",
+        "timer_minutes": null
+      }
+    ],
+    "prep_time_min": 30,
+    "cook_time_min": 45,
+    "advance_prep_hours": null,
+    "serving_size": 3
+  },
+  {
+    "title": "Croustillants de POULET Madivial",
+    "recipe_type": "appetizer",
+    "ingredients": [
+      {
+        "name": "Filet de poulet",
+        "quantity": 250,
+        "unit": "g"
+      },
+      {
+        "name": "Feuilles de brick",
+        "quantity": 8,
+        "unit": "whole"
+      },
+      {
+        "name": "Banane jaune",
+        "quantity": 190,
+        "unit": "g"
+      },
+      {
+        "name": "Poivron",
+        "quantity": 230,
+        "unit": "g"
+      },
+      {
+        "name": "Échalote",
+        "quantity": 60,
+        "unit": "g"
+      },
+      {
+        "name": "Piment végétarien",
+        "quantity": 10,
+        "unit": "g"
+      },
+      {
+        "name": "Carotte",
+        "quantity": 100,
+        "unit": "g"
+      },
+      {
+        "name": "Jus de citron vert",
+        "quantity": 18,
+        "unit": "g"
+      },
+      {
+        "name": "Ail",
+        "quantity": 12,
+        "unit": "g"
+      },
+      {
+        "name": "Oignon-pays",
+        "quantity": 2,
+        "unit": "branches"
+      },
+      {
+        "name": "Persil",
+        "quantity": 1,
+        "unit": "branche"
+      },
+      {
+        "name": "Poivre",
+        "quantity": 1,
+        "unit": "tsp"
+      },
+      {
+        "name": "Sel",
+        "quantity": 1,
+        "unit": "tsp"
+      },
+      {
+        "name": "Herbes de Provence",
+        "quantity": 1,
+        "unit": "tsp"
+      },
+      {
+        "name": "Huile d'olive",
+        "quantity": 30,
+        "unit": "g"
+      },
+      {
+        "name": "Beurre demi-sel",
         "quantity": 40,
         "unit": "g"
       }
@@ -161,122 +787,3194 @@
     "instructions": [
       {
         "step_number": 1,
-        "instruction_text": "Preheat oven to 425°F (220°C). Butter and flour 4 ramekins",
+        "instruction_text": "Faire mariner le poulet avec le jus de citron vert et l'ail",
         "timer_minutes": null
       },
       {
         "step_number": 2,
-        "instruction_text": "Melt chocolate and butter together in a double boiler",
-        "timer_minutes": 5
+        "instruction_text": "Hacher les légumes et les herbes",
+        "timer_minutes": null
       },
       {
         "step_number": 3,
-        "instruction_text": "Whisk eggs, egg yolks, and sugar until thick and pale",
-        "timer_minutes": 3
+        "instruction_text": "Griller les légumes et le poulet séparément",
+        "timer_minutes": null
       },
       {
         "step_number": 4,
-        "instruction_text": "Fold chocolate mixture into eggs, then gently fold in flour",
+        "instruction_text": "Préparer les feuilles de brick avec du beurre",
         "timer_minutes": null
       },
       {
         "step_number": 5,
-        "instruction_text": "Divide batter among ramekins and bake until edges are set but center jiggles",
-        "timer_minutes": 12
+        "instruction_text": "Assembler les croustillants en superposant les ingrédients grillés",
+        "timer_minutes": null
       },
       {
         "step_number": 6,
-        "instruction_text": "Let cool 1 minute, then invert onto plates and serve immediately",
-        "timer_minutes": 1
+        "instruction_text": "Plier comme un nem",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 7,
+        "instruction_text": "Cuire au four à 180°C",
+        "timer_minutes": 20
+      },
+      {
+        "step_number": 8,
+        "instruction_text": "Retourner immédiatement après cuisson pour rendre croustillant le dessous",
+        "timer_minutes": null
       }
     ],
-    "prep_time_min": 15,
-    "cook_time_min": 12,
+    "prep_time_min": 55,
+    "cook_time_min": 20,
     "advance_prep_hours": null,
     "serving_size": 4
   },
   {
-    "title": "Simple Grilled Cheese",
+    "title": "Escalope de DINDE panée aux CACAHUÈTES Madivial",
     "recipe_type": "main_course",
     "ingredients": [
       {
-        "name": "Bread",
-        "quantity": 2,
-        "unit": "slices"
+        "name": "Filets de dinde",
+        "quantity": 600,
+        "unit": "g"
       },
       {
-        "name": "Cheddar cheese",
-        "quantity": 2,
-        "unit": "slices"
+        "name": "Jus de citron vert",
+        "quantity": 45,
+        "unit": "g"
       },
       {
-        "name": "Butter",
+        "name": "Gousses d'ail",
+        "quantity": 20,
+        "unit": "g"
+      },
+      {
+        "name": "Sel",
         "quantity": 1,
-        "unit": "tbsp"
+        "unit": "g"
+      },
+      {
+        "name": "Farine de blé",
+        "quantity": 100,
+        "unit": "g"
+      },
+      {
+        "name": "Œufs",
+        "quantity": 2,
+        "unit": "whole"
+      },
+      {
+        "name": "Cacahuètes grillées non salées",
+        "quantity": 300,
+        "unit": "g"
+      },
+      {
+        "name": "Fromage blanc",
+        "quantity": 200,
+        "unit": "g"
+      },
+      {
+        "name": "Poivre vert séché",
+        "quantity": 15,
+        "unit": "g"
+      },
+      {
+        "name": "Oignon-pays",
+        "quantity": 10,
+        "unit": "g"
+      },
+      {
+        "name": "Persil plat",
+        "quantity": 5,
+        "unit": "g"
+      },
+      {
+        "name": "Thym",
+        "quantity": 3,
+        "unit": "g"
+      },
+      {
+        "name": "Huile d'olive",
+        "quantity": 10,
+        "unit": "g"
       }
     ],
     "instructions": [
       {
         "step_number": 1,
-        "instruction_text": "Butter one side of each bread slice",
-        "timer_minutes": null
+        "instruction_text": "Faire mariner les filets de dinde dans le jus de citron vert et l'ail écrasé",
+        "timer_minutes": 20
       },
       {
         "step_number": 2,
-        "instruction_text": "Place cheese between bread slices, butter side out",
+        "instruction_text": "Préparer la sauce aux herbes en mélangeant les herbes avec le fromage blanc",
         "timer_minutes": null
       },
       {
         "step_number": 3,
-        "instruction_text": "Grill in pan until golden brown on both sides",
-        "timer_minutes": 5
+        "instruction_text": "Broyer les cacahuètes au mixeur en mode pulse",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Préparer la station de panage avec la farine, les œufs battus et les cacahuètes broyées",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 5,
+        "instruction_text": "Paner chaque filet dans la farine, l'œuf puis les cacahuètes",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 6,
+        "instruction_text": "Chauffer l'huile dans une poêle",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 7,
+        "instruction_text": "Faire frire les escalopes jusqu'à ce qu'elles soient dorées des deux côtés",
+        "timer_minutes": 6
+      },
+      {
+        "step_number": 8,
+        "instruction_text": "Égoutter sur du papier absorbant",
+        "timer_minutes": null
       }
     ],
-    "prep_time_min": 2,
-    "cook_time_min": 5,
+    "prep_time_min": 30,
+    "cook_time_min": 10,
     "advance_prep_hours": null,
-    "serving_size": 1
+    "serving_size": 4
   },
   {
-    "title": "Fresh Fruit Salad",
-    "recipe_type": "appetizer",
+    "title": "Tomates farcies au porc MADIVIAL",
+    "recipe_type": "main_course",
     "ingredients": [
       {
-        "name": "Strawberries",
-        "quantity": 1,
-        "unit": "cup"
+        "name": "Tomates",
+        "quantity": 800,
+        "unit": "g"
       },
       {
-        "name": "Blueberries",
-        "quantity": 1,
-        "unit": "cup"
+        "name": "Côtelettes de porc",
+        "quantity": 300,
+        "unit": "g"
       },
       {
-        "name": "Banana",
-        "quantity": 1,
-        "unit": "whole"
+        "name": "Champignons",
+        "quantity": 100,
+        "unit": "g"
       },
       {
-        "name": "Honey",
-        "quantity": 2,
-        "unit": "tbsp"
+        "name": "Oignon",
+        "quantity": 90,
+        "unit": "g"
+      },
+      {
+        "name": "Huile d'olive",
+        "quantity": 35,
+        "unit": "g"
+      },
+      {
+        "name": "Vinaigre d'échalote",
+        "quantity": 20,
+        "unit": "g"
+      },
+      {
+        "name": "Poivron végétarien",
+        "quantity": 12,
+        "unit": "g"
+      },
+      {
+        "name": "Ail",
+        "quantity": 12,
+        "unit": "g"
+      },
+      {
+        "name": "Sel",
+        "quantity": 5,
+        "unit": "g"
+      },
+      {
+        "name": "Poivre",
+        "quantity": 1,
+        "unit": "tsp"
       }
     ],
     "instructions": [
       {
         "step_number": 1,
-        "instruction_text": "Wash and slice all fruits",
+        "instruction_text": "Couper le chapeau des tomates, évider délicatement l'intérieur",
         "timer_minutes": null
       },
       {
         "step_number": 2,
-        "instruction_text": "Combine in a bowl and drizzle with honey",
+        "instruction_text": "Saler légèrement l'intérieur des tomates, égoutter à l'envers",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Faire mijoter la pulpe de tomate dans l'huile, réserver",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Hacher finement les poivrons, l'ail et l'oignon",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 5,
+        "instruction_text": "Hacher les champignons",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 6,
+        "instruction_text": "Désosser et hacher finement le porc",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 7,
+        "instruction_text": "Préchauffer le four à 180°C",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 8,
+        "instruction_text": "Faire revenir les aromates et les champignons",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 9,
+        "instruction_text": "Ajouter la viande, cuire partiellement",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 10,
+        "instruction_text": "Assaisonner avec sel, poivre et vinaigre",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 11,
+        "instruction_text": "Farcir les tomates avec le mélange",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 12,
+        "instruction_text": "Placer dans un plat avec un peu d'eau",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 13,
+        "instruction_text": "Arroser avec l'huile restante",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 14,
+        "instruction_text": "Cuire au four",
+        "timer_minutes": 25
+      }
+    ],
+    "prep_time_min": 25,
+    "cook_time_min": 25,
+    "advance_prep_hours": null,
+    "serving_size": 4
+  },
+  {
+    "title": "Chou sauté au PORC caramélisé",
+    "recipe_type": "main_course",
+    "ingredients": [
+      {
+        "name": "Sauté de porc",
+        "quantity": 300,
+        "unit": "g"
+      },
+      {
+        "name": "Farine",
+        "quantity": 2,
+        "unit": "tbsp"
+      },
+      {
+        "name": "Chou frisé",
+        "quantity": 600,
+        "unit": "g"
+      },
+      {
+        "name": "Miel",
+        "quantity": 50,
+        "unit": "g"
+      },
+      {
+        "name": "Carotte",
+        "quantity": 60,
+        "unit": "g"
+      },
+      {
+        "name": "Oignon",
+        "quantity": 60,
+        "unit": "g"
+      },
+      {
+        "name": "Ail",
+        "quantity": 1,
+        "unit": "gousse"
+      },
+      {
+        "name": "Sauce soja salée",
+        "quantity": 35,
+        "unit": "g"
+      },
+      {
+        "name": "Pâte de gingembre",
+        "quantity": 10,
+        "unit": "g"
+      },
+      {
+        "name": "Quatre-épices",
+        "quantity": 4,
+        "unit": "pincées"
+      },
+      {
+        "name": "Pâte de piment",
+        "quantity": 1,
+        "unit": "tsp"
+      },
+      {
+        "name": "Vin blanc",
+        "quantity": 65,
+        "unit": "ml"
+      },
+      {
+        "name": "Noix de cajou grillées salées",
+        "quantity": 40,
+        "unit": "g"
+      },
+      {
+        "name": "Nouilles",
+        "quantity": 200,
+        "unit": "g"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Couper la viande en cubes de 1 cm, enrober de farine, faire dorer dans l'huile chaude",
+        "timer_minutes": 10
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "Ajouter le miel et les épices pour caraméliser la viande",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Hacher grossièrement le chou, couper la carotte en julienne, trancher l'ail et le piment",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Cuire les nouilles selon les instructions",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 5,
+        "instruction_text": "Ajouter l'oignon à la viande caramélisée",
+        "timer_minutes": 5
+      },
+      {
+        "step_number": 6,
+        "instruction_text": "Ajouter la carotte, 3/4 du chou, l'ail et le piment",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 7,
+        "instruction_text": "Ajouter le vin blanc et laisser s'évaporer",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 8,
+        "instruction_text": "Ajouter la sauce soja, le gingembre et la pâte de piment",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 9,
+        "instruction_text": "Ajouter le reste du chou et les nouilles",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 10,
+        "instruction_text": "Couvrir et cuire",
+        "timer_minutes": 5
+      },
+      {
+        "step_number": 11,
+        "instruction_text": "Concasser grossièrement les noix de cajou",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 12,
+        "instruction_text": "Servir dans un bol, garnir de noix de cajou",
+        "timer_minutes": null
+      }
+    ],
+    "prep_time_min": 20,
+    "cook_time_min": 20,
+    "advance_prep_hours": null,
+    "serving_size": 3
+  },
+  {
+    "title": "Carré de Porc au Rhum Vieux",
+    "recipe_type": "main_course",
+    "ingredients": [
+      {
+        "name": "Carré de porc",
+        "quantity": 1300,
+        "unit": "g"
+      },
+      {
+        "name": "Gros sel",
+        "quantity": 12,
+        "unit": "g"
+      },
+      {
+        "name": "Jus de citron vert",
+        "quantity": 109,
+        "unit": "g"
+      },
+      {
+        "name": "Miel",
+        "quantity": 27,
+        "unit": "g"
+      },
+      {
+        "name": "Rhum vieux",
+        "quantity": 33,
+        "unit": "g"
+      },
+      {
+        "name": "Patate douce",
+        "quantity": 350,
+        "unit": "g"
+      },
+      {
+        "name": "Oignon rouge",
+        "quantity": 110,
+        "unit": "g"
+      },
+      {
+        "name": "Gousses d'ail",
+        "quantity": 5,
+        "unit": "whole"
+      },
+      {
+        "name": "Quatre-épices",
+        "quantity": 1,
+        "unit": "tsp"
+      },
+      {
+        "name": "Huile de tournesol",
+        "quantity": 20,
+        "unit": "g"
+      },
+      {
+        "name": "Jus de citron vert pour sauce",
+        "quantity": 50,
+        "unit": "g"
+      },
+      {
+        "name": "Huile d'olive",
+        "quantity": 45,
+        "unit": "g"
+      },
+      {
+        "name": "Noix de cajou grillées",
+        "quantity": 30,
+        "unit": "g"
+      },
+      {
+        "name": "Thym",
+        "quantity": 12,
+        "unit": "g"
+      },
+      {
+        "name": "Ail pour sauce",
+        "quantity": 16,
+        "unit": "g"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Faire mariner le carré de porc",
+        "timer_minutes": 120
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "Préchauffer le four à 220°C",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Rôtir à 220°C",
+        "timer_minutes": 15
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Réduire la température à 180°C et continuer la cuisson en arrosant régulièrement",
+        "timer_minutes": 80
+      },
+      {
+        "step_number": 5,
+        "instruction_text": "Rôtir l'ail et les oignons avec les patates douces",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 6,
+        "instruction_text": "Préparer la sauce au thym avec l'huile d'olive, le citron vert et les noix de cajou",
+        "timer_minutes": null
+      }
+    ],
+    "prep_time_min": 45,
+    "cook_time_min": 95,
+    "advance_prep_hours": 2,
+    "serving_size": 5
+  },
+  {
+    "title": "Cordon Bleu maison",
+    "recipe_type": "main_course",
+    "ingredients": [
+      {
+        "name": "Escalopes de dinde",
+        "quantity": 550,
+        "unit": "g"
+      },
+      {
+        "name": "Jus de citron vert",
+        "quantity": 1,
+        "unit": "whole"
+      },
+      {
+        "name": "Jambon",
+        "quantity": 1,
+        "unit": "slice"
+      },
+      {
+        "name": "Emmental",
+        "quantity": 90,
+        "unit": "g"
+      },
+      {
+        "name": "Sel",
+        "quantity": 3,
+        "unit": "g"
+      },
+      {
+        "name": "Poivre",
+        "quantity": 1,
+        "unit": "tsp"
+      },
+      {
+        "name": "Tomates séchées",
+        "quantity": 25,
+        "unit": "g"
+      },
+      {
+        "name": "Poivrons végétariens",
+        "quantity": 2,
+        "unit": "whole"
+      },
+      {
+        "name": "Persil",
+        "quantity": 4,
+        "unit": "branches"
+      },
+      {
+        "name": "Oignon-pays",
+        "quantity": 2,
+        "unit": "branches"
+      },
+      {
+        "name": "Gousses d'ail",
+        "quantity": 2,
+        "unit": "whole"
+      },
+      {
+        "name": "Herbes mélangées",
+        "quantity": 1,
+        "unit": "tsp"
+      },
+      {
+        "name": "Farine",
+        "quantity": 3,
+        "unit": "tbsp"
+      },
+      {
+        "name": "Œufs",
+        "quantity": 2,
+        "unit": "whole"
+      },
+      {
+        "name": "Chapelure",
+        "quantity": 150,
+        "unit": "g"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Aplatir les escalopes finement",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "Préparer les aromates hachés",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Assaisonner les escalopes",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Garnir avec le jambon, le fromage et les tomates séchées",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 5,
+        "instruction_text": "Paner dans la farine, l'œuf et la chapelure",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 6,
+        "instruction_text": "Faire frire brièvement des deux côtés",
+        "timer_minutes": 5
+      },
+      {
+        "step_number": 7,
+        "instruction_text": "Cuire au four à 160°C",
+        "timer_minutes": 15
+      }
+    ],
+    "prep_time_min": 25,
+    "cook_time_min": 20,
+    "advance_prep_hours": null,
+    "serving_size": 4
+  },
+  {
+    "title": "Cassoulet au Coq",
+    "recipe_type": "main_course",
+    "ingredients": [
+      {
+        "name": "Haricots blancs",
+        "quantity": 1000,
+        "unit": "g"
+      },
+      {
+        "name": "Coq",
+        "quantity": 600,
+        "unit": "g"
+      },
+      {
+        "name": "Poitrine de porc",
+        "quantity": 180,
+        "unit": "g"
+      },
+      {
+        "name": "Saucisses",
+        "quantity": 300,
+        "unit": "g"
+      },
+      {
+        "name": "Carotte pour bouillon",
+        "quantity": 80,
+        "unit": "g"
+      },
+      {
+        "name": "Vin blanc",
+        "quantity": 135,
+        "unit": "g"
+      },
+      {
+        "name": "Huile",
+        "quantity": 15,
+        "unit": "g"
+      },
+      {
+        "name": "Sel",
+        "quantity": 5,
+        "unit": "g"
+      },
+      {
+        "name": "Poivre",
+        "quantity": 1,
+        "unit": "tsp"
+      },
+      {
+        "name": "Quatre-épices",
+        "quantity": 1,
+        "unit": "tsp"
+      },
+      {
+        "name": "Oignon",
+        "quantity": 70,
+        "unit": "g"
+      },
+      {
+        "name": "Poireau",
+        "quantity": 130,
+        "unit": "g"
+      },
+      {
+        "name": "Carotte",
+        "quantity": 90,
+        "unit": "g"
+      },
+      {
+        "name": "Poivrons",
+        "quantity": 2,
+        "unit": "whole"
+      },
+      {
+        "name": "Ail",
+        "quantity": 12,
+        "unit": "g"
+      },
+      {
+        "name": "Oignon-pays",
+        "quantity": 15,
+        "unit": "g"
+      },
+      {
+        "name": "Persil",
+        "quantity": 5,
+        "unit": "g"
+      },
+      {
+        "name": "Feuilles de laurier",
+        "quantity": 2,
+        "unit": "whole"
+      },
+      {
+        "name": "Huile pour cuisson",
+        "quantity": 20,
+        "unit": "g"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Préparer le bouillon avec les légumes",
+        "timer_minutes": 30
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "Faire revenir les viandes",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Déglacer au vin blanc",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Faire revenir le coq",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 5,
+        "instruction_text": "Combiner avec les haricots et laisser mijoter",
+        "timer_minutes": 40
+      }
+    ],
+    "prep_time_min": 30,
+    "cook_time_min": 90,
+    "advance_prep_hours": null,
+    "serving_size": 7
+  },
+  {
+    "title": "Curry de Poulet à la Christophine",
+    "recipe_type": "main_course",
+    "ingredients": [
+      {
+        "name": "Hauts de cuisse de poulet",
+        "quantity": 450,
+        "unit": "g"
+      },
+      {
+        "name": "Jus de citron",
+        "quantity": 1,
+        "unit": "whole"
+      },
+      {
+        "name": "Christophine",
+        "quantity": 450,
+        "unit": "g"
+      },
+      {
+        "name": "Pâte de curry",
+        "quantity": 55,
+        "unit": "g"
+      },
+      {
+        "name": "Eau",
+        "quantity": 280,
+        "unit": "ml"
+      },
+      {
+        "name": "Sel",
+        "quantity": 5,
+        "unit": "g"
+      },
+      {
+        "name": "Crème liquide",
+        "quantity": 75,
+        "unit": "g"
+      },
+      {
+        "name": "Oignon",
+        "quantity": 120,
+        "unit": "g"
+      },
+      {
+        "name": "Poivrons",
+        "quantity": 2,
+        "unit": "whole"
+      },
+      {
+        "name": "Cive",
+        "quantity": 2,
+        "unit": "branches"
+      },
+      {
+        "name": "Persil",
+        "quantity": 3,
+        "unit": "branches"
+      },
+      {
+        "name": "Ail",
+        "quantity": 2,
+        "unit": "gousses"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Faire mariner le poulet au citron",
+        "timer_minutes": 30
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "Hacher les aromates",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Éplucher et couper la christophine",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Faire revenir le poulet",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 5,
+        "instruction_text": "Ajouter les aromates et le curry",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 6,
+        "instruction_text": "Ajouter l'eau et la christophine, laisser mijoter",
+        "timer_minutes": 20
+      },
+      {
+        "step_number": 7,
+        "instruction_text": "Terminer avec la crème",
+        "timer_minutes": null
+      }
+    ],
+    "prep_time_min": 20,
+    "cook_time_min": 30,
+    "advance_prep_hours": null,
+    "serving_size": 3
+  },
+  {
+    "title": "Magret de Canard à l'ananas",
+    "recipe_type": "main_course",
+    "ingredients": [
+      {
+        "name": "Magret de canard",
+        "quantity": 400,
+        "unit": "g"
+      },
+      {
+        "name": "Ananas",
+        "quantity": 32,
+        "unit": "g"
+      },
+      {
+        "name": "Sel",
+        "quantity": 1,
+        "unit": "tsp"
+      },
+      {
+        "name": "Poivre",
+        "quantity": 1,
+        "unit": "tsp"
+      },
+      {
+        "name": "Sauce maracuja",
+        "quantity": 50,
+        "unit": "g"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Parer et quadriller le magret",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "Assaisonner",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Faire fondre le gras",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Cuire le magret",
+        "timer_minutes": 10
+      },
+      {
+        "step_number": 5,
+        "instruction_text": "Faire sauter l'ananas dans le gras de canard",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 6,
+        "instruction_text": "Servir avec la sauce maracuja",
+        "timer_minutes": null
+      }
+    ],
+    "prep_time_min": 20,
+    "cook_time_min": 10,
+    "advance_prep_hours": null,
+    "serving_size": 1
+  },
+  {
+    "title": "Lasagnes de Banane Jaune au Bœuf",
+    "recipe_type": "main_course",
+    "ingredients": [
+      {
+        "name": "Bananes jaunes",
+        "quantity": 4,
+        "unit": "whole"
+      },
+      {
+        "name": "Huile",
+        "quantity": 20,
+        "unit": "g"
+      },
+      {
+        "name": "Lait",
+        "quantity": 440,
+        "unit": "ml"
+      },
+      {
+        "name": "Huile pour béchamel",
+        "quantity": 25,
+        "unit": "g"
+      },
+      {
+        "name": "Farine",
+        "quantity": 35,
+        "unit": "g"
+      },
+      {
+        "name": "Échalote",
+        "quantity": 1,
+        "unit": "whole"
+      },
+      {
+        "name": "Oignon-pays",
+        "quantity": 2,
+        "unit": "branches"
+      },
+      {
+        "name": "Ail pour béchamel",
+        "quantity": 2,
+        "unit": "gousses"
+      },
+      {
+        "name": "Piment",
+        "quantity": 1,
+        "unit": "whole"
+      },
+      {
+        "name": "Sel pour béchamel",
+        "quantity": 2,
+        "unit": "g"
+      },
+      {
+        "name": "Quatre-épices",
+        "quantity": 1,
+        "unit": "tsp"
+      },
+      {
+        "name": "Fromage râpé",
+        "quantity": 90,
+        "unit": "g"
+      },
+      {
+        "name": "Bœuf haché",
+        "quantity": 200,
+        "unit": "g"
+      },
+      {
+        "name": "Concentré de tomate",
+        "quantity": 20,
+        "unit": "g"
+      },
+      {
+        "name": "Eau",
+        "quantity": 200,
+        "unit": "ml"
+      },
+      {
+        "name": "Ail pour viande",
+        "quantity": 1,
+        "unit": "gousse"
+      },
+      {
+        "name": "Piment pour viande",
+        "quantity": 1,
+        "unit": "whole"
+      },
+      {
+        "name": "Herbes",
+        "quantity": 1,
+        "unit": "tsp"
+      },
+      {
+        "name": "Poivre",
+        "quantity": 1,
+        "unit": "tsp"
+      },
+      {
+        "name": "Sel",
+        "quantity": 2,
+        "unit": "g"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Griller les tranches de banane",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "Cuire le bœuf avec le concentré de tomate",
+        "timer_minutes": 15
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Préparer la béchamel",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Monter les lasagnes en couches",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 5,
+        "instruction_text": "Cuire au four jusqu'à ce que le dessus soit doré",
+        "timer_minutes": 12
+      }
+    ],
+    "prep_time_min": 40,
+    "cook_time_min": 12,
+    "advance_prep_hours": null,
+    "serving_size": 3
+  },
+  {
+    "title": "Agneau confit au MIEL & ÉPICES",
+    "recipe_type": "main_course",
+    "ingredients": [
+      {
+        "name": "Souris d'agneau",
+        "quantity": 1500,
+        "unit": "g"
+      },
+      {
+        "name": "Jus de citron",
+        "quantity": 1,
+        "unit": "whole"
+      },
+      {
+        "name": "Échalotes",
+        "quantity": 150,
+        "unit": "g"
+      },
+      {
+        "name": "Ail",
+        "quantity": 40,
+        "unit": "g"
+      },
+      {
+        "name": "Poivrons",
+        "quantity": 4,
+        "unit": "whole"
+      },
+      {
+        "name": "Vin blanc",
+        "quantity": 160,
+        "unit": "ml"
+      },
+      {
+        "name": "Miel",
+        "quantity": 105,
+        "unit": "g"
+      },
+      {
+        "name": "Sel",
+        "quantity": 20,
+        "unit": "g"
+      },
+      {
+        "name": "Eau",
+        "quantity": 390,
+        "unit": "ml"
+      },
+      {
+        "name": "Gingembre",
+        "quantity": 8,
+        "unit": "g"
+      },
+      {
+        "name": "Thym",
+        "quantity": 2,
+        "unit": "g"
+      },
+      {
+        "name": "Poivre",
+        "quantity": 2,
+        "unit": "g"
+      },
+      {
+        "name": "Quatre-épices",
+        "quantity": 1,
+        "unit": "tsp"
+      },
+      {
+        "name": "Maïzena",
+        "quantity": 15,
+        "unit": "g"
+      },
+      {
+        "name": "Vinaigre",
+        "quantity": 30,
+        "unit": "g"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Faire dorer l'agneau",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "Préparer la marinade",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Ajouter les légumes",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Cuire au four couvert à 150°C en retournant de temps en temps",
+        "timer_minutes": 180
+      }
+    ],
+    "prep_time_min": 30,
+    "cook_time_min": 180,
+    "advance_prep_hours": null,
+    "serving_size": 3
+  },
+  {
+    "title": "Brochettes de POULET sauce laitière",
+    "recipe_type": "main_course",
+    "ingredients": [
+      {
+        "name": "Poulet",
+        "quantity": 510,
+        "unit": "g"
+      },
+      {
+        "name": "Lait en poudre",
+        "quantity": 100,
+        "unit": "g"
+      },
+      {
+        "name": "Moutarde",
+        "quantity": 42,
+        "unit": "g"
+      },
+      {
+        "name": "Ail",
+        "quantity": 3,
+        "unit": "gousses"
+      },
+      {
+        "name": "Poivrons",
+        "quantity": 3,
+        "unit": "whole"
+      },
+      {
+        "name": "Jus de citron",
+        "quantity": 125,
+        "unit": "g"
+      },
+      {
+        "name": "Cive",
+        "quantity": 4,
+        "unit": "branches"
+      },
+      {
+        "name": "Oignon",
+        "quantity": 34,
+        "unit": "g"
+      },
+      {
+        "name": "Poivre",
+        "quantity": 1,
+        "unit": "tsp"
+      },
+      {
+        "name": "Persil",
+        "quantity": 4,
+        "unit": "branches"
+      },
+      {
+        "name": "Eau",
+        "quantity": 34,
+        "unit": "g"
+      },
+      {
+        "name": "Sel",
+        "quantity": 3,
+        "unit": "g"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Préparer la marinade avec le lait en poudre et les autres ingrédients",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "Faire mariner le poulet",
+        "timer_minutes": 30
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Enfiler sur des brochettes",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Cuire au four à 200°C",
+        "timer_minutes": 12
+      }
+    ],
+    "prep_time_min": 25,
+    "cook_time_min": 12,
+    "advance_prep_hours": null,
+    "serving_size": 9
+  },
+  {
+    "title": "Joue de Porc Braisée à l'Ananas",
+    "recipe_type": "main_course",
+    "ingredients": [
+      {
+        "name": "Joues de porc",
+        "quantity": 600,
+        "unit": "g"
+      },
+      {
+        "name": "Jus de citron vert",
+        "quantity": 80,
+        "unit": "g"
+      },
+      {
+        "name": "Poireau",
+        "quantity": 15,
+        "unit": "g"
+      },
+      {
+        "name": "Piment",
+        "quantity": 15,
+        "unit": "g"
+      },
+      {
+        "name": "Ail",
+        "quantity": 10,
+        "unit": "g"
+      },
+      {
+        "name": "Huile",
+        "quantity": 10,
+        "unit": "g"
+      },
+      {
+        "name": "Poitrine de porc",
+        "quantity": 60,
+        "unit": "g"
+      },
+      {
+        "name": "Ananas",
+        "quantity": 190,
+        "unit": "g"
+      },
+      {
+        "name": "Carotte",
+        "quantity": 80,
+        "unit": "g"
+      },
+      {
+        "name": "Rhum",
+        "quantity": 6,
+        "unit": "g"
+      },
+      {
+        "name": "Sirop",
+        "quantity": 30,
+        "unit": "g"
+      },
+      {
+        "name": "Poivre",
+        "quantity": 1,
+        "unit": "tsp"
+      },
+      {
+        "name": "Herbes",
+        "quantity": 1,
+        "unit": "tsp"
+      },
+      {
+        "name": "Sel",
+        "quantity": 7,
+        "unit": "g"
+      },
+      {
+        "name": "Huile pour cuisson",
+        "quantity": 6,
+        "unit": "g"
+      },
+      {
+        "name": "Ananas pour garniture",
+        "quantity": 150,
+        "unit": "g"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Faire mariner les joues de porc",
+        "timer_minutes": 60
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "Faire dorer le porc",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Ajouter l'ananas et la carotte",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Braiser au four à 160°C",
+        "timer_minutes": 60
+      },
+      {
+        "step_number": 5,
+        "instruction_text": "Réduire la sauce avec le rhum",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 6,
+        "instruction_text": "Griller l'ananas pour la garniture",
+        "timer_minutes": null
+      }
+    ],
+    "prep_time_min": 20,
+    "cook_time_min": 100,
+    "advance_prep_hours": 1,
+    "serving_size": 3
+  },
+  {
+    "title": "Filet mignon de PORC",
+    "recipe_type": "main_course",
+    "ingredients": [
+      {
+        "name": "Filet mignon de porc",
+        "quantity": 550,
+        "unit": "g"
+      },
+      {
+        "name": "Ail",
+        "quantity": 6,
+        "unit": "gousses"
+      },
+      {
+        "name": "Moutarde",
+        "quantity": 40,
+        "unit": "g"
+      },
+      {
+        "name": "Vin blanc",
+        "quantity": 35,
+        "unit": "ml"
+      },
+      {
+        "name": "Miel",
+        "quantity": 40,
+        "unit": "g"
+      },
+      {
+        "name": "Sel",
+        "quantity": 3,
+        "unit": "g"
+      },
+      {
+        "name": "Poivre",
+        "quantity": 1,
+        "unit": "tsp"
+      },
+      {
+        "name": "Huile d'olive",
+        "quantity": 35,
+        "unit": "g"
+      },
+      {
+        "name": "Gingembre",
+        "quantity": 15,
+        "unit": "g"
+      },
+      {
+        "name": "Vinaigre",
+        "quantity": 1,
+        "unit": "tbsp"
+      },
+      {
+        "name": "Cive",
+        "quantity": 2,
+        "unit": "branches"
+      },
+      {
+        "name": "Persil",
+        "quantity": 3,
+        "unit": "branches"
+      },
+      {
+        "name": "Piment",
+        "quantity": 1,
+        "unit": "whole"
+      },
+      {
+        "name": "Herbes",
+        "quantity": 1,
+        "unit": "tsp"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Mélanger tous les ingrédients de la marinade",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "Enrober le filet mignon",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Cuire au four avec l'ail à 160°C",
+        "timer_minutes": 30
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Augmenter à 180°C",
+        "timer_minutes": 15
+      },
+      {
+        "step_number": 5,
+        "instruction_text": "Laisser reposer",
+        "timer_minutes": 10
+      }
+    ],
+    "prep_time_min": 10,
+    "cook_time_min": 45,
+    "advance_prep_hours": null,
+    "serving_size": 3
+  },
+  {
+    "title": "Fricassée de Poulet aux Oignons",
+    "recipe_type": "main_course",
+    "ingredients": [
+      {
+        "name": "Poulet",
+        "quantity": 1100,
+        "unit": "g"
+      },
+      {
+        "name": "Ail",
+        "quantity": 1,
+        "unit": "gousse"
+      },
+      {
+        "name": "Persil",
+        "quantity": 2,
+        "unit": "branches"
+      },
+      {
+        "name": "Poivrons",
+        "quantity": 3,
+        "unit": "whole"
+      },
+      {
+        "name": "Cive",
+        "quantity": 3,
+        "unit": "branches"
+      },
+      {
+        "name": "Farine",
+        "quantity": 2,
+        "unit": "tbsp"
+      },
+      {
+        "name": "Vin blanc",
+        "quantity": 200,
+        "unit": "ml"
+      },
+      {
+        "name": "Oignons grelots",
+        "quantity": 10,
+        "unit": "whole"
+      },
+      {
+        "name": "Jus de citron",
+        "quantity": 1,
+        "unit": "whole"
+      },
+      {
+        "name": "Bouillon cube",
+        "quantity": 1,
+        "unit": "whole"
+      },
+      {
+        "name": "Sel",
+        "quantity": 1,
+        "unit": "tsp"
+      },
+      {
+        "name": "Eau",
+        "quantity": 400,
+        "unit": "ml"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Faire dorer le poulet",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "Ajouter les aromates et le citron",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Ajouter les oignons",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Déglacer au vin blanc",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 5,
+        "instruction_text": "Ajouter la farine et les liquides",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 6,
+        "instruction_text": "Laisser mijoter",
+        "timer_minutes": 25
+      }
+    ],
+    "prep_time_min": 15,
+    "cook_time_min": 40,
+    "advance_prep_hours": null,
+    "serving_size": 5
+  },
+  {
+    "title": "Tarte Poulet Fumé & Laitue",
+    "recipe_type": "appetizer",
+    "ingredients": [
+      {
+        "name": "Farine",
+        "quantity": 210,
+        "unit": "g"
+      },
+      {
+        "name": "Beurre",
+        "quantity": 85,
+        "unit": "g"
+      },
+      {
+        "name": "Eau",
+        "quantity": 65,
+        "unit": "g"
+      },
+      {
+        "name": "Poulet fumé",
+        "quantity": 100,
+        "unit": "g"
+      },
+      {
+        "name": "Laitue",
+        "quantity": 40,
+        "unit": "g"
+      },
+      {
+        "name": "Œufs",
+        "quantity": 2,
+        "unit": "whole"
+      },
+      {
+        "name": "Crème liquide",
+        "quantity": 215,
+        "unit": "g"
+      },
+      {
+        "name": "Ail",
+        "quantity": 2,
+        "unit": "gousses"
+      },
+      {
+        "name": "Poivrons",
+        "quantity": 2,
+        "unit": "whole"
+      },
+      {
+        "name": "Jus de citron vert",
+        "quantity": 1,
+        "unit": "whole"
+      },
+      {
+        "name": "Sel",
+        "quantity": 1,
+        "unit": "tsp"
+      },
+      {
+        "name": "Cive",
+        "quantity": 1,
+        "unit": "branche"
+      },
+      {
+        "name": "Persil",
+        "quantity": 1,
+        "unit": "branche"
+      },
+      {
+        "name": "Poivre",
+        "quantity": 1,
+        "unit": "tsp"
+      },
+      {
+        "name": "Quatre-épices",
+        "quantity": 1,
+        "unit": "tsp"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Préparer la pâte brisée",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "Hacher les ingrédients de la garniture",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Mélanger avec la crème et les œufs",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Pré-cuire le fond de tarte",
+        "timer_minutes": 5
+      },
+      {
+        "step_number": 5,
+        "instruction_text": "Ajouter la garniture et cuire",
+        "timer_minutes": 25
+      }
+    ],
+    "prep_time_min": 35,
+    "cook_time_min": 25,
+    "advance_prep_hours": null,
+    "serving_size": 6
+  },
+  {
+    "title": "Blanquette de poulet à la feuille d'oranger",
+    "recipe_type": "main_course",
+    "ingredients": [
+      {
+        "name": "Poulet",
+        "quantity": 200,
+        "unit": "g"
+      },
+      {
+        "name": "Carottes",
+        "quantity": 60,
+        "unit": "g"
+      },
+      {
+        "name": "Champignons",
+        "quantity": 50,
+        "unit": "g"
+      },
+      {
+        "name": "Céleri",
+        "quantity": 20,
+        "unit": "g"
+      },
+      {
+        "name": "Échalote",
+        "quantity": 25,
+        "unit": "g"
+      },
+      {
+        "name": "Piment",
+        "quantity": 10,
+        "unit": "g"
+      },
+      {
+        "name": "Feuilles d'oranger",
+        "quantity": 3,
+        "unit": "whole"
+      },
+      {
+        "name": "Eau",
+        "quantity": 130,
+        "unit": "g"
+      },
+      {
+        "name": "Vin blanc",
+        "quantity": 70,
+        "unit": "ml"
+      },
+      {
+        "name": "Huile",
+        "quantity": 10,
+        "unit": "g"
+      },
+      {
+        "name": "Sel",
+        "quantity": 5,
+        "unit": "g"
+      },
+      {
+        "name": "Crème liquide",
+        "quantity": 90,
+        "unit": "g"
+      },
+      {
+        "name": "Farine",
+        "quantity": 10,
+        "unit": "g"
+      },
+      {
+        "name": "Ail",
+        "quantity": 2,
+        "unit": "gousses"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Couper le poulet en cubes",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "Faire dorer",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Ajouter les champignons",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Déglacer au vin blanc",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 5,
+        "instruction_text": "Ajouter les légumes et les feuilles d'oranger, cuire",
+        "timer_minutes": 10
+      },
+      {
+        "step_number": 6,
+        "instruction_text": "Ajouter la crème et laisser mijoter",
+        "timer_minutes": 15
+      }
+    ],
+    "prep_time_min": 10,
+    "cook_time_min": 25,
+    "advance_prep_hours": null,
+    "serving_size": 2
+  },
+  {
+    "title": "Pintade laquée au MARACUJA",
+    "recipe_type": "main_course",
+    "ingredients": [
+      {
+        "name": "Pintade",
+        "quantity": 1800,
+        "unit": "g"
+      },
+      {
+        "name": "Eau",
+        "quantity": 3600,
+        "unit": "ml"
+      },
+      {
+        "name": "Sel",
+        "quantity": 50,
+        "unit": "g"
+      },
+      {
+        "name": "Oignon",
+        "quantity": 140,
+        "unit": "g"
+      },
+      {
+        "name": "Clous de girofle",
+        "quantity": 5,
+        "unit": "whole"
+      },
+      {
+        "name": "Jus de citron vert",
+        "quantity": 55,
+        "unit": "g"
+      },
+      {
+        "name": "Poivrons",
+        "quantity": 20,
+        "unit": "g"
+      },
+      {
+        "name": "Ail",
+        "quantity": 3,
+        "unit": "gousses"
+      },
+      {
+        "name": "Beurre",
+        "quantity": 20,
+        "unit": "g"
+      },
+      {
+        "name": "Oignon-pays",
+        "quantity": 2,
+        "unit": "branches"
+      },
+      {
+        "name": "Persil",
+        "quantity": 1,
+        "unit": "branche"
+      },
+      {
+        "name": "Ail pour farce",
+        "quantity": 15,
+        "unit": "g"
+      },
+      {
+        "name": "Fruit de la passion",
+        "quantity": 240,
+        "unit": "g"
+      },
+      {
+        "name": "Anis étoilé",
+        "quantity": 2,
+        "unit": "whole"
+      },
+      {
+        "name": "Vinaigre",
+        "quantity": 15,
+        "unit": "g"
+      },
+      {
+        "name": "Miel",
+        "quantity": 50,
+        "unit": "g"
+      },
+      {
+        "name": "Sel pour glaçage",
+        "quantity": 2,
+        "unit": "g"
+      },
+      {
+        "name": "Maïzena",
+        "quantity": 6,
+        "unit": "g"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Pocher la pintade",
+        "timer_minutes": 15
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "Préparer le glaçage au fruit de la passion",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Farcir avec le beurre aux herbes",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Rôtir au four à 200-240°C en badigeonnant avec le glaçage",
+        "timer_minutes": 50
+      }
+    ],
+    "prep_time_min": 15,
+    "cook_time_min": 65,
+    "advance_prep_hours": null,
+    "serving_size": 6
+  },
+  {
+    "title": "Dombrés de Lentilles à la viande de BOEUF",
+    "recipe_type": "main_course",
+    "ingredients": [
+      {
+        "name": "Farine",
+        "quantity": 220,
+        "unit": "g"
+      },
+      {
+        "name": "Sel pour dombrés",
+        "quantity": 8,
+        "unit": "g"
+      },
+      {
+        "name": "Eau pour dombrés",
+        "quantity": 130,
+        "unit": "ml"
+      },
+      {
+        "name": "Bœuf",
+        "quantity": 580,
+        "unit": "g"
+      },
+      {
+        "name": "Citron",
+        "quantity": 1,
+        "unit": "whole"
+      },
+      {
+        "name": "Épices",
+        "quantity": 1,
+        "unit": "tsp"
+      },
+      {
+        "name": "Lentilles",
+        "quantity": 330,
+        "unit": "g"
+      },
+      {
+        "name": "Carotte",
+        "quantity": 175,
+        "unit": "g"
+      },
+      {
+        "name": "Giraumon",
+        "quantity": 120,
+        "unit": "g"
+      },
+      {
+        "name": "Ail",
+        "quantity": 4,
+        "unit": "gousses"
+      },
+      {
+        "name": "Oignon",
+        "quantity": 57,
+        "unit": "g"
+      },
+      {
+        "name": "Poivrons",
+        "quantity": 4,
+        "unit": "whole"
+      },
+      {
+        "name": "Oignon-pays",
+        "quantity": 2,
+        "unit": "branches"
+      },
+      {
+        "name": "Persil",
+        "quantity": 3,
+        "unit": "branches"
+      },
+      {
+        "name": "Feuille de laurier",
+        "quantity": 1,
+        "unit": "whole"
+      },
+      {
+        "name": "Thym",
+        "quantity": 1,
+        "unit": "branche"
+      },
+      {
+        "name": "Sel",
+        "quantity": 28,
+        "unit": "g"
+      },
+      {
+        "name": "Eau",
+        "quantity": 2600,
+        "unit": "ml"
+      },
+      {
+        "name": "Curry",
+        "quantity": 6,
+        "unit": "g"
+      },
+      {
+        "name": "Vinaigre",
+        "quantity": 25,
+        "unit": "g"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Faire mariner le bœuf",
+        "timer_minutes": 30
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "Faire dorer le bœuf",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Ajouter les lentilles et les légumes",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Laisser mijoter",
+        "timer_minutes": 30
+      },
+      {
+        "step_number": 5,
+        "instruction_text": "Préparer les boules de pâte à dombrés",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 6,
+        "instruction_text": "Ajouter les dombrés à la marmite",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 7,
+        "instruction_text": "Cuire à découvert",
+        "timer_minutes": 60
+      }
+    ],
+    "prep_time_min": 30,
+    "cook_time_min": 100,
+    "advance_prep_hours": null,
+    "serving_size": 7
+  },
+  {
+    "title": "Soupe de POULET et légumes",
+    "recipe_type": "main_course",
+    "ingredients": [
+      {
+        "name": "Poulet",
+        "quantity": 600,
+        "unit": "g"
+      },
+      {
+        "name": "Citron vert",
+        "quantity": 15,
+        "unit": "g"
+      },
+      {
+        "name": "Huile",
+        "quantity": 20,
+        "unit": "g"
+      },
+      {
+        "name": "Vin blanc",
+        "quantity": 140,
+        "unit": "ml"
+      },
+      {
+        "name": "Eau",
+        "quantity": 2000,
+        "unit": "ml"
+      },
+      {
+        "name": "Sel",
+        "quantity": 20,
+        "unit": "g"
+      },
+      {
+        "name": "Poivre",
+        "quantity": 1,
+        "unit": "tsp"
+      },
+      {
+        "name": "Vermicelles",
+        "quantity": 40,
+        "unit": "g"
+      },
+      {
+        "name": "Chou",
+        "quantity": 135,
+        "unit": "g"
+      },
+      {
+        "name": "Giraumon",
+        "quantity": 120,
+        "unit": "g"
+      },
+      {
+        "name": "Carottes",
+        "quantity": 90,
+        "unit": "g"
+      },
+      {
+        "name": "Oignon",
+        "quantity": 80,
+        "unit": "g"
+      },
+      {
+        "name": "Navet",
+        "quantity": 65,
+        "unit": "g"
+      },
+      {
+        "name": "Céleri",
+        "quantity": 20,
+        "unit": "g"
+      },
+      {
+        "name": "Ail",
+        "quantity": 10,
+        "unit": "g"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Couper tous les légumes en dés",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "Faire revenir le poulet",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Faire sauter les légumes",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Ajouter les liquides et laisser mijoter",
+        "timer_minutes": 180
+      },
+      {
+        "step_number": 5,
+        "instruction_text": "Ajouter les vermicelles pour les 5 dernières minutes",
+        "timer_minutes": 5
+      }
+    ],
+    "prep_time_min": 15,
+    "cook_time_min": 210,
+    "advance_prep_hours": null,
+    "serving_size": 4
+  },
+  {
+    "title": "Ragoût de Cochon Orange et Shrubb",
+    "recipe_type": "main_course",
+    "ingredients": [
+      {
+        "name": "Porc",
+        "quantity": 1130,
+        "unit": "g"
+      },
+      {
+        "name": "Jus de citron",
+        "quantity": 60,
+        "unit": "ml"
+      },
+      {
+        "name": "Piment de la Jamaïque",
+        "quantity": 1,
+        "unit": "tsp"
+      },
+      {
+        "name": "Vinaigre de fruit de la passion",
+        "quantity": 30,
+        "unit": "g"
+      },
+      {
+        "name": "Shrubb",
+        "quantity": 100,
+        "unit": "ml"
+      },
+      {
+        "name": "Sucre",
+        "quantity": 20,
+        "unit": "g"
+      },
+      {
+        "name": "Oignon-pays",
+        "quantity": 4,
+        "unit": "branches"
+      },
+      {
+        "name": "Poivre",
+        "quantity": 1,
+        "unit": "tsp"
+      },
+      {
+        "name": "Quatre-épices",
+        "quantity": 1,
+        "unit": "tsp"
+      },
+      {
+        "name": "Thym",
+        "quantity": 1,
+        "unit": "branche"
+      },
+      {
+        "name": "Carottes",
+        "quantity": 140,
+        "unit": "g"
+      },
+      {
+        "name": "Oignons",
+        "quantity": 200,
+        "unit": "g"
+      },
+      {
+        "name": "Poivrons",
+        "quantity": 3,
+        "unit": "whole"
+      },
+      {
+        "name": "Ail",
+        "quantity": 4,
+        "unit": "gousses"
+      },
+      {
+        "name": "Clous de girofle",
+        "quantity": 3,
+        "unit": "whole"
+      },
+      {
+        "name": "Feuilles de piment",
+        "quantity": 2,
+        "unit": "whole"
+      },
+      {
+        "name": "Jus d'orange",
+        "quantity": 260,
+        "unit": "ml"
+      },
+      {
+        "name": "Sel",
+        "quantity": 9,
+        "unit": "g"
+      },
+      {
+        "name": "Eau",
+        "quantity": 1000,
+        "unit": "ml"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Faire mariner le porc",
+        "timer_minutes": 60
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "Faire dorer la viande",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Faire revenir les légumes",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Ajouter tous les ingrédients et laisser mijoter",
+        "timer_minutes": 40
+      },
+      {
+        "step_number": 5,
+        "instruction_text": "Filtrer, ajouter le shrubb et le vinaigre",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 6,
+        "instruction_text": "Laisser mijoter",
+        "timer_minutes": 60
+      }
+    ],
+    "prep_time_min": 45,
+    "cook_time_min": 120,
+    "advance_prep_hours": null,
+    "serving_size": 5
+  },
+  {
+    "title": "Curry de Porc Express",
+    "recipe_type": "main_course",
+    "ingredients": [
+      {
+        "name": "Travers de porc",
+        "quantity": 315,
+        "unit": "g"
+      },
+      {
+        "name": "Vin blanc",
+        "quantity": 45,
+        "unit": "ml"
+      },
+      {
+        "name": "Jus de citron",
+        "quantity": 1,
+        "unit": "whole"
+      },
+      {
+        "name": "Pommes de terre",
+        "quantity": 220,
+        "unit": "g"
+      },
+      {
+        "name": "Giraumon",
+        "quantity": 175,
+        "unit": "g"
+      },
+      {
+        "name": "Poivrons",
+        "quantity": 3,
+        "unit": "whole"
+      },
+      {
+        "name": "Oignon-pays",
+        "quantity": 2,
+        "unit": "branches"
+      },
+      {
+        "name": "Eau",
+        "quantity": 260,
+        "unit": "ml"
+      },
+      {
+        "name": "Pâte de curry rouge",
+        "quantity": 30,
+        "unit": "g"
+      },
+      {
+        "name": "Sel",
+        "quantity": 4,
+        "unit": "g"
+      },
+      {
+        "name": "Lait de coco",
+        "quantity": 125,
+        "unit": "g"
+      },
+      {
+        "name": "Persil",
+        "quantity": 2,
+        "unit": "branches"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Couper le porc et les légumes",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "Faire dorer la viande",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Déglacer au vin blanc",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Ajouter le curry, les pommes de terre et l'eau, cuire",
+        "timer_minutes": 10
+      },
+      {
+        "step_number": 5,
+        "instruction_text": "Ajouter le giraumon, cuire",
+        "timer_minutes": 15
+      },
+      {
+        "step_number": 6,
+        "instruction_text": "Ajouter le lait de coco",
         "timer_minutes": null
       }
     ],
     "prep_time_min": 10,
+    "cook_time_min": 25,
+    "advance_prep_hours": null,
+    "serving_size": 2
+  },
+  {
+    "title": "Escalopes de POULET au CITRON confit",
+    "recipe_type": "main_course",
+    "ingredients": [
+      {
+        "name": "Poulet",
+        "quantity": 345,
+        "unit": "g"
+      },
+      {
+        "name": "Citron vert",
+        "quantity": 30,
+        "unit": "g"
+      },
+      {
+        "name": "Sel",
+        "quantity": 4,
+        "unit": "g"
+      },
+      {
+        "name": "Huile d'olive",
+        "quantity": 10,
+        "unit": "g"
+      },
+      {
+        "name": "Courgette",
+        "quantity": 240,
+        "unit": "g"
+      },
+      {
+        "name": "Oignon",
+        "quantity": 65,
+        "unit": "g"
+      },
+      {
+        "name": "Oignon-pays",
+        "quantity": 25,
+        "unit": "g"
+      },
+      {
+        "name": "Piment",
+        "quantity": 10,
+        "unit": "g"
+      },
+      {
+        "name": "Ail",
+        "quantity": 10,
+        "unit": "g"
+      },
+      {
+        "name": "Romarin",
+        "quantity": 1,
+        "unit": "branche"
+      },
+      {
+        "name": "Citron confit",
+        "quantity": 0.25,
+        "unit": "whole"
+      },
+      {
+        "name": "Sel pour sauce",
+        "quantity": 3,
+        "unit": "g"
+      },
+      {
+        "name": "Crème liquide",
+        "quantity": 145,
+        "unit": "g"
+      },
+      {
+        "name": "Eau",
+        "quantity": 75,
+        "unit": "g"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Assaisonner le poulet avec le citron vert et le sel",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "Faire revenir le poulet, retirer de la poêle",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Faire sauter les courgettes",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Ajouter les aromates, la crème et le citron confit",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 5,
+        "instruction_text": "Remettre le poulet et laisser mijoter",
+        "timer_minutes": 4
+      }
+    ],
+    "prep_time_min": 15,
+    "cook_time_min": 15,
+    "advance_prep_hours": null,
+    "serving_size": 3
+  },
+  {
+    "title": "Salade de Chou au Surimi",
+    "recipe_type": "appetizer",
+    "ingredients": [
+      {
+        "name": "Chou blanc",
+        "quantity": 315,
+        "unit": "g"
+      },
+      {
+        "name": "Surimi",
+        "quantity": 120,
+        "unit": "g"
+      },
+      {
+        "name": "Mangue légèrement verte",
+        "quantity": 90,
+        "unit": "g"
+      },
+      {
+        "name": "Échalote",
+        "quantity": 25,
+        "unit": "g"
+      },
+      {
+        "name": "Jus de citron vert",
+        "quantity": 25,
+        "unit": "g"
+      },
+      {
+        "name": "Vinaigre de cidre",
+        "quantity": 10,
+        "unit": "g"
+      },
+      {
+        "name": "Huile de tournesol",
+        "quantity": 10,
+        "unit": "g"
+      },
+      {
+        "name": "Mirin (optionnel)",
+        "quantity": 15,
+        "unit": "g"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Émincer finement le chou blanc et l'échalote",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "Éplucher et couper la mangue en dés",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Couper le surimi en morceaux",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Placer tous les ingrédients dans un saladier",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 5,
+        "instruction_text": "Ajouter l'huile, le jus de citron vert, le vinaigre et le mirin",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 6,
+        "instruction_text": "Bien mélanger",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 7,
+        "instruction_text": "Réfrigérer avant de servir",
+        "timer_minutes": null
+      }
+    ],
+    "prep_time_min": 15,
     "cook_time_min": null,
     "advance_prep_hours": null,
     "serving_size": 4
+  },
+  {
+    "title": "Salade de BETTERAVE et ORANGE",
+    "recipe_type": "appetizer",
+    "ingredients": [
+      {
+        "name": "Betterave rouge cuite",
+        "quantity": 90,
+        "unit": "g"
+      },
+      {
+        "name": "Orange caraïbe",
+        "quantity": 320,
+        "unit": "g"
+      },
+      {
+        "name": "Herbe couresse",
+        "quantity": 1,
+        "unit": "branche"
+      },
+      {
+        "name": "Pourpier",
+        "quantity": 1,
+        "unit": "branche"
+      },
+      {
+        "name": "Œufs durs (optionnel)",
+        "quantity": 2,
+        "unit": "whole"
+      },
+      {
+        "name": "Noix de cajou crue",
+        "quantity": 15,
+        "unit": "g"
+      },
+      {
+        "name": "Graines de courge",
+        "quantity": 1,
+        "unit": "tsp"
+      },
+      {
+        "name": "Gingembre frais",
+        "quantity": 9,
+        "unit": "g"
+      },
+      {
+        "name": "Poivre vert séché",
+        "quantity": 10,
+        "unit": "grains"
+      },
+      {
+        "name": "Zeste d'orange",
+        "quantity": 0.5,
+        "unit": "tsp"
+      },
+      {
+        "name": "Sel",
+        "quantity": 3,
+        "unit": "g"
+      },
+      {
+        "name": "Fromage blanc",
+        "quantity": 75,
+        "unit": "g"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Faire bouillir les œufs pendant 13-14 minutes puis refroidir",
+        "timer_minutes": 14
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "Zester et éplucher l'orange",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Mélanger les ingrédients de la sauce",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Torréfier les graines de courge",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 5,
+        "instruction_text": "Rôtir les noix de cajou à 220°C",
+        "timer_minutes": 5
+      },
+      {
+        "step_number": 6,
+        "instruction_text": "Rincer les herbes",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 7,
+        "instruction_text": "Trancher finement la betterave",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 8,
+        "instruction_text": "Dresser l'assiette avec les herbes, la betterave, les quartiers d'orange, les noix, les graines et les œufs",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 9,
+        "instruction_text": "Arroser de sauce",
+        "timer_minutes": null
+      }
+    ],
+    "prep_time_min": 15,
+    "cook_time_min": 5,
+    "advance_prep_hours": null,
+    "serving_size": 2
+  },
+  {
+    "title": "Rillettes de Thon et Concombre",
+    "recipe_type": "appetizer",
+    "ingredients": [
+      {
+        "name": "Concombre",
+        "quantity": 180,
+        "unit": "g"
+      },
+      {
+        "name": "Thon égoutté",
+        "quantity": 140,
+        "unit": "g"
+      },
+      {
+        "name": "Fromage frais",
+        "quantity": 150,
+        "unit": "g"
+      },
+      {
+        "name": "Jus de citron",
+        "quantity": 0.5,
+        "unit": "whole"
+      },
+      {
+        "name": "Piment végétarien",
+        "quantity": 0.5,
+        "unit": "whole"
+      },
+      {
+        "name": "Piment fort",
+        "quantity": 1,
+        "unit": "pincée"
+      },
+      {
+        "name": "Gousse d'ail",
+        "quantity": 1,
+        "unit": "whole"
+      },
+      {
+        "name": "Persil",
+        "quantity": 1,
+        "unit": "branche"
+      },
+      {
+        "name": "Gingembre",
+        "quantity": 1,
+        "unit": "cm"
+      },
+      {
+        "name": "Sel",
+        "quantity": 1,
+        "unit": "g"
+      },
+      {
+        "name": "Poivre",
+        "quantity": 1,
+        "unit": "pincée"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Éplucher et épépiner le concombre",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "Hacher finement le concombre et le piment",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Hacher le persil",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Égoutter le thon et mélanger avec le concombre et le jus de citron",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 5,
+        "instruction_text": "Ajouter le fromage frais",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 6,
+        "instruction_text": "Presser l'ail et assaisonner avec le sel, le poivre, le piment fort et le gingembre râpé",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 7,
+        "instruction_text": "Bien mélanger le tout",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 8,
+        "instruction_text": "Réfrigérer jusqu'au moment de servir",
+        "timer_minutes": null
+      }
+    ],
+    "prep_time_min": 20,
+    "cook_time_min": null,
+    "advance_prep_hours": null,
+    "serving_size": 6
+  },
+  {
+    "title": "Riz au Lait parfumé au Coco & Curcuma",
+    "recipe_type": "dessert",
+    "ingredients": [
+      {
+        "name": "Riz rond dessert",
+        "quantity": 60,
+        "unit": "g"
+      },
+      {
+        "name": "Eau",
+        "quantity": 260,
+        "unit": "ml"
+      },
+      {
+        "name": "Lait demi-écrémé",
+        "quantity": 120,
+        "unit": "ml"
+      },
+      {
+        "name": "Lait concentré sucré à la noix de coco",
+        "quantity": 125,
+        "unit": "g"
+      },
+      {
+        "name": "Sucre de canne",
+        "quantity": 10,
+        "unit": "g"
+      },
+      {
+        "name": "Poudre de curcuma",
+        "quantity": 4,
+        "unit": "g"
+      },
+      {
+        "name": "Cannelle",
+        "quantity": 1,
+        "unit": "pinch"
+      },
+      {
+        "name": "Zeste de citron vert",
+        "quantity": 1,
+        "unit": "whole"
+      },
+      {
+        "name": "Extrait de vanille",
+        "quantity": 1,
+        "unit": "tsp"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Mélanger tous les liquides (eau, lait, lait concentré) dans une casserole",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "Ajouter les épices et le sucre",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Chauffer jusqu'à ce que le mélange commence à bouillir légèrement",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Ajouter le riz",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 5,
+        "instruction_text": "Cuire à feu très doux pendant 45 minutes en remuant de temps en temps",
+        "timer_minutes": 45
+      }
+    ],
+    "prep_time_min": 10,
+    "cook_time_min": 45,
+    "advance_prep_hours": null,
+    "serving_size": 4
+  },
+  {
+    "title": "Flan au Chocolat",
+    "recipe_type": "dessert",
+    "ingredients": [
+      {
+        "name": "Chocolat",
+        "quantity": 60,
+        "unit": "g"
+      },
+      {
+        "name": "Lait concentré non sucré",
+        "quantity": 220,
+        "unit": "g"
+      },
+      {
+        "name": "Lait concentré sucré",
+        "quantity": 80,
+        "unit": "g"
+      },
+      {
+        "name": "Œuf",
+        "quantity": 1,
+        "unit": "whole"
+      },
+      {
+        "name": "Zeste de citron vert",
+        "quantity": 1,
+        "unit": "pinch"
+      },
+      {
+        "name": "Cannelle",
+        "quantity": 1,
+        "unit": "pinch"
+      },
+      {
+        "name": "Extrait de vanille",
+        "quantity": 1,
+        "unit": "tsp"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Préchauffer le four à 160°C",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "Faire fondre le chocolat au bain-marie",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Mélanger les laits, les épices et le jaune d'œuf dans un bol",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Ajouter le chocolat fondu et battre",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 5,
+        "instruction_text": "Monter les blancs d'œuf en neige séparément",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 6,
+        "instruction_text": "Incorporer délicatement les blancs en neige au mélange au chocolat",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 7,
+        "instruction_text": "Verser dans des ramequins placés au bain-marie",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 8,
+        "instruction_text": "Cuire au four à 160°C pendant 25 minutes",
+        "timer_minutes": 25
+      }
+    ],
+    "prep_time_min": 15,
+    "cook_time_min": 25,
+    "advance_prep_hours": null,
+    "serving_size": 4
+  },
+  {
+    "title": "Madeleines au chocolat",
+    "recipe_type": "dessert",
+    "ingredients": [
+      {
+        "name": "Farine de blé",
+        "quantity": 100,
+        "unit": "g"
+      },
+      {
+        "name": "Levure chimique",
+        "quantity": 2,
+        "unit": "g"
+      },
+      {
+        "name": "Sucre de canne",
+        "quantity": 70,
+        "unit": "g"
+      },
+      {
+        "name": "Œufs",
+        "quantity": 2,
+        "unit": "whole"
+      },
+      {
+        "name": "Beurre demi-sel",
+        "quantity": 70,
+        "unit": "g"
+      },
+      {
+        "name": "Chocolat",
+        "quantity": 50,
+        "unit": "g"
+      },
+      {
+        "name": "Zeste de citron vert",
+        "quantity": 1,
+        "unit": "pinch"
+      },
+      {
+        "name": "Cannelle",
+        "quantity": 1,
+        "unit": "pinch"
+      },
+      {
+        "name": "Extrait de vanille",
+        "quantity": 1,
+        "unit": "tsp"
+      }
+    ],
+    "instructions": [
+      {
+        "step_number": 1,
+        "instruction_text": "Faire fondre le beurre et le chocolat ensemble",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 2,
+        "instruction_text": "Battre les œufs et le sucre jusqu'à ce que le mélange blanchisse",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 3,
+        "instruction_text": "Ajouter le zeste de citron vert et la cannelle",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 4,
+        "instruction_text": "Incorporer la farine et la levure chimique",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 5,
+        "instruction_text": "Ajouter le mélange chocolat-beurre",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 6,
+        "instruction_text": "Réfrigérer pendant au moins 2 heures",
+        "timer_minutes": 120
+      },
+      {
+        "step_number": 7,
+        "instruction_text": "Préchauffer le four à 230°C",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 8,
+        "instruction_text": "Beurrer les moules à madeleines",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 9,
+        "instruction_text": "Remplir les moules",
+        "timer_minutes": null
+      },
+      {
+        "step_number": 10,
+        "instruction_text": "Cuire 5 minutes à 230°C puis 4 minutes à 180°C",
+        "timer_minutes": 9
+      },
+      {
+        "step_number": 11,
+        "instruction_text": "Démouler immédiatement",
+        "timer_minutes": null
+      }
+    ],
+    "prep_time_min": 15,
+    "cook_time_min": 9,
+    "advance_prep_hours": 2,
+    "serving_size": 16
   }
 ]
