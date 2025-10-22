@@ -134,39 +134,46 @@ async fn serve_command(
 
     // Set up evento subscription for read model projections
     // Projections write to read models, so they use the write pool
-    user_projection(write_pool.clone())
+    let user_handle = user_projection(write_pool.clone())
+        .delay(std::time::Duration::from_secs(10))
         .run(&evento_executor)
         .await?;
     tracing::info!("Evento subscription 'user-read-model' started");
 
-    recipe_projection(write_pool.clone())
+    let recipe_handle = recipe_projection(write_pool.clone())
+        .delay(std::time::Duration::from_secs(10))
         .run(&evento_executor)
         .await?;
     tracing::info!("Evento subscription 'recipe-read-model' started");
 
-    collection_projection(write_pool.clone())
+    let collection_handle = collection_projection(write_pool.clone())
+        .delay(std::time::Duration::from_secs(10))
         .run(&evento_executor)
         .await?;
     tracing::info!("Evento subscription 'collection-read-model' started");
 
-    meal_plan_projection(write_pool.clone())
+    let meal_plan_handle = meal_plan_projection(write_pool.clone())
+        .delay(std::time::Duration::from_secs(10))
         .run(&evento_executor)
         .await?;
     tracing::info!("Evento subscription 'meal-plan-read-model' started");
 
-    shopping_projection(write_pool.clone())
+    let shopping_handle = shopping_projection(write_pool.clone())
+        .delay(std::time::Duration::from_secs(10))
         .run(&evento_executor)
         .await?;
     tracing::info!("Evento subscription 'shopping-read-model' started");
 
     // Notification projections
-    notification_projections(write_pool.clone())
+    let notification_handle = notification_projections(write_pool.clone())
+        .delay(std::time::Duration::from_secs(10))
         .run(&evento_executor)
         .await?;
     tracing::info!("Evento subscription 'notification-projections' started");
 
     // Notification event subscriptions (business logic)
-    meal_plan_subscriptions(write_pool.clone())
+    let meal_plan_sub_handle = meal_plan_subscriptions(write_pool.clone())
+        .delay(std::time::Duration::from_secs(10))
         .run(&evento_executor)
         .await?;
     tracing::info!("Evento subscription 'notification-meal-plan-listeners' started");
@@ -381,7 +388,76 @@ async fn serve_command(
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     tracing::info!("Server listening on {}", listener.local_addr()?);
 
-    axum::serve(listener, app).await?;
+    // Set up graceful shutdown signal handler
+    let shutdown_signal = async {
+        let ctrl_c = async {
+            tokio::signal::ctrl_c()
+                .await
+                .expect("failed to install Ctrl+C handler");
+        };
+
+        #[cfg(unix)]
+        let terminate = async {
+            tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+                .expect("failed to install SIGTERM handler")
+                .recv()
+                .await;
+        };
+
+        #[cfg(not(unix))]
+        let terminate = std::future::pending::<()>();
+
+        tokio::select! {
+            _ = ctrl_c => {
+                tracing::info!("Received Ctrl+C signal");
+            },
+            _ = terminate => {
+                tracing::info!("Received SIGTERM signal");
+            },
+        }
+
+        tracing::info!("Starting graceful shutdown...");
+    };
+
+    // Serve with graceful shutdown
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal)
+        .await?;
+
+    tracing::info!("Shutting down evento projections...");
+
+    // Shutdown all projection subscriptions
+    if let Err(e) = user_handle.shutdown_and_wait().await {
+        tracing::error!("Error shutting down user projection: {}", e);
+    }
+    if let Err(e) = recipe_handle.shutdown_and_wait().await {
+        tracing::error!("Error shutting down recipe projection: {}", e);
+    }
+    if let Err(e) = collection_handle.shutdown_and_wait().await {
+        tracing::error!("Error shutting down collection projection: {}", e);
+    }
+    if let Err(e) = meal_plan_handle.shutdown_and_wait().await {
+        tracing::error!("Error shutting down meal plan projection: {}", e);
+    }
+    if let Err(e) = shopping_handle.shutdown_and_wait().await {
+        tracing::error!("Error shutting down shopping projection: {}", e);
+    }
+    if let Err(e) = notification_handle.shutdown_and_wait().await {
+        tracing::error!("Error shutting down notification projection: {}", e);
+    }
+    if let Err(e) = meal_plan_sub_handle.shutdown_and_wait().await {
+        tracing::error!("Error shutting down meal plan subscription: {}", e);
+    }
+
+    tracing::info!("All projections shut down successfully");
+
+    // Close database pools
+    tracing::info!("Closing database pools...");
+    read_pool.close().await;
+    write_pool.close().await;
+    tracing::info!("Database pools closed");
+
+    tracing::info!("Graceful shutdown complete");
 
     Ok(())
 }
