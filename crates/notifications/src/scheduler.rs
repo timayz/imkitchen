@@ -1043,7 +1043,8 @@ mod tests {
     fn test_calculate_reminder_time_24h_prep() {
         use chrono::Local;
 
-        // Given: Dinner at 6pm in 2 days with 24h marinade (ensures reminder is tomorrow at 9am, not in past)
+        // Given: Dinner at 6pm in 2 days with 24h marinade
+        // Using 2 days in future ensures reminder (day before = tomorrow at 9am) is always in future
         let in_two_days = Local::now().date_naive() + chrono::Duration::days(2);
         let meal_date = in_two_days.format("%Y-%m-%d").to_string();
         let meal_time = Some("18:00");
@@ -1052,10 +1053,11 @@ mod tests {
         // When: Calculate reminder time
         let result = calculate_reminder_time(&meal_date, meal_time, prep_hours).unwrap();
 
-        // Then: Reminder scheduled for tomorrow at 9am
+        // Then: Reminder scheduled for day before meal at 9am (which is tomorrow)
         let reminder_dt = DateTime::parse_from_rfc3339(&result).unwrap();
-        let expected_day = Local::now().date_naive() + chrono::Duration::days(1);
+        let expected_day = in_two_days - chrono::Duration::days(1); // Day before meal
         assert_eq!(reminder_dt.day(), expected_day.day());
+        assert_eq!(reminder_dt.month(), expected_day.month());
         assert_eq!(reminder_dt.hour(), 9);
         assert_eq!(reminder_dt.minute(), 0);
     }
