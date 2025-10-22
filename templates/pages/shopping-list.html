@@ -80,15 +80,6 @@ details[open] summary .chevron {
                     </svg>
                     Print
                 </button>
-                <form action="/shopping/generate" method="post">
-                    <input type="hidden" name="week" value="{{ selected_week }}">
-                    <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors flex items-center">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                        </svg>
-                        Regenerate
-                    </button>
-                </form>
             </div>
         </div>
 
@@ -228,16 +219,7 @@ details[open] summary .chevron {
                 </svg>
             </div>
             <h2 class="text-2xl font-bold text-gray-900 mb-2">No Shopping List Yet</h2>
-            <p class="text-gray-600 mb-6">Generate a shopping list from your active meal plan</p>
-            <form action="/shopping/generate" method="post">
-                <input type="hidden" name="week" value="{{ selected_week }}">
-                <button type="submit" class="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors inline-flex items-center">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                    </svg>
-                    Generate Shopping List
-                </button>
-            </form>
+            <p class="text-gray-600 mb-6">Shopping list is automatically generated from your active meal plan</p>
             <div class="mt-6">
                 <a href="/dashboard" class="text-gray-600 hover:text-gray-900">
                     Back to Dashboard

@@ -46,6 +46,5 @@ pub use recipes::{
     post_share_recipe, post_update_recipe, post_update_recipe_tags,
 };
 pub use shopping::{
-    check_shopping_item, generate_shopping_list_handler, refresh_shopping_list,
-    reset_shopping_list_handler, show_shopping_list,
+    check_shopping_item, refresh_shopping_list, reset_shopping_list_handler, show_shopping_list,
 };
