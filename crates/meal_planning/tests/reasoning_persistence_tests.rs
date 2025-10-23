@@ -69,6 +69,7 @@ fn create_test_recipe(
         advance_prep_hours: None,
         complexity: None,
         recipe_type: recipe_type.to_string(),
+        dietary_tags: Vec::new(),
     }
 }
 

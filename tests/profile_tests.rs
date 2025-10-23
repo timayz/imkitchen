@@ -36,7 +36,7 @@ async fn test_post_profile_requires_auth() {
     let (pool, _executor) = common::setup_test_db().await;
     let app = common::create_test_app((pool.clone(), _executor)).await;
 
-    let form_data = "dietary_restrictions=vegetarian&household_size=2&skill_level=intermediate&availability_start=18:00&availability_duration=45";
+    let form_data = "dietary_restrictions=vegetarian&household_size=2&availability_start=18:00&availability_duration=45";
 
     let response = app
         .router

@@ -16,7 +16,6 @@ async fn test_profile_update_validates_household_size() {
         user_id: "test-user".to_string(),
         dietary_restrictions: None,
         household_size: Some(10),
-        skill_level: None,
         weeknight_availability: None,
     };
 
@@ -27,7 +26,6 @@ async fn test_profile_update_validates_household_size() {
         user_id: "test-user".to_string(),
         dietary_restrictions: None,
         household_size: Some(25),
-        skill_level: None,
         weeknight_availability: None,
     };
 
@@ -38,7 +36,6 @@ async fn test_profile_update_validates_household_size() {
         user_id: "test-user".to_string(),
         dietary_restrictions: None,
         household_size: Some(0),
-        skill_level: None,
         weeknight_availability: None,
     };
 
@@ -53,8 +50,7 @@ fn test_profile_updated_event_structure() {
     // Create ProfileUpdated with partial fields (COALESCE pattern)
     let partial_update = ProfileUpdated {
         dietary_restrictions: Some(vec!["vegetarian".to_string()]),
-        household_size: None, // None = no change
-        skill_level: Some("intermediate".to_string()),
+        household_size: None,         // None = no change
         weeknight_availability: None, // None = no change
         updated_at: Utc::now().to_rfc3339(),
     };
@@ -62,21 +58,18 @@ fn test_profile_updated_event_structure() {
     // Verify Option fields allow None for COALESCE behavior
     assert!(partial_update.dietary_restrictions.is_some());
     assert!(partial_update.household_size.is_none());
-    assert!(partial_update.skill_level.is_some());
     assert!(partial_update.weeknight_availability.is_none());
 
     // Create ProfileUpdated with all fields
     let full_update = ProfileUpdated {
         dietary_restrictions: Some(vec!["vegan".to_string()]),
         household_size: Some(2),
-        skill_level: Some("expert".to_string()),
         weeknight_availability: Some(r#"{"start":"18:00","duration_minutes":60}"#.to_string()),
         updated_at: Utc::now().to_rfc3339(),
     };
 
     assert!(full_update.dietary_restrictions.is_some());
     assert!(full_update.household_size.is_some());
-    assert!(full_update.skill_level.is_some());
     assert!(full_update.weeknight_availability.is_some());
 }
 
@@ -91,7 +84,6 @@ fn test_user_aggregate_default() {
     assert_eq!(aggregate.email, "");
     assert_eq!(aggregate.dietary_restrictions, Vec::<String>::new());
     assert_eq!(aggregate.household_size, None);
-    assert_eq!(aggregate.skill_level, None);
     assert_eq!(aggregate.weeknight_availability, None);
     assert!(!aggregate.onboarding_completed);
 }
@@ -135,19 +127,6 @@ fn test_household_size_set_event() {
     };
 
     assert_eq!(household_event.household_size, 4);
-}
-
-/// Test SkillLevelSet event
-#[test]
-fn test_skill_level_set_event() {
-    use user::events::SkillLevelSet;
-
-    let skill_event = SkillLevelSet {
-        skill_level: "intermediate".to_string(),
-        set_at: Utc::now().to_rfc3339(),
-    };
-
-    assert_eq!(skill_event.skill_level, "intermediate");
 }
 
 /// Test WeeknightAvailabilitySet event

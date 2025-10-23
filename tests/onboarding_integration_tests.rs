@@ -216,7 +216,7 @@ async fn test_post_onboarding_with_valid_data_creates_profile() {
 
     test_app.process_events().await;
 
-    // Step 3: Submit skill level
+    // Step 3: Submit availability (defaults)
     let response3 = test_app
         .router
         .clone()
@@ -226,41 +226,17 @@ async fn test_post_onboarding_with_valid_data_creates_profile() {
                 .uri("/onboarding/step/3")
                 .header("cookie", cookie.clone())
                 .header("content-type", "application/x-www-form-urlencoded")
-                .body(Body::from("skill_level=expert"))
-                .unwrap(),
-        )
-        .await
-        .unwrap();
-
-    assert_eq!(response3.status(), StatusCode::OK);
-    assert_eq!(
-        response3.headers().get("ts-location").unwrap(),
-        "/onboarding?step=4"
-    );
-
-    test_app.process_events().await;
-
-    // Step 4: Submit availability (defaults)
-    let response4 = test_app
-        .router
-        .clone()
-        .oneshot(
-            Request::builder()
-                .method("POST")
-                .uri("/onboarding/step/4")
-                .header("cookie", cookie.clone())
-                .header("content-type", "application/x-www-form-urlencoded")
                 .body(Body::from(""))
                 .unwrap(),
         )
         .await
         .unwrap();
 
-    assert_eq!(response4.status(), StatusCode::OK);
-    // Step 4 now redirects to step 5 (Story 4.10: Push Notification Permission Flow)
+    assert_eq!(response3.status(), StatusCode::OK);
+    // Step 3 now redirects to step 4 (Story 4.10: Push Notification Permission Flow)
     assert_eq!(
-        response4.headers().get("ts-location").unwrap(),
-        "/onboarding?step=5"
+        response3.headers().get("ts-location").unwrap(),
+        "/onboarding?step=4"
     );
 
     // Process events to project to read model
@@ -268,7 +244,7 @@ async fn test_post_onboarding_with_valid_data_creates_profile() {
 
     // Verify profile data in database
     let user = sqlx::query(
-        "SELECT dietary_restrictions, household_size, skill_level, weeknight_availability, onboarding_completed FROM users WHERE email = 'test@example.com'",
+        "SELECT dietary_restrictions, household_size, weeknight_availability, onboarding_completed FROM users WHERE email = 'test@example.com'",
     )
     .fetch_one(&pool)
     .await
@@ -276,17 +252,15 @@ async fn test_post_onboarding_with_valid_data_creates_profile() {
 
     let dietary_restrictions: String = user.get("dietary_restrictions");
     let household_size: i32 = user.get("household_size");
-    let skill_level: String = user.get("skill_level");
     let weeknight_availability: String = user.get("weeknight_availability");
     let onboarding_completed: i32 = user.get("onboarding_completed");
 
     // Verify defaults and provided values
     assert_eq!(dietary_restrictions, "[]"); // Empty by default
     assert_eq!(household_size, 4);
-    assert_eq!(skill_level, "expert");
     assert!(weeknight_availability.contains("18:00")); // Default start time
     assert!(weeknight_availability.contains("45")); // Default duration
-                                                    // Story 4.10: Onboarding now has 5 steps, so after step 4 it's not complete
+                                                    // Story 4.10: Onboarding now has 4 steps, so after step 3 it's not complete
     assert_eq!(onboarding_completed, 0);
 }
 
@@ -335,7 +309,7 @@ async fn test_post_onboarding_applies_defaults_for_skipped_fields() {
 
     test_app.process_events().await;
 
-    // Step 3: empty skill level (defaults to intermediate)
+    // Step 3: empty availability (defaults to 18:00, 45 minutes)
     test_app
         .router
         .clone()
@@ -343,24 +317,6 @@ async fn test_post_onboarding_applies_defaults_for_skipped_fields() {
             Request::builder()
                 .method("POST")
                 .uri("/onboarding/step/3")
-                .header("cookie", cookie.clone())
-                .header("content-type", "application/x-www-form-urlencoded")
-                .body(Body::from(""))
-                .unwrap(),
-        )
-        .await
-        .unwrap();
-
-    test_app.process_events().await;
-
-    // Step 4: empty availability (defaults to 18:00, 45 minutes)
-    test_app
-        .router
-        .clone()
-        .oneshot(
-            Request::builder()
-                .method("POST")
-                .uri("/onboarding/step/4")
                 .header("cookie", cookie)
                 .header("content-type", "application/x-www-form-urlencoded")
                 .body(Body::from(""))
@@ -374,7 +330,7 @@ async fn test_post_onboarding_applies_defaults_for_skipped_fields() {
 
     // Verify default values were applied
     let user = sqlx::query(
-        "SELECT dietary_restrictions, household_size, skill_level, weeknight_availability FROM users WHERE email = 'test@example.com'",
+        "SELECT dietary_restrictions, household_size, weeknight_availability FROM users WHERE email = 'test@example.com'",
     )
     .fetch_one(&pool)
     .await
@@ -382,13 +338,11 @@ async fn test_post_onboarding_applies_defaults_for_skipped_fields() {
 
     let dietary_restrictions: String = user.get("dietary_restrictions");
     let household_size: i32 = user.get("household_size");
-    let skill_level: String = user.get("skill_level");
     let weeknight_availability: String = user.get("weeknight_availability");
 
     // Verify defaults
     assert_eq!(dietary_restrictions, "[]"); // Empty array
     assert_eq!(household_size, 2); // Default: 2
-    assert_eq!(skill_level, "intermediate"); // Default: intermediate
     assert!(weeknight_availability.contains("18:00")); // Default: 18:00
     assert!(weeknight_availability.contains("45")); // Default: 45 minutes
 }
@@ -487,7 +441,7 @@ async fn test_get_onboarding_skip_applies_all_defaults() {
 
     // Verify all defaults were applied
     let user = sqlx::query(
-        "SELECT dietary_restrictions, household_size, skill_level, weeknight_availability, onboarding_completed FROM users WHERE email = 'test@example.com'",
+        "SELECT dietary_restrictions, household_size, weeknight_availability, onboarding_completed FROM users WHERE email = 'test@example.com'",
     )
     .fetch_one(&pool)
     .await
@@ -495,13 +449,11 @@ async fn test_get_onboarding_skip_applies_all_defaults() {
 
     let dietary_restrictions: String = user.get("dietary_restrictions");
     let household_size: i32 = user.get("household_size");
-    let skill_level: String = user.get("skill_level");
     let weeknight_availability: String = user.get("weeknight_availability");
     let onboarding_completed: i32 = user.get("onboarding_completed");
 
     assert_eq!(dietary_restrictions, "[]");
     assert_eq!(household_size, 2);
-    assert_eq!(skill_level, "intermediate");
     assert!(weeknight_availability.contains("18:00"));
     assert!(weeknight_availability.contains("45"));
     assert_eq!(onboarding_completed, 1);
