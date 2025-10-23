@@ -514,15 +514,20 @@ pub async fn query_recipes_by_user_paginated(
     Ok(recipes)
 }
 
+/// Filter parameters for recipe queries
+pub struct RecipeFilterParams<'a> {
+    pub favorite_only: bool,
+    pub recipe_type: Option<&'a str>,
+    pub complexity: Option<&'a str>,
+    pub cuisine: Option<&'a str>,
+    pub dietary: Option<&'a str>,
+    pub shared_status: Option<&'a str>,
+}
+
 /// Query recipes by user with filters applied at database level for proper pagination
 pub async fn query_recipes_by_user_with_filters(
     user_id: &str,
-    favorite_only: bool,
-    recipe_type: Option<&str>,
-    complexity: Option<&str>,
-    cuisine: Option<&str>,
-    dietary: Option<&str>,
-    shared_status: Option<&str>,
+    filters: RecipeFilterParams<'_>,
     limit: u32,
     offset: u32,
     pool: &SqlitePool,
@@ -531,31 +536,31 @@ pub async fn query_recipes_by_user_with_filters(
     let mut where_clauses = vec!["user_id = ?1".to_string(), "deleted_at IS NULL".to_string()];
     let mut param_index = 2;
 
-    if favorite_only {
+    if filters.favorite_only {
         where_clauses.push("is_favorite = 1".to_string());
     }
 
-    if recipe_type.is_some() {
+    if filters.recipe_type.is_some() {
         where_clauses.push(format!("recipe_type = ?{}", param_index));
         param_index += 1;
     }
 
-    if complexity.is_some() {
+    if filters.complexity.is_some() {
         where_clauses.push(format!("complexity = ?{}", param_index));
         param_index += 1;
     }
 
-    if cuisine.is_some() {
+    if filters.cuisine.is_some() {
         where_clauses.push(format!("cuisine = ?{}", param_index));
         param_index += 1;
     }
 
-    if dietary.is_some() {
+    if filters.dietary.is_some() {
         where_clauses.push(format!("dietary_tags LIKE ?{}", param_index));
         param_index += 1;
     }
 
-    if shared_status.is_some() {
+    if filters.shared_status.is_some() {
         where_clauses.push(format!("is_shared = ?{}", param_index));
         param_index += 1;
     }
@@ -580,24 +585,24 @@ pub async fn query_recipes_by_user_with_filters(
 
     let mut query = sqlx::query(&query_str).bind(user_id);
 
-    if let Some(rt) = recipe_type {
+    if let Some(rt) = filters.recipe_type {
         query = query.bind(rt);
     }
 
-    if let Some(comp) = complexity {
+    if let Some(comp) = filters.complexity {
         query = query.bind(comp);
     }
 
-    if let Some(cuis) = cuisine {
+    if let Some(cuis) = filters.cuisine {
         query = query.bind(cuis);
     }
 
-    if let Some(diet) = dietary {
+    if let Some(diet) = filters.dietary {
         // Use LIKE pattern for JSON array search (e.g., '%vegetarian%')
         query = query.bind(format!("%{}%", diet));
     }
 
-    if let Some(status) = shared_status {
+    if let Some(status) = filters.shared_status {
         // "private" = 0, "shared" = 1
         let is_shared_value = if status == "shared" { 1 } else { 0 };
         query = query.bind(is_shared_value);

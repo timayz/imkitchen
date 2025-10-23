@@ -12,7 +12,7 @@ use recipe::{
     share_recipe, update_recipe, update_recipe_tags, BatchImportRecipe, BatchImportRecipesCommand,
     CollectionReadModel, CopyRecipeCommand, CreateRecipeCommand, DeleteRecipeCommand,
     FavoriteRecipeCommand, Ingredient, InstructionStep, RecipeDiscoveryFilters, RecipeError,
-    ShareRecipeCommand, UpdateRecipeCommand, UpdateRecipeTagsCommand,
+    RecipeFilterParams, ShareRecipeCommand, UpdateRecipeCommand, UpdateRecipeTagsCommand,
 };
 use serde::Deserialize;
 use sqlx::Row;
@@ -1003,12 +1003,14 @@ pub async fn get_recipe_list(
         let favorite_only = query.favorite_only.unwrap_or(false);
         query_recipes_by_user_with_filters(
             &auth.user_id,
-            favorite_only,
-            query.recipe_type.as_deref(),
-            query.complexity.as_deref(),
-            query.cuisine.as_deref(),
-            query.dietary.as_deref(),
-            query.shared_status.as_deref(),
+            RecipeFilterParams {
+                favorite_only,
+                recipe_type: query.recipe_type.as_deref(),
+                complexity: query.complexity.as_deref(),
+                cuisine: query.cuisine.as_deref(),
+                dietary: query.dietary.as_deref(),
+                shared_status: query.shared_status.as_deref(),
+            },
             INITIAL_LIMIT,
             0,
             &state.db_pool,
@@ -1127,12 +1129,14 @@ pub async fn get_more_recipes(
         let favorite_only = query.favorite_only.unwrap_or(false);
         query_recipes_by_user_with_filters(
             &auth.user_id,
-            favorite_only,
-            query.recipe_type.as_deref(),
-            query.complexity.as_deref(),
-            query.cuisine.as_deref(),
-            query.dietary.as_deref(),
-            query.shared_status.as_deref(),
+            RecipeFilterParams {
+                favorite_only,
+                recipe_type: query.recipe_type.as_deref(),
+                complexity: query.complexity.as_deref(),
+                cuisine: query.cuisine.as_deref(),
+                dietary: query.dietary.as_deref(),
+                shared_status: query.shared_status.as_deref(),
+            },
             LIMIT,
             offset,
             &state.db_pool,
