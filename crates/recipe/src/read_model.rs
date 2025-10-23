@@ -749,9 +749,32 @@ pub async fn list_shared_recipes(
     }
 
     // AC-4: Dietary filter (JSON text search) (parameterized)
-    if filters.dietary.is_some() {
-        conditions.push(format!("r.dietary_tags LIKE ?{}", bind_index));
-        bind_index += 1;
+    // Split by comma and create AND conditions for each dietary requirement
+    let dietary_tags_list: Vec<String> = if let Some(ref dietary) = filters.dietary {
+        dietary
+            .split(',')
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect()
+    } else {
+        Vec::new()
+    };
+
+    if !dietary_tags_list.is_empty() {
+        let dietary_conditions: Vec<String> = dietary_tags_list
+            .iter()
+            .map(|_| {
+                let condition = format!("r.dietary_tags LIKE ?{}", bind_index);
+                bind_index += 1;
+                condition
+            })
+            .collect();
+
+        if dietary_conditions.len() == 1 {
+            conditions.push(dietary_conditions[0].clone());
+        } else {
+            conditions.push(format!("({})", dietary_conditions.join(" AND ")));
+        }
     }
 
     // AC-5: Search filter (title OR ingredients) (parameterized)
@@ -798,7 +821,10 @@ pub async fn list_shared_recipes(
     let mut query = sqlx::query(&query_str);
 
     // Pre-compute patterns to avoid lifetime issues
-    let dietary_pattern = filters.dietary.as_ref().map(|d| format!("%{}%", d));
+    let dietary_patterns: Vec<String> = dietary_tags_list
+        .iter()
+        .map(|tag| format!("%{}%", tag))
+        .collect();
     let search_pattern = filters.search.as_ref().map(|s| format!("%{}%", s));
 
     // Bind parameters in the same order as conditions
@@ -808,7 +834,8 @@ pub async fn list_shared_recipes(
     if let Some(max_time) = filters.max_prep_time {
         query = query.bind(max_time);
     }
-    if let Some(ref pattern) = dietary_pattern {
+    // Bind each dietary tag pattern
+    for pattern in &dietary_patterns {
         query = query.bind(pattern);
     }
     if let Some(ref pattern) = search_pattern {

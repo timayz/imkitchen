@@ -1410,12 +1410,38 @@ pub async fn get_discover(
     user: Option<Extension<Auth>>,
     Query(params): Query<DiscoveryQueryParams>,
 ) -> impl IntoResponse {
+    // If user is logged in and hasn't specified dietary filter, apply their profile preferences
+    let dietary_filter = if let Some(ref auth) = user {
+        if params.dietary.is_none() {
+            // Load user's dietary restrictions from profile
+            let user_dietary: Option<String> =
+                sqlx::query_scalar("SELECT dietary_restrictions FROM users WHERE id = ?1")
+                    .bind(&auth.user_id)
+                    .fetch_optional(&state.db_pool)
+                    .await
+                    .ok()
+                    .flatten();
+
+            // Parse JSON array and join with commas for filter
+            user_dietary.and_then(|json| {
+                serde_json::from_str::<Vec<String>>(&json)
+                    .ok()
+                    .filter(|tags| !tags.is_empty())
+                    .map(|tags| tags.join(","))
+            })
+        } else {
+            params.dietary.clone()
+        }
+    } else {
+        params.dietary.clone()
+    };
+
     // Convert query params to RecipeDiscoveryFilters
     let filters = RecipeDiscoveryFilters {
         cuisine: params.cuisine.clone(),
         min_rating: params.min_rating,
         max_prep_time: params.max_prep_time,
-        dietary: params.dietary.clone(),
+        dietary: dietary_filter,
         search: params.search.clone(),
         sort: params.sort.clone(),
         page: params.page,

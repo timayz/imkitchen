@@ -11,15 +11,15 @@ pub mod types;
 pub use aggregate::UserAggregate;
 pub use commands::{
     complete_profile, register_user, reset_password, set_dietary_restrictions, set_household_size,
-    set_skill_level, set_weeknight_availability, update_profile, upgrade_subscription,
-    CompleteProfileCommand, RegisterUserCommand, ResetPasswordCommand,
-    SetDietaryRestrictionsCommand, SetHouseholdSizeCommand, SetSkillLevelCommand,
-    SetWeeknightAvailabilityCommand, UpdateProfileCommand, UpgradeSubscriptionCommand,
+    set_weeknight_availability, update_profile, upgrade_subscription, CompleteProfileCommand,
+    RegisterUserCommand, ResetPasswordCommand, SetDietaryRestrictionsCommand,
+    SetHouseholdSizeCommand, SetWeeknightAvailabilityCommand, UpdateProfileCommand,
+    UpgradeSubscriptionCommand,
 };
 pub use error::{UserError, UserResult};
 pub use events::{
     DietaryRestrictionsSet, HouseholdSizeSet, PasswordChanged, ProfileCompleted, ProfileUpdated,
-    RecipeCreated, RecipeDeleted, RecipeShared, SkillLevelSet, SubscriptionUpgraded, UserCreated,
+    RecipeCreated, RecipeDeleted, RecipeShared, SubscriptionUpgraded, UserCreated,
     WeeknightAvailabilitySet,
 };
 pub use jwt::{generate_jwt, generate_reset_token, validate_jwt, Claims};

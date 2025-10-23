@@ -21,6 +21,7 @@ fn create_test_recipe(
         advance_prep_hours: advance_prep,
         complexity: None,
         recipe_type: "main_course".to_string(),
+        dietary_tags: Vec::new(),
     }
 }
 
@@ -29,7 +30,6 @@ fn test_availability_constraint_weeknight_matches() {
     let recipe = create_test_recipe("1", 7, 5, None, 15, 25); // 40 min total
     let user_constraints = UserConstraints {
         weeknight_availability_minutes: Some(45),
-        skill_level: Some("intermediate".to_string()),
         dietary_restrictions: Vec::new(),
     };
 
@@ -55,7 +55,6 @@ fn test_availability_constraint_weeknight_too_long() {
     let recipe = create_test_recipe("1", 10, 8, None, 30, 45); // 75 min total
     let user_constraints = UserConstraints {
         weeknight_availability_minutes: Some(45),
-        skill_level: Some("intermediate".to_string()),
         dietary_restrictions: Vec::new(),
     };
 
@@ -81,7 +80,6 @@ fn test_availability_constraint_weekend_allows_all() {
     let recipe = create_test_recipe("1", 15, 12, Some(2), 45, 60); // Complex, long recipe
     let user_constraints = UserConstraints {
         weeknight_availability_minutes: Some(45),
-        skill_level: Some("intermediate".to_string()),
         dietary_restrictions: Vec::new(),
     };
 
@@ -217,14 +215,13 @@ fn test_advance_prep_constraint_no_prep_required() {
 }
 
 #[test]
-fn test_dietary_constraint_shellfish_restriction() {
-    // Simulate a recipe with shellfish (we'll need to enhance RecipeForPlanning to include tags)
+fn test_dietary_constraint_vegetarian_restriction() {
+    // Recipe without vegetarian tag
     let recipe = create_test_recipe("1", 10, 8, None, 20, 30);
 
     let user_constraints = UserConstraints {
         weeknight_availability_minutes: Some(45),
-        skill_level: Some("intermediate".to_string()),
-        dietary_restrictions: vec!["no-shellfish".to_string()],
+        dietary_restrictions: vec!["vegetarian".to_string()],
     };
 
     let monday = NaiveDate::from_ymd_opt(2025, 10, 20).unwrap();
@@ -236,11 +233,36 @@ fn test_dietary_constraint_shellfish_restriction() {
     let constraint = DietaryConstraint;
     let score = constraint.evaluate(&recipe, &slot, &user_constraints);
 
-    // For MVP, dietary constraint returns neutral score (future: check recipe tags)
-    // Score should be 1.0 (no filtering implemented yet)
+    // Recipe doesn't have vegetarian tag, so should be disqualified
+    assert_eq!(
+        score, 0.0,
+        "Expected recipe without vegetarian tag to be disqualified"
+    );
+}
+
+#[test]
+fn test_dietary_constraint_no_restrictions() {
+    // Recipe without any dietary tags
+    let recipe = create_test_recipe("1", 10, 8, None, 20, 30);
+
+    let user_constraints = UserConstraints {
+        weeknight_availability_minutes: Some(45),
+        dietary_restrictions: vec![],
+    };
+
+    let monday = NaiveDate::from_ymd_opt(2025, 10, 20).unwrap();
+    let slot = MealSlot {
+        date: monday,
+        course_type: CourseType::Dessert,
+    };
+
+    let constraint = DietaryConstraint;
+    let score = constraint.evaluate(&recipe, &slot, &user_constraints);
+
+    // No dietary restrictions, all recipes should be acceptable
     assert_eq!(
         score, 1.0,
-        "Expected neutral score for MVP dietary constraint"
+        "Expected neutral score when user has no dietary restrictions"
     );
 }
 
@@ -297,7 +319,6 @@ fn test_all_constraints_together() {
     let recipe = create_test_recipe("1", 6, 4, None, 10, 20);
     let user_constraints = UserConstraints {
         weeknight_availability_minutes: Some(45),
-        skill_level: Some("intermediate".to_string()),
         dietary_restrictions: Vec::new(),
     };
 

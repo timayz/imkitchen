@@ -213,6 +213,7 @@ async fn test_insufficient_recipes_returns_error() {
             advance_prep_hours: None,
             complexity: None,
             recipe_type: "main_course".to_string(),
+            dietary_tags: Vec::new(),
         },
         RecipeForPlanning {
             id: "2".to_string(),
@@ -224,6 +225,7 @@ async fn test_insufficient_recipes_returns_error() {
             advance_prep_hours: None,
             complexity: None,
             recipe_type: "main_course".to_string(),
+            dietary_tags: Vec::new(),
         },
     ];
 

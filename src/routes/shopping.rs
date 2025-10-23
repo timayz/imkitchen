@@ -58,6 +58,15 @@ pub async fn show_shopping_list(
 
     let week_start_str = selected_week.clone();
 
+    // Load user's household size for display/future scaling
+    let household_size: Option<u8> =
+        sqlx::query_scalar("SELECT household_size FROM users WHERE id = ?1")
+            .bind(user_id)
+            .fetch_optional(&state.db_pool)
+            .await
+            .ok()
+            .flatten();
+
     // Query shopping list for this week
     let shopping_list = get_shopping_list_by_week(user_id, &week_start_str, &state.db_pool).await?;
 
@@ -108,6 +117,7 @@ pub async fn show_shopping_list(
             categories,
             has_items: true,
             current_path: "/shopping".to_string(),
+            household_size,
         };
 
         Ok(Html(template.render().map_err(|e| {
@@ -123,6 +133,7 @@ pub async fn show_shopping_list(
             categories: vec![],
             has_items: false,
             current_path: "/shopping".to_string(),
+            household_size,
         };
 
         Ok(Html(template.render().map_err(|e| {
@@ -256,6 +267,7 @@ pub struct ShoppingListTemplate {
     pub categories: Vec<CategoryGroup>,
     pub has_items: bool,
     pub current_path: String,
+    pub household_size: Option<u8>, // User's household size for context/future scaling
 }
 
 /// Partial template for shopping list content (TwinSpark polling - Story 4.4)

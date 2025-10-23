@@ -35,8 +35,8 @@ pub use notifications::{
 };
 pub use profile::{
     get_onboarding, get_onboarding_skip, get_profile, get_subscription, get_subscription_success,
-    post_onboarding_step_1, post_onboarding_step_2, post_onboarding_step_3, post_onboarding_step_4,
-    post_profile, post_subscription_upgrade,
+    post_onboarding_step_1, post_onboarding_step_2, post_onboarding_step_3, post_profile,
+    post_subscription_upgrade,
 };
 pub use recipes::{
     check_recipe_exists, get_discover, get_discover_detail, get_import_modal, get_ingredient_row,

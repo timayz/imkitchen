@@ -54,8 +54,7 @@ pub async fn create_test_app((pool, evento_executor): (SqlitePool, evento::Sqlit
         get_check_user, get_contact, get_help, get_login, get_onboarding, get_onboarding_skip,
         get_profile, get_register, get_subscription, get_subscription_success, post_contact,
         post_login, post_logout, post_onboarding_step_1, post_onboarding_step_2,
-        post_onboarding_step_3, post_onboarding_step_4, post_profile, post_register,
-        post_subscription_upgrade, AppState,
+        post_onboarding_step_3, post_profile, post_register, post_subscription_upgrade, AppState,
     };
 
     let email_config = imkitchen::email::EmailConfig {
@@ -90,7 +89,6 @@ pub async fn create_test_app((pool, evento_executor): (SqlitePool, evento::Sqlit
         .route("/onboarding/step/1", post(post_onboarding_step_1))
         .route("/onboarding/step/2", post(post_onboarding_step_2))
         .route("/onboarding/step/3", post(post_onboarding_step_3))
-        .route("/onboarding/step/4", post(post_onboarding_step_4))
         .route("/onboarding/skip", get(get_onboarding_skip))
         .route("/profile", get(get_profile))
         .route("/profile", post(post_profile))

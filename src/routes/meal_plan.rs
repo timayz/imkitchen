@@ -13,7 +13,7 @@ use meal_planning::{
 };
 use recipe::read_model::{query_recipes_by_user, RecipeReadModel};
 use serde::{Deserialize, Serialize};
-use sqlx::SqlitePool;
+use sqlx::{Row, SqlitePool};
 
 use crate::error::AppError;
 use crate::middleware::auth::Auth;
@@ -110,6 +110,48 @@ fn render_toast(
     template
         .render()
         .map_err(|e| AppError::InternalError(format!("Toast template render error: {}", e)))
+}
+
+/// Helper function to load user profile constraints from database
+///
+/// Loads dietary restrictions, skill level, and weeknight availability from the users table
+/// and constructs a UserConstraints struct for the meal planning algorithm.
+async fn load_user_constraints(
+    user_id: &str,
+    db_pool: &SqlitePool,
+) -> Result<UserConstraints, AppError> {
+    let user_profile =
+        sqlx::query("SELECT dietary_restrictions, weeknight_availability FROM users WHERE id = ?1")
+            .bind(user_id)
+            .fetch_optional(db_pool)
+            .await?;
+
+    match user_profile {
+        Some(row) => {
+            // Parse dietary restrictions from JSON
+            let dietary_str: Option<String> = row.get("dietary_restrictions");
+            let dietary_restrictions: Vec<String> = dietary_str
+                .and_then(|s| serde_json::from_str(&s).ok())
+                .unwrap_or_default();
+
+            // Parse weeknight availability JSON to extract duration_minutes
+            let availability_json: Option<String> = row.get("weeknight_availability");
+            let weeknight_availability_minutes = availability_json
+                .as_ref()
+                .and_then(|json| serde_json::from_str::<serde_json::Value>(json).ok())
+                .and_then(|v| v["duration_minutes"].as_u64())
+                .map(|mins| mins as u32);
+
+            Ok(UserConstraints {
+                weeknight_availability_minutes,
+                dietary_restrictions,
+            })
+        }
+        None => {
+            tracing::warn!("User profile not found for {}, using defaults", user_id);
+            Ok(UserConstraints::default())
+        }
+    }
 }
 
 /// Day with 3 meal slots for template rendering
@@ -301,6 +343,13 @@ pub async fn post_generate_meal_plan(
                     Vec::new()
                 });
 
+            // Parse dietary_tags from JSON
+            let dietary_tags: Vec<String> = r
+                .dietary_tags
+                .as_ref()
+                .and_then(|tags_json| serde_json::from_str(tags_json).ok())
+                .unwrap_or_default();
+
             RecipeForPlanning {
                 id: r.id,
                 title: r.title,
@@ -311,12 +360,13 @@ pub async fn post_generate_meal_plan(
                 cook_time_min: r.cook_time_min.map(|v| v as u32),
                 advance_prep_hours: r.advance_prep_hours.map(|v| v as u32),
                 complexity: r.complexity,
+                dietary_tags,
             }
         })
         .collect();
 
-    // Load user profile constraints (future: query from user profile table)
-    let constraints = UserConstraints::default();
+    // Load user profile constraints from database
+    let constraints = load_user_constraints(&auth.user_id, &state.db_pool).await?;
 
     // Load rotation state from most recent meal plan
     let previous_meal_plan =
@@ -993,6 +1043,13 @@ pub async fn post_regenerate_meal_plan(
                     Vec::new()
                 });
 
+            // Parse dietary_tags from JSON
+            let dietary_tags: Vec<String> = r
+                .dietary_tags
+                .as_ref()
+                .and_then(|tags_json| serde_json::from_str(tags_json).ok())
+                .unwrap_or_default();
+
             RecipeForPlanning {
                 id: r.id,
                 title: r.title,
@@ -1003,12 +1060,13 @@ pub async fn post_regenerate_meal_plan(
                 cook_time_min: r.cook_time_min.map(|v| v as u32),
                 advance_prep_hours: r.advance_prep_hours.map(|v| v as u32),
                 complexity: r.complexity,
+                dietary_tags,
             }
         })
         .collect();
 
-    // Load user profile constraints (future: query from user profile table)
-    let constraints = UserConstraints::default();
+    // Load user profile constraints from database
+    let constraints = load_user_constraints(&auth.user_id, &state.db_pool).await?;
 
     // Invoke domain command to regenerate meal plan
     let cmd = meal_planning::RegenerateMealPlanCommand {

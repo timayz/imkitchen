@@ -20,6 +20,7 @@ fn create_test_recipe(
         advance_prep_hours: advance_prep,
         complexity: None,
         recipe_type: "main_course".to_string(),
+        dietary_tags: Vec::new(),
     }
 }
 
