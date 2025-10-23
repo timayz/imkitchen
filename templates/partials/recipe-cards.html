@@ -1,0 +1,103 @@
+{# Partial template for infinite scroll - renders recipe cards #}
+<div id="recipe-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+{% for recipe in recipes %}
+<a href="/recipes/{{ recipe.id }}" class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+   {% if loop.last && has_more %}
+   ts-req="/recipes/more?offset={{ next_offset }}{% if let Some(coll) = collection %}&collection={{ coll }}{% endif %}{% if let Some(comp) = complexity %}&complexity={{ comp }}{% endif %}{% if let Some(cuis) = cuisine %}&cuisine={{ cuis }}{% endif %}{% if let Some(diet) = dietary %}&dietary={{ diet }}{% endif %}{% if favorite_only %}&favorite_only=true{% endif %}{% if let Some(rtype) = recipe_type %}&recipe_type={{ rtype }}{% endif %}{% if let Some(status) = shared_status %}&shared_status={{ status }}{% endif %}"
+   ts-trigger="visible once"
+   ts-req-selector="children #recipe-grid"
+   ts-swap="afterend"
+   {% endif %}>
+    <div class="p-6">
+        <h3 class="text-xl font-bold text-gray-900 mb-2">{{ recipe.title }}</h3>
+
+        <!-- Timing Information -->
+        <div class="flex flex-wrap gap-2 mb-4 text-sm text-gray-600">
+            {% if let Some(prep_time) = recipe.prep_time_min %}
+            <div class="flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span>{{ prep_time }}m prep</span>
+            </div>
+            {% endif %}
+
+            {% if let Some(cook_time) = recipe.cook_time_min %}
+            <div class="flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"></path>
+                </svg>
+                <span>{{ cook_time }}m cook</span>
+            </div>
+            {% endif %}
+
+            {% if let Some(serving_size) = recipe.serving_size %}
+            <div class="flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+                <span>{{ serving_size }} servings</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Recipe Type & Complexity Badges -->
+        <div class="mb-3 flex flex-wrap gap-2">
+            <span class="px-2 py-1 text-xs font-medium rounded
+                         {% if recipe.recipe_type == "appetizer" %}
+                             bg-purple-100 text-purple-800
+                         {% elif recipe.recipe_type == "main_course" %}
+                             bg-orange-100 text-orange-800
+                         {% else %}
+                             bg-pink-100 text-pink-800
+                         {% endif %}">
+                {% if recipe.recipe_type == "appetizer" %}
+                    🥗 Appetizer
+                {% elif recipe.recipe_type == "main_course" %}
+                    🍽️ Main
+                {% else %}
+                    🍰 Dessert
+                {% endif %}
+            </span>
+
+            {% if let Some(complexity) = recipe.complexity %}
+            <span class="px-2 py-1 text-xs font-medium rounded
+                         {% if complexity == "simple" %}
+                             bg-green-100 text-green-800
+                         {% elif complexity == "moderate" %}
+                             bg-yellow-100 text-yellow-800
+                         {% else %}
+                             bg-red-100 text-red-800
+                         {% endif %}">
+                {{ complexity|title }}
+            </span>
+            {% endif %}
+        </div>
+
+        <!-- Recipe Stats -->
+        <div class="flex items-center gap-4 text-sm text-gray-500 border-t border-gray-100 pt-4">
+            <div class="flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                </svg>
+                <span>{{ recipe.ingredient_count }} ingredients</span>
+            </div>
+            <div class="flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+                <span>{{ recipe.instruction_count }} steps</span>
+            </div>
+        </div>
+
+        {% if recipe.is_favorite %}
+        <div class="mt-4">
+            <span class="inline-flex items-center px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">
+                ★ Favorite
+            </span>
+        </div>
+        {% endif %}
+    </div>
+</a>
+{% endfor %}
+</div>

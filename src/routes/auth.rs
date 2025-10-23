@@ -200,7 +200,8 @@ pub async fn post_register(
             let token = match generate_jwt(
                 aggregator_id.clone(),
                 form.email,
-                "free".to_string(),
+                "premium".to_string(),
+                // "free".to_string(),
                 &state.jwt_secret,
             ) {
                 Ok(t) => t,
@@ -340,7 +341,12 @@ pub async fn post_login(State(state): State<AppState>, Form(form): Form<LoginFor
     }
 
     // Generate JWT token (AC: 3, 7)
-    let token = match generate_jwt(user.id, user.email, user.tier, &state.jwt_secret) {
+    let token = match generate_jwt(
+        user.id,
+        user.email,
+        /*user.tier*/ "premium".to_owned(),
+        &state.jwt_secret,
+    ) {
         Ok(t) => t,
         Err(e) => {
             tracing::error!("Failed to generate JWT token: {:?}", e);

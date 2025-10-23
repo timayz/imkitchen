@@ -12,20 +12,21 @@ use imkitchen::routes::{
     dashboard_handler, dismiss_notification, get_check_user, get_collections, get_contact,
     get_discover, get_discover_detail, get_help, get_import_modal, get_ingredient_row,
     get_instruction_row, get_landing, get_login, get_meal_alternatives, get_meal_plan,
-    get_notification_status, get_onboarding, get_onboarding_skip, get_password_reset,
-    get_password_reset_complete, get_privacy, get_profile, get_recipe_detail, get_recipe_edit_form,
-    get_recipe_form, get_recipe_list, get_recipe_waiting, get_regenerate_confirm, get_register,
-    get_subscription, get_subscription_success, get_terms, health, list_notifications,
-    notifications_page, offline, post_add_recipe_to_collection, post_add_to_library, post_contact,
-    post_create_collection, post_create_recipe, post_delete_collection, post_delete_recipe,
-    post_delete_review, post_favorite_recipe, post_generate_meal_plan, post_import_recipes,
-    post_login, post_logout, post_onboarding_step_1, post_onboarding_step_2,
-    post_onboarding_step_3, post_password_reset, post_password_reset_complete, post_profile,
-    post_rate_recipe, post_regenerate_meal_plan, post_register, post_remove_recipe_from_collection,
-    post_replace_meal, post_share_recipe, post_stripe_webhook, post_subscription_upgrade,
-    post_update_collection, post_update_recipe, post_update_recipe_tags, ready,
-    record_permission_change, refresh_shopping_list, reset_shopping_list_handler,
-    show_shopping_list, snooze_notification, subscribe_push, AppState, AssetsService,
+    get_more_discover, get_more_recipes, get_notification_status, get_onboarding,
+    get_onboarding_skip, get_password_reset, get_password_reset_complete, get_privacy, get_profile,
+    get_recipe_detail, get_recipe_edit_form, get_recipe_form, get_recipe_list, get_recipe_waiting,
+    get_regenerate_confirm, get_register, get_subscription, get_subscription_success, get_terms,
+    health, list_notifications, notifications_page, offline, post_add_recipe_to_collection,
+    post_add_to_library, post_contact, post_create_collection, post_create_recipe,
+    post_delete_collection, post_delete_recipe, post_delete_review, post_favorite_recipe,
+    post_generate_meal_plan, post_import_recipes, post_login, post_logout, post_onboarding_step_1,
+    post_onboarding_step_2, post_onboarding_step_3, post_password_reset,
+    post_password_reset_complete, post_profile, post_rate_recipe, post_regenerate_meal_plan,
+    post_register, post_remove_recipe_from_collection, post_replace_meal, post_share_recipe,
+    post_stripe_webhook, post_subscription_upgrade, post_update_collection, post_update_recipe,
+    post_update_recipe_tags, ready, record_permission_change, refresh_shopping_list,
+    reset_shopping_list_handler, show_shopping_list, snooze_notification, subscribe_push, AppState,
+    AssetsService,
 };
 use meal_planning::meal_plan_projection;
 use notifications::{meal_plan_subscriptions, notification_projections};
@@ -223,9 +224,11 @@ async fn serve_command(
         // Recipe routes
         .route("/recipes", get(get_recipe_list).post(post_create_recipe))
         .route("/recipes/new", get(get_recipe_form))
+        .route("/recipes/more", get(get_more_recipes)) // Infinite scroll
         .route("/recipes/import-modal", get(get_import_modal)) // Story 2.12: Batch import modal
         .route("/recipes/import", post(post_import_recipes)) // Story 2.12: Batch import handler
         .route("/discover", get(get_discover))
+        .route("/discover/more", get(get_more_discover)) // Infinite scroll
         .route("/discover/{id}", get(get_discover_detail))
         .route("/discover/{id}/add", post(post_add_to_library))
         .route("/discover/{id}/rate", post(post_rate_recipe))

@@ -447,6 +447,197 @@ pub async fn query_recipes_by_user(
     Ok(recipes)
 }
 
+/// Query recipes by user with pagination support
+///
+/// Same as query_recipes_by_user but with LIMIT and OFFSET for infinite scroll
+pub async fn query_recipes_by_user_paginated(
+    user_id: &str,
+    favorite_only: bool,
+    limit: u32,
+    offset: u32,
+    pool: &SqlitePool,
+) -> RecipeResult<Vec<RecipeReadModel>> {
+    let query_str = if favorite_only {
+        r#"
+        SELECT id, user_id, title, recipe_type, ingredients, instructions,
+               prep_time_min, cook_time_min, advance_prep_hours, serving_size,
+               is_favorite, is_shared, complexity, cuisine, dietary_tags,
+               created_at, updated_at
+        FROM recipes
+        WHERE user_id = ?1 AND is_favorite = 1 AND deleted_at IS NULL
+        ORDER BY created_at DESC
+        LIMIT ?2 OFFSET ?3
+        "#
+    } else {
+        r#"
+        SELECT id, user_id, title, recipe_type, ingredients, instructions,
+               prep_time_min, cook_time_min, advance_prep_hours, serving_size,
+               is_favorite, is_shared, complexity, cuisine, dietary_tags,
+               created_at, updated_at
+        FROM recipes
+        WHERE user_id = ?1 AND deleted_at IS NULL
+        ORDER BY created_at DESC
+        LIMIT ?2 OFFSET ?3
+        "#
+    };
+
+    let rows = sqlx::query(query_str)
+        .bind(user_id)
+        .bind(limit as i64)
+        .bind(offset as i64)
+        .fetch_all(pool)
+        .await?;
+
+    let recipes = rows
+        .into_iter()
+        .map(|row| RecipeReadModel {
+            id: row.get("id"),
+            user_id: row.get("user_id"),
+            title: row.get("title"),
+            recipe_type: row.get("recipe_type"),
+            ingredients: row.get("ingredients"),
+            instructions: row.get("instructions"),
+            prep_time_min: row.get("prep_time_min"),
+            cook_time_min: row.get("cook_time_min"),
+            advance_prep_hours: row.get("advance_prep_hours"),
+            serving_size: row.get("serving_size"),
+            is_favorite: row.get("is_favorite"),
+            is_shared: row.get("is_shared"),
+            complexity: row.get("complexity"),
+            cuisine: row.get("cuisine"),
+            dietary_tags: row.get("dietary_tags"),
+            created_at: row.get("created_at"),
+            updated_at: row.get("updated_at"),
+        })
+        .collect();
+
+    Ok(recipes)
+}
+
+/// Filter parameters for recipe queries
+pub struct RecipeFilterParams<'a> {
+    pub favorite_only: bool,
+    pub recipe_type: Option<&'a str>,
+    pub complexity: Option<&'a str>,
+    pub cuisine: Option<&'a str>,
+    pub dietary: Option<&'a str>,
+    pub shared_status: Option<&'a str>,
+}
+
+/// Query recipes by user with filters applied at database level for proper pagination
+pub async fn query_recipes_by_user_with_filters(
+    user_id: &str,
+    filters: RecipeFilterParams<'_>,
+    limit: u32,
+    offset: u32,
+    pool: &SqlitePool,
+) -> RecipeResult<Vec<RecipeReadModel>> {
+    // Build dynamic WHERE clause
+    let mut where_clauses = vec!["user_id = ?1".to_string(), "deleted_at IS NULL".to_string()];
+    let mut param_index = 2;
+
+    if filters.favorite_only {
+        where_clauses.push("is_favorite = 1".to_string());
+    }
+
+    if filters.recipe_type.is_some() {
+        where_clauses.push(format!("recipe_type = ?{}", param_index));
+        param_index += 1;
+    }
+
+    if filters.complexity.is_some() {
+        where_clauses.push(format!("complexity = ?{}", param_index));
+        param_index += 1;
+    }
+
+    if filters.cuisine.is_some() {
+        where_clauses.push(format!("cuisine = ?{}", param_index));
+        param_index += 1;
+    }
+
+    if filters.dietary.is_some() {
+        where_clauses.push(format!("dietary_tags LIKE ?{}", param_index));
+        param_index += 1;
+    }
+
+    if filters.shared_status.is_some() {
+        where_clauses.push(format!("is_shared = ?{}", param_index));
+        param_index += 1;
+    }
+
+    let where_clause = where_clauses.join(" AND ");
+    let limit_param = param_index;
+    let offset_param = param_index + 1;
+
+    let query_str = format!(
+        r#"
+        SELECT id, user_id, title, recipe_type, ingredients, instructions,
+               prep_time_min, cook_time_min, advance_prep_hours, serving_size,
+               is_favorite, is_shared, complexity, cuisine, dietary_tags,
+               created_at, updated_at
+        FROM recipes
+        WHERE {}
+        ORDER BY created_at DESC
+        LIMIT ?{} OFFSET ?{}
+        "#,
+        where_clause, limit_param, offset_param
+    );
+
+    let mut query = sqlx::query(&query_str).bind(user_id);
+
+    if let Some(rt) = filters.recipe_type {
+        query = query.bind(rt);
+    }
+
+    if let Some(comp) = filters.complexity {
+        query = query.bind(comp);
+    }
+
+    if let Some(cuis) = filters.cuisine {
+        query = query.bind(cuis);
+    }
+
+    if let Some(diet) = filters.dietary {
+        // Use LIKE pattern for JSON array search (e.g., '%vegetarian%')
+        query = query.bind(format!("%{}%", diet));
+    }
+
+    if let Some(status) = filters.shared_status {
+        // "private" = 0, "shared" = 1
+        let is_shared_value = if status == "shared" { 1 } else { 0 };
+        query = query.bind(is_shared_value);
+    }
+
+    query = query.bind(limit as i64).bind(offset as i64);
+
+    let rows = query.fetch_all(pool).await?;
+
+    let recipes = rows
+        .into_iter()
+        .map(|row| RecipeReadModel {
+            id: row.get("id"),
+            user_id: row.get("user_id"),
+            title: row.get("title"),
+            recipe_type: row.get("recipe_type"),
+            ingredients: row.get("ingredients"),
+            instructions: row.get("instructions"),
+            prep_time_min: row.get("prep_time_min"),
+            cook_time_min: row.get("cook_time_min"),
+            advance_prep_hours: row.get("advance_prep_hours"),
+            serving_size: row.get("serving_size"),
+            is_favorite: row.get("is_favorite"),
+            is_shared: row.get("is_shared"),
+            complexity: row.get("complexity"),
+            cuisine: row.get("cuisine"),
+            dietary_tags: row.get("dietary_tags"),
+            created_at: row.get("created_at"),
+            updated_at: row.get("updated_at"),
+        })
+        .collect();
+
+    Ok(recipes)
+}
+
 /// Query recipe count for dashboard (Story 3.9)
 ///
 /// Returns (total_count, favorite_count) tuple for dashboard stats display.
@@ -1177,6 +1368,60 @@ pub async fn query_recipes_by_collection(
             user_id: row.get("user_id"),
             title: row.get("title"),
             recipe_type: row.get("recipe_type"), // AC-2: Add recipe_type
+            ingredients: row.get("ingredients"),
+            instructions: row.get("instructions"),
+            prep_time_min: row.get("prep_time_min"),
+            cook_time_min: row.get("cook_time_min"),
+            advance_prep_hours: row.get("advance_prep_hours"),
+            serving_size: row.get("serving_size"),
+            is_favorite: row.get("is_favorite"),
+            is_shared: row.get("is_shared"),
+            complexity: row.get("complexity"),
+            cuisine: row.get("cuisine"),
+            dietary_tags: row.get("dietary_tags"),
+            created_at: row.get("created_at"),
+            updated_at: row.get("updated_at"),
+        })
+        .collect();
+
+    Ok(recipes)
+}
+
+/// Query recipes by collection with pagination support
+///
+/// Same as query_recipes_by_collection but with LIMIT and OFFSET for infinite scroll
+pub async fn query_recipes_by_collection_paginated(
+    collection_id: &str,
+    limit: u32,
+    offset: u32,
+    pool: &SqlitePool,
+) -> RecipeResult<Vec<RecipeReadModel>> {
+    let rows = sqlx::query(
+        r#"
+        SELECT r.id, r.user_id, r.title, r.recipe_type, r.ingredients, r.instructions,
+               r.prep_time_min, r.cook_time_min, r.advance_prep_hours, r.serving_size,
+               r.is_favorite, r.is_shared, r.complexity, r.cuisine, r.dietary_tags,
+               r.created_at, r.updated_at
+        FROM recipes r
+        INNER JOIN recipe_collection_assignments a ON r.id = a.recipe_id
+        WHERE a.collection_id = ?1 AND r.deleted_at IS NULL
+        ORDER BY r.created_at DESC
+        LIMIT ?2 OFFSET ?3
+        "#,
+    )
+    .bind(collection_id)
+    .bind(limit as i64)
+    .bind(offset as i64)
+    .fetch_all(pool)
+    .await?;
+
+    let recipes = rows
+        .into_iter()
+        .map(|row| RecipeReadModel {
+            id: row.get("id"),
+            user_id: row.get("user_id"),
+            title: row.get("title"),
+            recipe_type: row.get("recipe_type"),
             ingredients: row.get("ingredients"),
             instructions: row.get("instructions"),
             prep_time_min: row.get("prep_time_min"),

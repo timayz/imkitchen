@@ -8,11 +8,11 @@ use axum::{
 use recipe::{
     batch_import_recipes, copy_recipe, create_recipe, delete_recipe, favorite_recipe,
     list_shared_recipes, query_collections_by_user, query_collections_for_recipe,
-    query_recipe_by_id, query_recipes_by_collection, query_recipes_by_user, share_recipe,
-    update_recipe, update_recipe_tags, BatchImportRecipe, BatchImportRecipesCommand,
+    query_recipe_by_id, query_recipes_by_collection_paginated, query_recipes_by_user_with_filters,
+    share_recipe, update_recipe, update_recipe_tags, BatchImportRecipe, BatchImportRecipesCommand,
     CollectionReadModel, CopyRecipeCommand, CreateRecipeCommand, DeleteRecipeCommand,
     FavoriteRecipeCommand, Ingredient, InstructionStep, RecipeDiscoveryFilters, RecipeError,
-    ShareRecipeCommand, UpdateRecipeCommand, UpdateRecipeTagsCommand,
+    RecipeFilterParams, ShareRecipeCommand, UpdateRecipeCommand, UpdateRecipeTagsCommand,
 };
 use serde::Deserialize;
 use sqlx::Row;
@@ -939,6 +939,9 @@ pub struct RecipeListQuery {
     pub dietary: Option<String>,     // e.g., "vegetarian", "vegan", "gluten-free"
     pub favorite_only: Option<bool>, // Filter for favorited recipes only
     pub recipe_type: Option<String>, // "appetizer", "main_course", "dessert"
+    pub shared_status: Option<String>, // "private" or "shared"
+    pub offset: Option<u32>,         // For infinite scroll pagination
+    pub limit: Option<u32>,          // For infinite scroll pagination
 }
 
 /// View model for recipe list with parsed ingredient/instruction counts
@@ -969,6 +972,7 @@ pub struct RecipeListTemplate {
     pub active_collection: Option<String>,
     pub complexity_filter: Option<String>,
     pub recipe_type_filter: Option<String>,
+    pub shared_status_filter: Option<String>,
     pub favorite_only: bool,
     pub favorite_count: i64,
     pub user: Option<Auth>,
@@ -987,22 +991,36 @@ pub async fn get_recipe_list(
         .await
         .unwrap_or_default();
 
-    // Query recipes based on collection filter
+    // Query recipes with pagination and filters (initial load: first 20 recipes)
+    const INITIAL_LIMIT: u32 = 20;
     let recipes = if let Some(ref collection_id) = query.collection {
         // Filter by specific collection
-        query_recipes_by_collection(collection_id, &state.db_pool)
+        query_recipes_by_collection_paginated(collection_id, INITIAL_LIMIT, 0, &state.db_pool)
             .await
             .unwrap_or_default()
     } else {
-        // Show all user's recipes (with optional favorite filter)
+        // Show all user's recipes with filters applied at database level
         let favorite_only = query.favorite_only.unwrap_or(false);
-        query_recipes_by_user(&auth.user_id, favorite_only, &state.db_pool)
-            .await
-            .unwrap_or_default()
+        query_recipes_by_user_with_filters(
+            &auth.user_id,
+            RecipeFilterParams {
+                favorite_only,
+                recipe_type: query.recipe_type.as_deref(),
+                complexity: query.complexity.as_deref(),
+                cuisine: query.cuisine.as_deref(),
+                dietary: query.dietary.as_deref(),
+                shared_status: query.shared_status.as_deref(),
+            },
+            INITIAL_LIMIT,
+            0,
+            &state.db_pool,
+        )
+        .await
+        .unwrap_or_default()
     };
 
     // Convert RecipeReadModel to RecipeListView (parse JSON counts)
-    let mut recipe_views: Vec<RecipeListView> = recipes
+    let recipe_views: Vec<RecipeListView> = recipes
         .into_iter()
         .map(|r| {
             // Parse ingredient and instruction JSON arrays to get counts
@@ -1040,36 +1058,7 @@ pub async fn get_recipe_list(
         })
         .collect();
 
-    // Apply tag filters
-    if let Some(ref complexity_filter) = query.complexity {
-        recipe_views.retain(|r| {
-            r.complexity
-                .as_ref()
-                .map(|c| c.eq_ignore_ascii_case(complexity_filter))
-                .unwrap_or(false)
-        });
-    }
-
-    if let Some(ref recipe_type_filter) = query.recipe_type {
-        recipe_views.retain(|r| r.recipe_type.eq_ignore_ascii_case(recipe_type_filter));
-    }
-
-    if let Some(ref cuisine_filter) = query.cuisine {
-        recipe_views.retain(|r| {
-            r.cuisine
-                .as_ref()
-                .map(|c| c.eq_ignore_ascii_case(cuisine_filter))
-                .unwrap_or(false)
-        });
-    }
-
-    if let Some(ref dietary_filter) = query.dietary {
-        recipe_views.retain(|r| {
-            r.dietary_tags
-                .iter()
-                .any(|tag| tag.eq_ignore_ascii_case(dietary_filter))
-        });
-    }
+    // All filters now applied at database level
 
     // Query favorite count from users table (O(1) query via subscription)
     let favorite_count =
@@ -1095,10 +1084,133 @@ pub async fn get_recipe_list(
         active_collection: query.collection,
         complexity_filter: query.complexity,
         recipe_type_filter: query.recipe_type,
+        shared_status_filter: query.shared_status,
         favorite_only,
         favorite_count: favorite_count as i64,
         user: Some(auth),
         current_path: "/recipes".to_string(),
+    };
+
+    Html(template.render().unwrap())
+}
+
+/// Template for recipe cards partial (infinite scroll)
+#[derive(Template)]
+#[template(path = "partials/recipe-cards.html")]
+pub struct RecipeCardsPartialTemplate {
+    pub recipes: Vec<RecipeListView>,
+    pub has_more: bool,
+    pub next_offset: u32,
+    pub collection: Option<String>,
+    pub complexity: Option<String>,
+    pub cuisine: Option<String>,
+    pub dietary: Option<String>,
+    pub favorite_only: bool,
+    pub recipe_type: Option<String>,
+    pub shared_status: Option<String>,
+}
+
+/// GET /recipes/more - Load more recipes for infinite scroll
+#[tracing::instrument(skip(state, auth), fields(user_id = %auth.user_id))]
+pub async fn get_more_recipes(
+    State(state): State<AppState>,
+    Extension(auth): Extension<Auth>,
+    Query(query): Query<RecipeListQuery>,
+) -> impl IntoResponse {
+    const LIMIT: u32 = 20;
+    let offset = query.offset.unwrap_or(0);
+
+    // Query recipes with pagination and filters applied at database level
+    let all_recipes = if let Some(ref collection_id) = query.collection {
+        query_recipes_by_collection_paginated(collection_id, LIMIT, offset, &state.db_pool)
+            .await
+            .unwrap_or_default()
+    } else {
+        let favorite_only = query.favorite_only.unwrap_or(false);
+        query_recipes_by_user_with_filters(
+            &auth.user_id,
+            RecipeFilterParams {
+                favorite_only,
+                recipe_type: query.recipe_type.as_deref(),
+                complexity: query.complexity.as_deref(),
+                cuisine: query.cuisine.as_deref(),
+                dietary: query.dietary.as_deref(),
+                shared_status: query.shared_status.as_deref(),
+            },
+            LIMIT,
+            offset,
+            &state.db_pool,
+        )
+        .await
+        .unwrap_or_default()
+    };
+
+    // Check if database returned a full page
+    let db_returned_full_page = all_recipes.len() == LIMIT as usize;
+
+    // Convert RecipeReadModel to RecipeListView (parse JSON counts)
+    let recipe_views: Vec<RecipeListView> = all_recipes
+        .into_iter()
+        .map(|r| {
+            let ingredient_count = serde_json::from_str::<Vec<Ingredient>>(&r.ingredients)
+                .map(|v| v.len())
+                .unwrap_or(0);
+            let instruction_count = serde_json::from_str::<Vec<InstructionStep>>(&r.instructions)
+                .map(|v| v.len())
+                .unwrap_or(0);
+            let dietary_tags = r
+                .dietary_tags
+                .as_ref()
+                .and_then(|tags_json| serde_json::from_str::<Vec<String>>(tags_json).ok())
+                .unwrap_or_default();
+
+            RecipeListView {
+                id: r.id,
+                user_id: r.user_id,
+                title: r.title,
+                recipe_type: r.recipe_type,
+                prep_time_min: r.prep_time_min,
+                cook_time_min: r.cook_time_min,
+                advance_prep_hours: r.advance_prep_hours,
+                serving_size: r.serving_size,
+                is_favorite: r.is_favorite,
+                ingredient_count,
+                instruction_count,
+                complexity: r.complexity,
+                cuisine: r.cuisine,
+                dietary_tags,
+                created_at: r.created_at,
+            }
+        })
+        .collect();
+
+    // All filters now applied at database level for proper pagination
+
+    // Check if there are potentially more recipes to load
+    // If DB returned full page, there might be more (continue pagination)
+    let has_more = db_returned_full_page;
+    let next_offset = offset + LIMIT;
+
+    tracing::info!(
+        user_id = %auth.user_id,
+        offset = offset,
+        limit = LIMIT,
+        returned = recipe_views.len(),
+        has_more = has_more,
+        "Loaded more recipes for infinite scroll"
+    );
+
+    let template = RecipeCardsPartialTemplate {
+        recipes: recipe_views,
+        has_more,
+        next_offset,
+        collection: query.collection,
+        complexity: query.complexity,
+        cuisine: query.cuisine,
+        dietary: query.dietary,
+        favorite_only: query.favorite_only.unwrap_or(false),
+        recipe_type: query.recipe_type,
+        shared_status: query.shared_status,
     };
 
     Html(template.render().unwrap())
@@ -1351,7 +1463,7 @@ pub async fn post_share_recipe(
 }
 
 /// Query parameters for /discover route (AC-4, AC-5, AC-6, AC-7)
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct DiscoveryQueryParams {
     #[serde(default, deserialize_with = "empty_string_as_none")]
     pub cuisine: Option<String>,
@@ -1367,6 +1479,8 @@ pub struct DiscoveryQueryParams {
     pub sort: Option<String>,
     #[serde(default, deserialize_with = "empty_string_as_none")]
     pub page: Option<u32>,
+    #[serde(default, deserialize_with = "empty_string_as_none")]
+    pub offset: Option<u32>, // For infinite scroll
 }
 
 /// Helper function to deserialize empty strings as None
@@ -1541,6 +1655,156 @@ pub async fn get_discover(
                 current_page,
                 has_next_page,
                 current_path: "/discover".to_string(),
+            };
+
+            Html(template.render().unwrap()).into_response()
+        }
+        Err(e) => {
+            tracing::error!("Failed to query shared recipes: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to load community recipes",
+            )
+                .into_response()
+        }
+    }
+}
+
+/// Template for discover cards partial (infinite scroll)
+#[derive(Template)]
+#[template(path = "partials/discover-cards.html")]
+pub struct DiscoverCardsPartialTemplate {
+    pub recipes: Vec<RecipeDetailView>,
+    pub has_more: bool,
+    pub next_offset: u32,
+    pub filters: DiscoveryQueryParams,
+}
+
+/// GET /discover/more - Load more discover recipes for infinite scroll
+#[tracing::instrument(skip(state))]
+pub async fn get_more_discover(
+    State(state): State<AppState>,
+    user: Option<Extension<Auth>>,
+    Query(params): Query<DiscoveryQueryParams>,
+) -> impl IntoResponse {
+    const LIMIT: u32 = 20;
+    let offset = params.offset.unwrap_or(0);
+
+    // Same dietary filter logic as get_discover
+    let dietary_filter = if let Some(ref auth) = user {
+        if params.dietary.is_none() {
+            let user_dietary: Option<String> =
+                sqlx::query_scalar("SELECT dietary_restrictions FROM users WHERE id = ?1")
+                    .bind(&auth.user_id)
+                    .fetch_optional(&state.db_pool)
+                    .await
+                    .ok()
+                    .flatten();
+
+            user_dietary.and_then(|json| {
+                serde_json::from_str::<Vec<String>>(&json)
+                    .ok()
+                    .filter(|tags| !tags.is_empty())
+                    .map(|tags| tags.join(","))
+            })
+        } else {
+            params.dietary.clone()
+        }
+    } else {
+        params.dietary.clone()
+    };
+
+    // Build filters - use offset instead of page for infinite scroll
+    let filters = RecipeDiscoveryFilters {
+        cuisine: params.cuisine.clone(),
+        min_rating: params.min_rating,
+        max_prep_time: params.max_prep_time,
+        dietary: dietary_filter,
+        search: params.search.clone(),
+        sort: params.sort.clone(),
+        page: Some((offset / LIMIT) + 1), // Convert offset to page for backend
+    };
+
+    match list_shared_recipes(&state.db_pool, filters).await {
+        Ok(recipes) => {
+            let mut recipe_views = Vec::new();
+            for recipe in &recipes {
+                let ingredients: Vec<Ingredient> = match serde_json::from_str(&recipe.ingredients) {
+                    Ok(ing) => ing,
+                    Err(_) => continue,
+                };
+
+                let instructions: Vec<InstructionStep> =
+                    match serde_json::from_str(&recipe.instructions) {
+                        Ok(inst) => inst,
+                        Err(_) => continue,
+                    };
+
+                let dietary_tags = recipe
+                    .dietary_tags
+                    .as_ref()
+                    .and_then(|tags_json| serde_json::from_str::<Vec<String>>(tags_json).ok())
+                    .unwrap_or_default();
+
+                let creator_email =
+                    sqlx::query_scalar::<_, String>("SELECT email FROM users WHERE id = ?")
+                        .bind(&recipe.user_id)
+                        .fetch_optional(&state.db_pool)
+                        .await
+                        .ok()
+                        .flatten();
+
+                use recipe::query_rating_stats;
+                let rating_stats = query_rating_stats(&recipe.id, &state.db_pool).await.ok();
+
+                let (avg_rating, review_count) = if let Some(stats) = rating_stats {
+                    if stats.review_count > 0 {
+                        (Some(stats.avg_rating), Some(stats.review_count))
+                    } else {
+                        (None, None)
+                    }
+                } else {
+                    (None, None)
+                };
+
+                recipe_views.push(RecipeDetailView {
+                    id: recipe.id.clone(),
+                    title: recipe.title.clone(),
+                    recipe_type: recipe.recipe_type.clone(),
+                    ingredients,
+                    instructions,
+                    prep_time_min: recipe.prep_time_min.map(|v| v as u32),
+                    cook_time_min: recipe.cook_time_min.map(|v| v as u32),
+                    advance_prep_hours: recipe.advance_prep_hours.map(|v| v as u32),
+                    serving_size: recipe.serving_size.map(|v| v as u32),
+                    is_favorite: recipe.is_favorite,
+                    is_shared: recipe.is_shared,
+                    complexity: recipe.complexity.clone(),
+                    cuisine: recipe.cuisine.clone(),
+                    dietary_tags,
+                    created_at: recipe.created_at.clone(),
+                    creator_email,
+                    avg_rating,
+                    review_count,
+                });
+            }
+
+            let has_more = recipe_views.len() == LIMIT as usize;
+            let next_offset = offset + recipe_views.len() as u32;
+
+            tracing::info!(
+                offset = offset,
+                limit = LIMIT,
+                returned = recipe_views.len(),
+                has_more = has_more,
+                "Loaded more discover recipes for infinite scroll"
+            );
+
+            let template = DiscoverCardsPartialTemplate {
+                recipes: recipe_views,
+                has_more,
+                next_offset,
+                filters: params,
             };
 
             Html(template.render().unwrap()).into_response()
