@@ -8,6 +8,25 @@ use tower::Service;
 #[prefix = "/"]
 struct Assets;
 
+/// Serve service worker at /sw.js (must be at root for scope: '/')
+pub async fn serve_sw() -> Response {
+    match Assets::get("/sw.js") {
+        Some(content) => Response::builder()
+            .header(
+                header::CONTENT_TYPE,
+                "application/javascript; charset=utf-8",
+            )
+            .header(header::CACHE_CONTROL, "no-cache, no-store, must-revalidate")
+            .header("Service-Worker-Allowed", "/")
+            .body(Body::from(content.data))
+            .unwrap(),
+        None => Response::builder()
+            .status(404)
+            .body(Body::from("Service worker not found"))
+            .unwrap(),
+    }
+}
+
 #[derive(Default, Clone)]
 pub struct AssetsService<S = DefaultServeDirFallback> {
     inner: Option<S>,

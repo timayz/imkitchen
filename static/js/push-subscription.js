@@ -126,15 +126,28 @@ const PushSubscription = {
 
         try {
             const registration = await navigator.serviceWorker.register(this.serviceWorkerPath);
-            console.log('Service worker registered:', registration);
 
-            // Wait for service worker to be ready
-            await navigator.serviceWorker.ready;
+            // Wait for service worker to be ready (with timeout)
+            const readyPromise = navigator.serviceWorker.ready;
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Service worker ready timeout after 10s')), 10000)
+            );
+
+            await Promise.race([readyPromise, timeoutPromise]);
 
             return registration;
         } catch (error) {
             console.error('Service worker registration failed:', error);
-            alert('Failed to register service worker. This may be due to browser security settings or using an insecure connection (HTTP). Push notifications require HTTPS.');
+
+            // Provide more specific error messages
+            if (error.message.includes('timeout')) {
+                alert('Service worker is taking too long to install. Please check the browser console for errors and try again.');
+            } else if (error.name === 'SecurityError') {
+                alert('Failed to register service worker due to security restrictions. Push notifications require HTTPS.');
+            } else {
+                alert('Failed to register service worker. Error: ' + error.message);
+            }
+
             return null;
         }
     },
@@ -164,7 +177,7 @@ const PushSubscription = {
                 applicationServerKey: applicationServerKey
             });
 
-            console.log('Push subscription created:', subscription);
+            console.log('Push subscription created');
             return subscription;
         } catch (error) {
             console.error('Failed to create push subscription:', error);
@@ -183,6 +196,28 @@ const PushSubscription = {
     },
 
     /**
+     * Convert ArrayBuffer to base64url string (URL-safe base64 without padding)
+     * Uses proper binary-safe conversion
+     */
+    arrayBufferToBase64(buffer) {
+        const bytes = new Uint8Array(buffer);
+        const len = bytes.byteLength;
+        let binary = '';
+
+        // Use chunks to avoid call stack size issues with large buffers
+        const chunkSize = 0x8000; // 32KB chunks
+        for (let i = 0; i < len; i += chunkSize) {
+            binary += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(i + chunkSize, len)));
+        }
+
+        // Convert to base64 and make it URL-safe (base64url)
+        return btoa(binary)
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=+$/, '');
+    },
+
+    /**
      * Send subscription data to server
      * AC #4: Store subscription endpoint, keys, and user ID
      */
@@ -192,8 +227,8 @@ const PushSubscription = {
 
         const subscriptionData = {
             endpoint: subscription.endpoint,
-            p256dh_key: btoa(String.fromCharCode.apply(null, new Uint8Array(p256dh))),
-            auth_key: btoa(String.fromCharCode.apply(null, new Uint8Array(auth)))
+            p256dh_key: this.arrayBufferToBase64(p256dh),
+            auth_key: this.arrayBufferToBase64(auth)
         };
 
         try {
@@ -284,6 +319,7 @@ const PushSubscription = {
                 await this.sendSubscriptionToServer(subscription);
                 return { success: true, permission: 'granted' };
             } catch (error) {
+                console.error('Failed to send subscription to server:', error);
                 return { success: false, reason: 'server_error', error };
             }
         } else if (permission === 'denied') {

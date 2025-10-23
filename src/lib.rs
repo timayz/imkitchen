@@ -80,6 +80,8 @@ pub async fn create_app(
         .with_state(db_pool)
         .merge(
             Router::new()
+                // Service Worker at root (required for scope: '/')
+                .route("/sw.js", get(routes::assets::serve_sw))
                 // Offline fallback page (public, no auth)
                 .route("/offline", get(offline))
                 // Browser compatibility information page (public, no auth) - Story 5.7

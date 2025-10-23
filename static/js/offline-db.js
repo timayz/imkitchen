@@ -507,29 +507,36 @@ function showStorageQuotaWarning() {
 
 /**
  * Export offline-db utilities as a global object for non-module scripts
+ * Supports both window context (main thread) and self context (service worker)
  */
+const offlineDB = {
+  openDatabase,
+  get,
+  put,
+  remove,
+  getAll,
+  clear,
+  cacheRecipe,
+  getCachedRecipe,
+  getAllCachedRecipes,
+  cacheMealPlan,
+  getCachedMealPlan,
+  getActiveMealPlan,
+  cacheShoppingList,
+  getCachedShoppingList,
+  getCurrentShoppingList,
+  queueRequest,
+  getQueuedRequests,
+  removeQueuedRequest,
+  clearSyncQueue,
+  getCacheStats,
+  clearAllCache
+};
+
+// Export to window (main thread) or self (service worker)
 if (typeof window !== 'undefined') {
-  window.offlineDB = {
-    openDatabase,
-    get,
-    put,
-    remove,
-    getAll,
-    clear,
-    cacheRecipe,
-    getCachedRecipe,
-    getAllCachedRecipes,
-    cacheMealPlan,
-    getCachedMealPlan,
-    getActiveMealPlan,
-    cacheShoppingList,
-    getCachedShoppingList,
-    getCurrentShoppingList,
-    queueRequest,
-    getQueuedRequests,
-    removeQueuedRequest,
-    clearSyncQueue,
-    getCacheStats,
-    clearAllCache
-  };
+  window.offlineDB = offlineDB;
+}
+if (typeof self !== 'undefined') {
+  self.offlineDB = offlineDB;
 }
