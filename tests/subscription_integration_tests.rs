@@ -192,9 +192,15 @@ async fn test_validate_recipe_creation_free_tier_enforces_limit() {
             advance_prep_hours: None,
             serving_size: None,
         };
-        recipe::create_recipe(command, &user_id, &test_app.evento_executor, &test_app.pool)
-            .await
-            .unwrap();
+        recipe::create_recipe(
+            command,
+            &user_id,
+            &test_app.evento_executor,
+            &test_app.pool,
+            false,
+        )
+        .await
+        .unwrap();
     }
 
     // Process events so UserAggregate updates recipe_count
@@ -219,8 +225,14 @@ async fn test_validate_recipe_creation_free_tier_enforces_limit() {
         advance_prep_hours: None,
         serving_size: None,
     };
-    let result =
-        recipe::create_recipe(command, &user_id, &test_app.evento_executor, &test_app.pool).await;
+    let result = recipe::create_recipe(
+        command,
+        &user_id,
+        &test_app.evento_executor,
+        &test_app.pool,
+        false,
+    )
+    .await;
 
     assert!(result.is_err());
     match result {
@@ -273,9 +285,15 @@ async fn test_validate_recipe_creation_premium_tier_bypasses_limit() {
             advance_prep_hours: None,
             serving_size: None,
         };
-        recipe::create_recipe(command, &user_id, &test_app.evento_executor, &test_app.pool)
-            .await
-            .unwrap();
+        recipe::create_recipe(
+            command,
+            &user_id,
+            &test_app.evento_executor,
+            &test_app.pool,
+            false,
+        )
+        .await
+        .unwrap();
     }
 
     // Process events so UserAggregate updates recipe_count
@@ -300,8 +318,14 @@ async fn test_validate_recipe_creation_premium_tier_bypasses_limit() {
         advance_prep_hours: None,
         serving_size: None,
     };
-    let result =
-        recipe::create_recipe(command, &user_id, &test_app.evento_executor, &test_app.pool).await;
+    let result = recipe::create_recipe(
+        command,
+        &user_id,
+        &test_app.evento_executor,
+        &test_app.pool,
+        false,
+    )
+    .await;
 
     assert!(result.is_ok());
 }
@@ -333,9 +357,15 @@ async fn test_validate_recipe_creation_free_tier_under_limit_succeeds() {
             advance_prep_hours: None,
             serving_size: None,
         };
-        recipe::create_recipe(command, &user_id, &test_app.evento_executor, &test_app.pool)
-            .await
-            .unwrap();
+        recipe::create_recipe(
+            command,
+            &user_id,
+            &test_app.evento_executor,
+            &test_app.pool,
+            false,
+        )
+        .await
+        .unwrap();
     }
 
     // Process events so UserAggregate updates recipe_count
@@ -360,8 +390,14 @@ async fn test_validate_recipe_creation_free_tier_under_limit_succeeds() {
         advance_prep_hours: None,
         serving_size: None,
     };
-    let result =
-        recipe::create_recipe(command, &user_id, &test_app.evento_executor, &test_app.pool).await;
+    let result = recipe::create_recipe(
+        command,
+        &user_id,
+        &test_app.evento_executor,
+        &test_app.pool,
+        false,
+    )
+    .await;
 
     assert!(result.is_ok());
 }

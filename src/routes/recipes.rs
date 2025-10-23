@@ -238,6 +238,7 @@ pub async fn post_create_recipe(
         &auth.user_id,
         &state.evento_executor,
         &state.db_pool,
+        state.bypass_premium,
     )
     .await
     {
@@ -2089,6 +2090,7 @@ pub async fn post_add_to_library(
         &auth.user_id,
         &state.evento_executor,
         &state.db_pool,
+        state.bypass_premium,
     )
     .await
     {
@@ -2363,21 +2365,30 @@ pub async fn post_import_recipes(
                         }
                         Err(e) => {
                             tracing::error!("Failed to parse file as UTF-8: {:?}", e);
-                            return (
-                                StatusCode::UNPROCESSABLE_ENTITY,
-                                "File must be valid UTF-8 text",
-                            )
+                            // Return 200 with error details so UI can display properly
+                            let template = BatchImportResultsTemplate {
+                                successful_count: 0,
+                                failed_count: 0,
+                                total_attempted: 0,
+                                failures: vec![(0, "File must be valid UTF-8 text".to_string())],
+                                user: Some(auth.clone()),
+                            };
+                            return (StatusCode::OK, Html(template.render().unwrap()))
                                 .into_response();
                         }
                     }
                 }
                 Err(e) => {
                     tracing::error!("Failed to read file bytes: {:?}", e);
-                    return (
-                        StatusCode::UNPROCESSABLE_ENTITY,
-                        "Failed to read file contents",
-                    )
-                        .into_response();
+                    // Return 200 with error details so UI can display properly
+                    let template = BatchImportResultsTemplate {
+                        successful_count: 0,
+                        failed_count: 0,
+                        total_attempted: 0,
+                        failures: vec![(0, "Failed to read file contents".to_string())],
+                        user: Some(auth.clone()),
+                    };
+                    return (StatusCode::OK, Html(template.render().unwrap())).into_response();
                 }
             }
         }
@@ -2386,7 +2397,15 @@ pub async fn post_import_recipes(
     let file_content = match file_content {
         Some(content) => content,
         None => {
-            return (StatusCode::BAD_REQUEST, "No file uploaded").into_response();
+            // Return 200 with error details so UI can display properly
+            let template = BatchImportResultsTemplate {
+                successful_count: 0,
+                failed_count: 0,
+                total_attempted: 0,
+                failures: vec![(0, "No file uploaded".to_string())],
+                user: Some(auth.clone()),
+            };
+            return (StatusCode::OK, Html(template.render().unwrap())).into_response();
         }
     };
 
@@ -2395,18 +2414,33 @@ pub async fn post_import_recipes(
         Ok(r) => r,
         Err(e) => {
             tracing::error!("Failed to parse JSON: {:?}", e);
-            return (
-                StatusCode::UNPROCESSABLE_ENTITY,
-                "Invalid JSON format. Please check your file syntax.",
-            )
-                .into_response();
+            // Return 200 with error details so UI can display properly
+            let template = BatchImportResultsTemplate {
+                successful_count: 0,
+                failed_count: 0,
+                total_attempted: 0,
+                failures: vec![(
+                    0,
+                    "Invalid JSON format. Please check your file syntax.".to_string(),
+                )],
+                user: Some(auth.clone()),
+            };
+            return (StatusCode::OK, Html(template.render().unwrap())).into_response();
         }
     };
 
     // AC-5: Validate root is array (not single object) - already handled by Vec deserialization
     // AC-5: Validate array is non-empty
     if recipes.is_empty() {
-        return (StatusCode::UNPROCESSABLE_ENTITY, "No recipes found in file").into_response();
+        // Return 200 with error details so UI can display properly
+        let template = BatchImportResultsTemplate {
+            successful_count: 0,
+            failed_count: 0,
+            total_attempted: 0,
+            failures: vec![(0, "No recipes found in file".to_string())],
+            user: Some(auth.clone()),
+        };
+        return (StatusCode::OK, Html(template.render().unwrap())).into_response();
     }
 
     // Create batch import command
@@ -2418,6 +2452,7 @@ pub async fn post_import_recipes(
         &auth.user_id,
         &state.evento_executor,
         &state.db_pool,
+        state.bypass_premium,
     )
     .await
     {
@@ -2449,11 +2484,18 @@ pub async fn post_import_recipes(
                 user_id = %auth.user_id,
                 "Batch import rejected: free tier limit exceeded"
             );
-            (
-                StatusCode::FORBIDDEN,
-                "Import would exceed free tier limit (10 recipes maximum)",
-            )
-                .into_response()
+            // Return 200 with error details so UI can display properly
+            let template = BatchImportResultsTemplate {
+                successful_count: 0,
+                failed_count: 0,
+                total_attempted: 0,
+                failures: vec![(
+                    0,
+                    "Import would exceed free tier limit (10 recipes maximum)".to_string(),
+                )],
+                user: Some(auth.clone()),
+            };
+            (StatusCode::OK, Html(template.render().unwrap())).into_response()
         }
         Err(RecipeError::ValidationError(msg)) => {
             // AC-5: Validation error (empty array, etc.)
@@ -2462,16 +2504,31 @@ pub async fn post_import_recipes(
                 error = %msg,
                 "Batch import validation failed"
             );
-            (StatusCode::UNPROCESSABLE_ENTITY, msg).into_response()
+            // Return 200 with error details so UI can display properly
+            let template = BatchImportResultsTemplate {
+                successful_count: 0,
+                failed_count: 0,
+                total_attempted: 0,
+                failures: vec![(0, msg)],
+                user: Some(auth.clone()),
+            };
+            (StatusCode::OK, Html(template.render().unwrap())).into_response()
         }
         Err(e) => {
             // Database error or other unexpected error
             tracing::error!("Batch import failed: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Server error during import. Please try again.",
-            )
-                .into_response()
+            // Return 200 with error details so UI can display properly
+            let template = BatchImportResultsTemplate {
+                successful_count: 0,
+                failed_count: 0,
+                total_attempted: 0,
+                failures: vec![(
+                    0,
+                    "Server error during import. Please try again.".to_string(),
+                )],
+                user: Some(auth.clone()),
+            };
+            (StatusCode::OK, Html(template.render().unwrap())).into_response()
         }
     }
 }

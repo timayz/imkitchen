@@ -90,7 +90,7 @@ async fn create_test_user_with_recipes(
             advance_prep_hours: None,
             serving_size: None,
         };
-        recipe::create_recipe(command, &user_id, executor, pool)
+        recipe::create_recipe(command, &user_id, executor, pool, false)
             .await
             .unwrap();
     }
@@ -137,7 +137,7 @@ async fn test_free_user_with_9_recipes_can_create() {
         serving_size: None,
     };
 
-    let result = recipe::create_recipe(command, &user_id, &executor, &pool).await;
+    let result = recipe::create_recipe(command, &user_id, &executor, &pool, false).await;
 
     assert!(
         result.is_ok(),
@@ -172,7 +172,7 @@ async fn test_free_user_with_10_recipes_cannot_create() {
         serving_size: None,
     };
 
-    let result = recipe::create_recipe(command, &user_id, &executor, &pool).await;
+    let result = recipe::create_recipe(command, &user_id, &executor, &pool, false).await;
 
     assert!(
         result.is_err(),
@@ -213,7 +213,7 @@ async fn test_premium_user_unlimited_recipes() {
         serving_size: None,
     };
 
-    let result = recipe::create_recipe(command, &user_id, &executor, &pool).await;
+    let result = recipe::create_recipe(command, &user_id, &executor, &pool, false).await;
 
     assert!(
         result.is_ok(),
@@ -249,7 +249,7 @@ async fn test_premium_user_100_recipes() {
         serving_size: None,
     };
 
-    let result = recipe::create_recipe(command, &user_id, &executor, &pool).await;
+    let result = recipe::create_recipe(command, &user_id, &executor, &pool, false).await;
 
     assert!(
         result.is_ok(),
@@ -284,7 +284,7 @@ async fn test_free_user_with_0_recipes_can_create() {
         serving_size: None,
     };
 
-    let result = recipe::create_recipe(command, &user_id, &executor, &pool).await;
+    let result = recipe::create_recipe(command, &user_id, &executor, &pool, false).await;
 
     assert!(
         result.is_ok(),
@@ -319,7 +319,7 @@ async fn test_free_user_with_5_recipes_can_create() {
         serving_size: None,
     };
 
-    let result = recipe::create_recipe(command, &user_id, &executor, &pool).await;
+    let result = recipe::create_recipe(command, &user_id, &executor, &pool, false).await;
 
     assert!(
         result.is_ok(),
@@ -354,7 +354,7 @@ async fn test_free_user_exactly_at_limit() {
         serving_size: None,
     };
 
-    let result = recipe::create_recipe(command, &user_id, &executor, &pool).await;
+    let result = recipe::create_recipe(command, &user_id, &executor, &pool, false).await;
 
     assert!(
         result.is_err(),
@@ -389,7 +389,7 @@ async fn test_free_user_over_limit() {
         serving_size: None,
     };
 
-    let result = recipe::create_recipe(command, &user_id, &executor, &pool).await;
+    let result = recipe::create_recipe(command, &user_id, &executor, &pool, false).await;
 
     assert!(
         result.is_err(),
@@ -424,7 +424,7 @@ async fn test_premium_user_with_0_recipes() {
         serving_size: None,
     };
 
-    let result = recipe::create_recipe(command, &user_id, &executor, &pool).await;
+    let result = recipe::create_recipe(command, &user_id, &executor, &pool, false).await;
 
     assert!(
         result.is_ok(),
@@ -457,7 +457,7 @@ async fn test_validation_fails_for_nonexistent_user() {
         serving_size: None,
     };
 
-    let result = recipe::create_recipe(command, "nonexistent_user", &executor, &pool).await;
+    let result = recipe::create_recipe(command, "nonexistent_user", &executor, &pool, false).await;
 
     assert!(
         result.is_err(),

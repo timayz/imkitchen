@@ -197,7 +197,7 @@ async fn test_recipe_assignment_and_unassignment() {
         advance_prep_hours: None,
         serving_size: None,
     };
-    let recipe_id = create_recipe(recipe_command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(recipe_command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -291,7 +291,7 @@ async fn test_collection_deletion_preserves_recipes() {
         advance_prep_hours: None,
         serving_size: None,
     };
-    let recipe_id = create_recipe(recipe_command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(recipe_command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 

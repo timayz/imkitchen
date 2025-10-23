@@ -71,6 +71,7 @@ pub async fn create_recipe(
     user_id: &str,
     executor: &Sqlite,
     _pool: &SqlitePool,
+    bypass_premium: bool,
 ) -> RecipeResult<String> {
     // Validate command
     command
@@ -102,8 +103,8 @@ pub async fn create_recipe(
         return Err(RecipeError::ValidationError("User not found".to_string()));
     }
 
-    // Premium users bypass all limits
-    if user_load_result.item.tier != "premium" {
+    // Premium users bypass all limits (or MVP/demo mode bypass)
+    if !bypass_premium && user_load_result.item.tier != "premium" {
         // Free tier users limited to 10 recipes
         // recipe_count is tracked in UserAggregate and represents all non-deleted recipes
         if user_load_result.item.recipe_count >= 10 {
@@ -899,6 +900,7 @@ pub async fn copy_recipe(
     user_id: &str,
     executor: &Sqlite,
     pool: &SqlitePool,
+    bypass_premium: bool,
 ) -> RecipeResult<String> {
     // AC-10: Load original recipe aggregate to verify it exists and is shared
     let original_load_result =
@@ -950,8 +952,8 @@ pub async fn copy_recipe(
         return Err(RecipeError::ValidationError("User not found".to_string()));
     }
 
-    // Premium users bypass all limits
-    if user_load_result.item.tier != "premium" {
+    // Premium users bypass all limits (or MVP/demo mode bypass)
+    if !bypass_premium && user_load_result.item.tier != "premium" {
         // Free tier users limited to 10 private recipes
         // recipe_count is tracked in UserAggregate via RecipeCreated/RecipeDeleted events
         if user_load_result.item.recipe_count >= 10 {
@@ -1035,6 +1037,7 @@ pub async fn batch_import_recipes(
     user_id: &str,
     executor: &Sqlite,
     pool: &SqlitePool,
+    bypass_premium: bool,
 ) -> RecipeResult<BatchImportResult> {
     // AC-5: Validate array is non-empty
     if command.recipes.is_empty() {
@@ -1054,8 +1057,8 @@ pub async fn batch_import_recipes(
         return Err(RecipeError::ValidationError("User not found".to_string()));
     }
 
-    // Premium users bypass all limits
-    if user_load_result.item.tier != "premium" {
+    // Premium users bypass all limits (or MVP/demo mode bypass)
+    if !bypass_premium && user_load_result.item.tier != "premium" {
         // Free tier users limited to 10 recipes
         // Check if (current_count + import_count) > 10
         let current_count = user_load_result.item.recipe_count;
@@ -1085,7 +1088,8 @@ pub async fn batch_import_recipes(
         };
 
         // Attempt to create recipe using existing create_recipe function
-        match create_recipe(create_cmd, user_id, executor, pool).await {
+        // Pass bypass_premium flag through (already checked upfront in batch)
+        match create_recipe(create_cmd, user_id, executor, pool, true).await {
             Ok(recipe_id) => {
                 successful_recipe_ids.push(recipe_id);
             }

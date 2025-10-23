@@ -16,6 +16,16 @@ pub struct Config {
     pub stripe: StripeConfig,
     #[serde(default)]
     pub vapid: VapidConfig,
+    #[serde(default)]
+    pub features: FeatureConfig,
+}
+
+#[derive(Debug, Deserialize, Clone, Default)]
+pub struct FeatureConfig {
+    /// Bypass premium restrictions for MVP/demo mode
+    /// When true, all users are treated as premium (no recipe limit, full features)
+    #[serde(default)]
+    pub bypass_premium: bool,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -332,6 +342,7 @@ mod tests {
             observability: ObservabilityConfig::default(),
             stripe: StripeConfig::default(),
             vapid: VapidConfig::default(),
+            features: FeatureConfig::default(),
         };
 
         assert!(config.validate().is_err());
@@ -356,6 +367,7 @@ mod tests {
             observability: ObservabilityConfig::default(),
             stripe: StripeConfig::default(),
             vapid: VapidConfig::default(),
+            features: FeatureConfig::default(),
         };
 
         assert!(config.validate().is_err());
@@ -380,6 +392,7 @@ mod tests {
             observability: ObservabilityConfig::default(),
             stripe: StripeConfig::default(),
             vapid: VapidConfig::default(),
+            features: FeatureConfig::default(),
         };
 
         assert!(config.validate().is_err());
@@ -404,6 +417,7 @@ mod tests {
             observability: ObservabilityConfig::default(),
             stripe: StripeConfig::default(),
             vapid: VapidConfig::default(),
+            features: FeatureConfig::default(),
         };
 
         assert!(config.validate().is_ok());

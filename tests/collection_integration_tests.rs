@@ -224,7 +224,7 @@ async fn test_add_recipe_to_collection_integration() {
         advance_prep_hours: None,
         serving_size: None,
     };
-    let recipe_id = create_recipe(recipe_command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(recipe_command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -299,7 +299,7 @@ async fn test_remove_recipe_from_collection_integration() {
         advance_prep_hours: None,
         serving_size: None,
     };
-    let recipe_id = create_recipe(recipe_command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(recipe_command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 

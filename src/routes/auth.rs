@@ -36,6 +36,8 @@ pub struct AppState {
     pub vapid_public_key: String, // Story 4.6: VAPID public key for push notifications
     /// Locks for preventing concurrent meal plan generation per user
     pub generation_locks: Arc<Mutex<HashMap<String, ()>>>,
+    /// Bypass premium restrictions for MVP/demo mode
+    pub bypass_premium: bool,
 }
 
 #[derive(Debug, Deserialize)]
