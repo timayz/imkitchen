@@ -8,6 +8,22 @@ css:
 css-watch:
 	tailwindcss -i static/css/tailwind.css -o static/css/main.css --watch
 
+cert:
+	mkdir -p .docker/traefik/certs
+	sudo mkcert -key-file .docker/traefik/certs/imkitchen.key -cert-file .docker/traefik/certs/imkitchen.crt traefik.localhost docker.imkitchen.localhost imkitchen.localhost
+
+cert.install:
+		sudo mkcert -install
+
+up:
+	sudo docker compose up -d --remove-orphans
+
+stop:
+	sudo docker compose stop
+
+down:
+	sudo docker compose down -v --rmi local --remove-orphans
+
 # Watch and run server on code changes
 dev:
 	cargo watch -x "run -- serve"
