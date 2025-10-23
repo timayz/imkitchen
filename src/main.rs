@@ -220,6 +220,7 @@ async fn serve_command(
         generation_locks: std::sync::Arc::new(tokio::sync::Mutex::new(
             std::collections::HashMap::new(),
         )),
+        bypass_premium: config.features.bypass_premium,
     };
 
     // Build protected routes with auth middleware

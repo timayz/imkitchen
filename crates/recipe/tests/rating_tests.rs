@@ -89,7 +89,7 @@ async fn create_shared_recipe(
         serving_size: Some(4),
     };
 
-    let recipe_id = create_recipe(command, user_id, executor, pool)
+    let recipe_id = create_recipe(command, user_id, executor, pool, false)
         .await
         .unwrap();
 
@@ -236,7 +236,7 @@ async fn test_rate_recipe_only_shared_recipes() {
         serving_size: Some(4),
     };
 
-    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 

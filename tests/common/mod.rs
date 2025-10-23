@@ -80,6 +80,7 @@ pub async fn create_test_app((pool, evento_executor): (SqlitePool, evento::Sqlit
         generation_locks: std::sync::Arc::new(tokio::sync::Mutex::new(
             std::collections::HashMap::new(),
         )),
+        bypass_premium: false, // Tests should verify premium logic works correctly
     };
 
     // Create protected routes with auth middleware

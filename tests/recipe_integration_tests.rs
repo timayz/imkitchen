@@ -123,7 +123,7 @@ async fn test_create_recipe_integration_with_read_model_projection() {
     };
 
     // Execute recipe creation
-    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -197,7 +197,7 @@ async fn test_query_recipes_by_user() {
             advance_prep_hours: None,
             serving_size: Some(2),
         };
-        create_recipe(command, &user1_id, &executor, &pool)
+        create_recipe(command, &user1_id, &executor, &pool, false)
             .await
             .unwrap();
     }
@@ -251,7 +251,7 @@ async fn test_delete_recipe_integration() {
         advance_prep_hours: None,
         serving_size: Some(2),
     };
-    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -316,7 +316,7 @@ async fn test_delete_recipe_permission_denied() {
         advance_prep_hours: None,
         serving_size: Some(2),
     };
-    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -379,7 +379,7 @@ async fn test_post_recipe_update_success_returns_ts_location() {
         advance_prep_hours: None,
         serving_size: Some(2),
     };
-    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -481,7 +481,7 @@ async fn test_post_recipe_update_unauthorized_returns_403() {
         advance_prep_hours: None,
         serving_size: Some(2),
     };
-    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -561,7 +561,7 @@ async fn test_post_recipe_update_invalid_data_returns_422() {
         advance_prep_hours: None,
         serving_size: Some(2),
     };
-    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -642,7 +642,7 @@ async fn test_get_recipe_edit_form_prepopulated() {
         advance_prep_hours: Some(2),
         serving_size: Some(4),
     };
-    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -727,7 +727,7 @@ async fn test_recipe_update_syncs_to_read_model() {
         advance_prep_hours: Some(1),
         serving_size: Some(2),
     };
-    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -844,7 +844,7 @@ async fn test_delete_recipe_integration_removes_from_read_model() {
         serving_size: Some(2),
     };
 
-    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -919,7 +919,7 @@ async fn test_delete_recipe_integration_unauthorized_returns_403() {
         serving_size: Some(2),
     };
 
-    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -984,7 +984,7 @@ async fn test_delete_recipe_integration_excluded_from_user_queries() {
             serving_size: Some(2),
         };
 
-        let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
+        let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
             .await
             .unwrap();
         recipe_ids.push(recipe_id);
@@ -1075,7 +1075,7 @@ async fn test_favorite_recipe_integration_full_cycle() {
         serving_size: Some(4),
     };
 
-    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -1193,7 +1193,7 @@ async fn test_favorite_filter_with_multiple_recipes() {
             serving_size: Some(2),
         };
 
-        let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
+        let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
             .await
             .unwrap();
         recipe_ids.push(recipe_id);
@@ -1280,7 +1280,7 @@ async fn test_favorite_permission_denied_for_other_users_recipe() {
         serving_size: Some(2),
     };
 
-    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 

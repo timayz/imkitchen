@@ -53,6 +53,7 @@ pub async fn create_app(
         generation_locks: std::sync::Arc::new(tokio::sync::Mutex::new(
             std::collections::HashMap::new(),
         )),
+        bypass_premium: false, // Tests should verify premium logic works correctly
     };
 
     // Build protected routes with auth middleware

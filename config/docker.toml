@@ -57,13 +57,32 @@ secret_key = ""
 webhook_secret = ""
 price_id = ""
 
+# Web Push Notifications (VAPID) - Story 4.6
+# Generate keys with: npx web-push generate-vapid-keys
+[vapid]
+# VAPID public key (base64url encoded, uncompressed P-256)
+# Override with: IMKITCHEN__VAPID__PUBLIC_KEY
+public_key = "BB8rIhib51reZc8Yy_MNyeWlTNpYKumwCoB5m1Sd4ggjvo_w3QtfO8XXrzxHPkoVkoVNvCdD50mbl75FYthMnN0"
+
+# VAPID private key (base64url encoded raw key)
+# Keep this secret! Override with: IMKITCHEN__VAPID__PRIVATE_KEY
+private_key = "gQbVG-hmJgxI1hVm3RkXGEbA_B0mC-Z7vCmy4l5EUrk"
+
+# VAPID subject (mailto: or https: URL)
+# Override with: IMKITCHEN__VAPID__SUBJECT
+subject = "mailto:contact@imkitchen.local"
+
+# Feature flags for MVP/demo mode
+[features]
+# Bypass premium restrictions (useful for MVP testing and demos)
+# When true, all users are treated as premium (no recipe limits, full features)
+# Default: false
+# Override with: IMKITCHEN__FEATURES__BYPASS_PREMIUM
+bypass_premium = false
+
 # Future configuration sections (not yet implemented):
 #
 # [minio]
 # endpoint = "http://minio:9000"
 # access_key = "minioadmin"
 # secret_key = ""  # Override with IMKITCHEN__MINIO__SECRET_KEY
-#
-# [vapid]
-# public_key = ""
-# private_key = ""

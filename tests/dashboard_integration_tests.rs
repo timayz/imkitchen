@@ -72,6 +72,7 @@ async fn test_dashboard_requires_authentication() {
         generation_locks: std::sync::Arc::new(tokio::sync::Mutex::new(
             std::collections::HashMap::new(),
         )),
+        bypass_premium: false,
     };
 
     // Build router with auth middleware (same as production)
@@ -139,6 +140,7 @@ async fn test_dashboard_rejects_invalid_jwt() {
         generation_locks: std::sync::Arc::new(tokio::sync::Mutex::new(
             std::collections::HashMap::new(),
         )),
+        bypass_premium: false,
     };
 
     let app = axum::Router::new()

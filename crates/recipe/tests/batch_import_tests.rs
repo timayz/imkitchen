@@ -92,7 +92,7 @@ async fn test_batch_import_valid_recipes() {
         ],
     };
 
-    let result = batch_import_recipes(command, &user_id, &executor, &pool)
+    let result = batch_import_recipes(command, &user_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -129,7 +129,7 @@ async fn test_batch_import_rejects_free_tier_overflow() {
             advance_prep_hours: None,
             serving_size: Some(4),
         };
-        recipe::create_recipe(recipe_cmd, &user_id, &executor, &pool)
+        recipe::create_recipe(recipe_cmd, &user_id, &executor, &pool, false)
             .await
             .unwrap();
 
@@ -155,7 +155,7 @@ async fn test_batch_import_rejects_free_tier_overflow() {
         ],
     };
 
-    let result = batch_import_recipes(command, &user_id, &executor, &pool).await;
+    let result = batch_import_recipes(command, &user_id, &executor, &pool, false).await;
     assert!(matches!(result, Err(RecipeError::RecipeLimitReached)));
 }
 
@@ -192,7 +192,7 @@ async fn test_batch_import_partial_failure() {
         ],
     };
 
-    let result = batch_import_recipes(command, &user_id, &executor, &pool)
+    let result = batch_import_recipes(command, &user_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -216,7 +216,7 @@ async fn test_batch_import_empty_array() {
 
     let command = BatchImportRecipesCommand { recipes: vec![] };
 
-    let result = batch_import_recipes(command, &user_id, &executor, &pool).await;
+    let result = batch_import_recipes(command, &user_id, &executor, &pool, false).await;
     assert!(matches!(result, Err(RecipeError::ValidationError(_))));
     assert!(result.unwrap_err().to_string().contains("No recipes found"));
 }
@@ -250,7 +250,7 @@ async fn test_batch_import_invalid_recipe_type() {
         }],
     };
 
-    let result = batch_import_recipes(command, &user_id, &executor, &pool)
+    let result = batch_import_recipes(command, &user_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -308,7 +308,7 @@ async fn test_batch_import_missing_required_fields() {
         ],
     };
 
-    let result = batch_import_recipes(command, &user_id, &executor, &pool)
+    let result = batch_import_recipes(command, &user_id, &executor, &pool, false)
         .await
         .unwrap();
 

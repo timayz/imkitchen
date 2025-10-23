@@ -80,7 +80,7 @@ async fn test_create_recipe_validates_title_length() {
         serving_size: Some(4),
     };
 
-    let result = create_recipe(command, &user1_id, &executor, &pool).await;
+    let result = create_recipe(command, &user1_id, &executor, &pool, false).await;
     assert!(matches!(result, Err(RecipeError::ValidationError(_))));
     assert!(result
         .unwrap_err()
@@ -109,7 +109,7 @@ async fn test_create_recipe_requires_at_least_one_ingredient() {
         serving_size: Some(4),
     };
 
-    let result = create_recipe(command, &user1_id, &executor, &pool).await;
+    let result = create_recipe(command, &user1_id, &executor, &pool, false).await;
     assert!(matches!(result, Err(RecipeError::ValidationError(_))));
     assert!(result
         .unwrap_err()
@@ -138,7 +138,7 @@ async fn test_create_recipe_requires_at_least_one_instruction() {
         serving_size: Some(4),
     };
 
-    let result = create_recipe(command, &user1_id, &executor, &pool).await;
+    let result = create_recipe(command, &user1_id, &executor, &pool, false).await;
     assert!(matches!(result, Err(RecipeError::ValidationError(_))));
     assert!(result
         .unwrap_err()
@@ -185,7 +185,7 @@ async fn test_free_tier_recipe_limit_enforced() {
         serving_size: Some(4),
     };
 
-    let result = create_recipe(command, &user1_id, &executor, &pool).await;
+    let result = create_recipe(command, &user1_id, &executor, &pool, false).await;
     assert!(matches!(result, Err(RecipeError::RecipeLimitReached)));
 }
 
@@ -231,7 +231,7 @@ async fn test_premium_tier_bypasses_recipe_limit() {
         serving_size: Some(4),
     };
 
-    let result = create_recipe(command, &premium_user_id, &executor, &pool).await;
+    let result = create_recipe(command, &premium_user_id, &executor, &pool, false).await;
     assert!(result.is_ok(), "Premium users should bypass recipe limit");
 }
 
@@ -305,7 +305,7 @@ async fn test_shared_recipes_dont_count_toward_limit() {
         serving_size: Some(4),
     };
 
-    let result = create_recipe(command, &user1_id, &executor, &pool).await;
+    let result = create_recipe(command, &user1_id, &executor, &pool, false).await;
     assert!(
         result.is_ok(),
         "Should be able to create 6th private recipe (5 shared recipes freed up 5 slots)"
@@ -351,7 +351,7 @@ async fn test_create_recipe_success_returns_recipe_id() {
         serving_size: Some(4),
     };
 
-    let result = create_recipe(command, &user1_id, &executor, &pool).await;
+    let result = create_recipe(command, &user1_id, &executor, &pool, false).await;
     assert!(result.is_ok());
 
     let recipe_id = result.unwrap();
@@ -389,7 +389,7 @@ async fn test_recipe_created_event_stored_and_loaded() {
         serving_size: Some(2),
     };
 
-    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -447,7 +447,7 @@ async fn insert_test_recipe(
         serving_size: None,
     };
 
-    create_recipe(command, user_id, executor, pool)
+    create_recipe(command, user_id, executor, pool, false)
         .await
         .unwrap()
 }
@@ -482,7 +482,7 @@ async fn test_recipe_updated_event_applies_delta_changes() {
         serving_size: Some(4),
     };
 
-    let recipe_id = create_recipe(create_command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(create_command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -568,7 +568,7 @@ async fn test_update_recipe_validates_empty_ingredients() {
         serving_size: Some(2),
     };
 
-    let recipe_id = create_recipe(create_command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(create_command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -624,7 +624,7 @@ async fn test_update_recipe_validates_empty_instructions() {
         serving_size: Some(2),
     };
 
-    let recipe_id = create_recipe(create_command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(create_command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -680,7 +680,7 @@ async fn test_update_recipe_validates_title_length() {
         serving_size: Some(2),
     };
 
-    let recipe_id = create_recipe(create_command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(create_command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -737,7 +737,7 @@ async fn test_update_recipe_ownership_denied() {
         serving_size: Some(2),
     };
 
-    let recipe_id = create_recipe(create_command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(create_command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -833,7 +833,7 @@ async fn test_update_recipe_recalculates_complexity() {
         serving_size: Some(2),
     };
 
-    let recipe_id = create_recipe(create_command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(create_command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -1016,7 +1016,7 @@ async fn test_update_recipe_clears_optional_fields() {
         serving_size: Some(4),
     };
 
-    let recipe_id = create_recipe(create_command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(create_command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -1081,7 +1081,7 @@ async fn test_recipe_deleted_event_sets_is_deleted_flag() {
         serving_size: Some(2),
     };
 
-    let recipe_id = create_recipe(create_command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(create_command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -1133,7 +1133,7 @@ async fn test_delete_recipe_validates_ownership() {
         serving_size: Some(2),
     };
 
-    let recipe_id = create_recipe(create_command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(create_command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -1209,7 +1209,7 @@ async fn test_favorite_recipe_toggles_status() {
         serving_size: Some(4),
     };
 
-    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -1313,7 +1313,7 @@ async fn test_favorite_recipe_ownership_check() {
         serving_size: Some(2),
     };
 
-    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -1392,7 +1392,7 @@ async fn test_query_recipes_favorite_only_filter() {
         serving_size: Some(2),
     };
 
-    let recipe_id_1 = create_recipe(command1, &user1_id, &executor, &pool)
+    let recipe_id_1 = create_recipe(command1, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -1415,7 +1415,7 @@ async fn test_query_recipes_favorite_only_filter() {
         serving_size: Some(4),
     };
 
-    let recipe_id_2 = create_recipe(command2, &user1_id, &executor, &pool)
+    let recipe_id_2 = create_recipe(command2, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -1438,7 +1438,7 @@ async fn test_query_recipes_favorite_only_filter() {
         serving_size: Some(6),
     };
 
-    let recipe_id_3 = create_recipe(command3, &user1_id, &executor, &pool)
+    let recipe_id_3 = create_recipe(command3, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -1534,7 +1534,7 @@ async fn test_share_recipe_emits_event() {
         serving_size: Some(4),
     };
 
-    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -1593,7 +1593,7 @@ async fn test_unshare_recipe_emits_event() {
         serving_size: None,
     };
 
-    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -1666,7 +1666,7 @@ async fn test_share_recipe_ownership_check() {
         serving_size: None,
     };
 
-    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -1741,7 +1741,7 @@ async fn test_recipe_shared_event_applied_to_aggregate() {
         serving_size: None,
     };
 
-    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -1834,7 +1834,7 @@ async fn test_deleted_recipe_excluded_from_query() {
         serving_size: Some(4),
     };
 
-    let recipe_id = create_recipe(command, &user1_id, &executor, &pool)
+    let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -1920,6 +1920,7 @@ async fn test_deleted_recipe_excluded_from_user_list() {
         &user1_id,
         &executor,
         &pool,
+        false,
     )
     .await
     .unwrap();
@@ -1946,6 +1947,7 @@ async fn test_deleted_recipe_excluded_from_user_list() {
         &user1_id,
         &executor,
         &pool,
+        false,
     )
     .await
     .unwrap();
@@ -2031,6 +2033,7 @@ async fn test_deleted_recipes_excluded_from_limit() {
             &user1_id,
             &executor,
             &pool,
+            false,
         )
         .await
         .unwrap();
@@ -2066,6 +2069,7 @@ async fn test_deleted_recipes_excluded_from_limit() {
         &user1_id,
         &executor,
         &pool,
+        false,
     )
     .await;
 
@@ -2122,6 +2126,7 @@ async fn test_deleted_recipes_excluded_from_limit() {
         &user1_id,
         &executor,
         &pool,
+        false,
     )
     .await;
 
@@ -2163,7 +2168,7 @@ async fn test_copy_recipe_success() {
         serving_size: Some(4),
     };
 
-    let original_recipe_id = create_recipe(create_command, &creator_id, &executor, &pool)
+    let original_recipe_id = create_recipe(create_command, &creator_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -2199,7 +2204,7 @@ async fn test_copy_recipe_success() {
         original_recipe_id: original_recipe_id.clone(),
     };
 
-    let new_recipe_id = copy_recipe(copy_command, &copier_id, &executor, &pool)
+    let new_recipe_id = copy_recipe(copy_command, &copier_id, &executor, &pool, false)
         .await
         .unwrap();
 
@@ -2267,6 +2272,7 @@ async fn test_copy_recipe_prevents_duplicates() {
         &creator_id,
         &executor,
         &pool,
+        false,
     )
     .await
     .unwrap();
@@ -2302,7 +2308,7 @@ async fn test_copy_recipe_prevents_duplicates() {
     let copy_command_1 = CopyRecipeCommand {
         original_recipe_id: original_recipe_id.clone(),
     };
-    let result_1 = copy_recipe(copy_command_1, &copier_id, &executor, &pool).await;
+    let result_1 = copy_recipe(copy_command_1, &copier_id, &executor, &pool, false).await;
     assert!(result_1.is_ok(), "First copy should succeed");
 
     let _copied_recipe_id = result_1.unwrap();
@@ -2317,7 +2323,7 @@ async fn test_copy_recipe_prevents_duplicates() {
     let copy_command_2 = CopyRecipeCommand {
         original_recipe_id: original_recipe_id.clone(),
     };
-    let result_2 = copy_recipe(copy_command_2, &copier_id, &executor, &pool).await;
+    let result_2 = copy_recipe(copy_command_2, &copier_id, &executor, &pool, false).await;
     assert!(
         matches!(result_2, Err(RecipeError::AlreadyCopied)),
         "Second copy should fail with AlreadyCopied error, got: {:?}",
@@ -2357,6 +2363,7 @@ async fn test_copy_recipe_enforces_freemium_limit() {
         &creator_id,
         &executor,
         &pool,
+        false,
     )
     .await
     .unwrap();
@@ -2411,6 +2418,7 @@ async fn test_copy_recipe_enforces_freemium_limit() {
             &copier_id,
             &executor,
             &pool,
+            false,
         )
         .await
         .unwrap();
@@ -2431,7 +2439,7 @@ async fn test_copy_recipe_enforces_freemium_limit() {
     let copy_command = CopyRecipeCommand {
         original_recipe_id: original_recipe_id.clone(),
     };
-    let result = copy_recipe(copy_command, &copier_id, &executor, &pool).await;
+    let result = copy_recipe(copy_command, &copier_id, &executor, &pool, false).await;
 
     assert!(
         matches!(result, Err(RecipeError::RecipeLimitReached)),
@@ -2471,6 +2479,7 @@ async fn test_copy_recipe_requires_shared_recipe() {
         &creator_id,
         &executor,
         &pool,
+        false,
     )
     .await
     .unwrap();
@@ -2487,7 +2496,7 @@ async fn test_copy_recipe_requires_shared_recipe() {
     let copy_command = CopyRecipeCommand {
         original_recipe_id: private_recipe_id.clone(),
     };
-    let result = copy_recipe(copy_command, &copier_id, &executor, &pool).await;
+    let result = copy_recipe(copy_command, &copier_id, &executor, &pool, false).await;
 
     assert!(
         matches!(result, Err(RecipeError::ValidationError(_))),
@@ -2511,7 +2520,7 @@ async fn test_copy_recipe_validates_recipe_exists() {
     let copy_command = CopyRecipeCommand {
         original_recipe_id: "nonexistent-recipe-id".to_string(),
     };
-    let result = copy_recipe(copy_command, &copier_id, &executor, &pool).await;
+    let result = copy_recipe(copy_command, &copier_id, &executor, &pool, false).await;
 
     assert!(
         matches!(result, Err(RecipeError::EventStoreError(_))),
@@ -2551,6 +2560,7 @@ async fn test_copy_recipe_modifications_independent() {
         &creator_id,
         &executor,
         &pool,
+        false,
     )
     .await
     .unwrap();
@@ -2586,7 +2596,7 @@ async fn test_copy_recipe_modifications_independent() {
     let copy_command = CopyRecipeCommand {
         original_recipe_id: original_recipe_id.clone(),
     };
-    let copied_recipe_id = copy_recipe(copy_command, &copier_id, &executor, &pool)
+    let copied_recipe_id = copy_recipe(copy_command, &copier_id, &executor, &pool, false)
         .await
         .unwrap();
 

@@ -88,7 +88,7 @@ async fn create_test_recipe(
         serving_size: Some(2),
     };
 
-    let recipe_id = create_recipe(command, user_id, executor, pool)
+    let recipe_id = create_recipe(command, user_id, executor, pool, false)
         .await
         .expect("Failed to create recipe");
 
