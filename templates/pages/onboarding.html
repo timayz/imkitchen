@@ -22,8 +22,7 @@
             <div class="step-indicator-item {% if current_step >= 1 %}{% if current_step == 1 %}current{% else %}completed{% endif %}{% endif %}"></div>
             <div class="step-indicator-item {% if current_step >= 2 %}{% if current_step == 2 %}current{% else %}completed{% endif %}{% endif %}"></div>
             <div class="step-indicator-item {% if current_step >= 3 %}{% if current_step == 3 %}current{% else %}completed{% endif %}{% endif %}"></div>
-            <div class="step-indicator-item {% if current_step >= 4 %}{% if current_step == 4 %}current{% else %}completed{% endif %}{% endif %}"></div>
-            <div class="step-indicator-item {% if current_step >= 5 %}current{% endif %}"></div>
+            <div class="step-indicator-item {% if current_step >= 4 %}current{% endif %}"></div>
         </div>
 
         {% if !error.is_empty() %}
@@ -128,63 +127,9 @@
         </form>
 
         {% else if current_step == 3 %}
-        <!-- Step 3: Skill Level -->
+        <!-- Step 3: Weeknight Availability -->
         <form method="POST" action="/onboarding/step/3" class="space-y-6"
               ts-req="/onboarding/step/3"
-              ts-target="#onboarding-container">
-
-            <h2 class="text-xl font-semibold text-gray-900 mb-4">Cooking Skill Level</h2>
-            <p class="text-gray-600 mb-4">How would you describe your cooking experience?</p>
-
-            <div class="space-y-3">
-                <label class="flex items-start p-4 border border-gray-300 rounded-lg hover:border-blue-500 cursor-pointer">
-                    <input type="radio" name="skill_level" value="beginner" required
-                           {% if skill_level == "beginner" %}checked{% endif %}
-                           class="mt-1 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500">
-                    <div class="ml-3">
-                        <span class="block font-medium text-gray-900">Beginner</span>
-                        <span class="block text-sm text-gray-600">I'm just starting out and prefer simple recipes</span>
-                    </div>
-                </label>
-                <label class="flex items-start p-4 border border-gray-300 rounded-lg hover:border-blue-500 cursor-pointer">
-                    <input type="radio" name="skill_level" value="intermediate" required
-                           {% if skill_level == "intermediate" %}checked{% endif %}
-                           class="mt-1 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500">
-                    <div class="ml-3">
-                        <span class="block font-medium text-gray-900">Intermediate</span>
-                        <span class="block text-sm text-gray-600">I'm comfortable with most cooking techniques</span>
-                    </div>
-                </label>
-                <label class="flex items-start p-4 border border-gray-300 rounded-lg hover:border-blue-500 cursor-pointer">
-                    <input type="radio" name="skill_level" value="expert" required
-                           {% if skill_level == "expert" %}checked{% endif %}
-                           class="mt-1 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500">
-                    <div class="ml-3">
-                        <span class="block font-medium text-gray-900">Expert</span>
-                        <span class="block text-sm text-gray-600">I'm experienced and enjoy complex recipes</span>
-                    </div>
-                </label>
-            </div>
-
-            <div class="flex justify-between mt-6">
-                <a href="/onboarding?step=2" class="text-gray-600 hover:text-gray-800 font-medium"
-                   ts-req="/onboarding?step=2"
-                   ts-target="#onboarding-container">
-                    Back
-                </a>
-                <div class="flex gap-4">
-                    <a href="/onboarding/skip" class="text-gray-600 hover:text-gray-800 text-sm self-center">Skip for now</a>
-                    <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 font-medium">
-                        Next
-                    </button>
-                </div>
-            </div>
-        </form>
-
-        {% else if current_step == 4 %}
-        <!-- Step 4: Weeknight Availability -->
-        <form method="POST" action="/onboarding/step/4" class="space-y-6"
-              ts-req="/onboarding/step/4"
               ts-target="#onboarding-container">
 
             <h2 class="text-xl font-semibold text-gray-900 mb-4">Weeknight Availability</h2>
@@ -228,8 +173,8 @@
             </div>
 
             <div class="flex justify-between mt-6">
-                <a href="/onboarding?step=3" class="text-gray-600 hover:text-gray-800 font-medium"
-                   ts-req="/onboarding?step=3"
+                <a href="/onboarding?step=2" class="text-gray-600 hover:text-gray-800 font-medium"
+                   ts-req="/onboarding?step=2"
                    ts-target="#onboarding-container">
                     Back
                 </a>
@@ -242,8 +187,8 @@
             </div>
         </form>
 
-        {% else if current_step == 5 %}
-        <!-- Step 5: Notification Permission (Story 4.10 AC #1, #2, #3) -->
+        {% else if current_step == 4 %}
+        <!-- Step 4: Notification Permission (Story 4.10 AC #1, #2, #3) -->
         <div class="space-y-6">
             <h2 class="text-xl font-semibold text-gray-900 mb-4">Stay on Track with Reminders</h2>
 
@@ -268,8 +213,8 @@
 
             <!-- AC #3: User can allow, deny, or skip -->
             <div class="flex justify-between mt-6">
-                <a href="/onboarding?step=4" class="text-gray-600 hover:text-gray-800 font-medium"
-                   ts-req="/onboarding?step=4"
+                <a href="/onboarding?step=3" class="text-gray-600 hover:text-gray-800 font-medium"
+                   ts-req="/onboarding?step=3"
                    ts-target="#onboarding-container">
                     Back
                 </a>

@@ -21,7 +21,6 @@ pub struct OnboardingPageTemplate {
     pub dietary_restrictions: Vec<String>,
     pub allergens: String,
     pub household_size: String,
-    pub skill_level: String,
     pub availability_start: String,
     pub availability_duration: String,
     pub vapid_public_key: String, // Story 4.10: VAPID key for push notifications
@@ -33,7 +32,6 @@ pub struct OnboardingForm {
     pub dietary_restrictions: Vec<String>,
     pub allergens: String,
     pub household_size: String,
-    pub skill_level: String,
     pub availability_start: String,
     pub availability_duration: String,
 }
@@ -56,9 +54,6 @@ impl OnboardingForm {
                     }
                     "household_size" => {
                         form.household_size = value.to_string();
-                    }
-                    "skill_level" => {
-                        form.skill_level = value.to_string();
                     }
                     "availability_start" => {
                         form.availability_start = value.to_string();
@@ -108,35 +103,29 @@ pub async fn get_onboarding(
             }
             // Load existing partial onboarding data from database
             let user_data = sqlx::query(
-                "SELECT dietary_restrictions, household_size, skill_level, weeknight_availability FROM users WHERE id = ?1"
+                "SELECT dietary_restrictions, household_size, weeknight_availability FROM users WHERE id = ?1"
             )
             .bind(&auth.user_id)
             .fetch_one(&state.db_pool)
             .await;
 
-            let (dietary_restrictions, household_size_val, skill_level, weeknight_availability) =
-                match user_data {
-                    Ok(row) => {
-                        let dietary_str: Option<String> = row.get("dietary_restrictions");
-                        let dietary: Vec<String> = dietary_str
-                            .and_then(|s| serde_json::from_str(&s).ok())
-                            .unwrap_or_default();
+            let (dietary_restrictions, household_size_val, weeknight_availability) = match user_data
+            {
+                Ok(row) => {
+                    let dietary_str: Option<String> = row.get("dietary_restrictions");
+                    let dietary: Vec<String> = dietary_str
+                        .and_then(|s| serde_json::from_str(&s).ok())
+                        .unwrap_or_default();
 
-                        let household: Option<i32> = row.get("household_size");
-                        let household_str = household.map(|h| h.to_string()).unwrap_or_default();
+                    let household: Option<i32> = row.get("household_size");
+                    let household_str = household.map(|h| h.to_string()).unwrap_or_default();
 
-                        let skill: Option<String> = row.get("skill_level");
-                        let availability: Option<String> = row.get("weeknight_availability");
+                    let availability: Option<String> = row.get("weeknight_availability");
 
-                        (
-                            dietary,
-                            household_str,
-                            skill.unwrap_or_default(),
-                            availability,
-                        )
-                    }
-                    Err(_) => (Vec::new(), String::new(), String::new(), None),
-                };
+                    (dietary, household_str, availability)
+                }
+                Err(_) => (Vec::new(), String::new(), None),
+            };
 
             // Parse availability JSON
             let (availability_start, availability_duration) = weeknight_availability
@@ -149,8 +138,8 @@ pub async fn get_onboarding(
                 .unwrap_or((String::from("18:00"), String::from("45")));
 
             // Determine which step to show (from query param or default to 1)
-            // Story 4.10: Added step 5 for notification permission
-            let current_step = query.step.unwrap_or(1).clamp(1, 5);
+            // Story 4.10: Added step 4 for notification permission
+            let current_step = query.step.unwrap_or(1).clamp(1, 4);
 
             let template = OnboardingPageTemplate {
                 error: String::new(),
@@ -159,7 +148,6 @@ pub async fn get_onboarding(
                 dietary_restrictions,
                 allergens: String::new(), // Allergens are merged into dietary_restrictions
                 household_size: household_size_val,
-                skill_level,
                 availability_start,
                 availability_duration,
                 vapid_public_key: std::env::var("VAPID_PUBLIC_KEY").unwrap_or_default(),
@@ -256,40 +244,9 @@ pub async fn post_onboarding_step_2(
     }
 }
 
-/// POST /onboarding/step/3 - Save skill level and move to step 4
+/// POST /onboarding/step/3 - Save availability and advance to notification permission (Story 4.10)
 #[tracing::instrument(skip(state, auth, body))]
 pub async fn post_onboarding_step_3(
-    State(state): State<AppState>,
-    Extension(auth): Extension<Auth>,
-    body: Bytes,
-) -> Response {
-    let body_str = String::from_utf8_lossy(&body);
-    let form = OnboardingForm::from_form_data(&body_str);
-
-    let skill_level = if form.skill_level.is_empty() {
-        "intermediate".to_string()
-    } else {
-        form.skill_level
-    };
-
-    // Emit event via command
-    let command = user::SetSkillLevelCommand {
-        user_id: auth.user_id,
-        skill_level,
-    };
-
-    match user::set_skill_level(command, &state.evento_executor).await {
-        Ok(_) => (StatusCode::OK, [("ts-location", "/onboarding?step=4")]).into_response(),
-        Err(e) => {
-            tracing::error!("Failed to set skill level: {:?}", e);
-            (StatusCode::OK, [("ts-location", "/onboarding?step=3")]).into_response()
-        }
-    }
-}
-
-/// POST /onboarding/step/4 - Save availability and advance to notification permission (Story 4.10)
-#[tracing::instrument(skip(state, auth, body))]
-pub async fn post_onboarding_step_4(
     State(state): State<AppState>,
     Extension(auth): Extension<Auth>,
     body: Bytes,
@@ -316,12 +273,12 @@ pub async fn post_onboarding_step_4(
 
     match user::set_weeknight_availability(availability_command, &state.evento_executor).await {
         Ok(_) => {
-            // Story 4.10: Advance to step 5 (notification permission) instead of completing
-            (StatusCode::OK, [("ts-location", "/onboarding?step=5")]).into_response()
+            // Story 4.10: Advance to step 4 (notification permission) instead of completing
+            (StatusCode::OK, [("ts-location", "/onboarding?step=4")]).into_response()
         }
         Err(e) => {
             tracing::error!("Failed to set weeknight availability: {:?}", e);
-            (StatusCode::OK, [("ts-location", "/onboarding?step=4")]).into_response()
+            (StatusCode::OK, [("ts-location", "/onboarding?step=3")]).into_response()
         }
     }
 }
@@ -348,15 +305,6 @@ pub async fn get_onboarding_skip(
         user::SetHouseholdSizeCommand {
             user_id: auth.user_id.clone(),
             household_size: 2,
-        },
-        &state.evento_executor,
-    )
-    .await;
-
-    let _ = user::set_skill_level(
-        user::SetSkillLevelCommand {
-            user_id: auth.user_id.clone(),
-            skill_level: "intermediate".to_string(),
         },
         &state.evento_executor,
     )
@@ -401,7 +349,6 @@ pub struct ProfilePageTemplate {
     pub dietary_restrictions: Vec<String>,
     pub allergens: String,
     pub household_size: String,
-    pub skill_level: String,
     pub availability_start: String,
     pub availability_duration: String,
     pub favorite_count: i64,
@@ -423,7 +370,7 @@ pub async fn get_profile(
 ) -> Response {
     // Query user profile data from read model (including favorite_count)
     let user_data = sqlx::query(
-        "SELECT dietary_restrictions, household_size, skill_level, weeknight_availability, favorite_count FROM users WHERE id = ?1"
+        "SELECT dietary_restrictions, household_size, weeknight_availability, favorite_count FROM users WHERE id = ?1"
     )
     .bind(&auth.user_id)
     .fetch_one(&state.db_pool)
@@ -449,10 +396,6 @@ pub async fn get_profile(
             // Get household_size
             let household: Option<i32> = row.get("household_size");
             let household_str = household.map(|h| h.to_string()).unwrap_or_default();
-
-            // Get skill_level
-            let skill: Option<String> = row.get("skill_level");
-            let skill_str = skill.unwrap_or_default();
 
             // Parse weeknight_availability JSON
             let availability: Option<String> = row.get("weeknight_availability");
@@ -484,7 +427,6 @@ pub async fn get_profile(
                 dietary_restrictions: dietary,
                 allergens: String::new(), // Allergens merged into dietary_restrictions
                 household_size: household_str,
-                skill_level: skill_str,
                 availability_start,
                 availability_duration,
                 favorite_count: favorite_count as i64,
@@ -529,7 +471,6 @@ pub async fn post_profile(
     // Clone form fields for error handling
     let form_allergens = form.allergens.clone();
     let form_household_size = form.household_size.clone();
-    let form_skill_level = form.skill_level.clone();
     let form_availability_start = form.availability_start.clone();
     let form_availability_duration = form.availability_duration.clone();
 
@@ -551,13 +492,6 @@ pub async fn post_profile(
         form.household_size.parse::<u8>().ok()
     };
 
-    // Parse skill_level
-    let skill_level = if form.skill_level.is_empty() {
-        None
-    } else {
-        Some(form.skill_level)
-    };
-
     // Parse weeknight_availability
     let weeknight_availability = if !form.availability_start.is_empty() {
         let availability_duration = form.availability_duration.parse::<u32>().unwrap_or(45);
@@ -574,7 +508,6 @@ pub async fn post_profile(
         user_id: auth.user_id.clone(),
         dietary_restrictions: Some(dietary_restrictions.clone()),
         household_size,
-        skill_level,
         weeknight_availability,
     };
 
@@ -616,7 +549,6 @@ pub async fn post_profile(
                 dietary_restrictions,
                 allergens: form_allergens,
                 household_size: form_household_size,
-                skill_level: form_skill_level,
                 availability_start: form_availability_start,
                 availability_duration: form_availability_duration,
                 favorite_count: favorite_count as i64,
@@ -664,7 +596,6 @@ pub async fn post_profile(
                 dietary_restrictions,
                 allergens: form_allergens,
                 household_size: form_household_size,
-                skill_level: form_skill_level,
                 availability_start: form_availability_start,
                 availability_duration: form_availability_duration,
                 favorite_count: favorite_count as i64,

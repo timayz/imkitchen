@@ -105,40 +105,6 @@
                 </div>
             </div>
 
-            <!-- Skill Level -->
-            <div>
-                <h2 class="text-xl font-semibold text-gray-900 mb-4">Cooking Skill Level</h2>
-                <div class="space-y-3">
-                    <label class="flex items-start p-4 border border-gray-300 rounded-lg hover:border-blue-500 cursor-pointer">
-                        <input type="radio" name="skill_level" value="beginner" required
-                               {% if skill_level == "beginner" %}checked{% endif %}
-                               class="mt-1 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500">
-                        <div class="ml-3">
-                            <span class="block font-medium text-gray-900">Beginner</span>
-                            <span class="block text-sm text-gray-600">I'm just starting out and prefer simple recipes</span>
-                        </div>
-                    </label>
-                    <label class="flex items-start p-4 border border-gray-300 rounded-lg hover:border-blue-500 cursor-pointer">
-                        <input type="radio" name="skill_level" value="intermediate" required
-                               {% if skill_level == "intermediate" %}checked{% endif %}
-                               class="mt-1 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500">
-                        <div class="ml-3">
-                            <span class="block font-medium text-gray-900">Intermediate</span>
-                            <span class="block text-sm text-gray-600">I'm comfortable with most cooking techniques</span>
-                        </div>
-                    </label>
-                    <label class="flex items-start p-4 border border-gray-300 rounded-lg hover:border-blue-500 cursor-pointer">
-                        <input type="radio" name="skill_level" value="expert" required
-                               {% if skill_level == "expert" %}checked{% endif %}
-                               class="mt-1 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500">
-                        <div class="ml-3">
-                            <span class="block font-medium text-gray-900">Expert</span>
-                            <span class="block text-sm text-gray-600">I'm experienced and enjoy complex recipes</span>
-                        </div>
-                    </label>
-                </div>
-            </div>
-
             <!-- Weeknight Availability -->
             <div>
                 <h2 class="text-xl font-semibold text-gray-900 mb-4">Weeknight Availability</h2>

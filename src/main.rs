@@ -20,13 +20,12 @@ use imkitchen::routes::{
     post_create_collection, post_create_recipe, post_delete_collection, post_delete_recipe,
     post_delete_review, post_favorite_recipe, post_generate_meal_plan, post_import_recipes,
     post_login, post_logout, post_onboarding_step_1, post_onboarding_step_2,
-    post_onboarding_step_3, post_onboarding_step_4, post_password_reset,
-    post_password_reset_complete, post_profile, post_rate_recipe, post_regenerate_meal_plan,
-    post_register, post_remove_recipe_from_collection, post_replace_meal, post_share_recipe,
-    post_stripe_webhook, post_subscription_upgrade, post_update_collection, post_update_recipe,
-    post_update_recipe_tags, ready, record_permission_change, refresh_shopping_list,
-    reset_shopping_list_handler, show_shopping_list, snooze_notification, subscribe_push, AppState,
-    AssetsService,
+    post_onboarding_step_3, post_password_reset, post_password_reset_complete, post_profile,
+    post_rate_recipe, post_regenerate_meal_plan, post_register, post_remove_recipe_from_collection,
+    post_replace_meal, post_share_recipe, post_stripe_webhook, post_subscription_upgrade,
+    post_update_collection, post_update_recipe, post_update_recipe_tags, ready,
+    record_permission_change, refresh_shopping_list, reset_shopping_list_handler,
+    show_shopping_list, snooze_notification, subscribe_push, AppState, AssetsService,
 };
 use meal_planning::meal_plan_projection;
 use notifications::{meal_plan_subscriptions, notification_projections};
@@ -215,7 +214,6 @@ async fn serve_command(
         .route("/onboarding/step/1", post(post_onboarding_step_1))
         .route("/onboarding/step/2", post(post_onboarding_step_2))
         .route("/onboarding/step/3", post(post_onboarding_step_3))
-        .route("/onboarding/step/4", post(post_onboarding_step_4))
         .route("/onboarding/skip", get(get_onboarding_skip))
         .route("/profile", get(get_profile).post(post_profile))
         .route("/subscription", get(get_subscription))
