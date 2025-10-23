@@ -45,12 +45,11 @@ pub async fn cache_control_middleware(req: Request<Body>, next: Next) -> Respons
             "public, max-age=31536000, immutable".parse().unwrap(),
         );
     } else {
-        // Don't cache HTML pages and API responses
+        // Don't cache HTML pages in browser cache, but allow service worker caching
+        // Using "no-cache" instead of "no-store" allows SW to cache while forcing revalidation
         headers.insert(
             header::CACHE_CONTROL,
-            "no-store, no-cache, must-revalidate, proxy-revalidate"
-                .parse()
-                .unwrap(),
+            "no-cache, must-revalidate, max-age=0".parse().unwrap(),
         );
         headers.insert(header::PRAGMA, "no-cache".parse().unwrap());
         headers.insert(header::EXPIRES, "0".parse().unwrap());
