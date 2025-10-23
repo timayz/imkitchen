@@ -339,13 +339,16 @@ function updateProgress() {
     const checked = checkedItems.length;
     const percentage = total > 0 ? Math.round((checked / total) * 100) : 0;
 
-    // Update text
-    document.getElementById('checked-count').textContent = checked;
-    document.getElementById('total-count').textContent = total;
-    document.getElementById('progress-percentage').textContent = percentage + '%';
+    // Update text (check if elements exist first - they won't exist if no shopping list)
+    const checkedCountEl = document.getElementById('checked-count');
+    const totalCountEl = document.getElementById('total-count');
+    const progressPercentageEl = document.getElementById('progress-percentage');
+    const progressBarEl = document.getElementById('progress-bar');
 
-    // Update progress bar
-    document.getElementById('progress-bar').style.width = percentage + '%';
+    if (checkedCountEl) checkedCountEl.textContent = checked;
+    if (totalCountEl) totalCountEl.textContent = total;
+    if (progressPercentageEl) progressPercentageEl.textContent = percentage + '%';
+    if (progressBarEl) progressBarEl.style.width = percentage + '%';
 }
 
 // Filter items (AC #5 - Task 7)

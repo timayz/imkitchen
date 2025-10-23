@@ -150,7 +150,7 @@ pub async fn get_onboarding(
                 household_size: household_size_val,
                 availability_start,
                 availability_duration,
-                vapid_public_key: std::env::var("VAPID_PUBLIC_KEY").unwrap_or_default(),
+                vapid_public_key: state.vapid_public_key.clone(),
                 current_path: "/onboarding".to_string(),
             };
             Html(template.render().unwrap()).into_response()
@@ -433,7 +433,7 @@ pub async fn get_profile(
                 shared_recipe_count: shared_count, // AC-8
                 notification_enabled: push_status.enabled,
                 subscription_count: push_status.subscription_count,
-                vapid_public_key: std::env::var("VAPID_PUBLIC_KEY").unwrap_or_default(),
+                vapid_public_key: state.vapid_public_key.clone(),
                 current_path: "/profile".to_string(),
             };
 
@@ -555,7 +555,7 @@ pub async fn post_profile(
                 shared_recipe_count: shared_count, // AC-8
                 notification_enabled: push_status.enabled,
                 subscription_count: push_status.subscription_count,
-                vapid_public_key: std::env::var("VAPID_PUBLIC_KEY").unwrap_or_default(),
+                vapid_public_key: state.vapid_public_key.clone(),
                 current_path: "/profile".to_string(),
             };
 
@@ -602,7 +602,7 @@ pub async fn post_profile(
                 shared_recipe_count: shared_count, // AC-8
                 notification_enabled: push_status.enabled,
                 subscription_count: push_status.subscription_count,
-                vapid_public_key: std::env::var("VAPID_PUBLIC_KEY").unwrap_or_default(),
+                vapid_public_key: state.vapid_public_key.clone(),
                 current_path: "/profile".to_string(),
             };
             (

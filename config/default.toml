@@ -48,7 +48,7 @@ from_email = "noreply@imkitchen.local"  # Use real domain in production
 from_name = "imkitchen"
 
 # Base URL for email links (password reset, etc.)
-base_url = "http://localhost:3000"  # Use https://imkitchen.app in production
+base_url = "https://imkitchen.localhost"  # Use https://imkitchen.app in production
 
 [observability]
 # OpenTelemetry collector endpoint (OTLP gRPC)

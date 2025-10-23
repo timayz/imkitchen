@@ -8,7 +8,7 @@ use clap::{Parser, Subcommand};
 use evento::prelude::*;
 use imkitchen::middleware::{auth_middleware, cache_control_middleware};
 use imkitchen::routes::{
-    browser_support, check_recipe_exists, check_shopping_item, complete_prep_task_handler,
+    assets, browser_support, check_recipe_exists, check_shopping_item, complete_prep_task_handler,
     dashboard_handler, dismiss_notification, get_check_user, get_collections, get_contact,
     get_discover, get_discover_detail, get_help, get_import_modal, get_ingredient_row,
     get_instruction_row, get_landing, get_login, get_meal_alternatives, get_meal_plan,
@@ -33,6 +33,7 @@ use notifications::{meal_plan_subscriptions, notification_projections};
 use recipe::{collection_projection, recipe_projection};
 use shopping::shopping_projection;
 use sqlx::migrate::MigrateDatabase;
+use sqlx::Row;
 use std::sync::Arc;
 use tower_http::compression::CompressionLayer;
 use tower_http::trace::TraceLayer;
@@ -77,6 +78,16 @@ enum Commands {
         #[arg(long)]
         tier: String,
     },
+    /// Send a test push notification to a user
+    SendNotification {
+        /// User email address
+        #[arg(long)]
+        email: String,
+
+        /// Notification message (optional, defaults to test message)
+        #[arg(long)]
+        message: Option<String>,
+    },
 }
 
 #[tokio::main]
@@ -100,6 +111,9 @@ async fn main() -> Result<()> {
         Commands::Migrate => migrate_command(config).await,
         Commands::Reset => reset_command(config).await,
         Commands::SetTier { email, tier } => set_tier_command(config, email, tier).await,
+        Commands::SendNotification { email, message } => {
+            send_notification_command(config, email, message).await
+        }
     };
 
     // Graceful shutdown of observability
@@ -340,6 +354,8 @@ async fn serve_command(
                 )
                 // Stripe webhook (public, no auth - verified via signature)
                 .route("/webhooks/stripe", post(post_stripe_webhook))
+                // Service Worker at root (required for scope: '/')
+                .route("/sw.js", get(assets::serve_sw))
                 // Merge protected routes
                 .merge(protected_routes)
                 // Static assets (no auth)
@@ -552,13 +568,9 @@ async fn set_tier_command(
     // Check if tier is already set
     if current_tier == subscription_tier.as_str() {
         tracing::warn!(
-            "User {} is already on {} tier. No changes made.",
-            email,
-            subscription_tier
-        );
-        println!(
-            "⚠️  User {} is already on {} tier",
-            email, subscription_tier
+            user_email = %email,
+            tier = %subscription_tier,
+            "User is already on this tier. No changes made"
         );
         return Ok(());
     }
@@ -580,14 +592,91 @@ async fn set_tier_command(
         .await?;
 
     tracing::info!(
-        "✅ Subscription tier updated successfully: {} -> {}",
-        current_tier,
-        subscription_tier
+        user_id = %user_id,
+        user_email = %email,
+        old_tier = %current_tier,
+        new_tier = %subscription_tier,
+        "Subscription tier updated successfully"
     );
-    println!("✅ Subscription tier updated successfully!");
-    println!("   User: {} ({})", email, user_id);
-    println!("   Old tier: {}", current_tier);
-    println!("   New tier: {}", subscription_tier);
+
+    Ok(())
+}
+
+/// Send a test push notification to a user
+#[tracing::instrument(skip(config))]
+async fn send_notification_command(
+    config: imkitchen::config::Config,
+    email: String,
+    message: Option<String>,
+) -> Result<()> {
+    use chrono::Utc;
+    use notifications::commands::{schedule_reminder, ScheduleReminderCommand};
+
+    tracing::info!("Sending test notification to user: {}", email);
+
+    // Set up database pool and evento executor
+    let pool = imkitchen::db::create_write_pool(&config.database.url).await?;
+    let executor: evento::Sqlite = pool.clone().into();
+
+    // Get user by email
+    let user_row = sqlx::query("SELECT id FROM users WHERE email = ?")
+        .bind(&email)
+        .fetch_optional(&pool)
+        .await?;
+
+    let user_id = match user_row {
+        Some(row) => row.try_get::<String, _>("id")?,
+        None => {
+            tracing::error!("User not found: {}", email);
+            anyhow::bail!("User not found: {}", email);
+        }
+    };
+
+    tracing::info!("Found user: {} ({})", email, user_id);
+
+    // Check for push subscriptions
+    let count_row =
+        sqlx::query("SELECT COUNT(*) as count FROM push_subscriptions WHERE user_id = ?")
+            .bind(&user_id)
+            .fetch_one(&pool)
+            .await?;
+
+    let subscription_count = count_row.try_get::<i64, _>("count")?;
+
+    if subscription_count == 0 {
+        tracing::error!("No push subscriptions found for user: {}", email);
+        anyhow::bail!(
+            "No push subscriptions found. Please enable notifications in the browser first"
+        );
+    }
+
+    tracing::info!("Found {} push subscription(s)", subscription_count);
+
+    // Schedule a test notification using the command
+    let now = Utc::now();
+    let msg = message.unwrap_or_else(|| "Test notification from imkitchen CLI".to_string());
+
+    let cmd = ScheduleReminderCommand {
+        user_id: user_id.clone(),
+        recipe_id: "cli-test-recipe".to_string(),
+        meal_date: now.format("%Y-%m-%d").to_string(),
+        scheduled_time: now.to_rfc3339(),
+        reminder_type: "day_of".to_string(), // Use valid reminder type
+        prep_hours: 0,
+        prep_task: Some(msg.clone()),
+    };
+
+    let notification_id = schedule_reminder(cmd, &executor).await?;
+
+    tracing::info!(
+        notification_id = %notification_id,
+        scheduled_time = %now.to_rfc3339(),
+        message = %msg,
+        user_email = %email,
+        "Test notification scheduled successfully"
+    );
+
+    pool.close().await;
 
     Ok(())
 }

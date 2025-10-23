@@ -213,11 +213,17 @@ pub async fn project_push_subscription_created<E: Executor>(
     let pool: sqlx::SqlitePool = context.extract();
     let subscription_id = &event.aggregator_id;
 
-    // Insert into push_subscriptions table
+    // Insert or replace subscription (idempotent - handles re-subscription with same endpoint)
     sqlx::query(
         r#"
         INSERT INTO push_subscriptions (id, user_id, endpoint, p256dh_key, auth_key, created_at)
         VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(endpoint) DO UPDATE SET
+            id = excluded.id,
+            user_id = excluded.user_id,
+            p256dh_key = excluded.p256dh_key,
+            auth_key = excluded.auth_key,
+            created_at = excluded.created_at
         "#,
     )
     .bind(subscription_id)

@@ -10,6 +10,11 @@ module.exports = {
   swDest: 'static/sw.js',
   swSrc: 'static/js/sw-source.js',
 
+  // Prepend /static/ to all URLs since files are served under /static prefix
+  modifyURLPrefix: {
+    '': '/static/'
+  },
+
   // Maximum cache sizes
   maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
 };
