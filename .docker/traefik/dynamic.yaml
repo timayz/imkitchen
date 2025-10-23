@@ -1,0 +1,25 @@
+tls:
+  certificates:
+    - certFile: /etc/traefik/certs/imkitchen.crt
+      keyFile: /etc/traefik/certs/imkitchen.key
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /etc/traefik/certs/imkitchen.crt
+        keyFile: /etc/traefik/certs/imkitchen.key
+
+http:
+  routers:
+    imkitchen-dev:
+      rule: "Host(`imkitchen.localhost`)"
+      tls: true
+      service: imkitchen-dev
+      priority: 25
+      entryPoints:
+        - https
+
+  services:
+    imkitchen-dev:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:3000"

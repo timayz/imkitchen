@@ -1,4 +1,26 @@
 services:
+  traefik:
+    image: "traefik:v3.5"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=Host(`traefik.localhost`)"
+      - "traefik.http.routers.api.tls=true"
+      - "traefik.http.routers.api.entrypoints=https"
+      - "traefik.http.routers.api.service=api@internal"
+    volumes:
+      - "${DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock:ro"
+      - ".docker/traefik/traefik.yaml:/etc/traefik/traefik.yml"
+      - ".docker/traefik/dynamic.yaml:/etc/traefik/dynamic.yml"
+      - ".docker/traefik/certs:/etc/traefik/certs"
+    environment:
+      - DOCKER_SOCK_FILE=/var/run/docker.sock
+    extra_hosts:
+      - host.docker.internal:host-gateway
+
   # imkitchen-migrate - Database migration init container
   # Runs migrations before the main app starts
   imkitchen-migrate:
@@ -21,8 +43,6 @@ services:
   imkitchen:
     image: timayz/imkitchen:latest
     container_name: imkitchen-app
-    ports:
-      - "3000:3000"
     environment:
       - CONFIG_PATH=/etc/imkitchen/config.toml
     volumes:
@@ -40,6 +60,13 @@ services:
         condition: service_started
       otel-collector:
         condition: service_started
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.imkitchen.rule=Host(`docker.imkitchen.localhost`)"
+      - "traefik.http.routers.imkitchen.tls=true"
+      - "traefik.http.routers.imkitchen.entrypoints=https"
+      - "traefik.http.routers.imkitchen.service=imkitchen"
+      - "traefik.http.services.imkitchen.loadbalancer.server.port=3000"
 
   # MailDev - SMTP testing server with web UI
   # Access web UI at: http://localhost:1080
