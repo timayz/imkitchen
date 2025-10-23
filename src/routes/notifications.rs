@@ -32,7 +32,6 @@ pub struct NotificationsTemplate {
     user: Option<()>,
     notifications: Vec<UserNotification>,
     push_enabled: bool,
-    vapid_public_key: String,
     pub current_path: String,
 }
 
@@ -48,14 +47,13 @@ pub async fn notifications_page(
 
     let notifications = get_user_pending_notifications(&state.db_pool, user_id).await?;
 
-    // TODO: Check if user has active push subscription
-    let push_enabled = false;
+    let push_status = get_push_subscription_status(&state.db_pool, user_id).await?;
+    let push_enabled = push_status.enabled;
 
     let template = NotificationsTemplate {
         user: Some(()),
         notifications,
         push_enabled,
-        vapid_public_key: state.vapid_public_key.clone(),
         current_path: "/notifications".to_string(),
     };
 
