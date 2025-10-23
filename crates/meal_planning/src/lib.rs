@@ -83,6 +83,7 @@ mod tests {
             cook_time_min: Some(30),
             advance_prep_hours: None,
             complexity: Some("simple".to_string()),
+            dietary_tags: Vec::new(),
         }
     }
 

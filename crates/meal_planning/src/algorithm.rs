@@ -16,13 +16,13 @@ pub struct RecipeForPlanning {
     pub cook_time_min: Option<u32>,
     pub advance_prep_hours: Option<u32>,
     pub complexity: Option<String>, // "simple", "moderate", "complex" (if pre-calculated)
+    pub dietary_tags: Vec<String>, // Tags like "vegetarian", "vegan", "gluten-free", "dairy-free", etc.
 }
 
 /// User profile constraints for meal planning
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserConstraints {
     pub weeknight_availability_minutes: Option<u32>, // Max cooking time on weeknights
-    pub skill_level: Option<String>,                 // "beginner", "intermediate", "expert"
     pub dietary_restrictions: Vec<String>,           // e.g., ["vegetarian", "gluten-free"]
 }
 
@@ -30,7 +30,6 @@ impl Default for UserConstraints {
     fn default() -> Self {
         UserConstraints {
             weeknight_availability_minutes: Some(45), // Default 45 min weeknights
-            skill_level: Some("intermediate".to_string()),
             dietary_restrictions: Vec::new(),
         }
     }
@@ -500,6 +499,7 @@ mod tests {
             cook_time_min: Some(30),
             advance_prep_hours: advance_prep,
             complexity: None,
+            dietary_tags: Vec::new(), // Tests can override if needed
         }
     }
 
@@ -575,6 +575,7 @@ mod tests {
             cook_time_min: Some(20),
             advance_prep_hours: None,
             complexity: None,
+            dietary_tags: Vec::new(),
         };
 
         assert!(RecipeComplexityCalculator::fits_weeknight(

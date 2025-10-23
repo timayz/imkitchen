@@ -181,28 +181,40 @@ impl Constraint for AdvancePrepConstraint {
 /// DietaryConstraint matches recipe dietary tags to user restrictions
 ///
 /// AC-6: Recipe dietary tags matched against user dietary restrictions
-/// MVP: Placeholder implementation (requires recipe tags to be added)
+/// This is a HARD constraint - recipes that don't match dietary restrictions are disqualified
 pub struct DietaryConstraint;
 
 impl Constraint for DietaryConstraint {
     fn evaluate(
         &self,
-        _recipe: &RecipeForPlanning,
+        recipe: &RecipeForPlanning,
         _slot: &MealSlot,
         user_constraints: &UserConstraints,
     ) -> f32 {
-        // MVP: Return 1.0 (no filtering)
-        // Future: Check recipe tags against user_constraints.dietary_restrictions
-        // If recipe contains restricted ingredient, return 0.0 (hard constraint violation)
-        // Otherwise return 1.0
-
+        // If user has no dietary restrictions, all recipes are compatible
         if user_constraints.dietary_restrictions.is_empty() {
-            1.0
-        } else {
-            // For now, assume all recipes are compatible
-            // TODO: Add dietary tags to RecipeForPlanning and implement filtering
-            1.0
+            return 1.0;
         }
+
+        // Check if recipe has necessary dietary tags to satisfy user restrictions
+        // User restrictions like "vegetarian", "vegan", "gluten-free" mean the recipe MUST have those tags
+        for restriction in &user_constraints.dietary_restrictions {
+            let restriction_lower = restriction.to_lowercase();
+
+            // Check if recipe has the required dietary tag
+            let has_tag = recipe
+                .dietary_tags
+                .iter()
+                .any(|tag| tag.to_lowercase() == restriction_lower);
+
+            // If required tag is missing, disqualify this recipe (hard constraint)
+            if !has_tag {
+                return 0.0;
+            }
+        }
+
+        // All dietary restrictions are satisfied
+        1.0
     }
 }
 
@@ -334,6 +346,7 @@ mod tests {
             cook_time_min: Some(cook_time),
             advance_prep_hours: advance_prep,
             complexity: None,
+            dietary_tags: Vec::new(),
         }
     }
 
