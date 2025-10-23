@@ -34,16 +34,34 @@
         // Create offline banner with neutral styling (AC-9: doesn't alarm user)
         offlineBanner = document.createElement('div');
         offlineBanner.id = 'offline-indicator';
-        offlineBanner.className = 'fixed top-0 left-0 right-0 bg-blue-50 text-blue-900 border-b border-blue-200 p-3 flex items-center justify-center z-50 shadow-sm';
+        offlineBanner.className = 'fixed top-0 left-0 right-0 bg-blue-50 text-blue-900 border-b border-blue-200 p-3 flex items-center justify-between z-[60] shadow-sm';
         offlineBanner.innerHTML = `
-            <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <span class="font-medium">Viewing cached content</span>
-            <span class="ml-2 text-sm text-blue-700">— Your changes will sync when you're back online</span>
+            <div class="flex items-center justify-center flex-1">
+                <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span class="font-medium">Viewing cached content</span>
+                <span class="ml-2 text-sm text-blue-700 hidden sm:inline">— Your changes will sync when you're back online</span>
+            </div>
+            <button
+                id="dismiss-offline-banner"
+                class="ml-4 text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100 transition-colors flex-shrink-0"
+                aria-label="Dismiss offline notification"
+                title="Dismiss (will reappear if you navigate)"
+            >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
         `;
 
         document.body.insertBefore(offlineBanner, document.body.firstChild);
+
+        // Add click handler for dismiss button
+        const dismissBtn = document.getElementById('dismiss-offline-banner');
+        if (dismissBtn) {
+            dismissBtn.addEventListener('click', dismissBanner);
+        }
 
         // Push content down to avoid overlapping
         pushContentDown(true);

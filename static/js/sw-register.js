@@ -27,6 +27,14 @@
             console.log('Service Worker registered successfully:', registration);
             console.log('Service Worker scope:', registration.scope);
 
+            // Handle first-time activation - reload when SW takes control
+            if (!navigator.serviceWorker.controller) {
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    console.log('Service Worker now controlling page, reloading...');
+                    window.location.reload();
+                });
+            }
+
             // Handle service worker updates
             registration.addEventListener('updatefound', () => {
                 const newWorker = registration.installing;
