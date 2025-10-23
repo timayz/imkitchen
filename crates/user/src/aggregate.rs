@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::events::{
     DietaryRestrictionsSet, HouseholdSizeSet, NotificationPermissionChanged, PasswordChanged,
-    ProfileCompleted, ProfileUpdated, RecipeCreated, RecipeDeleted, RecipeShared, SkillLevelSet,
+    ProfileCompleted, ProfileUpdated, RecipeCreated, RecipeDeleted, RecipeShared,
     SubscriptionUpgraded, UserCreated, WeeknightAvailabilitySet,
 };
 
@@ -24,7 +24,6 @@ pub struct UserAggregate {
     // Profile fields (from tech spec)
     pub dietary_restrictions: Vec<String>,
     pub household_size: Option<u8>,
-    pub skill_level: Option<String>, // "beginner", "intermediate", "expert"
     pub weeknight_availability: Option<String>, // JSON: {"start":"18:00","duration_minutes":45}
     pub onboarding_completed: bool,
 
@@ -65,7 +64,6 @@ impl UserAggregate {
         self.recipe_count = 0;
         self.dietary_restrictions = Vec::new();
         self.household_size = None;
-        self.skill_level = None;
         self.weeknight_availability = None;
         self.onboarding_completed = false;
         self.stripe_customer_id = None;
@@ -106,16 +104,7 @@ impl UserAggregate {
         Ok(())
     }
 
-    /// Handle SkillLevelSet event (Step 3)
-    async fn skill_level_set(
-        &mut self,
-        event: evento::EventDetails<SkillLevelSet>,
-    ) -> anyhow::Result<()> {
-        self.skill_level = Some(event.data.skill_level);
-        Ok(())
-    }
-
-    /// Handle WeeknightAvailabilitySet event (Step 4)
+    /// Handle WeeknightAvailabilitySet event (Step 3)
     async fn weeknight_availability_set(
         &mut self,
         event: evento::EventDetails<WeeknightAvailabilitySet>,
@@ -150,9 +139,6 @@ impl UserAggregate {
         }
         if let Some(household_size) = event.data.household_size {
             self.household_size = Some(household_size);
-        }
-        if let Some(skill_level) = event.data.skill_level {
-            self.skill_level = Some(skill_level);
         }
         if let Some(weeknight_availability) = event.data.weeknight_availability {
             self.weeknight_availability = Some(weeknight_availability);

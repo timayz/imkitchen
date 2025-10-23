@@ -3,7 +3,7 @@ use crate::error::UserResult;
 use crate::events::{
     DietaryRestrictionsSet, HouseholdSizeSet, NotificationPermissionChanged, PasswordChanged,
     ProfileCompleted, ProfileUpdated, RecipeCreated, RecipeDeleted, RecipeFavorited, RecipeShared,
-    SkillLevelSet, SubscriptionUpgraded, UserCreated, WeeknightAvailabilitySet,
+    SubscriptionUpgraded, UserCreated, WeeknightAvailabilitySet,
 };
 use evento::{AggregatorName, Context, EventDetails, Executor};
 use sqlx::{Row, SqlitePool};
@@ -102,24 +102,7 @@ async fn household_size_set_handler<E: Executor>(
     Ok(())
 }
 
-/// Handler for SkillLevelSet event (Step 3)
-#[evento::handler(UserAggregate)]
-async fn skill_level_set_handler<E: Executor>(
-    context: &Context<'_, E>,
-    event: EventDetails<SkillLevelSet>,
-) -> anyhow::Result<()> {
-    let pool: SqlitePool = context.extract();
-
-    sqlx::query("UPDATE users SET skill_level = ?1 WHERE id = ?2")
-        .bind(&event.data.skill_level)
-        .bind(&event.aggregator_id)
-        .execute(&pool)
-        .await?;
-
-    Ok(())
-}
-
-/// Handler for WeeknightAvailabilitySet event (Step 4)
+/// Handler for WeeknightAvailabilitySet event (Step 3)
 #[evento::handler(UserAggregate)]
 async fn weeknight_availability_set_handler<E: Executor>(
     context: &Context<'_, E>,
@@ -179,12 +162,6 @@ async fn profile_updated_handler<E: Executor>(
     if let Some(household_size) = event.data.household_size {
         bindings.push(household_size.to_string());
         updates.push(format!("household_size = ?{}", bindings.len()));
-    }
-
-    // Process skill_level
-    if let Some(ref skill_level) = event.data.skill_level {
-        bindings.push(skill_level.clone());
-        updates.push(format!("skill_level = ?{}", bindings.len()));
     }
 
     // Process weeknight_availability
@@ -394,7 +371,6 @@ pub fn user_projection(pool: SqlitePool) -> evento::SubscribeBuilder<evento::Sql
         .handler(password_changed_handler())
         .handler(dietary_restrictions_set_handler())
         .handler(household_size_set_handler())
-        .handler(skill_level_set_handler())
         .handler(weeknight_availability_set_handler())
         .handler(profile_completed_handler())
         .handler(profile_updated_handler())

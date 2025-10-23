@@ -41,14 +41,7 @@ pub struct HouseholdSizeSet {
     pub set_at: String,     // RFC3339 formatted timestamp
 }
 
-/// SkillLevelSet event emitted when user sets cooking skill level (Step 3)
-#[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
-pub struct SkillLevelSet {
-    pub skill_level: String, // "beginner", "intermediate", "expert"
-    pub set_at: String,      // RFC3339 formatted timestamp
-}
-
-/// WeeknightAvailabilitySet event emitted when user sets weeknight availability (Step 4)
+/// WeeknightAvailabilitySet event emitted when user sets weeknight availability (Step 3)
 #[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
 pub struct WeeknightAvailabilitySet {
     pub weeknight_availability: String, // JSON: {"start":"18:00","duration_minutes":45}
@@ -76,7 +69,6 @@ pub struct ProfileCompleted {
 pub struct ProfileUpdated {
     pub dietary_restrictions: Option<Vec<String>>, // None = no change
     pub household_size: Option<u8>,                // None = no change
-    pub skill_level: Option<String>,               // None = no change
     pub weeknight_availability: Option<String>, // None = no change, JSON: {"start":"18:00","duration_minutes":45}
     pub updated_at: String,                     // RFC3339 formatted timestamp
 }
