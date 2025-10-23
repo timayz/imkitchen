@@ -1,0 +1,102 @@
+{# Partial template for infinite scroll - renders discover recipe cards #}
+<div id="discover-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+{% for recipe in recipes %}
+<div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+     {% if loop.last && has_more %}
+     ts-req="/discover/more?offset={{ next_offset }}{% if filters.cuisine.is_some() %}&cuisine={{ filters.cuisine.as_ref().unwrap() }}{% endif %}{% if filters.min_rating.is_some() %}&min_rating={{ filters.min_rating.unwrap() }}{% endif %}{% if filters.max_prep_time.is_some() %}&max_prep_time={{ filters.max_prep_time.unwrap() }}{% endif %}{% if filters.dietary.is_some() %}&dietary={{ filters.dietary.as_ref().unwrap() }}{% endif %}{% if filters.search.is_some() %}&search={{ filters.search.as_ref().unwrap() }}{% endif %}{% if filters.sort.is_some() %}&sort={{ filters.sort.as_ref().unwrap() }}{% endif %}"
+     ts-trigger="visible once"
+     ts-req-selector="children #discover-grid"
+     ts-swap="afterend"
+     {% endif %}>
+    <a href="/discover/{{ recipe.id }}" class="block">
+        <!-- Recipe Card Header -->
+        <div class="p-6">
+            <!-- "Highly Rated" Badge -->
+            {% if recipe.avg_rating.is_some() && recipe.avg_rating.unwrap() >= 4.0 %}
+            <div class="mb-2">
+                <span class="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                    </svg>
+                    Highly Rated
+                </span>
+            </div>
+            {% endif %}
+
+            <h3 class="text-xl font-semibold text-gray-900 mb-2 line-clamp-2">{{ recipe.title }}</h3>
+
+            <!-- Rating Display -->
+            {% if recipe.avg_rating.is_some() %}
+            <div class="flex items-center gap-2 mb-2">
+                <div class="flex items-center">
+                    {% for i in 1..6 %}
+                    <svg class="w-4 h-4 {% if i as f32 <= recipe.avg_rating.unwrap() %}text-yellow-400{% else %}text-gray-300{% endif %}" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                    </svg>
+                    {% endfor %}
+                </div>
+                <span class="text-sm text-gray-600">{{ recipe.avg_rating.unwrap() }} ({{ recipe.review_count.unwrap() }})</span>
+            </div>
+            {% endif %}
+
+            <!-- Timing Info -->
+            <div class="flex items-center gap-4 text-sm text-gray-600 mb-3">
+                {% if recipe.prep_time_min.is_some() %}
+                <div class="flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Prep: {{ recipe.prep_time_min.unwrap() }}m</span>
+                </div>
+                {% endif %}
+                {% if recipe.cook_time_min.is_some() %}
+                <div class="flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+                    </svg>
+                    <span>Cook: {{ recipe.cook_time_min.unwrap() }}m</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Tags -->
+            <div class="flex flex-wrap gap-2 mb-3">
+                {% if recipe.complexity.is_some() %}
+                <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
+                    {{ recipe.complexity.as_ref().unwrap() }}
+                </span>
+                {% endif %}
+                {% if recipe.cuisine.is_some() %}
+                <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">
+                    {{ recipe.cuisine.as_ref().unwrap() }}
+                </span>
+                {% endif %}
+                {% for tag in recipe.dietary_tags %}
+                <span class="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded">
+                    {{ tag }}
+                </span>
+                {% endfor %}
+            </div>
+
+            <!-- Ingredients Preview -->
+            <div class="text-sm text-gray-600">
+                <span class="font-medium">{{ recipe.ingredients.len() }}</span> ingredients •
+                <span class="font-medium">{{ recipe.instructions.len() }}</span> steps
+            </div>
+        </div>
+
+        <!-- Card Footer (Recipe Attribution) -->
+        <div class="px-6 py-3 bg-gray-50 border-t border-gray-100">
+            <div class="flex items-center justify-between text-xs text-gray-500">
+                {% if recipe.creator_email.is_some() %}
+                <span>By {{ recipe.creator_email.as_ref().unwrap() }}</span>
+                {% else %}
+                <span>Shared recipe</span>
+                {% endif %}
+                <span>View recipe →</span>
+            </div>
+        </div>
+    </a>
+</div>
+{% endfor %}
+</div>
