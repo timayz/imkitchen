@@ -27,3 +27,5 @@ read 'docs/solution-architecture.md'
 read 'docs/ux-specification.md'
 read 'docs/ai-frontend-prompt.md'
 use Tailwind 4.1+ syntax for future tasks
+
+git new branch,conventional commits,push,create PR witch closed github issue 141 on merged

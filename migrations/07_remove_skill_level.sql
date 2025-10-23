@@ -9,20 +9,19 @@ CREATE TABLE users_new (
     id TEXT PRIMARY KEY NOT NULL,
     email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
+    tier TEXT NOT NULL DEFAULT 'free',
+    recipe_count INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL,
     dietary_restrictions TEXT,
     household_size INTEGER,
     weeknight_availability TEXT,
     onboarding_completed INTEGER NOT NULL DEFAULT 0,
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-    last_login TEXT,
-    tier TEXT NOT NULL DEFAULT 'free',
-    recipe_count INTEGER NOT NULL DEFAULT 0,
-    favorite_count INTEGER NOT NULL DEFAULT 0,
-    notification_permission_status TEXT,
-    last_permission_denial_at TEXT,
     stripe_customer_id TEXT,
-    stripe_subscription_id TEXT
+    stripe_subscription_id TEXT,
+    favorite_count INTEGER NOT NULL DEFAULT 0,
+    notification_permission_status TEXT NOT NULL DEFAULT 'not_asked',
+    last_permission_denial_at TEXT
 );
 
 -- 2. Copy data from old table to new table (excluding skill_level)
@@ -30,39 +29,37 @@ INSERT INTO users_new (
     id,
     email,
     password_hash,
+    tier,
+    recipe_count,
     created_at,
     dietary_restrictions,
     household_size,
     weeknight_availability,
     onboarding_completed,
     updated_at,
-    last_login,
-    tier,
-    recipe_count,
+    stripe_customer_id,
+    stripe_subscription_id,
     favorite_count,
     notification_permission_status,
-    last_permission_denial_at,
-    stripe_customer_id,
-    stripe_subscription_id
+    last_permission_denial_at
 )
 SELECT
     id,
     email,
     password_hash,
+    tier,
+    recipe_count,
     created_at,
     dietary_restrictions,
     household_size,
     weeknight_availability,
     onboarding_completed,
     updated_at,
-    last_login,
-    tier,
-    recipe_count,
+    stripe_customer_id,
+    stripe_subscription_id,
     favorite_count,
     notification_permission_status,
-    last_permission_denial_at,
-    stripe_customer_id,
-    stripe_subscription_id
+    last_permission_denial_at
 FROM users;
 
 -- 3. Drop old table
