@@ -162,20 +162,6 @@
                             <span>Kitchen Mode</span>
                         </button>
 
-                        <!-- Story 3.6: Replace This Meal button (opens alternatives modal) -->
-                        {% if is_from_calendar %}
-                        {% if let Some(assignment_id_val) = assignment_id %}
-                        <button
-                            ts-req="/plan/meal/{{ assignment_id_val }}/alternatives"
-                            ts-req-method="GET"
-                            ts-target="#modal-container"
-                            ts-swap="inner"
-                            class="px-6 py-3 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 font-bold shadow-md transition-all">
-                            🔄 Replace This Meal
-                        </button>
-                        {% endif %}
-                        {% endif %}
-
                         {% if is_owner %}
                         <a href="/recipes/{{ recipe.id }}/edit" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 font-medium">
                             Edit
@@ -504,9 +490,6 @@
             {% endif %}
         </nav>
     </div>
-
-    <!-- Story 3.6: Modal container for meal replacement modal -->
-    <div id="modal-container"></div>
 </div>
 
 <script>
