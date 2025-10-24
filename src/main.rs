@@ -6,7 +6,7 @@ use axum::{
 };
 use clap::{Parser, Subcommand};
 use evento::prelude::*;
-use imkitchen::middleware::{auth_middleware, cache_control_middleware};
+use imkitchen::middleware::{auth_middleware, cache_control_middleware, minify_html_middleware};
 use imkitchen::routes::{
     assets, browser_support, check_recipe_exists, check_shopping_item, complete_prep_task_handler,
     dashboard_handler, dismiss_notification, get_check_user, get_collections, get_contact,
@@ -360,6 +360,19 @@ async fn serve_command(
         )
         // Add cache control middleware (no-cache for HTML, cache for static files)
         .layer(axum_middleware::from_fn(cache_control_middleware))
+        // LiveReload layer for development (debug builds only) - must be before minification
+        .layer({
+            #[cfg(debug_assertions)]
+            {
+                tower_livereload::LiveReloadLayer::new()
+            }
+            #[cfg(not(debug_assertions))]
+            {
+                axum::middleware::from_fn(|req, next| async move { next.run(req).await })
+            }
+        })
+        // Minify HTML responses before compression
+        .layer(axum_middleware::map_response(minify_html_middleware))
         // Enable Brotli and Gzip compression for all text assets (Story 5.9)
         .layer(CompressionLayer::new().br(true).gzip(true))
         .layer(TraceLayer::new_for_http());
