@@ -21,6 +21,7 @@ pub use collections::{
     get_collections, post_add_recipe_to_collection, post_create_collection, post_delete_collection,
     post_remove_recipe_from_collection, post_update_collection,
 };
+// Re-export dashboard_handler for backward compatibility (tests)
 pub use dashboard::dashboard_handler;
 pub use health::{browser_support, health, offline, ready};
 pub use landing::get_landing;

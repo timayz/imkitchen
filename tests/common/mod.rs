@@ -96,7 +96,7 @@ pub async fn create_test_app((pool, evento_executor): (SqlitePool, evento::Sqlit
         .route("/subscription", get(get_subscription))
         .route("/subscription/upgrade", post(post_subscription_upgrade))
         .route("/subscription/success", get(get_subscription_success))
-        .route("/dashboard", get(|| async { "Dashboard" }))
+        .route("/", get(|| async { "Dashboard" }))
         .route_layer(axum_middleware::from_fn_with_state(
             state.clone(),
             auth_middleware,

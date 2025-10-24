@@ -396,7 +396,7 @@ async fn test_login_with_valid_credentials_succeeds() {
 
     // TwinSpark returns 200 OK with ts-location header (AC: 5)
     assert_eq!(response.status(), StatusCode::OK);
-    assert_eq!(response.headers().get("ts-location").unwrap(), "/dashboard");
+    assert_eq!(response.headers().get("ts-location").unwrap(), "/");
 
     // Verify JWT cookie set (AC: 3)
     let cookie = response
@@ -745,14 +745,14 @@ async fn test_accessing_protected_route_after_logout_redirects_to_login() {
         .await
         .unwrap();
 
-    // Attempt to access /dashboard without auth cookie (AC: 5)
+    // Attempt to access protected route without auth cookie (AC: 5)
     let dashboard_response = test_app
         .router
         .clone()
         .oneshot(
             Request::builder()
                 .method("GET")
-                .uri("/dashboard")
+                .uri("/profile")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -829,7 +829,7 @@ async fn test_deleted_user_with_valid_jwt_redirects_to_login() {
         .oneshot(
             Request::builder()
                 .method("GET")
-                .uri("/dashboard")
+                .uri("/profile")
                 .header("cookie", auth_cookie)
                 .body(Body::empty())
                 .unwrap(),
@@ -869,7 +869,7 @@ async fn test_user_not_in_read_model_with_valid_jwt_redirects_to_login() {
         .oneshot(
             Request::builder()
                 .method("GET")
-                .uri("/dashboard")
+                .uri("/profile")
                 .header("cookie", format!("auth_token={}", token))
                 .body(Body::empty())
                 .unwrap(),

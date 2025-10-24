@@ -253,19 +253,19 @@
 
             if (result.success) {
                 // Success - redirect to dashboard
-                window.location.href = '/dashboard';
+                window.location.href = '/';
             } else if (result.permission === 'denied') {
                 // AC #5: User denied - still complete onboarding
                 alert('Notifications were blocked. You can enable them later in Settings.');
-                window.location.href = '/dashboard';
+                window.location.href = '/';
             } else {
                 // Default or error - complete onboarding anyway
-                window.location.href = '/dashboard';
+                window.location.href = '/';
             }
         } catch (error) {
             console.error('Error enabling notifications:', error);
             // Don't block onboarding on error
-            window.location.href = '/dashboard';
+            window.location.href = '/';
         }
     }
 
@@ -277,7 +277,7 @@
             console.error('Error recording skip:', error);
         }
         // Complete onboarding
-        window.location.href = '/dashboard';
+        window.location.href = '/';
     }
 </script>
 {% endblock %}

@@ -10,6 +10,7 @@ use crate::middleware::auth::Auth;
 use crate::routes::AppState;
 
 /// Today's meal slot data for template rendering (Story 3.9)
+/// Public for use in landing.rs
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TodayMealSlotData {
     pub assignment_id: String,
@@ -24,6 +25,7 @@ pub struct TodayMealSlotData {
 }
 
 /// Today's meals data for dashboard template (Story 3.9)
+/// Public for use in landing.rs
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TodaysMealsData {
     pub appetizer: Option<TodayMealSlotData>, // AC-5: Course-based model
@@ -87,7 +89,7 @@ pub async fn dashboard_handler(
         recipe_count,
         favorite_count,
         prep_tasks,
-        current_path: "/dashboard".to_string(),
+        current_path: "/".to_string(),
     };
 
     template.render().map(Html).map_err(|e| {

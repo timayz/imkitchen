@@ -156,7 +156,7 @@ async fn test_get_onboarding_redirects_if_already_completed() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::SEE_OTHER);
-    assert_eq!(response.headers().get("location").unwrap(), "/dashboard");
+    assert_eq!(response.headers().get("location").unwrap(), "/");
 }
 
 #[tokio::test]
@@ -434,7 +434,7 @@ async fn test_get_onboarding_skip_applies_all_defaults() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::SEE_OTHER);
-    assert_eq!(response.headers().get("location").unwrap(), "/dashboard");
+    assert_eq!(response.headers().get("location").unwrap(), "/");
 
     // Process events
     test_app.process_events().await;
