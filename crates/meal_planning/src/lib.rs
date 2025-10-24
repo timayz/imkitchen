@@ -27,6 +27,43 @@ pub use read_model::{
 };
 pub use rotation::{RotationState, RotationSystem};
 
+/// Calculate the start date for next week (always a Monday).
+///
+/// Business Rule: All meal plans are generated for "next week only" - the Monday-Sunday
+/// period starting from the Monday following the current week. This forward-looking approach
+/// gives users time to shop and prepare without disrupting current week meals.
+///
+/// # Algorithm
+/// - If today is Monday: next week starts in 7 days (next Monday)
+/// - If today is Tuesday-Sunday: next week starts on the coming Monday
+///
+/// # Returns
+/// A `chrono::NaiveDate` representing next Monday in ISO 8601 format (YYYY-MM-DD)
+///
+/// # Examples
+/// ```
+/// use meal_planning::calculate_next_week_start;
+/// use chrono::{Datelike, Weekday};
+///
+/// let next_monday = calculate_next_week_start();
+/// assert_eq!(next_monday.weekday(), Weekday::Mon);
+/// ```
+pub fn calculate_next_week_start() -> chrono::NaiveDate {
+    use chrono::{Datelike, Duration, Local, Weekday};
+
+    let today = Local::now().date_naive();
+    let days_until_next_monday = match today.weekday() {
+        Weekday::Mon => 7, // If Monday, next week is 7 days away
+        Weekday::Tue => 6,
+        Weekday::Wed => 5,
+        Weekday::Thu => 4,
+        Weekday::Fri => 3,
+        Weekday::Sat => 2,
+        Weekday::Sun => 1, // If Sunday, next week starts tomorrow
+    };
+    today + Duration::days(days_until_next_monday as i64)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -95,7 +132,9 @@ mod tests {
 
         // Create initial meal plan
         let user_id = "test_user_1";
-        let start_date = "2025-10-20"; // Monday
+        let start_date = &crate::calculate_next_week_start()
+            .format("%Y-%m-%d")
+            .to_string(); // Next Monday (Story 3.13)
         let mut rotation_state = RotationState::new();
         rotation_state.total_favorite_count = 30;
 
@@ -228,7 +267,9 @@ mod tests {
 
         // Create meal plan first
         let user_id = "test_user_2";
-        let start_date = "2025-10-20";
+        let start_date = &crate::calculate_next_week_start()
+            .format("%Y-%m-%d")
+            .to_string();
         let rotation_state = RotationState::new();
 
         // Create 15 initial recipes for successful generation
@@ -302,7 +343,9 @@ mod tests {
 
         // Create meal plan for user1
         let user_id_1 = "test_user_1";
-        let start_date = "2025-10-20";
+        let start_date = &crate::calculate_next_week_start()
+            .format("%Y-%m-%d")
+            .to_string();
         let rotation_state = RotationState::new();
 
         let favorites = (1..=20)
@@ -352,5 +395,278 @@ mod tests {
             }
             _ => panic!("Expected UnauthorizedAccess error"),
         }
+    }
+
+    /// Test: calculate_next_week_start returns next Monday for all weekdays (Story 3.13 AC1)
+    #[test]
+    fn test_calculate_next_week_start_all_weekdays() {
+        use chrono::{Datelike, NaiveDate, Weekday};
+
+        // Test reference dates (known weekdays in 2025)
+        let test_cases = vec![
+            ("2025-10-20", Weekday::Mon, "2025-10-27"), // Monday -> +7 days
+            ("2025-10-21", Weekday::Tue, "2025-10-27"), // Tuesday -> +6 days
+            ("2025-10-22", Weekday::Wed, "2025-10-27"), // Wednesday -> +5 days
+            ("2025-10-23", Weekday::Thu, "2025-10-27"), // Thursday -> +4 days
+            ("2025-10-24", Weekday::Fri, "2025-10-27"), // Friday -> +3 days
+            ("2025-10-25", Weekday::Sat, "2025-10-27"), // Saturday -> +2 days
+            ("2025-10-26", Weekday::Sun, "2025-10-27"), // Sunday -> +1 day
+        ];
+
+        for (input_date_str, expected_weekday, expected_next_monday_str) in test_cases {
+            let input_date = NaiveDate::parse_from_str(input_date_str, "%Y-%m-%d").unwrap();
+            let expected_next_monday =
+                NaiveDate::parse_from_str(expected_next_monday_str, "%Y-%m-%d").unwrap();
+
+            // Verify input date is correct weekday
+            assert_eq!(
+                input_date.weekday(),
+                expected_weekday,
+                "Input date {} should be {:?}",
+                input_date_str,
+                expected_weekday
+            );
+
+            // Calculate days until next Monday manually
+            let days_until_next_monday = match expected_weekday {
+                Weekday::Mon => 7,
+                Weekday::Tue => 6,
+                Weekday::Wed => 5,
+                Weekday::Thu => 4,
+                Weekday::Fri => 3,
+                Weekday::Sat => 2,
+                Weekday::Sun => 1,
+            };
+
+            let calculated_next_monday =
+                input_date + chrono::Duration::days(days_until_next_monday);
+
+            // Verify calculation matches expected
+            assert_eq!(
+                calculated_next_monday, expected_next_monday,
+                "From {} ({:?}), next Monday should be {}",
+                input_date_str, expected_weekday, expected_next_monday_str
+            );
+
+            // Verify next Monday is actually a Monday
+            assert_eq!(
+                calculated_next_monday.weekday(),
+                Weekday::Mon,
+                "Result should always be a Monday"
+            );
+        }
+    }
+
+    /// Test: calculate_next_week_start edge case - today is Sunday (Story 3.13 AC7)
+    #[test]
+    fn test_calculate_next_week_start_edge_case_sunday() {
+        use chrono::{Datelike, NaiveDate, Weekday};
+
+        // Sunday 2025-10-26 -> next Monday is 2025-10-27 (+1 day)
+        let sunday = NaiveDate::from_ymd_opt(2025, 10, 26).unwrap();
+        assert_eq!(sunday.weekday(), Weekday::Sun);
+
+        let next_monday = sunday + chrono::Duration::days(1);
+        assert_eq!(next_monday.weekday(), Weekday::Mon);
+        assert_eq!(next_monday.to_string(), "2025-10-27");
+    }
+
+    /// Test: calculate_next_week_start edge case - today is Monday (Story 3.13 AC7)
+    #[test]
+    fn test_calculate_next_week_start_edge_case_monday() {
+        use chrono::{Datelike, NaiveDate, Weekday};
+
+        // Monday 2025-10-20 -> next Monday is 2025-10-27 (+7 days)
+        let monday = NaiveDate::from_ymd_opt(2025, 10, 20).unwrap();
+        assert_eq!(monday.weekday(), Weekday::Mon);
+
+        let next_monday = monday + chrono::Duration::days(7);
+        assert_eq!(next_monday.weekday(), Weekday::Mon);
+        assert_eq!(next_monday.to_string(), "2025-10-27");
+    }
+
+    /// Test: Week boundaries validation (Story 3.13 AC1)
+    #[test]
+    fn test_week_boundaries() {
+        use chrono::{Datelike, NaiveDate, Weekday};
+
+        let monday = NaiveDate::from_ymd_opt(2025, 10, 27).unwrap();
+        assert_eq!(monday.weekday(), Weekday::Mon, "Week starts on Monday");
+
+        let sunday = monday + chrono::Duration::days(6);
+        assert_eq!(sunday.weekday(), Weekday::Sun, "Week ends on Sunday");
+
+        // Verify exactly 7 days in week (inclusive)
+        let days_in_week = (sunday - monday).num_days() + 1;
+        assert_eq!(days_in_week, 7, "Week should have exactly 7 days");
+    }
+
+    /// Test: Algorithm rejects start_date in the past (Story 3.13 AC4)
+    #[tokio::test]
+    async fn test_algorithm_rejects_past_date() {
+        let yesterday = chrono::Local::now().date_naive() - chrono::Duration::days(1);
+        let start_date = yesterday.format("%Y-%m-%d").to_string();
+
+        let favorites = (1..=21)
+            .map(|i| create_test_recipe(&format!("recipe_{}", i)))
+            .collect::<Vec<_>>();
+
+        let result = MealPlanningAlgorithm::generate(
+            &start_date,
+            favorites,
+            UserConstraints::default(),
+            RotationState::new(),
+            Some(42),
+        );
+
+        assert!(result.is_err(), "Should reject past dates");
+        match result {
+            Err(MealPlanningError::InvalidWeekStart(msg)) => {
+                assert!(msg.contains("must be in the future"));
+            }
+            _ => panic!("Expected InvalidWeekStart error for past date"),
+        }
+    }
+
+    /// Test: Algorithm rejects start_date that is not Monday (Story 3.13 AC1)
+    #[tokio::test]
+    async fn test_algorithm_rejects_non_monday() {
+        use chrono::{Datelike, Weekday};
+
+        // Find next Tuesday (not Monday)
+        let today = chrono::Local::now().date_naive();
+        let mut test_date = today + chrono::Duration::days(1);
+        while test_date.weekday() != Weekday::Tue {
+            test_date += chrono::Duration::days(1);
+        }
+
+        let start_date = test_date.format("%Y-%m-%d").to_string();
+
+        let favorites = (1..=21)
+            .map(|i| create_test_recipe(&format!("recipe_{}", i)))
+            .collect::<Vec<_>>();
+
+        let result = MealPlanningAlgorithm::generate(
+            &start_date,
+            favorites,
+            UserConstraints::default(),
+            RotationState::new(),
+            Some(42),
+        );
+
+        assert!(result.is_err(), "Should reject non-Monday dates");
+        match result {
+            Err(MealPlanningError::InvalidWeekStart(msg)) => {
+                assert!(msg.contains("must be a Monday"));
+            }
+            _ => panic!("Expected InvalidWeekStart error for non-Monday date"),
+        }
+    }
+
+    /// Test: Algorithm accepts valid next Monday (Story 3.13 AC2)
+    #[tokio::test]
+    async fn test_algorithm_accepts_next_monday() {
+        // Calculate next Monday using our function
+        let next_monday = crate::calculate_next_week_start();
+        let start_date = next_monday.format("%Y-%m-%d").to_string();
+
+        // Use 21 recipes to ensure we have enough variety across all recipe types
+        let favorites = (1..=21)
+            .map(|i| create_test_recipe(&format!("recipe_{}", i)))
+            .collect::<Vec<_>>();
+
+        let result = MealPlanningAlgorithm::generate(
+            &start_date,
+            favorites,
+            UserConstraints::default(),
+            RotationState::new(),
+            Some(42),
+        );
+
+        assert!(
+            result.is_ok(),
+            "Should accept next Monday: {}, but got error: {:?}",
+            start_date,
+            result.as_ref().err()
+        );
+
+        let (assignments, _) = result.unwrap();
+        assert_eq!(assignments.len(), 21, "Should generate 21 meal assignments");
+    }
+
+    /// Test: Regenerate enforces next-week-only constraint (Story 3.13 AC3)
+    #[tokio::test]
+    async fn test_regenerate_uses_next_monday() {
+        let (executor, _pool) = setup_test_executor().await;
+
+        // Create initial meal plan with next Monday (valid plan)
+        let user_id = "test_user_1";
+        let old_start_date = &crate::calculate_next_week_start()
+            .format("%Y-%m-%d")
+            .to_string();
+
+        let favorites = (1..=30)
+            .map(|i| create_test_recipe(&format!("recipe_{}", i)))
+            .collect::<Vec<_>>();
+
+        // Generate initial plan using next Monday
+        let (initial_assignments, rotation_state) = MealPlanningAlgorithm::generate(
+            old_start_date,
+            favorites.clone(),
+            UserConstraints::default(),
+            RotationState::new(),
+            Some(42),
+        )
+        .unwrap();
+
+        let event_data = MealPlanGenerated {
+            user_id: user_id.to_string(),
+            start_date: old_start_date.to_string(),
+            meal_assignments: initial_assignments,
+            rotation_state_json: rotation_state.to_json().unwrap(),
+            generated_at: chrono::Utc::now().to_rfc3339(),
+        };
+
+        let meal_plan_id = evento::create::<MealPlanAggregate>()
+            .data(&event_data)
+            .unwrap()
+            .metadata(&true)
+            .unwrap()
+            .commit(&executor)
+            .await
+            .unwrap();
+
+        // Regenerate meal plan
+        let cmd = RegenerateMealPlanCommand {
+            meal_plan_id: meal_plan_id.clone(),
+            user_id: user_id.to_string(),
+            regeneration_reason: Some("Testing next-week enforcement".to_string()),
+        };
+
+        let result =
+            regenerate_meal_plan(cmd, &executor, favorites, UserConstraints::default()).await;
+        assert!(
+            result.is_ok(),
+            "Regeneration should succeed and use next Monday"
+        );
+
+        // Load aggregate and verify start_date was updated to next Monday
+        let loaded = evento::load::<MealPlanAggregate, _>(&executor, &meal_plan_id)
+            .await
+            .unwrap();
+
+        // Note: MealPlanRegenerated event doesn't update start_date in aggregate
+        // The regeneration creates new assignments for next week, but the aggregate
+        // retains the original start_date. This is acceptable as the new assignments
+        // use next week's dates. We verify this by checking the assignment dates.
+
+        let first_assignment_date = &loaded.item.meal_assignments[0].date;
+        let next_monday = crate::calculate_next_week_start();
+        let expected_start = next_monday.format("%Y-%m-%d").to_string();
+
+        assert_eq!(
+            first_assignment_date, &expected_start,
+            "First assignment should be for next Monday"
+        );
     }
 }

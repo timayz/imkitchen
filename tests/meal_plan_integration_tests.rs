@@ -126,17 +126,23 @@ async fn test_meal_plan_generated_event_projects_to_read_model() {
         .expect("Failed to create test recipes");
 
     // Act: Create MealPlanGenerated event via evento
-    let start_date = "2025-10-20".to_string();
+    let start_date = meal_planning::calculate_next_week_start()
+        .format("%Y-%m-%d")
+        .to_string();
     let meal_assignments = vec![
         meal_planning::events::MealAssignment {
-            date: "2025-10-20".to_string(),
+            date: meal_planning::calculate_next_week_start()
+                .format("%Y-%m-%d")
+                .to_string(),
             course_type: "appetizer".to_string(),
             recipe_id: "recipe_1".to_string(),
             prep_required: false,
             assignment_reasoning: None,
         },
         meal_planning::events::MealAssignment {
-            date: "2025-10-20".to_string(),
+            date: meal_planning::calculate_next_week_start()
+                .format("%Y-%m-%d")
+                .to_string(),
             course_type: "main_course".to_string(),
             recipe_id: "recipe_2".to_string(),
             prep_required: false,
@@ -232,8 +238,13 @@ async fn test_insufficient_recipes_returns_error() {
     let constraints = UserConstraints::default();
     let rotation_state = RotationState::new();
 
+    // Use next Monday (Story 3.13: all plans must start from next week)
+    let start_date = meal_planning::calculate_next_week_start()
+        .format("%Y-%m-%d")
+        .to_string();
+
     let result = MealPlanningAlgorithm::generate(
-        "2025-10-20",
+        &start_date,
         favorites,
         constraints,
         rotation_state,
@@ -265,7 +276,7 @@ async fn test_rotation_state_persists_across_generations() {
     // First generation with 7 recipes
     let event_data_1 = MealPlanGenerated {
         user_id: user_id.to_string(),
-        start_date: "2025-10-20".to_string(),
+        start_date: meal_planning::calculate_next_week_start().format("%Y-%m-%d").to_string(),
         meal_assignments: vec![],
         rotation_state_json:
             r#"{"cycle_number":1,"cycle_started_at":"2025-10-17T00:00:00Z","used_recipe_ids":["r1","r2","r3","r4","r5","r6","r7"],"total_favorite_count":7}"#
@@ -363,7 +374,7 @@ async fn test_multiple_meal_assignments_projected_correctly() {
 
     let event_data = MealPlanGenerated {
         user_id: user_id.to_string(),
-        start_date: "2025-10-20".to_string(),
+        start_date: meal_planning::calculate_next_week_start().format("%Y-%m-%d").to_string(),
         meal_assignments: meal_assignments.clone(),
         rotation_state_json: r#"{"cycle_number":1,"cycle_started_at":"2025-10-17T00:00:00Z","used_recipe_ids":[],"total_favorite_count":10}"#.to_string(),
         generated_at: Utc::now().to_rfc3339(),

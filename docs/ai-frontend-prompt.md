@@ -474,17 +474,19 @@ See "Meal Planning Calendar" section above for full specification.
 ### 10. Calendar Week View Component
 
 **Desktop Layout:**
-- 7 columns (days: Sun-Sat)
+- 7 columns (days: Mon-Tue-Wed-Thu-Fri-Sat-Sun, always starting Monday)
 - 3 rows per day (Breakfast, Lunch, Dinner)
 - Day headers: Date + Day name
 - Previous/Next week arrows (top)
 - "Today" indicator (blue border, elevated)
+- **Week Convention:** All weeks start on Monday. Navigation moves by 7-day increments from Monday.
 
 **Mobile Layout:**
-- Vertical stack, one day at a time
+- Vertical stack, one day at a time (Monday through Sunday order)
 - Swipe left/right to navigate days
 - Day header prominent
 - 3 meal slots stacked vertically
+- Week indicator shows "Week of {Monday date}"
 
 ---
 

@@ -234,10 +234,16 @@ pub async fn regenerate_meal_plan<E: evento::Executor>(
         MealPlanningError::RotationStateError(format!("Failed to parse rotation state: {}", e))
     })?;
 
+    // Calculate start date (next Monday) - Story 3.13: Next-week-only meal planning
+    // Business rule: Regeneration always creates plans for next week, not current week
+    let start_date = crate::calculate_next_week_start()
+        .format("%Y-%m-%d")
+        .to_string();
+
     // Generate new meal plan using algorithm (same constraints as initial generation)
     // Use different seed to ensure variety (timestamp-based)
     let (new_assignments, updated_rotation_state) = MealPlanningAlgorithm::generate(
-        &aggregate.start_date,
+        &start_date,
         favorite_recipes,
         user_constraints,
         rotation_state,

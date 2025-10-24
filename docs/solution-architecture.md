@@ -286,6 +286,10 @@ Render recipe detail template (Askama)
 
 ### 3.2 Data Models and Relationships
 
+**Week Start Convention:** All week-based data structures in imkitchen use **Monday as the first day of the week**. This applies to meal plans, shopping lists, calendar displays, and all date calculations. Week start dates are always Mondays in ISO 8601 format.
+
+**Next-Week-Only Meal Planning:** All meal plan generation and regeneration operations create plans for **next week only** (the Monday-Sunday period starting from the Monday following the current week). This business rule ensures users have adequate time to shop and prepare, prevents disruption of in-progress meals, and simplifies the MVP by avoiding multi-week plan management. See Story 3.13 for detailed requirements.
+
 **Read Model Schemas** (simplified - full schemas in per-epic tech specs):
 
 **users table:**
