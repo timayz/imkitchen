@@ -58,8 +58,8 @@ fn test_manifest_json_valid_schema() {
     );
     assert_eq!(
         manifest["start_url"].as_str().unwrap(),
-        "/dashboard",
-        "start_url must be /dashboard"
+        "/",
+        "start_url must be /"
     );
     assert_eq!(
         manifest["display"].as_str().unwrap(),
@@ -180,7 +180,7 @@ fn test_manifest_shortcuts_array() {
     // Verify "Today's Meals" shortcut exists
     let has_dashboard = shortcuts.iter().any(|shortcut| {
         shortcut["name"].as_str().unwrap_or("") == "Today's Meals"
-            && shortcut["url"].as_str().unwrap_or("") == "/dashboard"
+            && shortcut["url"].as_str().unwrap_or("") == "/"
     });
     assert!(
         has_dashboard,

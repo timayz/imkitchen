@@ -204,26 +204,18 @@ async fn test_kitchen_mode_query_param() {
 async fn test_back_button_href_context_aware() {
     // This will be validated in the template rendering logic
     // When is_from_calendar = true, back_url should be "/plan"
-    // When is_from_calendar = false, back_url should be "/dashboard"
+    // When is_from_calendar = false, back_url should be "/"
 
     // Test data simulation
     let is_from_calendar = true;
-    let back_url = if is_from_calendar {
-        "/plan"
-    } else {
-        "/dashboard"
-    };
+    let back_url = if is_from_calendar { "/plan" } else { "/" };
 
     assert_eq!(back_url, "/plan");
 
     let is_from_calendar = false;
-    let back_url = if is_from_calendar {
-        "/plan"
-    } else {
-        "/dashboard"
-    };
+    let back_url = if is_from_calendar { "/plan" } else { "/" };
 
-    assert_eq!(back_url, "/dashboard");
+    assert_eq!(back_url, "/");
 }
 
 /// Test: Meal calendar template renders recipe links with context query params
