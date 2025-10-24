@@ -195,10 +195,10 @@ pub struct MealCalendarTemplate {
 /// This endpoint is used by TwinSpark polling to check if evento projections
 /// have completed for a newly generated or regenerated meal plan.
 ///
-/// Pattern follows registration flow - returns polling HTML until read model is ready,
-/// then redirects to /plan using ts-location header.
+/// Returns polling HTML until ready, then returns full meal calendar page HTML
+/// for TwinSpark to swap into <body>.
 pub async fn get_meal_plan_check_ready(
-    Extension(_auth): Extension<Auth>,
+    Extension(auth): Extension<Auth>,
     State(state): State<AppState>,
     axum::extract::Path(meal_plan_id): axum::extract::Path<String>,
 ) -> axum::response::Response {
@@ -220,14 +220,27 @@ pub async fn get_meal_plan_check_ready(
     };
 
     if is_ready {
-        // Meal plan is ready in read model - redirect to /plan using ts-location header
-        // This is the same pattern as registration (register/check-user)
-        (
-            axum::http::StatusCode::OK,
-            [("ts-location", "/plan")],
-            (),
-        )
-            .into_response()
+        // Meal plan is ready - return full meal calendar HTML to swap into body
+        // This is different from registration which uses ts-location redirect
+        match get_meal_plan(Extension(auth), State(state)).await {
+            Ok(html) => (axum::http::StatusCode::OK, html).into_response(),
+            Err(e) => {
+                tracing::error!("Failed to render meal calendar after polling: {:?}", e);
+                // Return error HTML that displays in body
+                let error_html = Html(format!(
+                    r#"<div class="min-h-screen flex items-center justify-center">
+                        <div class="text-center">
+                            <h1 class="text-2xl font-bold text-red-600 mb-4">Error Loading Meal Plan</h1>
+                            <p class="text-gray-600 mb-4">Your meal plan was generated, but we couldn't display it.</p>
+                            <a href="/plan" class="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700">
+                                Refresh Page
+                            </a>
+                        </div>
+                    </div>"#
+                ));
+                (axum::http::StatusCode::OK, error_html).into_response()
+            }
+        }
     } else {
         // Meal plan not yet in read model - return minimal HTML with polling continuation
         // TwinSpark will continue polling every 500ms
