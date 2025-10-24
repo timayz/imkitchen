@@ -224,17 +224,70 @@ GET  /manifest.json       → PWA manifest
 **Commands** (writes):
 - Submitted via HTML forms (POST/PUT/DELETE)
 - Routed to domain crate command handler
-- Command handler loads aggregate from event stream
-- Business logic validates command
+- Command handler loads aggregate from event stream via `evento::load`
+- Business logic validates command in aggregate (NOT in handler)
 - New event(s) appended to event stream
 - Redirect to success page (PRG pattern: Post/Redirect/Get)
 
 **Queries** (reads):
 - Executed in route handlers before template rendering
-- Query domain crate read models (SQLite tables)
+- Query **page-specific** read models (SQLite tables)
 - Read models updated via evento subscriptions
 - Data passed to Askama template
 - Template renders HTML with data
+
+**Page-Specific Read Models:**
+
+Each page can have **one or more** dedicated read models, each serving a specific concern on that page:
+
+- **Dashboard**:
+  - `dashboard_meals` - Today's meal assignments
+  - `dashboard_prep_tasks` - Today's prep reminders
+  - `dashboard_metrics` - Recipe variety stats
+- **Meal Calendar**:
+  - `calendar_view` - Week view meal assignments
+- **Recipe Library**:
+  - `recipe_list` - Recipe cards for display
+  - `recipe_filter_counts` - Filter facet counts (e.g., "Simple: 12, Moderate: 8")
+  - `recipe_collections` - User-defined collections/tags
+- **Recipe Detail**:
+  - `recipe_detail` - Full recipe with ingredients/instructions
+  - `recipe_ratings` - Aggregated ratings and reviews
+- **Shopping List**:
+  - `shopping_list_view` - Categorized items with checkoff state
+  - `shopping_list_summary` - Category totals and progress
+
+**Benefits:**
+- Reduced coupling between pages
+- Optimized queries per concern (filters vs content)
+- Clear bounded contexts
+- No data over-fetching
+- Independent scaling per read model
+
+**Form Data Consistency:**
+
+When forms require pre-population with current trusted state, use `evento::load` to fetch the aggregate directly (NOT read model):
+
+```rust
+// Edit form handler - needs authoritative source
+async fn edit_recipe_form_handler(
+    auth: Auth,
+    Path(recipe_id): Path<String>,
+    State(executor): State<evento::Executor>,
+) -> Result<impl IntoResponse, AppError> {
+    // Load aggregate for TRUSTED form data
+    let recipe = evento::load::<Recipe>(&recipe_id)
+        .run(&executor)
+        .await?;
+
+    // Pass aggregate state to template
+    Ok(HtmlResponse(EditRecipeTemplate { recipe }))
+}
+```
+
+**When to Use:**
+- **Read Model**: Display-only pages (dashboards, lists, calendars)
+- **Aggregate (`evento::load`)**: Forms requiring consistency, command validation
 
 **Example Flow - Create Recipe:**
 ```rust
@@ -242,9 +295,10 @@ POST /recipes
   ↓
 Axum Handler receives form data
   ↓
-Validate with validator crate
+Validate form structure with validator crate
   ↓
 // Create new Recipe aggregate with RecipeCreated event
+// Business logic validation happens in aggregate, NOT handler
 let recipe_id = evento::create::<Recipe>()
     .data(&RecipeCreated { title, ingredients, ... })?
     .metadata(&user_id)?
@@ -253,11 +307,13 @@ let recipe_id = evento::create::<Recipe>()
   ↓
 RecipeCreated event written to evento event stream
   ↓
-evento subscription (background) updates recipe_read_model table
+evento subscription (background) updates page-specific read models:
+  - recipe_list (for library page)
+  - recipe_detail (for detail page)
   ↓
 Redirect to GET /recipes/:id
   ↓
-Query recipe_read_model table (SQLx)
+Query recipe_detail read model table (SQLx)
   ↓
 Render recipe detail template (Askama)
 ```
@@ -275,12 +331,38 @@ Render recipe detail template (Askama)
    - Schema details abstracted by evento library
    - Stores: Aggregate ID, event type, payload (JSON), timestamp, version
 
-2. **Read Models** (materialized views - manual migrations):
-   - `users` - User profiles and auth
-   - `recipes` - Recipe library (denormalized)
-   - `meal_plans` - Active meal plans
-   - `shopping_lists` - Generated shopping lists
-   - `notifications` - Prep reminders queue
+2. **Read Models** (page-specific materialized views - manual migrations):
+
+   **Authentication & Core:**
+   - `users` - User profiles and auth credentials
+
+   **Page-Specific Read Models (Multiple per Page):**
+
+   **Dashboard Page:**
+   - `dashboard_meals` - Today's meal assignments with recipe metadata
+   - `dashboard_prep_tasks` - Today's prep reminders
+   - `dashboard_metrics` - Recipe variety statistics
+
+   **Meal Calendar Page:**
+   - `calendar_view` - Week view meal assignments (Mon-Sun)
+
+   **Recipe Library Page:**
+   - `recipe_list` - Recipe cards for display (title, image, complexity, times)
+   - `recipe_filter_counts` - Facet counts for filters (e.g., "Simple: 12, Favorite: 5")
+   - `recipe_collections` - User-defined collections/tags
+
+   **Recipe Detail Page:**
+   - `recipe_detail` - Full recipe with ingredients and instructions
+   - `recipe_ratings` - Aggregated ratings and reviews
+
+   **Shopping List Page:**
+   - `shopping_list_view` - Categorized items with checkoff state
+   - `shopping_list_summary` - Category totals and completion progress
+
+   **Notifications:**
+   - `notifications_queue` - Prep reminders queue
+
+   **Rationale**: Pages can have multiple read models, each optimized for a specific concern (content vs filters vs metrics). This enables independent query optimization and reduces coupling.
 
 **Note**: evento manages event store schema internally. No manual SQL needed for `events` table.
 
@@ -404,7 +486,11 @@ CREATE INDEX idx_ratings_recipe ON ratings(recipe_id);
 
 **Event-to-ReadModel Projections** (evento subscriptions):
 
-**Example - Recipe Aggregate:**
+**Page-Specific Projection Pattern:**
+
+Each domain event updates ONLY the page-specific read models that need that data. One event may update multiple page-specific tables.
+
+**Example - Recipe Aggregate (Page-Specific Projections):**
 ```rust
 // Domain events
 #[derive(evento::AggregatorName, bincode::Encode, bincode::Decode)]
@@ -412,29 +498,31 @@ struct RecipeCreated {
     title: String,
     ingredients: Vec<Ingredient>,
     recipe_type: String, // "appetizer", "main_course", or "dessert"
+    complexity: String,
+    prep_time_min: u32,
+    cook_time_min: u32,
     // ...
 }
 
 #[derive(evento::AggregatorName, bincode::Encode, bincode::Decode)]
 struct RecipeFavorited { favorited: bool }
 
-// Aggregate
+// Aggregate (rebuilds state from events)
 #[derive(Default, Serialize, Deserialize, bincode::Encode, bincode::Decode, Clone, Debug)]
 struct Recipe {
     title: String,
     ingredients: Vec<Ingredient>,
-    recipe_type: String, // Course classification
+    recipe_type: String,
     is_favorite: bool,
-    // ...
+    // Business logic methods here (NOT in handlers)
 }
 
-// Event handlers (rebuilds aggregate state from events)
 #[evento::aggregator]
 impl Recipe {
     async fn recipe_created(&mut self, event: EventDetails<RecipeCreated>) -> anyhow::Result<()> {
-        self.title = event.data.title;
-        self.ingredients = event.data.ingredients;
-        self.recipe_type = event.data.recipe_type;
+        self.title = event.data.title.clone();
+        self.ingredients = event.data.ingredients.clone();
+        self.recipe_type = event.data.recipe_type.clone();
         Ok(())
     }
 
@@ -444,21 +532,136 @@ impl Recipe {
     }
 }
 
-// Read model projection (subscription handler)
+// Page-Specific Projection 1: Recipe Library Page
 #[evento::handler(Recipe)]
-async fn project_recipe_to_read_model<E: evento::Executor>(
+async fn project_recipe_to_list_view<E: evento::Executor>(
     context: &evento::Context<'_, E>,
     event: EventDetails<RecipeCreated>,
 ) -> anyhow::Result<()> {
-    // Insert into read model table
-    sqlx::query!(
-        "INSERT INTO recipes (id, user_id, title, ingredients, created_at) VALUES (?, ?, ?, ?, ?)",
-        event.aggregator_id,
-        event.metadata, // user_id stored in metadata
-        event.data.title,
-        serde_json::to_string(&event.data.ingredients)?,
-        chrono::Utc::now().to_rfc3339()
+    // Insert ONLY data needed for recipe list cards
+    sqlx::query(
+        "INSERT INTO recipe_list (id, user_id, title, complexity, prep_time_min, cook_time_min, is_favorite, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
     )
+    .bind(&event.aggregator_id)
+    .bind(&event.metadata.user_id)
+    .bind(&event.data.title)
+    .bind(&event.data.complexity)
+    .bind(event.data.prep_time_min)
+    .bind(event.data.cook_time_min)
+    .bind(false) // Default favorited state
+    .bind(chrono::Utc::now().to_rfc3339())
+    .execute(context.executor.pool())
+    .await?;
+
+    Ok(())
+}
+
+// Page-Specific Projection 2: Recipe Detail Page
+#[evento::handler(Recipe)]
+async fn project_recipe_to_detail_view<E: evento::Executor>(
+    context: &evento::Context<'_, E>,
+    event: EventDetails<RecipeCreated>,
+) -> anyhow::Result<()> {
+    let ingredients_json = serde_json::to_string(&event.data.ingredients)?;
+    let instructions_json = serde_json::to_string(&event.data.instructions)?;
+
+    // Insert FULL recipe data for detail view
+    sqlx::query(
+        "INSERT INTO recipe_detail (id, user_id, title, ingredients, instructions, complexity,
+         prep_time_min, cook_time_min, recipe_type, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    )
+    .bind(&event.aggregator_id)
+    .bind(&event.metadata.user_id)
+    .bind(&event.data.title)
+    .bind(ingredients_json)
+    .bind(instructions_json)
+    .bind(&event.data.complexity)
+    .bind(event.data.prep_time_min)
+    .bind(event.data.cook_time_min)
+    .bind(&event.data.recipe_type)
+    .bind(chrono::Utc::now().to_rfc3339())
+    .execute(context.executor.pool())
+    .await?;
+
+    Ok(())
+}
+
+// Favorite state updates BOTH list and detail views
+#[evento::handler(Recipe)]
+async fn update_recipe_favorite_status<E: evento::Executor>(
+    context: &evento::Context<'_, E>,
+    event: EventDetails<RecipeFavorited>,
+) -> anyhow::Result<()> {
+    // Update list view
+    sqlx::query("UPDATE recipe_list SET is_favorite = ? WHERE id = ?")
+        .bind(event.data.favorited)
+        .bind(&event.aggregator_id)
+        .execute(context.executor.pool())
+        .await?;
+
+    // Update detail view
+    sqlx::query("UPDATE recipe_detail SET is_favorite = ? WHERE id = ?")
+        .bind(event.data.favorited)
+        .bind(&event.aggregator_id)
+        .execute(context.executor.pool())
+        .await?;
+
+    Ok(())
+}
+```
+
+// Page-Specific Projection 3: Recipe Filter Counts (for Recipe Library Page)
+#[evento::handler(Recipe)]
+pub async fn update_recipe_filter_counts<E: evento::Executor>(
+    context: &evento::Context<'_, E>,
+    event: EventDetails<RecipeCreated>,
+) -> anyhow::Result<()> {
+    // Increment count for this complexity level
+    sqlx::query(
+        "INSERT INTO recipe_filter_counts (user_id, filter_type, filter_value, count)
+         VALUES (?, 'complexity', ?, 1)
+         ON CONFLICT (user_id, filter_type, filter_value)
+         DO UPDATE SET count = count + 1"
+    )
+    .bind(&event.metadata.user_id)
+    .bind(&event.data.complexity)
+    .execute(context.executor.pool())
+    .await?;
+
+    // Increment count for recipe type
+    sqlx::query(
+        "INSERT INTO recipe_filter_counts (user_id, filter_type, filter_value, count)
+         VALUES (?, 'recipe_type', ?, 1)
+         ON CONFLICT (user_id, filter_type, filter_value)
+         DO UPDATE SET count = count + 1"
+    )
+    .bind(&event.metadata.user_id)
+    .bind(&event.data.recipe_type)
+    .execute(context.executor.pool())
+    .await?;
+
+    Ok(())
+}
+
+// When recipe favorited, update favorite filter count
+#[evento::handler(Recipe)]
+pub async fn update_favorite_filter_count<E: evento::Executor>(
+    context: &evento::Context<'_, E>,
+    event: EventDetails<RecipeFavorited>,
+) -> anyhow::Result<()> {
+    let delta = if event.data.favorited { 1 } else { -1 };
+
+    sqlx::query(
+        "INSERT INTO recipe_filter_counts (user_id, filter_type, filter_value, count)
+         VALUES (?, 'favorite', 'true', ?)
+         ON CONFLICT (user_id, filter_type, filter_value)
+         DO UPDATE SET count = count + ?"
+    )
+    .bind(&event.metadata.user_id)
+    .bind(delta)
+    .bind(delta)
     .execute(context.executor.pool())
     .await?;
 
@@ -468,22 +671,51 @@ async fn project_recipe_to_read_model<E: evento::Executor>(
 
 **Subscription Setup** (in main.rs):
 ```rust
-// Register read model projection subscriptions
-evento::subscribe("recipe-projections")
+// Register page-specific projection subscriptions
+// NOTE: Pages can have MULTIPLE subscriptions for different read models
+
+// Recipe Library Page - Multiple read models
+evento::subscribe("recipe-list-projections")
     .aggregator::<Recipe>()
-    .handler(project_recipe_to_read_model())
-    .handler(project_recipe_favorited())
+    .handler(project_recipe_to_list_view)
+    .handler(update_recipe_favorite_status)
+    .run(&executor)
+    .await?;
+
+evento::subscribe("recipe-filter-counts-projections")
+    .aggregator::<Recipe>()
+    .handler(update_recipe_filter_counts)
+    .handler(update_favorite_filter_count)
+    .run(&executor)
+    .await?;
+
+// Recipe Detail Page
+evento::subscribe("recipe-detail-projections")
+    .aggregator::<Recipe>()
+    .handler(project_recipe_to_detail_view)
+    .handler(update_recipe_favorite_status)
     .run(&executor)
     .await?;
 ```
 
-**Projection Patterns**:
-- `UserCreated` → Insert into `users` table (subscription handler)
-- `RecipeCreated` → Insert into `recipes` table (subscription handler)
-- `RecipeFavorited` → Update `is_favorite` in `recipes` table (subscription handler)
-- `MealPlanGenerated` → Insert into `meal_plans` + `meal_assignments` tables (subscription handler)
-- `MealReplaced` → Update `meal_assignments` + regenerate shopping list (subscription handler)
-- `RecipeRated` → Insert/update `ratings` table (subscription handler)
+**Projection Patterns (Multiple Read Models per Page)**:
+- `UserCreated` → Insert into `users` table (auth system)
+- `RecipeCreated` → Insert into:
+  - `recipe_list` (recipe cards for display)
+  - `recipe_detail` (full recipe data)
+  - `recipe_filter_counts` (facet counts: "Simple: 12, Moderate: 8")
+- `RecipeFavorited` → Update:
+  - `recipe_list` (is_favorite flag)
+  - `recipe_detail` (is_favorite flag)
+  - `recipe_filter_counts` (favorite count increment/decrement)
+- `MealPlanGenerated` → Insert into:
+  - `calendar_view` (week view meals)
+  - `dashboard_meals` (today's meals only)
+  - `shopping_list_view` (week's ingredients)
+- `MealReplaced` → Update:
+  - `calendar_view` (meal slot)
+  - Recalculate `shopping_list_view`
+- `RecipeRated` → Update `recipe_ratings` (aggregated ratings)
 
 ### 3.3 Data Migrations Strategy
 
@@ -2053,6 +2285,72 @@ async fn test_create_recipe_endpoint() {
     assert!(resp.headers().get("Location").unwrap().to_str().unwrap().starts_with("/recipes/"));
 }
 ```
+
+**Projection Testing with `unsafe_oneshot`:**
+
+When testing that projections correctly update read models, use `unsafe_oneshot` for synchronous event processing:
+
+```rust
+#[tokio::test]
+async fn test_recipe_created_updates_read_models() {
+    let pool = setup_test_db().await;
+    let executor = evento::Executor::new(pool.clone());
+    let user_id = "test-user-123";
+
+    // Create recipe (emits RecipeCreated event)
+    let recipe_id = evento::create::<Recipe>()
+        .data(&RecipeCreated {
+            title: "Test Recipe".to_string(),
+            complexity: "simple".to_string(),
+            prep_time_min: 20,
+            cook_time_min: 30,
+            // ...
+        })?
+        .metadata(&user_id)?
+        .commit(&executor)
+        .await?;
+
+    // Process projections synchronously for deterministic testing
+    evento::subscribe("recipe-list-projections")
+        .aggregator::<Recipe>()
+        .handler(project_recipe_to_list_view)
+        .unsafe_oneshot(&executor) // Blocks until all events processed
+        .await?;
+
+    evento::subscribe("recipe-detail-projections")
+        .aggregator::<Recipe>()
+        .handler(project_recipe_to_detail_view)
+        .unsafe_oneshot(&executor)
+        .await?;
+
+    // Assert: Read models updated
+    let list_entry = sqlx::query!(
+        "SELECT title, complexity FROM recipe_list WHERE id = ?",
+        recipe_id
+    )
+    .fetch_one(&pool)
+    .await?;
+
+    assert_eq!(list_entry.title, "Test Recipe");
+    assert_eq!(list_entry.complexity, "simple");
+
+    let detail_entry = sqlx::query!(
+        "SELECT title, prep_time_min FROM recipe_detail WHERE id = ?",
+        recipe_id
+    )
+    .fetch_one(&pool)
+    .await?;
+
+    assert_eq!(detail_entry.title, "Test Recipe");
+    assert_eq!(detail_entry.prep_time_min, 20);
+}
+```
+
+**Why `unsafe_oneshot` for Tests:**
+- `run()` processes events asynchronously (eventual consistency)
+- `unsafe_oneshot()` blocks until all events processed (deterministic tests)
+- **Only use in tests** - production uses `run()` for async processing
+- Prevents race conditions in test assertions
 
 ### 15.3 E2E Tests
 
