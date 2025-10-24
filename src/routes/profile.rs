@@ -99,7 +99,7 @@ pub async fn get_onboarding(
             let onboarding_completed: Option<i32> = row.get("onboarding_completed");
             if onboarding_completed.unwrap_or(0) == 1 {
                 // User already completed onboarding, redirect to dashboard
-                return (StatusCode::SEE_OTHER, [("Location", "/dashboard")]).into_response();
+                return (StatusCode::SEE_OTHER, [("Location", "/")]).into_response();
             }
             // Load existing partial onboarding data from database
             let user_data = sqlx::query(
@@ -328,7 +328,7 @@ pub async fn get_onboarding_skip(
     )
     .await
     {
-        Ok(()) => (StatusCode::SEE_OTHER, [("Location", "/dashboard")]).into_response(),
+        Ok(()) => (StatusCode::SEE_OTHER, [("Location", "/")]).into_response(),
         Err(e) => {
             tracing::error!("Failed to skip onboarding: {:?}", e);
             (

@@ -2,7 +2,7 @@
   "name": "imkitchen - Intelligent Meal Planning",
   "short_name": "imkitchen",
   "description": "Automated meal planning and cooking optimization",
-  "start_url": "/dashboard",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#2563eb",
@@ -64,7 +64,7 @@
       "name": "Today's Meals",
       "short_name": "Today",
       "description": "View today's meal plan",
-      "url": "/dashboard",
+      "url": "/",
       "icons": [
         {
           "src": "/static/icons/shortcut-dashboard.png",

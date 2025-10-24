@@ -9,12 +9,12 @@ use evento::prelude::*;
 use imkitchen::middleware::{auth_middleware, cache_control_middleware, minify_html_middleware};
 use imkitchen::routes::{
     assets, browser_support, check_recipe_exists, check_shopping_item, complete_prep_task_handler,
-    dashboard_handler, dismiss_notification, get_check_user, get_collections, get_contact,
-    get_discover, get_discover_detail, get_help, get_import_modal, get_ingredient_row,
-    get_instruction_row, get_landing, get_login, get_meal_plan, get_meal_plan_check_ready,
-    get_more_discover, get_more_recipes, get_notification_status, get_onboarding,
-    get_onboarding_skip, get_password_reset, get_password_reset_complete, get_privacy, get_profile,
-    get_recipe_detail, get_recipe_edit_form, get_recipe_form, get_recipe_list, get_recipe_waiting,
+    dismiss_notification, get_check_user, get_collections, get_contact, get_discover,
+    get_discover_detail, get_help, get_import_modal, get_ingredient_row, get_instruction_row,
+    get_landing, get_login, get_meal_plan, get_meal_plan_check_ready, get_more_discover,
+    get_more_recipes, get_notification_status, get_onboarding, get_onboarding_skip,
+    get_password_reset, get_password_reset_complete, get_privacy, get_profile, get_recipe_detail,
+    get_recipe_edit_form, get_recipe_form, get_recipe_list, get_recipe_waiting,
     get_regenerate_confirm, get_register, get_subscription, get_subscription_success, get_terms,
     health, list_notifications, notifications_page, offline, post_add_recipe_to_collection,
     post_add_to_library, post_contact, post_create_collection, post_create_recipe,
@@ -234,7 +234,6 @@ async fn serve_command(
         .route("/subscription", get(get_subscription))
         .route("/subscription/upgrade", post(post_subscription_upgrade))
         .route("/subscription/success", get(get_subscription_success))
-        .route("/dashboard", get(dashboard_handler))
         // Recipe routes
         .route("/recipes", get(get_recipe_list).post(post_create_recipe))
         .route("/recipes/new", get(get_recipe_form))
@@ -368,7 +367,10 @@ async fn serve_command(
             }
             #[cfg(not(debug_assertions))]
             {
-                axum::middleware::from_fn(|req, next| async move { next.run(req).await })
+                use axum::{body::Body, extract::Request, response::Response};
+                axum::middleware::from_fn(|req: Request, next: axum::middleware::Next| async move {
+                    next.run(req).await
+                })
             }
         })
         // Minify HTML responses before compression

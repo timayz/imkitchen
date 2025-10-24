@@ -368,10 +368,7 @@ pub async fn post_login(State(state): State<AppState>, Form(form): Form<LoginFor
     // Returns 200 OK for proper form swap, ts-location triggers client-side navigation
     (
         StatusCode::OK,
-        [
-            ("Set-Cookie", cookie.as_str()),
-            ("ts-location", "/dashboard"),
-        ],
+        [("Set-Cookie", cookie.as_str()), ("ts-location", "/")],
         (),
     )
         .into_response()

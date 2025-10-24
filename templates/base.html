@@ -73,9 +73,8 @@
         .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0; }
     </style>
 
-    <!-- Full CSS loaded asynchronously to avoid blocking render -->
-    <link rel="preload" href={{ "/static/css/main.css?v=" ~ env!("CARGO_PKG_VERSION") }} as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href={{ "/static/css/main.css?v=" ~ env!("CARGO_PKG_VERSION") }}></noscript>
+    <!-- Main CSS - loaded synchronously to prevent visual breaking -->
+    <link rel="stylesheet" href={{ "/static/css/main.css?v=" ~ env!("CARGO_PKG_VERSION") }}>
 
     <!-- Conditional polyfills for old browsers (minified inline) -->
     <script>!function(){if(!window.Promise||!window.fetch||!Array.prototype.includes||!Object.assign||"undefined"==typeof Symbol){var e=document.createElement("script");e.src="{{ "/static/js/polyfills.min.js?v=" ~ env!("CARGO_PKG_VERSION") }}",e.async=!1,document.head.appendChild(e)}}();</script>
@@ -113,9 +112,6 @@
                     {% if user.is_some() %}
                     <!-- Authenticated navigation - hidden on mobile, shown on tablet+ -->
                     <div class="hidden md:flex space-x-6">
-                        <a href="/dashboard" class="text-gray-700 hover:text-primary-500 font-medium">
-                            Dashboard
-                        </a>
                         <a href="/plan" class="text-gray-700 hover:text-primary-500 font-medium">
                             Meal Plan
                         </a>
@@ -200,7 +196,7 @@
                     <ul class="space-y-2">
                         <li><a href="/discover" class="text-gray-600 hover:text-primary-500 text-sm">Discover Recipes</a></li>
                         {% if user.is_some() %}
-                        <li><a href="/dashboard" class="text-gray-600 hover:text-primary-500 text-sm">Dashboard</a></li>
+                        <li><a href="/plan" class="text-gray-600 hover:text-primary-500 text-sm">Meal Plan</a></li>
                         <li><a href="/subscription" class="text-gray-600 hover:text-primary-500 text-sm">Premium</a></li>
                         {% endif %}
                     </ul>
