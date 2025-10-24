@@ -31,9 +31,9 @@ button.ts-active::after {
 
 {% block page_scripts %}
 <!-- Meal regeneration modal -->
-<script src={{ "/static/js/meal-regeneration.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
-<script src={{ "/static/js/touch-enhancements.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
-<script src={{ "/static/js/sync-ui.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
+<script src={{ "/static/js/meal-regeneration.min.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
+<script src={{ "/static/js/touch-enhancements.min.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
+<script src={{ "/static/js/sync-ui.min.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
 {% endblock %}
 
 {% block content %}

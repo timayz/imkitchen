@@ -235,8 +235,8 @@
 
 {% block page_scripts %}
 <!-- Story 4.10 AC #7: Push subscription JavaScript for settings -->
-<script src={{ "/static/js/push-subscription.js?v=" ~ env!("CARGO_PKG_VERSION") }}></script>
-<script src={{ "/static/js/touch-enhancements.js?v=" ~ env!("CARGO_PKG_VERSION") }}></script>
+<script src={{ "/static/js/push-subscription.min.js?v=" ~ env!("CARGO_PKG_VERSION") }}></script>
+<script src={{ "/static/js/touch-enhancements.min.js?v=" ~ env!("CARGO_PKG_VERSION") }}></script>
 <script>
     // Initialize with VAPID public key
     PushSubscription.init('{{ vapid_public_key }}');

@@ -78,16 +78,16 @@
     <noscript><link rel="stylesheet" href={{ "/static/css/main.css?v=" ~ env!("CARGO_PKG_VERSION") }}></noscript>
 
     <!-- Conditional polyfills for old browsers (minified inline) -->
-    <script>!function(){if(!window.Promise||!window.fetch||!Array.prototype.includes||!Object.assign||"undefined"==typeof Symbol){var e=document.createElement("script");e.src="{{ "/static/js/polyfills.js?v=" ~ env!("CARGO_PKG_VERSION") }}",e.async=!1,document.head.appendChild(e)}}();</script>
+    <script>!function(){if(!window.Promise||!window.fetch||!Array.prototype.includes||!Object.assign||"undefined"==typeof Symbol){var e=document.createElement("script");e.src="{{ "/static/js/polyfills.min.js?v=" ~ env!("CARGO_PKG_VERSION") }}",e.async=!1,document.head.appendChild(e)}}();</script>
 
     <!-- Core scripts (loaded on all pages) -->
     <script src={{ "/static/js/twinspark.min.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
 
     <!-- PWA scripts (loaded on all pages for PWA functionality) -->
-    <script src={{ "/static/js/pwa-install.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
-    <script src={{ "/static/js/sw-register.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
-    <script src={{ "/static/js/offline-indicator.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
-    <script src={{ "/static/js/feature-detection.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
+    <script src={{ "/static/js/pwa-install.min.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
+    <script src={{ "/static/js/sw-register.min.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
+    <script src={{ "/static/js/offline-indicator.min.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
+    <script src={{ "/static/js/feature-detection.min.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
 
     <!-- Page-specific scripts (override in child templates) -->
     {% block page_scripts %}{% endblock %}

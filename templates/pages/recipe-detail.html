@@ -22,8 +22,8 @@
 
 {% block page_scripts %}
 <!-- Kitchen mode for recipe view -->
-<script src={{ "/static/js/kitchen-mode.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
-<script src={{ "/static/js/touch-enhancements.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
+<script src={{ "/static/js/kitchen-mode.min.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
+<script src={{ "/static/js/touch-enhancements.min.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
 {% endblock %}
 
 {% block content %}
