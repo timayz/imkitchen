@@ -35,105 +35,11 @@ async fn setup_test_db() -> (evento::Sqlite, sqlx::SqlitePool) {
         .unwrap();
     drop(conn);
 
-    // Run read model migrations
-    // Migration 01: users table
-    sqlx::query(
-        r#"
-        CREATE TABLE IF NOT EXISTS users (
-            id TEXT PRIMARY KEY NOT NULL,
-            email TEXT UNIQUE NOT NULL,
-            created_at TEXT NOT NULL
-        )
-        "#,
-    )
-    .execute(&pool)
-    .await
-    .unwrap();
-
-    // Migration 01: recipes table
-    sqlx::query(
-        r#"
-        CREATE TABLE IF NOT EXISTS recipes (
-            id TEXT PRIMARY KEY NOT NULL,
-            user_id TEXT NOT NULL,
-            title TEXT NOT NULL,
-            is_favorite INTEGER NOT NULL DEFAULT 0,
-            deleted_at TEXT,
-            created_at TEXT NOT NULL,
-            FOREIGN KEY (user_id) REFERENCES users(id)
-        )
-        "#,
-    )
-    .execute(&pool)
-    .await
-    .unwrap();
-
-    // Migration 02: meal_plans table
-    sqlx::query(
-        r#"
-        CREATE TABLE IF NOT EXISTS meal_plans (
-            id TEXT PRIMARY KEY NOT NULL,
-            user_id TEXT NOT NULL,
-            start_date TEXT NOT NULL,
-            status TEXT NOT NULL CHECK(status IN ('active', 'archived')),
-            rotation_state TEXT,
-            created_at TEXT NOT NULL,
-            FOREIGN KEY (user_id) REFERENCES users(id)
-        )
-        "#,
-    )
-    .execute(&pool)
-    .await
-    .unwrap();
-
-    // Migration 03: Unique constraint for single active meal plan (Story 3.11 AC #2, #10)
-    sqlx::query(
-        r#"
-        CREATE UNIQUE INDEX IF NOT EXISTS idx_meal_plans_unique_active
-        ON meal_plans(user_id)
-        WHERE status = 'active'
-        "#,
-    )
-    .execute(&pool)
-    .await
-    .unwrap();
-
-    // Migration 02: meal_assignments table
-    sqlx::query(
-        r#"
-        CREATE TABLE IF NOT EXISTS meal_assignments (
-            id TEXT PRIMARY KEY NOT NULL,
-            meal_plan_id TEXT NOT NULL,
-            date TEXT NOT NULL,
-            course_type TEXT NOT NULL CHECK(course_type IN ('appetizer', 'main_course', 'dessert')),
-            recipe_id TEXT NOT NULL,
-            prep_required INTEGER NOT NULL DEFAULT 0,
-            assignment_reasoning TEXT,
-            FOREIGN KEY (meal_plan_id) REFERENCES meal_plans(id) ON DELETE CASCADE,
-            FOREIGN KEY (recipe_id) REFERENCES recipes(id)
-        )
-        "#,
-    )
-    .execute(&pool)
-    .await
-    .unwrap();
-
-    // Migration (rotation): recipe_rotation_state table
-    sqlx::query(
-        r#"
-        CREATE TABLE IF NOT EXISTS recipe_rotation_state (
-            id TEXT PRIMARY KEY NOT NULL,
-            user_id TEXT NOT NULL,
-            cycle_number INTEGER NOT NULL,
-            recipe_id TEXT NOT NULL,
-            used_at TEXT NOT NULL,
-            UNIQUE(user_id, cycle_number, recipe_id)
-        )
-        "#,
-    )
-    .execute(&pool)
-    .await
-    .unwrap();
+    // Run application migrations from migrations/ directory
+    sqlx::migrate!("../../migrations")
+        .run(&pool)
+        .await
+        .unwrap();
 
     let executor: evento::Sqlite = pool.clone().into();
     (executor, pool)
@@ -141,9 +47,10 @@ async fn setup_test_db() -> (evento::Sqlite, sqlx::SqlitePool) {
 
 /// Helper: Create test user
 async fn create_test_user(user_id: &str, pool: &sqlx::SqlitePool) {
-    sqlx::query("INSERT INTO users (id, email, created_at) VALUES (?1, ?2, ?3)")
+    sqlx::query("INSERT INTO users (id, email, password_hash, created_at) VALUES (?1, ?2, ?3, ?4)")
         .bind(user_id)
         .bind(format!("{}@test.com", user_id))
+        .bind("test_hash") // dummy password hash for tests
         .bind(Utc::now().to_rfc3339())
         .execute(pool)
         .await
@@ -153,11 +60,14 @@ async fn create_test_user(user_id: &str, pool: &sqlx::SqlitePool) {
 /// Helper: Create test recipe
 async fn create_test_recipe(recipe_id: &str, user_id: &str, pool: &sqlx::SqlitePool) {
     sqlx::query(
-        "INSERT INTO recipes (id, user_id, title, is_favorite, created_at) VALUES (?1, ?2, ?3, 1, ?4)",
+        r#"INSERT INTO recipes (id, user_id, title, ingredients, instructions, is_favorite, created_at, updated_at)
+           VALUES (?1, ?2, ?3, ?4, ?5, 1, ?6, ?6)"#,
     )
     .bind(recipe_id)
     .bind(user_id)
     .bind(format!("Recipe {}", recipe_id))
+    .bind("[]") // Empty JSON array for ingredients
+    .bind("[]") // Empty JSON array for instructions
     .bind(Utc::now().to_rfc3339())
     .execute(pool)
     .await

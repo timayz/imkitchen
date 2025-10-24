@@ -22,36 +22,41 @@ async fn setup_test_db() -> (evento::Sqlite, sqlx::SqlitePool) {
         .unwrap();
     drop(conn);
 
-    // Run read model migrations
-    sqlx::query(
-        r#"
-        CREATE TABLE IF NOT EXISTS meal_plans (
-            id TEXT PRIMARY KEY NOT NULL,
-            user_id TEXT NOT NULL,
-            start_date TEXT NOT NULL,
-            status TEXT NOT NULL CHECK(status IN ('active', 'archived')),
-            rotation_state TEXT,
-            created_at TEXT NOT NULL
-        );
-
-        CREATE TABLE IF NOT EXISTS meal_assignments (
-            id TEXT PRIMARY KEY NOT NULL,
-            meal_plan_id TEXT NOT NULL,
-            date TEXT NOT NULL,
-            course_type TEXT NOT NULL CHECK(course_type IN ('appetizer', 'main_course', 'dessert')),
-            recipe_id TEXT NOT NULL,
-            prep_required INTEGER NOT NULL DEFAULT 0,
-            assignment_reasoning TEXT,
-            FOREIGN KEY (meal_plan_id) REFERENCES meal_plans(id) ON DELETE CASCADE
-        );
-        "#,
-    )
-    .execute(&pool)
-    .await
-    .unwrap();
+    // Run application migrations from migrations/ directory
+    sqlx::migrate!("../../migrations")
+        .run(&pool)
+        .await
+        .unwrap();
 
     let executor: evento::Sqlite = pool.clone().into();
     (executor, pool)
+}
+
+async fn create_test_user(user_id: &str, pool: &sqlx::SqlitePool) {
+    sqlx::query("INSERT INTO users (id, email, password_hash, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?4)")
+        .bind(user_id)
+        .bind(format!("{}@test.com", user_id))
+        .bind("test_hash")
+        .bind(Utc::now().to_rfc3339())
+        .execute(pool)
+        .await
+        .unwrap();
+}
+
+async fn create_test_recipe_in_db(recipe_id: &str, user_id: &str, pool: &sqlx::SqlitePool) {
+    sqlx::query(
+        r#"INSERT INTO recipes (id, user_id, title, ingredients, instructions, is_favorite, created_at, updated_at)
+           VALUES (?1, ?2, ?3, ?4, ?5, 1, ?6, ?6)"#,
+    )
+    .bind(recipe_id)
+    .bind(user_id)
+    .bind(format!("Recipe {}", recipe_id))
+    .bind("[]")
+    .bind("[]")
+    .bind(Utc::now().to_rfc3339())
+    .execute(pool)
+    .await
+    .unwrap();
 }
 
 fn create_test_recipe(
@@ -80,6 +85,14 @@ async fn test_reasoning_persisted_to_database() {
 
     // Create executor for committing events
     let commit_executor: evento::Sqlite = pool.clone().into();
+
+    // Create test user
+    create_test_user("test_user", &pool).await;
+
+    // Create test recipes in database (for foreign key constraints)
+    for i in 1..=12 {
+        create_test_recipe_in_db(&format!("r{}", i), "test_user", &pool).await;
+    }
 
     // Create test recipes with different course types
     let favorites = vec![
@@ -206,6 +219,14 @@ async fn test_reasoning_query_returns_with_assignments() {
 
     // Create executor for committing events
     let commit_executor: evento::Sqlite = pool.clone().into();
+
+    // Create test user (note: event uses test_user_2)
+    create_test_user("test_user_2", &pool).await;
+
+    // Create test recipes in database (for foreign key constraints)
+    for i in 1..=12 {
+        create_test_recipe_in_db(&format!("r{}", i), "test_user_2", &pool).await;
+    }
 
     // Create and generate meal plan with different course types
     let mut favorites = vec![];
