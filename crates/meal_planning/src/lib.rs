@@ -9,17 +9,14 @@ pub mod rotation;
 
 pub use aggregate::MealPlanAggregate;
 pub use algorithm::{generate_reasoning_text, MealPlanningAlgorithm, RecipeComplexityCalculator};
-pub use commands::{
-    regenerate_meal_plan, replace_meal, GenerateMealPlanCommand, RegenerateMealPlanCommand,
-    ReplaceMealCommand,
-};
+pub use commands::{regenerate_meal_plan, GenerateMealPlanCommand, RegenerateMealPlanCommand};
 pub use constraints::{
     AdvancePrepConstraint, AvailabilityConstraint, ComplexityConstraint, Constraint, CourseType,
     DietaryConstraint, EquipmentConflictConstraint, FreshnessConstraint, MealSlot,
 };
 pub use error::MealPlanningError;
 pub use events::{
-    MealPlanArchived, MealPlanGenerated, MealPlanRegenerated, MealReplaced, RecipeUsedInRotation,
+    MealPlanArchived, MealPlanGenerated, MealPlanRegenerated, RecipeUsedInRotation,
     RotationCycleReset,
 };
 pub use read_model::{

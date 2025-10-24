@@ -105,22 +105,6 @@ pub struct MealPlanArchived {
     pub archived_at: String, // RFC3339 formatted timestamp
 }
 
-/// MealReplaced event emitted when a user replaces a specific course slot
-///
-/// AC-5: Updated to use course_type instead of meal_type
-/// This event supports the "Replace Meal" feature (Story 3.2) allowing users
-/// to swap out a single course while preserving the rest of the plan.
-///
-/// Note: meal_plan_id is provided by event.aggregator_id, not stored in event data
-#[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
-pub struct MealReplaced {
-    pub date: String,          // ISO 8601 date of the course slot
-    pub course_type: String, // AC-5: "appetizer", "main_course", or "dessert" (renamed from meal_type)
-    pub old_recipe_id: String, // Recipe being replaced
-    pub new_recipe_id: String, // Replacement recipe
-    pub replaced_at: String, // RFC3339 formatted timestamp
-}
-
 /// MealPlanRegenerated event emitted when user regenerates entire meal plan (Story 3.7)
 ///
 /// This event replaces all 21 meal assignments with freshly generated recipes
