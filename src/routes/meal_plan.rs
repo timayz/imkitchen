@@ -104,6 +104,27 @@ pub struct MealPlanLoadingTemplate {
     pub current_path: String,
 }
 
+/// Template for meal plan polling continuation (partial HTML)
+#[derive(Template, Debug)]
+#[template(path = "components/meal-plan-polling.html")]
+pub struct MealPlanPollingTemplate {
+    pub meal_plan_id: String,
+}
+
+/// Template for meal plan polling page (full HTML with base.html)
+#[derive(Template, Debug)]
+#[template(path = "pages/meal-plan-polling-page.html")]
+pub struct MealPlanPollingPageTemplate {
+    pub user: Option<()>,
+    pub meal_plan_id: String,
+    pub current_path: String,
+}
+
+/// Template for meal plan error state (partial HTML)
+#[derive(Template, Debug)]
+#[template(path = "components/meal-plan-error.html")]
+pub struct MealPlanErrorTemplate;
+
 /// Helper function to render toast notification
 fn render_toast(
     message: &str,
@@ -195,57 +216,77 @@ pub struct MealCalendarTemplate {
 /// This endpoint is used by TwinSpark polling to check if evento projections
 /// have completed for a newly generated or regenerated meal plan.
 ///
+/// Verifies that:
+/// 1. Meal plan has 21 assignments in read model
+/// 2. Read model updated_at matches latest event timestamp from aggregate
+///
 /// Returns polling HTML until ready, then returns full meal calendar page HTML
 /// for TwinSpark to swap into <body>.
 pub async fn get_meal_plan_check_ready(
-    Extension(auth): Extension<Auth>,
+    Extension(_auth): Extension<Auth>,
     State(state): State<AppState>,
     axum::extract::Path(meal_plan_id): axum::extract::Path<String>,
 ) -> axum::response::Response {
-    // Check if read model has the meal plan with all 21 assignments
-    let assignment_count: Result<(i64,), sqlx::Error> = sqlx::query_as(
+    // Load aggregate to get latest event timestamp
+    let loaded = match evento::load::<meal_planning::MealPlanAggregate, _>(
+        &state.evento_executor,
+        &meal_plan_id,
+    )
+    .await
+    {
+        Ok(loaded) => loaded,
+        Err(e) => {
+            tracing::error!("Failed to load meal plan aggregate: {:?}", e);
+            // Return self polling element to retry
+            let polling_html = format!(
+                r##"<div ts-req="/plan/check-ready/{}" ts-trigger="load delay:500ms"></div>"##,
+                meal_plan_id
+            );
+            return (axum::http::StatusCode::OK, Html(polling_html)).into_response();
+        }
+    };
+
+    let event_timestamp = loaded.event.timestamp; // Latest event timestamp
+
+    // Check if read model has the meal plan with all 21 assignments AND matching timestamp
+    let meal_plan_check: Result<(i64, Option<String>), sqlx::Error> = sqlx::query_as(
         r#"
-        SELECT COUNT(*) as count
-        FROM meal_assignments
-        WHERE meal_plan_id = ?1
+        SELECT
+            (SELECT COUNT(*) FROM meal_assignments WHERE meal_plan_id = ?1) as assignment_count,
+            updated_at
+        FROM meal_plans
+        WHERE id = ?1
         "#,
     )
     .bind(&meal_plan_id)
     .fetch_one(&state.db_pool)
     .await;
 
-    let is_ready = match assignment_count {
-        Ok((count,)) => count >= 21, // Expected: 7 days × 3 courses = 21 assignments
-        Err(_) => false,
+    let is_ready = match meal_plan_check {
+        Ok((count, Some(updated_at))) => {
+            // Parse updated_at to timestamp and compare with event timestamp
+            if let Ok(updated_datetime) = chrono::DateTime::parse_from_rfc3339(&updated_at) {
+                let updated_ts = updated_datetime.timestamp();
+                count >= 21 && updated_ts == event_timestamp
+            } else {
+                false
+            }
+        }
+        _ => false,
     };
 
     if is_ready {
-        // Meal plan is ready - return full meal calendar HTML to swap into body
-        // This is different from registration which uses ts-location redirect
-        match get_meal_plan(Extension(auth), State(state)).await {
-            Ok(html) => (axum::http::StatusCode::OK, html).into_response(),
-            Err(e) => {
-                tracing::error!("Failed to render meal calendar after polling: {:?}", e);
-                // Return error HTML that displays in body
-                let error_html = Html(format!(
-                    r#"<div class="min-h-screen flex items-center justify-center">
-                        <div class="text-center">
-                            <h1 class="text-2xl font-bold text-red-600 mb-4">Error Loading Meal Plan</h1>
-                            <p class="text-gray-600 mb-4">Your meal plan was generated, but we couldn't display it.</p>
-                            <a href="/plan" class="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700">
-                                Refresh Page
-                            </a>
-                        </div>
-                    </div>"#
-                ));
-                (axum::http::StatusCode::OK, error_html).into_response()
-            }
-        }
+        // Meal plan is ready - return ts-location header to redirect to /plan
+        (
+            axum::http::StatusCode::OK,
+            [("ts-location", "/plan")],
+            Html(String::new()),
+        )
+            .into_response()
     } else {
-        // Meal plan not yet in read model - return minimal HTML with polling continuation
-        // TwinSpark will continue polling every 500ms
+        // Meal plan not yet ready - return self polling element to continue polling
         let polling_html = format!(
-            r#"<div ts-req="/plan/check-ready/{}" ts-trigger="load delay:500ms"></div>"#,
+            r##"<div ts-req="/plan/check-ready/{}" ts-trigger="load delay:500ms"></div>"##,
             meal_plan_id
         );
         (axum::http::StatusCode::OK, Html(polling_html)).into_response()
@@ -1076,7 +1117,7 @@ pub async fn post_regenerate_meal_plan(
     Extension(auth): Extension<Auth>,
     State(state): State<AppState>,
     axum::Form(form): axum::Form<RegenerateMealPlanForm>,
-) -> Result<impl IntoResponse, AppError> {
+) -> Result<Html<String>, AppError> {
     // Acquire generation lock to prevent concurrent regeneration
     let _lock_guard = {
         let mut locks = state.generation_locks.lock().await;
@@ -1188,10 +1229,10 @@ pub async fn post_regenerate_meal_plan(
         current_path: "/plan".to_string(),
     };
 
-    Ok(loading_template.render().map(Html).map_err(|e| {
+    loading_template.render().map(Html).map_err(|e| {
         tracing::error!("Failed to render meal plan loading template: {:?}", e);
         AppError::InternalError("Failed to render page".to_string())
-    })?)
+    })
 }
 
 #[cfg(test)]

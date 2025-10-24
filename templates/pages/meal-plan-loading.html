@@ -19,10 +19,10 @@
         </p>
 
         <!-- TwinSpark polling element -->
-        <!-- Polls /plan/check-ready/:meal_plan_id every 500ms until all 21 assignments exist in read model -->
-        <!-- When ready, server returns full meal calendar HTML to swap into body -->
-        <!-- Element replaces itself with response (which continues polling or swaps body) -->
-        <div ts-req="/plan/check-ready/{{ meal_plan_id }}" ts-trigger="load delay:500ms" ts-target="body" ts-swap="inner"></div>
+        <!-- Polls /plan/check-ready/:meal_plan_id every 500ms -->
+        <!-- Server returns self element when still polling -->
+        <!-- When ready, server responds with ts-location header to redirect to /plan -->
+        <div ts-req="/plan/check-ready/{{ meal_plan_id }}" ts-trigger="load delay:500ms"></div>
     </div>
 </div>
 {% endblock %}

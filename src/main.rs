@@ -276,7 +276,10 @@ async fn serve_command(
         )
         // Meal planning routes
         .route("/plan", get(get_meal_plan))
-        .route("/plan/check-ready/{meal_plan_id}", get(get_meal_plan_check_ready))
+        .route(
+            "/plan/check-ready/{meal_plan_id}",
+            get(get_meal_plan_check_ready),
+        )
         .route("/plan/generate", post(post_generate_meal_plan))
         .route("/plan/regenerate/confirm", get(get_regenerate_confirm))
         .route("/plan/regenerate", post(post_regenerate_meal_plan))
