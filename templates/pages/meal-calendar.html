@@ -30,8 +30,7 @@ button.ts-active::after {
 {% endblock %}
 
 {% block page_scripts %}
-<!-- Meal replacement and regeneration modals -->
-<script src={{ "/static/js/meal-replacement.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
+<!-- Meal regeneration modal -->
 <script src={{ "/static/js/meal-regeneration.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
 <script src={{ "/static/js/touch-enhancements.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
 <script src={{ "/static/js/sync-ui.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
@@ -150,14 +149,6 @@ button.ts-active::after {
                             <span class="text-orange-600 font-semibold" title="Advance prep required">⏰</span>
                             {% endif %}
                         </div>
-                        <button
-                            ts-req="/plan/meal/{{ appetizer.assignment_id }}/alternatives"
-                            ts-req-method="GET"
-                            ts-target="#modal-container"
-                            ts-swap="inner"
-                            class="mt-2 text-xs text-primary-600 hover:text-primary-800 underline">
-                            Replace This Meal
-                        </button>
                     </div>
                     {% when None %}
                     <div class="border-l-4 border-gray-200 pl-3 py-2">
@@ -208,14 +199,6 @@ button.ts-active::after {
                             <span class="text-orange-600 font-semibold" title="Advance prep required">⏰</span>
                             {% endif %}
                         </div>
-                        <button
-                            ts-req="/plan/meal/{{ main_course.assignment_id }}/alternatives"
-                            ts-req-method="GET"
-                            ts-target="#modal-container"
-                            ts-swap="inner"
-                            class="mt-2 text-xs text-primary-600 hover:text-primary-800 underline">
-                            Replace This Meal
-                        </button>
                     </div>
                     {% when None %}
                     <div class="border-l-4 border-gray-200 pl-3 py-2">
@@ -266,14 +249,6 @@ button.ts-active::after {
                             <span class="text-orange-600 font-semibold" title="Advance prep required">⏰</span>
                             {% endif %}
                         </div>
-                        <button
-                            ts-req="/plan/meal/{{ dessert.assignment_id }}/alternatives"
-                            ts-req-method="GET"
-                            ts-target="#modal-container"
-                            ts-swap="inner"
-                            class="mt-2 text-xs text-primary-600 hover:text-primary-800 underline">
-                            Replace This Meal
-                        </button>
                     </div>
                     {% when None %}
                     <div class="border-l-4 border-gray-200 pl-3 py-2">

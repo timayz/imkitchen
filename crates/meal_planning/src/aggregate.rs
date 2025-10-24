@@ -2,8 +2,8 @@ use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
 use crate::events::{
-    MealAssignment, MealPlanArchived, MealPlanGenerated, MealPlanRegenerated, MealReplaced,
-    RecipeUsedInRotation, RotationCycleReset,
+    MealAssignment, MealPlanArchived, MealPlanGenerated, MealPlanRegenerated, RecipeUsedInRotation,
+    RotationCycleReset,
 };
 
 /// MealPlanAggregate representing the state of a meal plan entity
@@ -153,53 +153,6 @@ impl MealPlanAggregate {
     ) -> anyhow::Result<()> {
         self.status = MealPlanStatus::Archived.as_str().to_string();
         self.archived_at = Some(event.data.archived_at);
-        Ok(())
-    }
-
-    /// Handle MealReplaced event to update a specific course assignment
-    ///
-    /// AC-5: Updated to use course_type instead of meal_type
-    /// This event handler supports the "Replace Individual Meal" feature (Story 3.2)
-    /// by swapping out a single recipe while preserving the rest of the plan.
-    ///
-    /// **Major Fix 2.3**: Updates rotation state to mark new recipe as used and
-    /// remove old recipe from used set, maintaining rotation integrity.
-    async fn meal_replaced(
-        &mut self,
-        event: evento::EventDetails<MealReplaced>,
-    ) -> anyhow::Result<()> {
-        // Find the meal assignment matching the date and course_type (AC-5)
-        if let Some(assignment) = self
-            .meal_assignments
-            .iter_mut()
-            .find(|a| a.date == event.data.date && a.course_type == event.data.course_type)
-        {
-            assignment.recipe_id = event.data.new_recipe_id.clone();
-        }
-
-        // Update rotation state to reflect the recipe swap
-        let mut rotation_state =
-            crate::rotation::RotationState::from_json(&self.rotation_state_json).map_err(|e| {
-                anyhow::anyhow!(
-                    "Failed to parse rotation state in meal_replaced for meal_plan_id={}: {}",
-                    self.meal_plan_id,
-                    e
-                )
-            })?;
-
-        // Remove old recipe from used set (if present)
-        rotation_state
-            .used_recipe_ids
-            .remove(&event.data.old_recipe_id);
-
-        // Mark new recipe as used
-        rotation_state.mark_recipe_used(event.data.new_recipe_id.clone());
-
-        // Save updated rotation state back to JSON
-        self.rotation_state_json = rotation_state.to_json().map_err(|e| {
-            anyhow::anyhow!("Failed to serialize rotation state in meal_replaced: {}", e)
-        })?;
-
         Ok(())
     }
 

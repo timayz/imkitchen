@@ -262,31 +262,6 @@ async fn test_kitchen_mode_link_format() {
     assert!(kitchen_mode_link.contains("from=calendar"));
 }
 
-/// Test: Replace button only visible when assignment_id present
-/// AC-4: Replace This Meal button functionality
-#[tokio::test]
-async fn test_replace_button_visibility_logic() {
-    // When assignment_id is Some, replace button should be rendered
-    let assignment_id: Option<String> = Some("assign123".to_string());
-    let is_from_calendar = true;
-
-    let should_show_replace = is_from_calendar && assignment_id.is_some();
-
-    assert!(
-        should_show_replace,
-        "Replace button should be visible when from calendar with assignment_id"
-    );
-
-    // When assignment_id is None, replace button should NOT be rendered
-    let assignment_id: Option<String> = None;
-    let should_show_replace = is_from_calendar && assignment_id.is_some();
-
-    assert!(
-        !should_show_replace,
-        "Replace button should be hidden when assignment_id is None"
-    );
-}
-
 /// Test: All calendar context fields parsed correctly from query string
 /// AC-1, AC-4, AC-5, AC-6: Full query parameter parsing
 #[tokio::test]
