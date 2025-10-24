@@ -1019,8 +1019,7 @@ impl evento::SubscribeHandler<evento::Sqlite> for MealPlanGeneratedHandler {
 /// We explicitly skip events we don't need to handle to avoid "Not handled" error logs.
 pub fn meal_plan_subscriptions(pool: sqlx::SqlitePool) -> evento::SubscribeBuilder<evento::Sqlite> {
     use meal_planning::{
-        MealPlanArchived, MealPlanRegenerated, MealReplaced, RecipeUsedInRotation,
-        RotationCycleReset,
+        MealPlanArchived, MealPlanRegenerated, RecipeUsedInRotation, RotationCycleReset,
     };
 
     evento::subscribe("notification-meal-plan-listeners")
@@ -1029,7 +1028,6 @@ pub fn meal_plan_subscriptions(pool: sqlx::SqlitePool) -> evento::SubscribeBuild
         .handler(MealPlanGeneratedHandler)
         .skip::<MealPlanAggregate, MealPlanRegenerated>()
         .skip::<MealPlanAggregate, MealPlanArchived>()
-        .skip::<MealPlanAggregate, MealReplaced>()
         .skip::<MealPlanAggregate, RecipeUsedInRotation>()
         .skip::<MealPlanAggregate, RotationCycleReset>()
 }
