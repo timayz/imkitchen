@@ -77,8 +77,10 @@
     <link rel="preload" href={{ "/static/css/main.css?v=" ~ env!("CARGO_PKG_VERSION") }} as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href={{ "/static/css/main.css?v=" ~ env!("CARGO_PKG_VERSION") }}></noscript>
 
+    <!-- Conditional polyfills for old browsers (minified inline) -->
+    <script>!function(){if(!window.Promise||!window.fetch||!Array.prototype.includes||!Object.assign||"undefined"==typeof Symbol){var e=document.createElement("script");e.src="{{ "/static/js/polyfills.js?v=" ~ env!("CARGO_PKG_VERSION") }}",e.async=!1,document.head.appendChild(e)}}();</script>
+
     <!-- Core scripts (loaded on all pages) -->
-    <script src={{ "/static/js/polyfills.js?v=" ~ env!("CARGO_PKG_VERSION") }}></script>
     <script src={{ "/static/js/twinspark.min.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
 
     <!-- PWA scripts (loaded on all pages for PWA functionality) -->
