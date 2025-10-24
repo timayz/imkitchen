@@ -1,7 +1,7 @@
 use askama::Template;
 use axum::{
     extract::State,
-    response::{Html, IntoResponse, Redirect},
+    response::{Html, IntoResponse},
     Extension,
 };
 use chrono::{Datelike, NaiveDate, Utc};
@@ -95,6 +95,36 @@ pub struct NoAlternativesModalTemplate<'a> {
     pub course_type: &'a str, // AC-5: Renamed from meal_type
 }
 
+/// Template for meal plan loading state with TwinSpark polling
+#[derive(Template, Debug)]
+#[template(path = "pages/meal-plan-loading.html")]
+pub struct MealPlanLoadingTemplate {
+    pub user: Option<()>,
+    pub meal_plan_id: String,
+    pub current_path: String,
+}
+
+/// Template for meal plan polling continuation (partial HTML)
+#[derive(Template, Debug)]
+#[template(path = "components/meal-plan-polling.html")]
+pub struct MealPlanPollingTemplate {
+    pub meal_plan_id: String,
+}
+
+/// Template for meal plan polling page (full HTML with base.html)
+#[derive(Template, Debug)]
+#[template(path = "pages/meal-plan-polling-page.html")]
+pub struct MealPlanPollingPageTemplate {
+    pub user: Option<()>,
+    pub meal_plan_id: String,
+    pub current_path: String,
+}
+
+/// Template for meal plan error state (partial HTML)
+#[derive(Template, Debug)]
+#[template(path = "components/meal-plan-error.html")]
+pub struct MealPlanErrorTemplate;
+
 /// Helper function to render toast notification
 fn render_toast(
     message: &str,
@@ -179,6 +209,88 @@ pub struct MealCalendarTemplate {
     pub rotation_total: usize, // AC (Story 3.3): Total favorites
     pub current_path: String,
     pub error_message: Option<String>, // Issue #130: Display inline error messages
+}
+
+/// GET /plan/check-ready/:meal_plan_id - Check if meal plan read model is ready
+///
+/// This endpoint is used by TwinSpark polling to check if evento projections
+/// have completed for a newly generated or regenerated meal plan.
+///
+/// Verifies that:
+/// 1. Meal plan has 21 assignments in read model
+/// 2. Read model updated_at matches latest event timestamp from aggregate
+///
+/// Returns polling HTML until ready, then returns full meal calendar page HTML
+/// for TwinSpark to swap into <body>.
+pub async fn get_meal_plan_check_ready(
+    Extension(_auth): Extension<Auth>,
+    State(state): State<AppState>,
+    axum::extract::Path(meal_plan_id): axum::extract::Path<String>,
+) -> axum::response::Response {
+    // Load aggregate to get latest event timestamp
+    let loaded = match evento::load::<meal_planning::MealPlanAggregate, _>(
+        &state.evento_executor,
+        &meal_plan_id,
+    )
+    .await
+    {
+        Ok(loaded) => loaded,
+        Err(e) => {
+            tracing::error!("Failed to load meal plan aggregate: {:?}", e);
+            // Return self polling element to retry
+            let polling_html = format!(
+                r##"<div ts-req="/plan/check-ready/{}" ts-trigger="load delay:500ms"></div>"##,
+                meal_plan_id
+            );
+            return (axum::http::StatusCode::OK, Html(polling_html)).into_response();
+        }
+    };
+
+    let event_timestamp = loaded.event.timestamp; // Latest event timestamp
+
+    // Check if read model has the meal plan with all 21 assignments AND matching timestamp
+    let meal_plan_check: Result<(i64, Option<String>), sqlx::Error> = sqlx::query_as(
+        r#"
+        SELECT
+            (SELECT COUNT(*) FROM meal_assignments WHERE meal_plan_id = ?1) as assignment_count,
+            updated_at
+        FROM meal_plans
+        WHERE id = ?1
+        "#,
+    )
+    .bind(&meal_plan_id)
+    .fetch_one(&state.db_pool)
+    .await;
+
+    let is_ready = match meal_plan_check {
+        Ok((count, Some(updated_at))) => {
+            // Parse updated_at to timestamp and compare with event timestamp
+            if let Ok(updated_datetime) = chrono::DateTime::parse_from_rfc3339(&updated_at) {
+                let updated_ts = updated_datetime.timestamp();
+                count >= 21 && updated_ts == event_timestamp
+            } else {
+                false
+            }
+        }
+        _ => false,
+    };
+
+    if is_ready {
+        // Meal plan is ready - return ts-location header to redirect to /plan
+        (
+            axum::http::StatusCode::OK,
+            [("ts-location", "/plan")],
+            Html(String::new()),
+        )
+            .into_response()
+    } else {
+        // Meal plan not yet ready - return self polling element to continue polling
+        let polling_html = format!(
+            r##"<div ts-req="/plan/check-ready/{}" ts-trigger="load delay:500ms"></div>"##,
+            meal_plan_id
+        );
+        (axum::http::StatusCode::OK, Html(polling_html)).into_response()
+    }
 }
 
 /// GET /plan - Display meal calendar view
@@ -593,10 +705,18 @@ pub async fn post_generate_meal_plan(
             })?;
     }
 
-    // AC-9: Redirect to calendar view after successful generation
-    // Note: We can't directly return Redirect from Html<String> handler,
-    // so we fetch and render the updated meal plan page
-    get_meal_plan(Extension(auth), State(state)).await
+    // Return loading state that polls for read model completion
+    // TwinSpark will poll /plan/check-ready until meal plan is fully projected
+    let loading_template = MealPlanLoadingTemplate {
+        user: Some(()),
+        meal_plan_id: meal_plan_id.clone(),
+        current_path: "/plan".to_string(),
+    };
+
+    loading_template.render().map(Html).map_err(|e| {
+        tracing::error!("Failed to render meal plan loading template: {:?}", e);
+        AppError::InternalError("Failed to render page".to_string())
+    })
 }
 
 /// Helper: Fetch recipes by IDs
@@ -822,12 +942,9 @@ pub async fn post_replace_meal(
 
     meal_planning::replace_meal(cmd, &state.evento_executor).await?;
 
-    // Process evento subscription to update read model (use unsafe_oneshot for sync processing)
-    // This ensures the read model is updated before we query it
-    meal_planning::meal_plan_projection(state.db_pool.clone())
-        .unsafe_oneshot(&state.evento_executor)
-        .await
-        .map_err(|e| AppError::EventStoreError(format!("Failed to process projection: {}", e)))?;
+    // Note: Read model projection happens asynchronously via evento subscriptions
+    // For meal replacement (single slot update), we can render optimistically
+    // since we have all the data needed from the command
 
     // Fetch the replacement recipe details for rendering
     let replacement_recipe = sqlx::query_as::<_, RecipeReadModel>(
@@ -1000,7 +1117,7 @@ pub async fn post_regenerate_meal_plan(
     Extension(auth): Extension<Auth>,
     State(state): State<AppState>,
     axum::Form(form): axum::Form<RegenerateMealPlanForm>,
-) -> Result<impl IntoResponse, AppError> {
+) -> Result<Html<String>, AppError> {
     // Acquire generation lock to prevent concurrent regeneration
     let _lock_guard = {
         let mut locks = state.generation_locks.lock().await;
@@ -1101,14 +1218,21 @@ pub async fn post_regenerate_meal_plan(
     )
     .await?;
 
-    // Process evento subscription to update read model (use unsafe_oneshot for sync processing)
-    meal_planning::meal_plan_projection(state.db_pool.clone())
-        .unsafe_oneshot(&state.evento_executor)
-        .await
-        .map_err(|e| AppError::EventStoreError(format!("Failed to process projection: {}", e)))?;
+    // Note: Read model projection happens asynchronously via evento subscriptions
+    // Return loading state that polls for completion instead of blocking
 
-    // Redirect to calendar view with success message
-    Ok(Redirect::to("/plan"))
+    // Return loading state that polls for read model completion
+    // TwinSpark will poll /plan/check-ready until meal plan is fully projected
+    let loading_template = MealPlanLoadingTemplate {
+        user: Some(()),
+        meal_plan_id: meal_plan.id.clone(),
+        current_path: "/plan".to_string(),
+    };
+
+    loading_template.render().map(Html).map_err(|e| {
+        tracing::error!("Failed to render meal plan loading template: {:?}", e);
+        AppError::InternalError("Failed to render page".to_string())
+    })
 }
 
 #[cfg(test)]

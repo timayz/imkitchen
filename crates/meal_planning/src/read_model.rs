@@ -16,6 +16,7 @@ pub struct MealPlanReadModel {
     pub status: String,         // "active" or "archived"
     pub rotation_state: String, // JSON
     pub created_at: String,
+    pub updated_at: Option<String>, // Updated on regeneration
 }
 
 /// MealAssignment data from read model (meal_assignments table)
@@ -58,7 +59,7 @@ impl MealPlanQueries {
     ) -> Result<Option<MealPlanReadModel>, sqlx::Error> {
         sqlx::query_as::<_, MealPlanReadModel>(
             r#"
-            SELECT id, user_id, start_date, status, rotation_state, created_at
+            SELECT id, user_id, start_date, status, rotation_state, created_at, updated_at
             FROM meal_plans
             WHERE user_id = ?1 AND status = 'active'
             ORDER BY created_at DESC
@@ -77,7 +78,7 @@ impl MealPlanQueries {
     ) -> Result<Option<MealPlanReadModel>, sqlx::Error> {
         sqlx::query_as::<_, MealPlanReadModel>(
             r#"
-            SELECT id, user_id, start_date, status, rotation_state, created_at
+            SELECT id, user_id, start_date, status, rotation_state, created_at, updated_at
             FROM meal_plans
             WHERE id = ?1
             "#,
@@ -425,17 +426,22 @@ pub async fn meal_plan_generated_handler<E: Executor>(
     .await?;
 
     // Insert meal plan into read model
+    // Use event.timestamp for created_at and updated_at (both same on initial generation)
+    let timestamp_rfc3339 = chrono::DateTime::from_timestamp(event.timestamp, 0)
+        .ok_or_else(|| anyhow::anyhow!("Invalid timestamp"))?
+        .to_rfc3339();
+
     sqlx::query(
         r#"
-        INSERT INTO meal_plans (id, user_id, start_date, status, rotation_state, created_at)
-        VALUES (?1, ?2, ?3, 'active', ?4, ?5)
+        INSERT INTO meal_plans (id, user_id, start_date, status, rotation_state, created_at, updated_at)
+        VALUES (?1, ?2, ?3, 'active', ?4, ?5, ?5)
         "#,
     )
     .bind(&event.aggregator_id)
     .bind(&event.data.user_id)
     .bind(&event.data.start_date)
     .bind(&event.data.rotation_state_json)
-    .bind(&event.data.generated_at)
+    .bind(&timestamp_rfc3339)
     .execute(&mut *tx)
     .await?;
 
@@ -706,15 +712,21 @@ pub async fn meal_plan_regenerated_handler<E: Executor>(
         .await?;
     }
 
-    // UPDATE rotation_state in meal_plans table (cycle preserved)
+    // UPDATE rotation_state and updated_at in meal_plans table (cycle preserved)
+    // Use event.timestamp for updated_at to track when regeneration occurred
+    let timestamp_rfc3339 = chrono::DateTime::from_timestamp(event.timestamp, 0)
+        .ok_or_else(|| anyhow::anyhow!("Invalid timestamp"))?
+        .to_rfc3339();
+
     sqlx::query(
         r#"
         UPDATE meal_plans
-        SET rotation_state = ?1
-        WHERE id = ?2
+        SET rotation_state = ?1, updated_at = ?2
+        WHERE id = ?3
         "#,
     )
     .bind(&event.data.rotation_state_json)
+    .bind(&timestamp_rfc3339)
     .bind(&event.aggregator_id)
     .execute(&mut *tx)
     .await?;
