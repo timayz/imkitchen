@@ -241,7 +241,7 @@
 
 {% block page_scripts %}
 <!-- AC #4: Push subscription JavaScript -->
-<script src={{ "/static/js/push-subscription.js?v=" ~ env!("CARGO_PKG_VERSION") }}></script>
+<script src={{ "/static/js/push-subscription.min.js?v=" ~ env!("CARGO_PKG_VERSION") }}></script>
 <script>
     // Initialize with VAPID public key (from server)
     PushSubscription.init('{{ vapid_public_key }}');
