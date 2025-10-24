@@ -360,6 +360,17 @@ async fn serve_command(
         )
         // Add cache control middleware (no-cache for HTML, cache for static files)
         .layer(axum_middleware::from_fn(cache_control_middleware))
+        // LiveReload layer for development (debug builds only) - must be before minification
+        .layer({
+            #[cfg(debug_assertions)]
+            {
+                tower_livereload::LiveReloadLayer::new()
+            }
+            #[cfg(not(debug_assertions))]
+            {
+                axum::middleware::from_fn(|req, next| async move { next.run(req).await })
+            }
+        })
         // Minify HTML responses before compression
         .layer(axum_middleware::map_response(minify_html_middleware))
         // Enable Brotli and Gzip compression for all text assets (Story 5.9)
