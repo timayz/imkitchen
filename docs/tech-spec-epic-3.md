@@ -13,25 +13,29 @@ The Intelligent Meal Planning Engine is the core value proposition of imkitchen,
 
 The system generates a single active meal plan per user organized by week, filling breakfast/lunch/dinner slots with recipes from the user's favorites. The algorithm considers multiple constraints simultaneously: weeknight availability patterns, cooking skill level, household size, advance preparation lead times, recipe complexity scores, and dietary restrictions. Visual calendar views with advance prep indicators and algorithm transparency features build user trust in the automated system.
 
+**Key Business Rule:** All meal plan generation and regeneration operations create plans for **next week only** (Monday-Sunday starting from the Monday following the current week). This forward-looking approach gives users time to shop and prepare without disrupting the current week's meals.
+
 ## Objectives and Scope
 
 ### In Scope
 1. Automated meal plan generation with multi-factor optimization algorithm
-2. Visual week-view calendar displaying breakfast/lunch/dinner assignments
-3. Recipe rotation system ensuring no duplicates until all favorites used once
-4. Individual meal slot replacement with constraint-aware suggestions
-5. Full meal plan regeneration maintaining rotation state
-6. Algorithm transparency showing reasoning for meal assignments
-7. Home dashboard displaying today's meals from active plan
-8. Recipe complexity calculation service
-9. Advance preparation indicator visualization
-10. Meal plan persistence and activation management
-11. Insufficient recipe validation with user guidance
-12. Integration with shopping list generation via domain events
+2. **Next-week-only generation:** All plans start from next Monday (Story 3.13)
+3. Visual week-view calendar displaying breakfast/lunch/dinner assignments
+4. Recipe rotation system ensuring no duplicates until all favorites used once
+5. Individual meal slot replacement with constraint-aware suggestions
+6. Full meal plan regeneration maintaining rotation state (next week target)
+7. Algorithm transparency showing reasoning for meal assignments
+8. Home dashboard displaying next week's meals from active plan
+9. Recipe complexity calculation service
+10. Advance preparation indicator visualization
+11. Meal plan persistence and activation management
+12. Insufficient recipe validation with user guidance
+13. Integration with shopping list generation via domain events
 
 ### Out of Scope (Future Enhancements)
 - Machine learning-based preference optimization
-- Multi-week meal planning (MVP: single week only)
+- Multi-week meal planning (MVP: single week only, always next week)
+- Current week meal plan modification (MVP: next week only, current week read-only)
 - Meal plan templates or pre-built suggestions
 - Collaborative meal planning (family member preferences)
 - Recipe scheduling based on weather or seasonal availability
@@ -85,6 +89,7 @@ fn generate_meal_plan(user_profile, favorite_recipes, rotation_state) -> MealPla
     let constraints = build_constraints(user_profile, scored_recipes);
 
     // 4. Generate meal slots (7 days × 3 meals = 21 slots)
+    // Note: start_date is always Monday (week convention)
     let meal_slots = generate_meal_slots(start_date);
 
     // 5. Assign recipes to slots via constraint satisfaction
@@ -424,8 +429,8 @@ impl MealPlan {
 CREATE TABLE meal_plans (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
-    start_date TEXT NOT NULL,  -- ISO 8601 date (YYYY-MM-DD)
-    end_date TEXT NOT NULL,    -- Computed: start_date + 6 days
+    start_date TEXT NOT NULL,  -- ISO 8601 date (YYYY-MM-DD), always Monday
+    end_date TEXT NOT NULL,    -- Computed: start_date + 6 days (Sunday)
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     rotation_cycle_number INTEGER NOT NULL,
     created_at TEXT NOT NULL,
@@ -733,6 +738,7 @@ pub struct ReplaceMealForm {
     <!-- Week navigation -->
     <div class="mb-4 text-center">
         <span class="text-lg">Week of {{ meal_plan.start_date | date_format }}</span>
+        <!-- Note: start_date is always Monday (week convention) -->
     </div>
 
     <!-- Rotation progress -->
@@ -1273,7 +1279,7 @@ pub async fn generate_meal_plan(
 - [ ] Rotation cycle resets when all favorites used once
 
 ### Story 3.4: Visual Week-View Meal Calendar
-- [ ] Calendar displays 7 days (Sunday-Saturday or Monday-Sunday)
+- [ ] Calendar displays 7 days (Monday-Sunday, always starting Monday)
 - [ ] Each day shows 3 meal slots: breakfast, lunch, dinner
 - [ ] Each slot displays: recipe title, prep time, complexity badge
 - [ ] Advance prep indicator (clock icon) visible on prep recipes

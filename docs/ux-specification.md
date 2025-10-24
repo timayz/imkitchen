@@ -761,11 +761,13 @@ Progressive Enhancement (works without JS)
 
 **Purpose**: Display weekly meal plan
 
-**Layout:** 7 columns (days), 3 rows per day (B/L/D), responsive: vertical stack mobile (<768px)
+**Layout:** 7 columns (days: Mon-Tue-Wed-Thu-Fri-Sat-Sun, always starting Monday), 3 rows per day (B/L/D), responsive: vertical stack mobile (<768px)
 
 **Content:** Day header (date, day name), 3 Meal Slot components per day, Previous/Next week arrows, "Today" indicator
 
 **Interaction:** Click day header: Jump to detail, Click meal slot: Open recipe, Swipe left/right: Navigate weeks (mobile)
+
+**Week Convention:** All weeks start on Monday. Week navigation moves forward/backward by 7 days from Monday. Week identifiers use Monday's date (e.g., "Week of Oct 14, 2025" for the week Monday Oct 14 - Sunday Oct 20).
 
 ---
 
@@ -905,9 +907,9 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
 - Desktop: Grid (4 columns) + filters sidebar
 
 **Meal Calendar:**
-- Mobile: Vertical stack (1 day at a time, swipe navigation)
-- Tablet: 7-day week view (compact meal slots)
-- Desktop: Full 7-day week view (large meal slots), month view option
+- Mobile: Vertical stack (1 day at a time, swipe navigation, Monday-Sunday ordering)
+- Tablet: 7-day week view starting Monday (compact meal slots)
+- Desktop: Full 7-day week view starting Monday (large meal slots), month view option
 
 **Shopping List:**
 - Mobile: Full-screen list, collapsible category sections

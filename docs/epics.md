@@ -12,12 +12,12 @@
 This document provides the detailed epic breakdown for imkitchen, an intelligent meal planning and cooking optimization platform. The MVP is structured into 5 epics delivering incremental value:
 
 1. **User Authentication and Profile Management** (8 stories) - Foundation for secure user access and personalized meal planning preferences
-2. **Recipe Management System** (10 stories) - Core recipe CRUD, organization, and community sharing capabilities
-3. **Intelligent Meal Planning Engine** (12 stories) - Automated meal scheduling with multi-factor optimization and recipe rotation
+2. **Recipe Management System** (11 stories) - Core recipe CRUD, organization, and community sharing capabilities
+3. **Intelligent Meal Planning Engine** (13 stories) - Automated meal scheduling with multi-factor optimization and recipe rotation
 4. **Shopping and Preparation Orchestration** (11 stories) - Shopping list generation and advance preparation reminder system
-5. **Progressive Web App and Mobile Experience** (9 stories) - Installable PWA with offline capabilities and kitchen-optimized interface
+5. **Progressive Web App and Mobile Experience** (10 stories) - Installable PWA with offline capabilities and kitchen-optimized interface
 
-**Total Estimated Stories:** 50 stories
+**Total Estimated Stories:** 53 stories
 **Development Timeline:** 5-8 months to MVP launch
 **Architecture Approach:** Event-sourced DDD using evento (Rust), TDD enforced, CQRS pattern
 
@@ -562,18 +562,22 @@ This document provides the detailed epic breakdown for imkitchen, an intelligent
 2. Clicking button triggers meal planning algorithm
 3. System analyzes all favorited recipes against user profile constraints
 4. Algorithm generates single meal plan with recipes organized by week
-5. Week-view calendar displays generated plan with breakfast/lunch/dinner slots filled
-6. Generation completes within 5 seconds for up to 50 favorite recipes
-7. Progress indicator shown during generation
-8. Generated plan automatically becomes active
-9. User redirected to calendar view after successful generation
-10. If insufficient recipes (<7 favorites), display helpful error: "Add more favorite recipes to generate meal plan (need at least 7)"
+5. **Meal plan always starts from next Monday** (see Story 3.13 - Next-Week-Only Generation)
+6. Week-view calendar displays generated plan with breakfast/lunch/dinner slots filled
+7. Generation completes within 5 seconds for up to 50 favorite recipes
+8. Progress indicator shown during generation
+9. Generated plan automatically becomes active
+10. User redirected to calendar view after successful generation
+11. If insufficient recipes (<7 favorites), display helpful error: "Add more favorite recipes to generate meal plan (need at least 7)"
+12. Confirmation message displays: "Meal plan generated for Week of {next Monday date}"
 
 **Technical Notes:**
 - MealPlan aggregate with MealPlanGenerated event
 - Multi-factor optimization algorithm considers: user availability, recipe complexity, advance prep requirements, ingredient freshness
 - Recipe rotation ensures no duplicates until all favorites used once
 - Algorithm runs synchronously (no background jobs for MVP)
+- **Next-week constraint:** `start_date` calculated via `calculate_next_week_start()` - always returns next Monday
+- Command validation rejects past or current week start dates
 
 ---
 
@@ -635,7 +639,7 @@ This document provides the detailed epic breakdown for imkitchen, an intelligent
 **Prerequisites:** User has active meal plan
 
 **Acceptance Criteria:**
-1. Calendar displays 7 days (Sunday-Saturday or Monday-Sunday based on locale)
+1. Calendar displays 7 days (Monday-Sunday, always starting on Monday)
 2. Each day shows 3 meal slots: breakfast, lunch, dinner
 3. Each slot displays: recipe title, recipe image placeholder, prep time indicator
 4. Advance preparation indicator (clock icon) visible on recipes requiring prep
@@ -711,20 +715,24 @@ This document provides the detailed epic breakdown for imkitchen, an intelligent
 
 **Acceptance Criteria:**
 1. "Regenerate Meal Plan" button visible on calendar page
-2. Confirmation dialog: "This will replace your entire meal plan. Continue?"
+2. Confirmation dialog: "This will replace your meal plan for next week. Continue?"
 3. Clicking confirm triggers full meal plan regeneration
-4. Algorithm runs with same logic as initial generation
-5. Rotation state preserved (doesn't reset cycle)
-6. New plan fills all slots with different recipe assignments
-7. Calendar updates to show new plan
-8. Shopping list regenerated for new plan
-9. Old meal plan archived for audit trail
-10. Generation respects same optimization factors (availability, complexity, prep timing)
+4. **Regenerated plan always starts from next Monday** (see Story 3.13 - Next-Week-Only Generation)
+5. Algorithm runs with same logic as initial generation
+6. Rotation state preserved (doesn't reset cycle)
+7. New plan fills all slots with different recipe assignments
+8. Calendar updates to show new plan
+9. Shopping list regenerated for new plan
+10. Old meal plan archived for audit trail
+11. Generation respects same optimization factors (availability, complexity, prep timing)
+12. **Current week protection:** System never overwrites current week's plan during regeneration
 
 **Technical Notes:**
 - MealPlanRegenerated event
 - Soft delete old meal plan (keeps history)
 - New MealPlan aggregate created with incremented version
+- **Next-week constraint:** Regeneration always targets next Monday via `calculate_next_week_start()`
+- Command validation prevents regenerating past or current week
 
 ---
 
@@ -846,11 +854,39 @@ This document provides the detailed epic breakdown for imkitchen, an intelligent
 
 ---
 
+#### Story 3.13: Next-Week-Only Meal Plan Generation
+**As a** user generating or regenerating a meal plan
+**I want** the system to always create plans starting from next Monday
+**So that** I have time to shop and prepare for the upcoming week without disrupting my current week's meals
+
+**Prerequisites:** User has at least 7 favorite recipes
+
+**Acceptance Criteria:**
+1. System calculates "next week" as the Monday following the current week
+2. Generate/regenerate always creates meal plan starting from next Monday
+3. Week boundaries always Monday-Sunday (Monday = start, Sunday = end)
+4. Confirmation message: "Meal plan generated for Week of {next Monday date}"
+5. Dashboard shows "Next Week's Meals" label
+6. Calendar header displays: "Week of {next Monday date} - {next Sunday date}"
+7. Current week protection: system never overwrites current week's plan
+8. Week transition (Sunday→Monday) correctly updates "next week" calculation
+9. Edge cases handled: if today is Sunday, next week starts tomorrow; if Monday, next week is 7 days away
+10. Command validation rejects past or current week start dates
+
+**Technical Notes:**
+- `calculate_next_week_start()` function returns next Monday based on current day
+- MealPlan aggregate enforces `start_date >= next_monday` constraint
+- Dashboard and calendar queries filter for next week only
+- Detailed specification in `./docs/stories/story-3.13.md`
+
+---
+
 **Epic 3 Technical Summary:**
 - **Aggregates:** MealPlan, MealPlanSlot
 - **Events:** MealPlanGenerated, MealPlanRegenerated, MealSlotReplaced, RecipeRotationCycleStarted, RecipeUsedInRotation
 - **Domain Services:** MealPlanningAlgorithm (CSP solver), RecipeComplexityCalculator
 - **Algorithm Performance:** O(n) where n = favorite recipe count, <5 second target
+- **Business Rules:** All meal plans start on Monday, generation always targets next week (never current week)
 - **Testing:** TDD enforced - unit tests for algorithm logic, integration tests for meal plan CRUD, E2E tests for generation and replacement flows, property-based testing for rotation invariants
 
 **Technical Specification:** Detailed implementation guide available in `./docs/tech-spec-epic-3.md`
@@ -1433,12 +1469,12 @@ This document provides the detailed epic breakdown for imkitchen, an intelligent
 
 ## Epic Summary
 
-**Total Stories Across All Epics:** 50 stories
+**Total Stories Across All Epics:** 53 stories
 - Epic 1: 8 stories (Authentication and Profile)
-- Epic 2: 10 stories (Recipe Management)
-- Epic 3: 12 stories (Meal Planning Engine)
+- Epic 2: 11 stories (Recipe Management - includes Story 2.11 Tech Debt)
+- Epic 3: 13 stories (Meal Planning Engine - includes Story 3.13 Next-Week-Only Generation)
 - Epic 4: 11 stories (Shopping and Preparation)
-- Epic 5: 9 stories (PWA and Mobile)
+- Epic 5: 10 stories (PWA and Mobile)
 
 **Estimated Timeline:** 5-8 months to MVP launch with solo developer or small team
 

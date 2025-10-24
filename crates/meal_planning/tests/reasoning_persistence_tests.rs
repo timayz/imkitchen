@@ -105,7 +105,9 @@ async fn test_reasoning_persisted_to_database() {
     let rotation_state = meal_planning::rotation::RotationState::new();
 
     let (assignments, rotation_state) = MealPlanningAlgorithm::generate(
-        "2025-10-20", // Monday
+        &meal_planning::calculate_next_week_start()
+            .format("%Y-%m-%d")
+            .to_string(), // Monday
         favorites,
         user_constraints,
         rotation_state,
@@ -126,7 +128,9 @@ async fn test_reasoning_persisted_to_database() {
     // Emit MealPlanGenerated event
     let event_data = MealPlanGenerated {
         user_id: "test_user".to_string(),
-        start_date: "2025-10-20".to_string(),
+        start_date: meal_planning::calculate_next_week_start()
+            .format("%Y-%m-%d")
+            .to_string(),
         meal_assignments: assignments.clone(),
         rotation_state_json: rotation_state.to_json().unwrap(),
         generated_at: Utc::now().to_rfc3339(),
@@ -179,9 +183,12 @@ async fn test_reasoning_persisted_to_database() {
     }
 
     // Verify specific reasoning examples
+    let tuesday_date = (meal_planning::calculate_next_week_start() + chrono::Duration::days(1))
+        .format("%Y-%m-%d")
+        .to_string();
     let tuesday_dinner = stored_assignments
         .iter()
-        .find(|a| a.date == "2025-10-21" && a.course_type == "dessert")
+        .find(|a| a.date == tuesday_date && a.course_type == "dessert")
         .expect("Should find Tuesday dessert");
 
     let reasoning = tuesday_dinner.assignment_reasoning.as_ref().unwrap();
@@ -228,7 +235,9 @@ async fn test_reasoning_query_returns_with_assignments() {
     }
 
     let (assignments, rotation_state) = MealPlanningAlgorithm::generate(
-        "2025-10-20",
+        &meal_planning::calculate_next_week_start()
+            .format("%Y-%m-%d")
+            .to_string(),
         favorites,
         UserConstraints::default(),
         meal_planning::rotation::RotationState::new(),
@@ -239,7 +248,9 @@ async fn test_reasoning_query_returns_with_assignments() {
     // Emit event
     let event_data = MealPlanGenerated {
         user_id: "test_user_2".to_string(),
-        start_date: "2025-10-20".to_string(),
+        start_date: meal_planning::calculate_next_week_start()
+            .format("%Y-%m-%d")
+            .to_string(),
         meal_assignments: assignments,
         rotation_state_json: rotation_state.to_json().unwrap(),
         generated_at: Utc::now().to_rfc3339(),

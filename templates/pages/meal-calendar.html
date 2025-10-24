@@ -43,9 +43,9 @@ button.ts-active::after {
         <!-- Header -->
         <div class="flex items-center justify-between mb-8">
             <div>
-                <h1 class="text-3xl font-bold text-gray-900">Weekly Meal Plan</h1>
+                <h1 class="text-3xl font-bold text-gray-900">Next Week's Meals</h1>
                 {% if has_meal_plan %}
-                <p class="text-gray-600 mt-2">Week of {{ start_date }}</p>
+                <p class="text-gray-600 mt-2">Week of {{ start_date }} - {{ end_date }}</p>
                 {% endif %}
             </div>
 

@@ -234,7 +234,7 @@ CREATE TABLE shopping_lists (
   id TEXT PRIMARY KEY,              -- UUID
   user_id TEXT NOT NULL,
   meal_plan_id TEXT NOT NULL,
-  week_start_date TEXT NOT NULL,    -- ISO 8601 date (Monday)
+  week_start_date TEXT NOT NULL,    -- ISO 8601 date, always Monday (week convention)
   generated_at TEXT NOT NULL,       -- ISO 8601 timestamp
   item_count INTEGER NOT NULL,      -- Denormalized count for quick display
   FOREIGN KEY (user_id) REFERENCES users(id),
@@ -1663,7 +1663,7 @@ pub async fn get_multi_week_shopping_lists(
 - **Push Subscriptions**: Subscriptions scoped to authenticated user (no cross-user notification delivery)
 
 **Input Validation**:
-- **Week Dates**: Validate ISO 8601 format, must be Monday (reject if not start of week)
+- **Week Dates**: Validate ISO 8601 format, must be Monday (reject if not start of week per Monday-first week convention)
 - **Item IDs**: Validate UUID format, check existence in database
 - **Push Subscription Data**: Validate endpoint URL format, key lengths (p256dh 65 bytes, auth 16 bytes)
 

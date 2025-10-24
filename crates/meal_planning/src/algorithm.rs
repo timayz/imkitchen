@@ -296,6 +296,28 @@ impl MealPlanningAlgorithm {
         let start = NaiveDate::parse_from_str(start_date, "%Y-%m-%d")
             .map_err(|e| MealPlanningError::InvalidDate(e.to_string()))?;
 
+        // Story 3.13 AC-4: Validate start_date is next Monday (not past or current week)
+        // Business rule: Meal plans must start from next week to give users time to prepare
+        use chrono::{Datelike, Local, Weekday};
+        let today = Local::now().date_naive();
+
+        // Validate: start_date must be in the future
+        if start <= today {
+            return Err(MealPlanningError::InvalidWeekStart(format!(
+                "Meal plan start date {} must be in the future (today is {})",
+                start, today
+            )));
+        }
+
+        // Validate: start_date must be a Monday (week start convention)
+        if start.weekday() != Weekday::Mon {
+            return Err(MealPlanningError::InvalidWeekStart(format!(
+                "Meal plan start date {} must be a Monday (found {:?})",
+                start,
+                start.weekday()
+            )));
+        }
+
         // Filter to only recipes not used in current rotation cycle
         let favorite_ids: Vec<String> = favorites.iter().map(|r| r.id.clone()).collect();
         let available_ids =
@@ -467,6 +489,13 @@ impl MealPlanningAlgorithm {
 mod tests {
     use super::*;
 
+    /// Helper function to get a valid next Monday for testing (Story 3.13)
+    fn next_monday_date() -> String {
+        crate::calculate_next_week_start()
+            .format("%Y-%m-%d")
+            .to_string()
+    }
+
     fn create_test_recipe(
         id: &str,
         ingredients: usize,
@@ -605,7 +634,7 @@ mod tests {
         let rotation_state = RotationState::new();
 
         let result = MealPlanningAlgorithm::generate(
-            "2025-10-20", // Monday
+            &next_monday_date(), // Use next Monday (Story 3.13)
             favorites,
             constraints,
             rotation_state,
@@ -635,7 +664,7 @@ mod tests {
         let rotation_state = RotationState::new();
 
         let result = MealPlanningAlgorithm::generate(
-            "2025-10-20",
+            &next_monday_date(),
             favorites,
             constraints,
             rotation_state,
@@ -763,14 +792,14 @@ mod tests {
 
         // Generate twice with same seed
         let result1 = MealPlanningAlgorithm::generate(
-            "2025-10-20",
+            &next_monday_date(),
             favorites.clone(),
             constraints.clone(),
             rotation_state.clone(),
             Some(seed),
         );
         let result2 = MealPlanningAlgorithm::generate(
-            "2025-10-20",
+            &next_monday_date(),
             favorites.clone(),
             constraints.clone(),
             rotation_state.clone(),
@@ -808,14 +837,14 @@ mod tests {
 
         // Generate with different seeds
         let result1 = MealPlanningAlgorithm::generate(
-            "2025-10-20",
+            &next_monday_date(),
             favorites.clone(),
             constraints.clone(),
             rotation_state.clone(),
             Some(42),
         );
         let result2 = MealPlanningAlgorithm::generate(
-            "2025-10-20",
+            &next_monday_date(),
             favorites.clone(),
             constraints.clone(),
             rotation_state.clone(),
@@ -862,9 +891,14 @@ mod tests {
         let constraints = UserConstraints::default();
         let rotation_state = RotationState::new();
 
+        // Use next Monday (Story 3.13: all meal plans must start from next week)
+        let start_date = crate::calculate_next_week_start()
+            .format("%Y-%m-%d")
+            .to_string();
+
         let start = Instant::now();
         let result = MealPlanningAlgorithm::generate(
-            "2025-10-20",
+            &start_date,
             favorites,
             constraints,
             rotation_state,

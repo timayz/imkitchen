@@ -53,4 +53,8 @@ pub enum MealPlanningError {
     // Story 3.7: Regeneration errors
     #[error("Unauthorized access: user {0} cannot access meal plan {1}")]
     UnauthorizedAccess(String, String),
+
+    // Story 3.13: Next-week-only validation
+    #[error("Invalid week start date: {0}")]
+    InvalidWeekStart(String),
 }

@@ -173,6 +173,7 @@ pub struct MealCalendarTemplate {
     pub user: Option<()>,
     pub days: Vec<DayData>,
     pub start_date: String,
+    pub end_date: String, // Story 3.13: End date for "Week of {start} - {end}" display
     pub has_meal_plan: bool,
     pub rotation_used: usize,  // AC (Story 3.3): Rotation progress display
     pub rotation_total: usize, // AC (Story 3.3): Total favorites
@@ -211,10 +212,21 @@ pub async fn get_meal_plan(
             // Group assignments by date into DayData with today/past flags
             let days = build_day_data(&plan_data.assignments, &recipes, &plan_data.meal_plan.id);
 
+            // Story 3.13: Calculate end_date (Sunday) from start_date (Monday)
+            let end_date =
+                chrono::NaiveDate::parse_from_str(&plan_data.meal_plan.start_date, "%Y-%m-%d")
+                    .map(|start| {
+                        (start + chrono::Duration::days(6))
+                            .format("%Y-%m-%d")
+                            .to_string()
+                    })
+                    .unwrap_or_else(|_| plan_data.meal_plan.start_date.clone());
+
             let template = MealCalendarTemplate {
                 user: Some(()),
                 days,
                 start_date: plan_data.meal_plan.start_date,
+                end_date,
                 has_meal_plan: true,
                 rotation_used,
                 rotation_total,
@@ -232,6 +244,7 @@ pub async fn get_meal_plan(
                 user: Some(()),
                 days: Vec::new(),
                 start_date: String::new(),
+                end_date: String::new(),
                 has_meal_plan: false,
                 rotation_used: 0,
                 rotation_total: 0,
@@ -304,6 +317,7 @@ pub async fn post_generate_meal_plan(
             user: Some(()),
             days: Vec::new(),
             start_date: String::new(),
+            end_date: String::new(),
             has_meal_plan: false,
             rotation_used: 0,
             rotation_total: favorites.len(),
@@ -399,8 +413,11 @@ pub async fn post_generate_meal_plan(
     let old_cycle_number = rotation_state.cycle_number;
     let favorite_count = recipes_for_planning.len();
 
-    // Calculate start date (today) - Story 3.9: Meal plans should start today for dashboard
-    let start_date = Utc::now().naive_utc().date().format("%Y-%m-%d").to_string();
+    // Calculate start date (next Monday) - Story 3.13: Next-week-only meal planning
+    // Business rule: All meal plans start from next Monday to give users time to shop/prepare
+    let start_date = meal_planning::calculate_next_week_start()
+        .format("%Y-%m-%d")
+        .to_string();
 
     // AC-2, AC-3, AC-4, AC-6: Generate meal plan using algorithm
     // AC-9: Pass None for seed to get random variety (timestamp-based)
@@ -424,6 +441,7 @@ pub async fn post_generate_meal_plan(
                 user: Some(()),
                 days: Vec::new(),
                 start_date: String::new(),
+                end_date: String::new(),
                 has_meal_plan: false,
                 rotation_used: 0,
                 rotation_total: current,
