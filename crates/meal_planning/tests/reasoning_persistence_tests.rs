@@ -23,10 +23,7 @@ async fn setup_test_db() -> (evento::Sqlite, sqlx::SqlitePool) {
     drop(conn);
 
     // Run application migrations from migrations/ directory
-    sqlx::migrate!("../../migrations")
-        .run(&pool)
-        .await
-        .unwrap();
+    sqlx::migrate!("../../migrations").run(&pool).await.unwrap();
 
     let executor: evento::Sqlite = pool.clone().into();
     (executor, pool)
