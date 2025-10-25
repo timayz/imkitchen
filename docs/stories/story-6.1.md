@@ -206,7 +206,7 @@ This story implements the foundational database schema changes required for Epic
 
 ### Context Reference
 
-<!-- Path(s) to story context XML/JSON will be added here by context workflow -->
+- `docs/stories/story-context-6.1.xml` (Generated: 2025-10-25)
 
 ### Agent Model Used
 

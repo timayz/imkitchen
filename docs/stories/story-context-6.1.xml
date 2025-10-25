@@ -1,0 +1,168 @@
+<story-context id="story-6.1" v="1.0">
+  <metadata>
+    <epicId>6</epicId>
+    <storyId>6.1</storyId>
+    <title>Database Schema Migration</title>
+    <status>Approved</status>
+    <generatedAt>2025-10-25</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/story-6.1.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>backend developer</asA>
+    <iWant>to create and test database migrations for enhanced meal planning</iWant>
+    <soThat>the schema supports multi-week plans, accompaniments, and user preferences</soThat>
+    <tasks>
+      - Create migration file structure (AC: 1)
+      - Implement PART 1: Multi-Week Meal Plan Support (AC: 2, 7, 8)
+      - Implement PART 2: Accompaniment Recipe Type (AC: 3, 4, 7)
+      - Implement PART 3: User Preferences for Algorithm (AC: 5, 7)
+      - Implement PART 4: Rotation State Tracking (AC: 6, 7)
+      - Implement existing data migration (AC: 9)
+      - Create rollback migration script (AC: 10)
+      - Test migration execution (AC: 1-10)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="1">Migration SQL file created per section 9.1 (Database Migration Strategy) of architecture-update-meal-planning-enhancements.md</criterion>
+    <criterion id="2">Migration adds columns to meal_plans: end_date, is_locked, generation_batch_id</criterion>
+    <criterion id="3">Migration adds columns to recipes: accepts_accompaniment, preferred_accompaniments, accompaniment_category, cuisine, dietary_tags</criterion>
+    <criterion id="4">Migration adds column to meal_assignments: accompaniment_recipe_id</criterion>
+    <criterion id="5">Migration adds columns to users: max_prep_time_weeknight, max_prep_time_weekend, avoid_consecutive_complex, cuisine_variety_weight</criterion>
+    <criterion id="6">Migration creates table meal_plan_rotation_state with all fields</criterion>
+    <criterion id="7">Migration creates indexes per section 4 (Database Schema Changes)</criterion>
+    <criterion id="8">Migration creates triggers: prevent_locked_week_modification, update_meal_plan_status</criterion>
+    <criterion id="9">Migration updates existing data (calculates end_date, sets is_locked based on dates)</criterion>
+    <criterion id="10">Rollback migration created and tested</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/architecture-update-meal-planning-enhancements.md</path>
+        <title>Architecture Update: Enhanced Meal Planning System</title>
+        <section>Section 9.1: Database Migration SQL</section>
+        <snippet>Complete SQL migration template with PART 1-5 structure covering multi-week support, accompaniment types, user preferences, rotation state tracking, and triggers</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture-update-meal-planning-enhancements.md</path>
+        <title>Architecture Update: Enhanced Meal Planning System</title>
+        <section>Section 4: Database Schema Changes</section>
+        <snippet>Detailed schema specifications for meal_plans (end_date, is_locked, generation_batch_id), recipes (accompaniment fields, cuisine, dietary_tags), meal_assignments (accompaniment_recipe_id), users (preference fields), and new meal_plan_rotation_state table with all indexes</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture-update-meal-planning-enhancements.md</path>
+        <title>Architecture Update: Enhanced Meal Planning System</title>
+        <section>Section 9.2-9.3: Data Migration Strategy and Rollback Plan</section>
+        <snippet>Backward compatibility approach, existing data update logic (end_date calculation, is_locked setting, status updates), and complete rollback SQL script</snippet>
+      </doc>
+      <doc>
+        <path>docs/solution-architecture-compact.md</path>
+        <title>Solution Architecture - imkitchen</title>
+        <section>Section 3: Data Architecture - Database Schema</section>
+        <snippet>SQLite 3.45+ with WAL mode, SQLx migrations system, evento event store integration, existing tables (users, recipes, meal_plans, meal_assignments, shopping_lists)</snippet>
+      </doc>
+      <doc>
+        <path>docs/solution-architecture-compact.md</path>
+        <title>Solution Architecture - imkitchen</title>
+        <section>Section 3.3: Migrations</section>
+        <snippet>Two migration systems: evento migrations (automatic) via sql_migrator, SQLx migrations (manual) via migrate!("./migrations"), both run on application startup</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>imkitchen Product Requirements Document</title>
+        <section>Non-Functional Requirements - NFR-10</section>
+        <snippet>Test-Driven Development enforced with minimum 80% code coverage, Domain-Driven Design architecture, Event Sourcing via evento for audit trail</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>migrations/00_v0.1.sql</path>
+        <kind>database_schema</kind>
+        <symbol>users table</symbol>
+        <lines>5-33</lines>
+        <reason>Existing users table schema - Story will add columns: max_prep_time_weeknight, max_prep_time_weekend, avoid_consecutive_complex, cuisine_variety_weight</reason>
+      </artifact>
+      <artifact>
+        <path>migrations/01_v0.2.sql</path>
+        <kind>database_schema</kind>
+        <symbol>recipes table</symbol>
+        <lines>12-47</lines>
+        <reason>Existing recipes table schema - Story will add columns: accepts_accompaniment, preferred_accompaniments, accompaniment_category, cuisine, dietary_tags</reason>
+      </artifact>
+      <artifact>
+        <path>migrations/02_v0.3.sql</path>
+        <kind>database_schema</kind>
+        <symbol>meal_plans table, meal_assignments table</symbol>
+        <lines>11-35</lines>
+        <reason>Existing meal_plans and meal_assignments tables - Story will add columns to meal_plans (end_date, is_locked, generation_batch_id) and meal_assignments (accompaniment_recipe_id)</reason>
+      </artifact>
+      <artifact>
+        <path>migrations/05_v0.7.sql</path>
+        <kind>database_migration</kind>
+        <symbol>Latest migration pattern</symbol>
+        <lines>1-97</lines>
+        <reason>Shows current migration naming convention (05_v0.7.sql), header comment structure, and SQLite index patterns to follow for new migration</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <rust>
+        <package name="sqlx" version="0.8+" note="Async SQL with compile-time verification, migration system via sqlx::migrate!"/>
+        <package name="evento" version="1.3+" note="Event sourcing framework with sql_migrator for automatic migrations"/>
+        <package name="bincode" version="1.0+" note="Event serialization for evento aggregates"/>
+      </rust>
+      <database>
+        <engine name="SQLite" version="3.45+" note="Embedded database with WAL mode enabled"/>
+      </database>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Migration file must be named sequentially: 06_v0.8.sql (next in sequence after 05_v0.7.sql)</constraint>
+    <constraint>Use SQLite syntax only - no PostgreSQL-specific features</constraint>
+    <constraint>All new columns must have DEFAULT values for backward compatibility</constraint>
+    <constraint>JSON fields stored as TEXT with application-layer validation (SQLite JSON functions optional)</constraint>
+    <constraint>Triggers must use SQLite BEFORE/AFTER UPDATE syntax with RAISE(FAIL) for errors</constraint>
+    <constraint>Indexes must use IF NOT EXISTS to support idempotent migrations</constraint>
+    <constraint>Rollback migration must be separate file: 06_v0.8_rollback.sql (not auto-generated)</constraint>
+    <constraint>Migration must complete in &lt;5 seconds on test dataset (100 users, 500 recipes, 200 meal plans)</constraint>
+    <constraint>Follow header comment structure from 05_v0.7.sql: migration number, version, creation date, purpose</constraint>
+    <constraint>WAL mode and PRAGMAs already configured - do not include in migration</constraint>
+  </constraints>
+  <interfaces>
+    <interface>
+      <name>sqlx::migrate!</name>
+      <kind>macro</kind>
+      <signature>sqlx::migrate!("./migrations").run(pool: &amp;Pool&lt;Sqlite&gt;) -&gt; Result&lt;(), Error&gt;</signature>
+      <path>sqlx crate</path>
+      <note>Automatically discovers and runs migrations in migrations/ directory in alphabetical order</note>
+    </interface>
+    <interface>
+      <name>evento::sql_migrator</name>
+      <kind>function</kind>
+      <signature>evento::sql_migrator::new_migrator::&lt;sqlx::Sqlite&gt;().run(...) -&gt; Result&lt;(), Error&gt;</signature>
+      <path>evento crate</path>
+      <note>Runs automatic evento event store migrations - separate from manual SQLx migrations</note>
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>Test-Driven Development (TDD) enforced with minimum 80% code coverage. Database migrations tested with both fresh databases and existing data. Integration tests use temporary SQLite databases. Story requires: (1) Migration execution tests on clean database, (2) Migration execution tests with sample data (100 users, 500 recipes, 200 meal plans), (3) Trigger validation tests (attempt locked week modification, verify RAISE(FAIL)), (4) Rollback migration tests (forward + rollback + forward again), (5) Performance tests (&lt;5 second execution time target).</standards>
+    <locations>
+      <location>tests/ - Integration tests</location>
+      <location>migrations/ - Migration SQL files (tested via integration tests)</location>
+    </locations>
+    <ideas>
+      <test ac="1" description="Verify migration file created with correct naming (06_v0.8.sql) and header structure"/>
+      <test ac="2,3,4,5,6,7" description="Execute migration on fresh database, verify all new columns, tables, and indexes exist using SQLite schema queries"/>
+      <test ac="8" description="Test prevent_locked_week_modification trigger: UPDATE locked meal plan, expect SQLite error"/>
+      <test ac="8" description="Test update_meal_plan_status trigger: UPDATE meal plan dates, verify status auto-calculated"/>
+      <test ac="9" description="Populate database with sample meal plans (various start dates), run migration, verify end_date = start_date + 6 days for all rows"/>
+      <test ac="9" description="Verify is_locked=TRUE for meal plans where start_date &lt;= today, FALSE for future weeks"/>
+      <test ac="10" description="Run forward migration, run rollback migration, verify all new columns/tables/indexes removed"/>
+      <test ac="10" description="Idempotence test: forward migration -&gt; rollback -&gt; forward migration again, all succeed"/>
+      <test ac="all" description="Performance test: Run migration on dataset with 100 users, 500 recipes, 200 meal plans, measure execution time (&lt;5 sec target)"/>
+    </ideas>
+  </tests>
+</story-context>
