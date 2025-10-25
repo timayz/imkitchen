@@ -1181,9 +1181,9 @@ dependencies = [
 
 [[package]]
 name = "deranged"
-version = "0.5.4"
+version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a41953f86f8a05768a6cda24def994fd2f424b04ec5c719cf89989779f199071"
+checksum = "ececcb659e7ba858fb4f10388c250a7252eb0a27373f1a72b8748afdd248e587"
 dependencies = [
  "powerfmt",
 ]
@@ -2223,7 +2223,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "anyhow",
  "askama",
@@ -2643,7 +2643,7 @@ dependencies = [
 
 [[package]]
 name = "meal_planning"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "anyhow",
  "bincode",
@@ -2802,7 +2802,7 @@ checksum = "610a5acd306ec67f907abe5567859a3c693fb9886eb1f012ab8f2a47bef3db51"
 
 [[package]]
 name = "notifications"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -4052,7 +4052,7 @@ dependencies = [
 
 [[package]]
 name = "recipe"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "anyhow",
  "bincode",
@@ -4322,9 +4322,9 @@ checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
 name = "sea-query"
-version = "1.0.0-rc.14"
+version = "1.0.0-rc.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fdeac8832b5b36a57b38ef6d2956cd6244c04508669f2a932439c8ca25dbad0f"
+checksum = "bf11f85aef8c7eaa4c383a67eca0e25d0eed00a8ff7f174c9c51db98f774ed9c"
 dependencies = [
  "inherent",
  "sea-query-derive",
@@ -4332,9 +4332,9 @@ dependencies = [
 
 [[package]]
 name = "sea-query-derive"
-version = "1.0.0-rc.9"
+version = "1.0.0-rc.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "217e9422de35f26c16c5f671fce3c075a65e10322068dbc66078428634af6195"
+checksum = "365d236217f5daa4f40d3c9998ff3921351b53472da50308e384388162353b3a"
 dependencies = [
  "darling",
  "heck 0.4.1",
@@ -4587,7 +4587,7 @@ checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 
 [[package]]
 name = "shopping"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "anyhow",
  "bincode",
@@ -5648,7 +5648,7 @@ checksum = "daf8dba3b7eb870caf1ddeed7bc9d2a049f3cfdfae7cb521b087cc33ae4c49da"
 
 [[package]]
 name = "user"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "anyhow",
  "argon2",
