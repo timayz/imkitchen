@@ -5,7 +5,7 @@ use axum::{
     body::Body,
     http::{Request, StatusCode},
 };
-use evento::prelude::*;
+use evento::migrator::{Migrate, Plan};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use sqlx::SqlitePool;
 use std::str::FromStr;

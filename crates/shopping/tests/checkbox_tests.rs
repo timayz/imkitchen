@@ -1,4 +1,4 @@
-use evento::prelude::{Migrate, Plan};
+use evento::migrator::{Migrate, Plan};
 use shopping::aggregate::ShoppingListAggregate;
 use shopping::commands::{mark_item_collected, reset_shopping_list};
 use shopping::commands::{

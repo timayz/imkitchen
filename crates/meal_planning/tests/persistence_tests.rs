@@ -9,7 +9,7 @@
 ///
 /// Test Strategy: Use unsafe_oneshot for synchronous event processing
 use chrono::Utc;
-use evento::prelude::{Migrate, Plan};
+use evento::migrator::{Migrate, Plan};
 use meal_planning::{
     aggregate::MealPlanAggregate,
     constraints::CourseType,

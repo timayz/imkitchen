@@ -1,5 +1,5 @@
 use chrono::Utc;
-use evento::prelude::{Migrate, Plan};
+use evento::migrator::{Migrate, Plan};
 use meal_planning::algorithm::{RecipeForPlanning, UserConstraints};
 use meal_planning::events::MealPlanGenerated;
 use meal_planning::read_model::MealPlanQueries;

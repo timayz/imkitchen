@@ -5,7 +5,7 @@ use axum::{
     Router,
 };
 use clap::{Parser, Subcommand};
-use evento::prelude::*;
+use evento::migrator::{Migrate, Plan};
 use imkitchen::middleware::{auth_middleware, cache_control_middleware, minify_html_middleware};
 use imkitchen::routes::{
     assets, browser_support, check_recipe_exists, check_shopping_item, complete_prep_task_handler,

@@ -1,6 +1,6 @@
 /// Story 3.5: View Recipe Details from Calendar - Integration Tests
 /// Tests calendar context passing, kitchen mode, and progressive disclosure features
-use evento::prelude::*;
+use evento::migrator::{Migrate, Plan};
 use recipe::{
     create_recipe, query_recipe_by_id, recipe_projection, CreateRecipeCommand, Ingredient,
     InstructionStep,

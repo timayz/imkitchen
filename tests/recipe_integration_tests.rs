@@ -1,4 +1,4 @@
-use evento::prelude::*;
+use evento::migrator::{Migrate, Plan};
 use recipe::{
     create_recipe, delete_recipe, query_recipe_by_id, query_recipes_by_user, recipe_projection,
     CreateRecipeCommand, DeleteRecipeCommand, Ingredient, InstructionStep, RecipeError,

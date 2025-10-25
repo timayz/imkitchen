@@ -1,6 +1,6 @@
 /// Story GH-139: Add 'Share with Community' Button to Recipe Detail Page - Integration Tests
 /// Tests share button visibility, ARIA labels, and TwinSpark swap behavior
-use evento::prelude::*;
+use evento::migrator::{Migrate, Plan};
 use recipe::{
     create_recipe, query_recipe_by_id, recipe_projection, share_recipe, CreateRecipeCommand,
     Ingredient, InstructionStep, ShareRecipeCommand,

@@ -365,7 +365,6 @@ async fn notification_permission_changed_handler<E: Executor>(
 /// ```
 pub fn user_projection(pool: SqlitePool) -> evento::SubscribeBuilder<evento::Sqlite> {
     evento::subscribe("user-read-model")
-        .aggregator::<UserAggregate>()
         .data(pool)
         .handler(user_created_handler())
         .handler(password_changed_handler())

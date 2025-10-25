@@ -577,7 +577,6 @@ pub async fn meal_plan_regenerated_handler<E: Executor>(
 /// This function sets up evento subscriptions for meal plan read model projections.
 pub fn meal_plan_projection(pool: SqlitePool) -> evento::SubscribeBuilder<evento::Sqlite> {
     evento::subscribe("meal-plan-read-model")
-        .aggregator::<MealPlanAggregate>()
         .data(pool)
         .handler(meal_plan_generated_handler())
         .handler(recipe_used_in_rotation_handler())

@@ -3,7 +3,7 @@
 /// These tests verify the full evento event → read model projection flow
 /// and HTTP route behavior with actual database operations.
 use chrono::Utc;
-use evento::prelude::*;
+use evento::migrator::{Migrate, Plan};
 use meal_planning::{
     events::{MealAssignment, MealPlanGenerated},
     read_model::MealPlanQueries,

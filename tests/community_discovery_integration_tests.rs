@@ -1,4 +1,4 @@
-use evento::prelude::*;
+use evento::migrator::{Migrate, Plan};
 use recipe::{
     create_recipe, list_shared_recipes, recipe_projection, share_recipe, CreateRecipeCommand,
     Ingredient, InstructionStep, RecipeDiscoveryFilters, ShareRecipeCommand,

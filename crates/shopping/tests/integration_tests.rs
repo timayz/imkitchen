@@ -1,5 +1,5 @@
 use chrono::{Datelike, Duration, Utc};
-use evento::prelude::{Migrate, Plan};
+use evento::migrator::{Migrate, Plan};
 use shopping::{
     generate_shopping_list, shopping_projection, validate_week_date, GenerateShoppingListCommand,
     ShoppingListError,

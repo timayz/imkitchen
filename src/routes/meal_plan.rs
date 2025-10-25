@@ -13,6 +13,7 @@ use meal_planning::{
 };
 use recipe::read_model::{query_recipes_by_user, RecipeReadModel};
 use serde::{Deserialize, Serialize};
+use shopping::{generate_shopping_list, GenerateShoppingListCommand};
 use sqlx::{Row, SqlitePool};
 
 use crate::error::AppError;
@@ -648,6 +649,46 @@ pub async fn post_generate_meal_plan(
             })?;
     }
 
+    // BUSINESS RULE: Automatically generate shopping list after meal plan generation
+    // Note: The shopping list projection handler will DELETE old lists for this week before inserting
+
+    // Step 1: Collect all recipe IDs from meal assignments
+    let recipe_ids: Vec<String> = meal_assignments
+        .iter()
+        .map(|a| a.recipe_id.clone())
+        .collect();
+
+    // Step 3: Collect ingredients from all recipes in the meal plan
+    let ingredients = collect_ingredients_from_recipes(&recipe_ids, &state.db_pool).await?;
+
+    tracing::info!(
+        "Generating shopping list for meal plan {} with {} ingredients from {} recipes",
+        meal_plan_id,
+        ingredients.len(),
+        recipe_ids.len()
+    );
+
+    // Step 4: Generate new shopping list
+    let shopping_list_cmd = GenerateShoppingListCommand {
+        user_id: auth.user_id.clone(),
+        meal_plan_id: meal_plan_id.clone(),
+        week_start_date: start_date.clone(),
+        ingredients,
+    };
+
+    let shopping_list_id = generate_shopping_list(shopping_list_cmd, &state.evento_executor)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to generate shopping list: {:?}", e);
+            AppError::InternalError(format!("Shopping list generation failed: {}", e))
+        })?;
+
+    tracing::info!(
+        "Successfully generated shopping list {} for meal plan {}",
+        shopping_list_id,
+        meal_plan_id
+    );
+
     // Return loading state that polls for read model completion
     // TwinSpark will poll /plan/check-ready until meal plan is fully projected
     let loading_template = MealPlanLoadingTemplate {
@@ -660,6 +701,43 @@ pub async fn post_generate_meal_plan(
         tracing::error!("Failed to render meal plan loading template: {:?}", e);
         AppError::InternalError("Failed to render page".to_string())
     })
+}
+
+/// Helper: Collect all ingredients from recipes for shopping list generation
+///
+/// Parses ingredients JSON from each recipe and returns a flat vector of (name, quantity, unit) tuples
+async fn collect_ingredients_from_recipes(
+    recipe_ids: &[String],
+    pool: &SqlitePool,
+) -> Result<Vec<(String, f32, String)>, AppError> {
+    let recipes = fetch_recipes_by_ids(recipe_ids, pool).await?;
+
+    let mut all_ingredients = Vec::new();
+
+    for recipe in recipes {
+        // Parse ingredients JSON
+        let ingredients: Vec<serde_json::Value> = serde_json::from_str(&recipe.ingredients)
+            .map_err(|e| {
+                tracing::warn!(
+                    "Failed to parse ingredients for recipe {}: {}",
+                    recipe.id,
+                    e
+                );
+                AppError::InternalError(format!("Invalid ingredients JSON: {}", e))
+            })?;
+
+        for ingredient in ingredients {
+            let name = ingredient["name"].as_str().unwrap_or("").to_string();
+            let quantity = ingredient["quantity"].as_f64().unwrap_or(0.0) as f32;
+            let unit = ingredient["unit"].as_str().unwrap_or("").to_string();
+
+            if !name.is_empty() && quantity > 0.0 {
+                all_ingredients.push((name, quantity, unit));
+            }
+        }
+    }
+
+    Ok(all_ingredients)
 }
 
 /// Helper: Fetch recipes by IDs
@@ -910,19 +988,87 @@ pub async fn post_regenerate_meal_plan(
     let cmd = meal_planning::RegenerateMealPlanCommand {
         meal_plan_id: meal_plan.id.clone(),
         user_id: auth.user_id.clone(),
-        regeneration_reason: form.regeneration_reason,
+        regeneration_reason: form.regeneration_reason.clone(),
     };
 
     meal_planning::regenerate_meal_plan(
         cmd,
         &state.evento_executor,
-        recipes_for_planning,
+        recipes_for_planning.clone(),
         constraints,
     )
     .await?;
 
     // Note: Read model projection happens asynchronously via evento subscriptions
-    // Return loading state that polls for completion instead of blocking
+
+    // BUSINESS RULE: Automatically regenerate shopping list after meal plan regeneration
+
+    // Calculate start date (next Monday) - same as meal plan regeneration
+    let start_date = meal_planning::calculate_next_week_start()
+        .format("%Y-%m-%d")
+        .to_string();
+
+    // Step 1: Delete any existing shopping lists for this week (cleanup orphaned lists)
+    // Note: We use week_start_date as the unique key, not meal_plan_id
+    // IMPORTANT: Use write_pool for DELETE operations (db_pool is read-only)
+    sqlx::query(
+        r#"
+        DELETE FROM shopping_list_items
+        WHERE shopping_list_id IN (
+            SELECT id FROM shopping_lists
+            WHERE user_id = ?1 AND week_start_date = ?2
+        )
+        "#,
+    )
+    .bind(&auth.user_id)
+    .bind(&start_date)
+    .execute(&state.write_pool)
+    .await?;
+
+    sqlx::query(
+        r#"
+        DELETE FROM shopping_lists
+        WHERE user_id = ?1 AND week_start_date = ?2
+        "#,
+    )
+    .bind(&auth.user_id)
+    .bind(&start_date)
+    .execute(&state.write_pool)
+    .await?;
+
+    // Step 2: Collect all recipe IDs from favorited recipes (same recipes used in meal planning)
+    let recipe_ids: Vec<String> = recipes_for_planning.iter().map(|r| r.id.clone()).collect();
+
+    // Step 3: Collect ingredients from all recipes
+    let ingredients = collect_ingredients_from_recipes(&recipe_ids, &state.db_pool).await?;
+
+    tracing::info!(
+        "Regenerating shopping list for meal plan {} with {} ingredients from {} recipes",
+        meal_plan.id,
+        ingredients.len(),
+        recipe_ids.len()
+    );
+
+    // Step 4: Generate new shopping list
+    let shopping_list_cmd = GenerateShoppingListCommand {
+        user_id: auth.user_id.clone(),
+        meal_plan_id: meal_plan.id.clone(),
+        week_start_date: start_date,
+        ingredients,
+    };
+
+    let shopping_list_id = generate_shopping_list(shopping_list_cmd, &state.evento_executor)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to regenerate shopping list: {:?}", e);
+            AppError::InternalError(format!("Shopping list regeneration failed: {}", e))
+        })?;
+
+    tracing::info!(
+        "Successfully regenerated shopping list {} for meal plan {}",
+        shopping_list_id,
+        meal_plan.id
+    );
 
     // Return loading state that polls for read model completion
     // TwinSpark will poll /plan/check-ready until meal plan is fully projected

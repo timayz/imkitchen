@@ -6,7 +6,7 @@ use sqlx::{Row, SqlitePool};
 
 /// Helper function to create in-memory SQLite database for testing
 async fn setup_test_db() -> SqlitePool {
-    use evento::prelude::*;
+    use evento::migrator::{Migrate, Plan};
 
     let pool = SqlitePool::connect(":memory:").await.unwrap();
 

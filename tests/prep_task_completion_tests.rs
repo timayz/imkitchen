@@ -10,7 +10,7 @@
 //! - AC #7: Uncompleted tasks carried over to next cycle (tested in scheduler)
 //! - AC #8: Recipe detail shows prep completion status
 
-use evento::prelude::*;
+use evento::migrator::{Migrate, Plan};
 use notifications::{
     commands::{
         complete_prep_task, schedule_reminder, CompletePrepTaskCommand, ScheduleReminderCommand,
