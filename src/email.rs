@@ -26,7 +26,8 @@ impl EmailConfig {
 
         // Build transport (authenticated relay for production, dangerous builder for local dev)
         let mut builder = if has_credentials {
-            let credentials = Credentials::new(self.smtp_username.clone(), self.smtp_password.clone());
+            let credentials =
+                Credentials::new(self.smtp_username.clone(), self.smtp_password.clone());
             SmtpTransport::relay(&self.smtp_host)
                 .context("Failed to create SMTP transport")?
                 .credentials(credentials)
