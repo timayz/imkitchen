@@ -845,7 +845,7 @@ async fn test_update_recipe_recalculates_complexity() {
         .unwrap();
 
     // Verify initial complexity is "simple" (score = 5*0.3 + 4*0.4 + 0*0.3 = 3.1)
-    let recipe = sqlx::query("SELECT complexity FROM recipes WHERE id = ?1")
+    let recipe = sqlx::query("SELECT complexity FROM recipe_detail WHERE id = ?1")
         .bind(&recipe_id)
         .fetch_one(&pool)
         .await
@@ -974,7 +974,7 @@ async fn test_update_recipe_recalculates_complexity() {
         .unwrap();
 
     // Verify complexity is now "complex"
-    let recipe_final = sqlx::query("SELECT complexity FROM recipes WHERE id = ?1")
+    let recipe_final = sqlx::query("SELECT complexity FROM recipe_detail WHERE id = ?1")
         .bind(&recipe_id)
         .fetch_one(&pool)
         .await
@@ -1221,7 +1221,7 @@ async fn test_favorite_recipe_toggles_status() {
         .unwrap();
 
     // Initial state: not favorited
-    let recipe = sqlx::query("SELECT is_favorite FROM recipes WHERE id = ?1")
+    let recipe = sqlx::query("SELECT is_favorite FROM recipe_detail WHERE id = ?1")
         .bind(&recipe_id)
         .fetch_one(&pool)
         .await
@@ -1247,7 +1247,7 @@ async fn test_favorite_recipe_toggles_status() {
         .unwrap();
 
     // Verify read model updated
-    let recipe = sqlx::query("SELECT is_favorite FROM recipes WHERE id = ?1")
+    let recipe = sqlx::query("SELECT is_favorite FROM recipe_detail WHERE id = ?1")
         .bind(&recipe_id)
         .fetch_one(&pool)
         .await
@@ -1275,7 +1275,7 @@ async fn test_favorite_recipe_toggles_status() {
         .unwrap();
 
     // Verify read model updated
-    let recipe = sqlx::query("SELECT is_favorite FROM recipes WHERE id = ?1")
+    let recipe = sqlx::query("SELECT is_favorite FROM recipe_detail WHERE id = ?1")
         .bind(&recipe_id)
         .fetch_one(&pool)
         .await

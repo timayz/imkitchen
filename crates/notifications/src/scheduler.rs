@@ -161,18 +161,17 @@ pub async fn morning_reminder_scheduler<E: evento::Executor>(
         .format("%Y-%m-%d")
         .to_string();
 
-    // Query meal assignments for tomorrow with advance prep requirements
+    // Query dashboard_meals for tomorrow with advance prep requirements
     let meal_slots = sqlx::query(
-        "SELECT ma.id, ma.recipe_id, ma.course_type, ma.date,
-                r.title, r.advance_prep_hours, r.prep_task, r.prep_time_min
-         FROM meal_assignments ma
-         JOIN recipes r ON ma.recipe_id = r.id
-         JOIN meal_plans mp ON ma.meal_plan_id = mp.id
-         WHERE mp.user_id = ?
-           AND ma.date = ?
-           AND ma.prep_required = 1
-           AND r.advance_prep_hours > 0
-           AND r.advance_prep_hours <= 24",
+        "SELECT dm.id, dm.recipe_id, dm.course_type, dm.date,
+                dm.recipe_title as title, rd.advance_prep_hours, dm.prep_time_min
+         FROM dashboard_meals dm
+         LEFT JOIN recipe_detail rd ON dm.recipe_id = rd.id
+         WHERE dm.user_id = ?
+           AND dm.date = ?
+           AND dm.prep_required = 1
+           AND rd.advance_prep_hours > 0
+           AND rd.advance_prep_hours <= 24",
     )
     .bind(user_id)
     .bind(&tomorrow)
@@ -198,7 +197,7 @@ pub async fn morning_reminder_scheduler<E: evento::Executor>(
         let meal_date: String = row.get("date");
         let recipe_title: String = row.get("title");
         let advance_prep_hours: i32 = row.get("advance_prep_hours");
-        let prep_task: Option<String> = row.get("prep_task");
+        let prep_task: Option<String> = None;
 
         // Calculate scheduled time = 9:00 AM today (UTC)
         // For morning reminders, we always schedule for today at 9am regardless of current time
@@ -252,18 +251,14 @@ pub async fn update_morning_reminder_messages(
 
     // Query all pending morning reminders for this user that don't have message_body set
     let notifications = sqlx::query(
-        "SELECT n.id, n.meal_date, n.prep_hours, n.prep_task, ma.course_type, r.prep_time_min
+        "SELECT n.id, n.meal_date, n.prep_hours, n.prep_task, dm.course_type, dm.prep_time_min
          FROM notifications n
-         JOIN meal_assignments ma ON n.meal_date = ma.date AND n.recipe_id = ma.recipe_id
-         JOIN meal_plans mp ON ma.meal_plan_id = mp.id
-         JOIN recipes r ON n.recipe_id = r.id
+         JOIN dashboard_meals dm ON n.meal_date = dm.date AND n.recipe_id = dm.recipe_id AND n.user_id = dm.user_id
          WHERE n.user_id = ?
            AND n.reminder_type = 'morning'
            AND n.status = 'pending'
-           AND (n.message_body IS NULL OR n.message_body = '')
-           AND mp.user_id = ?",
+           AND (n.message_body IS NULL OR n.message_body = '')",
     )
-    .bind(user_id)
     .bind(user_id)
     .fetch_all(pool)
     .await?;
@@ -335,15 +330,14 @@ pub async fn day_of_cooking_reminder_scheduler<E: evento::Executor>(
     // Calculate today's date
     let today = Utc::now().format("%Y-%m-%d").to_string();
 
-    // Query meal assignments for today
+    // Query dashboard_meals for today
     let meal_slots = sqlx::query(
-        "SELECT ma.id, ma.recipe_id, ma.course_type, ma.date,
-                r.title, r.prep_time_min, r.cook_time_min, r.advance_prep_hours
-         FROM meal_assignments ma
-         JOIN recipes r ON ma.recipe_id = r.id
-         JOIN meal_plans mp ON ma.meal_plan_id = mp.id
-         WHERE mp.user_id = ?
-           AND ma.date = ?",
+        "SELECT id, recipe_id, course_type, date,
+                recipe_title as title, prep_time_min, cook_time_min,
+                CAST((prep_time_min + cook_time_min) / 60.0 AS INTEGER) as advance_prep_hours
+         FROM dashboard_meals
+         WHERE user_id = ?
+           AND date = ?",
     )
     .bind(user_id)
     .bind(&today)
@@ -427,18 +421,14 @@ pub async fn update_day_of_reminder_messages(
 
     // Query all pending day-of reminders for this user that don't have message_body set
     let notifications = sqlx::query(
-        "SELECT n.id, n.meal_date, ma.course_type, r.title, r.prep_time_min, r.cook_time_min
+        "SELECT n.id, n.meal_date, dm.course_type, dm.recipe_title as title, dm.prep_time_min, dm.cook_time_min
          FROM notifications n
-         JOIN meal_assignments ma ON n.meal_date = ma.date AND n.recipe_id = ma.recipe_id
-         JOIN meal_plans mp ON ma.meal_plan_id = mp.id
-         JOIN recipes r ON n.recipe_id = r.id
+         JOIN dashboard_meals dm ON n.meal_date = dm.date AND n.recipe_id = dm.recipe_id AND n.user_id = dm.user_id
          WHERE n.user_id = ?
            AND n.reminder_type = 'day_of'
            AND n.status = 'pending'
-           AND (n.message_body IS NULL OR n.message_body = '')
-           AND mp.user_id = ?",
+           AND (n.message_body IS NULL OR n.message_body = '')",
     )
-    .bind(user_id)
     .bind(user_id)
     .fetch_all(pool)
     .await?;

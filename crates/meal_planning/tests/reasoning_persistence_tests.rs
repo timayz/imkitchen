@@ -42,14 +42,18 @@ async fn create_test_user(user_id: &str, pool: &sqlx::SqlitePool) {
 
 async fn create_test_recipe_in_db(recipe_id: &str, user_id: &str, pool: &sqlx::SqlitePool) {
     sqlx::query(
-        r#"INSERT INTO recipes (id, user_id, title, ingredients, instructions, is_favorite, created_at, updated_at)
-           VALUES (?1, ?2, ?3, ?4, ?5, 1, ?6, ?6)"#,
+        r#"INSERT INTO recipe_detail (id, user_id, title, recipe_type, ingredients, instructions, prep_time_min, cook_time_min, advance_prep_hours, is_favorite, created_at, updated_at)
+           VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 1, ?10, ?10)"#,
     )
     .bind(recipe_id)
     .bind(user_id)
     .bind(format!("Recipe {}", recipe_id))
+    .bind("main_course")
     .bind("[]")
     .bind("[]")
+    .bind(20)
+    .bind(30)
+    .bind(0)
     .bind(Utc::now().to_rfc3339())
     .execute(pool)
     .await

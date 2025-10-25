@@ -27,10 +27,13 @@ use imkitchen::routes::{
     ready, record_permission_change, refresh_shopping_list, reset_shopping_list_handler,
     show_shopping_list, snooze_notification, subscribe_push, AppState, AssetsService,
 };
-use meal_planning::meal_plan_projection;
+use meal_planning::{meal_plan_calendar_projections, meal_plan_dashboard_projections};
 use notifications::{meal_plan_subscriptions, notification_projections};
-use recipe::{collection_projection, recipe_projection};
-use shopping::shopping_projection;
+use recipe::{
+    collection_projection, recipe_dashboard_metrics_projections, recipe_detail_projections,
+    recipe_list_projections, recipe_ratings_projections,
+};
+use shopping::shopping_list_page_specific_projections;
 use sqlx::migrate::MigrateDatabase;
 use sqlx::Row;
 use std::sync::Arc;
@@ -153,11 +156,13 @@ async fn serve_command(
         .await?;
     tracing::info!("Evento subscription 'user-read-model' started");
 
-    let recipe_handle = recipe_projection(write_pool.clone())
-        .delay(std::time::Duration::from_secs(10))
-        .run(&evento_executor)
-        .await?;
-    tracing::info!("Evento subscription 'recipe-read-model' started");
+    // OLD READ MODEL PROJECTIONS - DISABLED (replaced by page-specific projections below)
+    // These old projections wrote to dropped tables (recipes, meal_assignments, ratings, shopping_list_items)
+    // let recipe_handle = recipe_projection(write_pool.clone())
+    //     .delay(std::time::Duration::from_secs(10))
+    //     .run(&evento_executor)
+    //     .await?;
+    // tracing::info!("Evento subscription 'recipe-read-model' started");
 
     let collection_handle = collection_projection(write_pool.clone())
         .delay(std::time::Duration::from_secs(10))
@@ -165,17 +170,17 @@ async fn serve_command(
         .await?;
     tracing::info!("Evento subscription 'collection-read-model' started");
 
-    let meal_plan_handle = meal_plan_projection(write_pool.clone())
-        .delay(std::time::Duration::from_secs(10))
-        .run(&evento_executor)
-        .await?;
-    tracing::info!("Evento subscription 'meal-plan-read-model' started");
+    // let meal_plan_handle = meal_plan_projection(write_pool.clone())
+    //     .delay(std::time::Duration::from_secs(10))
+    //     .run(&evento_executor)
+    //     .await?;
+    // tracing::info!("Evento subscription 'meal-plan-read-model' started");
 
-    let shopping_handle = shopping_projection(write_pool.clone())
-        .delay(std::time::Duration::from_secs(10))
-        .run(&evento_executor)
-        .await?;
-    tracing::info!("Evento subscription 'shopping-read-model' started");
+    // let shopping_handle = shopping_projection(write_pool.clone())
+    //     .delay(std::time::Duration::from_secs(10))
+    //     .run(&evento_executor)
+    //     .await?;
+    // tracing::info!("Evento subscription 'shopping-read-model' started");
 
     // Notification projections
     let notification_handle = notification_projections(write_pool.clone())
@@ -190,6 +195,50 @@ async fn serve_command(
         .run(&evento_executor)
         .await?;
     tracing::info!("Evento subscription 'notification-meal-plan-listeners' started");
+
+    // Page-specific projections (new architecture)
+    // Recipe domain: 3 separate subscriptions to avoid evento handler conflicts
+    let recipe_list_handle = recipe_list_projections(write_pool.clone())
+        .delay(std::time::Duration::from_secs(10))
+        .run(&evento_executor)
+        .await?;
+    tracing::info!("Evento subscription 'recipe-list-projections' started");
+
+    let recipe_detail_handle = recipe_detail_projections(write_pool.clone())
+        .delay(std::time::Duration::from_secs(10))
+        .run(&evento_executor)
+        .await?;
+    tracing::info!("Evento subscription 'recipe-detail-projections' started");
+
+    let recipe_ratings_handle = recipe_ratings_projections(write_pool.clone())
+        .delay(std::time::Duration::from_secs(10))
+        .run(&evento_executor)
+        .await?;
+    tracing::info!("Evento subscription 'recipe-ratings-projections' started");
+
+    let recipe_dashboard_metrics_handle = recipe_dashboard_metrics_projections(write_pool.clone())
+        .delay(std::time::Duration::from_secs(10))
+        .run(&evento_executor)
+        .await?;
+    tracing::info!("Evento subscription 'recipe-dashboard-metrics-projections' started");
+
+    let meal_plan_dashboard_handle = meal_plan_dashboard_projections(write_pool.clone())
+        .delay(std::time::Duration::from_secs(10))
+        .run(&evento_executor)
+        .await?;
+    tracing::info!("Evento subscription 'meal-plan-dashboard-projections' started");
+
+    let meal_plan_calendar_handle = meal_plan_calendar_projections(write_pool.clone())
+        .delay(std::time::Duration::from_secs(10))
+        .run(&evento_executor)
+        .await?;
+    tracing::info!("Evento subscription 'meal-plan-calendar-projections' started");
+
+    let shopping_list_page_projections_handle = shopping_list_page_specific_projections(write_pool.clone())
+        .delay(std::time::Duration::from_secs(10))
+        .run(&evento_executor)
+        .await?;
+    tracing::info!("Evento subscription 'shopping-list-page-specific-projections' started");
 
     // Clone references for background worker before moving into state
     let worker_pool = write_pool.clone();
@@ -460,18 +509,19 @@ async fn serve_command(
     if let Err(e) = user_handle.shutdown_and_wait().await {
         tracing::error!("Error shutting down user projection: {}", e);
     }
-    if let Err(e) = recipe_handle.shutdown_and_wait().await {
-        tracing::error!("Error shutting down recipe projection: {}", e);
-    }
+    // OLD READ MODEL PROJECTIONS - DISABLED
+    // if let Err(e) = recipe_handle.shutdown_and_wait().await {
+    //     tracing::error!("Error shutting down recipe projection: {}", e);
+    // }
     if let Err(e) = collection_handle.shutdown_and_wait().await {
         tracing::error!("Error shutting down collection projection: {}", e);
     }
-    if let Err(e) = meal_plan_handle.shutdown_and_wait().await {
-        tracing::error!("Error shutting down meal plan projection: {}", e);
-    }
-    if let Err(e) = shopping_handle.shutdown_and_wait().await {
-        tracing::error!("Error shutting down shopping projection: {}", e);
-    }
+    // if let Err(e) = meal_plan_handle.shutdown_and_wait().await {
+    //     tracing::error!("Error shutting down meal plan projection: {}", e);
+    // }
+    // if let Err(e) = shopping_handle.shutdown_and_wait().await {
+    //     tracing::error!("Error shutting down shopping projection: {}", e);
+    // }
     if let Err(e) = notification_handle.shutdown_and_wait().await {
         tracing::error!("Error shutting down notification projection: {}", e);
     }
@@ -597,17 +647,14 @@ async fn set_tier_command(
     // Execute subscription upgrade command
     upgrade_subscription(command, &evento_executor).await?;
 
-    // Run projections to persist event to read model
-    user::read_model::user_projection(db_pool.clone())
-        .unsafe_oneshot(&evento_executor)
-        .await?;
-
+    // Note: The user projection will process this event asynchronously.
+    // If you need to verify the change immediately, query the event store or wait a moment.
     tracing::info!(
         user_id = %user_id,
         user_email = %email,
         old_tier = %current_tier,
         new_tier = %subscription_tier,
-        "Subscription tier updated successfully"
+        "Subscription tier update command executed successfully (will be processed by projections)"
     );
 
     Ok(())

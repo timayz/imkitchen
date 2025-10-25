@@ -338,7 +338,7 @@ async fn test_collection_deletion_preserves_recipes() {
     assert!(aggregate.is_deleted);
 
     // Verify recipe still exists in database
-    let recipe_exists = sqlx::query("SELECT COUNT(*) as count FROM recipes WHERE id = ?1")
+    let recipe_exists = sqlx::query("SELECT COUNT(*) as count FROM recipe_detail WHERE id = ?1")
         .bind(&recipe_id)
         .fetch_one(&pool)
         .await
