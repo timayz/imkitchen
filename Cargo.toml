@@ -53,7 +53,7 @@ minify-html = "0.18"
 
 [package]
 name = "imkitchen"
-version = "0.7.2"
+version = "0.7.3"
 edition.workspace = true
 rust-version.workspace = true
 
@@ -96,11 +96,11 @@ validator = { workspace = true }
 base64 = { workspace = true }
 minify-html = { workspace = true }
 tower-livereload = "0.9"
-user = { path = "crates/user", version = "0.7.2" }
-recipe = { path = "crates/recipe", version = "0.7.2" }
-meal_planning = { path = "crates/meal_planning", version = "0.7.2" }
-shopping = { path = "crates/shopping", version = "0.7.2" }
-notifications = { path = "crates/notifications", version = "0.7.2" }
+user = { path = "crates/user", version = "0.7.3" }
+recipe = { path = "crates/recipe", version = "0.7.3" }
+meal_planning = { path = "crates/meal_planning", version = "0.7.3" }
+shopping = { path = "crates/shopping", version = "0.7.3" }
+notifications = { path = "crates/notifications", version = "0.7.3" }
 
 [dev-dependencies]
 http-body-util = "0.1"

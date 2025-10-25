@@ -2223,7 +2223,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "askama",
@@ -2643,7 +2643,7 @@ dependencies = [
 
 [[package]]
 name = "meal_planning"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "bincode",
@@ -2802,7 +2802,7 @@ checksum = "610a5acd306ec67f907abe5567859a3c693fb9886eb1f012ab8f2a47bef3db51"
 
 [[package]]
 name = "notifications"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -4052,7 +4052,7 @@ dependencies = [
 
 [[package]]
 name = "recipe"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "bincode",
@@ -4587,7 +4587,7 @@ checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 
 [[package]]
 name = "shopping"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "bincode",
@@ -5648,7 +5648,7 @@ checksum = "daf8dba3b7eb870caf1ddeed7bc9d2a049f3cfdfae7cb521b087cc33ae4c49da"
 
 [[package]]
 name = "user"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "anyhow",
  "argon2",
