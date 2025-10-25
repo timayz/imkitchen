@@ -35,16 +35,6 @@ FROM chef AS planner
 COPY . .
 RUN cargo chef prepare --recipe-path recipe.json
 
-FROM node:25-alpine AS node
-
-WORKDIR /app
-
-COPY . .
-
-RUN npm install tailwindcss @tailwindcss/cli
-
-RUN npx @tailwindcss/cli -i ./static/css/tailwind.css -o ./static/css/main.css --minify
-
 FROM chef AS builder
 COPY --from=planner /app/recipe.json recipe.json
 
@@ -55,7 +45,6 @@ RUN cargo chef cook --release --recipe-path recipe.json
 # Build application
 
 COPY . .
-COPY --from=node /app/static/css/main.css ./static/css/main.css
 
 RUN cargo build --release --bin imkitchen
 
@@ -76,3 +65,4 @@ EXPOSE 3000
 
 ENTRYPOINT [ "imkitchen" ]
 CMD ["serve"]
+
