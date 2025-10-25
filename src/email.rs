@@ -28,7 +28,7 @@ impl EmailConfig {
         let mut builder = if has_credentials {
             let credentials =
                 Credentials::new(self.smtp_username.clone(), self.smtp_password.clone());
-            SmtpTransport::relay(&self.smtp_host)
+            SmtpTransport::starttls_relay(&self.smtp_host)
                 .context("Failed to create SMTP transport")?
                 .credentials(credentials)
         } else {

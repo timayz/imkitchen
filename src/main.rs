@@ -4,6 +4,7 @@ use axum::{
     routing::{get, post},
     Router,
 };
+
 use clap::{Parser, Subcommand};
 use evento::migrator::{Migrate, Plan};
 use imkitchen::middleware::{auth_middleware, cache_control_middleware, minify_html_middleware};
