@@ -58,7 +58,7 @@ otel_endpoint = "http://localhost:4319"
 
 # Log level: trace, debug, info, warn, error
 # Override with: IMKITCHEN__OBSERVABILITY__LOG_LEVEL or RUST_LOG
-log_level = "info"
+log_level = "info,evento=debug"
 
 # Stripe payment processing configuration
 # Get these values from: https://dashboard.stripe.com/test/apikeys

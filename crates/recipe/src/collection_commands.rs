@@ -237,7 +237,7 @@ pub async fn add_recipe_to_collection(
     }
 
     // Verify recipe exists and check ownership
-    let recipe_result = sqlx::query("SELECT user_id FROM recipes WHERE id = ?1")
+    let recipe_result = sqlx::query("SELECT user_id FROM recipe_detail WHERE id = ?1")
         .bind(&command.recipe_id)
         .fetch_optional(pool)
         .await?;

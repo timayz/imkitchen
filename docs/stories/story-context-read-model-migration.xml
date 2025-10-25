@@ -1,0 +1,412 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>Cross-Cutting</epicId>
+    <storyId>read-model-migration</storyId>
+    <title>Read Model Migration to Page-Specific Architecture</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-24</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-read-model-migration.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>system architect</asA>
+    <iWant>a comprehensive migration plan from domain-centric read models to page-specific read models</iWant>
+    <soThat>we can evolve the architecture to improve query performance, reduce coupling, and enable independent scaling per page concern</soThat>
+    <tasks>
+- [ ] T1: Create migration plan document (`docs/read-model-migration-plan.md`)
+  - [ ] T1.1: Document current read model architecture (tables, indexes, usage patterns)
+  - [ ] T1.2: Document target page-specific architecture with detailed table designs
+  - [ ] T1.3: Define migration strategy (phased approach, backward compatibility, rollback plan)
+  - [ ] T1.4: Identify affected pages and their read model requirements
+  - [ ] T1.5: Define data migration scripts and validation checks
+  - [ ] T1.6: Document evento projection updates needed for each page-specific table
+- [ ] T2: Review and validate migration plan
+  - [ ] T2.1: Technical review of migration approach
+  - [ ] T2.2: Risk assessment and mitigation strategies
+  - [ ] T2.3: Performance impact analysis
+  - [ ] T2.4: Testing strategy for migration validation
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+### 1. Migration Plan Document Structure
+- Document created at `docs/read-model-migration-plan.md`
+- Contains executive summary with migration goals and timeline
+- Structured with clear sections: Current State, Target State, Migration Strategy, Implementation Phases
+- Includes risk assessment and rollback procedures
+- Contains validation criteria for each migration phase
+
+### 2. Current State Documentation
+- Complete inventory of existing read model tables: `users`, `recipes`, `meal_plans`, `meal_assignments`, `recipe_collections`, `ratings`, etc.
+- Document which pages/routes consume each table
+- Map existing indexes and performance characteristics
+- Document current evento projection handlers and their table updates
+- Identify all foreign key relationships and constraints
+
+### 3. Target Architecture Definition
+- Define all page-specific read models per solution-architecture.md:
+  - **Dashboard Page**: `dashboard_meals`, `dashboard_prep_tasks`, `dashboard_metrics`
+  - **Meal Calendar Page**: `calendar_view`
+  - **Recipe Library Page**: `recipe_list`, `recipe_filter_counts`, `recipe_collections`
+  - **Recipe Detail Page**: `recipe_detail`, `recipe_ratings`
+  - **Shopping List Page**: `shopping_list_view`, `shopping_list_summary`
+- Provide complete SQL schema for each page-specific table
+- Document indexes optimized for each table's query patterns
+- Define evento projection handlers for populating each table
+- Specify which domain events trigger which page-specific projections
+
+### 4. Migration Strategy
+- Define phased approach (not big-bang migration)
+- Strategy supports running old and new read models in parallel (dual-write pattern)
+- Document data population for new tables from existing tables or event replay
+- Define cutover criteria for switching queries from old to new tables
+- Include rollback procedure if migration encounters issues
+- Specify validation queries to verify data consistency between old and new models
+
+### 5. Backward Compatibility Plan
+- Existing routes continue functioning during migration
+- No breaking changes to current API/rendering contracts
+- Old tables remain until all pages migrated and validated
+- Document deprecation timeline for old tables
+- Define cleanup phase after successful migration
+
+### 6. Performance Impact Analysis
+- Estimate storage overhead from denormalized page-specific tables
+- Project query performance improvements per page
+- Calculate evento projection processing overhead
+- Define monitoring metrics to track migration health
+- Establish performance baselines before migration
+
+### 7. Testing and Validation Strategy
+- Unit tests for each new evento projection handler
+- Integration tests comparing old vs new read model query results
+- Load tests to validate performance improvements
+- Data consistency checks (old table data == new table data)
+- Smoke tests for each migrated page
+- Rollback validation tests
+
+### 8. Implementation Phases
+- **Phase 1**: Create migration plan document (this story)
+- **Phase 2**: Implement page-specific tables for Dashboard (pilot)
+- **Phase 3**: Migrate Recipe pages (Library, Detail)
+- **Phase 4**: Migrate Meal Planning pages (Calendar)
+- **Phase 5**: Migrate Shopping List page
+- **Phase 6**: Deprecate and remove old tables (cleanup)
+- Each phase includes: SQL migrations, projection handlers, query updates, validation, cutover
+
+### 9. Risk Mitigation
+- Document identified risks:
+  - Data consistency between old/new models
+  - evento projection lag causing stale reads
+  - Storage bloat from denormalized tables
+  - Migration script failures mid-execution
+- Mitigation strategies for each risk
+- Monitoring and alerting recommendations
+
+### 10. Documentation Quality
+- Document written in clear, technical English
+- Includes code examples (SQL, Rust projection handlers)
+- Diagrams showing current vs target architecture
+- References solution-architecture.md sections
+- Actionable implementation steps for each phase
+- Suitable for handoff to development team
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <sections>
+          <section>Section 2.4: Data Fetching Approach - Page-specific read models pattern</section>
+          <section>Section 3.1: Database Schema - Read model tables</section>
+          <section>Section 3.2: Event-to-ReadModel Projections - evento projection patterns</section>
+          <section>Section 15.2: Integration Tests - unsafe_oneshot testing pattern for projections</section>
+        </sections>
+        <snippet>
+**Page-Specific Read Models:**
+
+Each page can have **one or more** dedicated read models, each serving a specific concern on that page:
+
+- **Dashboard**:
+  - `dashboard_meals` - Today's meal assignments
+  - `dashboard_prep_tasks` - Today's prep reminders
+  - `dashboard_metrics` - Recipe variety stats
+- **Meal Calendar**:
+  - `calendar_view` - Week view meal assignments
+- **Recipe Library**:
+  - `recipe_list` - Recipe cards for display
+  - `recipe_filter_counts` - Filter facet counts
+  - `recipe_collections` - User-defined collections/tags
+- **Recipe Detail**:
+  - `recipe_detail` - Full recipe with ingredients/instructions
+  - `recipe_ratings` - Aggregated ratings and reviews
+- **Shopping List**:
+  - `shopping_list_view` - Categorized items with checkoff state
+  - `shopping_list_summary` - Category totals and progress
+
+**Benefits:**
+- Reduced coupling between pages
+- Optimized queries per concern (filters vs content)
+- Clear bounded contexts
+- No data over-fetching
+- Independent scaling per read model
+        </snippet>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/read-model-architecture-summary.md</path>
+        <title>Read Model Architecture Summary</title>
+        <snippet>
+**Key Concepts Documented:**
+- **Page-Specific Read Models**: Each page queries dedicated tables (dashboard_meals, recipe_list, etc.)
+- **Form Data Consistency**: Use `evento::load` for authoritative form pre-population
+- **Business Logic Location**: Keep validation/rules in aggregates, NOT handlers
+- **Testing Pattern**: Use `unsafe_oneshot` in tests for deterministic projection testing
+
+**Architectural Principles:**
+
+### 1. Page-Specific Read Models
+Each page → Dedicated read model table → Optimized for that view
+
+### 2. Form Data Consistency
+Forms requiring pre-population → Use evento::load (aggregate)
+Display-only pages → Use page-specific read models
+
+### 3. Business Logic Location
+Handlers → Thin orchestration (routing, validation structure)
+Aggregates → Business logic (rules, validation, state management)
+
+### 4. Testing Pattern: `unsafe_oneshot`
+Production → evento::subscribe().run() (async)
+Tests → evento::subscribe().unsafe_oneshot() (sync)
+        </snippet>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/multiple-read-models-pattern.md</path>
+        <title>Multiple Read Models Per Page Pattern</title>
+        <snippet>
+**Pattern Overview:**
+A single page can (and often should) have **multiple read model tables**, each optimized for a different concern on that page.
+
+**Example: Recipe Library Page**
+- Read Model 1: `recipe_list` (Content) - Recipe cards for display
+- Read Model 2: `recipe_filter_counts` (Filter Metadata) - Filter facet counts
+
+**When to Use Multiple Read Models:**
+✅ Different concerns: Content vs metadata vs statistics
+✅ Different update frequencies: Filter counts change often, content rarely
+✅ Performance optimization: Avoid complex joins/aggregations
+✅ Independent scaling: One table grows large, another stays small
+✅ Query patterns differ: Complex queries vs simple lookups
+
+**Performance Benefits:**
+Before (Single Read Model with Subqueries): ~150ms
+After (Multiple Read Models): ~11ms (13x faster!)
+        </snippet>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/read-model-migration-plan.md</path>
+        <title>Read Model Migration Plan</title>
+        <snippet>
+**NOTE**: This document may already exist and contain the migration plan. If so, this story is complete. If not, the story task T1 is to create this document with comprehensive migration strategy.
+        </snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/crates/recipe/src/read_model.rs</path>
+        <kind>module</kind>
+        <symbol>recipe_created_handler</symbol>
+        <lines>1-100</lines>
+        <reason>Existing evento projection handler for RecipeCreated events - example pattern for new page-specific projections</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/read_model.rs</path>
+        <kind>module</kind>
+        <symbol>MealPlanQueries</symbol>
+        <lines>1-100</lines>
+        <reason>Existing read model query methods - pattern for page-specific query functions</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/crates/user/src/read_model.rs</path>
+        <kind>module</kind>
+        <symbol>user projections</symbol>
+        <lines>1-50</lines>
+        <reason>User read model projections - reference for migration planning</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/migrations/00_v0.1.sql</path>
+        <kind>migration</kind>
+        <symbol>users table</symbol>
+        <lines>4-40</lines>
+        <reason>Current users table schema - domain-centric, needs evaluation for page-specific migration</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/migrations/01_v0.2.sql</path>
+        <kind>migration</kind>
+        <symbol>recipes, collections, ratings</symbol>
+        <lines>1-105</lines>
+        <reason>Current recipe-related tables - domain-centric, candidates for page-specific migration</reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/migrations/02_v0.3.sql</path>
+        <kind>migration</kind>
+        <symbol>meal_plans, meal_assignments</symbol>
+        <lines>1-68</lines>
+        <reason>Current meal planning tables - domain-centric, candidates for page-specific migration</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <rust>
+        <dependency name="evento" version="1.4" features="sqlite-migrator">Event sourcing framework - core to read model architecture</dependency>
+        <dependency name="sqlx" version="0.8" features="runtime-tokio, sqlite, chrono, uuid">SQL database toolkit - used for read model queries and migrations</dependency>
+        <dependency name="tokio" version="1.40" features="full">Async runtime - required for evento projections</dependency>
+        <dependency name="serde" version="1.0" features="derive">Serialization - used for JSON fields in read models</dependency>
+        <dependency name="serde_json" version="1.0">JSON serialization - used for complex read model fields</dependency>
+        <dependency name="chrono" version="0.4" features="serde">Date/time handling - timestamps in read models</dependency>
+        <dependency name="uuid" version="1.10" features="v4, serde">UUID generation - primary keys in read models</dependency>
+        <dependency name="anyhow" version="1.0">Error handling - used in projection handlers</dependency>
+        <dependency name="bincode" version="2.0">Binary encoding - evento event serialization</dependency>
+      </rust>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+1. **evento Event Sourcing**: All state changes must flow through evento event store. Read models are projections, not authoritative sources.
+
+2. **Backward Compatibility**: Migration must not break existing routes or user-facing functionality. Old and new read models must coexist during transition.
+
+3. **Zero Downtime**: Migration strategy must support continuous operation. No maintenance windows or service interruptions.
+
+4. **Data Consistency**: New page-specific read models must maintain consistency with existing domain-centric tables during migration. Validation queries required.
+
+5. **Performance**: New read models must improve query performance (target: &lt;50ms per query). Monitor and measure against baselines.
+
+6. **Testing**: All projection handlers must have unit tests with `unsafe_oneshot` pattern. Integration tests must compare old vs new read model outputs.
+
+7. **Business Logic Location**: Keep business logic in aggregates (evento), NOT in handlers or read model projections. Projections are pure data transformations.
+
+8. **Form Data**: Edit forms must use `evento::load` for trusted data, NOT read models. Read models only for display pages.
+
+9. **SQLite Constraints**: Single writer pool for evento operations, multiple readers for queries. Follow solution-architecture.md Section 8.4 database performance patterns.
+
+10. **Documentation Standards**: Migration plan must be suitable for handoff to development team with executable code examples, SQL schemas, and step-by-step phases.
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>evento::handler macro</name>
+      <kind>macro</kind>
+      <signature>#[evento::handler(AggregateType)] async fn handler_name&lt;E: Executor&gt;(context: &amp;Context&lt;'_, E&gt;, event: EventDetails&lt;EventType&gt;) -&gt; anyhow::Result&lt;()&gt;</signature>
+      <path>evento crate</path>
+      <description>Projection handler macro for subscribing to domain events and updating read models</description>
+    </interface>
+    <interface>
+      <name>evento::subscribe</name>
+      <kind>function</kind>
+      <signature>evento::subscribe(subscription_name: &amp;str) -&gt; SubscriptionBuilder</signature>
+      <path>evento crate</path>
+      <description>Creates a subscription to domain events. Use .aggregator() to specify aggregate type, .handler() to add projection handlers, .run() for production or .unsafe_oneshot() for tests</description>
+    </interface>
+    <interface>
+      <name>evento::load</name>
+      <kind>function</kind>
+      <signature>evento::load::&lt;AggregateType&gt;(id: &amp;str) -&gt; LoadBuilder</signature>
+      <path>evento crate</path>
+      <description>Loads aggregate from event stream. Use for form pre-population, NOT for display pages. Returns authoritative state by replaying events.</description>
+    </interface>
+    <interface>
+      <name>sqlx::query_as!</name>
+      <kind>macro</kind>
+      <signature>sqlx::query_as!(StructType, "SELECT ...", bind_params...)</signature>
+      <path>sqlx crate</path>
+      <description>Type-safe SQL query macro for reading from read model tables. Validates SQL at compile time against database schema.</description>
+    </interface>
+    <interface>
+      <name>Context::extract</name>
+      <kind>method</kind>
+      <signature>context.extract::&lt;SqlitePool&gt;()</signature>
+      <path>evento::Context</path>
+      <description>Extracts shared SqlitePool from evento context in projection handlers for executing read model updates</description>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+**Testing Framework**: Rust native `cargo test` with tokio test runtime
+
+**Projection Testing Pattern**:
+- Use `unsafe_oneshot()` for deterministic event processing in tests (NOT `run()`)
+- `unsafe_oneshot()` blocks until all events processed, preventing race conditions
+- Only use `unsafe_oneshot()` in tests, NEVER in production code
+
+**Test Structure**:
+1. **Unit Tests**: Test projection handlers in isolation (`crates/*/tests/*.rs`)
+2. **Integration Tests**: Test end-to-end flow from event → projection → read model query (`tests/*.rs`)
+3. **Migration Validation**: Test data consistency between old and new read models
+
+**Coverage Goal**: 80% code coverage per solution-architecture.md Section 15.4
+
+**Example Pattern**:
+```rust
+#[tokio::test]
+async fn test_projection_updates_read_model() {
+    let pool = setup_test_db().await;
+    let executor = evento::Executor::new(pool.clone());
+
+    // Emit event
+    let id = evento::create::&lt;Aggregate&gt;()
+        .data(&amp;EventData { /* ... */ })
+        .commit(&amp;executor)
+        .await?;
+
+    // Process projection synchronously
+    evento::subscribe("test-subscription")
+        .aggregator::&lt;Aggregate&gt;()
+        .handler(projection_handler)
+        .unsafe_oneshot(&amp;executor)  // Blocks until processed
+        .await?;
+
+    // Assert read model updated
+    let result = sqlx::query!("SELECT * FROM read_model WHERE id = ?", id)
+        .fetch_one(&amp;pool)
+        .await?;
+    assert_eq!(result.field, expected_value);
+}
+```
+    </standards>
+    <locations>
+- `crates/*/tests/` - Domain crate unit tests (projection handlers)
+- `tests/` - Root-level integration tests (end-to-end flows)
+- `migrations/` - SQL migration files (read model schema)
+    </locations>
+    <ideas>
+**AC-1 (Migration Plan Document Structure)**:
+- Test: Verify document exists at expected path
+- Test: Parse document sections, ensure all required sections present
+
+**AC-2 (Current State Documentation)**:
+- Test: Parse current migration files, count existing tables
+- Test: Verify all existing tables documented in plan
+
+**AC-3 (Target Architecture Definition)**:
+- Test: Validate SQL schemas for page-specific tables (syntax check)
+- Test: Verify evento projection handler examples compile
+
+**AC-4 (Migration Strategy)**:
+- Test: Validate migration phases are sequential and complete
+- Test: Verify rollback procedures include reversal steps
+
+**AC-7 (Testing and Validation Strategy)**:
+- Test: Create sample dual-write projection (old + new tables)
+- Test: Validate data consistency checks compare old vs new models
+- Test: Verify `unsafe_oneshot` pattern used in test examples
+
+**AC-10 (Documentation Quality)**:
+- Test: Verify code examples are valid Rust/SQL syntax
+- Test: Check all referenced solution-architecture.md sections exist
+- Test: Validate implementation phases have task breakdowns
+    </ideas>
+  </tests>
+</story-context>

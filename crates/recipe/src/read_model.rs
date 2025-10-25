@@ -57,7 +57,7 @@ async fn recipe_created_handler<E: Executor>(
     // AC-2: Include recipe_type in projection
     sqlx::query(
         r#"
-        INSERT INTO recipes (
+        INSERT INTO recipe_detail (
             id, user_id, title, recipe_type, ingredients, instructions,
             prep_time_min, cook_time_min, advance_prep_hours, serving_size,
             is_favorite, is_shared, created_at, updated_at
@@ -98,7 +98,7 @@ async fn recipe_deleted_handler<E: Executor>(
     // Execute SQL UPDATE to soft-delete recipe in read model
     // Sets deleted_at timestamp instead of removing the row
     // This enables future features like "show deleted recipes" and maintains referential integrity
-    sqlx::query("UPDATE recipes SET deleted_at = ?1 WHERE id = ?2")
+    sqlx::query("UPDATE recipe_detail SET deleted_at = ?1 WHERE id = ?2")
         .bind(&event.data.deleted_at)
         .bind(&event.aggregator_id)
         .execute(&pool)
@@ -119,7 +119,7 @@ async fn recipe_favorited_handler<E: Executor>(
     let pool: SqlitePool = context.extract();
 
     // Execute SQL update to toggle favorite status
-    sqlx::query("UPDATE recipes SET is_favorite = ?1 WHERE id = ?2")
+    sqlx::query("UPDATE recipe_detail SET is_favorite = ?1 WHERE id = ?2")
         .bind(event.data.favorited)
         .bind(&event.aggregator_id)
         .execute(&pool)
@@ -142,7 +142,7 @@ async fn recipe_shared_handler<E: Executor>(
     let pool: SqlitePool = context.extract();
 
     // Execute SQL update to toggle share status
-    sqlx::query("UPDATE recipes SET is_shared = ?1 WHERE id = ?2")
+    sqlx::query("UPDATE recipe_detail SET is_shared = ?1 WHERE id = ?2")
         .bind(event.data.shared)
         .bind(&event.aggregator_id)
         .execute(&pool)
@@ -165,7 +165,7 @@ async fn recipe_copied_handler<E: Executor>(
 
     // Execute SQL update to store attribution metadata
     // event.aggregator_id is the NEW recipe ID (the copy)
-    sqlx::query("UPDATE recipes SET original_recipe_id = ?1, original_author = ?2 WHERE id = ?3")
+    sqlx::query("UPDATE recipe_detail SET original_recipe_id = ?1, original_author = ?2 WHERE id = ?3")
         .bind(&event.data.original_recipe_id)
         .bind(&event.data.original_author)
         .bind(&event.aggregator_id)
@@ -193,7 +193,7 @@ async fn recipe_updated_handler<E: Executor>(
 
     // Build dynamic UPDATE query based on which fields are present in the event
     let mut updates = Vec::new();
-    let mut update_query = String::from("UPDATE recipes SET ");
+    let mut update_query = String::from("UPDATE recipe_detail SET ");
 
     if event.data.title.is_some() {
         updates.push("title = ?");
@@ -283,7 +283,7 @@ async fn recipe_tagged_handler<E: Executor>(
 
     // Execute SQL update to set tag columns
     sqlx::query(
-        "UPDATE recipes SET complexity = ?1, cuisine = ?2, dietary_tags = ?3 WHERE id = ?4",
+        "UPDATE recipe_detail SET complexity = ?1, cuisine = ?2, dietary_tags = ?3 WHERE id = ?4",
     )
     .bind(&event.data.complexity)
     .bind(&event.data.cuisine)
@@ -353,7 +353,7 @@ pub async fn query_recipe_by_id(
                prep_time_min, cook_time_min, advance_prep_hours, serving_size,
                is_favorite, is_shared, complexity, cuisine, dietary_tags,
                created_at, updated_at
-        FROM recipes
+        FROM recipe_detail
         WHERE id = ?1 AND deleted_at IS NULL
         "#,
     )
@@ -403,7 +403,7 @@ pub async fn query_recipes_by_user(
                prep_time_min, cook_time_min, advance_prep_hours, serving_size,
                is_favorite, is_shared, complexity, cuisine, dietary_tags,
                created_at, updated_at
-        FROM recipes
+        FROM recipe_detail
         WHERE user_id = ?1 AND is_favorite = 1 AND deleted_at IS NULL
         ORDER BY created_at DESC
         "#
@@ -413,7 +413,7 @@ pub async fn query_recipes_by_user(
                prep_time_min, cook_time_min, advance_prep_hours, serving_size,
                is_favorite, is_shared, complexity, cuisine, dietary_tags,
                created_at, updated_at
-        FROM recipes
+        FROM recipe_detail
         WHERE user_id = ?1 AND deleted_at IS NULL
         ORDER BY created_at DESC
         "#
@@ -463,7 +463,7 @@ pub async fn query_recipes_by_user_paginated(
                prep_time_min, cook_time_min, advance_prep_hours, serving_size,
                is_favorite, is_shared, complexity, cuisine, dietary_tags,
                created_at, updated_at
-        FROM recipes
+        FROM recipe_detail
         WHERE user_id = ?1 AND is_favorite = 1 AND deleted_at IS NULL
         ORDER BY created_at DESC
         LIMIT ?2 OFFSET ?3
@@ -474,7 +474,7 @@ pub async fn query_recipes_by_user_paginated(
                prep_time_min, cook_time_min, advance_prep_hours, serving_size,
                is_favorite, is_shared, complexity, cuisine, dietary_tags,
                created_at, updated_at
-        FROM recipes
+        FROM recipe_detail
         WHERE user_id = ?1 AND deleted_at IS NULL
         ORDER BY created_at DESC
         LIMIT ?2 OFFSET ?3
@@ -575,7 +575,7 @@ pub async fn query_recipes_by_user_with_filters(
                prep_time_min, cook_time_min, advance_prep_hours, serving_size,
                is_favorite, is_shared, complexity, cuisine, dietary_tags,
                created_at, updated_at
-        FROM recipes
+        FROM recipe_detail
         WHERE {}
         ORDER BY created_at DESC
         LIMIT ?{} OFFSET ?{}
@@ -646,7 +646,7 @@ pub async fn query_recipe_count(user_id: &str, pool: &SqlitePool) -> RecipeResul
     let total_count: (i64,) = sqlx::query_as(
         r#"
         SELECT COUNT(*) as count
-        FROM recipes
+        FROM recipe_detail
         WHERE user_id = ?1 AND deleted_at IS NULL
         "#,
     )
@@ -658,7 +658,7 @@ pub async fn query_recipe_count(user_id: &str, pool: &SqlitePool) -> RecipeResul
     let favorite_count: (i64,) = sqlx::query_as(
         r#"
         SELECT COUNT(*) as count
-        FROM recipes
+        FROM recipe_detail
         WHERE user_id = ?1 AND is_favorite = 1 AND deleted_at IS NULL
         "#,
     )
@@ -916,7 +916,7 @@ pub async fn list_shared_recipes(
                r.prep_time_min, r.cook_time_min, r.advance_prep_hours, r.serving_size,
                r.is_favorite, r.is_shared, r.complexity, r.cuisine, r.dietary_tags,
                r.created_at, r.updated_at
-        FROM recipes r
+        FROM recipe_detail r
         WHERE r.is_shared = 1 AND r.deleted_at IS NULL
         "#,
     );
@@ -993,8 +993,8 @@ pub async fn list_shared_recipes(
         Some("rating") => {
             // Join ratings table and sort by average rating DESC (highest rated first)
             query_str = query_str.replace(
-                "FROM recipes r",
-                "FROM recipes r LEFT JOIN (SELECT recipe_id, AVG(stars) as avg_rating FROM ratings GROUP BY recipe_id) rat ON r.id = rat.recipe_id"
+                "FROM recipe_detail r",
+                "FROM recipe_detail r LEFT JOIN (SELECT recipe_id, AVG(stars) as avg_rating FROM ratings GROUP BY recipe_id) rat ON r.id = rat.recipe_id"
             );
             "ORDER BY COALESCE(rat.avg_rating, 0) DESC, r.created_at DESC"
         }
@@ -1351,7 +1351,7 @@ pub async fn query_recipes_by_collection(
                r.prep_time_min, r.cook_time_min, r.advance_prep_hours, r.serving_size,
                r.is_favorite, r.is_shared, r.complexity, r.cuisine, r.dietary_tags,
                r.created_at, r.updated_at
-        FROM recipes r
+        FROM recipe_detail r
         INNER JOIN recipe_collection_assignments a ON r.id = a.recipe_id
         WHERE a.collection_id = ?1 AND r.deleted_at IS NULL
         ORDER BY r.created_at DESC
@@ -1402,7 +1402,7 @@ pub async fn query_recipes_by_collection_paginated(
                r.prep_time_min, r.cook_time_min, r.advance_prep_hours, r.serving_size,
                r.is_favorite, r.is_shared, r.complexity, r.cuisine, r.dietary_tags,
                r.created_at, r.updated_at
-        FROM recipes r
+        FROM recipe_detail r
         INNER JOIN recipe_collection_assignments a ON r.id = a.recipe_id
         WHERE a.collection_id = ?1 AND r.deleted_at IS NULL
         ORDER BY r.created_at DESC

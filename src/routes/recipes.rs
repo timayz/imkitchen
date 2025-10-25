@@ -6,13 +6,13 @@ use axum::{
     Extension, Form,
 };
 use recipe::{
-    batch_import_recipes, copy_recipe, create_recipe, delete_recipe, favorite_recipe,
-    list_shared_recipes, query_collections_by_user, query_collections_for_recipe,
-    query_recipe_by_id, query_recipes_by_collection_paginated, query_recipes_by_user_with_filters,
+    batch_import_recipes, copy_recipe, create_recipe, delete_recipe, favorite_recipe, get_recipe_counts, get_recipe_list_filtered, get_recipe_ratings,
+    list_shared_recipes, page_get_recipe_detail, query_collections_by_user,
+    query_collections_for_recipe, query_recipe_by_id, query_recipes_by_collection_paginated,
     share_recipe, update_recipe, update_recipe_tags, BatchImportRecipe, BatchImportRecipesCommand,
     CollectionReadModel, CopyRecipeCommand, CreateRecipeCommand, DeleteRecipeCommand,
     FavoriteRecipeCommand, Ingredient, InstructionStep, RecipeDiscoveryFilters, RecipeError,
-    RecipeFilterParams, ShareRecipeCommand, UpdateRecipeCommand, UpdateRecipeTagsCommand,
+    ShareRecipeCommand, UpdateRecipeCommand, UpdateRecipeTagsCommand,
 };
 use serde::Deserialize;
 use sqlx::Row;
@@ -320,11 +320,11 @@ pub async fn check_recipe_exists(
     Extension(auth): Extension<Auth>,
     Path(recipe_id): Path<String>,
 ) -> Response {
-    // Query recipe from read model
-    match query_recipe_by_id(&recipe_id, &state.db_pool).await {
+    // Query recipe from page-specific read model (recipe_detail)
+    match page_get_recipe_detail(&recipe_id, &auth.user_id, &state.db_pool).await {
         Ok(Some(recipe_data)) => {
             // Check if user has permission to view this recipe
-            if !recipe_data.is_shared && recipe_data.user_id != auth.user_id {
+            if recipe_data.is_shared == 0 && recipe_data.user_id != auth.user_id {
                 // Recipe exists but user doesn't have access - return 404
                 (StatusCode::NOT_FOUND, "Recipe not found").into_response()
             } else {
@@ -363,19 +363,10 @@ pub async fn get_recipe_detail(
     Path(recipe_id): Path<String>,
     Query(context): Query<CalendarContext>, // Story 3.5: Calendar context query params
 ) -> Response {
-    // Query recipe from read model
-    match query_recipe_by_id(&recipe_id, &state.db_pool).await {
+    // Query recipe from page-specific table (recipe_detail) - no JOINs needed
+    match page_get_recipe_detail(&recipe_id, &auth.user_id, &state.db_pool).await {
         Ok(Some(recipe_data)) => {
-            // AC-10: Privacy check - return 404 if recipe is private and user is not owner
-            if !recipe_data.is_shared && recipe_data.user_id != auth.user_id {
-                tracing::warn!(
-                    recipe_id = %recipe_id,
-                    requesting_user = %auth.user_id,
-                    owner_user = %recipe_data.user_id,
-                    "Non-owner attempted to access private recipe"
-                );
-                return (StatusCode::NOT_FOUND, "Recipe not found").into_response();
-            }
+            // Privacy check already handled by query (user_id filter)
 
             // Parse ingredients and instructions from JSON
             let ingredients: Vec<Ingredient> = match serde_json::from_str(&recipe_data.ingredients)
@@ -411,6 +402,11 @@ pub async fn get_recipe_detail(
                 .and_then(|tags_json| serde_json::from_str::<Vec<String>>(tags_json).ok())
                 .unwrap_or_default();
 
+            // Query ratings from page-specific table (recipe_ratings)
+            let ratings = get_recipe_ratings(&recipe_id, &state.db_pool)
+                .await
+                .unwrap_or(None);
+
             let recipe_view = RecipeDetailView {
                 id: recipe_data.id.clone(),
                 title: recipe_data.title,
@@ -421,19 +417,19 @@ pub async fn get_recipe_detail(
                 cook_time_min: recipe_data.cook_time_min.map(|v| v as u32),
                 advance_prep_hours: recipe_data.advance_prep_hours.map(|v| v as u32),
                 serving_size: recipe_data.serving_size.map(|v| v as u32),
-                is_favorite: recipe_data.is_favorite,
-                is_shared: recipe_data.is_shared,
+                is_favorite: recipe_data.is_favorite != 0, // SQLite boolean to Rust bool
+                is_shared: recipe_data.is_shared != 0,     // SQLite boolean to Rust bool
                 complexity: recipe_data.complexity,
                 cuisine: recipe_data.cuisine,
                 dietary_tags,
                 created_at: recipe_data.created_at,
-                creator_email: None, // Not needed for owner's own recipe views
-                avg_rating: None,    // Not needed for owner's recipe view
-                review_count: None,  // Not needed for owner's recipe view
+                creator_email: recipe_data.original_author, // Use original_author field
+                avg_rating: ratings.as_ref().map(|r| r.avg_stars as f32),
+                review_count: ratings.as_ref().map(|r| r.rating_count),
             };
 
-            // Check if user is the owner
-            let is_owner = recipe_data.user_id == auth.user_id;
+            // Check if user is the owner (recipe from recipe_detail filtered by user_id, so always owner)
+            let is_owner = true;
 
             // Query collections for this recipe (only if owner)
             let (all_collections, recipe_collections) = if is_owner {
@@ -975,6 +971,7 @@ pub struct RecipeListTemplate {
     pub recipe_type_filter: Option<String>,
     pub shared_status_filter: Option<String>,
     pub favorite_only: bool,
+    pub recipe_count: i64,     // Total count of all recipes (not just current page)
     pub favorite_count: i64,
     pub user: Option<Auth>,
     pub current_path: String,
@@ -992,47 +989,20 @@ pub async fn get_recipe_list(
         .await
         .unwrap_or_default();
 
-    // Query recipes with pagination and filters (initial load: first 20 recipes)
-    const INITIAL_LIMIT: u32 = 20;
-    let recipes = if let Some(ref collection_id) = query.collection {
-        // Filter by specific collection
-        query_recipes_by_collection_paginated(collection_id, INITIAL_LIMIT, 0, &state.db_pool)
+    // Query recipes from page-specific table (recipe_list) - no JOINs needed
+    let recipe_views: Vec<RecipeListView> = if let Some(ref collection_id) = query.collection {
+        // Collection recipes - use old query (returns RecipeReadModel)
+        let recipes = query_recipes_by_collection_paginated(collection_id, 20, 0, &state.db_pool)
             .await
-            .unwrap_or_default()
-    } else {
-        // Show all user's recipes with filters applied at database level
-        let favorite_only = query.favorite_only.unwrap_or(false);
-        query_recipes_by_user_with_filters(
-            &auth.user_id,
-            RecipeFilterParams {
-                favorite_only,
-                recipe_type: query.recipe_type.as_deref(),
-                complexity: query.complexity.as_deref(),
-                cuisine: query.cuisine.as_deref(),
-                dietary: query.dietary.as_deref(),
-                shared_status: query.shared_status.as_deref(),
-            },
-            INITIAL_LIMIT,
-            0,
-            &state.db_pool,
-        )
-        .await
-        .unwrap_or_default()
-    };
+            .unwrap_or_default();
 
-    // Convert RecipeReadModel to RecipeListView (parse JSON counts)
-    let recipe_views: Vec<RecipeListView> = recipes
-        .into_iter()
-        .map(|r| {
-            // Parse ingredient and instruction JSON arrays to get counts
+        recipes.into_iter().map(|r| {
             let ingredient_count = serde_json::from_str::<Vec<Ingredient>>(&r.ingredients)
                 .map(|v| v.len())
                 .unwrap_or(0);
             let instruction_count = serde_json::from_str::<Vec<InstructionStep>>(&r.instructions)
                 .map(|v| v.len())
                 .unwrap_or(0);
-
-            // Parse dietary tags JSON array
             let dietary_tags = r
                 .dietary_tags
                 .as_ref()
@@ -1056,24 +1026,63 @@ pub async fn get_recipe_list(
                 dietary_tags,
                 created_at: r.created_at,
             }
+        }).collect()
+    } else {
+        // User recipes from page-specific table (initial load: first 20 recipes)
+        let favorite_only = query.favorite_only.unwrap_or(false);
+        get_recipe_list_filtered(
+            &auth.user_id,
+            query.complexity.as_deref(),
+            query.cuisine.as_deref(),
+            query.recipe_type.as_deref(),
+            query.shared_status.as_deref(),
+            favorite_only,
+            Some(20), // Limit initial load to 20 recipes (same as infinite scroll)
+            Some(0),  // Start from offset 0
+            &state.db_pool,
+        )
+        .await
+        .unwrap_or_default()
+        .into_iter()
+        .map(|r| {
+            let dietary_tags = r
+                .dietary_tags
+                .as_ref()
+                .and_then(|tags_json| serde_json::from_str::<Vec<String>>(tags_json).ok())
+                .unwrap_or_default();
+
+            RecipeListView {
+                id: r.id,
+                user_id: "".to_string(),
+                title: r.title,
+                recipe_type: r.recipe_type,
+                prep_time_min: r.prep_time_min,
+                cook_time_min: r.cook_time_min,
+                advance_prep_hours: None,
+                serving_size: None,
+                is_favorite: r.is_favorite != 0,
+                ingredient_count: 0,
+                instruction_count: 0,
+                complexity: r.complexity,
+                cuisine: r.cuisine,
+                dietary_tags,
+                created_at: r.created_at,
+            }
         })
-        .collect();
+        .collect()
+    };
 
-    // All filters now applied at database level
-
-    // Query favorite count from users table (O(1) query via subscription)
-    let favorite_count =
-        sqlx::query_scalar::<_, i32>("SELECT favorite_count FROM users WHERE id = ?1")
-            .bind(&auth.user_id)
-            .fetch_one(&state.db_pool)
-            .await
-            .unwrap_or(0);
+    // Query total recipe count from page-specific projection (dashboard_metrics)
+    let (total_recipe_count, favorite_count) = get_recipe_counts(&auth.user_id, &state.db_pool)
+        .await
+        .unwrap_or((0, 0));
 
     let favorite_only = query.favorite_only.unwrap_or(false);
 
     tracing::info!(
         user_id = %auth.user_id,
-        recipe_count = recipe_views.len(),
+        displayed_count = recipe_views.len(),
+        total_count = total_recipe_count,
         collection_filter = ?query.collection,
         favorite_only = favorite_only,
         "Fetched recipe list"
@@ -1087,6 +1096,7 @@ pub async fn get_recipe_list(
         recipe_type_filter: query.recipe_type,
         shared_status_filter: query.shared_status,
         favorite_only,
+        recipe_count: total_recipe_count as i64,
         favorite_count: favorite_count as i64,
         user: Some(auth),
         current_path: "/recipes".to_string(),
@@ -1121,38 +1131,14 @@ pub async fn get_more_recipes(
     const LIMIT: u32 = 20;
     let offset = query.offset.unwrap_or(0);
 
-    // Query recipes with pagination and filters applied at database level
-    let all_recipes = if let Some(ref collection_id) = query.collection {
-        query_recipes_by_collection_paginated(collection_id, LIMIT, offset, &state.db_pool)
+    // Query recipes from page-specific table (recipe_list) - no JOINs needed
+    let recipe_views: Vec<RecipeListView> = if let Some(ref collection_id) = query.collection {
+        // Collection recipes - use old query
+        let recipes = query_recipes_by_collection_paginated(collection_id, LIMIT, offset, &state.db_pool)
             .await
-            .unwrap_or_default()
-    } else {
-        let favorite_only = query.favorite_only.unwrap_or(false);
-        query_recipes_by_user_with_filters(
-            &auth.user_id,
-            RecipeFilterParams {
-                favorite_only,
-                recipe_type: query.recipe_type.as_deref(),
-                complexity: query.complexity.as_deref(),
-                cuisine: query.cuisine.as_deref(),
-                dietary: query.dietary.as_deref(),
-                shared_status: query.shared_status.as_deref(),
-            },
-            LIMIT,
-            offset,
-            &state.db_pool,
-        )
-        .await
-        .unwrap_or_default()
-    };
+            .unwrap_or_default();
 
-    // Check if database returned a full page
-    let db_returned_full_page = all_recipes.len() == LIMIT as usize;
-
-    // Convert RecipeReadModel to RecipeListView (parse JSON counts)
-    let recipe_views: Vec<RecipeListView> = all_recipes
-        .into_iter()
-        .map(|r| {
+        recipes.into_iter().map(|r| {
             let ingredient_count = serde_json::from_str::<Vec<Ingredient>>(&r.ingredients)
                 .map(|v| v.len())
                 .unwrap_or(0);
@@ -1182,14 +1168,55 @@ pub async fn get_more_recipes(
                 dietary_tags,
                 created_at: r.created_at,
             }
-        })
-        .collect();
+        }).collect()
+    } else {
+        // User recipes from page-specific table with pagination
+        let favorite_only = query.favorite_only.unwrap_or(false);
+        let recipes = get_recipe_list_filtered(
+            &auth.user_id,
+            query.complexity.as_deref(),
+            query.cuisine.as_deref(),
+            query.recipe_type.as_deref(),
+            query.shared_status.as_deref(),
+            favorite_only,
+            Some(LIMIT as i32),
+            Some(offset as i32),
+            &state.db_pool,
+        )
+        .await
+        .unwrap_or_default();
 
-    // All filters now applied at database level for proper pagination
+        recipes.into_iter()
+            .map(|r| {
+                let dietary_tags = r
+                    .dietary_tags
+                    .as_ref()
+                    .and_then(|tags_json| serde_json::from_str::<Vec<String>>(tags_json).ok())
+                    .unwrap_or_default();
+
+                RecipeListView {
+                    id: r.id,
+                    user_id: "".to_string(),
+                    title: r.title,
+                    recipe_type: r.recipe_type,
+                    prep_time_min: r.prep_time_min,
+                    cook_time_min: r.cook_time_min,
+                    advance_prep_hours: None,
+                    serving_size: None,
+                    is_favorite: r.is_favorite != 0,
+                    ingredient_count: 0,
+                    instruction_count: 0,
+                    complexity: r.complexity,
+                    cuisine: r.cuisine,
+                    dietary_tags,
+                    created_at: r.created_at,
+                }
+            })
+            .collect()
+    };
 
     // Check if there are potentially more recipes to load
-    // If DB returned full page, there might be more (continue pagination)
-    let has_more = db_returned_full_page;
+    let has_more = recipe_views.len() == LIMIT as usize;
     let next_offset = offset + LIMIT;
 
     tracing::info!(
@@ -1551,19 +1578,19 @@ pub async fn get_discover(
         params.dietary.clone()
     };
 
-    // Convert query params to RecipeDiscoveryFilters
-    let filters = RecipeDiscoveryFilters {
-        cuisine: params.cuisine.clone(),
-        min_rating: params.min_rating,
-        max_prep_time: params.max_prep_time,
-        dietary: dietary_filter,
-        search: params.search.clone(),
-        sort: params.sort.clone(),
-        page: params.page,
-    };
-
-    // Query shared recipes using read model function
-    match list_shared_recipes(&state.db_pool, filters).await {
+    // Query shared recipes using page-specific query
+    match recipe::get_shared_recipes_filtered(
+        &state.db_pool,
+        params.cuisine.as_deref(),
+        params.min_rating.map(|r| r as f64),
+        params.max_prep_time.map(|t| t as i32),
+        dietary_filter.as_deref(),
+        params.search.as_deref(),
+        params.sort.as_deref(),
+        params.page,
+    )
+    .await
+    {
         Ok(recipes) => {
             // Convert RecipeReadModel to RecipeDetailView
             let mut recipe_views = Vec::new();
@@ -1626,8 +1653,8 @@ pub async fn get_discover(
                     cook_time_min: recipe.cook_time_min.map(|v| v as u32),
                     advance_prep_hours: recipe.advance_prep_hours.map(|v| v as u32),
                     serving_size: recipe.serving_size.map(|v| v as u32),
-                    is_favorite: recipe.is_favorite,
-                    is_shared: recipe.is_shared,
+                    is_favorite: recipe.is_favorite != 0,
+                    is_shared: recipe.is_shared != 0,
                     complexity: recipe.complexity.clone(),
                     cuisine: recipe.cuisine.clone(),
                     dietary_tags,
@@ -1858,14 +1885,14 @@ pub async fn get_discover_detail(
     Path(recipe_id): Path<String>,
     user: Option<Extension<Auth>>,
 ) -> impl IntoResponse {
-    // Query recipe from read model (AC-3: must be shared and not deleted)
+    // Query recipe from page-specific read model (AC-3: must be shared and not deleted)
     let recipe_query = sqlx::query(
         r#"
         SELECT r.id, r.user_id, r.title, r.recipe_type, r.ingredients, r.instructions,
                r.prep_time_min, r.cook_time_min, r.advance_prep_hours, r.serving_size,
                r.is_favorite, r.is_shared, r.complexity, r.cuisine, r.dietary_tags,
                r.created_at, r.updated_at, u.email as creator_email
-        FROM recipes r
+        FROM recipe_detail r
         LEFT JOIN users u ON r.user_id = u.id
         WHERE r.id = ? AND r.is_shared = 1 AND r.deleted_at IS NULL
         "#,
@@ -1935,20 +1962,31 @@ pub async fn get_discover_detail(
                 review_count: None,                      // Populated later
             };
 
-            // Query rating statistics (Story 2.9 AC-4)
-            use recipe::{query_rating_stats, query_recipe_ratings, query_user_rating};
+            // Query rating statistics from page-specific projection (Story 2.9 AC-4)
+            use recipe::{get_recipe_ratings, query_user_rating};
 
-            let rating_stats = query_rating_stats(&recipe_id, &state.db_pool)
+            let recipe_ratings = get_recipe_ratings(&recipe_id, &state.db_pool)
                 .await
-                .unwrap_or(recipe::RatingStats {
-                    avg_rating: 0.0,
-                    review_count: 0,
-                });
+                .ok()
+                .flatten();
 
-            // Query all ratings for display (Story 2.9 AC-5)
-            let ratings_data = query_recipe_ratings(&recipe_id, &state.db_pool)
-                .await
-                .unwrap_or_default();
+            let (avg_rating, review_count, ratings_data) = if let Some(ratings) = recipe_ratings {
+                // Parse recent_reviews JSON
+                #[derive(serde::Deserialize)]
+                struct RecentReview {
+                    user_id: String,
+                    stars: i32,
+                    review_text: Option<String>,
+                    created_at: String,
+                }
+
+                let recent_reviews: Vec<RecentReview> = serde_json::from_str(&ratings.recent_reviews)
+                    .unwrap_or_default();
+
+                (ratings.avg_stars as f32, ratings.rating_count, recent_reviews)
+            } else {
+                (0.0, 0, Vec::new())
+            };
 
             // Get current user's rating if logged in
             let current_user_id = user.as_ref().map(|u| u.0.user_id.clone());
@@ -1962,10 +2000,10 @@ pub async fn get_discover_detail(
 
             // Build rating displays with usernames (Story 2.9 AC-5)
             let mut ratings = Vec::new();
-            for rating in ratings_data {
+            for review in ratings_data {
                 // Query username/email for each rating
                 let username_result = sqlx::query("SELECT email FROM users WHERE id = ?")
-                    .bind(&rating.user_id)
+                    .bind(&review.user_id)
                     .fetch_optional(&state.db_pool)
                     .await;
 
@@ -1976,15 +2014,15 @@ pub async fn get_discover_detail(
 
                 let is_own = current_user_id
                     .as_ref()
-                    .map(|uid| uid == &rating.user_id)
+                    .map(|uid| uid == &review.user_id)
                     .unwrap_or(false);
 
                 ratings.push(RatingDisplay {
-                    user_id: rating.user_id.clone(),
+                    user_id: review.user_id.clone(),
                     username,
-                    stars: rating.stars,
-                    review_text: rating.review_text.clone(),
-                    created_at: rating.created_at.clone(),
+                    stars: review.stars,
+                    review_text: review.review_text.clone(),
+                    created_at: review.created_at.clone(),
                     is_own,
                 });
             }
@@ -2005,9 +2043,9 @@ pub async fn get_discover_detail(
 
             // Story 2.10 AC-10, AC-11: Check if user already copied and if at recipe limit
             let (already_copied, at_recipe_limit) = if let Some(ref auth) = user {
-                // AC-10: Check if user already copied this recipe
+                // AC-10: Check if user already copied this recipe (use page-specific table)
                 let copy_check: Option<i64> = sqlx::query_scalar(
-                    "SELECT COUNT(*) FROM recipes WHERE user_id = ?1 AND original_recipe_id = ?2 AND deleted_at IS NULL"
+                    "SELECT COUNT(*) FROM recipe_detail WHERE user_id = ?1 AND original_recipe_id = ?2 AND deleted_at IS NULL"
                 )
                 .bind(&auth.user_id)
                 .bind(&recipe_id)
@@ -2028,7 +2066,7 @@ pub async fn get_discover_detail(
 
                 let limit_reached = if user_tier.as_deref() != Some("premium") {
                     let private_recipe_count: i64 = sqlx::query_scalar(
-                        "SELECT COUNT(*) FROM recipes WHERE user_id = ?1 AND is_shared = 0 AND deleted_at IS NULL"
+                        "SELECT COUNT(*) FROM recipe_list WHERE user_id = ?1 AND is_shared = 0 AND deleted_at IS NULL"
                     )
                     .bind(&auth.user_id)
                     .fetch_one(&state.db_pool)
@@ -2048,8 +2086,8 @@ pub async fn get_discover_detail(
             let template = DiscoverDetailTemplate {
                 recipe,
                 user: user.map(|u| u.0),
-                avg_rating: rating_stats.avg_rating,
-                review_count: rating_stats.review_count,
+                avg_rating,
+                review_count,
                 ratings,
                 user_rating,
                 already_copied,

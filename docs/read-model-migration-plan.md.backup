@@ -1,105 +1,46 @@
-# Read Model Migration Plan: Domain-Centric to Page-Specific Architecture
+# Read Model Migration Plan: Domain-Wide to Page-Specific
 
 **Project:** imkitchen
 **Date:** 2025-10-24
-**Author:** Developer Agent (Amelia) - Based on Winston's Initial Draft
-**Status:** Draft - Awaiting Technical Review
-**Version:** 2.0
+**Author:** Winston (Architect Agent)
+**Status:** Planning Phase
 
 ---
 
 ## Executive Summary
 
-This document outlines the migration strategy for transforming imkitchen's read model architecture from **domain-centric tables** (users, recipes, meal_plans) to **page-specific read models** aligned with the solution architecture (Section 3.2). The migration adopts a phased, zero-downtime approach using the dual-write pattern to ensure continuous service availability while evolving the data layer to optimize query performance and reduce coupling between page concerns.
+This document outlines the migration strategy from domain-wide read models to page-specific read models in the imkitchen architecture. The new approach optimizes query performance, reduces coupling between pages, and aligns with Domain-Driven Design principles.
 
-**Migration Goals:**
-- Improve query performance by denormalizing data for specific page concerns (target: <50ms per query)
-- Reduce coupling between pages by isolating read models
-- Enable independent scaling per page concern
-- Maintain backward compatibility during transition
-- Preserve full audit trail via evento event sourcing
-
-**Timeline:** 6-8 weeks across 6 implementation phases (pilot + 4 pages + cleanup)
-
-**Risk Level:** Medium - Architectural migration with data consistency requirements
+**Key Changes:**
+- Replace shared `recipes`, `meal_plans`, `shopping_lists` tables with page-specific read models
+- Each page queries only its dedicated tables
+- Forms use `evento::load` for authoritative data (not read models)
+- Business logic remains in domain crates (aggregates)
+- Tests use `unsafe_oneshot` for deterministic projection testing
 
 ---
 
-## Table of Contents
+## Current State Analysis
 
-1. [Current State Documentation](#1-current-state-documentation)
-2. [Target Architecture Definition](#2-target-architecture-definition)
-3. [Migration Strategy](#3-migration-strategy)
-4. [Backward Compatibility Plan](#4-backward-compatibility-plan)
-5. [Performance Impact Analysis](#5-performance-impact-analysis)
-6. [Testing and Validation Strategy](#6-testing-and-validation-strategy)
-7. [Implementation Phases](#7-implementation-phases)
-8. [Risk Mitigation](#8-risk-mitigation)
+### Existing Read Model Tables
 
----
+```
+Current Architecture (Domain-Wide Read Models):
+├── users (Auth & Profile)
+├── recipes (All recipe data - shared by multiple pages)
+├── meal_plans (Meal plan state)
+├── meal_assignments (Individual meal slots)
+├── shopping_lists (Shopping list headers)
+├── shopping_list_items (Shopping items)
+├── ratings (Community ratings)
+└── notifications (Prep reminders)
+```
 
-## 1. Current State Documentation
-
-### 1.1 Existing Read Model Tables
-
-**Inventory of Domain-Centric Tables** (as of v0.8, migration 08):
-
-| Table | Purpose | Row Count (est.) | Primary Consumers |
-|-------|---------|------------------|-------------------|
-| `users` | User profiles, auth, subscription | 1-10K | All authenticated pages |
-| `recipes` | All recipe data (library, detail, community) | 100-1M | Recipe Library, Recipe Detail, Meal Planning, Community Discovery |
-| `meal_plans` | Active/archived meal plans | 1-10K | Dashboard, Meal Calendar |
-| `meal_assignments` | 7 days × 3 courses = 21 assignments/plan | 21K-210K | Dashboard, Meal Calendar, Shopping List |
-| `recipe_collections` | User-defined collections | 1K-100K | Recipe Library (Collections view) |
-| `recipe_collection_assignments` | Many-to-many recipe↔collection | 10K-1M | Recipe Library (filter by collection) |
-| `ratings` | Community recipe ratings/reviews | 10K-1M | Recipe Detail, Community Discovery |
-| `recipe_rotation_state` | Rotation cycle tracking | 10K-100K | Meal Planning algorithm |
-| `shopping_lists` | Generated shopping lists | 1K-10K | Shopping List page |
-| `shopping_list_items` | Individual shopping items | 10K-100K | Shopping List page |
-| `notifications` | Prep reminder queue | 1K-100K | Dashboard, Notifications page |
-| `push_subscriptions` | Web push endpoints | 1K-10K | Notification delivery |
-| `contact_submissions` | Support form entries | 100-10K | Admin support page |
-| `user_email_uniqueness` | Email uniqueness constraint | 1-10K | User registration (command validation) |
-
-**Total Tables:** 14 (13 read models + 1 command validation table)
-
-### 1.2 Current Usage Patterns by Page
-
-**Dashboard Page** (`GET /dashboard`):
-- **Tables Used:** `users`, `meal_plans`, `meal_assignments`, `recipes`, `notifications`
-- **Current Query:** 4-way JOIN to get today's meals with recipe details
-- **Performance:** ~80-120ms (JOIN overhead)
-- **Data Needed:** Today's 3 meals (appetizer, main, dessert), prep tasks, recipe variety stats
-
-**Meal Calendar Page** (`GET /plan`):
-- **Tables Used:** `meal_plans`, `meal_assignments`, `recipes`
-- **Current Query:** 3-way JOIN for week view (21 assignments × recipe details)
-- **Performance:** ~100-150ms
-- **Data Needed:** 7 days of meal assignments with minimal recipe metadata (title, image, prep time)
-
-**Recipe Library Page** (`GET /recipes`):
-- **Tables Used:** `recipes`, `recipe_collections`, `recipe_collection_assignments`, `ratings` (for avg stars)
-- **Current Query:** Complex JOINs for filters + LEFT JOIN for ratings aggregation
-- **Performance:** ~150-200ms with filters active
-- **Data Needed:** Recipe cards (title, image, complexity, prep/cook time, tags, avg rating), filter facet counts (e.g., "Simple: 12, Moderate: 8")
-
-**Recipe Detail Page** (`GET /recipes/:id`):
-- **Tables Used:** `recipes`, `ratings`, `users` (for author info)
-- **Current Query:** JOIN for recipe + ratings + author
-- **Performance:** ~50-80ms
-- **Data Needed:** Full recipe (all fields), aggregated ratings, author name
-
-**Shopping List Page** (`GET /shopping`):
-- **Tables Used:** `shopping_lists`, `shopping_list_items`, `meal_assignments` (for recipe context)
-- **Current Query:** JOIN for items + grouping by category
-- **Performance:** ~60-100ms
-- **Data Needed:** Categorized items, checkoff state, category totals
-
-### 1.3 Problems with Current Approach
+### Problems with Current Approach
 
 1. **Over-fetching**: Recipe list page queries full `recipes` table but only needs title, complexity, times
 2. **Tight Coupling**: Multiple pages depend on same `recipes` schema - changes impact all pages
-3. **Performance**: JOIN overhead adds 50-100ms latency per query
+3. **Performance**: Unnecessary data loaded (e.g., full instructions fetched for list cards)
 4. **Unclear Boundaries**: Recipe detail and recipe list use same table, obscuring page-specific needs
 5. **Difficult Testing**: Hard to test page-specific projections in isolation
 

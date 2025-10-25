@@ -10,8 +10,7 @@ use shopping::{
     commands::{
         mark_item_collected, reset_shopping_list, MarkItemCollectedCommand,
         ResetShoppingListCommand,
-    },
-    read_model::get_shopping_list_by_week,
+    }, get_shopping_list_by_week, get_shopping_list_items, ShoppingListItemData,
 };
 
 use crate::error::AppError;
@@ -67,15 +66,26 @@ pub async fn show_shopping_list(
             .ok()
             .flatten();
 
-    // Query shopping list for this week
-    let shopping_list = get_shopping_list_by_week(user_id, &week_start_str, &state.db_pool).await?;
+    // Query shopping list ID for this week from page-specific table
+    let shopping_list_id_opt = get_shopping_list_by_week(user_id, &week_start_str, &state.db_pool).await?;
 
-    if let Some(list) = shopping_list {
-        // Group items by category for display
-        let grouped = list.group_by_category();
+    if let Some(shopping_list_id) = shopping_list_id_opt {
+        // Query items from page-specific table (shopping_list_view) - no JOINs needed
+        let items = get_shopping_list_items(&shopping_list_id, &state.db_pool).await?;
+
+        // Group items by category manually (data already sorted by category in query)
+        let mut categories_map: std::collections::HashMap<String, Vec<ShoppingListItemData>> =
+            std::collections::HashMap::new();
+
+        for item in items {
+            categories_map
+                .entry(item.category.clone())
+                .or_default()
+                .push(item);
+        }
 
         // Prepare category data for template
-        let mut categories: Vec<CategoryGroup> = grouped
+        let mut categories: Vec<CategoryGroup> = categories_map
             .into_iter()
             .map(|(category_name, items)| {
                 let items_data: Vec<ShoppingItem> = items
@@ -83,9 +93,9 @@ pub async fn show_shopping_list(
                     .map(|item| ShoppingItem {
                         id: item.id.clone(),
                         ingredient_name: item.ingredient_name.clone(),
-                        quantity: item.quantity,
+                        quantity: item.quantity as f32,
                         unit: item.unit.clone(),
-                        is_collected: item.is_collected,
+                        is_collected: item.is_collected != 0, // SQLite boolean to Rust bool
                     })
                     .collect();
 
@@ -203,15 +213,26 @@ pub async fn refresh_shopping_list(
     // Validate week parameter
     shopping::validate_week_date(&selected_week)?;
 
-    // Query shopping list for this week
-    let shopping_list = get_shopping_list_by_week(user_id, &selected_week, &state.db_pool).await?;
+    // Query shopping list ID for this week from page-specific table
+    let shopping_list_id_opt = get_shopping_list_by_week(user_id, &selected_week, &state.db_pool).await?;
 
-    if let Some(list) = shopping_list {
-        // Group items by category for display
-        let grouped = list.group_by_category();
+    if let Some(shopping_list_id) = shopping_list_id_opt {
+        // Query items from page-specific table (shopping_list_view) - no JOINs needed
+        let items = get_shopping_list_items(&shopping_list_id, &state.db_pool).await?;
+
+        // Group items by category manually (data already sorted by category in query)
+        let mut categories_map: std::collections::HashMap<String, Vec<ShoppingListItemData>> =
+            std::collections::HashMap::new();
+
+        for item in items {
+            categories_map
+                .entry(item.category.clone())
+                .or_default()
+                .push(item);
+        }
 
         // Prepare category data for template
-        let categories: Vec<CategoryGroup> = grouped
+        let categories: Vec<CategoryGroup> = categories_map
             .into_iter()
             .map(|(category_name, items)| {
                 let items_data: Vec<ShoppingItem> = items
@@ -219,9 +240,9 @@ pub async fn refresh_shopping_list(
                     .map(|item| ShoppingItem {
                         id: item.id.clone(),
                         ingredient_name: item.ingredient_name.clone(),
-                        quantity: item.quantity,
+                        quantity: item.quantity as f32,
                         unit: item.unit.clone(),
-                        is_collected: item.is_collected,
+                        is_collected: item.is_collected != 0, // SQLite boolean to Rust bool
                     })
                     .collect();
 
@@ -405,13 +426,13 @@ pub async fn reset_shopping_list_handler(
     // Validate week format
     shopping::validate_week_date(&week)?;
 
-    // Get shopping list for this week
-    let shopping_list = get_shopping_list_by_week(user_id, &week, &state.db_pool).await?;
+    // Get shopping list ID for this week from page-specific table
+    let shopping_list_id = get_shopping_list_by_week(user_id, &week, &state.db_pool).await?;
 
-    if let Some(list) = shopping_list {
+    if let Some(shopping_list_id) = shopping_list_id {
         // Execute reset command
         let cmd = ResetShoppingListCommand {
-            shopping_list_id: list.header.id.clone(),
+            shopping_list_id,
         };
 
         reset_shopping_list(cmd, &state.evento_executor)

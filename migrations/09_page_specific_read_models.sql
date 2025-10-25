@@ -4,6 +4,28 @@
 -- Strategy: MVP - Fresh start with page-specific tables (replaces domain-centric tables)
 
 -- =============================================================================
+-- DROP OLD DOMAIN-CENTRIC READ MODEL TABLES
+-- =============================================================================
+
+-- Drop old tables that are replaced by page-specific read models
+DROP TABLE IF EXISTS recipes;
+DROP TABLE IF EXISTS meal_assignments;
+DROP TABLE IF EXISTS recipe_rotation_state;
+DROP TABLE IF EXISTS ratings;
+DROP TABLE IF EXISTS shopping_list_items;
+
+-- Note: Keep these tables (not replaced by page-specific models):
+-- - users (auth & profile - unchanged)
+-- - meal_plans (plan metadata - still needed)
+-- - shopping_lists (list headers - still needed)
+-- - recipe_collections (already page-specific)
+-- - recipe_collection_assignments (already page-specific)
+-- - notifications (prep reminders - unchanged)
+-- - push_subscriptions (web push - unchanged)
+-- - contact_submissions (support - unchanged)
+-- - user_email_uniqueness (command validation - unchanged)
+
+-- =============================================================================
 -- DASHBOARD PAGE READ MODELS
 -- =============================================================================
 
