@@ -1,6 +1,6 @@
 [package]
 name = "notifications"
-version = "0.7.1"
+version = "0.7.2"
 edition.workspace = true
 
 [dependencies]
@@ -16,7 +16,7 @@ thiserror = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }
 uuid = { workspace = true }
-meal_planning = { path = "../meal_planning", version = "0.7.1" }
+meal_planning = { path = "../meal_planning", version = "0.7.2" }
 base64 = { workspace = true }
 url = { workspace = true }
 

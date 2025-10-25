@@ -1,6 +1,6 @@
 [package]
 name = "user"
-version = "0.7.1"
+version = "0.7.2"
 edition.workspace = true
 rust-version.workspace = true
 
@@ -21,4 +21,4 @@ anyhow = { workspace = true }
 [dev-dependencies]
 tokio-test = "0.4"
 tokio = { workspace = true }
-recipe = { path = "../recipe", version = "0.7.1" }
+recipe = { path = "../recipe", version = "0.7.2" }
