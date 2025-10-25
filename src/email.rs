@@ -21,6 +21,7 @@ impl EmailConfig {
     /// Create SMTP transport based on configuration
     /// Uses builder_dangerous for local dev (no credentials), relay for production
     /// TLS can be enabled or disabled via smtp_tls configuration
+    /// Port 465 uses implicit TLS, port 587 uses STARTTLS
     fn create_transport(&self) -> Result<SmtpTransport> {
         let has_credentials = !self.smtp_username.is_empty() && !self.smtp_password.is_empty();
 
@@ -28,9 +29,17 @@ impl EmailConfig {
         let mut builder = if has_credentials {
             let credentials =
                 Credentials::new(self.smtp_username.clone(), self.smtp_password.clone());
-            SmtpTransport::starttls_relay(&self.smtp_host)
-                .context("Failed to create SMTP transport")?
-                .credentials(credentials)
+
+            // Port 465 uses implicit TLS (relay), port 587 uses STARTTLS (starttls_relay)
+            if self.smtp_port == 465 {
+                SmtpTransport::relay(&self.smtp_host)
+                    .context("Failed to create SMTP transport")?
+                    .credentials(credentials)
+            } else {
+                SmtpTransport::starttls_relay(&self.smtp_host)
+                    .context("Failed to create SMTP transport")?
+                    .credentials(credentials)
+            }
         } else {
             SmtpTransport::builder_dangerous(&self.smtp_host)
         };
