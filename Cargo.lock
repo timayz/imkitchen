@@ -1408,9 +1408,9 @@ dependencies = [
 
 [[package]]
 name = "evento"
-version = "1.4.1"
+version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa981457800b0f40c2aa0248da6673f7d48b8ac30f43b782a444d3abea9013bb"
+checksum = "8542f74366431e17ab3c4f470e39e463325f794c831cdafb33d4bba9dcb07f21"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1431,9 +1431,9 @@ dependencies = [
 
 [[package]]
 name = "evento-macro"
-version = "1.4.1"
+version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "32c8a7ccd701115564b612991723e4d9b802098a376d1c948ff80987a0c21339"
+checksum = "a0d4606aac71cc9dc513055033167da4a38d00f41dbb6f49e89defcd80166688"
 dependencies = [
  "convert_case 0.8.0",
  "proc-macro2",

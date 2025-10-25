@@ -23,6 +23,33 @@ pub async fn project_shopping_list_generated<E: Executor>(
     let pool: sqlx::SqlitePool = context.extract();
     let shopping_list_id = &event.aggregator_id;
 
+    // UPSERT PATTERN: Delete any existing shopping list for this user/week before inserting
+    // This ensures only ONE shopping list exists per user per week
+    sqlx::query(
+        r#"
+        DELETE FROM shopping_list_items
+        WHERE shopping_list_id IN (
+            SELECT id FROM shopping_lists
+            WHERE user_id = ?1 AND week_start_date = ?2
+        )
+        "#,
+    )
+    .bind(&event.data.user_id)
+    .bind(&event.data.week_start_date)
+    .execute(&pool)
+    .await?;
+
+    sqlx::query(
+        r#"
+        DELETE FROM shopping_lists
+        WHERE user_id = ?1 AND week_start_date = ?2
+        "#,
+    )
+    .bind(&event.data.user_id)
+    .bind(&event.data.week_start_date)
+    .execute(&pool)
+    .await?;
+
     // 1. Insert into shopping_lists table
     sqlx::query(
         r#"
@@ -464,7 +491,6 @@ impl ShoppingListData {
 /// - ShoppingListReset: Uncheck all items (Story 4.5)
 pub fn shopping_projection(pool: sqlx::SqlitePool) -> evento::SubscribeBuilder<evento::Sqlite> {
     evento::subscribe("shopping-read-model")
-        .aggregator::<ShoppingListAggregate>()
         .data(pool)
         .handler(project_shopping_list_generated())
         .handler(project_shopping_list_recalculated())

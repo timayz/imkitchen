@@ -2,7 +2,7 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use evento::prelude::*;
+use evento::migrator::{Migrate, Plan};
 use sqlx::SqlitePool;
 use user::user_projection;
 

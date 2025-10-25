@@ -468,8 +468,6 @@ pub fn notification_projections(
     pool: sqlx::SqlitePool,
 ) -> evento::SubscribeBuilder<evento::Sqlite> {
     evento::subscribe("notification-projections")
-        .aggregator::<NotificationAggregate>()
-        .aggregator::<PushSubscriptionAggregate>()
         .data(pool)
         .handler(project_reminder_scheduled())
         .handler(project_reminder_sent())

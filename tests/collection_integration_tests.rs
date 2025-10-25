@@ -1,4 +1,4 @@
-use evento::prelude::*;
+use evento::migrator::{Migrate, Plan};
 use recipe::{
     add_recipe_to_collection, collection_projection, create_collection, create_recipe,
     delete_collection, query_collection_by_id, query_collections_by_user,

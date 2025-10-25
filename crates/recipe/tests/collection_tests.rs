@@ -12,7 +12,7 @@ async fn setup_test_db() -> SqlitePool {
     let pool = SqlitePool::connect("sqlite::memory:").await.unwrap();
 
     // Run evento migrations for event store tables
-    use evento::prelude::*;
+    use evento::migrator::{Migrate, Plan};
     let mut conn = pool.acquire().await.unwrap();
     evento::sql_migrator::new_migrator::<sqlx::Sqlite>()
         .unwrap()

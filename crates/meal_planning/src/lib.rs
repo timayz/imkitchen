@@ -66,7 +66,7 @@ mod tests {
     use super::*;
     use algorithm::{RecipeForPlanning, UserConstraints};
     use commands::RegenerateMealPlanCommand;
-    use evento::prelude::{Migrate, Plan};
+    use evento::migrator::{Migrate, Plan};
     use events::MealPlanGenerated;
     use rotation::RotationState;
     use sqlx::sqlite::SqlitePoolOptions;

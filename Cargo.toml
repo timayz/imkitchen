@@ -21,7 +21,7 @@ tower = "0.5"
 tower-http = { version = "0.6", features = ["fs", "trace", "compression-br", "compression-gzip"] }
 askama = "0.14"
 sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite", "chrono", "uuid"] }
-evento = { version = "1.4", features = ["sqlite-migrator"] }
+evento = { version = "1.5", features = ["sqlite"] }
 argon2 = { version = "0.5", features = ["std"] }
 jsonwebtoken = { version = "10.1", features = ["aws_lc_rs"] }
 lettre = { version = "0.11", features = ["tokio1-native-tls", "builder"] }

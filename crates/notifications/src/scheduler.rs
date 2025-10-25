@@ -1023,7 +1023,6 @@ pub fn meal_plan_subscriptions(pool: sqlx::SqlitePool) -> evento::SubscribeBuild
     };
 
     evento::subscribe("notification-meal-plan-listeners")
-        .aggregator::<MealPlanAggregate>()
         .data(pool)
         .handler(MealPlanGeneratedHandler)
         .skip::<MealPlanAggregate, MealPlanRegenerated>()
