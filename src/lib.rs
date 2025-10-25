@@ -37,6 +37,7 @@ pub async fn create_app(
         smtp_password: "test".to_string(),
         from_email: "test@test.com".to_string(),
         from_name: "Test".to_string(),
+        smtp_tls: false,
     };
 
     let state = AppState {

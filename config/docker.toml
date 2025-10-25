@@ -35,6 +35,11 @@ smtp_port = 1025
 smtp_username = ""
 smtp_password = ""
 
+# Enable/disable TLS for SMTP connections
+# Disabled for maildev (local development, no TLS support)
+# Override with: IMKITCHEN__EMAIL__SMTP_TLS
+smtp_tls = false
+
 # Email sender information
 from_email = "noreply@imkitchen.local"
 from_name = "imkitchen"
