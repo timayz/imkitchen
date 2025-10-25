@@ -255,8 +255,8 @@ impl MealPlanQueries {
         let total_favorites: (i64,) = sqlx::query_as(
             r#"
             SELECT COUNT(*) as count
-            FROM recipes
-            WHERE user_id = ?1 AND is_favorite = TRUE AND deleted_at IS NULL
+            FROM recipe_detail
+            WHERE user_id = ?1 AND is_favorite = TRUE
             "#,
         )
         .bind(user_id)
@@ -292,7 +292,7 @@ impl MealPlanQueries {
                 r.advance_prep_hours,
                 r.complexity
             FROM meal_assignments ma
-            INNER JOIN recipes r ON ma.recipe_id = r.id
+            INNER JOIN recipe_detail r ON ma.recipe_id = r.id
             INNER JOIN meal_plans mp ON ma.meal_plan_id = mp.id
             WHERE mp.user_id = ?1
               AND mp.status = 'active'

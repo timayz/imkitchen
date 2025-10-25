@@ -368,22 +368,24 @@ pub async fn get_profile(
     Extension(auth): Extension<Auth>,
     Query(query): Query<SuccessQuery>,
 ) -> Response {
-    // Query user profile data from read model (including favorite_count)
+    // Query user profile data from read model
     let user_data = sqlx::query(
-        "SELECT dietary_restrictions, household_size, weeknight_availability, favorite_count FROM users WHERE id = ?1"
+        "SELECT dietary_restrictions, household_size, weeknight_availability FROM users WHERE id = ?1"
     )
     .bind(&auth.user_id)
     .fetch_one(&state.db_pool)
     .await;
 
-    // AC-8: Query shared recipe count (exclude deleted recipes)
-    let shared_count: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM recipes WHERE user_id = ?1 AND is_shared = 1 AND deleted_at IS NULL",
+    // Query favorite_count, recipe_count, and shared_count from dashboard_metrics (page-specific table)
+    let metrics: Option<(i32, i32, i32)> = sqlx::query_as(
+        "SELECT favorite_count, recipe_count, shared_count FROM dashboard_metrics WHERE user_id = ?1"
     )
     .bind(&auth.user_id)
-    .fetch_one(&state.db_pool)
+    .fetch_optional(&state.db_pool)
     .await
-    .unwrap_or(0);
+    .unwrap_or(None);
+
+    let (favorite_count, _recipe_count, shared_count) = metrics.unwrap_or((0, 0, 0));
 
     match user_data {
         Ok(row) => {
@@ -408,9 +410,6 @@ pub async fn get_profile(
                 })
                 .unwrap_or((String::from("18:00"), String::from("45")));
 
-            // Get favorite_count from users table (O(1) query via subscription)
-            let favorite_count: i32 = row.get("favorite_count");
-
             // Story 4.10 AC #7: Query push notification status
             let push_status =
                 notifications::get_push_subscription_status(&state.db_pool, &auth.user_id)
@@ -430,7 +429,7 @@ pub async fn get_profile(
                 availability_start,
                 availability_duration,
                 favorite_count: favorite_count as i64,
-                shared_recipe_count: shared_count, // AC-8
+                shared_recipe_count: shared_count as i64, // AC-8 from dashboard_metrics
                 notification_enabled: push_status.enabled,
                 subscription_count: push_status.subscription_count,
                 vapid_public_key: state.vapid_public_key.clone(),
@@ -516,17 +515,18 @@ pub async fn post_profile(
         Ok(_) => {
             // Success - use optimistic UI rendering with form data to avoid projection lag
             // This ensures user immediately sees their changes without waiting for read model update
-            // Query favorite count from users table (O(1) query)
-            let favorite_count =
-                sqlx::query_scalar::<_, i32>("SELECT favorite_count FROM users WHERE id = ?1")
-                    .bind(&auth.user_id)
-                    .fetch_one(&state.db_pool)
-                    .await
-                    .unwrap_or(0);
+            // Query favorite count from dashboard_metrics (page-specific table)
+            let favorite_count: i32 = sqlx::query_scalar(
+                "SELECT favorite_count FROM dashboard_metrics WHERE user_id = ?1"
+            )
+            .bind(&auth.user_id)
+            .fetch_one(&state.db_pool)
+            .await
+            .unwrap_or(0);
 
-            // AC-8: Query shared recipe count
-            let shared_count: i64 = sqlx::query_scalar(
-                "SELECT COUNT(*) FROM recipes WHERE user_id = ?1 AND is_shared = 1",
+            // AC-8: Query shared count from dashboard_metrics (page-specific table)
+            let shared_count: i32 = sqlx::query_scalar(
+                "SELECT shared_count FROM dashboard_metrics WHERE user_id = ?1"
             )
             .bind(&auth.user_id)
             .fetch_one(&state.db_pool)
@@ -552,7 +552,7 @@ pub async fn post_profile(
                 availability_start: form_availability_start,
                 availability_duration: form_availability_duration,
                 favorite_count: favorite_count as i64,
-                shared_recipe_count: shared_count, // AC-8
+                shared_recipe_count: shared_count as i64, // AC-8 from dashboard_metrics
                 notification_enabled: push_status.enabled,
                 subscription_count: push_status.subscription_count,
                 vapid_public_key: state.vapid_public_key.clone(),
@@ -562,17 +562,18 @@ pub async fn post_profile(
             Html(template.render().unwrap()).into_response()
         }
         Err(user::UserError::ValidationError(msg)) => {
-            // Query favorite count from users table (O(1) query)
-            let favorite_count =
-                sqlx::query_scalar::<_, i32>("SELECT favorite_count FROM users WHERE id = ?1")
-                    .bind(&auth.user_id)
-                    .fetch_one(&state.db_pool)
-                    .await
-                    .unwrap_or(0);
+            // Query favorite count from dashboard_metrics (page-specific table)
+            let favorite_count: i32 = sqlx::query_scalar(
+                "SELECT favorite_count FROM dashboard_metrics WHERE user_id = ?1"
+            )
+            .bind(&auth.user_id)
+            .fetch_one(&state.db_pool)
+            .await
+            .unwrap_or(0);
 
-            // AC-8: Query shared recipe count
-            let shared_count: i64 = sqlx::query_scalar(
-                "SELECT COUNT(*) FROM recipes WHERE user_id = ?1 AND is_shared = 1",
+            // AC-8: Query shared count from dashboard_metrics (page-specific table)
+            let shared_count: i32 = sqlx::query_scalar(
+                "SELECT shared_count FROM dashboard_metrics WHERE user_id = ?1"
             )
             .bind(&auth.user_id)
             .fetch_one(&state.db_pool)
@@ -599,7 +600,7 @@ pub async fn post_profile(
                 availability_start: form_availability_start,
                 availability_duration: form_availability_duration,
                 favorite_count: favorite_count as i64,
-                shared_recipe_count: shared_count, // AC-8
+                shared_recipe_count: shared_count as i64, // AC-8 from dashboard_metrics
                 notification_enabled: push_status.enabled,
                 subscription_count: push_status.subscription_count,
                 vapid_public_key: state.vapid_public_key.clone(),

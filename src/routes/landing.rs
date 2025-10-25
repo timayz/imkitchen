@@ -4,9 +4,8 @@ use axum::{
     response::{Html, IntoResponse},
 };
 use axum_extra::extract::CookieJar;
-use meal_planning::read_model::MealPlanQueries;
+use meal_planning::{get_dashboard_metrics, get_todays_meals, DashboardMeal};
 use notifications::read_model::get_user_prep_tasks_for_today;
-use recipe::read_model::query_recipe_count;
 use user::validate_jwt;
 
 use crate::error::AppError;
@@ -83,12 +82,15 @@ pub async fn get_landing(State(state): State<AppState>, jar: CookieJar) -> impl 
 
 /// Render dashboard for authenticated user
 async fn render_dashboard(state: &AppState, user_id: &str) -> Result<Html<String>, AppError> {
-    // Query today's meals with recipe details
-    let todays_meal_assignments =
-        MealPlanQueries::get_todays_meals(user_id, &state.db_pool).await?;
+    // Query today's meals from page-specific table (dashboard_meals)
+    // No JOINs needed - all recipe metadata is denormalized
+    let todays_meal_assignments: Vec<DashboardMeal> = get_todays_meals(user_id, &state.db_pool).await?;
 
-    // Query recipe stats for dashboard cards
-    let (recipe_count, favorite_count) = query_recipe_count(user_id, &state.db_pool).await?;
+    // Query dashboard metrics from page-specific table (dashboard_metrics)
+    let metrics = get_dashboard_metrics(user_id, &state.db_pool).await?;
+    let (recipe_count, favorite_count) = metrics
+        .map(|m| (m.recipe_count as usize, m.favorite_count as usize))
+        .unwrap_or((0, 0));
 
     // Query today's prep tasks
     let prep_tasks = get_user_prep_tasks_for_today(&state.db_pool, user_id).await?;

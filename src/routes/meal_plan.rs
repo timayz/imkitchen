@@ -10,10 +10,12 @@ use meal_planning::{
     events::MealPlanGenerated,
     read_model::{MealAssignmentReadModel, MealPlanQueries},
     rotation::RotationState,
+    CalendarMeal,
 };
 use recipe::read_model::{query_recipes_by_user, RecipeReadModel};
 use serde::{Deserialize, Serialize};
 use sqlx::{Row, SqlitePool};
+use std::collections::HashMap;
 
 use crate::error::AppError;
 use crate::middleware::auth::Auth;
@@ -244,73 +246,70 @@ pub async fn get_meal_plan(
     Extension(auth): Extension<Auth>,
     State(state): State<AppState>,
 ) -> Result<Html<String>, AppError> {
-    // Query active meal plan for user
-    let meal_plan_with_assignments =
-        MealPlanQueries::get_active_meal_plan_with_assignments(&auth.user_id, &state.db_pool)
-            .await?;
+    // Query calendar view from page-specific table (no JOINs needed)
+    use meal_planning::{get_active_meal_plan_metadata, get_calendar_week_view};
 
-    match meal_plan_with_assignments {
-        Some(plan_data) => {
-            // Fetch recipe details for all assignments
-            let recipe_ids: Vec<String> = plan_data
-                .assignments
-                .iter()
-                .map(|a| a.recipe_id.clone())
-                .collect();
+    let calendar_meals = get_calendar_week_view(&auth.user_id, &state.db_pool).await?;
 
-            let recipes = fetch_recipes_by_ids(&recipe_ids, &state.db_pool).await?;
+    if !calendar_meals.is_empty() {
+        // Get meal plan metadata (start_date, meal_plan_id)
+        let plan_metadata = get_active_meal_plan_metadata(&auth.user_id, &state.db_pool).await?;
 
-            // AC (Story 3.3): Query rotation progress for display
-            let (rotation_used, rotation_total) =
-                MealPlanQueries::query_rotation_progress(&auth.user_id, &state.db_pool).await?;
+        let (meal_plan_id, start_date) = plan_metadata
+            .unwrap_or_else(|| (String::new(), String::new()));
 
-            // Group assignments by date into DayData with today/past flags
-            let days = build_day_data(&plan_data.assignments, &recipes, &plan_data.meal_plan.id);
+        // AC (Story 3.3): Query rotation progress for display
+        let (rotation_used, rotation_total) =
+            MealPlanQueries::query_rotation_progress(&auth.user_id, &state.db_pool).await?;
 
-            // Story 3.13: Calculate end_date (Sunday) from start_date (Monday)
-            let end_date =
-                chrono::NaiveDate::parse_from_str(&plan_data.meal_plan.start_date, "%Y-%m-%d")
-                    .map(|start| {
-                        (start + chrono::Duration::days(6))
-                            .format("%Y-%m-%d")
-                            .to_string()
-                    })
-                    .unwrap_or_else(|_| plan_data.meal_plan.start_date.clone());
+        // Group assignments by date into DayData with today/past flags
+        let days = build_day_data_from_calendar_meals(&calendar_meals);
 
-            let template = MealCalendarTemplate {
-                user: Some(()),
-                days,
-                start_date: plan_data.meal_plan.start_date,
-                end_date,
-                has_meal_plan: true,
-                rotation_used,
-                rotation_total,
-                current_path: "/plan".to_string(),
-                error_message: None,
-            };
-            template.render().map(Html).map_err(|e| {
-                tracing::error!("Failed to render meal calendar template: {:?}", e);
-                AppError::InternalError("Failed to render page".to_string())
-            })
-        }
-        None => {
-            // No meal plan exists, show empty calendar or prompt
-            let template = MealCalendarTemplate {
-                user: Some(()),
-                days: Vec::new(),
-                start_date: String::new(),
-                end_date: String::new(),
-                has_meal_plan: false,
-                rotation_used: 0,
-                rotation_total: 0,
-                current_path: "/plan".to_string(),
-                error_message: None,
-            };
-            template.render().map(Html).map_err(|e| {
-                tracing::error!("Failed to render empty meal calendar template: {:?}", e);
-                AppError::InternalError("Failed to render page".to_string())
-            })
-        }
+        // Story 3.13: Calculate end_date (Sunday) from start_date (Monday)
+        let end_date = if !start_date.is_empty() {
+            chrono::NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
+                .map(|start| {
+                    (start + chrono::Duration::days(6))
+                        .format("%Y-%m-%d")
+                        .to_string()
+                })
+                .unwrap_or_else(|_| start_date.clone())
+        } else {
+            String::new()
+        };
+
+        let template = MealCalendarTemplate {
+            user: Some(()),
+            days,
+            start_date,
+            end_date,
+            has_meal_plan: true,
+            rotation_used,
+            rotation_total,
+            current_path: "/plan".to_string(),
+            error_message: None,
+        };
+        template.render().map(Html).map_err(|e| {
+            tracing::error!("Failed to render meal calendar template: {:?}", e);
+            AppError::InternalError("Failed to render page".to_string())
+        })
+    } else {
+        // No meal plan exists, show empty calendar or prompt
+        let template = MealCalendarTemplate {
+            user: Some(()),
+            days: Vec::new(),
+            start_date: String::new(),
+            end_date: String::new(),
+            has_meal_plan: false,
+            rotation_used: 0,
+            rotation_total: 0,
+            current_path: "/plan".to_string(),
+            error_message: None,
+        };
+        template.render().map(Html).map_err(|e| {
+            tracing::error!("Failed to render empty meal calendar template: {:?}", e);
+            AppError::InternalError("Failed to render page".to_string())
+        })
     }
 }
 
@@ -671,10 +670,10 @@ async fn fetch_recipes_by_ids(
         return Ok(Vec::new());
     }
 
-    // Build placeholders for IN clause
+    // Build placeholders for IN clause (use page-specific table)
     let placeholders = recipe_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
     let query_str = format!(
-        "SELECT id, user_id, title, recipe_type, ingredients, instructions, prep_time_min, cook_time_min, advance_prep_hours, serving_size, is_favorite, is_shared, complexity, cuisine, dietary_tags, created_at, updated_at FROM recipes WHERE id IN ({}) AND deleted_at IS NULL",
+        "SELECT id, user_id, title, recipe_type, ingredients, instructions, prep_time_min, cook_time_min, advance_prep_hours, serving_size, is_favorite, is_shared, complexity, cuisine, dietary_tags, created_at, updated_at FROM recipe_detail WHERE id IN ({}) AND deleted_at IS NULL",
         placeholders
     );
 
@@ -758,6 +757,75 @@ fn build_day_data(
                 "dinner" => day_data.dessert = Some(slot_data),
                 _ => {}
             }
+        }
+    }
+
+    // Sort days by date and return as Vec
+    let mut days: Vec<DayData> = days_map.into_values().collect();
+    days.sort_by(|a, b| a.date.cmp(&b.date));
+    days
+}
+
+/// Build DayData from CalendarMeal (page-specific table, no JOINs)
+///
+/// This replaces build_day_data() and works with the denormalized calendar_view table.
+fn build_day_data_from_calendar_meals(calendar_meals: &[CalendarMeal]) -> Vec<DayData> {
+    // AC-6, AC-7: Get today's date for highlighting logic
+    let today = chrono::Local::now().date_naive();
+
+    // Group assignments by date
+    let mut days_map: HashMap<String, DayData> = HashMap::new();
+
+    for meal in calendar_meals {
+        let date = meal.date.clone();
+
+        // Parse date to get day name and compute is_today/is_past flags
+        let (day_name, is_today, is_past) =
+            if let Ok(parsed_date) = NaiveDate::parse_from_str(&date, "%Y-%m-%d") {
+                let day_name = parsed_date.weekday().to_string();
+                let is_today = parsed_date == today;
+                let is_past = parsed_date < today;
+                (day_name, is_today, is_past)
+            } else {
+                (String::new(), false, false)
+            };
+
+        // Get or create DayData
+        let day_data = days_map.entry(date.clone()).or_insert(DayData {
+            date: date.clone(),
+            day_name,
+            is_today,
+            is_past,
+            meal_plan_id: meal.meal_plan_id.clone(),
+            appetizer: None,
+            main_course: None,
+            dessert: None,
+        });
+
+        // Create slot data from denormalized calendar meal
+        let slot_data = MealSlotData {
+            assignment_id: meal.id.clone(),
+            date: meal.date.clone(),
+            course_type: meal.course_type.clone(),
+            recipe_id: meal.recipe_id.clone(),
+            recipe_title: meal.recipe_title.clone(),
+            prep_time_min: meal.prep_time_min,
+            cook_time_min: meal.cook_time_min,
+            prep_required: false, // Not tracked in calendar_view (not needed for calendar display)
+            complexity: None,     // Not tracked in calendar_view
+            assignment_reasoning: meal.assignment_reasoning.clone(),
+        };
+
+        // Assign to appropriate course slot
+        match meal.course_type.as_str() {
+            "appetizer" => day_data.appetizer = Some(slot_data),
+            "main_course" => day_data.main_course = Some(slot_data),
+            "dessert" => day_data.dessert = Some(slot_data),
+            // Backward compatibility
+            "breakfast" => day_data.appetizer = Some(slot_data),
+            "lunch" => day_data.main_course = Some(slot_data),
+            "dinner" => day_data.dessert = Some(slot_data),
+            _ => {}
         }
     }
 

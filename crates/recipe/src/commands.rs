@@ -929,7 +929,7 @@ pub async fn copy_recipe(
 
     // AC-10: Check if user already copied this recipe (prevent duplicates)
     let duplicate_check: Option<i64> = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM recipes WHERE user_id = ?1 AND original_recipe_id = ?2 AND deleted_at IS NULL"
+        "SELECT COUNT(*) FROM recipe_detail WHERE user_id = ?1 AND original_recipe_id = ?2 AND deleted_at IS NULL"
     )
     .bind(user_id)
     .bind(&command.original_recipe_id)

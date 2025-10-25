@@ -122,7 +122,7 @@ async fn set_recipe_tags(
     dietary_tags: Vec<String>,
 ) {
     let dietary_json = serde_json::to_string(&dietary_tags).unwrap();
-    sqlx::query("UPDATE recipes SET cuisine = ?1, dietary_tags = ?2 WHERE id = ?3")
+    sqlx::query("UPDATE recipe_detail SET cuisine = ?1, dietary_tags = ?2 WHERE id = ?3")
         .bind(cuisine)
         .bind(dietary_json)
         .bind(recipe_id)
@@ -147,7 +147,7 @@ async fn share_recipe_helper(
     user_id: &str,
 ) {
     // Verify recipe exists before sharing
-    let exists: Option<String> = sqlx::query_scalar("SELECT id FROM recipes WHERE id = ?")
+    let exists: Option<String> = sqlx::query_scalar("SELECT id FROM recipe_detail WHERE id = ?")
         .bind(recipe_id)
         .fetch_optional(pool)
         .await
@@ -631,7 +631,7 @@ async fn test_sql_injection_prevention_search() {
     assert!(result.is_ok());
 
     // Verify table still exists
-    let count: i32 = sqlx::query_scalar("SELECT COUNT(*) FROM recipes")
+    let count: i32 = sqlx::query_scalar("SELECT COUNT(*) FROM recipe_detail")
         .fetch_one(&pool)
         .await
         .unwrap();
@@ -794,7 +794,7 @@ async fn test_deleted_recipes_not_visible() {
     assert_eq!(recipes.len(), 1);
 
     // Soft delete recipe by updating deleted_at directly (delete command is internal)
-    sqlx::query("UPDATE recipes SET deleted_at = datetime('now') WHERE id = ?")
+    sqlx::query("UPDATE recipe_detail SET deleted_at = datetime('now') WHERE id = ?")
         .bind(&recipe_id)
         .execute(&pool)
         .await

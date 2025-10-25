@@ -78,16 +78,17 @@ async fn create_test_recipes(
 
         sqlx::query(
             r#"
-            INSERT INTO recipes (
-                id, user_id, title, ingredients, instructions,
+            INSERT INTO recipe_detail (
+                id, user_id, title, recipe_type, ingredients, instructions,
                 prep_time_min, cook_time_min, serving_size,
                 is_favorite, is_shared, complexity, created_at, updated_at
-            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)
             "#,
         )
         .bind(&recipe_id)
         .bind(user_id)
         .bind(format!("Recipe {}", i))
+        .bind("main_course")
         .bind(r#"[{"name":"ingredient1","amount":"1 cup"}]"#)
         .bind(r#"[{"step_number":1,"instruction":"Cook it"}]"#)
         .bind(15 + (i as i32 % 10))
@@ -1155,51 +1156,42 @@ async fn test_get_todays_meals_query() {
 #[tokio::test]
 async fn test_dashboard_route_data_structure() {
     use imkitchen::routes::dashboard::map_to_todays_meals;
-    use meal_planning::read_model::MealAssignmentWithRecipe;
+    use meal_planning::DashboardMeal;
 
     // Test data with all meal types
     let assignments = vec![
-        MealAssignmentWithRecipe {
+        DashboardMeal {
             id: "assignment_breakfast".to_string(),
-            meal_plan_id: "plan1".to_string(),
             date: "2025-01-15".to_string(),
             course_type: "appetizer".to_string(),
             recipe_id: "recipe1".to_string(),
-            prep_required: false,
-            assignment_reasoning: None,
             recipe_title: "Pancakes".to_string(),
+            recipe_image_url: None,
             prep_time_min: Some(10),
             cook_time_min: Some(15),
-            advance_prep_hours: None,
-            complexity: Some("simple".to_string()),
+            prep_required: 0, // SQLite boolean: false
         },
-        MealAssignmentWithRecipe {
+        DashboardMeal {
             id: "assignment_lunch".to_string(),
-            meal_plan_id: "plan1".to_string(),
             date: "2025-01-15".to_string(),
             course_type: "main_course".to_string(),
             recipe_id: "recipe2".to_string(),
-            prep_required: true,
-            assignment_reasoning: Some("Marinated overnight".to_string()),
             recipe_title: "Chicken Salad".to_string(),
+            recipe_image_url: None,
             prep_time_min: Some(20),
             cook_time_min: Some(0),
-            advance_prep_hours: Some(12),
-            complexity: Some("moderate".to_string()),
+            prep_required: 1, // SQLite boolean: true
         },
-        MealAssignmentWithRecipe {
+        DashboardMeal {
             id: "assignment_dinner".to_string(),
-            meal_plan_id: "plan1".to_string(),
             date: "2025-01-15".to_string(),
             course_type: "dessert".to_string(),
             recipe_id: "recipe3".to_string(),
-            prep_required: false,
-            assignment_reasoning: None,
             recipe_title: "Pasta".to_string(),
+            recipe_image_url: None,
             prep_time_min: Some(15),
             cook_time_min: Some(20),
-            advance_prep_hours: None,
-            complexity: Some("simple".to_string()),
+            prep_required: 0, // SQLite boolean: false
         },
     ];
 
@@ -1395,16 +1387,17 @@ async fn test_recipe_count_boundary_conditions() {
         let now = chrono::Utc::now().to_rfc3339();
         sqlx::query(
             r#"
-            INSERT INTO recipes (
-                id, user_id, title, ingredients, instructions,
+            INSERT INTO recipe_detail (
+                id, user_id, title, recipe_type, ingredients, instructions,
                 prep_time_min, cook_time_min, serving_size,
                 is_favorite, is_shared, complexity, created_at, updated_at
-            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)
             "#,
         )
         .bind(&recipe_id)
         .bind(user_id_6)
         .bind(format!("Recipe {}", i))
+        .bind("main_course")
         .bind(r#"[{"name":"ingredient1","amount":"1 cup"}]"#)
         .bind(r#"[{"step_number":1,"instruction":"Cook it"}]"#)
         .bind(15)
@@ -1438,16 +1431,17 @@ async fn test_recipe_count_boundary_conditions() {
         let now = chrono::Utc::now().to_rfc3339();
         sqlx::query(
             r#"
-            INSERT INTO recipes (
-                id, user_id, title, ingredients, instructions,
+            INSERT INTO recipe_detail (
+                id, user_id, title, recipe_type, ingredients, instructions,
                 prep_time_min, cook_time_min, serving_size,
                 is_favorite, is_shared, complexity, created_at, updated_at
-            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)
             "#,
         )
         .bind(&recipe_id)
         .bind(user_id_8)
         .bind(format!("Recipe {}", i))
+        .bind("main_course")
         .bind(r#"[{"name":"ingredient1","amount":"1 cup"}]"#)
         .bind(r#"[{"step_number":1,"instruction":"Cook it"}]"#)
         .bind(15)

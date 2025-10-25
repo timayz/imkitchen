@@ -4,6 +4,8 @@ pub mod commands;
 pub mod constraints;
 pub mod error;
 pub mod events;
+pub mod page_specific_projections;
+pub mod page_specific_queries;
 pub mod read_model;
 pub mod rotation;
 
@@ -18,6 +20,11 @@ pub use error::MealPlanningError;
 pub use events::{
     MealPlanArchived, MealPlanGenerated, MealPlanRegenerated, RecipeUsedInRotation,
     RotationCycleReset,
+};
+pub use page_specific_projections::{meal_plan_calendar_projections, meal_plan_dashboard_projections};
+pub use page_specific_queries::{
+    get_active_meal_plan_metadata, get_calendar_week_view, get_dashboard_metrics, get_todays_meals,
+    CalendarMeal, DashboardMeal, DashboardMetrics,
 };
 pub use read_model::{
     meal_plan_projection, MealAssignmentReadModel, MealPlanQueries, MealPlanReadModel,

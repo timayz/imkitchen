@@ -36,12 +36,13 @@ async fn test_cooking_reminder_scheduled_1_hour_before_dinner() {
 
     // Create recipe with 1h prep (< 4h, should trigger day_of reminder)
     sqlx::query(
-        "INSERT INTO recipes (id, user_id, title, ingredients, instructions, prep_time_min, cook_time_min, advance_prep_hours, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        "INSERT INTO recipe_detail (id, user_id, title, recipe_type, ingredients, instructions, prep_time_min, cook_time_min, advance_prep_hours, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
     .bind(recipe_id)
     .bind(user_id)
     .bind("Quick Pasta")
+    .bind("main_course")
     .bind(r#"[{"name": "pasta", "quantity": 200, "unit": "g"}]"#)
     .bind(r#"["Boil water", "Cook pasta"]"#)
     .bind(10) // 10 minutes prep
@@ -69,15 +70,20 @@ async fn test_cooking_reminder_scheduled_1_hour_before_dinner() {
     .unwrap();
 
     sqlx::query(
-        "INSERT INTO meal_assignments (id, meal_plan_id, date, course_type, recipe_id, prep_required)
-         VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO dashboard_meals (id, user_id, date, course_type, recipe_id, recipe_title, prep_time_min, cook_time_min, prep_required, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
     .bind("assignment-day-of-001")
-    .bind(meal_plan_id)
+    .bind(user_id)
     .bind(&today)
     .bind("dessert")
     .bind(recipe_id)
+    .bind("Quick Pasta")
+    .bind(10)
+    .bind(15)
     .bind(1)
+    .bind(Utc::now().to_rfc3339())
+    .bind(Utc::now().to_rfc3339())
     .execute(&pool)
     .await
     .unwrap();
@@ -138,12 +144,13 @@ async fn test_cooking_reminder_for_breakfast_default_time() {
 
     // Create recipe with 0.5h prep (< 4h, should trigger day_of reminder)
     sqlx::query(
-        "INSERT INTO recipes (id, user_id, title, ingredients, instructions, prep_time_min, cook_time_min, advance_prep_hours, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        "INSERT INTO recipe_detail (id, user_id, title, recipe_type, ingredients, instructions, prep_time_min, cook_time_min, advance_prep_hours, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
     .bind(recipe_id)
     .bind(user_id)
     .bind("Oatmeal")
+    .bind("appetizer")
     .bind(r#"[]"#)
     .bind(r#"[]"#)
     .bind(5)
@@ -171,15 +178,20 @@ async fn test_cooking_reminder_for_breakfast_default_time() {
     .unwrap();
 
     sqlx::query(
-        "INSERT INTO meal_assignments (id, meal_plan_id, date, course_type, recipe_id, prep_required)
-         VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO dashboard_meals (id, user_id, date, course_type, recipe_id, recipe_title, prep_time_min, cook_time_min, prep_required, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
     .bind("assignment-day-of-002")
-    .bind(meal_plan_id)
+    .bind(user_id)
     .bind(&today)
     .bind("appetizer")
     .bind(recipe_id)
+    .bind("Oatmeal")
+    .bind(5)
+    .bind(5)
     .bind(0) // No prep required
+    .bind(Utc::now().to_rfc3339())
+    .bind(Utc::now().to_rfc3339())
     .execute(&pool)
     .await
     .unwrap();
@@ -224,12 +236,13 @@ async fn test_cooking_reminder_message_format_dinner() {
 
     // Create recipe: Chicken Tikka Masala with prep_time=20, cook_time=30 (total 50 minutes)
     sqlx::query(
-        "INSERT INTO recipes (id, user_id, title, ingredients, instructions, prep_time_min, cook_time_min, advance_prep_hours, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        "INSERT INTO recipe_detail (id, user_id, title, recipe_type, ingredients, instructions, prep_time_min, cook_time_min, advance_prep_hours, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
     .bind(recipe_id)
     .bind(user_id)
     .bind("Chicken Tikka Masala")
+    .bind("main_course")
     .bind(r#"[]"#)
     .bind(r#"[]"#)
     .bind(20) // 20 min prep
@@ -256,15 +269,20 @@ async fn test_cooking_reminder_message_format_dinner() {
     .unwrap();
 
     sqlx::query(
-        "INSERT INTO meal_assignments (id, meal_plan_id, date, course_type, recipe_id, prep_required)
-         VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO dashboard_meals (id, user_id, date, course_type, recipe_id, recipe_title, prep_time_min, cook_time_min, prep_required, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
     .bind("assignment-day-of-003")
-    .bind(meal_plan_id)
+    .bind(user_id)
     .bind(&today)
     .bind("dessert")
     .bind(recipe_id)
+    .bind("Chicken Tikka Masala")
+    .bind(20)
+    .bind(30)
     .bind(1)
+    .bind(Utc::now().to_rfc3339())
+    .bind(Utc::now().to_rfc3339())
     .execute(&pool)
     .await
     .unwrap();
@@ -323,12 +341,13 @@ async fn test_cooking_reminder_message_format_breakfast() {
 
     // Create recipe: Oatmeal with prep=5, cook=5 (total 10 minutes)
     sqlx::query(
-        "INSERT INTO recipes (id, user_id, title, ingredients, instructions, prep_time_min, cook_time_min, advance_prep_hours, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        "INSERT INTO recipe_detail (id, user_id, title, recipe_type, ingredients, instructions, prep_time_min, cook_time_min, advance_prep_hours, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
     .bind(recipe_id)
     .bind(user_id)
     .bind("Oatmeal")
+    .bind("appetizer")
     .bind(r#"[]"#)
     .bind(r#"[]"#)
     .bind(5)
@@ -355,15 +374,20 @@ async fn test_cooking_reminder_message_format_breakfast() {
     .unwrap();
 
     sqlx::query(
-        "INSERT INTO meal_assignments (id, meal_plan_id, date, course_type, recipe_id, prep_required)
-         VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO dashboard_meals (id, user_id, date, course_type, recipe_id, recipe_title, prep_time_min, cook_time_min, prep_required, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
     .bind("assignment-day-of-004")
-    .bind(meal_plan_id)
+    .bind(user_id)
     .bind(&today)
     .bind("appetizer")
     .bind(recipe_id)
+    .bind("Oatmeal")
+    .bind(5)
+    .bind(5)
     .bind(0)
+    .bind(Utc::now().to_rfc3339())
+    .bind(Utc::now().to_rfc3339())
     .execute(&pool)
     .await
     .unwrap();

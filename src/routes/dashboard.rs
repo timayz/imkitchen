@@ -1,8 +1,7 @@
 use askama::Template;
 use axum::{extract::State, response::Html, Extension};
-use meal_planning::read_model::{MealAssignmentWithRecipe, MealPlanQueries};
+use meal_planning::{get_dashboard_metrics, get_todays_meals, DashboardMeal};
 use notifications::read_model::{get_user_prep_tasks_for_today, UserNotification};
-use recipe::read_model::query_recipe_count;
 use serde::{Deserialize, Serialize};
 
 use crate::error::AppError;
@@ -62,12 +61,15 @@ pub async fn dashboard_handler(
     Extension(auth): Extension<Auth>,
     State(state): State<AppState>,
 ) -> Result<Html<String>, AppError> {
-    // Query today's meals with recipe details
-    let todays_meal_assignments =
-        MealPlanQueries::get_todays_meals(&auth.user_id, &state.db_pool).await?;
+    // Query today's meals from page-specific table (dashboard_meals)
+    // No JOINs needed - all recipe metadata is denormalized
+    let todays_meal_assignments: Vec<DashboardMeal> = get_todays_meals(&auth.user_id, &state.db_pool).await?;
 
-    // Query recipe stats for dashboard cards
-    let (recipe_count, favorite_count) = query_recipe_count(&auth.user_id, &state.db_pool).await?;
+    // Query dashboard metrics from page-specific table (dashboard_metrics)
+    let metrics = get_dashboard_metrics(&auth.user_id, &state.db_pool).await?;
+    let (recipe_count, favorite_count) = metrics
+        .map(|m| (m.recipe_count as usize, m.favorite_count as usize))
+        .unwrap_or((0, 0));
 
     // Query today's prep tasks (Story 4.9 AC #4)
     let prep_tasks = get_user_prep_tasks_for_today(&state.db_pool, &auth.user_id).await?;
@@ -99,7 +101,7 @@ pub async fn dashboard_handler(
 }
 
 /// Helper: Map meal assignments to TodaysMealsData
-pub fn map_to_todays_meals(assignments: &[MealAssignmentWithRecipe]) -> TodaysMealsData {
+pub fn map_to_todays_meals(assignments: &[DashboardMeal]) -> TodaysMealsData {
     let mut data = TodaysMealsData {
         appetizer: None,   // AC-5: Course-based model
         main_course: None, // AC-5: Course-based model
@@ -111,10 +113,7 @@ pub fn map_to_todays_meals(assignments: &[MealAssignmentWithRecipe]) -> TodaysMe
         let total_time_min = assignment.prep_time_min.unwrap_or(0) as u32
             + assignment.cook_time_min.unwrap_or(0) as u32;
 
-        let advance_prep_required = assignment
-            .advance_prep_hours
-            .map(|hours| hours > 0)
-            .unwrap_or(false);
+        let advance_prep_required = assignment.prep_required != 0; // SQLite boolean
 
         let slot_data = TodayMealSlotData {
             assignment_id: assignment.id.clone(),
@@ -124,8 +123,8 @@ pub fn map_to_todays_meals(assignments: &[MealAssignmentWithRecipe]) -> TodaysMe
             cook_time_min: assignment.cook_time_min,
             total_time_min,
             advance_prep_required,
-            complexity: assignment.complexity.clone(),
-            assignment_reasoning: assignment.assignment_reasoning.clone(),
+            complexity: None, // Not included in dashboard_meals (not needed for dashboard)
+            assignment_reasoning: None, // Not included in dashboard_meals
         };
 
         // AC-5: Map course_type to slots (with backward compatibility)
@@ -147,53 +146,44 @@ pub fn map_to_todays_meals(assignments: &[MealAssignmentWithRecipe]) -> TodaysMe
 #[cfg(test)]
 mod tests {
     use super::*;
-    use meal_planning::read_model::MealAssignmentWithRecipe;
+    use meal_planning::DashboardMeal;
 
     /// Test: map_to_todays_meals() correctly organizes meals by type
     #[test]
     fn test_map_to_todays_meals_organizes_by_meal_type() {
         let assignments = vec![
-            MealAssignmentWithRecipe {
+            DashboardMeal {
                 id: "assignment_breakfast".to_string(),
-                meal_plan_id: "plan1".to_string(),
                 date: "2025-01-15".to_string(),
                 course_type: "appetizer".to_string(),
                 recipe_id: "recipe1".to_string(),
-                prep_required: false,
-                assignment_reasoning: None,
                 recipe_title: "Pancakes".to_string(),
+                recipe_image_url: None,
                 prep_time_min: Some(10),
                 cook_time_min: Some(15),
-                advance_prep_hours: None,
-                complexity: Some("simple".to_string()),
+                prep_required: 0,
             },
-            MealAssignmentWithRecipe {
+            DashboardMeal {
                 id: "assignment_lunch".to_string(),
-                meal_plan_id: "plan1".to_string(),
                 date: "2025-01-15".to_string(),
                 course_type: "main_course".to_string(),
                 recipe_id: "recipe2".to_string(),
-                prep_required: true,
-                assignment_reasoning: Some("Marinated chicken".to_string()),
                 recipe_title: "Chicken Salad".to_string(),
+                recipe_image_url: None,
                 prep_time_min: Some(20),
                 cook_time_min: Some(0),
-                advance_prep_hours: Some(4),
-                complexity: Some("moderate".to_string()),
+                prep_required: 1,
             },
-            MealAssignmentWithRecipe {
+            DashboardMeal {
                 id: "assignment_dinner".to_string(),
-                meal_plan_id: "plan1".to_string(),
                 date: "2025-01-15".to_string(),
                 course_type: "dessert".to_string(),
                 recipe_id: "recipe3".to_string(),
-                prep_required: false,
-                assignment_reasoning: None,
                 recipe_title: "Pasta Carbonara".to_string(),
+                recipe_image_url: None,
                 prep_time_min: Some(15),
                 cook_time_min: Some(20),
-                advance_prep_hours: None,
-                complexity: Some("moderate".to_string()),
+                prep_required: 0,
             },
         ];
 
@@ -226,19 +216,16 @@ mod tests {
     /// Test: map_to_todays_meals() handles missing meal slots
     #[test]
     fn test_map_to_todays_meals_handles_missing_slots() {
-        let assignments = vec![MealAssignmentWithRecipe {
+        let assignments = vec![DashboardMeal {
             id: "assignment_breakfast".to_string(),
-            meal_plan_id: "plan1".to_string(),
             date: "2025-01-15".to_string(),
             course_type: "appetizer".to_string(),
             recipe_id: "recipe1".to_string(),
-            prep_required: false,
-            assignment_reasoning: None,
             recipe_title: "Pancakes".to_string(),
+            recipe_image_url: None,
             prep_time_min: Some(10),
             cook_time_min: Some(15),
-            advance_prep_hours: None,
-            complexity: Some("simple".to_string()),
+            prep_required: 0,
         }];
 
         let result = map_to_todays_meals(&assignments);
@@ -252,19 +239,16 @@ mod tests {
     /// Test: map_to_todays_meals() handles zero times gracefully
     #[test]
     fn test_map_to_todays_meals_handles_zero_times() {
-        let assignments = vec![MealAssignmentWithRecipe {
+        let assignments = vec![DashboardMeal {
             id: "assignment_breakfast".to_string(),
-            meal_plan_id: "plan1".to_string(),
             date: "2025-01-15".to_string(),
             course_type: "appetizer".to_string(),
             recipe_id: "recipe1".to_string(),
-            prep_required: false,
-            assignment_reasoning: None,
             recipe_title: "Cereal".to_string(),
+            recipe_image_url: None,
             prep_time_min: None,
             cook_time_min: None,
-            advance_prep_hours: None,
-            complexity: None,
+            prep_required: 0,
         }];
 
         let result = map_to_todays_meals(&assignments);
