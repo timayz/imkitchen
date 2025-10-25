@@ -1467,15 +1467,1108 @@ This document provides the detailed epic breakdown for imkitchen, an intelligent
 
 ---
 
+## Epic 6: Enhanced Meal Planning - Database & Domain Foundation
+
+**Goal:** Establish foundational database schema and domain models for multi-week meal planning, accompaniment support, and user preferences integration
+
+**Value Delivered:** Backend foundation enabling multi-week meal plans (up to 5 weeks), accompaniment recipe types (pasta, rice, fries, etc.), and personalized algorithm preferences
+
+**Success Criteria:**
+- Database migration runs successfully on development and staging
+- All domain models compile with zero warnings
+- Evento events properly serialized/deserialized
+- Unit test coverage >90% for domain models
+- Migration reversible (rollback tested)
+
+**Source Document:** `./docs/architecture-update-meal-planning-enhancements.md` (sections 1-6)
+
+---
+
+### Story 6.1: Database Schema Migration
+
+**As a** backend developer
+**I want to** create and test database migrations for enhanced meal planning
+**So that** the schema supports multi-week plans, accompaniments, and user preferences
+
+**Prerequisites:** None (foundational story)
+
+**Acceptance Criteria:**
+1. Migration SQL file created per section 9.1 (Database Migration Strategy)
+2. Migration adds columns to `meal_plans`: end_date, is_locked, generation_batch_id
+3. Migration adds columns to `recipes`: accepts_accompaniment, preferred_accompaniments, accompaniment_category, cuisine, dietary_tags
+4. Migration adds column to `meal_assignments`: accompaniment_recipe_id
+5. Migration adds columns to `users`: max_prep_time_weeknight, max_prep_time_weekend, avoid_consecutive_complex, cuisine_variety_weight
+6. Migration creates table `meal_plan_rotation_state` with all fields
+7. Migration creates indexes per section 4 (Database Schema Changes)
+8. Migration creates triggers: prevent_locked_week_modification, update_meal_plan_status
+9. Migration updates existing data (calculates end_date, sets is_locked based on dates)
+10. Rollback migration created and tested
+
+**Technical Notes:**
+- Migration file: `migrations/XXX_enhanced_meal_planning.sql`
+- JSON fields stored as TEXT with application-layer validation
+- Test with realistic volumes: 100 users, 500 recipes, 200 meal plans
+
+---
+
+### Story 6.2: Update Recipe Domain Model
+
+**As a** backend developer
+**I want to** extend Recipe aggregate with accompaniment and cuisine fields
+**So that** recipes support the new meal planning algorithm
+
+**Prerequisites:** Story 6.1 (database migration)
+
+**Acceptance Criteria:**
+1. Recipe struct updated with fields: accepts_accompaniment, preferred_accompaniments, accompaniment_category, cuisine, dietary_tags
+2. New enums created: AccompanimentCategory, Cuisine, DietaryTag
+3. RecipeCreated event updated with new fields
+4. RecipeAccompanimentSettingsUpdated event created
+5. Evento aggregator trait implemented
+6. All fields have serde Serialize/Deserialize derives
+7. All fields have bincode Encode/Decode derives
+8. Unit tests cover event handlers for new fields
+9. Compilation succeeds with zero warnings
+10. Existing recipe tests pass (backwards compatibility)
+
+**Technical Notes:**
+- AccompanimentCategory variants: Pasta, Rice, Fries, Salad, Bread, Vegetable, Other
+- Cuisine::Custom(String) allows user-defined cuisines
+- DietaryTag separate from DietaryRestriction (tags on recipes, restrictions on users)
+
+---
+
+### Story 6.3: Update MealPlan Domain Model
+
+**As a** backend developer
+**I want to** extend MealPlan aggregate for multi-week support
+**So that** system can generate and track multiple weeks
+
+**Prerequisites:** Story 6.1 (database migration)
+
+**Acceptance Criteria:**
+1. WeekMealPlan struct created with fields: end_date, is_locked, generation_batch_id, status
+2. MultiWeekMealPlan struct created
+3. WeekStatus enum created (Future, Current, Past, Archived)
+4. RotationState struct created with tracking fields
+5. MultiWeekMealPlanGenerated event created
+6. SingleWeekRegenerated event created
+7. AllFutureWeeksRegenerated event created
+8. MealAssignment updated with accompaniment_recipe_id field
+9. Unit tests cover all event handlers
+10. All tests pass with >90% coverage
+
+**Technical Notes:**
+- RotationState tracks: used_main_course_ids (unique), used_appetizer_ids (can repeat), used_dessert_ids (can repeat), cuisine_usage_count, last_complex_meal_date
+- generation_batch_id links weeks generated together
+
+---
+
+### Story 6.4: Update User Domain Model
+
+**As a** backend developer
+**I want to** extend User aggregate with meal planning preferences
+**So that** algorithm can personalize meal plans
+
+**Prerequisites:** Story 6.1 (database migration)
+
+**Acceptance Criteria:**
+1. UserPreferences struct created with meal planning fields
+2. Fields: max_prep_time_weeknight, max_prep_time_weekend, avoid_consecutive_complex, cuisine_variety_weight, dietary_restrictions
+3. DietaryRestriction enum created (Vegetarian, Vegan, GlutenFree, DairyFree, NutFree, Halal, Kosher, Custom(String))
+4. SkillLevel enum created (Beginner, Intermediate, Advanced)
+5. UserMealPlanningPreferencesUpdated event created
+6. User aggregate integrates preferences
+7. Unit tests cover preferences event handling
+8. Default values per design decisions (max_prep_time_weeknight: 30, weekend: 90, cuisine_variety_weight: 0.7)
+
+**Technical Notes:**
+- Defaults aligned with section 3.4 of architecture doc
+- Custom dietary restriction allows user-defined allergens
+
+---
+
+### Story 6.5: Create Rotation State Management Module
+
+**As a** backend developer
+**I want to** implement rotation state tracking logic
+**So that** recipes properly rotated across weeks
+
+**Prerequisites:** Story 6.2, 6.3 (domain models updated)
+
+**Acceptance Criteria:**
+1. New file `crates/meal_planning/src/rotation.rs` created
+2. RotationState::new() constructor implemented
+3. Methods: mark_used_main_course, mark_used_appetizer, mark_used_dessert
+4. Method: is_main_course_used (checks uniqueness)
+5. Methods: reset_appetizers_if_all_used, reset_desserts_if_all_used
+6. Method: increment_cuisine_usage
+7. Method: update_last_complex_meal_date
+8. Unit tests cover all rotation logic
+9. Edge cases handled: empty lists, all recipes exhausted
+
+**Technical Notes:**
+- Main courses NEVER repeat across weeks
+- Appetizers/desserts CAN repeat after exhausting full list
+- Used in generate_multi_week_meal_plans (Epic 7)
+
+---
+
+### Story 6.6: Update Read Models and Projections
+
+**As a** backend developer
+**I want to** update read model projections for new events
+**So that** query models stay in sync
+
+**Prerequisites:** Story 6.2, 6.3, 6.4 (all events defined)
+
+**Acceptance Criteria:**
+1. Projection handlers created for all new events
+2. project_multi_week_meal_plan_generated inserts all weeks
+3. project_recipe_created handles new recipe fields
+4. project_user_meal_planning_preferences_updated updates preferences
+5. JSON serialization works for JSON columns
+6. Integration tests verify database updates
+7. Evento subscriptions registered for all events
+
+**Technical Notes:**
+- Use serde_json for Vec<T> to TEXT JSON conversion
+- SQLx query macros for type safety
+- Projections use evento subscriptions
+
+---
+
+### Story 6.7: Write Comprehensive Domain Model Tests
+
+**As a** backend developer
+**I want to** achieve >90% test coverage on domain models
+**So that** we have confidence in foundation
+
+**Prerequisites:** Story 6.2, 6.3, 6.4, 6.5 (all models complete)
+
+**Acceptance Criteria:**
+1. Unit test coverage >90% (cargo tarpaulin)
+2. All enum variants tested
+3. All event handlers tested
+4. Edge cases tested: empty lists, nulls, boundaries
+5. Serialization round-trip tests (serde + bincode)
+6. All tests pass in CI
+7. Test execution <10 seconds
+
+**Technical Notes:**
+- Focus on domain logic, not external dependencies
+- Property-based testing with quickcheck optional
+
+---
+
+**Epic 6 Deliverables:**
+- Database migration SQL (tested, reversible)
+- Updated domain models (Recipe, MealPlan, User, RotationState)
+- New evento events for all state changes
+- Read model projections
+- >90% unit test coverage
+
+---
+
+## Epic 7: Enhanced Meal Planning - Algorithm Implementation
+
+**Goal:** Implement multi-week meal planning algorithm with preference-aware selection, dietary filtering, accompaniment pairing, and rotation management
+
+**Value Delivered:** Core differentiator - intelligent, personalized meal planning respecting time, skill, dietary needs
+
+**Success Criteria:**
+- Algorithm generates 1-5 weeks based on available recipes
+- Dietary restrictions filter correctly
+- Time/skill constraints respected
+- Cuisine variety influences distribution
+- Main courses unique across weeks
+- Accompaniments assigned when appropriate
+- Performance: <5 seconds for 5-week generation
+- Test coverage >80%
+
+**Source Document:** `./docs/architecture-update-meal-planning-enhancements.md` (sections 6, 7)
+
+---
+
+### Story 7.1: Implement Dietary Restriction Filtering
+
+**As a** backend developer
+**I want to** filter recipes by dietary restrictions
+**So that** incompatible recipes never appear in plans
+
+**Prerequisites:** Epic 6 complete
+
+**Acceptance Criteria:**
+1. Function filter_by_dietary_restrictions(recipes, restrictions) implemented
+2. Filters recipes not matching ALL restrictions (AND logic)
+3. Checks Vegetarian, Vegan, GlutenFree, DairyFree, NutFree, Halal, Kosher tags
+4. Custom restrictions check ingredients text (case-insensitive)
+5. Handles empty restriction list (returns all)
+6. Handles no compatible recipes (returns empty Vec)
+7. Unit tests cover all restriction types
+
+**Technical Notes:**
+- Implements section 3.5 of architecture doc
+- All restrictions must be satisfied (AND, not OR)
+
+---
+
+### Story 7.2: Implement Main Course Selection with Preferences
+
+**As a** backend developer
+**I want to** select main courses based on time, skill, complexity, cuisine
+**So that** plans respect user constraints
+
+**Prerequisites:** Story 7.1
+
+**Acceptance Criteria:**
+1. Function select_main_course_with_preferences implemented
+2. Filters by max_prep_time (weeknight vs weekend)
+3. Filters by skill_level (Beginner→Simple, Intermediate→Simple+Moderate, Advanced→All)
+4. Filters by avoid_consecutive_complex (checks rotation_state)
+5. Scores by cuisine_variety_weight (penalizes recent cuisines)
+6. Returns highest-scored recipe
+7. Handles no compatible recipes gracefully
+8. Unit tests cover preference combinations
+9. Performance: <10ms for 100 recipes
+
+**Technical Notes:**
+- Cuisine variety weight: 0.0 (repeat OK) to 1.0 (max variety)
+- Score formula: variety_weight * (1.0 / (cuisine_usage + 1.0))
+
+---
+
+### Story 7.3: Implement Accompaniment Selection
+
+**As a** backend developer
+**I want to** pair main courses with appropriate accompaniments
+**So that** plans include realistic sides
+
+**Prerequisites:** Story 7.2
+
+**Acceptance Criteria:**
+1. Function select_accompaniment(main_course, available) implemented
+2. Returns None if accepts_accompaniment == false
+3. Filters by preferred_accompaniments if specified
+4. Selects random from filtered list
+5. Returns None if no compatible accompaniments
+6. Allows repetition (not tracked in rotation)
+7. Unit tests cover pairing scenarios
+8. Random selection uses thread_rng
+
+**Technical Notes:**
+- Implements section 2.5
+- Accompaniments CAN repeat
+
+---
+
+### Story 7.4: Implement Single Week Generation
+
+**As a** backend developer
+**I want to** generate single week's plan
+**So that** it can be used in multi-week generation
+
+**Prerequisites:** Story 7.1, 7.2, 7.3
+
+**Acceptance Criteria:**
+1. Function generate_single_week implemented
+2. Generates 21 assignments (7 days × 3 courses)
+3. Assigns: appetizer, main (with optional accompaniment), dessert per day
+4. Appetizer/dessert rotation (can repeat after exhausting)
+5. Main course uses select_main_course_with_preferences
+6. Accompaniment assigned if accepts_accompaniment=true
+7. RotationState updated after each assignment
+8. Returns WeekMealPlan (status=Future, is_locked=false)
+9. Unit tests cover full week generation
+
+**Technical Notes:**
+- Core algorithm from section 1.5
+- RotationState mutated throughout (&mut)
+
+---
+
+### Story 7.5: Implement Multi-Week Meal Plan Generation
+
+**As a** backend developer
+**I want to** generate all possible weeks in batch
+**So that** users see plans for multiple weeks ahead
+
+**Prerequisites:** Story 7.4
+
+**Acceptance Criteria:**
+1. Function generate_multi_week_meal_plans implemented
+2. Calculates max_weeks = min(5, min(appetizers, mains, desserts))
+3. Returns InsufficientRecipes error if max_weeks < 1
+4. Filters by dietary restrictions before counting
+5. Generates weeks sequentially
+6. Week dates from next Monday + offset
+7. Shopping list per week
+8. Returns MultiWeekMealPlan
+9. Performance: <5 seconds for 5 weeks
+10. Unit tests cover various recipe counts
+
+**Technical Notes:**
+- Hard cap at 5 weeks per design decision
+- Next Monday calculation ensures ISO 8601
+
+---
+
+### Story 7.6: Implement Shopping List Generation
+
+**As a** backend developer
+**I want to** generate shopping lists from week assignments
+**So that** each week has complete ingredient list
+
+**Prerequisites:** Story 7.5
+
+**Acceptance Criteria:**
+1. Function generate_shopping_list_for_week implemented
+2. Loads recipes from assignments (main + accompaniments)
+3. Aggregates ingredients
+4. Groups by category (Produce, Dairy, Meat, Grains)
+5. Combines duplicates (2 onions + 1 onion = 3 onions)
+6. Returns ShoppingList with categories
+7. Includes both main AND accompaniment ingredients
+8. Unit tests cover aggregation
+
+**Technical Notes:**
+- Implements section 1.6
+- Unit handling simplified (future: conversion library)
+
+---
+
+### Story 7.7: Algorithm Integration Tests and Benchmarks
+
+**As a** backend developer
+**I want to** validate correctness and performance
+**So that** we meet targets
+
+**Prerequisites:** Story 7.1-7.6
+
+**Acceptance Criteria:**
+1. Integration test: full multi-week with realistic data
+2. Test: dietary restrictions filter correctly
+3. Test: time/skill constraints respected
+4. Test: main courses never repeat
+5. Test: accompaniments assigned correctly
+6. Benchmark: 5-week <5 seconds
+7. Coverage >80% for algorithm module
+
+**Technical Notes:**
+- Use criterion for benchmarking
+- Realistic volumes: 50 recipes per user
+
+---
+
+**Epic 7 Deliverables:**
+- Dietary filtering, preference-aware selection, accompaniment pairing
+- Single & multi-week generation, shopping lists
+- >80% test coverage, <5s performance
+
+---
+
+## Epic 8: Enhanced Meal Planning - Backend Routes & Handlers
+
+**Goal:** Create HTTP routes and handlers for multi-week meal plan generation, week navigation, regeneration, and user preference management
+
+**Value Delivered:** Exposes algorithm to users via RESTful API
+
+**Success Criteria:**
+- All routes respond with correct HTTP status codes
+- Route handlers call algorithm functions correctly
+- Error handling returns user-friendly responses
+- Integration tests verify request/response contracts
+- Performance: routes respond in <500ms (P95)
+
+**Source Document:** `./docs/architecture-update-meal-planning-enhancements.md` (section 7)
+
+---
+
+### Story 8.1: Create Multi-Week Generation Route
+
+**As a** API developer
+**I want to** create POST /plan/generate-multi-week endpoint
+**So that** users can trigger multi-week meal plan generation
+
+**Prerequisites:** Epic 7 complete (algorithm implemented)
+
+**Acceptance Criteria:**
+1. Route POST /plan/generate-multi-week created
+2. Route protected by authentication middleware
+3. Handler extracts user_id from JWT claims
+4. Handler loads user's favorite recipes from database
+5. Handler loads user's meal planning preferences
+6. Handler calls generate_multi_week_meal_plans algorithm
+7. Handler commits MultiWeekMealPlanGenerated event
+8. Handler returns JSON with first week data + navigation links
+9. Error: InsufficientRecipes returns 400 with helpful message
+10. Error: AlgorithmTimeout returns 500 with retry message
+11. Integration test: POST generates meal plan
+
+**Technical Notes:**
+- Uses Axum framework with Extension extractors
+- Evento event commit triggers read model projection
+- Error messages user-friendly (no stack traces)
+
+---
+
+### Story 8.2: Create Week Navigation Route
+
+**As a** API developer
+**I want to** create GET /plan/week/:week_id endpoint
+**So that** users can view specific weeks
+
+**Prerequisites:** Story 8.1
+
+**Acceptance Criteria:**
+1. Route GET /plan/week/:week_id created
+2. Route protected by authentication
+3. Handler verifies week belongs to authenticated user
+4. Handler loads week data (meal_plan + assignments)
+5. Handler loads shopping list for week
+6. Handler returns JSON/HTML with week calendar
+7. Returns 404 if week_id not found
+8. Returns 403 if week belongs to different user
+9. Integration test: GET with valid week_id returns data
+10. Integration test: GET with invalid week_id returns 404
+
+**Technical Notes:**
+- Path extractor for week_id parameter
+- Authorization check prevents cross-user access
+- Response includes full recipe details (joined)
+
+---
+
+### Story 8.3: Create Week Regeneration Route
+
+**As a** API developer
+**I want to** create POST /plan/week/:week_id/regenerate endpoint
+**So that** users can regenerate individual future weeks
+
+**Prerequisites:** Story 8.2
+
+**Acceptance Criteria:**
+1. Route POST /plan/week/:week_id/regenerate created
+2. Route verifies week belongs to user and is not locked
+3. Handler loads current rotation state
+4. Handler generates new meal assignments for week
+5. Handler commits SingleWeekRegenerated event
+6. Handler regenerates shopping list for week
+7. Returns 403 if week is locked (current week)
+8. Returns 400 if week already started
+9. Integration test: POST regenerates future week
+10. Integration test: POST on locked week returns 403
+
+**Technical Notes:**
+- SingleWeekRegenerated event triggers read model update
+- Locked weeks protection enforced at API + database trigger
+
+---
+
+### Story 8.4: Create Regenerate All Future Weeks Route
+
+**As a** API developer
+**I want to** create POST /plan/regenerate-all-future endpoint
+**So that** users can regenerate all upcoming weeks at once
+
+**Prerequisites:** Story 8.3
+
+**Acceptance Criteria:**
+1. Route POST /plan/regenerate-all-future created
+2. Requires confirmation parameter (prevent accidental regeneration)
+3. Handler identifies current week (locked) and preserves it
+4. Handler regenerates all future weeks (status=Future)
+5. Handler resets rotation state but preserves current week usage
+6. Handler commits AllFutureWeeksRegenerated event
+7. Handler regenerates shopping lists for all future weeks
+8. Returns count of regenerated weeks
+9. Integration test: POST with confirmation regenerates all
+10. Integration test: POST without confirmation returns 400
+
+**Technical Notes:**
+- Confirmation pattern prevents accidental data loss
+- Current week's main courses preserved in rotation
+- Bulk operation wrapped in database transaction
+
+---
+
+### Story 8.5: Create User Preferences Update Route
+
+**As a** API developer
+**I want to** create PUT /profile/meal-planning-preferences endpoint
+**So that** users can update meal planning preferences
+
+**Prerequisites:** Epic 6 complete (User domain model)
+
+**Acceptance Criteria:**
+1. Route PUT /profile/meal-planning-preferences created
+2. Handler validates input (max_prep_time >0, cuisine_variety_weight 0.0-1.0)
+3. Handler commits UserMealPlanningPreferencesUpdated event
+4. Handler returns updated preferences in response
+5. Returns 400 if validation fails
+6. Integration test: PUT updates preferences successfully
+7. Integration test: PUT with invalid data returns 400 with errors
+
+**Technical Notes:**
+- Use validator crate for field validation
+- Preferences applied in next generation (existing plans unchanged)
+
+---
+
+### Story 8.6: Write Route Integration Tests and API Documentation
+
+**As a** API developer
+**I want to** comprehensive integration tests and API docs
+**So that** routes are reliable and well-documented
+
+**Prerequisites:** Story 8.1-8.5
+
+**Acceptance Criteria:**
+1. Integration test suite covers all routes (>85% coverage)
+2. Tests verify authentication/authorization logic
+3. Tests verify error handling (400, 401, 403, 404, 500)
+4. Tests verify request/response JSON contracts
+5. API documentation created (README or OpenAPI spec)
+6. Documentation includes example requests/responses
+7. All integration tests pass in CI
+8. Performance tests verify P95 <500ms for all routes
+
+**Technical Notes:**
+- Integration tests use test database (in-memory SQLite)
+- API documentation critical for frontend integration
+- Performance tests run in CI to catch regressions
+
+---
+
+**Epic 8 Deliverables:**
+- POST /plan/generate-multi-week route
+- GET /plan/week/:week_id route
+- POST /plan/week/:week_id/regenerate route
+- POST /plan/regenerate-all-future route
+- PUT /profile/meal-planning-preferences route
+- >85% integration test coverage
+- API documentation complete
+- Performance targets met (P95 <500ms)
+
+---
+
+## Epic 9: Enhanced Meal Planning - Frontend UX Implementation
+
+**Goal:** Build user-facing UI for multi-week meal plan calendar, week navigation, accompaniment display, preference management, and regeneration controls
+
+**Value Delivered:** Intuitive interface for multi-week planning with visual calendar and easy navigation
+
+**Success Criteria:**
+- Multi-week calendar view displays all weeks with navigation
+- Accompaniments visibly displayed in meal slots
+- User preferences form functional and validates input
+- Recipe creation form includes accompaniment fields
+- Week regeneration UI with confirmation dialogs
+- Responsive design (mobile + desktop)
+- Accessibility: WCAG AA compliance
+
+**Source Document:** `./docs/architecture-update-meal-planning-enhancements.md` (section 8)
+
+---
+
+### Story 9.1: Create Multi-Week Calendar Component
+
+**As a** frontend developer
+**I want to** build multi-week calendar view with tabs/carousel
+**So that** users can see and navigate between weeks
+
+**Prerequisites:** Epic 8 complete (routes available)
+
+**Acceptance Criteria:**
+1. Askama template created: templates/meal_plan/multi_week_calendar.html
+2. Template displays week tabs (Week 1, Week 2, etc.) with dates
+3. Current week tab highlighted and marked with lock icon 🔒
+4. Clicking tab loads that week's calendar (TwinSpark partial update)
+5. Mobile view: carousel with swipe navigation instead of tabs
+6. Each week displays 7-day grid with breakfast/lunch/dinner slots
+7. Meal slots show recipe name, image thumbnail, prep time
+8. Template uses Tailwind CSS for styling
+9. Accessible: keyboard navigation between weeks
+10. Responsive: desktop (tabs), mobile (carousel)
+
+**Technical Notes:**
+- Askama templates server-rendered (SEO friendly, fast)
+- TwinSpark for progressive enhancement (works without JS)
+- Tailwind CSS for utility-first styling
+
+---
+
+### Story 9.2: Add Accompaniment Display in Meal Slots
+
+**As a** frontend developer
+**I want to** show accompaniment recipes alongside main courses
+**So that** users see complete meal compositions
+
+**Prerequisites:** Story 9.1
+
+**Acceptance Criteria:**
+1. Main course meal slots display accompaniment if present
+2. Accompaniment shown as: "+ {accompaniment_name}" below main
+3. Accompaniment has smaller, lighter styling (secondary text)
+4. Accompaniment name clickable to view recipe details
+5. If no accompaniment: nothing displayed (clean)
+6. Responsive: accompaniment text wraps on mobile
+7. Integration test verifies accompaniment HTML rendered
+
+**Technical Notes:**
+- Simple conditional rendering in Askama template
+- Links use existing recipe detail route
+
+---
+
+### Story 9.3: Create Meal Planning Preferences Form
+
+**As a** frontend developer
+**I want to** build user preferences form
+**So that** users can customize meal planning algorithm
+
+**Prerequisites:** Epic 8 complete (PUT route)
+
+**Acceptance Criteria:**
+1. Template created: templates/profile/meal_planning_preferences.html
+2. Form displays all preference fields with current values
+3. Time constraints: numeric inputs for weeknight/weekend max prep time
+4. Complexity toggle: checkbox for "Avoid complex meals on consecutive days"
+5. Cuisine variety: slider (0.0-1.0) with labels "Repeat OK" to "Mix it up!"
+6. Dietary restrictions: checkbox list (Vegetarian, Vegan, etc.)
+7. Custom allergen: text input for Custom dietary restriction
+8. Form validation: client-side (HTML5) + server-side
+9. Save button: submits to PUT /profile/meal-planning-preferences
+10. Success message displayed after save
+
+**Technical Notes:**
+- Server-rendered form (Askama), progressive enhancement
+- Validation errors from server displayed next to fields
+- Slider uses HTML5 range input (no JS required)
+
+---
+
+### Story 9.4: Update Recipe Creation Form with Accompaniment Fields
+
+**As a** frontend developer
+**I want to** add accompaniment settings to recipe creation form
+**So that** users can configure main courses to accept sides
+
+**Prerequisites:** Epic 6 complete (Recipe domain model)
+
+**Acceptance Criteria:**
+1. Recipe form updated: templates/recipes/create_recipe.html
+2. Recipe type selection includes "Accompaniment" option
+3. For Main Course: checkbox "This dish accepts an accompaniment"
+4. If checked: show preferred categories checkboxes (Pasta, Rice, etc.)
+5. For Accompaniment type: show category radio buttons
+6. Cuisine selection dropdown with all variants + Custom text input
+7. Dietary tags: checkbox list (Vegetarian, Vegan, etc.)
+8. Form submission includes all new fields
+9. Validation: if Accompaniment type, category required
+10. Playwright test verifies form submission with new fields
+
+**Technical Notes:**
+- Progressive disclosure (show/hide fields based on selections)
+- JavaScript minimal (or use TwinSpark for server-driven UI)
+- Validation both client-side (UX) and server-side (security)
+
+---
+
+### Story 9.5: Add Week Regeneration UI with Confirmation
+
+**As a** frontend developer
+**I want to** create regeneration buttons with confirmation dialogs
+**So that** users can regenerate weeks safely
+
+**Prerequisites:** Epic 8 complete (regeneration routes)
+
+**Acceptance Criteria:**
+1. "Regenerate This Week" button added to each future week's calendar
+2. "Regenerate All Future Weeks" button added to navigation area
+3. Clicking "Regenerate This Week" shows modal: "Replace meals for Week X?"
+4. Clicking "Regenerate All Future Weeks" shows modal: "Regenerate N future weeks?"
+5. Confirmation modal has Cancel and Confirm buttons
+6. Confirm triggers POST to respective regeneration route
+7. Loading spinner shown during regeneration
+8. Success: calendar updates with new meals
+9. Error: displays error message in toast/alert
+10. Locked weeks show disabled "Cannot Regenerate" text
+
+**Technical Notes:**
+- Modal uses semantic HTML dialog element or Tailwind UI
+- POST requests use fetch API with CSRF token
+- Success updates UI via partial template replacement
+
+---
+
+### Story 9.6: Add Week Selector to Shopping List Page
+
+**As a** frontend developer
+**I want to** add week dropdown to shopping list
+**So that** users can view shopping lists for different weeks
+
+**Prerequisites:** Epic 8 complete (week routes)
+
+**Acceptance Criteria:**
+1. Shopping list page updated: templates/shopping/shopping_list.html
+2. Week selector dropdown shows all weeks (Week 1, Week 2, etc.)
+3. Current week selected by default
+4. Changing selection loads that week's shopping list (partial update)
+5. Dropdown shows week dates: "Week 1 (Oct 28 - Nov 3)"
+6. Locked weeks marked with 🔒 icon in dropdown
+7. Shopping list displays week start date at top
+8. Mobile: dropdown full-width, easy to tap
+9. Playwright test verifies week selection works
+
+**Technical Notes:**
+- Shopping list route: GET /shopping?week_id={week_id}
+- TwinSpark for partial updates (swap #shopping-list-content div)
+- URL update enables bookmarking specific week's list
+
+---
+
+### Story 9.7: Responsive Design and Accessibility Testing
+
+**As a** frontend developer
+**I want to** ensure all new UI is responsive and accessible
+**So that** users on mobile and assistive technology can use features
+
+**Prerequisites:** Story 9.1-9.6
+
+**Acceptance Criteria:**
+1. All pages tested on mobile (375px), tablet (768px), desktop (1920px)
+2. Calendar: tabs on desktop, carousel on mobile
+3. Forms: full-width inputs on mobile, constrained on desktop
+4. Modals: centered on desktop, full-height on mobile
+5. Touch targets ≥44x44px on mobile (WCAG AA)
+6. Keyboard navigation works for all interactive elements
+7. Screen reader testing: all content accessible
+8. Color contrast ratios meet WCAG AA (4.5:1 for text)
+9. Focus indicators visible for all interactive elements
+10. Lighthouse accessibility score >90
+
+**Technical Notes:**
+- WCAG AA requires 4.5:1 contrast for normal text
+- Touch targets: WCAG 2.5.5 (AAA) is 44x44px minimum
+- Semantic HTML (nav, main, article) improves navigation
+
+---
+
+**Epic 9 Deliverables:**
+- Multi-week calendar component (tabs/carousel)
+- Accompaniment display in meal slots
+- Meal planning preferences form
+- Recipe creation form with accompaniment fields
+- Week regeneration UI with confirmation modals
+- Shopping list week selector
+- Responsive design (mobile + desktop)
+- WCAG AA accessibility compliance
+- Lighthouse accessibility score >90
+
+---
+
+## Epic 10: Enhanced Meal Planning - Testing & Refinement
+
+**Goal:** Validate system through comprehensive end-to-end testing, performance testing, bug fixing, and documentation updates
+
+**Value Delivered:** Confidence in quality before production deployment
+
+**Success Criteria:**
+- All E2E tests passing (Playwright test suite)
+- Performance benchmarks met (generation <5s, routes <500ms P95)
+- Zero critical bugs, <5 medium bugs remaining
+- User acceptance testing completed with positive feedback
+- Documentation complete (user guides, API docs, architecture docs)
+
+**Source Document:** `./docs/architecture-update-meal-planning-enhancements.md` (section 10, Phase 5)
+
+---
+
+### Story 10.1: End-to-End Testing with Playwright
+
+**As a** QA engineer
+**I want to** comprehensive E2E test suite
+**So that** critical user flows are validated
+
+**Prerequisites:** Epic 9 complete (all UI implemented)
+
+**Acceptance Criteria:**
+1. Playwright test suite covers all critical user flows
+2. Test: User generates multi-week meal plan (full flow)
+3. Test: User navigates between weeks
+4. Test: User regenerates single week
+5. Test: User regenerates all future weeks
+6. Test: User updates meal planning preferences
+7. Test: User creates recipe with accompaniment settings
+8. Test: User views shopping list for specific week
+9. All tests pass in CI pipeline
+10. Test execution time <5 minutes
+
+**Technical Notes:**
+- Use Playwright test fixtures for authenticated sessions
+- Record videos of test failures for debugging
+- Parallelize tests for faster execution
+
+---
+
+### Story 10.2: Performance Testing and Optimization
+
+**As a** performance engineer
+**I want to** validate performance benchmarks
+**So that** system meets targets under load
+
+**Prerequisites:** Epic 7, 8 complete
+
+**Acceptance Criteria:**
+1. Load test: 100 concurrent multi-week generation requests
+2. Benchmark: P95 generation time <5 seconds
+3. Benchmark: P95 route response time <500ms
+4. Database query performance profiled (no N+1 queries)
+5. Memory usage profiled (no leaks, bounded growth)
+6. Performance regression tests added to CI
+7. Optimization recommendations documented (if targets not met)
+
+**Technical Notes:**
+- k6 for load testing (better than JMeter for HTTP/2)
+- Use realistic data: 50 favorite recipes per user
+- Profile both algorithm and database queries
+
+---
+
+### Story 10.3: Bug Fixing and Edge Case Handling
+
+**As a** developer
+**I want to** identify and fix bugs
+**So that** system is robust
+
+**Prerequisites:** Story 10.1, 10.2 (testing reveals bugs)
+
+**Acceptance Criteria:**
+1. All critical bugs fixed (blocker for deployment)
+2. Medium bugs triaged (fix or defer to future release)
+3. Low bugs documented (known issues list)
+4. Edge cases handled gracefully (no crashes)
+5. Error messages user-friendly (no stack traces shown)
+6. Regression tests added for fixed bugs
+7. Bug fix changelog documented
+
+**Technical Notes:**
+- Use GitHub Issues or Jira for bug tracking
+- Regression tests prevent same bug from reappearing
+- Graceful error handling improves user trust
+
+---
+
+### Story 10.4: Documentation Updates
+
+**As a** technical writer
+**I want to** complete user and developer documentation
+**So that** users and developers can understand the system
+
+**Prerequisites:** Epic 6-9 complete
+
+**Acceptance Criteria:**
+1. User guide created: docs/user-guide-meal-planning.md
+2. User guide covers: generating, navigating, regenerating, preferences, accompaniments
+3. API documentation updated: docs/api/meal-planning-routes.md
+4. Architecture document updated with "as-built" notes
+5. README.md updated with new features
+6. Screenshots added to user guide
+7. Code comments added to complex algorithm functions
+8. Deployment guide updated (migration steps, env vars)
+
+**Technical Notes:**
+- Screenshots: use Playwright screenshot API for consistency
+- Documentation in Markdown for version control
+- Keep user guide non-technical
+
+---
+
+**Epic 10 Deliverables:**
+- E2E test suite passing (all critical flows)
+- Performance benchmarks met (<5s generation, <500ms routes)
+- All critical bugs fixed
+- User guide and API documentation complete
+- Regression tests for fixed bugs
+- Documentation updated
+
+---
+
+## Epic 11: Enhanced Meal Planning - Deployment & Monitoring
+
+**Goal:** Deploy enhanced meal planning system to production with comprehensive monitoring, ensuring zero downtime and establishing observability
+
+**Value Delivered:** Features available to users, seamless transition without service disruption
+
+**Success Criteria:**
+- Database migration runs successfully on production
+- Deployment achieves <5 minutes downtime
+- Monitoring dashboards operational
+- Error rate <0.1% post-deployment
+- Rollback plan validated
+- User feedback collected within 48 hours
+
+**Source Document:** `./docs/architecture-update-meal-planning-enhancements.md` (section 10, Phase 6)
+
+---
+
+### Story 11.1: Production Database Migration
+
+**As a** DevOps engineer
+**I want to** safely migrate production database
+**So that** schema supports new features without data loss
+
+**Prerequisites:** Epic 6 complete, migration tested on staging
+
+**Acceptance Criteria:**
+1. Pre-migration backup created and verified restorable
+2. Migration runs during low-traffic window (2-4 AM UTC)
+3. Migration completes in <30 seconds on production database
+4. Post-migration validation confirms all tables, indexes, triggers created
+5. Existing meal plan data preserved (end_date calculated, is_locked set)
+6. Zero data loss (record count verified)
+7. Application deployment coordinated (schema compatible with old code)
+8. Migration log saved for audit
+
+**Technical Notes:**
+- SQLite WAL mode enables concurrent reads during migration
+- Backup stored offsite (S3 or similar) for disaster recovery
+- Migration tested on staging with production-size dataset
+
+---
+
+### Story 11.2: Blue-Green Deployment
+
+**As a** DevOps engineer
+**I want to** deploy with zero downtime using blue-green strategy
+**So that** users experience no service interruption
+
+**Prerequisites:** Application containerized (Docker), load balancer configured
+
+**Acceptance Criteria:**
+1. Green environment deployed with new code
+2. Health checks pass on green environment (API smoke tests)
+3. Traffic gradually shifted: 10% → 50% → 100% over 15 minutes
+4. Error rates monitored during shift (no spikes)
+5. Blue environment kept warm for 24 hours (instant rollback)
+6. DNS/load balancer automated traffic switching
+7. Deployment logged (start, end, traffic shift milestones)
+8. Downtime <5 minutes (target: 0 minutes with blue-green)
+
+**Technical Notes:**
+- Use feature flags for gradual rollout (Story 11.3)
+- Load balancer: Nginx, HAProxy, or cloud provider (AWS ALB, GCP LB)
+- Blue-green enables instant rollback
+
+---
+
+### Story 11.3: Feature Flag for Multi-Week Generation
+
+**As a** product manager
+**I want to** enable multi-week for subset of users
+**So that** we validate with early adopters before full rollout
+
+**Prerequisites:** Feature flag infrastructure
+
+**Acceptance Criteria:**
+1. Feature flag ENABLE_MULTI_WEEK_MEAL_PLANNING controls access
+2. Flag configurable by user_id list or percentage rollout
+3. Users without flag see single-week generation (legacy)
+4. Users with flag see multi-week UI and algorithm
+5. Flag state logged in metrics for tracking
+6. Flag can be toggled without code deployment
+7. Graceful degradation if flag service unavailable (default: disabled)
+8. Admin dashboard shows flag status and user distribution
+
+**Technical Notes:**
+- Simple implementation: environment variable (CSV user IDs)
+- Advanced: integrate LaunchDarkly or Flagsmith
+- Flag enables A/B testing
+
+---
+
+### Story 11.4: Monitoring Dashboard Setup
+
+**As a** engineering lead
+**I want to** real-time visibility into system health
+**So that** we detect issues proactively
+
+**Prerequisites:** Metrics instrumented in code (OpenTelemetry, Prometheus)
+
+**Acceptance Criteria:**
+1. Grafana dashboard created with key metrics
+2. Metrics: generation requests/min, generation time P50/P95/P99, error rate, accompaniment assignment rate
+3. Alerts configured: error rate >1%, generation time P95 >5s
+4. Dashboard auto-refreshes every 30 seconds
+5. Historical data retained for 90 days
+6. Dashboard accessible to engineering team
+7. Runbook linked from alerts (what to do when alert fires)
+
+**Technical Notes:**
+- OpenTelemetry for instrumentation (vendor-neutral)
+- Grafana dashboards version-controlled (JSON export in git)
+- Alert thresholds tuned based on baseline
+
+---
+
+### Story 11.5: User Feedback Collection and Retrospective
+
+**As a** product manager
+**I want to** gather user feedback and conduct retrospective
+**So that** we learn and improve
+
+**Prerequisites:** Multi-week deployed to production, 7 days of data
+
+**Acceptance Criteria:**
+1. In-app feedback prompt shown to users with multi-week feature flag
+2. Feedback question: "How useful is multi-week meal planning? (1-5 stars)" + optional text
+3. Feedback stored in database, exportable to CSV
+4. Average rating calculated (target: >4.0/5.0)
+5. Response rate tracked (target: >20%)
+6. Retrospective meeting held within 2 weeks of 100% rollout
+7. Metrics reviewed: downtime, error rate, user feedback, performance
+8. Lessons learned documented
+
+**Technical Notes:**
+- Feedback prompt uses localStorage to show once per user
+- Retrospective within 2 weeks ensures fresh memory
+- Action items tracked in project management tool
+
+---
+
+**Epic 11 Deliverables:**
+- Production database migration successful
+- Blue-green deployment with <5 min downtime
+- Feature flag for gradual rollout (10% → 50% → 100%)
+- Monitoring dashboard operational with alerts
+- User feedback collected (average rating >4.0 target)
+- Retrospective completed with lessons learned
+
+---
+
 ## Epic Summary
 
-**Total Stories Across All Epics:** 53 stories
+**Total Stories Across All Epics:** 90 stories
 - Epic 1: 8 stories (Authentication and Profile)
-- Epic 2: 11 stories (Recipe Management - includes Story 2.11 Tech Debt)
-- Epic 3: 13 stories (Meal Planning Engine - includes Story 3.13 Next-Week-Only Generation)
+- Epic 2: 11 stories (Recipe Management)
+- Epic 3: 13 stories (Meal Planning Engine)
 - Epic 4: 11 stories (Shopping and Preparation)
 - Epic 5: 10 stories (PWA and Mobile)
+- Epic 6: 7 stories (Enhanced Meal Planning - Database & Domain)
+- Epic 7: 7 stories (Enhanced Meal Planning - Algorithm)
+- Epic 8-11: 23 stories (Enhanced Meal Planning - Routes, UI, Testing, Deployment)
 
-**Estimated Timeline:** 5-8 months to MVP launch with solo developer or small team
+**Estimated Timeline:**
+- MVP (Epics 1-5): 5-8 months
+- Enhanced Meal Planning (Epics 6-11): 9 weeks
 
-**Next Steps:** This epic breakdown provides architect with detailed requirements for technical design. Proceed to architecture workflow (3-solutioning) for technical specifications, database schema, HTML endpoint design, and implementation roadmap.
+**Next Steps:**
+- Complete MVP (Epics 1-5) first
+- Then proceed with Enhanced Meal Planning (Epics 6-11)
+
+**Architecture Documents:**
+- MVP: `./docs/solution-architecture.md`
+- Enhanced Meal Planning: `./docs/architecture-update-meal-planning-enhancements.md`
+
+**Detailed Epic Breakdown:** For full implementation details of Epics 8-11 (Backend Routes, Frontend UX, Testing, Deployment), see `./docs/epic-breakdown-meal-planning-enhancements.md`

@@ -1680,6 +1680,450 @@ ALTER TABLE meal_plans DROP COLUMN end_date;
 
 ---
 
+---
+
+## 11. Epic Breakdown for Implementation
+
+The architecture enhancements are structured into 6 epics aligned with the Implementation Roadmap phases. Each epic delivers incremental value and can be developed iteratively.
+
+---
+
+## Epic 6: Database & Domain Foundation
+
+**Corresponds to:** Phase 1 of Implementation Roadmap (Week 1-2)
+
+### Epic Goal
+
+Establish the foundational database schema and domain models required for multi-week meal planning, accompaniment support, and user preferences integration.
+
+### Epic Value
+
+- **Business Value:** Enables all future features through proper data modeling
+- **User Value:** Transparent to users (backend foundation)
+- **Technical Value:** Clean event-sourced architecture with proper migrations and type safety
+
+### Success Criteria
+
+1. Database migration runs successfully on development and staging environments
+2. All domain models compile with zero warnings
+3. Evento events properly serialized/deserialized with bincode
+4. Unit test coverage >90% for domain models
+5. Migration is reversible (rollback tested)
+6. All existing functionality continues to work post-migration
+
+---
+
+#### Story 6.1: Database Schema Migration
+
+**As a** backend developer
+**I want to** create and test database migrations for enhanced meal planning
+**So that** the schema supports multi-week plans, accompaniments, and user preferences
+
+**Prerequisites:** None (foundational story)
+
+**Acceptance Criteria:**
+
+1. Migration SQL file created following section 9.1 (Database Migration Strategy)
+2. Migration adds all new columns to `meal_plans` table (end_date, is_locked, generation_batch_id)
+3. Migration adds all new columns to `recipes` table (accepts_accompaniment, preferred_accompaniments, accompaniment_category, cuisine, dietary_tags)
+4. Migration adds `accompaniment_recipe_id` column to `meal_assignments` table
+5. Migration adds new preference columns to `users` table (max_prep_time_weeknight, max_prep_time_weekend, avoid_consecutive_complex, cuisine_variety_weight)
+6. Migration creates new `meal_plan_rotation_state` table with all fields
+7. Migration creates all indexes per section 4 (Database Schema Changes)
+8. Migration creates triggers: `prevent_locked_week_modification`, `update_meal_plan_status`
+9. Migration updates existing data (calculates end_date for existing meal plans, sets is_locked based on dates)
+10. Rollback migration script created and tested (reverses all changes)
+11. Migration tested on development database with sample data
+12. Migration runs in <5 seconds on development database
+
+**Tasks / Subtasks:**
+
+- [ ] Create migration file `migrations/XXX_enhanced_meal_planning.sql` (AC: 1)
+  - [ ] Add header comment with date, description, features list
+  - [ ] Structure migration into logical sections (PART 1-5 per architecture doc)
+
+- [ ] Implement PART 1: Multi-Week Meal Plan Support (AC: 2, 7, 8)
+  - [ ] Add `end_date TEXT NOT NULL DEFAULT ''` to meal_plans
+  - [ ] Add `is_locked BOOLEAN DEFAULT FALSE` to meal_plans
+  - [ ] Add `generation_batch_id TEXT` to meal_plans
+  - [ ] Create indexes: `idx_meal_plans_user_batch`, `idx_meal_plans_status`, `idx_meal_plans_dates`
+  - [ ] Create trigger `prevent_locked_week_modification`
+  - [ ] Create trigger `update_meal_plan_status`
+
+- [ ] Implement PART 2: Accompaniment Recipe Type (AC: 3, 4, 7)
+  - [ ] Add `accepts_accompaniment BOOLEAN DEFAULT FALSE` to recipes
+  - [ ] Add `preferred_accompaniments TEXT` to recipes (JSON array)
+  - [ ] Add `accompaniment_category TEXT` to recipes
+  - [ ] Add `accompaniment_recipe_id TEXT` to meal_assignments
+  - [ ] Create indexes: `idx_meal_assignments_accompaniment`, `idx_recipes_accompaniment_type`, `idx_recipes_accompaniment_category`
+
+- [ ] Implement PART 3: User Preferences for Algorithm (AC: 5, 7)
+  - [ ] Add `max_prep_time_weeknight INTEGER DEFAULT 30` to users
+  - [ ] Add `max_prep_time_weekend INTEGER DEFAULT 90` to users
+  - [ ] Add `avoid_consecutive_complex BOOLEAN DEFAULT TRUE` to users
+  - [ ] Add `cuisine_variety_weight REAL DEFAULT 0.7` to users
+  - [ ] Add `cuisine TEXT` to recipes
+  - [ ] Add `dietary_tags TEXT` to recipes (JSON array)
+  - [ ] Create index: `idx_recipes_cuisine`
+
+- [ ] Implement PART 4: Rotation State Tracking (AC: 6, 7)
+  - [ ] Create table `meal_plan_rotation_state` with all fields (id, user_id, generation_batch_id, used_main_course_ids, used_appetizer_ids, used_dessert_ids, cuisine_usage_count, last_complex_meal_date, created_at, updated_at)
+  - [ ] Add foreign key constraint to users table
+  - [ ] Create indexes: `idx_rotation_state_user`, `idx_rotation_state_batch`
+
+- [ ] Implement data migration for existing records (AC: 9)
+  - [ ] UPDATE meal_plans SET end_date = date(start_date, '+6 days') WHERE end_date = ''
+  - [ ] UPDATE meal_plans SET is_locked = TRUE WHERE date(start_date) <= date('now')
+  - [ ] UPDATE meal_plans SET status based on dates (current/past/future)
+
+- [ ] Create rollback migration script (AC: 10)
+  - [ ] DROP all triggers
+  - [ ] DROP meal_plan_rotation_state table
+  - [ ] DROP all new indexes
+  - [ ] ALTER TABLE to drop all new columns (reverse order)
+  - [ ] Test rollback on development database
+
+- [ ] Test migration execution (AC: 11, 12)
+  - [ ] Run migration on fresh development database
+  - [ ] Run migration on database with existing meal plan data
+  - [ ] Verify all tables, columns, indexes, triggers created
+  - [ ] Verify existing data preserved and updated correctly
+  - [ ] Measure execution time (should be <5 seconds)
+  - [ ] Test rollback migration successfully reverses changes
+
+**Technical Notes:**
+- Use SQLite ALTER TABLE for column additions (backwards compatible)
+- JSON fields stored as TEXT with JSON validation in application layer
+- Triggers use SQLite BEFORE/AFTER UPDATE syntax
+- Test migration with realistic data volumes (100 users, 500 recipes, 200 meal plans)
+- Migration file location: `migrations/` directory (SQLx migration system)
+
+---
+
+#### Story 6.2: Update Rust Domain Models
+
+**As a** DevOps engineer
+**I want to** deploy new code with zero downtime
+**So that** users experience seamless service during rollout
+
+**Prerequisites:** Application containerized (Docker image), load balancer configured
+
+**Acceptance Criteria:**
+
+1. Two identical production environments (blue/green) configured
+2. New code deployed to green environment while blue serves traffic
+3. Health checks validate green environment fully operational (API smoke tests pass)
+4. Traffic gradually shifted from blue to green (10% → 50% → 100% over 15 minutes)
+5. Monitoring confirms error rates remain stable during traffic shift
+6. Blue environment kept warm for 24 hours post-deployment (instant rollback capability)
+7. DNS/load balancer configuration automates traffic switching
+8. Deployment automation script runs health checks before traffic shift
+
+**Technical Notes:**
+- Use feature flags to enable multi-week generation gradually (Story 6.3)
+- Monitor evento stream lag during deployment (should remain <100ms)
+- Health check endpoints: `/health` (liveness), `/ready` (readiness with DB connectivity)
+- Target P99 latency <500ms during traffic shift
+
+---
+
+#### Story 6.3: Feature Flag for Multi-Week Generation
+
+**As a** product manager
+**I want to** enable multi-week meal planning for subset of users
+**So that** we validate functionality with early adopters before full rollout
+
+**Prerequisites:** Feature flag infrastructure deployed
+
+**Acceptance Criteria:**
+
+1. Feature flag `multi_week_meal_planning_enabled` controls access to multi-week generation
+2. Flag configurable per user_id or percentage rollout (e.g., 10% of users)
+3. Users without flag see single-week generation (legacy behavior)
+4. Users with flag enabled see multi-week UI and algorithm
+5. Flag state logged for analytics (track adoption rate)
+6. Flag can be toggled without code deployment (environment variable or admin panel)
+7. Graceful degradation: if flag service unavailable, default to disabled
+8. Admin dashboard shows flag status and user distribution
+
+**Technical Notes:**
+- Simple implementation: check `ENABLE_MULTI_WEEK_FOR_USER_IDS` env var (comma-separated list)
+- Or integrate feature flag service (LaunchDarkly, Flagsmith)
+- Track flag state in evento command metadata for debugging
+- Metrics: `meal_plan_generation_type{type="single_week"|"multi_week"}` counter
+
+---
+
+#### Story 6.4: Monitoring Dashboard Setup
+
+**As a** engineering lead
+**I want to** real-time visibility into meal planning system health
+**So that** we detect issues before users report them
+
+**Prerequisites:** Metrics collection instrumented in code (Prometheus/Grafana or similar)
+
+**Acceptance Criteria:**
+
+1. Dashboard displays key metrics:
+   - Meal plan generation requests per minute
+   - Generation time P50/P95/P99 percentiles
+   - Multi-week generation: average weeks generated per user
+   - Accompaniment assignment rate (% of main courses with accompaniment)
+   - Dietary restriction filter success rate
+   - Rotation state conflicts (impossible to satisfy constraints)
+2. Error rate tracking:
+   - `InsufficientRecipes` errors (user has <7 favorites in category)
+   - Algorithm timeout errors (generation exceeds 10 seconds)
+   - Database lock conflicts during evento commit
+3. User engagement metrics:
+   - Active meal plans by week status (current/future/past)
+   - Regeneration frequency (single week vs all future weeks)
+   - Shopping list access rate per week
+4. Dashboard auto-refreshes every 30 seconds
+5. Alerts configured for critical thresholds (error rate >1%, generation time >5s P95)
+6. Historical data retained for 90 days (time-series database)
+
+**Technical Notes:**
+- Instrument code with OpenTelemetry spans for generation flow
+- Use Prometheus metrics exposition format (`/metrics` endpoint)
+- Grafana dashboards with JSON export for version control
+- Alert routing: PagerDuty for critical, Slack for warnings
+
+---
+
+#### Story 6.5: Algorithm Performance Profiling
+
+**As a** backend engineer
+**I want to** identify performance bottlenecks in multi-week generation
+**So that** we optimize for <5 second generation time at scale
+
+**Prerequisites:** Multi-week algorithm deployed to production, telemetry instrumented
+
+**Acceptance Criteria:**
+
+1. Profiling data collected for 1000+ multi-week generation runs
+2. Breakdown of time spent in algorithm phases:
+   - Dietary restriction filtering
+   - Recipe selection with preferences
+   - Accompaniment pairing
+   - Shopping list generation
+   - Evento event commit
+3. Identify slowest phase (target: none >40% of total time)
+4. Memory allocation profiling shows no excessive allocations (Rust heap profiling)
+5. Database query performance analyzed (SQLx query logging with timing)
+6. Recommendations documented for optimization (Story 6.6)
+7. Load testing confirms 100 concurrent generations supported without degradation
+8. Profiling integrated into CI/CD (performance regression tests)
+
+**Technical Notes:**
+- Use `tracing` crate with spans for each algorithm phase
+- Integrate with Jaeger or Honeycomb for distributed tracing
+- Flamegraph generation for CPU profiling (`cargo flamegraph`)
+- Load test with k6 or Apache JMeter (100 concurrent requests, 5-week generation)
+
+---
+
+#### Story 6.6: Query Optimization for Recipe Filtering
+
+**As a** database engineer
+**I want to** optimize recipe filtering queries
+**So that** multi-week generation maintains sub-second response time
+
+**Prerequisites:** Profiling data from Story 6.5 identifies query bottlenecks
+
+**Acceptance Criteria:**
+
+1. Recipe filtering query (by `user_id`, `is_favorite=true`, `recipe_type`) uses composite index
+2. Dietary tag filtering leverages JSON indexing (if SQLite supports, else denormalize)
+3. Query execution time <50ms for typical user (50 favorite recipes)
+4. Explain plan confirms index usage (no full table scans)
+5. Batch loading of recipes reduces N+1 query problem (single query fetches all needed recipes)
+6. Read model projection optimized for meal planning queries (materialized view or cached aggregates)
+7. Connection pool sizing tuned (min 5, max 20 connections for production load)
+8. Query results cached for 60 seconds (user's favorite recipes rarely change mid-session)
+
+**Technical Notes:**
+- Create composite index: `CREATE INDEX idx_recipes_user_favorite_type ON recipes(user_id, is_favorite, recipe_type)`
+- Denormalize dietary tags into separate `recipe_dietary_tags` table with foreign key
+- Use SQLx `query_as!` macro for compile-time checked queries
+- Implement simple in-memory LRU cache (e.g., `moka` crate) for recipe lists
+
+---
+
+#### Story 6.7: User Feedback Collection
+
+**As a** product manager
+**I want to** gather early user feedback on multi-week meal planning
+**So that** we validate feature value and identify friction points
+
+**Prerequisites:** Multi-week meal planning enabled for 10% of users (feature flag)
+
+**Acceptance Criteria:**
+
+1. In-app feedback prompt appears after user's first multi-week generation:
+   - "How useful is seeing multiple weeks of meal plans? (1-5 stars)"
+   - Optional text: "What would make this feature better?"
+2. Feedback submitted via `/feedback` POST endpoint (stores in database)
+3. Feedback dashboard displays:
+   - Average star rating (target: >4.0/5.0)
+   - Common themes from text responses (manual review or NLP sentiment analysis)
+   - Response rate (target: >20% of users provide feedback)
+4. Non-intrusive placement: prompt appears once, dismissible, doesn't block workflow
+5. Analytics tracked: feedback submission rate, average rating over time
+6. Feedback reviewed weekly by product team (export to CSV for analysis)
+7. Negative feedback (<3 stars) triggers alert for immediate investigation
+
+**Technical Notes:**
+- Simple feedback table: `user_id`, `feature_name`, `rating`, `comment`, `created_at`
+- Trigger feedback prompt via feature flag + session storage (shown once per user)
+- Admin route: `/admin/feedback?feature=multi_week_meal_planning`
+- Optional: Integrate with third-party feedback tools (Hotjar, Canny)
+
+---
+
+#### Story 6.8: Error Handling and Graceful Degradation
+
+**As a** backend engineer
+**I want to** handle edge cases and errors gracefully
+**So that** users get helpful messages instead of cryptic failures
+
+**Prerequisites:** Multi-week generation logic deployed
+
+**Acceptance Criteria:**
+
+1. `InsufficientRecipes` error shows user-friendly message:
+   - "You need at least 7 favorite recipes in each category (appetizers, main courses, desserts) to generate meal plans. You currently have X/Y/Z."
+   - Link to recipe discovery page to add more favorites
+2. `AlgorithmTimeout` error (generation exceeds 10 seconds):
+   - Log full context for debugging (user preferences, recipe counts, constraints)
+   - Display fallback: "We're having trouble generating your meal plan. Try simplifying your preferences or contact support."
+   - Offer single-week generation as fallback
+3. Dietary restriction filter results in zero compatible recipes:
+   - "No recipes match your dietary restrictions. Try relaxing some constraints or adding more recipes."
+   - Show which restrictions eliminated all recipes
+4. Database lock conflicts (evento commit failure):
+   - Retry up to 3 times with exponential backoff (100ms, 400ms, 1600ms)
+   - If all retries fail, log error and show: "We couldn't save your meal plan. Please try again in a moment."
+5. All errors logged with structured context (user_id, preferences, recipe counts, stack trace)
+6. Error rate alerts trigger if any error type exceeds 1% of requests
+
+**Technical Notes:**
+- Implement custom error types: `MealPlanningError::InsufficientRecipes(RecipeCounts)`
+- Use Rust `?` operator with `map_err` to add context
+- Structured logging with `tracing::error!` including all relevant fields
+- Retry logic in evento commit layer with `tokio::time::sleep` for backoff
+
+---
+
+#### Story 6.9: Rollback Plan Testing
+
+**As a** DevOps engineer
+**I want to** validated rollback procedures
+**So that** we can revert deployment if critical issues arise
+
+**Prerequisites:** Deployment automation scripts, blue-green environments configured
+
+**Acceptance Criteria:**
+
+1. Rollback runbook documented with step-by-step instructions:
+   - Traffic routing back to blue environment (single command)
+   - Feature flag disable (instant fallback to single-week)
+   - Database rollback migration (if needed, tested on staging)
+2. Rollback simulation executed on staging environment:
+   - Deploy new code, identify "critical issue" (simulated), execute rollback
+   - Validate all systems operational after rollback (API tests pass)
+   - Measure rollback time: <10 minutes from decision to completion
+3. Rollback triggers defined:
+   - Error rate >5% for 5 consecutive minutes
+   - Generation time P95 >10 seconds for 10 minutes
+   - User reports of data inconsistency (meal plans missing, shopping lists incorrect)
+   - Database corruption detected (integrity check failures)
+4. Communication plan: user notification if rollback occurs (status page, email)
+5. Post-rollback postmortem template prepared (root cause, timeline, action items)
+
+**Technical Notes:**
+- Blue-green rollback: flip load balancer target from green to blue
+- Feature flag rollback: set `ENABLE_MULTI_WEEK_MEAL_PLANNING=false` (instant)
+- Database rollback SQL script: reverse migration (DROP new columns, DROP new tables)
+- Smoke tests: `curl https://imkitchen.app/health` returns 200, `/plan` page loads
+
+---
+
+#### Story 6.10: Production Launch Retrospective
+
+**As a** product team
+**I want to** review deployment outcomes and learnings
+**So that** future launches improve
+
+**Prerequisites:** Multi-week meal planning deployed to 100% of users, 7 days of production data
+
+**Acceptance Criteria:**
+
+1. Retrospective meeting held within 2 weeks of 100% rollout
+2. Metrics reviewed:
+   - Deployment downtime (actual vs target <5 minutes)
+   - Error rate during launch week (actual vs target <0.1%)
+   - User feedback average rating (actual vs target >4.0/5.0)
+   - Performance metrics (generation time P95, weeks generated distribution)
+   - Incident count (Sev1/Sev2/Sev3 breakdown)
+3. Lessons learned documented:
+   - What went well (celebrate successes)
+   - What went wrong (blameless analysis)
+   - Action items for next epic deployment (assign owners, deadlines)
+4. Knowledge base updated with deployment best practices
+5. Runbooks refined based on issues encountered
+6. Feature adoption tracked: % of users generating multi-week plans
+
+**Deliverables:**
+- Retrospective notes document (shared with team)
+- Updated deployment checklist for Epic 7 (future features)
+- Postmortem report for any incidents (if occurred)
+- Metrics dashboard screenshot for reference
+
+**Technical Notes:**
+- Use retrospective framework: Start/Stop/Continue or 4Ls (Liked/Learned/Lacked/Longed For)
+- Track action items in project management tool (Jira, Linear, etc.)
+- Schedule follow-up: 30 days post-launch to review action item completion
+
+---
+
+### Epic 6 Technical Summary
+
+**Infrastructure Components:**
+- Blue-green deployment environments (Docker containers, load balancer)
+- Feature flag system (environment variables or dedicated service)
+- Monitoring stack (Prometheus, Grafana, OpenTelemetry)
+- Backup and restore automation (SQLite `.backup`, retention policy)
+
+**Observability:**
+- Key metrics: generation time, error rates, user engagement
+- Distributed tracing for algorithm performance profiling
+- Structured logging with contextual fields for debugging
+- Alert thresholds and escalation policies
+
+**Risk Mitigation:**
+- Database migration tested on staging with production-size data
+- Rollback plan validated through simulation exercises
+- Gradual rollout via feature flags (10% → 50% → 100%)
+- Comprehensive error handling with graceful degradation
+
+**Success Metrics:**
+- Deployment downtime: <5 minutes (target)
+- Error rate: <0.1% post-deployment (target)
+- User feedback rating: >4.0/5.0 (target)
+- Generation time P95: <5 seconds (target)
+- Rollback capability: <10 minutes (validated)
+
+**Testing Standards:**
+- Load testing: 100 concurrent multi-week generation requests
+- Smoke tests: API health checks, critical user flows
+- Performance regression tests in CI/CD pipeline
+- Chaos engineering: simulate database failures, network partitions (optional)
+
+**Timeline:** Week 9 (Phase 6 of Implementation Roadmap)
+
+---
+
 **Document Status:** ✅ Design Approved - Ready for Implementation
-**Version:** 2.1 (Updated with stakeholder decisions)
+**Version:** 2.2 (Added Epic 6: Deployment & Monitoring)
 **Next Steps:** Begin Phase 1 (Database & Domain Foundation)
