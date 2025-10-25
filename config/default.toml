@@ -43,6 +43,13 @@ smtp_port = 1025  # MailDev SMTP port
 smtp_username = ""
 smtp_password = ""  # Override with: IMKITCHEN__EMAIL__SMTP_PASSWORD
 
+# Enable/disable TLS for SMTP connections
+# Set to false for local development with MailDev/MailHog (no TLS support)
+# Set to true for production SMTP services (recommended for security)
+# Default: true
+# Override with: IMKITCHEN__EMAIL__SMTP_TLS
+smtp_tls = false  # Disabled for MailDev (local development)
+
 # Email sender information
 from_email = "noreply@imkitchen.local"  # Use real domain in production
 from_name = "imkitchen"

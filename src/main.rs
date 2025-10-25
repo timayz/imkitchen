@@ -203,6 +203,7 @@ async fn serve_command(
         smtp_password: config.email.smtp_password,
         from_email: config.email.from_email,
         from_name: config.email.from_name,
+        smtp_tls: config.email.smtp_tls,
     };
 
     let state = AppState {

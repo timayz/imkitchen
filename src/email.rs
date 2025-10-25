@@ -14,28 +14,35 @@ pub struct EmailConfig {
     pub smtp_password: String,
     pub from_email: String,
     pub from_name: String,
+    pub smtp_tls: bool,
 }
 
 impl EmailConfig {
     /// Create SMTP transport based on configuration
     /// Uses builder_dangerous for local dev (no credentials), relay for production
+    /// TLS can be enabled or disabled via smtp_tls configuration
     fn create_transport(&self) -> Result<SmtpTransport> {
-        if self.smtp_username.is_empty() && self.smtp_password.is_empty() {
-            // Local development mode - direct connection without authentication
-            Ok(SmtpTransport::builder_dangerous(&self.smtp_host)
-                .port(self.smtp_port)
-                .build())
-        } else {
-            // Production mode - authenticated relay
-            let credentials =
-                Credentials::new(self.smtp_username.clone(), self.smtp_password.clone());
+        let has_credentials = !self.smtp_username.is_empty() && !self.smtp_password.is_empty();
 
-            Ok(SmtpTransport::relay(&self.smtp_host)
+        // Build transport (authenticated relay for production, dangerous builder for local dev)
+        let mut builder = if has_credentials {
+            let credentials = Credentials::new(self.smtp_username.clone(), self.smtp_password.clone());
+            SmtpTransport::relay(&self.smtp_host)
                 .context("Failed to create SMTP transport")?
-                .port(self.smtp_port)
                 .credentials(credentials)
-                .build())
+        } else {
+            SmtpTransport::builder_dangerous(&self.smtp_host)
+        };
+
+        // Apply common settings
+        builder = builder.port(self.smtp_port);
+
+        // Disable TLS if configured (useful for local MailDev/MailHog, not recommended for production)
+        if !self.smtp_tls {
+            builder = builder.tls(lettre::transport::smtp::client::Tls::None);
         }
+
+        Ok(builder.build())
     }
 }
 
@@ -266,6 +273,7 @@ mod tests {
             smtp_password: "password".to_string(),
             from_email: "noreply@imkitchen.app".to_string(),
             from_name: "imkitchen".to_string(),
+            smtp_tls: true,
         };
 
         // This test validates the email formatting logic

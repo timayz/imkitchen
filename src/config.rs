@@ -44,6 +44,8 @@ pub struct EmailConfig {
     pub from_name: String,
     #[serde(default = "default_base_url")]
     pub base_url: String,
+    #[serde(default = "default_smtp_tls")]
+    pub smtp_tls: bool,
 }
 
 impl Default for EmailConfig {
@@ -56,6 +58,7 @@ impl Default for EmailConfig {
             from_email: default_from_email(),
             from_name: default_from_name(),
             base_url: default_base_url(),
+            smtp_tls: default_smtp_tls(),
         }
     }
 }
@@ -82,6 +85,10 @@ fn default_from_name() -> String {
 
 fn default_base_url() -> String {
     "http://localhost:3000".to_string()
+}
+
+fn default_smtp_tls() -> bool {
+    true
 }
 
 #[derive(Debug, Deserialize, Clone)]

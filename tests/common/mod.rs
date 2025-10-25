@@ -64,6 +64,7 @@ pub async fn create_test_app((pool, evento_executor): (SqlitePool, evento::Sqlit
         smtp_password: "password".to_string(),
         from_email: "noreply@imkitchen.app".to_string(),
         from_name: "imkitchen".to_string(),
+        smtp_tls: false,
     };
 
     let state = AppState {
