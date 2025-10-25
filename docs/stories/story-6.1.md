@@ -1,6 +1,6 @@
 # Story 6.1: Database Schema Migration
 
-Status: Draft
+Status: Approved
 
 ## Story
 
