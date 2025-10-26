@@ -347,6 +347,7 @@ mod tests {
             advance_prep_hours: advance_prep,
             complexity: None,
             dietary_tags: Vec::new(),
+            cuisine: recipe::Cuisine::Italian,
         }
     }
 

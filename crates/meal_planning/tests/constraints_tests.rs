@@ -22,6 +22,7 @@ fn create_test_recipe(
         complexity: None,
         recipe_type: "main_course".to_string(),
         dietary_tags: Vec::new(),
+        cuisine: recipe::Cuisine::Italian,
     }
 }
 

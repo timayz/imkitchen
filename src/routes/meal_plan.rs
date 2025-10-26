@@ -420,6 +420,13 @@ pub async fn post_generate_meal_plan(
                 .and_then(|tags_json| serde_json::from_str(tags_json).ok())
                 .unwrap_or_default();
 
+            // Parse cuisine from string to enum (Story 7.2)
+            let cuisine = r
+                .cuisine
+                .as_ref()
+                .and_then(|c| serde_json::from_str(&format!("\"{}\"", c)).ok())
+                .unwrap_or(recipe::Cuisine::Italian); // Default fallback
+
             RecipeForPlanning {
                 id: r.id,
                 title: r.title,
@@ -431,6 +438,7 @@ pub async fn post_generate_meal_plan(
                 advance_prep_hours: r.advance_prep_hours.map(|v| v as u32),
                 complexity: r.complexity,
                 dietary_tags,
+                cuisine,
             }
         })
         .collect();
@@ -966,6 +974,13 @@ pub async fn post_regenerate_meal_plan(
                 .and_then(|tags_json| serde_json::from_str(tags_json).ok())
                 .unwrap_or_default();
 
+            // Parse cuisine from string to enum (Story 7.2)
+            let cuisine = r
+                .cuisine
+                .as_ref()
+                .and_then(|c| serde_json::from_str(&format!("\"{}\"", c)).ok())
+                .unwrap_or(recipe::Cuisine::Italian); // Default fallback
+
             RecipeForPlanning {
                 id: r.id,
                 title: r.title,
@@ -977,6 +992,7 @@ pub async fn post_regenerate_meal_plan(
                 advance_prep_hours: r.advance_prep_hours.map(|v| v as u32),
                 complexity: r.complexity,
                 dietary_tags,
+                cuisine,
             }
         })
         .collect();
