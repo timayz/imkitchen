@@ -91,6 +91,7 @@ fn create_sample_assignments(start_date: &str) -> Vec<MealAssignment> {
                 recipe_id: format!("recipe_{}", assignments.len() + 1),
                 prep_required: false,
                 assignment_reasoning: None,
+                accompaniment_recipe_id: None, // Story 6.3 AC-8
             });
         }
     }

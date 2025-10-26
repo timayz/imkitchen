@@ -16,8 +16,9 @@ pub use constraints::{
 };
 pub use error::MealPlanningError;
 pub use events::{
-    MealPlanArchived, MealPlanGenerated, MealPlanRegenerated, RecipeUsedInRotation,
-    RotationCycleReset,
+    AllFutureWeeksRegenerated, MealPlanArchived, MealPlanGenerated, MealPlanRegenerated,
+    MultiWeekMealPlan, MultiWeekMealPlanGenerated, RecipeUsedInRotation, RotationCycleReset,
+    SingleWeekRegenerated, WeekMealPlan, WeekMealPlanData, WeekStatus,
 };
 pub use read_model::{
     meal_plan_projection, MealAssignmentReadModel, MealPlanQueries, MealPlanReadModel,
