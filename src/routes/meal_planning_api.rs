@@ -626,7 +626,7 @@ async fn build_multi_week_response(
     })
 }
 
-/// API-specific error types with JSON responses (Story 8.1 AC-9, AC-10, Story 8.2 AC-7, AC-8)
+/// API-specific error types with JSON responses (Story 8.1 AC-9, AC-10, Story 8.2 AC-7, AC-8, Story 8.3 AC-7, AC-8)
 #[derive(Debug)]
 pub enum ApiError {
     InsufficientRecipes {
@@ -637,6 +637,8 @@ pub enum ApiError {
     AlgorithmTimeout,
     WeekNotFound,       // Story 8.2 AC-7
     Forbidden,          // Story 8.2 AC-8
+    WeekLocked,         // Story 8.3 AC-7: Cannot regenerate locked/current week
+    WeekAlreadyStarted, // Story 8.3 AC-8: Cannot regenerate past week
     BadRequest(String), // Story 8.2: Invalid UUID format
     InternalServerError(String),
     DatabaseError(sqlx::Error),
@@ -713,6 +715,24 @@ impl IntoResponse for ApiError {
                 ErrorResponse {
                     error: "Forbidden".to_string(),
                     message: "This week belongs to a different user.".to_string(),
+                    details: None,
+                    action: None,
+                },
+            ),
+            ApiError::WeekLocked => (
+                StatusCode::FORBIDDEN,
+                ErrorResponse {
+                    error: "WeekLocked".to_string(),
+                    message: "Cannot regenerate current week. It is locked to prevent disrupting in-progress meals.".to_string(),
+                    details: None,
+                    action: None,
+                },
+            ),
+            ApiError::WeekAlreadyStarted => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse {
+                    error: "WeekAlreadyStarted".to_string(),
+                    message: "Cannot regenerate a week that has already started.".to_string(),
                     details: None,
                     action: None,
                 },
@@ -1098,4 +1118,430 @@ async fn calculate_week_navigation(
         previous_week_id,
         next_week_id,
     })
+}
+
+/// JSON response for week regeneration (Story 8.3)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WeekRegenerationResponse {
+    pub week: WeekData,
+    pub message: String,
+}
+
+/// POST /plan/week/:week_id/regenerate route handler (Story 8.3 AC-1)
+///
+/// Regenerates a single future week's meal plan by calling the Epic 7 algorithm
+/// with the current rotation state and emitting a SingleWeekRegenerated event.
+///
+/// # Authentication
+/// Protected by JWT cookie middleware (AC-1)
+///
+/// # Authorization & Validation
+/// - Verifies week belongs to authenticated user (AC-2)
+/// - Checks week is not locked (is_locked == false) (AC-7)
+/// - Checks week status is not "past" (AC-8)
+/// - Checks week status is not "current" (AC-7)
+///
+/// # Returns
+/// - 200 OK: JSON with regenerated week data (AC-1)
+/// - 403 Forbidden: Week is locked or belongs to different user (AC-7)
+/// - 400 Bad Request: Week already started (AC-8)
+/// - 404 Not Found: Week not found
+#[tracing::instrument(skip(state), fields(user_id = %auth.user_id, week_id = %week_id))]
+pub async fn regenerate_week(
+    State(state): State<AppState>,
+    Extension(auth): Extension<Auth>, // AC-1: Extract user_id from JWT
+    Path(week_id): Path<String>,      // AC-1: Extract week_id from path
+) -> Result<Json<WeekRegenerationResponse>, ApiError> {
+    let user_id = &auth.user_id;
+
+    tracing::info!(user_id = %user_id, week_id = %week_id, "Week regeneration requested");
+
+    // Validate week_id is valid UUID format
+    uuid::Uuid::parse_str(&week_id).map_err(|e| {
+        tracing::warn!(
+            user_id = %user_id,
+            week_id = %week_id,
+            error = %e,
+            "Invalid UUID format for week_id"
+        );
+        ApiError::BadRequest("Invalid week_id format: must be a valid UUID".to_string())
+    })?;
+
+    // AC-2: Load week from read model and verify ownership
+    let week_row = sqlx::query(
+        r#"
+        SELECT
+            id,
+            user_id,
+            start_date,
+            end_date,
+            status,
+            is_locked,
+            generation_batch_id
+        FROM meal_plans
+        WHERE id = ?1
+        "#,
+    )
+    .bind(&week_id)
+    .fetch_optional(&state.db_pool)
+    .await?;
+
+    let week_data = week_row.ok_or_else(|| {
+        tracing::warn!(
+            user_id = %user_id,
+            week_id = %week_id,
+            "Week not found in database"
+        );
+        ApiError::WeekNotFound
+    })?;
+
+    // AC-2: Verify week belongs to authenticated user (authorization check)
+    let week_user_id: String = week_data.try_get("user_id")?;
+    if week_user_id != *user_id {
+        tracing::warn!(
+            user_id = %user_id,
+            week_id = %week_id,
+            week_user_id = %week_user_id,
+            "Authorization failed: week belongs to different user"
+        );
+        return Err(ApiError::Forbidden);
+    }
+
+    // Parse week metadata
+    let start_date: String = week_data.try_get("start_date")?;
+    let end_date: String = week_data.try_get("end_date")?;
+    let status: String = week_data.try_get("status")?;
+    let is_locked: bool = week_data.try_get("is_locked")?;
+    let generation_batch_id: String = week_data.try_get("generation_batch_id")?;
+
+    tracing::debug!(
+        user_id = %user_id,
+        week_id = %week_id,
+        status = %status,
+        is_locked = is_locked,
+        "Week metadata loaded for regeneration"
+    );
+
+    // AC-2, AC-7: Check if week is locked (current week cannot be regenerated)
+    // Note: Database uses 'active'/'archived' status values (not 'current'/'future'/'past')
+    // - 'active' = current OR future weeks (is_locked differentiates them)
+    // - 'archived' = past weeks that have ended
+    // - is_locked=true = current week (actively in use, cannot regenerate)
+    // - is_locked=false + status='active' = future week (can regenerate)
+    if is_locked {
+        tracing::warn!(
+            user_id = %user_id,
+            week_id = %week_id,
+            status = %status,
+            is_locked = is_locked,
+            "Cannot regenerate locked week (current week in progress)"
+        );
+        return Err(ApiError::WeekLocked);
+    }
+
+    // AC-2, AC-8: Check if week already started (archived/past week cannot be regenerated)
+    // Archived weeks are past weeks that have already ended (end_date < today)
+    if status == "archived" {
+        tracing::warn!(
+            user_id = %user_id,
+            week_id = %week_id,
+            status = %status,
+            "Cannot regenerate archived week (week has already ended)"
+        );
+        return Err(ApiError::WeekAlreadyStarted);
+    }
+
+    // AC-3: Load current rotation state for meal plan batch
+    let rotation_state_row = sqlx::query(
+        r#"
+        SELECT used_main_course_ids, used_appetizer_ids, used_dessert_ids,
+               cuisine_usage_count, last_complex_meal_date
+        FROM meal_plan_rotation_state
+        WHERE generation_batch_id = ?1 AND user_id = ?2
+        "#,
+    )
+    .bind(&generation_batch_id)
+    .bind(user_id)
+    .fetch_optional(&state.db_pool)
+    .await?;
+
+    let mut rotation_state = match rotation_state_row {
+        Some(row) => {
+            // Parse individual columns to reconstruct RotationState
+            // Note: Database schema stores rotation state in separate columns (migration 06_v0.8.sql)
+            // rather than a single JSON blob for query performance and field-level updates
+            let used_main_ids: String = row.try_get("used_main_course_ids")?;
+            let used_app_ids: String = row.try_get("used_appetizer_ids")?;
+            let used_dess_ids: String = row.try_get("used_dessert_ids")?;
+            let cuisine_usage: String = row.try_get("cuisine_usage_count")?;
+            let last_complex: Option<String> = row.try_get("last_complex_meal_date")?;
+
+            let used_main_course_ids: Vec<String> =
+                serde_json::from_str(&used_main_ids).unwrap_or_default();
+            let used_appetizer_ids: Vec<String> =
+                serde_json::from_str(&used_app_ids).unwrap_or_default();
+            let used_dessert_ids: Vec<String> =
+                serde_json::from_str(&used_dess_ids).unwrap_or_default();
+            let cuisine_usage_count: std::collections::HashMap<recipe::Cuisine, u32> =
+                serde_json::from_str(&cuisine_usage).unwrap_or_default();
+
+            // Reconstruct RotationState from database columns
+            // Note: cycle_number, cycle_started_at, used_recipe_ids, and total_favorite_count
+            // are re-initialized rather than persisted because:
+            // 1. cycle_number is recalculated based on main_course exhaustion during generation
+            // 2. cycle_started_at is reset when a new cycle begins (tracked implicitly)
+            // 3. used_recipe_ids (global set) is derived from the three typed lists
+            // 4. total_favorite_count is a snapshot at generation time, not a persistent stat
+            // The critical persisted fields are the typed used lists (main/app/dessert) which
+            // drive the rotation algorithm's variety logic across weeks within a batch.
+            meal_planning::rotation::RotationState {
+                cycle_number: 1,
+                cycle_started_at: chrono::Utc::now().to_rfc3339(),
+                used_recipe_ids: std::collections::HashSet::new(),
+                total_favorite_count: 0,
+                used_main_course_ids,
+                used_appetizer_ids,
+                used_dessert_ids,
+                cuisine_usage_count,
+                last_complex_meal_date: last_complex,
+            }
+        }
+        None => {
+            tracing::warn!(
+                user_id = %user_id,
+                generation_batch_id = %generation_batch_id,
+                "Rotation state not found, initializing new state"
+            );
+            meal_planning::rotation::RotationState::new()
+        }
+    };
+
+    tracing::debug!(
+        user_id = %user_id,
+        week_id = %week_id,
+        "Rotation state loaded successfully"
+    );
+
+    // Load user's favorite recipes
+    let favorite_recipes = load_favorite_recipes(user_id, &state.db_pool).await?;
+
+    tracing::debug!(
+        user_id = %user_id,
+        recipe_count = favorite_recipes.len(),
+        "Loaded favorite recipes for regeneration"
+    );
+
+    // Validate minimum recipe count (need at least 7 favorites for 1 week)
+    if favorite_recipes.len() < 7 {
+        tracing::warn!(
+            user_id = %user_id,
+            count = favorite_recipes.len(),
+            "Insufficient recipes for week regeneration"
+        );
+        return Err(ApiError::InsufficientRecipes {
+            appetizers: favorite_recipes
+                .iter()
+                .filter(|r| r.recipe_type == "appetizer")
+                .count(),
+            main_courses: favorite_recipes
+                .iter()
+                .filter(|r| r.recipe_type == "main_course")
+                .count(),
+            desserts: favorite_recipes
+                .iter()
+                .filter(|r| r.recipe_type == "dessert")
+                .count(),
+        });
+    }
+
+    // Load user's meal planning preferences
+    let preferences = load_user_preferences(user_id, &state.db_pool).await?;
+
+    tracing::debug!(
+        user_id = %user_id,
+        "Loaded meal planning preferences for regeneration"
+    );
+
+    // AC-4: Call Epic 7 algorithm to generate single week
+    tracing::info!(user_id = %user_id, week_id = %week_id, "Calling single week regeneration algorithm");
+
+    // Parse week_start_date as NaiveDate
+    let week_start_date = chrono::NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
+        .map_err(|e| ApiError::InternalServerError(format!("Invalid date format: {}", e)))?;
+
+    let regenerated_week = meal_planning::algorithm::generate_single_week(
+        favorite_recipes.clone(),
+        &preferences,
+        &mut rotation_state,
+        week_start_date,
+    )
+    .map_err(|e| {
+        tracing::error!(user_id = %user_id, week_id = %week_id, error = %e, "Week regeneration algorithm failed");
+        match e {
+            meal_planning::MealPlanningError::InsufficientRecipes { minimum: _, current: _ } => {
+                let appetizers = favorite_recipes
+                    .iter()
+                    .filter(|r| r.recipe_type == "appetizer")
+                    .count();
+                let main_courses = favorite_recipes
+                    .iter()
+                    .filter(|r| r.recipe_type == "main_course")
+                    .count();
+                let desserts = favorite_recipes
+                    .iter()
+                    .filter(|r| r.recipe_type == "dessert")
+                    .count();
+
+                ApiError::InsufficientRecipes {
+                    appetizers,
+                    main_courses,
+                    desserts,
+                }
+            }
+            _ => ApiError::AlgorithmTimeout,
+        }
+    })?;
+
+    tracing::info!(
+        user_id = %user_id,
+        week_id = %week_id,
+        meal_count = regenerated_week.meal_assignments.len(),
+        "Week regeneration algorithm completed successfully"
+    );
+
+    // AC-5: Emit SingleWeekRegenerated evento event
+    let event = meal_planning::events::SingleWeekRegenerated {
+        week_id: week_id.clone(),
+        week_start_date: start_date.clone(),
+        meal_assignments: regenerated_week.meal_assignments.clone(),
+        updated_rotation_state: rotation_state.clone(),
+        regenerated_at: Utc::now().to_rfc3339(),
+    };
+
+    evento::create::<meal_planning::MealPlanAggregate>()
+        .data(&event)
+        .map_err(|e| {
+            tracing::error!(
+                user_id = %user_id,
+                week_id = %week_id,
+                error = %e,
+                "Failed to encode SingleWeekRegenerated event"
+            );
+            ApiError::InternalServerError(format!("Failed to encode event: {}", e))
+        })?
+        .metadata(&true)
+        .map_err(|e| {
+            tracing::error!(
+                user_id = %user_id,
+                week_id = %week_id,
+                error = %e,
+                "Failed to encode event metadata"
+            );
+            ApiError::InternalServerError(format!("Failed to encode metadata: {}", e))
+        })?
+        .commit(&state.evento_executor)
+        .await
+        .map_err(|e| {
+            tracing::error!(
+                user_id = %user_id,
+                week_id = %week_id,
+                error = %e,
+                "Failed to commit SingleWeekRegenerated event to evento"
+            );
+            ApiError::InternalServerError(format!("Failed to commit event: {}", e))
+        })?;
+
+    tracing::info!(
+        user_id = %user_id,
+        week_id = %week_id,
+        "SingleWeekRegenerated event emitted successfully"
+    );
+
+    // Build meal assignments for response
+    let meal_assignments: Vec<MealAssignmentData> = regenerated_week
+        .meal_assignments
+        .iter()
+        .map(|assignment| {
+            // Find recipe details
+            let recipe = favorite_recipes
+                .iter()
+                .find(|r| r.id == assignment.recipe_id)
+                .ok_or_else(|| {
+                    ApiError::InternalServerError(format!(
+                        "Recipe {} not found",
+                        assignment.recipe_id
+                    ))
+                })?;
+
+            // Build accompaniment data if present
+            let accompaniment = assignment
+                .accompaniment_recipe_id
+                .as_ref()
+                .and_then(|acc_id| {
+                    favorite_recipes
+                        .iter()
+                        .find(|r| r.id == *acc_id)
+                        .map(|acc_recipe| {
+                            let category = acc_recipe
+                                .accompaniment_category
+                                .as_ref()
+                                .map(|cat| match cat {
+                                    recipe::AccompanimentCategory::Pasta => "pasta",
+                                    recipe::AccompanimentCategory::Rice => "rice",
+                                    recipe::AccompanimentCategory::Fries => "fries",
+                                    recipe::AccompanimentCategory::Salad => "salad",
+                                    recipe::AccompanimentCategory::Bread => "bread",
+                                    recipe::AccompanimentCategory::Vegetable => "vegetable",
+                                    recipe::AccompanimentCategory::Other => "other",
+                                })
+                                .unwrap_or("other")
+                                .to_string();
+
+                            AccompanimentData {
+                                id: acc_recipe.id.clone(),
+                                title: acc_recipe.title.clone(),
+                                category,
+                            }
+                        })
+                });
+
+            Ok(MealAssignmentData {
+                id: uuid::Uuid::new_v4().to_string(), // Generate assignment ID
+                date: assignment.date.clone(),
+                course_type: assignment.course_type.clone(),
+                recipe: RecipeData {
+                    id: recipe.id.clone(),
+                    title: recipe.title.clone(),
+                    prep_time_min: recipe.prep_time_min,
+                    cook_time_min: recipe.cook_time_min,
+                    complexity: recipe.complexity.clone(),
+                },
+                accompaniment,
+                prep_required: assignment.prep_required,
+                algorithm_reasoning: assignment.assignment_reasoning.clone(),
+            })
+        })
+        .collect::<Result<Vec<_>, ApiError>>()?;
+
+    // Build JSON response
+    let response = WeekRegenerationResponse {
+        week: WeekData {
+            id: week_id.clone(),
+            start_date,
+            end_date,
+            status,
+            is_locked,
+            meal_assignments,
+            shopping_list_id: Some(regenerated_week.shopping_list_id),
+        },
+        message: "Week regenerated successfully. Shopping list updated.".to_string(),
+    };
+
+    tracing::info!(
+        user_id = %user_id,
+        week_id = %week_id,
+        "Week regeneration completed successfully"
+    );
+
+    Ok(Json(response))
 }

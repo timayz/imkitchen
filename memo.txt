@@ -1,5 +1,5 @@
 # after create-story/story-context
-run [make check] and fix output errors, must succeed and not ignore test then
+run make check and fix output errors, must succeed and not ignore test then
 git checkout new, conventional commits, push.
 create PR: 
   - title: story title,conventional commits,no story num, in lower case 
@@ -14,13 +14,13 @@ can you create all epics as milestone with associeted stories as issue ? epic ti
   "v0.{epic_num}", issue title format "{story_title}" with label story.
 
 # before create-story / develop / review
-read 'docs/tech-spec-epic-7.md'
+read 'docs/tech-spec-epic-8.md'
 read 'docs/twinspark.md'
 read 'docs/ux-specification.md'
 read 'docs/ai-frontend-prompt.md'
 use Tailwind 4.1+ syntax for future tasks
 when doing tests, use unsafe_oneshot instead of run for subscribe because its process events in sync
-*develop 7.2
+*develop 8.1
 
 in folder fixtures, create recipe json file structured like "example-recipe.json" from
   [link]
