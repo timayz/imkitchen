@@ -9,13 +9,61 @@ use std::collections::{HashMap, HashSet};
 /// The rotation system ensures each favorite recipe is used exactly once before
 /// any recipe repeats. When all favorites have been used once, the cycle resets.
 ///
-/// **Story 6.3 Extensions (Multi-Week Support):**
-/// - `used_main_course_ids`: Main courses MUST be unique across ALL weeks (never repeat)
-/// - `used_appetizer_ids`, `used_dessert_ids`: CAN repeat after exhausting full list
-/// - `cuisine_usage_count`: Tracks cuisine variety for preference algorithm
-/// - `last_complex_meal_date`: Avoids consecutive complex meals
+/// **Multi-Week Rotation Business Rules (Story 6.5):**
+/// - **Main Courses**: MUST be unique across ALL generated weeks (strict uniqueness - never repeat)
+/// - **Appetizers**: CAN repeat after all available appetizers used once (soft rotation with reset)
+/// - **Desserts**: CAN repeat after all available desserts used once (soft rotation with reset)
+/// - **Accompaniments**: NOT tracked in rotation state (can repeat freely)
+/// - **Cuisine Variety**: Tracked via `cuisine_usage_count` to promote diversity
+/// - **Complexity Spacing**: `last_complex_meal_date` avoids consecutive high-complexity meals
 ///
-/// This state is stored as JSON in the meal_plans.rotation_state column.
+/// # Storage
+/// This state is persisted in two locations:
+/// - As JSON in the `meal_plans.rotation_state` column (database)
+/// - As bincode-encoded events in the evento event store
+///
+/// # Example Usage
+/// ```
+/// use meal_planning::RotationState;
+/// use recipe::Cuisine;
+///
+/// // Initialize new rotation state
+/// let mut state = RotationState::new();
+///
+/// // Track main course usage (strict uniqueness)
+/// state.mark_used_main_course("main-course-1");
+/// assert!(state.is_main_course_used("main-course-1"));
+///
+/// // Track appetizer usage with soft reset
+/// state.mark_used_appetizer("app-1");
+/// state.mark_used_appetizer("app-2");
+/// state.mark_used_appetizer("app-3");
+/// state.reset_appetizers_if_all_used(3); // Clears list when all exhausted
+///
+/// // Track cuisine variety
+/// state.increment_cuisine_usage(&Cuisine::Italian);
+/// assert_eq!(state.get_cuisine_usage(&Cuisine::Italian), 1);
+///
+/// // Track complex meal spacing
+/// state.update_last_complex_meal_date("2025-10-27");
+/// ```
+///
+/// # Serialization
+/// Supports both `serde` (JSON for database) and `bincode` (evento events):
+/// ```
+/// # use meal_planning::RotationState;
+/// let state = RotationState::new();
+///
+/// // JSON serialization (for database storage)
+/// let json = state.to_json().unwrap();
+/// let deserialized = RotationState::from_json(&json).unwrap();
+///
+/// // Bincode serialization (for evento event storage)
+/// use bincode::{Encode, Decode};
+/// let encoded = bincode::encode_to_vec(&state, bincode::config::standard()).unwrap();
+/// let (decoded, _): (RotationState, _) =
+///     bincode::decode_from_slice(&encoded, bincode::config::standard()).unwrap();
+/// ```
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 pub struct RotationState {
     // Pre-Epic 6 fields (backwards compatible)
@@ -181,6 +229,42 @@ impl RotationState {
     /// * `false` if main course not yet used (available for assignment)
     pub fn is_main_course_used(&self, recipe_id: &str) -> bool {
         self.used_main_course_ids.contains(&recipe_id.to_string())
+    }
+
+    /// Reset appetizer tracking if all available appetizers have been used (Story 6.5 AC-5)
+    ///
+    /// Clears used_appetizer_ids list when all available appetizers exhausted,
+    /// allowing appetizers to repeat in subsequent assignments.
+    ///
+    /// # Arguments
+    /// * `available_count` - Total number of available appetizer recipes
+    ///
+    /// # Behavior
+    /// - If `used_appetizer_ids.len() >= available_count`, clears the list
+    /// - Otherwise, leaves the list unchanged
+    /// - Handles edge case: `available_count == 0` safely (clears list)
+    pub fn reset_appetizers_if_all_used(&mut self, available_count: usize) {
+        if self.used_appetizer_ids.len() >= available_count {
+            self.used_appetizer_ids.clear();
+        }
+    }
+
+    /// Reset dessert tracking if all available desserts have been used (Story 6.5 AC-5)
+    ///
+    /// Clears used_dessert_ids list when all available desserts exhausted,
+    /// allowing desserts to repeat in subsequent assignments.
+    ///
+    /// # Arguments
+    /// * `available_count` - Total number of available dessert recipes
+    ///
+    /// # Behavior
+    /// - If `used_dessert_ids.len() >= available_count`, clears the list
+    /// - Otherwise, leaves the list unchanged
+    /// - Handles edge case: `available_count == 0` safely (clears list)
+    pub fn reset_desserts_if_all_used(&mut self, available_count: usize) {
+        if self.used_dessert_ids.len() >= available_count {
+            self.used_dessert_ids.clear();
+        }
     }
 
     /// Increment cuisine usage count (Story 6.3 AC-4)
@@ -617,5 +701,254 @@ mod tests {
         assert_eq!(state.cycle_number, 1);
         assert!(!state.is_recipe_used("recipe_2"));
         assert!(state.is_recipe_used("recipe_4"));
+    }
+
+    // ============================================================================
+    // Story 6.5: Reset Methods Tests (AC-5)
+    // ============================================================================
+
+    #[test]
+    fn test_reset_appetizers_if_all_used_clears_when_exhausted() {
+        let mut state = RotationState::new();
+
+        // Mark 3 appetizers as used
+        state.mark_used_appetizer("app-1");
+        state.mark_used_appetizer("app-2");
+        state.mark_used_appetizer("app-3");
+
+        assert_eq!(state.used_appetizer_ids.len(), 3);
+
+        // Call reset with count=3 (all used)
+        state.reset_appetizers_if_all_used(3);
+
+        // List should be cleared
+        assert_eq!(state.used_appetizer_ids.len(), 0);
+    }
+
+    #[test]
+    fn test_reset_appetizers_if_all_used_does_not_clear_when_partial() {
+        let mut state = RotationState::new();
+
+        // Mark 2 appetizers as used
+        state.mark_used_appetizer("app-1");
+        state.mark_used_appetizer("app-2");
+
+        assert_eq!(state.used_appetizer_ids.len(), 2);
+
+        // Call reset with count=3 (not all used yet)
+        state.reset_appetizers_if_all_used(3);
+
+        // List should NOT be cleared
+        assert_eq!(state.used_appetizer_ids.len(), 2);
+        assert_eq!(state.used_appetizer_ids[0], "app-1");
+        assert_eq!(state.used_appetizer_ids[1], "app-2");
+    }
+
+    #[test]
+    fn test_reset_appetizers_edge_case_available_count_zero() {
+        let mut state = RotationState::new();
+
+        // Edge case: no appetizers available
+        state.reset_appetizers_if_all_used(0);
+
+        // Should not panic, list should be cleared (0 >= 0)
+        assert_eq!(state.used_appetizer_ids.len(), 0);
+    }
+
+    #[test]
+    fn test_reset_desserts_if_all_used_clears_when_exhausted() {
+        let mut state = RotationState::new();
+
+        // Mark 5 desserts as used
+        state.mark_used_dessert("dessert-1");
+        state.mark_used_dessert("dessert-2");
+        state.mark_used_dessert("dessert-3");
+        state.mark_used_dessert("dessert-4");
+        state.mark_used_dessert("dessert-5");
+
+        assert_eq!(state.used_dessert_ids.len(), 5);
+
+        // Call reset with count=5 (all used)
+        state.reset_desserts_if_all_used(5);
+
+        // List should be cleared
+        assert_eq!(state.used_dessert_ids.len(), 0);
+    }
+
+    #[test]
+    fn test_reset_desserts_if_all_used_does_not_clear_when_partial() {
+        let mut state = RotationState::new();
+
+        // Mark 3 desserts as used
+        state.mark_used_dessert("dessert-1");
+        state.mark_used_dessert("dessert-2");
+        state.mark_used_dessert("dessert-3");
+
+        assert_eq!(state.used_dessert_ids.len(), 3);
+
+        // Call reset with count=5 (not all used yet)
+        state.reset_desserts_if_all_used(5);
+
+        // List should NOT be cleared
+        assert_eq!(state.used_dessert_ids.len(), 3);
+        assert_eq!(state.used_dessert_ids[0], "dessert-1");
+        assert_eq!(state.used_dessert_ids[1], "dessert-2");
+        assert_eq!(state.used_dessert_ids[2], "dessert-3");
+    }
+
+    #[test]
+    fn test_reset_desserts_edge_case_available_count_zero() {
+        let mut state = RotationState::new();
+
+        // Edge case: no desserts available
+        state.reset_desserts_if_all_used(0);
+
+        // Should not panic, list should be cleared (0 >= 0)
+        assert_eq!(state.used_dessert_ids.len(), 0);
+    }
+
+    // ============================================================================
+    // Story 6.5: Edge Case Tests (AC-8, AC-9)
+    // ============================================================================
+
+    #[test]
+    fn test_mark_used_main_course_with_empty_initial_state() {
+        let mut state = RotationState::new();
+
+        // Verify empty initially
+        assert_eq!(state.used_main_course_ids.len(), 0);
+
+        // Mark first main course
+        state.mark_used_main_course("main-1");
+
+        // Should work correctly
+        assert_eq!(state.used_main_course_ids.len(), 1);
+        assert!(state.is_main_course_used("main-1"));
+    }
+
+    #[test]
+    fn test_is_main_course_used_with_empty_list_returns_false() {
+        let state = RotationState::new();
+
+        // Empty list should return false for any ID
+        assert!(!state.is_main_course_used("any-id"));
+        assert!(!state.is_main_course_used(""));
+    }
+
+    #[test]
+    fn test_reset_appetizers_when_list_is_empty() {
+        let mut state = RotationState::new();
+
+        // List is empty
+        assert_eq!(state.used_appetizer_ids.len(), 0);
+
+        // Call reset with count > 0
+        state.reset_appetizers_if_all_used(5);
+
+        // Should not panic, list remains empty
+        assert_eq!(state.used_appetizer_ids.len(), 0);
+    }
+
+    #[test]
+    fn test_increment_cuisine_usage_when_hashmap_is_empty() {
+        use recipe::Cuisine;
+
+        let mut state = RotationState::new();
+
+        // HashMap is empty initially
+        assert_eq!(state.cuisine_usage_count.len(), 0);
+
+        // Increment a cuisine
+        state.increment_cuisine_usage(&Cuisine::Italian);
+
+        // Should insert correctly with count 1
+        assert_eq!(state.get_cuisine_usage(&Cuisine::Italian), 1);
+        assert_eq!(state.cuisine_usage_count.len(), 1);
+    }
+
+    #[test]
+    fn test_all_recipes_exhausted_scenario() {
+        let mut state = RotationState::new();
+
+        // Mark all main courses as used
+        state.mark_used_main_course("main-1");
+        state.mark_used_main_course("main-2");
+        state.mark_used_main_course("main-3");
+
+        // Verify all return true for is_used
+        assert!(state.is_main_course_used("main-1"));
+        assert!(state.is_main_course_used("main-2"));
+        assert!(state.is_main_course_used("main-3"));
+
+        // Verify unused recipe still returns false
+        assert!(!state.is_main_course_used("main-4"));
+    }
+
+    #[test]
+    fn test_serde_serialization_round_trip() {
+        use recipe::Cuisine;
+
+        // Create state with all fields populated
+        let mut state = RotationState::new();
+        state.mark_used_main_course("main-1");
+        state.mark_used_main_course("main-2");
+        state.mark_used_appetizer("app-1");
+        state.mark_used_dessert("dessert-1");
+        state.increment_cuisine_usage(&Cuisine::Italian);
+        state.increment_cuisine_usage(&Cuisine::Indian);
+        state.update_last_complex_meal_date("2025-10-27");
+
+        // Serialize to JSON
+        let json = state.to_json().expect("Serialization should succeed");
+
+        // Deserialize from JSON
+        let deserialized = RotationState::from_json(&json).expect("Deserialization should succeed");
+
+        // Verify equality of all Epic 6 fields
+        assert_eq!(
+            deserialized.used_main_course_ids,
+            state.used_main_course_ids
+        );
+        assert_eq!(deserialized.used_appetizer_ids, state.used_appetizer_ids);
+        assert_eq!(deserialized.used_dessert_ids, state.used_dessert_ids);
+        assert_eq!(deserialized.cuisine_usage_count.len(), 2);
+        assert_eq!(deserialized.get_cuisine_usage(&Cuisine::Italian), 1);
+        assert_eq!(deserialized.get_cuisine_usage(&Cuisine::Indian), 1);
+        assert_eq!(
+            deserialized.last_complex_meal_date,
+            Some("2025-10-27".to_string())
+        );
+    }
+
+    #[test]
+    fn test_bincode_encode_decode_round_trip() {
+        use recipe::Cuisine;
+
+        // Create state with all fields populated
+        let mut state = RotationState::new();
+        state.mark_used_main_course("main-1");
+        state.mark_used_appetizer("app-1");
+        state.mark_used_dessert("dessert-1");
+        state.increment_cuisine_usage(&Cuisine::Mexican);
+        state.update_last_complex_meal_date("2025-10-28");
+
+        // Encode with bincode
+        let encoded = bincode::encode_to_vec(&state, bincode::config::standard())
+            .expect("Bincode encode should succeed");
+
+        // Decode with bincode
+        let (decoded, _): (RotationState, usize) =
+            bincode::decode_from_slice(&encoded, bincode::config::standard())
+                .expect("Bincode decode should succeed");
+
+        // Verify equality for evento event storage compatibility
+        assert_eq!(decoded.used_main_course_ids, state.used_main_course_ids);
+        assert_eq!(decoded.used_appetizer_ids, state.used_appetizer_ids);
+        assert_eq!(decoded.used_dessert_ids, state.used_dessert_ids);
+        assert_eq!(decoded.get_cuisine_usage(&Cuisine::Mexican), 1);
+        assert_eq!(
+            decoded.last_complex_meal_date,
+            Some("2025-10-28".to_string())
+        );
     }
 }
