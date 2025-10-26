@@ -138,6 +138,7 @@ async fn test_meal_plan_generated_event_projects_to_read_model() {
             recipe_id: "recipe_1".to_string(),
             prep_required: false,
             assignment_reasoning: None,
+            accompaniment_recipe_id: None,
         },
         meal_planning::events::MealAssignment {
             date: meal_planning::calculate_next_week_start()
@@ -147,6 +148,7 @@ async fn test_meal_plan_generated_event_projects_to_read_model() {
             recipe_id: "recipe_2".to_string(),
             prep_required: false,
             assignment_reasoning: None,
+            accompaniment_recipe_id: None,
         },
     ];
 
@@ -368,6 +370,7 @@ async fn test_multiple_meal_assignments_projected_correctly() {
                 recipe_id: format!("recipe_{}", (day * 3 + meal_assignments.len() % 3) % 10 + 1),
                 prep_required: false,
                 assignment_reasoning: None,
+                accompaniment_recipe_id: None,
             });
         }
     }
@@ -461,6 +464,7 @@ async fn test_rotation_progress_displays_correctly() {
             recipe_id: recipe_ids_used[recipe_idx].clone(),
             prep_required: false,
             assignment_reasoning: None,
+            accompaniment_recipe_id: None,
         });
         meal_assignments.push(MealAssignment {
             date: date.clone(),
@@ -468,6 +472,7 @@ async fn test_rotation_progress_displays_correctly() {
             recipe_id: recipe_ids_used[(recipe_idx + 1) % recipe_ids_used.len()].clone(),
             prep_required: false,
             assignment_reasoning: None,
+            accompaniment_recipe_id: None,
         });
         meal_assignments.push(MealAssignment {
             date: date.clone(),
@@ -475,6 +480,7 @@ async fn test_rotation_progress_displays_correctly() {
             recipe_id: recipe_ids_used[(recipe_idx + 2) % recipe_ids_used.len()].clone(),
             prep_required: false,
             assignment_reasoning: None,
+            accompaniment_recipe_id: None,
         });
     }
 
@@ -580,6 +586,7 @@ async fn test_meal_plan_regeneration_projection() {
                 recipe_id: format!("recipe_{}", (i % 10) + 1),
                 prep_required: false,
                 assignment_reasoning: None,
+                accompaniment_recipe_id: None,
             }
         })
         .collect();
@@ -642,6 +649,7 @@ async fn test_meal_plan_regeneration_projection() {
                 recipe_id: format!("recipe_{}", ((i + 5) % 10) + 1),
                 prep_required: false,
                 assignment_reasoning: None,
+                accompaniment_recipe_id: None,
             }
         })
         .collect();
@@ -740,6 +748,12 @@ async fn test_regeneration_preserves_rotation_cycle() {
             .into_iter()
             .collect(),
         total_favorite_count: 10,
+        // Epic 6 fields (Story 6.3)
+        used_main_course_ids: Vec::new(),
+        used_appetizer_ids: Vec::new(),
+        used_dessert_ids: Vec::new(),
+        cuisine_usage_count: std::collections::HashMap::new(),
+        last_complex_meal_date: None,
     };
 
     let initial_assignments: Vec<MealAssignment> = (1..=21)
@@ -763,6 +777,7 @@ async fn test_regeneration_preserves_rotation_cycle() {
                 recipe_id: format!("recipe_{}", (i % 8) + 3), // Start from recipe_3 to avoid used ones
                 prep_required: false,
                 assignment_reasoning: None,
+                accompaniment_recipe_id: None,
             }
         })
         .collect();
@@ -811,6 +826,7 @@ async fn test_regeneration_preserves_rotation_cycle() {
                 recipe_id: format!("recipe_{}", (i % 8) + 3),
                 prep_required: false,
                 assignment_reasoning: None,
+                accompaniment_recipe_id: None,
             }
         })
         .collect();
@@ -826,6 +842,12 @@ async fn test_regeneration_preserves_rotation_cycle() {
         .into_iter()
         .collect(),
         total_favorite_count: 10,
+        // Epic 6 fields (Story 6.3)
+        used_main_course_ids: Vec::new(),
+        used_appetizer_ids: Vec::new(),
+        used_dessert_ids: Vec::new(),
+        cuisine_usage_count: std::collections::HashMap::new(),
+        last_complex_meal_date: None,
     };
 
     let regenerated_event = MealPlanRegenerated {
@@ -906,6 +928,7 @@ async fn test_regeneration_with_reason() {
                 recipe_id: format!("recipe_{}", (i % 10) + 1),
                 prep_required: false,
                 assignment_reasoning: None,
+                accompaniment_recipe_id: None,
             }
         })
         .collect();
@@ -955,6 +978,7 @@ async fn test_regeneration_with_reason() {
                 recipe_id: format!("recipe_{}", i),
                 prep_required: false,
                 assignment_reasoning: None,
+                accompaniment_recipe_id: None,
             }
         })
         .collect();
@@ -1034,6 +1058,7 @@ async fn test_get_todays_meals_query() {
             recipe_id: "recipe_1".to_string(),
             prep_required: false,
             assignment_reasoning: None,
+            accompaniment_recipe_id: None,
         },
         // Today - all 3 meals
         MealAssignment {
@@ -1042,6 +1067,7 @@ async fn test_get_todays_meals_query() {
             recipe_id: "recipe_2".to_string(),
             prep_required: false,
             assignment_reasoning: Some("Great morning meal".to_string()),
+            accompaniment_recipe_id: None,
         },
         MealAssignment {
             date: today.clone(),
@@ -1049,6 +1075,7 @@ async fn test_get_todays_meals_query() {
             recipe_id: "recipe_3".to_string(),
             prep_required: false,
             assignment_reasoning: None,
+            accompaniment_recipe_id: None,
         },
         MealAssignment {
             date: today.clone(),
@@ -1056,6 +1083,7 @@ async fn test_get_todays_meals_query() {
             recipe_id: "recipe_4".to_string(),
             prep_required: false,
             assignment_reasoning: None,
+            accompaniment_recipe_id: None,
         },
         // Tomorrow
         MealAssignment {
@@ -1064,6 +1092,7 @@ async fn test_get_todays_meals_query() {
             recipe_id: "recipe_5".to_string(),
             prep_required: false,
             assignment_reasoning: None,
+            accompaniment_recipe_id: None,
         },
     ];
 
@@ -1267,6 +1296,7 @@ async fn test_todays_meals_uses_date_now() {
         recipe_id: "recipe_1".to_string(),
         prep_required: false,
         assignment_reasoning: None,
+        accompaniment_recipe_id: None,
     }];
 
     let rotation_state = meal_planning::rotation::RotationState::with_favorite_count(5).unwrap();
