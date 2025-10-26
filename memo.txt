@@ -17,7 +17,7 @@ can you create all epics as milestone with associeted stories as issue ? epic ti
   "v0.{epic_num}", issue title format "{story_title}" with label story.
 
 # before create-story / develop / review
-read 'docs/solution-architecture-compact.md'
+read 'docs/docs/tech-spec-epic-7.md'
 read 'docs/twinspark.md'
 read 'docs/ux-specification.md'
 read 'docs/ai-frontend-prompt.md'
