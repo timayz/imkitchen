@@ -1,6 +1,6 @@
 # Story 7.3: Accompaniment Selection
 
-Status: Draft
+Status: Approved
 
 ## Story
 
@@ -145,7 +145,7 @@ fn test_random_selection_deterministic() {
 
 ### Context Reference
 
-<!-- Story context XML will be added by story-context workflow -->
+- [Story Context XML: story-context-7.3.xml](../story-context-7.3.xml) - Generated 2025-10-26
 
 ### Agent Model Used
 

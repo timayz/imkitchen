@@ -1,6 +1,6 @@
 # Story 7.6: Shopping List Generation
 
-Status: Draft
+Status: Approved
 
 ## Story
 
@@ -201,7 +201,7 @@ const FROZEN_KEYWORDS: &[&str] = &["frozen", "ice cream"];
 
 ### Context Reference
 
-<!-- Story context XML will be added by story-context workflow -->
+- Story Context XML: `/home/snapiz/projects/github/timayz/imkitchen/docs/story-context-7.6.xml`
 
 ### Agent Model Used
 

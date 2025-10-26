@@ -1,6 +1,6 @@
 # Story 7.5: Multi-Week Meal Plan Generation
 
-Status: Draft
+Status: Approved
 
 ## Story
 
@@ -223,7 +223,7 @@ pub enum Error {
 
 ### Context Reference
 
-<!-- Story context XML will be added by story-context workflow -->
+- [Story Context XML](/home/snapiz/projects/github/timayz/imkitchen/docs/story-context-7.5.xml) - Generated 2025-10-26
 
 ### Agent Model Used
 
