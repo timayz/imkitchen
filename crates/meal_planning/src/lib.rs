@@ -121,6 +121,7 @@ mod tests {
             advance_prep_hours: None,
             complexity: Some("simple".to_string()),
             dietary_tags: Vec::new(),
+            cuisine: recipe::Cuisine::Italian,
         }
     }
 

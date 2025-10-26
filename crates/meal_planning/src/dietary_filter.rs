@@ -126,6 +126,7 @@ mod tests {
             advance_prep_hours: None,
             complexity: Some("simple".to_string()),
             dietary_tags: dietary_tags.iter().map(|s| s.to_string()).collect(),
+            cuisine: recipe::Cuisine::Italian,
         }
     }
 
