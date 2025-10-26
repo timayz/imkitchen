@@ -2,6 +2,7 @@ pub mod aggregate;
 pub mod algorithm;
 pub mod commands;
 pub mod constraints;
+pub mod dietary_filter;
 pub mod error;
 pub mod events;
 pub mod read_model;
@@ -14,6 +15,7 @@ pub use constraints::{
     AdvancePrepConstraint, AvailabilityConstraint, ComplexityConstraint, Constraint, CourseType,
     DietaryConstraint, EquipmentConflictConstraint, FreshnessConstraint, MealSlot,
 };
+pub use dietary_filter::filter_by_dietary_restrictions;
 pub use error::MealPlanningError;
 pub use events::{
     AllFutureWeeksRegenerated, MealPlanArchived, MealPlanGenerated, MealPlanRegenerated,
