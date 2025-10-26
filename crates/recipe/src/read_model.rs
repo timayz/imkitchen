@@ -6,8 +6,8 @@ use crate::collection_events::{
 };
 use crate::error::{RecipeError, RecipeResult};
 use crate::events::{
-    RatingDeleted, RatingUpdated, RecipeCopied, RecipeCreated, RecipeDeleted, RecipeFavorited,
-    RecipeRated, RecipeShared, RecipeTagged, RecipeUpdated,
+    RatingDeleted, RatingUpdated, RecipeAccompanimentSettingsUpdated, RecipeCopied, RecipeCreated,
+    RecipeDeleted, RecipeFavorited, RecipeRated, RecipeShared, RecipeTagged, RecipeUpdated,
 };
 use evento::{AggregatorName, Context, EventDetails, Executor};
 use serde::{Deserialize, Serialize};
@@ -31,6 +31,10 @@ pub struct RecipeReadModel {
     pub complexity: Option<String>, // "simple", "moderate", "complex"
     pub cuisine: Option<String>,    // e.g., "Italian", "Asian"
     pub dietary_tags: Option<String>, // JSON array e.g., ["vegetarian", "vegan"]
+    // Epic 6: Accompaniment fields
+    pub accepts_accompaniment: bool,
+    pub preferred_accompaniments: Option<String>, // JSON array of AccompanimentCategory
+    pub accompaniment_category: Option<String>,   // AccompanimentCategory as string
     pub created_at: String,
     pub updated_at: String,
 }
@@ -51,18 +55,48 @@ async fn recipe_created_handler<E: Executor>(
     let ingredients_json = serde_json::to_string(&event.data.ingredients)?;
     let instructions_json = serde_json::to_string(&event.data.instructions)?;
 
+    // Epic 6: Serialize accompaniment and metadata fields
+    let accepts_accompaniment = event.data.accepts_accompaniment.unwrap_or(false);
+    let preferred_accompaniments_json = event
+        .data
+        .preferred_accompaniments
+        .as_ref()
+        .map(serde_json::to_string)
+        .transpose()?;
+    let accompaniment_category = event
+        .data
+        .accompaniment_category
+        .as_ref()
+        .map(serde_json::to_string)
+        .transpose()?;
+    let cuisine = event
+        .data
+        .cuisine
+        .as_ref()
+        .map(serde_json::to_string)
+        .transpose()?;
+    let dietary_tags_json = event
+        .data
+        .dietary_tags
+        .as_ref()
+        .map(serde_json::to_string)
+        .transpose()?;
+
     // Execute SQL insert to project event into read model
     // Use event.aggregator_id as the primary key (recipe id)
     // Default is_shared to false (private) per AC-10
     // AC-2: Include recipe_type in projection
+    // Epic 6: Include accompaniment fields (accepts_accompaniment, preferred_accompaniments, accompaniment_category)
+    // Epic 6: Include metadata fields (cuisine, dietary_tags)
     sqlx::query(
         r#"
         INSERT INTO recipes (
             id, user_id, title, recipe_type, ingredients, instructions,
             prep_time_min, cook_time_min, advance_prep_hours, serving_size,
-            is_favorite, is_shared, created_at, updated_at
+            is_favorite, is_shared, accepts_accompaniment, preferred_accompaniments,
+            accompaniment_category, cuisine, dietary_tags, created_at, updated_at
         )
-        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, 0, 0, ?11, ?11)
+        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, 0, 0, ?11, ?12, ?13, ?14, ?15, ?16, ?16)
         "#,
     )
     .bind(&event.aggregator_id)
@@ -75,6 +109,11 @@ async fn recipe_created_handler<E: Executor>(
     .bind(event.data.cook_time_min.map(|v| v as i32))
     .bind(event.data.advance_prep_hours.map(|v| v as i32))
     .bind(event.data.serving_size.map(|v| v as i32))
+    .bind(accepts_accompaniment) // Epic 6
+    .bind(preferred_accompaniments_json) // Epic 6
+    .bind(accompaniment_category) // Epic 6
+    .bind(cuisine) // Epic 6
+    .bind(dietary_tags_json) // Epic 6
     .bind(&event.data.created_at)
     .execute(&pool)
     .await?;
@@ -295,6 +334,38 @@ async fn recipe_tagged_handler<E: Executor>(
     Ok(())
 }
 
+/// Async evento subscription handler for RecipeAccompanimentSettingsUpdated events
+///
+/// This handler updates the accompaniment settings in the read model when
+/// a user modifies whether the recipe accepts sides and which categories it prefers.
+///
+/// Epic 6: Enhanced Meal Planning System
+#[evento::handler(RecipeAggregate)]
+async fn recipe_accompaniment_settings_updated_handler<E: Executor>(
+    context: &Context<'_, E>,
+    event: EventDetails<RecipeAccompanimentSettingsUpdated>,
+) -> anyhow::Result<()> {
+    // Extract the shared SqlitePool from context
+    let pool: SqlitePool = context.extract();
+
+    // Serialize preferred_accompaniments to JSON
+    let preferred_accompaniments_json =
+        serde_json::to_string(&event.data.preferred_accompaniments)?;
+
+    // Execute SQL update to set accompaniment fields
+    sqlx::query(
+        "UPDATE recipes SET accepts_accompaniment = ?1, preferred_accompaniments = ?2, updated_at = ?3 WHERE id = ?4",
+    )
+    .bind(event.data.accepts_accompaniment)
+    .bind(&preferred_accompaniments_json)
+    .bind(&event.data.updated_at)
+    .bind(&event.aggregator_id)
+    .execute(&pool)
+    .await?;
+
+    Ok(())
+}
+
 /// Create recipe event subscription for read model projection
 ///
 /// Returns a subscription builder that can be run with `.run(&executor).await`
@@ -334,6 +405,7 @@ pub fn recipe_projection(pool: SqlitePool) -> evento::SubscribeBuilder<evento::S
         .handler(recipe_copied_handler())
         .handler(recipe_updated_handler())
         .handler(recipe_tagged_handler())
+        .handler(recipe_accompaniment_settings_updated_handler()) // Epic 6
         .handler(recipe_rated_handler())
         .handler(rating_updated_handler())
         .handler(rating_deleted_handler())
@@ -351,6 +423,7 @@ pub async fn query_recipe_by_id(
         SELECT id, user_id, title, recipe_type, ingredients, instructions,
                prep_time_min, cook_time_min, advance_prep_hours, serving_size,
                is_favorite, is_shared, complexity, cuisine, dietary_tags,
+               accepts_accompaniment, preferred_accompaniments, accompaniment_category,
                created_at, updated_at
         FROM recipes
         WHERE id = ?1 AND deleted_at IS NULL
@@ -378,6 +451,9 @@ pub async fn query_recipe_by_id(
                 complexity: row.get("complexity"),
                 cuisine: row.get("cuisine"),
                 dietary_tags: row.get("dietary_tags"),
+                accepts_accompaniment: row.get("accepts_accompaniment"), // Epic 6
+                preferred_accompaniments: row.get("preferred_accompaniments"), // Epic 6
+                accompaniment_category: row.get("accompaniment_category"), // Epic 6
                 created_at: row.get("created_at"),
                 updated_at: row.get("updated_at"),
             };
@@ -401,6 +477,7 @@ pub async fn query_recipes_by_user(
         SELECT id, user_id, title, recipe_type, ingredients, instructions,
                prep_time_min, cook_time_min, advance_prep_hours, serving_size,
                is_favorite, is_shared, complexity, cuisine, dietary_tags,
+               accepts_accompaniment, preferred_accompaniments, accompaniment_category,
                created_at, updated_at
         FROM recipes
         WHERE user_id = ?1 AND is_favorite = 1 AND deleted_at IS NULL
@@ -411,6 +488,7 @@ pub async fn query_recipes_by_user(
         SELECT id, user_id, title, recipe_type, ingredients, instructions,
                prep_time_min, cook_time_min, advance_prep_hours, serving_size,
                is_favorite, is_shared, complexity, cuisine, dietary_tags,
+               accepts_accompaniment, preferred_accompaniments, accompaniment_category,
                created_at, updated_at
         FROM recipes
         WHERE user_id = ?1 AND deleted_at IS NULL
@@ -438,6 +516,9 @@ pub async fn query_recipes_by_user(
             complexity: row.get("complexity"),
             cuisine: row.get("cuisine"),
             dietary_tags: row.get("dietary_tags"),
+            accepts_accompaniment: row.get("accepts_accompaniment"), // Epic 6
+            preferred_accompaniments: row.get("preferred_accompaniments"), // Epic 6
+            accompaniment_category: row.get("accompaniment_category"), // Epic 6
             created_at: row.get("created_at"),
             updated_at: row.get("updated_at"),
         })
@@ -461,6 +542,7 @@ pub async fn query_recipes_by_user_paginated(
         SELECT id, user_id, title, recipe_type, ingredients, instructions,
                prep_time_min, cook_time_min, advance_prep_hours, serving_size,
                is_favorite, is_shared, complexity, cuisine, dietary_tags,
+               accepts_accompaniment, preferred_accompaniments, accompaniment_category,
                created_at, updated_at
         FROM recipes
         WHERE user_id = ?1 AND is_favorite = 1 AND deleted_at IS NULL
@@ -472,6 +554,7 @@ pub async fn query_recipes_by_user_paginated(
         SELECT id, user_id, title, recipe_type, ingredients, instructions,
                prep_time_min, cook_time_min, advance_prep_hours, serving_size,
                is_favorite, is_shared, complexity, cuisine, dietary_tags,
+               accepts_accompaniment, preferred_accompaniments, accompaniment_category,
                created_at, updated_at
         FROM recipes
         WHERE user_id = ?1 AND deleted_at IS NULL
@@ -505,6 +588,9 @@ pub async fn query_recipes_by_user_paginated(
             complexity: row.get("complexity"),
             cuisine: row.get("cuisine"),
             dietary_tags: row.get("dietary_tags"),
+            accepts_accompaniment: row.get("accepts_accompaniment"), // Epic 6
+            preferred_accompaniments: row.get("preferred_accompaniments"), // Epic 6
+            accompaniment_category: row.get("accompaniment_category"), // Epic 6
             created_at: row.get("created_at"),
             updated_at: row.get("updated_at"),
         })
@@ -573,6 +659,7 @@ pub async fn query_recipes_by_user_with_filters(
         SELECT id, user_id, title, recipe_type, ingredients, instructions,
                prep_time_min, cook_time_min, advance_prep_hours, serving_size,
                is_favorite, is_shared, complexity, cuisine, dietary_tags,
+               accepts_accompaniment, preferred_accompaniments, accompaniment_category,
                created_at, updated_at
         FROM recipes
         WHERE {}
@@ -629,6 +716,9 @@ pub async fn query_recipes_by_user_with_filters(
             complexity: row.get("complexity"),
             cuisine: row.get("cuisine"),
             dietary_tags: row.get("dietary_tags"),
+            accepts_accompaniment: row.get("accepts_accompaniment"), // Epic 6
+            preferred_accompaniments: row.get("preferred_accompaniments"), // Epic 6
+            accompaniment_category: row.get("accompaniment_category"), // Epic 6
             created_at: row.get("created_at"),
             updated_at: row.get("updated_at"),
         })
@@ -914,6 +1004,7 @@ pub async fn list_shared_recipes(
         SELECT r.id, r.user_id, r.title, r.recipe_type, r.ingredients, r.instructions,
                r.prep_time_min, r.cook_time_min, r.advance_prep_hours, r.serving_size,
                r.is_favorite, r.is_shared, r.complexity, r.cuisine, r.dietary_tags,
+               r.accepts_accompaniment, r.preferred_accompaniments, r.accompaniment_category,
                r.created_at, r.updated_at
         FROM recipes r
         WHERE r.is_shared = 1 AND r.deleted_at IS NULL
@@ -1056,6 +1147,9 @@ pub async fn list_shared_recipes(
             complexity: row.get("complexity"),
             cuisine: row.get("cuisine"),
             dietary_tags: row.get("dietary_tags"),
+            accepts_accompaniment: row.get("accepts_accompaniment"), // Epic 6
+            preferred_accompaniments: row.get("preferred_accompaniments"), // Epic 6
+            accompaniment_category: row.get("accompaniment_category"), // Epic 6
             created_at: row.get("created_at"),
             updated_at: row.get("updated_at"),
         })
@@ -1348,6 +1442,7 @@ pub async fn query_recipes_by_collection(
         SELECT r.id, r.user_id, r.title, r.recipe_type, r.ingredients, r.instructions,
                r.prep_time_min, r.cook_time_min, r.advance_prep_hours, r.serving_size,
                r.is_favorite, r.is_shared, r.complexity, r.cuisine, r.dietary_tags,
+               r.accepts_accompaniment, r.preferred_accompaniments, r.accompaniment_category,
                r.created_at, r.updated_at
         FROM recipes r
         INNER JOIN recipe_collection_assignments a ON r.id = a.recipe_id
@@ -1377,6 +1472,9 @@ pub async fn query_recipes_by_collection(
             complexity: row.get("complexity"),
             cuisine: row.get("cuisine"),
             dietary_tags: row.get("dietary_tags"),
+            accepts_accompaniment: row.get("accepts_accompaniment"), // Epic 6
+            preferred_accompaniments: row.get("preferred_accompaniments"), // Epic 6
+            accompaniment_category: row.get("accompaniment_category"), // Epic 6
             created_at: row.get("created_at"),
             updated_at: row.get("updated_at"),
         })
@@ -1399,6 +1497,7 @@ pub async fn query_recipes_by_collection_paginated(
         SELECT r.id, r.user_id, r.title, r.recipe_type, r.ingredients, r.instructions,
                r.prep_time_min, r.cook_time_min, r.advance_prep_hours, r.serving_size,
                r.is_favorite, r.is_shared, r.complexity, r.cuisine, r.dietary_tags,
+               r.accepts_accompaniment, r.preferred_accompaniments, r.accompaniment_category,
                r.created_at, r.updated_at
         FROM recipes r
         INNER JOIN recipe_collection_assignments a ON r.id = a.recipe_id
@@ -1431,6 +1530,9 @@ pub async fn query_recipes_by_collection_paginated(
             complexity: row.get("complexity"),
             cuisine: row.get("cuisine"),
             dietary_tags: row.get("dietary_tags"),
+            accepts_accompaniment: row.get("accepts_accompaniment"), // Epic 6
+            preferred_accompaniments: row.get("preferred_accompaniments"), // Epic 6
+            accompaniment_category: row.get("accompaniment_category"), // Epic 6
             created_at: row.get("created_at"),
             updated_at: row.get("updated_at"),
         })

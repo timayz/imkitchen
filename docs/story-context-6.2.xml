@@ -1,0 +1,237 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>6</epicId>
+    <storyId>6.2</storyId>
+    <title>Update Recipe Domain Model</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-25</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-6.2.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>backend developer</asA>
+    <iWant>to extend Recipe aggregate with accompaniment and cuisine fields</iWant>
+    <soThat>recipes support the new meal planning algorithm</soThat>
+    <tasks>
+      - Create new enum types (AccompanimentCategory, Cuisine, DietaryTag)
+      - Update Recipe aggregate struct with new fields
+      - Update RecipeCreated event with new fields
+      - Create RecipeAccompanimentSettingsUpdated event
+      - Implement evento aggregator trait handlers
+      - Update Recipe read model projections
+      - Create comprehensive unit tests for new functionality
+      - Verify compilation and existing tests pass
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="1">Recipe struct updated with fields: accepts_accompaniment, preferred_accompaniments, accompaniment_category, cuisine, dietary_tags</criterion>
+    <criterion id="2">New enums created: AccompanimentCategory, Cuisine, DietaryTag</criterion>
+    <criterion id="3">RecipeCreated event updated with new fields</criterion>
+    <criterion id="4">RecipeAccompanimentSettingsUpdated event created</criterion>
+    <criterion id="5">Evento aggregator trait implemented</criterion>
+    <criterion id="6">All fields have serde Serialize/Deserialize derives</criterion>
+    <criterion id="7">All fields have bincode Encode/Decode derives</criterion>
+    <criterion id="8">Unit tests cover event handlers for new fields</criterion>
+    <criterion id="9">Compilation succeeds with zero warnings</criterion>
+    <criterion id="10">Existing recipe tests pass (backwards compatibility)</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/architecture-update-meal-planning-enhancements.md</path>
+        <title>Architecture Update: Enhanced Meal Planning System</title>
+        <section>2.3 Data Model Changes</section>
+        <snippet>Recipe struct extension with accompaniment fields (accepts_accompaniment, preferred_accompaniments, accompaniment_category) and metadata fields (cuisine, dietary_tags)</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture-update-meal-planning-enhancements.md</path>
+        <title>Architecture Update: Enhanced Meal Planning System</title>
+        <section>2.4 Events</section>
+        <snippet>RecipeCreated and RecipeAccompanimentSettingsUpdated event schemas with all new fields and bincode/serde derives</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture-update-meal-planning-enhancements.md</path>
+        <title>Architecture Update: Enhanced Meal Planning System</title>
+        <section>5.2 Crate: recipe</section>
+        <snippet>Files to update: aggregate.rs (Recipe struct), events.rs (RecipeCreated, new event), types.rs or aggregate.rs (enums), read_model.rs (projections)</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic 6: Enhanced Meal Planning</title>
+        <section>Story 6.2</section>
+        <snippet>Technical Notes: AccompanimentCategory variants (Pasta, Rice, Fries, Salad, Bread, Vegetable, Other), Cuisine::Custom(String) for user-defined cuisines, DietaryTag separate from DietaryRestriction</snippet>
+      </doc>
+      <doc>
+        <path>docs/solution-architecture-compact.md</path>
+        <title>Solution Architecture - imkitchen</title>
+        <section>11. Component Overview - Domain Crates</section>
+        <snippet>crates/recipe/ structure with aggregate.rs, commands.rs, events.rs, read_model.rs</snippet>
+      </doc>
+      <doc>
+        <path>docs/solution-architecture-compact.md</path>
+        <title>Solution Architecture - imkitchen</title>
+        <section>17. Implementation Guidance - Naming</section>
+        <snippet>Enums: PascalCase, Enum variants: PascalCase, Struct fields: snake_case, Events: Past tense PascalCase</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>crates/recipe/src/aggregate.rs</path>
+        <kind>aggregate</kind>
+        <symbol>RecipeAggregate</symbol>
+        <lines>17-50</lines>
+        <reason>Existing Recipe aggregate struct to extend with new fields (accepts_accompaniment, preferred_accompaniments, accompaniment_category). Note: cuisine and dietary_tags already exist per Story 6.1 completion notes.</reason>
+      </artifact>
+      <artifact>
+        <path>crates/recipe/src/aggregate.rs</path>
+        <kind>event_handler</kind>
+        <symbol>recipe_created</symbol>
+        <lines>66-93</lines>
+        <reason>Existing RecipeCreated event handler showing backwards compatibility pattern (#[serde(default)] or explicit Option types). Must extend to handle 5 new fields while maintaining old event compatibility.</reason>
+      </artifact>
+      <artifact>
+        <path>crates/recipe/src/events.rs</path>
+        <kind>event</kind>
+        <symbol>RecipeCreated</symbol>
+        <lines>21-39</lines>
+        <reason>Existing RecipeCreated event struct to extend with new fields. Already has #[derive(AggregatorName, Encode, Decode, Serialize, Deserialize)] - must add 5 new fields.</reason>
+      </artifact>
+      <artifact>
+        <path>crates/recipe/src/events.rs</path>
+        <kind>event</kind>
+        <symbol>RecipeTagged</symbol>
+        <lines>91-98</lines>
+        <reason>Existing RecipeTagged event shows pattern for cuisine and dietary_tags as Option&lt;String&gt; and Vec&lt;String&gt;. Reference for similar field structure.</reason>
+      </artifact>
+      <artifact>
+        <path>crates/recipe/src/events.rs</path>
+        <kind>struct</kind>
+        <symbol>Ingredient</symbol>
+        <lines>6-11</lines>
+        <reason>Existing Ingredient struct pattern showing bincode/serde derives and String types for compatibility.</reason>
+      </artifact>
+      <artifact>
+        <path>crates/recipe/src/tagging.rs</path>
+        <kind>enum</kind>
+        <symbol>Complexity</symbol>
+        <lines>16-31</lines>
+        <reason>Existing enum pattern showing Copy trait, Serialize/Deserialize/Encode/Decode derives, and as_str() method. Reference for AccompanimentCategory enum design.</reason>
+      </artifact>
+      <artifact>
+        <path>crates/recipe/src/tagging.rs</path>
+        <kind>struct</kind>
+        <symbol>RecipeTags</symbol>
+        <lines>34-40</lines>
+        <reason>Existing RecipeTags struct showing cuisine as Option&lt;String&gt; and dietary_tags as Vec&lt;String&gt;. Confirms these fields already exist in aggregate.</reason>
+      </artifact>
+      <artifact>
+        <path>crates/recipe/tests/recipe_tests.rs</path>
+        <kind>test_suite</kind>
+        <symbol>recipe_tests</symbol>
+        <lines>N/A</lines>
+        <reason>Existing test file for Recipe aggregate - must verify existing tests pass after changes (AC-10). Add new tests for accompaniment fields and event handlers.</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <rust>
+        <package name="evento" version="1.5" features="sqlite">Event sourcing framework - provides #[evento::aggregator] macro, AggregatorName trait, event replay functionality</package>
+        <package name="bincode" version="2.0">Binary serialization for evento events - Encode/Decode derives required on all events</package>
+        <package name="serde" version="1.0" features="derive">JSON serialization - Serialize/Deserialize derives required on all structs/enums for database storage and API compatibility</package>
+        <package name="serde_json" version="1.0">JSON encoding/decoding for Vec&lt;AccompanimentCategory&gt; and Vec&lt;DietaryTag&gt; database storage as JSON TEXT</package>
+        <package name="anyhow" version="1.0">Error handling in async event handlers (anyhow::Result return type)</package>
+        <package name="thiserror" version="2.0">Custom error types for domain errors (if needed for validation)</package>
+      </rust>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Event Sourcing Backwards Compatibility: Old RecipeCreated events (pre-Epic 6) must deserialize gracefully with default values for new fields. Use #[serde(default)] or explicit Option types. Example: accepts_accompaniment defaults to false.</constraint>
+    <constraint>Bincode Serialization: All evento events MUST have #[derive(bincode::Encode, bincode::Decode)]. Field order matters for bincode encoding - never reorder existing fields.</constraint>
+    <constraint>Serde Serialization: All structs/enums MUST have #[derive(serde::Serialize, serde::Deserialize)]. Use #[serde(rename_all = "snake_case")] for enums to match JSON storage convention.</constraint>
+    <constraint>Evento Aggregator Pattern: Event handlers are async and return anyhow::Result&lt;()&gt;. Access aggregator_id via event.aggregator_id, not from event.data.</constraint>
+    <constraint>Naming Convention: Enums PascalCase (AccompanimentCategory), variants PascalCase (Pasta, Rice), struct fields snake_case (accepts_accompaniment), events past tense (RecipeAccompanimentSettingsUpdated).</constraint>
+    <constraint>Copy Trait: Only use Copy on enums with no heap-allocated variants. AccompanimentCategory and DietaryTag can be Copy. Cuisine cannot (has Custom(String) variant).</constraint>
+    <constraint>Hash Trait: All enums need Hash + Eq for use in HashMap/HashSet (rotation state tracking in Epic 7).</constraint>
+    <constraint>Database Schema: cuisine and dietary_tags columns already exist in recipes table (migration 01_v0.2.sql per Story 6.1 notes). Only 3 NEW columns added in migration 06_v0.8: accepts_accompaniment, preferred_accompaniments, accompaniment_category.</constraint>
+    <constraint>Testing Standard: Unit tests must verify (1) event serialization round-trips, (2) aggregate state reconstruction from events, (3) backwards compatibility with old events, (4) new event handler logic. Target 80%+ test coverage.</constraint>
+    <constraint>Zero Warnings: cargo build --package recipe must complete with zero warnings. cargo clippy must produce no lints.</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>evento::Aggregator</name>
+      <kind>trait</kind>
+      <signature>async fn handle_event(&amp;mut self, event: Self::Event) -&gt; anyhow::Result&lt;()&gt;</signature>
+      <path>evento crate (external dependency)</path>
+      <usage>Implemented via #[evento::aggregator] macro on RecipeAggregate impl block. Automatically generates event dispatching to individual handlers (recipe_created, recipe_updated, etc.).</usage>
+    </interface>
+    <interface>
+      <name>evento::AggregatorName</name>
+      <kind>trait</kind>
+      <signature>const AGGREGATOR_NAME: &amp;'static str</signature>
+      <path>evento crate (external dependency)</path>
+      <usage>Derived via #[derive(AggregatorName)] on all event structs. Links events to RecipeAggregate for event stream routing.</usage>
+    </interface>
+    <interface>
+      <name>bincode::Encode</name>
+      <kind>trait</kind>
+      <signature>fn encode&lt;E: bincode::enc::Encoder&gt;(&amp;self, encoder: &amp;mut E) -&gt; Result&lt;(), bincode::error::EncodeError&gt;</signature>
+      <path>bincode crate (external dependency)</path>
+      <usage>Derived via #[derive(Encode)] on all events and aggregate. Required for evento event store persistence.</usage>
+    </interface>
+    <interface>
+      <name>bincode::Decode</name>
+      <kind>trait</kind>
+      <signature>fn decode&lt;D: bincode::de::Decoder&gt;(decoder: &amp;mut D) -&gt; Result&lt;Self, bincode::error::DecodeError&gt;</signature>
+      <path>bincode crate (external dependency)</path>
+      <usage>Derived via #[derive(Decode)] on all events and aggregate. Required for evento event replay from store.</usage>
+    </interface>
+    <interface>
+      <name>serde::Serialize</name>
+      <kind>trait</kind>
+      <signature>fn serialize&lt;S: serde::Serializer&gt;(&amp;self, serializer: S) -&gt; Result&lt;S::Ok, S::Error&gt;</signature>
+      <path>serde crate (external dependency)</path>
+      <usage>Derived via #[derive(Serialize)] on all structs/enums. Required for JSON database storage (preferred_accompaniments as JSON TEXT).</usage>
+    </interface>
+    <interface>
+      <name>serde::Deserialize</name>
+      <kind>trait</kind>
+      <signature>fn deserialize&lt;D: serde::Deserializer&gt;(deserializer: D) -&gt; Result&lt;Self, D::Error&gt;</signature>
+      <path>serde crate (external dependency)</path>
+      <usage>Derived via #[derive(Deserialize)] on all structs/enums. Required for JSON database deserialization and backwards compatibility (#[serde(default)]).</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Tests follow Rust standard testing conventions using #[cfg(test)] modules and #[tokio::test] for async tests. Integration tests reside in crates/recipe/tests/ directory. evento testing uses evento::Executor for event replay simulation. Target: 80%+ code coverage measured via cargo-tarpaulin. All tests must pass with cargo test --package recipe. Backwards compatibility tests verify old events (without new fields) deserialize successfully with defaults.
+    </standards>
+
+    <locations>
+      - crates/recipe/tests/recipe_tests.rs (integration tests for Recipe aggregate)
+      - crates/recipe/tests/rating_tests.rs (rating-specific tests)
+      - crates/recipe/tests/collection_tests.rs (recipe collection tests)
+      - crates/recipe/tests/batch_import_tests.rs (batch import tests)
+      - crates/recipe/src/aggregate.rs (inline unit tests in #[cfg(test)] module if added)
+    </locations>
+
+    <ideas>
+      <idea ac="1,2">Test enum creation: Serialize/deserialize AccompanimentCategory (all 7 variants), Cuisine (13 variants + Custom), DietaryTag (7 variants) to/from JSON. Verify bincode round-trips.</idea>
+      <idea ac="1,6,7">Test Recipe struct field additions: Create RecipeAggregate with new fields set. Verify bincode/serde serialization preserves all values. Test defaults for Option fields.</idea>
+      <idea ac="3,6,7">Test RecipeCreated event with new fields: Create event with all 5 new fields populated (accepts_accompaniment=true, preferred_accompaniments=[Pasta, Rice], accompaniment_category=Some(Rice), cuisine=Some(Italian), dietary_tags=[Vegetarian]). Serialize to bincode and JSON, deserialize, verify equality.</idea>
+      <idea ac="3,10">Test RecipeCreated backwards compatibility: Deserialize old RecipeCreated event JSON (missing new fields). Verify aggregate applies defaults: accepts_accompaniment=false, preferred_accompaniments=[], accompaniment_category=None, cuisine=None, dietary_tags=[].</idea>
+      <idea ac="4,6,7">Test RecipeAccompanimentSettingsUpdated event: Create event, serialize/deserialize bincode + JSON. Apply to aggregate, verify accepts_accompaniment and preferred_accompaniments updated correctly.</idea>
+      <idea ac="5">Test evento aggregator integration: Create evento::Executor, apply RecipeCreated event with new fields, load aggregate, verify state matches event data. Apply RecipeAccompanimentSettingsUpdated, reload, verify update applied.</idea>
+      <idea ac="8">Test event handler: Mock RecipeCreated event, call recipe_created handler, assert aggregate fields populated correctly. Repeat for RecipeAccompanimentSettingsUpdated handler.</idea>
+      <idea ac="2">Test Cuisine::Custom variant: Create Cuisine::Custom("Fusion"), serialize to JSON as {"Custom": "Fusion"}, deserialize, verify equality. Test in RecipeCreated event.</idea>
+      <idea ac="2">Test enum Hash trait: Insert AccompanimentCategory::Pasta into HashSet, verify contains(). Insert Cuisine::Italian into HashMap, retrieve value.</idea>
+      <idea ac="9">Test zero warnings: Run cargo build --package recipe 2&gt;&amp;1 | grep warning, assert output empty. Run cargo clippy --package recipe, assert exit code 0.</idea>
+      <idea ac="10">Test existing tests unchanged: Run cargo test --package recipe on current codebase (before changes), capture passing test names. After changes, re-run, verify same tests pass (no regressions).</idea>
+    </ideas>
+  </tests>
+</story-context>

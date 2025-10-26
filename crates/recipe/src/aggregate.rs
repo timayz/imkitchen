@@ -2,10 +2,12 @@ use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
 use crate::events::{
-    Ingredient, InstructionStep, RatingDeleted, RatingUpdated, RecipeCopied, RecipeCreated,
-    RecipeDeleted, RecipeFavorited, RecipeRated, RecipeShared, RecipeTagged, RecipeUpdated,
+    Ingredient, InstructionStep, RatingDeleted, RatingUpdated, RecipeAccompanimentSettingsUpdated,
+    RecipeCopied, RecipeCreated, RecipeDeleted, RecipeFavorited, RecipeRated, RecipeShared,
+    RecipeTagged, RecipeUpdated,
 };
 use crate::tagging::{Complexity, RecipeTags};
+use crate::types::AccompanimentCategory;
 
 /// Recipe aggregate representing the state of a recipe entity
 ///
@@ -40,6 +42,14 @@ pub struct RecipeAggregate {
 
     // Tags
     pub tags: RecipeTags,
+
+    // Accompaniment fields (Epic 6: Enhanced Meal Planning System)
+    /// Whether this main course accepts an accompaniment side dish
+    pub accepts_accompaniment: bool,
+    /// Preferred accompaniment categories this recipe pairs well with (if accepts_accompaniment)
+    pub preferred_accompaniments: Vec<AccompanimentCategory>,
+    /// Accompaniment category if this recipe is a side dish (None for main courses)
+    pub accompaniment_category: Option<AccompanimentCategory>,
 
     // Attribution (for copied recipes)
     pub original_recipe_id: Option<String>, // ID of original recipe if this is a copy
@@ -87,6 +97,14 @@ impl RecipeAggregate {
         self.is_deleted = false;
         self.is_shared = false; // Default to private per AC-9
         self.tags = RecipeTags::default();
+        // Epic 6 accompaniment fields (with backwards compatibility defaults)
+        self.accepts_accompaniment = event.data.accepts_accompaniment.unwrap_or(false);
+        self.preferred_accompaniments = event
+            .data
+            .preferred_accompaniments
+            .clone()
+            .unwrap_or_default();
+        self.accompaniment_category = event.data.accompaniment_category;
         self.original_recipe_id = None;
         self.original_author = None;
         Ok(())
@@ -239,6 +257,21 @@ impl RecipeAggregate {
     ) -> anyhow::Result<()> {
         self.original_recipe_id = Some(event.data.original_recipe_id);
         self.original_author = Some(event.data.original_author);
+        Ok(())
+    }
+
+    /// Handle RecipeAccompanimentSettingsUpdated event to update accompaniment preferences
+    ///
+    /// This event handler updates the accompaniment settings when a user modifies
+    /// whether the recipe accepts sides and which accompaniment categories it prefers.
+    ///
+    /// Epic 6: Enhanced Meal Planning System
+    async fn recipe_accompaniment_settings_updated(
+        &mut self,
+        event: evento::EventDetails<RecipeAccompanimentSettingsUpdated>,
+    ) -> anyhow::Result<()> {
+        self.accepts_accompaniment = event.data.accepts_accompaniment;
+        self.preferred_accompaniments = event.data.preferred_accompaniments;
         Ok(())
     }
 }

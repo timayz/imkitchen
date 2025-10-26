@@ -7,6 +7,7 @@ pub mod error;
 pub mod events;
 pub mod read_model;
 pub mod tagging;
+pub mod types;
 
 pub use aggregate::RecipeAggregate;
 pub use collection_aggregate::CollectionAggregate;
@@ -17,6 +18,7 @@ pub use error::{RecipeError, RecipeResult};
 pub use events::*;
 pub use read_model::*;
 pub use tagging::*;
+pub use types::{AccompanimentCategory, Cuisine, DietaryTag};
 
 // Re-export batch import types for convenience
 pub use commands::{

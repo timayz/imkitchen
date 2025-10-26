@@ -170,7 +170,7 @@ lighthouse:
 	@echo "✓ Lighthouse audit complete! Check .lighthouseci/ for results."
 
 # Run all checks: format, lint, machete, and test (CI-ready)
-check: test-parallel lint fmt machete
+check: test-parallel lint fmt-fix machete
 	@echo "✓ All checks passed!"
 
 # Show help
