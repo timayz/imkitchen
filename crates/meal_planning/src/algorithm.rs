@@ -1,7 +1,8 @@
 use crate::error::MealPlanningError;
 use crate::events::MealAssignment;
 use crate::rotation::{RotationState, RotationSystem};
-use chrono::{Datelike, NaiveDate};
+use chrono::{Datelike, NaiveDate, Weekday};
+use recipe::Cuisine;
 use serde::{Deserialize, Serialize};
 
 /// Recipe data needed for meal planning algorithm
@@ -17,6 +18,7 @@ pub struct RecipeForPlanning {
     pub advance_prep_hours: Option<u32>,
     pub complexity: Option<String>, // "simple", "moderate", "complex" (if pre-calculated)
     pub dietary_tags: Vec<String>, // Tags like "vegetarian", "vegan", "gluten-free", "dairy-free", etc.
+    pub cuisine: Cuisine, // Cuisine type for variety scoring (Story 7.2 AC-5)
 }
 
 /// User profile constraints for meal planning
@@ -31,6 +33,50 @@ impl Default for UserConstraints {
         UserConstraints {
             weeknight_availability_minutes: Some(45), // Default 45 min weeknights
             dietary_restrictions: Vec::new(),
+        }
+    }
+}
+
+/// User skill level for recipe complexity filtering (Story 7.2 AC-3)
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum SkillLevel {
+    /// Beginner: Only Simple complexity recipes allowed
+    Beginner,
+    /// Intermediate: Simple + Moderate complexity recipes allowed
+    Intermediate,
+    /// Advanced: All complexity levels allowed (Simple, Moderate, Complex)
+    Advanced,
+}
+
+/// User preferences for meal planning algorithm (Story 7.2)
+///
+/// Controls time constraints, skill level filtering, complexity avoidance,
+/// and cuisine variety optimization.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UserPreferences {
+    /// Dietary restrictions (Story 7.1 - used by filter_by_dietary_restrictions)
+    pub dietary_restrictions: Vec<String>,
+    /// Maximum total time (prep + cook) for weeknight meals in minutes (default: 30)
+    pub max_prep_time_weeknight: u32,
+    /// Maximum total time (prep + cook) for weekend meals in minutes (default: 90)
+    pub max_prep_time_weekend: u32,
+    /// User's cooking skill level for complexity filtering
+    pub skill_level: SkillLevel,
+    /// If true, avoid assigning Complex recipes on consecutive days (default: true)
+    pub avoid_consecutive_complex: bool,
+    /// Weight for cuisine variety scoring: 0.0 (no variety preference) to 1.0 (maximum variety), default: 0.7
+    pub cuisine_variety_weight: f32,
+}
+
+impl Default for UserPreferences {
+    fn default() -> Self {
+        UserPreferences {
+            dietary_restrictions: Vec::new(),
+            max_prep_time_weeknight: 30,
+            max_prep_time_weekend: 90,
+            skill_level: SkillLevel::Intermediate,
+            avoid_consecutive_complex: true,
+            cuisine_variety_weight: 0.7,
         }
     }
 }
@@ -486,6 +532,120 @@ impl MealPlanningAlgorithm {
     }
 }
 
+/// Select main course based on user preferences and constraints (Story 7.2)
+///
+/// Applies multi-factor filtering and scoring:
+/// 1. Time constraint filtering (weeknight vs weekend) - AC-2
+/// 2. Skill level filtering (Beginner/Intermediate/Advanced) - AC-3
+/// 3. Consecutive complex avoidance (if enabled) - AC-4
+/// 4. Cuisine variety scoring (penalizes recently used cuisines) - AC-5
+/// 5. Returns highest-scored recipe or None if no candidates - AC-6, AC-7
+///
+/// # Arguments
+/// * `available_main_courses` - Candidate main course recipes to select from
+/// * `preferences` - User preferences (time limits, skill level, variety weight, etc.)
+/// * `rotation_state` - Current rotation state (cuisine usage, last complex date)
+/// * `date` - Date for the meal assignment (used to check weeknight/weekend)
+/// * `day_of_week` - Day of week for the assignment
+///
+/// # Returns
+/// * `Some(Recipe)` - Highest-scored recipe matching all constraints
+/// * `None` - No recipes satisfy all constraints
+///
+/// # Performance
+/// Target: <10ms for 100 recipes (Story 7.2 AC-9)
+/// Complexity: O(n) where n = number of available main courses
+pub fn select_main_course_with_preferences(
+    available_main_courses: &[RecipeForPlanning],
+    preferences: &UserPreferences,
+    rotation_state: &RotationState,
+    date: NaiveDate,
+    day_of_week: Weekday,
+) -> Option<RecipeForPlanning> {
+    // AC-2: Determine time limit based on weeknight vs weekend
+    let is_weekend = day_of_week == Weekday::Sat || day_of_week == Weekday::Sun;
+    let max_time = if is_weekend {
+        preferences.max_prep_time_weekend
+    } else {
+        preferences.max_prep_time_weeknight
+    };
+
+    // Parse last_complex_meal_date from rotation_state if present (AC-4)
+    let last_complex_date_opt = rotation_state
+        .last_complex_meal_date
+        .as_ref()
+        .and_then(|date_str| NaiveDate::parse_from_str(date_str, "%Y-%m-%d").ok());
+
+    // Filter candidates by hard constraints
+    let candidates: Vec<&RecipeForPlanning> = available_main_courses
+        .iter()
+        // AC-2: Time constraint filtering (weeknight vs weekend)
+        .filter(|recipe| {
+            let total_time = recipe.prep_time_min.unwrap_or(0) + recipe.cook_time_min.unwrap_or(0);
+            total_time <= max_time
+        })
+        // AC-3: Skill level filtering
+        .filter(|recipe| {
+            let complexity = RecipeComplexityCalculator::calculate_complexity(recipe);
+            match preferences.skill_level {
+                SkillLevel::Beginner => complexity == Complexity::Simple,
+                SkillLevel::Intermediate => {
+                    complexity == Complexity::Simple || complexity == Complexity::Moderate
+                }
+                SkillLevel::Advanced => true, // All complexities allowed
+            }
+        })
+        // AC-4: Consecutive complex avoidance
+        .filter(|recipe| {
+            if !preferences.avoid_consecutive_complex {
+                return true; // Feature disabled, allow all
+            }
+
+            let complexity = RecipeComplexityCalculator::calculate_complexity(recipe);
+            if complexity != Complexity::Complex {
+                return true; // Not complex, always allow
+            }
+
+            // Complex recipe: check if last complex was yesterday
+            match last_complex_date_opt {
+                None => true, // No previous complex meal, allow
+                Some(last_complex_date) => {
+                    // Calculate days difference
+                    let days_since_last_complex = (date - last_complex_date).num_days();
+                    // Allow if 2+ days ago, filter if yesterday (1 day ago)
+                    days_since_last_complex >= 2 || days_since_last_complex < 0
+                }
+            }
+        })
+        .collect();
+
+    // AC-7: Handle no compatible recipes - return None
+    if candidates.is_empty() {
+        return None;
+    }
+
+    // AC-5: Score candidates by cuisine variety
+    // Formula: score = variety_weight * (1.0 / (cuisine_usage_count + 1.0))
+    let variety_weight = preferences.cuisine_variety_weight;
+
+    let mut scored_candidates: Vec<(f32, &RecipeForPlanning)> = candidates
+        .iter()
+        .map(|recipe| {
+            let usage_count = rotation_state.get_cuisine_usage(&recipe.cuisine);
+            let score = variety_weight * (1.0 / (usage_count as f32 + 1.0));
+            (score, *recipe)
+        })
+        .collect();
+
+    // AC-6: Select highest-scored recipe
+    // Sort by score descending (highest first)
+    scored_candidates.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
+
+    // Return first (highest-scored) recipe
+    // If multiple tie, first one selected (deterministic)
+    scored_candidates.first().map(|(_, recipe)| (*recipe).clone())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -519,6 +679,14 @@ mod tests {
             _ => "main_course", // Recipes 2, 3, 5, 6, 8, 9...
         };
 
+        // Distribute cuisines for variety (Story 7.2)
+        let cuisine = match num % 4 {
+            0 => Cuisine::Italian,
+            1 => Cuisine::Mexican,
+            2 => Cuisine::Indian,
+            _ => Cuisine::Chinese,
+        };
+
         RecipeForPlanning {
             id: id.to_string(),
             title: format!("Recipe {}", id),
@@ -530,6 +698,7 @@ mod tests {
             advance_prep_hours: advance_prep,
             complexity: None,
             dietary_tags: Vec::new(), // Tests can override if needed
+            cuisine,
         }
     }
 
@@ -606,6 +775,7 @@ mod tests {
             advance_prep_hours: None,
             complexity: None,
             dietary_tags: Vec::new(),
+            cuisine: Cuisine::Italian,
         };
 
         assert!(RecipeComplexityCalculator::fits_weeknight(
@@ -920,5 +1090,420 @@ mod tests {
 
         // Log performance for monitoring
         println!("Algorithm performance with 50 recipes: {:?}", duration);
+    }
+
+    // ============================================================================
+    // Story 7.2: Main Course Selection with Preferences - Unit Tests
+    // ============================================================================
+
+    /// Helper to create a recipe with specific time and complexity
+    fn create_recipe_with_time_complexity(
+        id: &str,
+        prep_time: u32,
+        cook_time: u32,
+        ingredients: usize,
+        steps: usize,
+        cuisine: Cuisine,
+    ) -> RecipeForPlanning {
+        RecipeForPlanning {
+            id: id.to_string(),
+            title: format!("Recipe {}", id),
+            recipe_type: "main_course".to_string(),
+            ingredients_count: ingredients,
+            instructions_count: steps,
+            prep_time_min: Some(prep_time),
+            cook_time_min: Some(cook_time),
+            advance_prep_hours: None,
+            complexity: None,
+            dietary_tags: Vec::new(),
+            cuisine,
+        }
+    }
+
+    #[test]
+    fn test_weeknight_time_filtering() {
+        // AC-2: Test weeknight filtering (30min limit default)
+        let recipes = vec![
+            create_recipe_with_time_complexity("fast", 10, 15, 5, 4, Cuisine::Italian), // 25min total
+            create_recipe_with_time_complexity("slow", 20, 20, 8, 6, Cuisine::Mexican), // 40min total
+        ];
+
+        let preferences = UserPreferences::default(); // max_prep_time_weeknight: 30
+        let rotation_state = RotationState::new();
+        let date = NaiveDate::from_ymd_opt(2025, 10, 27).unwrap(); // Monday
+        let day_of_week = Weekday::Mon;
+
+        let result = select_main_course_with_preferences(
+            &recipes,
+            &preferences,
+            &rotation_state,
+            date,
+            day_of_week,
+        );
+
+        assert!(result.is_some());
+        let selected = result.unwrap();
+        assert_eq!(selected.id, "fast"); // Only 25min recipe should pass
+    }
+
+    #[test]
+    fn test_weekend_time_filtering() {
+        // AC-2: Test weekend filtering (90min limit default)
+        let recipes = vec![
+            create_recipe_with_time_complexity("medium", 30, 40, 10, 8, Cuisine::Indian), // 70min total
+            create_recipe_with_time_complexity("long", 50, 50, 100, 100, Cuisine::Chinese), // 100min total (Complex)
+        ];
+
+        let preferences = UserPreferences::default(); // max_prep_time_weekend: 90
+        let rotation_state = RotationState::new();
+        let date = NaiveDate::from_ymd_opt(2025, 10, 25).unwrap(); // Saturday
+        let day_of_week = Weekday::Sat;
+
+        let result = select_main_course_with_preferences(
+            &recipes,
+            &preferences,
+            &rotation_state,
+            date,
+            day_of_week,
+        );
+
+        assert!(result.is_some());
+        let selected = result.unwrap();
+        assert_eq!(selected.id, "medium"); // 70min passes, 100min filtered
+    }
+
+    #[test]
+    fn test_skill_level_beginner() {
+        // AC-3: Beginner should only get Simple recipes
+        let recipes = vec![
+            create_recipe_with_time_complexity("simple", 10, 10, 5, 4, Cuisine::Italian), // Simple
+            create_recipe_with_time_complexity("moderate", 15, 15, 50, 50, Cuisine::Mexican), // Moderate
+        ];
+
+        let mut preferences = UserPreferences::default();
+        preferences.skill_level = SkillLevel::Beginner;
+        let rotation_state = RotationState::new();
+        let date = NaiveDate::from_ymd_opt(2025, 10, 25).unwrap(); // Saturday
+        let day_of_week = Weekday::Sat;
+
+        let result = select_main_course_with_preferences(
+            &recipes,
+            &preferences,
+            &rotation_state,
+            date,
+            day_of_week,
+        );
+
+        assert!(result.is_some());
+        let selected = result.unwrap();
+        assert_eq!(selected.id, "simple"); // Only Simple passes for Beginner
+    }
+
+    #[test]
+    fn test_skill_level_intermediate() {
+        // AC-3: Intermediate should get Simple + Moderate, not Complex
+        let recipes = vec![
+            create_recipe_with_time_complexity("simple", 10, 10, 5, 4, Cuisine::Italian), // Simple
+            create_recipe_with_time_complexity("moderate", 15, 15, 50, 50, Cuisine::Mexican), // Moderate
+            create_recipe_with_time_complexity("complex", 20, 20, 100, 100, Cuisine::Indian), // Complex
+        ];
+
+        let mut preferences = UserPreferences::default();
+        preferences.skill_level = SkillLevel::Intermediate;
+        let rotation_state = RotationState::new();
+        let date = NaiveDate::from_ymd_opt(2025, 10, 25).unwrap(); // Saturday
+        let day_of_week = Weekday::Sat;
+
+        let result = select_main_course_with_preferences(
+            &recipes,
+            &preferences,
+            &rotation_state,
+            date,
+            day_of_week,
+        );
+
+        assert!(result.is_some());
+        let selected = result.unwrap();
+        // Should select Simple or Moderate, not Complex
+        assert!(selected.id == "simple" || selected.id == "moderate");
+        assert_ne!(selected.id, "complex");
+    }
+
+    #[test]
+    fn test_skill_level_advanced() {
+        // AC-3: Advanced should get all complexity levels
+        let recipes = vec![
+            create_recipe_with_time_complexity("complex", 20, 20, 100, 100, Cuisine::Indian), // Complex
+        ];
+
+        let mut preferences = UserPreferences::default();
+        preferences.skill_level = SkillLevel::Advanced;
+        let rotation_state = RotationState::new();
+        let date = NaiveDate::from_ymd_opt(2025, 10, 25).unwrap(); // Saturday
+        let day_of_week = Weekday::Sat;
+
+        let result = select_main_course_with_preferences(
+            &recipes,
+            &preferences,
+            &rotation_state,
+            date,
+            day_of_week,
+        );
+
+        assert!(result.is_some());
+        let selected = result.unwrap();
+        assert_eq!(selected.id, "complex"); // Advanced allows Complex
+    }
+
+    #[test]
+    fn test_consecutive_complex_avoidance_yesterday() {
+        // AC-4: If last complex was yesterday, filter out Complex recipes
+        let recipes = vec![
+            create_recipe_with_time_complexity("simple", 10, 10, 5, 4, Cuisine::Italian), // Simple
+            create_recipe_with_time_complexity("complex", 20, 20, 100, 100, Cuisine::Mexican), // Complex
+        ];
+
+        let mut preferences = UserPreferences::default();
+        preferences.skill_level = SkillLevel::Advanced; // Allow complex
+        preferences.avoid_consecutive_complex = true;
+
+        let mut rotation_state = RotationState::new();
+        let date = NaiveDate::from_ymd_opt(2025, 10, 28).unwrap(); // Tuesday
+        let yesterday = date - chrono::Duration::days(1);
+        rotation_state.update_last_complex_meal_date(&yesterday.format("%Y-%m-%d").to_string());
+
+        let day_of_week = Weekday::Tue;
+
+        let result = select_main_course_with_preferences(
+            &recipes,
+            &preferences,
+            &rotation_state,
+            date,
+            day_of_week,
+        );
+
+        assert!(result.is_some());
+        let selected = result.unwrap();
+        assert_eq!(selected.id, "simple"); // Complex filtered due to yesterday rule
+    }
+
+    #[test]
+    fn test_consecutive_complex_allowed_2_days_ago() {
+        // AC-4: If last complex was 2+ days ago, allow Complex recipes
+        let recipes = vec![
+            create_recipe_with_time_complexity("complex", 10, 10, 100, 100, Cuisine::Mexican), // Complex, 20min total
+        ];
+
+        let mut preferences = UserPreferences::default();
+        preferences.skill_level = SkillLevel::Advanced; // Allow complex
+        preferences.avoid_consecutive_complex = true;
+
+        let mut rotation_state = RotationState::new();
+        let date = NaiveDate::from_ymd_opt(2025, 10, 28).unwrap(); // Tuesday
+        let two_days_ago = date - chrono::Duration::days(2);
+        rotation_state.update_last_complex_meal_date(&two_days_ago.format("%Y-%m-%d").to_string());
+
+        let day_of_week = Weekday::Tue;
+
+        let result = select_main_course_with_preferences(
+            &recipes,
+            &preferences,
+            &rotation_state,
+            date,
+            day_of_week,
+        );
+
+        assert!(result.is_some());
+        let selected = result.unwrap();
+        assert_eq!(selected.id, "complex"); // 2+ days ago, Complex allowed
+    }
+
+    #[test]
+    fn test_cuisine_variety_scoring() {
+        // AC-5: Less-used cuisines should score higher
+        let recipes = vec![
+            create_recipe_with_time_complexity("italian", 10, 10, 5, 4, Cuisine::Italian),
+            create_recipe_with_time_complexity("mexican", 10, 10, 5, 4, Cuisine::Mexican),
+        ];
+
+        let preferences = UserPreferences::default(); // variety_weight: 0.7
+        let mut rotation_state = RotationState::new();
+
+        // Mark Italian as used 2 times
+        rotation_state.increment_cuisine_usage(&Cuisine::Italian);
+        rotation_state.increment_cuisine_usage(&Cuisine::Italian);
+        // Mexican used 0 times
+
+        let date = NaiveDate::from_ymd_opt(2025, 10, 25).unwrap(); // Saturday
+        let day_of_week = Weekday::Sat;
+
+        let result = select_main_course_with_preferences(
+            &recipes,
+            &preferences,
+            &rotation_state,
+            date,
+            day_of_week,
+        );
+
+        assert!(result.is_some());
+        let selected = result.unwrap();
+        // Mexican should be selected (usage=0, score=0.7 * 1/1 = 0.7)
+        // Italian score = 0.7 * 1/3 = 0.23
+        assert_eq!(selected.id, "mexican");
+    }
+
+    #[test]
+    fn test_cuisine_variety_weight_zero() {
+        // AC-5: variety_weight=0.0 should not prefer any cuisine
+        let recipes = vec![
+            create_recipe_with_time_complexity("italian", 10, 10, 5, 4, Cuisine::Italian),
+            create_recipe_with_time_complexity("mexican", 10, 10, 5, 4, Cuisine::Mexican),
+        ];
+
+        let mut preferences = UserPreferences::default();
+        preferences.cuisine_variety_weight = 0.0; // No variety preference
+
+        let mut rotation_state = RotationState::new();
+        rotation_state.increment_cuisine_usage(&Cuisine::Italian);
+        rotation_state.increment_cuisine_usage(&Cuisine::Italian);
+
+        let date = NaiveDate::from_ymd_opt(2025, 10, 25).unwrap(); // Saturday
+        let day_of_week = Weekday::Sat;
+
+        let result = select_main_course_with_preferences(
+            &recipes,
+            &preferences,
+            &rotation_state,
+            date,
+            day_of_week,
+        );
+
+        assert!(result.is_some());
+        // Both score 0.0, first one selected (deterministic)
+        let selected = result.unwrap();
+        assert_eq!(selected.id, "italian"); // First in list
+    }
+
+    #[test]
+    fn test_highest_scored_selection() {
+        // AC-6: Verify highest-scored recipe is selected
+        let recipes = vec![
+            create_recipe_with_time_complexity("italian", 10, 10, 5, 4, Cuisine::Italian),   // usage=2, score=0.23
+            create_recipe_with_time_complexity("mexican", 10, 10, 5, 4, Cuisine::Mexican),   // usage=1, score=0.35
+            create_recipe_with_time_complexity("indian", 10, 10, 5, 4, Cuisine::Indian),     // usage=0, score=0.70
+        ];
+
+        let preferences = UserPreferences::default(); // variety_weight: 0.7
+        let mut rotation_state = RotationState::new();
+
+        rotation_state.increment_cuisine_usage(&Cuisine::Italian);
+        rotation_state.increment_cuisine_usage(&Cuisine::Italian);
+        rotation_state.increment_cuisine_usage(&Cuisine::Mexican);
+
+        let date = NaiveDate::from_ymd_opt(2025, 10, 25).unwrap(); // Saturday
+        let day_of_week = Weekday::Sat;
+
+        let result = select_main_course_with_preferences(
+            &recipes,
+            &preferences,
+            &rotation_state,
+            date,
+            day_of_week,
+        );
+
+        assert!(result.is_some());
+        let selected = result.unwrap();
+        assert_eq!(selected.id, "indian"); // Highest score (0.70)
+    }
+
+    #[test]
+    fn test_tie_breaking_deterministic() {
+        // AC-6: If multiple recipes tie, first one selected
+        let recipes = vec![
+            create_recipe_with_time_complexity("italian1", 10, 10, 5, 4, Cuisine::Italian),
+            create_recipe_with_time_complexity("italian2", 10, 10, 5, 4, Cuisine::Italian),
+        ];
+
+        let preferences = UserPreferences::default();
+        let rotation_state = RotationState::new(); // Both Italian unused, same score
+
+        let date = NaiveDate::from_ymd_opt(2025, 10, 25).unwrap(); // Saturday
+        let day_of_week = Weekday::Sat;
+
+        let result = select_main_course_with_preferences(
+            &recipes,
+            &preferences,
+            &rotation_state,
+            date,
+            day_of_week,
+        );
+
+        assert!(result.is_some());
+        let selected = result.unwrap();
+        assert_eq!(selected.id, "italian1"); // First in list selected
+    }
+
+    #[test]
+    fn test_no_compatible_recipes_returns_none() {
+        // AC-7: If all recipes filtered, return None
+        let recipes = vec![
+            create_recipe_with_time_complexity("slow", 50, 50, 100, 100, Cuisine::Italian), // 100min total, Complex
+        ];
+
+        let mut preferences = UserPreferences::default();
+        preferences.max_prep_time_weeknight = 30; // 30min limit
+        preferences.skill_level = SkillLevel::Beginner; // Only Simple allowed
+
+        let rotation_state = RotationState::new();
+        let date = NaiveDate::from_ymd_opt(2025, 10, 27).unwrap(); // Monday
+        let day_of_week = Weekday::Mon;
+
+        let result = select_main_course_with_preferences(
+            &recipes,
+            &preferences,
+            &rotation_state,
+            date,
+            day_of_week,
+        );
+
+        assert!(result.is_none()); // All filtered, returns None
+    }
+
+    #[test]
+    fn test_preference_combinations() {
+        // AC-8: Test multiple constraints active simultaneously
+        let recipes = vec![
+            create_recipe_with_time_complexity("fast_simple", 10, 10, 5, 4, Cuisine::Italian), // 20min, Simple
+            create_recipe_with_time_complexity("slow_complex", 25, 25, 100, 100, Cuisine::Mexican), // 50min, Complex
+        ];
+
+        let mut preferences = UserPreferences::default();
+        preferences.max_prep_time_weeknight = 30; // Weeknight limit
+        preferences.skill_level = SkillLevel::Beginner; // Only Simple
+        preferences.avoid_consecutive_complex = true;
+
+        let mut rotation_state = RotationState::new();
+        let date = NaiveDate::from_ymd_opt(2025, 10, 27).unwrap(); // Monday (weeknight)
+        let yesterday = date - chrono::Duration::days(1);
+        rotation_state.update_last_complex_meal_date(&yesterday.format("%Y-%m-%d").to_string());
+
+        let day_of_week = Weekday::Mon;
+
+        let result = select_main_course_with_preferences(
+            &recipes,
+            &preferences,
+            &rotation_state,
+            date,
+            day_of_week,
+        );
+
+        assert!(result.is_some());
+        let selected = result.unwrap();
+        // Only fast_simple passes all constraints:
+        // - Time: 20min <= 30min ✓
+        // - Skill: Simple ✓
+        // - Consecutive complex: Simple (not filtered) ✓
+        // slow_complex fails: time (50>30), skill (Complex), consecutive (Complex yesterday)
+        assert_eq!(selected.id, "fast_simple");
     }
 }

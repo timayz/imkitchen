@@ -20,3 +20,8 @@ user = { path = "../user" }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util"] }
+criterion = "0.5"
+
+[[bench]]
+name = "algorithm_benchmarks"
+harness = false
