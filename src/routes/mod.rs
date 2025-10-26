@@ -31,7 +31,7 @@ pub use meal_plan::{
     get_meal_plan, get_meal_plan_check_ready, get_regenerate_confirm, post_generate_meal_plan,
     post_regenerate_meal_plan,
 };
-pub use meal_planning_api::generate_multi_week_meal_plan; // Story 8.1: API route
+pub use meal_planning_api::{generate_multi_week_meal_plan, get_week_detail}; // Story 8.1, 8.2: API routes
 pub use notifications::{
     complete_prep_task_handler, dismiss_notification, get_notification_status, list_notifications,
     notifications_page, record_permission_change, snooze_notification, subscribe_push,
