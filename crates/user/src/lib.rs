@@ -20,9 +20,9 @@ pub use error::{UserError, UserResult};
 pub use events::{
     DietaryRestrictionsSet, HouseholdSizeSet, PasswordChanged, ProfileCompleted, ProfileUpdated,
     RecipeCreated, RecipeDeleted, RecipeShared, SubscriptionUpgraded, UserCreated,
-    WeeknightAvailabilitySet,
+    UserMealPlanningPreferencesUpdated, WeeknightAvailabilitySet,
 };
 pub use jwt::{generate_jwt, generate_reset_token, validate_jwt, Claims};
 pub use password::{hash_password, verify_password};
 pub use read_model::{query_user_by_email, query_user_for_login, user_projection, UserLoginData};
-pub use types::SubscriptionTier;
+pub use types::{DietaryRestriction, SkillLevel, SubscriptionTier, TimeRange, UserPreferences};

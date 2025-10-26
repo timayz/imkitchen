@@ -151,3 +151,34 @@ pub struct NotificationPermissionChanged {
     pub last_permission_denial_at: Option<String>, // RFC3339 timestamp when denied (for grace period)
     pub changed_at: String,                        // RFC3339 formatted timestamp
 }
+
+/// UserMealPlanningPreferencesUpdated event emitted when user updates meal planning preferences
+///
+/// This event captures all user preferences used by the meal planning algorithm for personalization.
+/// Emitted when user configures preferences in profile settings or onboarding.
+///
+/// Design note: All preference fields serialized with bincode for evento compatibility.
+/// Uses String for timestamps and structured types for preferences.
+///
+/// Note: user_id is provided by event.aggregator_id, not stored in event data
+#[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
+pub struct UserMealPlanningPreferencesUpdated {
+    /// Dietary restrictions (serialized as JSON array)
+    pub dietary_restrictions: String, // JSON: [{"type":"Vegetarian"},{"type":"Custom","value":"shellfish"}]
+    /// Number of people in household
+    pub household_size: u32,
+    /// Cooking skill level: "Beginner", "Intermediate", "Advanced"
+    pub skill_level: String,
+    /// Weeknight availability (JSON)
+    pub weeknight_availability: String, // JSON: {"start":"18:00","duration_minutes":45}
+    /// Maximum prep time for weeknight meals (minutes)
+    pub max_prep_time_weeknight: u32,
+    /// Maximum prep time for weekend meals (minutes)
+    pub max_prep_time_weekend: u32,
+    /// Avoid scheduling complex meals back-to-back
+    pub avoid_consecutive_complex: bool,
+    /// Cuisine variety weight (0.0-1.0)
+    pub cuisine_variety_weight: f32,
+    /// Timestamp when preferences were updated
+    pub updated_at: String, // RFC3339 formatted timestamp
+}
