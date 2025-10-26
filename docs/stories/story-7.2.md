@@ -1,6 +1,6 @@
 # Story 7.2: Main Course Selection with Preferences
 
-Status: Draft
+Status: Approved
 
 ## Story
 

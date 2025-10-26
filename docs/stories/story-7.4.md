@@ -1,6 +1,6 @@
 # Story 7.4: Single Week Generation
 
-Status: Draft
+Status: Approved
 
 ## Story
 
@@ -210,7 +210,9 @@ pub enum WeekStatus {
 
 ### Context Reference
 
-<!-- Story context XML will be added by story-context workflow -->
+- Story Context XML: `/home/snapiz/projects/github/timayz/imkitchen/docs/story-context-7.4.xml`
+  - Generated: 2025-10-26
+  - Includes: Complete acceptance criteria, task breakdown, relevant documentation references, existing code artifacts, interface signatures, constraints, and test ideas
 
 ### Agent Model Used
 

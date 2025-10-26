@@ -1,0 +1,411 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>7</epicId>
+    <storyId>7.5</storyId>
+    <title>Multi-Week Meal Plan Generation</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-26T00:00:00Z</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-7.5.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>generate meal plans for multiple weeks (1-5)</iWant>
+    <soThat>I can plan ahead and maximize recipe variety across weeks</soThat>
+    <tasks>
+      - Implement multi-week generation function (AC: 1)
+        - Create async function in `crates/meal_planning/src/algorithm.rs`
+        - Signature: `pub async fn generate_multi_week_meal_plans(user_id: UserId, favorite_recipes: Vec&lt;Recipe&gt;, preferences: UserPreferences) -&gt; Result&lt;MultiWeekMealPlan, Error&gt;`
+        - Return `Result&lt;MultiWeekMealPlan, Error&gt;`
+      - Filter recipes by dietary restrictions (AC: 4)
+        - Call `filter_by_dietary_restrictions(favorite_recipes, &amp;preferences.dietary_restrictions)`
+        - Use filtered list for all subsequent operations
+        - If all recipes filtered, return `InsufficientRecipes` error
+      - Calculate maximum weeks (AC: 2)
+        - Separate recipes by type: appetizers, main_courses, desserts
+        - Count each type
+        - Calculate: `max_weeks = min(5, min(appetizer_count, main_count, dessert_count))`
+        - Hard cap at 5 weeks per architecture decision
+      - Validate sufficient recipes (AC: 3)
+        - Check `max_weeks &gt;= 1`
+        - If false, return `Error::InsufficientRecipes { appetizers, main_courses, desserts }`
+        - Error includes actual counts for user feedback
+      - Initialize RotationState (AC: 5)
+        - Create `RotationState::new()`
+        - Will be mutated across all week generations
+      - Generate weeks sequentially (AC: 5, 6)
+        - Loop `for week_index in 0..max_weeks`
+        - Calculate `week_start_date = calculate_next_monday() + Duration::weeks(week_index)`
+        - Call `generate_single_week(recipes.clone(), &amp;preferences, &amp;mut rotation_state, week_start_date)`
+        - Collect all `WeekMealPlan` results
+        - If any week generation fails, return error and halt
+      - Generate shopping lists per week (AC: 7)
+        - For each generated week, call `generate_shopping_list_for_week(&amp;week.meal_assignments, &amp;recipes, week.start_date)`
+        - Attach shopping list ID to `week.shopping_list_id`
+        - Store shopping lists in result
+      - Construct MultiWeekMealPlan result (AC: 8)
+        - Generate UUID for `generation_batch_id`
+        - Set `user_id`
+        - Collect all `generated_weeks: Vec&lt;WeekMealPlan&gt;`
+        - Include final `rotation_state` (for future regenerations)
+        - Return `MultiWeekMealPlan`
+      - Write comprehensive unit tests (AC: 10)
+        - Test with exactly 7 recipes per type (1 week)
+        - Test with 35+ recipes per type (5 weeks, capped)
+        - Test with 100+ recipes per type (still capped at 5)
+        - Test insufficient recipes (6 appetizers, 7 mains, 7 desserts → 0 weeks)
+        - Test dietary filtering reduces available recipes
+        - Test week date calculations (Monday-Sunday, sequential)
+        - Test RotationState persistence across weeks
+        - Test error propagation from single week generation
+      - Performance benchmark (AC: 9)
+        - Create criterion benchmark with 50 recipes (realistic dataset)
+        - Measure end-to-end generation time for 5 weeks
+        - Assert P95 &lt; 5 seconds
+        - Profile bottlenecks if needed
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    1. Function `generate_multi_week_meal_plans` implemented
+    2. Calculates `max_weeks = min(5, min(appetizers, mains, desserts))`
+    3. Returns `InsufficientRecipes` error if `max_weeks &lt; 1`
+    4. Filters by dietary restrictions before counting recipes
+    5. Generates weeks sequentially (loop 0..max_weeks)
+    6. Week dates calculated from next Monday + offset (ISO 8601)
+    7. Shopping list generated per week via `generate_shopping_list_for_week`
+    8. Returns `MultiWeekMealPlan` with all weeks and rotation state
+    9. Performance: &lt;5 seconds for 5 weeks (P95)
+    10. Unit tests cover various recipe counts (edge cases: 1 week, 5 weeks, insufficient)
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-7.md</path>
+        <title>Technical Specification: Enhanced Meal Planning - Algorithm Implementation</title>
+        <section>Services and Modules</section>
+        <snippet>
+`generate_multi_week_meal_plans` - Calculate max weeks, generate all weeks in batch, create shopping lists
+Inputs: `UserId`, `Vec&lt;Recipe&gt;` (favorites), `UserPreferences`
+Outputs: `Result&lt;MultiWeekMealPlan, Error&gt;`
+
+Multi-Week Generation Flow:
+1. Filter recipes by dietary restrictions (Story 7.1)
+2. Separate by type: appetizers, main_courses, desserts
+3. Calculate max_weeks = min(5, min(counts))
+4. Validate max_weeks &gt;= 1 (else InsufficientRecipes error)
+5. Initialize RotationState::new()
+6. For each week (0..max_weeks):
+   a. Calculate week_start_date (next Monday + offset)
+   b. Generate single week (Story 7.4)
+   c. Generate shopping list (Story 7.6)
+   d. Collect week results
+7. Return MultiWeekMealPlan with all weeks + rotation state
+        </snippet>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-7.md</path>
+        <title>Technical Specification: Enhanced Meal Planning - Algorithm Implementation</title>
+        <section>Data Models and Contracts</section>
+        <snippet>
+// Multi-week plan
+pub struct MultiWeekMealPlan {
+    user_id: UserId,
+    generation_batch_id: String,   // UUID linking all weeks
+    generated_weeks: Vec&lt;WeekMealPlan&gt;,
+    rotation_state: RotationState, // Final state for future use
+}
+
+// Error Types
+pub enum Error {
+    InsufficientRecipes {
+        appetizers: usize,
+        main_courses: usize,
+        desserts: usize,
+    },
+    NoCompatibleRecipes {
+        course_type: CourseType,
+        reason: String,
+    },
+    AlgorithmTimeout,
+    InvalidPreferences(String),
+}
+        </snippet>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-7.md</path>
+        <title>Technical Specification: Enhanced Meal Planning - Algorithm Implementation</title>
+        <section>Performance</section>
+        <snippet>
+Target Metrics:
+- Multi-week generation (5 weeks): &lt;5 seconds (P95), measured with 50 recipes per user
+- Single week generation: &lt;1 second (P95)
+- Dietary filtering: &lt;10ms for 100 recipes
+
+5-week hard cap (section 1.2) to balance planning horizon with computational cost.
+Main courses NEVER repeat; appetizers/desserts CAN repeat after exhaustion (section 1.3).
+        </snippet>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-7.md</path>
+        <title>Technical Specification: Enhanced Meal Planning - Algorithm Implementation</title>
+        <section>Acceptance Criteria (Authoritative) - Story 7.5</section>
+        <snippet>
+1. Function `generate_multi_week_meal_plans` implemented
+2. Calculates `max_weeks = min(5, min(appetizers, mains, desserts))`
+3. Returns `InsufficientRecipes` error if `max_weeks &lt; 1`
+4. Filters by dietary restrictions before counting recipes
+5. Generates weeks sequentially (loop 0..max_weeks)
+6. Week dates calculated from next Monday + offset (ISO 8601)
+7. Shopping list generated per week via `generate_shopping_list_for_week`
+8. Returns `MultiWeekMealPlan` with all weeks and rotation state
+9. Performance: &lt;5 seconds for 5 weeks (P95)
+10. Unit tests cover various recipe counts (edge cases: 1 week, 5 weeks, insufficient)
+        </snippet>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/ux-specification.md</path>
+        <title>imkitchen UX/UI Specification</title>
+        <section>Calendar Week View Component</section>
+        <snippet>
+Layout: 7 columns (days: Mon-Tue-Wed-Thu-Fri-Sat-Sun, always starting Monday)
+Week Convention: All weeks start on Monday. Week navigation moves forward/backward by 7 days from Monday.
+Week identifiers use Monday's date (e.g., "Week of Oct 14, 2025" for the week Monday Oct 14 - Sunday Oct 20).
+        </snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/algorithm.rs</path>
+        <kind>module</kind>
+        <symbol>MealPlanningAlgorithm::generate</symbol>
+        <lines>284-486</lines>
+        <reason>
+Single week generation function that will be called in loop for multi-week generation.
+Shows pattern for week_start_date calculation, rotation state mutation, and assignment collection.
+Demonstrates error handling for InsufficientRecipes.
+        </reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/rotation.rs</path>
+        <kind>module</kind>
+        <symbol>RotationState</symbol>
+        <lines>67-305</lines>
+        <reason>
+RotationState struct definition with multi-week tracking fields.
+Contains methods for marking main courses, appetizers, desserts as used.
+Includes reset logic for appetizers/desserts when exhausted (Story 6.5).
+Critical for tracking recipe usage across multiple weeks.
+        </reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/dietary_filter.rs</path>
+        <kind>module</kind>
+        <symbol>filter_by_dietary_restrictions</symbol>
+        <lines>46-60</lines>
+        <reason>
+Dietary filtering function to be called BEFORE counting recipes for max_weeks calculation.
+Implements AND logic for multiple restrictions.
+Returns empty Vec if no compatible recipes (AC-4).
+        </reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/lib.rs</path>
+        <kind>module</kind>
+        <symbol>calculate_next_week_start</symbol>
+        <lines>51-65</lines>
+        <reason>
+Helper function to calculate next Monday for week_start_date.
+Business rule: All meal plans start from next week (Monday-Sunday).
+Used as base date for week offset calculations (week_index * 7 days).
+        </reason>
+      </artifact>
+      <artifact>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/error.rs</path>
+        <kind>module</kind>
+        <symbol>MealPlanningError</symbol>
+        <lines>1-60</lines>
+        <reason>
+Error types for meal planning domain including InsufficientRecipes.
+Shows pattern for error context (includes counts for user feedback).
+Used for AC-3: Return error if max_weeks &lt; 1 with detailed counts.
+        </reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <rust>
+        <dependency name="evento" version="1.5+" purpose="Event sourcing framework (SQLite backend), aggregate traits, event handling"/>
+        <dependency name="chrono" version="0.4+" purpose="Date/time handling (week calculations, Monday start dates, ISO 8601)"/>
+        <dependency name="uuid" version="1.10+" purpose="Generate generation_batch_id, shopping_list_id (v4 UUIDs)"/>
+        <dependency name="tracing" version="0.1+" purpose="Structured logging for observability"/>
+        <dependency name="thiserror" version="1.0+" purpose="Custom error type definitions (Error enum)"/>
+        <dependency name="serde" version="1.0+" purpose="Serialization for evento events (bincode + JSON)"/>
+        <dependency name="bincode" version="2.0+" purpose="Binary encoding for evento event persistence"/>
+        <dependency name="criterion" version="0.5+" purpose="Benchmarking suite (dev dependency)"/>
+      </rust>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - TDD enforced: Write tests first, implement to pass (cargo test, &gt;80% coverage via cargo-tarpaulin)
+    - No external HTTP/IO in algorithm functions (pure business logic, dependency injection for data access)
+    - Performance target: &lt;5 seconds for 5-week generation (measured via criterion benchmarks)
+    - 5-week hard cap to balance planning horizon with computational cost
+    - Main courses NEVER repeat across weeks (strict uniqueness - use RotationState.used_main_course_ids)
+    - Appetizers/desserts CAN repeat after exhaustion (soft rotation with reset via RotationState.reset_appetizers_if_all_used / reset_desserts_if_all_used)
+    - Dietary restrictions use AND logic—all must be satisfied (filter BEFORE counting recipes)
+    - Week start convention: Monday (ISO 8601), calculate using calculate_next_monday() + Duration::weeks(week_index)
+    - Async function signature for future database/event store integration (current implementation CPU-bound)
+    - Event integration: Function returns MultiWeekMealPlan struct, route handler (Epic 8) emits MultiWeekMealPlanGenerated event
+    - Error messages must include context for user feedback (e.g., InsufficientRecipes with counts)
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>filter_by_dietary_restrictions</name>
+      <kind>function</kind>
+      <signature>pub fn filter_by_dietary_restrictions(recipes: Vec&lt;Recipe&gt;, restrictions: &amp;[DietaryRestriction]) -&gt; Vec&lt;Recipe&gt;</signature>
+      <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/dietary_filter.rs</path>
+      <usage>Call before counting recipes to ensure max_weeks calculation uses only compatible recipes (AC-4)</usage>
+    </interface>
+    <interface>
+      <name>generate_single_week</name>
+      <kind>function</kind>
+      <signature>pub fn generate_single_week(recipes: Vec&lt;Recipe&gt;, preferences: &amp;UserPreferences, rotation_state: &amp;mut RotationState, week_start_date: Date) -&gt; Result&lt;WeekMealPlan, Error&gt;</signature>
+      <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/algorithm.rs</path>
+      <usage>Call in loop for each week (0..max_weeks), pass mutable rotation_state to track usage across weeks (AC-5)</usage>
+    </interface>
+    <interface>
+      <name>generate_shopping_list_for_week</name>
+      <kind>function</kind>
+      <signature>pub fn generate_shopping_list_for_week(meal_assignments: &amp;[MealAssignment], recipes: &amp;[Recipe], week_start_date: Date) -&gt; ShoppingList</signature>
+      <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/algorithm.rs</path>
+      <usage>Call for each generated week to create shopping list, attach shopping_list_id to WeekMealPlan (AC-7)</usage>
+    </interface>
+    <interface>
+      <name>calculate_next_week_start</name>
+      <kind>function</kind>
+      <signature>pub fn calculate_next_week_start() -&gt; chrono::NaiveDate</signature>
+      <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/lib.rs</path>
+      <usage>Calculate base Monday date, then add Duration::weeks(week_index) for each week in loop (AC-6)</usage>
+    </interface>
+    <interface>
+      <name>RotationState::new</name>
+      <kind>constructor</kind>
+      <signature>pub fn new() -&gt; Self</signature>
+      <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/rotation.rs</path>
+      <usage>Initialize rotation state before week generation loop (AC-5)</usage>
+    </interface>
+    <interface>
+      <name>RotationState::mark_used_main_course</name>
+      <kind>method</kind>
+      <signature>pub fn mark_used_main_course(&amp;mut self, recipe_id: &amp;str)</signature>
+      <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/rotation.rs</path>
+      <usage>Track main course uniqueness across weeks (called by generate_single_week)</usage>
+    </interface>
+    <interface>
+      <name>RotationState::reset_appetizers_if_all_used</name>
+      <kind>method</kind>
+      <signature>pub fn reset_appetizers_if_all_used(&amp;mut self, available_count: usize)</signature>
+      <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/rotation.rs</path>
+      <usage>Allow appetizer repetition after exhaustion (called by generate_single_week)</usage>
+    </interface>
+    <interface>
+      <name>RotationState::reset_desserts_if_all_used</name>
+      <kind>method</kind>
+      <signature>pub fn reset_desserts_if_all_used(&amp;mut self, available_count: usize)</signature>
+      <path>/home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/rotation.rs</path>
+      <usage>Allow dessert repetition after exhaustion (called by generate_single_week)</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      TDD enforced: Write failing test → Implement minimal code to pass → Refactor → Repeat.
+      All stories begin with test creation before implementation.
+
+      Test Pyramid:
+      - Unit Tests (70%): Individual functions in isolation using built-in Rust #[test], assert_eq!, assert! macros
+      - Integration Tests (25%): Multi-function workflows in tests/ directory
+      - Performance Benchmarks (5%): criterion crate for regression detection
+
+      Coverage Targets:
+      - Overall: &gt;80% line coverage for crates/meal_planning/src/ (measured via cargo-tarpaulin)
+      - Critical Functions: 100% coverage for generate_multi_week_meal_plans
+      - CI Enforcement: Coverage report generated in CI, build fails if &lt;80%
+
+      Test Execution:
+      - Local: cargo test (all unit + integration tests)
+      - Benchmarks: cargo bench (criterion benchmarks)
+      - Coverage: cargo tarpaulin --out Html --output-dir coverage/
+      - CI/CD: GitHub Actions runs cargo test, cargo tarpaulin, cargo bench on every PR
+    </standards>
+
+    <locations>
+      - crates/meal_planning/tests/unit/ (unit tests for individual functions)
+      - crates/meal_planning/tests/integration/ (end-to-end multi-week generation tests)
+      - crates/meal_planning/tests/benchmarks/ (criterion performance benchmarks)
+    </locations>
+
+    <ideas>
+      <test ac="1" idea="Unit: Verify generate_multi_week_meal_plans function signature and return type">
+        Create function stub, verify it compiles with correct async signature.
+        Test returns Ok(MultiWeekMealPlan) with valid inputs.
+      </test>
+      <test ac="2" idea="Unit: Test max_weeks calculation with various recipe counts">
+        Test case: 10 appetizers, 15 mains, 8 desserts → min(5, min(10,15,8)) = 5 weeks (capped at 5).
+        Test case: 7 appetizers, 14 mains, 21 desserts → min(5, min(7,14,21)) = 5 (capped).
+        Test case: 21 appetizers, 7 mains, 14 desserts → min(5, min(21,7,14)) = 5 (capped).
+        Test case: 100 each → still returns 5 (hard cap).
+      </test>
+      <test ac="3" idea="Unit: Test InsufficientRecipes error when max_weeks &lt; 1">
+        Test case: 6 appetizers, 7 mains, 7 desserts → 6/7 = 0 weeks → error with counts.
+        Test case: 0 appetizers → immediate error.
+        Verify error includes appetizers, main_courses, desserts counts.
+      </test>
+      <test ac="4" idea="Integration: Test dietary filtering before recipe counting">
+        Setup: 20 total recipes (10 vegan, 10 non-vegan), user has Vegan restriction.
+        After filtering: only 10 vegan recipes remain for max_weeks calculation.
+        If filtered count too low, returns InsufficientRecipes error.
+      </test>
+      <test ac="5" idea="Integration: Test sequential week generation with rotation state mutation">
+        Generate 3 weeks, verify rotation_state updated after each week.
+        Verify main courses never repeat across all 3 weeks.
+        Verify appetizers/desserts can repeat after exhaustion.
+      </test>
+      <test ac="6" idea="Unit: Test week date calculation (Monday-Sunday, sequential)">
+        Use calculate_next_monday() as base, verify week_0 starts on Monday.
+        Verify week_1 starts exactly 7 days later (next Monday).
+        Verify week_4 starts exactly 28 days after week_0.
+        Verify each week ends on Sunday (start_date + 6 days).
+      </test>
+      <test ac="7" idea="Integration: Test shopping list generation per week">
+        Generate 2 weeks, verify each WeekMealPlan has unique shopping_list_id.
+        Verify shopping lists include ingredients from all meals in that week.
+      </test>
+      <test ac="8" idea="Unit: Test MultiWeekMealPlan structure">
+        Verify MultiWeekMealPlan contains: user_id, generation_batch_id (UUID), generated_weeks (Vec), rotation_state.
+        Verify generation_batch_id is unique per generation.
+      </test>
+      <test ac="9" idea="Benchmark: Test 5-week generation performance &lt;5s P95">
+        Setup: 50 realistic recipes (15 appetizers, 20 mains, 15 desserts).
+        Use criterion benchmark to measure P50, P95, P99 latencies.
+        Assert P95 &lt; 5 seconds.
+        Log performance for monitoring (println! or tracing).
+      </test>
+      <test ac="10" idea="Integration: Test edge cases (1 week, 5 weeks, insufficient)">
+        1 week: Exactly 7 of each type → generates 1 week.
+        5 weeks: 35+ of each type → generates exactly 5 weeks (capped).
+        Insufficient: 6 appetizers → error before generation starts.
+      </test>
+      <test ac="10" idea="Integration: Test error propagation from single week generation">
+        Force generate_single_week to fail (e.g., corrupt rotation state).
+        Verify multi-week generation halts and returns error.
+      </test>
+    </ideas>
+  </tests>
+</story-context>

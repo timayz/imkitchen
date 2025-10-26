@@ -1,6 +1,6 @@
 # Story 7.7: Algorithm Integration Tests and Benchmarks
 
-Status: Draft
+Status: Approved
 
 ## Story
 
@@ -251,7 +251,7 @@ cargo tarpaulin --package meal_planning --out Html --output-dir coverage/
 
 ### Context Reference
 
-<!-- Story context XML will be added by story-context workflow -->
+- [Story Context XML](/home/snapiz/projects/github/timayz/imkitchen/docs/story-context-7.7.xml) - Generated 2025-10-26
 
 ### Agent Model Used
 
