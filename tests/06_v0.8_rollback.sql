@@ -34,7 +34,7 @@ DROP INDEX IF EXISTS idx_recipes_accompaniment_category;
 
 -- Recreate meal_plans table without new columns
 CREATE TABLE meal_plans_backup AS
-SELECT id, user_id, start_date, status, created_at, archived_at
+SELECT id, user_id, start_date, status, created_at, updated_at
 FROM meal_plans;
 
 DROP TABLE meal_plans;
@@ -45,12 +45,17 @@ CREATE TABLE meal_plans (
   start_date TEXT NOT NULL,
   status TEXT NOT NULL CHECK(status IN ('active', 'archived')),
   created_at TEXT NOT NULL,
-  archived_at TEXT,
+  updated_at TEXT,
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 INSERT INTO meal_plans SELECT * FROM meal_plans_backup;
 DROP TABLE meal_plans_backup;
+
+-- Recreate the unique active constraint that was dropped in 06_v0.8
+CREATE UNIQUE INDEX IF NOT EXISTS idx_meal_plans_unique_active
+    ON meal_plans(user_id)
+    WHERE status = 'active';
 
 -- Recreate meal_assignments table without accompaniment_recipe_id
 CREATE TABLE meal_assignments_backup AS

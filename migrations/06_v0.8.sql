@@ -17,9 +17,14 @@
 -- We'll add new columns but keep using 'active'/'archived' for status to maintain compatibility
 -- Future migrations can recreate the table with updated constraints if needed
 
+-- Drop the unique constraint on (user_id) WHERE status='active'
+-- This constraint prevented multiple active weeks per user, but Epic 6 allows multiple active weeks
+DROP INDEX IF EXISTS idx_meal_plans_unique_active;
+
 ALTER TABLE meal_plans ADD COLUMN end_date TEXT NOT NULL DEFAULT '';
 ALTER TABLE meal_plans ADD COLUMN is_locked BOOLEAN DEFAULT FALSE;
 ALTER TABLE meal_plans ADD COLUMN generation_batch_id TEXT;
+ALTER TABLE meal_plans ADD COLUMN rotation_state_json TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_meal_plans_user_batch ON meal_plans(user_id, generation_batch_id);
 CREATE INDEX IF NOT EXISTS idx_meal_plans_status ON meal_plans(user_id, status);
