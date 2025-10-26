@@ -1,6 +1,6 @@
 # Story 7.1: Implement Dietary Restriction Filtering
 
-Status: Approved
+Status: Done
 
 ## Story
 
