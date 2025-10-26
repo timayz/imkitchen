@@ -1,7 +1,8 @@
 # after create-story/story-context
+status Approved then
 git checkout new, conventional commits, push.
 create PR: 
-  - title: start with "feat: impl",story title,no story num, in lower case 
+  - title: story title,conventional commits,no story num, in lower case 
   - body: 
     - include tasks (task_title) checklist without subtasks (remove # from AC num) 
     - closed issue id (use story title to search)

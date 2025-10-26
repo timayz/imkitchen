@@ -275,3 +275,100 @@ impl RecipeAggregate {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Test RecipeAggregate Default implementation
+    #[test]
+    fn test_recipe_aggregate_default() {
+        let aggregate = RecipeAggregate::default();
+
+        assert_eq!(aggregate.recipe_id, "");
+        assert_eq!(aggregate.user_id, "");
+        assert_eq!(aggregate.title, "");
+        assert_eq!(aggregate.recipe_type, "");
+        assert_eq!(aggregate.ingredients, vec![]);
+        assert_eq!(aggregate.instructions, vec![]);
+        assert_eq!(aggregate.prep_time_min, None);
+        assert_eq!(aggregate.cook_time_min, None);
+        assert_eq!(aggregate.advance_prep_hours, None);
+        assert_eq!(aggregate.serving_size, None);
+        assert!(!aggregate.is_favorite);
+        assert!(!aggregate.is_deleted);
+        assert!(!aggregate.is_shared);
+        assert!(!aggregate.accepts_accompaniment);
+        assert_eq!(aggregate.preferred_accompaniments, vec![]);
+        assert_eq!(aggregate.accompaniment_category, None);
+        assert_eq!(aggregate.original_recipe_id, None);
+        assert_eq!(aggregate.original_author, None);
+    }
+
+    /// Test RecipeAggregate Clone implementation
+    #[test]
+    fn test_recipe_aggregate_clone() {
+        let original = RecipeAggregate {
+            recipe_id: "recipe-1".to_string(),
+            user_id: "user-123".to_string(),
+            title: "Test Recipe".to_string(),
+            recipe_type: "main_course".to_string(),
+            accepts_accompaniment: true,
+            preferred_accompaniments: vec![AccompanimentCategory::Rice],
+            ..Default::default()
+        };
+
+        let cloned = original.clone();
+
+        assert_eq!(original.recipe_id, cloned.recipe_id);
+        assert_eq!(original.title, cloned.title);
+        assert_eq!(original.accepts_accompaniment, cloned.accepts_accompaniment);
+        assert_eq!(
+            original.preferred_accompaniments,
+            cloned.preferred_accompaniments
+        );
+    }
+
+    /// Test RecipeAggregate serialization roundtrip (bincode)
+    #[test]
+    fn test_recipe_aggregate_bincode_serialization() {
+        let aggregate = RecipeAggregate {
+            recipe_id: "recipe-1".to_string(),
+            user_id: "user-123".to_string(),
+            title: "Tikka Masala".to_string(),
+            recipe_type: "main_course".to_string(),
+            accepts_accompaniment: true,
+            preferred_accompaniments: vec![
+                AccompanimentCategory::Rice,
+                AccompanimentCategory::Bread,
+            ],
+            accompaniment_category: None,
+            is_favorite: true,
+            ..Default::default()
+        };
+
+        let encoded = bincode::encode_to_vec(&aggregate, bincode::config::standard()).unwrap();
+        let (decoded, _): (RecipeAggregate, _) =
+            bincode::decode_from_slice(&encoded, bincode::config::standard()).unwrap();
+
+        assert_eq!(aggregate.recipe_id, decoded.recipe_id);
+        assert_eq!(aggregate.title, decoded.title);
+        assert_eq!(
+            aggregate.accepts_accompaniment,
+            decoded.accepts_accompaniment
+        );
+        assert_eq!(
+            aggregate.preferred_accompaniments,
+            decoded.preferred_accompaniments
+        );
+        assert_eq!(aggregate.is_favorite, decoded.is_favorite);
+    }
+
+    // Note: Event handler tests are in integration tests (recipe_epic6_tests.rs)
+    // because evento::EventDetails cannot be easily constructed in unit tests.
+    // The existing integration tests provide comprehensive coverage of:
+    // - All event handlers (RecipeCreated, RecipeDeleted, RecipeFavorited, etc.)
+    // - Epic 6 fields (accepts_accompaniment, preferred_accompaniments, cuisine)
+    // - Backwards compatibility (old events without Epic 6 fields)
+    // - Edge cases (empty vectors, None values)
+}

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::types::{AccompanimentCategory, Cuisine, DietaryTag};
 
 /// Ingredient structure for recipes
-#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Encode, Decode)]
 pub struct Ingredient {
     pub name: String,
     pub quantity: f32,
@@ -13,7 +13,7 @@ pub struct Ingredient {
 }
 
 /// Instruction step for recipes
-#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Encode, Decode)]
 pub struct InstructionStep {
     pub step_number: u32,
     pub instruction_text: String,
@@ -205,4 +205,269 @@ pub struct RecipeAccompanimentSettingsUpdated {
     pub accepts_accompaniment: bool, // Whether this recipe accepts an accompaniment
     pub preferred_accompaniments: Vec<AccompanimentCategory>, // Preferred side categories
     pub updated_at: String,          // RFC3339 formatted timestamp
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Test RecipeCreated bincode serialization round-trip
+    #[test]
+    fn test_recipe_created_bincode_roundtrip() {
+        let event = RecipeCreated {
+            user_id: "user-123".to_string(),
+            title: "Tikka Masala".to_string(),
+            recipe_type: "main_course".to_string(),
+            ingredients: vec![Ingredient {
+                name: "Chicken".to_string(),
+                quantity: 500.0,
+                unit: "g".to_string(),
+            }],
+            instructions: vec![InstructionStep {
+                step_number: 1,
+                instruction_text: "Cook chicken".to_string(),
+                timer_minutes: Some(20),
+            }],
+            prep_time_min: Some(30),
+            cook_time_min: Some(45),
+            advance_prep_hours: Some(4),
+            serving_size: Some(4),
+            created_at: "2025-01-01T00:00:00Z".to_string(),
+            accepts_accompaniment: Some(true),
+            preferred_accompaniments: Some(vec![AccompanimentCategory::Rice]),
+            accompaniment_category: None,
+            cuisine: Some(Cuisine::Indian),
+            dietary_tags: Some(vec![DietaryTag::GlutenFree]),
+        };
+
+        let encoded = bincode::encode_to_vec(&event, bincode::config::standard()).unwrap();
+        let (decoded, _): (RecipeCreated, _) =
+            bincode::decode_from_slice(&encoded, bincode::config::standard()).unwrap();
+
+        assert_eq!(event.user_id, decoded.user_id);
+        assert_eq!(event.title, decoded.title);
+        assert_eq!(event.recipe_type, decoded.recipe_type);
+        assert_eq!(event.accepts_accompaniment, decoded.accepts_accompaniment);
+        assert_eq!(
+            event.preferred_accompaniments,
+            decoded.preferred_accompaniments
+        );
+        assert_eq!(event.cuisine, decoded.cuisine);
+        assert_eq!(event.dietary_tags, decoded.dietary_tags);
+    }
+
+    /// Test RecipeDeleted bincode serialization
+    #[test]
+    fn test_recipe_deleted_bincode_roundtrip() {
+        let event = RecipeDeleted {
+            user_id: "user-123".to_string(),
+            deleted_at: "2025-01-01T00:00:00Z".to_string(),
+        };
+
+        let encoded = bincode::encode_to_vec(&event, bincode::config::standard()).unwrap();
+        let (decoded, _): (RecipeDeleted, _) =
+            bincode::decode_from_slice(&encoded, bincode::config::standard()).unwrap();
+
+        assert_eq!(event.user_id, decoded.user_id);
+        assert_eq!(event.deleted_at, decoded.deleted_at);
+    }
+
+    /// Test RecipeFavorited bincode serialization
+    #[test]
+    fn test_recipe_favorited_bincode_roundtrip() {
+        let event = RecipeFavorited {
+            user_id: "user-123".to_string(),
+            favorited: true,
+            toggled_at: "2025-01-01T00:00:00Z".to_string(),
+        };
+
+        let encoded = bincode::encode_to_vec(&event, bincode::config::standard()).unwrap();
+        let (decoded, _): (RecipeFavorited, _) =
+            bincode::decode_from_slice(&encoded, bincode::config::standard()).unwrap();
+
+        assert_eq!(event.user_id, decoded.user_id);
+        assert_eq!(event.favorited, decoded.favorited);
+    }
+
+    /// Test RecipeUpdated bincode serialization
+    #[test]
+    fn test_recipe_updated_bincode_roundtrip() {
+        let event = RecipeUpdated {
+            title: Some("Updated Title".to_string()),
+            recipe_type: Some("dessert".to_string()),
+            ingredients: None,
+            instructions: None,
+            prep_time_min: Some(Some(25)),
+            cook_time_min: None,
+            advance_prep_hours: None,
+            serving_size: Some(None),
+            updated_at: "2025-01-01T00:00:00Z".to_string(),
+        };
+
+        let encoded = bincode::encode_to_vec(&event, bincode::config::standard()).unwrap();
+        let (decoded, _): (RecipeUpdated, _) =
+            bincode::decode_from_slice(&encoded, bincode::config::standard()).unwrap();
+
+        assert_eq!(event.title, decoded.title);
+        assert_eq!(event.recipe_type, decoded.recipe_type);
+        assert_eq!(event.prep_time_min, decoded.prep_time_min);
+    }
+
+    /// Test RecipeTagged bincode serialization
+    #[test]
+    fn test_recipe_tagged_bincode_roundtrip() {
+        let event = RecipeTagged {
+            complexity: Some("moderate".to_string()),
+            cuisine: Some("Mexican".to_string()),
+            dietary_tags: vec!["vegetarian".to_string()],
+            manual_override: false,
+            tagged_at: "2025-01-01T00:00:00Z".to_string(),
+        };
+
+        let encoded = bincode::encode_to_vec(&event, bincode::config::standard()).unwrap();
+        let (decoded, _): (RecipeTagged, _) =
+            bincode::decode_from_slice(&encoded, bincode::config::standard()).unwrap();
+
+        assert_eq!(event.complexity, decoded.complexity);
+        assert_eq!(event.cuisine, decoded.cuisine);
+        assert_eq!(event.dietary_tags, decoded.dietary_tags);
+    }
+
+    /// Test RecipeShared bincode serialization
+    #[test]
+    fn test_recipe_shared_bincode_roundtrip() {
+        let event = RecipeShared {
+            user_id: "user-123".to_string(),
+            shared: true,
+            toggled_at: "2025-01-01T00:00:00Z".to_string(),
+        };
+
+        let encoded = bincode::encode_to_vec(&event, bincode::config::standard()).unwrap();
+        let (decoded, _): (RecipeShared, _) =
+            bincode::decode_from_slice(&encoded, bincode::config::standard()).unwrap();
+
+        assert_eq!(event.user_id, decoded.user_id);
+        assert_eq!(event.shared, decoded.shared);
+    }
+
+    /// Test RecipeRated bincode serialization
+    #[test]
+    fn test_recipe_rated_bincode_roundtrip() {
+        let event = RecipeRated {
+            user_id: "user-123".to_string(),
+            stars: 5,
+            review_text: Some("Excellent!".to_string()),
+            rated_at: "2025-01-01T00:00:00Z".to_string(),
+        };
+
+        let encoded = bincode::encode_to_vec(&event, bincode::config::standard()).unwrap();
+        let (decoded, _): (RecipeRated, _) =
+            bincode::decode_from_slice(&encoded, bincode::config::standard()).unwrap();
+
+        assert_eq!(event.user_id, decoded.user_id);
+        assert_eq!(event.stars, decoded.stars);
+        assert_eq!(event.review_text, decoded.review_text);
+    }
+
+    /// Test RecipeCopied bincode serialization
+    #[test]
+    fn test_recipe_copied_bincode_roundtrip() {
+        let event = RecipeCopied {
+            original_recipe_id: "recipe-orig".to_string(),
+            original_author: "user-orig".to_string(),
+            copying_user_id: "user-copy".to_string(),
+            copied_at: "2025-01-01T00:00:00Z".to_string(),
+        };
+
+        let encoded = bincode::encode_to_vec(&event, bincode::config::standard()).unwrap();
+        let (decoded, _): (RecipeCopied, _) =
+            bincode::decode_from_slice(&encoded, bincode::config::standard()).unwrap();
+
+        assert_eq!(event.original_recipe_id, decoded.original_recipe_id);
+        assert_eq!(event.original_author, decoded.original_author);
+    }
+
+    /// Test RecipeAccompanimentSettingsUpdated bincode serialization (Epic 6)
+    #[test]
+    fn test_recipe_accompaniment_settings_updated_bincode_roundtrip() {
+        let event = RecipeAccompanimentSettingsUpdated {
+            recipe_id: "recipe-123".to_string(),
+            user_id: "user-456".to_string(),
+            accepts_accompaniment: true,
+            preferred_accompaniments: vec![
+                AccompanimentCategory::Pasta,
+                AccompanimentCategory::Salad,
+            ],
+            updated_at: "2025-01-01T00:00:00Z".to_string(),
+        };
+
+        let encoded = bincode::encode_to_vec(&event, bincode::config::standard()).unwrap();
+        let (decoded, _): (RecipeAccompanimentSettingsUpdated, _) =
+            bincode::decode_from_slice(&encoded, bincode::config::standard()).unwrap();
+
+        assert_eq!(event.recipe_id, decoded.recipe_id);
+        assert_eq!(event.accepts_accompaniment, decoded.accepts_accompaniment);
+        assert_eq!(
+            event.preferred_accompaniments,
+            decoded.preferred_accompaniments
+        );
+    }
+
+    /// Test empty preferred_accompaniments edge case
+    #[test]
+    fn test_recipe_created_empty_preferred_accompaniments() {
+        let event = RecipeCreated {
+            user_id: "user-123".to_string(),
+            title: "Simple Pasta".to_string(),
+            recipe_type: "main_course".to_string(),
+            ingredients: vec![],
+            instructions: vec![],
+            prep_time_min: None,
+            cook_time_min: None,
+            advance_prep_hours: None,
+            serving_size: None,
+            created_at: "2025-01-01T00:00:00Z".to_string(),
+            accepts_accompaniment: Some(false),
+            preferred_accompaniments: Some(vec![]), // Empty vector
+            accompaniment_category: None,
+            cuisine: None,
+            dietary_tags: Some(vec![]),
+        };
+
+        let encoded = bincode::encode_to_vec(&event, bincode::config::standard()).unwrap();
+        let (decoded, _): (RecipeCreated, _) =
+            bincode::decode_from_slice(&encoded, bincode::config::standard()).unwrap();
+
+        assert_eq!(decoded.preferred_accompaniments, Some(vec![]));
+        assert_eq!(decoded.dietary_tags, Some(vec![]));
+    }
+
+    /// Test None values for Option<Cuisine> edge case
+    #[test]
+    fn test_recipe_created_none_cuisine() {
+        let event = RecipeCreated {
+            user_id: "user-123".to_string(),
+            title: "Generic Recipe".to_string(),
+            recipe_type: "dessert".to_string(),
+            ingredients: vec![],
+            instructions: vec![],
+            prep_time_min: None,
+            cook_time_min: None,
+            advance_prep_hours: None,
+            serving_size: None,
+            created_at: "2025-01-01T00:00:00Z".to_string(),
+            accepts_accompaniment: None,
+            preferred_accompaniments: None,
+            accompaniment_category: None,
+            cuisine: None, // None cuisine
+            dietary_tags: None,
+        };
+
+        let encoded = bincode::encode_to_vec(&event, bincode::config::standard()).unwrap();
+        let (decoded, _): (RecipeCreated, _) =
+            bincode::decode_from_slice(&encoded, bincode::config::standard()).unwrap();
+
+        assert_eq!(decoded.cuisine, None);
+        assert_eq!(decoded.dietary_tags, None);
+    }
 }
