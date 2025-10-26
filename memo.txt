@@ -7,7 +7,7 @@ create PR:
     - closed issue id (use story title to search)
 
 # after develop/review
-[make check] must fix and not ignore then git conventional commits, push
+run [make check] and fix output errors, must succeed and not ignore test then git conventional commits, push
 
 git new branch,conventional commits,push,create PR witch closed github issue 141 on merged
 
