@@ -23,6 +23,9 @@ fn create_test_recipe(
         recipe_type: "main_course".to_string(),
         dietary_tags: Vec::new(),
         cuisine: recipe::Cuisine::Italian,
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
     }
 }
 

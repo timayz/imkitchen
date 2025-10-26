@@ -23,6 +23,7 @@ use user::types::DietaryRestriction;
 /// use meal_planning::dietary_filter::filter_by_dietary_restrictions;
 /// use meal_planning::algorithm::RecipeForPlanning;
 /// use user::types::DietaryRestriction;
+/// use recipe::Cuisine;
 ///
 /// let recipes = vec![
 ///     RecipeForPlanning {
@@ -36,6 +37,10 @@ use user::types::DietaryRestriction;
 ///         advance_prep_hours: None,
 ///         complexity: Some("simple".to_string()),
 ///         dietary_tags: vec!["vegan".to_string(), "gluten_free".to_string()],
+///         cuisine: Cuisine::Italian,
+///         accepts_accompaniment: false,
+///         preferred_accompaniments: vec![],
+///         accompaniment_category: None,
 ///     },
 /// ];
 ///
@@ -127,6 +132,9 @@ mod tests {
             complexity: Some("simple".to_string()),
             dietary_tags: dietary_tags.iter().map(|s| s.to_string()).collect(),
             cuisine: recipe::Cuisine::Italian,
+            accepts_accompaniment: false,
+            preferred_accompaniments: vec![],
+            accompaniment_category: None,
         }
     }
 

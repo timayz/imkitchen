@@ -122,6 +122,9 @@ mod tests {
             complexity: Some("simple".to_string()),
             dietary_tags: Vec::new(),
             cuisine: recipe::Cuisine::Italian,
+            accepts_accompaniment: false,
+            preferred_accompaniments: vec![],
+            accompaniment_category: None,
         }
     }
 

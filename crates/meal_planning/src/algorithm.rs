@@ -2,7 +2,7 @@ use crate::error::MealPlanningError;
 use crate::events::MealAssignment;
 use crate::rotation::{RotationState, RotationSystem};
 use chrono::{Datelike, NaiveDate, Weekday};
-use recipe::Cuisine;
+use recipe::{AccompanimentCategory, Cuisine};
 use serde::{Deserialize, Serialize};
 
 /// Recipe data needed for meal planning algorithm
@@ -19,6 +19,14 @@ pub struct RecipeForPlanning {
     pub complexity: Option<String>, // "simple", "moderate", "complex" (if pre-calculated)
     pub dietary_tags: Vec<String>, // Tags like "vegetarian", "vegan", "gluten-free", "dairy-free", etc.
     pub cuisine: Cuisine,          // Cuisine type for variety scoring (Story 7.2 AC-5)
+
+    // Story 7.3: Accompaniment fields
+    /// Does this main course accept an accompaniment side dish? (for main courses only)
+    pub accepts_accompaniment: bool,
+    /// Preferred accompaniment categories (empty = any category acceptable)
+    pub preferred_accompaniments: Vec<AccompanimentCategory>,
+    /// Category if this recipe IS an accompaniment (None for main courses, appetizers, desserts)
+    pub accompaniment_category: Option<AccompanimentCategory>,
 }
 
 /// User profile constraints for meal planning
@@ -648,6 +656,111 @@ pub fn select_main_course_with_preferences(
         .map(|(_, recipe)| (*recipe).clone())
 }
 
+/// Story 7.3: Select a random compatible accompaniment for a main course
+///
+/// Pairs main courses with appropriate side dishes based on:
+/// - Whether the main course accepts an accompaniment
+/// - Preferred accompaniment categories (if specified)
+/// - Random selection from compatible options
+///
+/// # Arguments
+/// * `main_course` - The main course recipe
+/// * `available_accompaniments` - List of available accompaniment recipes
+///
+/// # Returns
+/// * `Some(Recipe)` - A randomly selected compatible accompaniment
+/// * `None` - If main doesn't accept accompaniment or no compatible options available
+///
+/// # Acceptance Criteria
+/// - AC-1: Function implemented with correct signature
+/// - AC-2: Returns None if main_course.accepts_accompaniment == false
+/// - AC-3: Filters by preferred_accompaniments if specified
+/// - AC-4, AC-8: Uses rand::thread_rng for random selection
+/// - AC-5: Returns None if no compatible accompaniments
+/// - AC-6: Allows repetition (not tracked in rotation)
+///
+/// # Example
+/// ```rust,no_run
+/// use meal_planning::algorithm::{RecipeForPlanning, select_accompaniment};
+/// use recipe::{AccompanimentCategory, Cuisine};
+///
+/// let main = RecipeForPlanning {
+///     id: "main1".to_string(),
+///     title: "Chicken Tikka Masala".to_string(),
+///     recipe_type: "main_course".to_string(),
+///     ingredients_count: 10,
+///     instructions_count: 5,
+///     prep_time_min: Some(20),
+///     cook_time_min: Some(30),
+///     advance_prep_hours: Some(4),
+///     complexity: Some("moderate".to_string()),
+///     dietary_tags: vec![],
+///     cuisine: Cuisine::Indian,
+///     accepts_accompaniment: true,
+///     preferred_accompaniments: vec![AccompanimentCategory::Rice],
+///     accompaniment_category: None,
+/// };
+///
+/// let rice = RecipeForPlanning {
+///     id: "rice1".to_string(),
+///     title: "Basmati Rice".to_string(),
+///     recipe_type: "main_course".to_string(),
+///     ingredients_count: 2,
+///     instructions_count: 2,
+///     prep_time_min: Some(5),
+///     cook_time_min: Some(15),
+///     advance_prep_hours: None,
+///     complexity: Some("simple".to_string()),
+///     dietary_tags: vec![],
+///     cuisine: Cuisine::Indian,
+///     accepts_accompaniment: false,
+///     preferred_accompaniments: vec![],
+///     accompaniment_category: Some(AccompanimentCategory::Rice),
+/// };
+///
+/// let accompaniments = vec![rice];
+/// let selected = select_accompaniment(&main, &accompaniments);
+/// assert!(selected.is_some());
+/// ```
+pub fn select_accompaniment(
+    main_course: &RecipeForPlanning,
+    available_accompaniments: &[RecipeForPlanning],
+) -> Option<RecipeForPlanning> {
+    use rand::prelude::IndexedRandom;
+
+    // AC-2: If main course doesn't accept accompaniment, return None immediately
+    if !main_course.accepts_accompaniment {
+        return None;
+    }
+
+    // AC-3: Filter by preferred_accompaniments if specified
+    let filtered: Vec<&RecipeForPlanning> = if main_course.preferred_accompaniments.is_empty() {
+        // Empty preferences = any category acceptable
+        available_accompaniments.iter().collect()
+    } else {
+        // Filter to only accompaniments in preferred categories
+        available_accompaniments
+            .iter()
+            .filter(|acc| {
+                if let Some(category) = &acc.accompaniment_category {
+                    main_course.preferred_accompaniments.contains(category)
+                } else {
+                    false // Accompaniment must have a category to match preferences
+                }
+            })
+            .collect()
+    };
+
+    // AC-5: If no compatible accompaniments, return None
+    if filtered.is_empty() {
+        return None;
+    }
+
+    // AC-4, AC-8: Random selection using rand::rng (rand 0.9)
+    let mut rng = rand::rng();
+    filtered.choose(&mut rng).map(|recipe| (*recipe).clone()) // AC-6: Clone for ownership (allows repetition)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -701,6 +814,10 @@ mod tests {
             complexity: None,
             dietary_tags: Vec::new(), // Tests can override if needed
             cuisine,
+            // Story 7.3: Default accompaniment values for existing tests
+            accepts_accompaniment: false,
+            preferred_accompaniments: vec![],
+            accompaniment_category: None,
         }
     }
 
@@ -778,6 +895,9 @@ mod tests {
             complexity: None,
             dietary_tags: Vec::new(),
             cuisine: Cuisine::Italian,
+            accepts_accompaniment: false,
+            preferred_accompaniments: vec![],
+            accompaniment_category: None,
         };
 
         assert!(RecipeComplexityCalculator::fits_weeknight(
@@ -1119,6 +1239,9 @@ mod tests {
             complexity: None,
             dietary_tags: Vec::new(),
             cuisine,
+            accepts_accompaniment: false,
+            preferred_accompaniments: vec![],
+            accompaniment_category: None,
         }
     }
 
@@ -1523,5 +1646,270 @@ mod tests {
         // - Consecutive complex: Simple (not filtered) ✓
         // slow_complex fails: time (50>30), skill (Complex), consecutive (Complex yesterday)
         assert_eq!(selected.id, "fast_simple");
+    }
+
+    // Story 7.3: Accompaniment Selection Tests
+
+    /// Helper to create test recipe with accompaniment fields
+    fn create_test_recipe_with_accompaniment(
+        id: &str,
+        accepts: bool,
+        preferred: Vec<AccompanimentCategory>,
+        category: Option<AccompanimentCategory>,
+    ) -> RecipeForPlanning {
+        RecipeForPlanning {
+            id: id.to_string(),
+            title: format!("Test Recipe {}", id),
+            recipe_type: "main_course".to_string(),
+            ingredients_count: 5,
+            instructions_count: 3,
+            prep_time_min: Some(10),
+            cook_time_min: Some(20),
+            advance_prep_hours: None,
+            complexity: Some("simple".to_string()),
+            dietary_tags: vec![],
+            cuisine: Cuisine::Italian,
+            accepts_accompaniment: accepts,
+            preferred_accompaniments: preferred,
+            accompaniment_category: category,
+        }
+    }
+
+    #[test]
+    fn test_select_accompaniment_main_does_not_accept_returns_none() {
+        // AC-2: Returns None if main_course.accepts_accompaniment == false
+        let main_course = create_test_recipe_with_accompaniment("main1", false, vec![], None);
+        let accompaniments = vec![create_test_recipe_with_accompaniment(
+            "rice",
+            false,
+            vec![],
+            Some(AccompanimentCategory::Rice),
+        )];
+
+        let result = select_accompaniment(&main_course, &accompaniments);
+
+        assert!(
+            result.is_none(),
+            "Expected None when main course doesn't accept accompaniment"
+        );
+    }
+
+    #[test]
+    fn test_select_accompaniment_filters_by_preferred_categories() {
+        // AC-3: Filters by preferred_accompaniments if specified
+        let main_course = create_test_recipe_with_accompaniment(
+            "main2",
+            true,
+            vec![AccompanimentCategory::Rice, AccompanimentCategory::Pasta],
+            None,
+        );
+
+        let accompaniments = vec![
+            create_test_recipe_with_accompaniment(
+                "rice1",
+                false,
+                vec![],
+                Some(AccompanimentCategory::Rice),
+            ),
+            create_test_recipe_with_accompaniment(
+                "pasta1",
+                false,
+                vec![],
+                Some(AccompanimentCategory::Pasta),
+            ),
+            create_test_recipe_with_accompaniment(
+                "salad1",
+                false,
+                vec![],
+                Some(AccompanimentCategory::Salad),
+            ),
+        ];
+
+        // Test multiple times to ensure filtering works
+        for _iteration in 0..10 {
+            let result = select_accompaniment(&main_course, &accompaniments);
+            assert!(result.is_some(), "Should select an accompaniment");
+
+            let selected = result.unwrap();
+            // Should only select rice or pasta, never salad
+            assert!(
+                selected.id == "rice1" || selected.id == "pasta1",
+                "Selected unexpected accompaniment: {}, expected rice1 or pasta1",
+                selected.id
+            );
+        }
+    }
+
+    #[test]
+    fn test_select_accompaniment_random_selection() {
+        // AC-4, AC-8: Selects random from filtered list using rand::rng
+        let main_course = create_test_recipe_with_accompaniment("main3", true, vec![], None);
+        let accompaniments = vec![
+            create_test_recipe_with_accompaniment(
+                "acc1",
+                false,
+                vec![],
+                Some(AccompanimentCategory::Rice),
+            ),
+            create_test_recipe_with_accompaniment(
+                "acc2",
+                false,
+                vec![],
+                Some(AccompanimentCategory::Pasta),
+            ),
+            create_test_recipe_with_accompaniment(
+                "acc3",
+                false,
+                vec![],
+                Some(AccompanimentCategory::Salad),
+            ),
+        ];
+
+        // Run multiple times to check for variety (proves randomness)
+        let mut selected_ids = std::collections::HashSet::new();
+        for _ in 0..20 {
+            let result = select_accompaniment(&main_course, &accompaniments);
+            assert!(result.is_some(), "Should select an accompaniment");
+            selected_ids.insert(result.unwrap().id.clone());
+        }
+
+        // With 20 random selections from 3 options, should see at least 2 different results
+        assert!(
+            selected_ids.len() >= 2,
+            "Random selection should produce variety, got only: {:?}",
+            selected_ids
+        );
+    }
+
+    #[test]
+    fn test_select_accompaniment_empty_preferences_uses_all() {
+        // AC-3: Empty preferred_accompaniments uses all available
+        let main_course = create_test_recipe_with_accompaniment("main4", true, vec![], None);
+        let accompaniments = vec![
+            create_test_recipe_with_accompaniment(
+                "rice",
+                false,
+                vec![],
+                Some(AccompanimentCategory::Rice),
+            ),
+            create_test_recipe_with_accompaniment(
+                "pasta",
+                false,
+                vec![],
+                Some(AccompanimentCategory::Pasta),
+            ),
+            create_test_recipe_with_accompaniment(
+                "salad",
+                false,
+                vec![],
+                Some(AccompanimentCategory::Salad),
+            ),
+            create_test_recipe_with_accompaniment(
+                "fries",
+                false,
+                vec![],
+                Some(AccompanimentCategory::Fries),
+            ),
+            create_test_recipe_with_accompaniment(
+                "bread",
+                false,
+                vec![],
+                Some(AccompanimentCategory::Bread),
+            ),
+        ];
+
+        // Run multiple times to verify all can be selected
+        let mut selected_ids = std::collections::HashSet::new();
+        for _ in 0..50 {
+            let result = select_accompaniment(&main_course, &accompaniments);
+            assert!(result.is_some(), "Should select an accompaniment");
+            selected_ids.insert(result.unwrap().id.clone());
+        }
+
+        // With empty preferences, all 5 should be eligible (statistical check)
+        assert!(
+            selected_ids.len() >= 4,
+            "Empty preferences should allow all accompaniments, got: {:?}",
+            selected_ids
+        );
+    }
+
+    #[test]
+    fn test_select_accompaniment_no_compatible_returns_none() {
+        // AC-5: Returns None if no compatible accompaniments
+        let main_course = create_test_recipe_with_accompaniment(
+            "main5",
+            true,
+            vec![AccompanimentCategory::Rice],
+            None,
+        );
+
+        let accompaniments = vec![
+            create_test_recipe_with_accompaniment(
+                "pasta1",
+                false,
+                vec![],
+                Some(AccompanimentCategory::Pasta),
+            ),
+            create_test_recipe_with_accompaniment(
+                "salad1",
+                false,
+                vec![],
+                Some(AccompanimentCategory::Salad),
+            ),
+        ];
+
+        let result = select_accompaniment(&main_course, &accompaniments);
+
+        assert!(
+            result.is_none(),
+            "Expected None when no compatible accompaniments"
+        );
+    }
+
+    #[test]
+    fn test_select_accompaniment_allows_repetition() {
+        // AC-6: Allows repetition (not tracked in rotation)
+        let main_course = create_test_recipe_with_accompaniment(
+            "main6",
+            true,
+            vec![AccompanimentCategory::Rice],
+            None,
+        );
+
+        let accompaniments = vec![create_test_recipe_with_accompaniment(
+            "rice1",
+            false,
+            vec![],
+            Some(AccompanimentCategory::Rice),
+        )];
+
+        // Call twice with same inputs
+        let result1 = select_accompaniment(&main_course, &accompaniments);
+        let result2 = select_accompaniment(&main_course, &accompaniments);
+
+        assert!(result1.is_some(), "First call should return Some");
+        assert!(result2.is_some(), "Second call should return Some");
+
+        // Both should return the same recipe (since only one option)
+        assert_eq!(
+            result1.as_ref().unwrap().id,
+            result2.as_ref().unwrap().id,
+            "Repetition should be allowed - both calls should return same recipe"
+        );
+    }
+
+    #[test]
+    fn test_select_accompaniment_empty_list_returns_none() {
+        // AC-5: Edge case - empty accompaniments list
+        let main_course = create_test_recipe_with_accompaniment("main7", true, vec![], None);
+        let accompaniments: Vec<RecipeForPlanning> = vec![];
+
+        let result = select_accompaniment(&main_course, &accompaniments);
+
+        assert!(
+            result.is_none(),
+            "Expected None when accompaniments list is empty"
+        );
     }
 }

@@ -439,6 +439,9 @@ pub async fn post_generate_meal_plan(
                 complexity: r.complexity,
                 dietary_tags,
                 cuisine,
+                accepts_accompaniment: false, // Story 7.3: Default for now, will be set from DB later
+                preferred_accompaniments: vec![],
+                accompaniment_category: None,
             }
         })
         .collect();
@@ -993,6 +996,9 @@ pub async fn post_regenerate_meal_plan(
                 complexity: r.complexity,
                 dietary_tags,
                 cuisine,
+                accepts_accompaniment: false, // Story 7.3: Default for now, will be set from DB later
+                preferred_accompaniments: vec![],
+                accompaniment_category: None,
             }
         })
         .collect();

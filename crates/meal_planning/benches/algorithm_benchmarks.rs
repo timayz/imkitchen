@@ -35,6 +35,9 @@ fn create_bench_recipe(
         complexity: None,
         dietary_tags: Vec::new(),
         cuisine,
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
     }
 }
 
