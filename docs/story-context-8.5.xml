@@ -1,0 +1,258 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/8.5" v="1.0">
+  <metadata>
+    <epicId>8</epicId>
+    <storyId>8.5</storyId>
+    <title>Create User Preferences Update Route</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-26</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-8.5.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>backend developer</asA>
+    <iWant>to create a PUT route that updates user meal planning preferences</iWant>
+    <soThat>authenticated users can customize meal plan generation constraints via HTTP API</soThat>
+    <tasks>
+      - Define route handler function signature with JSON payload extractor
+      - Define MealPlanningPreferences request struct with validation (validator crate)
+      - Implement input validation (max_prep_time &gt; 0, cuisine_variety_weight 0.0-1.0)
+      - Emit UserMealPlanningPreferencesUpdated evento event
+      - Build JSON response with updated preferences and informational message
+      - Implement error handling for ValidationFailed (400) with field-specific error messages
+      - Add structured logging and tracing
+      - Write integration tests for successful update and validation failures
+      - Write boundary value tests (min/max valid values)
+      - Write performance test (P95 &lt;100ms)
+      - Register route in Axum router
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    1. Route `PUT /profile/meal-planning-preferences` created
+    2. Handler validates input (`max_prep_time_weeknight` &gt; 0, `cuisine_variety_weight` 0.0-1.0)
+    3. Handler commits `UserMealPlanningPreferencesUpdated` event to evento
+    4. Handler returns updated preferences in response
+    5. Returns 400 if validation fails with field-specific error messages
+    6. Integration test: PUT updates preferences successfully
+    7. Integration test: PUT with invalid data returns 400 with validation errors
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      - Technical Specification: /home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-8.md
+        * Section: APIs and Interfaces - PUT /profile/meal-planning-preferences
+        * Section: Data Models and Contracts - User Preferences Update Request/Response
+        * Section: Non-Functional Requirements - Security (input validation rules)
+        * Section: Dependencies - validator crate 0.18+
+
+      - UX Specification: /home/snapiz/projects/github/timayz/imkitchen/docs/ux-specification.md
+        * Section: User Interface Requirements - Profile &amp; Settings
+
+      - AI Frontend Prompt: /home/snapiz/projects/github/timayz/imkitchen/docs/ai-frontend-prompt.md
+        * Tailwind 4.1+ form validation UI patterns
+    </docs>
+
+    <code>
+      - User Aggregate: /home/snapiz/projects/github/timayz/imkitchen/crates/user/src/aggregate.rs
+        * User domain model
+
+      - User Events: /home/snapiz/projects/github/timayz/imkitchen/crates/user/src/events.rs
+        * UserMealPlanningPreferencesUpdated event (may need to add)
+
+      - User Read Model: /home/snapiz/projects/github/timayz/imkitchen/crates/user/src/read_model.rs
+        * Projection handler for UserMealPlanningPreferencesUpdated event
+        * UPDATE users table with new preferences
+
+      - Database Schema: migrations/
+        * users table: max_prep_time_weeknight, max_prep_time_weekend, avoid_consecutive_complex, cuisine_variety_weight columns
+    </code>
+
+    <dependencies>
+      - axum 0.7+ (HTTP routing, Json extractor)
+      - sqlx 0.8+ (database queries)
+      - evento 1.5+ (event emission)
+      - serde, serde_json (JSON deserialization)
+      - validator 0.18+ (declarative input validation)
+      - tracing 0.1+ (structured logging)
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - Validation Rules:
+      * max_prep_time_weeknight: Must be &gt; 0 (no zero or negative)
+      * max_prep_time_weekend: Must be &gt; 0 (no zero or negative)
+      * avoid_consecutive_complex: Boolean (true/false, no validation needed)
+      * cuisine_variety_weight: Must be 0.0 &lt;= value &lt;= 1.0 (inclusive range)
+    - Rust Validator Crate: Use #[validate] attributes for declarative validation
+    - Error Messages: User-friendly, field-specific, actionable (e.g., "Must be greater than 0")
+    - Immediate Effect: Preferences apply to NEXT meal plan generation, not retroactive
+    - Event-Sourced CQRS: Route emits event, projection updates users table asynchronously
+    - Performance Target: P95 &lt;100ms (simple UPDATE query)
+  </constraints>
+
+  <interfaces>
+    Route Signature:
+    ```rust
+    #[put("/profile/meal-planning-preferences")]
+    async fn update_meal_planning_preferences(
+        Extension(user_id): Extension&lt;UserId&gt;,
+        Json(payload): Json&lt;MealPlanningPreferences&gt;,
+        Extension(db): Extension&lt;DatabasePool&gt;,
+        Extension(executor): Extension&lt;EventoExecutor&gt;,
+    ) -&gt; Result&lt;Json&lt;PreferencesResponse&gt;, ApiError&gt;
+    ```
+
+    Request Payload with Validation:
+    ```rust
+    use validator::{Validate, ValidationError};
+
+    #[derive(Debug, Deserialize, Validate)]
+    pub struct MealPlanningPreferences {
+        #[validate(range(min = 1, message = "Must be greater than 0"))]
+        pub max_prep_time_weeknight: i32,
+
+        #[validate(range(min = 1, message = "Must be greater than 0"))]
+        pub max_prep_time_weekend: i32,
+
+        pub avoid_consecutive_complex: bool,
+
+        #[validate(range(min = 0.0, max = 1.0, message = "Must be between 0.0 and 1.0"))]
+        pub cuisine_variety_weight: f64,
+    }
+    ```
+
+    Example Request:
+    ```json
+    {
+      "max_prep_time_weeknight": 30,
+      "max_prep_time_weekend": 90,
+      "avoid_consecutive_complex": true,
+      "cuisine_variety_weight": 0.7
+    }
+    ```
+
+    Response Schema:
+    ```json
+    {
+      "preferences": {
+        "max_prep_time_weeknight": 30,
+        "max_prep_time_weekend": 90,
+        "avoid_consecutive_complex": true,
+        "cuisine_variety_weight": 0.7
+      },
+      "message": "Meal planning preferences updated. Changes will apply to your next meal plan generation."
+    }
+    ```
+
+    Error Response:
+    ```json
+    {
+      "error": "ValidationFailed",
+      "message": "Invalid preferences provided.",
+      "details": {
+        "max_prep_time_weeknight": "Must be greater than 0",
+        "cuisine_variety_weight": "Must be between 0.0 and 1.0"
+      },
+      "status": 400
+    }
+    ```
+
+    Implementation Pattern:
+    ```rust
+    // 1. Validate payload
+    if let Err(errors) = payload.validate() {
+        let field_errors: HashMap&lt;String, String&gt; = errors
+            .field_errors()
+            .iter()
+            .map(|(field, errors)| (field.to_string(), errors[0].message.to_string()))
+            .collect();
+        return Err(ApiError::ValidationFailed(field_errors));
+    }
+
+    // 2. Emit event
+    let event = UserMealPlanningPreferencesUpdated {
+        user_id: user_id.to_string(),
+        max_prep_time_weeknight: payload.max_prep_time_weeknight,
+        max_prep_time_weekend: payload.max_prep_time_weekend,
+        avoid_consecutive_complex: payload.avoid_consecutive_complex,
+        cuisine_variety_weight: payload.cuisine_variety_weight,
+        updated_at: Utc::now(),
+    };
+    executor.emit(event).await?;
+
+    // 3. Return response
+    Ok(Json(PreferencesResponse {
+        preferences: payload,
+        message: "Meal planning preferences updated. Changes will apply to your next meal plan generation.".to_string(),
+    }))
+    ```
+
+    Evento Event Schema:
+    ```rust
+    #[derive(Debug, Clone, Serialize, Deserialize)]
+    pub struct UserMealPlanningPreferencesUpdated {
+        pub user_id: String,                    // UUID from JWT claims
+        pub max_prep_time_weeknight: i32,       // Minutes (e.g., 30)
+        pub max_prep_time_weekend: i32,         // Minutes (e.g., 90)
+        pub avoid_consecutive_complex: bool,    // True/false
+        pub cuisine_variety_weight: f64,        // 0.0-1.0 (e.g., 0.7)
+        pub updated_at: DateTime&lt;Utc&gt;,          // Timestamp
+    }
+    ```
+
+    Projection Handler:
+    ```rust
+    // In user read_model.rs
+    async fn handle_preferences_updated(
+        event: UserMealPlanningPreferencesUpdated,
+        pool: &amp;SqlitePool,
+    ) -&gt; Result&lt;(), Error&gt; {
+        sqlx::query(
+            r#"UPDATE users
+               SET max_prep_time_weeknight = ?,
+                   max_prep_time_weekend = ?,
+                   avoid_consecutive_complex = ?,
+                   cuisine_variety_weight = ?
+               WHERE id = ?"#
+        )
+        .bind(event.max_prep_time_weeknight)
+        .bind(event.max_prep_time_weekend)
+        .bind(event.avoid_consecutive_complex)
+        .bind(event.cuisine_variety_weight)
+        .bind(&event.user_id)
+        .execute(pool)
+        .await?;
+        Ok(())
+    }
+    ```
+  </interfaces>
+
+  <tests>
+    <standards>
+      - Coverage Target: 100% coverage for validation logic (all validation rules tested)
+      - Edge Cases: Boundary values (min/max), negative values, zero values, out-of-range floats
+      - Security Testing: Verify authentication required (401 without JWT)
+      - Validation Testing: Each validation rule has dedicated test case
+    </standards>
+
+    <locations>
+      - Integration Tests: crates/api/tests/integration/test_preferences.rs
+      - Performance Tests: crates/api/tests/performance/route_latency_tests.rs
+    </locations>
+
+    <ideas>
+      - Test: PUT /profile/meal-planning-preferences with valid JSON returns 200 OK
+      - Test: Verify JSON response echoes submitted preferences and includes message
+      - Test: Subscribe to UserMealPlanningPreferencesUpdated event using unsafe_oneshot
+      - Test: Query users table, assert preferences fields match submitted values
+      - Test: PUT with invalid data (negative prep times, cuisine_variety_weight &gt; 1.0) returns 400 ValidationFailed
+      - Test: Verify 400 response includes field-specific error details (max_prep_time_weeknight: "Must be greater than 0")
+      - Test: PUT without JWT cookie returns 401 Unauthorized
+      - Test: Boundary values (max_prep_time: 1 minimum, cuisine_variety_weight: 0.0 and 1.0) accepted
+      - Test: Boundary values outside range (max_prep_time: 0, cuisine_variety_weight: 1.5) rejected
+      - Test: Verify structured logging includes user_id, updated_fields
+      - Performance Test: Measure route response time &lt;100ms P95
+    </ideas>
+  </tests>
+</story-context>

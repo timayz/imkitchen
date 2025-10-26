@@ -1,0 +1,242 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/8.1" v="1.0">
+  <metadata>
+    <epicId>8</epicId>
+    <storyId>8.1</storyId>
+    <title>Create Multi-Week Generation Route</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-26</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-8.1.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>backend developer</asA>
+    <iWant>to create a POST route that generates multi-week meal plans</iWant>
+    <soThat>authenticated users can trigger intelligent meal plan generation via HTTP API</soThat>
+    <tasks>
+      - Define route handler function signature with Axum extractors
+      - Load user's favorite recipes from database (read model query)
+      - Load user's meal planning preferences from users table
+      - Call Epic 7 algorithm `generate_multi_week_meal_plans`
+      - Emit MultiWeekMealPlanGenerated evento event
+      - Build JSON response with first week data + navigation links
+      - Implement error handling for InsufficientRecipes and AlgorithmTimeout
+      - Add structured logging and tracing
+      - Write integration test verifying POST generates meal plan
+      - Write error scenario integration tests
+      - Register route in Axum router
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    1. Route `POST /plan/generate-multi-week` created
+    2. Route protected by authentication middleware (JWT cookie)
+    3. Handler extracts `user_id` from JWT claims
+    4. Handler loads user's favorite recipes from database (read model query)
+    5. Handler loads user's meal planning preferences from users table
+    6. Handler calls `generate_multi_week_meal_plans` algorithm (Epic 7)
+    7. Handler commits `MultiWeekMealPlanGenerated` event to evento
+    8. Handler returns JSON with first week data + navigation links
+    9. Error: `InsufficientRecipes` returns 400 with helpful message + "Add Recipe" action
+    10. Error: `AlgorithmTimeout` returns 500 with retry message
+    11. Integration test: POST generates meal plan, verifies JSON response structure
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      - Technical Specification: /home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-8.md
+        * Section: APIs and Interfaces - POST /plan/generate-multi-week route signature
+        * Section: Workflows and Sequencing - Multi-Week Generation Request Flow
+        * Section: Data Models and Contracts - MultiWeekResponse JSON structure
+        * Section: Non-Functional Requirements - Performance P95 &lt;500ms target
+
+      - UX Specification: /home/snapiz/projects/github/timayz/imkitchen/docs/ux-specification.md
+        * Section: User Flows - Flow 1: New User Onboarding (meal plan generation)
+
+      - TwinSpark Documentation: /home/snapiz/projects/github/timayz/imkitchen/docs/twinspark.md
+        * Frontend integration patterns for ts-req="/plan/generate-multi-week"
+
+      - AI Frontend Prompt: /home/snapiz/projects/github/timayz/imkitchen/docs/ai-frontend-prompt.md
+        * Tailwind 4.1+ CSS syntax guidelines
+    </docs>
+
+    <code>
+      - Epic 7 Algorithm Implementation: /home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/algorithm.rs
+        * Function: generate_multi_week_meal_plans(user_id, recipes, preferences) -&gt; Result&lt;MultiWeekMealPlan, Error&gt;
+        * Public API: RecipeForPlanning, UserPreferences, MealPlanningAlgorithm trait
+
+      - Evento Event Definitions: /home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/events.rs
+        * MultiWeekMealPlanGenerated event struct
+        * WeekMealPlanData, MealAssignment, WeekStatus types
+
+      - Read Model Projections: /home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/read_model.rs
+        * meal_plan_projection handler for evento events
+        * MealPlanQueries trait for database queries
+
+      - Example Test Pattern: /home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/tests/multi_week_projection_tests.rs
+        * Use unsafe_oneshot for synchronous evento event processing in tests
+        * setup_test_db() helper creates in-memory SQLite database
+        * Test structure: setup → emit event → unsafe_oneshot → assert read model
+
+      - Rotation State: /home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/rotation.rs
+        * RotationState type for tracking recipe usage across weeks
+    </code>
+
+    <dependencies>
+      - axum 0.7+ (HTTP routing, extractors, middleware)
+      - tokio 1.40+ (async runtime)
+      - sqlx 0.8+ (database queries, connection pooling)
+      - evento 1.5+ (event sourcing framework)
+      - serde, serde_json (JSON serialization)
+      - chrono 0.4+ (date/time handling)
+      - tracing 0.1+ (structured logging)
+      - uuid 1.10+ (batch_id, week_id generation)
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - TDD Enforced: Write failing integration test first, implement route handler to pass
+    - Authentication: JWT cookie-based (Epic 1 implementation), middleware extracts user_id from claims
+    - Database: SQLite with SQLx for parameterized queries (SQL injection prevention)
+    - Evento Events: Use unsafe_oneshot in tests for synchronous projection processing (not run)
+    - Response Format: JSON by default, Epic 9 handles HTML rendering via Askama templates
+    - Performance Target: Route overhead P95 &lt;500ms (excluding algorithm execution time)
+    - Rate Limiting: 5 meal plan generations per user per hour (Epic 8 NFR)
+  </constraints>
+
+  <interfaces>
+    Route Signature:
+    ```rust
+    #[post("/plan/generate-multi-week")]
+    async fn generate_multi_week_meal_plan(
+        Extension(user_id): Extension&lt;UserId&gt;,
+        Extension(db): Extension&lt;DatabasePool&gt;,
+        Extension(executor): Extension&lt;EventoExecutor&gt;,
+    ) -&gt; Result&lt;Json&lt;MultiWeekResponse&gt;, ApiError&gt;
+    ```
+
+    Response Schema:
+    ```json
+    {
+      "generation_batch_id": "uuid",
+      "max_weeks_possible": 5,
+      "current_week_index": 0,
+      "first_week": {
+        "id": "week-uuid",
+        "start_date": "2025-10-28",
+        "end_date": "2025-11-03",
+        "status": "future",
+        "is_locked": false,
+        "meal_assignments": [
+          {
+            "id": "assignment-uuid",
+            "date": "2025-10-28",
+            "course_type": "main_course",
+            "recipe": {
+              "id": "recipe-uuid",
+              "title": "Chicken Tikka Masala",
+              "prep_time_min": 20,
+              "cook_time_min": 30,
+              "complexity": "moderate"
+            },
+            "accompaniment": {
+              "id": "accompaniment-uuid",
+              "title": "Basmati Rice",
+              "category": "rice"
+            },
+            "prep_required": true,
+            "algorithm_reasoning": "Saturday: Weekend allows longer prep time"
+          }
+          // ... 20 more assignments
+        ],
+        "shopping_list_id": "shopping-uuid"
+      },
+      "navigation": {
+        "next_week_id": "week-uuid-2",
+        "week_links": [
+          { "week_id": "uuid-1", "start_date": "2025-10-28", "is_current": false },
+          { "week_id": "uuid-2", "start_date": "2025-11-04", "is_current": false }
+        ]
+      }
+    }
+    ```
+
+    Error Response:
+    ```json
+    {
+      "error": "InsufficientRecipes",
+      "message": "You need at least 7 favorite recipes in each category to generate a meal plan.",
+      "details": {
+        "appetizers": 5,
+        "main_courses": 3,
+        "desserts": 7
+      },
+      "action": {
+        "label": "Add More Recipes",
+        "url": "/recipes/new"
+      }
+    }
+    ```
+
+    Algorithm Integration:
+    ```rust
+    use meal_planning::{generate_multi_week_meal_plans, RecipeForPlanning, UserPreferences};
+
+    // Load recipes from database
+    let recipes: Vec&lt;RecipeForPlanning&gt; = load_favorite_recipes(db, user_id).await?;
+    let preferences: UserPreferences = load_user_preferences(db, user_id).await?;
+
+    // Call algorithm
+    let result = generate_multi_week_meal_plans(user_id, recipes, preferences).await;
+
+    match result {
+        Ok(meal_plan) =&gt; {
+            // Emit evento event
+            let event = MultiWeekMealPlanGenerated {
+                generation_batch_id: meal_plan.batch_id,
+                user_id: user_id.to_string(),
+                weeks: meal_plan.weeks,
+                rotation_state: meal_plan.rotation_state,
+                generated_at: Utc::now(),
+            };
+            executor.emit(event).await?;
+
+            // Build JSON response
+            Ok(Json(MultiWeekResponse { /* ... */ }))
+        }
+        Err(MealPlanningError::InsufficientRecipes { appetizers, main_courses, desserts }) =&gt; {
+            Err(ApiError::InsufficientRecipes { appetizers, main_courses, desserts })
+        }
+        Err(_) =&gt; Err(ApiError::InternalServerError),
+    }
+    ```
+  </interfaces>
+
+  <tests>
+    <standards>
+      - Coverage Target: &gt;85% line coverage for route handler code (measured via cargo-tarpaulin)
+      - Integration Tests: Full HTTP request/response cycle with database and evento
+      - Performance Target: Route overhead &lt;500ms P95 (excluding algorithm execution time)
+      - Test Isolation: Each test runs in transaction, rolled back after completion
+    </standards>
+
+    <locations>
+      - Integration Tests: crates/api/tests/integration/test_meal_planning_routes.rs
+      - Performance Tests: crates/api/tests/performance/route_latency_tests.rs
+      - Test Helpers: crates/api/tests/helpers.rs (setup_test_db, create_test_user, create_valid_jwt)
+    </locations>
+
+    <ideas>
+      - Test: POST /plan/generate-multi-week with valid JWT cookie returns 200 OK
+      - Test: Verify JSON response structure matches schema (first_week, navigation, generation_batch_id)
+      - Test: Subscribe to MultiWeekMealPlanGenerated event using unsafe_oneshot
+      - Test: Verify read models updated (meal_plans table, meal_assignments table, shopping_lists table)
+      - Test: Assert first week has 21 meal assignments (7 days × 3 meals)
+      - Test: POST without JWT cookie returns 401 Unauthorized
+      - Test: POST with &lt;7 favorite recipes returns 400 InsufficientRecipes with category counts
+      - Test: Simulate algorithm timeout, verify 500 response with retry message
+      - Test: Verify structured logging includes user_id, recipe_count, weeks_generated
+      - Performance Test: Measure route overhead &lt;500ms P95 (mock algorithm to return immediately)
+    </ideas>
+  </tests>
+</story-context>
