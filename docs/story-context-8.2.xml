@@ -1,0 +1,256 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/8.2" v="1.0">
+  <metadata>
+    <epicId>8</epicId>
+    <storyId>8.2</storyId>
+    <title>Create Week Navigation Route</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-26</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-8.2.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>backend developer</asA>
+    <iWant>to create a GET route that displays specific week meal plan details</iWant>
+    <soThat>authenticated users can navigate between weeks and view their scheduled meals with shopping lists</soThat>
+    <tasks>
+      - Define route handler function signature with Axum extractors (user_id, week_id, db)
+      - Load week data from meal_plans + meal_assignments tables
+      - Verify week belongs to authenticated user (authorization check)
+      - Load meal assignments for week with JOIN to recipes and accompaniments
+      - Load shopping list for week from shopping_lists table
+      - Build JSON response with week calendar data, shopping list, and navigation links
+      - Implement error handling for WeekNotFound (404) and Forbidden (403)
+      - Add path parameter validation (valid UUID format)
+      - Add structured logging and tracing
+      - Write integration tests for valid week_id, invalid week_id, and authorization failure
+      - Write performance test (P95 &lt;100ms)
+      - Register route in Axum router
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    1. Route `GET /plan/week/:week_id` created
+    2. Route protected by authentication middleware
+    3. Handler verifies week belongs to authenticated user (authorization check)
+    4. Handler loads week data from `meal_plans` + `meal_assignments` tables
+    5. Handler loads shopping list for week from `shopping_lists` table
+    6. Handler returns JSON/HTML with week calendar data
+    7. Returns 404 if `week_id` not found
+    8. Returns 403 if week belongs to different user
+    9. Integration test: GET with valid week_id returns correct data
+    10. Integration test: GET with invalid week_id returns 404
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      - Technical Specification: /home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-8.md
+        * Section: APIs and Interfaces - GET /plan/week/:week_id route signature
+        * Section: Data Models and Contracts - WeekDetailResponse JSON structure
+        * Section: Non-Functional Requirements - Performance P95 &lt;100ms target
+        * Section: Security - Authorization (verify week.user_id == user_id)
+
+      - UX Specification: /home/snapiz/projects/github/timayz/imkitchen/docs/ux-specification.md
+        * Section: Key Screens &amp; Layouts - Meal Planning Calendar (week view)
+        * Section: Component Library - Calendar Week View Component
+
+      - TwinSpark Documentation: /home/snapiz/projects/github/timayz/imkitchen/docs/twinspark.md
+        * Frontend integration: ts-req="/plan/week/{week_id}" ts-target="#meal-calendar"
+    </docs>
+
+    <code>
+      - Read Model Queries: /home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/src/read_model.rs
+        * MealPlanQueries trait for database queries
+        * MealPlanReadModel, MealAssignmentReadModel types
+
+      - Database Schema (Epic 6): migrations/
+        * meal_plans table: id, user_id, start_date, end_date, status, is_locked
+        * meal_assignments table: id, meal_plan_id, date, course_type, recipe_id, accompaniment_id
+        * shopping_lists table: id, meal_plan_id, categories (JSON)
+        * Indexes: meal_plans(user_id, id), meal_assignments(meal_plan_id)
+
+      - Example Test Pattern: /home/snapiz/projects/github/timayz/imkitchen/crates/meal_planning/tests/multi_week_projection_tests.rs
+        * setup_test_db() helper
+        * create_test_user(), create_test_recipe() helpers
+    </code>
+
+    <dependencies>
+      - axum 0.7+ (HTTP routing, Path extractor)
+      - sqlx 0.8+ (database queries with JOIN)
+      - serde, serde_json (JSON serialization)
+      - uuid 1.10+ (week_id validation)
+      - tracing 0.1+ (structured logging)
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - Read-Only Route: No evento events emitted, pure read model query for performance
+    - Authorization Pattern: Verify resource ownership (week.user_id == JWT user_id) before returning data
+    - Navigation Support: Calculate previous/next week IDs for frontend week navigation UI
+    - Performance Critical: P95 &lt;100ms target for read-only query (caching not required initially)
+    - Database Query Optimization: Single query with JOIN for meal assignments + recipes (avoid N+1)
+  </constraints>
+
+  <interfaces>
+    Route Signature:
+    ```rust
+    #[get("/plan/week/:week_id")]
+    async fn get_week_detail(
+        Extension(user_id): Extension&lt;UserId&gt;,
+        Path(week_id): Path&lt;String&gt;,
+        Extension(db): Extension&lt;DatabasePool&gt;,
+    ) -&gt; Result&lt;Json&lt;WeekDetailResponse&gt;, ApiError&gt;
+    ```
+
+    Response Schema:
+    ```json
+    {
+      "week": {
+        "id": "week-uuid",
+        "start_date": "2025-10-28",
+        "end_date": "2025-11-03",
+        "status": "current",
+        "is_locked": true,
+        "meal_assignments": [
+          {
+            "id": "assignment-uuid",
+            "date": "2025-10-28",
+            "course_type": "main_course",
+            "recipe": {
+              "id": "recipe-uuid",
+              "title": "Chicken Tikka Masala",
+              "prep_time_min": 20,
+              "cook_time_min": 30,
+              "complexity": "moderate"
+            },
+            "accompaniment": {
+              "id": "accompaniment-uuid",
+              "title": "Basmati Rice",
+              "category": "rice"
+            },
+            "prep_required": true,
+            "algorithm_reasoning": "Saturday: Weekend allows longer prep time"
+          }
+          // ... 20 more assignments
+        ],
+        "shopping_list": {
+          "id": "shopping-uuid",
+          "categories": [
+            {
+              "name": "Produce",
+              "items": [
+                {
+                  "ingredient_name": "Tomatoes",
+                  "quantity": 6,
+                  "unit": "whole",
+                  "from_recipe_ids": ["recipe-uuid-1", "recipe-uuid-2"]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "navigation": {
+        "previous_week_id": "week-uuid-prev",
+        "next_week_id": "week-uuid-next"
+      }
+    }
+    ```
+
+    Error Responses:
+    ```json
+    {
+      "error": "WeekNotFound",
+      "message": "Week not found or does not belong to you.",
+      "status": 404
+    }
+
+    {
+      "error": "Forbidden",
+      "message": "This week belongs to a different user.",
+      "status": 403
+    }
+    ```
+
+    Database Queries:
+    ```rust
+    // Load week with authorization check
+    let week: MealPlanReadModel = sqlx::query_as(
+        "SELECT * FROM meal_plans WHERE id = ? AND user_id = ?"
+    )
+    .bind(&week_id)
+    .bind(&user_id)
+    .fetch_optional(&db)
+    .await?
+    .ok_or(ApiError::WeekNotFound)?;
+
+    // Load meal assignments with JOIN
+    let assignments: Vec&lt;MealAssignmentReadModel&gt; = sqlx::query_as(
+        r#"SELECT ma.*, r.*, a.*
+           FROM meal_assignments ma
+           JOIN recipes r ON ma.recipe_id = r.id
+           LEFT JOIN accompaniments a ON ma.accompaniment_id = a.id
+           WHERE ma.meal_plan_id = ?
+           ORDER BY ma.date, ma.course_type"#
+    )
+    .bind(&week_id)
+    .fetch_all(&db)
+    .await?;
+
+    // Load shopping list
+    let shopping_list: ShoppingListReadModel = sqlx::query_as(
+        r#"SELECT sl.*, si.*
+           FROM shopping_lists sl
+           LEFT JOIN shopping_items si ON sl.id = si.shopping_list_id
+           WHERE sl.meal_plan_id = ?"#
+    )
+    .bind(&week_id)
+    .fetch_optional(&db)
+    .await?;
+
+    // Calculate navigation links
+    let prev_week_id = sqlx::query_scalar(
+        "SELECT id FROM meal_plans WHERE user_id = ? AND start_date &lt; ? ORDER BY start_date DESC LIMIT 1"
+    )
+    .bind(&user_id)
+    .bind(&week.start_date)
+    .fetch_optional(&db)
+    .await?;
+
+    let next_week_id = sqlx::query_scalar(
+        "SELECT id FROM meal_plans WHERE user_id = ? AND start_date &gt; ? ORDER BY start_date ASC LIMIT 1"
+    )
+    .bind(&user_id)
+    .bind(&week.start_date)
+    .fetch_optional(&db)
+    .await?;
+    ```
+  </interfaces>
+
+  <tests>
+    <standards>
+      - Coverage Target: 100% coverage for authorization logic (critical security path)
+      - Security Testing: Verify cross-user access prevention (403 Forbidden)
+      - Edge Cases: Invalid UUID format, missing week_id, empty shopping list
+      - Performance Target: P95 &lt;100ms for read-only query
+    </standards>
+
+    <locations>
+      - Integration Tests: crates/api/tests/integration/test_week_navigation.rs
+      - Performance Tests: crates/api/tests/performance/route_latency_tests.rs
+    </locations>
+
+    <ideas>
+      - Test: GET /plan/week/{week_id} with valid JWT and valid week_id returns 200 OK
+      - Test: Verify JSON response structure (week data, meal_assignments array with 21 items, shopping_list with categories)
+      - Test: Verify navigation links (previous_week_id, next_week_id) are correct
+      - Test: GET with non-existent week_id UUID returns 404 WeekNotFound
+      - Test: GET with invalid UUID format returns 400 Bad Request
+      - Test: GET without JWT cookie returns 401 Unauthorized
+      - Test: Create two test users with separate meal plans, authenticate as user A, attempt to access user B's week_id → 403 Forbidden
+      - Test: Verify structured logging includes week_id, user_id, week_status
+      - Performance Test: Measure route response time with realistic data (21 assignments, 30 shopping items), assert P95 &lt;100ms
+      - Test: Week with empty shopping list (LEFT JOIN returns NULL gracefully)
+    </ideas>
+  </tests>
+</story-context>
