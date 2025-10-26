@@ -18,7 +18,7 @@ pub struct RecipeForPlanning {
     pub advance_prep_hours: Option<u32>,
     pub complexity: Option<String>, // "simple", "moderate", "complex" (if pre-calculated)
     pub dietary_tags: Vec<String>, // Tags like "vegetarian", "vegan", "gluten-free", "dairy-free", etc.
-    pub cuisine: Cuisine, // Cuisine type for variety scoring (Story 7.2 AC-5)
+    pub cuisine: Cuisine,          // Cuisine type for variety scoring (Story 7.2 AC-5)
 }
 
 /// User profile constraints for meal planning
@@ -613,7 +613,7 @@ pub fn select_main_course_with_preferences(
                     // Calculate days difference
                     let days_since_last_complex = (date - last_complex_date).num_days();
                     // Allow if 2+ days ago, filter if yesterday (1 day ago)
-                    days_since_last_complex >= 2 || days_since_last_complex < 0
+                    !(0..2).contains(&days_since_last_complex)
                 }
             }
         })
@@ -643,7 +643,9 @@ pub fn select_main_course_with_preferences(
 
     // Return first (highest-scored) recipe
     // If multiple tie, first one selected (deterministic)
-    scored_candidates.first().map(|(_, recipe)| (*recipe).clone())
+    scored_candidates
+        .first()
+        .map(|(_, recipe)| (*recipe).clone())
 }
 
 #[cfg(test)]
@@ -1180,8 +1182,10 @@ mod tests {
             create_recipe_with_time_complexity("moderate", 15, 15, 50, 50, Cuisine::Mexican), // Moderate
         ];
 
-        let mut preferences = UserPreferences::default();
-        preferences.skill_level = SkillLevel::Beginner;
+        let preferences = UserPreferences {
+            skill_level: SkillLevel::Beginner,
+            ..Default::default()
+        };
         let rotation_state = RotationState::new();
         let date = NaiveDate::from_ymd_opt(2025, 10, 25).unwrap(); // Saturday
         let day_of_week = Weekday::Sat;
@@ -1208,8 +1212,10 @@ mod tests {
             create_recipe_with_time_complexity("complex", 20, 20, 100, 100, Cuisine::Indian), // Complex
         ];
 
-        let mut preferences = UserPreferences::default();
-        preferences.skill_level = SkillLevel::Intermediate;
+        let preferences = UserPreferences {
+            skill_level: SkillLevel::Intermediate,
+            ..Default::default()
+        };
         let rotation_state = RotationState::new();
         let date = NaiveDate::from_ymd_opt(2025, 10, 25).unwrap(); // Saturday
         let day_of_week = Weekday::Sat;
@@ -1236,8 +1242,10 @@ mod tests {
             create_recipe_with_time_complexity("complex", 20, 20, 100, 100, Cuisine::Indian), // Complex
         ];
 
-        let mut preferences = UserPreferences::default();
-        preferences.skill_level = SkillLevel::Advanced;
+        let preferences = UserPreferences {
+            skill_level: SkillLevel::Advanced,
+            ..Default::default()
+        };
         let rotation_state = RotationState::new();
         let date = NaiveDate::from_ymd_opt(2025, 10, 25).unwrap(); // Saturday
         let day_of_week = Weekday::Sat;
@@ -1263,9 +1271,11 @@ mod tests {
             create_recipe_with_time_complexity("complex", 20, 20, 100, 100, Cuisine::Mexican), // Complex
         ];
 
-        let mut preferences = UserPreferences::default();
-        preferences.skill_level = SkillLevel::Advanced; // Allow complex
-        preferences.avoid_consecutive_complex = true;
+        let preferences = UserPreferences {
+            skill_level: SkillLevel::Advanced,
+            avoid_consecutive_complex: true,
+            ..Default::default()
+        };
 
         let mut rotation_state = RotationState::new();
         let date = NaiveDate::from_ymd_opt(2025, 10, 28).unwrap(); // Tuesday
@@ -1294,9 +1304,11 @@ mod tests {
             create_recipe_with_time_complexity("complex", 10, 10, 100, 100, Cuisine::Mexican), // Complex, 20min total
         ];
 
-        let mut preferences = UserPreferences::default();
-        preferences.skill_level = SkillLevel::Advanced; // Allow complex
-        preferences.avoid_consecutive_complex = true;
+        let preferences = UserPreferences {
+            skill_level: SkillLevel::Advanced,
+            avoid_consecutive_complex: true,
+            ..Default::default()
+        };
 
         let mut rotation_state = RotationState::new();
         let date = NaiveDate::from_ymd_opt(2025, 10, 28).unwrap(); // Tuesday
@@ -1360,8 +1372,10 @@ mod tests {
             create_recipe_with_time_complexity("mexican", 10, 10, 5, 4, Cuisine::Mexican),
         ];
 
-        let mut preferences = UserPreferences::default();
-        preferences.cuisine_variety_weight = 0.0; // No variety preference
+        let preferences = UserPreferences {
+            cuisine_variety_weight: 0.0,
+            ..Default::default()
+        };
 
         let mut rotation_state = RotationState::new();
         rotation_state.increment_cuisine_usage(&Cuisine::Italian);
@@ -1388,9 +1402,9 @@ mod tests {
     fn test_highest_scored_selection() {
         // AC-6: Verify highest-scored recipe is selected
         let recipes = vec![
-            create_recipe_with_time_complexity("italian", 10, 10, 5, 4, Cuisine::Italian),   // usage=2, score=0.23
-            create_recipe_with_time_complexity("mexican", 10, 10, 5, 4, Cuisine::Mexican),   // usage=1, score=0.35
-            create_recipe_with_time_complexity("indian", 10, 10, 5, 4, Cuisine::Indian),     // usage=0, score=0.70
+            create_recipe_with_time_complexity("italian", 10, 10, 5, 4, Cuisine::Italian), // usage=2, score=0.23
+            create_recipe_with_time_complexity("mexican", 10, 10, 5, 4, Cuisine::Mexican), // usage=1, score=0.35
+            create_recipe_with_time_complexity("indian", 10, 10, 5, 4, Cuisine::Indian), // usage=0, score=0.70
         ];
 
         let preferences = UserPreferences::default(); // variety_weight: 0.7
@@ -1450,9 +1464,11 @@ mod tests {
             create_recipe_with_time_complexity("slow", 50, 50, 100, 100, Cuisine::Italian), // 100min total, Complex
         ];
 
-        let mut preferences = UserPreferences::default();
-        preferences.max_prep_time_weeknight = 30; // 30min limit
-        preferences.skill_level = SkillLevel::Beginner; // Only Simple allowed
+        let preferences = UserPreferences {
+            max_prep_time_weeknight: 30,
+            skill_level: SkillLevel::Beginner,
+            ..Default::default()
+        };
 
         let rotation_state = RotationState::new();
         let date = NaiveDate::from_ymd_opt(2025, 10, 27).unwrap(); // Monday
@@ -1477,10 +1493,12 @@ mod tests {
             create_recipe_with_time_complexity("slow_complex", 25, 25, 100, 100, Cuisine::Mexican), // 50min, Complex
         ];
 
-        let mut preferences = UserPreferences::default();
-        preferences.max_prep_time_weeknight = 30; // Weeknight limit
-        preferences.skill_level = SkillLevel::Beginner; // Only Simple
-        preferences.avoid_consecutive_complex = true;
+        let preferences = UserPreferences {
+            max_prep_time_weeknight: 30,
+            skill_level: SkillLevel::Beginner,
+            avoid_consecutive_complex: true,
+            ..Default::default()
+        };
 
         let mut rotation_state = RotationState::new();
         let date = NaiveDate::from_ymd_opt(2025, 10, 27).unwrap(); // Monday (weeknight)

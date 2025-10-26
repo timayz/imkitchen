@@ -1,10 +1,10 @@
+use chrono::{NaiveDate, Weekday};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use meal_planning::{
     algorithm::{select_main_course_with_preferences, RecipeForPlanning, UserPreferences},
     rotation::RotationState,
 };
 use recipe::Cuisine;
-use chrono::{NaiveDate, Weekday};
 
 /// Create a test recipe with specific properties for benchmarking
 fn create_bench_recipe(
@@ -47,10 +47,10 @@ fn bench_select_main_course_100_recipes(c: &mut Criterion) {
         .map(|i| {
             create_bench_recipe(
                 i,
-                5 + (i as u32 % 25),   // prep_time: 5-30 minutes
-                10 + (i as u32 % 40),  // cook_time: 10-50 minutes
-                5 + (i % 15),          // ingredients: 5-20
-                4 + (i % 12),          // steps: 4-16
+                5 + (i as u32 % 25),  // prep_time: 5-30 minutes
+                10 + (i as u32 % 40), // cook_time: 10-50 minutes
+                5 + (i % 15),         // ingredients: 5-20
+                4 + (i % 12),         // steps: 4-16
             )
         })
         .collect();
