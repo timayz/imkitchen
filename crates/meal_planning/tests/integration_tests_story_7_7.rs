@@ -23,6 +23,7 @@ use user::types::DietaryRestriction;
 // ============================================================================
 
 /// Create realistic test recipe with full properties
+#[allow(clippy::too_many_arguments)]
 fn create_recipe(
     id: &str,
     recipe_type: &str,
@@ -241,7 +242,7 @@ fn create_realistic_recipe_library() -> Vec<RecipeForPlanning> {
     ];
 
     for i in 0..15 {
-        let (category, name) = accompaniment_types[i % 5].clone();
+        let (category, name) = accompaniment_types[i % 5];
         let dietary = match i % 3 {
             0 => vec!["vegan", "vegetarian"],
             1 => vec!["gluten_free"],
@@ -872,9 +873,9 @@ async fn test_accompaniment_pairing_assigns_correctly() {
 
                     // Verify accompaniment exists and has correct category
                     if let Some(accompaniment_id) = &assignment.accompaniment_recipe_id {
-                        let accompaniment = recipe_map.get(accompaniment_id).expect(
-                            &format!("Accompaniment {} should exist in recipe library", accompaniment_id)
-                        );
+                        let accompaniment = recipe_map.get(accompaniment_id).unwrap_or_else(|| {
+                            panic!("Accompaniment {} should exist in recipe library", accompaniment_id)
+                        });
 
                         assert!(
                             accompaniment.accompaniment_category.is_some(),
@@ -886,7 +887,7 @@ async fn test_accompaniment_pairing_assigns_correctly() {
                         if !main_recipe.preferred_accompaniments.is_empty() {
                             assert!(
                                 main_recipe.preferred_accompaniments.contains(
-                                    &accompaniment.accompaniment_category.clone().unwrap()
+                                    &accompaniment.accompaniment_category.unwrap()
                                 ),
                                 "Accompaniment category {:?} should match main course preferred {:?}",
                                 accompaniment.accompaniment_category,
