@@ -1,6 +1,7 @@
 use crate::aggregate::MealPlanAggregate;
 use crate::events::{
-    MealPlanGenerated, MealPlanRegenerated, RecipeUsedInRotation, RotationCycleReset,
+    MealPlanGenerated, MealPlanRegenerated, MultiWeekMealPlanGenerated, RecipeUsedInRotation,
+    RotationCycleReset,
 };
 use evento::{AggregatorName, Context, EventDetails, Executor};
 use serde::{Deserialize, Serialize};
@@ -572,6 +573,134 @@ pub async fn meal_plan_regenerated_handler<E: Executor>(
     Ok(())
 }
 
+/// Async evento subscription handler for MultiWeekMealPlanGenerated events (Story 6.6 AC-1, AC-2)
+///
+/// This handler projects MultiWeekMealPlanGenerated events into meal_plans and meal_assignments
+/// read model tables. Unlike MealPlanGenerated (single week), this handler processes multiple weeks
+/// (1-5 maximum) in a single batch with rotation tracking across weeks.
+///
+/// **Key Operations:**
+/// 1. Iterate over weeks in event.data.weeks vector
+/// 2. Calculate week status from dates (Future/Current/Past)
+/// 3. Insert each week into meal_plans table with generation_batch_id
+/// 4. Insert 21 meal assignments per week (7 days × 3 courses)
+/// 5. Store accompaniment_recipe_id for main courses
+/// 6. Serialize rotation_state to JSON for persistence
+#[evento::handler(MealPlanAggregate)]
+pub async fn multi_week_meal_plan_generated_handler<E: Executor>(
+    context: &Context<'_, E>,
+    event: EventDetails<MultiWeekMealPlanGenerated>,
+) -> anyhow::Result<()> {
+    // Extract the shared SqlitePool from context
+    let pool: SqlitePool = context.extract();
+
+    // Begin transaction for atomic updates across all weeks
+    let mut tx = pool.begin().await?;
+
+    // Archive any existing active meal plans for this user
+    sqlx::query(
+        r#"
+        UPDATE meal_plans
+        SET status = 'archived'
+        WHERE user_id = ?1 AND status = 'active'
+        "#,
+    )
+    .bind(&event.data.user_id)
+    .execute(&mut *tx)
+    .await?;
+
+    // Serialize rotation_state to JSON
+    let rotation_state_json = serde_json::to_string(&event.data.rotation_state)?;
+
+    // Get current date for status calculation
+    let now = chrono::Utc::now().date_naive();
+
+    // Process each week in the batch
+    for week_data in &event.data.weeks {
+        // Calculate week status from dates
+        let start_date = chrono::NaiveDate::parse_from_str(&week_data.start_date, "%Y-%m-%d")
+            .map_err(|e| anyhow::anyhow!("Invalid start_date format: {}", e))?;
+        let end_date = chrono::NaiveDate::parse_from_str(&week_data.end_date, "%Y-%m-%d")
+            .map_err(|e| anyhow::anyhow!("Invalid end_date format: {}", e))?;
+
+        // Calculate actual status (Future/Current/Past for business logic)
+        let actual_status = if start_date > now {
+            "future"
+        } else if end_date < now {
+            "past"
+        } else {
+            "current"
+        };
+
+        // Map to database status (only 'active' or 'archived' allowed by CHECK constraint)
+        // Future and Current weeks are 'active', Past weeks are 'archived'
+        let db_status = if actual_status == "past" {
+            "archived"
+        } else {
+            "active"
+        };
+
+        // Determine if week is locked (current week is locked)
+        let is_locked = actual_status == "current";
+
+        // Use event timestamp for created_at
+        let timestamp_rfc3339 = chrono::DateTime::from_timestamp(event.timestamp, 0)
+            .ok_or_else(|| anyhow::anyhow!("Invalid timestamp"))?
+            .to_rfc3339();
+
+        // Insert week into meal_plans table
+        sqlx::query(
+            r#"
+            INSERT INTO meal_plans (
+                id, user_id, start_date, end_date, status, is_locked,
+                generation_batch_id, rotation_state_json, created_at, updated_at
+            )
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?9)
+            "#,
+        )
+        .bind(&week_data.id)
+        .bind(&event.data.user_id)
+        .bind(&week_data.start_date)
+        .bind(&week_data.end_date)
+        .bind(db_status)
+        .bind(is_locked)
+        .bind(&event.data.generation_batch_id)
+        .bind(&rotation_state_json)
+        .bind(&timestamp_rfc3339)
+        .execute(&mut *tx)
+        .await?;
+
+        // Insert 21 meal assignments for this week
+        for assignment in &week_data.meal_assignments {
+            let assignment_id = Uuid::new_v4().to_string();
+            sqlx::query(
+                r#"
+                INSERT INTO meal_assignments (
+                    id, meal_plan_id, date, course_type, recipe_id, prep_required,
+                    assignment_reasoning, accompaniment_recipe_id
+                )
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+                "#,
+            )
+            .bind(assignment_id)
+            .bind(&week_data.id)
+            .bind(&assignment.date)
+            .bind(&assignment.course_type)
+            .bind(&assignment.recipe_id)
+            .bind(assignment.prep_required)
+            .bind(&assignment.assignment_reasoning)
+            .bind(&assignment.accompaniment_recipe_id)
+            .execute(&mut *tx)
+            .await?;
+        }
+    }
+
+    // Commit transaction - all weeks and assignments inserted atomically
+    tx.commit().await?;
+
+    Ok(())
+}
+
 /// Create and configure the meal plan projection subscription
 ///
 /// This function sets up evento subscriptions for meal plan read model projections.
@@ -582,7 +711,27 @@ pub fn meal_plan_projection(pool: SqlitePool) -> evento::SubscribeBuilder<evento
         .handler(recipe_used_in_rotation_handler())
         .handler(rotation_cycle_reset_handler())
         .handler(meal_plan_regenerated_handler())
+        .handler(multi_week_meal_plan_generated_handler())
 }
+
+// NOTE: Integration tests for multi-week meal plan projections (Story 6.6 AC-8)
+//
+// Comprehensive integration tests for the multi_week_meal_plan_generated_handler()
+// are located in tests/multi_week_projection_tests.rs (TODO: to be created)
+//
+// These tests should verify:
+// 1. Multiple weeks (1-5) inserted atomically into meal_plans table
+// 2. All weeks share same generation_batch_id for batch tracking
+// 3. 21 meal assignments per week inserted into meal_assignments table
+// 4. Week status (Future/Current/Past) calculated correctly from dates
+// 5. is_locked field set correctly (current week locked, future weeks unlocked)
+// 6. accompaniment_recipe_id stored for main courses (Story 6.3 AC-8)
+// 7. rotation_state serialized to JSON and can be deserialized
+// 8. Transaction rollback on error (all-or-nothing semantics)
+// 9. Previous active meal plans archived before inserting new batch
+//
+// Test pattern should follow existing tests in tests/persistence_tests.rs using unsafe_oneshot()
+// for synchronous evento processing during tests.
 
 // NOTE: Task 7 (AC-6, AC-7) - Favorite Recipe Changes Mid-Rotation
 //

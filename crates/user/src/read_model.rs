@@ -3,7 +3,8 @@ use crate::error::UserResult;
 use crate::events::{
     DietaryRestrictionsSet, HouseholdSizeSet, NotificationPermissionChanged, PasswordChanged,
     ProfileCompleted, ProfileUpdated, RecipeCreated, RecipeDeleted, RecipeFavorited, RecipeShared,
-    SubscriptionUpgraded, UserCreated, WeeknightAvailabilitySet,
+    SubscriptionUpgraded, UserCreated, UserMealPlanningPreferencesUpdated,
+    WeeknightAvailabilitySet,
 };
 use evento::{AggregatorName, Context, EventDetails, Executor};
 use sqlx::{Row, SqlitePool};
@@ -350,6 +351,62 @@ async fn notification_permission_changed_handler<E: Executor>(
     Ok(())
 }
 
+/// Handler for UserMealPlanningPreferencesUpdated event (Story 6.6 AC-5, AC-6, AC-7)
+///
+/// This handler updates user meal planning preferences in the users table when
+/// the user configures algorithm preferences for personalized meal planning.
+///
+/// Epic 6: Enhanced Meal Planning System
+///
+/// **Updated Fields:**
+/// - max_prep_time_weeknight (minutes)
+/// - max_prep_time_weekend (minutes)
+/// - avoid_consecutive_complex (boolean)
+/// - cuisine_variety_weight (float 0.0-1.0)
+/// - dietary_restrictions (JSON TEXT - Vec<DietaryRestriction>)
+/// - household_size (u32)
+/// - skill_level (string: "Beginner", "Intermediate", "Advanced")
+/// - weeknight_availability (JSON string)
+#[evento::handler(UserAggregate)]
+async fn user_meal_planning_preferences_updated_handler<E: Executor>(
+    context: &Context<'_, E>,
+    event: EventDetails<UserMealPlanningPreferencesUpdated>,
+) -> anyhow::Result<()> {
+    let pool: SqlitePool = context.extract();
+
+    // All fields from the event are directly stored
+    // dietary_restrictions is already JSON string in the event
+    sqlx::query(
+        r#"
+        UPDATE users
+        SET max_prep_time_weeknight = ?1,
+            max_prep_time_weekend = ?2,
+            avoid_consecutive_complex = ?3,
+            cuisine_variety_weight = ?4,
+            dietary_restrictions = ?5,
+            household_size = ?6,
+            skill_level = ?7,
+            weeknight_availability = ?8,
+            updated_at = ?9
+        WHERE id = ?10
+        "#,
+    )
+    .bind(event.data.max_prep_time_weeknight as i32)
+    .bind(event.data.max_prep_time_weekend as i32)
+    .bind(event.data.avoid_consecutive_complex)
+    .bind(event.data.cuisine_variety_weight)
+    .bind(&event.data.dietary_restrictions) // Already JSON string
+    .bind(event.data.household_size as i32)
+    .bind(&event.data.skill_level)
+    .bind(&event.data.weeknight_availability)
+    .bind(&event.data.updated_at)
+    .bind(&event.aggregator_id)
+    .execute(&pool)
+    .await?;
+
+    Ok(())
+}
+
 /// Create user event subscription for read model projection
 ///
 /// Returns a subscription builder that can be run with `.run(&executor).await`
@@ -379,6 +436,7 @@ pub fn user_projection(pool: SqlitePool) -> evento::SubscribeBuilder<evento::Sql
         .handler(recipe_favorited_handler())
         .handler(subscription_upgraded_handler())
         .handler(notification_permission_changed_handler())
+        .handler(user_meal_planning_preferences_updated_handler())
 }
 
 /// Query user by email for uniqueness check in read model
