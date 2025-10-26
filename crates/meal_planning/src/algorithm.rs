@@ -450,6 +450,7 @@ impl MealPlanningAlgorithm {
                     recipe_id: selected_recipe.id.clone(),
                     prep_required,
                     assignment_reasoning: Some(assignment_reasoning),
+                    accompaniment_recipe_id: None, // Story 6.3 AC-8: No accompaniment logic yet
                 });
 
                 // Track day assignments for equipment conflict detection

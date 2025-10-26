@@ -413,7 +413,7 @@ async fn test_rollback_migration() {
     );
 
     // Run rollback migration
-    let rollback_sql = include_str!("../06_v0.8_rollback.sql");
+    let rollback_sql = include_str!("06_v0.8_rollback.sql");
     sqlx::raw_sql(rollback_sql).execute(&pool).await.unwrap();
 
     // Verify meal_plan_rotation_state table dropped
@@ -495,7 +495,7 @@ async fn test_migration_idempotence() {
     sqlx::migrate!("./migrations").run(&pool).await.unwrap();
 
     // Run rollback
-    let rollback_sql = include_str!("../06_v0.8_rollback.sql");
+    let rollback_sql = include_str!("06_v0.8_rollback.sql");
     sqlx::raw_sql(rollback_sql).execute(&pool).await.unwrap();
 
     // Run forward migration again

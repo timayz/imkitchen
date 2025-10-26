@@ -1,19 +1,40 @@
+use bincode::{Decode, Encode};
 use chrono;
+use recipe::Cuisine;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 /// RotationState tracks which recipes have been used in the current rotation cycle
 ///
 /// The rotation system ensures each favorite recipe is used exactly once before
 /// any recipe repeats. When all favorites have been used once, the cycle resets.
 ///
+/// **Story 6.3 Extensions (Multi-Week Support):**
+/// - `used_main_course_ids`: Main courses MUST be unique across ALL weeks (never repeat)
+/// - `used_appetizer_ids`, `used_dessert_ids`: CAN repeat after exhausting full list
+/// - `cuisine_usage_count`: Tracks cuisine variety for preference algorithm
+/// - `last_complex_meal_date`: Avoids consecutive complex meals
+///
 /// This state is stored as JSON in the meal_plans.rotation_state column.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 pub struct RotationState {
+    // Pre-Epic 6 fields (backwards compatible)
     pub cycle_number: u32,
     pub cycle_started_at: String, // RFC3339 formatted timestamp
     pub used_recipe_ids: HashSet<String>,
     pub total_favorite_count: usize,
+
+    // Epic 6: Multi-week rotation tracking (Story 6.3 AC-4)
+    #[serde(default)]
+    pub used_main_course_ids: Vec<String>, // Main courses MUST be unique (never repeat)
+    #[serde(default)]
+    pub used_appetizer_ids: Vec<String>, // Can repeat after all used once
+    #[serde(default)]
+    pub used_dessert_ids: Vec<String>, // Can repeat after all used once
+    #[serde(default)]
+    pub cuisine_usage_count: HashMap<Cuisine, u32>, // Tracks cuisine variety
+    #[serde(default)]
+    pub last_complex_meal_date: Option<String>, // ISO 8601 date (avoid consecutive complex)
 }
 
 impl RotationState {
@@ -24,6 +45,12 @@ impl RotationState {
             cycle_started_at: chrono::Utc::now().to_rfc3339(),
             used_recipe_ids: HashSet::new(),
             total_favorite_count: 0,
+            // Epic 6 fields (Story 6.3 AC-4)
+            used_main_course_ids: Vec::new(),
+            used_appetizer_ids: Vec::new(),
+            used_dessert_ids: Vec::new(),
+            cuisine_usage_count: HashMap::new(),
+            last_complex_meal_date: None,
         }
     }
 
@@ -40,6 +67,12 @@ impl RotationState {
             cycle_started_at: chrono::Utc::now().to_rfc3339(),
             used_recipe_ids: HashSet::new(),
             total_favorite_count,
+            // Epic 6 fields (Story 6.3 AC-4)
+            used_main_course_ids: Vec::new(),
+            used_appetizer_ids: Vec::new(),
+            used_dessert_ids: Vec::new(),
+            cuisine_usage_count: HashMap::new(),
+            last_complex_meal_date: None,
         })
     }
 
@@ -96,6 +129,88 @@ impl RotationState {
     /// Deserialize from JSON string
     pub fn from_json(json: &str) -> Result<Self, serde_json::Error> {
         serde_json::from_str(json)
+    }
+
+    // ============================================================================
+    // Epic 6: Multi-Week Rotation Helpers (Story 6.3 AC-4)
+    // ============================================================================
+
+    /// Mark a main course as used (Story 6.3 AC-4)
+    ///
+    /// Main courses MUST be unique across all weeks - they never repeat.
+    /// This method adds the recipe_id to used_main_course_ids vector.
+    ///
+    /// # Arguments
+    /// * `recipe_id` - ID of main course recipe to mark as used
+    ///
+    /// # Uniqueness
+    /// This method does NOT check for duplicates - caller must verify uniqueness
+    /// using `is_main_course_used()` before calling this method.
+    pub fn mark_used_main_course(&mut self, recipe_id: &str) {
+        if !self.used_main_course_ids.contains(&recipe_id.to_string()) {
+            self.used_main_course_ids.push(recipe_id.to_string());
+        }
+    }
+
+    /// Mark an appetizer as used (Story 6.3 AC-4)
+    ///
+    /// Appetizers CAN repeat after all appetizers have been used once.
+    /// Tracks usage for rotation fairness.
+    pub fn mark_used_appetizer(&mut self, recipe_id: &str) {
+        self.used_appetizer_ids.push(recipe_id.to_string());
+    }
+
+    /// Mark a dessert as used (Story 6.3 AC-4)
+    ///
+    /// Desserts CAN repeat after all desserts have been used once.
+    /// Tracks usage for rotation fairness.
+    pub fn mark_used_dessert(&mut self, recipe_id: &str) {
+        self.used_dessert_ids.push(recipe_id.to_string());
+    }
+
+    /// Check if a main course has been used (Story 6.3 AC-4)
+    ///
+    /// Returns true if recipe_id is in used_main_course_ids vector.
+    /// Use this to enforce main course uniqueness constraint.
+    ///
+    /// # Arguments
+    /// * `recipe_id` - ID of main course recipe to check
+    ///
+    /// # Returns
+    /// * `true` if main course already used (cannot be assigned again)
+    /// * `false` if main course not yet used (available for assignment)
+    pub fn is_main_course_used(&self, recipe_id: &str) -> bool {
+        self.used_main_course_ids.contains(&recipe_id.to_string())
+    }
+
+    /// Increment cuisine usage count (Story 6.3 AC-4)
+    ///
+    /// Tracks how many times each cuisine has been used across weeks.
+    /// Used by algorithm to prefer less-frequently-used cuisines for variety.
+    ///
+    /// # Arguments
+    /// * `cuisine` - Cuisine enum variant (e.g., Cuisine::Italian, Cuisine::Indian)
+    pub fn increment_cuisine_usage(&mut self, cuisine: &Cuisine) {
+        *self.cuisine_usage_count.entry(cuisine.clone()).or_insert(0) += 1;
+    }
+
+    /// Get cuisine usage count (Story 6.3 AC-4)
+    ///
+    /// Returns how many times a specific cuisine has been used.
+    /// Returns 0 if cuisine has never been used.
+    pub fn get_cuisine_usage(&self, cuisine: &Cuisine) -> u32 {
+        *self.cuisine_usage_count.get(cuisine).unwrap_or(&0)
+    }
+
+    /// Update last complex meal date (Story 6.3 AC-4)
+    ///
+    /// Tracks the date of the last complex meal to avoid consecutive complex meals.
+    /// Algorithm uses this to space out complex recipes across the week.
+    ///
+    /// # Arguments
+    /// * `date` - ISO 8601 date string (YYYY-MM-DD)
+    pub fn update_last_complex_meal_date(&mut self, date: &str) {
+        self.last_complex_meal_date = Some(date.to_string());
     }
 }
 
@@ -309,6 +424,95 @@ mod tests {
         // All 3 recipes used, cycle should have reset
         assert_eq!(updated_state.cycle_number, 2);
         assert_eq!(updated_state.used_count(), 0);
+    }
+
+    // ============================================================================
+    // Epic 6: Multi-Week Helper Method Tests (Story 6.3)
+    // ============================================================================
+
+    #[test]
+    fn test_mark_used_main_course_epic6() {
+        let mut state = RotationState::new();
+
+        // Mark main courses as used
+        state.mark_used_main_course("main-1");
+        state.mark_used_main_course("main-2");
+
+        assert_eq!(state.used_main_course_ids.len(), 2);
+        assert!(state.is_main_course_used("main-1"));
+        assert!(state.is_main_course_used("main-2"));
+        assert!(!state.is_main_course_used("main-3"));
+
+        // Verify uniqueness - duplicate should not be added
+        state.mark_used_main_course("main-1");
+        assert_eq!(state.used_main_course_ids.len(), 2); // Still 2
+    }
+
+    #[test]
+    fn test_mark_used_appetizer_epic6() {
+        let mut state = RotationState::new();
+
+        // Appetizers CAN repeat
+        state.mark_used_appetizer("app-1");
+        state.mark_used_appetizer("app-2");
+        state.mark_used_appetizer("app-1"); // Duplicate allowed
+
+        assert_eq!(state.used_appetizer_ids.len(), 3); // Both occurrences tracked
+    }
+
+    #[test]
+    fn test_mark_used_dessert_epic6() {
+        let mut state = RotationState::new();
+
+        // Desserts CAN repeat
+        state.mark_used_dessert("dessert-1");
+        state.mark_used_dessert("dessert-2");
+        state.mark_used_dessert("dessert-1"); // Duplicate allowed
+
+        assert_eq!(state.used_dessert_ids.len(), 3); // Both occurrences tracked
+    }
+
+    #[test]
+    fn test_increment_cuisine_usage_epic6() {
+        use recipe::Cuisine;
+
+        let mut state = RotationState::new();
+
+        // Track cuisine usage
+        state.increment_cuisine_usage(&Cuisine::Italian);
+        state.increment_cuisine_usage(&Cuisine::Italian);
+        state.increment_cuisine_usage(&Cuisine::Indian);
+
+        assert_eq!(state.get_cuisine_usage(&Cuisine::Italian), 2);
+        assert_eq!(state.get_cuisine_usage(&Cuisine::Indian), 1);
+        assert_eq!(state.get_cuisine_usage(&Cuisine::Mexican), 0); // Never used
+    }
+
+    #[test]
+    fn test_update_last_complex_meal_date_epic6() {
+        let mut state = RotationState::new();
+
+        assert_eq!(state.last_complex_meal_date, None);
+
+        state.update_last_complex_meal_date("2025-10-27");
+
+        assert_eq!(state.last_complex_meal_date, Some("2025-10-27".to_string()));
+
+        // Can be updated
+        state.update_last_complex_meal_date("2025-10-28");
+        assert_eq!(state.last_complex_meal_date, Some("2025-10-28".to_string()));
+    }
+
+    #[test]
+    fn test_epic6_fields_initialized_in_constructor() {
+        let state = RotationState::new();
+
+        // Verify all Epic 6 fields start empty/None
+        assert_eq!(state.used_main_course_ids.len(), 0);
+        assert_eq!(state.used_appetizer_ids.len(), 0);
+        assert_eq!(state.used_dessert_ids.len(), 0);
+        assert_eq!(state.cuisine_usage_count.len(), 0);
+        assert_eq!(state.last_complex_meal_date, None);
     }
 
     #[test]

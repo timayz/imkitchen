@@ -2,8 +2,9 @@ use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
 use crate::events::{
-    MealAssignment, MealPlanArchived, MealPlanGenerated, MealPlanRegenerated, RecipeUsedInRotation,
-    RotationCycleReset,
+    AllFutureWeeksRegenerated, MealAssignment, MealPlanArchived, MealPlanGenerated,
+    MealPlanRegenerated, MultiWeekMealPlanGenerated, RecipeUsedInRotation, RotationCycleReset,
+    SingleWeekRegenerated,
 };
 
 /// MealPlanAggregate representing the state of a meal plan entity
@@ -171,6 +172,128 @@ impl MealPlanAggregate {
 
         // Update rotation state (preserved, not reset)
         self.rotation_state_json = event.data.rotation_state_json;
+
+        Ok(())
+    }
+
+    // ============================================================================
+    // Epic 6: Multi-Week Event Handlers (Story 6.3 AC-5, AC-6, AC-7)
+    // ============================================================================
+
+    /// Handle MultiWeekMealPlanGenerated event (Story 6.3 AC-5)
+    ///
+    /// This event handler processes multi-week meal plan generation by storing
+    /// all generated weeks and rotation state. The aggregate tracks the first week's
+    /// data in its root fields for backwards compatibility.
+    ///
+    /// **Multi-Week Storage Strategy:**
+    /// - Aggregate root fields (start_date, meal_assignments) store FIRST week only
+    /// - Full multi-week data stored in separate read model (Story 6.4)
+    /// - rotation_state_json tracks usage across ALL weeks
+    ///
+    /// **Event Flow:**
+    /// 1. Algorithm generates 1-5 weeks simultaneously
+    /// 2. MultiWeekMealPlanGenerated event emitted with all weeks
+    /// 3. This handler updates aggregate with first week data
+    /// 4. Projection handler (Story 6.4) stores all weeks in read model
+    async fn multi_week_meal_plan_generated(
+        &mut self,
+        event: evento::EventDetails<MultiWeekMealPlanGenerated>,
+    ) -> anyhow::Result<()> {
+        // Validate rotation state JSON is parseable
+        let rotation_state_json = event.data.rotation_state.to_json()?;
+
+        // Validate at least one week generated
+        if event.data.weeks.is_empty() {
+            return Err(anyhow::anyhow!(
+                "MultiWeekMealPlanGenerated event must contain at least 1 week"
+            ));
+        }
+
+        // Store first week in aggregate root (backwards compatibility)
+        let first_week = &event.data.weeks[0];
+        self.meal_plan_id = event.aggregator_id.clone();
+        self.user_id = event.data.user_id;
+        self.start_date = first_week.start_date.clone();
+        self.meal_assignments = first_week.meal_assignments.clone();
+        self.rotation_state_json = rotation_state_json;
+        self.created_at = event.data.generated_at.clone();
+        self.status = "active".to_string();
+        self.archived_at = None;
+
+        Ok(())
+    }
+
+    /// Handle SingleWeekRegenerated event (Story 6.3 AC-6)
+    ///
+    /// This event handler processes single-week regeneration by updating meal assignments
+    /// for one specific week while preserving all other weeks and rotation state.
+    ///
+    /// **Single Week Update Strategy:**
+    /// - If regenerated week is FIRST week: update aggregate root fields
+    /// - If regenerated week is NOT first: only projection handler updates (Story 6.4)
+    /// - rotation_state_json updated with new recipe usage
+    ///
+    /// **Locking Safety:**
+    /// - Application layer prevents locked (current) week regeneration before event emission
+    /// - This handler assumes validation already passed
+    async fn single_week_regenerated(
+        &mut self,
+        event: evento::EventDetails<SingleWeekRegenerated>,
+    ) -> anyhow::Result<()> {
+        // Validate rotation state JSON is parseable
+        let rotation_state_json = event.data.updated_rotation_state.to_json()?;
+
+        // Update rotation state
+        self.rotation_state_json = rotation_state_json;
+
+        // If regenerated week matches aggregate's start_date, update root meal assignments
+        // (This handles the case where the first week in the multi-week plan is regenerated)
+        if self.start_date == event.data.week_start_date {
+            self.meal_assignments = event.data.meal_assignments;
+        }
+
+        // Note: Projection handler (Story 6.4) updates the specific week in read model
+
+        Ok(())
+    }
+
+    /// Handle AllFutureWeeksRegenerated event (Story 6.3 AC-7)
+    ///
+    /// This event handler processes regeneration of all future weeks while preserving
+    /// the current locked week. Updates aggregate with new first future week data.
+    ///
+    /// **Future Weeks Regeneration Strategy:**
+    /// - Current week (locked) preserved and NOT included in event.data.weeks
+    /// - All future weeks replaced with new generations
+    /// - Aggregate root stores first FUTURE week (not current week)
+    /// - Projection handler (Story 6.4) preserves current week in read model
+    ///
+    /// **Event Flow:**
+    /// 1. User clicks "Regenerate All Future Weeks"
+    /// 2. Algorithm generates new weeks starting from next Monday (current+1)
+    /// 3. AllFutureWeeksRegenerated event emitted with future weeks only
+    /// 4. This handler updates aggregate with first future week
+    /// 5. Projection handler preserves current week, replaces future weeks
+    async fn all_future_weeks_regenerated(
+        &mut self,
+        event: evento::EventDetails<AllFutureWeeksRegenerated>,
+    ) -> anyhow::Result<()> {
+        // Validate at least one future week generated
+        if event.data.weeks.is_empty() {
+            return Err(anyhow::anyhow!(
+                "AllFutureWeeksRegenerated event must contain at least 1 future week"
+            ));
+        }
+
+        // Store first future week in aggregate root
+        let first_future_week = &event.data.weeks[0];
+        self.start_date = first_future_week.start_date.clone();
+        self.meal_assignments = first_future_week.meal_assignments.clone();
+
+        // Note: rotation_state is embedded in weeks data, extract from first week's context
+        // For now, we'll maintain the existing rotation_state_json
+        // (Story 6.5 will implement full rotation state management)
 
         Ok(())
     }
