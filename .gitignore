@@ -13,7 +13,6 @@
 
 # Node.js / Tailwind
 node_modules/
-static/css/main.css
 
 # IDE
 .vscode/
