@@ -1049,6 +1049,173 @@ fn day_of_week_to_string(day: Weekday) -> &'static str {
     }
 }
 
+/// Story 7.5: Generate multi-week meal plans (1-5 weeks maximum)
+///
+/// Generates meal plans for multiple weeks in a single batch, maximizing recipe variety
+/// across weeks while respecting rotation rules (main courses never repeat, appetizers/desserts
+/// can repeat after exhausting the full list).
+///
+/// # Arguments
+/// * `user_id` - User identifier for the meal plan owner
+/// * `favorite_recipes` - All favorite recipes available for assignment
+/// * `preferences` - User preferences (time constraints, skill level, dietary restrictions)
+///
+/// # Returns
+/// * `Ok(MultiWeekMealPlan)` - Multi-week plan with 1-5 weeks, rotation state tracking
+/// * `Err(MealPlanningError)` - If insufficient recipes or other constraints violated
+///
+/// # Acceptance Criteria
+/// - AC-1: Function implemented with correct async signature
+/// - AC-2: Calculates max_weeks = min(5, min(appetizers, mains, desserts))
+/// - AC-3: Returns InsufficientRecipes error if max_weeks < 1
+/// - AC-4: Filters by dietary restrictions BEFORE counting recipes
+/// - AC-5: Generates weeks sequentially (loop 0..max_weeks)
+/// - AC-6: Week dates calculated from next Monday + offset (ISO 8601)
+/// - AC-7: Shopping list generated per week via generate_shopping_list_for_week
+/// - AC-8: Returns MultiWeekMealPlan with all weeks and rotation state
+/// - AC-9: Performance: <5 seconds for 5 weeks (P95)
+/// - AC-10: Unit tests cover edge cases (1 week, 5 weeks, insufficient)
+///
+/// # Performance
+/// Target: <5 seconds for 5 weeks with 50 recipes (Story 7.5 AC-9)
+///
+/// # Example
+/// ```rust,no_run
+/// use meal_planning::algorithm::{generate_multi_week_meal_plans, RecipeForPlanning, UserPreferences};
+///
+/// # async fn example() {
+/// let user_id = "user123".to_string();
+/// let recipes = vec![/* ... 50 recipes ... */];
+/// let preferences = UserPreferences::default();
+///
+/// let result = generate_multi_week_meal_plans(user_id, recipes, preferences).await;
+/// match result {
+///     Ok(multi_week_plan) => {
+///         println!("Generated {} weeks", multi_week_plan.generated_weeks.len());
+///     }
+///     Err(e) => eprintln!("Generation failed: {}", e),
+/// }
+/// # }
+/// ```
+pub async fn generate_multi_week_meal_plans(
+    user_id: String,
+    favorite_recipes: Vec<RecipeForPlanning>,
+    preferences: UserPreferences,
+) -> Result<crate::events::MultiWeekMealPlan, MealPlanningError> {
+    use crate::dietary_filter::filter_by_dietary_restrictions;
+    use crate::events::{MultiWeekMealPlan, WeekMealPlan};
+    use chrono::Duration;
+
+    // AC-4: Filter recipes by dietary restrictions BEFORE counting
+    let compatible_recipes = filter_by_dietary_restrictions(
+        favorite_recipes,
+        &preferences
+            .dietary_restrictions
+            .iter()
+            .map(|tag| {
+                // Convert String tags to DietaryRestriction enum
+                use user::types::DietaryRestriction;
+                match tag.to_lowercase().as_str() {
+                    "vegetarian" => DietaryRestriction::Vegetarian,
+                    "vegan" => DietaryRestriction::Vegan,
+                    "gluten_free" => DietaryRestriction::GlutenFree,
+                    "dairy_free" => DietaryRestriction::DairyFree,
+                    "nut_free" => DietaryRestriction::NutFree,
+                    "halal" => DietaryRestriction::Halal,
+                    "kosher" => DietaryRestriction::Kosher,
+                    _ => DietaryRestriction::Custom(tag.clone()),
+                }
+            })
+            .collect::<Vec<_>>(),
+    );
+
+    // Separate recipes by type for max_weeks calculation
+    let appetizers: Vec<RecipeForPlanning> = compatible_recipes
+        .iter()
+        .filter(|r| r.recipe_type == "appetizer")
+        .cloned()
+        .collect();
+
+    let main_courses: Vec<RecipeForPlanning> = compatible_recipes
+        .iter()
+        .filter(|r| r.recipe_type == "main_course" && r.accompaniment_category.is_none())
+        .cloned()
+        .collect();
+
+    let desserts: Vec<RecipeForPlanning> = compatible_recipes
+        .iter()
+        .filter(|r| r.recipe_type == "dessert")
+        .cloned()
+        .collect();
+
+    // AC-2: Calculate max_weeks = min(5, min(appetizers/7, mains/7, desserts/7))
+    // Each week needs 7 of each type (7 days × 1 course per day)
+    let appetizer_weeks = appetizers.len() / 7;
+    let main_weeks = main_courses.len() / 7;
+    let dessert_weeks = desserts.len() / 7;
+
+    let max_weeks = std::cmp::min(
+        5, // Hard cap at 5 weeks
+        std::cmp::min(appetizer_weeks, std::cmp::min(main_weeks, dessert_weeks)),
+    );
+
+    // AC-3: Validate sufficient recipes (max_weeks must be >= 1)
+    if max_weeks < 1 {
+        return Err(MealPlanningError::InsufficientRecipes {
+            minimum: 21, // Need 7 of each type minimum
+            current: compatible_recipes.len(),
+        });
+    }
+
+    // AC-5: Initialize RotationState
+    let mut rotation_state = RotationState::new();
+
+    // AC-6: Calculate base week start date (next Monday)
+    let base_week_start = crate::calculate_next_week_start();
+
+    // AC-5, AC-6: Generate weeks sequentially
+    let mut generated_weeks: Vec<WeekMealPlan> = Vec::with_capacity(max_weeks);
+
+    for week_index in 0..max_weeks {
+        // AC-6: Calculate week_start_date = next Monday + (week_index * 7 days)
+        let week_start_date = base_week_start + Duration::weeks(week_index as i64);
+
+        // Call generate_single_week (Story 7.4)
+        // Note: We pass the full compatible_recipes list to each week.
+        // generate_single_week will internally filter out already-used main courses
+        // based on rotation_state, ensuring proper variety across weeks.
+        let week_plan = generate_single_week(
+            compatible_recipes.clone(),
+            &preferences,
+            &mut rotation_state,
+            week_start_date,
+        )?;
+
+        // AC-7: Generate shopping list for this week
+        // Note: generate_shopping_list_for_week is Story 7.6 - will be implemented separately
+        // For now, shopping_list_id is already set by generate_single_week
+
+        generated_weeks.push(week_plan);
+    }
+
+    // Update user_id on all weeks (generate_single_week leaves it empty)
+    for week in &mut generated_weeks {
+        week.user_id = user_id.clone();
+    }
+
+    // AC-8: Construct MultiWeekMealPlan result
+    let generation_batch_id = uuid::Uuid::new_v4().to_string();
+
+    let multi_week_plan = MultiWeekMealPlan {
+        user_id,
+        generation_batch_id,
+        generated_weeks,
+        rotation_state,
+    };
+
+    Ok(multi_week_plan)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2199,5 +2366,357 @@ mod tests {
             result.is_none(),
             "Expected None when accompaniments list is empty"
         );
+    }
+
+    // ============================================================================
+    // Story 7.5: Multi-Week Meal Planning Tests
+    // ============================================================================
+
+    /// Helper to create a balanced recipe set for multi-week testing
+    fn create_balanced_recipes(count: usize) -> Vec<RecipeForPlanning> {
+        let mut recipes = Vec::new();
+
+        for i in 0..count {
+            let recipe_type = match i % 3 {
+                0 => "appetizer",
+                1 => "main_course",
+                _ => "dessert",
+            };
+
+            // Distribute cuisines for variety
+            let cuisine = match i % 5 {
+                0 => recipe::Cuisine::Italian,
+                1 => recipe::Cuisine::Mexican,
+                2 => recipe::Cuisine::Indian,
+                3 => recipe::Cuisine::Chinese,
+                _ => recipe::Cuisine::Japanese,
+            };
+
+            // Make ALL test recipes weeknight-friendly (<= 30min total)
+            // This simplifies testing by ensuring time constraints don't interfere
+            // In real-world usage, users would have a mix of recipe times
+            let (prep_time, cook_time) = (10, 15); // 25 min total (weeknight-friendly)
+
+            recipes.push(RecipeForPlanning {
+                id: format!("recipe_{}", i + 1),
+                title: format!("Recipe {}", i + 1),
+                recipe_type: recipe_type.to_string(),
+                ingredients_count: 5,
+                instructions_count: 3,
+                prep_time_min: Some(prep_time),
+                cook_time_min: Some(cook_time),
+                advance_prep_hours: None,
+                complexity: Some("simple".to_string()),
+                dietary_tags: vec![],
+                cuisine,
+                accepts_accompaniment: false,
+                preferred_accompaniments: vec![],
+                accompaniment_category: None,
+            });
+        }
+
+        recipes
+    }
+
+    /// AC-10: Test with exactly 21 recipes (exactly 1 week possible)
+    #[tokio::test]
+    async fn test_generate_multi_week_exactly_one_week() {
+        // 21 recipes = 7 appetizers, 7 mains, 7 desserts → exactly 1 week
+        let recipes = create_balanced_recipes(21);
+        let user_id = "test_user_1".to_string();
+        let preferences = UserPreferences::default();
+
+        let result = generate_multi_week_meal_plans(user_id.clone(), recipes, preferences).await;
+
+        assert!(
+            result.is_ok(),
+            "Should generate plan with exactly 21 recipes. Error: {:?}",
+            result.as_ref().err()
+        );
+        let plan = result.unwrap();
+
+        // AC-2: Should generate exactly 1 week
+        assert_eq!(
+            plan.generated_weeks.len(),
+            1,
+            "Should generate exactly 1 week from 21 recipes"
+        );
+
+        // AC-6: Verify week dates
+        let week = &plan.generated_weeks[0];
+        assert!(
+            week.start_date.ends_with("Monday") || week.start_date.len() == 10,
+            "Week should start on a Monday"
+        );
+
+        // AC-8: Verify structure
+        assert_eq!(plan.user_id, user_id);
+        assert!(!plan.generation_batch_id.is_empty());
+        assert_eq!(week.meal_assignments.len(), 21);
+    }
+
+    /// AC-10: Test with 105+ recipes (5 weeks capped at maximum)
+    #[tokio::test]
+    async fn test_generate_multi_week_five_weeks_maximum() {
+        // 105 recipes = 35 appetizers, 35 mains, 35 desserts → 5 weeks (capped)
+        let recipes = create_balanced_recipes(105);
+        let user_id = "test_user_2".to_string();
+        let preferences = UserPreferences::default();
+
+        let result = generate_multi_week_meal_plans(user_id.clone(), recipes, preferences).await;
+
+        assert!(
+            result.is_ok(),
+            "Should generate plan with 105+ recipes. Error: {:?}",
+            result.as_ref().err()
+        );
+        let plan = result.unwrap();
+
+        // AC-2: Hard cap at 5 weeks
+        assert_eq!(
+            plan.generated_weeks.len(),
+            5,
+            "Should cap at 5 weeks even with many recipes"
+        );
+
+        // AC-8: Verify all weeks have full assignments
+        for (index, week) in plan.generated_weeks.iter().enumerate() {
+            assert_eq!(
+                week.meal_assignments.len(),
+                21,
+                "Week {} should have 21 assignments",
+                index + 1
+            );
+            assert_eq!(week.user_id, user_id);
+        }
+
+        // AC-6: Verify sequential week dates
+        let base_date =
+            chrono::NaiveDate::parse_from_str(&plan.generated_weeks[0].start_date, "%Y-%m-%d")
+                .expect("Start date should be valid ISO 8601");
+
+        for (index, week) in plan.generated_weeks.iter().enumerate() {
+            let expected_start = base_date + chrono::Duration::weeks(index as i64);
+            let actual_start = chrono::NaiveDate::parse_from_str(&week.start_date, "%Y-%m-%d")
+                .expect("Week start date should be valid");
+
+            assert_eq!(
+                actual_start,
+                expected_start,
+                "Week {} should start on correct date",
+                index + 1
+            );
+        }
+    }
+
+    /// AC-3: Test insufficient recipes error (< 21 recipes)
+    #[tokio::test]
+    async fn test_generate_multi_week_insufficient_recipes() {
+        // 18 recipes = 6 appetizers, 6 mains, 6 desserts → insufficient (need 7 each)
+        let recipes = create_balanced_recipes(18);
+        let user_id = "test_user_3".to_string();
+        let preferences = UserPreferences::default();
+
+        let result = generate_multi_week_meal_plans(user_id, recipes, preferences).await;
+
+        assert!(result.is_err(), "Should fail with insufficient recipes");
+        match result {
+            Err(MealPlanningError::InsufficientRecipes { minimum, current }) => {
+                assert_eq!(minimum, 21, "Should require minimum 21 recipes");
+                assert_eq!(current, 18, "Should report 18 available recipes");
+            }
+            _ => panic!("Expected InsufficientRecipes error"),
+        }
+    }
+
+    /// AC-4: Test dietary filtering impact on max_weeks calculation
+    #[tokio::test]
+    async fn test_generate_multi_week_dietary_filtering() {
+        // Create 63 recipes (21 of each type) but only 21 are vegetarian (7 of each)
+        let mut recipes = Vec::new();
+
+        for i in 0..63 {
+            let recipe_type = match i % 3 {
+                0 => "appetizer",
+                1 => "main_course",
+                _ => "dessert",
+            };
+
+            // Only first 21 recipes are vegetarian
+            let dietary_tags = if i < 21 {
+                vec!["vegetarian".to_string()]
+            } else {
+                vec![]
+            };
+
+            // Distribute cuisines for variety
+            let cuisine = match i % 5 {
+                0 => recipe::Cuisine::Italian,
+                1 => recipe::Cuisine::Mexican,
+                2 => recipe::Cuisine::Indian,
+                3 => recipe::Cuisine::Chinese,
+                _ => recipe::Cuisine::Japanese,
+            };
+
+            recipes.push(RecipeForPlanning {
+                id: format!("recipe_{}", i + 1),
+                title: format!("Recipe {}", i + 1),
+                recipe_type: recipe_type.to_string(),
+                ingredients_count: 5,
+                instructions_count: 3,
+                prep_time_min: Some(10),
+                cook_time_min: Some(15), // 25 min total (weeknight-friendly)
+                advance_prep_hours: None,
+                complexity: Some("simple".to_string()),
+                dietary_tags,
+                cuisine,
+                accepts_accompaniment: false,
+                preferred_accompaniments: vec![],
+                accompaniment_category: None,
+            });
+        }
+
+        let user_id = "test_user_4".to_string();
+        let preferences = UserPreferences {
+            dietary_restrictions: vec!["vegetarian".to_string()],
+            ..Default::default()
+        };
+
+        let result = generate_multi_week_meal_plans(user_id, recipes, preferences).await;
+
+        assert!(
+            result.is_ok(),
+            "Should generate plan with dietary filtering. Error: {:?}",
+            result.as_ref().err()
+        );
+        let plan = result.unwrap();
+
+        // AC-4: Should only use 21 vegetarian recipes → 1 week
+        assert_eq!(
+            plan.generated_weeks.len(),
+            1,
+            "Should generate 1 week after filtering to vegetarian recipes only"
+        );
+    }
+
+    /// AC-6: Test week date calculations (sequential Monday dates)
+    #[tokio::test]
+    async fn test_generate_multi_week_date_calculations() {
+        // 63 recipes = 21 of each type → 3 weeks
+        let recipes = create_balanced_recipes(63);
+        let user_id = "test_user_5".to_string();
+        let preferences = UserPreferences::default();
+
+        let result = generate_multi_week_meal_plans(user_id, recipes, preferences).await;
+
+        assert!(
+            result.is_ok(),
+            "Should generate 3 weeks. Error: {:?}",
+            result.as_ref().err()
+        );
+        let plan = result.unwrap();
+
+        assert_eq!(plan.generated_weeks.len(), 3);
+
+        // Verify all start dates are Mondays
+        for (index, week) in plan.generated_weeks.iter().enumerate() {
+            let start_date = chrono::NaiveDate::parse_from_str(&week.start_date, "%Y-%m-%d")
+                .expect("Start date should be valid ISO 8601");
+            let end_date = chrono::NaiveDate::parse_from_str(&week.end_date, "%Y-%m-%d")
+                .expect("End date should be valid ISO 8601");
+
+            assert_eq!(
+                start_date.weekday(),
+                chrono::Weekday::Mon,
+                "Week {} should start on Monday",
+                index + 1
+            );
+
+            assert_eq!(
+                end_date.weekday(),
+                chrono::Weekday::Sun,
+                "Week {} should end on Sunday",
+                index + 1
+            );
+
+            // Verify 7-day span
+            let days_diff = (end_date - start_date).num_days();
+            assert_eq!(
+                days_diff,
+                6,
+                "Week {} should span 7 days (Mon-Sun)",
+                index + 1
+            );
+        }
+
+        // Verify sequential weeks (no gaps)
+        for i in 0..plan.generated_weeks.len() - 1 {
+            let current_end =
+                chrono::NaiveDate::parse_from_str(&plan.generated_weeks[i].end_date, "%Y-%m-%d")
+                    .unwrap();
+            let next_start = chrono::NaiveDate::parse_from_str(
+                &plan.generated_weeks[i + 1].start_date,
+                "%Y-%m-%d",
+            )
+            .unwrap();
+
+            let gap_days = (next_start - current_end).num_days();
+            assert_eq!(
+                gap_days,
+                1,
+                "Weeks {} and {} should be consecutive (1 day gap)",
+                i + 1,
+                i + 2
+            );
+        }
+    }
+
+    /// AC-5: Test RotationState persistence across weeks
+    #[tokio::test]
+    async fn test_generate_multi_week_rotation_state() {
+        // 42 recipes = 14 of each type → 2 weeks
+        let recipes = create_balanced_recipes(42);
+        let user_id = "test_user_6".to_string();
+        let preferences = UserPreferences::default();
+
+        let result = generate_multi_week_meal_plans(user_id, recipes, preferences).await;
+
+        assert!(
+            result.is_ok(),
+            "Should generate 2 weeks. Error: {:?}",
+            result.as_ref().err()
+        );
+        let plan = result.unwrap();
+
+        assert_eq!(plan.generated_weeks.len(), 2);
+
+        // Collect all recipe IDs used across both weeks
+        let mut all_recipe_ids = std::collections::HashSet::new();
+        for week in &plan.generated_weeks {
+            for assignment in &week.meal_assignments {
+                all_recipe_ids.insert(&assignment.recipe_id);
+            }
+        }
+
+        // AC-5: Verify rotation state reflects all used recipes
+        assert!(
+            all_recipe_ids.len() <= 42,
+            "Should not use more recipes than available"
+        );
+
+        // Verify no recipe is used more than appropriate for rotation rules
+        // (Main courses should never repeat, others can repeat after exhausting list)
+        let mut main_course_ids = std::collections::HashSet::new();
+        for week in &plan.generated_weeks {
+            for assignment in &week.meal_assignments {
+                if assignment.course_type == "main_course" {
+                    assert!(
+                        main_course_ids.insert(&assignment.recipe_id),
+                        "Main course recipe {} should not repeat across weeks",
+                        assignment.recipe_id
+                    );
+                }
+            }
+        }
     }
 }

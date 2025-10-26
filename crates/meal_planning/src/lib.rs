@@ -10,9 +10,9 @@ pub mod rotation;
 
 pub use aggregate::MealPlanAggregate;
 pub use algorithm::{
-    generate_reasoning_text, generate_single_week, select_accompaniment,
-    select_main_course_with_preferences, MealPlanningAlgorithm, RecipeComplexityCalculator,
-    RecipeForPlanning, UserPreferences,
+    generate_multi_week_meal_plans, generate_reasoning_text, generate_single_week,
+    select_accompaniment, select_main_course_with_preferences, MealPlanningAlgorithm,
+    RecipeComplexityCalculator, RecipeForPlanning, UserPreferences,
 };
 pub use commands::{regenerate_meal_plan, GenerateMealPlanCommand, RegenerateMealPlanCommand};
 pub use constraints::{
