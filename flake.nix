@@ -39,6 +39,7 @@
             pkg-config
             cargo-watch
             cargo-machete
+            cargo-tarpaulin
             tailwindcss_4
             playwright-test
             mkcert
