@@ -1,0 +1,224 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>6</epicId>
+    <storyId>4</storyId>
+    <title>Update User Domain Model</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-25</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-6.4.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>backend developer</asA>
+    <iWant>to extend User aggregate with meal planning preferences</iWant>
+    <soThat>the algorithm can personalize meal plans based on user constraints and preferences</soThat>
+    <tasks>
+      - Create DietaryRestriction enum (AC: 3)
+      - Create SkillLevel enum (AC: 4)
+      - Create UserPreferences struct (AC: 1, 2)
+      - Create UserMealPlanningPreferencesUpdated event (AC: 5)
+      - Update User aggregate to integrate preferences (AC: 6)
+      - Create unit tests for preference event handling (AC: 7)
+      - Validate defaults and constraints (AC: 8)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    1. UserPreferences struct created with meal planning fields
+    2. Fields: max_prep_time_weeknight, max_prep_time_weekend, avoid_consecutive_complex, cuisine_variety_weight, dietary_restrictions
+    3. DietaryRestriction enum created (Vegetarian, Vegan, GlutenFree, DairyFree, NutFree, Halal, Kosher, Custom(String))
+    4. SkillLevel enum created (Beginner, Intermediate, Advanced)
+    5. UserMealPlanningPreferencesUpdated event created
+    6. User aggregate integrates preferences
+    7. Unit tests cover preferences event handling
+    8. Default values per design decisions (max_prep_time_weeknight: 30, weekend: 90, cuisine_variety_weight: 0.7)
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/architecture-update-meal-planning-enhancements.md</path>
+        <title>Architecture Update: Enhanced Meal Planning System</title>
+        <section>3. User Preferences Integration</section>
+        <snippet>
+UserPreferences struct definition with fields:
+- dietary_restrictions: Vec&lt;DietaryRestriction&gt;
+- household_size: u32
+- skill_level: SkillLevel
+- weeknight_availability: TimeRange
+- max_prep_time_weeknight: u32 (default: 30)
+- max_prep_time_weekend: u32 (default: 90)
+- avoid_consecutive_complex: bool (default: true)
+- cuisine_variety_weight: f32 (0.0-1.0, default: 0.7)
+
+Design Notes:
+- Cuisine preferences INFERRED from favorite recipe selection (NOT stored)
+- Advance prep timing stored on Recipe aggregate, NOT User
+- SkillLevel affects complexity filtering: Beginner=simple only, Intermediate=simple+moderate, Advanced=all
+        </snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic 6: Enhanced Meal Planning - Database &amp; Domain Foundation</title>
+        <section>Story 6.4</section>
+        <snippet>
+Prerequisites: Story 6.1 (database migration)
+Technical Notes:
+- Defaults aligned with section 3.4 of architecture doc
+- Custom dietary restriction allows user-defined allergens
+- DietaryTag separate from DietaryRestriction (tags on recipes, restrictions on users)
+        </snippet>
+      </doc>
+      <doc>
+        <path>docs/solution-architecture-compact.md</path>
+        <title>Solution Architecture - imkitchen</title>
+        <section>13. Testing Strategy</section>
+        <snippet>
+TDD Enforced: Write test → Red → Implement → Green → Refactor
+
+Test Pyramid:
+- Unit: Domain aggregates (evento commands/events)
+- Integration: HTTP routes, projections (use unsafe_oneshot for sync)
+- E2E: Playwright critical flows
+
+Projection Testing:
+Use unsafe_oneshot instead of run for subscribe in tests (synchronous event processing)
+
+Coverage: 80% goal (cargo-tarpaulin), CI enforced
+        </snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/story-6.3.md</path>
+        <title>Story 6.3: Update MealPlan Domain Model</title>
+        <section>Pattern Reference</section>
+        <snippet>
+Pattern for domain model updates in Epic 6:
+1. Create enums with Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Encode, Decode derives
+2. Create structs with all required fields
+3. Create evento events with AggregatorName, Encode, Decode derives
+4. Update aggregate with event handlers
+5. Unit tests with &gt;90% coverage target
+6. Use unsafe_oneshot for subscribe in tests
+        </snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>crates/user/src/aggregate.rs</path>
+        <kind>aggregate</kind>
+        <symbol>UserAggregate</symbol>
+        <lines>0-80</lines>
+        <reason>Existing User aggregate structure - need to add preferences field and event handler for UserMealPlanningPreferencesUpdated</reason>
+      </file>
+      <file>
+        <path>crates/user/src/types.rs</path>
+        <kind>types</kind>
+        <symbol>SubscriptionTier</symbol>
+        <lines>0-168</lines>
+        <reason>Existing types module - add DietaryRestriction and SkillLevel enums here following same pattern as SubscriptionTier</reason>
+      </file>
+      <file>
+        <path>crates/user/src/events.rs</path>
+        <kind>events</kind>
+        <symbol>UserCreated, PasswordChanged, DietaryRestrictionsSet</symbol>
+        <lines>0-60</lines>
+        <reason>Existing evento events - add UserMealPlanningPreferencesUpdated event following same pattern with AggregatorName, Encode, Decode derives</reason>
+      </file>
+      <file>
+        <path>crates/user/src/lib.rs</path>
+        <kind>module</kind>
+        <symbol>user crate root</symbol>
+        <lines>n/a</lines>
+        <reason>Module entry point - may need to export new types and ensure they're publicly accessible</reason>
+      </file>
+    </code>
+    <dependencies>
+      <rust>
+        <package name="evento" version="1.5" features="sqlite">Event sourcing framework - required for AggregatorName derive and event handling</package>
+        <package name="bincode" version="2.0">Binary serialization - required for Encode/Decode derives on events and aggregates</package>
+        <package name="serde" version="1.0" features="derive">JSON serialization - required for Serialize/Deserialize derives</package>
+        <package name="serde_json" version="1.0">JSON support for serde</package>
+        <package name="chrono" version="0.4" features="serde">Timestamp handling for event metadata</package>
+        <package name="uuid" version="1.10" features="v4,serde">User ID generation and serialization</package>
+        <package name="anyhow" version="1.0">Error handling in event handlers</package>
+        <package name="thiserror" version="2.0">Custom error types for domain validation</package>
+      </rust>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - Follow evento aggregator pattern: events must have AggregatorName, Encode, Decode derives
+    - All preference fields must be serializable with both serde and bincode
+    - Use String types for timestamps (RFC3339 format) for bincode compatibility
+    - Naming: snake_case for modules/fields, PascalCase for structs/enums
+    - Target &gt;90% unit test coverage per Epic 6 requirements
+    - Use unsafe_oneshot instead of run for subscribe in tests (synchronous processing)
+    - Default values mandated: max_prep_time_weeknight=30, max_prep_time_weekend=90, cuisine_variety_weight=0.7, avoid_consecutive_complex=true
+    - DietaryRestriction enum separate from DietaryTag (restrictions on users, tags on recipes)
+    - Cuisine preferences NOT stored (inferred from favorites)
+    - Advance prep timing NOT stored on User (stored on Recipe aggregate)
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>evento::Aggregator trait</name>
+      <kind>trait</kind>
+      <signature>Generated by #[evento::aggregator] macro - provides event replay and dispatching</signature>
+      <path>evento crate</path>
+    </interface>
+    <interface>
+      <name>evento::AggregatorName</name>
+      <kind>derive</kind>
+      <signature>Required derive on all event structs for evento compatibility</signature>
+      <path>evento crate</path>
+    </interface>
+    <interface>
+      <name>bincode::Encode + bincode::Decode</name>
+      <kind>derive</kind>
+      <signature>Required derives for binary serialization of events and aggregates</signature>
+      <path>bincode crate</path>
+    </interface>
+    <interface>
+      <name>serde::Serialize + serde::Deserialize</name>
+      <kind>derive</kind>
+      <signature>Required derives for JSON serialization</signature>
+      <path>serde crate</path>
+    </interface>
+    <interface>
+      <name>Default trait</name>
+      <kind>trait</kind>
+      <signature>impl Default for UserPreferences - provides default values (30, 90, 0.7, true)</signature>
+      <path>std::default::Default</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+Test-Driven Development (TDD) enforced: Write test → Red → Implement → Green → Refactor. All domain aggregates tested with evento event handlers. Use unsafe_oneshot instead of run for subscribe in integration tests to enable synchronous event processing. Target &gt;90% coverage for Epic 6 domain models. Tests organized inline with modules or in crates/user/tests/. Use existing User aggregate tests as pattern reference (see crates/user/src/aggregate.rs tests).
+    </standards>
+    <locations>
+      - crates/user/src/types.rs (inline unit tests for enums)
+      - crates/user/src/aggregate.rs (inline tests for event handlers)
+      - crates/user/src/events.rs (inline tests for event serialization)
+      - crates/user/tests/ (integration tests with evento executor)
+    </locations>
+    <ideas>
+      <test ac="3">Test DietaryRestriction enum serialization round-trip with all variants including Custom(String)</test>
+      <test ac="4">Test SkillLevel enum serialization round-trip with all variants</test>
+      <test ac="1,2">Test UserPreferences Default trait implementation returns correct default values</test>
+      <test ac="5">Test UserMealPlanningPreferencesUpdated event serde and bincode serialization</test>
+      <test ac="6">Test User aggregate integrates preferences field - event handler updates preferences correctly</test>
+      <test ac="7">Test creating user initializes with default preferences</test>
+      <test ac="7">Test updating preferences via event preserves user_id and updates all fields</test>
+      <test ac="7">Test multiple preference update events are applied in order</test>
+      <test ac="8">Test max_prep_time_weeknight defaults to 30</test>
+      <test ac="8">Test max_prep_time_weekend defaults to 90</test>
+      <test ac="8">Test cuisine_variety_weight defaults to 0.7</test>
+      <test ac="8">Test avoid_consecutive_complex defaults to true</test>
+      <test ac="8">Test cuisine_variety_weight validated in range 0.0-1.0</test>
+      <test ac="8">Test max_prep_time values are positive integers</test>
+      <test>Integration test: Load user aggregate from events using unsafe_oneshot for sync processing</test>
+    </ideas>
+  </tests>
+</story-context>
