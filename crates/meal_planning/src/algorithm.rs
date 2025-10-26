@@ -2,8 +2,10 @@ use crate::error::MealPlanningError;
 use crate::events::MealAssignment;
 use crate::rotation::{RotationState, RotationSystem};
 use chrono::{Datelike, NaiveDate, Weekday};
-use recipe::{AccompanimentCategory, Cuisine};
+use recipe::{AccompanimentCategory, Cuisine, Ingredient};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use uuid::Uuid;
 
 /// Recipe data needed for meal planning algorithm
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1214,6 +1216,415 @@ pub async fn generate_multi_week_meal_plans(
     };
 
     Ok(multi_week_plan)
+}
+
+// ============================================================================
+// Story 7.6: Shopping List Generation
+// ============================================================================
+
+/// Shopping list item with aggregated quantities
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ShoppingItem {
+    pub ingredient_name: String,
+    pub quantity: f32,
+    pub unit: String,
+    pub from_recipe_ids: Vec<String>,
+}
+
+/// Shopping category grouping items
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ShoppingCategory {
+    pub name: String,
+    pub items: Vec<ShoppingItem>,
+}
+
+/// Shopping list for a week
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ShoppingList {
+    pub id: String,
+    pub meal_plan_id: String,
+    pub week_start_date: String,
+    pub categories: Vec<ShoppingCategory>,
+}
+
+/// Recipe with full ingredient data for shopping list generation
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Recipe {
+    pub id: String,
+    pub title: String,
+    pub ingredients: Vec<Ingredient>,
+}
+
+/// Generate shopping list for a week from meal assignments
+///
+/// Story 7.6: Aggregates ingredients from all meals in the week, including both
+/// main courses and their accompaniments, groups by category, and combines duplicates.
+///
+/// # Arguments
+/// * `meal_assignments` - All 21 meal assignments for the week (7 days × 3 courses)
+/// * `recipes` - Full recipe data with ingredients for all recipes referenced in assignments
+/// * `week_start_date` - Monday of the week (ISO 8601: YYYY-MM-DD)
+///
+/// # Returns
+/// `ShoppingList` with categorized and aggregated ingredients
+///
+/// # Algorithm
+/// 1. Extract recipe IDs from assignments (main + accompaniment)
+/// 2. Look up full Recipe structs
+/// 3. Flatten ingredients from all recipes
+/// 4. Aggregate duplicates by name (case-insensitive)
+/// 5. Categorize ingredients by keyword matching
+/// 6. Group into ShoppingCategory structs
+/// 7. Return ShoppingList with categorized items
+///
+/// AC-1: Function implemented
+/// AC-2: Loads recipes from assignments (main + accompaniments)
+/// AC-3: Aggregates ingredients (extracts from all recipes in week)
+/// AC-4: Groups by category (Produce, Dairy, Meat, Grains, Pantry, Frozen)
+/// AC-5: Combines duplicates (case-insensitive name matching)
+/// AC-6: Returns `ShoppingList` with categorized items
+/// AC-7: Includes both main AND accompaniment ingredients
+pub fn generate_shopping_list_for_week(
+    meal_assignments: &[MealAssignment],
+    recipes: &[Recipe],
+    week_start_date: String,
+) -> ShoppingList {
+    // AC-2: Extract recipe IDs from assignments (main + accompaniment)
+    let mut recipe_ids = std::collections::HashSet::new();
+    for assignment in meal_assignments {
+        recipe_ids.insert(&assignment.recipe_id);
+        // AC-7: Include accompaniment ingredients
+        if let Some(accompaniment_id) = &assignment.accompaniment_recipe_id {
+            recipe_ids.insert(accompaniment_id);
+        }
+    }
+
+    // AC-2: Look up full Recipe structs from recipes slice
+    let recipe_map: HashMap<&String, &Recipe> = recipes.iter().map(|r| (&r.id, r)).collect();
+
+    // AC-3: Extract ingredients from all recipes (flatten)
+    let mut all_ingredients: Vec<(&Recipe, &Ingredient)> = Vec::new();
+    for recipe_id in recipe_ids {
+        if let Some(recipe) = recipe_map.get(recipe_id) {
+            for ingredient in &recipe.ingredients {
+                all_ingredients.push((recipe, ingredient));
+            }
+        }
+    }
+
+    // AC-5: Aggregate duplicate ingredients by name (case-insensitive)
+    // HashMap<lowercase_name, (quantity, unit, from_recipe_ids)>
+    let mut aggregated: HashMap<String, (f32, String, Vec<String>)> = HashMap::new();
+
+    for (recipe, ingredient) in all_ingredients {
+        let key = ingredient.name.to_lowercase();
+        let entry = aggregated
+            .entry(key.clone())
+            .or_insert((0.0, ingredient.unit.clone(), vec![]));
+        entry.0 += ingredient.quantity;
+        if !entry.2.contains(&recipe.id) {
+            entry.2.push(recipe.id.clone());
+        }
+    }
+
+    // AC-4: Categorize ingredients by keyword matching
+    let mut categories: HashMap<&str, Vec<ShoppingItem>> = HashMap::new();
+
+    // Category keyword lists
+    const PRODUCE_KEYWORDS: &[&str] = &[
+        "onion", "tomato", "potato", "lettuce", "carrot", "apple", "banana", "garlic", "pepper",
+        "cucumber", "celery", "broccoli", "spinach", "mushroom", "lemon", "lime", "orange",
+        "avocado", "zucchini", "eggplant", "cabbage", "kale", "beet", "radish", "squash",
+        "pumpkin", "corn", "pea", "bean", "herb", "parsley", "cilantro", "basil", "thyme",
+        "rosemary", "oregano", "mint", "dill", "sage", "chive",
+    ];
+    const DAIRY_KEYWORDS: &[&str] = &[
+        "milk",
+        "cheese",
+        "butter",
+        "yogurt",
+        "cream",
+        "sour cream",
+        "cottage cheese",
+        "mozzarella",
+        "cheddar",
+        "parmesan",
+        "feta",
+        "ricotta",
+        "goat cheese",
+        "blue cheese",
+        "swiss",
+        "provolone",
+        "brie",
+        "camembert",
+        "mascarpone",
+        "whey",
+        "casein",
+    ];
+    const MEAT_KEYWORDS: &[&str] = &[
+        "chicken",
+        "beef",
+        "pork",
+        "fish",
+        "salmon",
+        "shrimp",
+        "turkey",
+        "lamb",
+        "duck",
+        "bacon",
+        "sausage",
+        "ham",
+        "steak",
+        "ground beef",
+        "ground turkey",
+        "ground pork",
+        "tuna",
+        "cod",
+        "tilapia",
+        "mahi",
+        "halibut",
+        "trout",
+        "crab",
+        "lobster",
+        "scallop",
+        "clam",
+        "mussel",
+        "oyster",
+        "anchovy",
+        "sardine",
+        "herring",
+        "mackerel",
+        "brisket",
+        "ribs",
+        "chop",
+        "cutlet",
+        "drumstick",
+        "thigh",
+        "breast",
+        "wing",
+        "tenderloin",
+        "roast",
+        "meat",
+        "poultry",
+        "seafood",
+    ];
+    const GRAINS_KEYWORDS: &[&str] = &[
+        "rice",
+        "pasta",
+        "bread",
+        "flour",
+        "oat",
+        "quinoa",
+        "barley",
+        "couscous",
+        "bulgur",
+        "farro",
+        "wheat",
+        "rye",
+        "corn meal",
+        "cornmeal",
+        "polenta",
+        "grits",
+        "cereal",
+        "cracker",
+        "tortilla",
+        "pita",
+        "naan",
+        "bagel",
+        "bun",
+        "roll",
+        "baguette",
+        "ciabatta",
+        "sourdough",
+        "whole grain",
+        "grain",
+        "noodle",
+        "macaroni",
+        "spaghetti",
+        "penne",
+        "linguine",
+        "fettuccine",
+        "ravioli",
+        "lasagna",
+        "orzo",
+    ];
+    const PANTRY_KEYWORDS: &[&str] = &[
+        "oil",
+        "salt",
+        "pepper",
+        "sugar",
+        "vinegar",
+        "sauce",
+        "spice",
+        "olive oil",
+        "vegetable oil",
+        "canola oil",
+        "coconut oil",
+        "sesame oil",
+        "soy sauce",
+        "fish sauce",
+        "worcestershire",
+        "hot sauce",
+        "ketchup",
+        "mustard",
+        "mayonnaise",
+        "mayo",
+        "honey",
+        "syrup",
+        "maple syrup",
+        "molasses",
+        "jam",
+        "jelly",
+        "peanut butter",
+        "almond butter",
+        "tahini",
+        "stock",
+        "broth",
+        "bouillon",
+        "tomato paste",
+        "tomato sauce",
+        "salsa",
+        "chili sauce",
+        "curry paste",
+        "miso",
+        "hoisin",
+        "teriyaki",
+        "bbq",
+        "barbecue",
+        "marinade",
+        "dressing",
+        "balsamic",
+        "red wine vinegar",
+        "white wine vinegar",
+        "apple cider vinegar",
+        "rice vinegar",
+        "lemon juice",
+        "lime juice",
+        "vanilla",
+        "extract",
+        "cinnamon",
+        "cumin",
+        "paprika",
+        "cayenne",
+        "chili powder",
+        "curry powder",
+        "ginger",
+        "turmeric",
+        "coriander",
+        "cardamom",
+        "clove",
+        "nutmeg",
+        "allspice",
+        "bay leaf",
+        "peppercorn",
+        "salt",
+        "sea salt",
+        "kosher salt",
+        "garlic powder",
+        "onion powder",
+        "dried",
+        "can",
+        "canned",
+        "jar",
+        "bottle",
+        "packet",
+        "box",
+        "bag",
+    ];
+    const FROZEN_KEYWORDS: &[&str] = &[
+        "frozen",
+        "ice cream",
+        "frozen vegetable",
+        "frozen fruit",
+        "frozen pizza",
+        "frozen meal",
+        "frozen fish",
+        "frozen shrimp",
+        "frozen chicken",
+        "frozen pea",
+        "frozen corn",
+        "frozen berry",
+        "frozen mango",
+        "frozen pineapple",
+        "frozen broccoli",
+        "frozen spinach",
+        "popsicle",
+        "sorbet",
+        "gelato",
+    ];
+
+    for (name_lower, (quantity, unit, from_recipe_ids)) in aggregated {
+        // Determine category by keyword matching
+        // Note: Check FROZEN first since "frozen peas" should be Frozen, not Produce
+        let category = if FROZEN_KEYWORDS
+            .iter()
+            .any(|&keyword| name_lower.contains(keyword))
+        {
+            "Frozen"
+        } else if PRODUCE_KEYWORDS
+            .iter()
+            .any(|&keyword| name_lower.contains(keyword))
+        {
+            "Produce"
+        } else if DAIRY_KEYWORDS
+            .iter()
+            .any(|&keyword| name_lower.contains(keyword))
+        {
+            "Dairy"
+        } else if MEAT_KEYWORDS
+            .iter()
+            .any(|&keyword| name_lower.contains(keyword))
+        {
+            "Meat"
+        } else if GRAINS_KEYWORDS
+            .iter()
+            .any(|&keyword| name_lower.contains(keyword))
+        {
+            "Grains"
+        } else if PANTRY_KEYWORDS
+            .iter()
+            .any(|&keyword| name_lower.contains(keyword))
+        {
+            "Pantry"
+        } else {
+            "Other" // Fallback for uncategorized ingredients
+        };
+
+        let item = ShoppingItem {
+            ingredient_name: name_lower.clone(),
+            quantity,
+            unit,
+            from_recipe_ids,
+        };
+
+        categories.entry(category).or_default().push(item);
+    }
+
+    // AC-6: Construct ShoppingList with categorized items
+    let mut shopping_categories: Vec<ShoppingCategory> = categories
+        .into_iter()
+        .map(|(name, items)| ShoppingCategory {
+            name: name.to_string(),
+            items,
+        })
+        .collect();
+
+    // Sort categories by name for consistent ordering
+    shopping_categories.sort_by(|a, b| a.name.cmp(&b.name));
+
+    // Sort items within each category alphabetically
+    for category in &mut shopping_categories {
+        category
+            .items
+            .sort_by(|a, b| a.ingredient_name.cmp(&b.ingredient_name));
+    }
+
+    ShoppingList {
+        id: Uuid::new_v4().to_string(),
+        meal_plan_id: String::new(), // Will be set by caller
+        week_start_date,
+        categories: shopping_categories,
+    }
 }
 
 #[cfg(test)]
@@ -2718,5 +3129,592 @@ mod tests {
                 }
             }
         }
+    }
+
+    // ========================================================================
+    // Story 7.6: Shopping List Generation Tests
+    // ========================================================================
+
+    /// Helper: Create test recipe with ingredients
+    fn create_test_recipe_with_ingredients(
+        id: &str,
+        title: &str,
+        ingredients: Vec<Ingredient>,
+    ) -> Recipe {
+        Recipe {
+            id: id.to_string(),
+            title: title.to_string(),
+            ingredients,
+        }
+    }
+
+    /// Helper: Create test meal assignment
+    fn create_test_meal_assignment(
+        date: &str,
+        course_type: &str,
+        recipe_id: &str,
+        accompaniment_id: Option<String>,
+    ) -> MealAssignment {
+        MealAssignment {
+            date: date.to_string(),
+            course_type: course_type.to_string(),
+            recipe_id: recipe_id.to_string(),
+            prep_required: false,
+            assignment_reasoning: None,
+            accompaniment_recipe_id: accompaniment_id,
+        }
+    }
+
+    /// AC-1: Test generate_shopping_list_for_week function exists and returns ShoppingList
+    #[test]
+    fn test_generate_shopping_list_function_exists() {
+        let assignments = vec![];
+        let recipes = vec![];
+        let week_start = "2025-10-27".to_string();
+
+        let result = generate_shopping_list_for_week(&assignments, &recipes, week_start.clone());
+
+        assert_eq!(result.week_start_date, week_start);
+        assert!(!result.id.is_empty(), "Shopping list should have UUID");
+        assert!(
+            result.categories.is_empty(),
+            "Empty assignments should return empty categories"
+        );
+    }
+
+    /// AC-3, AC-5: Test single meal assignment aggregates ingredients correctly
+    #[test]
+    fn test_single_meal_assignment_aggregation() {
+        let recipe = create_test_recipe_with_ingredients(
+            "recipe1",
+            "Pasta",
+            vec![
+                Ingredient {
+                    name: "Pasta".to_string(),
+                    quantity: 200.0,
+                    unit: "g".to_string(),
+                },
+                Ingredient {
+                    name: "Tomato".to_string(),
+                    quantity: 3.0,
+                    unit: "whole".to_string(),
+                },
+                Ingredient {
+                    name: "Onion".to_string(),
+                    quantity: 1.0,
+                    unit: "whole".to_string(),
+                },
+            ],
+        );
+
+        let assignments = vec![create_test_meal_assignment(
+            "2025-10-27",
+            "main_course",
+            "recipe1",
+            None,
+        )];
+
+        let result =
+            generate_shopping_list_for_week(&assignments, &[recipe], "2025-10-27".to_string());
+
+        // Should have ingredients from the single recipe
+        let all_items: Vec<&ShoppingItem> = result
+            .categories
+            .iter()
+            .flat_map(|cat| &cat.items)
+            .collect();
+        assert_eq!(all_items.len(), 3, "Should have 3 ingredients");
+
+        // Check ingredient names are lowercase
+        let ingredient_names: Vec<&str> = all_items
+            .iter()
+            .map(|item| item.ingredient_name.as_str())
+            .collect();
+        assert!(ingredient_names.contains(&"pasta"));
+        assert!(ingredient_names.contains(&"tomato"));
+        assert!(ingredient_names.contains(&"onion"));
+    }
+
+    /// AC-5: Test duplicate aggregation (2 onions + 1 onion = 3 onions)
+    #[test]
+    fn test_duplicate_ingredient_aggregation() {
+        let recipe1 = create_test_recipe_with_ingredients(
+            "recipe1",
+            "Recipe 1",
+            vec![Ingredient {
+                name: "Onion".to_string(),
+                quantity: 2.0,
+                unit: "whole".to_string(),
+            }],
+        );
+
+        let recipe2 = create_test_recipe_with_ingredients(
+            "recipe2",
+            "Recipe 2",
+            vec![Ingredient {
+                name: "onion".to_string(), // lowercase variant
+                quantity: 1.0,
+                unit: "whole".to_string(),
+            }],
+        );
+
+        let assignments = vec![
+            create_test_meal_assignment("2025-10-27", "appetizer", "recipe1", None),
+            create_test_meal_assignment("2025-10-27", "main_course", "recipe2", None),
+        ];
+
+        let result = generate_shopping_list_for_week(
+            &assignments,
+            &[recipe1, recipe2],
+            "2025-10-27".to_string(),
+        );
+
+        // Find onion item
+        let onion_item = result
+            .categories
+            .iter()
+            .flat_map(|cat| &cat.items)
+            .find(|item| item.ingredient_name == "onion");
+
+        assert!(onion_item.is_some(), "Should find aggregated onion");
+        let onion = onion_item.unwrap();
+        assert_eq!(onion.quantity, 3.0, "Should aggregate 2 + 1 = 3 onions");
+        assert_eq!(onion.unit, "whole");
+        assert_eq!(
+            onion.from_recipe_ids.len(),
+            2,
+            "Should track both recipe IDs"
+        );
+    }
+
+    /// AC-4: Test ingredient categorization (chicken → Meat, onion → Produce)
+    #[test]
+    fn test_ingredient_categorization() {
+        let recipe = create_test_recipe_with_ingredients(
+            "recipe1",
+            "Chicken Stir Fry",
+            vec![
+                Ingredient {
+                    name: "Chicken Breast".to_string(),
+                    quantity: 500.0,
+                    unit: "g".to_string(),
+                },
+                Ingredient {
+                    name: "Onion".to_string(),
+                    quantity: 1.0,
+                    unit: "whole".to_string(),
+                },
+                Ingredient {
+                    name: "Milk".to_string(),
+                    quantity: 1.0,
+                    unit: "cup".to_string(),
+                },
+                Ingredient {
+                    name: "Rice".to_string(),
+                    quantity: 200.0,
+                    unit: "g".to_string(),
+                },
+                Ingredient {
+                    name: "Olive Oil".to_string(),
+                    quantity: 2.0,
+                    unit: "tbsp".to_string(),
+                },
+                Ingredient {
+                    name: "Frozen Peas".to_string(),
+                    quantity: 100.0,
+                    unit: "g".to_string(),
+                },
+            ],
+        );
+
+        let assignments = vec![create_test_meal_assignment(
+            "2025-10-27",
+            "main_course",
+            "recipe1",
+            None,
+        )];
+
+        let result =
+            generate_shopping_list_for_week(&assignments, &[recipe], "2025-10-27".to_string());
+
+        // Check categories exist
+        let category_names: Vec<&str> = result.categories.iter().map(|c| c.name.as_str()).collect();
+        assert!(
+            category_names.contains(&"Meat"),
+            "Should have Meat category for chicken"
+        );
+        assert!(
+            category_names.contains(&"Produce"),
+            "Should have Produce category for onion"
+        );
+        assert!(
+            category_names.contains(&"Dairy"),
+            "Should have Dairy category for milk"
+        );
+        assert!(
+            category_names.contains(&"Grains"),
+            "Should have Grains category for rice"
+        );
+        assert!(
+            category_names.contains(&"Pantry"),
+            "Should have Pantry category for oil"
+        );
+        assert!(
+            category_names.contains(&"Frozen"),
+            "Should have Frozen category for frozen peas"
+        );
+
+        // Verify specific categorization
+        let meat_category = result.categories.iter().find(|c| c.name == "Meat").unwrap();
+        assert!(meat_category
+            .items
+            .iter()
+            .any(|item| item.ingredient_name.contains("chicken")));
+
+        let produce_category = result
+            .categories
+            .iter()
+            .find(|c| c.name == "Produce")
+            .unwrap();
+        assert!(produce_category
+            .items
+            .iter()
+            .any(|item| item.ingredient_name == "onion"));
+    }
+
+    /// AC-7: Test accompaniment ingredient inclusion (main + side)
+    #[test]
+    fn test_accompaniment_ingredient_inclusion() {
+        let main_recipe = create_test_recipe_with_ingredients(
+            "main1",
+            "Steak",
+            vec![Ingredient {
+                name: "Beef Steak".to_string(),
+                quantity: 300.0,
+                unit: "g".to_string(),
+            }],
+        );
+
+        let side_recipe = create_test_recipe_with_ingredients(
+            "side1",
+            "Mashed Potatoes",
+            vec![
+                Ingredient {
+                    name: "Potato".to_string(),
+                    quantity: 4.0,
+                    unit: "whole".to_string(),
+                },
+                Ingredient {
+                    name: "Butter".to_string(),
+                    quantity: 50.0,
+                    unit: "g".to_string(),
+                },
+            ],
+        );
+
+        let assignments = vec![create_test_meal_assignment(
+            "2025-10-27",
+            "main_course",
+            "main1",
+            Some("side1".to_string()),
+        )];
+
+        let result = generate_shopping_list_for_week(
+            &assignments,
+            &[main_recipe, side_recipe],
+            "2025-10-27".to_string(),
+        );
+
+        let all_items: Vec<&ShoppingItem> = result
+            .categories
+            .iter()
+            .flat_map(|cat| &cat.items)
+            .collect();
+
+        // Should have ingredients from BOTH main and accompaniment
+        let ingredient_names: Vec<&str> = all_items
+            .iter()
+            .map(|item| item.ingredient_name.as_str())
+            .collect();
+        assert!(
+            ingredient_names.iter().any(|name| name.contains("beef")),
+            "Should have beef from main"
+        );
+        assert!(
+            ingredient_names.iter().any(|name| name.contains("potato")),
+            "Should have potato from side"
+        );
+        assert!(
+            ingredient_names.iter().any(|name| name.contains("butter")),
+            "Should have butter from side"
+        );
+        assert_eq!(all_items.len(), 3, "Should have 3 total ingredients");
+    }
+
+    /// AC-8: Test full week (21 assignments) with multiple recipes
+    #[test]
+    fn test_full_week_generation() {
+        let mut recipes = vec![];
+        let mut assignments = vec![];
+
+        // Create 7 different appetizers (one per day)
+        for day in 0..7 {
+            recipes.push(create_test_recipe_with_ingredients(
+                &format!("app{}", day),
+                "Salad",
+                vec![Ingredient {
+                    name: "Lettuce".to_string(),
+                    quantity: 1.0,
+                    unit: "head".to_string(),
+                }],
+            ));
+        }
+
+        // Create 7 different main courses (one per day)
+        for day in 0..7 {
+            recipes.push(create_test_recipe_with_ingredients(
+                &format!("main{}", day),
+                "Pasta",
+                vec![Ingredient {
+                    name: "Pasta".to_string(),
+                    quantity: 200.0,
+                    unit: "g".to_string(),
+                }],
+            ));
+        }
+
+        // Create 7 different desserts (one per day)
+        for day in 0..7 {
+            recipes.push(create_test_recipe_with_ingredients(
+                &format!("dessert{}", day),
+                "Cake",
+                vec![Ingredient {
+                    name: "Flour".to_string(),
+                    quantity: 300.0,
+                    unit: "g".to_string(),
+                }],
+            ));
+        }
+
+        // Create 21 assignments (7 days × 3 courses)
+        for day in 0..7 {
+            let date = format!("2025-10-{}", 27 + day);
+            assignments.push(create_test_meal_assignment(
+                &date,
+                "appetizer",
+                &format!("app{}", day),
+                None,
+            ));
+            assignments.push(create_test_meal_assignment(
+                &date,
+                "main_course",
+                &format!("main{}", day),
+                None,
+            ));
+            assignments.push(create_test_meal_assignment(
+                &date,
+                "dessert",
+                &format!("dessert{}", day),
+                None,
+            ));
+        }
+
+        let result =
+            generate_shopping_list_for_week(&assignments, &recipes, "2025-10-27".to_string());
+
+        // Should aggregate across all 21 meals
+        let lettuce = result
+            .categories
+            .iter()
+            .flat_map(|cat| &cat.items)
+            .find(|item| item.ingredient_name == "lettuce");
+        assert!(lettuce.is_some());
+        assert_eq!(
+            lettuce.unwrap().quantity,
+            7.0,
+            "Should have 7 heads of lettuce (one per day)"
+        );
+
+        let pasta = result
+            .categories
+            .iter()
+            .flat_map(|cat| &cat.items)
+            .find(|item| item.ingredient_name == "pasta");
+        assert!(pasta.is_some());
+        assert_eq!(
+            pasta.unwrap().quantity,
+            1400.0,
+            "Should have 1400g pasta (200g × 7 days)"
+        );
+    }
+
+    /// AC-8: Test empty meal assignments returns empty shopping list
+    #[test]
+    fn test_empty_meal_assignments() {
+        let assignments = vec![];
+        let recipes = vec![];
+
+        let result =
+            generate_shopping_list_for_week(&assignments, &recipes, "2025-10-27".to_string());
+
+        assert_eq!(
+            result.categories.len(),
+            0,
+            "Empty assignments should return no categories"
+        );
+        assert!(!result.id.is_empty(), "Should still have UUID");
+        assert_eq!(result.week_start_date, "2025-10-27");
+    }
+
+    /// AC-8: Test case-insensitive ingredient matching ("Onion" vs "onion")
+    #[test]
+    fn test_case_insensitive_ingredient_matching() {
+        let recipe1 = create_test_recipe_with_ingredients(
+            "recipe1",
+            "Recipe 1",
+            vec![Ingredient {
+                name: "Onion".to_string(), // Capitalized
+                quantity: 1.0,
+                unit: "whole".to_string(),
+            }],
+        );
+
+        let recipe2 = create_test_recipe_with_ingredients(
+            "recipe2",
+            "Recipe 2",
+            vec![Ingredient {
+                name: "onion".to_string(), // lowercase
+                quantity: 2.0,
+                unit: "whole".to_string(),
+            }],
+        );
+
+        let recipe3 = create_test_recipe_with_ingredients(
+            "recipe3",
+            "Recipe 3",
+            vec![Ingredient {
+                name: "ONION".to_string(), // UPPERCASE
+                quantity: 1.5,
+                unit: "whole".to_string(),
+            }],
+        );
+
+        let assignments = vec![
+            create_test_meal_assignment("2025-10-27", "appetizer", "recipe1", None),
+            create_test_meal_assignment("2025-10-27", "main_course", "recipe2", None),
+            create_test_meal_assignment("2025-10-27", "dessert", "recipe3", None),
+        ];
+
+        let result = generate_shopping_list_for_week(
+            &assignments,
+            &[recipe1, recipe2, recipe3],
+            "2025-10-27".to_string(),
+        );
+
+        // All "onion" variants should be aggregated into single item
+        let onion_items: Vec<&ShoppingItem> = result
+            .categories
+            .iter()
+            .flat_map(|cat| &cat.items)
+            .filter(|item| item.ingredient_name == "onion")
+            .collect();
+
+        assert_eq!(
+            onion_items.len(),
+            1,
+            "Should have only one 'onion' item (case-insensitive)"
+        );
+        assert_eq!(
+            onion_items[0].quantity, 4.5,
+            "Should aggregate 1 + 2 + 1.5 = 4.5"
+        );
+        assert_eq!(
+            onion_items[0].from_recipe_ids.len(),
+            3,
+            "Should track all 3 recipes"
+        );
+    }
+
+    /// AC-8: Test uncategorized ingredients go to "Other" category
+    #[test]
+    fn test_uncategorized_ingredients_to_other() {
+        let recipe = create_test_recipe_with_ingredients(
+            "recipe1",
+            "Exotic Dish",
+            vec![Ingredient {
+                name: "Dragon Fruit Powder".to_string(), // Uncommon ingredient
+                quantity: 10.0,
+                unit: "g".to_string(),
+            }],
+        );
+
+        let assignments = vec![create_test_meal_assignment(
+            "2025-10-27",
+            "dessert",
+            "recipe1",
+            None,
+        )];
+
+        let result =
+            generate_shopping_list_for_week(&assignments, &[recipe], "2025-10-27".to_string());
+
+        // Should have "Other" category
+        let other_category = result.categories.iter().find(|c| c.name == "Other");
+        assert!(
+            other_category.is_some(),
+            "Should have 'Other' category for uncategorized ingredients"
+        );
+
+        let other_items = &other_category.unwrap().items;
+        assert!(other_items
+            .iter()
+            .any(|item| item.ingredient_name.contains("dragon fruit")));
+    }
+
+    /// AC-6: Test ShoppingList structure fields
+    #[test]
+    fn test_shopping_list_structure() {
+        let recipe = create_test_recipe_with_ingredients(
+            "recipe1",
+            "Test",
+            vec![Ingredient {
+                name: "Salt".to_string(),
+                quantity: 1.0,
+                unit: "tsp".to_string(),
+            }],
+        );
+
+        let assignments = vec![create_test_meal_assignment(
+            "2025-10-27",
+            "main_course",
+            "recipe1",
+            None,
+        )];
+
+        let result =
+            generate_shopping_list_for_week(&assignments, &[recipe], "2025-10-27".to_string());
+
+        // Verify structure
+        assert!(!result.id.is_empty(), "Should have UUID id");
+        assert_eq!(
+            result.week_start_date, "2025-10-27",
+            "Should have correct week start"
+        );
+        assert!(!result.categories.is_empty(), "Should have categories");
+
+        // Verify category structure
+        let category = &result.categories[0];
+        assert!(!category.name.is_empty(), "Category should have name");
+        assert!(!category.items.is_empty(), "Category should have items");
+
+        // Verify item structure
+        let item = &category.items[0];
+        assert!(!item.ingredient_name.is_empty(), "Item should have name");
+        assert!(item.quantity > 0.0, "Item should have positive quantity");
+        assert!(!item.unit.is_empty(), "Item should have unit");
+        assert!(
+            !item.from_recipe_ids.is_empty(),
+            "Item should track recipe IDs"
+        );
     }
 }
