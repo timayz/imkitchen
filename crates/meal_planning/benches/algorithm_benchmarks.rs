@@ -1,7 +1,10 @@
 use chrono::{NaiveDate, Weekday};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use meal_planning::{
-    algorithm::{select_main_course_with_preferences, RecipeForPlanning, UserPreferences},
+    algorithm::{
+        generate_multi_week_meal_plans, select_main_course_with_preferences, RecipeForPlanning,
+        UserPreferences,
+    },
     rotation::RotationState,
 };
 use recipe::Cuisine;
@@ -39,6 +42,46 @@ fn create_bench_recipe(
         preferred_accompaniments: vec![],
         accompaniment_category: None,
     }
+}
+
+/// Create balanced recipe set for multi-week benchmarking
+fn create_balanced_bench_recipes(count: usize) -> Vec<RecipeForPlanning> {
+    let mut recipes = Vec::new();
+
+    for i in 0..count {
+        let recipe_type = match i % 3 {
+            0 => "appetizer",
+            1 => "main_course",
+            _ => "dessert",
+        };
+
+        let cuisine = match i % 5 {
+            0 => Cuisine::Italian,
+            1 => Cuisine::Mexican,
+            2 => Cuisine::Indian,
+            3 => Cuisine::Chinese,
+            _ => Cuisine::Japanese,
+        };
+
+        recipes.push(RecipeForPlanning {
+            id: format!("recipe_{}", i),
+            title: format!("Recipe {}", i),
+            recipe_type: recipe_type.to_string(),
+            ingredients_count: 5 + (i % 15),
+            instructions_count: 3 + (i % 10),
+            prep_time_min: Some(5 + (i as u32 % 25)),
+            cook_time_min: Some(10 + (i as u32 % 40)),
+            advance_prep_hours: None,
+            complexity: Some("simple".to_string()),
+            dietary_tags: vec![],
+            cuisine,
+            accepts_accompaniment: false,
+            preferred_accompaniments: vec![],
+            accompaniment_category: None,
+        });
+    }
+
+    recipes
 }
 
 /// Benchmark select_main_course_with_preferences with 100 recipes (Story 7.2 AC-9)
@@ -82,5 +125,35 @@ fn bench_select_main_course_100_recipes(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, bench_select_main_course_100_recipes);
+/// Benchmark generate_multi_week_meal_plans with 5 weeks (Story 7.5 AC-9)
+///
+/// Target: <5 seconds execution time (P95) for 5 weeks with 50 recipes
+fn bench_generate_multi_week_5_weeks(c: &mut Criterion) {
+    let rt = tokio::runtime::Runtime::new().unwrap();
+
+    // Create 105 recipes (35 of each type) to ensure 5 weeks can be generated
+    let recipes = create_balanced_bench_recipes(105);
+    let user_id = "bench_user".to_string();
+    let preferences = UserPreferences::default();
+
+    c.bench_function("generate_multi_week_5_weeks", |b| {
+        b.iter(|| {
+            rt.block_on(async {
+                generate_multi_week_meal_plans(
+                    black_box(user_id.clone()),
+                    black_box(recipes.clone()),
+                    black_box(preferences.clone()),
+                )
+                .await
+                .expect("Benchmark generation should succeed")
+            })
+        })
+    });
+}
+
+criterion_group!(
+    benches,
+    bench_select_main_course_100_recipes,
+    bench_generate_multi_week_5_weeks
+);
 criterion_main!(benches);
