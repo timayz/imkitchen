@@ -1,9 +1,9 @@
-/// Story 8.1: Multi-Week Meal Plan Generation API Route
+/// Story 8.1 & 8.2: Multi-Week Meal Plan Generation and Week Navigation API Routes
 ///
-/// RESTful JSON API endpoint for generating multi-week meal plans.
+/// RESTful JSON API endpoints for generating multi-week meal plans and navigating week details.
 /// Integrates with Epic 7 algorithm and evento event sourcing.
 use axum::{
-    extract::State,
+    extract::{Path, State},
     http::StatusCode,
     response::{IntoResponse, Json, Response},
     Extension,
@@ -91,6 +91,57 @@ pub struct WeekLink {
     pub week_id: String,
     pub start_date: String,
     pub is_current: bool,
+}
+
+/// JSON response for week detail navigation (Story 8.2 AC-6)
+///
+/// Returns full week data with meal assignments and shopping list.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WeekDetailResponse {
+    pub week: WeekDetailData,
+    pub navigation: WeekNavigationData,
+}
+
+/// Week detail data with complete meal assignments and shopping list
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WeekDetailData {
+    pub id: String,
+    pub start_date: String,
+    pub end_date: String,
+    pub status: String,
+    pub is_locked: bool,
+    pub meal_assignments: Vec<MealAssignmentData>,
+    pub shopping_list: Option<ShoppingListData>,
+}
+
+/// Shopping list data with categorized items
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ShoppingListData {
+    pub id: String,
+    pub categories: Vec<ShoppingCategoryData>,
+}
+
+/// Shopping list category with items
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ShoppingCategoryData {
+    pub name: String,
+    pub items: Vec<ShoppingItemData>,
+}
+
+/// Shopping list item
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ShoppingItemData {
+    pub ingredient_name: String,
+    pub quantity: f32,
+    pub unit: String,
+    pub from_recipe_ids: Vec<String>,
+}
+
+/// Week navigation data with previous/next links
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WeekNavigationData {
+    pub previous_week_id: Option<String>,
+    pub next_week_id: Option<String>,
 }
 
 /// Error response with actionable guidance (Story 8.1 AC-9, AC-10)
@@ -575,7 +626,7 @@ async fn build_multi_week_response(
     })
 }
 
-/// API-specific error types with JSON responses (Story 8.1 AC-9, AC-10)
+/// API-specific error types with JSON responses (Story 8.1 AC-9, AC-10, Story 8.2 AC-7, AC-8)
 #[derive(Debug)]
 pub enum ApiError {
     InsufficientRecipes {
@@ -584,6 +635,9 @@ pub enum ApiError {
         desserts: usize,
     },
     AlgorithmTimeout,
+    WeekNotFound,       // Story 8.2 AC-7
+    Forbidden,          // Story 8.2 AC-8
+    BadRequest(String), // Story 8.2: Invalid UUID format
     InternalServerError(String),
     DatabaseError(sqlx::Error),
 }
@@ -645,6 +699,33 @@ impl IntoResponse for ApiError {
                     }),
                 },
             ),
+            ApiError::WeekNotFound => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse {
+                    error: "WeekNotFound".to_string(),
+                    message: "Week not found or does not belong to you.".to_string(),
+                    details: None,
+                    action: None,
+                },
+            ),
+            ApiError::Forbidden => (
+                StatusCode::FORBIDDEN,
+                ErrorResponse {
+                    error: "Forbidden".to_string(),
+                    message: "This week belongs to a different user.".to_string(),
+                    details: None,
+                    action: None,
+                },
+            ),
+            ApiError::BadRequest(msg) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse {
+                    error: "BadRequest".to_string(),
+                    message: msg,
+                    details: None,
+                    action: None,
+                },
+            ),
             ApiError::DatabaseError(e) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorResponse {
@@ -667,4 +748,354 @@ impl IntoResponse for ApiError {
 
         (status, Json(error_response)).into_response()
     }
+}
+
+/// GET /plan/week/:week_id route handler (Story 8.2 AC-1)
+///
+/// Displays specific week meal plan details with shopping list for authenticated users.
+///
+/// # Authentication
+/// Protected by JWT cookie middleware (AC-2)
+///
+/// # Authorization
+/// Verifies week belongs to authenticated user (AC-3)
+///
+/// # Returns
+/// - 200 OK: JSON with week data, meal assignments, shopping list, and navigation links (AC-6)
+/// - 400 Bad Request: Invalid UUID format
+/// - 403 Forbidden: Week belongs to different user (AC-8)
+/// - 404 Not Found: Week not found (AC-7)
+#[tracing::instrument(skip(state), fields(user_id = %auth.user_id, week_id = %week_id))]
+pub async fn get_week_detail(
+    State(state): State<AppState>,
+    Extension(auth): Extension<Auth>, // AC-2: Extract user_id from JWT
+    Path(week_id): Path<String>,      // AC-1: Extract week_id from path
+) -> Result<Json<WeekDetailResponse>, ApiError> {
+    let user_id = &auth.user_id;
+
+    tracing::debug!(user_id = %user_id, week_id = %week_id, "Loading week detail");
+
+    // Validate week_id is valid UUID format
+    uuid::Uuid::parse_str(&week_id).map_err(|e| {
+        tracing::warn!(
+            user_id = %user_id,
+            week_id = %week_id,
+            error = %e,
+            "Invalid UUID format for week_id"
+        );
+        ApiError::BadRequest("Invalid week_id format: must be a valid UUID".to_string())
+    })?;
+
+    // AC-4: Load week data from meal_plans table
+    let week_row = sqlx::query(
+        r#"
+        SELECT
+            id,
+            user_id,
+            start_date,
+            end_date,
+            status,
+            is_locked
+        FROM meal_plans
+        WHERE id = ?1
+        "#,
+    )
+    .bind(&week_id)
+    .fetch_optional(&state.db_pool)
+    .await?;
+
+    let week_data = week_row.ok_or_else(|| {
+        tracing::warn!(
+            user_id = %user_id,
+            week_id = %week_id,
+            "Week not found in database"
+        );
+        ApiError::WeekNotFound
+    })?;
+
+    // AC-3: Verify week belongs to authenticated user (authorization check)
+    let week_user_id: String = week_data.try_get("user_id")?;
+    if week_user_id != *user_id {
+        tracing::warn!(
+            user_id = %user_id,
+            week_id = %week_id,
+            week_user_id = %week_user_id,
+            "Authorization failed: week belongs to different user"
+        );
+        return Err(ApiError::Forbidden);
+    }
+
+    // Parse week metadata
+    let id: String = week_data.try_get("id")?;
+    let start_date: String = week_data.try_get("start_date")?;
+    let end_date: String = week_data.try_get("end_date")?;
+    let status: String = week_data.try_get("status")?;
+    let is_locked: bool = week_data.try_get("is_locked")?;
+
+    tracing::debug!(
+        user_id = %user_id,
+        week_id = %week_id,
+        status = %status,
+        is_locked = is_locked,
+        "Week metadata loaded successfully"
+    );
+
+    // AC-4: Load meal assignments for week with recipe details (JOIN query to avoid N+1)
+    let meal_assignments = sqlx::query(
+        r#"
+        SELECT
+            ma.id as assignment_id,
+            ma.date,
+            ma.course_type,
+            ma.prep_required,
+            ma.assignment_reasoning,
+            ma.accompaniment_recipe_id,
+            r.id as recipe_id,
+            r.title as recipe_title,
+            r.prep_time_min,
+            r.cook_time_min,
+            r.complexity,
+            acc.id as acc_id,
+            acc.title as acc_title,
+            acc.accompaniment_category as acc_category
+        FROM meal_assignments ma
+        JOIN recipes r ON ma.recipe_id = r.id
+        LEFT JOIN recipes acc ON ma.accompaniment_recipe_id = acc.id
+        WHERE ma.meal_plan_id = ?1
+        ORDER BY ma.date, ma.course_type
+        "#,
+    )
+    .bind(&week_id)
+    .fetch_all(&state.db_pool)
+    .await?;
+
+    let meal_assignment_data: Vec<MealAssignmentData> = meal_assignments
+        .iter()
+        .map(|row| {
+            let assignment_id: String = row.try_get("assignment_id")?;
+            let date: String = row.try_get("date")?;
+            let course_type: String = row.try_get("course_type")?;
+            let prep_required: bool = row.try_get("prep_required")?;
+            let assignment_reasoning: Option<String> = row.try_get("assignment_reasoning")?;
+
+            let recipe_id: String = row.try_get("recipe_id")?;
+            let recipe_title: String = row.try_get("recipe_title")?;
+            let prep_time_min: Option<i32> = row.try_get("prep_time_min")?;
+            let cook_time_min: Option<i32> = row.try_get("cook_time_min")?;
+            let complexity: Option<String> = row.try_get("complexity")?;
+
+            // Parse accompaniment if present
+            let accompaniment = if let Ok(Some(acc_id)) = row.try_get::<Option<String>, _>("acc_id")
+            {
+                let acc_title: String = row.try_get("acc_title")?;
+                let acc_category: Option<String> = row.try_get("acc_category")?;
+
+                Some(AccompanimentData {
+                    id: acc_id,
+                    title: acc_title,
+                    category: acc_category.unwrap_or_else(|| "other".to_string()),
+                })
+            } else {
+                None
+            };
+
+            Ok(MealAssignmentData {
+                id: assignment_id,
+                date,
+                course_type,
+                recipe: RecipeData {
+                    id: recipe_id,
+                    title: recipe_title,
+                    prep_time_min: prep_time_min.map(|t| t as u32),
+                    cook_time_min: cook_time_min.map(|t| t as u32),
+                    complexity,
+                },
+                accompaniment,
+                prep_required,
+                algorithm_reasoning: assignment_reasoning,
+            })
+        })
+        .collect::<Result<Vec<_>, sqlx::Error>>()?;
+
+    tracing::debug!(
+        user_id = %user_id,
+        week_id = %week_id,
+        meal_count = meal_assignment_data.len(),
+        "Meal assignments loaded successfully"
+    );
+
+    // AC-5: Load shopping list for week (use LEFT JOIN to handle weeks without shopping lists)
+    let shopping_list_data = load_shopping_list_for_week(&week_id, &state.db_pool).await?;
+
+    tracing::debug!(
+        user_id = %user_id,
+        week_id = %week_id,
+        has_shopping_list = shopping_list_data.is_some(),
+        "Shopping list loaded"
+    );
+
+    // Calculate previous_week_id and next_week_id from database
+    let navigation = calculate_week_navigation(user_id, &start_date, &state.db_pool).await?;
+
+    tracing::info!(
+        user_id = %user_id,
+        week_id = %week_id,
+        status = %status,
+        meal_count = meal_assignment_data.len(),
+        "Week detail loaded successfully"
+    );
+
+    // AC-6: Build JSON response
+    Ok(Json(WeekDetailResponse {
+        week: WeekDetailData {
+            id,
+            start_date,
+            end_date,
+            status,
+            is_locked,
+            meal_assignments: meal_assignment_data,
+            shopping_list: shopping_list_data,
+        },
+        navigation,
+    }))
+}
+
+/// Load shopping list for week from database (Story 8.2 AC-5)
+async fn load_shopping_list_for_week(
+    week_id: &str,
+    db_pool: &SqlitePool,
+) -> Result<Option<ShoppingListData>, ApiError> {
+    // Query shopping list by meal_plan_id
+    let shopping_list_row = sqlx::query(
+        r#"
+        SELECT id
+        FROM shopping_lists
+        WHERE meal_plan_id = ?1
+        "#,
+    )
+    .bind(week_id)
+    .fetch_optional(db_pool)
+    .await?;
+
+    let shopping_list_id: String = match shopping_list_row {
+        Some(row) => row.try_get("id")?,
+        None => return Ok(None), // No shopping list for this week
+    };
+
+    // Query shopping list items with category grouping
+    let items_rows = sqlx::query(
+        r#"
+        SELECT
+            ingredient_name,
+            quantity,
+            unit,
+            category
+        FROM shopping_list_items
+        WHERE shopping_list_id = ?1
+        ORDER BY category, ingredient_name
+        "#,
+    )
+    .bind(&shopping_list_id)
+    .fetch_all(db_pool)
+    .await?;
+
+    // Group items by category
+    let mut categories: std::collections::HashMap<String, Vec<ShoppingItemData>> =
+        std::collections::HashMap::new();
+
+    for row in items_rows {
+        let ingredient_name: String = row.try_get("ingredient_name")?;
+        let quantity: f64 = row.try_get("quantity")?;
+        let unit: String = row.try_get("unit")?;
+        let category: String = row.try_get("category")?;
+
+        categories
+            .entry(category.clone())
+            .or_default()
+            .push(ShoppingItemData {
+                ingredient_name,
+                quantity: quantity as f32,
+                unit,
+                from_recipe_ids: vec![], // TODO: Track recipe IDs in shopping list items (future enhancement)
+            });
+    }
+
+    // Convert HashMap to Vec with standardized category order
+    let category_order = [
+        "Produce", "Dairy", "Meat", "Pantry", "Frozen", "Bakery", "Other",
+    ];
+    let mut category_data: Vec<ShoppingCategoryData> = category_order
+        .iter()
+        .filter_map(|&cat_name| {
+            categories
+                .remove(cat_name)
+                .map(|items| ShoppingCategoryData {
+                    name: cat_name.to_string(),
+                    items,
+                })
+        })
+        .collect();
+
+    // Add any remaining categories not in standard order
+    for (cat_name, items) in categories {
+        category_data.push(ShoppingCategoryData {
+            name: cat_name,
+            items,
+        });
+    }
+
+    Ok(Some(ShoppingListData {
+        id: shopping_list_id,
+        categories: category_data,
+    }))
+}
+
+/// Calculate previous/next week navigation links (Story 8.2 AC-6)
+async fn calculate_week_navigation(
+    user_id: &str,
+    current_start_date: &str,
+    db_pool: &SqlitePool,
+) -> Result<WeekNavigationData, ApiError> {
+    // Query previous week (week with start_date < current_start_date, ORDER BY start_date DESC LIMIT 1)
+    let previous_week_row = sqlx::query(
+        r#"
+        SELECT id
+        FROM meal_plans
+        WHERE user_id = ?1 AND start_date < ?2
+        ORDER BY start_date DESC
+        LIMIT 1
+        "#,
+    )
+    .bind(user_id)
+    .bind(current_start_date)
+    .fetch_optional(db_pool)
+    .await?;
+
+    let previous_week_id: Option<String> = previous_week_row
+        .as_ref()
+        .and_then(|row| row.try_get("id").ok());
+
+    // Query next week (week with start_date > current_start_date, ORDER BY start_date ASC LIMIT 1)
+    let next_week_row = sqlx::query(
+        r#"
+        SELECT id
+        FROM meal_plans
+        WHERE user_id = ?1 AND start_date > ?2
+        ORDER BY start_date ASC
+        LIMIT 1
+        "#,
+    )
+    .bind(user_id)
+    .bind(current_start_date)
+    .fetch_optional(db_pool)
+    .await?;
+
+    let next_week_id: Option<String> = next_week_row
+        .as_ref()
+        .and_then(|row| row.try_get("id").ok());
+
+    Ok(WeekNavigationData {
+        previous_week_id,
+        next_week_id,
+    })
 }
