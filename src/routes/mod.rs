@@ -6,6 +6,7 @@ pub mod health;
 pub mod landing;
 pub mod legal;
 pub mod meal_plan;
+pub mod meal_planning_api; // Story 8.1: Multi-week meal plan generation API
 pub mod notifications;
 pub mod profile;
 pub mod recipes;
@@ -30,6 +31,7 @@ pub use meal_plan::{
     get_meal_plan, get_meal_plan_check_ready, get_regenerate_confirm, post_generate_meal_plan,
     post_regenerate_meal_plan,
 };
+pub use meal_planning_api::generate_multi_week_meal_plan; // Story 8.1: API route
 pub use notifications::{
     complete_prep_task_handler, dismiss_notification, get_notification_status, list_notifications,
     notifications_page, record_permission_change, snooze_notification, subscribe_push,

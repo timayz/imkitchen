@@ -10,12 +10,12 @@ use evento::migrator::{Migrate, Plan};
 use imkitchen::middleware::{auth_middleware, cache_control_middleware, minify_html_middleware};
 use imkitchen::routes::{
     assets, browser_support, check_recipe_exists, check_shopping_item, complete_prep_task_handler,
-    dismiss_notification, get_check_user, get_collections, get_contact, get_discover,
-    get_discover_detail, get_help, get_import_modal, get_ingredient_row, get_instruction_row,
-    get_landing, get_login, get_meal_plan, get_meal_plan_check_ready, get_more_discover,
-    get_more_recipes, get_notification_status, get_onboarding, get_onboarding_skip,
-    get_password_reset, get_password_reset_complete, get_privacy, get_profile, get_recipe_detail,
-    get_recipe_edit_form, get_recipe_form, get_recipe_list, get_recipe_waiting,
+    dismiss_notification, generate_multi_week_meal_plan, get_check_user, get_collections,
+    get_contact, get_discover, get_discover_detail, get_help, get_import_modal, get_ingredient_row,
+    get_instruction_row, get_landing, get_login, get_meal_plan, get_meal_plan_check_ready,
+    get_more_discover, get_more_recipes, get_notification_status, get_onboarding,
+    get_onboarding_skip, get_password_reset, get_password_reset_complete, get_privacy, get_profile,
+    get_recipe_detail, get_recipe_edit_form, get_recipe_form, get_recipe_list, get_recipe_waiting,
     get_regenerate_confirm, get_register, get_subscription, get_subscription_success, get_terms,
     health, list_notifications, notifications_page, offline, post_add_recipe_to_collection,
     post_add_to_library, post_contact, post_create_collection, post_create_recipe,
@@ -283,6 +283,11 @@ async fn serve_command(
         .route("/plan/generate", post(post_generate_meal_plan))
         .route("/plan/regenerate/confirm", get(get_regenerate_confirm))
         .route("/plan/regenerate", post(post_regenerate_meal_plan))
+        // Story 8.1: Multi-week meal plan generation API route
+        .route(
+            "/plan/generate-multi-week",
+            post(generate_multi_week_meal_plan),
+        )
         // Shopping list routes
         .route("/shopping", get(show_shopping_list))
         .route("/shopping/refresh", get(refresh_shopping_list))
