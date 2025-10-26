@@ -9,7 +9,11 @@ pub mod read_model;
 pub mod rotation;
 
 pub use aggregate::MealPlanAggregate;
-pub use algorithm::{generate_reasoning_text, MealPlanningAlgorithm, RecipeComplexityCalculator};
+pub use algorithm::{
+    generate_reasoning_text, generate_single_week, select_accompaniment,
+    select_main_course_with_preferences, MealPlanningAlgorithm, RecipeComplexityCalculator,
+    RecipeForPlanning, UserPreferences,
+};
 pub use commands::{regenerate_meal_plan, GenerateMealPlanCommand, RegenerateMealPlanCommand};
 pub use constraints::{
     AdvancePrepConstraint, AvailabilityConstraint, ComplexityConstraint, Constraint, CourseType,
