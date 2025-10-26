@@ -76,7 +76,7 @@ fn create_balanced_bench_recipes(count: usize) -> Vec<RecipeForPlanning> {
             title: format!("Recipe {}", i),
             recipe_type: recipe_type.to_string(),
             ingredients_count: 5 + (i % 10), // 5-15 ingredients (Simple complexity)
-            instructions_count: 3 + (i % 8),  // 3-11 steps (Simple complexity)
+            instructions_count: 3 + (i % 8), // 3-11 steps (Simple complexity)
             prep_time_min: Some(prep_time),
             cook_time_min: Some(cook_time),
             advance_prep_hours: None,

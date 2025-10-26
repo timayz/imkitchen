@@ -10,8 +10,7 @@
 
 use chrono::{Datelike, NaiveDate, Weekday};
 use meal_planning::algorithm::{
-    generate_multi_week_meal_plans,
-    RecipeForPlanning, SkillLevel, UserPreferences,
+    generate_multi_week_meal_plans, RecipeForPlanning, SkillLevel, UserPreferences,
 };
 use meal_planning::dietary_filter::filter_by_dietary_restrictions;
 use recipe::{AccompanimentCategory, Cuisine};
@@ -90,8 +89,8 @@ fn create_realistic_recipe_library() -> Vec<RecipeForPlanning> {
         recipes.push(create_recipe(
             &format!("app_{}", i),
             "appetizer",
-            4 + (i % 8),      // 4-12 ingredients
-            3 + (i % 5),      // 3-8 steps
+            4 + (i % 8),         // 4-12 ingredients
+            3 + (i % 5),         // 3-8 steps
             5 + (i as u32 % 15), // 5-20 min prep
             5 + (i as u32 % 10), // 5-15 min cook
             appetizer_cuisines[i % 5].clone(),
@@ -119,11 +118,11 @@ fn create_realistic_recipe_library() -> Vec<RecipeForPlanning> {
     // Need LOTS of these because tests with Beginner skill + 30min constraint rely on them
     for i in 0..40 {
         let dietary = match i % 5 {
-            0 => vec!["vegan", "vegetarian"], // 20% Vegan
+            0 => vec!["vegan", "vegetarian"],                // 20% Vegan
             1 => vec!["vegan", "vegetarian", "gluten_free"], // 20% Vegan+GF
-            2 => vec!["vegetarian", "dairy_free"],          // 20% Vegetarian+DF
-            3 => vec!["vegetarian"],          // 20% Vegetarian only
-            _ => vec![],                      // 20% None
+            2 => vec!["vegetarian", "dairy_free"],           // 20% Vegetarian+DF
+            3 => vec!["vegetarian"],                         // 20% Vegetarian only
+            _ => vec![],                                     // 20% None
         };
 
         // Half accept accompaniments
@@ -139,10 +138,10 @@ fn create_realistic_recipe_library() -> Vec<RecipeForPlanning> {
         recipes.push(create_recipe(
             &format!("main_simple_{}", i),
             "main_course",
-            6 + (i % 10),      // 6-16 ingredients
-            4 + (i % 8),       // 4-12 steps
+            6 + (i % 10),        // 6-16 ingredients
+            4 + (i % 8),         // 4-12 steps
             10 + (i as u32 % 6), // 10-16 min prep
-            8 + (i as u32 % 6), // 8-14 min cook (total: 18-30 min, fits weeknight 30min)
+            8 + (i as u32 % 6),  // 8-14 min cook (total: 18-30 min, fits weeknight 30min)
             main_cuisines[i % 8].clone(),
             dietary,
             accepts,
@@ -172,8 +171,8 @@ fn create_realistic_recipe_library() -> Vec<RecipeForPlanning> {
         recipes.push(create_recipe(
             &format!("main_moderate_{}", i),
             "main_course",
-            10 + (i % 12),    // 10-22 ingredients
-            8 + (i % 10),     // 8-18 steps
+            10 + (i % 12),        // 10-22 ingredients
+            8 + (i % 10),         // 8-18 steps
             20 + (i as u32 % 15), // 20-35 min prep
             25 + (i as u32 % 20), // 25-45 min cook (total 45-80 min)
             main_cuisines[(i + 2) % 8].clone(),
@@ -195,8 +194,8 @@ fn create_realistic_recipe_library() -> Vec<RecipeForPlanning> {
         recipes.push(create_recipe(
             &format!("main_complex_{}", i),
             "main_course",
-            15 + (i % 10),    // 15-25 ingredients
-            12 + (i % 8),     // 12-20 steps
+            15 + (i % 10),        // 15-25 ingredients
+            12 + (i % 8),         // 12-20 steps
             30 + (i as u32 % 20), // 30-50 min prep
             40 + (i as u32 % 30), // 40-70 min cook (total 70-120 min)
             main_cuisines[(i + 4) % 8].clone(),
@@ -220,8 +219,8 @@ fn create_realistic_recipe_library() -> Vec<RecipeForPlanning> {
         recipes.push(create_recipe(
             &format!("dessert_{}", i),
             "dessert",
-            5 + (i % 10),     // 5-15 ingredients
-            4 + (i % 8),      // 4-12 steps
+            5 + (i % 10),         // 5-15 ingredients
+            4 + (i % 8),          // 4-12 steps
             10 + (i as u32 % 25), // 10-35 min prep
             15 + (i as u32 % 45), // 15-60 min cook
             appetizer_cuisines[i % 5].clone(),
@@ -252,11 +251,11 @@ fn create_realistic_recipe_library() -> Vec<RecipeForPlanning> {
         recipes.push(create_recipe(
             &format!("accompaniment_{}_{}", name.to_lowercase(), i),
             "accompaniment",
-            3 + (i % 5),      // 3-8 ingredients
-            2 + (i % 3),      // 2-5 steps
-            5 + (i as u32 % 10), // 5-15 min prep
+            3 + (i % 5),          // 3-8 ingredients
+            2 + (i % 3),          // 2-5 steps
+            5 + (i as u32 % 10),  // 5-15 min prep
             10 + (i as u32 % 15), // 10-25 min cook
-            Cuisine::Italian, // Accompaniments are cuisine-neutral
+            Cuisine::Italian,     // Accompaniments are cuisine-neutral
             dietary,
             false,
             vec![],
@@ -339,8 +338,8 @@ async fn test_full_multi_week_generation_realistic_data() {
         // Validate week dates are consecutive Monday-Sunday
         let start_date = NaiveDate::parse_from_str(&week.start_date, "%Y-%m-%d")
             .expect("Week start_date should parse");
-        let end_date =
-            NaiveDate::parse_from_str(&week.end_date, "%Y-%m-%d").expect("Week end_date should parse");
+        let end_date = NaiveDate::parse_from_str(&week.end_date, "%Y-%m-%d")
+            .expect("Week end_date should parse");
 
         assert_eq!(
             start_date.weekday(),
@@ -361,10 +360,12 @@ async fn test_full_multi_week_generation_realistic_data() {
 
     // Assert: Weeks have consecutive start dates (7-day increments)
     for i in 1..meal_plan.generated_weeks.len() {
-        let prev_start = NaiveDate::parse_from_str(&meal_plan.generated_weeks[i - 1].start_date, "%Y-%m-%d")
-            .unwrap();
+        let prev_start =
+            NaiveDate::parse_from_str(&meal_plan.generated_weeks[i - 1].start_date, "%Y-%m-%d")
+                .unwrap();
         let curr_start =
-            NaiveDate::parse_from_str(&meal_plan.generated_weeks[i].start_date, "%Y-%m-%d").unwrap();
+            NaiveDate::parse_from_str(&meal_plan.generated_weeks[i].start_date, "%Y-%m-%d")
+                .unwrap();
         assert_eq!(
             (curr_start - prev_start).num_days(),
             7,
@@ -463,7 +464,10 @@ async fn test_dietary_restriction_combined_gluten_free_and_dairy_free() {
         // This validates AND logic for dietary restrictions
         let err = result.err().unwrap();
         assert!(
-            matches!(err, meal_planning::error::MealPlanningError::InsufficientRecipes { .. }),
+            matches!(
+                err,
+                meal_planning::error::MealPlanningError::InsufficientRecipes { .. }
+            ),
             "Expected InsufficientRecipes error for strict combined restrictions"
         );
         return;
@@ -602,12 +606,10 @@ async fn test_time_constraint_beginner_skill_level() {
 
     for main_id in main_course_ids {
         if let Some(recipe) = recipe_map.get(&main_id) {
-            let complexity = meal_planning::algorithm::RecipeComplexityCalculator::calculate_complexity(recipe);
+            let complexity =
+                meal_planning::algorithm::RecipeComplexityCalculator::calculate_complexity(recipe);
             assert!(
-                matches!(
-                    complexity,
-                    meal_planning::algorithm::Complexity::Simple
-                ),
+                matches!(complexity, meal_planning::algorithm::Complexity::Simple),
                 "Beginner user should only get Simple main courses, but got {:?} for recipe {}",
                 complexity,
                 main_id
@@ -622,8 +624,8 @@ async fn test_time_constraint_weeknight_vs_weekend() {
 
     let preferences = UserPreferences {
         dietary_restrictions: vec![],
-        max_prep_time_weeknight: 30,  // Strict weeknight limit
-        max_prep_time_weekend: 90,    // Relaxed weekend limit
+        max_prep_time_weeknight: 30, // Strict weeknight limit
+        max_prep_time_weekend: 90,   // Relaxed weekend limit
         skill_level: SkillLevel::Intermediate,
         avoid_consecutive_complex: false,
         cuisine_variety_weight: 0.7,
@@ -659,7 +661,8 @@ async fn test_time_constraint_weeknight_vs_weekend() {
             let is_weekend = day_of_week == Weekday::Sat || day_of_week == Weekday::Sun;
 
             if let Some(recipe) = recipe_map.get(&assignment.recipe_id) {
-                let total_time = recipe.prep_time_min.unwrap_or(0) + recipe.cook_time_min.unwrap_or(0);
+                let total_time =
+                    recipe.prep_time_min.unwrap_or(0) + recipe.cook_time_min.unwrap_or(0);
 
                 if is_weekend {
                     assert!(
@@ -768,10 +771,10 @@ async fn test_main_course_exactly_35_recipes_boundary() {
         recipes.push(create_recipe(
             &format!("main_{}", i),
             "main_course",
-            6 + (i % 4),  // 6-10 ingredients (Simple)
-            4 + (i % 4),  // 4-8 steps (Simple)
-            10,           // 10 min prep
-            12,           // 12 min cook (total 22min, fits weeknight 30min)
+            6 + (i % 4), // 6-10 ingredients (Simple)
+            4 + (i % 4), // 4-8 steps (Simple)
+            10,          // 10 min prep
+            12,          // 12 min cook (total 22min, fits weeknight 30min)
             match i % 5 {
                 0 => Cuisine::Italian,
                 1 => Cuisine::Mexican,
@@ -803,8 +806,14 @@ async fn test_main_course_exactly_35_recipes_boundary() {
         ));
     }
 
-    let main_count = recipes.iter().filter(|r| r.recipe_type == "main_course").count();
-    assert_eq!(main_count, 35, "Should have exactly 35 main courses for boundary test");
+    let main_count = recipes
+        .iter()
+        .filter(|r| r.recipe_type == "main_course")
+        .count();
+    assert_eq!(
+        main_count, 35,
+        "Should have exactly 35 main courses for boundary test"
+    );
 
     let preferences = UserPreferences::default();
     let user_id = "test_user_boundary_35".to_string();
@@ -874,7 +883,10 @@ async fn test_accompaniment_pairing_assigns_correctly() {
                     // Verify accompaniment exists and has correct category
                     if let Some(accompaniment_id) = &assignment.accompaniment_recipe_id {
                         let accompaniment = recipe_map.get(accompaniment_id).unwrap_or_else(|| {
-                            panic!("Accompaniment {} should exist in recipe library", accompaniment_id)
+                            panic!(
+                                "Accompaniment {} should exist in recipe library",
+                                accompaniment_id
+                            )
                         });
 
                         assert!(
@@ -981,7 +993,10 @@ async fn test_insufficient_recipes_error() {
 
     let err = result.err().unwrap();
     assert!(
-        matches!(err, meal_planning::error::MealPlanningError::InsufficientRecipes { .. }),
+        matches!(
+            err,
+            meal_planning::error::MealPlanningError::InsufficientRecipes { .. }
+        ),
         "Expected InsufficientRecipes error, got: {:?}",
         err
     );
