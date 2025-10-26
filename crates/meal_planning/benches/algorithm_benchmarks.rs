@@ -45,6 +45,7 @@ fn create_bench_recipe(
 }
 
 /// Create balanced recipe set for multi-week benchmarking
+/// All main courses are weeknight-friendly (≤30min total) to avoid filtering issues
 fn create_balanced_bench_recipes(count: usize) -> Vec<RecipeForPlanning> {
     let mut recipes = Vec::new();
 
@@ -63,14 +64,21 @@ fn create_balanced_bench_recipes(count: usize) -> Vec<RecipeForPlanning> {
             _ => Cuisine::Japanese,
         };
 
+        // For main courses, ensure they fit weeknight constraints (≤30min total)
+        let (prep_time, cook_time) = if recipe_type == "main_course" {
+            (10 + (i as u32 % 6), 8 + (i as u32 % 6)) // Total: 18-30 min
+        } else {
+            (5 + (i as u32 % 25), 10 + (i as u32 % 40)) // Appetizers/desserts: flexible
+        };
+
         recipes.push(RecipeForPlanning {
             id: format!("recipe_{}", i),
             title: format!("Recipe {}", i),
             recipe_type: recipe_type.to_string(),
-            ingredients_count: 5 + (i % 15),
-            instructions_count: 3 + (i % 10),
-            prep_time_min: Some(5 + (i as u32 % 25)),
-            cook_time_min: Some(10 + (i as u32 % 40)),
+            ingredients_count: 5 + (i % 10), // 5-15 ingredients (Simple complexity)
+            instructions_count: 3 + (i % 8),  // 3-11 steps (Simple complexity)
+            prep_time_min: Some(prep_time),
+            cook_time_min: Some(cook_time),
             advance_prep_hours: None,
             complexity: Some("simple".to_string()),
             dietary_tags: vec![],
