@@ -130,6 +130,12 @@ pub async fn create_recipe(
             advance_prep_hours: command.advance_prep_hours,
             serving_size: command.serving_size,
             created_at: created_at.to_rfc3339(),
+            // Epic 6 fields - defaults for now (will be set via separate command in future)
+            accepts_accompaniment: Some(false),
+            preferred_accompaniments: Some(vec![]),
+            accompaniment_category: None,
+            cuisine: None,
+            dietary_tags: Some(vec![]),
         })
         .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
         .metadata(&true)
@@ -986,6 +992,14 @@ pub async fn copy_recipe(
             advance_prep_hours: original_aggregate.item.advance_prep_hours,
             serving_size: original_aggregate.item.serving_size,
             created_at: copied_at.to_rfc3339(),
+            // Epic 6 fields - copy from original recipe
+            accepts_accompaniment: Some(original_aggregate.item.accepts_accompaniment),
+            preferred_accompaniments: Some(
+                original_aggregate.item.preferred_accompaniments.clone(),
+            ),
+            accompaniment_category: original_aggregate.item.accompaniment_category,
+            cuisine: None, // Cuisine not copied yet (will be in tagging domain)
+            dietary_tags: Some(vec![]), // Dietary tags not copied yet
         })
         .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
         .data(&RecipeCopied {

@@ -2,6 +2,8 @@ use bincode::{Decode, Encode};
 use evento::AggregatorName;
 use serde::{Deserialize, Serialize};
 
+use crate::types::{AccompanimentCategory, Cuisine, DietaryTag};
+
 /// Ingredient structure for recipes
 #[derive(Debug, Clone, Serialize, Deserialize, Encode, Decode)]
 pub struct Ingredient {
@@ -23,6 +25,14 @@ pub struct InstructionStep {
 /// This event is the source of truth for recipe creation in the event sourced system.
 /// Uses String types for bincode compatibility (UUID and timestamps serialized as strings).
 ///
+/// # Epic 6: Enhanced Meal Planning System
+/// Added accompaniment fields (accepts_accompaniment, preferred_accompaniments, accompaniment_category)
+/// and metadata fields (cuisine, dietary_tags) for multi-week meal planning algorithm.
+///
+/// # Backwards Compatibility
+/// All Epic 6 fields are Option types to support deserialization of old events without these fields.
+/// Old events default to: accepts_accompaniment=false, preferred_accompaniments=[], others=None.
+///
 /// Note: recipe_id is provided by event.aggregator_id, not stored in event data
 #[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
 pub struct RecipeCreated {
@@ -36,6 +46,20 @@ pub struct RecipeCreated {
     pub advance_prep_hours: Option<u32>,    // Hours needed for advance prep (e.g., marinating)
     pub serving_size: Option<u32>,          // Number of servings
     pub created_at: String,                 // RFC3339 formatted timestamp
+
+    // Epic 6: Accompaniment support
+    #[serde(default)]
+    pub accepts_accompaniment: Option<bool>, // Whether this main course accepts an accompaniment (default: false)
+    #[serde(default)]
+    pub preferred_accompaniments: Option<Vec<AccompanimentCategory>>, // Preferred side categories (default: [])
+    #[serde(default)]
+    pub accompaniment_category: Option<AccompanimentCategory>, // Category if this is a side dish (default: None)
+
+    // Epic 6: Cuisine and dietary metadata
+    #[serde(default)]
+    pub cuisine: Option<Cuisine>, // Cuisine type for variety tracking (default: None)
+    #[serde(default)]
+    pub dietary_tags: Option<Vec<DietaryTag>>, // Dietary tags for filtering (default: [])
 }
 
 /// RecipeDeleted event emitted when a recipe is deleted
@@ -163,4 +187,22 @@ pub struct RecipeCopied {
     pub original_author: String,    // User ID of the original recipe creator
     pub copying_user_id: String,    // ID of the user copying the recipe
     pub copied_at: String,          // RFC3339 formatted timestamp
+}
+
+/// RecipeAccompanimentSettingsUpdated event emitted when accompaniment settings are changed
+///
+/// This event allows users to update whether a recipe accepts accompaniments and which
+/// accompaniment categories it prefers, without needing to update the entire recipe.
+///
+/// # Epic 6: Enhanced Meal Planning System
+/// Enables flexible accompaniment pairing configuration for the multi-week meal planning algorithm.
+///
+/// Note: recipe_id is provided by event.aggregator_id, not stored in event data
+#[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
+pub struct RecipeAccompanimentSettingsUpdated {
+    pub recipe_id: String,           // ID of the recipe being updated
+    pub user_id: String,             // ID of the user updating settings (ownership verification)
+    pub accepts_accompaniment: bool, // Whether this recipe accepts an accompaniment
+    pub preferred_accompaniments: Vec<AccompanimentCategory>, // Preferred side categories
+    pub updated_at: String,          // RFC3339 formatted timestamp
 }
