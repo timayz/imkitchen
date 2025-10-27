@@ -96,7 +96,42 @@ impl RecipeAggregate {
         self.is_favorite = false;
         self.is_deleted = false;
         self.is_shared = false; // Default to private per AC-9
-        self.tags = RecipeTags::default();
+
+        // Epic 6: Initialize tags with user-provided cuisine and dietary_tags
+        // Convert enums to strings for aggregate storage
+        self.tags = RecipeTags {
+            complexity: None, // Will be calculated by RecipeTagged event
+            cuisine: event.data.cuisine.as_ref().and_then(|c| {
+                // Serialize enum to JSON string for aggregate storage
+                // For simple variants like Mediterranean -> "mediterranean"
+                // For complex variants like Custom("X") -> "{\"custom\":\"X\"}"
+                serde_json::to_value(c).ok().and_then(|v| match v {
+                    serde_json::Value::String(s) => Some(s),
+                    serde_json::Value::Object(_) => {
+                        // Complex variant like Custom - serialize to full JSON
+                        serde_json::to_string(c).ok()
+                    }
+                    _ => None,
+                })
+            }),
+            dietary_tags: event
+                .data
+                .dietary_tags
+                .as_ref()
+                .map(|tags| {
+                    // Convert Vec<DietaryTag> to Vec<String>
+                    tags.iter()
+                        .filter_map(|tag| {
+                            serde_json::to_value(tag)
+                                .ok()
+                                .and_then(|v| v.as_str().map(String::from))
+                        })
+                        .collect()
+                })
+                .unwrap_or_default(),
+            manual_override: false,
+        };
+
         // Epic 6 accompaniment fields (with backwards compatibility defaults)
         self.accepts_accompaniment = event.data.accepts_accompaniment.unwrap_or(false);
         self.preferred_accompaniments = event

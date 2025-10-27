@@ -11,10 +11,69 @@ use crate::events::{
     RecipeDeleted, RecipeFavorited, RecipeRated, RecipeShared, RecipeTagged, RecipeUpdated,
 };
 use crate::tagging::{CuisineInferenceService, DietaryTagDetector, RecipeComplexityCalculator};
+use crate::types::{AccompanimentCategory, Cuisine, DietaryTag};
 use serde::{Deserialize, Serialize};
 
 // Import UserAggregate for recipe limit checks
 use user::aggregate::UserAggregate;
+
+/// Helper function to parse accompaniment category from form string
+fn parse_accompaniment_category(s: &str) -> Option<AccompanimentCategory> {
+    match s {
+        "Pasta" => Some(AccompanimentCategory::Pasta),
+        "Rice" => Some(AccompanimentCategory::Rice),
+        "Fries" => Some(AccompanimentCategory::Fries),
+        "Salad" => Some(AccompanimentCategory::Salad),
+        "Bread" => Some(AccompanimentCategory::Bread),
+        "Vegetable" => Some(AccompanimentCategory::Vegetable),
+        "Other" => Some(AccompanimentCategory::Other),
+        _ => {
+            tracing::warn!("Failed to parse accompaniment category: '{}'", s);
+            None
+        }
+    }
+}
+
+/// Helper function to parse cuisine from form string
+fn parse_cuisine(s: &str) -> Option<Cuisine> {
+    match s {
+        "Italian" => Some(Cuisine::Italian),
+        "Indian" => Some(Cuisine::Indian),
+        "Mexican" => Some(Cuisine::Mexican),
+        "Chinese" => Some(Cuisine::Chinese),
+        "Japanese" => Some(Cuisine::Japanese),
+        "French" => Some(Cuisine::French),
+        "American" => Some(Cuisine::American),
+        "Mediterranean" => Some(Cuisine::Mediterranean),
+        "Thai" => Some(Cuisine::Thai),
+        "Korean" => Some(Cuisine::Korean),
+        "Vietnamese" => Some(Cuisine::Vietnamese),
+        "Greek" => Some(Cuisine::Greek),
+        "Spanish" => Some(Cuisine::Spanish),
+        custom if !custom.is_empty() => Some(Cuisine::Custom(custom.to_string())),
+        _ => {
+            tracing::warn!("Failed to parse cuisine: empty string provided");
+            None
+        }
+    }
+}
+
+/// Helper function to parse dietary tag from form string
+fn parse_dietary_tag(s: &str) -> Option<DietaryTag> {
+    match s {
+        "Vegetarian" => Some(DietaryTag::Vegetarian),
+        "Vegan" => Some(DietaryTag::Vegan),
+        "Gluten-Free" => Some(DietaryTag::GlutenFree),
+        "Dairy-Free" => Some(DietaryTag::DairyFree),
+        "Nut-Free" => Some(DietaryTag::NutFree),
+        "Halal" => Some(DietaryTag::Halal),
+        "Kosher" => Some(DietaryTag::Kosher),
+        _ => {
+            tracing::warn!("Failed to parse dietary tag: '{}'", s);
+            None
+        }
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub struct CreateRecipeCommand {
@@ -26,7 +85,7 @@ pub struct CreateRecipeCommand {
     pub title: String,
 
     #[validate(custom(function = "validate_recipe_type"))]
-    pub recipe_type: String, // AC-2: Must be "appetizer", "main_course", or "dessert"
+    pub recipe_type: String, // AC 9.4.2: Must be "appetizer", "main_course", "dessert", or "accompaniment"
 
     #[validate(length(min = 1, message = "At least 1 ingredient is required"))]
     pub ingredients: Vec<Ingredient>,
@@ -38,17 +97,28 @@ pub struct CreateRecipeCommand {
     pub cook_time_min: Option<u32>,
     pub advance_prep_hours: Option<u32>,
     pub serving_size: Option<u32>,
+
+    // AC 9.4.3: Main course accepts accompaniment
+    pub accepts_accompaniment: bool,
+    // AC 9.4.4: Preferred accompaniment categories
+    pub preferred_accompaniments: Vec<String>,
+    // AC 9.4.5: Accompaniment category (required if recipe_type = "accompaniment")
+    pub accompaniment_category: Option<String>,
+    // AC 9.4.6: Cuisine selection (custom cuisines stored as Cuisine::Custom variant)
+    pub cuisine: Option<String>,
+    // AC 9.4.7: Dietary tags
+    pub dietary_tags: Vec<String>,
 }
 
-/// AC-2: Validate recipe_type field
-/// Only accepts: "appetizer", "main_course", or "dessert"
+/// AC 9.4.2: Validate recipe_type field
+/// Only accepts: "appetizer", "main_course", "dessert", or "accompaniment"
 fn validate_recipe_type(recipe_type: &str) -> Result<(), validator::ValidationError> {
     match recipe_type {
-        "appetizer" | "main_course" | "dessert" => Ok(()),
+        "appetizer" | "main_course" | "dessert" | "accompaniment" => Ok(()),
         _ => {
             let mut error = validator::ValidationError::new("invalid_recipe_type");
             error.message = Some(std::borrow::Cow::from(
-                "Recipe type must be 'appetizer', 'main_course', or 'dessert'",
+                "Recipe type must be 'appetizer', 'main_course', 'dessert', or 'accompaniment'",
             ));
             Err(error)
         }
@@ -92,6 +162,13 @@ pub async fn create_recipe(
         ));
     }
 
+    // AC 9.4.9: Validate that accompaniment category is provided if recipe_type is "accompaniment"
+    if command.recipe_type == "accompaniment" && command.accompaniment_category.is_none() {
+        return Err(RecipeError::ValidationError(
+            "Accompaniment category is required when recipe type is 'accompaniment'".to_string(),
+        ));
+    }
+
     // Check user tier and recipe count for freemium enforcement using evento::load
     // AC-11: recipe_count is tracked in UserAggregate via RecipeCreated/RecipeDeleted events
     let user_load_result = evento::load::<UserAggregate, _>(executor, user_id)
@@ -117,12 +194,22 @@ pub async fn create_recipe(
     // Create RecipeCreated event and commit to evento event store
     // The async subscription handler will project to read model
     // evento::create() generates a ULID for the aggregator_id (recipe_id)
-    // AC-2: Include recipe_type in event
+    // AC 9.4.2: Include recipe_type in event (now supports "accompaniment")
+
+    // Parse cuisine and dietary tags from command
+    let parsed_cuisine = command.cuisine.and_then(|s| parse_cuisine(&s));
+
+    let parsed_dietary_tags: Vec<DietaryTag> = command
+        .dietary_tags
+        .iter()
+        .filter_map(|s| parse_dietary_tag(s))
+        .collect();
+
     let aggregator_id = evento::create::<RecipeAggregate>()
         .data(&RecipeCreated {
             user_id: user_id.to_string(),
             title: command.title,
-            recipe_type: command.recipe_type, // AC-2: Course type
+            recipe_type: command.recipe_type, // AC 9.4.2: Course type (appetizer, main_course, dessert, accompaniment)
             ingredients: command.ingredients,
             instructions: command.instructions,
             prep_time_min: command.prep_time_min,
@@ -130,12 +217,24 @@ pub async fn create_recipe(
             advance_prep_hours: command.advance_prep_hours,
             serving_size: command.serving_size,
             created_at: created_at.to_rfc3339(),
-            // Epic 6 fields - defaults for now (will be set via separate command in future)
-            accepts_accompaniment: Some(false),
-            preferred_accompaniments: Some(vec![]),
-            accompaniment_category: None,
-            cuisine: None,
-            dietary_tags: Some(vec![]),
+            // AC 9.4.3: Main course accepts accompaniment
+            accepts_accompaniment: Some(command.accepts_accompaniment),
+            // AC 9.4.4: Preferred accompaniment categories (convert strings to enum)
+            preferred_accompaniments: Some(
+                command
+                    .preferred_accompaniments
+                    .iter()
+                    .filter_map(|s| parse_accompaniment_category(s))
+                    .collect(),
+            ),
+            // AC 9.4.5: Accompaniment category
+            accompaniment_category: command
+                .accompaniment_category
+                .and_then(|s| parse_accompaniment_category(&s)),
+            // AC 9.4.6: Cuisine (convert string to enum) - use pre-parsed value
+            cuisine: parsed_cuisine,
+            // AC 9.4.7: Dietary tags (convert strings to enum) - use pre-parsed value
+            dietary_tags: Some(parsed_dietary_tags),
         })
         .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
         .metadata(&true)
@@ -192,10 +291,17 @@ async fn emit_recipe_tagged_event(
         aggregate.advance_prep_hours,
     );
 
-    // Infer cuisine using domain service
-    let cuisine = CuisineInferenceService::infer(&aggregate.ingredients);
+    // If user provided explicit cuisine/dietary_tags, skip the RecipeTagged event
+    // to avoid overwriting user input with auto-inferred values
+    let has_user_provided_metadata =
+        aggregate.tags.cuisine.is_some() || !aggregate.tags.dietary_tags.is_empty();
+    if has_user_provided_metadata {
+        // User provided metadata explicitly - don't emit RecipeTagged to avoid overwriting
+        return Ok(());
+    }
 
-    // Detect dietary tags using domain service
+    // Auto-infer cuisine and dietary_tags from ingredients
+    let cuisine = CuisineInferenceService::infer(&aggregate.ingredients);
     let dietary_tags = DietaryTagDetector::detect(&aggregate.ingredients);
 
     let tagged_at = Utc::now();
@@ -1099,6 +1205,12 @@ pub async fn batch_import_recipes(
             cook_time_min: recipe.cook_time_min,
             advance_prep_hours: recipe.advance_prep_hours,
             serving_size: recipe.serving_size,
+            // AC 9.4.3-9.4.7: Default values for batch imports (can be enhanced later)
+            accepts_accompaniment: false,
+            preferred_accompaniments: vec![],
+            accompaniment_category: None,
+            cuisine: None,
+            dietary_tags: vec![],
         };
 
         // Attempt to create recipe using existing create_recipe function
