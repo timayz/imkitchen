@@ -11,6 +11,7 @@ pub mod notifications;
 pub mod profile;
 pub mod recipes;
 pub mod shopping;
+pub mod user_preferences_api; // Story 8.5: User preferences update API
 
 pub use assets::AssetsService;
 pub use auth::{
@@ -54,3 +55,4 @@ pub use recipes::{
 pub use shopping::{
     check_shopping_item, refresh_shopping_list, reset_shopping_list_handler, show_shopping_list,
 };
+pub use user_preferences_api::update_meal_planning_preferences; // Story 8.5: User preferences API

@@ -233,27 +233,40 @@ impl UserAggregate {
     /// This handler is called when a user updates their meal planning preferences.
     /// It deserializes JSON fields (dietary_restrictions, weeknight_availability) and updates
     /// the UserPreferences struct within the aggregate.
+    /// Supports partial updates (optional fields) for Story 8.5.
     ///
     /// Story 6.4 - AC #6: User aggregate integrates preferences
+    /// Story 8.5 - AC #3: Partial updates via API
     async fn user_meal_planning_preferences_updated(
         &mut self,
         event: evento::EventDetails<UserMealPlanningPreferencesUpdated>,
     ) -> anyhow::Result<()> {
         use crate::types::{DietaryRestriction, SkillLevel, TimeRange};
 
-        // Deserialize JSON fields
-        let dietary_restrictions: Vec<DietaryRestriction> =
-            serde_json::from_str(&event.data.dietary_restrictions)?;
-        let skill_level: SkillLevel =
-            serde_json::from_str(&format!("\"{}\"", event.data.skill_level))?;
-        let weeknight_availability: TimeRange =
-            serde_json::from_str(&event.data.weeknight_availability)?;
+        // Deserialize optional JSON fields (only if provided)
+        if let Some(dietary_restrictions_str) = &event.data.dietary_restrictions {
+            let dietary_restrictions: Vec<DietaryRestriction> =
+                serde_json::from_str(dietary_restrictions_str)?;
+            self.preferences.dietary_restrictions = dietary_restrictions;
+        }
 
-        // Update preferences
-        self.preferences.dietary_restrictions = dietary_restrictions;
-        self.preferences.household_size = event.data.household_size;
-        self.preferences.skill_level = skill_level;
-        self.preferences.weeknight_availability = weeknight_availability;
+        if let Some(skill_level_str) = &event.data.skill_level {
+            let skill_level: SkillLevel =
+                serde_json::from_str(&format!("\"{}\"", skill_level_str))?;
+            self.preferences.skill_level = skill_level;
+        }
+
+        if let Some(weeknight_availability_str) = &event.data.weeknight_availability {
+            let weeknight_availability: TimeRange =
+                serde_json::from_str(weeknight_availability_str)?;
+            self.preferences.weeknight_availability = weeknight_availability;
+        }
+
+        if let Some(household_size) = event.data.household_size {
+            self.preferences.household_size = household_size;
+        }
+
+        // Always update these fields (required for Story 8.5)
         self.preferences.max_prep_time_weeknight = event.data.max_prep_time_weeknight;
         self.preferences.max_prep_time_weekend = event.data.max_prep_time_weekend;
         self.preferences.avoid_consecutive_complex = event.data.avoid_consecutive_complex;
@@ -348,10 +361,10 @@ mod tests {
         evento::save::<UserAggregate>(&user_id)
             .metadata(&true)?
             .data(&UserMealPlanningPreferencesUpdated {
-                dietary_restrictions: dietary_json,
-                household_size: 4,
-                skill_level: "Advanced".to_string(),
-                weeknight_availability: weeknight_json,
+                dietary_restrictions: Some(dietary_json),
+                household_size: Some(4),
+                skill_level: Some("Advanced".to_string()),
+                weeknight_availability: Some(weeknight_json),
                 max_prep_time_weeknight: 45,
                 max_prep_time_weekend: 120,
                 avoid_consecutive_complex: false,
@@ -403,10 +416,12 @@ mod tests {
         evento::save::<UserAggregate>(&user_id)
             .metadata(&true)?
             .data(&UserMealPlanningPreferencesUpdated {
-                dietary_restrictions: "[]".to_string(),
-                household_size: 2,
-                skill_level: "Beginner".to_string(),
-                weeknight_availability: r#"{"start":"18:00","duration_minutes":30}"#.to_string(),
+                dietary_restrictions: Some("[]".to_string()),
+                household_size: Some(2),
+                skill_level: Some("Beginner".to_string()),
+                weeknight_availability: Some(
+                    r#"{"start":"18:00","duration_minutes":30}"#.to_string(),
+                ),
                 max_prep_time_weeknight: 20,
                 max_prep_time_weekend: 60,
                 avoid_consecutive_complex: true,
@@ -420,10 +435,12 @@ mod tests {
         evento::save::<UserAggregate>(&user_id)
             .metadata(&true)?
             .data(&UserMealPlanningPreferencesUpdated {
-                dietary_restrictions: r#"[{"type":"Vegan"}]"#.to_string(),
-                household_size: 3,
-                skill_level: "Intermediate".to_string(),
-                weeknight_availability: r#"{"start":"18:30","duration_minutes":45}"#.to_string(),
+                dietary_restrictions: Some(r#"[{"type":"Vegan"}]"#.to_string()),
+                household_size: Some(3),
+                skill_level: Some("Intermediate".to_string()),
+                weeknight_availability: Some(
+                    r#"{"start":"18:30","duration_minutes":45}"#.to_string(),
+                ),
                 max_prep_time_weeknight: 35,
                 max_prep_time_weekend: 100,
                 avoid_consecutive_complex: false,
@@ -469,10 +486,12 @@ mod tests {
         evento::save::<UserAggregate>(&user_id)
             .metadata(&true)?
             .data(&UserMealPlanningPreferencesUpdated {
-                dietary_restrictions: dietary_json,
-                household_size: 1,
-                skill_level: "Beginner".to_string(),
-                weeknight_availability: r#"{"start":"18:00","duration_minutes":45}"#.to_string(),
+                dietary_restrictions: Some(dietary_json),
+                household_size: Some(1),
+                skill_level: Some("Beginner".to_string()),
+                weeknight_availability: Some(
+                    r#"{"start":"18:00","duration_minutes":45}"#.to_string(),
+                ),
                 max_prep_time_weeknight: 30,
                 max_prep_time_weekend: 90,
                 avoid_consecutive_complex: true,
@@ -500,10 +519,10 @@ mod tests {
     async fn test_event_serialization() -> anyhow::Result<()> {
         // AC #5: Test UserMealPlanningPreferencesUpdated event serialization
         let event = UserMealPlanningPreferencesUpdated {
-            dietary_restrictions: r#"[{"type":"GlutenFree"}]"#.to_string(),
-            household_size: 2,
-            skill_level: "Intermediate".to_string(),
-            weeknight_availability: r#"{"start":"18:00","duration_minutes":45}"#.to_string(),
+            dietary_restrictions: Some(r#"[{"type":"GlutenFree"}]"#.to_string()),
+            household_size: Some(2),
+            skill_level: Some("Intermediate".to_string()),
+            weeknight_availability: Some(r#"{"start":"18:00","duration_minutes":45}"#.to_string()),
             max_prep_time_weeknight: 30,
             max_prep_time_weekend: 90,
             avoid_consecutive_complex: true,
@@ -514,7 +533,7 @@ mod tests {
         // Test serde JSON serialization
         let json = serde_json::to_string(&event)?;
         let decoded: UserMealPlanningPreferencesUpdated = serde_json::from_str(&json)?;
-        assert_eq!(decoded.household_size, 2);
+        assert_eq!(decoded.household_size, Some(2));
         assert_eq!(decoded.max_prep_time_weeknight, 30);
 
         // Test bincode serialization
