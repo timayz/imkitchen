@@ -1,0 +1,212 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>10</epicId>
+    <storyId>1</storyId>
+    <title>End-to-End Testing with Playwright</title>
+    <status>Approved</status>
+    <generatedAt>2025-10-27</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-10.1.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>QA engineer</asA>
+    <iWant>implement a comprehensive E2E test suite using Playwright</iWant>
+    <soThat>all critical user flows for the enhanced meal planning system are validated before production deployment</soThat>
+    <tasks>
+      - Setup Playwright infrastructure (config, fixtures, test data)
+      - Implement meal planning E2E tests (generation, navigation, regeneration)
+      - Implement preferences E2E tests
+      - Implement recipe E2E tests (with accompaniments)
+      - Implement shopping list E2E tests
+      - Configure CI integration with parallel execution and video recording
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    1. Playwright test suite configured in e2e/ directory with TypeScript fixtures for authenticated sessions
+    2. Test coverage for multi-week meal plan generation flow
+    3. Test coverage for week navigation
+    4. Test coverage for single week regeneration
+    5. Test coverage for all future weeks regeneration
+    6. Test coverage for meal planning preferences update
+    7. Test coverage for recipe creation with accompaniment settings
+    8. Test coverage for shopping list access for specific week
+    9. All E2E tests pass in CI pipeline
+    10. Test execution time &lt;5 minutes
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-10.md</path>
+        <title>Technical Specification: Enhanced Meal Planning - Testing &amp; Refinement</title>
+        <section>Story 10.1: End-to-End Testing with Playwright (lines 683-725)</section>
+        <snippet>Authoritative acceptance criteria, technical requirements, Playwright configuration, test fixtures, TwinSpark testing considerations</snippet>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-10.md</path>
+        <title>Testing Architecture</title>
+        <section>Testing Architecture (lines 119-128)</section>
+        <snippet>Test Pyramid Level 3: E2E Tests with Playwright (Chromium, Firefox, WebKit), cross-browser testing strategy</snippet>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/tech-spec-epic-10.md</path>
+        <title>Workflow 1: E2E Test Execution Flow</title>
+        <section>Workflow 1: E2E Test Execution Flow (lines 381-427)</section>
+        <snippet>CI integration, test phases (setup, execution, teardown), test reporting, video recording for failures</snippet>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/epics.md</path>
+        <title>Epic 10, Story 10.1</title>
+        <section>Epic 10, Story 10.1 (lines 2288-2313)</section>
+        <snippet>User story statement, prerequisites (Epic 9 complete), technical notes (test fixtures, video recording, parallelization)</snippet>
+      </doc>
+      <doc>
+        <path>/home/snapiz/projects/github/timayz/imkitchen/docs/solution-architecture.md</path>
+        <title>Event-Sourced Monolith Architecture</title>
+        <section>Architecture Overview</section>
+        <snippet>Axum routes, evento aggregates, SQLite with WAL mode, TwinSpark progressive enhancement</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>.github/workflows/test.yml</path>
+        <kind>ci-workflow</kind>
+        <symbol>GitHub Actions workflow</symbol>
+        <lines>N/A (to be created)</lines>
+        <reason>CI integration point for E2E test execution, parallel jobs, artifact uploads</reason>
+      </artifact>
+      <artifact>
+        <path>e2e/playwright.config.ts</path>
+        <kind>config</kind>
+        <symbol>Playwright configuration</symbol>
+        <lines>N/A (to be created)</lines>
+        <reason>Parallel workers (4), base URL, auth storage path, browser configuration (Chromium, Firefox, WebKit)</reason>
+      </artifact>
+      <artifact>
+        <path>e2e/fixtures/auth.ts</path>
+        <kind>test-fixture</kind>
+        <symbol>authenticatedPage</symbol>
+        <lines>N/A (to be created)</lines>
+        <reason>Provides authenticated Playwright context with JWT cookie for protected routes</reason>
+      </artifact>
+      <artifact>
+        <path>e2e/tests/meal-planning.spec.ts</path>
+        <kind>test</kind>
+        <symbol>E2E tests for meal planning flows</symbol>
+        <lines>N/A (to be created)</lines>
+        <reason>Tests for generation, navigation, single week regeneration, all future weeks regeneration</reason>
+      </artifact>
+      <artifact>
+        <path>crates/meal_planning</path>
+        <kind>domain-crate</kind>
+        <symbol>meal_planning aggregate</symbol>
+        <lines>N/A</lines>
+        <reason>Multi-week meal plan generation, rotation state management, preference application (tested via E2E)</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <rust>
+        <package name="evento" version="1.5" features="sqlite">Event sourcing framework</package>
+        <package name="axum" version="0.8" features="macros, multipart">HTTP server</package>
+        <package name="askama" version="0.14">Server-side HTML templates</package>
+        <package name="sqlx" version="0.8" features="runtime-tokio, sqlite">SQLite database access</package>
+      </rust>
+      <node>
+        <package name="@playwright/test" version="^1.56.0" dev="true">E2E testing framework (to be added)</package>
+        <package name="typescript" version="^5.7.0" dev="true">TypeScript for test fixtures (to be added)</package>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - Use Playwright test fixtures for authenticated sessions (no manual login in each test)
+    - Parallelize tests across 4 workers for &lt;5 minute execution time
+    - Use waitForSelector instead of fixed delays to avoid flaky tests
+    - Enable video recording for failed tests only (storage optimization)
+    - Tests must pass when run in parallel (no shared state between tests)
+    - Test data must be deterministic (fixed random seed for reproducibility)
+    - TwinSpark attributes (ts-req, ts-target, ts-swap) require waiting for DOM updates after AJAX requests
+    - All tests must pass in CI pipeline before merge to main
+    - Test isolation: each test uses isolated authenticated session (no cross-test contamination)
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>POST /plan/generate-multi-week</name>
+      <kind>HTTP route</kind>
+      <signature>Form { num_weeks: u32 } -&gt; 303 Redirect to /plan?week={first_monday}</signature>
+      <path>src/routes/meal_planning</path>
+    </interface>
+    <interface>
+      <name>GET /plan?week=YYYY-MM-DD</name>
+      <kind>HTTP route</kind>
+      <signature>Query { week: Option&lt;String&gt; } -&gt; 200 HTML (meal_plan_calendar.html)</signature>
+      <path>src/routes/meal_planning</path>
+    </interface>
+    <interface>
+      <name>POST /plan/regenerate-week?week=YYYY-MM-DD</name>
+      <kind>HTTP route</kind>
+      <signature>Query { week: String } -&gt; 303 Redirect to /plan?week={regenerated_week}</signature>
+      <path>src/routes/meal_planning</path>
+    </interface>
+    <interface>
+      <name>POST /plan/regenerate-future</name>
+      <kind>HTTP route</kind>
+      <signature>None -&gt; 303 Redirect to /plan?week={current_week}</signature>
+      <path>src/routes/meal_planning</path>
+    </interface>
+    <interface>
+      <name>GET /profile/meal-planning-preferences</name>
+      <kind>HTTP route</kind>
+      <signature>None -&gt; 200 HTML (preferences_form.html)</signature>
+      <path>src/routes/profile</path>
+    </interface>
+    <interface>
+      <name>POST /profile/meal-planning-preferences</name>
+      <kind>HTTP route</kind>
+      <signature>Form { generate_breakfast: bool, generate_lunch: bool, generate_dinner: bool, prefer_side_dishes: bool } -&gt; 303 Redirect to /profile</signature>
+      <path>src/routes/profile</path>
+    </interface>
+    <interface>
+      <name>GET /shopping?week=YYYY-MM-DD</name>
+      <kind>HTTP route</kind>
+      <signature>Query { week: Option&lt;String&gt; } -&gt; 200 HTML (shopping_list.html)</signature>
+      <path>src/routes/shopping</path>
+    </interface>
+    <interface>
+      <name>POST /recipes</name>
+      <kind>HTTP route</kind>
+      <signature>Form { title, recipe_type, can_be_side_dish, needs_side_dish, ... } -&gt; 303 Redirect to /recipes/{id}</signature>
+      <path>src/routes/recipes</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Playwright test suite with TypeScript fixtures. Tests isolated via authenticated sessions. Use waitForSelector for deterministic assertions (no fixed delays). Parallel execution across 4 workers. Video recording for failures only. CI integration via GitHub Actions (.github/workflows/test.yml). Test data seeded deterministically (fixed random seed). Cross-browser testing: Chromium (primary), Firefox (secondary), WebKit (tertiary).
+    </standards>
+    <locations>
+      e2e/tests/*.spec.ts (all E2E tests)
+      e2e/fixtures/*.ts (test fixtures)
+      e2e/playwright.config.ts (configuration)
+    </locations>
+    <ideas>
+      <idea ac="1">Test: Configure Playwright with 4 workers, verify parallel execution</idea>
+      <idea ac="1">Test: Verify authenticatedPage fixture provides valid JWT cookie</idea>
+      <idea ac="2">Test: User generates multi-week meal plan (4 weeks), verify redirect to /plan?week={monday}</idea>
+      <idea ac="2">Test: Verify meal plan calendar displays 7 days (Monday-Sunday)</idea>
+      <idea ac="3">Test: User clicks "Next Week" button, verify calendar updates to next Monday-Sunday range</idea>
+      <idea ac="3">Test: User clicks "Previous Week" button, verify calendar updates to previous week</idea>
+      <idea ac="4">Test: User clicks "Regenerate This Week" button, verify only target week changes (other weeks unchanged)</idea>
+      <idea ac="5">Test: User clicks "Regenerate All Future Weeks" button, verify all future weeks regenerated</idea>
+      <idea ac="6">Test: User navigates to /profile/meal-planning-preferences, toggles checkboxes, submits form</idea>
+      <idea ac="6">Test: Verify preferences saved (next meal plan generation respects breakfast/lunch/dinner toggles)</idea>
+      <idea ac="7">Test: User creates recipe with can_be_side_dish=true, verify saved correctly</idea>
+      <idea ac="8">Test: User navigates to /shopping?week=2025-11-10, verify shopping list displays week-specific ingredients</idea>
+      <idea ac="9">Test: Verify all E2E tests pass in CI (exit code 0)</idea>
+      <idea ac="10">Test: Verify CI execution time &lt;300 seconds (5 minutes)</idea>
+    </ideas>
+  </tests>
+</story-context>
