@@ -770,7 +770,19 @@ async fn list_contact_messages_command(config: imkitchen::config::Config) -> Res
     let pool = imkitchen::db::create_read_pool(&config.database.url, 1).await?;
 
     // Query all contact submissions, ordered by creation date (newest first)
-    let submissions = sqlx::query_as::<_, (String, Option<String>, String, String, String, String, String, String)>(
+    let submissions = sqlx::query_as::<
+        _,
+        (
+            String,
+            Option<String>,
+            String,
+            String,
+            String,
+            String,
+            String,
+            String,
+        ),
+    >(
         r#"SELECT id, user_id, name, email, subject, message, created_at, status
            FROM contact_submissions
            ORDER BY created_at DESC"#,
@@ -785,10 +797,15 @@ async fn list_contact_messages_command(config: imkitchen::config::Config) -> Res
         let count = submissions.len();
         println!("\nTotal submissions: {}\n", count);
 
-        for (i, (id, user_id, name, email, subject, message, created_at, status)) in submissions.iter().enumerate() {
+        for (i, (id, user_id, name, email, subject, message, created_at, status)) in
+            submissions.iter().enumerate()
+        {
             println!("{}. Submission ID: {}", i + 1, id);
             println!("   Status: {}", status);
-            println!("   User ID: {}", user_id.as_ref().unwrap_or(&"(anonymous)".to_string()));
+            println!(
+                "   User ID: {}",
+                user_id.as_ref().unwrap_or(&"(anonymous)".to_string())
+            );
             println!("   Name: {}", name);
             println!("   Email: {}", email);
             println!("   Subject: {}", subject);
@@ -798,7 +815,10 @@ async fn list_contact_messages_command(config: imkitchen::config::Config) -> Res
             println!("{}", "-".repeat(80));
         }
 
-        tracing::info!(count = count, "Listed contact form submissions successfully");
+        tracing::info!(
+            count = count,
+            "Listed contact form submissions successfully"
+        );
     }
 
     pool.close().await;
