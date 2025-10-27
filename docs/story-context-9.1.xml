@@ -1,0 +1,183 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>9</epicId>
+    <storyId>9.1</storyId>
+    <title>Create Multi-Week Calendar Component</title>
+    <status>Approved</status>
+    <generatedAt>2025-10-26</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-9.1.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>frontend developer</asA>
+    <iWant>build multi-week calendar view with tabs/carousel</iWant>
+    <soThat>users can see and navigate between weeks</soThat>
+    <tasks>
+      - Create Askama template structure
+      - Implement week tab navigation
+      - Implement mobile carousel view
+      - Build 7-day meal grid
+      - Apply Tailwind CSS styling
+      - Implement keyboard navigation
+      - Responsive design testing
+      - Integration testing
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="9.1.1">Askama template created at `templates/meal_plan/multi_week_calendar.html`</criterion>
+    <criterion id="9.1.2">Template displays week tabs (Week 1, Week 2, etc.) with date ranges (e.g., "Week 1 (Oct 28 - Nov 3)")</criterion>
+    <criterion id="9.1.3">Current week tab highlighted with distinct styling (border, background color) and lock icon 🔒</criterion>
+    <criterion id="9.1.4">Clicking week tab triggers TwinSpark request: `ts-req="/plan/week/:week_id"` with `ts-target="#calendar-content"` and `ts-swap="innerHTML"`</criterion>
+    <criterion id="9.1.5">Mobile view displays carousel with swipe navigation instead of tabs (progressive enhancement)</criterion>
+    <criterion id="9.1.6">Each week displays 7-day grid with breakfast/lunch/dinner slots (Monday-Sunday order)</criterion>
+    <criterion id="9.1.7">Meal slots show: recipe name, image thumbnail, prep time with icon</criterion>
+    <criterion id="9.1.8">Styling uses Tailwind CSS 4.1+ utility classes with 8px spacing grid</criterion>
+    <criterion id="9.1.9">Keyboard navigation between weeks using Tab key and Enter to select</criterion>
+    <criterion id="9.1.10">Responsive design: Desktop (tabs), Mobile (carousel with left/right arrows)</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-9.md</path>
+        <title>Technical Specification: Enhanced Meal Planning - Frontend UX Implementation</title>
+        <section>Acceptance Criteria → Story 9.1</section>
+        <snippet>Epic 9 delivers user-facing frontend for multi-week meal planning. Story 9.1 implements multi-week calendar component with tab/carousel navigation, server-side Askama templates, TwinSpark progressive enhancement, and Tailwind CSS responsive design.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-9.md</path>
+        <title>System Architecture Alignment</title>
+        <section>Detailed Design → Services and Modules → Template Modules</section>
+        <snippet>Template: `templates/meal_plan/multi_week_calendar.html` - Multi-week calendar component with week tabs/carousel. Dependencies: Week read models, meal assignments. Uses Askama server-side rendering, TwinSpark for partial updates, Tailwind CSS for styling.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-9.md</path>
+        <title>Workflows and Sequencing</title>
+        <section>Workflow 1: Multi-Week Calendar Navigation</section>
+        <snippet>User clicks "Week 2" tab → TwinSpark triggers GET /plan/week/week_2_id → Backend queries read model → Returns HTML fragment → TwinSpark swaps #calendar-content innerHTML → Display Week 2 calendar (no page reload)</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic 9: Enhanced Meal Planning - Frontend UX Implementation</title>
+        <section>Story 9.1</section>
+        <snippet>As a frontend developer, I want to build multi-week calendar view with tabs/carousel, so that users can see and navigate between weeks. Prerequisites: Epic 8 complete (routes available). Askama templates server-rendered (SEO friendly, fast). TwinSpark for progressive enhancement (works without JS).</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>templates/pages/meal-calendar.html</path>
+        <kind>template</kind>
+        <symbol>meal-calendar</symbol>
+        <lines>1-50</lines>
+        <reason>Existing meal calendar template using Askama, TwinSpark, and Tailwind CSS. Reference for template structure, TwinSpark integration pattern, and responsive design approach.</reason>
+      </artifact>
+      <artifact>
+        <path>static/js/twinspark.js</path>
+        <kind>library</kind>
+        <symbol>twinspark</symbol>
+        <lines>N/A</lines>
+        <reason>TwinSpark progressive enhancement library (~10KB). Handles partial HTML updates via ts-req, ts-target, ts-swap attributes. Core dependency for week navigation without page reload.</reason>
+      </artifact>
+      <artifact>
+        <path>static/js/meal-regeneration.js</path>
+        <kind>script</kind>
+        <symbol>meal-regeneration</symbol>
+        <lines>N/A</lines>
+        <reason>Existing JavaScript for meal plan interactions. Reference for TwinSpark request patterns and loading states.</reason>
+      </artifact>
+      <artifact>
+        <path>templates/components/regenerate-confirmation-modal.html</path>
+        <kind>component</kind>
+        <symbol>regenerate-confirmation-modal</symbol>
+        <lines>N/A</lines>
+        <reason>Existing modal component using Tailwind CSS. Reference for modal structure, accessibility patterns, and responsive design.</reason>
+      </artifact>
+      <artifact>
+        <path>templates/base.html</path>
+        <kind>template</kind>
+        <symbol>base</symbol>
+        <lines>N/A</lines>
+        <reason>Base layout template that multi_week_calendar.html will extend. Contains HTML structure, TwinSpark script inclusion, and global styles.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <rust>
+        <package name="askama" version="0.14">Server-side templating with compile-time checking</package>
+        <package name="axum" version="0.8">HTTP framework for serving HTML responses</package>
+        <package name="evento" version="1.5">Event sourcing library for read models (WeekReadModel)</package>
+        <package name="tokio" version="1.40">Async runtime</package>
+        <package name="chrono" version="0.4">Date/time handling for week ranges</package>
+      </rust>
+      <frontend>
+        <library name="TwinSpark" version="1.2+">Progressive enhancement for partial HTML updates (~10KB)</library>
+        <library name="Tailwind CSS" version="4.1+">Utility-first CSS framework (<30KB after purge)</library>
+      </frontend>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Server-Side Rendering: Use Askama templates for compile-time checked, SEO-friendly HTML. No React/Vue/Angular frameworks.</constraint>
+    <constraint>Progressive Enhancement: TwinSpark for partial updates. Site must function without JavaScript (graceful degradation).</constraint>
+    <constraint>Mobile-First Design: Implement responsive breakpoints with Tailwind CSS utilities. Carousel on mobile (<768px), tabs on desktop (≥768px).</constraint>
+    <constraint>Event-Sourced Read Models: Template consumes WeekReadModel from evento projections. No direct database queries in templates.</constraint>
+    <constraint>WCAG AA Compliance: Keyboard navigation, ARIA labels, 4.5:1 contrast ratios, 44x44px touch targets on mobile.</constraint>
+    <constraint>Performance: First Contentful Paint <1.5s on mobile 3G. Template rendering <500ms. Lazy-load images.</constraint>
+    <constraint>Browser Compatibility: Chrome 90+, Firefox 88+, Safari 14+, Edge 90+. TwinSpark degrades gracefully in older browsers.</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>GET /plan</name>
+      <kind>route</kind>
+      <signature>async fn get_multi_week_calendar(State(state): State&lt;AppState&gt;, user: User) -> Result&lt;Html&lt;String&gt;, AppError&gt;</signature>
+      <path>Epic 8 backend routes</path>
+      <description>Returns full multi-week calendar page with all weeks. Renders multi_week_calendar.html template with WeekReadModel vector.</description>
+    </interface>
+    <interface>
+      <name>GET /plan/week/:week_id</name>
+      <kind>route</kind>
+      <signature>async fn get_week_calendar(Path(week_id): Path&lt;String&gt;, State(state): State&lt;AppState&gt;) -> Result&lt;Html&lt;String&gt;, AppError&gt;</signature>
+      <path>Epic 8 backend routes</path>
+      <description>Returns partial HTML fragment for specific week. Used by TwinSpark to update #calendar-content without page reload.</description>
+    </interface>
+    <interface>
+      <name>WeekReadModel</name>
+      <kind>struct</kind>
+      <signature>pub struct WeekReadModel { pub id: String, pub start_date: NaiveDate, pub end_date: NaiveDate, pub status: WeekStatus, pub is_locked: bool, pub meal_assignments: Vec&lt;MealAssignmentView&gt; }</signature>
+      <path>Epic 6-8 domain models</path>
+      <description>Read model consumed by template. Provides week data including dates, lock status, and meal assignments.</description>
+    </interface>
+    <interface>
+      <name>MealAssignmentView</name>
+      <kind>struct</kind>
+      <signature>pub struct MealAssignmentView { pub date: NaiveDate, pub course_type: CourseType, pub recipe: RecipePreview, pub accompaniment: Option&lt;RecipePreview&gt;, pub prep_required: bool }</signature>
+      <path>Epic 6-8 domain models</path>
+      <description>Meal slot data for template rendering. Includes recipe details, accompaniment, and prep requirements.</description>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Integration tests using Playwright for end-to-end user flows. Tests verify TwinSpark partial updates, keyboard navigation, responsive breakpoints, and accessibility (WCAG AA). Backend integration tests use evento `unsafe_oneshot` for synchronous event processing. Template rendering tests verify Askama compilation. Performance tests verify FCP <1.5s, LCP <2.5s on mobile 3G.
+    </standards>
+    <locations>
+      - crates/meal_planning/tests/ (backend integration tests)
+      - tests/playwright/ (frontend E2E tests, if exists)
+      - Story 9.7 creates comprehensive accessibility test suite
+    </locations>
+    <ideas>
+      <test ac="9.1.1">Verify `templates/meal_plan/multi_week_calendar.html` file created and compiles with Askama</test>
+      <test ac="9.1.2">Test week tabs render with correct labels and date ranges (Week 1 (Oct 28 - Nov 3))</test>
+      <test ac="9.1.3">Test current week tab highlighted with border-primary-500, bg-primary-50, and lock icon 🔒</test>
+      <test ac="9.1.4">Playwright test: Click week tab → Verify TwinSpark GET /plan/week/:week_id → Verify #calendar-content updated without page reload</test>
+      <test ac="9.1.5">Responsive test: Mobile (375px) shows carousel with arrows, desktop (1920px) shows tabs</test>
+      <test ac="9.1.6">Test 7-day grid renders Monday-Sunday with breakfast/lunch/dinner rows</test>
+      <test ac="9.1.7">Test meal slots display recipe name, image thumbnail, prep time icon</test>
+      <test ac="9.1.8">Verify Tailwind classes applied: space-2, space-4, space-8, responsive utilities</test>
+      <test ac="9.1.9">Keyboard test: Tab through weeks, Enter activates tab, loads new content</test>
+      <test ac="9.1.10">Responsive breakpoint test: @md: triggers tabs layout, <768px triggers carousel</test>
+    </ideas>
+  </tests>
+</story-context>
