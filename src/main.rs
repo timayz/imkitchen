@@ -25,9 +25,9 @@ use imkitchen::routes::{
     post_password_reset_complete, post_profile, post_rate_recipe, post_regenerate_meal_plan,
     post_register, post_remove_recipe_from_collection, post_share_recipe, post_stripe_webhook,
     post_subscription_upgrade, post_update_collection, post_update_recipe, post_update_recipe_tags,
-    ready, record_permission_change, refresh_shopping_list, regenerate_week,
-    reset_shopping_list_handler, show_shopping_list, snooze_notification, subscribe_push, AppState,
-    AssetsService,
+    ready, record_permission_change, refresh_shopping_list, regenerate_all_future_weeks,
+    regenerate_week, reset_shopping_list_handler, show_shopping_list, snooze_notification,
+    subscribe_push, AppState, AssetsService,
 };
 use meal_planning::meal_plan_projection;
 use notifications::{meal_plan_subscriptions, notification_projections};
@@ -293,6 +293,11 @@ async fn serve_command(
         .route("/plan/week/{week_id}", get(get_week_detail))
         // Story 8.3: Week regeneration API route
         .route("/plan/week/{week_id}/regenerate", post(regenerate_week))
+        // Story 8.4: Regenerate all future weeks API route
+        .route(
+            "/plan/regenerate-all-future",
+            post(regenerate_all_future_weeks),
+        )
         // Shopping list routes
         .route("/shopping", get(show_shopping_list))
         .route("/shopping/refresh", get(refresh_shopping_list))
