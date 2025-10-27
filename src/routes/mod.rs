@@ -40,7 +40,8 @@ pub use notifications::{
     notifications_page, record_permission_change, snooze_notification, subscribe_push,
 };
 pub use profile::{
-    get_onboarding, get_onboarding_skip, get_profile, get_subscription, get_subscription_success,
+    get_meal_planning_preferences, get_onboarding, get_onboarding_skip, get_profile,
+    get_subscription, get_subscription_success, post_meal_planning_preferences,
     post_onboarding_step_1, post_onboarding_step_2, post_onboarding_step_3, post_profile,
     post_subscription_upgrade,
 };

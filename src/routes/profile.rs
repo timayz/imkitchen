@@ -12,6 +12,11 @@ use sqlx::Row;
 use crate::middleware::Auth;
 use crate::routes::auth::AppState;
 
+// Default values for meal planning preferences
+const DEFAULT_MAX_PREP_TIME_WEEKNIGHT: u32 = 45; // minutes
+const DEFAULT_MAX_PREP_TIME_WEEKEND: u32 = 120; // minutes
+const DEFAULT_CUISINE_VARIETY_WEIGHT: f32 = 0.5; // 0.0 = repetition OK, 1.0 = maximize variety
+
 #[derive(Template)]
 #[template(path = "pages/onboarding.html")]
 pub struct OnboardingPageTemplate {
@@ -787,4 +792,323 @@ pub async fn get_subscription_success(Extension(_auth): Extension<Auth>) -> Resp
     };
 
     Html(template.render().unwrap()).into_response()
+}
+
+// ================================================
+// Meal Planning Preferences HTML Form (Story 9.3)
+// ================================================
+
+#[derive(Template)]
+#[template(path = "profile/meal_planning_preferences.html")]
+pub struct MealPlanningPreferencesTemplate {
+    pub error: String,
+    pub user: Option<()>,
+    pub user_preferences: UserPreferencesView,
+    pub csrf_token: String,
+    pub current_path: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct UserPreferencesView {
+    pub max_prep_time_weeknight: u32,
+    pub max_prep_time_weekend: u32,
+    pub avoid_consecutive_complex: bool,
+    pub cuisine_variety_weight: f32,
+    pub dietary_restrictions: Vec<String>,
+    pub custom_dietary_restriction: String,
+}
+
+impl Default for UserPreferencesView {
+    fn default() -> Self {
+        Self {
+            max_prep_time_weeknight: 45,
+            max_prep_time_weekend: 120,
+            avoid_consecutive_complex: false,
+            cuisine_variety_weight: 0.5,
+            dietary_restrictions: Vec::new(),
+            custom_dietary_restriction: String::new(),
+        }
+    }
+}
+
+/// GET /profile/meal-planning-preferences - Display preferences form
+///
+/// Story 9.3 AC #1, #2: Template with pre-populated user preferences
+#[tracing::instrument(skip(state, auth))]
+pub async fn get_meal_planning_preferences(
+    State(state): State<AppState>,
+    Extension(auth): Extension<Auth>,
+) -> Response {
+    // Query user preferences from read model
+    let user_data = sqlx::query(
+        "SELECT max_prep_time_weeknight, max_prep_time_weekend, avoid_consecutive_complex,
+         cuisine_variety_weight, dietary_restrictions FROM users WHERE id = ?1",
+    )
+    .bind(&auth.user_id)
+    .fetch_one(&state.db_pool)
+    .await;
+
+    match user_data {
+        Ok(row) => {
+            let max_prep_time_weeknight: Option<i32> = row.get("max_prep_time_weeknight");
+            let max_prep_time_weekend: Option<i32> = row.get("max_prep_time_weekend");
+            let avoid_consecutive_complex: Option<i32> = row.get("avoid_consecutive_complex");
+            let cuisine_variety_weight: Option<f64> = row.get("cuisine_variety_weight");
+            let dietary_restrictions_json: Option<String> = row.get("dietary_restrictions");
+
+            // Parse dietary restrictions from JSON: [{"type":"Vegetarian"},{"type":"Custom","value":"shellfish"}]
+            let (dietary_restrictions, custom_dietary_restriction) = dietary_restrictions_json
+                .and_then(|s| {
+                    let parsed: Option<Vec<serde_json::Value>> = serde_json::from_str(&s).ok();
+                    parsed
+                })
+                .map(|items| {
+                    let mut restrictions = vec![];
+                    let mut custom = String::new();
+                    for item in items {
+                        if let Some(type_val) = item.get("type").and_then(|v| v.as_str()) {
+                            if type_val == "Custom" {
+                                custom = item
+                                    .get("value")
+                                    .and_then(|v| v.as_str())
+                                    .unwrap_or("")
+                                    .to_string();
+                            } else {
+                                restrictions.push(type_val.to_string());
+                            }
+                        }
+                    }
+                    (restrictions, custom)
+                })
+                .unwrap_or_default();
+
+            let user_preferences = UserPreferencesView {
+                max_prep_time_weeknight: max_prep_time_weeknight
+                    .unwrap_or(DEFAULT_MAX_PREP_TIME_WEEKNIGHT as i32)
+                    as u32,
+                max_prep_time_weekend: max_prep_time_weekend
+                    .unwrap_or(DEFAULT_MAX_PREP_TIME_WEEKEND as i32)
+                    as u32,
+                avoid_consecutive_complex: avoid_consecutive_complex.unwrap_or(0) == 1,
+                cuisine_variety_weight: cuisine_variety_weight
+                    .unwrap_or(DEFAULT_CUISINE_VARIETY_WEIGHT as f64)
+                    as f32,
+                dietary_restrictions,
+                custom_dietary_restriction,
+            };
+
+            // Generate CSRF token (simplified - in production use proper CSRF library)
+            let csrf_token = uuid::Uuid::new_v4().to_string();
+
+            let template = MealPlanningPreferencesTemplate {
+                error: String::new(),
+                user: Some(()),
+                user_preferences,
+                csrf_token,
+                current_path: "/profile/meal-planning-preferences".to_string(),
+            };
+
+            Html(template.render().unwrap()).into_response()
+        }
+        Err(e) => {
+            tracing::error!("Failed to query user preferences: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
+        }
+    }
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct UpdatePreferencesForm {
+    pub max_prep_time_weeknight: u32,
+    pub max_prep_time_weekend: u32,
+    #[serde(default)]
+    pub avoid_consecutive_complex: bool,
+    pub cuisine_variety_weight: f32,
+    #[serde(default)]
+    #[serde(rename = "dietary_restrictions[]")]
+    pub dietary_restrictions: Vec<String>,
+    #[serde(default)]
+    pub custom_dietary_restriction: String,
+}
+
+/// POST /profile/meal-planning-preferences - Update preferences (HTML form)
+///
+/// Story 9.3 AC #8, #9, #10: Form submission with validation and redirect
+#[tracing::instrument(skip(state, auth, form))]
+pub async fn post_meal_planning_preferences(
+    State(state): State<AppState>,
+    Extension(auth): Extension<Auth>,
+    axum::Form(form): axum::Form<UpdatePreferencesForm>,
+) -> Response {
+    // Validate form fields
+    if form.max_prep_time_weeknight > 300 {
+        return render_preferences_error(
+            &state,
+            &auth.user_id,
+            "Invalid weeknight prep time (0-300 minutes required)",
+        )
+        .await;
+    }
+
+    if form.max_prep_time_weekend > 300 {
+        return render_preferences_error(
+            &state,
+            &auth.user_id,
+            "Invalid weekend prep time (0-300 minutes required)",
+        )
+        .await;
+    }
+
+    if !(0.0..=1.0).contains(&form.cuisine_variety_weight) {
+        return render_preferences_error(
+            &state,
+            &auth.user_id,
+            "Invalid cuisine variety weight (0.0-1.0 required)",
+        )
+        .await;
+    }
+
+    // Build dietary restrictions JSON: [{"type":"Vegetarian"},{"type":"Custom","value":"shellfish"}]
+    let mut dietary_restrictions_list = vec![];
+    for restriction in &form.dietary_restrictions {
+        dietary_restrictions_list.push(serde_json::json!({
+            "type": restriction
+        }));
+    }
+    // Add custom allergen if provided
+    if !form.custom_dietary_restriction.trim().is_empty() {
+        dietary_restrictions_list.push(serde_json::json!({
+            "type": "Custom",
+            "value": form.custom_dietary_restriction.trim()
+        }));
+    }
+    let dietary_restrictions_json =
+        serde_json::to_string(&dietary_restrictions_list).unwrap_or_else(|_| "[]".to_string());
+
+    // Emit UserMealPlanningPreferencesUpdated event
+    let event = user::events::UserMealPlanningPreferencesUpdated {
+        dietary_restrictions: Some(dietary_restrictions_json),
+        household_size: None,
+        skill_level: None,
+        weeknight_availability: None,
+        max_prep_time_weeknight: form.max_prep_time_weeknight,
+        max_prep_time_weekend: form.max_prep_time_weekend,
+        avoid_consecutive_complex: form.avoid_consecutive_complex,
+        cuisine_variety_weight: form.cuisine_variety_weight,
+        updated_at: chrono::Utc::now().to_rfc3339(),
+    };
+
+    let commit_result = async {
+        evento::save::<user::UserAggregate>(auth.user_id.to_string())
+            .data(&event)?
+            .metadata(&true)?
+            .commit(&state.evento_executor)
+            .await
+    }
+    .await;
+
+    match commit_result {
+        Ok(_) => {
+            // Success: redirect to /profile with toast (AC #10)
+            // Note: Toast rendering will be handled by JavaScript on the profile page
+            (
+                StatusCode::SEE_OTHER,
+                [("Location", "/profile?preferences_updated=true")],
+            )
+                .into_response()
+        }
+        Err(e) => {
+            tracing::error!("Failed to update meal planning preferences: {:?}", e);
+            render_preferences_error(&state, &auth.user_id, "Failed to save preferences").await
+        }
+    }
+}
+
+async fn render_preferences_error(
+    state: &AppState,
+    user_id: &str,
+    error_message: &str,
+) -> Response {
+    // Query current preferences to re-render form
+    let user_data = sqlx::query(
+        "SELECT max_prep_time_weeknight, max_prep_time_weekend, avoid_consecutive_complex,
+         cuisine_variety_weight, dietary_restrictions FROM users WHERE id = ?1",
+    )
+    .bind(user_id)
+    .fetch_one(&state.db_pool)
+    .await;
+
+    match user_data {
+        Ok(row) => {
+            let max_prep_time_weeknight: Option<i32> = row.get("max_prep_time_weeknight");
+            let max_prep_time_weekend: Option<i32> = row.get("max_prep_time_weekend");
+            let avoid_consecutive_complex: Option<i32> = row.get("avoid_consecutive_complex");
+            let cuisine_variety_weight: Option<f64> = row.get("cuisine_variety_weight");
+            let dietary_restrictions_json: Option<String> = row.get("dietary_restrictions");
+
+            // Parse dietary restrictions from JSON (same as GET handler)
+            let (dietary_restrictions, custom_dietary_restriction) = dietary_restrictions_json
+                .and_then(|s| {
+                    let parsed: Option<Vec<serde_json::Value>> = serde_json::from_str(&s).ok();
+                    parsed
+                })
+                .map(|items| {
+                    let mut restrictions = vec![];
+                    let mut custom = String::new();
+                    for item in items {
+                        if let Some(type_val) = item.get("type").and_then(|v| v.as_str()) {
+                            if type_val == "Custom" {
+                                custom = item
+                                    .get("value")
+                                    .and_then(|v| v.as_str())
+                                    .unwrap_or("")
+                                    .to_string();
+                            } else {
+                                restrictions.push(type_val.to_string());
+                            }
+                        }
+                    }
+                    (restrictions, custom)
+                })
+                .unwrap_or_default();
+
+            let user_preferences = UserPreferencesView {
+                max_prep_time_weeknight: max_prep_time_weeknight
+                    .unwrap_or(DEFAULT_MAX_PREP_TIME_WEEKNIGHT as i32)
+                    as u32,
+                max_prep_time_weekend: max_prep_time_weekend
+                    .unwrap_or(DEFAULT_MAX_PREP_TIME_WEEKEND as i32)
+                    as u32,
+                avoid_consecutive_complex: avoid_consecutive_complex.unwrap_or(0) == 1,
+                cuisine_variety_weight: cuisine_variety_weight
+                    .unwrap_or(DEFAULT_CUISINE_VARIETY_WEIGHT as f64)
+                    as f32,
+                dietary_restrictions,
+                custom_dietary_restriction,
+            };
+
+            let csrf_token = uuid::Uuid::new_v4().to_string();
+
+            let template = MealPlanningPreferencesTemplate {
+                error: error_message.to_string(),
+                user: Some(()),
+                user_preferences,
+                csrf_token,
+                current_path: "/profile/meal-planning-preferences".to_string(),
+            };
+
+            (
+                StatusCode::UNPROCESSABLE_ENTITY,
+                Html(template.render().unwrap()),
+            )
+                .into_response()
+        }
+        Err(e) => {
+            tracing::error!(
+                "Failed to query user preferences for error rendering: {:?}",
+                e
+            );
+            (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error").into_response()
+        }
+    }
 }

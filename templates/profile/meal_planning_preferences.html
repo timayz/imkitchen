@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+
+{% block title %}Meal Planning Preferences - imkitchen{% endblock %}
+
+{% block content %}
+<div class="min-h-screen py-12">
+    <div class="container mx-auto px-4 max-w-2xl">
+        <div class="bg-white rounded-lg shadow-md p-8">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">
+                Meal Planning Preferences
+            </h1>
+            <p class="text-gray-600 mb-6">
+                Customize how the meal planning algorithm works for you
+            </p>
+
+            {% if !error.is_empty() %}
+            <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded mb-6" role="alert">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="POST"
+                  action="/profile/meal-planning-preferences"
+                  class="space-y-6"
+                  id="preferences-form">
+                <!-- Hidden method field for PUT -->
+                <input type="hidden" name="_method" value="PUT" />
+
+                <!-- CSRF Token (AC #8: Form security) -->
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+
+                <!-- Time Constraints Section (AC #3) -->
+                <fieldset class="border border-gray-200 rounded-lg p-6">
+                    <legend class="text-lg font-semibold text-gray-900 px-2">Time Constraints</legend>
+
+                    <div class="space-y-4 mt-4">
+                        <!-- Max Prep Time Weeknight -->
+                        <div>
+                            <label for="max_prep_time_weeknight" class="block text-sm font-medium text-gray-700 mb-1">
+                                Max prep time on weeknights (minutes) *
+                            </label>
+                            <input
+                                type="number"
+                                id="max_prep_time_weeknight"
+                                name="max_prep_time_weeknight"
+                                min="0"
+                                max="300"
+                                required
+                                value="{{ user_preferences.max_prep_time_weeknight }}"
+                                class="w-full px-4 py-3 md:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                aria-required="true"
+                            />
+                            <p class="mt-1 text-sm text-gray-500">
+                                Enter a value between 0 and 300 minutes
+                            </p>
+                        </div>
+
+                        <!-- Max Prep Time Weekend -->
+                        <div>
+                            <label for="max_prep_time_weekend" class="block text-sm font-medium text-gray-700 mb-1">
+                                Max prep time on weekends (minutes) *
+                            </label>
+                            <input
+                                type="number"
+                                id="max_prep_time_weekend"
+                                name="max_prep_time_weekend"
+                                min="0"
+                                max="300"
+                                required
+                                value="{{ user_preferences.max_prep_time_weekend }}"
+                                class="w-full px-4 py-3 md:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                aria-required="true"
+                            />
+                            <p class="mt-1 text-sm text-gray-500">
+                                Enter a value between 0 and 300 minutes
+                            </p>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <!-- Meal Complexity Section (AC #4) -->
+                <fieldset class="border border-gray-200 rounded-lg p-6">
+                    <legend class="text-lg font-semibold text-gray-900 px-2">Meal Complexity</legend>
+
+                    <div class="mt-4">
+                        <label class="flex items-start p-4 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                            <div class="flex items-center h-5">
+                                <input
+                                    type="checkbox"
+                                    id="avoid_consecutive_complex"
+                                    name="avoid_consecutive_complex"
+                                    value="true"
+                                    class="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-2 focus:ring-primary-500"
+                                    {% if user_preferences.avoid_consecutive_complex %}checked{% endif %}
+                                />
+                            </div>
+                            <div class="ml-3">
+                                <span class="font-medium text-gray-900">
+                                    Avoid complex meals on consecutive days
+                                </span>
+                                <p class="text-sm text-gray-600 mt-1">
+                                    The algorithm will space out complex recipes to prevent cooking fatigue
+                                </p>
+                            </div>
+                        </label>
+                    </div>
+                </fieldset>
+
+                <!-- Cuisine Variety Section (AC #5) -->
+                <fieldset class="border border-gray-200 rounded-lg p-6">
+                    <legend class="text-lg font-semibold text-gray-900 px-2">Cuisine Variety</legend>
+
+                    <div class="mt-4">
+                        <div class="flex justify-between text-sm text-gray-600 mb-2">
+                            <span>Repeat OK</span>
+                            <span class="font-medium text-gray-900" id="cuisine-variety-value">
+                                {{ user_preferences.cuisine_variety_weight }}
+                            </span>
+                            <span>Mix it up!</span>
+                        </div>
+                        <input
+                            type="range"
+                            id="cuisine_variety_weight"
+                            name="cuisine_variety_weight"
+                            min="0"
+                            max="1"
+                            step="0.1"
+                            value="{{ user_preferences.cuisine_variety_weight }}"
+                            class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-500"
+                            oninput="document.getElementById('cuisine-variety-value').textContent = this.value"
+                        />
+                        <p class="mt-2 text-sm text-gray-500">
+                            Lower values allow more repetition of cuisine types, higher values maximize variety
+                        </p>
+                    </div>
+                </fieldset>
+
+                <!-- Dietary Restrictions Section (AC #6) -->
+                <fieldset class="border border-gray-200 rounded-lg p-6">
+                    <legend class="text-lg font-semibold text-gray-900 px-2">Dietary Restrictions</legend>
+
+                    <div class="space-y-3 mt-4">
+                        <label class="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                            <input
+                                type="checkbox"
+                                name="dietary_restrictions[]"
+                                value="Vegetarian"
+                                class="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-2 focus:ring-primary-500"
+                                {% for r in user_preferences.dietary_restrictions %}{% if r == "Vegetarian" %}checked{% endif %}{% endfor %}
+                            />
+                            <span class="ml-3 text-gray-900">Vegetarian</span>
+                        </label>
+                        <label class="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                            <input
+                                type="checkbox"
+                                name="dietary_restrictions[]"
+                                value="Vegan"
+                                class="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-2 focus:ring-primary-500"
+                                {% for r in user_preferences.dietary_restrictions %}{% if r == "Vegan" %}checked{% endif %}{% endfor %}
+                            />
+                            <span class="ml-3 text-gray-900">Vegan</span>
+                        </label>
+                        <label class="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                            <input
+                                type="checkbox"
+                                name="dietary_restrictions[]"
+                                value="GlutenFree"
+                                class="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-2 focus:ring-primary-500"
+                                {% for r in user_preferences.dietary_restrictions %}{% if r == "GlutenFree" %}checked{% endif %}{% endfor %}
+                            />
+                            <span class="ml-3 text-gray-900">Gluten-Free</span>
+                        </label>
+                        <label class="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                            <input
+                                type="checkbox"
+                                name="dietary_restrictions[]"
+                                value="DairyFree"
+                                class="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-2 focus:ring-primary-500"
+                                {% for r in user_preferences.dietary_restrictions %}{% if r == "DairyFree" %}checked{% endif %}{% endfor %}
+                            />
+                            <span class="ml-3 text-gray-900">Dairy-Free</span>
+                        </label>
+                        <label class="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                            <input
+                                type="checkbox"
+                                name="dietary_restrictions[]"
+                                value="NutFree"
+                                class="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-2 focus:ring-primary-500"
+                                {% for r in user_preferences.dietary_restrictions %}{% if r == "NutFree" %}checked{% endif %}{% endfor %}
+                            />
+                            <span class="ml-3 text-gray-900">Nut-Free</span>
+                        </label>
+                        <label class="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                            <input
+                                type="checkbox"
+                                name="dietary_restrictions[]"
+                                value="Halal"
+                                class="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-2 focus:ring-primary-500"
+                                {% for r in user_preferences.dietary_restrictions %}{% if r == "Halal" %}checked{% endif %}{% endfor %}
+                            />
+                            <span class="ml-3 text-gray-900">Halal</span>
+                        </label>
+                        <label class="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                            <input
+                                type="checkbox"
+                                name="dietary_restrictions[]"
+                                value="Kosher"
+                                class="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-2 focus:ring-primary-500"
+                                {% for r in user_preferences.dietary_restrictions %}{% if r == "Kosher" %}checked{% endif %}{% endfor %}
+                            />
+                            <span class="ml-3 text-gray-900">Kosher</span>
+                        </label>
+                    </div>
+                </fieldset>
+
+                <!-- Custom Allergen Section (AC #7) -->
+                <div>
+                    <label for="custom_dietary_restriction" class="block text-sm font-medium text-gray-700 mb-1">
+                        Custom dietary restriction (e.g., shellfish)
+                    </label>
+                    <input
+                        type="text"
+                        id="custom_dietary_restriction"
+                        name="custom_dietary_restriction"
+                        value="{{ user_preferences.custom_dietary_restriction }}"
+                        placeholder="Enter any additional dietary restrictions"
+                        class="w-full px-4 py-3 md:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        maxlength="200"
+                    />
+                    <p class="mt-1 text-sm text-gray-500">
+                        Optional: specify any additional dietary restrictions not listed above
+                    </p>
+                </div>
+
+                <!-- Submit Button (AC #9) -->
+                <div class="flex gap-4 pt-4">
+                    <button
+                        type="submit"
+                        class="flex-1 bg-primary-500 text-white py-3 px-4 rounded-lg hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 font-medium transition-colors"
+                    >
+                        Save Preferences
+                    </button>
+                    <a
+                        href="/profile"
+                        class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium text-center transition-colors"
+                    >
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Enhanced range slider visualization (progressive enhancement)
+document.addEventListener('DOMContentLoaded', () => {
+    const slider = document.getElementById('cuisine_variety_weight');
+    const valueDisplay = document.getElementById('cuisine-variety-value');
+
+    if (slider && valueDisplay) {
+        // Format initial value
+        valueDisplay.textContent = parseFloat(slider.value).toFixed(1);
+
+        // Update display on input
+        slider.addEventListener('input', (e) => {
+            valueDisplay.textContent = parseFloat(e.target.value).toFixed(1);
+        });
+    }
+});
+</script>
+{% endblock %}
