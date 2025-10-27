@@ -48,7 +48,7 @@ struct InstructionRowTemplate {
 #[derive(Debug, Deserialize)]
 pub struct CreateRecipeForm {
     pub title: String,
-    pub recipe_type: String, // AC-2: "appetizer", "main_course", or "dessert"
+    pub recipe_type: String, // AC 9.4.2: "appetizer", "main_course", "dessert", or "accompaniment"
     pub ingredient_name: Vec<String>,
     pub ingredient_quantity: Vec<String>,
     pub ingredient_unit: Vec<String>,
@@ -58,6 +58,19 @@ pub struct CreateRecipeForm {
     pub cook_time_min: Option<String>,
     pub advance_prep_hours: Option<String>,
     pub serving_size: Option<String>,
+    // AC 9.4.3: Main course accepts accompaniment
+    pub accepts_accompaniment: Option<String>,
+    // AC 9.4.4: Preferred accompaniment categories
+    #[serde(default)]
+    pub preferred_accompaniments: Vec<String>,
+    // AC 9.4.5: Accompaniment category
+    pub accompaniment_category: Option<String>,
+    // AC 9.4.6: Cuisine selection
+    pub cuisine: Option<String>,
+    pub custom_cuisine: Option<String>,
+    // AC 9.4.7: Dietary tags
+    #[serde(default)]
+    pub dietary_tags: Vec<String>,
 }
 
 #[derive(Template)]
@@ -103,7 +116,7 @@ pub struct RecipeDetailTemplate {
 pub struct RecipeDetailView {
     pub id: String,
     pub title: String,
-    pub recipe_type: String, // AC-2: Recipe type (appetizer, main_course, dessert)
+    pub recipe_type: String, // AC 9.4.2: Recipe type (appetizer, main_course, dessert, accompaniment)
     pub ingredients: Vec<Ingredient>,
     pub instructions: Vec<InstructionStep>,
     pub prep_time_min: Option<u32>,
@@ -119,6 +132,14 @@ pub struct RecipeDetailView {
     pub creator_email: Option<String>, // AC-4: Recipe attribution (creator username)
     pub avg_rating: Option<f32>,       // Story 2.9 AC-4, AC-9: Average rating
     pub review_count: Option<i32>,     // Story 2.9 AC-4: Number of reviews
+    // AC 9.4.3: Main course accepts accompaniment
+    pub accepts_accompaniment: bool,
+    // AC 9.4.4: Preferred accompaniment categories
+    pub preferred_accompaniments: Vec<String>,
+    // AC 9.4.5: Accompaniment category
+    pub accompaniment_category: Option<String>,
+    // AC 9.4.6: Custom cuisine
+    pub custom_cuisine: Option<String>,
 }
 
 /// GET /recipes/new - Display recipe creation form
@@ -220,16 +241,50 @@ pub async fn post_create_recipe(
         .serving_size
         .and_then(|s| if s.is_empty() { None } else { s.parse().ok() });
 
+    // AC 9.4.3: Parse accepts_accompaniment checkbox (checkboxes send "on" or absent)
+    let accepts_accompaniment = form.accepts_accompaniment.is_some();
+
+    // AC 9.4.4: Preferred accompaniments already parsed as Vec<String> by form
+    let preferred_accompaniments = form.preferred_accompaniments.clone();
+
+    // AC 9.4.5: Accompaniment category
+    let accompaniment_category =
+        form.accompaniment_category
+            .and_then(|s| if s.is_empty() { None } else { Some(s) });
+
+    // AC 9.4.6: Cuisine (merge custom_cuisine into cuisine field if "Custom" selected)
+    // Custom cuisines are stored as Cuisine::Custom(name) variant in the domain model
+    let cuisine = if form.cuisine.as_deref() == Some("Custom") {
+        form.custom_cuisine
+            .and_then(|s| if s.is_empty() { None } else { Some(s) })
+    } else {
+        form.cuisine
+            .and_then(|s| if s.is_empty() { None } else { Some(s) })
+    };
+
+    // AC 9.4.7: Dietary tags already parsed as Vec<String> by form
+    let dietary_tags = form.dietary_tags.clone();
+
     // Create command
     let command = CreateRecipeCommand {
         title: form.title.clone(),
-        recipe_type: form.recipe_type.clone(), // AC-2: Recipe type classification
+        recipe_type: form.recipe_type.clone(), // AC 9.4.2: Recipe type classification
         ingredients,
         instructions,
         prep_time_min,
         cook_time_min,
         advance_prep_hours,
         serving_size,
+        // AC 9.4.3: Main course accepts accompaniment
+        accepts_accompaniment,
+        // AC 9.4.4: Preferred accompaniment categories
+        preferred_accompaniments,
+        // AC 9.4.5: Accompaniment category
+        accompaniment_category,
+        // AC 9.4.6: Cuisine (custom cuisines merged from custom_cuisine form field)
+        cuisine,
+        // AC 9.4.7: Dietary tags
+        dietary_tags,
     };
 
     // Execute recipe creation (evento event sourcing)
@@ -411,10 +466,23 @@ pub async fn get_recipe_detail(
                 .and_then(|tags_json| serde_json::from_str::<Vec<String>>(tags_json).ok())
                 .unwrap_or_default();
 
+            // AC 9.4.4: Parse preferred accompaniments from JSON
+            let preferred_accompaniments = recipe_data
+                .preferred_accompaniments
+                .as_ref()
+                .and_then(|json| serde_json::from_str::<Vec<String>>(json).ok())
+                .unwrap_or_default();
+
+            // AC 9.4.5: Parse accompaniment category from JSON
+            let accompaniment_category = recipe_data
+                .accompaniment_category
+                .as_ref()
+                .and_then(|json| serde_json::from_str::<String>(json).ok());
+
             let recipe_view = RecipeDetailView {
                 id: recipe_data.id.clone(),
                 title: recipe_data.title,
-                recipe_type: recipe_data.recipe_type, // AC-2: Include recipe_type
+                recipe_type: recipe_data.recipe_type, // AC 9.4.2: Include recipe_type
                 ingredients,
                 instructions,
                 prep_time_min: recipe_data.prep_time_min.map(|v| v as u32),
@@ -423,13 +491,18 @@ pub async fn get_recipe_detail(
                 serving_size: recipe_data.serving_size.map(|v| v as u32),
                 is_favorite: recipe_data.is_favorite,
                 is_shared: recipe_data.is_shared,
-                complexity: recipe_data.complexity,
-                cuisine: recipe_data.cuisine,
+                complexity: recipe_data.complexity.clone(),
+                cuisine: recipe_data.cuisine.clone(),
                 dietary_tags,
                 created_at: recipe_data.created_at,
                 creator_email: None, // Not needed for owner's own recipe views
                 avg_rating: None,    // Not needed for owner's recipe view
                 review_count: None,  // Not needed for owner's recipe view
+                // AC 9.4.3-9.4.7: Accompaniment fields from database
+                accepts_accompaniment: recipe_data.accepts_accompaniment,
+                preferred_accompaniments,
+                accompaniment_category,
+                custom_cuisine: None, // Merged into cuisine field
             };
 
             // Check if user is the owner
@@ -577,10 +650,23 @@ pub async fn get_recipe_edit_form(
                 .and_then(|tags_json| serde_json::from_str::<Vec<String>>(tags_json).ok())
                 .unwrap_or_default();
 
+            // AC 9.4.4: Parse preferred accompaniments from JSON
+            let preferred_accompaniments = recipe_data
+                .preferred_accompaniments
+                .as_ref()
+                .and_then(|json| serde_json::from_str::<Vec<String>>(json).ok())
+                .unwrap_or_default();
+
+            // AC 9.4.5: Parse accompaniment category from JSON
+            let accompaniment_category = recipe_data
+                .accompaniment_category
+                .as_ref()
+                .and_then(|json| serde_json::from_str::<String>(json).ok());
+
             let recipe_view = RecipeDetailView {
                 id: recipe_data.id.clone(),
                 title: recipe_data.title,
-                recipe_type: recipe_data.recipe_type, // AC-2: Include recipe_type
+                recipe_type: recipe_data.recipe_type, // AC 9.4.2: Include recipe_type
                 ingredients,
                 instructions,
                 prep_time_min: recipe_data.prep_time_min.map(|v| v as u32),
@@ -589,13 +675,18 @@ pub async fn get_recipe_edit_form(
                 serving_size: recipe_data.serving_size.map(|v| v as u32),
                 is_favorite: recipe_data.is_favorite,
                 is_shared: recipe_data.is_shared,
-                complexity: recipe_data.complexity,
-                cuisine: recipe_data.cuisine,
+                complexity: recipe_data.complexity.clone(),
+                cuisine: recipe_data.cuisine.clone(),
                 dietary_tags,
                 created_at: recipe_data.created_at,
                 creator_email: None, // Not needed for owner's own recipe views
                 avg_rating: None,    // Not needed for owner's recipe view
                 review_count: None,  // Not needed for owner's recipe view
+                // AC 9.4.3-9.4.7: Accompaniment fields from database
+                accepts_accompaniment: recipe_data.accepts_accompaniment,
+                preferred_accompaniments,
+                accompaniment_category,
+                custom_cuisine: None, // Merged into cuisine field
             };
 
             let template = RecipeFormTemplate {
@@ -850,9 +941,37 @@ fn parse_recipe_form(body: &str) -> Result<CreateRecipeForm, String> {
         .cloned();
     let serving_size = fields.get("serving_size").and_then(|v| v.first()).cloned();
 
+    // AC 9.4.3: Parse accepts_accompaniment checkbox
+    let accepts_accompaniment = fields
+        .get("accepts_accompaniment")
+        .and_then(|v| v.first())
+        .cloned();
+
+    // AC 9.4.4: Parse preferred_accompaniments checkboxes
+    let preferred_accompaniments = fields
+        .get("preferred_accompaniments[]")
+        .cloned()
+        .unwrap_or_default();
+
+    // AC 9.4.5: Parse accompaniment_category radio
+    let accompaniment_category = fields
+        .get("accompaniment_category")
+        .and_then(|v| v.first())
+        .cloned();
+
+    // AC 9.4.6: Parse cuisine dropdown
+    let cuisine = fields.get("cuisine").and_then(|v| v.first()).cloned();
+    let custom_cuisine = fields
+        .get("custom_cuisine")
+        .and_then(|v| v.first())
+        .cloned();
+
+    // AC 9.4.7: Parse dietary_tags checkboxes
+    let dietary_tags = fields.get("dietary_tags[]").cloned().unwrap_or_default();
+
     Ok(CreateRecipeForm {
         title,
-        recipe_type, // AC-2: Include recipe_type in form
+        recipe_type, // AC 9.4.2: Include recipe_type in form
         ingredient_name,
         ingredient_quantity,
         ingredient_unit,
@@ -862,6 +981,13 @@ fn parse_recipe_form(body: &str) -> Result<CreateRecipeForm, String> {
         cook_time_min,
         advance_prep_hours,
         serving_size,
+        // AC 9.4.3-9.4.7: New accompaniment fields
+        accepts_accompaniment,
+        preferred_accompaniments,
+        accompaniment_category,
+        cuisine,
+        custom_cuisine,
+        dietary_tags,
     })
 }
 
@@ -1616,10 +1742,23 @@ pub async fn get_discover(
                     (None, None)
                 };
 
+                // AC 9.4.4: Parse preferred accompaniments from JSON
+                let preferred_accompaniments = recipe
+                    .preferred_accompaniments
+                    .as_ref()
+                    .and_then(|json| serde_json::from_str::<Vec<String>>(json).ok())
+                    .unwrap_or_default();
+
+                // AC 9.4.5: Parse accompaniment category from JSON
+                let accompaniment_category = recipe
+                    .accompaniment_category
+                    .as_ref()
+                    .and_then(|json| serde_json::from_str::<String>(json).ok());
+
                 recipe_views.push(RecipeDetailView {
                     id: recipe.id.clone(),
                     title: recipe.title.clone(),
-                    recipe_type: recipe.recipe_type.clone(), // AC-2: Include recipe_type
+                    recipe_type: recipe.recipe_type.clone(), // AC 9.4.2: Include recipe_type
                     ingredients,
                     instructions,
                     prep_time_min: recipe.prep_time_min.map(|v| v as u32),
@@ -1635,6 +1774,11 @@ pub async fn get_discover(
                     creator_email,
                     avg_rating,
                     review_count,
+                    // AC 9.4.3-9.4.7: Accompaniment fields from database
+                    accepts_accompaniment: recipe.accepts_accompaniment,
+                    preferred_accompaniments,
+                    accompaniment_category,
+                    custom_cuisine: None, // Merged into cuisine field
                 });
             }
 
@@ -1787,6 +1931,18 @@ pub async fn get_more_discover(
                     creator_email,
                     avg_rating,
                     review_count,
+                    // AC 9.4.3-9.4.7: Accompaniment fields from database
+                    accepts_accompaniment: recipe.accepts_accompaniment,
+                    preferred_accompaniments: recipe
+                        .preferred_accompaniments
+                        .as_ref()
+                        .and_then(|json| serde_json::from_str(json).ok())
+                        .unwrap_or_default(),
+                    accompaniment_category: recipe
+                        .accompaniment_category
+                        .as_ref()
+                        .and_then(|json| serde_json::from_str(json).ok()),
+                    custom_cuisine: None, // Always None (merged into cuisine)
                 });
             }
 
@@ -1864,6 +2020,7 @@ pub async fn get_discover_detail(
         SELECT r.id, r.user_id, r.title, r.recipe_type, r.ingredients, r.instructions,
                r.prep_time_min, r.cook_time_min, r.advance_prep_hours, r.serving_size,
                r.is_favorite, r.is_shared, r.complexity, r.cuisine, r.dietary_tags,
+               r.accepts_accompaniment, r.preferred_accompaniments, r.accompaniment_category,
                r.created_at, r.updated_at, u.email as creator_email
         FROM recipes r
         LEFT JOIN users u ON r.user_id = u.id
@@ -1912,10 +2069,23 @@ pub async fn get_discover_detail(
                 .and_then(|tags_json| serde_json::from_str::<Vec<String>>(tags_json).ok())
                 .unwrap_or_default();
 
+            // AC 9.4.4: Parse preferred accompaniments from JSON
+            let preferred_accompaniments_json: Option<String> = row.get("preferred_accompaniments");
+            let preferred_accompaniments = preferred_accompaniments_json
+                .as_ref()
+                .and_then(|json| serde_json::from_str::<Vec<String>>(json).ok())
+                .unwrap_or_default();
+
+            // AC 9.4.5: Parse accompaniment category from JSON
+            let accompaniment_category_json: Option<String> = row.get("accompaniment_category");
+            let accompaniment_category = accompaniment_category_json
+                .as_ref()
+                .and_then(|json| serde_json::from_str::<String>(json).ok());
+
             let recipe = RecipeDetailView {
                 id: row.get("id"),
                 title: row.get("title"),
-                recipe_type: row.get("recipe_type"), // AC-2: Include recipe_type
+                recipe_type: row.get("recipe_type"), // AC 9.4.2: Include recipe_type
                 ingredients,
                 instructions,
                 prep_time_min: row.get::<Option<i32>, _>("prep_time_min").map(|v| v as u32),
@@ -1933,6 +2103,11 @@ pub async fn get_discover_detail(
                 creator_email: row.get("creator_email"), // AC-9: Recipe attribution
                 avg_rating: None,                        // Populated later
                 review_count: None,                      // Populated later
+                // AC 9.4.3-9.4.7: Accompaniment fields from database
+                accepts_accompaniment: row.get("accepts_accompaniment"),
+                preferred_accompaniments,
+                accompaniment_category,
+                custom_cuisine: None, // Merged into cuisine field
             };
 
             // Query rating statistics (Story 2.9 AC-4)
