@@ -90,6 +90,10 @@ enum Commands {
         #[arg(long)]
         message: Option<String>,
     },
+    /// List all user emails
+    ListUsers,
+    /// List all contact form submissions
+    ListContactMessages,
 }
 
 #[tokio::main]
@@ -116,6 +120,8 @@ async fn main() -> Result<()> {
         Commands::SendNotification { email, message } => {
             send_notification_command(config, email, message).await
         }
+        Commands::ListUsers => list_users_command(config).await,
+        Commands::ListContactMessages => list_contact_messages_command(config).await,
     };
 
     // Graceful shutdown of observability
@@ -716,6 +722,107 @@ async fn send_notification_command(
 
     pool.close().await;
 
+    Ok(())
+}
+
+/// List all user emails
+#[tracing::instrument(skip(config))]
+async fn list_users_command(config: imkitchen::config::Config) -> Result<()> {
+    tracing::info!("Listing all user emails...");
+
+    // Set up database connection pool
+    let pool = imkitchen::db::create_read_pool(&config.database.url, 1).await?;
+
+    // Query all users, ordered by creation date
+    let users = sqlx::query_as::<_, (String, String, String)>(
+        r#"SELECT id, email, created_at FROM users ORDER BY created_at DESC"#,
+    )
+    .fetch_all(&pool)
+    .await?;
+
+    if users.is_empty() {
+        println!("No users found in database.");
+        tracing::info!("No users found in database");
+    } else {
+        let count = users.len();
+        println!("\nTotal users: {}\n", count);
+        println!("{:<36} {:<40} {:<25}", "ID", "Email", "Created At");
+        println!("{}", "-".repeat(105));
+
+        for (id, email, created_at) in users {
+            println!("{:<36} {:<40} {:<25}", id, email, created_at);
+        }
+
+        tracing::info!(count = count, "Listed users successfully");
+    }
+
+    pool.close().await;
+    tracing::info!("Database pool closed");
+    Ok(())
+}
+
+/// List all contact form messages
+#[tracing::instrument(skip(config))]
+async fn list_contact_messages_command(config: imkitchen::config::Config) -> Result<()> {
+    tracing::info!("Listing all contact form submissions...");
+
+    // Set up database connection pool
+    let pool = imkitchen::db::create_read_pool(&config.database.url, 1).await?;
+
+    // Query all contact submissions, ordered by creation date (newest first)
+    let submissions = sqlx::query_as::<
+        _,
+        (
+            String,
+            Option<String>,
+            String,
+            String,
+            String,
+            String,
+            String,
+            String,
+        ),
+    >(
+        r#"SELECT id, user_id, name, email, subject, message, created_at, status
+           FROM contact_submissions
+           ORDER BY created_at DESC"#,
+    )
+    .fetch_all(&pool)
+    .await?;
+
+    if submissions.is_empty() {
+        println!("No contact form submissions found in database.");
+        tracing::info!("No contact form submissions found in database");
+    } else {
+        let count = submissions.len();
+        println!("\nTotal submissions: {}\n", count);
+
+        for (i, (id, user_id, name, email, subject, message, created_at, status)) in
+            submissions.iter().enumerate()
+        {
+            println!("{}. Submission ID: {}", i + 1, id);
+            println!("   Status: {}", status);
+            println!(
+                "   User ID: {}",
+                user_id.as_ref().unwrap_or(&"(anonymous)".to_string())
+            );
+            println!("   Name: {}", name);
+            println!("   Email: {}", email);
+            println!("   Subject: {}", subject);
+            println!("   Created: {}", created_at);
+            println!("   Message:");
+            println!("   {}", message);
+            println!("{}", "-".repeat(80));
+        }
+
+        tracing::info!(
+            count = count,
+            "Listed contact form submissions successfully"
+        );
+    }
+
+    pool.close().await;
+    tracing::info!("Database pool closed");
     Ok(())
 }
 
