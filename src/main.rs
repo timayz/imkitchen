@@ -27,7 +27,7 @@ use imkitchen::routes::{
     post_subscription_upgrade, post_update_collection, post_update_recipe, post_update_recipe_tags,
     ready, record_permission_change, refresh_shopping_list, regenerate_all_future_weeks,
     regenerate_week, reset_shopping_list_handler, show_shopping_list, snooze_notification,
-    subscribe_push, AppState, AssetsService,
+    subscribe_push, update_meal_planning_preferences, AppState, AssetsService,
 };
 use meal_planning::meal_plan_projection;
 use notifications::{meal_plan_subscriptions, notification_projections};
@@ -297,6 +297,11 @@ async fn serve_command(
         .route(
             "/plan/regenerate-all-future",
             post(regenerate_all_future_weeks),
+        )
+        // Story 8.5: User preferences update API route
+        .route(
+            "/profile/meal-planning-preferences",
+            axum::routing::put(update_meal_planning_preferences),
         )
         // Shopping list routes
         .route("/shopping", get(show_shopping_list))

@@ -374,35 +374,66 @@ async fn user_meal_planning_preferences_updated_handler<E: Executor>(
 ) -> anyhow::Result<()> {
     let pool: SqlitePool = context.extract();
 
-    // All fields from the event are directly stored
-    // dietary_restrictions is already JSON string in the event
-    sqlx::query(
-        r#"
-        UPDATE users
-        SET max_prep_time_weeknight = ?1,
-            max_prep_time_weekend = ?2,
-            avoid_consecutive_complex = ?3,
-            cuisine_variety_weight = ?4,
-            dietary_restrictions = ?5,
-            household_size = ?6,
-            skill_level = ?7,
-            weeknight_availability = ?8,
-            updated_at = ?9
-        WHERE id = ?10
-        "#,
-    )
-    .bind(event.data.max_prep_time_weeknight as i32)
-    .bind(event.data.max_prep_time_weekend as i32)
-    .bind(event.data.avoid_consecutive_complex)
-    .bind(event.data.cuisine_variety_weight)
-    .bind(&event.data.dietary_restrictions) // Already JSON string
-    .bind(event.data.household_size as i32)
-    .bind(&event.data.skill_level)
-    .bind(&event.data.weeknight_availability)
-    .bind(&event.data.updated_at)
-    .bind(&event.aggregator_id)
-    .execute(&pool)
-    .await?;
+    // Build dynamic query for partial updates (Story 8.5)
+    // Only update fields that are provided (Some), skip None fields
+    let mut query_parts: Vec<String> = vec![
+        "max_prep_time_weeknight = ?1".to_string(),
+        "max_prep_time_weekend = ?2".to_string(),
+        "avoid_consecutive_complex = ?3".to_string(),
+        "cuisine_variety_weight = ?4".to_string(),
+        "updated_at = ?5".to_string(),
+    ];
+    let mut bind_idx = 6;
+    let mut optional_parts = Vec::new();
+
+    if event.data.dietary_restrictions.is_some() {
+        optional_parts.push(format!("dietary_restrictions = ?{}", bind_idx));
+        bind_idx += 1;
+    }
+    if event.data.household_size.is_some() {
+        optional_parts.push(format!("household_size = ?{}", bind_idx));
+        bind_idx += 1;
+    }
+    if event.data.skill_level.is_some() {
+        optional_parts.push(format!("skill_level = ?{}", bind_idx));
+        bind_idx += 1;
+    }
+    if event.data.weeknight_availability.is_some() {
+        optional_parts.push(format!("weeknight_availability = ?{}", bind_idx));
+        bind_idx += 1;
+    }
+
+    query_parts.extend(optional_parts);
+
+    let query_str = format!(
+        "UPDATE users SET {} WHERE id = ?{}",
+        query_parts.join(", "),
+        bind_idx
+    );
+
+    let mut query = sqlx::query(&query_str)
+        .bind(event.data.max_prep_time_weeknight as i32)
+        .bind(event.data.max_prep_time_weekend as i32)
+        .bind(event.data.avoid_consecutive_complex)
+        .bind(event.data.cuisine_variety_weight as f64)
+        .bind(&event.data.updated_at);
+
+    // Bind optional fields in order
+    if let Some(dietary_restrictions) = &event.data.dietary_restrictions {
+        query = query.bind(dietary_restrictions);
+    }
+    if let Some(household_size) = event.data.household_size {
+        query = query.bind(household_size as i32);
+    }
+    if let Some(skill_level) = &event.data.skill_level {
+        query = query.bind(skill_level);
+    }
+    if let Some(weeknight_availability) = &event.data.weeknight_availability {
+        query = query.bind(weeknight_availability);
+    }
+
+    query = query.bind(&event.aggregator_id);
+    query.execute(&pool).await?;
 
     Ok(())
 }

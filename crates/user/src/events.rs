@@ -157,20 +157,49 @@ pub struct NotificationPermissionChanged {
 /// This event captures all user preferences used by the meal planning algorithm for personalization.
 /// Emitted when user configures preferences in profile settings or onboarding.
 ///
-/// Design note: All preference fields serialized with bincode for evento compatibility.
-/// Uses String for timestamps and structured types for preferences.
+/// # Schema Version History
 ///
-/// Note: user_id is provided by event.aggregator_id, not stored in event data
+/// ## v1 (Story 8.5 - October 2025)
+/// Changed first 4 fields from required to `Option<T>` to support partial updates:
+/// - `dietary_restrictions: String` → `Option<String>`
+/// - `household_size: u32` → `Option<u32>`
+/// - `skill_level: String` → `Option<String>`
+/// - `weeknight_availability: String` → `Option<String>`
+///
+/// **Rationale**: Story 8.5 introduces a route that updates only 4 specific fields
+/// (max_prep_time_weeknight, max_prep_time_weekend, avoid_consecutive_complex, cuisine_variety_weight).
+/// Making the other fields optional allows partial updates without requiring all fields to be provided.
+///
+/// **Backward Compatibility**: Existing events with non-null values deserialize correctly.
+/// The aggregate and read model handlers check `Option::is_some()` before updating fields.
+///
+/// **Migration Strategy**: No data migration needed. Old events remain valid.
+/// New events emit `None` for unchanged fields.
+///
+/// # Design Notes
+///
+/// - All preference fields serialized with bincode for evento compatibility
+/// - Uses String for timestamps and structured types for preferences
+/// - user_id is provided by event.aggregator_id, not stored in event data
+/// - `#[serde(skip_serializing_if = "Option::is_none")]` ensures clean JSON serialization
 #[derive(Debug, Clone, Serialize, Deserialize, AggregatorName, Encode, Decode)]
 pub struct UserMealPlanningPreferencesUpdated {
     /// Dietary restrictions (serialized as JSON array)
-    pub dietary_restrictions: String, // JSON: [{"type":"Vegetarian"},{"type":"Custom","value":"shellfish"}]
+    /// Optional since Story 8.5 to support partial updates
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dietary_restrictions: Option<String>, // JSON: [{"type":"Vegetarian"},{"type":"Custom","value":"shellfish"}]
     /// Number of people in household
-    pub household_size: u32,
+    /// Optional since Story 8.5 to support partial updates
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub household_size: Option<u32>,
     /// Cooking skill level: "Beginner", "Intermediate", "Advanced"
-    pub skill_level: String,
+    /// Optional since Story 8.5 to support partial updates
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub skill_level: Option<String>,
     /// Weeknight availability (JSON)
-    pub weeknight_availability: String, // JSON: {"start":"18:00","duration_minutes":45}
+    /// Optional since Story 8.5 to support partial updates
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub weeknight_availability: Option<String>, // JSON: {"start":"18:00","duration_minutes":45}
     /// Maximum prep time for weeknight meals (minutes)
     pub max_prep_time_weeknight: u32,
     /// Maximum prep time for weekend meals (minutes)
