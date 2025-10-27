@@ -186,6 +186,20 @@ button.ts-active::after {
                         <a href="/recipes/{{ main_course.recipe_id }}?from=calendar&meal_plan_id={{ day.meal_plan_id }}&assignment_id={{ main_course.assignment_id }}" class="text-gray-900 hover:text-primary-500 font-medium block">
                             {{ main_course.recipe_title }}
                         </a>
+                        <!-- Story 9.2: Display accompaniment if present -->
+                        {% match main_course.accompaniment %}
+                        {% when Some with (acc) %}
+                        <div class="mt-1">
+                          <a
+                            href="/recipes/{{ acc.id }}"
+                            class="text-gray-600 text-sm hover:text-gray-800 hover:underline inline-block"
+                            aria-label="View {{ acc.title }} accompaniment recipe"
+                          >
+                            + {{ acc.title }}
+                          </a>
+                        </div>
+                        {% when None %}
+                        {% endmatch %}
                         <div class="flex items-center gap-2 mt-1 text-xs text-gray-500">
                             {% match main_course.prep_time_min %}
                             {% when Some with (prep) %}

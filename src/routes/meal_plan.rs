@@ -41,6 +41,13 @@ impl Drop for GenerationLockGuard {
     }
 }
 
+/// Accompaniment data for template rendering (Story 9.2)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AccompanimentView {
+    pub id: String,
+    pub title: String,
+}
+
 /// Recipe with meal assignment for template rendering
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MealSlotData {
@@ -54,6 +61,7 @@ pub struct MealSlotData {
     pub prep_required: bool,
     pub complexity: Option<String>,
     pub assignment_reasoning: Option<String>, // Story 3.8: Assignment reasoning tooltip
+    pub accompaniment: Option<AccompanimentView>, // Story 9.2: Accompaniment display
 }
 
 /// Template for meal plan loading state with TwinSpark polling
@@ -301,12 +309,30 @@ pub async fn get_meal_plan(
 
             let recipes = fetch_recipes_by_ids(&recipe_ids, &state.db_pool).await?;
 
+            // Story 9.2: Fetch accompaniment recipes
+            let accompaniment_ids: Vec<String> = plan_data
+                .assignments
+                .iter()
+                .filter_map(|a| a.accompaniment_recipe_id.clone())
+                .collect();
+
+            let accompaniment_recipes = if !accompaniment_ids.is_empty() {
+                fetch_recipes_by_ids(&accompaniment_ids, &state.db_pool).await?
+            } else {
+                Vec::new()
+            };
+
             // AC (Story 3.3): Query rotation progress for display
             let (rotation_used, rotation_total) =
                 MealPlanQueries::query_rotation_progress(&auth.user_id, &state.db_pool).await?;
 
             // Group assignments by date into DayData with today/past flags
-            let days = build_day_data(&plan_data.assignments, &recipes, &plan_data.meal_plan.id);
+            let days = build_day_data(
+                &plan_data.assignments,
+                &recipes,
+                &accompaniment_recipes,
+                &plan_data.meal_plan.id,
+            );
 
             // Story 3.13: Calculate end_date (Sunday) from start_date (Monday)
             let end_date =
@@ -819,16 +845,23 @@ async fn fetch_recipes_by_ids(
 fn build_day_data(
     assignments: &[MealAssignmentReadModel],
     recipes: &[RecipeReadModel],
-    meal_plan_id: &str, // Story 3.5: Pass meal_plan_id for calendar context
+    accompaniment_recipes: &[RecipeReadModel], // Story 9.2: Accompaniment recipe lookups
+    meal_plan_id: &str,                        // Story 3.5: Pass meal_plan_id for calendar context
 ) -> Vec<DayData> {
     use std::collections::HashMap;
 
     // AC-6, AC-7: Get today's date for highlighting logic
     let today = chrono::Local::now().date_naive();
 
-    // Create recipe lookup map
+    // Create recipe lookup maps
     let recipe_map: HashMap<String, &RecipeReadModel> =
         recipes.iter().map(|r| (r.id.clone(), r)).collect();
+
+    // Story 9.2: Create accompaniment recipe lookup map
+    let accompaniment_map: HashMap<String, &RecipeReadModel> = accompaniment_recipes
+        .iter()
+        .map(|r| (r.id.clone(), r))
+        .collect();
 
     // Group assignments by date
     let mut days_map: HashMap<String, DayData> = HashMap::new();
@@ -863,6 +896,16 @@ fn build_day_data(
         let recipe = recipe_map.get(&assignment.recipe_id);
 
         if let Some(recipe) = recipe {
+            // Story 9.2: Load accompaniment if present
+            let accompaniment = assignment
+                .accompaniment_recipe_id
+                .as_ref()
+                .and_then(|acc_id| accompaniment_map.get(acc_id))
+                .map(|acc_recipe| AccompanimentView {
+                    id: acc_recipe.id.clone(),
+                    title: acc_recipe.title.clone(),
+                });
+
             let slot_data = MealSlotData {
                 assignment_id: assignment.id.clone(), // Story 3.4: Include for replacement
                 date: assignment.date.clone(),
@@ -874,6 +917,7 @@ fn build_day_data(
                 prep_required: assignment.prep_required,
                 complexity: recipe.complexity.clone(),
                 assignment_reasoning: assignment.assignment_reasoning.clone(), // Story 3.8: Reasoning tooltip
+                accompaniment, // Story 9.2: Accompaniment display
             };
 
             // Assign to appropriate course slot (AC-5)
@@ -1169,6 +1213,7 @@ mod tests {
                 recipe_id: "recipe1".to_string(),
                 prep_required: false,
                 assignment_reasoning: None,
+                accompaniment_recipe_id: None, // Story 9.2
             },
             MealAssignmentReadModel {
                 id: "assignment_today".to_string(),
@@ -1178,6 +1223,7 @@ mod tests {
                 recipe_id: "recipe2".to_string(),
                 prep_required: false,
                 assignment_reasoning: None,
+                accompaniment_recipe_id: None, // Story 9.2
             },
             MealAssignmentReadModel {
                 id: "assignment_tomorrow".to_string(),
@@ -1187,6 +1233,7 @@ mod tests {
                 recipe_id: "recipe3".to_string(),
                 prep_required: false,
                 assignment_reasoning: None,
+                accompaniment_recipe_id: None, // Story 9.2
             },
         ];
 
@@ -1260,7 +1307,7 @@ mod tests {
         ];
 
         // Execute
-        let days = build_day_data(&assignments, &recipes, "test_meal_plan_id");
+        let days = build_day_data(&assignments, &recipes, &[], "test_meal_plan_id");
 
         // Assert
         assert_eq!(days.len(), 3, "Should have 3 days");

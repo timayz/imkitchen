@@ -1,5 +1,5 @@
 use chrono::{NaiveDate, Weekday};
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use meal_planning::{
     algorithm::{
         generate_multi_week_meal_plans, select_main_course_with_preferences, RecipeForPlanning,
@@ -8,6 +8,7 @@ use meal_planning::{
     rotation::RotationState,
 };
 use recipe::Cuisine;
+use std::hint::black_box;
 
 /// Create a test recipe with specific properties for benchmarking
 fn create_bench_recipe(

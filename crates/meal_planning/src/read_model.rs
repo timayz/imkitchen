@@ -30,6 +30,7 @@ pub struct MealAssignmentReadModel {
     pub recipe_id: String,
     pub prep_required: bool,
     pub assignment_reasoning: Option<String>, // Story 3.8: Human-readable assignment explanation
+    pub accompaniment_recipe_id: Option<String>, // Story 9.2: Optional accompaniment for main courses
 }
 
 /// MealPlanWithAssignments combines meal plan with its assignments for queries
@@ -96,7 +97,7 @@ impl MealPlanQueries {
     ) -> Result<Vec<MealAssignmentReadModel>, sqlx::Error> {
         sqlx::query_as::<_, MealAssignmentReadModel>(
             r#"
-            SELECT id, meal_plan_id, date, course_type, recipe_id, prep_required, assignment_reasoning
+            SELECT id, meal_plan_id, date, course_type, recipe_id, prep_required, assignment_reasoning, accompaniment_recipe_id
             FROM meal_assignments
             WHERE meal_plan_id = ?1
             ORDER BY date, course_type
