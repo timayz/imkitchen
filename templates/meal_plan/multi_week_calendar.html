@@ -111,6 +111,8 @@ button.ts-active::after {
 {% block page_scripts %}
 <!-- Meal regeneration modal -->
 <script src={{ "/static/js/meal-regeneration.min.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
+<!-- Week regeneration modal (Story 9.5) -->
+<script src={{ "/static/js/week-regeneration.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
 <script src={{ "/static/js/touch-enhancements.min.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
 <script src={{ "/static/js/sync-ui.min.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>
 {% endblock %}
@@ -127,7 +129,7 @@ button.ts-active::after {
                 {% endif %}
             </div>
 
-            <div class="flex gap-3">
+            <div class="flex flex-wrap gap-3">
                 {% if has_meal_plan %}
                 <a href="/shopping?week={{ current_week_start_date }}" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium flex items-center">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -135,6 +137,19 @@ button.ts-active::after {
                     </svg>
                     Shopping List
                 </a>
+                <!-- AC-9.5.2: Regenerate All Future Weeks button -->
+                {% set future_weeks_count = weeks | selectattr("is_locked", "equalto", false) | list | length %}
+                {% if future_weeks_count > 0 %}
+                <button
+                    type="button"
+                    onclick="openRegenerateAllModal({{ future_weeks_count }})"
+                    class="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors font-medium flex items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    Regenerate All Future Weeks
+                </button>
+                {% endif %}
                 <button
                     ts-req="/plan/regenerate/confirm"
                     ts-req-method="GET"
@@ -164,27 +179,43 @@ button.ts-active::after {
         <div class="hidden md:block mb-6">
             <div class="week-tabs" role="tablist" aria-label="Week navigation">
                 {% for week in weeks %}
-                <button
-                    type="button"
-                    role="tab"
-                    aria-selected="{% if week.id == current_week_id %}true{% else %}false{% endif %}"
-                    aria-controls="calendar-content"
-                    tabindex="{% if week.id == current_week_id %}0{% else %}-1{% endif %}"
-                    ts-req="/plan/week/{{ week.id }}"
-                    ts-target="#calendar-content"
-                    ts-swap="innerHTML"
-                    ts-req-method="GET"
-                    class="week-tab {% if week.id == current_week_id %}active{% endif %}">
-                    <div class="text-sm font-semibold text-gray-900">
-                        Week {{ loop.index }}
-                        {% if week.is_locked %}
-                        <span class="ml-1">🔒</span>
-                        {% endif %}
-                    </div>
-                    <div class="text-xs text-gray-600 mt-1">
-                        {{ week.start_date }} - {{ week.end_date }}
-                    </div>
-                </button>
+                <div class="flex flex-col gap-2">
+                    <button
+                        type="button"
+                        role="tab"
+                        aria-selected="{% if week.id == current_week_id %}true{% else %}false{% endif %}"
+                        aria-controls="calendar-content"
+                        tabindex="{% if week.id == current_week_id %}0{% else %}-1{% endif %}"
+                        ts-req="/plan/week/{{ week.id }}"
+                        ts-target="#calendar-content"
+                        ts-swap="innerHTML"
+                        ts-req-method="GET"
+                        class="week-tab {% if week.id == current_week_id %}active{% endif %}">
+                        <div class="text-sm font-semibold text-gray-900">
+                            Week {{ loop.index }}
+                            {% if week.is_locked %}
+                            <span class="ml-1">🔒</span>
+                            {% endif %}
+                        </div>
+                        <div class="text-xs text-gray-600 mt-1">
+                            {{ week.start_date }} - {{ week.end_date }}
+                        </div>
+                    </button>
+                    <!-- AC-9.5.1: Regenerate This Week button (only for future weeks) -->
+                    {% if not week.is_locked %}
+                    <button
+                        type="button"
+                        onclick="openRegenerateWeekModal('{{ week.id }}', {{ loop.index }}, '{{ week.start_date }}', '{{ week.end_date }}')"
+                        class="text-xs px-2 py-1 bg-yellow-500 hover:bg-yellow-600 text-white rounded transition-colors font-medium">
+                        Regenerate This Week
+                    </button>
+                    {% else %}
+                    <!-- AC-9.5.10: Disabled text for locked weeks -->
+                    <span class="text-xs text-gray-500 text-center px-2 py-1">
+                        Cannot Regenerate (week in progress)
+                    </span>
+                    {% endif %}
+                </div>
                 {% endfor %}
             </div>
         </div>
@@ -324,5 +355,8 @@ button.ts-active::after {
 
     <!-- Modal Container for meal replacement -->
     <div id="modal-container"></div>
+
+    <!-- Week Regeneration Modal (Story 9.5) -->
+    {% include "components/week-regeneration-modal.html" %}
 </main>
 {% endblock %}
