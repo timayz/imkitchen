@@ -128,6 +128,11 @@ async fn test_batch_import_rejects_free_tier_overflow() {
             cook_time_min: Some(10),
             advance_prep_hours: None,
             serving_size: Some(4),
+            accepts_accompaniment: false,
+            preferred_accompaniments: vec![],
+            accompaniment_category: None,
+            cuisine: None,
+            dietary_tags: vec![],
         };
         recipe::create_recipe(recipe_cmd, &user_id, &executor, &pool, false)
             .await

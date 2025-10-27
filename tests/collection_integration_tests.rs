@@ -223,6 +223,11 @@ async fn test_add_recipe_to_collection_integration() {
         cook_time_min: None,
         advance_prep_hours: None,
         serving_size: None,
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: vec![],
     };
     let recipe_id = create_recipe(recipe_command, &user1_id, &executor, &pool, false)
         .await
@@ -298,6 +303,11 @@ async fn test_remove_recipe_from_collection_integration() {
         cook_time_min: None,
         advance_prep_hours: None,
         serving_size: None,
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: vec![],
     };
     let recipe_id = create_recipe(recipe_command, &user1_id, &executor, &pool, false)
         .await

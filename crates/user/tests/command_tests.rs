@@ -89,6 +89,11 @@ async fn create_test_user_with_recipes(
             cook_time_min: None,
             advance_prep_hours: None,
             serving_size: None,
+            accepts_accompaniment: false,
+            preferred_accompaniments: vec![],
+            accompaniment_category: None,
+            cuisine: None,
+            dietary_tags: vec![],
         };
         recipe::create_recipe(command, &user_id, executor, pool, false)
             .await
@@ -135,6 +140,11 @@ async fn test_free_user_with_9_recipes_can_create() {
         cook_time_min: None,
         advance_prep_hours: None,
         serving_size: None,
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: vec![],
     };
 
     let result = recipe::create_recipe(command, &user_id, &executor, &pool, false).await;
@@ -170,6 +180,11 @@ async fn test_free_user_with_10_recipes_cannot_create() {
         cook_time_min: None,
         advance_prep_hours: None,
         serving_size: None,
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: vec![],
     };
 
     let result = recipe::create_recipe(command, &user_id, &executor, &pool, false).await;
@@ -211,6 +226,11 @@ async fn test_premium_user_unlimited_recipes() {
         cook_time_min: None,
         advance_prep_hours: None,
         serving_size: None,
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: vec![],
     };
 
     let result = recipe::create_recipe(command, &user_id, &executor, &pool, false).await;
@@ -247,6 +267,11 @@ async fn test_premium_user_100_recipes() {
         cook_time_min: None,
         advance_prep_hours: None,
         serving_size: None,
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: vec![],
     };
 
     let result = recipe::create_recipe(command, &user_id, &executor, &pool, false).await;
@@ -282,6 +307,11 @@ async fn test_free_user_with_0_recipes_can_create() {
         cook_time_min: None,
         advance_prep_hours: None,
         serving_size: None,
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: vec![],
     };
 
     let result = recipe::create_recipe(command, &user_id, &executor, &pool, false).await;
@@ -317,6 +347,11 @@ async fn test_free_user_with_5_recipes_can_create() {
         cook_time_min: None,
         advance_prep_hours: None,
         serving_size: None,
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: vec![],
     };
 
     let result = recipe::create_recipe(command, &user_id, &executor, &pool, false).await;
@@ -352,6 +387,11 @@ async fn test_free_user_exactly_at_limit() {
         cook_time_min: None,
         advance_prep_hours: None,
         serving_size: None,
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: vec![],
     };
 
     let result = recipe::create_recipe(command, &user_id, &executor, &pool, false).await;
@@ -387,6 +427,11 @@ async fn test_free_user_over_limit() {
         cook_time_min: None,
         advance_prep_hours: None,
         serving_size: None,
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: vec![],
     };
 
     let result = recipe::create_recipe(command, &user_id, &executor, &pool, false).await;
@@ -422,6 +467,11 @@ async fn test_premium_user_with_0_recipes() {
         cook_time_min: None,
         advance_prep_hours: None,
         serving_size: None,
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: vec![],
     };
 
     let result = recipe::create_recipe(command, &user_id, &executor, &pool, false).await;
@@ -455,6 +505,11 @@ async fn test_validation_fails_for_nonexistent_user() {
         cook_time_min: None,
         advance_prep_hours: None,
         serving_size: None,
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: vec![],
     };
 
     let result = recipe::create_recipe(command, "nonexistent_user", &executor, &pool, false).await;

@@ -191,6 +191,11 @@ async fn test_validate_recipe_creation_free_tier_enforces_limit() {
             cook_time_min: None,
             advance_prep_hours: None,
             serving_size: None,
+            accepts_accompaniment: false,
+            preferred_accompaniments: vec![],
+            accompaniment_category: None,
+            cuisine: None,
+            dietary_tags: vec![],
         };
         recipe::create_recipe(
             command,
@@ -224,6 +229,11 @@ async fn test_validate_recipe_creation_free_tier_enforces_limit() {
         cook_time_min: None,
         advance_prep_hours: None,
         serving_size: None,
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: vec![],
     };
     let result = recipe::create_recipe(
         command,
@@ -284,6 +294,11 @@ async fn test_validate_recipe_creation_premium_tier_bypasses_limit() {
             cook_time_min: None,
             advance_prep_hours: None,
             serving_size: None,
+            accepts_accompaniment: false,
+            preferred_accompaniments: vec![],
+            accompaniment_category: None,
+            cuisine: None,
+            dietary_tags: vec![],
         };
         recipe::create_recipe(
             command,
@@ -317,6 +332,11 @@ async fn test_validate_recipe_creation_premium_tier_bypasses_limit() {
         cook_time_min: None,
         advance_prep_hours: None,
         serving_size: None,
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: vec![],
     };
     let result = recipe::create_recipe(
         command,
@@ -356,6 +376,11 @@ async fn test_validate_recipe_creation_free_tier_under_limit_succeeds() {
             cook_time_min: None,
             advance_prep_hours: None,
             serving_size: None,
+            accepts_accompaniment: false,
+            preferred_accompaniments: vec![],
+            accompaniment_category: None,
+            cuisine: None,
+            dietary_tags: vec![],
         };
         recipe::create_recipe(
             command,
@@ -389,6 +414,11 @@ async fn test_validate_recipe_creation_free_tier_under_limit_succeeds() {
         cook_time_min: None,
         advance_prep_hours: None,
         serving_size: None,
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: vec![],
     };
     let result = recipe::create_recipe(
         command,
