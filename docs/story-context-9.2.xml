@@ -1,0 +1,112 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>9</epicId>
+    <storyId>9.2</storyId>
+    <title>Add Accompaniment Display in Meal Slots</title>
+    <status>Approved</status>
+    <generatedAt>2025-10-26</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/home/snapiz/projects/github/timayz/imkitchen/docs/stories/story-9.2.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>frontend developer</asA>
+    <iWant>show accompaniment recipes alongside main courses</iWant>
+    <soThat>users see complete meal compositions</soThat>
+    <tasks>
+      - Create accompaniment display partial template
+      - Implement accompaniment styling
+      - Add clickable link to recipe detail
+      - Handle empty state gracefully
+      - Implement responsive behavior
+      - Integration testing
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="9.2.1">Main course meal slots display accompaniment if `accompaniment_recipe_id` present</criterion>
+    <criterion id="9.2.2">Accompaniment formatted as: `+ {accompaniment_name}` (e.g., "+ Basmati Rice") below main recipe name</criterion>
+    <criterion id="9.2.3">Accompaniment styling: secondary text color (text-gray-600), smaller font (text-sm)</criterion>
+    <criterion id="9.2.4">Accompaniment name clickable, links to recipe detail: `href="/recipes/:accompaniment_id"`</criterion>
+    <criterion id="9.2.5">If no accompaniment: nothing displayed (clean, no placeholder text)</criterion>
+    <criterion id="9.2.6">Responsive: Accompaniment text wraps on mobile (<768px), stays inline on desktop</criterion>
+    <criterion id="9.2.7">Integration test verifies accompaniment HTML rendered correctly in meal slot</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-9.md</path>
+        <title>Acceptance Criteria → Story 9.2</title>
+        <section>AC-9.2.1 through AC-9.2.7</section>
+        <snippet>Accompaniment display in meal slots as secondary text with format "+ {title}". Conditional rendering with Askama Option&lt;RecipePreview&gt; pattern. Clickable link to recipe detail page.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-9.md</path>
+        <title>Data Models and Contracts</title>
+        <section>Accompaniment Display Contract</section>
+        <snippet>Format: "+ {accompaniment_name}". Styling: gray-600, text-sm. Clickable link to recipe detail. Display nothing when accompaniment is None (graceful empty state).</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>templates/components/recipe-card.html</path>
+        <kind>component</kind>
+        <symbol>recipe-card</symbol>
+        <lines>N/A</lines>
+        <reason>Existing recipe display component. Reference for recipe name, image, and link patterns with Askama.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <rust>
+        <package name="askama" version="0.14">Template engine with Option&lt;T&gt; conditional rendering</package>
+      </rust>
+      <frontend>
+        <library name="Tailwind CSS" version="4.1+">Utility classes: text-gray-600, text-sm, mt-1, hover:text-gray-800</library>
+      </frontend>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Component-Based Templates: Create reusable partial template for accompaniment display.</constraint>
+    <constraint>Type-Safe Rendering: Use Askama's Option&lt;RecipePreview&gt; for safe null handling. No empty placeholder text.</constraint>
+    <constraint>Conditional Rendering: Display only when accompaniment data exists using {% if let Some(acc) = accompaniment %} pattern.</constraint>
+    <constraint>Accessibility: Link has descriptive text and ARIA label "View accompaniment recipe".</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>MealAssignmentView.accompaniment</name>
+      <kind>field</kind>
+      <signature>pub accompaniment: Option&lt;RecipePreview&gt;</signature>
+      <path>Epic 6-8 domain models</path>
+      <description>Optional accompaniment recipe data. None when no accompaniment assigned. Some(RecipePreview) contains id, title, image_url.</description>
+    </interface>
+    <interface>
+      <name>GET /recipes/:id</name>
+      <kind>route</kind>
+      <signature>async fn get_recipe_detail(Path(id): Path&lt;String&gt;) -> Result&lt;Html&lt;String&gt;, AppError&gt;</signature>
+      <path>Existing recipe routes</path>
+      <description>Recipe detail page. Accompaniment link targets this route with accompaniment recipe ID.</description>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Playwright integration tests verify accompaniment HTML rendered in DOM with correct styling and link. Accessibility tests verify link has descriptive text. Visual regression testing verifies styling (gray, smaller font).
+    </standards>
+    <locations>
+      - Story 9.1 integration tests (meal calendar rendering)
+      - Story 9.7 accessibility tests
+    </locations>
+    <ideas>
+      <test ac="9.2.1">Test: Meal with accompaniment → Verify accompaniment div rendered</test>
+      <test ac="9.2.2">Test: Verify text format "+ Basmati Rice" below main recipe name</test>
+      <test ac="9.2.3">Test: Verify CSS classes applied: text-gray-600, text-sm</test>
+      <test ac="9.2.4">Playwright test: Click accompaniment link → Navigate to /recipes/:accompaniment_id</test>
+      <test ac="9.2.5">Test: Meal without accompaniment → Verify no extra text or placeholder displayed</test>
+      <test ac="9.2.6">Responsive test: Mobile (375px) text wraps, desktop (1920px) inline</test>
+      <test ac="9.2.7">Integration test: Create meal with rice accompaniment → Verify "+ Jasmine Rice" in HTML</test>
+    </ideas>
+  </tests>
+</story-context>
