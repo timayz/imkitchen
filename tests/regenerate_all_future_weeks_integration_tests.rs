@@ -137,16 +137,16 @@ async fn create_test_recipes(
                     id, user_id, title, complexity, prep_time_min, cook_time_min,
                     advance_prep_hours, serving_size, is_shared, is_favorite,
                     created_at, updated_at, recipe_type, cuisine, dietary_tags,
-                    ingredients, instructions
-                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17)
+                    ingredients, instructions, accepts_accompaniment, preferred_accompaniments, accompaniment_category
+                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20)
                 "#,
             )
             .bind(&recipe_id)
             .bind(user_id)
             .bind(format!("Test {} Recipe {}", recipe_type, i))
-            .bind("moderate")
-            .bind(20) // prep_time_min
-            .bind(30) // cook_time_min
+            .bind("simple") // complexity (simple for weeknight-friendly)
+            .bind(10) // prep_time_min (weeknight-friendly: 10+15=25 < 30)
+            .bind(15) // cook_time_min
             .bind(0) // advance_prep_hours
             .bind(4) // serving_size
             .bind(0) // is_shared (INTEGER)
@@ -158,6 +158,9 @@ async fn create_test_recipes(
             .bind("[]")
             .bind("[]") // ingredients
             .bind("[]") // instructions
+            .bind(false) // accepts_accompaniment
+            .bind(Option::<String>::None) // preferred_accompaniments (NULL)
+            .bind(Option::<String>::None) // accompaniment_category (NULL)
             .execute(pool)
             .await?;
 
@@ -176,14 +179,15 @@ async fn create_existing_meal_plan(
 ) -> Result<String, anyhow::Error> {
     let executor: evento::Sqlite = pool.clone().into();
 
-    // Create multi-week meal plan (5 weeks)
+    // Create multi-week meal plan (3 weeks: 1 current + 2 future)
+    // With 21 recipes per type, this allows 7 per week with rotation
     let generation_batch_id = uuid::Uuid::new_v4().to_string();
     let today = Utc::now().date_naive();
-    let start_of_week = today - Duration::days(today.weekday().number_from_monday() as i64);
+    let start_of_week = today - Duration::days(today.weekday().num_days_from_monday() as i64);
 
     let mut weeks = Vec::new();
 
-    for week_offset in 0..5 {
+    for week_offset in 0..3 {
         let week_start = start_of_week + Duration::weeks(week_offset);
         let week_end = week_start + Duration::days(6);
         let week_id = format!("week_{}", week_offset + 1);
@@ -197,27 +201,56 @@ async fn create_existing_meal_plan(
         let is_locked = week_offset == 0;
 
         // Create meal assignments (21 per week: 7 days × 3 meals)
+        // Separate recipes by type
+        let appetizers: Vec<_> = recipe_ids
+            .iter()
+            .filter(|id| id.starts_with("appetizer_"))
+            .collect();
+        let main_courses: Vec<_> = recipe_ids
+            .iter()
+            .filter(|id| id.starts_with("main_course_"))
+            .collect();
+        let desserts: Vec<_> = recipe_ids
+            .iter()
+            .filter(|id| id.starts_with("dessert_"))
+            .collect();
+
         let mut meal_assignments = Vec::new();
         for day_offset in 0..7 {
             let date = week_start + Duration::days(day_offset);
-            for course_idx in 0..3 {
-                let recipe_id =
-                    &recipe_ids[(week_offset as usize * 21 + day_offset as usize * 3 + course_idx)
-                        % recipe_ids.len()];
 
-                meal_assignments.push(MealAssignment {
-                    date: date.format("%Y-%m-%d").to_string(),
-                    course_type: match course_idx {
-                        0 => "appetizer".to_string(),
-                        1 => "main_course".to_string(),
-                        _ => "dessert".to_string(),
-                    },
-                    recipe_id: recipe_id.clone(),
-                    prep_required: false,
-                    assignment_reasoning: Some("Test assignment".to_string()),
-                    accompaniment_recipe_id: None,
-                });
-            }
+            // Assign recipes by matching course type to recipe type
+            let assignment_idx = week_offset as usize * 7 + day_offset as usize;
+
+            // Appetizer
+            meal_assignments.push(MealAssignment {
+                date: date.format("%Y-%m-%d").to_string(),
+                course_type: "appetizer".to_string(),
+                recipe_id: appetizers[assignment_idx % appetizers.len()].clone(),
+                prep_required: false,
+                assignment_reasoning: Some("Test assignment".to_string()),
+                accompaniment_recipe_id: None,
+            });
+
+            // Main course
+            meal_assignments.push(MealAssignment {
+                date: date.format("%Y-%m-%d").to_string(),
+                course_type: "main_course".to_string(),
+                recipe_id: main_courses[assignment_idx % main_courses.len()].clone(),
+                prep_required: false,
+                assignment_reasoning: Some("Test assignment".to_string()),
+                accompaniment_recipe_id: None,
+            });
+
+            // Dessert
+            meal_assignments.push(MealAssignment {
+                date: date.format("%Y-%m-%d").to_string(),
+                course_type: "dessert".to_string(),
+                recipe_id: desserts[assignment_idx % desserts.len()].clone(),
+                prep_required: false,
+                assignment_reasoning: Some("Test assignment".to_string()),
+                accompaniment_recipe_id: None,
+            });
         }
 
         weeks.push(WeekMealPlanData {
@@ -250,7 +283,7 @@ async fn create_existing_meal_plan(
         generated_at: Utc::now().to_rfc3339(),
     };
 
-    evento::save::<MealPlanAggregate>(&generation_batch_id)
+    evento::create::<MealPlanAggregate>()
         .data(&event_data)?
         .metadata(&true)?
         .commit(&executor)
@@ -321,7 +354,7 @@ async fn test_regenerate_all_future_weeks_with_confirmation() {
         .await
         .unwrap();
 
-    let recipe_ids = create_test_recipes(&pool, user_id, 10).await.unwrap();
+    let recipe_ids = create_test_recipes(&pool, user_id, 21).await.unwrap();
     create_existing_meal_plan(&pool, user_id, &recipe_ids)
         .await
         .unwrap();
@@ -329,9 +362,9 @@ async fn test_regenerate_all_future_weeks_with_confirmation() {
     let executor: evento::Sqlite = pool.clone().into();
     let app = create_test_app(pool.clone(), executor.clone(), user_id.to_string());
 
-    // Count future weeks before regeneration
+    // Count future weeks before regeneration (active and unlocked)
     let future_weeks_before: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM meal_plans WHERE user_id = ?1 AND status = 'future'",
+        "SELECT COUNT(*) FROM meal_plans WHERE user_id = ?1 AND status = 'active' AND is_locked = 0",
     )
     .bind(user_id)
     .fetch_one(&pool)
@@ -339,8 +372,8 @@ async fn test_regenerate_all_future_weeks_with_confirmation() {
     .unwrap();
 
     assert_eq!(
-        future_weeks_before, 4,
-        "Should have 4 future weeks initially"
+        future_weeks_before, 2,
+        "Should have 2 future weeks initially"
     );
 
     // Make request WITH confirmation
@@ -355,16 +388,17 @@ async fn test_regenerate_all_future_weeks_with_confirmation() {
 
     let response = app.oneshot(request).await.unwrap();
 
-    // Assert response status
-    assert_eq!(
-        response.status(),
-        StatusCode::OK,
-        "Expected 200 OK when regenerating with confirmation"
-    );
-
-    // Parse response body
+    // Assert response status and parse body
+    let status = response.status();
     let body_bytes = response.into_body().collect().await.unwrap().to_bytes();
     let body_str = std::str::from_utf8(&body_bytes).unwrap();
+
+    if status != StatusCode::OK {
+        panic!(
+            "Expected 200 OK when regenerating with confirmation, got {}: {}",
+            status, body_str
+        );
+    }
     let body: serde_json::Value =
         serde_json::from_str(body_str).expect("Response should be valid JSON");
 
@@ -388,11 +422,11 @@ async fn test_regenerate_all_future_weeks_with_confirmation() {
 
     // Verify regenerated_weeks count
     let regenerated_count = body.get("regenerated_weeks").unwrap().as_i64().unwrap();
-    assert_eq!(regenerated_count, 4, "Should regenerate 4 future weeks");
+    assert_eq!(regenerated_count, 2, "Should regenerate 2 future weeks");
 
     // AC-3: Verify current week preserved
     let current_week_count: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM meal_plans WHERE user_id = ?1 AND status = 'current' AND is_locked = 1"
+        "SELECT COUNT(*) FROM meal_plans WHERE user_id = ?1 AND status = 'active' AND is_locked = 1"
     )
     .bind(user_id)
     .fetch_one(&pool)
@@ -412,7 +446,7 @@ async fn test_regenerate_all_future_weeks_without_confirmation() {
         .await
         .unwrap();
 
-    let recipe_ids = create_test_recipes(&pool, user_id, 10).await.unwrap();
+    let recipe_ids = create_test_recipes(&pool, user_id, 21).await.unwrap();
     create_existing_meal_plan(&pool, user_id, &recipe_ids)
         .await
         .unwrap();
@@ -465,7 +499,7 @@ async fn test_regenerate_all_future_weeks_missing_confirmation_field() {
         .await
         .unwrap();
 
-    let recipe_ids = create_test_recipes(&pool, user_id, 10).await.unwrap();
+    let recipe_ids = create_test_recipes(&pool, user_id, 21).await.unwrap();
     create_existing_meal_plan(&pool, user_id, &recipe_ids)
         .await
         .unwrap();
@@ -485,6 +519,16 @@ async fn test_regenerate_all_future_weeks_missing_confirmation_field() {
 
     let response = app.oneshot(request).await.unwrap();
 
-    // Should return 400 for missing confirmation
-    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    // Should return 422 Unprocessable Entity for missing confirmation field
+    // (Axum returns 422 for JSON deserialization errors, not 400)
+    let status = response.status();
+    let body_bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let body_str = std::str::from_utf8(&body_bytes).unwrap();
+
+    if status != StatusCode::UNPROCESSABLE_ENTITY {
+        panic!(
+            "Expected 422 UNPROCESSABLE_ENTITY for missing confirmation, got {}: {}",
+            status, body_str
+        );
+    }
 }

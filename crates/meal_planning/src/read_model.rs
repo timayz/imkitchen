@@ -314,6 +314,49 @@ impl MealPlanQueries {
         .fetch_all(pool)
         .await
     }
+
+    /// Get all active weeks for multi-week calendar view (Story 9.1, Epic 8)
+    ///
+    /// Returns a list of WeekReadModel for all active weeks in the meal plan batch,
+    /// ordered by start_date ascending (Week 1, Week 2, etc.).
+    ///
+    /// This query is used to populate the week tabs and carousel navigation
+    /// in the multi-week calendar template.
+    pub async fn get_active_weeks(
+        user_id: &str,
+        pool: &SqlitePool,
+    ) -> Result<Vec<WeekReadModel>, sqlx::Error> {
+        sqlx::query_as::<_, WeekReadModel>(
+            r#"
+            SELECT id, start_date, end_date, status, is_locked
+            FROM meal_plans
+            WHERE user_id = ?1 AND status = 'active'
+            ORDER BY start_date ASC
+            "#,
+        )
+        .bind(user_id)
+        .fetch_all(pool)
+        .await
+    }
+
+    /// Get a specific week by ID for partial week content rendering (Story 9.1, Epic 8)
+    ///
+    /// Used for TwinSpark partial updates when user clicks a different week tab.
+    pub async fn get_week_by_id(
+        week_id: &str,
+        pool: &SqlitePool,
+    ) -> Result<Option<WeekReadModel>, sqlx::Error> {
+        sqlx::query_as::<_, WeekReadModel>(
+            r#"
+            SELECT id, start_date, end_date, status, is_locked
+            FROM meal_plans
+            WHERE id = ?1
+            "#,
+        )
+        .bind(week_id)
+        .fetch_optional(pool)
+        .await
+    }
 }
 
 /// MealAssignment with Recipe details for today's meals display (Story 3.9)
@@ -331,6 +374,19 @@ pub struct MealAssignmentWithRecipe {
     pub cook_time_min: Option<i32>,
     pub advance_prep_hours: Option<i32>,
     pub complexity: Option<String>,
+}
+
+/// Week data for multi-week calendar view (Story 9.1, Epic 8)
+///
+/// Represents a single week in the multi-week calendar, containing
+/// week metadata (dates, status, lock state) for template rendering.
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct WeekReadModel {
+    pub id: String,
+    pub start_date: String, // Format: YYYY-MM-DD
+    pub end_date: String,   // Format: YYYY-MM-DD
+    pub status: String,     // "active" or "archived"
+    pub is_locked: bool,    // true if current week (locked from regeneration)
 }
 
 /// Async evento subscription handler for MealPlanGenerated events
