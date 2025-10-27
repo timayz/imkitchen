@@ -106,6 +106,11 @@ async fn create_test_recipe(
         cook_time_min: cook_time,
         advance_prep_hours: None,
         serving_size: Some(2),
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: vec![],
     };
 
     create_recipe(command, user_id, executor, pool, false)

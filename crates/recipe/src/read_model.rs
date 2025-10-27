@@ -57,24 +57,32 @@ async fn recipe_created_handler<E: Executor>(
 
     // Epic 6: Serialize accompaniment and metadata fields
     let accepts_accompaniment = event.data.accepts_accompaniment.unwrap_or(false);
+
+    // For Vec types, serialize the whole vec to JSON array
     let preferred_accompaniments_json = event
         .data
         .preferred_accompaniments
         .as_ref()
         .map(serde_json::to_string)
         .transpose()?;
+
+    // For single enum Option types, serialize to JSON string that can be deserialized with from_str
+    // We need to store the full JSON representation (e.g., "\"mediterranean\"" for proper from_str parsing)
     let accompaniment_category = event
         .data
         .accompaniment_category
         .as_ref()
         .map(serde_json::to_string)
         .transpose()?;
+
     let cuisine = event
         .data
         .cuisine
         .as_ref()
         .map(serde_json::to_string)
         .transpose()?;
+
+    // For Vec types, serialize the whole vec to JSON array
     let dietary_tags_json = event
         .data
         .dietary_tags
@@ -320,12 +328,18 @@ async fn recipe_tagged_handler<E: Executor>(
     // Serialize dietary_tags to JSON
     let dietary_tags_json = serde_json::to_string(&event.data.dietary_tags)?;
 
+    // RecipeTagged.cuisine comes from aggregate.tags.cuisine which is already formatted correctly:
+    // - Simple variants: "mediterranean"
+    // - Complex variants: {"custom":"Asian-Fusion"}
+    // Both formats can be parsed by serde's enum deserialization, so store as-is
+    let cuisine_json = event.data.cuisine.clone();
+
     // Execute SQL update to set tag columns
     sqlx::query(
         "UPDATE recipes SET complexity = ?1, cuisine = ?2, dietary_tags = ?3 WHERE id = ?4",
     )
     .bind(&event.data.complexity)
-    .bind(&event.data.cuisine)
+    .bind(&cuisine_json)
     .bind(&dietary_tags_json)
     .bind(&event.aggregator_id)
     .execute(&pool)

@@ -406,6 +406,11 @@ async fn test_projection_persists_epic6_fields() {
         cook_time_min: Some(45),
         advance_prep_hours: Some(4),
         serving_size: Some(4),
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: vec![],
     };
 
     let recipe_id = create_recipe(command, &user_id, &executor, &pool, false)

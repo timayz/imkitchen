@@ -120,6 +120,11 @@ async fn test_create_recipe_integration_with_read_model_projection() {
         cook_time_min: Some(30),
         advance_prep_hours: Some(2),
         serving_size: Some(4),
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: vec![],
     };
 
     // Execute recipe creation
@@ -196,6 +201,11 @@ async fn test_query_recipes_by_user() {
             cook_time_min: Some(20),
             advance_prep_hours: None,
             serving_size: Some(2),
+            accepts_accompaniment: false,
+            preferred_accompaniments: vec![],
+            accompaniment_category: None,
+            cuisine: None,
+            dietary_tags: vec![],
         };
         create_recipe(command, &user1_id, &executor, &pool, false)
             .await
@@ -250,6 +260,11 @@ async fn test_delete_recipe_integration() {
         cook_time_min: Some(20),
         advance_prep_hours: None,
         serving_size: Some(2),
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: vec![],
     };
     let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
         .await
@@ -315,6 +330,11 @@ async fn test_delete_recipe_permission_denied() {
         cook_time_min: Some(20),
         advance_prep_hours: None,
         serving_size: Some(2),
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: vec![],
     };
     let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
         .await
@@ -378,6 +398,11 @@ async fn test_post_recipe_update_success_returns_ts_location() {
         cook_time_min: Some(20),
         advance_prep_hours: None,
         serving_size: Some(2),
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: vec![],
     };
     let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
         .await
@@ -480,6 +505,11 @@ async fn test_post_recipe_update_unauthorized_returns_403() {
         cook_time_min: Some(20),
         advance_prep_hours: None,
         serving_size: Some(2),
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: vec![],
     };
     let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
         .await
@@ -560,6 +590,11 @@ async fn test_post_recipe_update_invalid_data_returns_422() {
         cook_time_min: Some(20),
         advance_prep_hours: None,
         serving_size: Some(2),
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: vec![],
     };
     let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
         .await
@@ -641,6 +676,11 @@ async fn test_get_recipe_edit_form_prepopulated() {
         cook_time_min: Some(20),
         advance_prep_hours: Some(2),
         serving_size: Some(4),
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: vec![],
     };
     let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
         .await
@@ -726,6 +766,11 @@ async fn test_recipe_update_syncs_to_read_model() {
         cook_time_min: Some(20),
         advance_prep_hours: Some(1),
         serving_size: Some(2),
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: vec![],
     };
     let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
         .await
@@ -842,6 +887,11 @@ async fn test_delete_recipe_integration_removes_from_read_model() {
         cook_time_min: Some(10),
         advance_prep_hours: None,
         serving_size: Some(2),
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: vec![],
     };
 
     let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
@@ -917,6 +967,11 @@ async fn test_delete_recipe_integration_unauthorized_returns_403() {
         cook_time_min: Some(10),
         advance_prep_hours: None,
         serving_size: Some(2),
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: vec![],
     };
 
     let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
@@ -982,6 +1037,11 @@ async fn test_delete_recipe_integration_excluded_from_user_queries() {
             cook_time_min: Some(10),
             advance_prep_hours: None,
             serving_size: Some(2),
+            accepts_accompaniment: false,
+            preferred_accompaniments: vec![],
+            accompaniment_category: None,
+            cuisine: None,
+            dietary_tags: vec![],
         };
 
         let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
@@ -1073,6 +1133,11 @@ async fn test_favorite_recipe_integration_full_cycle() {
         cook_time_min: Some(15),
         advance_prep_hours: None,
         serving_size: Some(4),
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: vec![],
     };
 
     let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
@@ -1191,6 +1256,11 @@ async fn test_favorite_filter_with_multiple_recipes() {
             cook_time_min: None,
             advance_prep_hours: None,
             serving_size: Some(2),
+            accepts_accompaniment: false,
+            preferred_accompaniments: vec![],
+            accompaniment_category: None,
+            cuisine: None,
+            dietary_tags: vec![],
         };
 
         let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
@@ -1278,6 +1348,11 @@ async fn test_favorite_permission_denied_for_other_users_recipe() {
         cook_time_min: None,
         advance_prep_hours: None,
         serving_size: Some(2),
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: vec![],
     };
 
     let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)

@@ -46,24 +46,373 @@
                     />
                 </div>
 
-                <!-- Recipe Type (AC-2: Required for course-based meal planning) -->
+                <!-- Recipe Type (AC 9.4.2: Radio buttons including Accompaniment) -->
                 <div>
-                    <label for="recipe_type" class="block text-sm font-medium text-gray-700 mb-1">
-                        Recipe Type *
+                    <fieldset>
+                        <legend class="block text-sm font-medium text-gray-700 mb-2">
+                            Recipe Type *
+                        </legend>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input
+                                    type="radio"
+                                    name="recipe_type"
+                                    value="appetizer"
+                                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                                    {% if mode == "edit" && recipe.as_ref().unwrap().recipe_type == "appetizer" %}checked{% endif %}
+                                />
+                                <span class="ml-2 text-gray-700">Appetizer / Starter</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input
+                                    type="radio"
+                                    name="recipe_type"
+                                    value="main_course"
+                                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                                    {% if mode == "edit" && recipe.as_ref().unwrap().recipe_type == "main_course" %}checked{% elif mode != "edit" %}checked{% endif %}
+                                />
+                                <span class="ml-2 text-gray-700">Main Course</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input
+                                    type="radio"
+                                    name="recipe_type"
+                                    value="dessert"
+                                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                                    {% if mode == "edit" && recipe.as_ref().unwrap().recipe_type == "dessert" %}checked{% endif %}
+                                />
+                                <span class="ml-2 text-gray-700">Dessert</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input
+                                    type="radio"
+                                    name="recipe_type"
+                                    value="accompaniment"
+                                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                                    {% if mode == "edit" && recipe.as_ref().unwrap().recipe_type == "accompaniment" %}checked{% endif %}
+                                />
+                                <span class="ml-2 text-gray-700">Accompaniment (side dish)</span>
+                            </label>
+                        </div>
+                        <p class="mt-2 text-sm text-gray-500">
+                            This helps the meal planner assign recipes to the correct course. Accompaniments are sides like rice, pasta, or salad.
+                        </p>
+                    </fieldset>
+                </div>
+
+                <!-- Main Course: Accepts Accompaniment (AC 9.4.3) -->
+                <div id="main-course-fields" class="hidden">
+                    <div class="border border-gray-300 rounded-md p-4 space-y-4">
+                        <label class="flex items-start">
+                            <input
+                                type="checkbox"
+                                id="accepts_accompaniment"
+                                name="accepts_accompaniment"
+                                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1"
+                                {% if mode == "edit" && recipe.as_ref().unwrap().accepts_accompaniment %}checked{% endif %}
+                            />
+                            <div class="ml-3">
+                                <span class="font-medium text-gray-900">This dish accepts an accompaniment</span>
+                                <p class="text-sm text-gray-500 mt-1">
+                                    The meal planner will suggest appropriate side dishes when scheduling this recipe.
+                                </p>
+                            </div>
+                        </label>
+
+                        <!-- Preferred Accompaniment Categories (AC 9.4.4) -->
+                        <div id="preferred-categories" class="hidden">
+                            <fieldset class="border-t border-gray-200 pt-4">
+                                <legend class="text-sm font-medium text-gray-700 mb-2">
+                                    Preferred Accompaniment Categories
+                                </legend>
+                                <p class="text-sm text-gray-500 mb-3">
+                                    Select which types of sides work best with this dish.
+                                </p>
+                                <div class="space-y-2">
+                                    <label class="flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            name="preferred_accompaniments[]"
+                                            value="Pasta"
+                                            class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                            {% if mode == "edit" && recipe.as_ref().unwrap().preferred_accompaniments.contains(&"Pasta".to_string()) %}checked{% endif %}
+                                        />
+                                        <span class="ml-2 text-gray-700">Pasta</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            name="preferred_accompaniments[]"
+                                            value="Rice"
+                                            class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                            {% if mode == "edit" && recipe.as_ref().unwrap().preferred_accompaniments.contains(&"Rice".to_string()) %}checked{% endif %}
+                                        />
+                                        <span class="ml-2 text-gray-700">Rice</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            name="preferred_accompaniments[]"
+                                            value="Fries"
+                                            class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                            {% if mode == "edit" && recipe.as_ref().unwrap().preferred_accompaniments.contains(&"Fries".to_string()) %}checked{% endif %}
+                                        />
+                                        <span class="ml-2 text-gray-700">Fries</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            name="preferred_accompaniments[]"
+                                            value="Salad"
+                                            class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                            {% if mode == "edit" && recipe.as_ref().unwrap().preferred_accompaniments.contains(&"Salad".to_string()) %}checked{% endif %}
+                                        />
+                                        <span class="ml-2 text-gray-700">Salad</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            name="preferred_accompaniments[]"
+                                            value="Bread"
+                                            class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                            {% if mode == "edit" && recipe.as_ref().unwrap().preferred_accompaniments.contains(&"Bread".to_string()) %}checked{% endif %}
+                                        />
+                                        <span class="ml-2 text-gray-700">Bread</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            name="preferred_accompaniments[]"
+                                            value="Vegetable"
+                                            class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                            {% if mode == "edit" && recipe.as_ref().unwrap().preferred_accompaniments.contains(&"Vegetable".to_string()) %}checked{% endif %}
+                                        />
+                                        <span class="ml-2 text-gray-700">Vegetable</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            name="preferred_accompaniments[]"
+                                            value="Other"
+                                            class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                            {% if mode == "edit" && recipe.as_ref().unwrap().preferred_accompaniments.contains(&"Other".to_string()) %}checked{% endif %}
+                                        />
+                                        <span class="ml-2 text-gray-700">Other</span>
+                                    </label>
+                                </div>
+                            </fieldset>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Accompaniment: Category Selection (AC 9.4.5) -->
+                <div id="accompaniment-fields" class="hidden">
+                    <fieldset class="border border-gray-300 rounded-md p-4">
+                        <legend class="text-sm font-medium text-gray-700 mb-2">
+                            Accompaniment Category *
+                        </legend>
+                        <p class="text-sm text-gray-500 mb-3">
+                            Select the category for this side dish.
+                        </p>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input
+                                    type="radio"
+                                    name="accompaniment_category"
+                                    value="Pasta"
+                                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                                    {% if mode == "edit" && recipe.as_ref().unwrap().accompaniment_category == Some("Pasta".to_string()) %}checked{% endif %}
+                                />
+                                <span class="ml-2 text-gray-700">Pasta</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input
+                                    type="radio"
+                                    name="accompaniment_category"
+                                    value="Rice"
+                                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                                    {% if mode == "edit" && recipe.as_ref().unwrap().accompaniment_category == Some("Rice".to_string()) %}checked{% endif %}
+                                />
+                                <span class="ml-2 text-gray-700">Rice</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input
+                                    type="radio"
+                                    name="accompaniment_category"
+                                    value="Fries"
+                                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                                    {% if mode == "edit" && recipe.as_ref().unwrap().accompaniment_category == Some("Fries".to_string()) %}checked{% endif %}
+                                />
+                                <span class="ml-2 text-gray-700">Fries</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input
+                                    type="radio"
+                                    name="accompaniment_category"
+                                    value="Salad"
+                                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                                    {% if mode == "edit" && recipe.as_ref().unwrap().accompaniment_category == Some("Salad".to_string()) %}checked{% endif %}
+                                />
+                                <span class="ml-2 text-gray-700">Salad</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input
+                                    type="radio"
+                                    name="accompaniment_category"
+                                    value="Bread"
+                                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                                    {% if mode == "edit" && recipe.as_ref().unwrap().accompaniment_category == Some("Bread".to_string()) %}checked{% endif %}
+                                />
+                                <span class="ml-2 text-gray-700">Bread</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input
+                                    type="radio"
+                                    name="accompaniment_category"
+                                    value="Vegetable"
+                                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                                    {% if mode == "edit" && recipe.as_ref().unwrap().accompaniment_category == Some("Vegetable".to_string()) %}checked{% endif %}
+                                />
+                                <span class="ml-2 text-gray-700">Vegetable</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input
+                                    type="radio"
+                                    name="accompaniment_category"
+                                    value="Other"
+                                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                                    {% if mode == "edit" && recipe.as_ref().unwrap().accompaniment_category == Some("Other".to_string()) %}checked{% endif %}
+                                />
+                                <span class="ml-2 text-gray-700">Other</span>
+                            </label>
+                        </div>
+                    </fieldset>
+                </div>
+
+                <!-- Cuisine Selection (AC 9.4.6) -->
+                <div>
+                    <label for="cuisine" class="block text-sm font-medium text-gray-700 mb-1">
+                        Cuisine
                     </label>
                     <select
-                        id="recipe_type"
-                        name="recipe_type"
-                        required
+                        id="cuisine"
+                        name="cuisine"
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="">-- Select Recipe Type --</option>
-                        <option value="appetizer" {% if mode == "edit" && recipe.as_ref().unwrap().recipe_type == "appetizer" %}selected{% endif %}>Appetizer / Starter</option>
-                        <option value="main_course" {% if mode == "edit" && recipe.as_ref().unwrap().recipe_type == "main_course" %}selected{% endif %}>Main Course</option>
-                        <option value="dessert" {% if mode == "edit" && recipe.as_ref().unwrap().recipe_type == "dessert" %}selected{% endif %}>Dessert</option>
+                        <option value="">-- Select cuisine --</option>
+                        <option value="Italian" {% if mode == "edit" && recipe.as_ref().unwrap().cuisine == Some("Italian".to_string()) %}selected{% endif %}>Italian</option>
+                        <option value="Indian" {% if mode == "edit" && recipe.as_ref().unwrap().cuisine == Some("Indian".to_string()) %}selected{% endif %}>Indian</option>
+                        <option value="Mexican" {% if mode == "edit" && recipe.as_ref().unwrap().cuisine == Some("Mexican".to_string()) %}selected{% endif %}>Mexican</option>
+                        <option value="Chinese" {% if mode == "edit" && recipe.as_ref().unwrap().cuisine == Some("Chinese".to_string()) %}selected{% endif %}>Chinese</option>
+                        <option value="French" {% if mode == "edit" && recipe.as_ref().unwrap().cuisine == Some("French".to_string()) %}selected{% endif %}>French</option>
+                        <option value="Thai" {% if mode == "edit" && recipe.as_ref().unwrap().cuisine == Some("Thai".to_string()) %}selected{% endif %}>Thai</option>
+                        <option value="Japanese" {% if mode == "edit" && recipe.as_ref().unwrap().cuisine == Some("Japanese".to_string()) %}selected{% endif %}>Japanese</option>
+                        <option value="American" {% if mode == "edit" && recipe.as_ref().unwrap().cuisine == Some("American".to_string()) %}selected{% endif %}>American</option>
+                        <option value="Mediterranean" {% if mode == "edit" && recipe.as_ref().unwrap().cuisine == Some("Mediterranean".to_string()) %}selected{% endif %}>Mediterranean</option>
+                        <option value="Korean" {% if mode == "edit" && recipe.as_ref().unwrap().cuisine == Some("Korean".to_string()) %}selected{% endif %}>Korean</option>
+                        <option value="Greek" {% if mode == "edit" && recipe.as_ref().unwrap().cuisine == Some("Greek".to_string()) %}selected{% endif %}>Greek</option>
+                        <option value="Vietnamese" {% if mode == "edit" && recipe.as_ref().unwrap().cuisine == Some("Vietnamese".to_string()) %}selected{% endif %}>Vietnamese</option>
+                        <option value="Custom">Custom...</option>
                     </select>
+                    <div id="custom-cuisine" class="hidden mt-2">
+                        <label for="custom_cuisine_input" class="block text-sm font-medium text-gray-700 mb-1">
+                            Custom Cuisine
+                        </label>
+                        <input
+                            type="text"
+                            id="custom_cuisine_input"
+                            name="custom_cuisine"
+                            placeholder="Enter custom cuisine type"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            {% if mode == "edit" && recipe.as_ref().unwrap().custom_cuisine.is_some() %}value="{{ recipe.as_ref().unwrap().custom_cuisine.as_ref().unwrap() }}"{% endif %}
+                        />
+                    </div>
                     <p class="mt-1 text-sm text-gray-500">
-                        This helps the meal planner assign recipes to the correct course (appetizer, main, or dessert).
+                        Optional: Helps with meal variety and cultural preferences.
                     </p>
+                </div>
+
+                <!-- Dietary Tags (AC 9.4.7) -->
+                <div>
+                    <fieldset>
+                        <legend class="block text-sm font-medium text-gray-700 mb-2">
+                            Dietary Tags
+                        </legend>
+                        <p class="text-sm text-gray-500 mb-3">
+                            Select all dietary restrictions/preferences that apply.
+                        </p>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    name="dietary_tags[]"
+                                    value="Vegetarian"
+                                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                    {% if mode == "edit" && recipe.as_ref().unwrap().dietary_tags.contains(&"Vegetarian".to_string()) %}checked{% endif %}
+                                />
+                                <span class="ml-2 text-gray-700">Vegetarian</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    name="dietary_tags[]"
+                                    value="Vegan"
+                                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                    {% if mode == "edit" && recipe.as_ref().unwrap().dietary_tags.contains(&"Vegan".to_string()) %}checked{% endif %}
+                                />
+                                <span class="ml-2 text-gray-700">Vegan</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    name="dietary_tags[]"
+                                    value="Gluten-Free"
+                                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                    {% if mode == "edit" && recipe.as_ref().unwrap().dietary_tags.contains(&"Gluten-Free".to_string()) %}checked{% endif %}
+                                />
+                                <span class="ml-2 text-gray-700">Gluten-Free</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    name="dietary_tags[]"
+                                    value="Dairy-Free"
+                                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                    {% if mode == "edit" && recipe.as_ref().unwrap().dietary_tags.contains(&"Dairy-Free".to_string()) %}checked{% endif %}
+                                />
+                                <span class="ml-2 text-gray-700">Dairy-Free</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    name="dietary_tags[]"
+                                    value="Nut-Free"
+                                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                    {% if mode == "edit" && recipe.as_ref().unwrap().dietary_tags.contains(&"Nut-Free".to_string()) %}checked{% endif %}
+                                />
+                                <span class="ml-2 text-gray-700">Nut-Free</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    name="dietary_tags[]"
+                                    value="Halal"
+                                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                    {% if mode == "edit" && recipe.as_ref().unwrap().dietary_tags.contains(&"Halal".to_string()) %}checked{% endif %}
+                                />
+                                <span class="ml-2 text-gray-700">Halal</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    name="dietary_tags[]"
+                                    value="Kosher"
+                                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                    {% if mode == "edit" && recipe.as_ref().unwrap().dietary_tags.contains(&"Kosher".to_string()) %}checked{% endif %}
+                                />
+                                <span class="ml-2 text-gray-700">Kosher</span>
+                            </label>
+                        </div>
+                    </fieldset>
                 </div>
 
                 <!-- Ingredients Section -->
@@ -368,6 +717,85 @@ function removeInstructionRow(button) {
     row.remove();
     renumberInstructions();
 }
+
+// Progressive disclosure for accompaniment fields (AC 9.4.3, 9.4.4, 9.4.5)
+function updateRecipeTypeFields() {
+    const recipeTypeRadios = document.querySelectorAll('input[name="recipe_type"]');
+    const mainCourseFields = document.getElementById('main-course-fields');
+    const accompanimentFields = document.getElementById('accompaniment-fields');
+
+    recipeTypeRadios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            if (e.target.value === 'main_course') {
+                mainCourseFields.classList.remove('hidden');
+                accompanimentFields.classList.add('hidden');
+            } else if (e.target.value === 'accompaniment') {
+                mainCourseFields.classList.add('hidden');
+                accompanimentFields.classList.remove('hidden');
+            } else {
+                mainCourseFields.classList.add('hidden');
+                accompanimentFields.classList.add('hidden');
+            }
+        });
+    });
+
+    // Trigger initial state based on checked radio
+    const checkedRadio = document.querySelector('input[name="recipe_type"]:checked');
+    if (checkedRadio) {
+        if (checkedRadio.value === 'main_course') {
+            mainCourseFields.classList.remove('hidden');
+        } else if (checkedRadio.value === 'accompaniment') {
+            accompanimentFields.classList.remove('hidden');
+        }
+    }
+}
+
+// Show/hide preferred categories when accepts_accompaniment checkbox changes
+function updateAccompanimentCheckbox() {
+    const acceptsAccompaniment = document.getElementById('accepts_accompaniment');
+    const preferredCategories = document.getElementById('preferred-categories');
+
+    if (acceptsAccompaniment) {
+        acceptsAccompaniment.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                preferredCategories.classList.remove('hidden');
+            } else {
+                preferredCategories.classList.add('hidden');
+            }
+        });
+
+        // Trigger initial state
+        if (acceptsAccompaniment.checked) {
+            preferredCategories.classList.remove('hidden');
+        }
+    }
+}
+
+// Show/hide custom cuisine input when "Custom" is selected (AC 9.4.6)
+function updateCuisineSelect() {
+    const cuisineSelect = document.getElementById('cuisine');
+    const customCuisineDiv = document.getElementById('custom-cuisine');
+
+    cuisineSelect.addEventListener('change', (e) => {
+        if (e.target.value === 'Custom') {
+            customCuisineDiv.classList.remove('hidden');
+        } else {
+            customCuisineDiv.classList.add('hidden');
+        }
+    });
+
+    // Trigger initial state
+    if (cuisineSelect.value === 'Custom') {
+        customCuisineDiv.classList.remove('hidden');
+    }
+}
+
+// Initialize all progressive disclosure on page load
+document.addEventListener('DOMContentLoaded', () => {
+    updateRecipeTypeFields();
+    updateAccompanimentCheckbox();
+    updateCuisineSelect();
+});
 </script>
 
 {% endblock %}

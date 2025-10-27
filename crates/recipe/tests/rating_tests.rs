@@ -87,6 +87,11 @@ async fn create_shared_recipe(
         cook_time_min: Some(20),
         advance_prep_hours: None,
         serving_size: Some(4),
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: vec![],
     };
 
     let recipe_id = create_recipe(command, user_id, executor, pool, false)
@@ -234,6 +239,11 @@ async fn test_rate_recipe_only_shared_recipes() {
         cook_time_min: Some(20),
         advance_prep_hours: None,
         serving_size: Some(4),
+        accepts_accompaniment: false,
+        preferred_accompaniments: vec![],
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: vec![],
     };
 
     let recipe_id = create_recipe(command, &user1_id, &executor, &pool, false)
