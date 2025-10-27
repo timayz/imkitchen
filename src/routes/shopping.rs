@@ -58,6 +58,11 @@ pub async fn show_shopping_list(
 
     let week_start_str = selected_week.clone();
 
+    // Parse selected week date for formatted display
+    let selected_week_date = NaiveDate::parse_from_str(&selected_week, "%Y-%m-%d")
+        .map_err(|_| AppError::ValidationError("Invalid week date format".to_string()))?;
+    let week_start_date_formatted = selected_week_date.format("%B %d").to_string();
+
     // Load user's household size for display/future scaling
     let household_size: Option<u8> =
         sqlx::query_scalar("SELECT household_size FROM users WHERE id = ?1")
@@ -112,6 +117,7 @@ pub async fn show_shopping_list(
         let template = ShoppingListTemplate {
             user: Some(()),
             week_start_date: week_start_str.clone(),
+            week_start_date_formatted: week_start_date_formatted.clone(),
             selected_week: selected_week.clone(),
             week_options: week_options.clone(),
             categories,
@@ -128,6 +134,7 @@ pub async fn show_shopping_list(
         let template = ShoppingListTemplate {
             user: Some(()),
             week_start_date: week_start_str.clone(),
+            week_start_date_formatted: week_start_date_formatted.clone(),
             selected_week: selected_week.clone(),
             week_options: week_options.clone(),
             categories: vec![],
@@ -144,29 +151,41 @@ pub async fn show_shopping_list(
 
 /// Generate week options for dropdown (current week + 4 future weeks)
 ///
-/// AC #2: Options format: "This Week", "Next Week", "Week of {date}"
-/// AC #4: Current week highlighted
-/// AC #5: Up to 4 weeks ahead
+/// AC 9.6.2: Options show all weeks (Week 1, Week 2, ..., Week N)
+/// AC 9.6.3: Current week selected by default
+/// AC 9.6.5: Format: "Week 1 (Oct 28 - Nov 3)", "Week 2 (Nov 4 - Nov 10)"
+/// AC 9.6.6: Locked weeks (current) marked with 🔒 icon
 fn generate_week_options(current_week_monday: NaiveDate) -> Vec<WeekOption> {
     let mut options = Vec::new();
 
     for weeks_ahead in 0..=4 {
         let week_monday = current_week_monday + Duration::weeks(weeks_ahead);
+        let week_sunday = week_monday + Duration::days(6);
         let iso_date = week_monday.format("%Y-%m-%d").to_string();
+        let week_number = weeks_ahead + 1;
+
+        // Format: "Week 1 (Oct 28 - Nov 3)" with optional lock icon for current week
+        let date_range = format!(
+            "{} - {}",
+            week_monday.format("%b %d"),
+            week_sunday.format("%b %d")
+        );
 
         let label = if weeks_ahead == 0 {
-            "This Week".to_string()
-        } else if weeks_ahead == 1 {
-            "Next Week".to_string()
+            format!("🔒 Week {} ({})", week_number, date_range)
         } else {
-            // Format: "Week of Oct 21"
-            format!("Week of {}", week_monday.format("%b %d"))
+            format!("Week {} ({})", week_number, date_range)
         };
+
+        // For header display: "October 28"
+        let start_date_formatted = week_monday.format("%B %d").to_string();
 
         options.push(WeekOption {
             label,
             iso_date,
             is_current: weeks_ahead == 0,
+            week_number,
+            start_date_formatted,
         });
     }
 
@@ -203,6 +222,11 @@ pub async fn refresh_shopping_list(
     // Validate week parameter
     shopping::validate_week_date(&selected_week)?;
 
+    // Parse selected week date for formatted display
+    let selected_week_date = NaiveDate::parse_from_str(&selected_week, "%Y-%m-%d")
+        .map_err(|_| AppError::ValidationError("Invalid week date format".to_string()))?;
+    let week_start_date_formatted = selected_week_date.format("%B %d").to_string();
+
     // Query shopping list for this week
     let shopping_list = get_shopping_list_by_week(user_id, &selected_week, &state.db_pool).await?;
 
@@ -237,6 +261,7 @@ pub async fn refresh_shopping_list(
             categories,
             has_items: true,
             selected_week: selected_week.clone(),
+            week_start_date_formatted: week_start_date_formatted.clone(),
         };
 
         Ok(Html(template.render().map_err(|e| {
@@ -248,6 +273,7 @@ pub async fn refresh_shopping_list(
             categories: vec![],
             has_items: false,
             selected_week: selected_week.clone(),
+            week_start_date_formatted: week_start_date_formatted.clone(),
         };
 
         Ok(Html(template.render().map_err(|e| {
@@ -262,8 +288,9 @@ pub async fn refresh_shopping_list(
 pub struct ShoppingListTemplate {
     pub user: Option<()>,
     pub week_start_date: String,
-    pub selected_week: String,         // ISO 8601 date (YYYY-MM-DD)
-    pub week_options: Vec<WeekOption>, // Dropdown options (current + 4 future weeks)
+    pub week_start_date_formatted: String, // "October 28" for header display (AC 9.6.7)
+    pub selected_week: String,             // ISO 8601 date (YYYY-MM-DD)
+    pub week_options: Vec<WeekOption>,     // Dropdown options (current + 4 future weeks)
     pub categories: Vec<CategoryGroup>,
     pub has_items: bool,
     pub current_path: String,
@@ -277,14 +304,17 @@ pub struct ShoppingListContentPartial {
     pub categories: Vec<CategoryGroup>,
     pub has_items: bool,
     pub selected_week: String, // Needed for "generate" button in no-items state
+    pub week_start_date_formatted: String, // "October 28" for header display (AC 9.6.7)
 }
 
 /// Week option for dropdown selector
 #[derive(Debug, Clone, Serialize)]
 pub struct WeekOption {
-    pub label: String,    // "This Week", "Next Week", "Week of Oct 21"
-    pub iso_date: String, // "2025-10-21" (ISO 8601)
-    pub is_current: bool, // True if this is the current week (for highlighting)
+    pub label: String,                // "Week 1 (Oct 28 - Nov 3)"
+    pub iso_date: String,             // "2025-10-21" (ISO 8601)
+    pub is_current: bool,             // True if this is the current week (for highlighting)
+    pub week_number: i64,             // Week number (1, 2, 3, etc.)
+    pub start_date_formatted: String, // "October 28" for header display
 }
 
 /// Category group for template rendering

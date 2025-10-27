@@ -1,9 +1,9 @@
-<div id="shopping-list-content"
-     ts-req="/shopping/refresh?week={{ selected_week }}"
-     ts-req-method="GET"
-     ts-trigger="every 2s"
-     ts-swap="outerHTML">
 {% if has_items %}
+<!-- Week Header (AC 9.6.7) -->
+<h2 class="text-2xl font-semibold text-gray-900 mb-6">
+    Shopping List for Week of {{ week_start_date_formatted }}
+</h2>
+
 <!-- Shopping List Categories (Collapsible with Details/Summary) -->
 <div class="space-y-4">
     {% for category in categories %}
@@ -82,4 +82,3 @@
     </div>
 </div>
 {% endif %}
-</div>
