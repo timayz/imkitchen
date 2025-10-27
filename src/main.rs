@@ -742,17 +742,22 @@ async fn list_users_command(config: imkitchen::config::Config) -> Result<()> {
 
     if users.is_empty() {
         println!("No users found in database.");
+        tracing::info!("No users found in database");
     } else {
-        println!("\nTotal users: {}\n", users.len());
+        let count = users.len();
+        println!("\nTotal users: {}\n", count);
         println!("{:<36} {:<40} {:<25}", "ID", "Email", "Created At");
         println!("{}", "-".repeat(105));
 
         for (id, email, created_at) in users {
             println!("{:<36} {:<40} {:<25}", id, email, created_at);
         }
+
+        tracing::info!(count = count, "Listed users successfully");
     }
 
     pool.close().await;
+    tracing::info!("Database pool closed");
     Ok(())
 }
 
@@ -775,8 +780,10 @@ async fn list_contact_messages_command(config: imkitchen::config::Config) -> Res
 
     if submissions.is_empty() {
         println!("No contact form submissions found in database.");
+        tracing::info!("No contact form submissions found in database");
     } else {
-        println!("\nTotal submissions: {}\n", submissions.len());
+        let count = submissions.len();
+        println!("\nTotal submissions: {}\n", count);
 
         for (i, (id, user_id, name, email, subject, message, created_at, status)) in submissions.iter().enumerate() {
             println!("{}. Submission ID: {}", i + 1, id);
@@ -790,9 +797,12 @@ async fn list_contact_messages_command(config: imkitchen::config::Config) -> Res
             println!("   {}", message);
             println!("{}", "-".repeat(80));
         }
+
+        tracing::info!(count = count, "Listed contact form submissions successfully");
     }
 
     pool.close().await;
+    tracing::info!("Database pool closed");
     Ok(())
 }
 
