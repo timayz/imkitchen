@@ -155,6 +155,46 @@ pub struct MealCalendarTemplate {
     pub error_message: Option<String>, // Issue #130: Display inline error messages
 }
 
+/* TODO: Epic 8 - Multi-Week Calendar Template Structs
+ *
+ * These structs are prepared for Epic 8 backend implementation.
+ * Currently commented out due to Askama compilation issues that need resolution.
+ *
+ * To enable these templates:
+ * 1. Resolve the `filters` module error in Askama compilation
+ * 2. Ensure template variables match the struct fields
+ * 3. Implement the backend routes `GET /plan` and `GET /plan/week/:week_id`
+ *
+/// Multi-Week Calendar Template (Story 9.1, Epic 8)
+///
+/// Renders the multi-week meal plan calendar with week tabs (desktop)
+/// and carousel navigation (mobile). Supports TwinSpark partial updates
+/// for week navigation without full page reload.
+#[derive(Template)]
+#[template(path = "meal_plan/multi_week_calendar.html")]
+pub struct MultiWeekCalendarTemplate {
+    pub user: Option<()>,
+    pub weeks: Vec<meal_planning::read_model::WeekReadModel>,
+    pub current_week_id: String,
+    pub current_week_index: usize, // Index of current week in weeks vec (for carousel navigation)
+    pub current_week_start_date: String, // For shopping list link
+    pub has_meal_plan: bool,
+    pub days: Vec<DayData>, // 7-day grid for the current week
+    pub error_message: Option<String>,
+    pub current_path: String,
+}
+
+/// Week Calendar Content Partial Template (Story 9.1, Epic 8)
+///
+/// Renders just the 7-day meal grid for a single week.
+/// Used for TwinSpark partial HTML updates when user navigates between weeks.
+#[derive(Template)]
+#[template(path = "meal_plan/week_calendar_content.html")]
+pub struct WeekCalendarContentTemplate {
+    pub days: Vec<DayData>, // 7-day grid for the selected week
+}
+*/
+
 /// GET /plan/check-ready/:meal_plan_id - Check if meal plan read model is ready
 ///
 /// This endpoint is used by TwinSpark polling to check if evento projections

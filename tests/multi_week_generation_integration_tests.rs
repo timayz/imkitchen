@@ -137,16 +137,16 @@ async fn create_test_recipes(
                     id, user_id, title, complexity, prep_time_min, cook_time_min,
                     advance_prep_hours, serving_size, is_shared, is_favorite,
                     created_at, updated_at, recipe_type, cuisine, dietary_tags,
-                    ingredients, instructions
-                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17)
+                    ingredients, instructions, accepts_accompaniment, preferred_accompaniments, accompaniment_category
+                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20)
                 "#,
             )
             .bind(&recipe_id)
             .bind(user_id)
             .bind(format!("Test {} Recipe {}", recipe_type, i))
-            .bind("moderate")
-            .bind(20) // prep_time_min
-            .bind(30) // cook_time_min
+            .bind("simple") // complexity (simple for weeknight-friendly)
+            .bind(10) // prep_time_min (weeknight-friendly: 10+15=25 < 30)
+            .bind(15) // cook_time_min
             .bind(0) // advance_prep_hours
             .bind(4) // serving_size
             .bind(0) // is_shared (INTEGER not boolean)
@@ -158,6 +158,9 @@ async fn create_test_recipes(
             .bind("[]") // dietary_tags
             .bind("[]") // ingredients (JSON)
             .bind("[]") // instructions (JSON)
+            .bind(false) // accepts_accompaniment
+            .bind(Option::<String>::None) // preferred_accompaniments (NULL)
+            .bind(Option::<String>::None) // accompaniment_category (NULL)
             .execute(pool)
             .await?;
 
@@ -226,10 +229,10 @@ async fn test_generate_multi_week_with_sufficient_recipes() {
         .await
         .unwrap();
 
-    // Create 15 recipes per type (45 total, all favorites)
+    // Create 21 recipes per type (63 total, all favorites)
     // Algorithm requires at least 7 unused main courses per week for multi-week generation
-    // For 5 weeks, need substantial recipe pool (15 per category ensures enough variety)
-    create_test_recipes(&pool, user_id, 15).await.unwrap();
+    // For multi-week, need substantial recipe pool (21 per category = 3 full weeks max)
+    create_test_recipes(&pool, user_id, 21).await.unwrap();
 
     let executor: evento::Sqlite = pool.clone().into();
     let app = create_test_app(pool.clone(), executor.clone(), user_id.to_string());
