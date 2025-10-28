@@ -207,30 +207,43 @@ pub struct WeekCalendarContentTemplate {
 /// Returns polling HTML until ready, then returns full meal calendar page HTML
 /// for TwinSpark to swap into <body>.
 pub async fn get_meal_plan_check_ready(
-    Extension(_auth): Extension<Auth>,
+    Extension(auth): Extension<Auth>,
     State(state): State<AppState>,
     axum::extract::Path(meal_plan_id): axum::extract::Path<String>,
 ) -> axum::response::Response {
-    // For multi-week meal plans, we don't have individual aggregates
-    // Just check if the read model has the meal plan with assignments
-    let meal_plan_check: Result<i64, sqlx::Error> = sqlx::query_scalar(
+    // For multi-week meal plans, check if ALL weeks in the batch have assignments
+    // Get the generation_batch_id from the provided meal_plan_id
+    let batch_check: Result<(String, i64, i64), sqlx::Error> = sqlx::query_as(
         r#"
-        SELECT COUNT(*)
-        FROM meal_assignments
-        WHERE meal_plan_id = ?1
+        SELECT
+            mp.generation_batch_id,
+            COUNT(DISTINCT mp.id) as total_weeks,
+            COUNT(DISTINCT ma.meal_plan_id) as weeks_with_assignments
+        FROM meal_plans mp
+        LEFT JOIN meal_assignments ma ON mp.id = ma.meal_plan_id
+        WHERE mp.generation_batch_id = (
+            SELECT generation_batch_id FROM meal_plans WHERE id = ?1
+        )
+        AND mp.user_id = ?2
+        GROUP BY mp.generation_batch_id
         "#,
     )
     .bind(&meal_plan_id)
+    .bind(&auth.user_id)
     .fetch_one(&state.db_pool)
     .await;
 
-    let is_ready = match meal_plan_check {
-        Ok(count) => count > 0, // Any assignments means the projection has completed
+    let is_ready = match batch_check {
+        Ok((_batch_id, total_weeks, weeks_with_assignments)) => {
+            // All weeks in the batch must have assignments
+            total_weeks > 0 && weeks_with_assignments == total_weeks
+        }
         Err(_) => false,
     };
 
     if is_ready {
-        // Meal plan is ready - return ts-location header to redirect to /plan
+        // All weeks are ready - return ts-location header to redirect to /plan
+        tracing::info!("Meal plan batch ready, redirecting to /plan");
         (
             axum::http::StatusCode::OK,
             [("ts-location", "/plan")],
@@ -238,7 +251,7 @@ pub async fn get_meal_plan_check_ready(
         )
             .into_response()
     } else {
-        // Meal plan not yet ready - return self polling element to continue polling
+        // Not all weeks ready yet - return self polling element to continue polling
         let polling_html = format!(
             r##"<div ts-req="/plan/check-ready/{}" ts-trigger="load delay:500ms"></div>"##,
             meal_plan_id
@@ -358,9 +371,8 @@ pub async fn get_meal_plan(
         Some(assignments) => {
             // Calculate the start and end dates for the selected week
             use chrono::NaiveDate;
-            let week_start = NaiveDate::parse_from_str(&selected_plan.start_date, "%Y-%m-%d")
+            let _week_start = NaiveDate::parse_from_str(&selected_plan.start_date, "%Y-%m-%d")
                 .map_err(|_| AppError::InternalError("Invalid start date".to_string()))?;
-            let week_end = week_start + chrono::Duration::days(6);
 
             // Fetch recipe details for assignments in this week
             let recipe_ids: Vec<String> = assignments.iter().map(|a| a.recipe_id.clone()).collect();
