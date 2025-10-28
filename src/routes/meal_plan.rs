@@ -211,21 +211,19 @@ pub async fn get_meal_plan_check_ready(
     State(state): State<AppState>,
     axum::extract::Path(meal_plan_id): axum::extract::Path<String>,
 ) -> axum::response::Response {
-    // For multi-week meal plans, check if ALL weeks in the batch have assignments
-    // Get the generation_batch_id from the provided meal_plan_id
-    let batch_check: Result<(String, i64, i64), sqlx::Error> = sqlx::query_as(
+    // For multi-week meal plans, check if ALL weeks in the batch have complete assignments
+    // Each week needs 7 assignments (one per day)
+    let batch_check: Result<(i64, i64), sqlx::Error> = sqlx::query_as(
         r#"
         SELECT
-            mp.generation_batch_id,
             COUNT(DISTINCT mp.id) as total_weeks,
-            COUNT(DISTINCT ma.meal_plan_id) as weeks_with_assignments
+            COUNT(ma.id) as total_assignments
         FROM meal_plans mp
         LEFT JOIN meal_assignments ma ON mp.id = ma.meal_plan_id
         WHERE mp.generation_batch_id = (
             SELECT generation_batch_id FROM meal_plans WHERE id = ?1
         )
         AND mp.user_id = ?2
-        GROUP BY mp.generation_batch_id
         "#,
     )
     .bind(&meal_plan_id)
@@ -234,9 +232,9 @@ pub async fn get_meal_plan_check_ready(
     .await;
 
     let is_ready = match batch_check {
-        Ok((_batch_id, total_weeks, weeks_with_assignments)) => {
-            // All weeks in the batch must have assignments
-            total_weeks > 0 && weeks_with_assignments == total_weeks
+        Ok((total_weeks, total_assignments)) => {
+            // Each week needs 7 assignments, so total should be total_weeks * 7
+            total_weeks > 0 && total_assignments == total_weeks * 7
         }
         Err(_) => false,
     };
