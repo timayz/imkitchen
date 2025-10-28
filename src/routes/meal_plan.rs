@@ -213,36 +213,41 @@ pub async fn get_meal_plan_check_ready(
 ) -> axum::response::Response {
     tracing::debug!("Checking meal plan readiness for aggregate_id: {}", aggregate_id);
 
-    // First, check if the evento aggregate exists
-    // This ensures the event has been processed by evento before checking read model
-    if evento::load::<meal_planning::aggregate::MealPlanAggregate, _>(
+    // Load the evento aggregate to get the latest event timestamp
+    let load_result = evento::load::<meal_planning::aggregate::MealPlanAggregate, _>(
         &state.evento_executor,
         &aggregate_id,
     )
-    .await
-    .is_err()
-    {
-        tracing::debug!("Aggregate not yet available, continuing polling");
-        let polling_html = format!(
-            r##"<div ts-req="/plan/check-ready/{}" ts-trigger="load delay:500ms"></div>"##,
-            aggregate_id
-        );
-        return (axum::http::StatusCode::OK, Html(polling_html)).into_response();
-    }
-
-    // Get the generation_batch_id from the aggregate's rotation state
-    // The aggregate stores the batch ID in its rotation_state_json
-    let batch_id_result: Result<String, _> = sqlx::query_scalar(
-        "SELECT generation_batch_id FROM meal_plan_rotation_state WHERE user_id = ?1 LIMIT 1"
-    )
-    .bind(&auth.user_id)
-    .fetch_one(&state.db_pool)
     .await;
 
-    let generation_batch_id = match batch_id_result {
-        Ok(bid) => bid,
+    let (event_timestamp, generation_batch_id) = match load_result {
+        Ok(loaded) => {
+            // Get the timestamp from the latest event
+            let event_ts = loaded.event.timestamp;
+
+            // Try to extract generation_batch_id from the aggregate state
+            // The aggregate should have it after MultiWeekMealPlanGenerated event
+            let batch_id_result: Result<String, _> = sqlx::query_scalar(
+                "SELECT generation_batch_id FROM meal_plan_rotation_state WHERE user_id = ?1 ORDER BY updated_at DESC LIMIT 1"
+            )
+            .bind(&auth.user_id)
+            .fetch_one(&state.db_pool)
+            .await;
+
+            match batch_id_result {
+                Ok(bid) => (event_ts, bid),
+                Err(e) => {
+                    tracing::debug!("Batch ID not yet in rotation_state table: {}", e);
+                    let polling_html = format!(
+                        r##"<div ts-req="/plan/check-ready/{}" ts-trigger="load delay:500ms"></div>"##,
+                        aggregate_id
+                    );
+                    return (axum::http::StatusCode::OK, Html(polling_html)).into_response();
+                }
+            }
+        }
         Err(e) => {
-            tracing::debug!("Batch ID not yet in rotation_state table: {}", e);
+            tracing::debug!("Aggregate not yet available: {}", e);
             let polling_html = format!(
                 r##"<div ts-req="/plan/check-ready/{}" ts-trigger="load delay:500ms"></div>"##,
                 aggregate_id
@@ -251,13 +256,14 @@ pub async fn get_meal_plan_check_ready(
         }
     };
 
-    // Check if ALL weeks in the batch have complete assignments in read model
-    // Each week needs 7 assignments (one per day)
-    let batch_check: Result<(i64, i64), sqlx::Error> = sqlx::query_as(
+    // Check if ALL weeks in the batch have been projected with timestamps >= event timestamp
+    // Each week needs 7 assignments (one per day) AND created_at >= event timestamp
+    let batch_check: Result<(i64, i64, Option<String>), sqlx::Error> = sqlx::query_as(
         r#"
         SELECT
             COUNT(DISTINCT mp.id) as total_weeks,
-            COUNT(ma.id) as total_assignments
+            COUNT(ma.id) as total_assignments,
+            MIN(mp.created_at) as earliest_created_at
         FROM meal_plans mp
         LEFT JOIN meal_assignments ma ON mp.id = ma.meal_plan_id
         WHERE mp.generation_batch_id = ?1
@@ -270,15 +276,36 @@ pub async fn get_meal_plan_check_ready(
     .await;
 
     let is_ready = match &batch_check {
-        Ok((total_weeks, total_assignments)) => {
+        Ok((total_weeks, total_assignments, earliest_created_at)) => {
+            // Parse the earliest created_at timestamp
+            let projection_ready = if let Some(created_at_str) = earliest_created_at {
+                // Parse RFC3339 timestamp and compare with event timestamp
+                if let Ok(created_at) = chrono::DateTime::parse_from_rfc3339(created_at_str) {
+                    let created_ts = created_at.timestamp();
+                    tracing::debug!(
+                        "Timestamp check: event_ts={}, created_ts={}, projection_newer={}",
+                        event_timestamp,
+                        created_ts,
+                        created_ts >= event_timestamp
+                    );
+                    created_ts >= event_timestamp
+                } else {
+                    false
+                }
+            } else {
+                false
+            };
+
             tracing::debug!(
-                "Batch check: total_weeks={}, total_assignments={}, expected={}",
+                "Batch check: total_weeks={}, total_assignments={}, expected={}, projection_ready={}",
                 total_weeks,
                 total_assignments,
-                total_weeks * 7
+                total_weeks * 7,
+                projection_ready
             );
-            // Each week needs 7 assignments, so total should be total_weeks * 7
-            *total_weeks > 0 && *total_assignments == *total_weeks * 7
+
+            // Each week needs 7 assignments AND projection timestamp must be >= event timestamp
+            *total_weeks > 0 && *total_assignments == *total_weeks * 7 && projection_ready
         }
         Err(e) => {
             tracing::debug!("Batch check query failed (projection likely not complete yet): {}", e);
