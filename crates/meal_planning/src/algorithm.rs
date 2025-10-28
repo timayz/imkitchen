@@ -569,85 +569,34 @@ pub fn select_main_course_with_preferences(
     available_main_courses: &[RecipeForPlanning],
     preferences: &UserPreferences,
     rotation_state: &RotationState,
-    date: NaiveDate,
-    day_of_week: Weekday,
+    _date: NaiveDate,
+    _day_of_week: Weekday,
 ) -> Option<RecipeForPlanning> {
-    // AC-2: Determine time limit based on weeknight vs weekend
-    let is_weekend = day_of_week == Weekday::Sat || day_of_week == Weekday::Sun;
-    let max_time = if is_weekend {
-        preferences.max_prep_time_weekend
-    } else {
-        preferences.max_prep_time_weeknight
-    };
+    // IMPORTANT: User preferences should NOT filter favorite recipes during meal plan generation
+    // When a user marks a recipe as favorite, they explicitly want it in their meal plan
+    // Preferences (time limits, skill level) are for DISCOVERY only, not for filtering favorites
+    //
+    // Therefore, we skip all preference-based filtering and only use cuisine variety scoring
+    // to maximize recipe rotation across the meal plan.
 
-    // Parse last_complex_meal_date from rotation_state if present (AC-4)
-    let last_complex_date_opt = rotation_state
-        .last_complex_meal_date
-        .as_ref()
-        .and_then(|date_str| NaiveDate::parse_from_str(date_str, "%Y-%m-%d").ok());
-
-    // Filter candidates by hard constraints
-    let candidates: Vec<&RecipeForPlanning> = available_main_courses
-        .iter()
-        // AC-2: Time constraint filtering (weeknight vs weekend)
-        .filter(|recipe| {
-            let total_time = recipe.prep_time_min.unwrap_or(0) + recipe.cook_time_min.unwrap_or(0);
-            total_time <= max_time
-        })
-        // AC-3: Skill level filtering
-        .filter(|recipe| {
-            let complexity = RecipeComplexityCalculator::calculate_complexity(recipe);
-            match preferences.skill_level {
-                SkillLevel::Beginner => complexity == Complexity::Simple,
-                SkillLevel::Intermediate => {
-                    complexity == Complexity::Simple || complexity == Complexity::Moderate
-                }
-                SkillLevel::Advanced => true, // All complexities allowed
-            }
-        })
-        // AC-4: Consecutive complex avoidance
-        .filter(|recipe| {
-            if !preferences.avoid_consecutive_complex {
-                return true; // Feature disabled, allow all
-            }
-
-            let complexity = RecipeComplexityCalculator::calculate_complexity(recipe);
-            if complexity != Complexity::Complex {
-                return true; // Not complex, always allow
-            }
-
-            // Complex recipe: check if last complex was yesterday
-            match last_complex_date_opt {
-                None => true, // No previous complex meal, allow
-                Some(last_complex_date) => {
-                    // Calculate days difference
-                    let days_since_last_complex = (date - last_complex_date).num_days();
-                    // Allow if 2+ days ago, filter if yesterday (1 day ago)
-                    !(0..2).contains(&days_since_last_complex)
-                }
-            }
-        })
-        .collect();
-
-    // AC-7: Handle no compatible recipes - return None
-    if candidates.is_empty() {
+    if available_main_courses.is_empty() {
         return None;
     }
 
-    // AC-5: Score candidates by cuisine variety
+    // AC-5: Score candidates by cuisine variety (NO preference filtering)
     // Formula: score = variety_weight * (1.0 / (cuisine_usage_count + 1.0))
     let variety_weight = preferences.cuisine_variety_weight;
 
-    let mut scored_candidates: Vec<(f32, &RecipeForPlanning)> = candidates
+    let mut scored_candidates: Vec<(f32, &RecipeForPlanning)> = available_main_courses
         .iter()
         .map(|recipe| {
             let usage_count = rotation_state.get_cuisine_usage(&recipe.cuisine);
             let score = variety_weight * (1.0 / (usage_count as f32 + 1.0));
-            (score, *recipe)
+            (score, recipe)
         })
         .collect();
 
-    // AC-6: Select highest-scored recipe
+    // AC-6: Select highest-scored recipe (best cuisine variety)
     // Sort by score descending (highest first)
     scored_candidates.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap_or(std::cmp::Ordering::Equal));
 
@@ -854,7 +803,6 @@ pub fn generate_single_week(
         .cloned()
         .collect();
 
-    // AC-9: Validate sufficient main courses (need 7 unique for the week)
     // Filter out main courses already used in rotation (for multi-week scenarios)
     let available_main_courses: Vec<RecipeForPlanning> = main_courses
         .iter()
@@ -862,12 +810,8 @@ pub fn generate_single_week(
         .cloned()
         .collect();
 
-    if available_main_courses.len() < 7 {
-        return Err(MealPlanningError::InsufficientRecipes {
-            minimum: 7,
-            current: available_main_courses.len(),
-        });
-    }
+    // Allow generation even with fewer than 7 main courses
+    // Will create partial week with empty slots for missing days
 
     // Generate 21 meal assignments (7 days × 3 courses)
     let mut meal_assignments = Vec::with_capacity(21);
@@ -877,81 +821,75 @@ pub fn generate_single_week(
         let date_str = date.format("%Y-%m-%d").to_string();
         let day_of_week = date.weekday();
 
-        // AC-3: Generate 3 courses per day (Appetizer, MainCourse, Dessert)
-
-        // 1. APPETIZER SELECTION
-        // AC-4: Cyclic rotation - reset if all appetizers exhausted
-        rotation_state.reset_appetizers_if_all_used(appetizers.len());
-
-        let available_appetizers: Vec<&RecipeForPlanning> = appetizers
-            .iter()
-            .filter(|app| {
-                !rotation_state
-                    .used_appetizer_ids
-                    .contains(&app.id.to_string())
-            })
-            .collect();
-
-        let selected_appetizer = if !available_appetizers.is_empty() {
-            // Select first available (simple selection)
-            available_appetizers[0].clone()
-        } else if !appetizers.is_empty() {
-            // Fallback: use any appetizer if all were used
-            appetizers[0].clone()
-        } else {
-            return Err(MealPlanningError::InsufficientRecipes {
-                minimum: 1,
-                current: 0,
-            });
-        };
-
-        // Track appetizer usage
-        rotation_state.mark_used_appetizer(&selected_appetizer.id);
-
-        meal_assignments.push(MealAssignment {
-            date: date_str.clone(),
-            course_type: "appetizer".to_string(),
-            recipe_id: selected_appetizer.id.clone(),
-            prep_required: selected_appetizer.advance_prep_hours.is_some()
-                && selected_appetizer.advance_prep_hours.unwrap() > 0,
-            assignment_reasoning: Some(format!(
-                "Assigned appetizer for {}",
-                day_of_week_to_string(day_of_week)
-            )),
-            accompaniment_recipe_id: None,
-        });
-
-        // 2. MAIN COURSE SELECTION
-        // AC-5: Main courses never repeat (strict uniqueness)
+        // MAIN COURSE IS THE ANCHOR: Check if we have a main course first
+        // If no main course available for this day → skip ENTIRE day (no appetizer/dessert)
         let available_main_for_selection: Vec<RecipeForPlanning> = available_main_courses
             .iter()
             .filter(|mc| !rotation_state.is_main_course_used(&mc.id))
             .cloned()
             .collect();
 
-        let selected_main = select_main_course_with_preferences(
+        let selected_main_opt = select_main_course_with_preferences(
             &available_main_for_selection,
             preferences,
             rotation_state,
             date,
             day_of_week,
-        )
-        .ok_or_else(|| MealPlanningError::InsufficientRecipes {
-            minimum: 7,
-            current: available_main_for_selection.len(),
-        })?;
+        );
 
-        // AC-7: Track main course usage (never reset within week)
+        // If NO main course → skip entire day (empty day)
+        if selected_main_opt.is_none() {
+            continue; // Skip to next day
+        }
+
+        let selected_main = selected_main_opt.unwrap();
+
+        // We have a main course! Now add all 3 courses for this day
+
+        // 1. APPETIZER (optional - skip if none available)
+        if !appetizers.is_empty() {
+            rotation_state.reset_appetizers_if_all_used(appetizers.len());
+
+            let available_appetizers: Vec<&RecipeForPlanning> = appetizers
+                .iter()
+                .filter(|app| {
+                    !rotation_state
+                        .used_appetizer_ids
+                        .contains(&app.id.to_string())
+                })
+                .collect();
+
+            let selected_appetizer = if !available_appetizers.is_empty() {
+                available_appetizers[0].clone()
+            } else {
+                appetizers[0].clone()
+            };
+
+            rotation_state.mark_used_appetizer(&selected_appetizer.id);
+
+            meal_assignments.push(MealAssignment {
+                date: date_str.clone(),
+                course_type: "appetizer".to_string(),
+                recipe_id: selected_appetizer.id.clone(),
+                prep_required: selected_appetizer.advance_prep_hours.is_some()
+                    && selected_appetizer.advance_prep_hours.unwrap() > 0,
+                assignment_reasoning: Some(format!(
+                    "Assigned appetizer for {}",
+                    day_of_week_to_string(day_of_week)
+                )),
+                accompaniment_recipe_id: None,
+            });
+        }
+
+        // 2. MAIN COURSE (already selected above)
         rotation_state.mark_used_main_course(&selected_main.id);
         rotation_state.increment_cuisine_usage(&selected_main.cuisine);
 
-        // Update last_complex_meal_date if recipe is complex
         let complexity = RecipeComplexityCalculator::calculate_complexity(&selected_main);
         if complexity == Complexity::Complex {
             rotation_state.update_last_complex_meal_date(&date_str);
         }
 
-        // AC-6: Select accompaniment if main course accepts one
         let accompaniment_id = if selected_main.accepts_accompaniment {
             select_accompaniment(&selected_main, &accompaniments).map(|acc| acc.id)
         } else {
@@ -971,47 +909,40 @@ pub fn generate_single_week(
             accompaniment_recipe_id: accompaniment_id,
         });
 
-        // 3. DESSERT SELECTION
-        // AC-4: Cyclic rotation - reset if all desserts exhausted
-        rotation_state.reset_desserts_if_all_used(desserts.len());
+        // 3. DESSERT (optional - skip if none available)
+        if !desserts.is_empty() {
+            rotation_state.reset_desserts_if_all_used(desserts.len());
 
-        let available_desserts: Vec<&RecipeForPlanning> = desserts
-            .iter()
-            .filter(|des| {
-                !rotation_state
-                    .used_dessert_ids
-                    .contains(&des.id.to_string())
-            })
-            .collect();
+            let available_desserts: Vec<&RecipeForPlanning> = desserts
+                .iter()
+                .filter(|des| {
+                    !rotation_state
+                        .used_dessert_ids
+                        .contains(&des.id.to_string())
+                })
+                .collect();
 
-        let selected_dessert = if !available_desserts.is_empty() {
-            // Select first available (simple selection)
-            available_desserts[0].clone()
-        } else if !desserts.is_empty() {
-            // Fallback: use any dessert if all were used
-            desserts[0].clone()
-        } else {
-            return Err(MealPlanningError::InsufficientRecipes {
-                minimum: 1,
-                current: 0,
+            let selected_dessert = if !available_desserts.is_empty() {
+                available_desserts[0].clone()
+            } else {
+                desserts[0].clone()
+            };
+
+            rotation_state.mark_used_dessert(&selected_dessert.id);
+
+            meal_assignments.push(MealAssignment {
+                date: date_str.clone(),
+                course_type: "dessert".to_string(),
+                recipe_id: selected_dessert.id.clone(),
+                prep_required: selected_dessert.advance_prep_hours.is_some()
+                    && selected_dessert.advance_prep_hours.unwrap() > 0,
+                assignment_reasoning: Some(format!(
+                    "Dessert for {}",
+                    day_of_week_to_string(day_of_week)
+                )),
+                accompaniment_recipe_id: None,
             });
-        };
-
-        // Track dessert usage
-        rotation_state.mark_used_dessert(&selected_dessert.id);
-
-        meal_assignments.push(MealAssignment {
-            date: date_str.clone(),
-            course_type: "dessert".to_string(),
-            recipe_id: selected_dessert.id.clone(),
-            prep_required: selected_dessert.advance_prep_hours.is_some()
-                && selected_dessert.advance_prep_hours.unwrap() > 0,
-            assignment_reasoning: Some(format!(
-                "Dessert for {}",
-                day_of_week_to_string(day_of_week)
-            )),
-            accompaniment_recipe_id: None,
-        });
+        }
     }
 
     // AC-8: Create WeekMealPlan with status=Future, is_locked=false
@@ -1132,7 +1063,7 @@ pub async fn generate_multi_week_meal_plans(
     );
 
     // Separate recipes by type for max_weeks calculation
-    let appetizers: Vec<RecipeForPlanning> = compatible_recipes
+    let _appetizers: Vec<RecipeForPlanning> = compatible_recipes
         .iter()
         .filter(|r| r.recipe_type == "appetizer")
         .cloned()
@@ -1144,30 +1075,33 @@ pub async fn generate_multi_week_meal_plans(
         .cloned()
         .collect();
 
-    let desserts: Vec<RecipeForPlanning> = compatible_recipes
+    let _desserts: Vec<RecipeForPlanning> = compatible_recipes
         .iter()
         .filter(|r| r.recipe_type == "dessert")
         .cloned()
         .collect();
 
-    // AC-2: Calculate max_weeks = min(5, min(appetizers/7, mains/7, desserts/7))
-    // Each week needs 7 of each type (7 days × 1 course per day)
-    let appetizer_weeks = appetizers.len() / 7;
-    let main_weeks = main_courses.len() / 7;
-    let dessert_weeks = desserts.len() / 7;
+    // Week calculation driven by MAIN COURSES only
+    // Main courses are the anchor - weeks = ceil(main_courses / 7)
+    // Examples: 13 main = 2 weeks (7+6), 16 main = 3 weeks (7+7+2)
+    // If no main course for a day, entire day is empty (no appetizer/dessert)
+    let main_course_count = main_courses.len();
+    let appetizer_count = _appetizers.len();
+    let dessert_count = _desserts.len();
+    let total_recipes = compatible_recipes.len();
 
-    let max_weeks = std::cmp::min(
-        5, // Hard cap at 5 weeks
-        std::cmp::min(appetizer_weeks, std::cmp::min(main_weeks, dessert_weeks)),
-    );
-
-    // AC-3: Validate sufficient recipes (max_weeks must be >= 1)
-    if max_weeks < 1 {
+    // Require minimum 7 of each type (one full week = 21 total recipes)
+    // AC-3: Returns InsufficientRecipes error if insufficient recipes
+    if main_course_count < 7 || appetizer_count < 7 || dessert_count < 7 {
         return Err(MealPlanningError::InsufficientRecipes {
-            minimum: 21, // Need 7 of each type minimum
-            current: compatible_recipes.len(),
+            minimum: 21,
+            current: total_recipes,
         });
     }
+
+    // Calculate weeks: ceil(main_courses / 7), cap at 5 weeks
+    // Use float division + ceil to handle partial weeks
+    let max_weeks = ((main_course_count as f32 / 7.0).ceil() as usize).min(5);
 
     // AC-5: Initialize RotationState
     let mut rotation_state = RotationState::new();
@@ -2448,10 +2382,9 @@ mod tests {
 
     #[test]
     fn test_no_compatible_recipes_returns_none() {
-        // AC-7: If all recipes filtered, return None
-        let recipes = vec![
-            create_recipe_with_time_complexity("slow", 50, 50, 100, 100, Cuisine::Italian), // 100min total, Complex
-        ];
+        // AC-7: If no recipes available, return None
+        // Note: Preferences no longer filter favorites - they're for discovery only
+        let recipes = vec![]; // Empty list
 
         let preferences = UserPreferences {
             max_prep_time_weeknight: 30,
@@ -2471,7 +2404,7 @@ mod tests {
             day_of_week,
         );
 
-        assert!(result.is_none()); // All filtered, returns None
+        assert!(result.is_none()); // No recipes available, returns None
     }
 
     #[test]
