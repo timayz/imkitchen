@@ -448,7 +448,7 @@ async fn load_favorite_recipes(
 /// Load user's meal planning preferences from users table (Story 8.1 AC-5)
 ///
 /// Queries users table for dietary restrictions, skill level, and time constraints.
-async fn load_user_preferences(
+pub async fn load_user_preferences(
     user_id: &str,
     db_pool: &SqlitePool,
 ) -> Result<UserPreferences, ApiError> {

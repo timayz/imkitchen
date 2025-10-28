@@ -43,14 +43,15 @@ pub async fn show_shopping_list(
     let today = Utc::now().date_naive();
     let current_week_monday = get_week_start(today);
 
-    // Parse selected week from query param or default to current week (AC #3)
+    // Parse selected week from query param or default to next week (current week is locked)
     let selected_week = if let Some(week_param) = query.week {
         // Validate and parse the week parameter (validates Monday, date range, etc.)
         shopping::validate_week_date(&week_param)?;
         week_param
     } else {
-        // Default to current week
-        current_week_monday.format("%Y-%m-%d").to_string()
+        // Default to next week (current week + 7 days) since current week is locked
+        let next_week_monday = current_week_monday + Duration::weeks(1);
+        next_week_monday.format("%Y-%m-%d").to_string()
     };
 
     // Generate week options for dropdown (current + 4 future weeks) - AC #2, #5
@@ -235,7 +236,7 @@ pub async fn refresh_shopping_list(
         let grouped = list.group_by_category();
 
         // Prepare category data for template
-        let categories: Vec<CategoryGroup> = grouped
+        let mut categories: Vec<CategoryGroup> = grouped
             .into_iter()
             .map(|(category_name, items)| {
                 let items_data: Vec<ShoppingItem> = items
@@ -256,6 +257,18 @@ pub async fn refresh_shopping_list(
                 }
             })
             .collect();
+
+        // Sort categories in a logical grocery store order
+        categories.sort_by_key(|cat| match cat.name.as_str() {
+            "Produce" => 0,
+            "Dairy" => 1,
+            "Meat" => 2,
+            "Bakery" => 3,
+            "Pantry" => 4,
+            "Frozen" => 5,
+            "Other" => 6,
+            _ => 7,
+        });
 
         let template = ShoppingListContentPartial {
             categories,
