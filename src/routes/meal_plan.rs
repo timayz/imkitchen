@@ -211,6 +211,8 @@ pub async fn get_meal_plan_check_ready(
     State(state): State<AppState>,
     axum::extract::Path(meal_plan_id): axum::extract::Path<String>,
 ) -> axum::response::Response {
+    tracing::debug!("Checking meal plan readiness for id: {}", meal_plan_id);
+
     // Check if meal plan exists in read model (to distinguish initial generation vs regeneration)
     let meal_plan_exists: Result<bool, sqlx::Error> = sqlx::query_scalar(
         "SELECT EXISTS(SELECT 1 FROM meal_plans WHERE id = ?1 AND user_id = ?2)"
@@ -221,6 +223,12 @@ pub async fn get_meal_plan_check_ready(
     .await;
 
     let is_regeneration = meal_plan_exists.unwrap_or(false);
+    tracing::debug!(
+        "Meal plan {} exists in read model: {}, is_regeneration: {}",
+        meal_plan_id,
+        is_regeneration,
+        is_regeneration
+    );
 
     // For initial generation only: check if evento aggregate has been created
     if !is_regeneration {
@@ -231,8 +239,11 @@ pub async fn get_meal_plan_check_ready(
         .await
         .is_ok();
 
+        tracing::debug!("Aggregate ready check: {}", aggregate_ready);
+
         if !aggregate_ready {
             // Aggregate not yet created, continue polling
+            tracing::debug!("Aggregate not ready, continuing polling");
             let polling_html = format!(
                 r##"<div ts-req="/plan/check-ready/{}" ts-trigger="load delay:500ms"></div>"##,
                 meal_plan_id
@@ -261,12 +272,21 @@ pub async fn get_meal_plan_check_ready(
     .fetch_one(&state.db_pool)
     .await;
 
-    let is_ready = match batch_check {
+    let is_ready = match &batch_check {
         Ok((total_weeks, total_assignments)) => {
+            tracing::debug!(
+                "Batch check: total_weeks={}, total_assignments={}, expected={}",
+                total_weeks,
+                total_assignments,
+                total_weeks * 7
+            );
             // Each week needs 7 assignments, so total should be total_weeks * 7
-            total_weeks > 0 && total_assignments == total_weeks * 7
+            *total_weeks > 0 && *total_assignments == *total_weeks * 7
         }
-        Err(_) => false,
+        Err(e) => {
+            tracing::warn!("Batch check query failed: {}", e);
+            false
+        }
     };
 
     if is_ready {
