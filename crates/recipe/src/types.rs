@@ -40,6 +40,22 @@ pub enum AccompanimentCategory {
     Other,
 }
 
+impl AccompanimentCategory {
+    /// Parse string to AccompanimentCategory
+    pub fn parse(s: &str) -> Option<Self> {
+        match s {
+            "Pasta" => Some(Self::Pasta),
+            "Rice" => Some(Self::Rice),
+            "Fries" => Some(Self::Fries),
+            "Salad" => Some(Self::Salad),
+            "Bread" => Some(Self::Bread),
+            "Vegetable" => Some(Self::Vegetable),
+            "Other" => Some(Self::Other),
+            _ => None,
+        }
+    }
+}
+
 /// Cuisine type for recipe categorization and variety tracking
 ///
 /// Supports 13 predefined cuisines plus a Custom variant for user-defined cuisines.

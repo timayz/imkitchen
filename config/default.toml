@@ -110,7 +110,7 @@ subject = "mailto:contact@imkitchen.local"
 # When true, all users are treated as premium (no recipe limits, full features)
 # Default: false
 # Override with: IMKITCHEN__FEATURES__BYPASS_PREMIUM
-bypass_premium = false
+bypass_premium = true
 
 # Future configuration sections (not yet implemented):
 #

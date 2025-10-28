@@ -10,7 +10,7 @@ use crate::events::{
     Ingredient, InstructionStep, RatingDeleted, RatingUpdated, RecipeCopied, RecipeCreated,
     RecipeDeleted, RecipeFavorited, RecipeRated, RecipeShared, RecipeTagged, RecipeUpdated,
 };
-use crate::tagging::{CuisineInferenceService, DietaryTagDetector, RecipeComplexityCalculator};
+use crate::tagging::{CuisineInferenceService, RecipeComplexityCalculator};
 use crate::types::{AccompanimentCategory, Cuisine, DietaryTag};
 use serde::{Deserialize, Serialize};
 
@@ -300,9 +300,10 @@ async fn emit_recipe_tagged_event(
         return Ok(());
     }
 
-    // Auto-infer cuisine and dietary_tags from ingredients
+    // Auto-infer cuisine from ingredients
     let cuisine = CuisineInferenceService::infer(&aggregate.ingredients);
-    let dietary_tags = DietaryTagDetector::detect(&aggregate.ingredients);
+    // Dietary tags are no longer auto-detected - must be set manually
+    let dietary_tags = Vec::new();
 
     let tagged_at = Utc::now();
 
@@ -417,6 +418,13 @@ pub struct UpdateRecipeCommand {
     pub cook_time_min: Option<Option<u32>>,
     pub advance_prep_hours: Option<Option<u32>>,
     pub serving_size: Option<Option<u32>>,
+
+    // Metadata fields (AC 9.4.3-9.4.7)
+    pub accepts_accompaniment: Option<bool>,
+    pub preferred_accompaniments: Option<Vec<AccompanimentCategory>>,
+    pub accompaniment_category: Option<Option<AccompanimentCategory>>,
+    pub cuisine: Option<Option<Cuisine>>,
+    pub dietary_tags: Option<Vec<DietaryTag>>,
 }
 
 /// AC-3: Validate optional recipe_type field in updates
@@ -493,6 +501,12 @@ pub async fn update_recipe(
             cook_time_min: command.cook_time_min,
             advance_prep_hours: command.advance_prep_hours,
             serving_size: command.serving_size,
+            // Metadata fields (AC 9.4.3-9.4.7)
+            accepts_accompaniment: command.accepts_accompaniment,
+            preferred_accompaniments: command.preferred_accompaniments,
+            accompaniment_category: command.accompaniment_category,
+            cuisine: command.cuisine,
+            dietary_tags: command.dietary_tags,
             updated_at: updated_at.to_rfc3339(),
         })
         .map_err(|e| RecipeError::EventStoreError(e.to_string()))?
