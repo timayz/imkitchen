@@ -204,6 +204,37 @@ impl RecipeAggregate {
         if let Some(serving_size) = event.data.serving_size {
             self.serving_size = serving_size;
         }
+        // Metadata fields (AC 9.4.3-9.4.7)
+        if let Some(accepts_accompaniment) = event.data.accepts_accompaniment {
+            self.accepts_accompaniment = accepts_accompaniment;
+        }
+        if let Some(preferred_accompaniments) = event.data.preferred_accompaniments {
+            self.preferred_accompaniments = preferred_accompaniments;
+        }
+        if let Some(accompaniment_category) = event.data.accompaniment_category {
+            self.accompaniment_category = accompaniment_category;
+        }
+        if let Some(cuisine) = event.data.cuisine {
+            // Convert Option<Cuisine> to Option<String> like in recipe_created
+            self.tags.cuisine = cuisine.as_ref().and_then(|c| {
+                serde_json::to_value(c).ok().and_then(|v| match v {
+                    serde_json::Value::String(s) => Some(s),
+                    serde_json::Value::Object(_) => serde_json::to_string(c).ok(),
+                    _ => None,
+                })
+            });
+        }
+        if let Some(dietary_tags) = event.data.dietary_tags {
+            // Convert Vec<DietaryTag> to Vec<String> like in recipe_created
+            self.tags.dietary_tags = dietary_tags
+                .iter()
+                .filter_map(|tag| {
+                    serde_json::to_value(tag)
+                        .ok()
+                        .and_then(|v| v.as_str().map(String::from))
+                })
+                .collect();
+        }
         Ok(())
     }
 

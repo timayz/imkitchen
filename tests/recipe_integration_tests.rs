@@ -816,6 +816,11 @@ async fn test_recipe_update_syncs_to_read_model() {
         cook_time_min: Some(Some(25)),
         advance_prep_hours: Some(Some(2)), // Change to 2 hours
         serving_size: Some(None),          // Clear serving size
+        accepts_accompaniment: None,
+        preferred_accompaniments: None,
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: None,
     };
     recipe::update_recipe(update_command, &executor, &pool)
         .await

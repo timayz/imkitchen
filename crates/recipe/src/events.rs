@@ -103,6 +103,17 @@ pub struct RecipeUpdated {
     pub cook_time_min: Option<Option<u32>>,
     pub advance_prep_hours: Option<Option<u32>>,
     pub serving_size: Option<Option<u32>>,
+    // Metadata fields (AC 9.4.3-9.4.7) - with backwards compatibility
+    #[serde(default)]
+    pub accepts_accompaniment: Option<bool>,
+    #[serde(default)]
+    pub preferred_accompaniments: Option<Vec<AccompanimentCategory>>,
+    #[serde(default)]
+    pub accompaniment_category: Option<Option<AccompanimentCategory>>,
+    #[serde(default)]
+    pub cuisine: Option<Option<Cuisine>>,
+    #[serde(default)]
+    pub dietary_tags: Option<Vec<DietaryTag>>,
     pub updated_at: String, // RFC3339 formatted timestamp
 }
 
@@ -301,6 +312,11 @@ mod tests {
             cook_time_min: None,
             advance_prep_hours: None,
             serving_size: Some(None),
+            accepts_accompaniment: None,
+            preferred_accompaniments: None,
+            accompaniment_category: None,
+            cuisine: None,
+            dietary_tags: None,
             updated_at: "2025-01-01T00:00:00Z".to_string(),
         };
 

@@ -559,6 +559,11 @@ async fn test_recipe_updated_event_applies_delta_changes() {
         cook_time_min: None,
         advance_prep_hours: None,
         serving_size: None,
+        accepts_accompaniment: None,
+        preferred_accompaniments: None,
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: None,
     };
 
     update_recipe(update_command, &executor, &pool)
@@ -639,6 +644,11 @@ async fn test_update_recipe_validates_empty_ingredients() {
         cook_time_min: None,
         advance_prep_hours: None,
         serving_size: None,
+        accepts_accompaniment: None,
+        preferred_accompaniments: None,
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: None,
     };
 
     let result = update_recipe(update_command, &executor, &pool).await;
@@ -700,6 +710,11 @@ async fn test_update_recipe_validates_empty_instructions() {
         cook_time_min: None,
         advance_prep_hours: None,
         serving_size: None,
+        accepts_accompaniment: None,
+        preferred_accompaniments: None,
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: None,
     };
 
     let result = update_recipe(update_command, &executor, &pool).await;
@@ -761,6 +776,11 @@ async fn test_update_recipe_validates_title_length() {
         cook_time_min: None,
         advance_prep_hours: None,
         serving_size: None,
+        accepts_accompaniment: None,
+        preferred_accompaniments: None,
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: None,
     };
 
     let result = update_recipe(update_command, &executor, &pool).await;
@@ -823,6 +843,11 @@ async fn test_update_recipe_ownership_denied() {
         cook_time_min: None,
         advance_prep_hours: None,
         serving_size: None,
+        accepts_accompaniment: None,
+        preferred_accompaniments: None,
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: None,
     };
 
     let result = update_recipe(update_command, &executor, &pool).await;
@@ -962,6 +987,11 @@ async fn test_update_recipe_recalculates_complexity() {
         cook_time_min: None,
         advance_prep_hours: None,
         serving_size: None,
+        accepts_accompaniment: None,
+        preferred_accompaniments: None,
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: None,
     };
 
     update_recipe(update_command, &executor, &pool)
@@ -988,6 +1018,11 @@ async fn test_update_recipe_recalculates_complexity() {
         cook_time_min: None,
         advance_prep_hours: Some(Some(4)), // Add 4-hour advance prep (multiplier = 100)
         serving_size: None,
+        accepts_accompaniment: None,
+        preferred_accompaniments: None,
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: None,
     };
 
     update_recipe(update_with_prep, &executor, &pool)
@@ -1036,6 +1071,11 @@ async fn test_update_recipe_recalculates_complexity() {
         cook_time_min: None,
         advance_prep_hours: None, // Keep the 4-hour prep
         serving_size: None,
+        accepts_accompaniment: None,
+        preferred_accompaniments: None,
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: None,
     };
 
     update_recipe(update_to_complex, &executor, &pool)
@@ -1112,6 +1152,11 @@ async fn test_update_recipe_clears_optional_fields() {
         cook_time_min: None,       // Not changing cook_time
         advance_prep_hours: Some(None), // Option<Option<u32>>: explicitly set to None
         serving_size: None,
+        accepts_accompaniment: None,
+        preferred_accompaniments: None,
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: None,
     };
 
     update_recipe(update_command, &executor, &pool)
@@ -2818,6 +2863,11 @@ async fn test_copy_recipe_modifications_independent() {
         cook_time_min: None,
         advance_prep_hours: None,
         serving_size: None,
+        accepts_accompaniment: None,
+        preferred_accompaniments: None,
+        accompaniment_category: None,
+        cuisine: None,
+        dietary_tags: None,
     };
     update_recipe(update_command, &executor, &pool)
         .await

@@ -9,10 +9,11 @@ use recipe::{
     batch_import_recipes, copy_recipe, create_recipe, delete_recipe, favorite_recipe,
     list_shared_recipes, query_collections_by_user, query_collections_for_recipe,
     query_recipe_by_id, query_recipes_by_collection_paginated, query_recipes_by_user_with_filters,
-    share_recipe, update_recipe, update_recipe_tags, BatchImportRecipe, BatchImportRecipesCommand,
-    CollectionReadModel, CopyRecipeCommand, CreateRecipeCommand, DeleteRecipeCommand,
-    FavoriteRecipeCommand, Ingredient, InstructionStep, RecipeDiscoveryFilters, RecipeError,
-    RecipeFilterParams, ShareRecipeCommand, UpdateRecipeCommand, UpdateRecipeTagsCommand,
+    share_recipe, update_recipe, update_recipe_tags, AccompanimentCategory, BatchImportRecipe,
+    BatchImportRecipesCommand, CollectionReadModel, CopyRecipeCommand, CreateRecipeCommand,
+    Cuisine, DeleteRecipeCommand, DietaryTag, FavoriteRecipeCommand, Ingredient, InstructionStep,
+    RecipeDiscoveryFilters, RecipeError, RecipeFilterParams, ShareRecipeCommand,
+    UpdateRecipeCommand, UpdateRecipeTagsCommand,
 };
 use serde::Deserialize;
 use sqlx::Row;
@@ -795,6 +796,71 @@ pub async fn post_update_recipe(
         .serving_size
         .map(|s| if s.is_empty() { None } else { s.parse().ok() });
 
+    // Parse accompaniment fields (AC 9.4.3-9.4.5)
+    let accepts_accompaniment = form.accepts_accompaniment.as_ref().map(|v| v == "on");
+    let preferred_accompaniments = if form.preferred_accompaniments.is_empty() {
+        None
+    } else {
+        // Convert Vec<String> to Vec<AccompanimentCategory>
+        let categories: Vec<AccompanimentCategory> = form
+            .preferred_accompaniments
+            .iter()
+            .filter_map(|s| AccompanimentCategory::parse(s))
+            .collect();
+        if categories.is_empty() {
+            None
+        } else {
+            Some(categories)
+        }
+    };
+    let accompaniment_category = Some(form.accompaniment_category.as_ref().and_then(|s| {
+        if s.is_empty() {
+            None
+        } else {
+            AccompanimentCategory::parse(s)
+        }
+    }));
+
+    // Parse cuisine field (AC 9.4.6)
+    let cuisine = Some(if let Some(ref custom) = form.custom_cuisine {
+        if !custom.is_empty() {
+            Some(Cuisine::Custom(custom.clone()))
+        } else {
+            form.cuisine.as_ref().and_then(|s| {
+                if s.is_empty() || s == "Custom" {
+                    None
+                } else {
+                    parse_cuisine(s)
+                }
+            })
+        }
+    } else {
+        form.cuisine.as_ref().and_then(|s| {
+            if s.is_empty() || s == "Custom" {
+                None
+            } else {
+                parse_cuisine(s)
+            }
+        })
+    });
+
+    // Parse dietary tags (AC 9.4.7)
+    let dietary_tags = if form.dietary_tags.is_empty() {
+        None
+    } else {
+        // Convert Vec<String> to Vec<DietaryTag>
+        let tags: Vec<DietaryTag> = form
+            .dietary_tags
+            .iter()
+            .filter_map(|s| parse_dietary_tag(s))
+            .collect();
+        if tags.is_empty() {
+            None
+        } else {
+            Some(tags)
+        }
+    };
+
     // Create update command
     let command = UpdateRecipeCommand {
         recipe_id: recipe_id.clone(),
@@ -807,6 +873,12 @@ pub async fn post_update_recipe(
         cook_time_min,
         advance_prep_hours,
         serving_size,
+        // Metadata fields (AC 9.4.3-9.4.7)
+        accepts_accompaniment,
+        preferred_accompaniments,
+        accompaniment_category,
+        cuisine,
+        dietary_tags,
     };
 
     // Execute recipe update (evento event sourcing)
@@ -2705,5 +2777,39 @@ pub async fn post_import_recipes(
             };
             (StatusCode::OK, Html(template.render().unwrap())).into_response()
         }
+    }
+}
+
+/// Helper function to parse cuisine string to Cuisine enum
+fn parse_cuisine(s: &str) -> Option<Cuisine> {
+    match s {
+        "Italian" => Some(Cuisine::Italian),
+        "Indian" => Some(Cuisine::Indian),
+        "Mexican" => Some(Cuisine::Mexican),
+        "Chinese" => Some(Cuisine::Chinese),
+        "Japanese" => Some(Cuisine::Japanese),
+        "French" => Some(Cuisine::French),
+        "American" => Some(Cuisine::American),
+        "Mediterranean" => Some(Cuisine::Mediterranean),
+        "Thai" => Some(Cuisine::Thai),
+        "Korean" => Some(Cuisine::Korean),
+        "Vietnamese" => Some(Cuisine::Vietnamese),
+        "Greek" => Some(Cuisine::Greek),
+        "Spanish" => Some(Cuisine::Spanish),
+        _ => None,
+    }
+}
+
+/// Helper function to parse dietary tag string to DietaryTag enum
+fn parse_dietary_tag(s: &str) -> Option<DietaryTag> {
+    match s {
+        "Vegetarian" => Some(DietaryTag::Vegetarian),
+        "Vegan" => Some(DietaryTag::Vegan),
+        "Gluten-Free" => Some(DietaryTag::GlutenFree),
+        "Dairy-Free" => Some(DietaryTag::DairyFree),
+        "Nut-Free" => Some(DietaryTag::NutFree),
+        "Halal" => Some(DietaryTag::Halal),
+        "Kosher" => Some(DietaryTag::Kosher),
+        _ => None,
     }
 }
