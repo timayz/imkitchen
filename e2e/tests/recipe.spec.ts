@@ -541,3 +541,179 @@ test.describe('Recipe Complexity Display and Filtering', () => {
     await expect(simpleFilter).not.toHaveClass(/bg-green-50|text-green-800|font-medium/);
   });
 });
+
+/**
+ * E2E Tests for Recipe Accompaniment Settings (Story 10.1 - AC7)
+ *
+ * Tests verify that users can create recipes with accompaniment settings
+ * (can_be_side_dish and needs_side_dish) and these settings persist correctly.
+ */
+test.describe('Recipe Accompaniment Settings (Story 10.1 AC7)', () => {
+  test.beforeEach(async ({ page }) => {
+    // Login
+    await page.goto('/login');
+    await page.fill('input[name="email"]', 'test@example.com');
+    await page.fill('input[name="password"]', 'password123');
+    await page.click('button[type="submit"]');
+    await page.waitForURL('/dashboard');
+  });
+
+  /**
+   * AC7: Test coverage for recipe creation with accompaniment settings
+   * Verifies: Navigate to /recipes/new, fill form with can_be_side_dish and needs_side_dish checkboxes
+   */
+  test('user can create recipe with can_be_side_dish setting', async ({ page }) => {
+    const recipeTitle = uniqueRecipeTitle('Side Dish Recipe');
+
+    // Navigate to create recipe form
+    await page.goto('/recipes/new');
+
+    // Fill in basic recipe info
+    await page.fill('input[name="title"]', recipeTitle);
+    await page.fill('input[name="ingredient_name[]"]', 'Rice');
+    await page.fill('input[name="ingredient_quantity[]"]', '2');
+    await page.selectOption('select[name="ingredient_unit[]"]', 'cup');
+    await page.fill('textarea[name="instruction_text[]"]', 'Cook rice');
+    await page.fill('input[name="prep_time_min"]', '5');
+    await page.fill('input[name="cook_time_min"]', '20');
+
+    // Verify accompaniment checkboxes are present
+    const canBeSideDishCheckbox = page.locator('input[name="can_be_side_dish"], input[id="can_be_side_dish"]');
+    const needsSideDishCheckbox = page.locator('input[name="needs_side_dish"], input[id="needs_side_dish"]');
+
+    await expect(canBeSideDishCheckbox).toBeVisible();
+    await expect(needsSideDishCheckbox).toBeVisible();
+
+    // Check "can_be_side_dish" (this recipe can be served as a side dish)
+    await canBeSideDishCheckbox.check();
+
+    // Verify checkbox is checked
+    await expect(canBeSideDishCheckbox).toBeChecked();
+
+    // Submit form
+    await page.click('button[type="submit"]:has-text("Create Recipe")');
+
+    // Wait for redirect to recipe detail page
+    await page.waitForURL(/\/recipes\/[a-zA-Z0-9-]+$/);
+
+    // Verify recipe saved with correct accompaniment setting
+    await expect(page.locator('h1')).toContainText(recipeTitle);
+
+    // Check if "Can be served as side dish" indicator is visible on detail page
+    const sideDishIndicator = page.locator(':text("Can be served as side dish"), :text("Side Dish"), .side-dish-indicator');
+    if (await sideDishIndicator.isVisible()) {
+      await expect(sideDishIndicator).toBeVisible();
+    }
+
+    // Navigate to edit page to verify setting persisted
+    const recipeUrl = page.url();
+    const recipeId = recipeUrl.split('/').pop();
+    await page.goto(`/recipes/${recipeId}/edit`);
+
+    // Verify checkbox is still checked in edit form
+    await expect(canBeSideDishCheckbox).toBeChecked();
+    await expect(needsSideDishCheckbox).not.toBeChecked();
+  });
+
+  /**
+   * AC7 (Extended): Test creation with needs_side_dish setting
+   */
+  test('user can create recipe with needs_side_dish setting', async ({ page }) => {
+    const recipeTitle = uniqueRecipeTitle('Main Course Needing Side');
+
+    // Navigate to create recipe form
+    await page.goto('/recipes/new');
+
+    // Fill in basic recipe info
+    await page.fill('input[name="title"]', recipeTitle);
+    await page.fill('input[name="ingredient_name[]"]', 'Steak');
+    await page.fill('input[name="ingredient_quantity[]"]', '1');
+    await page.selectOption('select[name="ingredient_unit[]"]', 'lb');
+    await page.fill('textarea[name="instruction_text[]"]', 'Grill steak');
+    await page.fill('input[name="prep_time_min"]', '10');
+    await page.fill('input[name="cook_time_min"]', '15');
+
+    // Check "needs_side_dish" (this recipe requires a side dish)
+    const needsSideDishCheckbox = page.locator('input[name="needs_side_dish"], input[id="needs_side_dish"]');
+    await needsSideDishCheckbox.check();
+
+    // Verify checkbox is checked
+    await expect(needsSideDishCheckbox).toBeChecked();
+
+    // Submit form
+    await page.click('button[type="submit"]:has-text("Create Recipe")');
+
+    // Wait for redirect
+    await page.waitForURL(/\/recipes\/[a-zA-Z0-9-]+$/);
+
+    // Verify recipe saved
+    await expect(page.locator('h1')).toContainText(recipeTitle);
+
+    // Navigate to edit page to verify setting persisted
+    const recipeUrl = page.url();
+    const recipeId = recipeUrl.split('/').pop();
+    await page.goto(`/recipes/${recipeId}/edit`);
+
+    // Verify checkbox is still checked in edit form
+    const canBeSideDishCheckbox = page.locator('input[name="can_be_side_dish"], input[id="can_be_side_dish"]');
+    await expect(canBeSideDishCheckbox).not.toBeChecked();
+    await expect(needsSideDishCheckbox).toBeChecked();
+  });
+
+  /**
+   * AC7 (Edge Case): Test creation with both accompaniment settings
+   */
+  test('user can create recipe with both accompaniment settings checked', async ({ page }) => {
+    const recipeTitle = uniqueRecipeTitle('Versatile Recipe');
+
+    await page.goto('/recipes/new');
+
+    // Fill in basic recipe info
+    await page.fill('input[name="title"]', recipeTitle);
+    await page.fill('input[name="ingredient_name[]"]', 'Vegetables');
+    await page.fill('input[name="ingredient_quantity[]"]', '3');
+    await page.selectOption('select[name="ingredient_unit[]"]', 'cup');
+    await page.fill('textarea[name="instruction_text[]"]', 'Roast vegetables');
+    await page.fill('input[name="prep_time_min"]', '15');
+
+    // Check both checkboxes
+    const canBeSideDishCheckbox = page.locator('input[name="can_be_side_dish"], input[id="can_be_side_dish"]');
+    const needsSideDishCheckbox = page.locator('input[name="needs_side_dish"], input[id="needs_side_dish"]');
+
+    await canBeSideDishCheckbox.check();
+    await needsSideDishCheckbox.check();
+
+    // Verify both checked
+    await expect(canBeSideDishCheckbox).toBeChecked();
+    await expect(needsSideDishCheckbox).toBeChecked();
+
+    // Submit form
+    await page.click('button[type="submit"]:has-text("Create Recipe")');
+    await page.waitForURL(/\/recipes\/[a-zA-Z0-9-]+$/);
+
+    // Verify saved
+    await expect(page.locator('h1')).toContainText(recipeTitle);
+
+    // Verify both settings persisted in edit form
+    const recipeUrl = page.url();
+    const recipeId = recipeUrl.split('/').pop();
+    await page.goto(`/recipes/${recipeId}/edit`);
+
+    await expect(canBeSideDishCheckbox).toBeChecked();
+    await expect(needsSideDishCheckbox).toBeChecked();
+  });
+
+  /**
+   * AC7 (Default State): Verify accompaniment checkboxes default to unchecked
+   */
+  test('accompaniment checkboxes default to unchecked on new recipe form', async ({ page }) => {
+    await page.goto('/recipes/new');
+
+    const canBeSideDishCheckbox = page.locator('input[name="can_be_side_dish"], input[id="can_be_side_dish"]');
+    const needsSideDishCheckbox = page.locator('input[name="needs_side_dish"], input[id="needs_side_dish"]');
+
+    // Verify both checkboxes are unchecked by default
+    await expect(canBeSideDishCheckbox).not.toBeChecked();
+    await expect(needsSideDishCheckbox).not.toBeChecked();
+  });
+});
