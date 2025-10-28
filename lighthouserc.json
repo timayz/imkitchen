@@ -6,6 +6,8 @@
         "http://localhost:8080/dashboard",
         "http://localhost:8080/recipes",
         "http://localhost:8080/plan",
+        "http://localhost:8080/profile/meal-planning-preferences",
+        "http://localhost:8080/recipes/new",
         "http://localhost:8080/shopping"
       ],
       "numberOfRuns": 3,
@@ -34,7 +36,28 @@
         "first-contentful-paint": ["warn", {"maxNumericValue": 2500}],
         "largest-contentful-paint": ["warn", {"maxNumericValue": 2500}],
         "cumulative-layout-shift": ["warn", {"maxNumericValue": 0.1}],
-        "total-blocking-time": ["warn", {"maxNumericValue": 200}]
+        "total-blocking-time": ["warn", {"maxNumericValue": 200}],
+        "color-contrast": "error",
+        "aria-allowed-attr": "error",
+        "aria-required-attr": "error",
+        "aria-valid-attr": "error",
+        "aria-valid-attr-value": "error",
+        "button-name": "error",
+        "duplicate-id-active": "error",
+        "form-field-multiple-labels": "error",
+        "frame-title": "error",
+        "html-has-lang": "error",
+        "image-alt": "error",
+        "input-image-alt": "error",
+        "label": "error",
+        "link-name": "error",
+        "list": "error",
+        "listitem": "error",
+        "meta-viewport": "error",
+        "tabindex": "error",
+        "td-headers-attr": "error",
+        "th-has-data-cells": "error",
+        "valid-lang": "error"
       }
     },
     "upload": {

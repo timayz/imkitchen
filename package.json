@@ -4,9 +4,20 @@
   "description": "Intelligent meal planning and cooking optimization",
   "private": true,
   "scripts": {
-    "build:sw": "workbox injectManifest workbox-config.js"
+    "build:sw": "workbox injectManifest workbox-config.js",
+    "test": "playwright test",
+    "test:accessibility": "playwright test tests/accessibility",
+    "test:e2e": "playwright test tests/e2e",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:debug": "playwright test --debug",
+    "lighthouse": "lhci autorun",
+    "playwright:install": "playwright install --with-deps"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.8.3",
+    "@lhci/cli": "^0.13.0",
+    "@playwright/test": "^1.40.1",
     "workbox-cli": "^7.1.0"
   },
   "engines": {
