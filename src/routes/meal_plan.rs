@@ -209,17 +209,50 @@ pub struct WeekCalendarContentTemplate {
 pub async fn get_meal_plan_check_ready(
     Extension(auth): Extension<Auth>,
     State(state): State<AppState>,
-    axum::extract::Path(meal_plan_id): axum::extract::Path<String>,
+    axum::extract::Path(aggregate_id): axum::extract::Path<String>,
 ) -> axum::response::Response {
-    tracing::debug!("Checking meal plan readiness for id: {}", meal_plan_id);
+    tracing::debug!("Checking meal plan readiness for aggregate_id: {}", aggregate_id);
+
+    // First, check if the evento aggregate exists
+    // This ensures the event has been processed by evento before checking read model
+    if evento::load::<meal_planning::aggregate::MealPlanAggregate, _>(
+        &state.evento_executor,
+        &aggregate_id,
+    )
+    .await
+    .is_err()
+    {
+        tracing::debug!("Aggregate not yet available, continuing polling");
+        let polling_html = format!(
+            r##"<div ts-req="/plan/check-ready/{}" ts-trigger="load delay:500ms"></div>"##,
+            aggregate_id
+        );
+        return (axum::http::StatusCode::OK, Html(polling_html)).into_response();
+    }
+
+    // Get the generation_batch_id from the aggregate's rotation state
+    // The aggregate stores the batch ID in its rotation_state_json
+    let batch_id_result: Result<String, _> = sqlx::query_scalar(
+        "SELECT generation_batch_id FROM meal_plan_rotation_state WHERE user_id = ?1 LIMIT 1"
+    )
+    .bind(&auth.user_id)
+    .fetch_one(&state.db_pool)
+    .await;
+
+    let generation_batch_id = match batch_id_result {
+        Ok(bid) => bid,
+        Err(e) => {
+            tracing::debug!("Batch ID not yet in rotation_state table: {}", e);
+            let polling_html = format!(
+                r##"<div ts-req="/plan/check-ready/{}" ts-trigger="load delay:500ms"></div>"##,
+                aggregate_id
+            );
+            return (axum::http::StatusCode::OK, Html(polling_html)).into_response();
+        }
+    };
 
     // Check if ALL weeks in the batch have complete assignments in read model
     // Each week needs 7 assignments (one per day)
-    //
-    // Note: This works for both initial generation and regeneration because:
-    // - Initial generation: creates new meal_plan records with new IDs
-    // - Regeneration: archives old meal_plans and creates new ones with new IDs
-    // In both cases, we wait for the new meal_plan records and their assignments to appear
     let batch_check: Result<(i64, i64), sqlx::Error> = sqlx::query_as(
         r#"
         SELECT
@@ -227,13 +260,11 @@ pub async fn get_meal_plan_check_ready(
             COUNT(ma.id) as total_assignments
         FROM meal_plans mp
         LEFT JOIN meal_assignments ma ON mp.id = ma.meal_plan_id
-        WHERE mp.generation_batch_id = (
-            SELECT generation_batch_id FROM meal_plans WHERE id = ?1
-        )
+        WHERE mp.generation_batch_id = ?1
         AND mp.user_id = ?2
         "#,
     )
-    .bind(&meal_plan_id)
+    .bind(&generation_batch_id)
     .bind(&auth.user_id)
     .fetch_one(&state.db_pool)
     .await;
@@ -268,7 +299,7 @@ pub async fn get_meal_plan_check_ready(
         // Not all weeks ready yet - return self polling element to continue polling
         let polling_html = format!(
             r##"<div ts-req="/plan/check-ready/{}" ts-trigger="load delay:500ms"></div>"##,
-            meal_plan_id
+            aggregate_id
         );
         (axum::http::StatusCode::OK, Html(polling_html)).into_response()
     }
@@ -701,7 +732,7 @@ pub async fn post_generate_meal_plan(
         generated_at: Utc::now().to_rfc3339(),
     };
 
-    evento::create::<meal_planning::MealPlanAggregate>()
+    let aggregate_id = evento::create::<meal_planning::MealPlanAggregate>()
         .data(&event)
         .map_err(|e| {
             tracing::error!("Failed to encode MultiWeekMealPlanGenerated event: {:?}", e);
@@ -720,8 +751,9 @@ pub async fn post_generate_meal_plan(
         })?;
 
     tracing::info!(
-        "MultiWeekMealPlanGenerated event emitted successfully for batch {}",
-        generation_batch_id
+        "MultiWeekMealPlanGenerated event emitted successfully for batch {} with aggregate_id {}",
+        generation_batch_id,
+        aggregate_id
     );
 
     // BUSINESS RULE: Auto-generate shopping lists for each week
@@ -783,18 +815,11 @@ pub async fn post_generate_meal_plan(
         }
     }
 
-    // Get the first week ID for polling redirect
-    let first_week_id = multi_week_plan
-        .generated_weeks
-        .first()
-        .map(|w| w.id.clone())
-        .ok_or_else(|| anyhow::anyhow!("No weeks generated in multi-week plan"))?;
-
-    // Return loading state that polls for read model completion
-    // TwinSpark will poll /plan/check-ready until all weeks are fully projected
+    // Use aggregate ID for polling instead of week ID
+    // The aggregate ID is the canonical identifier for evento, and we can use evento::load to check if it exists
     let loading_template = MealPlanLoadingTemplate {
         user: Some(()),
-        meal_plan_id: first_week_id.clone(),
+        meal_plan_id: aggregate_id,
         current_path: "/plan".to_string(),
     };
 
@@ -1175,7 +1200,7 @@ pub async fn post_regenerate_meal_plan(
         generated_at: Utc::now().to_rfc3339(),
     };
 
-    evento::create::<meal_planning::MealPlanAggregate>()
+    let aggregate_id = evento::create::<meal_planning::MealPlanAggregate>()
         .data(&event)
         .map_err(|e| {
             tracing::error!("Failed to encode MultiWeekMealPlanGenerated event: {:?}", e);
@@ -1194,8 +1219,9 @@ pub async fn post_regenerate_meal_plan(
         })?;
 
     tracing::info!(
-        "MultiWeekMealPlanGenerated event emitted successfully for batch {}",
-        generation_batch_id
+        "MultiWeekMealPlanGenerated event emitted successfully for batch {} with aggregate_id {}",
+        generation_batch_id,
+        aggregate_id
     );
 
     // BUSINESS RULE: Auto-generate shopping lists for each week
@@ -1257,18 +1283,11 @@ pub async fn post_regenerate_meal_plan(
         }
     }
 
-    // Get the first week ID for polling redirect
-    let first_week_id = multi_week_plan
-        .generated_weeks
-        .first()
-        .map(|w| w.id.clone())
-        .ok_or_else(|| anyhow::anyhow!("No weeks generated in multi-week plan"))?;
-
-    // Return loading state that polls for read model completion
-    // TwinSpark will poll /plan/check-ready until all weeks are fully projected
+    // Use aggregate ID for polling instead of week ID
+    // The aggregate ID is the canonical identifier for evento, and we can use evento::load to check if it exists
     let loading_template = MealPlanLoadingTemplate {
         user: Some(()),
-        meal_plan_id: first_week_id.clone(),
+        meal_plan_id: aggregate_id,
         current_path: "/plan".to_string(),
     };
 
