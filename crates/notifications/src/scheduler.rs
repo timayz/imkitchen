@@ -5,7 +5,10 @@ use crate::push::{create_push_payload, send_push_notification, WebPushConfig};
 use crate::read_model::{get_pending_notifications_due, get_push_subscription_by_user};
 use chrono::{Datelike, Duration, NaiveDate, NaiveTime, Utc};
 use evento::AggregatorName;
-use meal_planning::{events::{MealPlanGenerated, MultiWeekMealPlanGenerated}, MealPlanAggregate};
+use meal_planning::{
+    events::{MealPlanGenerated, MultiWeekMealPlanGenerated},
+    MealPlanAggregate,
+};
 use std::sync::Arc;
 use tokio::time::{interval, Duration as TokioDuration};
 
@@ -1131,10 +1134,12 @@ impl evento::SubscribeHandler<evento::Sqlite> for MultiWeekMealPlanGeneratedHand
 
             // Create EventDetails using transmute (same pattern as MealPlanGeneratedHandler)
             const _: () = {
-                let _size_check = std::mem::size_of::<(evento::Event, MultiWeekMealPlanGenerated, bool)>()
-                    == std::mem::size_of::<evento::EventDetails<MultiWeekMealPlanGenerated>>();
-                let _align_check = std::mem::align_of::<(evento::Event, MultiWeekMealPlanGenerated, bool)>()
-                    == std::mem::align_of::<evento::EventDetails<MultiWeekMealPlanGenerated>>();
+                let _size_check =
+                    std::mem::size_of::<(evento::Event, MultiWeekMealPlanGenerated, bool)>()
+                        == std::mem::size_of::<evento::EventDetails<MultiWeekMealPlanGenerated>>();
+                let _align_check =
+                    std::mem::align_of::<(evento::Event, MultiWeekMealPlanGenerated, bool)>()
+                        == std::mem::align_of::<evento::EventDetails<MultiWeekMealPlanGenerated>>();
             };
 
             let event = unsafe {

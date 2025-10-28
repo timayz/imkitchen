@@ -211,41 +211,19 @@ pub async fn get_meal_plan_check_ready(
     State(state): State<AppState>,
     axum::extract::Path(aggregate_id): axum::extract::Path<String>,
 ) -> axum::response::Response {
-    tracing::debug!("Checking meal plan readiness for aggregate_id: {}", aggregate_id);
+    tracing::debug!(
+        "Checking meal plan readiness for aggregate_id: {}",
+        aggregate_id
+    );
 
     // Load the evento aggregate to get the latest event timestamp
-    let load_result = evento::load::<meal_planning::aggregate::MealPlanAggregate, _>(
+    let event_timestamp = match evento::load::<meal_planning::aggregate::MealPlanAggregate, _>(
         &state.evento_executor,
         &aggregate_id,
     )
-    .await;
-
-    let (event_timestamp, generation_batch_id) = match load_result {
-        Ok(loaded) => {
-            // Get the timestamp from the latest event
-            let event_ts = loaded.event.timestamp;
-
-            // Try to extract generation_batch_id from the aggregate state
-            // The aggregate should have it after MultiWeekMealPlanGenerated event
-            let batch_id_result: Result<String, _> = sqlx::query_scalar(
-                "SELECT generation_batch_id FROM meal_plan_rotation_state WHERE user_id = ?1 ORDER BY updated_at DESC LIMIT 1"
-            )
-            .bind(&auth.user_id)
-            .fetch_one(&state.db_pool)
-            .await;
-
-            match batch_id_result {
-                Ok(bid) => (event_ts, bid),
-                Err(e) => {
-                    tracing::debug!("Batch ID not yet in rotation_state table: {}", e);
-                    let polling_html = format!(
-                        r##"<div ts-req="/plan/check-ready/{}" ts-trigger="load delay:500ms"></div>"##,
-                        aggregate_id
-                    );
-                    return (axum::http::StatusCode::OK, Html(polling_html)).into_response();
-                }
-            }
-        }
+    .await
+    {
+        Ok(loaded) => loaded.event.timestamp,
         Err(e) => {
             tracing::debug!("Aggregate not yet available: {}", e);
             let polling_html = format!(
@@ -256,66 +234,36 @@ pub async fn get_meal_plan_check_ready(
         }
     };
 
-    // Check if ALL weeks in the batch have been projected with timestamps >= event timestamp
-    // Each week needs 7 assignments (one per day) AND created_at >= event timestamp
-    let batch_check: Result<(i64, i64, Option<String>), sqlx::Error> = sqlx::query_as(
-        r#"
-        SELECT
-            COUNT(DISTINCT mp.id) as total_weeks,
-            COUNT(ma.id) as total_assignments,
-            MIN(mp.created_at) as earliest_created_at
-        FROM meal_plans mp
-        LEFT JOIN meal_assignments ma ON mp.id = ma.meal_plan_id
-        WHERE mp.generation_batch_id = ?1
-        AND mp.user_id = ?2
-        "#,
+    // Check if any meal_plan exists with created_at >= event timestamp
+    let projection_created_at: Result<Option<String>, sqlx::Error> = sqlx::query_scalar(
+        "SELECT created_at FROM meal_plans WHERE user_id = ?1 AND created_at >= ?2 LIMIT 1",
     )
-    .bind(&generation_batch_id)
     .bind(&auth.user_id)
-    .fetch_one(&state.db_pool)
+    .bind(
+        chrono::DateTime::from_timestamp(event_timestamp, 0)
+            .unwrap()
+            .to_rfc3339(),
+    )
+    .fetch_optional(&state.db_pool)
     .await;
 
-    let is_ready = match &batch_check {
-        Ok((total_weeks, total_assignments, earliest_created_at)) => {
-            // Parse the earliest created_at timestamp
-            let projection_ready = if let Some(created_at_str) = earliest_created_at {
-                // Parse RFC3339 timestamp and compare with event timestamp
-                if let Ok(created_at) = chrono::DateTime::parse_from_rfc3339(created_at_str) {
-                    let created_ts = created_at.timestamp();
-                    tracing::debug!(
-                        "Timestamp check: event_ts={}, created_ts={}, projection_newer={}",
-                        event_timestamp,
-                        created_ts,
-                        created_ts >= event_timestamp
-                    );
-                    created_ts >= event_timestamp
-                } else {
-                    false
-                }
-            } else {
-                false
-            };
-
-            tracing::debug!(
-                "Batch check: total_weeks={}, total_assignments={}, expected={}, projection_ready={}",
-                total_weeks,
-                total_assignments,
-                total_weeks * 7,
-                projection_ready
-            );
-
-            // Each week needs 7 assignments AND projection timestamp must be >= event timestamp
-            *total_weeks > 0 && *total_assignments == *total_weeks * 7 && projection_ready
+    let is_ready = match projection_created_at {
+        Ok(Some(_)) => {
+            tracing::debug!("Meal plan projection found with created_at >= event timestamp");
+            true
+        }
+        Ok(None) => {
+            tracing::debug!("No meal plan projection yet with created_at >= event timestamp");
+            false
         }
         Err(e) => {
-            tracing::debug!("Batch check query failed (projection likely not complete yet): {}", e);
+            tracing::debug!("Query failed: {}", e);
             false
         }
     };
 
     if is_ready {
-        // All weeks are ready - return ts-location header to redirect to /plan
-        tracing::info!("Meal plan batch ready, redirecting to /plan");
+        tracing::info!("Meal plan ready, redirecting to /plan");
         (
             axum::http::StatusCode::OK,
             [("ts-location", "/plan")],
@@ -323,7 +271,6 @@ pub async fn get_meal_plan_check_ready(
         )
             .into_response()
     } else {
-        // Not all weeks ready yet - return self polling element to continue polling
         let polling_html = format!(
             r##"<div ts-req="/plan/check-ready/{}" ts-trigger="load delay:500ms"></div>"##,
             aggregate_id
@@ -367,7 +314,10 @@ pub async fn get_meal_plan(
             is_current_week: false,
         };
         return template.render().map(Html).map_err(|e| {
-            tracing::error!("Failed to render empty multi-week calendar template: {:?}", e);
+            tracing::error!(
+                "Failed to render empty multi-week calendar template: {:?}",
+                e
+            );
             AppError::InternalError("Failed to render page".to_string())
         });
     }
@@ -399,16 +349,14 @@ pub async fn get_meal_plan(
     );
 
     // Find the current week index (week containing today's date)
-    let current_week_idx = all_meal_plans
-        .iter()
-        .position(|plan| {
-            if let Ok(start_date) = NaiveDate::parse_from_str(&plan.start_date, "%Y-%m-%d") {
-                let end_date = start_date + chrono::Duration::days(6);
-                today >= start_date && today <= end_date
-            } else {
-                false
-            }
-        });
+    let current_week_idx = all_meal_plans.iter().position(|plan| {
+        if let Ok(start_date) = NaiveDate::parse_from_str(&plan.start_date, "%Y-%m-%d") {
+            let end_date = start_date + chrono::Duration::days(6);
+            today >= start_date && today <= end_date
+        } else {
+            false
+        }
+    });
 
     // Get week index from query parameter, or default to current week or first week
     let week_index: usize = params
@@ -424,14 +372,16 @@ pub async fn get_meal_plan(
     let _all_assignments: Vec<_> = {
         let mut assignments = Vec::new();
         for plan in &all_meal_plans {
-            let plan_assignments = MealPlanQueries::get_meal_assignments(&plan.id, &state.db_pool).await?;
+            let plan_assignments =
+                MealPlanQueries::get_meal_assignments(&plan.id, &state.db_pool).await?;
             assignments.extend(plan_assignments);
         }
         assignments
     };
 
     // Filter assignments to only the selected week
-    let assignments: Vec<_> = MealPlanQueries::get_meal_assignments(&selected_plan.id, &state.db_pool).await?;
+    let assignments: Vec<_> =
+        MealPlanQueries::get_meal_assignments(&selected_plan.id, &state.db_pool).await?;
 
     let meal_plan_with_assignments = if !assignments.is_empty() {
         Some(assignments)
@@ -476,13 +426,16 @@ pub async fn get_meal_plan(
             );
 
             let start_date = selected_plan.start_date.clone();
-            let end_date = if let Ok(start) = chrono::NaiveDate::parse_from_str(&start_date, "%Y-%m-%d") {
-                (start + chrono::Duration::days(6)).format("%Y-%m-%d").to_string()
-            } else {
-                String::new()
-            };
+            let end_date =
+                if let Ok(start) = chrono::NaiveDate::parse_from_str(&start_date, "%Y-%m-%d") {
+                    (start + chrono::Duration::days(6))
+                        .format("%Y-%m-%d")
+                        .to_string()
+                } else {
+                    String::new()
+                };
 
-            let is_current_week = current_week_idx.map_or(false, |idx| week_index == idx);
+            let is_current_week = current_week_idx == Some(week_index);
 
             let template = MealCalendarTemplate {
                 user: Some(()),
@@ -506,13 +459,16 @@ pub async fn get_meal_plan(
         None => {
             // No assignments for this meal plan, show empty template
             let start_date = selected_plan.start_date.clone();
-            let end_date = if let Ok(start) = chrono::NaiveDate::parse_from_str(&start_date, "%Y-%m-%d") {
-                (start + chrono::Duration::days(6)).format("%Y-%m-%d").to_string()
-            } else {
-                String::new()
-            };
+            let end_date =
+                if let Ok(start) = chrono::NaiveDate::parse_from_str(&start_date, "%Y-%m-%d") {
+                    (start + chrono::Duration::days(6))
+                        .format("%Y-%m-%d")
+                        .to_string()
+                } else {
+                    String::new()
+                };
 
-            let is_current_week = current_week_idx.map_or(false, |idx| week_index == idx);
+            let is_current_week = current_week_idx == Some(week_index);
 
             let template = MealCalendarTemplate {
                 user: Some(()),
