@@ -213,47 +213,13 @@ pub async fn get_meal_plan_check_ready(
 ) -> axum::response::Response {
     tracing::debug!("Checking meal plan readiness for id: {}", meal_plan_id);
 
-    // Check if meal plan exists in read model (to distinguish initial generation vs regeneration)
-    let meal_plan_exists: Result<bool, sqlx::Error> = sqlx::query_scalar(
-        "SELECT EXISTS(SELECT 1 FROM meal_plans WHERE id = ?1 AND user_id = ?2)"
-    )
-    .bind(&meal_plan_id)
-    .bind(&auth.user_id)
-    .fetch_one(&state.db_pool)
-    .await;
-
-    let is_regeneration = meal_plan_exists.unwrap_or(false);
-    tracing::debug!(
-        "Meal plan {} exists in read model: {}, is_regeneration: {}",
-        meal_plan_id,
-        is_regeneration,
-        is_regeneration
-    );
-
-    // For initial generation only: check if evento aggregate has been created
-    if !is_regeneration {
-        let aggregate_ready = evento::load::<meal_planning::aggregate::MealPlanAggregate, _>(
-            &state.evento_executor,
-            &meal_plan_id,
-        )
-        .await
-        .is_ok();
-
-        tracing::debug!("Aggregate ready check: {}", aggregate_ready);
-
-        if !aggregate_ready {
-            // Aggregate not yet created, continue polling
-            tracing::debug!("Aggregate not ready, continuing polling");
-            let polling_html = format!(
-                r##"<div ts-req="/plan/check-ready/{}" ts-trigger="load delay:500ms"></div>"##,
-                meal_plan_id
-            );
-            return (axum::http::StatusCode::OK, Html(polling_html)).into_response();
-        }
-    }
-
     // Check if ALL weeks in the batch have complete assignments in read model
     // Each week needs 7 assignments (one per day)
+    //
+    // Note: This works for both initial generation and regeneration because:
+    // - Initial generation: creates new meal_plan records with new IDs
+    // - Regeneration: archives old meal_plans and creates new ones with new IDs
+    // In both cases, we wait for the new meal_plan records and their assignments to appear
     let batch_check: Result<(i64, i64), sqlx::Error> = sqlx::query_as(
         r#"
         SELECT
@@ -284,7 +250,7 @@ pub async fn get_meal_plan_check_ready(
             *total_weeks > 0 && *total_assignments == *total_weeks * 7
         }
         Err(e) => {
-            tracing::warn!("Batch check query failed: {}", e);
+            tracing::debug!("Batch check query failed (projection likely not complete yet): {}", e);
             false
         }
     };
