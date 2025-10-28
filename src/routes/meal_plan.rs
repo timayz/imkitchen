@@ -211,7 +211,24 @@ pub async fn get_meal_plan_check_ready(
     State(state): State<AppState>,
     axum::extract::Path(meal_plan_id): axum::extract::Path<String>,
 ) -> axum::response::Response {
-    // For multi-week meal plans, check if ALL weeks in the batch have complete assignments
+    // First check if the evento aggregate has been projected (ensures event processing is complete)
+    let aggregate_ready = evento::load::<meal_planning::aggregate::MealPlanAggregate, _>(
+        &state.evento_executor,
+        &meal_plan_id,
+    )
+    .await
+    .is_ok();
+
+    if !aggregate_ready {
+        // Aggregate not yet projected, continue polling
+        let polling_html = format!(
+            r##"<div ts-req="/plan/check-ready/{}" ts-trigger="load delay:500ms"></div>"##,
+            meal_plan_id
+        );
+        return (axum::http::StatusCode::OK, Html(polling_html)).into_response();
+    }
+
+    // Then check if ALL weeks in the batch have complete assignments in read model
     // Each week needs 7 assignments (one per day)
     let batch_check: Result<(i64, i64), sqlx::Error> = sqlx::query_as(
         r#"
