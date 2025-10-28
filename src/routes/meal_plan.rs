@@ -270,11 +270,11 @@ pub async fn get_meal_plan(
     // Get week index from query parameter (default to 0 for first week)
     let week_index: usize = params.get("week").and_then(|w| w.parse().ok()).unwrap_or(0);
 
-    // Query ALL active meal plans for user (multi-week support)
-    let all_meal_plans =
-        MealPlanQueries::get_all_active_meal_plans(&auth.user_id, &state.db_pool).await?;
+    // Query active meal plan for user (multi-week support)
+    let meal_plan_opt =
+        MealPlanQueries::get_active_meal_plan(&auth.user_id, &state.db_pool).await?;
 
-    if all_meal_plans.is_empty() {
+    if meal_plan_opt.is_none() {
         // No meal plan exists, show empty calendar or prompt
         let template = MealCalendarTemplate {
             user: Some(()),
@@ -295,23 +295,56 @@ pub async fn get_meal_plan(
         });
     }
 
-    // Get the requested week (or first week if index out of bounds)
-    let week_index = week_index.min(all_meal_plans.len() - 1);
-    let selected_meal_plan = &all_meal_plans[week_index];
+    // Get the meal plan (we already checked it exists above)
+    let meal_plan = meal_plan_opt.unwrap();
 
-    // Query assignments for the selected week
-    let assignments =
-        MealPlanQueries::get_meal_assignments(&selected_meal_plan.id, &state.db_pool).await?;
+    // Query all assignments for the meal plan
+    let assignments = MealPlanQueries::get_meal_assignments(&meal_plan.id, &state.db_pool).await?;
 
     let meal_plan_with_assignments = if !assignments.is_empty() {
-        Some((selected_meal_plan.clone(), assignments))
+        Some((meal_plan.clone(), assignments))
     } else {
         None
     };
 
     match meal_plan_with_assignments {
-        Some((selected_plan, assignments)) => {
-            // Fetch recipe details for all assignments
+        Some((selected_plan, all_assignments)) => {
+            // Calculate total weeks from assignments
+            use chrono::NaiveDate;
+            let dates: Vec<NaiveDate> = all_assignments
+                .iter()
+                .filter_map(|a| NaiveDate::parse_from_str(&a.date, "%Y-%m-%d").ok())
+                .collect();
+
+            let total_weeks = if dates.is_empty() {
+                1
+            } else {
+                let min_date = dates.iter().min().unwrap();
+                let max_date = dates.iter().max().unwrap();
+                let days_span = (*max_date - *min_date).num_days() + 1;
+                ((days_span + 6) / 7) as usize // Round up to nearest week
+            };
+
+            // Calculate the start date for the selected week
+            let first_monday = NaiveDate::parse_from_str(&selected_plan.start_date, "%Y-%m-%d")
+                .map_err(|_| AppError::InternalError("Invalid start date".to_string()))?;
+
+            let week_start = first_monday + chrono::Duration::weeks(week_index as i64);
+            let week_end = week_start + chrono::Duration::days(6);
+
+            // Filter assignments to only the selected week
+            let assignments: Vec<_> = all_assignments
+                .into_iter()
+                .filter(|a| {
+                    if let Ok(date) = NaiveDate::parse_from_str(&a.date, "%Y-%m-%d") {
+                        date >= week_start && date <= week_end
+                    } else {
+                        false
+                    }
+                })
+                .collect();
+
+            // Fetch recipe details for assignments in this week
             let recipe_ids: Vec<String> = assignments.iter().map(|a| a.recipe_id.clone()).collect();
 
             let recipes = fetch_recipes_by_ids(&recipe_ids, &state.db_pool).await?;
@@ -340,19 +373,13 @@ pub async fn get_meal_plan(
                 &selected_plan.id,
             );
 
-            // Story 3.13: Calculate end_date (Sunday) from start_date (Monday)
-            let end_date = chrono::NaiveDate::parse_from_str(&selected_plan.start_date, "%Y-%m-%d")
-                .map(|start| {
-                    (start + chrono::Duration::days(6))
-                        .format("%Y-%m-%d")
-                        .to_string()
-                })
-                .unwrap_or_else(|_| selected_plan.start_date.clone());
+            let start_date = week_start.format("%Y-%m-%d").to_string();
+            let end_date = week_end.format("%Y-%m-%d").to_string();
 
             let template = MealCalendarTemplate {
                 user: Some(()),
                 days,
-                start_date: selected_plan.start_date.clone(),
+                start_date,
                 end_date,
                 has_meal_plan: true,
                 rotation_used,
@@ -360,7 +387,7 @@ pub async fn get_meal_plan(
                 current_path: "/plan".to_string(),
                 error_message: None,
                 current_week_index: week_index,
-                total_weeks: all_meal_plans.len(),
+                total_weeks,
             };
             template.render().map(Html).map_err(|e| {
                 tracing::error!("Failed to render meal calendar template: {:?}", e);
@@ -368,28 +395,26 @@ pub async fn get_meal_plan(
             })
         }
         None => {
-            // No assignments for this week, show empty template
+            // No assignments for this meal plan, show empty template
+            use chrono::NaiveDate;
+            let first_monday = NaiveDate::parse_from_str(&meal_plan.start_date, "%Y-%m-%d")
+                .map_err(|_| AppError::InternalError("Invalid start date".to_string()))?;
+
+            let week_start = first_monday + chrono::Duration::weeks(week_index as i64);
+            let week_end = week_start + chrono::Duration::days(6);
+
             let template = MealCalendarTemplate {
                 user: Some(()),
                 days: Vec::new(),
-                start_date: selected_meal_plan.start_date.clone(),
-                end_date: chrono::NaiveDate::parse_from_str(
-                    &selected_meal_plan.start_date,
-                    "%Y-%m-%d",
-                )
-                .map(|start| {
-                    (start + chrono::Duration::days(6))
-                        .format("%Y-%m-%d")
-                        .to_string()
-                })
-                .unwrap_or_else(|_| selected_meal_plan.start_date.clone()),
+                start_date: week_start.format("%Y-%m-%d").to_string(),
+                end_date: week_end.format("%Y-%m-%d").to_string(),
                 has_meal_plan: true,
                 rotation_used: 0,
                 rotation_total: 0,
                 current_path: "/plan".to_string(),
                 error_message: None,
                 current_week_index: week_index,
-                total_weeks: all_meal_plans.len(),
+                total_weeks: 1,
             };
             template.render().map(Html).map_err(|e| {
                 tracing::error!("Failed to render meal calendar template: {:?}", e);
