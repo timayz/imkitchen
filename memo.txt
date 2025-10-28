@@ -7,7 +7,7 @@ create PR:
     - include tasks (task_title) checklist without subtasks (remove # from AC num) 
     - closed issue id (use story title to search)
 
-git new branch,conventional commits,push,create PR witch closed github issue 141 on merged
+git new branch,git add all,conventional commits,push,create PR witch closed github issue 141 on merged
 
 # init milestones / issues from epic
 can you create all epics as milestone with associeted stories as issue ? epic title format

@@ -5,7 +5,10 @@ use crate::push::{create_push_payload, send_push_notification, WebPushConfig};
 use crate::read_model::{get_pending_notifications_due, get_push_subscription_by_user};
 use chrono::{Datelike, Duration, NaiveDate, NaiveTime, Utc};
 use evento::AggregatorName;
-use meal_planning::{events::MealPlanGenerated, MealPlanAggregate};
+use meal_planning::{
+    events::{MealPlanGenerated, MultiWeekMealPlanGenerated},
+    MealPlanAggregate,
+};
 use std::sync::Arc;
 use tokio::time::{interval, Duration as TokioDuration};
 
@@ -751,6 +754,97 @@ pub async fn schedule_reminders_on_meal_plan_generated<E: evento::Executor>(
     Ok(())
 }
 
+/// Evento subscription handler for MultiWeekMealPlanGenerated events
+///
+/// This handler processes all weeks in a multi-week meal plan and schedules reminders
+/// for recipes with advance prep requirements in each week.
+///
+/// Note: This handler is registered manually in meal_plan_subscriptions() function below
+/// because the evento::handler macro doesn't support cross-crate aggregate types.
+pub async fn schedule_reminders_on_multi_week_generated<E: evento::Executor>(
+    context: &evento::Context<'_, E>,
+    event: evento::EventDetails<MultiWeekMealPlanGenerated>,
+) -> anyhow::Result<()> {
+    use sqlx::Row;
+
+    let pool: sqlx::SqlitePool = context.extract();
+
+    tracing::info!(
+        "Processing MultiWeekMealPlanGenerated event for user_id={}, {} weeks",
+        event.data.user_id,
+        event.data.weeks.len()
+    );
+
+    // Process each week in the multi-week plan
+    for week in &event.data.weeks {
+        tracing::debug!(
+            "Processing week starting {} with {} meal assignments",
+            week.start_date,
+            week.meal_assignments.len()
+        );
+
+        // Scan each meal assignment for advance prep requirements
+        for meal in &week.meal_assignments {
+            // Only process meals that have prep_required flag set
+            if !meal.prep_required {
+                continue;
+            }
+
+            // Query recipe to get advance_prep_hours
+            let recipe_row =
+                sqlx::query("SELECT id, title, advance_prep_hours FROM recipes WHERE id = ?")
+                    .bind(&meal.recipe_id)
+                    .fetch_optional(&pool)
+                    .await?;
+
+            let Some(recipe) = recipe_row else {
+                tracing::warn!(
+                    "Recipe not found for meal assignment: recipe_id={}",
+                    meal.recipe_id
+                );
+                continue;
+            };
+
+            let recipe_id: String = recipe.get("id");
+            let recipe_title: String = recipe.get("title");
+            let advance_prep_hours: i32 = recipe.get("advance_prep_hours");
+
+            // Skip if no advance prep required
+            if advance_prep_hours <= 0 {
+                continue;
+            }
+
+            // Calculate reminder scheduled time
+            let scheduled_time = calculate_reminder_time(&meal.date, None, advance_prep_hours)?;
+            let reminder_type = determine_reminder_type(advance_prep_hours);
+
+            // Create ScheduleReminderCommand
+            let cmd = ScheduleReminderCommand {
+                user_id: event.data.user_id.clone(),
+                recipe_id: recipe_id.clone(),
+                meal_date: meal.date.clone(),
+                scheduled_time,
+                reminder_type: reminder_type.to_string(),
+                prep_hours: advance_prep_hours,
+                prep_task: None,
+            };
+
+            // Schedule the reminder (emits ReminderScheduled event)
+            let notification_id = schedule_reminder(cmd, context.executor).await?;
+
+            tracing::info!(
+                "Scheduled reminder notification_id={} for recipe={} ({} hours prep) on {}",
+                notification_id,
+                recipe_title,
+                advance_prep_hours,
+                meal.date
+            );
+        }
+    }
+
+    Ok(())
+}
+
 /// Background notification worker
 ///
 /// This worker runs as a tokio task and polls for due notifications every minute.
@@ -1013,6 +1107,61 @@ impl evento::SubscribeHandler<evento::Sqlite> for MealPlanGeneratedHandler {
     }
 }
 
+/// Manual handler wrapper for schedule_reminders_on_multi_week_generated
+///
+/// This wraps the async function in a SubscribeHandler trait implementation.
+/// Needed because evento::handler macro doesn't support cross-crate aggregates.
+struct MultiWeekMealPlanGeneratedHandler;
+
+impl evento::SubscribeHandler<evento::Sqlite> for MultiWeekMealPlanGeneratedHandler {
+    fn handle<'async_trait>(
+        &'async_trait self,
+        context: &'async_trait evento::Context<'_, evento::Sqlite>,
+    ) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = anyhow::Result<()>> + Send + 'async_trait>,
+    >
+    where
+        Self: Sync + 'async_trait,
+    {
+        Box::pin(async move {
+            // Decode the event from context
+            let event_data: MultiWeekMealPlanGenerated =
+                bincode::decode_from_slice(&context.event.data, bincode::config::standard())
+                    .map_err(|e| {
+                        anyhow::anyhow!("Failed to decode MultiWeekMealPlanGenerated event: {}", e)
+                    })?
+                    .0;
+
+            // Create EventDetails using transmute (same pattern as MealPlanGeneratedHandler)
+            const _: () = {
+                let _size_check =
+                    std::mem::size_of::<(evento::Event, MultiWeekMealPlanGenerated, bool)>()
+                        == std::mem::size_of::<evento::EventDetails<MultiWeekMealPlanGenerated>>();
+                let _align_check =
+                    std::mem::align_of::<(evento::Event, MultiWeekMealPlanGenerated, bool)>()
+                        == std::mem::align_of::<evento::EventDetails<MultiWeekMealPlanGenerated>>();
+            };
+
+            let event = unsafe {
+                std::mem::transmute::<
+                    (evento::Event, MultiWeekMealPlanGenerated, bool),
+                    evento::EventDetails<MultiWeekMealPlanGenerated>,
+                >((context.event.clone(), event_data, false))
+            };
+
+            schedule_reminders_on_multi_week_generated(context, event).await
+        })
+    }
+
+    fn aggregator_type(&self) -> &'static str {
+        MealPlanAggregate::name()
+    }
+
+    fn event_name(&self) -> &'static str {
+        MultiWeekMealPlanGenerated::name()
+    }
+}
+
 /// Create subscription builder for meal plan event listeners
 ///
 /// This sets up the subscription that automatically schedules reminders when a meal plan is generated.
@@ -1025,6 +1174,7 @@ pub fn meal_plan_subscriptions(pool: sqlx::SqlitePool) -> evento::SubscribeBuild
     evento::subscribe("notification-meal-plan-listeners")
         .data(pool)
         .handler(MealPlanGeneratedHandler)
+        .handler(MultiWeekMealPlanGeneratedHandler)
         .skip::<MealPlanAggregate, MealPlanRegenerated>()
         .skip::<MealPlanAggregate, MealPlanArchived>()
         .skip::<MealPlanAggregate, RecipeUsedInRotation>()

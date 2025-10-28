@@ -138,7 +138,6 @@ button.ts-active::after {
                     Shopping List
                 </a>
                 <!-- AC-9.5.2: Regenerate All Future Weeks button -->
-                {% set future_weeks_count = weeks | selectattr("is_locked", "equalto", false) | list | length %}
                 {% if future_weeks_count > 0 %}
                 <button
                     type="button"
@@ -180,16 +179,11 @@ button.ts-active::after {
             <div class="week-tabs" role="tablist" aria-label="Week navigation">
                 {% for week in weeks %}
                 <div class="flex flex-col gap-2">
-                    <button
-                        type="button"
+                    <a
+                        href="/plan?week={{ loop.index0 }}"
                         role="tab"
                         aria-selected="{% if week.id == current_week_id %}true{% else %}false{% endif %}"
                         aria-controls="calendar-content"
-                        tabindex="{% if week.id == current_week_id %}0{% else %}-1{% endif %}"
-                        ts-req="/plan/week/{{ week.id }}"
-                        ts-target="#calendar-content"
-                        ts-swap="innerHTML"
-                        ts-req-method="GET"
                         class="week-tab {% if week.id == current_week_id %}active{% endif %}">
                         <div class="text-sm font-semibold text-gray-900">
                             Week {{ loop.index }}
@@ -200,9 +194,9 @@ button.ts-active::after {
                         <div class="text-xs text-gray-600 mt-1">
                             {{ week.start_date }} - {{ week.end_date }}
                         </div>
-                    </button>
+                    </a>
                     <!-- AC-9.5.1: Regenerate This Week button (only for future weeks) -->
-                    {% if not week.is_locked %}
+                    {% if !week.is_locked %}
                     <button
                         type="button"
                         onclick="openRegenerateWeekModal('{{ week.id }}', {{ loop.index }}, '{{ week.start_date }}', '{{ week.end_date }}')"
@@ -223,44 +217,42 @@ button.ts-active::after {
         <!-- Week Carousel Navigation (Mobile only: visible, Desktop: hidden) -->
         <div class="block md:hidden mb-6">
             <div class="carousel-container">
-                {% if weeks|length > 1 %}
+                {% if weeks.len() > 1 %}
                 <!-- Previous Week Button -->
-                <button
-                    type="button"
+                {% if current_week_index > 0 %}
+                <a
+                    href="/plan?week={{ current_week_index - 1 }}"
                     aria-label="Previous week"
-                    class="carousel-nav left"
-                    {% if current_week_index > 0 %}
-                    ts-req="/plan/week/{{ weeks[current_week_index - 1].id }}"
-                    ts-target="#calendar-content"
-                    ts-swap="innerHTML"
-                    ts-req-method="GET"
-                    {% else %}
-                    disabled
-                    style="opacity: 0.3; cursor: not-allowed;"
-                    {% endif %}>
+                    class="carousel-nav left">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                     </svg>
-                </button>
+                </a>
+                {% else %}
+                <span class="carousel-nav left" style="opacity: 0.3; cursor: not-allowed;">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </span>
+                {% endif %}
 
                 <!-- Next Week Button -->
-                <button
-                    type="button"
+                {% if current_week_index < weeks.len() - 1 %}
+                <a
+                    href="/plan?week={{ current_week_index + 1 }}"
                     aria-label="Next week"
-                    class="carousel-nav right"
-                    {% if current_week_index < weeks|length - 1 %}
-                    ts-req="/plan/week/{{ weeks[current_week_index + 1].id }}"
-                    ts-target="#calendar-content"
-                    ts-swap="innerHTML"
-                    ts-req-method="GET"
-                    {% else %}
-                    disabled
-                    style="opacity: 0.3; cursor: not-allowed;"
-                    {% endif %}>
+                    class="carousel-nav right">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                     </svg>
-                </button>
+                </a>
+                {% else %}
+                <span class="carousel-nav right" style="opacity: 0.3; cursor: not-allowed;">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </span>
+                {% endif %}
                 {% endif %}
 
                 <!-- Current Week Display -->

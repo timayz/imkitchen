@@ -41,12 +41,63 @@ button.ts-active::after {
     <div class="max-w-7xl mx-auto">
         <!-- Header -->
         <div class="flex items-center justify-between mb-8">
-            <div>
-                <h1 class="text-3xl font-bold text-gray-900">Next Week's Meals</h1>
+            <div class="flex-1">
+                <h1 class="text-3xl font-bold text-gray-900">
+                    {% if has_meal_plan %}
+                        {% if is_current_week %}
+                            This Week's Meals
+                        {% else %}
+                            Week of {{ start_date }}
+                        {% endif %}
+                    {% else %}
+                        Meal Plan
+                    {% endif %}
+                </h1>
                 {% if has_meal_plan %}
-                <p class="text-gray-600 mt-2">Week of {{ start_date }} - {{ end_date }}</p>
+                <p class="text-gray-600 mt-2">{{ start_date }} - {{ end_date }}</p>
                 {% endif %}
             </div>
+
+            <!-- Week Navigation (Multi-week support) -->
+            {% if has_meal_plan && total_weeks > 1 %}
+            <div class="flex items-center gap-3 mr-4">
+                {% if current_week_index > 0 %}
+                <a
+                    href="/plan?week={{ current_week_index - 1 }}"
+                    aria-label="Previous week"
+                    class="w-11 h-11 flex items-center justify-center bg-white border-2 border-gray-300 rounded-full hover:border-primary-500 hover:bg-primary-50 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </a>
+                {% else %}
+                <span class="w-11 h-11 flex items-center justify-center bg-gray-100 border-2 border-gray-200 rounded-full opacity-40 cursor-not-allowed">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </span>
+                {% endif %}
+                <span class="text-sm font-semibold text-gray-700 min-w-24 text-center">
+                    Week {{ current_week_index + 1 }} of {{ total_weeks }}
+                </span>
+                {% if current_week_index < total_weeks - 1 %}
+                <a
+                    href="/plan?week={{ current_week_index + 1 }}"
+                    aria-label="Next week"
+                    class="w-11 h-11 flex items-center justify-center bg-white border-2 border-gray-300 rounded-full hover:border-primary-500 hover:bg-primary-50 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </a>
+                {% else %}
+                <span class="w-11 h-11 flex items-center justify-center bg-gray-100 border-2 border-gray-200 rounded-full opacity-40 cursor-not-allowed">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </span>
+                {% endif %}
+            </div>
+            {% endif %}
 
             <div class="flex gap-3">
                 {% if has_meal_plan %}
@@ -310,19 +361,25 @@ button.ts-active::after {
                 <!-- Issue #130: Display inline error message -->
                 {% match error_message %}
                 {% when Some with (msg) %}
-                <div class="mb-6 bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-lg">
+                <div class="mb-6 bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
                     <div class="flex items-start">
-                        <svg class="h-6 w-6 text-amber-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="h-6 w-6 text-blue-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
-                        <p class="text-amber-800 font-medium text-left">{{ msg }}</p>
+                        <p class="text-blue-800 font-medium text-left">{{ msg }}</p>
                     </div>
                 </div>
+                {% if total_weeks > 0 %}
+                <div class="flex gap-4 justify-center">
+                    <a href="/plan?week=0" class="px-6 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-medium">
+                        View Your Meal Plans
+                    </a>
+                </div>
+                {% endif %}
                 {% when None %}
                 <p class="text-gray-600 mb-6">
                     Generate your first weekly meal plan based on your favorite recipes. You'll need at least 7 favorite recipes to get started.
                 </p>
-                {% endmatch %}
                 <div class="space-y-3 text-left bg-blue-50 p-4 rounded-lg mb-6">
                     <p class="font-semibold text-blue-900">To get started:</p>
                     <ol class="list-decimal list-inside space-y-2 text-blue-800">
@@ -339,6 +396,7 @@ button.ts-active::after {
                         Browse Community
                     </a>
                 </div>
+                {% endmatch %}
             </div>
         </div>
         {% endif %}

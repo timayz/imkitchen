@@ -162,18 +162,9 @@ pub struct MealCalendarTemplate {
     pub error_message: Option<String>, // Issue #130: Display inline error messages
     pub current_week_index: usize,     // Multi-week navigation: current week (0-indexed)
     pub total_weeks: usize,            // Multi-week navigation: total number of weeks
+    pub is_current_week: bool,         // Whether this is the current week
 }
 
-/* TODO: Epic 8 - Multi-Week Calendar Template Structs
- *
- * These structs are prepared for Epic 8 backend implementation.
- * Currently commented out due to Askama compilation issues that need resolution.
- *
- * To enable these templates:
- * 1. Resolve the `filters` module error in Askama compilation
- * 2. Ensure template variables match the struct fields
- * 3. Implement the backend routes `GET /plan` and `GET /plan/week/:week_id`
- *
 /// Multi-Week Calendar Template (Story 9.1, Epic 8)
 ///
 /// Renders the multi-week meal plan calendar with week tabs (desktop)
@@ -191,6 +182,7 @@ pub struct MultiWeekCalendarTemplate {
     pub days: Vec<DayData>, // 7-day grid for the current week
     pub error_message: Option<String>,
     pub current_path: String,
+    pub future_weeks_count: usize, // Count of unlocked (future) weeks for regeneration
 }
 
 /// Week Calendar Content Partial Template (Story 9.1, Epic 8)
@@ -202,7 +194,6 @@ pub struct MultiWeekCalendarTemplate {
 pub struct WeekCalendarContentTemplate {
     pub days: Vec<DayData>, // 7-day grid for the selected week
 }
-*/
 
 /// GET /plan/check-ready/:meal_plan_id - Check if meal plan read model is ready
 ///
@@ -216,30 +207,63 @@ pub struct WeekCalendarContentTemplate {
 /// Returns polling HTML until ready, then returns full meal calendar page HTML
 /// for TwinSpark to swap into <body>.
 pub async fn get_meal_plan_check_ready(
-    Extension(_auth): Extension<Auth>,
+    Extension(auth): Extension<Auth>,
     State(state): State<AppState>,
-    axum::extract::Path(meal_plan_id): axum::extract::Path<String>,
+    axum::extract::Path(aggregate_id): axum::extract::Path<String>,
 ) -> axum::response::Response {
-    // For multi-week meal plans, we don't have individual aggregates
-    // Just check if the read model has the meal plan with assignments
-    let meal_plan_check: Result<i64, sqlx::Error> = sqlx::query_scalar(
-        r#"
-        SELECT COUNT(*)
-        FROM meal_assignments
-        WHERE meal_plan_id = ?1
-        "#,
+    tracing::debug!(
+        "Checking meal plan readiness for aggregate_id: {}",
+        aggregate_id
+    );
+
+    // Load the evento aggregate to get the latest event timestamp
+    let event_timestamp = match evento::load::<meal_planning::aggregate::MealPlanAggregate, _>(
+        &state.evento_executor,
+        &aggregate_id,
     )
-    .bind(&meal_plan_id)
-    .fetch_one(&state.db_pool)
+    .await
+    {
+        Ok(loaded) => loaded.event.timestamp,
+        Err(e) => {
+            tracing::debug!("Aggregate not yet available: {}", e);
+            let polling_html = format!(
+                r##"<div ts-req="/plan/check-ready/{}" ts-trigger="load delay:500ms"></div>"##,
+                aggregate_id
+            );
+            return (axum::http::StatusCode::OK, Html(polling_html)).into_response();
+        }
+    };
+
+    // Check if any meal_plan exists with created_at >= event timestamp
+    let projection_created_at: Result<Option<String>, sqlx::Error> = sqlx::query_scalar(
+        "SELECT created_at FROM meal_plans WHERE user_id = ?1 AND created_at >= ?2 LIMIT 1",
+    )
+    .bind(&auth.user_id)
+    .bind(
+        chrono::DateTime::from_timestamp(event_timestamp, 0)
+            .unwrap()
+            .to_rfc3339(),
+    )
+    .fetch_optional(&state.db_pool)
     .await;
 
-    let is_ready = match meal_plan_check {
-        Ok(count) => count > 0, // Any assignments means the projection has completed
-        Err(_) => false,
+    let is_ready = match projection_created_at {
+        Ok(Some(_)) => {
+            tracing::debug!("Meal plan projection found with created_at >= event timestamp");
+            true
+        }
+        Ok(None) => {
+            tracing::debug!("No meal plan projection yet with created_at >= event timestamp");
+            false
+        }
+        Err(e) => {
+            tracing::debug!("Query failed: {}", e);
+            false
+        }
     };
 
     if is_ready {
-        // Meal plan is ready - return ts-location header to redirect to /plan
+        tracing::info!("Meal plan ready, redirecting to /plan");
         (
             axum::http::StatusCode::OK,
             [("ts-location", "/plan")],
@@ -247,10 +271,9 @@ pub async fn get_meal_plan_check_ready(
         )
             .into_response()
     } else {
-        // Meal plan not yet ready - return self polling element to continue polling
         let polling_html = format!(
             r##"<div ts-req="/plan/check-ready/{}" ts-trigger="load delay:500ms"></div>"##,
-            meal_plan_id
+            aggregate_id
         );
         (axum::http::StatusCode::OK, Html(polling_html)).into_response()
     }
@@ -267,14 +290,14 @@ pub async fn get_meal_plan(
     State(state): State<AppState>,
     axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> Result<Html<String>, AppError> {
-    // Get week index from query parameter (default to 0 for first week)
-    let week_index: usize = params.get("week").and_then(|w| w.parse().ok()).unwrap_or(0);
+    use chrono::{Local, NaiveDate};
+    let today = Local::now().date_naive();
 
-    // Query active meal plan for user (multi-week support)
-    let meal_plan_opt =
+    // Query active meal plan for user to get generation_batch_id
+    let first_meal_plan =
         MealPlanQueries::get_active_meal_plan(&auth.user_id, &state.db_pool).await?;
 
-    if meal_plan_opt.is_none() {
+    if first_meal_plan.is_none() {
         // No meal plan exists, show empty calendar or prompt
         let template = MealCalendarTemplate {
             user: Some(()),
@@ -288,61 +311,90 @@ pub async fn get_meal_plan(
             error_message: None,
             current_week_index: 0,
             total_weeks: 0,
+            is_current_week: false,
         };
         return template.render().map(Html).map_err(|e| {
-            tracing::error!("Failed to render empty meal calendar template: {:?}", e);
+            tracing::error!(
+                "Failed to render empty multi-week calendar template: {:?}",
+                e
+            );
             AppError::InternalError("Failed to render page".to_string())
         });
     }
 
-    // Get the meal plan (we already checked it exists above)
-    let meal_plan = meal_plan_opt.unwrap();
+    let first_plan = first_meal_plan.unwrap();
 
-    // Query all assignments for the meal plan
-    let assignments = MealPlanQueries::get_meal_assignments(&meal_plan.id, &state.db_pool).await?;
+    // Query ALL meal plans in the same generation batch (for multi-week support)
+    let all_meal_plans: Vec<_> = sqlx::query_as::<_, meal_planning::read_model::MealPlanReadModel>(
+        r#"
+        SELECT id, user_id, start_date, status, rotation_state, created_at, updated_at
+        FROM meal_plans
+        WHERE user_id = ?1 AND generation_batch_id = (
+            SELECT generation_batch_id FROM meal_plans WHERE id = ?2
+        )
+        ORDER BY start_date
+        "#,
+    )
+    .bind(&auth.user_id)
+    .bind(&first_plan.id)
+    .fetch_all(&state.db_pool)
+    .await?;
+
+    let _total_weeks = all_meal_plans.len();
+
+    tracing::info!(
+        "Loaded {} meal plans for batch_id from plan {}",
+        all_meal_plans.len(),
+        first_plan.id
+    );
+
+    // Find the current week index (week containing today's date)
+    let current_week_idx = all_meal_plans.iter().position(|plan| {
+        if let Ok(start_date) = NaiveDate::parse_from_str(&plan.start_date, "%Y-%m-%d") {
+            let end_date = start_date + chrono::Duration::days(6);
+            today >= start_date && today <= end_date
+        } else {
+            false
+        }
+    });
+
+    // Get week index from query parameter, or default to current week or first week
+    let week_index: usize = params
+        .get("week")
+        .and_then(|w| w.parse().ok())
+        .or(current_week_idx)
+        .unwrap_or(0); // Default to first week if current week not found
+
+    // Get the selected week's meal plan
+    let selected_plan = all_meal_plans.get(week_index).unwrap_or(&first_plan);
+
+    // Query all assignments for ALL weeks (to enable correct week calculation)
+    let _all_assignments: Vec<_> = {
+        let mut assignments = Vec::new();
+        for plan in &all_meal_plans {
+            let plan_assignments =
+                MealPlanQueries::get_meal_assignments(&plan.id, &state.db_pool).await?;
+            assignments.extend(plan_assignments);
+        }
+        assignments
+    };
+
+    // Filter assignments to only the selected week
+    let assignments: Vec<_> =
+        MealPlanQueries::get_meal_assignments(&selected_plan.id, &state.db_pool).await?;
 
     let meal_plan_with_assignments = if !assignments.is_empty() {
-        Some((meal_plan.clone(), assignments))
+        Some(assignments)
     } else {
         None
     };
 
     match meal_plan_with_assignments {
-        Some((selected_plan, all_assignments)) => {
-            // Calculate total weeks from assignments
+        Some(assignments) => {
+            // Calculate the start and end dates for the selected week
             use chrono::NaiveDate;
-            let dates: Vec<NaiveDate> = all_assignments
-                .iter()
-                .filter_map(|a| NaiveDate::parse_from_str(&a.date, "%Y-%m-%d").ok())
-                .collect();
-
-            let total_weeks = if dates.is_empty() {
-                1
-            } else {
-                let min_date = dates.iter().min().unwrap();
-                let max_date = dates.iter().max().unwrap();
-                let days_span = (*max_date - *min_date).num_days() + 1;
-                ((days_span + 6) / 7) as usize // Round up to nearest week
-            };
-
-            // Calculate the start date for the selected week
-            let first_monday = NaiveDate::parse_from_str(&selected_plan.start_date, "%Y-%m-%d")
+            let _week_start = NaiveDate::parse_from_str(&selected_plan.start_date, "%Y-%m-%d")
                 .map_err(|_| AppError::InternalError("Invalid start date".to_string()))?;
-
-            let week_start = first_monday + chrono::Duration::weeks(week_index as i64);
-            let week_end = week_start + chrono::Duration::days(6);
-
-            // Filter assignments to only the selected week
-            let assignments: Vec<_> = all_assignments
-                .into_iter()
-                .filter(|a| {
-                    if let Ok(date) = NaiveDate::parse_from_str(&a.date, "%Y-%m-%d") {
-                        date >= week_start && date <= week_end
-                    } else {
-                        false
-                    }
-                })
-                .collect();
 
             // Fetch recipe details for assignments in this week
             let recipe_ids: Vec<String> = assignments.iter().map(|a| a.recipe_id.clone()).collect();
@@ -361,8 +413,8 @@ pub async fn get_meal_plan(
                 Vec::new()
             };
 
-            // AC (Story 3.3): Query rotation progress for display
-            let (rotation_used, rotation_total) =
+            // AC (Story 3.3): Query rotation progress for display (not used in multi-week template)
+            let (_rotation_used, _rotation_total) =
                 MealPlanQueries::query_rotation_progress(&auth.user_id, &state.db_pool).await?;
 
             // Group assignments by date into DayData with today/past flags
@@ -373,8 +425,17 @@ pub async fn get_meal_plan(
                 &selected_plan.id,
             );
 
-            let start_date = week_start.format("%Y-%m-%d").to_string();
-            let end_date = week_end.format("%Y-%m-%d").to_string();
+            let start_date = selected_plan.start_date.clone();
+            let end_date =
+                if let Ok(start) = chrono::NaiveDate::parse_from_str(&start_date, "%Y-%m-%d") {
+                    (start + chrono::Duration::days(6))
+                        .format("%Y-%m-%d")
+                        .to_string()
+                } else {
+                    String::new()
+                };
+
+            let is_current_week = current_week_idx == Some(week_index);
 
             let template = MealCalendarTemplate {
                 user: Some(()),
@@ -382,12 +443,13 @@ pub async fn get_meal_plan(
                 start_date,
                 end_date,
                 has_meal_plan: true,
-                rotation_used,
-                rotation_total,
+                rotation_used: _rotation_used,
+                rotation_total: _rotation_total,
                 current_path: "/plan".to_string(),
                 error_message: None,
                 current_week_index: week_index,
-                total_weeks,
+                total_weeks: all_meal_plans.len(),
+                is_current_week,
             };
             template.render().map(Html).map_err(|e| {
                 tracing::error!("Failed to render meal calendar template: {:?}", e);
@@ -396,25 +458,31 @@ pub async fn get_meal_plan(
         }
         None => {
             // No assignments for this meal plan, show empty template
-            use chrono::NaiveDate;
-            let first_monday = NaiveDate::parse_from_str(&meal_plan.start_date, "%Y-%m-%d")
-                .map_err(|_| AppError::InternalError("Invalid start date".to_string()))?;
+            let start_date = selected_plan.start_date.clone();
+            let end_date =
+                if let Ok(start) = chrono::NaiveDate::parse_from_str(&start_date, "%Y-%m-%d") {
+                    (start + chrono::Duration::days(6))
+                        .format("%Y-%m-%d")
+                        .to_string()
+                } else {
+                    String::new()
+                };
 
-            let week_start = first_monday + chrono::Duration::weeks(week_index as i64);
-            let week_end = week_start + chrono::Duration::days(6);
+            let is_current_week = current_week_idx == Some(week_index);
 
             let template = MealCalendarTemplate {
                 user: Some(()),
                 days: Vec::new(),
-                start_date: week_start.format("%Y-%m-%d").to_string(),
-                end_date: week_end.format("%Y-%m-%d").to_string(),
+                start_date,
+                end_date,
                 has_meal_plan: true,
                 rotation_used: 0,
                 rotation_total: 0,
                 current_path: "/plan".to_string(),
                 error_message: None,
                 current_week_index: week_index,
-                total_weeks: 1,
+                total_weeks: all_meal_plans.len(),
+                is_current_week,
             };
             template.render().map(Html).map_err(|e| {
                 tracing::error!("Failed to render meal calendar template: {:?}", e);
@@ -490,6 +558,7 @@ pub async fn post_generate_meal_plan(
             error_message: Some(error_msg),
             current_week_index: 0,
             total_weeks: 0,
+            is_current_week: false,
         };
 
         return template.render().map(Html).map_err(|e| {
@@ -583,7 +652,7 @@ pub async fn post_generate_meal_plan(
         Ok(plan) => plan,
         Err(meal_planning::MealPlanningError::InsufficientRecipes { minimum, current }) => {
             let error_msg = format!(
-                "Cannot generate meal plan: Not enough recipes for multi-week generation. Need at least {} recipes per course type, but found only {}. Please add more recipes with different course types (appetizer, main_course, dessert).",
+                "Cannot generate meal plan: Need at least {} main course recipe(s), but found only {} total recipes. Please add at least one recipe with recipe_type='main_course'.",
                 minimum,
                 current
             );
@@ -600,6 +669,7 @@ pub async fn post_generate_meal_plan(
                 error_message: Some(error_msg),
                 current_week_index: 0,
                 total_weeks: 0,
+                is_current_week: false,
             };
 
             return template.render().map(Html).map_err(|e| {
@@ -645,7 +715,7 @@ pub async fn post_generate_meal_plan(
         generated_at: Utc::now().to_rfc3339(),
     };
 
-    evento::create::<meal_planning::MealPlanAggregate>()
+    let aggregate_id = evento::create::<meal_planning::MealPlanAggregate>()
         .data(&event)
         .map_err(|e| {
             tracing::error!("Failed to encode MultiWeekMealPlanGenerated event: {:?}", e);
@@ -664,8 +734,9 @@ pub async fn post_generate_meal_plan(
         })?;
 
     tracing::info!(
-        "MultiWeekMealPlanGenerated event emitted successfully for batch {}",
-        generation_batch_id
+        "MultiWeekMealPlanGenerated event emitted successfully for batch {} with aggregate_id {}",
+        generation_batch_id,
+        aggregate_id
     );
 
     // BUSINESS RULE: Auto-generate shopping lists for each week
@@ -727,18 +798,11 @@ pub async fn post_generate_meal_plan(
         }
     }
 
-    // Get the first week ID for polling redirect
-    let first_week_id = multi_week_plan
-        .generated_weeks
-        .first()
-        .map(|w| w.id.clone())
-        .ok_or_else(|| anyhow::anyhow!("No weeks generated in multi-week plan"))?;
-
-    // Return loading state that polls for read model completion
-    // TwinSpark will poll /plan/check-ready until all weeks are fully projected
+    // Use aggregate ID for polling instead of week ID
+    // The aggregate ID is the canonical identifier for evento, and we can use evento::load to check if it exists
     let loading_template = MealPlanLoadingTemplate {
         user: Some(()),
-        meal_plan_id: first_week_id.clone(),
+        meal_plan_id: aggregate_id,
         current_path: "/plan".to_string(),
     };
 
@@ -1119,7 +1183,7 @@ pub async fn post_regenerate_meal_plan(
         generated_at: Utc::now().to_rfc3339(),
     };
 
-    evento::create::<meal_planning::MealPlanAggregate>()
+    let aggregate_id = evento::create::<meal_planning::MealPlanAggregate>()
         .data(&event)
         .map_err(|e| {
             tracing::error!("Failed to encode MultiWeekMealPlanGenerated event: {:?}", e);
@@ -1138,8 +1202,9 @@ pub async fn post_regenerate_meal_plan(
         })?;
 
     tracing::info!(
-        "MultiWeekMealPlanGenerated event emitted successfully for batch {}",
-        generation_batch_id
+        "MultiWeekMealPlanGenerated event emitted successfully for batch {} with aggregate_id {}",
+        generation_batch_id,
+        aggregate_id
     );
 
     // BUSINESS RULE: Auto-generate shopping lists for each week
@@ -1201,18 +1266,11 @@ pub async fn post_regenerate_meal_plan(
         }
     }
 
-    // Get the first week ID for polling redirect
-    let first_week_id = multi_week_plan
-        .generated_weeks
-        .first()
-        .map(|w| w.id.clone())
-        .ok_or_else(|| anyhow::anyhow!("No weeks generated in multi-week plan"))?;
-
-    // Return loading state that polls for read model completion
-    // TwinSpark will poll /plan/check-ready until all weeks are fully projected
+    // Use aggregate ID for polling instead of week ID
+    // The aggregate ID is the canonical identifier for evento, and we can use evento::load to check if it exists
     let loading_template = MealPlanLoadingTemplate {
         user: Some(()),
-        meal_plan_id: first_week_id.clone(),
+        meal_plan_id: aggregate_id,
         current_path: "/plan".to_string(),
     };
 
