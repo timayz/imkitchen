@@ -92,9 +92,10 @@ details[open] summary .chevron {
                 name="week"
                 class="w-full md:max-w-xs px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 style="min-height: 44px;"
-                ts-req="/shopping?week={value}"
+                ts-req="/shopping"
+                ts-req-selector="#shopping-list-content"
                 ts-target="#shopping-list-content"
-                ts-swap="innerHTML"
+                ts-swap="inner"
                 ts-trigger="change"
                 ts-req-history="replace"
             >
