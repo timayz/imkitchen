@@ -1,3 +1,4 @@
+use crate::routes::meal_planning_api::load_user_preferences;
 use askama::Template;
 use axum::{
     extract::State,
@@ -6,14 +7,12 @@ use axum::{
 };
 use chrono::{Datelike, NaiveDate, Utc};
 use meal_planning::{
-    algorithm::{MealPlanningAlgorithm, RecipeForPlanning, UserConstraints},
-    events::MealPlanGenerated,
+    algorithm::{RecipeForPlanning, UserConstraints},
     read_model::{MealAssignmentReadModel, MealPlanQueries},
-    rotation::RotationState,
 };
 use recipe::read_model::{query_recipes_by_user, RecipeReadModel};
 use serde::{Deserialize, Serialize};
-use shopping::{generate_shopping_list, GenerateShoppingListCommand};
+use shopping;
 use sqlx::{Row, SqlitePool};
 
 use crate::error::AppError;
@@ -98,7 +97,7 @@ pub struct MealPlanErrorTemplate;
 ///
 /// Loads dietary restrictions, skill level, and weeknight availability from the users table
 /// and constructs a UserConstraints struct for the meal planning algorithm.
-async fn load_user_constraints(
+async fn _load_user_constraints(
     user_id: &str,
     db_pool: &SqlitePool,
 ) -> Result<UserConstraints, AppError> {
@@ -161,6 +160,8 @@ pub struct MealCalendarTemplate {
     pub rotation_total: usize, // AC (Story 3.3): Total favorites
     pub current_path: String,
     pub error_message: Option<String>, // Issue #130: Display inline error messages
+    pub current_week_index: usize,     // Multi-week navigation: current week (0-indexed)
+    pub total_weeks: usize,            // Multi-week navigation: total number of weeks
 }
 
 /* TODO: Epic 8 - Multi-Week Calendar Template Structs
@@ -219,35 +220,13 @@ pub async fn get_meal_plan_check_ready(
     State(state): State<AppState>,
     axum::extract::Path(meal_plan_id): axum::extract::Path<String>,
 ) -> axum::response::Response {
-    // Load aggregate to get latest event timestamp
-    let loaded = match evento::load::<meal_planning::MealPlanAggregate, _>(
-        &state.evento_executor,
-        &meal_plan_id,
-    )
-    .await
-    {
-        Ok(loaded) => loaded,
-        Err(e) => {
-            tracing::error!("Failed to load meal plan aggregate: {:?}", e);
-            // Return self polling element to retry
-            let polling_html = format!(
-                r##"<div ts-req="/plan/check-ready/{}" ts-trigger="load delay:500ms"></div>"##,
-                meal_plan_id
-            );
-            return (axum::http::StatusCode::OK, Html(polling_html)).into_response();
-        }
-    };
-
-    let event_timestamp = loaded.event.timestamp; // Latest event timestamp
-
-    // Check if read model has the meal plan with all 21 assignments AND matching timestamp
-    let meal_plan_check: Result<(i64, Option<String>), sqlx::Error> = sqlx::query_as(
+    // For multi-week meal plans, we don't have individual aggregates
+    // Just check if the read model has the meal plan with assignments
+    let meal_plan_check: Result<i64, sqlx::Error> = sqlx::query_scalar(
         r#"
-        SELECT
-            (SELECT COUNT(*) FROM meal_assignments WHERE meal_plan_id = ?1) as assignment_count,
-            updated_at
-        FROM meal_plans
-        WHERE id = ?1
+        SELECT COUNT(*)
+        FROM meal_assignments
+        WHERE meal_plan_id = ?1
         "#,
     )
     .bind(&meal_plan_id)
@@ -255,16 +234,8 @@ pub async fn get_meal_plan_check_ready(
     .await;
 
     let is_ready = match meal_plan_check {
-        Ok((count, Some(updated_at))) => {
-            // Parse updated_at to timestamp and compare with event timestamp
-            if let Ok(updated_datetime) = chrono::DateTime::parse_from_rfc3339(&updated_at) {
-                let updated_ts = updated_datetime.timestamp();
-                count >= 21 && updated_ts == event_timestamp
-            } else {
-                false
-            }
-        }
-        _ => false,
+        Ok(count) => count > 0, // Any assignments means the projection has completed
+        Err(_) => false,
     };
 
     if is_ready {
@@ -287,31 +258,66 @@ pub async fn get_meal_plan_check_ready(
 
 /// GET /plan - Display meal calendar view
 ///
+/// Supports multi-week navigation via ?week=N query parameter (0-indexed)
+///
 /// AC-5: Week-view calendar displays generated plan with breakfast/lunch/dinner slots filled
 /// AC-9: User redirected to calendar view after successful generation
 pub async fn get_meal_plan(
     Extension(auth): Extension<Auth>,
     State(state): State<AppState>,
+    axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> Result<Html<String>, AppError> {
-    // Query active meal plan for user
-    let meal_plan_with_assignments =
-        MealPlanQueries::get_active_meal_plan_with_assignments(&auth.user_id, &state.db_pool)
-            .await?;
+    // Get week index from query parameter (default to 0 for first week)
+    let week_index: usize = params.get("week").and_then(|w| w.parse().ok()).unwrap_or(0);
+
+    // Query ALL active meal plans for user (multi-week support)
+    let all_meal_plans =
+        MealPlanQueries::get_all_active_meal_plans(&auth.user_id, &state.db_pool).await?;
+
+    if all_meal_plans.is_empty() {
+        // No meal plan exists, show empty calendar or prompt
+        let template = MealCalendarTemplate {
+            user: Some(()),
+            days: Vec::new(),
+            start_date: String::new(),
+            end_date: String::new(),
+            has_meal_plan: false,
+            rotation_used: 0,
+            rotation_total: 0,
+            current_path: "/plan".to_string(),
+            error_message: None,
+            current_week_index: 0,
+            total_weeks: 0,
+        };
+        return template.render().map(Html).map_err(|e| {
+            tracing::error!("Failed to render empty meal calendar template: {:?}", e);
+            AppError::InternalError("Failed to render page".to_string())
+        });
+    }
+
+    // Get the requested week (or first week if index out of bounds)
+    let week_index = week_index.min(all_meal_plans.len() - 1);
+    let selected_meal_plan = &all_meal_plans[week_index];
+
+    // Query assignments for the selected week
+    let assignments =
+        MealPlanQueries::get_meal_assignments(&selected_meal_plan.id, &state.db_pool).await?;
+
+    let meal_plan_with_assignments = if !assignments.is_empty() {
+        Some((selected_meal_plan.clone(), assignments))
+    } else {
+        None
+    };
 
     match meal_plan_with_assignments {
-        Some(plan_data) => {
+        Some((selected_plan, assignments)) => {
             // Fetch recipe details for all assignments
-            let recipe_ids: Vec<String> = plan_data
-                .assignments
-                .iter()
-                .map(|a| a.recipe_id.clone())
-                .collect();
+            let recipe_ids: Vec<String> = assignments.iter().map(|a| a.recipe_id.clone()).collect();
 
             let recipes = fetch_recipes_by_ids(&recipe_ids, &state.db_pool).await?;
 
             // Story 9.2: Fetch accompaniment recipes
-            let accompaniment_ids: Vec<String> = plan_data
-                .assignments
+            let accompaniment_ids: Vec<String> = assignments
                 .iter()
                 .filter_map(|a| a.accompaniment_recipe_id.clone())
                 .collect();
@@ -328,32 +334,33 @@ pub async fn get_meal_plan(
 
             // Group assignments by date into DayData with today/past flags
             let days = build_day_data(
-                &plan_data.assignments,
+                &assignments,
                 &recipes,
                 &accompaniment_recipes,
-                &plan_data.meal_plan.id,
+                &selected_plan.id,
             );
 
             // Story 3.13: Calculate end_date (Sunday) from start_date (Monday)
-            let end_date =
-                chrono::NaiveDate::parse_from_str(&plan_data.meal_plan.start_date, "%Y-%m-%d")
-                    .map(|start| {
-                        (start + chrono::Duration::days(6))
-                            .format("%Y-%m-%d")
-                            .to_string()
-                    })
-                    .unwrap_or_else(|_| plan_data.meal_plan.start_date.clone());
+            let end_date = chrono::NaiveDate::parse_from_str(&selected_plan.start_date, "%Y-%m-%d")
+                .map(|start| {
+                    (start + chrono::Duration::days(6))
+                        .format("%Y-%m-%d")
+                        .to_string()
+                })
+                .unwrap_or_else(|_| selected_plan.start_date.clone());
 
             let template = MealCalendarTemplate {
                 user: Some(()),
                 days,
-                start_date: plan_data.meal_plan.start_date,
+                start_date: selected_plan.start_date.clone(),
                 end_date,
                 has_meal_plan: true,
                 rotation_used,
                 rotation_total,
                 current_path: "/plan".to_string(),
                 error_message: None,
+                current_week_index: week_index,
+                total_weeks: all_meal_plans.len(),
             };
             template.render().map(Html).map_err(|e| {
                 tracing::error!("Failed to render meal calendar template: {:?}", e);
@@ -361,20 +368,31 @@ pub async fn get_meal_plan(
             })
         }
         None => {
-            // No meal plan exists, show empty calendar or prompt
+            // No assignments for this week, show empty template
             let template = MealCalendarTemplate {
                 user: Some(()),
                 days: Vec::new(),
-                start_date: String::new(),
-                end_date: String::new(),
-                has_meal_plan: false,
+                start_date: selected_meal_plan.start_date.clone(),
+                end_date: chrono::NaiveDate::parse_from_str(
+                    &selected_meal_plan.start_date,
+                    "%Y-%m-%d",
+                )
+                .map(|start| {
+                    (start + chrono::Duration::days(6))
+                        .format("%Y-%m-%d")
+                        .to_string()
+                })
+                .unwrap_or_else(|_| selected_meal_plan.start_date.clone()),
+                has_meal_plan: true,
                 rotation_used: 0,
                 rotation_total: 0,
                 current_path: "/plan".to_string(),
                 error_message: None,
+                current_week_index: week_index,
+                total_weeks: all_meal_plans.len(),
             };
             template.render().map(Html).map_err(|e| {
-                tracing::error!("Failed to render empty meal calendar template: {:?}", e);
+                tracing::error!("Failed to render meal calendar template: {:?}", e);
                 AppError::InternalError("Failed to render page".to_string())
             })
         }
@@ -445,6 +463,8 @@ pub async fn post_generate_meal_plan(
             rotation_total: favorites.len(),
             current_path: "/plan".to_string(),
             error_message: Some(error_msg),
+            current_week_index: 0,
+            total_weeks: 0,
         };
 
         return template.render().map(Html).map_err(|e| {
@@ -512,60 +532,33 @@ pub async fn post_generate_meal_plan(
         })
         .collect();
 
-    // Load user profile constraints from database
-    let constraints = load_user_constraints(&auth.user_id, &state.db_pool).await?;
+    // Load user profile preferences from database (for multi-week generation)
+    let preferences = load_user_preferences(&auth.user_id, &state.db_pool)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to load user preferences: {:?}", e);
+            AppError::InternalError("Failed to load user preferences".to_string())
+        })?;
 
-    // Load rotation state from most recent meal plan
-    let previous_meal_plan =
-        MealPlanQueries::get_active_meal_plan(&auth.user_id, &state.db_pool).await?;
-    let mut rotation_state = match previous_meal_plan {
-        Some(plan) => RotationState::from_json(&plan.rotation_state).unwrap_or_else(|e| {
-            tracing::warn!(
-                "Failed to parse rotation state for user {}: {}. Using default.",
-                auth.user_id,
-                e
-            );
-            RotationState::default()
-        }),
-        None => {
-            RotationState::with_favorite_count(recipes_for_planning.len()).unwrap_or_else(|e| {
-                tracing::warn!(
-                    "Failed to create rotation state with count {}: {}. Using default.",
-                    recipes_for_planning.len(),
-                    e
-                );
-                RotationState::default()
-            })
-        }
-    };
+    tracing::info!(
+        "Generating multi-week meal plan for user {} with {} favorite recipes",
+        auth.user_id,
+        recipes_for_planning.len()
+    );
 
-    // Ensure total_favorite_count is set correctly
-    rotation_state.total_favorite_count = recipes_for_planning.len();
-
-    // Store values for later use
-    let old_cycle_number = rotation_state.cycle_number;
-    let favorite_count = recipes_for_planning.len();
-
-    // Calculate start date (next Monday) - Story 3.13: Next-week-only meal planning
-    // Business rule: All meal plans start from next Monday to give users time to shop/prepare
-    let start_date = meal_planning::calculate_next_week_start()
-        .format("%Y-%m-%d")
-        .to_string();
-
-    // AC-2, AC-3, AC-4, AC-6: Generate meal plan using algorithm
-    // AC-9: Pass None for seed to get random variety (timestamp-based)
+    // AC-2, AC-3, AC-4, AC-6: Generate multi-week meal plan (up to 5 weeks)
     // Issue #130: Handle algorithm errors inline
-    let (meal_assignments, updated_rotation_state) = match MealPlanningAlgorithm::generate(
-        &start_date,
-        recipes_for_planning,
-        constraints,
-        rotation_state,
-        None, // None = use timestamp for variety
-    ) {
-        Ok(result) => result,
+    let multi_week_plan = match meal_planning::generate_multi_week_meal_plans(
+        auth.user_id.clone(),
+        recipes_for_planning.clone(),
+        preferences,
+    )
+    .await
+    {
+        Ok(plan) => plan,
         Err(meal_planning::MealPlanningError::InsufficientRecipes { minimum, current }) => {
             let error_msg = format!(
-                "Cannot generate meal plan: Not enough recipes of each type. Need at least {} recipes per course type, but found only {}. Please add more recipes with different course types (appetizer, main_course, dessert).",
+                "Cannot generate meal plan: Not enough recipes for multi-week generation. Need at least {} recipes per course type, but found only {}. Please add more recipes with different course types (appetizer, main_course, dessert).",
                 minimum,
                 current
             );
@@ -580,6 +573,8 @@ pub async fn post_generate_meal_plan(
                 rotation_total: current,
                 current_path: "/plan".to_string(),
                 error_message: Some(error_msg),
+                current_week_index: 0,
+                total_weeks: 0,
             };
 
             return template.render().map(Html).map_err(|e| {
@@ -591,42 +586,45 @@ pub async fn post_generate_meal_plan(
             });
         }
         Err(e) => {
-            tracing::error!("Meal planning algorithm error: {:?}", e);
+            tracing::error!("Multi-week meal planning algorithm error: {:?}", e);
             return Err(AppError::MealPlanningError(e));
         }
     };
 
-    // Detect if cycle was reset during generation
-    let cycle_reset_occurred = updated_rotation_state.cycle_number > old_cycle_number;
+    tracing::info!(
+        "Multi-week generation successful: {} weeks generated",
+        multi_week_plan.generated_weeks.len()
+    );
 
-    // Create MealPlanGenerated event via evento
-    let now = Utc::now().to_rfc3339();
+    // AC-8: Emit MultiWeekMealPlanGenerated event via evento (this will trigger read model projection)
+    let generation_batch_id = multi_week_plan.generation_batch_id.clone();
+    let weeks_data: Vec<meal_planning::WeekMealPlanData> = multi_week_plan
+        .generated_weeks
+        .iter()
+        .map(|week| meal_planning::WeekMealPlanData {
+            id: week.id.clone(),
+            start_date: week.start_date.clone(),
+            end_date: week.end_date.clone(),
+            status: week.status,
+            is_locked: week.is_locked,
+            meal_assignments: week.meal_assignments.clone(),
+            shopping_list_id: week.shopping_list_id.clone(),
+        })
+        .collect();
 
-    let event_data = MealPlanGenerated {
+    let event = meal_planning::MultiWeekMealPlanGenerated {
+        generation_batch_id: generation_batch_id.clone(),
         user_id: auth.user_id.clone(),
-        start_date: start_date.clone(),
-        meal_assignments: meal_assignments.clone(),
-        rotation_state_json: updated_rotation_state.to_json()?,
-        generated_at: now.clone(),
+        weeks: weeks_data,
+        rotation_state: multi_week_plan.rotation_state.clone(),
+        generated_at: Utc::now().to_rfc3339(),
     };
 
-    // AC-8: Emit MealPlanGenerated event via evento (this will trigger read model projection)
-    // evento::create() generates a ULID for the aggregator_id (meal_plan_id)
-    tracing::info!(
-        "Creating MealPlanGenerated event with {} assignments",
-        event_data.meal_assignments.len()
-    );
-    tracing::debug!(
-        "Event data: user_id={}, start_date={}",
-        event_data.user_id,
-        event_data.start_date
-    );
-
-    let meal_plan_id = evento::create::<meal_planning::MealPlanAggregate>()
-        .data(&event_data)
+    evento::create::<meal_planning::MealPlanAggregate>()
+        .data(&event)
         .map_err(|e| {
-            tracing::error!("Failed to encode event data: {:?}", e);
-            anyhow::anyhow!("Failed to encode event data: {}", e)
+            tracing::error!("Failed to encode MultiWeekMealPlanGenerated event: {:?}", e);
+            anyhow::anyhow!("Failed to encode event: {}", e)
         })?
         .metadata(&true)
         .map_err(|e| {
@@ -636,141 +634,86 @@ pub async fn post_generate_meal_plan(
         .commit(&state.evento_executor)
         .await
         .map_err(|e| {
-            tracing::error!("Failed to commit event: {:?}", e);
+            tracing::error!("Failed to commit MultiWeekMealPlanGenerated event: {:?}", e);
             anyhow::anyhow!("Failed to commit event: {}", e)
         })?;
 
-    // AC-1: Emit RecipeUsedInRotation events for each unique recipe used in this generation
-    // This enables rotation tracking in the recipe_rotation_state table
-    use std::collections::HashSet;
-    let unique_recipe_ids: HashSet<String> = meal_assignments
-        .iter()
-        .map(|a| a.recipe_id.clone())
-        .collect();
-
-    for recipe_id in &unique_recipe_ids {
-        use meal_planning::events::RecipeUsedInRotation;
-
-        let rotation_event = RecipeUsedInRotation {
-            recipe_id: recipe_id.clone(),
-            cycle_number: updated_rotation_state.cycle_number,
-            used_at: now.clone(),
-        };
-
-        tracing::debug!(
-            "Emitting RecipeUsedInRotation: recipe_id={}, cycle={}",
-            recipe_id,
-            updated_rotation_state.cycle_number
-        );
-
-        evento::save::<meal_planning::MealPlanAggregate>(&meal_plan_id)
-            .data(&rotation_event)
-            .map_err(|e| {
-                tracing::error!("Failed to encode RecipeUsedInRotation event: {:?}", e);
-                anyhow::anyhow!("Failed to encode rotation event: {}", e)
-            })?
-            .metadata(&true)
-            .map_err(|e| {
-                tracing::error!("Failed to encode metadata: {:?}", e);
-                anyhow::anyhow!("Failed to encode metadata: {}", e)
-            })?
-            .commit(&state.evento_executor)
-            .await
-            .map_err(|e| {
-                tracing::error!("Failed to commit rotation event: {:?}", e);
-                anyhow::anyhow!("Failed to commit rotation event: {}", e)
-            })?;
-    }
-
     tracing::info!(
-        "Emitted {} RecipeUsedInRotation events for cycle {}",
-        unique_recipe_ids.len(),
-        updated_rotation_state.cycle_number
+        "MultiWeekMealPlanGenerated event emitted successfully for batch {}",
+        generation_batch_id
     );
 
-    // **Critical Fix 1.3:** Emit RotationCycleReset event if cycle was reset
-    if cycle_reset_occurred {
-        use meal_planning::events::RotationCycleReset;
+    // BUSINESS RULE: Auto-generate shopping lists for each week
+    tracing::info!(
+        "Auto-generating shopping lists for {} weeks",
+        multi_week_plan.generated_weeks.len()
+    );
 
-        let reset_event = RotationCycleReset {
-            user_id: auth.user_id.clone(),
-            old_cycle_number,
-            new_cycle_number: updated_rotation_state.cycle_number,
-            favorite_count,
-            reset_at: now.clone(),
-        };
+    for (week_index, week) in multi_week_plan.generated_weeks.iter().enumerate() {
+        tracing::debug!(
+            "Generating shopping list for week {} ({}): meal_plan_id={}",
+            week_index + 1,
+            week.start_date,
+            week.id
+        );
+
+        // Collect all recipe IDs from this week's meal assignments
+        let recipe_ids: Vec<String> = week
+            .meal_assignments
+            .iter()
+            .map(|assignment| assignment.recipe_id.clone())
+            .collect();
+
+        // Collect ingredients from all recipes
+        let ingredients = collect_ingredients_from_recipes(&recipe_ids, &state.db_pool).await?;
 
         tracing::info!(
-            "Rotation cycle reset: {} -> {} for user {}",
-            old_cycle_number,
-            updated_rotation_state.cycle_number,
-            auth.user_id
+            "Generating shopping list for week {} with {} ingredients from {} recipes",
+            week.start_date,
+            ingredients.len(),
+            recipe_ids.len()
         );
 
-        evento::save::<meal_planning::MealPlanAggregate>(&meal_plan_id)
-            .data(&reset_event)
-            .map_err(|e| {
-                tracing::error!("Failed to encode RotationCycleReset event: {:?}", e);
-                anyhow::anyhow!("Failed to encode reset event: {}", e)
-            })?
-            .metadata(&true)
-            .map_err(|e| {
-                tracing::error!("Failed to encode metadata: {:?}", e);
-                anyhow::anyhow!("Failed to encode metadata: {}", e)
-            })?
-            .commit(&state.evento_executor)
-            .await
-            .map_err(|e| {
-                tracing::error!("Failed to commit reset event: {:?}", e);
-                anyhow::anyhow!("Failed to commit reset event: {}", e)
-            })?;
+        // Generate shopping list
+        let shopping_list_cmd = shopping::GenerateShoppingListCommand {
+            user_id: auth.user_id.clone(),
+            meal_plan_id: week.id.clone(),
+            week_start_date: week.start_date.clone(),
+            ingredients,
+        };
+
+        match shopping::generate_shopping_list(shopping_list_cmd, &state.evento_executor).await {
+            Ok(shopping_list_id) => {
+                tracing::info!(
+                    "Shopping list generated successfully: id={}, week={}, meal_plan_id={}",
+                    shopping_list_id,
+                    week.start_date,
+                    week.id
+                );
+            }
+            Err(e) => {
+                tracing::error!(
+                    "Failed to generate shopping list for week {}: {:?}",
+                    week.start_date,
+                    e
+                );
+                // Continue processing other weeks even if one fails
+            }
+        }
     }
 
-    // BUSINESS RULE: Automatically generate shopping list after meal plan generation
-    // Note: The shopping list projection handler will DELETE old lists for this week before inserting
-
-    // Step 1: Collect all recipe IDs from meal assignments
-    let recipe_ids: Vec<String> = meal_assignments
-        .iter()
-        .map(|a| a.recipe_id.clone())
-        .collect();
-
-    // Step 3: Collect ingredients from all recipes in the meal plan
-    let ingredients = collect_ingredients_from_recipes(&recipe_ids, &state.db_pool).await?;
-
-    tracing::info!(
-        "Generating shopping list for meal plan {} with {} ingredients from {} recipes",
-        meal_plan_id,
-        ingredients.len(),
-        recipe_ids.len()
-    );
-
-    // Step 4: Generate new shopping list
-    let shopping_list_cmd = GenerateShoppingListCommand {
-        user_id: auth.user_id.clone(),
-        meal_plan_id: meal_plan_id.clone(),
-        week_start_date: start_date.clone(),
-        ingredients,
-    };
-
-    let shopping_list_id = generate_shopping_list(shopping_list_cmd, &state.evento_executor)
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to generate shopping list: {:?}", e);
-            AppError::InternalError(format!("Shopping list generation failed: {}", e))
-        })?;
-
-    tracing::info!(
-        "Successfully generated shopping list {} for meal plan {}",
-        shopping_list_id,
-        meal_plan_id
-    );
+    // Get the first week ID for polling redirect
+    let first_week_id = multi_week_plan
+        .generated_weeks
+        .first()
+        .map(|w| w.id.clone())
+        .ok_or_else(|| anyhow::anyhow!("No weeks generated in multi-week plan"))?;
 
     // Return loading state that polls for read model completion
-    // TwinSpark will poll /plan/check-ready until meal plan is fully projected
+    // TwinSpark will poll /plan/check-ready until all weeks are fully projected
     let loading_template = MealPlanLoadingTemplate {
         user: Some(()),
-        meal_plan_id: meal_plan_id.clone(),
+        meal_plan_id: first_week_id.clone(),
         current_path: "/plan".to_string(),
     };
 
@@ -829,7 +772,7 @@ async fn fetch_recipes_by_ids(
     // Build placeholders for IN clause
     let placeholders = recipe_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
     let query_str = format!(
-        "SELECT id, user_id, title, recipe_type, ingredients, instructions, prep_time_min, cook_time_min, advance_prep_hours, serving_size, is_favorite, is_shared, complexity, cuisine, dietary_tags, created_at, updated_at FROM recipes WHERE id IN ({}) AND deleted_at IS NULL",
+        "SELECT id, user_id, title, recipe_type, ingredients, instructions, prep_time_min, cook_time_min, advance_prep_hours, serving_size, is_favorite, is_shared, complexity, cuisine, dietary_tags, accepts_accompaniment, preferred_accompaniments, accompaniment_category, created_at, updated_at FROM recipes WHERE id IN ({}) AND deleted_at IS NULL",
         placeholders
     );
 
@@ -992,7 +935,7 @@ pub async fn get_regenerate_confirm(
 pub async fn post_regenerate_meal_plan(
     Extension(auth): Extension<Auth>,
     State(state): State<AppState>,
-    axum::Form(form): axum::Form<RegenerateMealPlanForm>,
+    axum::Form(_form): axum::Form<RegenerateMealPlanForm>,
 ) -> Result<Html<String>, AppError> {
     // Acquire generation lock to prevent concurrent regeneration
     let _lock_guard = {
@@ -1016,7 +959,7 @@ pub async fn post_regenerate_meal_plan(
     };
 
     // Query active meal plan
-    let meal_plan = MealPlanQueries::get_active_meal_plan(&auth.user_id, &state.db_pool)
+    let _meal_plan = MealPlanQueries::get_active_meal_plan(&auth.user_id, &state.db_pool)
         .await?
         .ok_or_else(|| AppError::InternalError("No active meal plan to regenerate".to_string()))?;
 
@@ -1087,100 +1030,164 @@ pub async fn post_regenerate_meal_plan(
         })
         .collect();
 
-    // Load user profile constraints from database
-    let constraints = load_user_constraints(&auth.user_id, &state.db_pool).await?;
-
-    // Invoke domain command to regenerate meal plan
-    let cmd = meal_planning::RegenerateMealPlanCommand {
-        meal_plan_id: meal_plan.id.clone(),
-        user_id: auth.user_id.clone(),
-        regeneration_reason: form.regeneration_reason.clone(),
-    };
-
-    meal_planning::regenerate_meal_plan(
-        cmd,
-        &state.evento_executor,
-        recipes_for_planning.clone(),
-        constraints,
-    )
-    .await?;
-
-    // Note: Read model projection happens asynchronously via evento subscriptions
-
-    // BUSINESS RULE: Automatically regenerate shopping list after meal plan regeneration
-
-    // Calculate start date (next Monday) - same as meal plan regeneration
-    let start_date = meal_planning::calculate_next_week_start()
-        .format("%Y-%m-%d")
-        .to_string();
-
-    // Step 1: Delete any existing shopping lists for this week (cleanup orphaned lists)
-    // Note: We use week_start_date as the unique key, not meal_plan_id
-    // IMPORTANT: Use write_pool for DELETE operations (db_pool is read-only)
-    sqlx::query(
-        r#"
-        DELETE FROM shopping_list_items
-        WHERE shopping_list_id IN (
-            SELECT id FROM shopping_lists
-            WHERE user_id = ?1 AND week_start_date = ?2
-        )
-        "#,
-    )
-    .bind(&auth.user_id)
-    .bind(&start_date)
-    .execute(&state.write_pool)
-    .await?;
-
-    sqlx::query(
-        r#"
-        DELETE FROM shopping_lists
-        WHERE user_id = ?1 AND week_start_date = ?2
-        "#,
-    )
-    .bind(&auth.user_id)
-    .bind(&start_date)
-    .execute(&state.write_pool)
-    .await?;
-
-    // Step 2: Collect all recipe IDs from favorited recipes (same recipes used in meal planning)
-    let recipe_ids: Vec<String> = recipes_for_planning.iter().map(|r| r.id.clone()).collect();
-
-    // Step 3: Collect ingredients from all recipes
-    let ingredients = collect_ingredients_from_recipes(&recipe_ids, &state.db_pool).await?;
-
-    tracing::info!(
-        "Regenerating shopping list for meal plan {} with {} ingredients from {} recipes",
-        meal_plan.id,
-        ingredients.len(),
-        recipe_ids.len()
-    );
-
-    // Step 4: Generate new shopping list
-    let shopping_list_cmd = GenerateShoppingListCommand {
-        user_id: auth.user_id.clone(),
-        meal_plan_id: meal_plan.id.clone(),
-        week_start_date: start_date,
-        ingredients,
-    };
-
-    let shopping_list_id = generate_shopping_list(shopping_list_cmd, &state.evento_executor)
+    // Load user profile preferences from database (for multi-week generation)
+    let preferences = load_user_preferences(&auth.user_id, &state.db_pool)
         .await
         .map_err(|e| {
-            tracing::error!("Failed to regenerate shopping list: {:?}", e);
-            AppError::InternalError(format!("Shopping list regeneration failed: {}", e))
+            tracing::error!("Failed to load user preferences: {:?}", e);
+            AppError::InternalError("Failed to load user preferences".to_string())
         })?;
 
     tracing::info!(
-        "Successfully regenerated shopping list {} for meal plan {}",
-        shopping_list_id,
-        meal_plan.id
+        "Regenerating multi-week meal plan for user {} with {} favorite recipes",
+        auth.user_id,
+        recipes_for_planning.len()
     );
 
+    // Generate new multi-week meal plan (this will archive old plans via projection)
+    let multi_week_plan = match meal_planning::generate_multi_week_meal_plans(
+        auth.user_id.clone(),
+        recipes_for_planning.clone(),
+        preferences,
+    )
+    .await
+    {
+        Ok(plan) => plan,
+        Err(meal_planning::MealPlanningError::InsufficientRecipes { minimum, current }) => {
+            return Err(AppError::InsufficientRecipes {
+                current,
+                required: minimum,
+            });
+        }
+        Err(e) => {
+            tracing::error!("Multi-week meal planning algorithm error: {:?}", e);
+            return Err(AppError::MealPlanningError(e));
+        }
+    };
+
+    tracing::info!(
+        "Multi-week regeneration successful: {} weeks generated",
+        multi_week_plan.generated_weeks.len()
+    );
+
+    // Emit MultiWeekMealPlanGenerated event via evento
+    let generation_batch_id = multi_week_plan.generation_batch_id.clone();
+    let weeks_data: Vec<meal_planning::WeekMealPlanData> = multi_week_plan
+        .generated_weeks
+        .iter()
+        .map(|week| meal_planning::WeekMealPlanData {
+            id: week.id.clone(),
+            start_date: week.start_date.clone(),
+            end_date: week.end_date.clone(),
+            status: week.status,
+            is_locked: week.is_locked,
+            meal_assignments: week.meal_assignments.clone(),
+            shopping_list_id: week.shopping_list_id.clone(),
+        })
+        .collect();
+
+    let event = meal_planning::MultiWeekMealPlanGenerated {
+        generation_batch_id: generation_batch_id.clone(),
+        user_id: auth.user_id.clone(),
+        weeks: weeks_data,
+        rotation_state: multi_week_plan.rotation_state.clone(),
+        generated_at: Utc::now().to_rfc3339(),
+    };
+
+    evento::create::<meal_planning::MealPlanAggregate>()
+        .data(&event)
+        .map_err(|e| {
+            tracing::error!("Failed to encode MultiWeekMealPlanGenerated event: {:?}", e);
+            anyhow::anyhow!("Failed to encode event: {}", e)
+        })?
+        .metadata(&true)
+        .map_err(|e| {
+            tracing::error!("Failed to encode metadata: {:?}", e);
+            anyhow::anyhow!("Failed to encode metadata: {}", e)
+        })?
+        .commit(&state.evento_executor)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to commit MultiWeekMealPlanGenerated event: {:?}", e);
+            anyhow::anyhow!("Failed to commit event: {}", e)
+        })?;
+
+    tracing::info!(
+        "MultiWeekMealPlanGenerated event emitted successfully for batch {}",
+        generation_batch_id
+    );
+
+    // BUSINESS RULE: Auto-generate shopping lists for each week
+    tracing::info!(
+        "Auto-generating shopping lists for {} weeks",
+        multi_week_plan.generated_weeks.len()
+    );
+
+    for (week_index, week) in multi_week_plan.generated_weeks.iter().enumerate() {
+        tracing::debug!(
+            "Generating shopping list for week {} ({}): meal_plan_id={}",
+            week_index + 1,
+            week.start_date,
+            week.id
+        );
+
+        // Collect all recipe IDs from this week's meal assignments
+        let recipe_ids: Vec<String> = week
+            .meal_assignments
+            .iter()
+            .map(|assignment| assignment.recipe_id.clone())
+            .collect();
+
+        // Collect ingredients from all recipes
+        let ingredients = collect_ingredients_from_recipes(&recipe_ids, &state.db_pool).await?;
+
+        tracing::info!(
+            "Generating shopping list for week {} with {} ingredients from {} recipes",
+            week.start_date,
+            ingredients.len(),
+            recipe_ids.len()
+        );
+
+        // Generate shopping list
+        let shopping_list_cmd = shopping::GenerateShoppingListCommand {
+            user_id: auth.user_id.clone(),
+            meal_plan_id: week.id.clone(),
+            week_start_date: week.start_date.clone(),
+            ingredients,
+        };
+
+        match shopping::generate_shopping_list(shopping_list_cmd, &state.evento_executor).await {
+            Ok(shopping_list_id) => {
+                tracing::info!(
+                    "Shopping list generated successfully: id={}, week={}, meal_plan_id={}",
+                    shopping_list_id,
+                    week.start_date,
+                    week.id
+                );
+            }
+            Err(e) => {
+                tracing::error!(
+                    "Failed to generate shopping list for week {}: {:?}",
+                    week.start_date,
+                    e
+                );
+                // Continue processing other weeks even if one fails
+            }
+        }
+    }
+
+    // Get the first week ID for polling redirect
+    let first_week_id = multi_week_plan
+        .generated_weeks
+        .first()
+        .map(|w| w.id.clone())
+        .ok_or_else(|| anyhow::anyhow!("No weeks generated in multi-week plan"))?;
+
     // Return loading state that polls for read model completion
-    // TwinSpark will poll /plan/check-ready until meal plan is fully projected
+    // TwinSpark will poll /plan/check-ready until all weeks are fully projected
     let loading_template = MealPlanLoadingTemplate {
         user: Some(()),
-        meal_plan_id: meal_plan.id.clone(),
+        meal_plan_id: first_week_id.clone(),
         current_path: "/plan".to_string(),
     };
 
