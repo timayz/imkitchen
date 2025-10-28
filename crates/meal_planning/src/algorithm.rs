@@ -1083,18 +1083,18 @@ pub async fn generate_multi_week_meal_plans(
 
     // Week calculation driven by MAIN COURSES only
     // Main courses are the anchor - weeks = ceil(main_courses / 7)
-    // Examples: 13 main = 2 weeks (7+6), 16 main = 3 weeks (7+7+2)
+    // Examples: 1 main = 1 week (1 slot filled, 6 empty), 16 main = 3 weeks (7+7+2)
     // If no main course for a day, entire day is empty (no appetizer/dessert)
     let main_course_count = main_courses.len();
-    let appetizer_count = _appetizers.len();
-    let dessert_count = _desserts.len();
+    let _appetizer_count = _appetizers.len();
+    let _dessert_count = _desserts.len();
     let total_recipes = compatible_recipes.len();
 
-    // Require minimum 7 of each type (one full week = 21 total recipes)
+    // Require at least 1 main course to generate meal plan
     // AC-3: Returns InsufficientRecipes error if insufficient recipes
-    if main_course_count < 7 || appetizer_count < 7 || dessert_count < 7 {
+    if main_course_count < 1 {
         return Err(MealPlanningError::InsufficientRecipes {
-            minimum: 21,
+            minimum: 1,
             current: total_recipes,
         });
     }
@@ -2856,18 +2856,39 @@ mod tests {
     /// AC-3: Test insufficient recipes error (< 21 recipes)
     #[tokio::test]
     async fn test_generate_multi_week_insufficient_recipes() {
-        // 18 recipes = 6 appetizers, 6 mains, 6 desserts → insufficient (need 7 each)
-        let recipes = create_balanced_recipes(18);
+        // 0 main courses → insufficient (need at least 1 main course)
+        // Create recipes with only appetizers and desserts
+        let mut recipes = Vec::new();
+        for i in 0..10 {
+            let recipe_type = if i < 5 { "appetizer" } else { "dessert" };
+            recipes.push(RecipeForPlanning {
+                id: format!("recipe_{}", i + 1),
+                title: format!("Recipe {}", i + 1),
+                recipe_type: recipe_type.to_string(),
+                ingredients_count: 5,
+                instructions_count: 3,
+                prep_time_min: Some(15),
+                cook_time_min: Some(20),
+                advance_prep_hours: None,
+                complexity: Some("simple".to_string()),
+                dietary_tags: vec![],
+                cuisine: recipe::Cuisine::Italian,
+                accepts_accompaniment: false,
+                preferred_accompaniments: vec![],
+                accompaniment_category: None,
+            });
+        }
+
         let user_id = "test_user_3".to_string();
         let preferences = UserPreferences::default();
 
         let result = generate_multi_week_meal_plans(user_id, recipes, preferences).await;
 
-        assert!(result.is_err(), "Should fail with insufficient recipes");
+        assert!(result.is_err(), "Should fail with no main courses");
         match result {
             Err(MealPlanningError::InsufficientRecipes { minimum, current }) => {
-                assert_eq!(minimum, 21, "Should require minimum 21 recipes");
-                assert_eq!(current, 18, "Should report 18 available recipes");
+                assert_eq!(minimum, 1, "Should require minimum 1 main course");
+                assert_eq!(current, 10, "Should report 10 available recipes");
             }
             _ => panic!("Expected InsufficientRecipes error"),
         }
