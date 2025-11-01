@@ -5,7 +5,7 @@ use imkitchen::Config;
 #[test]
 fn test_config_loads_from_default_toml() {
     // Test that default config can be loaded
-    let config = Config::load().expect("Failed to load config");
+    let config = Config::load(None).expect("Failed to load config");
 
     // Verify default values
     assert_eq!(config.server.host, "0.0.0.0");
@@ -18,7 +18,7 @@ fn test_config_loads_from_default_toml() {
 
 #[test]
 fn test_config_has_all_required_fields() {
-    let config = Config::load().expect("Failed to load config");
+    let config = Config::load(None).expect("Failed to load config");
 
     // Verify all sections exist and have required fields
     assert!(!config.server.host.is_empty());

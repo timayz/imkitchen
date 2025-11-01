@@ -7,6 +7,10 @@ mod server;
 #[command(name = "imkitchen")]
 #[command(about = "ImKitchen - Event-driven meal planning application", long_about = None)]
 struct Cli {
+    /// Path to configuration file (optional)
+    #[arg(short, long, global = true)]
+    config: Option<String>,
+
     #[command(subcommand)]
     command: Commands,
 }
@@ -27,8 +31,10 @@ enum Commands {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    let cli = Cli::parse();
+
     // Load configuration
-    let config = imkitchen::Config::load()?;
+    let config = imkitchen::Config::load(cli.config.as_deref())?;
 
     // Initialize tracing with config
     tracing_subscriber::fmt()
@@ -37,8 +43,6 @@ async fn main() -> anyhow::Result<()> {
                 .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new(&config.logging.level)),
         )
         .init();
-
-    let cli = Cli::parse();
 
     match cli.command {
         Commands::Serve { port } => {
