@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>imkitchen - Intelligent Meal Planning</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style type="text/tailwindcss">
+        @layer base {
+            body {
+                @apply bg-gray-50 text-gray-900;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <div class="bg-gradient-to-br from-green-500 to-green-700 text-white">
+        <nav class="container mx-auto px-4 py-6 flex items-center justify-between">
+            <div class="text-2xl font-bold">🍳 imkitchen</div>
+            <div class="flex gap-4">
+                <a href="login.html" class="px-4 py-2 hover:bg-white/10 rounded-lg transition">Login</a>
+                <a href="register.html" class="px-6 py-2 bg-white text-green-600 font-semibold rounded-lg hover:bg-gray-100 transition">Get Started</a>
+            </div>
+        </nav>
+
+        <div class="container mx-auto px-4 py-20 text-center">
+            <h1 class="text-5xl md:text-6xl font-bold mb-6">Cook More. Plan Less.</h1>
+            <p class="text-xl md:text-2xl mb-8 text-green-50 max-w-3xl mx-auto">
+                Intelligent meal planning that unlocks your entire recipe collection. Generate weeks of meals in seconds with automatic accompaniment pairing.
+            </p>
+            <div class="flex gap-4 justify-center flex-wrap">
+                <a href="register.html" class="px-8 py-4 bg-white text-green-600 font-bold text-lg rounded-lg hover:bg-gray-100 transition">
+                    Start Planning Free
+                </a>
+                <a href="#features" class="px-8 py-4 bg-green-600 text-white font-bold text-lg rounded-lg hover:bg-green-800 transition">
+                    See How It Works
+                </a>
+            </div>
+            <p class="mt-4 text-green-100 text-sm">No credit card required • Free tier includes 1 week visibility</p>
+        </div>
+    </div>
+
+    <!-- Problem Statement -->
+    <div class="bg-white py-16">
+        <div class="container mx-auto px-4 max-w-4xl text-center">
+            <h2 class="text-3xl md:text-4xl font-bold mb-6">You Have 100 Saved Recipes. You Cook the Same 10.</h2>
+            <p class="text-xl text-gray-600 mb-8">
+                Sound familiar? You're avoiding complex recipes not because you can't cook them, but because planning accompaniments, timing prep work, and coordinating multiple dishes is exhausting.
+            </p>
+            <div class="grid md:grid-cols-3 gap-8 text-left">
+                <div class="p-6 bg-red-50 rounded-lg">
+                    <div class="text-4xl mb-3">😰</div>
+                    <h3 class="font-bold text-lg mb-2">Decision Fatigue</h3>
+                    <p class="text-gray-600">Spending 30 minutes every week deciding what to cook</p>
+                </div>
+                <div class="p-6 bg-red-50 rounded-lg">
+                    <div class="text-4xl mb-3">🍝</div>
+                    <h3 class="font-bold text-lg mb-2">Incomplete Meals</h3>
+                    <p class="text-gray-600">Forgetting to plan rice with curry or pasta with sauce</p>
+                </div>
+                <div class="p-6 bg-red-50 rounded-lg">
+                    <div class="text-4xl mb-3">📅</div>
+                    <h3 class="font-bold text-lg mb-2">Short-Term Planning</h3>
+                    <p class="text-gray-600">Only planning one week ahead, missing bulk shopping savings</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- How It Works -->
+    <div id="features" class="bg-gray-50 py-16">
+        <div class="container mx-auto px-4 max-w-6xl">
+            <h2 class="text-3xl md:text-4xl font-bold text-center mb-12">Meal Planning on Autopilot</h2>
+
+            <div class="grid md:grid-cols-2 gap-12 items-center mb-16">
+                <div>
+                    <div class="text-green-600 font-bold mb-2">STEP 1</div>
+                    <h3 class="text-2xl font-bold mb-4">Import or Create Your Recipes</h3>
+                    <p class="text-gray-600 mb-4">
+                        Add your favorite recipes (appetizers, main courses, desserts, and accompaniments). Bulk import from JSON or create them one by one. Mark dietary restrictions, cuisine types, and whether mains need sides.
+                    </p>
+                    <ul class="space-y-2 text-gray-600">
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-500 mt-1">✓</span>
+                            <span>4 recipe types: appetizer, main, dessert, accompaniment</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-500 mt-1">✓</span>
+                            <span>Bulk JSON import (up to 20 files)</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-500 mt-1">✓</span>
+                            <span>Community recipe sharing</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="bg-white rounded-lg shadow-lg p-8 border-2 border-gray-200">
+                    <div class="text-sm text-gray-500 mb-4">Recipe Library Preview</div>
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3 p-3 bg-blue-50 rounded border border-blue-200">
+                            <span class="text-2xl">🥗</span>
+                            <div>
+                                <div class="font-semibold">Caesar Salad</div>
+                                <div class="text-sm text-gray-600">Appetizer • 15 min</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 p-3 bg-orange-50 rounded border border-orange-200">
+                            <span class="text-2xl">🍛</span>
+                            <div>
+                                <div class="font-semibold">Thai Red Curry</div>
+                                <div class="text-sm text-gray-600">Main Course • 45 min</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 p-3 bg-purple-50 rounded border border-purple-200">
+                            <span class="text-2xl">🍚</span>
+                            <div>
+                                <div class="font-semibold">Jasmine Rice</div>
+                                <div class="text-sm text-gray-600">Accompaniment • 20 min</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-12 items-center mb-16">
+                <div class="order-2 md:order-1 bg-white rounded-lg shadow-lg p-8 border-2 border-gray-200">
+                    <div class="text-sm text-gray-500 mb-4">Generated Meal Plan</div>
+                    <div class="space-y-4">
+                        <div class="border-l-4 border-green-500 pl-4">
+                            <div class="font-bold">Monday, Nov 4</div>
+                            <div class="text-sm text-gray-600 mt-1">🥗 Caesar Salad</div>
+                            <div class="text-sm text-gray-600">🍛 Thai Red Curry + 🍚 Jasmine Rice</div>
+                            <div class="text-sm text-gray-600">🍰 Chocolate Mousse</div>
+                        </div>
+                        <div class="border-l-4 border-gray-300 pl-4">
+                            <div class="font-bold">Tuesday, Nov 5</div>
+                            <div class="text-sm text-gray-600 mt-1">🍝 Pasta Carbonara + 🥖 Garlic Bread</div>
+                            <div class="text-sm text-gray-600">🍨 Tiramisu</div>
+                        </div>
+                        <div class="border-l-4 border-gray-300 pl-4 opacity-50">
+                            <div class="font-bold flex items-center gap-2">
+                                Wednesday, Nov 6
+                                <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">Premium</span>
+                            </div>
+                            <div class="text-sm text-gray-400 mt-1">Upgrade to view all weeks →</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="order-1 md:order-2">
+                    <div class="text-green-600 font-bold mb-2">STEP 2</div>
+                    <h3 class="text-2xl font-bold mb-4">One-Click Month Generation</h3>
+                    <p class="text-gray-600 mb-4">
+                        Click "Generate" and watch weeks of meals appear instantly. The algorithm considers your dietary restrictions, pairs main courses with appropriate sides, and ensures variety across weeks.
+                    </p>
+                    <ul class="space-y-2 text-gray-600">
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-500 mt-1">✓</span>
+                            <span>Generates all remaining weeks of current month</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-500 mt-1">✓</span>
+                            <span>Automatic accompaniment pairing (rice with curry, pasta with sauce)</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-500 mt-1">✓</span>
+                            <span>Respects dietary restrictions and preferences</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-500 mt-1">✓</span>
+                            <span>No duplicate main courses across weeks</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div>
+                    <div class="text-green-600 font-bold mb-2">STEP 3</div>
+                    <h3 class="text-2xl font-bold mb-4">Shop, Prep, Cook</h3>
+                    <p class="text-gray-600 mb-4">
+                        Get weekly shopping lists with all ingredients (including accompaniments). Receive morning reminders for advance prep. Adjust or regenerate anytime.
+                    </p>
+                    <ul class="space-y-2 text-gray-600">
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-500 mt-1">✓</span>
+                            <span>Separate shopping lists per week</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-500 mt-1">✓</span>
+                            <span>Morning prep reminders (8 AM daily)</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-500 mt-1">✓</span>
+                            <span>Unlimited regenerations to find perfect plan</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="bg-white rounded-lg shadow-lg p-8 border-2 border-gray-200">
+                    <div class="text-sm text-gray-500 mb-4">Shopping List - Week 1</div>
+                    <div class="space-y-3">
+                        <div>
+                            <div class="font-bold text-sm text-gray-700 mb-2">Proteins</div>
+                            <ul class="text-sm text-gray-600 space-y-1 ml-4">
+                                <li>• Chicken breast (500g)</li>
+                                <li>• Salmon fillet (300g)</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <div class="font-bold text-sm text-gray-700 mb-2">Vegetables</div>
+                            <ul class="text-sm text-gray-600 space-y-1 ml-4">
+                                <li>• Bell peppers (3)</li>
+                                <li>• Tomatoes (6)</li>
+                                <li>• Lettuce (1 head)</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <div class="font-bold text-sm text-gray-700 mb-2">Pantry</div>
+                            <ul class="text-sm text-gray-600 space-y-1 ml-4">
+                                <li>• Jasmine rice (1kg)</li>
+                                <li>• Pasta (500g)</li>
+                                <li>• Coconut milk (2 cans)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Features -->
+    <div class="bg-white py-16">
+        <div class="container mx-auto px-4 max-w-6xl">
+            <h2 class="text-3xl md:text-4xl font-bold text-center mb-12">Everything You Need</h2>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="text-center p-6">
+                    <div class="text-5xl mb-4">🗓️</div>
+                    <h3 class="font-bold text-xl mb-2">Month-Based Planning</h3>
+                    <p class="text-gray-600">Generate all future weeks of current month in seconds. See the whole picture.</p>
+                </div>
+                <div class="text-center p-6">
+                    <div class="text-5xl mb-4">🍚</div>
+                    <h3 class="font-bold text-xl mb-2">Smart Pairing</h3>
+                    <p class="text-gray-600">Automatically pair mains with sides. Curry gets rice, pasta gets bread.</p>
+                </div>
+                <div class="text-center p-6">
+                    <div class="text-5xl mb-4">🎯</div>
+                    <h3 class="font-bold text-xl mb-2">Preference-Aware</h3>
+                    <p class="text-gray-600">Respects dietary restrictions and cuisine variety preferences.</p>
+                </div>
+                <div class="text-center p-6">
+                    <div class="text-5xl mb-4">🔄</div>
+                    <h3 class="font-bold text-xl mb-2">Smart Rotation</h3>
+                    <p class="text-gray-600">No duplicate main courses across weeks. Maximum variety guaranteed.</p>
+                </div>
+                <div class="text-center p-6">
+                    <div class="text-5xl mb-4">🛒</div>
+                    <h3 class="font-bold text-xl mb-2">Shopping Lists</h3>
+                    <p class="text-gray-600">Separate lists per week with ingredient grouping and quantity optimization.</p>
+                </div>
+                <div class="text-center p-6">
+                    <div class="text-5xl mb-4">👥</div>
+                    <h3 class="font-bold text-xl mb-2">Community Sharing</h3>
+                    <p class="text-gray-600">Share and discover recipes with ratings and reviews.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pricing -->
+    <div class="bg-gray-50 py-16">
+        <div class="container mx-auto px-4 max-w-5xl">
+            <h2 class="text-3xl md:text-4xl font-bold text-center mb-4">Simple, Transparent Pricing</h2>
+            <p class="text-center text-gray-600 mb-12">Start free. Upgrade when you're ready to see the full month.</p>
+
+            <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                <!-- Free Tier -->
+                <div class="bg-white rounded-lg shadow-lg p-8 border-2 border-gray-200">
+                    <h3 class="text-2xl font-bold mb-2">Free</h3>
+                    <div class="text-4xl font-bold mb-6">$0<span class="text-lg text-gray-600 font-normal">/month</span></div>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-500 mt-1">✓</span>
+                            <span>Generate all future weeks</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-500 mt-1">✓</span>
+                            <span>View first week only</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-500 mt-1">✓</span>
+                            <span>Unlimited regenerations</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-500 mt-1">✓</span>
+                            <span>Up to 10 favorite recipes</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-500 mt-1">✓</span>
+                            <span>Recipe management & sharing</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-500 mt-1">✓</span>
+                            <span>Community access</span>
+                        </li>
+                    </ul>
+                    <a href="register.html" class="block text-center px-6 py-3 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition">
+                        Get Started Free
+                    </a>
+                </div>
+
+                <!-- Premium Tier -->
+                <div class="bg-gradient-to-br from-green-500 to-green-700 text-white rounded-lg shadow-xl p-8 border-2 border-green-600 relative">
+                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-400 text-gray-900 px-4 py-1 rounded-full text-sm font-bold">
+                        MOST POPULAR
+                    </div>
+                    <h3 class="text-2xl font-bold mb-2">Premium</h3>
+                    <div class="text-4xl font-bold mb-2">$9.99<span class="text-lg font-normal">/month</span></div>
+                    <div class="text-sm mb-6 text-green-100">or $59.94/year (save 50%)</div>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-200 mt-1">✓</span>
+                            <span>View all generated weeks</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-200 mt-1">✓</span>
+                            <span>Full month visibility</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-200 mt-1">✓</span>
+                            <span>Unlimited favorite recipes</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-200 mt-1">✓</span>
+                            <span>Priority support</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-200 mt-1">✓</span>
+                            <span>Early access to new features</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-200 mt-1">✓</span>
+                            <span>Everything in Free</span>
+                        </li>
+                    </ul>
+                    <a href="register.html" class="block text-center px-6 py-3 bg-white text-green-600 font-bold rounded-lg hover:bg-gray-100 transition">
+                        Start Free Trial
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Social Proof / Testimonials -->
+    <div class="bg-white py-16">
+        <div class="container mx-auto px-4 max-w-6xl">
+            <h2 class="text-3xl font-bold text-center mb-12">What Home Cooks Say</h2>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="bg-gray-50 p-6 rounded-lg">
+                    <div class="flex gap-1 mb-3">
+                        <span class="text-yellow-400">★★★★★</span>
+                    </div>
+                    <p class="text-gray-600 mb-4">"Finally using recipes I saved years ago! The accompaniment pairing is genius - no more forgetting to make rice."</p>
+                    <div class="font-semibold">Sarah M.</div>
+                    <div class="text-sm text-gray-500">Busy mom of 3</div>
+                </div>
+                <div class="bg-gray-50 p-6 rounded-lg">
+                    <div class="flex gap-1 mb-3">
+                        <span class="text-yellow-400">★★★★★</span>
+                    </div>
+                    <p class="text-gray-600 mb-4">"Planning a whole month at once saves SO much time. I can bulk shop and actually stick to my meal plan."</p>
+                    <div class="font-semibold">Michael T.</div>
+                    <div class="text-sm text-gray-500">Home cooking enthusiast</div>
+                </div>
+                <div class="bg-gray-50 p-6 rounded-lg">
+                    <div class="flex gap-1 mb-3">
+                        <span class="text-yellow-400">★★★★★</span>
+                    </div>
+                    <p class="text-gray-600 mb-4">"The dietary restriction filtering is perfect. Every meal fits my preferences without me having to check manually."</p>
+                    <div class="font-semibold">Jessica L.</div>
+                    <div class="text-sm text-gray-500">Gluten-free household</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Final CTA -->
+    <div class="bg-gradient-to-br from-green-500 to-green-700 text-white py-16">
+        <div class="container mx-auto px-4 text-center max-w-3xl">
+            <h2 class="text-4xl font-bold mb-6">Ready to Cook More and Plan Less?</h2>
+            <p class="text-xl mb-8 text-green-50">
+                Join thousands of home cooks who've unlocked their recipe collections. Start free, upgrade anytime.
+            </p>
+            <a href="register.html" class="inline-block px-8 py-4 bg-white text-green-600 font-bold text-lg rounded-lg hover:bg-gray-100 transition">
+                Get Started Free
+            </a>
+            <p class="mt-4 text-green-100 text-sm">No credit card required • Cancel anytime</p>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-gray-300 py-12">
+        <div class="container mx-auto px-4">
+            <div class="grid md:grid-cols-4 gap-8 mb-8">
+                <div>
+                    <div class="text-2xl font-bold text-white mb-4">🍳 imkitchen</div>
+                    <p class="text-sm text-gray-400">Intelligent meal planning for home cooks.</p>
+                </div>
+                <div>
+                    <h3 class="font-bold text-white mb-3">Product</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#features" class="hover:text-white">Features</a></li>
+                        <li><a href="#pricing" class="hover:text-white">Pricing</a></li>
+                        <li><a href="contact.html" class="hover:text-white">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-bold text-white mb-3">Resources</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#" class="hover:text-white">Help Center</a></li>
+                        <li><a href="#" class="hover:text-white">API Docs</a></li>
+                        <li><a href="#" class="hover:text-white">JSON Schema</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-bold text-white mb-3">Legal</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#" class="hover:text-white">Privacy Policy</a></li>
+                        <li><a href="#" class="hover:text-white">Terms of Service</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 pt-8 text-center text-sm text-gray-500">
+                © 2025 imkitchen. All rights reserved.
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

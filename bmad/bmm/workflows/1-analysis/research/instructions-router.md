@@ -2,13 +2,38 @@
 
 <critical>The workflow execution engine is governed by: {project_root}/bmad/core/tasks/workflow.xml</critical>
 <critical>You MUST have already loaded and processed: {installed_path}/workflow.yaml</critical>
-<critical>This is a ROUTER that directs to specialized research instruction sets</critical>
+<critical>Communicate all responses in {communication_language}</critical>
 
 <!-- IDE-INJECT-POINT: research-subagents -->
 
 <workflow>
 
-<step n="1" goal="Welcome and Research Type Selection">
+<critical>This is a ROUTER that directs to specialized research instruction sets</critical>
+
+<step n="1" goal="Validate workflow readiness">
+<invoke-workflow path="{project-root}/bmad/bmm/workflows/workflow-status">
+  <param>mode: validate</param>
+  <param>calling_workflow: research</param>
+</invoke-workflow>
+
+<check if="status_exists == false">
+  <output>{{suggestion}}</output>
+  <output>Note: Research is optional. Continuing without progress tracking.</output>
+  <action>Set standalone_mode = true</action>
+</check>
+
+<check if="status_exists == true">
+  <action>Store {{status_file_path}} for status updates in sub-workflows</action>
+  <action>Pass status_file_path to loaded instruction set</action>
+
+  <check if="warning != ''">
+    <output>{{warning}}</output>
+    <output>Note: Research can provide valuable insights at any project stage.</output>
+  </check>
+</check>
+</step>
+
+<step n="2" goal="Welcome and Research Type Selection">
 <action>Welcome the user to the Research Workflow</action>
 
 **The Research Workflow supports multiple research types:**
@@ -47,7 +72,7 @@ Present the user with research type options:
 
 </step>
 
-<step n="2" goal="Route to Appropriate Research Instructions">
+<step n="3" goal="Route to Appropriate Research Instructions">
 
 <critical>Based on user selection, load the appropriate instruction set</critical>
 

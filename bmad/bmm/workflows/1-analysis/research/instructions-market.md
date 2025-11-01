@@ -80,7 +80,7 @@ Search queries to execute:
 - "[market_category] market growth rate CAGR forecast"
 - "[market_category] market trends [current_year]"
 
-<elicit-required/>
+<invoke-task halt="true">{project-root}/bmad/core/tasks/adv-elicit.xml</invoke-task>
 </step>
 
 <step n="3b" title="Regulatory and Government Data">
@@ -204,8 +204,8 @@ For each major segment, research and define:
 - Purchasing frequency
 - Budget allocation
 
-<elicit-required/>
-<template-output>segment_profile_{{segment_number}}</template-output>
+<invoke-task halt="true">{project-root}/bmad/core/tasks/adv-elicit.xml</invoke-task>
+<template-output>segment*profile*{{segment_number}}</template-output>
 </step>
 
 <step n="5b" title="Jobs-to-be-Done Framework">
@@ -280,8 +280,8 @@ Gather intelligence on:
 - Team and leadership
 - Customer reviews and sentiment
 
-<elicit-required/>
-<template-output>competitor_analysis_{{competitor_number}}</template-output>
+<invoke-task halt="true">{project-root}/bmad/core/tasks/adv-elicit.xml</invoke-task>
+<template-output>competitor*analysis*{{competitor_number}}</template-output>
 </step>
 
 <step n="6c" title="Competitive Positioning Map">
@@ -404,7 +404,7 @@ For each opportunity:
 - Risk assessment
 - Success criteria
 
-<elicit-required/>
+<invoke-task halt="true">{project-root}/bmad/core/tasks/adv-elicit.xml</invoke-task>
 <template-output>market_opportunities</template-output>
 </step>
 
@@ -553,5 +553,61 @@ Create compelling executive summary with:
 </check>
 
 </step>
+
+<step n="14" goal="Update status file on completion">
+<action>Search {output_folder}/ for files matching pattern: bmm-workflow-status.md</action>
+<action>Find the most recent file (by date in filename)</action>
+
+<check if="status file exists">
+  <invoke-workflow path="{project-root}/bmad/bmm/workflows/workflow-status">
+    <param>mode: update</param>
+    <param>action: complete_workflow</param>
+    <param>workflow_name: research</param>
+  </invoke-workflow>
+
+  <check if="success == true">
+    <output>Status updated! Next: {{next_workflow}}</output>
+  </check>
+</check>
+
+<output>**✅ Research Complete ({{research_mode}} mode)**
+
+**Research Report:**
+
+- Research report generated and saved
+
+**Status file updated:**
+
+- Current step: research ({{research_mode}}) ✓
+- Progress: {{new_progress_percentage}}%
+
+**Next Steps:**
+
+- **Next required:** {{next_workflow}} ({{next_agent}} agent)
+- **Optional:** Review findings with stakeholders, or run additional analysis workflows (product-brief, game-brief, etc.)
+
+Check status anytime with: `workflow-status`
+</output>
+</check>
+
+<check if="status file not found">
+  <output>**✅ Research Complete ({{research_mode}} mode)**
+
+**Research Report:**
+
+- Research report generated and saved
+
+Note: Running in standalone mode (no status file).
+
+**Next Steps:**
+
+Since no workflow is in progress:
+
+- Review research findings
+- Refer to the BMM workflow guide if unsure what to do next
+- Or run `workflow-init` to create a workflow path and get guided next steps
+  </output>
+  </check>
+  </step>
 
 </workflow>

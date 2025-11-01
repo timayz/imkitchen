@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile & Settings - imkitchen</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-4 flex items-center justify-between">
+            <a href="dashboard-free.html" class="text-2xl font-bold text-green-600">🍳 imkitchen</a>
+            <div class="flex gap-6 items-center">
+                <a href="dashboard-free.html" class="text-gray-600 hover:text-gray-900">Dashboard</a>
+                <a href="calendar-free.html" class="text-gray-600 hover:text-gray-900">Calendar</a>
+                <a href="recipes-list.html" class="text-gray-600 hover:text-gray-900">My Recipes</a>
+                <a href="community.html" class="text-gray-600 hover:text-gray-900">Community</a>
+                <a href="profile.html" class="text-gray-900 font-semibold">Profile</a>
+            </div>
+            <div class="flex items-center gap-4">
+                <span class="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded-full font-semibold">Free Tier</span>
+                <a href="index.html" class="text-gray-600 hover:text-gray-900">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold mb-2">Profile & Settings</h1>
+            <p class="text-gray-600">Manage your account and preferences</p>
+        </div>
+
+        <div class="grid lg:grid-cols-3 gap-8">
+            <!-- Sidebar Navigation -->
+            <div class="space-y-2">
+                <button class="w-full text-left px-4 py-3 bg-green-600 text-white font-semibold rounded-lg">
+                    👤 Account Info
+                </button>
+                <button class="w-full text-left px-4 py-3 bg-white text-gray-700 hover:bg-gray-50 rounded-lg">
+                    🍽️ Meal Preferences
+                </button>
+                <button class="w-full text-left px-4 py-3 bg-white text-gray-700 hover:bg-gray-50 rounded-lg">
+                    💳 Subscription
+                </button>
+                <button class="w-full text-left px-4 py-3 bg-white text-gray-700 hover:bg-gray-50 rounded-lg">
+                    🔔 Notifications
+                </button>
+                <button class="w-full text-left px-4 py-3 bg-white text-gray-700 hover:bg-gray-50 rounded-lg">
+                    🔒 Privacy & Security
+                </button>
+            </div>
+
+            <!-- Main Content Area -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Account Information -->
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h2 class="text-xl font-bold mb-6">Account Information</h2>
+
+                    <form class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Full Name</label>
+                            <input
+                                type="text"
+                                value="Sarah Mitchell"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                            />
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Email Address</label>
+                            <input
+                                type="email"
+                                value="sarah@example.com"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                            />
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Username</label>
+                            <input
+                                type="text"
+                                value="@sarah_cooks"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                            />
+                            <p class="text-sm text-gray-500 mt-1">Used for community recipe sharing</p>
+                        </div>
+
+                        <button class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">
+                            Save Changes
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Meal Preferences -->
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h2 class="text-xl font-bold mb-6">Meal Preferences</h2>
+
+                    <form class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-3">Dietary Restrictions</label>
+                            <div class="grid md:grid-cols-2 gap-3">
+                                <label class="flex items-center">
+                                    <input type="checkbox" checked class="rounded border-gray-300 text-green-600" />
+                                    <span class="ml-2">Vegetarian</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" class="rounded border-gray-300 text-green-600" />
+                                    <span class="ml-2">Vegan</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" checked class="rounded border-gray-300 text-green-600" />
+                                    <span class="ml-2">Gluten-Free</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" class="rounded border-gray-300 text-green-600" />
+                                    <span class="ml-2">Dairy-Free</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" class="rounded border-gray-300 text-green-600" />
+                                    <span class="ml-2">Nut-Free</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" class="rounded border-gray-300 text-green-600" />
+                                    <span class="ml-2">Low-Carb</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Household Size</label>
+                            <input
+                                type="number"
+                                value="4"
+                                min="1"
+                                max="10"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                            />
+                            <p class="text-sm text-gray-500 mt-1">Number of people in your household</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                Cuisine Variety Preference
+                            </label>
+                            <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value="70"
+                                class="w-full"
+                            />
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>Repeat Often (0.0)</span>
+                                <span class="font-semibold text-green-600">Current: 0.7</span>
+                                <span>Maximum Variety (1.0)</span>
+                            </div>
+                            <p class="text-sm text-gray-500 mt-2">
+                                Controls how often the algorithm repeats similar cuisines. Higher values = more variety.
+                            </p>
+                        </div>
+
+                        <button class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">
+                            Save Preferences
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Subscription Management -->
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h2 class="text-xl font-bold mb-6">Subscription</h2>
+
+                    <div class="mb-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <div class="text-lg font-bold">Current Plan: Free</div>
+                                <div class="text-sm text-gray-600">Limited to 10 favorite recipes and Week 1 visibility</div>
+                            </div>
+                            <span class="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg">
+                                FREE
+                            </span>
+                        </div>
+
+                        <!-- Upgrade CTA -->
+                        <div class="p-6 bg-gradient-to-br from-purple-500 to-pink-500 text-white rounded-lg">
+                            <h3 class="font-bold text-xl mb-3">Upgrade to Premium</h3>
+                            <ul class="space-y-2 mb-4 text-sm">
+                                <li>✓ View all generated weeks (full month)</li>
+                                <li>✓ Unlimited favorite recipes</li>
+                                <li>✓ Priority support</li>
+                                <li>✓ Early access to new features</li>
+                            </ul>
+                            <div class="flex gap-4">
+                                <a href="dashboard-premium.html" class="flex-1 px-4 py-3 bg-white text-purple-600 font-bold text-center rounded-lg hover:bg-gray-100">
+                                    $9.99/month
+                                </a>
+                                <a href="dashboard-premium.html" class="flex-1 px-4 py-3 bg-yellow-400 text-gray-900 font-bold text-center rounded-lg hover:bg-yellow-300">
+                                    $59.94/year (Save 50%)
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notification Settings -->
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h2 class="text-xl font-bold mb-6">Notification Settings</h2>
+
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between p-4 border rounded-lg">
+                            <div>
+                                <div class="font-semibold">Morning Prep Reminders</div>
+                                <div class="text-sm text-gray-600">Get notified at 8 AM for advance preparation tasks</div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" checked class="sr-only peer" />
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                            </label>
+                        </div>
+
+                        <div class="flex items-center justify-between p-4 border rounded-lg">
+                            <div>
+                                <div class="font-semibold">Recipe Updates</div>
+                                <div class="text-sm text-gray-600">Notify when shared recipes get new reviews or ratings</div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" checked class="sr-only peer" />
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                            </label>
+                        </div>
+
+                        <div class="flex items-center justify-between p-4 border rounded-lg">
+                            <div>
+                                <div class="font-semibold">Weekly Summary</div>
+                                <div class="text-sm text-gray-600">Receive weekly meal planning summary every Sunday</div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="sr-only peer" />
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                            </label>
+                        </div>
+
+                        <div class="flex items-center justify-between p-4 border rounded-lg">
+                            <div>
+                                <div class="font-semibold">Marketing Emails</div>
+                                <div class="text-sm text-gray-600">Receive updates about new features and special offers</div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="sr-only peer" />
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Change Password -->
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h2 class="text-xl font-bold mb-6">Change Password</h2>
+
+                    <form class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Current Password</label>
+                            <input
+                                type="password"
+                                placeholder="••••••••"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                            />
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">New Password</label>
+                            <input
+                                type="password"
+                                placeholder="••••••••"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                            />
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Confirm New Password</label>
+                            <input
+                                type="password"
+                                placeholder="••••••••"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                            />
+                        </div>
+
+                        <button class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">
+                            Update Password
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Danger Zone -->
+                <div class="bg-white rounded-lg shadow-lg p-6 border-2 border-red-200">
+                    <h2 class="text-xl font-bold mb-4 text-red-800">Danger Zone</h2>
+
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="font-semibold">Delete Account</div>
+                                <div class="text-sm text-gray-600">Permanently delete your account and all data</div>
+                            </div>
+                            <button onclick="if(confirm('Are you sure? This cannot be undone.')) alert('Account deletion initiated')" class="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700">
+                                Delete Account
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
