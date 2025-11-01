@@ -1,0 +1,15 @@
+[package]
+name = "imkitchen-recipe"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+# Unused - will be needed when implementing recipe domain
+# evento.workspace = true
+# sqlx.workspace = true
+# tokio.workspace = true
+# validator.workspace = true
+# anyhow.workspace = true
+# serde.workspace = true
+# bincode.workspace = true
+# tracing.workspace = true

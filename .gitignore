@@ -1,2 +1,19 @@
 # Docker
 .docker/traefik/certs/
+
+# Rust
+target/
+
+# Databases
+*.db
+*.db-shm
+*.db-wal
+
+# Configuration
+config/dev.toml
+
+# Node/Playwright
+node_modules/
+/test-results/
+/playwright-report/
+/playwright/.cache/
