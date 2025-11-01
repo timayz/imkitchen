@@ -2,10 +2,11 @@
 `make check` must succeed, always run `make check` at the end to make sure it succeed, do not ignore test.
 git checkout new, add -A, commit, push.
 create PR: 
-  - title: story title,no story num, in lower case 
+  - title: same as commit 
   - body: 
-    - include tasks (task_title) checklist without subtasks (remove # from AC num) 
+    - comprehensible details description for release changelog
     - closed issue id (use story title to search)
+  - target: alpha
 
 git checkout new,add -A,commit,push,create PR witch closed github issue 141 on merged
 

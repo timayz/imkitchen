@@ -55,6 +55,7 @@ async fn migrate_evento(config: &Config) -> anyhow::Result<()> {
     let mut conn = pool.acquire().await?;
     migrator.run(&mut *conn, &Plan::apply_all()).await?;
 
+    conn.close().await?;
     pool.close().await;
 
     tracing::info!("Evento database initialized");

@@ -26,7 +26,7 @@ down:
 
 # Watch and run server on code changes
 dev:
-	cargo watch -x "run -- serve"
+	cargo watch -x "run -- serve -c config/dev.toml"
 
 # Run Clippy linter for code quality
 lint:

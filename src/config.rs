@@ -33,26 +33,6 @@ pub struct LoggingConfig {
     pub format: String,
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            server: ServerConfig {
-                host: "0.0.0.0".to_string(),
-                port: 3000,
-            },
-            database: DatabaseConfig {
-                evento_db: "evento.db".to_string(),
-                queries_db: "queries.db".to_string(),
-                validation_db: "validation.db".to_string(),
-            },
-            logging: LoggingConfig {
-                level: "info".to_string(),
-                format: "pretty".to_string(),
-            },
-        }
-    }
-}
-
 impl Config {
     /// Load configuration from optional file and environment variables
     ///
@@ -63,7 +43,8 @@ impl Config {
     ///
     /// Example environment variable: IMKITCHEN_SERVER__PORT=8080
     pub fn load(config_path: Option<&str>) -> Result<Self, ConfigError> {
-        let mut builder = ConfigLoader::builder();
+        let mut builder =
+            ConfigLoader::builder().add_source(File::with_name("config/default").required(false));
 
         // Add custom config file if provided
         if let Some(path) = config_path {
@@ -76,6 +57,6 @@ impl Config {
             .add_source(Environment::with_prefix("IMKITCHEN").separator("__"))
             .build()?;
 
-        config.try_deserialize().or_else(|_| Ok(Self::default()))
+        config.try_deserialize()
     }
 }
