@@ -10,7 +10,7 @@ target/
 *.db-wal
 
 # Configuration
-config/dev.toml
+config/*.toml
 
 # Node/Playwright
 node_modules/
