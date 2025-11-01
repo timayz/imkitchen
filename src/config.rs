@@ -33,28 +33,42 @@ pub struct LoggingConfig {
     pub format: String,
 }
 
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            server: ServerConfig {
+                host: "0.0.0.0".to_string(),
+                port: 3000,
+            },
+            database: DatabaseConfig {
+                evento_db: "evento.db".to_string(),
+                queries_db: "queries.db".to_string(),
+                validation_db: "validation.db".to_string(),
+            },
+            logging: LoggingConfig {
+                level: "info".to_string(),
+                format: "pretty".to_string(),
+            },
+        }
+    }
+}
+
 impl Config {
-    /// Load configuration from files and environment variables
+    /// Load configuration from optional file and environment variables
     ///
     /// Configuration is loaded in this order (later sources override earlier ones):
-    /// 1. config/default.toml (required)
-    /// 2. Custom config file (if path provided)
-    /// 3. config/dev.toml (optional, for local development)
-    /// 4. Environment variables (prefix: IMKITCHEN_)
+    /// 1. Default values (hardcoded)
+    /// 2. Custom config file (if path provided via --config)
+    /// 3. Environment variables (prefix: IMKITCHEN_)
     ///
     /// Example environment variable: IMKITCHEN_SERVER__PORT=8080
     pub fn load(config_path: Option<&str>) -> Result<Self, ConfigError> {
-        let mut builder = ConfigLoader::builder()
-            // Start with default config
-            .add_source(File::with_name("config/default"));
+        let mut builder = ConfigLoader::builder();
 
         // Add custom config file if provided
         if let Some(path) = config_path {
             builder = builder.add_source(File::with_name(path));
         }
-
-        // Add dev.toml if it exists (for local development overrides)
-        builder = builder.add_source(File::with_name("config/dev").required(false));
 
         // Add environment variables (with prefix IMKITCHEN_)
         // Example: IMKITCHEN_SERVER__PORT=8080
@@ -62,6 +76,6 @@ impl Config {
             .add_source(Environment::with_prefix("IMKITCHEN").separator("__"))
             .build()?;
 
-        config.try_deserialize()
+        config.try_deserialize().or_else(|_| Ok(Self::default()))
     }
 }
