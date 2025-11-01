@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - imkitchen</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-4 flex items-center justify-between">
+            <a href="dashboard-premium.html" class="text-2xl font-bold text-green-600">🍳 imkitchen</a>
+            <div class="flex gap-6 items-center">
+                <a href="dashboard-premium.html" class="text-gray-900 font-semibold">Dashboard</a>
+                <a href="calendar-premium.html" class="text-gray-600 hover:text-gray-900">Calendar</a>
+                <a href="recipes-list.html" class="text-gray-600 hover:text-gray-900">My Recipes</a>
+                <a href="community.html" class="text-gray-600 hover:text-gray-900">Community</a>
+                <a href="profile.html" class="text-gray-600 hover:text-gray-900">Profile</a>
+            </div>
+            <div class="flex items-center gap-4">
+                <span class="px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm rounded-full font-semibold">✨ Premium</span>
+                <a href="index.html" class="text-gray-600 hover:text-gray-900">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-8">
+        <!-- Welcome -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold mb-2">Welcome back, Michael!</h1>
+            <p class="text-gray-600">Here's what's cooking today</p>
+        </div>
+
+        <!-- Today's Meals -->
+        <div class="grid lg:grid-cols-3 gap-6 mb-8">
+            <!-- Nearest Day Card -->
+            <div class="lg:col-span-2 bg-white rounded-lg shadow-lg p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold">Monday, November 4, 2025</h2>
+                        <p class="text-gray-600">Today's Meal Plan</p>
+                    </div>
+                    <div class="px-4 py-2 bg-green-100 text-green-800 rounded-lg font-semibold">
+                        Week 1
+                    </div>
+                </div>
+
+                <!-- Appetizer -->
+                <div class="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-lg">
+                    <div class="flex items-start gap-4">
+                        <span class="text-4xl">🥗</span>
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between mb-2">
+                                <div>
+                                    <div class="text-xs text-blue-600 font-semibold uppercase mb-1">Appetizer</div>
+                                    <h3 class="font-bold text-lg">Caesar Salad</h3>
+                                </div>
+                                <div class="text-sm text-gray-600">⏱️ 15 min</div>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-2">Fresh romaine, parmesan, croutons with homemade Caesar dressing</p>
+                            <div class="flex gap-2 text-xs">
+                                <span class="px-2 py-1 bg-blue-200 text-blue-800 rounded">Vegetarian</span>
+                                <span class="px-2 py-1 bg-blue-200 text-blue-800 rounded">Italian</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Course + Accompaniment -->
+                <div class="mb-6 p-4 bg-orange-50 border-l-4 border-orange-500 rounded-lg">
+                    <div class="flex items-start gap-4">
+                        <span class="text-4xl">🍛</span>
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between mb-2">
+                                <div>
+                                    <div class="text-xs text-orange-600 font-semibold uppercase mb-1">Main Course</div>
+                                    <h3 class="font-bold text-lg">Thai Red Curry with Chicken</h3>
+                                </div>
+                                <div class="text-sm text-gray-600">⏱️ 45 min</div>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-3">Spicy coconut curry with vegetables and tender chicken</p>
+
+                            <!-- Accompaniment -->
+                            <div class="mb-3 p-3 bg-white rounded border border-orange-200">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-2xl">🍚</span>
+                                    <div>
+                                        <div class="text-xs text-purple-600 font-semibold uppercase">Accompaniment</div>
+                                        <div class="font-semibold">Jasmine Rice</div>
+                                        <div class="text-xs text-gray-600">⏱️ 20 min</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex gap-2 text-xs">
+                                <span class="px-2 py-1 bg-orange-200 text-orange-800 rounded">Gluten-Free</span>
+                                <span class="px-2 py-1 bg-orange-200 text-orange-800 rounded">Thai</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dessert -->
+                <div class="p-4 bg-pink-50 border-l-4 border-pink-500 rounded-lg">
+                    <div class="flex items-start gap-4">
+                        <span class="text-4xl">🍰</span>
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between mb-2">
+                                <div>
+                                    <div class="text-xs text-pink-600 font-semibold uppercase mb-1">Dessert</div>
+                                    <h3 class="font-bold text-lg">Chocolate Mousse</h3>
+                                </div>
+                                <div class="text-sm text-gray-600">⏱️ 30 min + 2h chill</div>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-2">Rich dark chocolate mousse with whipped cream</p>
+                            <div class="flex gap-2 text-xs">
+                                <span class="px-2 py-1 bg-pink-200 text-pink-800 rounded">Vegetarian</span>
+                                <span class="px-2 py-1 bg-pink-200 text-pink-800 rounded">French</span>
+                            </div>
+                            <div class="mt-3 p-2 bg-yellow-100 border border-yellow-300 rounded text-sm text-yellow-800">
+                                ⏰ <strong>Prep Reminder:</strong> Prepare this dessert in the morning at 8 AM (2h chill time required)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="space-y-6">
+                <!-- Meal Plan Status -->
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h3 class="font-bold text-lg mb-4">Meal Plan Status</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-600">Total Weeks Generated</span>
+                            <span class="font-bold">5 weeks</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-600">Full Month Access</span>
+                            <span class="font-bold text-purple-600">✓ Premium</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-600">Current Week</span>
+                            <span class="font-bold">Week 1</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-600">Favorited Recipes</span>
+                            <span class="font-bold">47 recipes</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h3 class="font-bold text-lg mb-4">Quick Actions</h3>
+                    <div class="space-y-3">
+                        <a href="calendar-premium.html" class="block w-full px-4 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition text-center">
+                            📅 View Full Calendar
+                        </a>
+                        <a href="shopping-list.html" class="block w-full px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition text-center">
+                            🛒 Shopping Lists (All Weeks)
+                        </a>
+                        <button onclick="alert('Regenerating all future weeks...')" class="block w-full px-4 py-3 bg-orange-600 text-white font-semibold rounded-lg hover:bg-orange-700 transition text-center">
+                            🔄 Regenerate All Weeks
+                        </button>
+                        <a href="recipes-list.html" class="block w-full px-4 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition text-center">
+                            ➕ Add More Recipes
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Premium Benefits -->
+                <div class="bg-gradient-to-br from-purple-500 to-pink-500 text-white rounded-lg shadow-lg p-6">
+                    <h3 class="font-bold text-lg mb-2">✨ Premium Active</h3>
+                    <p class="text-sm mb-4 text-purple-100">
+                        Enjoying full access to imkitchen
+                    </p>
+                    <ul class="text-sm space-y-2 mb-4">
+                        <li>✓ View all 5 generated weeks</li>
+                        <li>✓ Unlimited favorite recipes</li>
+                        <li>✓ Priority support</li>
+                    </ul>
+                    <a href="profile.html" class="block w-full px-4 py-2 bg-white text-purple-600 font-bold rounded-lg hover:bg-gray-100 transition text-center">
+                        Manage Subscription
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upcoming Week Preview -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-bold mb-4">This Week at a Glance</h2>
+            <div class="grid md:grid-cols-7 gap-4">
+                <!-- Monday (Today) -->
+                <div class="p-4 bg-green-50 border-2 border-green-500 rounded-lg">
+                    <div class="font-bold text-sm mb-2">Mon 11/4</div>
+                    <div class="text-xs text-gray-600 space-y-1">
+                        <div>🥗 Caesar Salad</div>
+                        <div>🍛 Thai Curry</div>
+                        <div>🍰 Mousse</div>
+                    </div>
+                </div>
+
+                <!-- Tuesday -->
+                <div class="p-4 bg-gray-50 border border-gray-200 rounded-lg hover:border-green-500 cursor-pointer">
+                    <div class="font-bold text-sm mb-2">Tue 11/5</div>
+                    <div class="text-xs text-gray-600 space-y-1">
+                        <div>🍝 Carbonara</div>
+                        <div>🥖 Garlic Bread</div>
+                        <div>🍨 Tiramisu</div>
+                    </div>
+                </div>
+
+                <!-- Wednesday -->
+                <div class="p-4 bg-gray-50 border border-gray-200 rounded-lg hover:border-green-500 cursor-pointer">
+                    <div class="font-bold text-sm mb-2">Wed 11/6</div>
+                    <div class="text-xs text-gray-600 space-y-1">
+                        <div>🥟 Gyoza</div>
+                        <div>🍜 Ramen</div>
+                        <div>🍵 Mochi</div>
+                    </div>
+                </div>
+
+                <!-- Thursday -->
+                <div class="p-4 bg-gray-50 border border-gray-200 rounded-lg hover:border-green-500 cursor-pointer">
+                    <div class="font-bold text-sm mb-2">Thu 11/7</div>
+                    <div class="text-xs text-gray-600 space-y-1">
+                        <div>🌮 Tacos</div>
+                        <div>🍚 Mexican Rice</div>
+                        <div>🍮 Flan</div>
+                    </div>
+                </div>
+
+                <!-- Friday -->
+                <div class="p-4 bg-gray-50 border border-gray-200 rounded-lg hover:border-green-500 cursor-pointer">
+                    <div class="font-bold text-sm mb-2">Fri 11/8</div>
+                    <div class="text-xs text-gray-600 space-y-1">
+                        <div>🐟 Fish & Chips</div>
+                        <div>🥗 Coleslaw</div>
+                        <div>🍰 Cheesecake</div>
+                    </div>
+                </div>
+
+                <!-- Saturday -->
+                <div class="p-4 bg-gray-50 border border-gray-200 rounded-lg hover:border-green-500 cursor-pointer">
+                    <div class="font-bold text-sm mb-2">Sat 11/9</div>
+                    <div class="text-xs text-gray-600 space-y-1">
+                        <div>🍕 Margherita Pizza</div>
+                        <div>🥗 Caprese</div>
+                        <div>🍦 Gelato</div>
+                    </div>
+                </div>
+
+                <!-- Sunday -->
+                <div class="p-4 bg-gray-50 border border-gray-200 rounded-lg hover:border-green-500 cursor-pointer">
+                    <div class="font-bold text-sm mb-2">Sun 11/10</div>
+                    <div class="text-xs text-gray-600 space-y-1">
+                        <div>🍗 Roast Chicken</div>
+                        <div>🥔 Roast Potatoes</div>
+                        <div>🍰 Apple Pie</div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 text-center">
+                <a href="calendar-premium.html" class="text-green-600 font-semibold hover:text-green-700">
+                    View Full Month Calendar →
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
