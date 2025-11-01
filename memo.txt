@@ -1,13 +1,13 @@
 # after create-story/story-context
 `make check` must succeed, always run `make check` at the end to make sure it succeed, do not ignore test.
-git checkout new, conventional commits, push.
+git checkout new, add -A, commit, push.
 create PR: 
-  - title: story title,conventional commits,no story num, in lower case 
+  - title: story title,no story num, in lower case 
   - body: 
     - include tasks (task_title) checklist without subtasks (remove # from AC num) 
     - closed issue id (use story title to search)
 
-git new branch,git add all,conventional commits,push,create PR witch closed github issue 141 on merged
+git checkout new,add -A,commit,push,create PR witch closed github issue 141 on merged
 
 # init milestones / issues from epic
 can you create all epics as milestone with associeted stories as issue ? epic title format
