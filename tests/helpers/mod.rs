@@ -3,6 +3,7 @@
 //! This module provides reusable utilities for setting up test databases
 //! following DRY principles as specified in CLAUDE.md testing guidelines.
 
+use evento::migrator::{Migrate, Plan};
 use sqlx::SqlitePool;
 
 /// Test database configuration
@@ -63,80 +64,11 @@ pub async fn setup_test_databases() -> anyhow::Result<TestDatabases> {
 
 /// Set up evento schema in a pool
 ///
-/// Creates all evento tables and indices needed for event sourcing.
+/// Creates all evento tables and indices needed for event sourcing using evento::sql_migrator.
 async fn setup_evento_schema(pool: &SqlitePool) -> anyhow::Result<()> {
-    // Create event table
-    sqlx::query(
-        r#"
-        CREATE TABLE IF NOT EXISTS event (
-            id TEXT PRIMARY KEY NOT NULL,
-            name TEXT NOT NULL,
-            aggregator_type TEXT NOT NULL,
-            aggregator_id TEXT NOT NULL,
-            version INTEGER NOT NULL,
-            data BLOB NOT NULL,
-            metadata BLOB NOT NULL,
-            routing_key TEXT,
-            timestamp INTEGER NOT NULL
-        );
-        "#,
-    )
-    .execute(pool)
-    .await?;
-
-    // Create indices
-    sqlx::query("CREATE INDEX IF NOT EXISTS idx_event_type ON event(aggregator_type);")
-        .execute(pool)
-        .await?;
-
-    sqlx::query(
-        "CREATE INDEX IF NOT EXISTS idx_event_type_id ON event(aggregator_type, aggregator_id);",
-    )
-    .execute(pool)
-    .await?;
-
-    sqlx::query("CREATE INDEX IF NOT EXISTS idx_event_routing_key_type ON event(routing_key, aggregator_type);")
-        .execute(pool)
-        .await?;
-
-    sqlx::query("CREATE UNIQUE INDEX IF NOT EXISTS idx_event_type_id_version ON event(aggregator_type, aggregator_id, version);")
-        .execute(pool)
-        .await?;
-
-    // Create snapshot table
-    sqlx::query(
-        r#"
-        CREATE TABLE IF NOT EXISTS snapshot (
-            id TEXT NOT NULL,
-            type TEXT NOT NULL,
-            cursor TEXT NOT NULL,
-            revision TEXT NOT NULL,
-            data BLOB NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-            updated_at TIMESTAMP,
-            PRIMARY KEY (type, id)
-        );
-        "#,
-    )
-    .execute(pool)
-    .await?;
-
-    // Create subscriber table
-    sqlx::query(
-        r#"
-        CREATE TABLE IF NOT EXISTS subscriber (
-            key TEXT PRIMARY KEY NOT NULL,
-            worker_id TEXT NOT NULL,
-            cursor TEXT,
-            lag INTEGER NOT NULL,
-            enabled BOOLEAN DEFAULT 1 NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-            updated_at TIMESTAMP
-        );
-        "#,
-    )
-    .execute(pool)
-    .await?;
+    let migrator = evento::sql_migrator::new_migrator::<sqlx::Sqlite>()?;
+    let mut conn = pool.acquire().await?;
+    migrator.run(&mut *conn, &Plan::apply_all()).await?;
 
     Ok(())
 }
