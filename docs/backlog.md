@@ -17,3 +17,7 @@ Routing guidance:
 | 2025-11-01 | 1.3 | 1 | TechDebt | Low | Future maintainer | Open | Add inline comment to migration explaining JSON format for dietary_restrictions (migrations/queries/20251101230002_user_profiles.sql:4) |
 | 2025-11-01 | 1.3 | 1 | Enhancement | Medium | Security enhancement epic | Open | Consider logging failed authentication attempts in AuthUser extractor for security monitoring (src/auth/jwt.rs:93) |
 | 2025-11-01 | 1.3 | 1 | Enhancement | Low | UX polish epic | Open | Surface specific validation errors to users in profile route handler for better UX (src/routes/auth/profile.rs:140-156) |
+| 2025-11-02 | 1.4 | 1 | Performance | Medium | Dev | Resolved | ✅ Fixed N+1 Query - LEFT JOIN user_profiles optimization reduces admin page from 22 to 2 queries (91% reduction) (src/queries/user.rs:397-400) |
+| 2025-11-02 | 1.4 | 1 | Bug | Medium | Dev | Resolved | ✅ TwinSpark Attributes Correct - Investigation confirmed ts-req-selector is required for <tr> element extraction, correctly implemented |
+| 2025-11-02 | 1.4 | 1 | Testing | Low | TBD | Open | Add E2E Middleware Test - Add HTTP-level test verifying /admin/users returns 403 for non-admin users (tests/admin_test.rs, AC #2) - Optional enhancement, command-level auth test exists |
+| 2025-11-02 | 1.4 | 1 | Enhancement | Low | UX polish epic | Open | Format Timestamp Display - Add human-readable date format instead of raw Unix timestamp (templates/pages/admin/users.html:102) - Optional UX enhancement |

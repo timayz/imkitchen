@@ -2,8 +2,9 @@
 
 use crate::aggregate::User;
 use crate::event::{
-    EventMetadata, UserLoggedIn, UserProfileUpdated, UserRegistered, UserRegistrationFailed,
-    UserRegistrationSucceeded,
+    EventMetadata, UserActivated, UserDemotedFromAdmin, UserLoggedIn, UserPremiumBypassToggled,
+    UserProfileUpdated, UserPromotedToAdmin, UserRegistered, UserRegistrationFailed,
+    UserRegistrationSucceeded, UserSuspended,
 };
 use argon2::{password_hash::PasswordHasher, Argon2};
 use evento::{AggregatorName, Context, EventDetails, Executor};
@@ -38,6 +39,8 @@ pub struct RegisterUserInput {
         custom(function = "validate_password_complexity")
     )]
     pub password: String,
+    /// Whether this user should be an admin (defaults to false)
+    pub is_admin: Option<bool>,
 }
 
 /// Input for user login
@@ -66,6 +69,29 @@ pub struct UpdateProfileInput {
     #[validate(custom(function = "validate_cuisine_variety_weight"))]
     pub cuisine_variety_weight: f32,
     pub household_size: Option<i32>,
+}
+
+/// Input for suspending a user (admin only)
+pub struct SuspendUserInput {
+    pub user_id: String,
+    pub reason: Option<String>,
+}
+
+/// Input for activating a suspended user (admin only)
+pub struct ActivateUserInput {
+    pub user_id: String,
+}
+
+/// Input for toggling premium bypass flag (admin only)
+pub struct TogglePremiumBypassInput {
+    pub user_id: String,
+    pub premium_bypass: bool,
+}
+
+/// Input for setting admin status (CLI only)
+pub struct SetAdminStatusInput {
+    pub user_id: String,
+    pub is_admin: bool,
 }
 
 /// User command handlers
@@ -111,6 +137,7 @@ impl<E: Executor> Command<E> {
             .data(&UserRegistered {
                 email: input.email.clone(),
                 hashed_password,
+                is_admin: input.is_admin.unwrap_or(false),
             })?
             .metadata(&metadata)?
             .commit(&self.evento)
@@ -231,6 +258,205 @@ impl<E: Executor> Command<E> {
 
         Ok(())
     }
+
+    /// Suspend a user account (admin only)
+    pub async fn suspend_user(
+        &self,
+        input: SuspendUserInput,
+        metadata: EventMetadata,
+    ) -> anyhow::Result<()> {
+        info!(
+            admin_user_id = ?metadata.user_id,
+            target_user_id = %input.user_id,
+            request_id = %metadata.request_id,
+            "Suspending user account"
+        );
+
+        // Verify requesting user is admin
+        let admin_user_id = metadata.user_id.as_ref().ok_or_else(|| {
+            error!("Suspend user command requires admin user_id in metadata");
+            anyhow::anyhow!("Unauthorized: admin user required")
+        })?;
+
+        let admin_result = evento::load::<User, _>(&self.evento, admin_user_id).await?;
+        let admin = &admin_result.item;
+
+        if !admin.is_admin {
+            error!(user_id = %admin_user_id, "Non-admin user attempted to suspend account");
+            return Err(anyhow::anyhow!("Unauthorized: admin privileges required"));
+        }
+
+        // Verify target user exists
+        let _target_user = evento::load::<User, _>(&self.evento, &input.user_id).await?;
+
+        // Emit UserSuspended event
+        evento::save::<User>(&input.user_id)
+            .data(&UserSuspended {
+                reason: input.reason,
+            })?
+            .metadata(&metadata)?
+            .commit(&self.evento)
+            .await?;
+
+        info!(
+            target_user_id = %input.user_id,
+            admin_user_id = %admin_user_id,
+            "User suspended successfully"
+        );
+
+        Ok(())
+    }
+
+    /// Activate a suspended user account (admin only)
+    pub async fn activate_user(
+        &self,
+        input: ActivateUserInput,
+        metadata: EventMetadata,
+    ) -> anyhow::Result<()> {
+        info!(
+            admin_user_id = ?metadata.user_id,
+            target_user_id = %input.user_id,
+            request_id = %metadata.request_id,
+            "Activating user account"
+        );
+
+        // Verify requesting user is admin
+        let admin_user_id = metadata.user_id.as_ref().ok_or_else(|| {
+            error!("Activate user command requires admin user_id in metadata");
+            anyhow::anyhow!("Unauthorized: admin user required")
+        })?;
+
+        let admin_result = evento::load::<User, _>(&self.evento, admin_user_id).await?;
+        let admin = &admin_result.item;
+
+        if !admin.is_admin {
+            error!(user_id = %admin_user_id, "Non-admin user attempted to activate account");
+            return Err(anyhow::anyhow!("Unauthorized: admin privileges required"));
+        }
+
+        // Verify target user exists
+        let _target_user = evento::load::<User, _>(&self.evento, &input.user_id).await?;
+
+        // Emit UserActivated event
+        evento::save::<User>(&input.user_id)
+            .data(&UserActivated {})?
+            .metadata(&metadata)?
+            .commit(&self.evento)
+            .await?;
+
+        info!(
+            target_user_id = %input.user_id,
+            admin_user_id = %admin_user_id,
+            "User activated successfully"
+        );
+
+        Ok(())
+    }
+
+    /// Toggle premium bypass flag for a user (admin only)
+    pub async fn toggle_premium_bypass(
+        &self,
+        input: TogglePremiumBypassInput,
+        metadata: EventMetadata,
+    ) -> anyhow::Result<()> {
+        info!(
+            admin_user_id = ?metadata.user_id,
+            target_user_id = %input.user_id,
+            premium_bypass = input.premium_bypass,
+            request_id = %metadata.request_id,
+            "Toggling premium bypass flag"
+        );
+
+        // Verify requesting user is admin
+        let admin_user_id = metadata.user_id.as_ref().ok_or_else(|| {
+            error!("Toggle premium bypass command requires admin user_id in metadata");
+            anyhow::anyhow!("Unauthorized: admin user required")
+        })?;
+
+        let admin_result = evento::load::<User, _>(&self.evento, admin_user_id).await?;
+        let admin = &admin_result.item;
+
+        if !admin.is_admin {
+            error!(user_id = %admin_user_id, "Non-admin user attempted to toggle premium bypass");
+            return Err(anyhow::anyhow!("Unauthorized: admin privileges required"));
+        }
+
+        // Verify target user exists
+        let _target_user = evento::load::<User, _>(&self.evento, &input.user_id).await?;
+
+        // Emit UserPremiumBypassToggled event
+        evento::save::<User>(&input.user_id)
+            .data(&UserPremiumBypassToggled {
+                premium_bypass: input.premium_bypass,
+            })?
+            .metadata(&metadata)?
+            .commit(&self.evento)
+            .await?;
+
+        info!(
+            target_user_id = %input.user_id,
+            admin_user_id = %admin_user_id,
+            premium_bypass = input.premium_bypass,
+            "Premium bypass toggled successfully"
+        );
+
+        Ok(())
+    }
+
+    /// Set admin status for a user (CLI only - no authorization check)
+    pub async fn set_admin_status(
+        &self,
+        input: SetAdminStatusInput,
+        metadata: EventMetadata,
+    ) -> anyhow::Result<()> {
+        info!(
+            target_user_id = %input.user_id,
+            is_admin = input.is_admin,
+            request_id = %metadata.request_id,
+            "Setting admin status via CLI"
+        );
+
+        // Verify target user exists
+        let user_result = evento::load::<User, _>(&self.evento, &input.user_id).await?;
+        let current_is_admin = user_result.item.is_admin;
+
+        // Only emit event if status is actually changing
+        if current_is_admin == input.is_admin {
+            info!(
+                user_id = %input.user_id,
+                is_admin = input.is_admin,
+                "User already has this admin status, no change needed"
+            );
+            return Ok(());
+        }
+
+        // Emit appropriate event
+        if input.is_admin {
+            evento::save::<User>(&input.user_id)
+                .data(&UserPromotedToAdmin {})?
+                .metadata(&metadata)?
+                .commit(&self.evento)
+                .await?;
+
+            info!(
+                user_id = %input.user_id,
+                "User promoted to admin successfully"
+            );
+        } else {
+            evento::save::<User>(&input.user_id)
+                .data(&UserDemotedFromAdmin {})?
+                .metadata(&metadata)?
+                .commit(&self.evento)
+                .await?;
+
+            info!(
+                user_id = %input.user_id,
+                "User demoted from admin successfully"
+            );
+        }
+
+        Ok(())
+    }
 }
 
 /// Command handler for UserRegistered event - validates email uniqueness
@@ -285,6 +511,7 @@ async fn on_user_registered<E: Executor>(
         .data(&UserRegistrationSucceeded {
             email: event.data.email.clone(),
             hashed_password: event.data.hashed_password.clone(),
+            is_admin: event.data.is_admin,
         })?
         .metadata(&event.metadata)?
         .commit(context.executor)
@@ -311,4 +538,9 @@ pub fn subscribe_user_command<E: Executor + Clone>(
         .skip::<User, UserRegistrationFailed>()
         .skip::<User, UserLoggedIn>()
         .skip::<User, UserProfileUpdated>()
+        .skip::<User, UserSuspended>()
+        .skip::<User, UserActivated>()
+        .skip::<User, UserPremiumBypassToggled>()
+        .skip::<User, UserPromotedToAdmin>()
+        .skip::<User, UserDemotedFromAdmin>()
 }

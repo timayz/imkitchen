@@ -27,6 +27,13 @@ enum Commands {
     Migrate,
     /// Drop all databases and run migrations
     Reset,
+    /// Set admin status for a user by email
+    SetAdmin {
+        /// User email address
+        email: String,
+        /// Admin status (true/false)
+        is_admin: String,
+    },
 }
 
 #[tokio::main]
@@ -61,7 +68,69 @@ async fn main() -> anyhow::Result<()> {
             migrate::reset(&config).await?;
             tracing::info!("Databases reset successfully");
         }
+        Commands::SetAdmin { email, is_admin } => {
+            let is_admin_bool = is_admin.parse::<bool>().map_err(|_| {
+                anyhow::anyhow!("Invalid value for is_admin. Use 'true' or 'false'")
+            })?;
+            tracing::info!("Setting admin status for user: {}", email);
+            set_admin(&config, &email, is_admin_bool).await?;
+            tracing::info!(
+                "Admin status set successfully: {} is now {}",
+                email,
+                if is_admin_bool {
+                    "an admin"
+                } else {
+                    "not an admin"
+                }
+            );
+        }
     }
+
+    Ok(())
+}
+
+/// Set admin status for a user by email
+async fn set_admin(config: &imkitchen::Config, email: &str, is_admin: bool) -> anyhow::Result<()> {
+    use imkitchen::queries::user::get_user_by_email;
+    use imkitchen_user::command::{Command, SetAdminStatusInput};
+    use imkitchen_user::event::EventMetadata;
+    use sqlx::SqlitePool;
+    use ulid::Ulid;
+
+    // Connect to databases
+    let evento_pool = SqlitePool::connect(&config.database.evento_db).await?;
+    let query_pool = SqlitePool::connect(&config.database.queries_db).await?;
+
+    let evento = evento::Sqlite::from(evento_pool);
+
+    // Find user by email
+    let user = get_user_by_email(&query_pool, email)
+        .await?
+        .ok_or_else(|| anyhow::anyhow!("User not found with email: {}", email))?;
+
+    // Create command
+    let command = Command::new(evento.clone());
+
+    // Set admin status
+    let metadata = EventMetadata {
+        user_id: None, // CLI operation, no user context
+        request_id: Ulid::new().to_string(),
+    };
+
+    command
+        .set_admin_status(
+            SetAdminStatusInput {
+                user_id: user.id.clone(),
+                is_admin,
+            },
+            metadata,
+        )
+        .await?;
+
+    // Process events synchronously
+    imkitchen::queries::user::subscribe_user_query::<evento::Sqlite>(query_pool.clone())
+        .unsafe_oneshot(&evento)
+        .await?;
 
     Ok(())
 }

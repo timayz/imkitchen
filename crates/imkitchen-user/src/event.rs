@@ -16,6 +16,7 @@ pub struct EventMetadata {
 pub struct UserRegistered {
     pub email: String,
     pub hashed_password: String,
+    pub is_admin: bool,
 }
 
 /// User registration succeeded after validation
@@ -23,6 +24,7 @@ pub struct UserRegistered {
 pub struct UserRegistrationSucceeded {
     pub email: String,
     pub hashed_password: String,
+    pub is_admin: bool,
 }
 
 /// User registration failed during validation
@@ -44,3 +46,27 @@ pub struct UserProfileUpdated {
     pub cuisine_variety_weight: f32,
     pub household_size: Option<i32>,
 }
+
+/// User account suspended by admin
+#[derive(evento::AggregatorName, Encode, Decode)]
+pub struct UserSuspended {
+    pub reason: Option<String>,
+}
+
+/// User account activated (unsuspended) by admin
+#[derive(evento::AggregatorName, Encode, Decode)]
+pub struct UserActivated {}
+
+/// User premium bypass flag toggled by admin
+#[derive(evento::AggregatorName, Encode, Decode)]
+pub struct UserPremiumBypassToggled {
+    pub premium_bypass: bool,
+}
+
+/// User promoted to admin status
+#[derive(evento::AggregatorName, Encode, Decode)]
+pub struct UserPromotedToAdmin {}
+
+/// User demoted from admin status
+#[derive(evento::AggregatorName, Encode, Decode)]
+pub struct UserDemotedFromAdmin {}
