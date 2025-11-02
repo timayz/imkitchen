@@ -31,3 +31,13 @@ format = "pretty"
 # Global premium bypass - NEVER enable in production!
 # Use config/dev.toml for local development bypass
 global_premium_bypass = false
+
+[email]
+# SMTP email configuration
+# IMPORTANT: Never commit credentials! Set smtp_username and smtp_password in config/dev.toml
+smtp_host = "localhost"
+smtp_port = 1025
+smtp_username = ""  # Set in config/dev.toml
+smtp_password = ""  # Set in config/dev.toml (never commit)
+from_address = "noreply@imkitchen.app"
+admin_emails = ["admin@imkitchen.app"]

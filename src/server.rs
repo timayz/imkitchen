@@ -8,6 +8,7 @@ use imkitchen::routes::auth::{
     get_login, get_profile, get_register, get_register_status, post_login, post_logout,
     post_profile, post_register, AppState,
 };
+use imkitchen::routes::contact::{get_contact, post_contact};
 use imkitchen::Config;
 use sqlx::SqlitePool;
 use std::net::SocketAddr;
@@ -34,6 +35,16 @@ pub async fn serve(config: &Config, port: u16) -> anyhow::Result<()> {
     imkitchen::queries::user::subscribe_user_query::<evento::Sqlite>(query_pool.clone())
         .run(&evento)
         .await?;
+
+    // Create email service
+    let email_service = imkitchen::email::EmailService::new(&config.email)?;
+
+    imkitchen::queries::contact::subscribe_contact_query::<evento::Sqlite>(
+        query_pool.clone(),
+        email_service,
+    )
+    .run(&evento)
+    .await?;
 
     info!("Creating application state...");
 
@@ -97,6 +108,8 @@ fn create_router(state: AppState, auth_state: imkitchen::auth::middleware::AuthS
         .route("/auth/login", get(get_login).post(post_login))
         .route("/auth/logout", axum::routing::post(post_logout))
         .route("/auth/profile", get(get_profile).post(post_profile))
+        // Contact routes (public access)
+        .route("/contact", get(get_contact).post(post_contact))
         // Admin routes (protected by auth + admin middleware)
         .merge(admin_routes(auth_state))
         .nest_service("/static", AssetsService::new())

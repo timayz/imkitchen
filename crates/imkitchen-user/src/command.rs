@@ -1,8 +1,9 @@
 //! User commands
 
-use crate::aggregate::User;
+use crate::aggregate::{ContactMessage, User};
 use crate::event::{
-    EventMetadata, UserActivated, UserDemotedFromAdmin, UserLoggedIn, UserPremiumBypassToggled,
+    ContactFormSubmitted, ContactMessageMarkedRead, ContactMessageResolved, EventMetadata,
+    UserActivated, UserDemotedFromAdmin, UserLoggedIn, UserPremiumBypassToggled,
     UserProfileUpdated, UserPromotedToAdmin, UserRegistered, UserRegistrationFailed,
     UserRegistrationSucceeded, UserSuspended,
 };
@@ -92,6 +93,29 @@ pub struct TogglePremiumBypassInput {
 pub struct SetAdminStatusInput {
     pub user_id: String,
     pub is_admin: bool,
+}
+
+/// Input for contact form submission (public access)
+#[derive(Validate)]
+pub struct SubmitContactFormInput {
+    #[validate(length(min = 1, message = "Name is required"))]
+    pub name: String,
+    #[validate(email(message = "Invalid email format"))]
+    pub email: String,
+    #[validate(length(min = 1, message = "Subject is required"))]
+    pub subject: String,
+    #[validate(length(min = 1, message = "Message is required"))]
+    pub message: String,
+}
+
+/// Input for marking contact message as read (admin only)
+pub struct MarkContactMessageReadInput {
+    pub message_id: String,
+}
+
+/// Input for resolving contact message (admin only)
+pub struct ResolveContactMessageInput {
+    pub message_id: String,
 }
 
 /// User command handlers
@@ -457,6 +481,135 @@ impl<E: Executor> Command<E> {
 
         Ok(())
     }
+
+    /// Submit a contact form (public access - no authentication required)
+    pub async fn submit_contact_form(
+        &self,
+        input: SubmitContactFormInput,
+        metadata: EventMetadata,
+    ) -> anyhow::Result<String> {
+        info!(
+            email = %input.email,
+            subject = %input.subject,
+            request_id = %metadata.request_id,
+            "Submitting contact form"
+        );
+
+        // Validate input
+        input.validate()?;
+
+        // Create contact message aggregate with ContactFormSubmitted event
+        let message_id = evento::create::<ContactMessage>()
+            .data(&ContactFormSubmitted {
+                name: input.name.clone(),
+                email: input.email.clone(),
+                subject: input.subject.clone(),
+                message: input.message.clone(),
+            })?
+            .metadata(&metadata)?
+            .commit(&self.evento)
+            .await?;
+
+        info!(
+            message_id = %message_id,
+            email = %input.email,
+            "Contact form submitted successfully"
+        );
+
+        Ok(message_id)
+    }
+
+    /// Mark contact message as read (admin only)
+    pub async fn mark_contact_message_read(
+        &self,
+        input: MarkContactMessageReadInput,
+        metadata: EventMetadata,
+    ) -> anyhow::Result<()> {
+        info!(
+            admin_user_id = ?metadata.user_id,
+            message_id = %input.message_id,
+            request_id = %metadata.request_id,
+            "Marking contact message as read"
+        );
+
+        // Verify requesting user is admin
+        let admin_user_id = metadata.user_id.as_ref().ok_or_else(|| {
+            error!("Mark contact message read requires admin user_id in metadata");
+            anyhow::anyhow!("Unauthorized: admin user required")
+        })?;
+
+        let admin_result = evento::load::<User, _>(&self.evento, admin_user_id).await?;
+        let admin = &admin_result.item;
+
+        if !admin.is_admin {
+            error!(user_id = %admin_user_id, "Non-admin user attempted to mark contact message");
+            return Err(anyhow::anyhow!("Unauthorized: admin privileges required"));
+        }
+
+        // Verify message exists
+        let _message = evento::load::<ContactMessage, _>(&self.evento, &input.message_id).await?;
+
+        // Emit ContactMessageMarkedRead event
+        evento::save::<ContactMessage>(&input.message_id)
+            .data(&ContactMessageMarkedRead {})?
+            .metadata(&metadata)?
+            .commit(&self.evento)
+            .await?;
+
+        info!(
+            message_id = %input.message_id,
+            admin_user_id = %admin_user_id,
+            "Contact message marked as read"
+        );
+
+        Ok(())
+    }
+
+    /// Resolve contact message (admin only)
+    pub async fn resolve_contact_message(
+        &self,
+        input: ResolveContactMessageInput,
+        metadata: EventMetadata,
+    ) -> anyhow::Result<()> {
+        info!(
+            admin_user_id = ?metadata.user_id,
+            message_id = %input.message_id,
+            request_id = %metadata.request_id,
+            "Resolving contact message"
+        );
+
+        // Verify requesting user is admin
+        let admin_user_id = metadata.user_id.as_ref().ok_or_else(|| {
+            error!("Resolve contact message requires admin user_id in metadata");
+            anyhow::anyhow!("Unauthorized: admin user required")
+        })?;
+
+        let admin_result = evento::load::<User, _>(&self.evento, admin_user_id).await?;
+        let admin = &admin_result.item;
+
+        if !admin.is_admin {
+            error!(user_id = %admin_user_id, "Non-admin user attempted to resolve contact message");
+            return Err(anyhow::anyhow!("Unauthorized: admin privileges required"));
+        }
+
+        // Verify message exists
+        let _message = evento::load::<ContactMessage, _>(&self.evento, &input.message_id).await?;
+
+        // Emit ContactMessageResolved event
+        evento::save::<ContactMessage>(&input.message_id)
+            .data(&ContactMessageResolved {})?
+            .metadata(&metadata)?
+            .commit(&self.evento)
+            .await?;
+
+        info!(
+            message_id = %input.message_id,
+            admin_user_id = %admin_user_id,
+            "Contact message resolved"
+        );
+
+        Ok(())
+    }
 }
 
 /// Command handler for UserRegistered event - validates email uniqueness
@@ -543,4 +696,7 @@ pub fn subscribe_user_command<E: Executor + Clone>(
         .skip::<User, UserPremiumBypassToggled>()
         .skip::<User, UserPromotedToAdmin>()
         .skip::<User, UserDemotedFromAdmin>()
+        .skip::<ContactMessage, ContactFormSubmitted>()
+        .skip::<ContactMessage, ContactMessageMarkedRead>()
+        .skip::<ContactMessage, ContactMessageResolved>()
 }

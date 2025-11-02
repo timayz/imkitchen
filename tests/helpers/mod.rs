@@ -110,6 +110,14 @@ pub fn create_test_config() -> imkitchen::Config {
         access_control: imkitchen::config::AccessControlConfig {
             global_premium_bypass: false,
         },
+        email: imkitchen::config::EmailConfig {
+            smtp_host: "smtp.example.com".to_string(),
+            smtp_port: 587,
+            smtp_username: "".to_string(),
+            smtp_password: "".to_string(),
+            from_address: "test@example.com".to_string(),
+            admin_emails: vec!["admin@example.com".to_string()],
+        },
     }
 }
 
