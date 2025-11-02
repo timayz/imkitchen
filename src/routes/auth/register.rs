@@ -50,6 +50,7 @@ pub async fn post_register(
     let input = RegisterUserInput {
         email: form.email.clone(),
         password: form.password,
+        is_admin: None, // Defaults to false for regular user registration
     };
 
     let metadata = EventMetadata {

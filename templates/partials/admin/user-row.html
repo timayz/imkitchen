@@ -1,0 +1,77 @@
+<table>
+<tbody>
+<tr id="user-{{ user.id }}" class="hover:bg-gray-50">
+    <td class="px-6 py-4 whitespace-nowrap">
+        <div class="text-sm font-medium text-gray-900">{{ user.email }}</div>
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap">
+        {% if user.is_admin %}
+        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+            Admin
+        </span>
+        {% else %}
+        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+            User
+        </span>
+        {% endif %}
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap">
+        {% if user.is_suspended %}
+        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+            Suspended
+        </span>
+        {% else %}
+        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+            Active
+        </span>
+        {% endif %}
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap">
+        {% if user.premium_bypass %}
+        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+            Enabled
+        </span>
+        {% else %}
+        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+            Disabled
+        </span>
+        {% endif %}
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        {{ user.created_at_formatted }}
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+        <div class="flex space-x-2">
+            {% if user.is_suspended %}
+            <button
+                ts-req="/admin/users/{{ user.id }}/activate"
+                ts-req-method="POST"
+                ts-req-selector="#user-{{ user.id }}"
+                ts-target="#user-{{ user.id }}"
+                class="text-green-600 hover:text-green-900 bg-green-50 hover:bg-green-100 px-3 py-1 rounded">
+                Activate
+            </button>
+            {% else %}
+            <button
+                ts-req="/admin/users/{{ user.id }}/suspend"
+                ts-req-method="POST"
+                ts-req-selector="#user-{{ user.id }}"
+                ts-target="#user-{{ user.id }}"
+                class="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-3 py-1 rounded">
+                Suspend
+            </button>
+            {% endif %}
+
+            <button
+                ts-req="/admin/users/{{ user.id }}/premium-bypass"
+                ts-req-method="POST"
+                ts-req-selector="#user-{{ user.id }}"
+                ts-target="#user-{{ user.id }}"
+                class="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded">
+                {% if user.premium_bypass %}Disable{% else %}Enable{% endif %} Bypass
+            </button>
+        </div>
+    </td>
+</tr>
+</tbody>
+</table>

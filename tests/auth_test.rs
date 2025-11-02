@@ -34,6 +34,7 @@ async fn test_user_can_register_with_valid_credentials() -> anyhow::Result<()> {
     let input = RegisterUserInput {
         email: "test@example.com".to_string(),
         password: "Password123".to_string(),
+        is_admin: None,
     };
 
     let metadata = EventMetadata {
@@ -72,6 +73,7 @@ async fn test_user_can_register_with_valid_credentials() -> anyhow::Result<()> {
 async fn test_registration_fails_with_invalid_email() -> anyhow::Result<()> {
     let input = RegisterUserInput {
         email: "not-an-email".to_string(),
+        is_admin: None,
         password: "Password123".to_string(),
     };
 
@@ -93,6 +95,7 @@ async fn test_registration_fails_with_invalid_email() -> anyhow::Result<()> {
 async fn test_registration_fails_with_weak_password() -> anyhow::Result<()> {
     let input = RegisterUserInput {
         email: "test@example.com".to_string(),
+        is_admin: None,
         password: "Short1".to_string(), // Only 6 characters
     };
 
@@ -115,6 +118,7 @@ async fn test_registration_fails_without_password_complexity() -> anyhow::Result
     // Test: no uppercase
     let input1 = RegisterUserInput {
         email: "test@example.com".to_string(),
+        is_admin: None,
         password: "password123".to_string(), // No uppercase
     };
     assert!(
@@ -125,6 +129,7 @@ async fn test_registration_fails_without_password_complexity() -> anyhow::Result
     // Test: no lowercase
     let input2 = RegisterUserInput {
         email: "test@example.com".to_string(),
+        is_admin: None,
         password: "PASSWORD123".to_string(), // No lowercase
     };
     assert!(
@@ -135,6 +140,7 @@ async fn test_registration_fails_without_password_complexity() -> anyhow::Result
     // Test: no number
     let input3 = RegisterUserInput {
         email: "test@example.com".to_string(),
+        is_admin: None,
         password: "PasswordOnly".to_string(), // No number
     };
     assert!(input3.validate().is_err(), "Should fail without number");
@@ -142,6 +148,7 @@ async fn test_registration_fails_without_password_complexity() -> anyhow::Result
     // Test: valid password with all requirements
     let input4 = RegisterUserInput {
         email: "test@example.com".to_string(),
+        is_admin: None,
         password: "Password123".to_string(), // Has all requirements
     };
     assert!(
@@ -171,6 +178,7 @@ async fn test_email_uniqueness_prevents_duplicate_registration() -> anyhow::Resu
     // Register first user
     let input1 = RegisterUserInput {
         email: "duplicate@example.com".to_string(),
+        is_admin: None,
         password: "Password123".to_string(),
     };
 
@@ -196,6 +204,7 @@ async fn test_email_uniqueness_prevents_duplicate_registration() -> anyhow::Resu
     // Try to register second user with same email
     let input2 = RegisterUserInput {
         email: "duplicate@example.com".to_string(),
+        is_admin: None,
         password: "DifferentPass123".to_string(),
     };
 
@@ -251,6 +260,7 @@ async fn test_user_can_login_with_correct_credentials() -> anyhow::Result<()> {
     // Register user
     let register_input = RegisterUserInput {
         email: "login@example.com".to_string(),
+        is_admin: None,
         password: "Password123".to_string(),
     };
 
@@ -323,6 +333,7 @@ async fn test_login_fails_with_incorrect_password() -> anyhow::Result<()> {
     // Register user
     let register_input = RegisterUserInput {
         email: "wrongpass@example.com".to_string(),
+        is_admin: None,
         password: "CorrectPass123".to_string(),
     };
 
@@ -433,6 +444,7 @@ async fn test_user_can_update_dietary_restrictions() -> anyhow::Result<()> {
     // Register user first
     let register_input = RegisterUserInput {
         email: "profile@example.com".to_string(),
+        is_admin: None,
         password: "Password123".to_string(),
     };
 
@@ -619,6 +631,7 @@ async fn test_multiple_profile_updates_preserve_latest_state() -> anyhow::Result
 
     let register_input = RegisterUserInput {
         email: "multiupdate@example.com".to_string(),
+        is_admin: None,
         password: "Password123".to_string(),
     };
 
@@ -713,6 +726,7 @@ async fn test_profile_update_without_household_size() -> anyhow::Result<()> {
 
     let register_input = RegisterUserInput {
         email: "optional@example.com".to_string(),
+        is_admin: None,
         password: "Password123".to_string(),
     };
 

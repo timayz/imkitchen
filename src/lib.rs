@@ -6,6 +6,7 @@
 pub mod assets;
 pub mod auth;
 pub mod config;
+pub mod middleware;
 pub mod queries;
 pub mod routes;
 

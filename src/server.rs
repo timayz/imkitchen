@@ -2,6 +2,7 @@
 
 use axum::{routing::get, Router};
 use imkitchen::assets::AssetsService;
+use imkitchen::routes::admin::admin_routes;
 use imkitchen::routes::auth::{
     get_login, get_profile, get_register, get_register_status, post_login, post_logout,
     post_profile, post_register, AppState,
@@ -37,13 +38,19 @@ pub async fn serve(config: &Config, port: u16) -> anyhow::Result<()> {
 
     // Create application state
     let state = AppState {
-        evento,
+        evento: evento.clone(),
         query_pool,
         jwt_secret: config.auth.jwt_secret.clone(),
         jwt_lifetime_seconds: config.auth.jwt_lifetime_seconds,
     };
 
-    let app = create_router(state);
+    // Create auth state for middleware
+    let auth_state = imkitchen::auth::middleware::AuthState {
+        jwt_secret: config.auth.jwt_secret.clone(),
+        evento,
+    };
+
+    let app = create_router(state, auth_state);
 
     // Parse host from config
     let host_parts: Vec<u8> = if config.server.host == "0.0.0.0" {
@@ -74,7 +81,7 @@ pub async fn serve(config: &Config, port: u16) -> anyhow::Result<()> {
 }
 
 /// Create the application router
-fn create_router(state: AppState) -> Router {
+fn create_router(state: AppState, auth_state: imkitchen::auth::middleware::AuthState) -> Router {
     Router::new()
         .route("/", get(root))
         .route("/health", get(health))
@@ -84,6 +91,8 @@ fn create_router(state: AppState) -> Router {
         .route("/auth/login", get(get_login).post(post_login))
         .route("/auth/logout", axum::routing::post(post_logout))
         .route("/auth/profile", get(get_profile).post(post_profile))
+        // Admin routes (protected by auth + admin middleware)
+        .merge(admin_routes(auth_state))
         .nest_service("/static", AssetsService::new())
         .with_state(state)
         .layer({
