@@ -4,7 +4,8 @@ git checkout new, add -A, commit, push.
 create PR: 
   - title: same as commit 
   - body: 
-    - comprehensible details description for release changelog
+    - comprehensible details description
+    - release notes
     - closed issue id (use story title to search)
   - target: alpha
 

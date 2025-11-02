@@ -3,7 +3,8 @@
 use axum::{routing::get, Router};
 use imkitchen::assets::AssetsService;
 use imkitchen::routes::auth::{
-    get_login, get_register, get_register_status, post_login, post_logout, post_register, AppState,
+    get_login, get_profile, get_register, get_register_status, post_login, post_logout,
+    post_profile, post_register, AppState,
 };
 use imkitchen::Config;
 use sqlx::SqlitePool;
@@ -82,6 +83,7 @@ fn create_router(state: AppState) -> Router {
         .route("/auth/register/status/{id}", get(get_register_status))
         .route("/auth/login", get(get_login).post(post_login))
         .route("/auth/logout", axum::routing::post(post_logout))
+        .route("/auth/profile", get(get_profile).post(post_profile))
         .nest_service("/static", AssetsService::new())
         .with_state(state)
         .layer({

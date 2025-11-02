@@ -1,6 +1,7 @@
 //! Authentication route handlers
 
 pub mod login;
+pub mod profile;
 pub mod register;
 
 use askama::Template;
@@ -12,6 +13,7 @@ use sqlx::SqlitePool;
 
 // Re-export route handlers
 pub use login::{get_login, post_login, post_logout};
+pub use profile::{get_profile, post_profile};
 pub use register::{get_register, get_register_status, post_register};
 
 /// Application state

@@ -1,7 +1,8 @@
 //! User aggregate
 
 use crate::event::{
-    EventMetadata, UserLoggedIn, UserRegistered, UserRegistrationFailed, UserRegistrationSucceeded,
+    EventMetadata, UserLoggedIn, UserProfileUpdated, UserRegistered, UserRegistrationFailed,
+    UserRegistrationSucceeded,
 };
 use bincode::{Decode, Encode};
 use evento::EventDetails;
@@ -50,6 +51,15 @@ impl User {
         _event: EventDetails<UserLoggedIn, EventMetadata>,
     ) -> anyhow::Result<()> {
         // Login event processed, timestamp tracked automatically by Evento
+        Ok(())
+    }
+
+    /// Handle user profile update event
+    async fn user_profile_updated(
+        &mut self,
+        _event: EventDetails<UserProfileUpdated, EventMetadata>,
+    ) -> anyhow::Result<()> {
+        // Profile update processed, data stored in projection
         Ok(())
     }
 }
