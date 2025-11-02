@@ -39,7 +39,9 @@ async fn test_is_admin_flag_in_aggregate_and_projection() {
         .expect("Failed to register admin user");
 
     // Process admin registration events
-    helpers::process_user_events(&dbs).await.expect("Failed to process admin events");
+    helpers::process_user_events(&dbs)
+        .await
+        .expect("Failed to process admin events");
 
     // Verify aggregate has is_admin = true
     let admin_result = evento::load::<User, _>(&dbs.evento, &admin_id)
@@ -73,7 +75,9 @@ async fn test_is_admin_flag_in_aggregate_and_projection() {
         .expect("Failed to register regular user");
 
     // Process regular user registration events
-    helpers::process_user_events(&dbs).await.expect("Failed to process user events");
+    helpers::process_user_events(&dbs)
+        .await
+        .expect("Failed to process user events");
 
     // Verify aggregate has is_admin = false
     let user_result = evento::load::<User, _>(&dbs.evento, &user_id)
