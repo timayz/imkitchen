@@ -19,17 +19,6 @@ async fn test_is_admin_flag_in_aggregate_and_projection() {
         .await
         .expect("Failed to setup test databases");
 
-    // Start subscriptions synchronously for testing
-    subscribe_user_command::<evento::Sqlite>(dbs.validation.clone())
-        .unsafe_oneshot(&dbs.evento)
-        .await
-        .expect("Failed to subscribe user command");
-
-    subscribe_user_query::<evento::Sqlite>(dbs.queries.clone())
-        .unsafe_oneshot(&dbs.evento)
-        .await
-        .expect("Failed to subscribe user query");
-
     // Register admin user
     let command = Command::new(dbs.evento.clone());
     let metadata = EventMetadata {
@@ -49,15 +38,8 @@ async fn test_is_admin_flag_in_aggregate_and_projection() {
         .await
         .expect("Failed to register admin user");
 
-    // Process events
-    subscribe_user_command::<evento::Sqlite>(dbs.validation.clone())
-        .unsafe_oneshot(&dbs.evento)
-        .await
-        .expect("Failed to subscribe user command");
-    subscribe_user_query::<evento::Sqlite>(dbs.queries.clone())
-        .unsafe_oneshot(&dbs.evento)
-        .await
-        .expect("Failed to subscribe user query");
+    // Process admin registration events
+    helpers::process_user_events(&dbs).await.expect("Failed to process admin events");
 
     // Verify aggregate has is_admin = true
     let admin_result = evento::load::<User, _>(&dbs.evento, &admin_id)
@@ -74,6 +56,10 @@ async fn test_is_admin_flag_in_aggregate_and_projection() {
     assert!(admin_row.is_admin);
 
     // Register regular user
+    let metadata2 = EventMetadata {
+        user_id: None,
+        request_id: Ulid::new().to_string(),
+    };
     let user_id = command
         .register_user(
             RegisterUserInput {
@@ -81,20 +67,13 @@ async fn test_is_admin_flag_in_aggregate_and_projection() {
                 password: "User123!".to_string(),
                 is_admin: None,
             },
-            metadata,
+            metadata2,
         )
         .await
         .expect("Failed to register regular user");
 
-    // Process events
-    subscribe_user_command::<evento::Sqlite>(dbs.validation.clone())
-        .unsafe_oneshot(&dbs.evento)
-        .await
-        .expect("Failed to subscribe user command");
-    subscribe_user_query::<evento::Sqlite>(dbs.queries.clone())
-        .unsafe_oneshot(&dbs.evento)
-        .await
-        .expect("Failed to subscribe user query");
+    // Process regular user registration events
+    helpers::process_user_events(&dbs).await.expect("Failed to process user events");
 
     // Verify aggregate has is_admin = false
     let user_result = evento::load::<User, _>(&dbs.evento, &user_id)
