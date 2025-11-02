@@ -2,7 +2,8 @@
 
 use crate::aggregate::User;
 use crate::event::{
-    EventMetadata, UserLoggedIn, UserRegistered, UserRegistrationFailed, UserRegistrationSucceeded,
+    EventMetadata, UserLoggedIn, UserProfileUpdated, UserRegistered, UserRegistrationFailed,
+    UserRegistrationSucceeded,
 };
 use argon2::{password_hash::PasswordHasher, Argon2};
 use evento::{AggregatorName, Context, EventDetails, Executor};
@@ -45,6 +46,26 @@ pub struct LoginUserInput {
     #[validate(email(message = "Invalid email format"))]
     pub email: String,
     pub password: String,
+}
+
+/// Validate cuisine variety weight is between 0.0 and 1.0
+fn validate_cuisine_variety_weight(weight: f32) -> Result<(), validator::ValidationError> {
+    if !(0.0..=1.0).contains(&weight) {
+        return Err(
+            validator::ValidationError::new("cuisine_variety_weight_range")
+                .with_message("Cuisine variety weight must be between 0.0 and 1.0".into()),
+        );
+    }
+    Ok(())
+}
+
+/// Input for user profile update
+#[derive(Validate)]
+pub struct UpdateProfileInput {
+    pub dietary_restrictions: Vec<String>,
+    #[validate(custom(function = "validate_cuisine_variety_weight"))]
+    pub cuisine_variety_weight: f32,
+    pub household_size: Option<i32>,
 }
 
 /// User command handlers
@@ -167,6 +188,49 @@ impl<E: Executor> Command<E> {
 
         Ok(())
     }
+
+    /// Update user profile with dietary restrictions and preferences
+    pub async fn update_profile(
+        &self,
+        user_id: String,
+        input: UpdateProfileInput,
+        metadata: EventMetadata,
+    ) -> anyhow::Result<()> {
+        info!(
+            user_id = %user_id,
+            request_id = %metadata.request_id,
+            "Updating user profile"
+        );
+
+        // Validate input
+        input.validate()?;
+
+        // Validate household_size manually (custom validator doesn't work with Option fields)
+        if let Some(size) = input.household_size {
+            if size <= 0 {
+                return Err(anyhow::anyhow!("Household size must be greater than 0"));
+            }
+        }
+
+        // Emit UserProfileUpdated event
+        evento::save::<User>(&user_id)
+            .data(&UserProfileUpdated {
+                dietary_restrictions: input.dietary_restrictions.clone(),
+                cuisine_variety_weight: input.cuisine_variety_weight,
+                household_size: input.household_size,
+            })?
+            .metadata(&metadata)?
+            .commit(&self.evento)
+            .await?;
+
+        info!(
+            user_id = %user_id,
+            restrictions_count = input.dietary_restrictions.len(),
+            "User profile updated successfully"
+        );
+
+        Ok(())
+    }
 }
 
 /// Command handler for UserRegistered event - validates email uniqueness
@@ -246,4 +310,5 @@ pub fn subscribe_user_command<E: Executor + Clone>(
         .skip::<User, UserRegistrationSucceeded>()
         .skip::<User, UserRegistrationFailed>()
         .skip::<User, UserLoggedIn>()
+        .skip::<User, UserProfileUpdated>()
 }

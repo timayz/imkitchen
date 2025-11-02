@@ -36,3 +36,11 @@ pub struct UserRegistrationFailed {
 pub struct UserLoggedIn {
     // Timestamp is handled automatically by Evento
 }
+
+/// User profile updated with preferences
+#[derive(evento::AggregatorName, Encode, Decode)]
+pub struct UserProfileUpdated {
+    pub dietary_restrictions: Vec<String>,
+    pub cuisine_variety_weight: f32,
+    pub household_size: Option<i32>,
+}

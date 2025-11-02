@@ -14,3 +14,6 @@ Routing guidance:
 | 2025-11-01 | 1.2 | 1 | Enhancement | Medium | Dev | Open | Add Password Complexity Validation - Update RegisterUserInput validator to require uppercase/lowercase/number per Architecture.md (crates/imkitchen-user/src/command.rs:16-21) |
 | 2025-11-01 | 1.2 | 1 | Process | Low | SM | Open | Create Story Context for Future Stories - Generate context files for Epic 1 stories for better consistency |
 | 2025-11-01 | 1.2 | 1 | Enhancement | Low | Dev | Open | Improve get_user_status Query Function - Consider adding aggregate status check for failed registrations (src/queries/user.rs:151-177) |
+| 2025-11-01 | 1.3 | 1 | TechDebt | Low | Future maintainer | Open | Add inline comment to migration explaining JSON format for dietary_restrictions (migrations/queries/20251101230002_user_profiles.sql:4) |
+| 2025-11-01 | 1.3 | 1 | Enhancement | Medium | Security enhancement epic | Open | Consider logging failed authentication attempts in AuthUser extractor for security monitoring (src/auth/jwt.rs:93) |
+| 2025-11-01 | 1.3 | 1 | Enhancement | Low | UX polish epic | Open | Surface specific validation errors to users in profile route handler for better UX (src/routes/auth/profile.rs:140-156) |
