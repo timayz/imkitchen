@@ -418,6 +418,16 @@ pub async fn get_total_user_count(pool: &SqlitePool) -> anyhow::Result<i64> {
     Ok(count)
 }
 
+/// Count user favorites for freemium 10-favorite limit
+/// NOTE: This is a placeholder until Story 2.3 implements the favorites table
+pub async fn count_user_favorites(pool: &SqlitePool, user_id: &str) -> anyhow::Result<i32> {
+    // TODO: Implement when favorites table exists in Story 2.3
+    // For now, return 0 to allow testing of access control logic
+    let _user_id = user_id; // Suppress unused warning
+    let _pool = pool;
+    Ok(0)
+}
+
 /// Get user profile by user ID, returns defaults if profile doesn't exist
 pub async fn get_user_profile(pool: &SqlitePool, user_id: &str) -> anyhow::Result<UserProfile> {
     // Query the user_profiles table

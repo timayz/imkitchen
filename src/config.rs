@@ -10,6 +10,7 @@ pub struct Config {
     pub database: DatabaseConfig,
     pub auth: AuthConfig,
     pub logging: LoggingConfig,
+    pub access_control: AccessControlConfig,
 }
 
 /// Server configuration
@@ -39,6 +40,12 @@ pub struct AuthConfig {
 pub struct LoggingConfig {
     pub level: String,
     pub format: String,
+}
+
+/// Access control configuration
+#[derive(Debug, Deserialize, Clone)]
+pub struct AccessControlConfig {
+    pub global_premium_bypass: bool,
 }
 
 impl Config {

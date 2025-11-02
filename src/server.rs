@@ -1,6 +1,7 @@
 //! Web server implementation using Axum
 
 use axum::{routing::get, Router};
+use imkitchen::access_control::AccessControlService;
 use imkitchen::assets::AssetsService;
 use imkitchen::routes::admin::admin_routes;
 use imkitchen::routes::auth::{
@@ -36,12 +37,17 @@ pub async fn serve(config: &Config, port: u16) -> anyhow::Result<()> {
 
     info!("Creating application state...");
 
+    // Create access control service
+    let access_control = AccessControlService::new(config.clone(), query_pool.clone());
+
     // Create application state
     let state = AppState {
         evento: evento.clone(),
         query_pool,
         jwt_secret: config.auth.jwt_secret.clone(),
         jwt_lifetime_seconds: config.auth.jwt_lifetime_seconds,
+        config: config.clone(),
+        access_control,
     };
 
     // Create auth state for middleware

@@ -107,5 +107,17 @@ pub fn create_test_config() -> imkitchen::Config {
             jwt_secret: "test_secret_for_testing_only".to_string(),
             jwt_lifetime_seconds: 3600,
         },
+        access_control: imkitchen::config::AccessControlConfig {
+            global_premium_bypass: false,
+        },
     }
+}
+
+/// Create a test configuration with global bypass enabled
+///
+/// Returns a test configuration with global premium bypass enabled for testing bypass scenarios.
+pub fn create_test_config_with_bypass() -> imkitchen::Config {
+    let mut config = create_test_config();
+    config.access_control.global_premium_bypass = true;
+    config
 }
