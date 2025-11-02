@@ -1,0 +1,251 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>6</storyId>
+    <title>Contact Form and Admin Notifications</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-01</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/1-6-contact-form-and-admin-notifications.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>visitor</asA>
+    <iWant>to submit questions or feedback through a contact form</iWant>
+    <soThat>I can reach the platform administrators without needing an account</soThat>
+    <tasks>
+- Task 1: Define ContactFormSubmitted event
+- Task 2: Implement contact form submission command
+- Task 3: Create contact_messages projection table
+- Task 4: Implement query handler for ContactFormSubmitted
+- Task 5: Create public contact form page
+- Task 6: Implement contact form route handler
+- Task 7: Implement email notification service
+- Task 8: Configure SMTP settings
+- Task 9: Create admin contact inbox
+- Task 10: Implement admin inbox route handlers
+- Task 11: Define status update events (ContactMessageMarkedRead, ContactMessageResolved)
+- Task 12: Write comprehensive tests
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+1. Public contact form route (no authentication required) with fields: name, email, subject, message
+2. ContactFormSubmitted event stores submission data with timestamp
+3. Query handler projects submissions to contact_messages table
+4. Admin panel displays contact form inbox with read/resolved status
+5. Email notification sent to configured admin email(s) on new submission
+6. Admin can mark messages as read/resolved and filter by status
+7. Tests verify form submission, projection, and admin access
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Decision Architecture</title>
+        <section>ADR-008: Configurable SMTP with lettre</section>
+        <snippet>Email service using lettre with SMTP configuration. EmailService struct with send_contact_notification method. SMTP credentials in config/dev.toml (gitignored). Event handler sends email on ContactFormSubmitted.</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>imkitchen Product Requirements Document</title>
+        <section>FR049-FR050: Contact Form Requirements</section>
+        <snippet>Public contact form accessible without authentication. Fields: name, email, subject, message. Email notifications sent to admin on submission.</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>imkitchen Product Requirements Document</title>
+        <section>FR046: Admin Contact Inbox</section>
+        <snippet>Admin panel displays contact form submissions with read/resolved status. Admin can mark messages as read or resolved. Filter by status.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE.md</path>
+        <title>Rust Event-Driven Web Server Coding Standards</title>
+        <section>Server-Side Rendering</section>
+        <snippet>Always render HTML with status 200. Use Twinspark for form submission and partial updates. Public routes do not require authentication.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE.md</path>
+        <title>Rust Event-Driven Web Server Coding Standards</title>
+        <section>Configuration Rules</section>
+        <snippet>SMTP passwords must be in config/dev.toml (gitignored). Never commit credentials. config/default.toml has empty placeholders.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>crates/imkitchen-user/src/event.rs</path>
+        <kind>event</kind>
+        <symbol>ContactFormSubmitted, ContactMessageMarkedRead, ContactMessageResolved</symbol>
+        <lines>TBD</lines>
+        <reason>Contact form events for submission and status updates</reason>
+      </artifact>
+      <artifact>
+        <path>crates/imkitchen-user/src/aggregate.rs</path>
+        <kind>aggregate</kind>
+        <symbol>ContactMessage</symbol>
+        <lines>TBD</lines>
+        <reason>ContactMessage aggregate root with status tracking (new, read, resolved)</reason>
+      </artifact>
+      <artifact>
+        <path>crates/imkitchen-user/src/command.rs</path>
+        <kind>command</kind>
+        <symbol>submit_contact_form, mark_contact_message_read, resolve_contact_message</symbol>
+        <lines>TBD</lines>
+        <reason>Contact form commands for submission and status updates</reason>
+      </artifact>
+      <artifact>
+        <path>src/email.rs</path>
+        <kind>service</kind>
+        <symbol>EmailService, send_contact_notification</symbol>
+        <lines>TBD</lines>
+        <reason>Email service using lettre to send contact form notifications to admin</reason>
+      </artifact>
+      <artifact>
+        <path>src/config.rs</path>
+        <kind>config</kind>
+        <symbol>EmailConfig</symbol>
+        <lines>TBD</lines>
+        <reason>Email configuration struct with SMTP settings and admin email addresses</reason>
+      </artifact>
+      <artifact>
+        <path>src/queries/contact.rs</path>
+        <kind>query</kind>
+        <symbol>on_contact_form_submitted, on_contact_message_marked_read, on_contact_message_resolved, list_contact_messages</symbol>
+        <lines>TBD</lines>
+        <reason>Contact query handlers and list function with status filtering</reason>
+      </artifact>
+      <artifact>
+        <path>src/routes/contact.rs</path>
+        <kind>route</kind>
+        <symbol>get_form, submit_form</symbol>
+        <lines>TBD</lines>
+        <reason>Public contact form route handlers (no authentication required)</reason>
+      </artifact>
+      <artifact>
+        <path>src/routes/admin/contact_inbox.rs</path>
+        <kind>route</kind>
+        <symbol>list, mark_read, resolve</symbol>
+        <lines>TBD</lines>
+        <reason>Admin contact inbox route handlers with status update actions</reason>
+      </artifact>
+      <artifact>
+        <path>templates/pages/contact.html</path>
+        <kind>template</kind>
+        <symbol>contact form</symbol>
+        <lines>TBD</lines>
+        <reason>Public contact form template with name, email, subject, message fields</reason>
+      </artifact>
+      <artifact>
+        <path>templates/pages/admin/contact_inbox.html</path>
+        <kind>template</kind>
+        <symbol>contact inbox</symbol>
+        <lines>TBD</lines>
+        <reason>Admin contact inbox template with message list, filtering, and status badges</reason>
+      </artifact>
+      <artifact>
+        <path>migrations/queries/20250101000008_contact_messages.sql</path>
+        <kind>migration</kind>
+        <symbol>contact_messages table</symbol>
+        <lines>TBD</lines>
+        <reason>Contact messages projection table with status field and indexes</reason>
+      </artifact>
+      <artifact>
+        <path>config/default.toml</path>
+        <kind>config</kind>
+        <symbol>[email] section</symbol>
+        <lines>TBD</lines>
+        <reason>Email configuration with SMTP settings (credentials empty, set in dev.toml)</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <rust>
+        <package name="lettre" version="0.11.14" />
+      </rust>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - Contact form is publicly accessible (no authentication required)
+    - SMTP credentials must be in config/dev.toml (gitignored), never commit to repository
+    - config/default.toml has empty SMTP username/password as placeholders
+    - Email sending failures must be logged but not block contact form submission
+    - contact_messages table has status field: 'new' (default), 'read', 'resolved'
+    - Admin inbox protected by admin middleware (requires is_admin JWT claim)
+    - Email notifications sent to all admin_emails configured in config
+    - Form validation: email format, all fields required
+    - Message ID generated using ULID
+    - Admin inbox displays message count badges by status
+    - Status updates emit events (ContactMessageMarkedRead, ContactMessageResolved)
+    - Query handlers for status updates must be idempotent
+    - Public contact form returns status 200 with success HTML (no REST patterns)
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>Submit Contact Form Command</name>
+      <kind>function</kind>
+      <signature>async fn submit_contact_form(&amp;self, input: SubmitContactFormInput, metadata: EventMetadata) -&gt; anyhow::Result&lt;String&gt;</signature>
+      <path>crates/imkitchen-user/src/command.rs</path>
+    </interface>
+    <interface>
+      <name>Mark Message Read Command</name>
+      <kind>function</kind>
+      <signature>async fn mark_contact_message_read(&amp;self, message_id: &amp;str, metadata: EventMetadata) -&gt; anyhow::Result&lt;()&gt;</signature>
+      <path>crates/imkitchen-user/src/command.rs</path>
+    </interface>
+    <interface>
+      <name>Resolve Message Command</name>
+      <kind>function</kind>
+      <signature>async fn resolve_contact_message(&amp;self, message_id: &amp;str, metadata: EventMetadata) -&gt; anyhow::Result&lt;()&gt;</signature>
+      <path>crates/imkitchen-user/src/command.rs</path>
+    </interface>
+    <interface>
+      <name>Email Service - Send Notification</name>
+      <kind>function</kind>
+      <signature>async fn send_contact_notification(&amp;self, submission: &amp;ContactFormSubmitted) -&gt; anyhow::Result&lt;()&gt;</signature>
+      <path>src/email.rs</path>
+    </interface>
+    <interface>
+      <name>List Contact Messages Query</name>
+      <kind>function</kind>
+      <signature>async fn list_contact_messages(pool: &amp;SqlitePool, status_filter: Option&lt;&amp;str&gt;) -&gt; anyhow::Result&lt;Vec&lt;ContactMessageRow&gt;&gt;</signature>
+      <path>src/queries/contact.rs</path>
+    </interface>
+    <interface>
+      <name>Public Contact Routes</name>
+      <kind>REST</kind>
+      <signature>GET /contact, POST /contact</signature>
+      <path>src/routes/contact.rs</path>
+    </interface>
+    <interface>
+      <name>Admin Inbox Routes</name>
+      <kind>REST</kind>
+      <signature>GET /admin/contact, POST /admin/contact/{id}/mark-read, POST /admin/contact/{id}/resolve</signature>
+      <path>src/routes/admin/contact_inbox.rs</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Use evento::unsafe_oneshot for event processing. Mock SMTP for email tests (avoid actual sends). Test public form without authentication. Test admin routes require admin JWT. Verify email failures don't block submission.</standards>
+    <locations>
+      - tests/contact_test.rs - Contact form and admin inbox tests
+      - tests/helpers/mod.rs - Test database and config helpers
+    </locations>
+    <ideas>
+      - AC1: Test visitor can submit contact form without authentication
+      - AC1: Test form validation (email format, required fields)
+      - AC2: Test submission emits ContactFormSubmitted event with correct data
+      - AC2: Test message_id generated as ULID
+      - AC3: Test query handler projects submission to contact_messages table with status='new'
+      - AC4: Test admin can view contact inbox (requires admin JWT)
+      - AC4: Test non-admin receives 403 when accessing inbox
+      - AC5: Test email notification sent to admin emails on submission (mock SMTP)
+      - AC5: Test email failure logged but doesn't block submission
+      - AC6: Test admin can mark message as read (status 'new' → 'read')
+      - AC6: Test admin can resolve message (status → 'resolved')
+      - AC6: Test inbox filtering by status (new/read/resolved)
+      - AC7: Integration test: submit form → projection created → admin views → marks read → status updated
+    </ideas>
+  </tests>
+</story-context>

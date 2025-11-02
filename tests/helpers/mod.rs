@@ -3,6 +3,8 @@
 //! This module provides reusable utilities for setting up test databases
 //! following DRY principles as specified in CLAUDE.md testing guidelines.
 
+#![allow(dead_code)]
+
 use evento::migrator::{Migrate, Plan};
 use sqlx::SqlitePool;
 
@@ -100,6 +102,10 @@ pub fn create_test_config() -> imkitchen::Config {
         logging: imkitchen::config::LoggingConfig {
             level: "debug".to_string(),
             format: "pretty".to_string(),
+        },
+        auth: imkitchen::config::AuthConfig {
+            jwt_secret: "test_secret_for_testing_only".to_string(),
+            jwt_lifetime_seconds: 3600,
         },
     }
 }
