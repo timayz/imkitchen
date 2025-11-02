@@ -4,12 +4,14 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-# Unused - will be needed when implementing user domain
-# evento.workspace = true
-# sqlx.workspace = true
-# tokio.workspace = true
-# validator.workspace = true
-# anyhow.workspace = true
-# serde.workspace = true
-# bincode.workspace = true
-# tracing.workspace = true
+evento.workspace = true
+sqlx.workspace = true
+# tokio.workspace = true  # Unused - async runtime provided by executor
+validator.workspace = true
+anyhow.workspace = true
+# serde.workspace = true  # Unused - bincode used for event serialization
+bincode.workspace = true
+tracing.workspace = true
+# ulid.workspace = true  # Unused - only used in routes/tests, not domain
+argon2.workspace = true
+password-hash.workspace = true

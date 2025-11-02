@@ -13,6 +13,14 @@ evento_db = "evento.db"
 queries_db = "queries.db"
 validation_db = "validation.db"
 
+[auth]
+# JWT authentication configuration
+# IMPORTANT: Change this secret in production! Use a strong random string.
+# Generate with: openssl rand -base64 32
+jwt_secret = "CHANGE_THIS_IN_PRODUCTION_USE_A_STRONG_RANDOM_SECRET"
+# JWT token lifetime in seconds (7 days)
+jwt_lifetime_seconds = 604800
+
 [logging]
 # Logging level: trace, debug, info, warn, error
 level = "info"

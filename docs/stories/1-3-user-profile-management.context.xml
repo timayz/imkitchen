@@ -1,0 +1,188 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>3</storyId>
+    <title>User Profile Management</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-01</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/1-3-user-profile-management.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>logged-in user</asA>
+    <iWant>to configure my dietary restrictions and preferences</iWant>
+    <soThat>meal plan generation respects my dietary needs and cuisine preferences</soThat>
+    <tasks>
+- Task 1: Define UserProfileUpdated event and aggregate handler
+- Task 2: Implement profile update command
+- Task 3: Create user_profiles projection table and migration
+- Task 4: Implement query handler for UserProfileUpdated
+- Task 5: Create profile query function
+- Task 6: Create profile page templates
+- Task 7: Implement profile route handlers
+- Task 8: Write comprehensive tests
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+1. UserProfileUpdated event stores dietary restrictions (array), complexity preferences, cuisine_variety_weight (default 0.7), household_size
+2. Profile update command accepts input struct with validation
+3. Profile page displays current preferences with edit form
+4. Query handler projects profile data to user_profiles table
+5. Profile data accessible via query function for meal planning algorithm
+6. Twinspark form submission with optimistic UI update
+7. Tests verify profile creation, update, and query retrieval
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Decision Architecture</title>
+        <section>Core Tables - user_profiles</section>
+        <snippet>user_profiles table schema with dietary_restrictions (JSON array), cuisine_variety_weight (REAL default 0.7), household_size (INTEGER), is_premium_active, premium_bypass. Foreign key to users table.</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>imkitchen Product Requirements Document</title>
+        <section>FR002: User Preferences</section>
+        <snippet>System shall store user preferences including dietary restrictions, complexity preferences, cuisine variety weight (default 0.7), and household size for meal plan generation.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic Documentation</title>
+        <section>Story 1.3 Linkage</section>
+        <snippet>Story 1.3 provides profile data consumed by Story 3.5 (Dietary Restriction Filtering) and Story 3.6 (Cuisine Variety Scheduling). Profile preferences directly influence meal plan generation algorithm behavior.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE.md</path>
+        <title>Rust Event-Driven Web Server Coding Standards</title>
+        <section>Server-Side Rendering</section>
+        <snippet>Always define ts-target when using ts-req. Always render HTML with status 200 (no REST API patterns). Use Twinspark for UI reactivity with optimistic updates.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE.md</path>
+        <title>Rust Event-Driven Web Server Coding Standards</title>
+        <section>Query Guidelines</section>
+        <snippet>Query handlers must be idempotent. Never perform heavy calculations in queries - all computation must be done in subscription handlers that update projections.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>crates/imkitchen-user/src/event.rs</path>
+        <kind>event</kind>
+        <symbol>UserProfileUpdated</symbol>
+        <lines>TBD</lines>
+        <reason>Event for user profile updates with dietary restrictions, cuisine_variety_weight, and household_size</reason>
+      </artifact>
+      <artifact>
+        <path>crates/imkitchen-user/src/aggregate.rs</path>
+        <kind>aggregate</kind>
+        <symbol>User (profile handler)</symbol>
+        <lines>TBD</lines>
+        <reason>User aggregate handler for UserProfileUpdated event to update profile state</reason>
+      </artifact>
+      <artifact>
+        <path>crates/imkitchen-user/src/command.rs</path>
+        <kind>command</kind>
+        <symbol>update_profile</symbol>
+        <lines>TBD</lines>
+        <reason>Command to update user profile with validation for cuisine_variety_weight (0.0-1.0) and household_size (&gt; 0)</reason>
+      </artifact>
+      <artifact>
+        <path>src/queries/users.rs</path>
+        <kind>query</kind>
+        <symbol>on_user_profile_updated, get_user_profile</symbol>
+        <lines>TBD</lines>
+        <reason>Query handler to project UserProfileUpdated to user_profiles table, and query function to retrieve profile data</reason>
+      </artifact>
+      <artifact>
+        <path>src/routes/auth/profile.rs</path>
+        <kind>route</kind>
+        <symbol>get_profile, post_profile</symbol>
+        <lines>TBD</lines>
+        <reason>Profile route handlers for GET /auth/profile and POST /auth/profile</reason>
+      </artifact>
+      <artifact>
+        <path>migrations/queries/20250101000001_user_profiles.sql</path>
+        <kind>migration</kind>
+        <symbol>user_profiles table</symbol>
+        <lines>TBD</lines>
+        <reason>User profiles projection table with dietary_restrictions (JSON), cuisine_variety_weight, household_size, premium flags</reason>
+      </artifact>
+      <artifact>
+        <path>templates/pages/auth/profile.html</path>
+        <kind>template</kind>
+        <symbol>profile form</symbol>
+        <lines>TBD</lines>
+        <reason>Askama template for profile page with form for dietary restrictions, cuisine variety slider, household size input</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <rust>
+        <package name="serde_json" version="1" />
+      </rust>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - Commands must use input struct UpdateProfileInput with validation
+    - cuisine_variety_weight must be between 0.0 and 1.0 (default 0.7)
+    - household_size must be greater than 0 (optional field)
+    - dietary_restrictions stored as JSON array in TEXT field
+    - Profile data projected to user_profiles table (queries.db)
+    - Query handler must be idempotent (handle multiple UserProfileUpdated events safely)
+    - Form uses Twinspark for optimistic UI update (ts-target, ts-req-before, ts-req-after)
+    - Always render status 200 with HTML (no REST error codes)
+    - Profile query function returns defaults when user has no profile
+    - User aggregate must store profile state for consistency
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>Update Profile Command</name>
+      <kind>function</kind>
+      <signature>async fn update_profile(&amp;self, input: UpdateProfileInput, metadata: EventMetadata) -&gt; anyhow::Result&lt;()&gt;</signature>
+      <path>crates/imkitchen-user/src/command.rs</path>
+    </interface>
+    <interface>
+      <name>Get User Profile Query</name>
+      <kind>function</kind>
+      <signature>async fn get_user_profile(pool: &amp;SqlitePool, user_id: &amp;str) -&gt; anyhow::Result&lt;Option&lt;UserProfile&gt;&gt;</signature>
+      <path>src/queries/users.rs</path>
+    </interface>
+    <interface>
+      <name>Profile Routes</name>
+      <kind>REST</kind>
+      <signature>GET /auth/profile, POST /auth/profile</signature>
+      <path>src/routes/auth/profile.rs</path>
+    </interface>
+    <interface>
+      <name>UserProfile Struct</name>
+      <kind>struct</kind>
+      <signature>UserProfile { user_id: String, dietary_restrictions: Vec&lt;String&gt;, cuisine_variety_weight: f32, household_size: Option&lt;i32&gt;, is_premium_active: bool, premium_bypass: bool }</signature>
+      <path>src/queries/users.rs</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Use evento::unsafe_oneshot for synchronous event processing in tests. Test profile updates with various validation scenarios. Verify query retrieval returns correct data. Test defaults when profile doesn't exist.</standards>
+    <locations>
+      - tests/auth_test.rs or tests/profile_test.rs - Profile management tests
+      - tests/helpers/mod.rs - Test database setup helpers
+    </locations>
+    <ideas>
+      - AC1: Test UserProfileUpdated event stores all profile fields correctly
+      - AC2: Test profile update with valid dietary restrictions
+      - AC2: Test cuisine_variety_weight validation (must be 0.0-1.0)
+      - AC2: Test household_size validation (must be &gt; 0)
+      - AC2: Test profile update with invalid data fails gracefully
+      - AC4: Test query handler projects profile to user_profiles table
+      - AC4: Test multiple profile updates preserve latest state (idempotency)
+      - AC5: Test get_user_profile returns correct data
+      - AC5: Test get_user_profile returns defaults when profile doesn't exist
+      - AC7: Integration test for profile create → update → query flow
+    </ideas>
+  </tests>
+</story-context>

@@ -1,2 +1,0 @@
--- Initial migration for validation database
--- Validation constraint tables will be added in subsequent stories
