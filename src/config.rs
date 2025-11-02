@@ -8,6 +8,7 @@ use serde::Deserialize;
 pub struct Config {
     pub server: ServerConfig,
     pub database: DatabaseConfig,
+    pub auth: AuthConfig,
     pub logging: LoggingConfig,
 }
 
@@ -24,6 +25,13 @@ pub struct DatabaseConfig {
     pub evento_db: String,
     pub queries_db: String,
     pub validation_db: String,
+}
+
+/// Authentication configuration
+#[derive(Debug, Deserialize, Clone)]
+pub struct AuthConfig {
+    pub jwt_secret: String,
+    pub jwt_lifetime_seconds: u64,
 }
 
 /// Logging configuration

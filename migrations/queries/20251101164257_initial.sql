@@ -1,2 +1,0 @@
--- Initial migration for queries database
--- Query projection tables will be added in subsequent stories

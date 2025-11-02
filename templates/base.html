@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}imkitchen{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/static/js/twinspark.min.js"></script>
+    {% block head %}{% endblock %}
+</head>
+<body class="bg-gray-50">
+    {% block nav %}
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-4 flex items-center justify-between">
+            <a href="/" class="text-2xl font-bold text-green-600">🍳 imkitchen</a>
+            <div class="flex gap-4">
+                {% block nav_links %}{% endblock %}
+            </div>
+        </div>
+    </nav>
+    {% endblock %}
+
+    {% block content %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,244 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>1</storyId>
+    <title>Project Infrastructure Setup</title>
+    <status>done</status>
+    <generatedAt>2025-11-01</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/1-1-project-infrastructure-setup.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>a properly configured Rust workspace with evento, axum, and database setup</iWant>
+    <soThat>the project foundation supports event-driven architecture and web server capabilities</soThat>
+    <tasks>
+- Task 1: Initialize Rust workspace with bounded context crates
+- Task 2: Implement CLI commands (serve, migrate, reset)
+- Task 3: Set up configuration system
+- Task 4: Create database structure
+- Task 5: Configure Playwright E2E testing
+- Task 6: Create Rust test helper functions
+- Task 7: Verify code quality standards
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+1. Workspace Cargo.toml configured with all required dependencies (evento 1.5+, axum 0.8+, sqlx, askama, etc.)
+2. CLI commands implemented: serve, migrate, reset
+3. Configuration system using TOML files (config/default.toml committed, config/dev.toml in .gitignore)
+4. Separate databases created: write DB (evento), read DB (queries), validation DB
+5. Migration structure created: migrations/queries/ and migrations/validation/
+6. Playwright configured with example E2E test (tests/e2e/ directory created)
+7. Rust test helper functions created for database setup (using sqlx::migrate! and evento::sql_migrator)
+8. Project compiles without errors and passes clippy/fmt checks
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Decision Architecture</title>
+        <section>Project Initialization</section>
+        <snippet>First implementation story (Story 1.1) should create workspace Cargo.toml, set up CLI commands (serve, migrate, reset), create config/ directory with default.toml, initialize git repository with proper .gitignore, and set up migration directories.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Decision Architecture</title>
+        <section>Decision Summary</section>
+        <snippet>Technology stack decisions including Rust 1.90+, Axum 0.8.6, evento 1.5.0, SQLite (via sqlx 0.8.2), Askama 0.14.0, Twinspark, clap 4.5.23, and config 0.15.0.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Decision Architecture</title>
+        <section>Project Structure</section>
+        <snippet>Workspace structure with bounded contexts in crates/ (imkitchen-user, imkitchen-recipe, imkitchen-mealplan), CLI in src/main.rs, config/ directory, migrations/ split into queries/ and validation/ subdirectories.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE.md</path>
+        <title>Rust Event-Driven Web Server Coding Standards</title>
+        <section>Dependencies</section>
+        <snippet>All dependencies must be managed using workspace dependencies in root Cargo.toml. Required: evento 1.5+, axum 0.8+, sqlx 0.8+, askama 0.14+, validator 0.20+, ulid 1.2+.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE.md</path>
+        <title>Rust Event-Driven Web Server Coding Standards</title>
+        <section>CLI and Configuration</section>
+        <snippet>Every application must implement serve, migrate, and reset commands. Configuration uses TOML files (config/default.toml committed, config/dev.toml in .gitignore). Migrate command must create database if it doesn't exist.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE.md</path>
+        <title>Rust Event-Driven Web Server Coding Standards</title>
+        <section>Database Guidelines</section>
+        <snippet>Separate databases for write (evento.db - events and aggregate state) and read operations (queries.db - projections). Never query Evento data from read operations. Migration file format: {timestamp}_{table_name}.sql with YYYYMMDDHHmmss timestamp format.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE.md</path>
+        <title>Rust Event-Driven Web Server Coding Standards</title>
+        <section>Testing Guidelines</section>
+        <snippet>Always use migrations for database setup (sqlx::migrate! and evento::sql_migrator). Never create tables directly using sqlx::query in tests. Apply DRY principle for test database setup. Tests in tests/ folder (not in src/).</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>imkitchen Product Requirements Document</title>
+        <section>Functional Requirements - Authentication</section>
+        <snippet>FR001: System shall support user registration, login, and profile management with JWT cookie-based authentication. FR003: System shall support admin users with is_admin flag.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>Cargo.toml</path>
+        <kind>workspace</kind>
+        <symbol>workspace definition</symbol>
+        <lines>1-97</lines>
+        <reason>Defines workspace structure with three bounded context crates and all workspace dependencies for the project</reason>
+      </artifact>
+      <artifact>
+        <path>src/main.rs</path>
+        <kind>cli</kind>
+        <symbol>main</symbol>
+        <lines>1-50</lines>
+        <reason>CLI entry point using clap with serve, migrate, and reset commands</reason>
+      </artifact>
+      <artifact>
+        <path>config/default.toml</path>
+        <kind>config</kind>
+        <symbol>default configuration</symbol>
+        <lines>1-29</lines>
+        <reason>Default configuration file with server, database, auth, and logging settings</reason>
+      </artifact>
+      <artifact>
+        <path>tests/helpers/mod.rs</path>
+        <kind>test</kind>
+        <symbol>setup_test_databases</symbol>
+        <lines>42-63</lines>
+        <reason>Reusable test helper function for setting up in-memory databases with migrations</reason>
+      </artifact>
+      <artifact>
+        <path>tests/helpers/mod.rs</path>
+        <kind>test</kind>
+        <symbol>create_test_config</symbol>
+        <lines>89-109</lines>
+        <reason>Test configuration factory for creating test-appropriate config instances</reason>
+      </artifact>
+      <artifact>
+        <path>src/server.rs</path>
+        <kind>server</kind>
+        <symbol>serve</symbol>
+        <lines>N/A</lines>
+        <reason>Web server implementation using Axum framework</reason>
+      </artifact>
+      <artifact>
+        <path>src/migrate.rs</path>
+        <kind>migration</kind>
+        <symbol>migrate, reset</symbol>
+        <lines>N/A</lines>
+        <reason>Database migration implementation using sqlx::migrate! and evento::sql_migrator</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <rust>
+        <package name="evento" version="1.5" features="sqlite" />
+        <package name="axum" version="0.8" />
+        <package name="axum-extra" version="0.12" features="form, query, cookie" />
+        <package name="askama" version="0.14" />
+        <package name="askama_web" version="0.14" />
+        <package name="sqlx" version="0.8" features="runtime-tokio-rustls, sqlite" />
+        <package name="tokio" version="1" features="full" />
+        <package name="validator" version="0.20" features="derive" />
+        <package name="ulid" version="1.2" />
+        <package name="clap" version="4.5" features="derive" />
+        <package name="config" version="0.15" />
+        <package name="argon2" version="0.5" />
+        <package name="jsonwebtoken" version="10.1" features="aws_lc_rs" />
+        <package name="tracing" version="0.1" />
+        <package name="tracing-subscriber" version="0.3" features="env-filter" />
+      </rust>
+      <javascript>
+        <package name="playwright" version="latest" />
+      </javascript>
+    </dependencies>
+  </artifacts>
+  <constraints>
+    - All dependencies MUST be defined as workspace dependencies in root Cargo.toml
+    - Three separate SQLite databases required: evento.db (write/events), queries.db (read/projections), validation.db (async validation)
+    - Configuration files: config/default.toml must be committed to git; config/dev.toml must be in .gitignore
+    - Migration files must follow format: {timestamp}_{table_name}.sql with YYYYMMDDHHmmss timestamp format
+    - Migrate command must create databases if they don't exist
+    - Reset command must drop all three databases and re-run migrations
+    - Tests must use sqlx::migrate! and evento::sql_migrator for database setup (never create tables directly)
+    - Test helpers must follow DRY principle (no duplicate database setup code)
+    - Workspace must include three bounded context crates: imkitchen-user, imkitchen-recipe, imkitchen-mealplan
+    - All code must pass clippy without warnings (no #[allow(...)] suppressions) and cargo fmt
+  </constraints>
+  <interfaces>
+    <interface>
+      <name>CLI Commands</name>
+      <kind>command-line</kind>
+      <signature>cargo run -- serve [--port PORT] [--config PATH]</signature>
+      <path>src/main.rs</path>
+    </interface>
+    <interface>
+      <name>CLI Commands</name>
+      <kind>command-line</kind>
+      <signature>cargo run -- migrate [--config PATH]</signature>
+      <path>src/main.rs</path>
+    </interface>
+    <interface>
+      <name>CLI Commands</name>
+      <kind>command-line</kind>
+      <signature>cargo run -- reset [--config PATH]</signature>
+      <path>src/main.rs</path>
+    </interface>
+    <interface>
+      <name>Config Structure</name>
+      <kind>struct</kind>
+      <signature>Config { server: ServerConfig, database: DatabaseConfig, logging: LoggingConfig, auth: AuthConfig }</signature>
+      <path>src/config.rs</path>
+    </interface>
+    <interface>
+      <name>Test Database Setup</name>
+      <kind>function</kind>
+      <signature>async fn setup_test_databases() -&gt; anyhow::Result&lt;TestDatabases&gt;</signature>
+      <path>tests/helpers/mod.rs</path>
+    </interface>
+    <interface>
+      <name>Test Database Cleanup</name>
+      <kind>function</kind>
+      <signature>async fn cleanup_test_databases(dbs: TestDatabases) -&gt; anyhow::Result&lt;()&gt;</signature>
+      <path>tests/helpers/mod.rs</path>
+    </interface>
+    <interface>
+      <name>Test Config Factory</name>
+      <kind>function</kind>
+      <signature>fn create_test_config() -&gt; imkitchen::Config</signature>
+      <path>tests/helpers/mod.rs</path>
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>All tests must use sqlx::migrate! and evento::sql_migrator for database setup. Never create tables directly using sqlx::query in tests. Test helpers follow DRY principle with reusable functions in tests/helpers/mod.rs. Tests use in-memory SQLite databases for isolation. E2E tests use Playwright framework located in tests/e2e/.</standards>
+    <locations>
+      - tests/workspace_structure.rs - Workspace configuration tests
+      - tests/cli_commands.rs - CLI command tests (serve, migrate, reset)
+      - tests/configuration.rs - Configuration loading tests
+      - tests/database_helpers.rs - Database helper tests
+      - tests/helpers/mod.rs - Shared test utilities
+      - tests/e2e/*.spec.ts - Playwright E2E tests
+    </locations>
+    <ideas>
+      - AC1: Verify workspace Cargo.toml has all required dependencies with correct versions
+      - AC2: Test serve command starts server on configured port
+      - AC2: Test migrate command creates all three databases and runs migrations
+      - AC2: Test reset command drops databases and recreates them
+      - AC3: Test config loading from default.toml and dev.toml override
+      - AC3: Test CLI config path override
+      - AC4: Verify three separate databases are created (evento, queries, validation)
+      - AC5: Test migration directories exist and contain migration files
+      - AC6: Test Playwright configuration and example E2E test execution
+      - AC7: Test setup_test_databases creates in-memory databases with migrations
+      - AC7: Test cleanup_test_databases closes connections properly
+      - AC8: Run cargo clippy and cargo fmt, verify no errors or warnings
+    </ideas>
+  </tests>
+</story-context>

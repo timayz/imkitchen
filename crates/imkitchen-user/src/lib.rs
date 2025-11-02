@@ -6,3 +6,8 @@
 pub mod aggregate;
 pub mod command;
 pub mod event;
+
+// Re-export commonly used types
+pub use aggregate::User;
+pub use command::{Command, LoginUserInput, RegisterUserInput};
+pub use event::EventMetadata;

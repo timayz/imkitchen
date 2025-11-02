@@ -22,7 +22,9 @@ evento = { version = "1.5", features = ["sqlite"] }
 
 # Web server framework
 axum = "0.8"
-axum-extra = { version = "0.12", features = ["form", "query"] }
+axum-extra = { version = "0.12", features = ["form", "query", "cookie"] }
+tower = "0.5"
+tower-livereload = "0.9"
 
 # Template engine
 askama = "0.14"
@@ -36,6 +38,11 @@ tokio = { version = "1", features = ["full"] }
 
 # Validation
 validator = { version = "0.20", features = ["derive"] }
+
+# Security
+argon2 = "0.5"
+password-hash = { version = "0.5", features = ["getrandom"] }
+jsonwebtoken = { version = "10.1", features = ["aws_lc_rs"] }
 
 # Utilities
 ulid = "1.2"
@@ -53,6 +60,10 @@ clap = { version = "4.5", features = ["derive"] }
 config = "0.15"
 toml = "0.9"
 
+# assets
+rust-embed = "8.8"
+mime_guess = "2.0"
+
 [package]
 name = "imkitchen"
 version.workspace = true
@@ -61,24 +72,25 @@ edition.workspace = true
 [dependencies]
 evento.workspace = true
 axum.workspace = true
-# axum-extra.workspace = true  # Unused - will be needed for forms
-# askama.workspace = true  # Unused - will be needed for templates
-# askama_web.workspace = true  # Unused - will be needed for templates
+axum-extra.workspace = true
+askama.workspace = true
+# askama_web.workspace = true  # Unused - using askama::Template directly
 sqlx.workspace = true
 tokio.workspace = true
-# validator.workspace = true  # Unused - will be needed for input validation
-# ulid.workspace = true  # Unused - will be needed for request IDs
+validator.workspace = true
+ulid.workspace = true
 anyhow.workspace = true
 serde.workspace = true
-# serde_json.workspace = true  # Unused
-# bincode.workspace = true  # Unused - used by evento internally
+# serde_json.workspace = true  # Unused - no JSON serialization needed yet
 tracing.workspace = true
 tracing-subscriber.workspace = true
 clap.workspace = true
 config.workspace = true
-# toml.workspace = true  # Unused - used by config crate internally
+jsonwebtoken.workspace = true
+mime_guess.workspace = true
+rust-embed.workspace = true
+tower.workspace = true
+tower-livereload.workspace = true
 
-# Bounded context crates (unused - will be needed when implementing features)
-# imkitchen-user = { path = "crates/imkitchen-user" }
-# imkitchen-recipe = { path = "crates/imkitchen-recipe" }
-# imkitchen-mealplan = { path = "crates/imkitchen-mealplan" }
+# Bounded context crates
+imkitchen-user = { path = "crates/imkitchen-user" }

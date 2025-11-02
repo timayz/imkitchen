@@ -1,0 +1,222 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>4</storyId>
+    <title>Admin User Management</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-01</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/1-4-admin-user-management.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>admin</asA>
+    <iWant>to view and manage user accounts</iWant>
+    <soThat>I can suspend problematic users and manage premium bypass flags</soThat>
+    <tasks>
+- Task 1: Add is_admin support to User aggregate
+- Task 2: Define admin-related events (UserSuspended, UserActivated, UserPremiumBypassToggled)
+- Task 3: Implement admin commands (suspend_user, activate_user, toggle_premium_bypass)
+- Task 4: Create admin middleware
+- Task 5: Update query handlers for admin events
+- Task 6: Create admin panel UI
+- Task 7: Implement admin route handlers
+- Task 8: Update authentication to check suspension
+- Task 9: Write comprehensive tests
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+1. is_admin flag added to user aggregate and projection
+2. Admin panel route protected by admin-only middleware
+3. Admin can view list of all users with pagination
+4. Admin can suspend/activate user accounts (UserSuspended, UserActivated events)
+5. Suspended users cannot log in (authentication check)
+6. Suspended users' shared recipes hidden from community view
+7. Admin can toggle premium_bypass flag per user (UserPremiumBypassToggled event)
+8. Tests verify admin authentication, user suspension, and reactivation
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Decision Architecture</title>
+        <section>Security Architecture - Admin Authorization</section>
+        <snippet>Admin routes protected by middleware that extracts JWT and checks is_admin claim. Returns 403 if not admin. Admin routes protected at router level using layer(middleware::from_fn(admin_middleware)).</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>imkitchen Product Requirements Document</title>
+        <section>FR003, FR045-FR048: Admin Requirements</section>
+        <snippet>System shall support admin users identified by is_admin flag. Admin panel provides user management capabilities: view, edit, suspend/activate accounts, manage premium bypass flags. Suspended users cannot log in and their shared recipes are hidden from community.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic Documentation</title>
+        <section>Story 1.4 Dependencies</section>
+        <snippet>Story 1.4 affects Story 2.1 (recipe creation) and Story 5.2 (community browse). Suspended users' recipes hidden immediately with no grace period.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE.md</path>
+        <title>Rust Event-Driven Web Server Coding Standards</title>
+        <section>Axum Guidelines</section>
+        <snippet>Always use latest route parameter format {id} instead of :id. Apply middleware to route groups using layer(). Protected routes should verify claims and return appropriate HTTP status codes.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>crates/imkitchen-user/src/event.rs</path>
+        <kind>event</kind>
+        <symbol>UserSuspended, UserActivated, UserPremiumBypassToggled</symbol>
+        <lines>TBD</lines>
+        <reason>Admin-related events for user account management</reason>
+      </artifact>
+      <artifact>
+        <path>crates/imkitchen-user/src/aggregate.rs</path>
+        <kind>aggregate</kind>
+        <symbol>User (is_admin, is_suspended, premium_bypass fields)</symbol>
+        <lines>TBD</lines>
+        <reason>User aggregate updated to handle admin events and store admin/suspension/bypass state</reason>
+      </artifact>
+      <artifact>
+        <path>crates/imkitchen-user/src/command.rs</path>
+        <kind>command</kind>
+        <symbol>suspend_user, activate_user, toggle_premium_bypass</symbol>
+        <lines>TBD</lines>
+        <reason>Admin commands to manage user accounts with admin verification</reason>
+      </artifact>
+      <artifact>
+        <path>src/middleware/admin.rs</path>
+        <kind>middleware</kind>
+        <symbol>admin_middleware</symbol>
+        <lines>TBD</lines>
+        <reason>Middleware to protect admin routes by verifying is_admin JWT claim</reason>
+      </artifact>
+      <artifact>
+        <path>src/queries/users.rs</path>
+        <kind>query</kind>
+        <symbol>on_user_suspended, on_user_activated, on_user_premium_bypass_toggled, list_all_users</symbol>
+        <lines>TBD</lines>
+        <reason>Query handlers to project admin events and list users with pagination</reason>
+      </artifact>
+      <artifact>
+        <path>src/routes/admin/users.rs</path>
+        <kind>route</kind>
+        <symbol>list, suspend, activate, toggle_premium_bypass</symbol>
+        <lines>TBD</lines>
+        <reason>Admin route handlers for user management operations</reason>
+      </artifact>
+      <artifact>
+        <path>src/auth/middleware.rs</path>
+        <kind>middleware</kind>
+        <symbol>auth_middleware (updated)</symbol>
+        <lines>TBD</lines>
+        <reason>Updated auth middleware to check is_suspended flag and reject suspended users</reason>
+      </artifact>
+      <artifact>
+        <path>crates/imkitchen-user/src/command.rs</path>
+        <kind>command</kind>
+        <symbol>login_user (updated)</symbol>
+        <lines>TBD</lines>
+        <reason>Updated login command to check is_suspended flag before allowing login</reason>
+      </artifact>
+      <artifact>
+        <path>templates/pages/admin/users.html</path>
+        <kind>template</kind>
+        <symbol>admin user list</symbol>
+        <lines>TBD</lines>
+        <reason>Admin panel UI for user management with pagination and action buttons</reason>
+      </artifact>
+      <artifact>
+        <path>migrations/queries/20250101000002_user_admin_fields.sql</path>
+        <kind>migration</kind>
+        <symbol>ALTER TABLE users ADD COLUMN is_suspended</symbol>
+        <lines>TBD</lines>
+        <reason>Migration to add is_suspended column to users table</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <rust>
+        <!-- No new dependencies, uses existing auth/evento/axum infrastructure -->
+      </rust>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - is_admin flag defaults to false for new users
+    - Admin middleware must verify is_admin JWT claim and return 403 if not admin
+    - Admin routes must be protected at router level using layer(middleware::from_fn(admin_middleware))
+    - Suspended users cannot log in - login command must check is_suspended flag
+    - Suspended users' shared recipes must be hidden from community view
+    - premium_bypass flag allows free tier users to access premium features
+    - Admin commands must verify requesting user is admin before executing
+    - All admin operations emit events (UserSuspended, UserActivated, UserPremiumBypassToggled)
+    - Query handlers must be idempotent for admin events
+    - Recipe queries must filter WHERE owner_id NOT IN (SELECT id FROM users WHERE is_suspended = 1)
+    - Admin panel should display pagination (20 users per page)
+    - First admin setup options: manual DB update, config flag, or CLI command
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>Suspend User Command</name>
+      <kind>function</kind>
+      <signature>async fn suspend_user(&amp;self, input: SuspendUserInput, metadata: EventMetadata) -&gt; anyhow::Result&lt;()&gt;</signature>
+      <path>crates/imkitchen-user/src/command.rs</path>
+    </interface>
+    <interface>
+      <name>Activate User Command</name>
+      <kind>function</kind>
+      <signature>async fn activate_user(&amp;self, input: ActivateUserInput, metadata: EventMetadata) -&gt; anyhow::Result&lt;()&gt;</signature>
+      <path>crates/imkitchen-user/src/command.rs</path>
+    </interface>
+    <interface>
+      <name>Toggle Premium Bypass Command</name>
+      <kind>function</kind>
+      <signature>async fn toggle_premium_bypass(&amp;self, input: TogglePremiumBypassInput, metadata: EventMetadata) -&gt; anyhow::Result&lt;()&gt;</signature>
+      <path>crates/imkitchen-user/src/command.rs</path>
+    </interface>
+    <interface>
+      <name>Admin Middleware</name>
+      <kind>function</kind>
+      <signature>async fn admin_middleware(request: Request, next: Next) -&gt; Response</signature>
+      <path>src/middleware/admin.rs</path>
+    </interface>
+    <interface>
+      <name>List Users Query</name>
+      <kind>function</kind>
+      <signature>async fn list_all_users(pool: &amp;SqlitePool, page: i32, per_page: i32) -&gt; anyhow::Result&lt;Vec&lt;UserRow&gt;&gt;</signature>
+      <path>src/queries/users.rs</path>
+    </interface>
+    <interface>
+      <name>Admin Routes</name>
+      <kind>REST</kind>
+      <signature>GET /admin/users, POST /admin/users/{id}/suspend, POST /admin/users/{id}/activate, POST /admin/users/{id}/premium-bypass</signature>
+      <path>src/routes/admin/users.rs</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Use evento::unsafe_oneshot for synchronous event processing. Create admin and non-admin test users. Verify middleware blocks non-admin access (403). Test suspended user login rejection. Verify recipe visibility filtering.</standards>
+    <locations>
+      - tests/admin_test.rs - Admin user management tests
+      - tests/helpers/mod.rs - Test database setup helpers
+    </locations>
+    <ideas>
+      - AC1: Test is_admin flag set correctly in user aggregate and projection
+      - AC2: Test non-admin user receives 403 when accessing /admin/users
+      - AC2: Test admin user can access /admin/users successfully
+      - AC3: Test admin can view user list with pagination
+      - AC4: Test admin can suspend user account (UserSuspended event emitted)
+      - AC4: Test admin can activate suspended user (UserActivated event emitted)
+      - AC5: Test suspended user cannot log in (receives error message)
+      - AC5: Test auth middleware rejects suspended users on protected routes
+      - AC6: Test suspended user's shared recipes hidden from community view
+      - AC6: Test recipe query filters suspended users correctly
+      - AC7: Test admin can toggle premium_bypass flag
+      - AC7: Test UserPremiumBypassToggled event updates user_profiles table
+      - AC8: Integration test for suspend → login rejection → activate → login success flow
+    </ideas>
+  </tests>
+</story-context>
