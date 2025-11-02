@@ -3,6 +3,7 @@
 //! This crate contains shared application types, server implementation,
 //! and database migration utilities.
 
+pub mod access_control;
 pub mod assets;
 pub mod auth;
 pub mod config;

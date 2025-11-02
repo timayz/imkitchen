@@ -11,6 +11,9 @@ use axum::{
 };
 use sqlx::SqlitePool;
 
+use crate::access_control::AccessControlService;
+use crate::Config;
+
 // Re-export route handlers
 pub use login::{get_login, post_login, post_logout};
 pub use profile::{get_profile, post_profile};
@@ -23,6 +26,8 @@ pub struct AppState {
     pub query_pool: SqlitePool,
     pub jwt_secret: String,
     pub jwt_lifetime_seconds: u64,
+    pub config: Config,
+    pub access_control: AccessControlService,
 }
 
 /// Helper to render templates

@@ -26,3 +26,8 @@ jwt_lifetime_seconds = 604800
 level = "info"
 # Log format: json, pretty, compact
 format = "pretty"
+
+[access_control]
+# Global premium bypass - NEVER enable in production!
+# Use config/dev.toml for local development bypass
+global_premium_bypass = false
