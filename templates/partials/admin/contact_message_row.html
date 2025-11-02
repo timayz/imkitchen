@@ -1,0 +1,54 @@
+<table>
+<tbody>
+<tr id="message-{{ message.id }}" class="hover:bg-gray-50">
+    <td class="px-6 py-4 whitespace-nowrap">
+        <div class="text-sm font-medium text-gray-900">{{ message.name }}</div>
+        <div class="text-sm text-gray-500">{{ message.email }}</div>
+    </td>
+    <td class="px-6 py-4">
+        <div class="text-sm text-gray-900">{{ message.subject }}</div>
+    </td>
+    <td class="px-6 py-4">
+        <div class="text-sm text-gray-600 truncate max-w-xs">
+            {% if message.message.len() > 100 %}
+            {{ message.message | truncate(length=100) }}...
+            {% else %}
+            {{ message.message }}
+            {% endif %}
+        </div>
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap">
+        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {% if message.status == "new" %}bg-blue-100 text-blue-800{% else if message.status == "read" %}bg-yellow-100 text-yellow-800{% else if message.status == "resolved" %}bg-green-100 text-green-800{% endif %}">
+            {% if message.status == "new" %}New{% else if message.status == "read" %}Read{% else if message.status == "resolved" %}Resolved{% endif %}
+        </span>
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        {{ message.created_at }}
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+        <div class="flex space-x-2">
+            {% if message.status == "new" %}
+            <button
+                ts-req="/admin/contact/{{ message.id }}/mark-read"
+                ts-req-method="POST"
+                ts-req-selector="#message-{{ message.id }}"
+                ts-target="#message-{{ message.id }}"
+                class="text-yellow-600 hover:text-yellow-900 bg-yellow-50 hover:bg-yellow-100 px-3 py-1 rounded">
+                Mark Read
+            </button>
+            {% endif %}
+            {% if message.status != "resolved" %}
+            <button
+                ts-req="/admin/contact/{{ message.id }}/resolve"
+                ts-req-method="POST"
+                ts-req-selector="#message-{{ message.id }}"
+                ts-target="#message-{{ message.id }}"
+                class="text-green-600 hover:text-green-900 bg-green-50 hover:bg-green-100 px-3 py-1 rounded">
+                Resolve
+            </button>
+            {% endif %}
+        </div>
+    </td>
+</tr>
+</tbody>
+</table>

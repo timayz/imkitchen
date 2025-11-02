@@ -44,6 +44,9 @@ argon2 = "0.5"
 password-hash = { version = "0.5", features = ["getrandom"] }
 jsonwebtoken = { version = "10.1", features = ["aws_lc_rs"] }
 
+# Email
+lettre = { version = "0.11", default-features = false, features = ["smtp-transport", "builder", "tokio1-rustls-tls"] }
+
 # Utilities
 ulid = "1.2"
 anyhow = "1"
@@ -52,6 +55,7 @@ serde_json = "1"
 bincode = "2"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+chrono = "0.4"
 
 # CLI
 clap = { version = "4.5", features = ["derive"] }
@@ -91,6 +95,8 @@ mime_guess.workspace = true
 rust-embed.workspace = true
 tower.workspace = true
 tower-livereload.workspace = true
+lettre.workspace = true
+chrono.workspace = true
 
 # Bounded context crates
 imkitchen-user = { path = "crates/imkitchen-user" }

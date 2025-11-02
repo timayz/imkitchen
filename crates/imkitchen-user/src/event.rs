@@ -70,3 +70,20 @@ pub struct UserPromotedToAdmin {}
 /// User demoted from admin status
 #[derive(evento::AggregatorName, Encode, Decode)]
 pub struct UserDemotedFromAdmin {}
+
+/// Contact form submitted by visitor
+#[derive(evento::AggregatorName, Encode, Decode, Clone)]
+pub struct ContactFormSubmitted {
+    pub name: String,
+    pub email: String,
+    pub subject: String,
+    pub message: String,
+}
+
+/// Contact message marked as read by admin
+#[derive(evento::AggregatorName, Encode, Decode)]
+pub struct ContactMessageMarkedRead {}
+
+/// Contact message resolved by admin
+#[derive(evento::AggregatorName, Encode, Decode)]
+pub struct ContactMessageResolved {}

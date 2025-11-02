@@ -1,7 +1,8 @@
 //! User aggregate
 
 use crate::event::{
-    EventMetadata, UserActivated, UserDemotedFromAdmin, UserLoggedIn, UserPremiumBypassToggled,
+    ContactFormSubmitted, ContactMessageMarkedRead, ContactMessageResolved, EventMetadata,
+    UserActivated, UserDemotedFromAdmin, UserLoggedIn, UserPremiumBypassToggled,
     UserProfileUpdated, UserPromotedToAdmin, UserRegistered, UserRegistrationFailed,
     UserRegistrationSucceeded, UserSuspended,
 };
@@ -112,6 +113,43 @@ impl User {
         _event: EventDetails<UserDemotedFromAdmin, EventMetadata>,
     ) -> anyhow::Result<()> {
         self.is_admin = false;
+        Ok(())
+    }
+}
+
+/// ContactMessage aggregate representing a contact form submission
+#[derive(Default, Encode, Decode, Clone, Debug)]
+pub struct ContactMessage {
+    /// Message status: new, read, or resolved
+    pub status: Option<String>,
+}
+
+#[evento::aggregator]
+impl ContactMessage {
+    /// Handle contact form submission
+    async fn contact_form_submitted(
+        &mut self,
+        _event: EventDetails<ContactFormSubmitted, EventMetadata>,
+    ) -> anyhow::Result<()> {
+        self.status = Some("new".to_string());
+        Ok(())
+    }
+
+    /// Handle message marked as read
+    async fn contact_message_marked_read(
+        &mut self,
+        _event: EventDetails<ContactMessageMarkedRead, EventMetadata>,
+    ) -> anyhow::Result<()> {
+        self.status = Some("read".to_string());
+        Ok(())
+    }
+
+    /// Handle message resolved
+    async fn contact_message_resolved(
+        &mut self,
+        _event: EventDetails<ContactMessageResolved, EventMetadata>,
+    ) -> anyhow::Result<()> {
+        self.status = Some("resolved".to_string());
         Ok(())
     }
 }

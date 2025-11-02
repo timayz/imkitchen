@@ -11,6 +11,7 @@ pub struct Config {
     pub auth: AuthConfig,
     pub logging: LoggingConfig,
     pub access_control: AccessControlConfig,
+    pub email: EmailConfig,
 }
 
 /// Server configuration
@@ -46,6 +47,17 @@ pub struct LoggingConfig {
 #[derive(Debug, Deserialize, Clone)]
 pub struct AccessControlConfig {
     pub global_premium_bypass: bool,
+}
+
+/// Email configuration
+#[derive(Debug, Deserialize, Clone)]
+pub struct EmailConfig {
+    pub smtp_host: String,
+    pub smtp_port: u16,
+    pub smtp_username: String,
+    pub smtp_password: String,
+    pub from_address: String,
+    pub admin_emails: Vec<String>,
 }
 
 impl Config {

@@ -110,6 +110,14 @@ pub fn create_test_config() -> imkitchen::Config {
         access_control: imkitchen::config::AccessControlConfig {
             global_premium_bypass: false,
         },
+        email: imkitchen::config::EmailConfig {
+            smtp_host: "smtp.example.com".to_string(),
+            smtp_port: 587,
+            smtp_username: "".to_string(),
+            smtp_password: "".to_string(),
+            from_address: "test@example.com".to_string(),
+            admin_emails: vec!["admin@example.com".to_string()],
+        },
     }
 }
 
@@ -120,4 +128,22 @@ pub fn create_test_config_with_bypass() -> imkitchen::Config {
     let mut config = create_test_config();
     config.access_control.global_premium_bypass = true;
     config
+}
+
+/// Process user events synchronously (helper for tests)
+///
+/// Processes both command and query handlers for user events.
+/// This should be called after any user-related commands to ensure
+/// projections are updated before assertions.
+pub async fn process_user_events(dbs: &TestDatabases) -> anyhow::Result<()> {
+    use imkitchen::queries::user::subscribe_user_query;
+    use imkitchen_user::command::subscribe_user_command;
+
+    subscribe_user_command::<evento::Sqlite>(dbs.validation.clone())
+        .unsafe_oneshot(&dbs.evento)
+        .await?;
+    subscribe_user_query::<evento::Sqlite>(dbs.queries.clone())
+        .unsafe_oneshot(&dbs.evento)
+        .await?;
+    Ok(())
 }
