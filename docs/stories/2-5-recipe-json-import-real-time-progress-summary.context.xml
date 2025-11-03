@@ -1,0 +1,122 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/2-5" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>2.5</storyId>
+    <title>Recipe JSON Import - Real-Time Progress & Summary</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-03</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/2-5-recipe-json-import-real-time-progress-summary.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>to see real-time progress during recipe import</iWant>
+    <soThat>I understand the import status and can review results</soThat>
+    <tasks>
+      - Create import progress storage (ImportProgress struct, in-memory HashMap)
+      - Update import command to track progress (increment counts after each recipe)
+      - Create progress polling route (GET /recipes/import/progress/{import_id})
+      - Create progress partial template (Twinspark polling with "Imported X, Y failed, Z remaining")
+      - Create summary template (success/failed/duplicate counts, detailed error list, link to library)
+      - Update import form to trigger progress (return import-progress.html after POST)
+      - Handle import cancellation (clear progress on page reload)
+      - Write integration tests for progress updates and summary accuracy
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-2.5.1">Real-time progress display: "Imported X recipes, Y failed, Z remaining..."</criterion>
+    <criterion id="AC-2.5.2">Twinspark polling updates progress without blocking UI</criterion>
+    <criterion id="AC-2.5.3">Summary report after completion: success count, failed count, duplicate count</criterion>
+    <criterion id="AC-2.5.4">Detailed error list for failed recipes (missing fields, validation errors)</criterion>
+    <criterion id="AC-2.5.5">Success message with link to recipe library when complete</criterion>
+    <criterion id="AC-2.5.6">Progress state cleared on page reload (no persistent history)</criterion>
+    <criterion id="AC-2.5.7">Tests verify progress updates and summary accuracy</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-2.md</path>
+        <title>Epic 2 Technical Specification</title>
+        <section>Workflows - Import Progress</section>
+        <snippet>POST /recipes/import returns import_id + progress partial. Browser polls GET /recipes/import/progress/{id} every 1s. Parser updates ImportProgress after each recipe. Progress partial swaps itself until complete, then returns summary partial to stop polling.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE.md</path>
+        <title>Coding Standards</title>
+        <section>Twinspark API Reference - ts-trigger</section>
+        <snippet>Use ts-trigger="load delay 1s" to poll progress endpoint every 1 second. Polling stops when summary template returned. Syntax: &lt;event-type&gt; [modifier...]. Modifiers: delay:&lt;ms&gt;, once, changed.</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>src/routes/recipes/import.rs</path>
+        <kind>route handler</kind>
+        <symbol>GET /recipes/import/progress/{import_id}</symbol>
+        <lines>all</lines>
+        <reason>Progress polling endpoint returning partial HTML with counts or summary</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <rust>
+        <package name="std::collections::HashMap">In-memory progress storage</package>
+        <package name="Arc&lt;Mutex&lt;HashMap&gt;&gt;">Thread-safe progress tracking</package>
+        <package name="ulid" version="1.2">Import ID generation</package>
+      </rust>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="C-1">In-memory storage only (no database persistence)</constraint>
+    <constraint id="C-2">Progress cleared on page reload or server restart</constraint>
+    <constraint id="C-3">Twinspark polling: ts-trigger="load delay 1s"</constraint>
+    <constraint id="C-4">Progress partial swaps itself, summary partial stops polling</constraint>
+    <constraint id="C-5">Use Arc&lt;Mutex&lt;HashMap&lt;String, ImportProgress&gt;&gt;&gt; for thread safety</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>GET /recipes/import/progress/{import_id}</name>
+      <kind>REST endpoint</kind>
+      <signature>
+Route: GET /recipes/import/progress/{import_id}
+Input: import_id (path)
+Output: HTML partial (progress or summary template)
+Storage: In-memory HashMap lookup
+      </signature>
+      <path>src/routes/recipes/import.rs</path>
+    </interface>
+
+    <interface>
+      <name>ImportProgress struct</name>
+      <kind>Progress tracking</kind>
+      <signature>
+pub struct ImportProgress {
+    pub success_count: usize,
+    pub failed_count: usize,
+    pub duplicate_count: usize,
+    pub total: usize,
+    pub status: ImportStatus,  // Pending | Completed
+    pub error_messages: Vec&lt;String&gt;,
+}
+      </signature>
+      <path>src/routes/recipes/import.rs</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Integration tests in tests/import_test.rs. Test polling behavior with async import simulation. Verify progress counts accuracy.</standards>
+    <locations>
+      <location>tests/import_test.rs</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-2.5.1">Integration test: import in progress → verify counts updated incrementally</idea>
+      <idea ac="AC-2.5.2">E2E test: Twinspark polling → verify updates every 1s until complete</idea>
+      <idea ac="AC-2.5.3">Integration test: import complete → verify summary shows correct counts</idea>
+    </ideas>
+  </tests>
+</story-context>

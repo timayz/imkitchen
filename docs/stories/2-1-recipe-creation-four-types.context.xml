@@ -1,0 +1,270 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/2-1" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>2.1</storyId>
+    <title>Recipe Creation (Four Types)</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-03</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/2-1-recipe-creation-four-types.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>to create recipes with explicit type selection (Appetizer, Main Course, Dessert, Accompaniment)</iWant>
+    <soThat>I can build my recipe library for meal planning</soThat>
+    <tasks>
+      - Create recipe bounded context crate `imkitchen-recipe` with evento, validator, serde, bincode dependencies
+      - Implement Recipe events (EventMetadata, RecipeCreated) with all fields including accepts_accompaniment
+      - Implement Recipe aggregate with evento aggregator pattern and recipe_created handler
+      - Implement Recipe creation command with CreateRecipeInput validation using validator crate
+      - Create recipe migrations (migrations/queries/20250101000002_recipes.sql) with indexes
+      - Implement recipe query handler (on_recipe_created) and subscribe_recipe_query function
+      - Create recipe creation route (src/routes/recipes/create.rs) with GET/POST handlers
+      - Create recipe creation template (templates/pages/recipes/create.html) with conditional fields
+      - Create recipe list route (src/routes/recipes/list.rs) with type filtering
+      - Create recipe list template (templates/pages/recipes/list.html) with type badges
+      - Write integration tests (tests/recipes_test.rs) for all four recipe types
+      - Add recipe routes to server (src/server.rs) with auth middleware
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-2.1.1">Recipe aggregate with RecipeCreated event including: recipe_type (enum), name, ingredients, instructions, dietary_restrictions, cuisine_type, complexity, advance_prep_text</criterion>
+    <criterion id="AC-2.1.2">Main courses include accepts_accompaniment field (defaults to false)</criterion>
+    <criterion id="AC-2.1.3">Recipe creation command validates required fields using validator crate</criterion>
+    <criterion id="AC-2.1.4">Recipe creation form with type selector and conditional fields (accompaniment field shown only for Main Course)</criterion>
+    <criterion id="AC-2.1.5">Recipe projection table stores all recipe data for querying</criterion>
+    <criterion id="AC-2.1.6">User can view their recipe list filtered by type</criterion>
+    <criterion id="AC-2.1.7">Tests verify recipe creation for all four types with validation</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-2.md</path>
+        <title>Epic 2 Technical Specification</title>
+        <section>Data Models - Recipe Aggregate</section>
+        <snippet>Recipe aggregate with recipe_type enum (Appetizer, MainCourse, Dessert, Accompaniment), name, owner_id, favorite_count, deleted_at. RecipeCreated event includes all fields: recipe_type, name, ingredients (JSON array), instructions, dietary_restrictions, cuisine_type, complexity, advance_prep_text, accepts_accompaniment (Main only, default false).</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-2.md</path>
+        <title>Epic 2 Technical Specification</title>
+        <section>APIs - Recipe Creation</section>
+        <snippet>POST /recipes accepts CreateRecipeForm with name, recipe_type, ingredients, instructions, dietary_restrictions, cuisine_type, complexity, advance_prep_text, accepts_accompaniment. Command: recipe_command.create_recipe(input, metadata) → Result&lt;String&gt;. Events: RecipeCreated.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Decision Architecture</title>
+        <section>Command Pattern</section>
+        <snippet>Commands MUST use input struct as first argument, metadata as second. Use evento::create for new aggregates. Commands ONLY use evento or validation tables for data. NEVER use projections in commands (eventual consistency risk). Commands complete in &lt;10 seconds.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Decision Architecture</title>
+        <section>Query Pattern</section>
+        <snippet>Queries ONLY access read DB (queries.db). Query handlers MUST be idempotent (can replay events). Use event.timestamp for all time fields in projections. Never perform heavy calculations in queries.</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>FR004-FR006</section>
+        <snippet>System shall allow users to create recipes with four types: Appetizer, Main Course, Dessert, Accompaniment. Recipe fields explicitly set by users with no automatic inference. Main courses default accepts_accompaniment=false requiring explicit enablement.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE.md</path>
+        <title>Coding Standards</title>
+        <section>Command Guidelines</section>
+        <snippet>Commands use input struct as first argument, metadata as second. CRITICAL: Commands ONLY use Evento or validation tables for consistent data. Never use projections. Always defer long/async validation to command handlers. Use evento::create for new aggregates.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE.md</path>
+        <title>Coding Standards</title>
+        <section>Axum Guidelines</section>
+        <snippet>Use latest route parameter format {id} instead of :id. Always use axum-extra Form/Query extractors for HTML forms. Use axum_extra::extract::Form for form data extraction.</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>crates/imkitchen-recipe/src/lib.rs</path>
+        <kind>crate root</kind>
+        <symbol>pub mod command, event, aggregate</symbol>
+        <lines>1-10</lines>
+        <reason>Recipe bounded context crate structure - modules to implement</reason>
+      </artifact>
+      <artifact>
+        <path>crates/imkitchen-recipe/src/event.rs</path>
+        <kind>event definitions</kind>
+        <symbol>EventMetadata, RecipeCreated</symbol>
+        <lines>all</lines>
+        <reason>Event structures for Recipe domain with bincode serialization</reason>
+      </artifact>
+      <artifact>
+        <path>crates/imkitchen-recipe/src/aggregate.rs</path>
+        <kind>aggregate root</kind>
+        <symbol>Recipe struct, #[evento::aggregator]</symbol>
+        <lines>all</lines>
+        <reason>Recipe aggregate with evento pattern and recipe_created handler</reason>
+      </artifact>
+      <artifact>
+        <path>crates/imkitchen-recipe/src/command.rs</path>
+        <kind>command handlers</kind>
+        <symbol>Command&lt;E: Executor&gt;, create_recipe</symbol>
+        <lines>all</lines>
+        <reason>Recipe command implementations with validator constraints</reason>
+      </artifact>
+      <artifact>
+        <path>Cargo.toml</path>
+        <kind>workspace manifest</kind>
+        <symbol>workspace.dependencies</symbol>
+        <lines>19-66</lines>
+        <reason>Dependency versions for evento, axum, validator, serde, bincode</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <rust>
+        <package name="evento" version="1.5" features="sqlite">Event sourcing framework</package>
+        <package name="axum" version="0.8">Web framework</package>
+        <package name="axum-extra" version="0.12" features="form,query,cookie">Form extraction</package>
+        <package name="askama" version="0.14">Template engine</package>
+        <package name="sqlx" version="0.8" features="sqlite">Database queries</package>
+        <package name="validator" version="0.20" features="derive">Input validation</package>
+        <package name="serde" version="1" features="derive">Serialization</package>
+        <package name="bincode" version="2">Event serialization</package>
+        <package name="ulid" version="1.2">Request ID generation</package>
+        <package name="anyhow" version="1">Error handling</package>
+        <package name="tracing" version="0.1">Logging</package>
+      </rust>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="C-1">Use evento::create for new Recipe aggregates (not evento::save)</constraint>
+    <constraint id="C-2">Commands MUST use input struct as first arg, EventMetadata as second arg</constraint>
+    <constraint id="C-3">NEVER use projections in commands - only evento or validation tables for consistent data</constraint>
+    <constraint id="C-4">Query handlers MUST be idempotent (can replay events from beginning)</constraint>
+    <constraint id="C-5">Use event.timestamp for created_at field in projections</constraint>
+    <constraint id="C-6">Axum routes use {id} format not :id for parameters</constraint>
+    <constraint id="C-7">Use axum_extra::extract::Form for form data (not axum::extract::Form)</constraint>
+    <constraint id="C-8">Recipe bounded context lives in crates/imkitchen-recipe/ with complete isolation</constraint>
+    <constraint id="C-9">Write DB (evento.db) managed exclusively by evento, read DB (queries.db) for projections</constraint>
+    <constraint id="C-10">Tests MUST use sqlx::migrate! and evento::sql_migrator for database setup (never direct SQL)</constraint>
+    <constraint id="C-11">All commands complete in &lt;10 seconds (graceful shutdown limit)</constraint>
+    <constraint id="C-12">Recipe type enum: Appetizer, MainCourse, Dessert, Accompaniment (exactly 4 values)</constraint>
+    <constraint id="C-13">accepts_accompaniment defaults to false, shown only for MainCourse type</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>CreateRecipeInput</name>
+      <kind>Command Input Struct</kind>
+      <signature>
+pub struct CreateRecipeInput {
+    #[validate(length(min = 1))]
+    pub name: String,
+    pub recipe_type: RecipeType,
+    #[validate(length(min = 1))]
+    pub ingredients: String,  // JSON array on backend
+    #[validate(length(min = 1))]
+    pub instructions: String,
+    pub dietary_restrictions: Vec&lt;String&gt;,
+    pub cuisine_type: Option&lt;String&gt;,
+    pub complexity: Option&lt;String&gt;,
+    pub advance_prep_text: Option&lt;String&gt;,
+    pub accepts_accompaniment: Option&lt;bool&gt;,  // Main courses only
+}
+      </signature>
+      <path>crates/imkitchen-recipe/src/command.rs</path>
+    </interface>
+
+    <interface>
+      <name>RecipeCreated Event</name>
+      <kind>Domain Event</kind>
+      <signature>
+#[derive(Encode, Decode, Clone)]
+pub struct RecipeCreated {
+    pub recipe_type: RecipeType,
+    pub name: String,
+    pub ingredients: String,
+    pub instructions: String,
+    pub dietary_restrictions: Vec&lt;String&gt;,
+    pub cuisine_type: Option&lt;String&gt;,
+    pub complexity: Option&lt;String&gt;,
+    pub advance_prep_text: Option&lt;String&gt;,
+    pub accepts_accompaniment: bool,  // Default false
+}
+      </signature>
+      <path>crates/imkitchen-recipe/src/event.rs</path>
+    </interface>
+
+    <interface>
+      <name>POST /recipes</name>
+      <kind>REST endpoint</kind>
+      <signature>
+Route: POST /recipes
+Input: axum_extra::extract::Form&lt;CreateRecipeForm&gt;
+Output: HTML (Askama template - success or error form)
+Auth: Required (JWT middleware)
+      </signature>
+      <path>src/routes/recipes/create.rs</path>
+    </interface>
+
+    <interface>
+      <name>GET /recipes</name>
+      <kind>REST endpoint</kind>
+      <signature>
+Route: GET /recipes?type=MainCourse
+Input: axum_extra::extract::Query&lt;RecipeListQuery&gt;
+Output: HTML (Askama template - recipe list with filters)
+Auth: Required (JWT middleware)
+      </signature>
+      <path>src/routes/recipes/list.rs</path>
+    </interface>
+
+    <interface>
+      <name>recipes table schema</name>
+      <kind>Database projection</kind>
+      <signature>
+CREATE TABLE recipes (
+    id TEXT PRIMARY KEY,
+    owner_id TEXT NOT NULL,
+    recipe_type TEXT NOT NULL,
+    name TEXT NOT NULL,
+    ingredients TEXT NOT NULL,
+    instructions TEXT NOT NULL,
+    dietary_restrictions TEXT,
+    cuisine_type TEXT,
+    complexity TEXT,
+    advance_prep_text TEXT,
+    accepts_accompaniment BOOLEAN DEFAULT 0,
+    is_shared BOOLEAN DEFAULT 0,
+    deleted_at INTEGER,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (owner_id) REFERENCES users(id)
+);
+      </signature>
+      <path>migrations/queries/20250101000002_recipes.sql</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Use Rust built-in #[test] and #[tokio::test] for async tests. Integration tests in tests/ folder (NOT src/). Test file naming: {feature}_test.rs. Use sqlx::migrate! and evento::sql_migrator for database setup - NEVER direct SQL. Always use evento::load to validate command results. Tests must use implemented query functions to validate output.</standards>
+
+    <locations>
+      <location>tests/recipes_test.rs</location>
+      <location>crates/imkitchen-recipe/src/*.rs (unit tests inline)</location>
+    </locations>
+
+    <ideas>
+      <idea ac="AC-2.1.1">Unit test RecipeCreated event contains all required fields (recipe_type, name, ingredients, instructions, dietary_restrictions, cuisine_type, complexity, advance_prep_text)</idea>
+      <idea ac="AC-2.1.2">Unit test accepts_accompaniment defaults to false for MainCourse type</idea>
+      <idea ac="AC-2.1.3">Unit test CreateRecipeInput validator constraints - test missing name, empty ingredients, empty instructions return validation errors</idea>
+      <idea ac="AC-2.1.4">E2E test recipe creation form with Playwright - verify type selector, conditional accepts_accompaniment field visible only for MainCourse</idea>
+      <idea ac="AC-2.1.5">Integration test: create recipe command → verify recipes projection table populated with all fields</idea>
+      <idea ac="AC-2.1.6">Integration test: get_user_recipes query with type=MainCourse filter → verify only main course recipes returned</idea>
+      <idea ac="AC-2.1.7">Integration test: create all 4 recipe types (Appetizer, MainCourse, Dessert, Accompaniment) → verify projections for each</idea>
+    </ideas>
+  </tests>
+</story-context>

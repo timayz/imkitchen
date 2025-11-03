@@ -1,0 +1,193 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/2-6" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>2.6</storyId>
+    <title>JSON Schema Documentation</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-03</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/2-6-json-schema-documentation.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>third-party developer</asA>
+    <iWant>publicly accessible versioned JSON schema documentation</iWant>
+    <soThat>I can build tools that export recipes compatible with imkitchen</soThat>
+    <tasks>
+      - Create JSON schema document (Draft 2020-12 with all recipe fields)
+      - Create schema storage (static/schemas/recipe-v1.0.json)
+      - Create schema API route (GET /api/schema/recipe/v1.0, public, CORS enabled)
+      - Create schema documentation page (GET /docs/schema with field explanations)
+      - Add example recipes (one for each recipe type)
+      - Update import page with schema link
+      - Write integration tests (endpoint accessibility, CORS headers)
+      - Validate schema against HTML form (match CreateRecipeInput validator)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-2.6.1">JSON schema document created with all recipe fields and types</criterion>
+    <criterion id="AC-2.6.2">Schema versioned (v1.0) and published at public URL (/api/schema/recipe/v1.0)</criterion>
+    <criterion id="AC-2.6.3">Documentation page explains schema fields, required vs optional, and example JSON</criterion>
+    <criterion id="AC-2.6.4">Schema matches HTML form validation exactly</criterion>
+    <criterion id="AC-2.6.5">Schema includes all four recipe types with type-specific fields</criterion>
+    <criterion id="AC-2.6.6">Tests verify schema endpoint accessibility</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-2.md</path>
+        <title>Epic 2 Technical Specification</title>
+        <section>API Contracts - Schema Endpoints</section>
+        <snippet>GET /api/schema/recipe/v1.0 returns JSON Schema Draft 2020-12 with public access (no auth). CORS headers enabled. GET /docs/schema returns HTML documentation with field explanations and example JSONs for all 4 recipe types.</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>FR011 - JSON Schema Documentation</section>
+        <snippet>Publicly accessible versioned JSON schema (v1.0) published at /api/schema/recipe/v1.0. Documentation page explains required/optional fields with examples. Schema matches HTML form validation exactly.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Decision Architecture</title>
+        <section>Security Architecture - CORS</section>
+        <snippet>Public schema API endpoints include CORS headers for cross-origin access. No authentication required for schema endpoints (intended for third-party developers).</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE.md</path>
+        <title>Coding Standards</title>
+        <section>Axum Guidelines</section>
+        <snippet>Use {id} route parameter format (Axum 0.8+). Static file serving with application/json content-type. Always return HTML with status 200 for web pages.</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>src/routes/schema.rs</path>
+        <kind>route handler</kind>
+        <symbol>GET /api/schema/recipe/v1.0</symbol>
+        <lines>all</lines>
+        <reason>Public JSON schema endpoint serving static file with CORS headers</reason>
+      </artifact>
+      <artifact>
+        <path>src/routes/schema.rs</path>
+        <kind>route handler</kind>
+        <symbol>GET /docs/schema</symbol>
+        <lines>all</lines>
+        <reason>Schema documentation page with field explanations and examples</reason>
+      </artifact>
+      <artifact>
+        <path>static/schemas/recipe-v1.0.json</path>
+        <kind>static file</kind>
+        <symbol>JSON Schema Draft 2020-12</symbol>
+        <lines>all</lines>
+        <reason>Versioned JSON schema document with all recipe fields</reason>
+      </artifact>
+      <artifact>
+        <path>crates/imkitchen-recipe/src/command.rs</path>
+        <kind>command input struct</kind>
+        <symbol>CreateRecipeInput</symbol>
+        <lines>all</lines>
+        <reason>Reference for validator constraints that must match JSON schema</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <rust>
+        <package name="axum" version="0.8">Static file serving and route handlers</package>
+        <package name="askama" version="0.14">Documentation page template rendering</package>
+      </rust>
+      <external>
+        <package name="JSON Schema Draft 2020-12">Schema standard specification</package>
+      </external>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="C-1">Use JSON Schema Draft 2020-12 standard</constraint>
+    <constraint id="C-2">Public access (no authentication required)</constraint>
+    <constraint id="C-3">Schema versioned as v1.0 in URL and file path</constraint>
+    <constraint id="C-4">CORS headers enabled for cross-origin requests</constraint>
+    <constraint id="C-5">Schema constraints MUST match HTML form validator exactly</constraint>
+    <constraint id="C-6">Conditional field: accepts_accompaniment required only if recipe_type="MainCourse"</constraint>
+    <constraint id="C-7">Four recipe types: Appetizer, MainCourse, Dessert, Accompaniment</constraint>
+    <constraint id="C-8">Schema file stored as static/schemas/recipe-v1.0.json</constraint>
+    <constraint id="C-9">Documentation page includes example JSON for each recipe type</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>GET /api/schema/recipe/v1.0</name>
+      <kind>REST endpoint</kind>
+      <signature>
+Route: GET /api/schema/recipe/v1.0
+Input: None (public endpoint)
+Output: JSON (application/json)
+Headers: Access-Control-Allow-Origin: *
+Authentication: None (public access)
+      </signature>
+      <path>src/routes/schema.rs</path>
+    </interface>
+
+    <interface>
+      <name>GET /docs/schema</name>
+      <kind>REST endpoint</kind>
+      <signature>
+Route: GET /docs/schema
+Input: None
+Output: HTML (documentation page)
+Content: Field explanations, required/optional markers, example JSONs for all 4 types
+      </signature>
+      <path>src/routes/schema.rs</path>
+    </interface>
+
+    <interface>
+      <name>recipe-v1.0.json schema structure</name>
+      <kind>JSON Schema document</kind>
+      <signature>
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "/api/schema/recipe/v1.0",
+  "title": "imkitchen Recipe Schema",
+  "version": "1.0",
+  "type": "object",
+  "properties": {
+    "name": { "type": "string", "minLength": 1 },
+    "recipe_type": { "enum": ["Appetizer", "MainCourse", "Dessert", "Accompaniment"] },
+    "ingredients": { "type": "array", "items": { "type": "string" } },
+    "instructions": { "type": "string", "minLength": 1 },
+    "dietary_restrictions": { "type": "array", "items": { "type": "string" } },
+    "cuisine_type": { "type": "string" },
+    "complexity": { "type": "string" },
+    "advance_prep_text": { "type": "string" },
+    "accepts_accompaniment": { "type": "boolean" }
+  },
+  "required": ["name", "recipe_type", "ingredients", "instructions"],
+  "if": {
+    "properties": { "recipe_type": { "const": "MainCourse" } }
+  },
+  "then": {
+    "required": ["accepts_accompaniment"]
+  }
+}
+      </signature>
+      <path>static/schemas/recipe-v1.0.json</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Integration tests in tests/schema_test.rs. Test endpoint accessibility without authentication. Verify CORS headers. Validate schema is valid JSON Schema Draft 2020-12.</standards>
+    <locations>
+      <location>tests/schema_test.rs</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-2.6.2">Integration test: GET /api/schema/recipe/v1.0 returns 200 with application/json</idea>
+      <idea ac="AC-2.6.6">Integration test: schema endpoint accessible without authentication</idea>
+      <idea ac="AC-2.6.6">Integration test: CORS headers present (Access-Control-Allow-Origin)</idea>
+      <idea ac="AC-2.6.1">Unit test: schema is valid JSON Schema Draft 2020-12 format</idea>
+      <idea ac="AC-2.6.4">Unit test: schema required fields match CreateRecipeInput validator</idea>
+      <idea ac="AC-2.6.5">Unit test: conditional accepts_accompaniment only required for MainCourse</idea>
+    </ideas>
+  </tests>
+</story-context>
