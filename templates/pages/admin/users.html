@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}User Management - ImKitchen Admin{% endblock %}
+
+{% block nav_links %}
+<a href="/auth/profile" class="text-gray-700 hover:text-green-600">Profile</a>
+<a href="/admin/users" class="text-green-600 font-semibold">Admin</a>
+<form action="/auth/logout" method="POST" class="inline">
+    <button type="submit" class="text-gray-700 hover:text-red-600">Logout</button>
+</form>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h1 class="text-3xl font-bold text-gray-800 mb-4">User Management</h1>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-blue-50 p-4 rounded-lg">
+                <div class="text-sm text-blue-600 font-medium">Total Users</div>
+                <div class="text-2xl font-bold text-blue-800">{{ total_users }}</div>
+            </div>
+            <div class="bg-green-50 p-4 rounded-lg">
+                <div class="text-sm text-green-600 font-medium">Premium Users</div>
+                <div class="text-2xl font-bold text-green-800">{{ premium_users }}</div>
+            </div>
+            <div class="bg-red-50 p-4 rounded-lg">
+                <div class="text-sm text-red-600 font-medium">Suspended Users</div>
+                <div class="text-2xl font-bold text-red-800">{{ suspended_users }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Table -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Email
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Admin
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Premium Bypass
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Created At
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for user in users %}
+                    <tr id="user-{{ user.id }}" class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ user.email }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if user.is_admin %}
+                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                                Admin
+                            </span>
+                            {% else %}
+                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                User
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if user.is_suspended %}
+                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                Suspended
+                            </span>
+                            {% else %}
+                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                Active
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if user.premium_bypass %}
+                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                Enabled
+                            </span>
+                            {% else %}
+                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                Disabled
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ user.created_at_formatted }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex space-x-2">
+                                {% if user.is_suspended %}
+                                <button
+                                    ts-req="/admin/users/{{ user.id }}/activate"
+                                    ts-req-method="POST"
+                                    ts-req-selector="#user-{{ user.id }}"
+                                    ts-target="#user-{{ user.id }}"
+                                    class="text-green-600 hover:text-green-900 bg-green-50 hover:bg-green-100 px-3 py-1 rounded">
+                                    Activate
+                                </button>
+                                {% else %}
+                                <button
+                                    ts-req="/admin/users/{{ user.id }}/suspend"
+                                    ts-req-method="POST"
+                                    ts-req-selector="#user-{{ user.id }}"
+                                    ts-target="#user-{{ user.id }}"
+                                    class="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-3 py-1 rounded">
+                                    Suspend
+                                </button>
+                                {% endif %}
+
+                                <button
+                                    ts-req="/admin/users/{{ user.id }}/premium-bypass"
+                                    ts-req-method="POST"
+                                    ts-req-selector="#user-{{ user.id }}"
+                                    ts-target="#user-{{ user.id }}"
+                                    class="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded">
+                                    {% if user.premium_bypass %}Disable{% else %}Enable{% endif %} Bypass
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div class="flex-1 flex justify-between sm:hidden">
+                {% if page > 1 %}
+                <a href="/admin/users?page={{ page - 1 }}"
+                   class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Previous
+                </a>
+                {% endif %}
+                {% if has_more %}
+                <a href="/admin/users?page={{ page + 1 }}"
+                   class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Next
+                </a>
+                {% endif %}
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700">
+                        Showing page <span class="font-medium">{{ page }}</span> of <span class="font-medium">{{ total_pages }}</span>
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        {% if page > 1 %}
+                        <a href="/admin/users?page={{ page - 1 }}"
+                           class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            Previous
+                        </a>
+                        {% endif %}
+                        {% if has_more %}
+                        <a href="/admin/users?page={{ page + 1 }}"
+                           class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                            Next
+                        </a>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

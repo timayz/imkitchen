@@ -1,0 +1,178 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>5</storyId>
+    <title>Premium Bypass Configuration</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-01</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/1-5-premium-bypass-configuration.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>to configure premium bypass globally or per-user</iWant>
+    <soThat>development, staging, and demo accounts can bypass premium restrictions</soThat>
+    <tasks>
+- Task 1: Add global bypass configuration to config/default.toml
+- Task 2: Implement AccessControlService with freemium checks
+- Task 3: Verify premium_bypass flag in user_profiles (from Story 1.3)
+- Task 4: Integrate AccessControlService with existing routes
+- Task 5: Write comprehensive tests
+- Task 6: Document bypass configuration in CLAUDE.md
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+1. Global premium bypass setting in config/default.toml (boolean)
+2. Per-user premium_bypass flag in user profile (boolean)
+3. Access control logic checks: global config OR user flag OR active premium subscription
+4. Tests verify bypass behavior in both global and per-user scenarios
+5. Documentation added to CLAUDE.md explaining bypass configuration
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Decision Architecture</title>
+        <section>ADR-004: Centralized Access Control Service</section>
+        <snippet>Centralized AccessControlService with methods can_view_week(), can_add_favorite(), can_access_shopping_list(). Priority: global bypass &gt; per-user bypass &gt; premium active &gt; free tier restrictions.</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>imkitchen Product Requirements Document</title>
+        <section>FR051-FR053, FR116-FR119: Freemium Access Control</section>
+        <snippet>Free tier limits: Week 1 calendar visible, max 10 favorites, Week 1 shopping list. Premium tier: all weeks, unlimited favorites. Global bypass for dev/staging, per-user bypass for demo/test accounts.</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>imkitchen Product Requirements Document</title>
+        <section>Freemium Tier Restrictions Summary</section>
+        <snippet>Free tier: Calendar Week 1 only, Dashboard nearest day if in Week 1, Favorites max 10, Shopping Lists Week 1 only. Premium/Bypass: All features unrestricted.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE.md</path>
+        <title>Rust Event-Driven Web Server Coding Standards</title>
+        <section>Configuration Rules</section>
+        <snippet>Configuration must use TOML files. config/default.toml committed to git with safe defaults. config/dev.toml in .gitignore for local overrides. Never enable security bypasses in production config.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>config/default.toml</path>
+        <kind>config</kind>
+        <symbol>[access_control] section</symbol>
+        <lines>TBD</lines>
+        <reason>Configuration with global_premium_bypass setting (default: false for production safety)</reason>
+      </artifact>
+      <artifact>
+        <path>src/config.rs</path>
+        <kind>config</kind>
+        <symbol>AccessControlConfig</symbol>
+        <lines>TBD</lines>
+        <reason>Config struct to load access_control settings</reason>
+      </artifact>
+      <artifact>
+        <path>src/access_control.rs</path>
+        <kind>service</kind>
+        <symbol>AccessControlService</symbol>
+        <lines>TBD</lines>
+        <reason>Centralized service for freemium access control with methods: can_view_week, can_add_favorite, can_access_shopping_list</reason>
+      </artifact>
+      <artifact>
+        <path>src/lib.rs</path>
+        <kind>module</kind>
+        <symbol>pub mod access_control</symbol>
+        <lines>TBD</lines>
+        <reason>Export access_control module</reason>
+      </artifact>
+      <artifact>
+        <path>src/server.rs</path>
+        <kind>server</kind>
+        <symbol>AppState (add access_control field)</symbol>
+        <lines>TBD</lines>
+        <reason>Add AccessControlService to application state for route handlers</reason>
+      </artifact>
+      <artifact>
+        <path>src/queries/users.rs</path>
+        <kind>query</kind>
+        <symbol>count_user_favorites</symbol>
+        <lines>TBD</lines>
+        <reason>Query function to count user's current favorite recipes for 10-favorite limit check</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <rust>
+        <!-- No new dependencies, uses existing infrastructure -->
+      </rust>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - Global bypass (global_premium_bypass) must default to false in config/default.toml for production safety
+    - config/dev.toml (gitignored) can enable global bypass for local development
+    - Access control priority: global bypass &gt; per-user bypass &gt; is_premium_active &gt; free tier restrictions
+    - AccessControlService must check all three bypass mechanisms (global config, user flag, premium subscription)
+    - Free tier restrictions: Week 1 calendar only, max 10 favorites, Week 1 shopping list only
+    - Premium tier (or bypass): all weeks, unlimited favorites, all shopping lists
+    - per-user premium_bypass flag stored in user_profiles table (from Story 1.3)
+    - NEVER enable global_premium_bypass in production environments
+    - Access control service must be available via Axum State in route handlers
+    - Documentation must explain security implications of bypass configuration
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>Access Control Service - View Week</name>
+      <kind>function</kind>
+      <signature>async fn can_view_week(&amp;self, user_id: &amp;str, week_number: u8) -&gt; anyhow::Result&lt;bool&gt;</signature>
+      <path>src/access_control.rs</path>
+    </interface>
+    <interface>
+      <name>Access Control Service - Add Favorite</name>
+      <kind>function</kind>
+      <signature>async fn can_add_favorite(&amp;self, user_id: &amp;str) -&gt; anyhow::Result&lt;bool&gt;</signature>
+      <path>src/access_control.rs</path>
+    </interface>
+    <interface>
+      <name>Access Control Service - Shopping List</name>
+      <kind>function</kind>
+      <signature>async fn can_access_shopping_list(&amp;self, user_id: &amp;str, week_number: u8) -&gt; anyhow::Result&lt;bool&gt;</signature>
+      <path>src/access_control.rs</path>
+    </interface>
+    <interface>
+      <name>Count User Favorites</name>
+      <kind>function</kind>
+      <signature>async fn count_user_favorites(pool: &amp;SqlitePool, user_id: &amp;str) -&gt; anyhow::Result&lt;i32&gt;</signature>
+      <path>src/queries/users.rs</path>
+    </interface>
+    <interface>
+      <name>AccessControlConfig</name>
+      <kind>struct</kind>
+      <signature>AccessControlConfig { global_premium_bypass: bool }</signature>
+      <path>src/config.rs</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Create test configurations with global bypass enabled/disabled. Create test users with premium_bypass flag variations. Test all access control methods in various scenarios. Verify free tier restrictions enforced correctly.</standards>
+    <locations>
+      - tests/access_control_test.rs - Access control service tests
+      - tests/helpers/mod.rs - Test database and config helpers
+    </locations>
+    <ideas>
+      - AC1: Test global bypass allows access to all features (Week 5, unlimited favorites, all shopping lists)
+      - AC1: Test global bypass disabled enforces free tier restrictions
+      - AC2: Test per-user bypass allows access regardless of premium status
+      - AC2: Test user without bypass flag follows normal access rules
+      - AC3: Test premium user (is_premium_active=true) has full access
+      - AC3: Test free tier user restricted to Week 1 only
+      - AC3: Test free tier user can add favorites up to 10, blocked at 11
+      - AC4: Test multiple bypass mechanisms work independently (global + per-user + premium)
+      - AC4: Test priority order: global &gt; per-user &gt; premium &gt; free tier
+      - AC5: Verify CLAUDE.md documentation includes bypass configuration section
+      - Integration test: Create user, set bypass flag, verify access, remove bypass, verify restriction
+    </ideas>
+  </tests>
+</story-context>

@@ -1,26 +1,29 @@
 {
   "name": "imkitchen",
-  "version": "0.4.0",
-  "description": "Intelligent meal planning and cooking optimization",
-  "private": true,
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
   "scripts": {
-    "build:sw": "workbox injectManifest workbox-config.js",
     "test": "playwright test",
-    "test:accessibility": "playwright test tests/accessibility",
-    "test:e2e": "playwright test tests/e2e",
-    "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
-    "test:debug": "playwright test --debug",
-    "lighthouse": "lhci autorun",
-    "playwright:install": "playwright install --with-deps"
+    "test:headed": "playwright test --headed"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/timayz/imkitchen.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/timayz/imkitchen/issues"
+  },
+  "homepage": "https://github.com/timayz/imkitchen#readme",
   "devDependencies": {
-    "@axe-core/playwright": "^4.8.3",
-    "@lhci/cli": "^0.13.0",
-    "@playwright/test": "^1.40.1",
-    "workbox-cli": "^7.1.0"
-  },
-  "engines": {
-    "node": ">=18.0.0"
+    "@playwright/test": "^1.56.1"
   }
 }

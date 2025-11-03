@@ -1,0 +1,218 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>2</storyId>
+    <title>User Registration and Authentication</title>
+    <status>review</status>
+    <generatedAt>2025-11-01</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/1-2-user-registration-and-authentication.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>new user</asA>
+    <iWant>to register an account with email and password</iWant>
+    <soThat>I can access the meal planning platform securely</soThat>
+    <tasks>
+- Task 1: Create User bounded context with evento events
+- Task 2: Implement registration command with validation
+- Task 3: Implement JWT authentication system
+- Task 4: Create registration and login forms
+- Task 5: Create user projection table and query handlers
+- Task 6: Create command handler for async email validation
+- Task 7: Implement route handlers for registration and login
+- Task 8: Write comprehensive tests
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+1. User aggregate created with evento: UserRegistered, UserLoggedIn events
+2. Registration command validates email format and password requirements
+3. JWT cookie-based authentication implemented using evento metadata pattern
+4. Login route returns JWT token stored in secure HTTP-only cookie
+5. Protected routes verify JWT token and extract user_id
+6. Registration/login forms rendered with Askama templates
+7. User projection table created in queries DB with email, hashed_password, created_at
+8. Tests verify registration, login, and protected route access
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Decision Architecture</title>
+        <section>Security Architecture</section>
+        <snippet>JWT cookie-based authentication with 7-day token lifetime. Argon2id password hashing (OWASP recommended). HTTP-only cookies with SameSite=Strict attribute.</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>imkitchen Product Requirements Document</title>
+        <section>Functional Requirements - Authentication</section>
+        <snippet>FR001: System shall support user registration, login, and profile management with JWT cookie-based authentication. FR003: System shall support admin users with is_admin flag.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE.md</path>
+        <title>Rust Event-Driven Web Server Coding Standards</title>
+        <section>Command Guidelines</section>
+        <snippet>Commands must use input struct as first argument, metadata as second. NEVER use projections in commands. Always defer async validation to command handlers. Metadata must include user_id (optional) and request_id (ULID).</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE.md</path>
+        <title>Rust Event-Driven Web Server Coding Standards</title>
+        <section>Complete Example: Command with Async Validation + Polling</section>
+        <snippet>Demonstrates complete flow: registration command → async email validation in handler → UserRegistrationSucceeded/Failed events → polling template → success/error response.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>crates/imkitchen-user/src/event.rs</path>
+        <kind>event</kind>
+        <symbol>UserRegistered, UserRegistrationSucceeded, UserRegistrationFailed, UserLoggedIn</symbol>
+        <lines>N/A</lines>
+        <reason>User domain events for registration and authentication flow</reason>
+      </artifact>
+      <artifact>
+        <path>crates/imkitchen-user/src/aggregate.rs</path>
+        <kind>aggregate</kind>
+        <symbol>User</symbol>
+        <lines>N/A</lines>
+        <reason>User aggregate root with status tracking (pending, success, failed)</reason>
+      </artifact>
+      <artifact>
+        <path>crates/imkitchen-user/src/command.rs</path>
+        <kind>command</kind>
+        <symbol>register_user, login_user</symbol>
+        <lines>N/A</lines>
+        <reason>User commands with input validation and evento integration</reason>
+      </artifact>
+      <artifact>
+        <path>src/auth/jwt.rs</path>
+        <kind>auth</kind>
+        <symbol>generate_jwt, verify_jwt</symbol>
+        <lines>N/A</lines>
+        <reason>JWT token generation and verification using jsonwebtoken crate</reason>
+      </artifact>
+      <artifact>
+        <path>src/auth/middleware.rs</path>
+        <kind>middleware</kind>
+        <symbol>auth_middleware</symbol>
+        <lines>N/A</lines>
+        <reason>Axum middleware to extract and verify JWT from HTTP-only cookies</reason>
+      </artifact>
+      <artifact>
+        <path>src/routes/auth/register.rs</path>
+        <kind>route</kind>
+        <symbol>get_form, post_form, get_user_status</symbol>
+        <lines>N/A</lines>
+        <reason>Registration route handlers with Twinspark polling pattern</reason>
+      </artifact>
+      <artifact>
+        <path>src/routes/auth/login.rs</path>
+        <kind>route</kind>
+        <symbol>get_login, post_login, logout</symbol>
+        <lines>N/A</lines>
+        <reason>Login and logout route handlers with JWT cookie management</reason>
+      </artifact>
+      <artifact>
+        <path>src/queries/user.rs</path>
+        <kind>query</kind>
+        <symbol>subscribe_user_query, get_user, get_user_status</symbol>
+        <lines>N/A</lines>
+        <reason>User projection handlers and query functions</reason>
+      </artifact>
+      <artifact>
+        <path>migrations/queries/20251101000000_users.sql</path>
+        <kind>migration</kind>
+        <symbol>users table</symbol>
+        <lines>N/A</lines>
+        <reason>User projection table schema with email, hashed_password, is_admin, is_suspended, created_at</reason>
+      </artifact>
+      <artifact>
+        <path>migrations/validation/20251101000000_user_emails.sql</path>
+        <kind>migration</kind>
+        <symbol>user_emails table</symbol>
+        <lines>N/A</lines>
+        <reason>Email uniqueness validation table</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <rust>
+        <package name="argon2" version="0.5" />
+        <package name="password-hash" version="0.5" features="getrandom" />
+        <package name="jsonwebtoken" version="10.1" features="aws_lc_rs" />
+        <package name="validator" version="0.20" features="derive" />
+      </rust>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - Password hashing: Argon2id algorithm with auto-generated salts (OWASP recommended)
+    - Password requirements: Minimum 8 characters (should extend with uppercase, lowercase, number per Architecture.md)
+    - JWT Security: HTTP-only cookies with SameSite=Strict attribute, 7-day token lifetime
+    - Commands must use input struct as first argument, metadata (user_id, request_id) as second
+    - NEVER use projections in commands - use Evento or validation tables only
+    - Async validation deferred to command handlers (check email uniqueness after UserRegistered event)
+    - All events must have EventMetadata with user_id (optional) and request_id (ULID)
+    - Registration uses polling pattern: UserRegistered → handler validates → UserRegistrationSucceeded/Failed → polling endpoint returns result
+    - Database separation: evento.db (write), queries.db (projections), validation.db (email uniqueness)
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>Registration Command</name>
+      <kind>function</kind>
+      <signature>async fn register_user(&amp;self, input: RegisterUserInput, metadata: EventMetadata) -&gt; anyhow::Result&lt;String&gt;</signature>
+      <path>crates/imkitchen-user/src/command.rs</path>
+    </interface>
+    <interface>
+      <name>Login Command</name>
+      <kind>function</kind>
+      <signature>async fn login_user(&amp;self, input: LoginUserInput, metadata: EventMetadata) -&gt; anyhow::Result&lt;String&gt;</signature>
+      <path>crates/imkitchen-user/src/command.rs</path>
+    </interface>
+    <interface>
+      <name>JWT Generation</name>
+      <kind>function</kind>
+      <signature>fn generate_jwt(user_id: &amp;str, is_admin: bool, secret: &amp;str, lifetime_seconds: i64) -&gt; anyhow::Result&lt;String&gt;</signature>
+      <path>src/auth/jwt.rs</path>
+    </interface>
+    <interface>
+      <name>User Query Subscription</name>
+      <kind>function</kind>
+      <signature>fn subscribe_user_query(pool: SqlitePool) -&gt; evento::SubscriptionBuilder</signature>
+      <path>src/queries/user.rs</path>
+    </interface>
+    <interface>
+      <name>User Command Subscription</name>
+      <kind>function</kind>
+      <signature>fn subscribe_user_command(pool: SqlitePool) -&gt; evento::SubscriptionBuilder</signature>
+      <path>crates/imkitchen-user/src/command.rs</path>
+    </interface>
+    <interface>
+      <name>Auth Routes</name>
+      <kind>REST</kind>
+      <signature>GET /auth/register, POST /auth/register, GET /auth/register/status/{user_id}, GET /auth/login, POST /auth/login, POST /auth/logout</signature>
+      <path>src/routes/auth/</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Tests should use evento::unsafe_oneshot for synchronous event processing. Test database setup uses in-memory SQLite. Always use implemented query functions to validate results (never SELECT directly). Follow event-driven flow: command → wait for events → query projection → assert.</standards>
+    <locations>
+      - tests/auth_test.rs - Authentication tests (TO BE IMPLEMENTED)
+      - tests/helpers/mod.rs - Test database setup helpers
+    </locations>
+    <ideas>
+      - AC1: Test User aggregate events (UserRegistered, UserLoggedIn) applied correctly
+      - AC2: Test registration with valid email and password creates user
+      - AC2: Test registration fails with invalid email format
+      - AC2: Test registration fails with weak password (less than 8 chars)
+      - AC2: Test email uniqueness validation prevents duplicate registration
+      - AC3,4: Test login with correct credentials returns JWT in HTTP-only cookie
+      - AC3,4: Test login fails with incorrect password
+      - AC5: Test protected route accessible with valid JWT
+      - AC5: Test protected route redirects when JWT missing or invalid
+      - AC8: Integration test for complete registration → validation → login flow
+    </ideas>
+  </tests>
+</story-context>

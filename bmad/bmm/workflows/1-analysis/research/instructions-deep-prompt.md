@@ -195,7 +195,7 @@ Examples:
 
 <template-output>special_requirements</template-output>
 
-<elicit-required/>
+<invoke-task halt="true">{project-root}/bmad/core/tasks/adv-elicit.xml</invoke-task>
 
 </step>
 
@@ -373,5 +373,61 @@ Select option (1-4):</ask>
 </check>
 
 </step>
+
+<step n="FINAL" goal="Update status file on completion">
+<action>Search {output_folder}/ for files matching pattern: bmm-workflow-status.md</action>
+<action>Find the most recent file (by date in filename)</action>
+
+<check if="status file exists">
+  <invoke-workflow path="{project-root}/bmad/bmm/workflows/workflow-status">
+    <param>mode: update</param>
+    <param>action: complete_workflow</param>
+    <param>workflow_name: research</param>
+  </invoke-workflow>
+
+  <check if="success == true">
+    <output>Status updated! Next: {{next_workflow}}</output>
+  </check>
+
+<output>**✅ Deep Research Prompt Generated**
+
+**Research Prompt:**
+
+- Structured research prompt generated and saved
+- Ready to execute with ChatGPT, Claude, Gemini, or Grok
+
+**Status file updated:**
+
+- Current step: research (deep-prompt) ✓
+- Progress: {{new_progress_percentage}}%
+
+**Next Steps:**
+
+- **Next required:** {{next_workflow}} ({{next_agent}} agent)
+- **Optional:** Execute the research prompt with AI platform, gather findings, or run additional research workflows
+
+Check status anytime with: `workflow-status`
+</output>
+</check>
+
+<check if="status file not found">
+  <output>**✅ Deep Research Prompt Generated**
+
+**Research Prompt:**
+
+- Structured research prompt generated and saved
+
+Note: Running in standalone mode (no status file).
+
+**Next Steps:**
+
+Since no workflow is in progress:
+
+- Execute the research prompt with AI platform and gather findings
+- Refer to the BMM workflow guide if unsure what to do next
+- Or run `workflow-init` to create a workflow path and get guided next steps
+  </output>
+  </check>
+  </step>
 
 </workflow>
