@@ -6,22 +6,68 @@
     <title>Meal Calendar - imkitchen</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50">
-    <!-- Navigation -->
+<body class="bg-gray-50 pb-20 md:pb-0">
+    <!-- Top Navigation -->
     <nav class="bg-white shadow-sm">
-        <div class="container mx-auto px-4 py-4 flex items-center justify-between">
-            <a href="dashboard-free.html" class="text-2xl font-bold text-green-600">🍳 imkitchen</a>
-            <div class="flex gap-6 items-center">
-                <a href="dashboard-free.html" class="text-gray-600 hover:text-gray-900">Dashboard</a>
-                <a href="calendar-free.html" class="text-gray-900 font-semibold">Calendar</a>
-                <a href="recipes-list.html" class="text-gray-600 hover:text-gray-900">My Recipes</a>
-                <a href="community.html" class="text-gray-600 hover:text-gray-900">Community</a>
-                <a href="profile.html" class="text-gray-600 hover:text-gray-900">Profile</a>
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <a href="dashboard-free.html" class="text-2xl font-bold text-green-600">🍳 imkitchen</a>
+
+                <!-- Desktop Navigation -->
+                <div class="hidden md:flex gap-6 items-center">
+                    <a href="dashboard-free.html" class="text-gray-600 hover:text-gray-900">Dashboard</a>
+                    <a href="calendar-free.html" class="text-gray-900 font-semibold">Calendar</a>
+                    <a href="recipes-list.html" class="text-gray-600 hover:text-gray-900">My Recipes</a>
+                    <a href="community.html" class="text-gray-600 hover:text-gray-900">Community</a>
+                    <a href="profile.html" class="text-gray-600 hover:text-gray-900">Profile</a>
+                </div>
+
+                <div class="hidden md:flex items-center gap-4">
+                    <span class="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded-full font-semibold">Free Tier</span>
+                    <a href="index.html" class="text-gray-600 hover:text-gray-900">Logout</a>
+                </div>
+
+                <!-- Mobile: Account Badge -->
+                <div class="md:hidden">
+                    <span class="px-3 py-1 bg-gray-200 text-gray-700 text-xs rounded-full font-semibold">Free</span>
+                </div>
             </div>
-            <div class="flex items-center gap-4">
-                <span class="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded-full font-semibold">Free Tier</span>
-                <a href="index.html" class="text-gray-600 hover:text-gray-900">Logout</a>
-            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+        <div class="flex items-center justify-around">
+            <a href="dashboard-free.html" class="flex flex-col items-center py-2 px-3 text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                </svg>
+                <span class="text-xs mt-1">Dashboard</span>
+            </a>
+            <a href="calendar-free.html" class="flex flex-col items-center py-2 px-3 text-green-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                <span class="text-xs mt-1 font-semibold">Calendar</span>
+            </a>
+            <a href="recipes-list.html" class="flex flex-col items-center py-2 px-3 text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                </svg>
+                <span class="text-xs mt-1">Recipes</span>
+            </a>
+            <a href="community.html" class="flex flex-col items-center py-2 px-3 text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+                <span class="text-xs mt-1">Community</span>
+            </a>
+            <a href="profile.html" class="flex flex-col items-center py-2 px-3 text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                </svg>
+                <span class="text-xs mt-1">Profile</span>
+            </a>
         </div>
     </nav>
 
@@ -50,8 +96,44 @@
         </div>
 
         <!-- Week Navigation -->
-        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-            <div class="flex items-center justify-between">
+        <div class="bg-white rounded-lg shadow-lg p-4 md:p-6 mb-6">
+            <!-- Mobile: Stack vertically -->
+            <div class="flex flex-col gap-3 md:hidden">
+                <div class="flex items-center justify-between gap-2">
+                    <button disabled class="px-3 py-2 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed text-sm">
+                        ← Prev
+                    </button>
+                    <button class="px-3 py-2 bg-green-600 text-white rounded-lg font-semibold text-sm flex-1">
+                        Week 1 (Nov 4-10)
+                    </button>
+                    <button class="px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm">
+                        🔄
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <div class="flex gap-2 min-w-max">
+                        <button onclick="alert('Upgrade to Premium to view Week 2')" class="px-3 py-2 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300 relative text-sm whitespace-nowrap">
+                            Week 2
+                            <span class="absolute -top-1 -right-1 text-xs bg-yellow-400 text-gray-900 px-1 py-0.5 rounded-full">🔒</span>
+                        </button>
+                        <button onclick="alert('Upgrade to Premium to view Week 3')" class="px-3 py-2 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300 relative text-sm whitespace-nowrap">
+                            Week 3
+                            <span class="absolute -top-1 -right-1 text-xs bg-yellow-400 text-gray-900 px-1 py-0.5 rounded-full">🔒</span>
+                        </button>
+                        <button onclick="alert('Upgrade to Premium to view Week 4')" class="px-3 py-2 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300 relative text-sm whitespace-nowrap">
+                            Week 4
+                            <span class="absolute -top-1 -right-1 text-xs bg-yellow-400 text-gray-900 px-1 py-0.5 rounded-full">🔒</span>
+                        </button>
+                        <button onclick="alert('Upgrade to Premium to view Week 5')" class="px-3 py-2 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300 relative text-sm whitespace-nowrap">
+                            Week 5
+                            <span class="absolute -top-1 -right-1 text-xs bg-yellow-400 text-gray-900 px-1 py-0.5 rounded-full">🔒</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Desktop: Original layout -->
+            <div class="hidden md:flex items-center justify-between">
                 <button disabled class="px-4 py-2 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed">
                     ← Previous
                 </button>
@@ -85,21 +167,24 @@
         </div>
 
         <!-- Calendar Grid - Week 1 -->
-        <div class="grid grid-cols-7 gap-4">
-            <!-- Day Headers -->
-            <div class="font-bold text-center py-2">Monday</div>
-            <div class="font-bold text-center py-2">Tuesday</div>
-            <div class="font-bold text-center py-2">Wednesday</div>
-            <div class="font-bold text-center py-2">Thursday</div>
-            <div class="font-bold text-center py-2">Friday</div>
-            <div class="font-bold text-center py-2">Saturday</div>
-            <div class="font-bold text-center py-2">Sunday</div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
+            <!-- Day Headers (hidden on mobile) -->
+            <div class="hidden lg:block font-bold text-center py-2">Monday</div>
+            <div class="hidden lg:block font-bold text-center py-2">Tuesday</div>
+            <div class="hidden lg:block font-bold text-center py-2">Wednesday</div>
+            <div class="hidden lg:block font-bold text-center py-2">Thursday</div>
+            <div class="hidden lg:block font-bold text-center py-2">Friday</div>
+            <div class="hidden lg:block font-bold text-center py-2">Saturday</div>
+            <div class="hidden lg:block font-bold text-center py-2">Sunday</div>
 
             <!-- Monday 11/4 -->
-            <div class="bg-white rounded-lg shadow p-4 min-h-[300px] border-2 border-green-500">
-                <div class="font-bold mb-3 flex items-center justify-between">
-                    <span>Nov 4</span>
-                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Today</span>
+            <div class="bg-white rounded-lg shadow p-4 min-h-[300px] md:min-h-[250px] border-2 border-green-500">
+                <div class="mb-3">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="font-bold text-lg lg:text-base">Monday, Nov 4</span>
+                        <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Today</span>
+                    </div>
+                    <div class="text-xs text-gray-500 lg:hidden">Week 1</div>
                 </div>
                 <div class="space-y-3">
                     <div class="p-2 bg-blue-50 rounded text-sm">
@@ -121,8 +206,11 @@
             </div>
 
             <!-- Tuesday 11/5 -->
-            <div class="bg-white rounded-lg shadow p-4 min-h-[300px]">
-                <div class="font-bold mb-3">Nov 5</div>
+            <div class="bg-white rounded-lg shadow p-4 min-h-[300px] md:min-h-[250px]">
+                <div class="mb-3">
+                    <div class="font-bold text-lg lg:text-base mb-1">Tuesday, Nov 5</div>
+                    <div class="text-xs text-gray-500 lg:hidden">Week 1</div>
+                </div>
                 <div class="space-y-3">
                     <div class="p-2 bg-orange-50 rounded text-sm">
                         <div class="text-xs text-orange-600 font-semibold">MAIN</div>
@@ -137,8 +225,11 @@
             </div>
 
             <!-- Wednesday 11/6 -->
-            <div class="bg-white rounded-lg shadow p-4 min-h-[300px]">
-                <div class="font-bold mb-3">Nov 6</div>
+            <div class="bg-white rounded-lg shadow p-4 min-h-[300px] md:min-h-[250px]">
+                <div class="mb-3">
+                    <div class="font-bold text-lg lg:text-base mb-1">Wednesday, Nov 6</div>
+                    <div class="text-xs text-gray-500 lg:hidden">Week 1</div>
+                </div>
                 <div class="space-y-3">
                     <div class="p-2 bg-blue-50 rounded text-sm">
                         <div class="text-xs text-blue-600 font-semibold">APPETIZER</div>
@@ -156,8 +247,11 @@
             </div>
 
             <!-- Thursday 11/7 -->
-            <div class="bg-white rounded-lg shadow p-4 min-h-[300px]">
-                <div class="font-bold mb-3">Nov 7</div>
+            <div class="bg-white rounded-lg shadow p-4 min-h-[300px] md:min-h-[250px]">
+                <div class="mb-3">
+                    <div class="font-bold text-lg lg:text-base mb-1">Thursday, Nov 7</div>
+                    <div class="text-xs text-gray-500 lg:hidden">Week 1</div>
+                </div>
                 <div class="space-y-3">
                     <div class="p-2 bg-orange-50 rounded text-sm">
                         <div class="text-xs text-orange-600 font-semibold">MAIN</div>
@@ -172,8 +266,11 @@
             </div>
 
             <!-- Friday 11/8 -->
-            <div class="bg-white rounded-lg shadow p-4 min-h-[300px]">
-                <div class="font-bold mb-3">Nov 8</div>
+            <div class="bg-white rounded-lg shadow p-4 min-h-[300px] md:min-h-[250px]">
+                <div class="mb-3">
+                    <div class="font-bold text-lg lg:text-base mb-1">Friday, Nov 8</div>
+                    <div class="text-xs text-gray-500 lg:hidden">Week 1</div>
+                </div>
                 <div class="space-y-3">
                     <div class="p-2 bg-blue-50 rounded text-sm">
                         <div class="text-xs text-blue-600 font-semibold">APPETIZER</div>
@@ -192,8 +289,11 @@
             </div>
 
             <!-- Saturday 11/9 -->
-            <div class="bg-white rounded-lg shadow p-4 min-h-[300px]">
-                <div class="font-bold mb-3">Nov 9</div>
+            <div class="bg-white rounded-lg shadow p-4 min-h-[300px] md:min-h-[250px]">
+                <div class="mb-3">
+                    <div class="font-bold text-lg lg:text-base mb-1">Saturday, Nov 9</div>
+                    <div class="text-xs text-gray-500 lg:hidden">Week 1</div>
+                </div>
                 <div class="space-y-3">
                     <div class="p-2 bg-blue-50 rounded text-sm">
                         <div class="text-xs text-blue-600 font-semibold">APPETIZER</div>
@@ -211,8 +311,11 @@
             </div>
 
             <!-- Sunday 11/10 -->
-            <div class="bg-white rounded-lg shadow p-4 min-h-[300px]">
-                <div class="font-bold mb-3">Nov 10</div>
+            <div class="bg-white rounded-lg shadow p-4 min-h-[300px] md:min-h-[250px]">
+                <div class="mb-3">
+                    <div class="font-bold text-lg lg:text-base mb-1">Sunday, Nov 10</div>
+                    <div class="text-xs text-gray-500 lg:hidden">Week 1</div>
+                </div>
                 <div class="space-y-3">
                     <div class="p-2 bg-orange-50 rounded text-sm">
                         <div class="text-xs text-orange-600 font-semibold">MAIN</div>

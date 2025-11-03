@@ -17,3 +17,4 @@ can you create all epics as milestone with associeted stories as issue ? epic ti
 in folder fixtures, create recipe json file structured like "example-recipe.json" from
   [link]
 
+SELECT * FROM table WHERE id IN (SELECT id FROM table ORDER BY RANDOM() LIMIT x)

@@ -4,7 +4,7 @@ Complete set of HTML mockups for the imkitchen meal planning application.
 
 ## Overview
 
-This folder contains **17 fully interactive HTML pages** built with Tailwind CSS 4.1+ (via CDN). All pages are static HTML with realistic dummy data, ready to open directly in your browser for validation and testing.
+This folder contains **23 fully interactive HTML pages** built with Tailwind CSS 4.1+ (via CDN). All pages are static HTML with realistic dummy data, ready to open directly in your browser for validation and testing.
 
 ## Quick Start
 
@@ -14,7 +14,7 @@ This folder contains **17 fully interactive HTML pages** built with Tailwind CSS
 
 ## Page Inventory
 
-### Public Pages (3 pages)
+### Public Pages (6 pages)
 
 **1. Landing Page** - `index.html`
 - Hero section with value proposition
@@ -36,36 +36,56 @@ This folder contains **17 fully interactive HTML pages** built with Tailwind CSS
 - Household size and cuisine variety settings
 - Terms acceptance checkbox
 
+**4. Privacy Policy** - `privacy-policy.html`
+- Comprehensive privacy policy covering data collection, usage, sharing
+- GDPR compliance and user rights
+- Recipe snapshot and meal plan data handling
+- Contact information for privacy inquiries
+
+**5. Terms of Service** - `terms-of-service.html`
+- Complete terms governing service use
+- Subscription and payment terms (Free and Premium tiers)
+- User content and recipe ownership
+- Account suspension/termination policies
+- Disclaimers, warranties, and liability limitations
+
+**6. Help Center** - `help-center.html`
+- Searchable help center with category navigation
+- 6 help categories (Getting Started, Meal Planning, Recipes, Community, Account/Billing, Technical)
+- Popular articles section
+- Comprehensive FAQs organized by category
+- Contact support CTA
+
 ### Authenticated User Pages (9 pages)
 
-**4. Dashboard (Free Tier)** - `dashboard-free.html`
+**7. Dashboard (Free Tier)** - `dashboard-free.html`
 - Shows nearest day's meals (only if in accessible Week 1)
 - Upgrade banner for premium
 - Quick actions (calendar, shopping list, regenerate)
 - Recipe favorites status (8/10 limit)
 - Premium upsell cards
 
-**5. Dashboard (Premium)** - `dashboard-premium.html`
+**8. Dashboard (Premium)** - `dashboard-premium.html`
 - Shows nearest day's meals (from any week)
 - Full access indicators
 - This week at a glance preview
 - No upgrade banners
 
-**6. Meal Calendar (Free)** - `calendar-free.html`
+**9. Meal Calendar (Free)** - `calendar-free.html`
 - Week 1 fully visible with all meals
 - Weeks 2-5 locked with upgrade prompts
 - 7-day grid with appetizer, main, dessert per day
 - Regenerate all weeks button
 - Premium upsell section
 
-**7. Meal Calendar (Premium)** - `calendar-premium.html`
+**10. Meal Calendar (Premium)** - `calendar-premium.html`
 - All 5 weeks accessible
 - Week navigation tabs
 - Full 7-day grid for each week
 - Week preview sections
 - No restrictions
 
-**8. Recipe Create/Edit Form** - `recipe-create.html`
+**11. Recipe Create/Edit Form** - `recipe-create.html`
 - Recipe type selector (all 4 types with icons)
 - Basic info (name, description, prep/cook time)
 - Dynamic ingredient list
@@ -76,7 +96,7 @@ This folder contains **17 fully interactive HTML pages** built with Tailwind CSS
 - Advance prep instructions
 - Community sharing toggle
 
-**9. My Recipes List** - `recipes-list.html`
+**12. My Recipes List** - `recipes-list.html`
 - Stats cards (total, favorited, shared, community)
 - Favorites limit warning (Free tier: 8/10)
 - Filters (search, type, cuisine, sort)
@@ -88,7 +108,7 @@ This folder contains **17 fully interactive HTML pages** built with Tailwind CSS
   - Community indicator
   - Edit/View buttons
 
-**10. Recipe Detail View** - `recipe-detail.html`
+**13. Recipe Detail View** - `recipe-detail.html`
 - Full recipe display with hero image area
 - Ingredients with checkboxes
 - Numbered instruction steps
@@ -99,7 +119,7 @@ This folder contains **17 fully interactive HTML pages** built with Tailwind CSS
 - Quick info sidebar
 - Recipe stats (views, favorites, reviews)
 
-**11. Community Recipes** - `community.html`
+**14. Community Recipes** - `community.html`
 - Community stats banner
 - Trending recipes section (4 featured)
 - Advanced filters (search, type, cuisine, dietary)
@@ -107,7 +127,7 @@ This folder contains **17 fully interactive HTML pages** built with Tailwind CSS
 - Favorite button on each card
 - Pagination
 
-**12. Recipe Import** - `import.html`
+**15. Recipe Import** - `import.html`
 - Drag-and-drop upload area
 - JSON schema documentation
 - Required/optional fields reference
@@ -119,7 +139,7 @@ This folder contains **17 fully interactive HTML pages** built with Tailwind CSS
 
 ### Utility Pages (3 pages)
 
-**13. Shopping List** - `shopping-list.html`
+**16. Shopping List** - `shopping-list.html`
 - Week selector (Week 1 visible, others locked for Free)
 - Organized by category (proteins, vegetables, dairy, bakery, pantry)
 - Checkboxes for each item
@@ -129,7 +149,7 @@ This folder contains **17 fully interactive HTML pages** built with Tailwind CSS
 - Recipes included list
 - Premium upsell
 
-**14. User Profile/Settings** - `profile.html`
+**17. User Profile/Settings** - `profile.html`
 - Account info form (name, email, username)
 - Meal preferences (dietary restrictions, household size, cuisine variety slider)
 - Subscription management with upgrade CTA
@@ -137,7 +157,7 @@ This folder contains **17 fully interactive HTML pages** built with Tailwind CSS
 - Change password form
 - Danger zone (delete account)
 
-**15. Contact Us** - `contact.html`
+**18. Contact Us** - `contact.html`
 - Contact form (name, email, subject dropdown, message)
 - Subject categories (general, support, billing, feature, bug, etc.)
 - Contact information sidebar
@@ -145,9 +165,35 @@ This folder contains **17 fully interactive HTML pages** built with Tailwind CSS
 - Social media links
 - FAQ section (4 common questions)
 
+### Error Pages (3 pages)
+
+**19. 404 Not Found** - `404.html`
+- Friendly error message with food-themed copy
+- Explanation of why the error might have occurred
+- Quick links to dashboard, calendar, and help center
+- Search suggestions
+- Action buttons to homepage and recipe browsing
+
+**20. 403 Forbidden** - `403.html`
+- Access denied message
+- Premium feature upsell
+- Login/Sign up call-to-action
+- List of premium benefits
+- Links to available pages
+- Upgrade to Premium button
+
+**21. 500 Server Error** - `500.html`
+- Apologetic error message
+- Explanation that the issue is on the server side
+- Refresh page functionality
+- System status link
+- Contact support option
+- Quick links to working pages
+- Auto-generated error reference ID for debugging
+
 ### Admin Pages (2 pages)
 
-**16. Admin - User Management** - `admin-users.html`
+**22. Admin - User Management** - `admin-users.html`
 - Admin-only dark navigation
 - User stats dashboard (total, premium, active, suspended)
 - Filters (search, account type, status, sort)
@@ -159,7 +205,7 @@ This folder contains **17 fully interactive HTML pages** built with Tailwind CSS
   - Action buttons (edit, view, suspend, reactivate, delete)
 - Pagination
 
-**17. Admin - Contact Inbox** - `admin-contact.html`
+**23. Admin - Contact Inbox** - `admin-contact.html`
 - Admin-only navigation
 - Message stats (total, unread, today, avg response time)
 - Filters (search, status, subject, sort)
@@ -337,12 +383,48 @@ All pages are mobile-responsive with:
    - Polling for async operations (meal generation)
    - WebSocket for admin notifications
 
+## Reusable Components
+
+A collection of reusable UI components in the `components/` folder:
+
+### Modals (`components/modal.html`)
+- Basic Modal
+- Confirmation Modal (with warning icon)
+- Form Modal (scrollable)
+- Loading Modal (with spinner)
+- Success Modal (with checkmark)
+- Large Modal (full-screen on mobile)
+
+### Alerts (`components/alerts.html`)
+- **Success Alerts:** Basic, with loading, with action button
+- **Error Alerts:** Basic, with loading (retry), with validation list
+- **Warning Alerts:** Basic, with loading, with upgrade CTA
+- **Info Alerts:** Basic, with loading, with progress bar
+- **Toast Notifications:** Compact, fixed-position, auto-dismiss
+- **Banner Alerts:** Full-width info and success banners
+
+All components are:
+- Mobile-responsive (stacked layouts on mobile)
+- Color-coded by type (green, red, yellow, blue)
+- Accessible with proper semantic HTML
+- Built with Tailwind CSS 4.1+
+- Ready to copy/paste into your pages
+
+See `components/README.md` for detailed usage instructions.
+
 ## File Structure
 ```
 mockups/
+├── components/
+│   ├── modal.html              # Modal components
+│   ├── alerts.html             # Alert components
+│   └── README.md               # Component documentation
 ├── index.html                  # Landing page
 ├── login.html                  # Login
 ├── register.html               # Sign up
+├── privacy-policy.html         # Privacy policy
+├── terms-of-service.html       # Terms of service
+├── help-center.html            # Help center & FAQs
 ├── dashboard-free.html         # Free tier dashboard
 ├── dashboard-premium.html      # Premium dashboard
 ├── calendar-free.html          # Free tier calendar
@@ -355,6 +437,9 @@ mockups/
 ├── shopping-list.html          # Weekly shopping lists
 ├── profile.html                # User settings
 ├── contact.html                # Contact form
+├── 404.html                    # 404 Not Found error page
+├── 403.html                    # 403 Forbidden error page
+├── 500.html                    # 500 Server Error page
 ├── admin-users.html            # Admin user management
 ├── admin-contact.html          # Admin message inbox
 └── README.md                   # This file
