@@ -1,0 +1,253 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/2-2" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>2.2</storyId>
+    <title>Recipe Editing and Deletion</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-03</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/2-2-recipe-editing-and-deletion.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>to edit and delete my recipes</iWant>
+    <soThat>I can maintain my recipe library accurately</soThat>
+    <tasks>
+      - Define Recipe update and delete events (RecipeUpdated, RecipeDeleted) with bincode macros
+      - Implement Recipe aggregate handlers (recipe_updated, recipe_deleted) for state changes
+      - Implement Recipe update and delete commands (update_recipe, delete_recipe) using evento::save
+      - Create query handlers for update/delete events with cascade delete for favorites
+      - Update recipes migration for soft delete (add deleted_at INTEGER column with index)
+      - Create recipe edit route (src/routes/recipes/edit.rs) with GET/POST handlers and ownership check
+      - Create recipe delete route with confirmation modal (Twinspark)
+      - Update recipe list to show edit/delete actions (only for user's own recipes)
+      - Handle cascade deletion of favorites (ON DELETE CASCADE or manual deletion)
+      - Handle shared recipe visibility (WHERE deleted_at IS NULL in all queries)
+      - Write integration tests for edit, delete, and cascade deletion of favorites
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-2.2.1">RecipeUpdated event stores changed fields with evento::save pattern</criterion>
+    <criterion id="AC-2.2.2">RecipeDeleted event marks recipe as deleted with soft delete timestamp</criterion>
+    <criterion id="AC-2.2.3">Recipe edit form pre-populated with current data</criterion>
+    <criterion id="AC-2.2.4">Deletion requires confirmation modal</criterion>
+    <criterion id="AC-2.2.5">Deleted recipes removed from user's favorites automatically</criterion>
+    <criterion id="AC-2.2.6">Deleted shared recipes hidden from community immediately</criterion>
+    <criterion id="AC-2.2.7">Query handlers update projections for edit/delete events</criterion>
+    <criterion id="AC-2.2.8">Tests verify edit, delete, and cascade deletion of favorites</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-2.md</path>
+        <title>Epic 2 Technical Specification</title>
+        <section>Data Models - Recipe Events</section>
+        <snippet>RecipeUpdated event with evento::save pattern stores changed fields. RecipeDeleted event with deleted_at timestamp for soft delete. Soft delete preserves event history and enables data recovery.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-2.md</path>
+        <title>Epic 2 Technical Specification</title>
+        <section>APIs - Recipe Editing</section>
+        <snippet>GET /recipes/{id}/edit (form), POST /recipes/{id}/edit (submit). Ownership validation required: only owner can edit/delete. Command: update_recipe(input, metadata) → Result&lt;()&gt;. Events: RecipeUpdated.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-2.md</path>
+        <title>Epic 2 Technical Specification</title>
+        <section>Workflows - Recipe Deletion</section>
+        <snippet>Deletion requires confirmation modal. RecipeDeleted event sets deleted_at timestamp. Query handler updates recipes table with soft delete. Database ON DELETE CASCADE automatically removes recipe_favorites entries.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Decision Architecture</title>
+        <section>Command Pattern - evento::save</section>
+        <snippet>Use evento::save&lt;Recipe&gt;(&recipe_id) for updates/deletes to existing aggregates (NOT evento::create). Commands verify ownership before allowing edit/delete operations.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE.md</path>
+        <title>Coding Standards</title>
+        <section>Command Guidelines</section>
+        <snippet>evento::save pattern for updates to existing aggregates. Commands must validate ownership (user_id matches recipe owner_id). Query handlers update projections for edit/delete events. Never use commands/events from other domains.</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>FR016</section>
+        <snippet>When recipe owner deletes their recipe, it shall be automatically removed from all users' favorites without notifications. Cascade deletion prevents broken favorites in meal planning.</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>crates/imkitchen-recipe/src/event.rs</path>
+        <kind>event definitions</kind>
+        <symbol>RecipeUpdated, RecipeDeleted</symbol>
+        <lines>all</lines>
+        <reason>Add new events for recipe update and deletion with soft delete pattern</reason>
+      </artifact>
+      <artifact>
+        <path>crates/imkitchen-recipe/src/aggregate.rs</path>
+        <kind>aggregate root</kind>
+        <symbol>Recipe::recipe_updated, Recipe::recipe_deleted</symbol>
+        <lines>all</lines>
+        <reason>Add aggregate handlers to apply update and delete events to state</reason>
+      </artifact>
+      <artifact>
+        <path>crates/imkitchen-recipe/src/command.rs</path>
+        <kind>command handlers</kind>
+        <symbol>Command::update_recipe, Command::delete_recipe</symbol>
+        <lines>all</lines>
+        <reason>Implement update and delete commands with ownership validation and evento::save</reason>
+      </artifact>
+      <artifact>
+        <path>docs/stories/2-1-recipe-creation-four-types.context.xml</path>
+        <kind>story context</kind>
+        <symbol>recipes table schema</symbol>
+        <lines>interface section</lines>
+        <reason>Reference existing recipes table structure for soft delete column addition</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <rust>
+        <package name="evento" version="1.5" features="sqlite">evento::save for updates</package>
+        <package name="axum" version="0.8">Web routes</package>
+        <package name="axum-extra" version="0.12" features="form">Form extraction</package>
+        <package name="askama" version="0.14">Edit form template</package>
+        <package name="sqlx" version="0.8">Projection updates</package>
+        <package name="validator" version="0.20">Update input validation</package>
+      </rust>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="C-1">Use evento::save for Recipe updates/deletes (not evento::create)</constraint>
+    <constraint id="C-2">Ownership validation REQUIRED: only recipe owner can edit/delete</constraint>
+    <constraint id="C-3">Soft delete pattern: use deleted_at timestamp (preserve event history)</constraint>
+    <constraint id="C-4">All queries must filter deleted recipes: WHERE deleted_at IS NULL</constraint>
+    <constraint id="C-5">ON DELETE CASCADE FK constraint automatically removes favorites</constraint>
+    <constraint id="C-6">NO notifications sent when recipe deleted (silent cascade)</constraint>
+    <constraint id="C-7">Confirmation modal required for deletion (Twinspark interaction)</constraint>
+    <constraint id="C-8">Recipe edit form pre-populated from projection (not aggregate)</constraint>
+    <constraint id="C-9">Deleted shared recipes immediately hidden from community views</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>UpdateRecipeInput</name>
+      <kind>Command Input Struct</kind>
+      <signature>
+pub struct UpdateRecipeInput {
+    pub recipe_id: String,
+    #[validate(length(min = 1))]
+    pub name: String,
+    pub recipe_type: RecipeType,
+    #[validate(length(min = 1))]
+    pub ingredients: String,
+    #[validate(length(min = 1))]
+    pub instructions: String,
+    pub dietary_restrictions: Vec&lt;String&gt;,
+    pub cuisine_type: Option&lt;String&gt;,
+    pub complexity: Option&lt;String&gt;,
+    pub advance_prep_text: Option&lt;String&gt;,
+    pub accepts_accompaniment: Option&lt;bool&gt;,
+}
+      </signature>
+      <path>crates/imkitchen-recipe/src/command.rs</path>
+    </interface>
+
+    <interface>
+      <name>RecipeUpdated Event</name>
+      <kind>Domain Event</kind>
+      <signature>
+#[derive(Encode, Decode, Clone)]
+pub struct RecipeUpdated {
+    pub name: String,
+    pub recipe_type: RecipeType,
+    pub ingredients: String,
+    pub instructions: String,
+    pub dietary_restrictions: Vec&lt;String&gt;,
+    pub cuisine_type: Option&lt;String&gt;,
+    pub complexity: Option&lt;String&gt;,
+    pub advance_prep_text: Option&lt;String&gt;,
+    pub accepts_accompaniment: bool,
+}
+      </signature>
+      <path>crates/imkitchen-recipe/src/event.rs</path>
+    </interface>
+
+    <interface>
+      <name>RecipeDeleted Event</name>
+      <kind>Domain Event</kind>
+      <signature>
+#[derive(Encode, Decode, Clone)]
+pub struct RecipeDeleted {
+    pub deleted_at: i64,  // Unix timestamp
+}
+      </signature>
+      <path>crates/imkitchen-recipe/src/event.rs</path>
+    </interface>
+
+    <interface>
+      <name>GET /recipes/{id}/edit</name>
+      <kind>REST endpoint</kind>
+      <signature>
+Route: GET /recipes/{id}/edit
+Input: recipe_id (path parameter)
+Output: HTML (Askama template - edit form pre-populated)
+Auth: Required (JWT middleware)
+Validation: User must own recipe
+      </signature>
+      <path>src/routes/recipes/edit.rs</path>
+    </interface>
+
+    <interface>
+      <name>POST /recipes/{id}/edit</name>
+      <kind>REST endpoint</kind>
+      <signature>
+Route: POST /recipes/{id}/edit
+Input: axum_extra::extract::Form&lt;UpdateRecipeForm&gt;
+Output: HTML (Askama template - success or error)
+Auth: Required (JWT middleware)
+Command: update_recipe(input, metadata) → Result&lt;()&gt;
+      </signature>
+      <path>src/routes/recipes/edit.rs</path>
+    </interface>
+
+    <interface>
+      <name>POST /recipes/{id}/delete</name>
+      <kind>REST endpoint</kind>
+      <signature>
+Route: POST /recipes/{id}/delete
+Input: recipe_id (path parameter)
+Output: HTML (redirect to recipe list)
+Auth: Required (JWT middleware)
+Command: delete_recipe(recipe_id, metadata) → Result&lt;()&gt;
+      </signature>
+      <path>src/routes/recipes/delete.rs</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Integration tests in tests/recipes_test.rs. Use evento::load to validate aggregate state changes. Never SELECT/INSERT/UPDATE/DELETE directly in tests - use query functions and evento API. Use sqlx::migrate! for database setup.</standards>
+
+    <locations>
+      <location>tests/recipes_test.rs</location>
+      <location>crates/imkitchen-recipe/src/*.rs (unit tests inline)</location>
+    </locations>
+
+    <ideas>
+      <idea ac="AC-2.2.1">Integration test: update recipe fields → verify RecipeUpdated event emitted with changed fields → verify projection updated</idea>
+      <idea ac="AC-2.2.2">Integration test: delete recipe → verify RecipeDeleted event with deleted_at timestamp → verify soft delete in projection</idea>
+      <idea ac="AC-2.2.3">E2E test: GET /recipes/{id}/edit → verify form pre-populated with current recipe data</idea>
+      <idea ac="AC-2.2.4">E2E test: click delete button → verify confirmation modal appears → cancel vs confirm behavior</idea>
+      <idea ac="AC-2.2.5">Integration test: favorite recipe → delete recipe → verify favorite automatically removed from recipe_favorites table</idea>
+      <idea ac="AC-2.2.6">Integration test: share recipe → delete recipe → verify deleted_at set and recipe hidden from community queries</idea>
+      <idea ac="AC-2.2.7">Integration test: emit RecipeUpdated/RecipeDeleted → verify query handlers update projections correctly</idea>
+      <idea ac="AC-2.2.8">Integration test: combine edit, delete, cascade tests → verify end-to-end flow</idea>
+      <idea ac="ownership">Integration test: user A creates recipe → user B attempts to edit → verify ownership error (401 Unauthorized)</idea>
+    </ideas>
+  </tests>
+</story-context>

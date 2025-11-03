@@ -1,0 +1,151 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/2-4" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>2.4</storyId>
+    <title>Recipe JSON Import - File Upload & Validation</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-03</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/2-4-recipe-json-import-file-upload-validation.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>to bulk import recipes from JSON files via drag-and-drop</iWant>
+    <soThat>I can quickly populate my recipe library from exported data</soThat>
+    <tasks>
+      - Define import data structures (ImportedRecipe with validator constraints)
+      - Create recipe import command (import_recipes batch processing)
+      - Implement streaming JSON parser (tokio tasks, 10MB files)
+      - Implement malicious content detection (script tags, eval patterns, size checks)
+      - Create import UI route (GET /recipes/import) and template with drag-drop
+      - Handle import submission (POST /recipes/import, multipart files)
+      - Implement duplicate detection (name match + fuzzy ingredient similarity)
+      - Store import results for progress tracking (in-memory HashMap)
+      - Update recipe list to show imported recipes (is_shared=false)
+      - Write integration tests for validation, malicious content, duplicate blocking
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-2.4.1">Recipe import route accepts multiple JSON files (max 10MB per file, 20 files per batch)</criterion>
+    <criterion id="AC-2.4.2">Drag-and-drop UI with file picker fallback</criterion>
+    <criterion id="AC-2.4.3">Validation against recipe schema: all required AND optional fields must be present and valid</criterion>
+    <criterion id="AC-2.4.4">Malicious content detection (script injection, oversized payloads)</criterion>
+    <criterion id="AC-2.4.5">Streaming parser for large files to prevent memory issues</criterion>
+    <criterion id="AC-2.4.6">Invalid recipes skipped with detailed error messages collected</criterion>
+    <criterion id="AC-2.4.7">Duplicate detection blocks recipes with matching name or similar ingredients</criterion>
+    <criterion id="AC-2.4.8">Imported recipes stored as private (not shared) by default</criterion>
+    <criterion id="AC-2.4.9">Tests verify validation, malicious content rejection, and duplicate blocking</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-2.md</path>
+        <title>Epic 2 Technical Specification</title>
+        <section>APIs - Recipe Import</section>
+        <snippet>POST /recipes/import accepts multipart files (max 20 JSON, 10MB each). Streaming JSON parser with async tokio tasks. Validation: JSON Schema v1.0, malicious content scan, duplicate detection. Return import_id + progress template.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-2.md</path>
+        <title>Epic 2 Technical Specification</title>
+        <section>Security - File Upload Security</section>
+        <snippet>Max file size 10MB enforced at upload. Content-type: application/json only. Malicious content scan: &lt;script&gt;, &lt;iframe&gt;, eval, onclick patterns. Streaming parser with 30s timeout per file. Reject oversized payloads.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Decision Architecture</title>
+        <section>ADR-005 - Streaming Parser for Recipe Import</section>
+        <snippet>Use tokio tasks with streaming JSON parser for 10MB file uploads. Memory efficiency (constant memory, not 200MB spike). Can yield progress updates during parse. Detect oversized payloads early.</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>FR007-FR009</section>
+        <snippet>Bulk import from JSON (max 10MB/file, 20 files/batch) via drag-drop. Validate against schema, skip invalid, provide detailed errors. Duplicate detection blocks matching names or similar ingredients.</snippet>
+      </doc>
+      <doc>
+        <path>CLAUDE.md</path>
+        <title>Coding Standards</title>
+        <section>Security Architecture</section>
+        <snippet>OWASP compliance requires input validation, malicious content detection, DoS prevention. File upload: max size, content-type validation, streaming parser, timeout enforcement.</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>crates/imkitchen-recipe/src/command.rs</path>
+        <kind>command handlers</kind>
+        <symbol>Command::import_recipes</symbol>
+        <lines>all</lines>
+        <reason>Implement batch import command with validation and duplicate detection</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <rust>
+        <package name="tokio" version="1" features="full">Async file processing</package>
+        <package name="serde_json" version="1">JSON parsing</package>
+        <package name="validator" version="0.20">Schema validation</package>
+        <package name="axum" version="0.8">Multipart upload</package>
+      </rust>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="C-1">Max file size: 10MB per file, 20 files per batch</constraint>
+    <constraint id="C-2">Streaming parser required (constant memory, no 200MB spike)</constraint>
+    <constraint id="C-3">Malicious content scan: &lt;script&gt;, &lt;iframe&gt;, eval, onclick patterns</constraint>
+    <constraint id="C-4">Duplicate detection: exact name match OR 80%+ ingredient similarity</constraint>
+    <constraint id="C-5">Import timeout: 30s per file</constraint>
+    <constraint id="C-6">Imported recipes default: is_shared=false (private)</constraint>
+    <constraint id="C-7">JSON Schema validation against recipe-v1.0.json</constraint>
+    <constraint id="C-8">Invalid recipes skipped (don't fail entire batch)</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>POST /recipes/import</name>
+      <kind>REST endpoint</kind>
+      <signature>
+Route: POST /recipes/import
+Input: Multipart files (application/json)
+Output: HTML partial (import_id + progress template)
+Processing: Streaming parser, async tokio tasks
+Command: import_recipes(batch, metadata) → Result&lt;ImportResult&gt;
+      </signature>
+      <path>src/routes/recipes/import.rs</path>
+    </interface>
+
+    <interface>
+      <name>ImportedRecipe</name>
+      <kind>Import Input Struct</kind>
+      <signature>
+#[derive(Deserialize, Validate)]
+pub struct ImportedRecipe {
+    #[validate(length(min = 1))]
+    pub name: String,
+    pub recipe_type: RecipeType,
+    pub ingredients: Vec&lt;String&gt;,
+    pub instructions: String,
+    // ... all fields matching JSON schema
+}
+      </signature>
+      <path>src/routes/recipes/import.rs</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Integration tests in tests/import_test.rs. Test streaming parser memory efficiency. Test malicious content detection. Use performance tests for large file handling.</standards>
+    <locations>
+      <location>tests/import_test.rs</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-2.4.3">Integration test: import valid JSON → verify recipes created</idea>
+      <idea ac="AC-2.4.4">Unit test: inject &lt;script&gt; tag → verify rejected</idea>
+      <idea ac="AC-2.4.5">Performance test: 10MB file → verify constant memory (&lt;50MB resident)</idea>
+      <idea ac="AC-2.4.7">Unit test: duplicate name → verify blocked with error message</idea>
+    </ideas>
+  </tests>
+</story-context>

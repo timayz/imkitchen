@@ -1,0 +1,220 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/2-7" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>2.7</storyId>
+    <title>Recipe Snapshot System for Meal Plans</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-03</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/stories/2-7-recipe-snapshot-system-for-meal-plans.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>my generated meal plans to preserve original recipe data</iWant>
+    <soThat>I can access historical meal plans even if the recipe owner modifies or deletes their recipe</soThat>
+    <tasks>
+      - Create snapshot migration (meal_plan_recipe_snapshots table with all recipe fields)
+      - Create snapshot data structure (RecipeSnapshot struct with From&lt;Recipe&gt; trait)
+      - Implement snapshot creation function (create_recipe_snapshot in src/queries/snapshots.rs)
+      - Update meal plan generation to create snapshots (Story 3.1 integration)
+      - Create snapshot query functions (get_meal_plan_snapshots by meal_plan_id)
+      - Update calendar queries to use snapshots (NEVER query recipes table)
+      - Test snapshot isolation from updates (verify unchanged after recipe update)
+      - Test snapshot isolation from deletion (verify unchanged after recipe deletion)
+      - Write integration tests for snapshot creation and isolation
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-2.7.1">Meal plan generation creates complete snapshot/copy of each referenced recipe</criterion>
+    <criterion id="AC-2.7.2">Snapshots stored in meal_plan_recipes table with week_id foreign key</criterion>
+    <criterion id="AC-2.7.3">Snapshots include all recipe fields: name, ingredients, instructions, dietary_restrictions, etc.</criterion>
+    <criterion id="AC-2.7.4">Calendar displays recipe data from snapshot, not original recipe</criterion>
+    <criterion id="AC-2.7.5">Recipe modifications by owner don't affect existing meal plan snapshots</criterion>
+    <criterion id="AC-2.7.6">Recipe deletion by owner doesn't affect existing meal plan snapshots</criterion>
+    <criterion id="AC-2.7.7">Tests verify snapshot creation, isolation from original recipe changes</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-2.md</path>
+        <title>Epic 2 Technical Specification</title>
+        <section>Data Models - Recipe Snapshots</section>
+        <snippet>meal_plan_recipe_snapshots table stores complete recipe copy at meal plan generation time. Includes all fields: id, meal_plan_id (FK ON DELETE CASCADE), day_index, meal_slot, original_recipe_id, recipe_type, name, ingredients, instructions, dietary_restrictions, cuisine_type, complexity, advance_prep_text, snapshot_at.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Decision Architecture</title>
+        <section>ADR-003 - Recipe Snapshots in Separate Table</section>
+        <snippet>Store snapshots in meal_plan_recipe_snapshots table (not embedded in events) for query performance and event size optimization. Snapshots include ALL recipe fields for complete isolation. ON DELETE CASCADE when meal plan deleted.</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>FR029 - Recipe Snapshot Creation</section>
+        <snippet>Meal plan generation creates complete snapshot of each referenced recipe. Snapshots preserve original data even if recipe owner modifies or deletes recipe. Calendar displays snapshot data, not original recipe.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic Breakdown</title>
+        <section>Story 3.8 - Recipe Snapshot Integration</section>
+        <snippet>Story 2.7 lays foundation for Story 3.8 integration with meal planning algorithm. Meal plan generation will call create_recipe_snapshot for each selected recipe and store snapshot_id in MealPlanGenerated event.</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>src/queries/snapshots.rs</path>
+        <kind>query functions</kind>
+        <symbol>create_recipe_snapshot</symbol>
+        <lines>all</lines>
+        <reason>Creates complete recipe snapshot for meal plan</reason>
+      </artifact>
+      <artifact>
+        <path>src/queries/snapshots.rs</path>
+        <kind>query functions</kind>
+        <symbol>get_meal_plan_snapshots</symbol>
+        <lines>all</lines>
+        <reason>Retrieves all snapshots for a meal plan</reason>
+      </artifact>
+      <artifact>
+        <path>migrations/queries/20250101000006_meal_plan_recipe_snapshots.sql</path>
+        <kind>database migration</kind>
+        <symbol>meal_plan_recipe_snapshots table</symbol>
+        <lines>all</lines>
+        <reason>Creates snapshot storage table with all recipe fields</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <rust>
+        <package name="sqlx" version="0.8">Database operations for snapshot CRUD</package>
+      </rust>
+      <story>
+        <dependency id="3-1">Story 3.1 (Basic Meal Plan Generation Algorithm) will integrate snapshot creation</dependency>
+      </story>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="C-1">Snapshots stored in separate table (not embedded in events)</constraint>
+    <constraint id="C-2">Complete copy includes ALL recipe fields at generation time</constraint>
+    <constraint id="C-3">original_recipe_id preserved even if recipe deleted</constraint>
+    <constraint id="C-4">Calendar queries NEVER access recipes table (use snapshots exclusively)</constraint>
+    <constraint id="C-5">ON DELETE CASCADE when meal plan deleted (automatic snapshot cleanup)</constraint>
+    <constraint id="C-6">Snapshot creation integrated with Story 3.1 meal plan generation</constraint>
+    <constraint id="C-7">RecipeSnapshot struct implements From&lt;Recipe&gt; trait</constraint>
+    <constraint id="C-8">snapshot_at timestamp records when snapshot created</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>meal_plan_recipe_snapshots table</name>
+      <kind>Database table</kind>
+      <signature>
+CREATE TABLE meal_plan_recipe_snapshots (
+    id TEXT PRIMARY KEY,
+    meal_plan_id TEXT NOT NULL,
+    day_index INTEGER NOT NULL,
+    meal_slot TEXT NOT NULL,  -- 'lunch' | 'dinner'
+    original_recipe_id TEXT,  -- Nullable (recipe may be deleted)
+    recipe_type TEXT NOT NULL,
+    name TEXT NOT NULL,
+    ingredients TEXT NOT NULL,  -- JSON array
+    instructions TEXT NOT NULL,
+    dietary_restrictions TEXT,  -- JSON array
+    cuisine_type TEXT,
+    complexity TEXT,
+    advance_prep_text TEXT,
+    accepts_accompaniment BOOLEAN,
+    snapshot_at INTEGER NOT NULL,
+    FOREIGN KEY (meal_plan_id) REFERENCES meal_plans(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_snapshots_meal_plan ON meal_plan_recipe_snapshots(meal_plan_id);
+      </signature>
+      <path>migrations/queries/20250101000006_meal_plan_recipe_snapshots.sql</path>
+    </interface>
+
+    <interface>
+      <name>RecipeSnapshot struct</name>
+      <kind>Data structure</kind>
+      <signature>
+#[derive(sqlx::FromRow, Clone)]
+pub struct RecipeSnapshot {
+    pub id: String,
+    pub meal_plan_id: String,
+    pub day_index: i64,
+    pub meal_slot: String,
+    pub original_recipe_id: Option&lt;String&gt;,
+    pub recipe_type: String,
+    pub name: String,
+    pub ingredients: String,  // JSON array
+    pub instructions: String,
+    pub dietary_restrictions: Option&lt;String&gt;,  // JSON array
+    pub cuisine_type: Option&lt;String&gt;,
+    pub complexity: Option&lt;String&gt;,
+    pub advance_prep_text: Option&lt;String&gt;,
+    pub accepts_accompaniment: Option&lt;bool&gt;,
+    pub snapshot_at: i64,
+}
+
+impl From&lt;Recipe&gt; for RecipeSnapshot {
+    // Convert Recipe projection to RecipeSnapshot
+}
+      </signature>
+      <path>src/queries/snapshots.rs</path>
+    </interface>
+
+    <interface>
+      <name>create_recipe_snapshot</name>
+      <kind>Query function</kind>
+      <signature>
+pub async fn create_recipe_snapshot(
+    pool: &amp;SqlitePool,
+    recipe_id: &amp;str,
+    meal_plan_id: &amp;str,
+    day_index: i64,
+    meal_slot: &amp;str,
+) -&gt; anyhow::Result&lt;String&gt; {
+    // Query current recipe data from recipes table
+    // Insert into meal_plan_recipe_snapshots table
+    // Return snapshot_id
+}
+      </signature>
+      <path>src/queries/snapshots.rs</path>
+    </interface>
+
+    <interface>
+      <name>get_meal_plan_snapshots</name>
+      <kind>Query function</kind>
+      <signature>
+pub async fn get_meal_plan_snapshots(
+    pool: &amp;SqlitePool,
+    meal_plan_id: &amp;str,
+) -&gt; anyhow::Result&lt;Vec&lt;RecipeSnapshot&gt;&gt; {
+    // Query snapshots by meal_plan_id
+    // Return snapshots ordered by day_index and meal_slot
+}
+      </signature>
+      <path>src/queries/snapshots.rs</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Integration tests in tests/mealplan_test.rs. Test snapshot creation during meal plan generation. Verify isolation: update/delete recipe, snapshot unchanged. Verify calendar displays snapshot data.</standards>
+    <locations>
+      <location>tests/mealplan_test.rs</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-2.7.1">Integration test: generate meal plan → verify snapshot created for each recipe</idea>
+      <idea ac="AC-2.7.3">Integration test: verify snapshot includes all recipe fields</idea>
+      <idea ac="AC-2.7.5">Integration test: update recipe → verify snapshot unchanged</idea>
+      <idea ac="AC-2.7.6">Integration test: delete recipe → verify snapshot unchanged, original_recipe_id preserved</idea>
+      <idea ac="AC-2.7.4">Integration test: calendar query uses snapshot data, not original recipe</idea>
+      <idea ac="AC-2.7.2">Integration test: delete meal plan → verify snapshots cascade deleted</idea>
+    </ideas>
+  </tests>
+</story-context>
