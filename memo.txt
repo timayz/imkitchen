@@ -2,10 +2,10 @@
 `make check` must succeed, always run `make check` at the end to make sure it succeed, do not ignore test.
 git checkout new, add -A, commit, push.
 create PR: 
-  - title: same as commit 
+  - title: title of issue 299 
   - body: 
-    - conventional commits multi-paragraph body
-    - closed issue id (use story title to search)
+    - conventional commits multi-paragraph body from issue body for end users that only use WEB UI
+    - closed that issue 
   - target: alpha
 
 git checkout new,add -A,commit,push,create PR witch closed github issue 141 on merged
