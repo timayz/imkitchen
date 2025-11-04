@@ -5,3 +5,6 @@ edition.workspace = true
 authors.workspace = true
 
 [dependencies]
+evento.workspace = true
+bincode.workspace = true
+anyhow.workspace = true

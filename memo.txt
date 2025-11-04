@@ -8,7 +8,7 @@ create PR:
   - title: same as commit
   - body: 
     - story tasks / subtasks
-    - closed that issue 300
+    - closed that issue xxx
     - do not mention any abort claude code
   - target: alpha
 

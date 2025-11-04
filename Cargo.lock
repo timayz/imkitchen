@@ -1596,6 +1596,7 @@ dependencies = [
  "config",
  "evento",
  "http-body-util",
+ "imkitchen-user",
  "mime_guess",
  "minify-html",
  "rust-embed",
@@ -1626,6 +1627,11 @@ version = "0.1.0"
 [[package]]
 name = "imkitchen-user"
 version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "evento",
+]
 
 [[package]]
 name = "indexmap"

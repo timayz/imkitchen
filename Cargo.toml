@@ -83,7 +83,7 @@ mime_guess = { workspace = true }
 # validator = { workspace = true }
 # base64 = { workspace = true }
 minify-html = { workspace = true }
-# imkitchen-user = { path = "crates/user" }
+imkitchen-user = { path = "crates/user" }
 # imkitchen-recipe = { path = "crates/recipe" }
 # imkitchen-mealplan = { path = "crates/mealplan" }
 # imkitchen-notification = { path = "crates/notification" }
