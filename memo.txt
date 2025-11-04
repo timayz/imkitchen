@@ -1,27 +1,20 @@
 # after create-story/story-context
 `make check` must succeed, always run `make check` at the end to make sure it succeed, do not ignore test.
-git checkout new, conventional commits, push.
+git checkout new, add -A, commit, push.
 create PR: 
-  - title: story title,conventional commits,no story num, in lower case 
+  - title: same as commit 
   - body: 
-    - include tasks (task_title) checklist without subtasks (remove # from AC num) 
+    - conventional commits multi-paragraph body
     - closed issue id (use story title to search)
+  - target: alpha
 
-git new branch,git add all,conventional commits,push,create PR witch closed github issue 141 on merged
+git checkout new,add -A,commit,push,create PR witch closed github issue 141 on merged
 
 # init milestones / issues from epic
 can you create all epics as milestone with associeted stories as issue ? epic title format
   "v0.{epic_num}", issue title format "{story_title}" with label story.
 
-# before create-story / develop / review
-read 'docs/tech-spec-epic-10.md'
-read 'docs/twinspark.md'
-read 'docs/ux-specification.md'
-read 'docs/ai-frontend-prompt.md'
-use Tailwind 4.1+ syntax for future tasks
-when doing tests, use unsafe_oneshot instead of run for subscribe because its process events in sync
-*develop 10.1
-
 in folder fixtures, create recipe json file structured like "example-recipe.json" from
   [link]
 
+SELECT * FROM table WHERE id IN (SELECT id FROM table ORDER BY RANDOM() LIMIT x)

@@ -10,6 +10,10 @@
 - Path: `bmad/bmm/workflows/1-analysis/brainstorm-project/workflow.yaml`
 - Facilitate project brainstorming sessions by orchestrating the CIS brainstorming workflow with project-specific context and guidance.
 
+**document-project**
+- Path: `bmad/bmm/workflows/1-analysis/document-project/workflow.yaml`
+- Analyzes and documents brownfield projects by scanning codebase, architecture, and patterns to create comprehensive reference documentation for AI-assisted development
+
 **game-brief**
 - Path: `bmad/bmm/workflows/1-analysis/game-brief/workflow.yaml`
 - Interactive game brief creation workflow that guides users through defining their game vision with multiple input sources and conversational collaboration
@@ -22,37 +26,33 @@
 - Path: `bmad/bmm/workflows/1-analysis/research/workflow.yaml`
 - Adaptive research workflow supporting multiple research types: market research, deep research prompt generation, technical/architecture evaluation, competitive intelligence, user research, and domain analysis
 
+**create-ux-design**
+- Path: `bmad/bmm/workflows/2-plan-workflows/create-ux-design/workflow.yaml`
+- Collaborative UX design facilitation workflow that creates exceptional user experiences through visual exploration and informed decision-making. Unlike template-driven approaches, this workflow facilitates discovery, generates visual options, and collaboratively designs the UX with the user at every step.
+
 **gdd**
-- Path: `bmad/bmm/workflows/2-plan/gdd/workflow.yaml`
+- Path: `bmad/bmm/workflows/2-plan-workflows/gdd/workflow.yaml`
 - Game Design Document workflow for all game project levels - from small prototypes to full AAA games. Generates comprehensive GDD with game mechanics, systems, progression, and implementation guidance.
 
 **narrative**
-- Path: `bmad/bmm/workflows/2-plan/narrative/workflow.yaml`
+- Path: `bmad/bmm/workflows/2-plan-workflows/narrative/workflow.yaml`
 - Narrative design workflow for story-driven games and applications. Creates comprehensive narrative documentation including story structure, character arcs, dialogue systems, and narrative implementation guidance.
 
 **prd**
-- Path: `bmad/bmm/workflows/2-plan/prd/workflow.yaml`
-- Scale-adaptive PRD workflow for project levels 1-4. Level 1-2: focused PRD + solutioning handoff. Level 3-4: full PRD with epics + architect handoff. Automatically adjusts scope based on project complexity.
+- Path: `bmad/bmm/workflows/2-plan-workflows/prd/workflow.yaml`
+- Unified PRD workflow for project levels 2-4. Produces strategic PRD and tactical epic breakdown. Hands off to architecture workflow for technical design. Note: Level 0-1 use tech-spec workflow.
 
 **tech-spec-sm**
-- Path: `bmad/bmm/workflows/2-plan/tech-spec/workflow.yaml`
+- Path: `bmad/bmm/workflows/2-plan-workflows/tech-spec/workflow.yaml`
 - Technical specification workflow for Level 0 projects (single atomic changes). Creates focused tech spec for bug fixes, single endpoint additions, or small isolated changes. Tech-spec only - no PRD needed.
 
-**ux-spec**
-- Path: `bmad/bmm/workflows/2-plan/ux/workflow.yaml`
-- UX/UI specification workflow for defining user experience and interface design. Creates comprehensive UX documentation including wireframes, user flows, component specifications, and design system guidelines.
+**architecture**
+- Path: `bmad/bmm/workflows/3-solutioning/architecture/workflow.yaml`
+- Collaborative architectural decision facilitation for AI-agent consistency. Replaces template-driven architecture with intelligent, adaptive conversation that produces a decision-focused architecture document optimized for preventing agent conflicts.
 
-**plan-project**
-- Path: `bmad/bmm/workflows/2-plan/workflow.yaml`
-- Scale-adaptive project planning workflow for all project levels (0-4). Automatically adjusts outputs based on project scope - from single atomic changes (Level 0: tech-spec only) to enterprise platforms (Level 4: full PRD + epics). Level 2-4 route to 3-solutioning workflow for architecture and tech specs. Generates appropriate planning artifacts for each level.
-
-**tech-spec**
-- Path: `bmad/bmm/workflows/3-solutioning/tech-spec/workflow.yaml`
-- Generate a comprehensive Technical Specification from PRD and Architecture with acceptance criteria and traceability mapping
-
-**solution-architecture**
-- Path: `bmad/bmm/workflows/3-solutioning/workflow.yaml`
-- Scale-adaptive solution architecture generation with dynamic template sections. Replaces legacy HLA workflow with modern BMAD Core compliance.
+**solutioning-gate-check**
+- Path: `bmad/bmm/workflows/3-solutioning/solutioning-gate-check/workflow.yaml`
+- Systematically validate that all planning and solutioning phases are complete and properly aligned before transitioning to Phase 4 implementation. Ensures PRD, architecture, and stories are cohesive with no gaps or contradictions.
 
 **correct-course**
 - Path: `bmad/bmm/workflows/4-implementation/correct-course/workflow.yaml`
@@ -66,6 +66,10 @@
 - Path: `bmad/bmm/workflows/4-implementation/dev-story/workflow.yaml`
 - Execute a story by implementing tasks/subtasks, writing tests, validating, and updating the story file per acceptance criteria
 
+**tech-spec**
+- Path: `bmad/bmm/workflows/4-implementation/epic-tech-context/workflow.yaml`
+- Generate a comprehensive Technical Specification from PRD and Architecture with acceptance criteria and traceability mapping
+
 **retrospective**
 - Path: `bmad/bmm/workflows/4-implementation/retrospective/workflow.yaml`
 - Run after epic completion to review overall success, extract lessons learned, and explore if new information emerged that might impact the next epic
@@ -74,41 +78,29 @@
 - Path: `bmad/bmm/workflows/4-implementation/review-story/workflow.yaml`
 - Perform a Senior Developer Review on a completed story flagged Ready for Review, leveraging story-context, epic tech-spec, repo docs, MCP servers for latest best-practices, and web search as fallback. Appends structured review notes to the story.
 
+**sprint-planning**
+- Path: `bmad/bmm/workflows/4-implementation/sprint-planning/workflow.yaml`
+- Generate and manage the sprint status tracking file for Phase 4 implementation, extracting all epics and stories from epic files and tracking their status through the development lifecycle
+
 **story-context**
 - Path: `bmad/bmm/workflows/4-implementation/story-context/workflow.yaml`
 - Assemble a dynamic Story Context XML by pulling latest documentation and existing code/library artifacts relevant to a drafted story
 
-**testarch-atdd**
-- Path: `bmad/bmm/workflows/testarch/atdd/workflow.yaml`
-- Generate failing acceptance tests before implementation.
+**story-done**
+- Path: `bmad/bmm/workflows/4-implementation/story-done/workflow.yaml`
+- Marks a story as done (DoD complete) and moves it from its current status → DONE in the status file. Advances the story queue. Simple status-update workflow with no searching required.
 
-**testarch-automate**
-- Path: `bmad/bmm/workflows/testarch/automate/workflow.yaml`
-- Expand automation coverage after implementation.
+**story-ready**
+- Path: `bmad/bmm/workflows/4-implementation/story-ready/workflow.yaml`
+- Marks a drafted story as ready for development and moves it from TODO → IN PROGRESS in the status file. Simple status-update workflow with no searching required.
 
-**testarch-ci**
-- Path: `bmad/bmm/workflows/testarch/ci/workflow.yaml`
-- Scaffold or update the CI/CD quality pipeline.
+**workflow-init**
+- Path: `bmad/bmm/workflows/workflow-status/init/workflow.yaml`
+- Initialize a new BMM project by determining level, type, and creating workflow path
 
-**testarch-framework**
-- Path: `bmad/bmm/workflows/testarch/framework/workflow.yaml`
-- Initialize or refresh the test framework harness.
-
-**testarch-gate**
-- Path: `bmad/bmm/workflows/testarch/gate/workflow.yaml`
-- Record the quality gate decision for the story.
-
-**testarch-nfr**
-- Path: `bmad/bmm/workflows/testarch/nfr-assess/workflow.yaml`
-- Assess non-functional requirements before release.
-
-**testarch-plan**
-- Path: `bmad/bmm/workflows/testarch/test-design/workflow.yaml`
-- Plan risk mitigation and test coverage before development.
-
-**testarch-trace**
-- Path: `bmad/bmm/workflows/testarch/trace/workflow.yaml`
-- Trace requirements to implemented automated tests.
+**workflow-status**
+- Path: `bmad/bmm/workflows/workflow-status/workflow.yaml`
+- Lightweight status checker - answers "what should I do now?" for any agent. Reads simple key-value status file for instant parsing. Use workflow-init for new projects.
 
 
 ## Execution

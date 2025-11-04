@@ -1,16 +1,11 @@
 [workspace]
 members = [
-	"crates/user",
-	"crates/recipe",
-	"crates/meal_planning",
-	"crates/shopping",
-	"crates/notifications",
+	"crates/*",
 ]
 resolver = "2"
 
 [workspace.package]
-edition = "2021"
-rust-version = "1.90"
+edition = "2024"
 authors = ["imkitchen team"]
 
 [workspace.dependencies]
@@ -37,25 +32,19 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 clap = { version = "4.5", features = ["derive"] }
 config = { version = "0.15", features = ["toml"] }
-tracing-opentelemetry = "0.32"
-opentelemetry = "0.31"
-opentelemetry_sdk = { version = "0.31", features = ["rt-tokio"] }
-opentelemetry-otlp = { version = "0.31", features = ["trace", "grpc-tonic"] }
 bincode = "2.0"
 rust-embed = "8.8"
 mime_guess = "2.0"
 urlencoding = "2.1"
-web-push = { version = "0.11", default-features = false, features = ["hyper-client"] }
-fraction = "0.15"
 base64 = "0.22"
 url = "2.5"
 minify-html = "0.18"
+tower-livereload = "0.9"
 
 [package]
 name = "imkitchen"
 version = "0.8.0"
 edition.workspace = true
-rust-version.workspace = true
 
 [package.metadata.cargo-machete]
 ignored = []
@@ -66,6 +55,7 @@ async-stripe = "stripe"
 [dependencies]
 tokio = { workspace = true }
 axum = { workspace = true }
+tower-livereload = { workspace = true }
 axum-extra = { workspace = true }
 tower = { workspace = true }
 tower-http = { workspace = true }
@@ -81,10 +71,6 @@ anyhow = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
-tracing-opentelemetry = { workspace = true }
-opentelemetry = { workspace = true }
-opentelemetry_sdk = { workspace = true }
-opentelemetry-otlp = { workspace = true }
 clap = { workspace = true }
 config = { workspace = true }
 rust-embed = { workspace = true }
@@ -95,20 +81,14 @@ async-stripe = { workspace = true }
 validator = { workspace = true }
 base64 = { workspace = true }
 minify-html = { workspace = true }
-tower-livereload = "0.9"
-user = { path = "crates/user", version = "0.8.0" }
-recipe = { path = "crates/recipe", version = "0.8.0" }
-meal_planning = { path = "crates/meal_planning", version = "0.8.0" }
-shopping = { path = "crates/shopping", version = "0.8.0" }
-notifications = { path = "crates/notifications", version = "0.8.0" }
+imkitchen-user = { path = "crates/user" }
+imkitchen-recipe = { path = "crates/recipe" }
+imkitchen-mealplan = { path = "crates/mealplan" }
+imkitchen-notification = { path = "crates/notification" }
 
 [dev-dependencies]
 http-body-util = "0.1"
 serde_urlencoded = "0.7.1"
-
-[lib]
-name = "imkitchen"
-path = "src/lib.rs"
 
 [[bin]]
 name = "imkitchen"

@@ -101,7 +101,7 @@ If you have specific options, list them. Otherwise, I'll research current leadin
 - "State of [technical_category] 2025"
   </action>
 
-  <elicit-required/>
+  <invoke-task halt="true">{project-root}/bmad/core/tasks/adv-elicit.xml</invoke-task>
 
 <action>Present discovered options (typically 3-5 main candidates)</action>
 <template-output>technology_options</template-output>
@@ -173,8 +173,8 @@ Research and document:
 - Training costs
 - Total cost of ownership estimate
 
-<elicit-required/>
-<template-output>tech_profile_{{option_number}}</template-output>
+<invoke-task halt="true">{project-root}/bmad/core/tasks/adv-elicit.xml</invoke-task>
+<template-output>tech*profile*{{option_number}}</template-output>
 
 </step>
 
@@ -344,7 +344,7 @@ Research and document:
 - Contingency options if primary choice doesn't work
 - Exit strategy considerations
 
-<elicit-required/>
+<invoke-task halt="true">{project-root}/bmad/core/tasks/adv-elicit.xml</invoke-task>
 
 <template-output>recommendations</template-output>
 
@@ -441,5 +441,61 @@ Select option (1-5):</ask>
 </check>
 
 </step>
+
+<step n="FINAL" goal="Update status file on completion">
+<action>Search {output_folder}/ for files matching pattern: bmm-workflow-status.md</action>
+<action>Find the most recent file (by date in filename)</action>
+
+<check if="status file exists">
+  <invoke-workflow path="{project-root}/bmad/bmm/workflows/workflow-status">
+    <param>mode: update</param>
+    <param>action: complete_workflow</param>
+    <param>workflow_name: research</param>
+  </invoke-workflow>
+
+  <check if="success == true">
+    <output>Status updated! Next: {{next_workflow}}</output>
+  </check>
+</check>
+
+<output>**✅ Technical Research Complete**
+
+**Research Report:**
+
+- Technical research report generated and saved
+
+**Status file updated:**
+
+- Current step: research (technical) ✓
+- Progress: {{new_progress_percentage}}%
+
+**Next Steps:**
+
+- **Next required:** {{next_workflow}} ({{next_agent}} agent)
+- **Optional:** Review findings with architecture team, or run additional analysis workflows
+
+Check status anytime with: `workflow-status`
+</output>
+</check>
+
+<check if="status file not found">
+  <output>**✅ Technical Research Complete**
+
+**Research Report:**
+
+- Technical research report generated and saved
+
+Note: Running in standalone mode (no status file).
+
+**Next Steps:**
+
+Since no workflow is in progress:
+
+- Review technical research findings
+- Refer to the BMM workflow guide if unsure what to do next
+- Or run `workflow-init` to create a workflow path and get guided next steps
+  </output>
+  </check>
+  </step>
 
 </workflow>
