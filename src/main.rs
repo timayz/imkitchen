@@ -77,3 +77,21 @@ async fn main() -> Result<()> {
         Commands::Reset => crate::migrate::reset(config).await,
     }
 }
+
+rust_i18n::i18n!("locales", fallback = "en");
+
+pub(crate) mod filters {
+    pub fn t(value: &str, _values: &dyn askama::Values) -> askama::Result<String> {
+        // let preferred_language = askama::get_value::<String>(values, "preferred_language")
+        //     .expect("Unable to get preferred_language from askama::get_value");
+
+        Ok(rust_i18n::t!(value, locale = "fr_FR" /*locale = preferred_language*/).to_string())
+    }
+
+    // pub fn assets(value: &str, values: &dyn askama::Values) -> askama::Result<String> {
+    //     let config = askama::get_value::<crate::axum_extra::TemplateConfig>(values, "config")
+    //         .expect("Unable to get config from askama::get_value");
+    //
+    //     Ok(format!("{}/{value}", config.assets_base_url))
+    // }
+}
