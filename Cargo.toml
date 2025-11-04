@@ -1,16 +1,11 @@
 [workspace]
 members = [
-	"crates/user",
-	"crates/recipe",
-	"crates/meal_planning",
-	"crates/shopping",
-	"crates/notifications",
+	"crates/*",
 ]
 resolver = "2"
 
 [workspace.package]
-edition = "2021"
-rust-version = "1.90"
+edition = "2024"
 authors = ["imkitchen team"]
 
 [workspace.dependencies]
@@ -19,6 +14,7 @@ axum = { version = "0.8", features = ["macros", "multipart"] }
 axum-extra = { version = "0.12", features = ["cookie"] }
 tower = "0.5"
 tower-http = { version = "0.6", features = ["fs", "trace", "compression-br", "compression-gzip"] }
+rust-i18n = "3.1"
 askama = "0.14"
 sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite", "chrono", "uuid"] }
 evento = { version = "1.5", features = ["sqlite"] }
@@ -37,25 +33,19 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 clap = { version = "4.5", features = ["derive"] }
 config = { version = "0.15", features = ["toml"] }
-tracing-opentelemetry = "0.32"
-opentelemetry = "0.31"
-opentelemetry_sdk = { version = "0.31", features = ["rt-tokio"] }
-opentelemetry-otlp = { version = "0.31", features = ["trace", "grpc-tonic"] }
 bincode = "2.0"
 rust-embed = "8.8"
 mime_guess = "2.0"
 urlencoding = "2.1"
-web-push = { version = "0.11", default-features = false, features = ["hyper-client"] }
-fraction = "0.15"
 base64 = "0.22"
 url = "2.5"
 minify-html = "0.18"
+tower-livereload = "0.9"
 
 [package]
 name = "imkitchen"
 version = "0.8.0"
 edition.workspace = true
-rust-version.workspace = true
 
 [package.metadata.cargo-machete]
 ignored = []
@@ -66,49 +56,41 @@ async-stripe = "stripe"
 [dependencies]
 tokio = { workspace = true }
 axum = { workspace = true }
-axum-extra = { workspace = true }
+rust-i18n = { workspace = true }
+tower-livereload = { workspace = true }
+# axum-extra = { workspace = true }
 tower = { workspace = true }
 tower-http = { workspace = true }
 askama = { workspace = true }
 sqlx = { workspace = true }
 evento = { workspace = true }
 serde = { workspace = true }
-serde_json = { workspace = true }
-uuid = { workspace = true }
-chrono = { workspace = true }
-bincode = { workspace = true }
+# serde_json = { workspace = true }
+# uuid = { workspace = true }
+# chrono = { workspace = true }
+# bincode = { workspace = true }
 anyhow = { workspace = true }
-thiserror = { workspace = true }
+# thiserror = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
-tracing-opentelemetry = { workspace = true }
-opentelemetry = { workspace = true }
-opentelemetry_sdk = { workspace = true }
-opentelemetry-otlp = { workspace = true }
 clap = { workspace = true }
 config = { workspace = true }
 rust-embed = { workspace = true }
 mime_guess = { workspace = true }
-lettre = { workspace = true }
-urlencoding = { workspace = true }
-async-stripe = { workspace = true }
-validator = { workspace = true }
-base64 = { workspace = true }
+# lettre = { workspace = true }
+# urlencoding = { workspace = true }
+# async-stripe = { workspace = true }
+# validator = { workspace = true }
+# base64 = { workspace = true }
 minify-html = { workspace = true }
-tower-livereload = "0.9"
-user = { path = "crates/user", version = "0.8.0" }
-recipe = { path = "crates/recipe", version = "0.8.0" }
-meal_planning = { path = "crates/meal_planning", version = "0.8.0" }
-shopping = { path = "crates/shopping", version = "0.8.0" }
-notifications = { path = "crates/notifications", version = "0.8.0" }
+# imkitchen-user = { path = "crates/user" }
+# imkitchen-recipe = { path = "crates/recipe" }
+# imkitchen-mealplan = { path = "crates/mealplan" }
+# imkitchen-notification = { path = "crates/notification" }
 
 [dev-dependencies]
 http-body-util = "0.1"
 serde_urlencoded = "0.7.1"
-
-[lib]
-name = "imkitchen"
-path = "src/lib.rs"
 
 [[bin]]
 name = "imkitchen"

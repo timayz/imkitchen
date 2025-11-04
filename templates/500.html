@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}{{ "500 - Server Error - imkitchen"|t }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  *,
+  ::after,
+  ::before {
+    box-sizing: border-box;
+    border-style: solid;
+    border-color: #e5e7eb;
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+
+<body class="bg-gray-50">
+  <!-- Error Content -->
+  <div class="container mx-auto px-4 py-16">
+    <div class="max-w-2xl mx-auto text-center">
+      <!-- Error Icon -->
+      <div class="mb-8">
+        <div class="inline-flex items-center justify-center w-32 h-32 bg-red-100 rounded-full">
+          <svg class="w-16 h-16 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      <h1 class="text-6xl md:text-8xl font-bold text-gray-900 mb-4">500</h1>
+      <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-4">{{ "Something Went Wrong"|t }}</h2>
+      <p class="text-lg text-gray-600 mb-8">
+        {{ "Oops! Our kitchen had a little accident. We're working on cleaning up the mess. Please try again in a few moments."|t }}
+      </p>
+
+      <!-- Error Details -->
+      <div class="bg-red-50 border border-red-200 rounded-lg p-6 mb-8 text-left">
+        <div class="flex items-start gap-3">
+          <svg class="w-6 h-6 text-red-600 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+            </path>
+          </svg>
+          <div class="flex-1">
+            <h3 class="font-bold text-red-800 mb-2">{{ "What happened?"|t }}</h3>
+            <p class="text-sm text-red-700 mb-3">
+              {{ "An internal server error occurred while processing your request. This is not your fault - it's an issue on our end."|t }}
+            </p>
+            <div class="text-sm text-red-700">
+              <strong>{{ "What we're doing:"|t }}</strong>
+              <ul class="mt-1 space-y-1">
+                <li>• {{ "Our team has been automatically notified"|t }}</li>
+                <li>• {{ "We're investigating the issue right now"|t }}</li>
+                <li>• {{ "Your data is safe and secure"|t }}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- What to do -->
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8 text-left">
+        <div class="flex items-start gap-3">
+          <svg class="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <div class="flex-1">
+            <h3 class="font-bold text-blue-800 mb-2">{{ "What can you do?"|t }}</h3>
+            <ul class="text-sm text-blue-700 space-y-1">
+              <li>• {{ "Try refreshing the page"|t }}</li>
+              <li>• {{ "Wait a few minutes and try again"|t }}</li>
+              <li>• {{ "Clear your browser cache"|t }}</li>
+              <li>• {{ "If the problem persists, contact our support team"|t }}</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-col md:flex-row gap-4 justify-center mb-8">
+        <button onclick="window.location.reload()"
+          class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition">
+          🔄 {{ "Refresh Page"|t }}
+        </button>
+        <a href="/"
+          class="px-6 py-3 bg-white border-2 border-green-600 text-green-600 font-semibold rounded-lg hover:bg-green-50 transition">
+          🏠 {{ "Go to Homepage"|t }}
+        </a>
+      </div>
+
+      <!-- Status & Support -->
+      <div class="grid md:grid-cols-2 gap-4 mb-8">
+        <div class="bg-white rounded-lg shadow-lg p-6 text-left">
+          <div class="flex items-center gap-3 mb-3">
+            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <h3 class="font-bold text-lg">{{ "System Status"|t }}</h3>
+          </div>
+          <p class="text-sm text-gray-600 mb-2">{{ "Check if there are ongoing issues or maintenance"|t }}</p>
+          <a href="#" class="text-green-600 hover:text-green-700 font-semibold text-sm">{{ "View Status Page →"|t }}</a>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg p-6 text-left">
+          <div class="flex items-center gap-3 mb-3">
+            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z">
+              </path>
+            </svg>
+            <h3 class="font-bold text-lg">{{ "Need Help?"|t }}</h3>
+          </div>
+          <p class="text-sm text-gray-600 mb-2">{{ "Our support team is here to help"|t }}</p>
+          <a href="/contact" class="text-green-600 hover:text-green-700 font-semibold text-sm">{{ "Contact Support →"|t }}</a>
+        </div>
+      </div>
+
+      <!-- Quick Links -->
+      <div class="bg-white rounded-lg shadow-lg p-6">
+        <h3 class="font-bold text-lg mb-4">{{ "Try These Pages Instead"|t }}</h3>
+        <div class="grid md:grid-cols-3 gap-4 text-sm">
+          <a href="/" class="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+            <div class="font-semibold text-green-600 mb-1">📊 {{ "Dashboard"|t }}</div>
+            <div class="text-gray-600">{{ "View your meals"|t }}</div>
+          </a>
+          <a href="/community" class="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+            <div class="font-semibold text-green-600 mb-1">👥 {{ "Community"|t }}</div>
+            <div class="text-gray-600">{{ "Browse recipes"|t }}</div>
+          </a>
+          <a href="/help" class="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+            <div class="font-semibold text-green-600 mb-1">❓ {{ "Help Center"|t }}</div>
+            <div class="text-gray-600">{{ "Get assistance"|t }}</div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Error Code (for debugging) -->
+      <div class="mt-8 text-xs text-gray-400">
+        {{ "Error Reference:"|t }} ERR-500-<span id="error-id"></span>
+        <script>
+          document.getElementById('error-id').textContent = Date.now().toString(36).toUpperCase();
+        </script>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="border-t bg-white mt-12">
+    <div class="container mx-auto px-4 py-6 text-center text-gray-600 text-sm">
+      <p>{{ "We apologize for the inconvenience."|t }} <a href="/contact"
+          class="text-green-600 hover:text-green-700 font-semibold">{{ "Contact Support"|t }}</a> {{ "if this issue persists."|t }}</p>
+    </div>
+  </div>
+</body>
+{% endblock %}

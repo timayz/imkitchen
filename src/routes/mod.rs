@@ -1,59 +1,19 @@
-pub mod assets;
-pub mod auth;
-pub mod collections;
-pub mod dashboard;
-pub mod health;
-pub mod landing;
-pub mod legal;
-pub mod meal_plan;
-pub mod meal_planning_api; // Story 8.1: Multi-week meal plan generation API
-pub mod notifications;
-pub mod profile;
-pub mod recipes;
-pub mod shopping;
-pub mod user_preferences_api; // Story 8.5: User preferences update API
+use axum::response::IntoResponse;
 
-pub use assets::AssetsService;
-pub use auth::{
-    get_check_user, get_login, get_password_reset, get_password_reset_complete, get_register,
-    post_login, post_logout, post_password_reset, post_password_reset_complete, post_register,
-    post_stripe_webhook, AppState,
-};
-pub use collections::{
-    get_collections, post_add_recipe_to_collection, post_create_collection, post_delete_collection,
-    post_remove_recipe_from_collection, post_update_collection,
-};
-// Re-export dashboard_handler for backward compatibility (tests)
-pub use dashboard::dashboard_handler;
-pub use health::{browser_support, health, offline, ready};
-pub use landing::get_landing;
-pub use legal::{get_contact, get_help, get_privacy, get_terms, post_contact};
-pub use meal_plan::{
-    get_meal_plan, get_meal_plan_check_ready, get_regenerate_confirm, post_generate_meal_plan,
-    post_regenerate_meal_plan,
-};
-pub use meal_planning_api::{
-    generate_multi_week_meal_plan, get_week_detail, regenerate_all_future_weeks, regenerate_week,
-}; // Story 8.1, 8.2, 8.3, 8.4: API routes
-pub use notifications::{
-    complete_prep_task_handler, dismiss_notification, get_notification_status, list_notifications,
-    notifications_page, record_permission_change, snooze_notification, subscribe_push,
-};
-pub use profile::{
-    get_meal_planning_preferences, get_onboarding, get_onboarding_skip, get_profile,
-    get_subscription, get_subscription_success, post_meal_planning_preferences,
-    post_onboarding_step_1, post_onboarding_step_2, post_onboarding_step_3, post_profile,
-    post_subscription_upgrade,
-};
-pub use recipes::{
-    check_recipe_exists, get_discover, get_discover_detail, get_import_modal, get_ingredient_row,
-    get_instruction_row, get_more_discover, get_more_recipes, get_recipe_detail,
-    get_recipe_edit_form, get_recipe_form, get_recipe_list, get_recipe_waiting,
-    post_add_to_library, post_create_recipe, post_delete_recipe, post_delete_review,
-    post_favorite_recipe, post_import_recipes, post_rate_recipe, post_share_recipe,
-    post_update_recipe, post_update_recipe_tags,
-};
-pub use shopping::{
-    check_shopping_item, refresh_shopping_list, reset_shopping_list_handler, show_shopping_list,
-};
-pub use user_preferences_api::update_meal_planning_preferences; // Story 8.5: User preferences API
+use crate::extract::template::Template;
+use crate::filters;
+
+pub mod health;
+pub mod help;
+pub mod index;
+pub mod policy;
+pub mod service_worker;
+pub mod terms;
+
+#[derive(askama::Template)]
+#[template(path = "404.html")]
+pub struct NotFoundTemplate;
+
+pub async fn fallback(template: Template<NotFoundTemplate>) -> impl IntoResponse {
+    template.render(NotFoundTemplate)
+}

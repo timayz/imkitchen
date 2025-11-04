@@ -98,60 +98,6 @@ services:
       retries: 3
       start_period: 10s
 
-  # PostgreSQL (future - for production use)
-  # Uncomment when ready to migrate from SQLite
-  # postgres:
-  #   image: postgres:16-alpine
-  #   container_name: imkitchen-postgres
-  #   environment:
-  #     POSTGRES_DB: imkitchen
-  #     POSTGRES_USER: imkitchen
-  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
-  #   ports:
-  #     - "5432:5432"
-  #   volumes:
-  #     - postgres-data:/var/lib/postgresql/data
-  #   networks:
-  #     - imkitchen-network
-  #   restart: unless-stopped
-
-  # OpenTelemetry Collector - receives traces/metrics from application
-  # Forwards to Jaeger for visualization
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:latest
-    container_name: imkitchen-otel
-    command: ["--config=/etc/otel-collector-config.yaml"]
-    volumes:
-      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
-    ports:
-      - "4319:4319" # OTLP gRPC receiver
-      - "4320:4320" # OTLP HTTP receiver
-      - "9090:9090" # Prometheus metrics
-      - "13133:13133" # health_check extension
-    networks:
-      - imkitchen-network
-    restart: unless-stopped
-    depends_on:
-      - jaeger
-
-  # Jaeger - distributed tracing UI
-  # Access web UI at: http://localhost:16686
-  jaeger:
-    image: jaegertracing/all-in-one:latest
-    container_name: imkitchen-jaeger
-    ports:
-      - "16686:16686" # Jaeger UI
-      - "4317:4317" # OTLP gRPC receiver
-      - "4318:4318" # OTLP HTTP receiver
-      - "14250:14250" # Jaeger gRPC (legacy)
-      - "14268:14268" # Jaeger HTTP (legacy)
-    environment:
-      - COLLECTOR_OTLP_ENABLED=true
-      - LOG_LEVEL=info
-    networks:
-      - imkitchen-network
-    restart: unless-stopped
-
 networks:
   imkitchen-network:
     driver: bridge
@@ -159,5 +105,3 @@ networks:
 volumes:
   imkitchen-data:
     driver: local
-#   postgres-data:
-#     driver: local

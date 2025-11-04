@@ -1,701 +1,421 @@
 # imkitchen Product Requirements Document (PRD)
 
 **Author:** Jonathan
-**Date:** 2025-10-10
-**Project Level:** Level 3 (Full Product)
-**Project Type:** Web Application (Progressive Web App)
-**Target Scale:** 12-40 stories, 2-5 epics, full PRD + architect handoff
+**Date:** 2025-10-31
+**Project Level:** 3
+**Target Scale:** Comprehensive product with freemium model, community features, and intelligent meal planning automation
 
 ---
 
-## Description, Context and Goals
-
-### Description
-
-imkitchen is an intelligent meal planning and cooking optimization platform designed to eliminate the mental overhead and timing complexity that prevents home cooks from exploring their full recipe repertoire. The platform transforms cooking from a stressful daily decision into an effortless, enjoyable experience through three core capabilities:
-
-**1. Intelligent Automation** - Multi-factor optimization algorithm that automatically generates a single meal plan with aggregate recipes organized by week. The system matches recipe complexity to user availability, energy patterns, and schedule constraints while considering advance preparation requirements, ingredient freshness windows, equipment conflicts, and real-time disruptions to create realistic, achievable weekly schedules.
-
-**2. Preparation Orchestration** - Detailed morning reminders with specific timing guidance for advance preparation tasks (marination, rising, chilling, defrosting). Users receive actionable notifications that break down complex multi-day recipes into manageable steps, ensuring they can successfully execute recipes that would otherwise require complex mental planning.
-
-**3. Community-Driven Discovery** - Social recipe sharing and rating system that enables users to discover tested, high-quality recipes from other home cooks. Community feedback creates trust signals that help users confidently expand their culinary repertoire beyond their current comfort zone.
-
-**Primary Value Proposition:** imkitchen unlocks access to complex recipes by automating timing, preparation, and scheduling complexity, enabling home cooks to utilize their full recipe collections without the planning burden that currently forces artificial self-limitation.
-
-**Target Users:**
-- **Primary:** Home cooking enthusiasts (ages 28-45, families, $50K+ income) who save 50+ recipes but cook only 10-15 regularly due to planning complexity
-- **Secondary:** Busy professional families (ages 32-50, dual-income, 1-3 children) seeking to reduce takeout reliance while maintaining family dinner traditions
-
-**Core Problem Solved:** Home cooks artificially limit their recipe choices to avoid advance preparation timing complexity, resulting in culinary monotony and underutilized recipe collections. Current meal planning solutions address recipe storage and basic scheduling but ignore the fundamental timing coordination problem that drives user self-limitation.
-
-**Business Model:** Freemium SaaS with 10 recipe limit in free tier, premium features include unlimited recipes, advanced scheduling optimization, and priority community features. Target 10,000 active users within 6 months, 15% premium conversion within 60 days.
-
-### Deployment Intent
-
-Production SaaS with freemium business model. Target launch with MVP feature set to early adopters, then scale to 10,000 active users within 6 months. Platform designed for high availability, mobile-first progressive web app experience with offline capabilities. Premium tier unlocks unlimited recipes and advanced scheduling features, targeting 15% conversion rate within 60 days of user signup.
-
-### Context
-
-Home cooks face a fundamental tension between culinary variety and planning simplicity. Despite maintaining extensive recipe collections—often 50+ saved recipes across bookmarks, apps, and cookbooks—users repeatedly cook only 10-15 simple dishes. This artificial self-limitation stems not from lack of skill or interest, but from the overwhelming complexity of coordinating advance preparation timing, ingredient freshness windows, and family schedules. Current meal planning applications focus on recipe storage and basic calendar scheduling but fail to address the core friction: the mental overhead required to successfully execute recipes with multi-day preparation requirements. This creates a pattern where users avoid complex but rewarding recipes entirely, resulting in culinary stagnation despite expanded cooking time at home.
-
-The timing is optimal for intelligent meal planning automation. Post-2020, families cook 40% more meals at home, creating both increased demand for cooking solutions and heightened frustration with planning complexity. Users demonstrate willingness to adopt complex systems when they deliver demonstrable time savings and reduce decision fatigue. The convergence of mobile-first design patterns, progressive web app capabilities for offline kitchen access, and sophisticated scheduling algorithms enables a solution that eliminates timing complexity while maintaining user control and culinary creativity. The market gap is clear: existing solutions treat meal planning as a scheduling problem when it is fundamentally a timing orchestration challenge requiring intelligent automation that matches recipe complexity to user capacity.
+## Goals and Background Context
 
 ### Goals
 
-1. **User Acquisition & Retention**: Achieve 10,000 monthly active users within 6 months of launch with 70% weekly active user retention rate, demonstrating strong product-market fit.
+- Increase recipe variety by enabling users to cook 3x more unique recipes per month through intelligent multi-week rotation
+- Reduce meal planning time by 60% through one-click month-based generation
+- Eliminate timing complexity and advance preparation stress with automated reminders and scheduling
+- Enable realistic meal composition through intelligent accompaniment pairing (85% success rate)
+- Extend planning horizons from 1 week to average of 3.5 weeks for better grocery shopping and reduced waste
+- Build sustainable community engagement through recipe sharing, rating, and discovery across four recipe types
+- Achieve 15% freemium-to-premium conversion within 60 days by demonstrating value through first-week access
 
-2. **Recipe Variety Expansion**: Enable users to cook 3x more unique recipes per month compared to pre-app baseline, validating that intelligent automation successfully unlocks culinary repertoire expansion.
+### Background Context
 
-3. **Planning Efficiency**: Reduce user meal planning time by 60% while maintaining 85% recipe completion rate, proving the platform delivers measurable time savings without sacrificing execution quality.
+Home cooks face a fundamental choice between culinary variety and planning simplicity. The complexity of coordinating recipe selection, advance preparation timing, meal composition, and multi-week planning creates a self-limitation pattern where users avoid 70-80% of their saved recipes. Current meal planning apps focus on recipe storage without addressing the core problems: timing complexity, realistic meal composition (mains paired with appropriate sides), and extended planning visibility.
 
-4. **Community Engagement**: Achieve 40% monthly recipe rating participation and build library of 500+ community-rated recipes within first year, creating sustainable content network effects.
+imkitchen solves this by automatically generating meal plans for all future weeks of the current month with intelligent accompaniment pairing, preference-aware scheduling, and comprehensive shopping lists. The freemium model (first week visible on free tier, all weeks on premium) provides immediate value demonstration while creating natural upgrade incentive for full month visibility and unlimited recipe favorites.
 
-5. **Revenue Generation**: Reach $50,000 monthly recurring revenue by month 12 with 15% free-to-premium conversion within 60 days, validating freemium business model viability.
+---
 
 ## Requirements
 
 ### Functional Requirements
 
-#### Recipe Management
-**FR-1: Recipe Creation and Storage**
-Users can create recipes with title, ingredients (quantities and units), step-by-step instructions, preparation time, cooking time, advance preparation requirements, and serving size. Recipes are stored per-user with optional sharing to community.
+**Authentication & User Management**
 
-**FR-2: Recipe Organization**
-System organizes recipes into user-defined collections and automatically tags recipes based on preparation complexity, cuisine type, and dietary attributes.
+- FR001: System shall support user registration, login, and profile management with JWT cookie-based authentication
+- FR002: System shall store user preferences including dietary restrictions, complexity preferences, cuisine variety weight (default 0.7), and household size
+- FR003: System shall support admin users identified by `is_admin` flag with access to admin panel
 
-**FR-3: Recipe Sharing and Privacy Controls**
-Users can mark recipes as private (visible only to them) or shared (visible to community). Shared recipes appear in community discovery with attribution to original creator.
+**Recipe Management**
 
-#### Meal Planning
-**FR-4: Automated Meal Plan Generation**
-System generates a single meal plan organizing user's favorite recipes by week, filling breakfast/lunch/dinner slots based on multi-factor optimization including user availability, recipe complexity, advance preparation requirements, and ingredient freshness windows.
+- FR004: System shall allow users to create, edit, and delete recipes with four types: Appetizer, Main Course, Dessert, Accompaniment
+- FR005: Recipe fields (dietary restrictions, cuisine type, etc.) shall be explicitly set by users with no automatic inference
+- FR006: Main courses shall default to `accepts_accompaniment=false` requiring explicit user enablement
+- FR007: System shall support bulk recipe import from JSON files (max 10MB per file, 20 files per batch) via drag-and-drop
+- FR008: Recipe import shall validate against HTML form schema, skip invalid recipes, and provide detailed success/failure summary
+- FR009: Recipe import shall detect and block duplicate recipes (matching name or similar ingredients)
+- FR010: Recipe import shall display real-time progress (imported count, failed count, remaining count)
+- FR011: System shall maintain publicly accessible versioned JSON schema documentation for recipe import
 
-**FR-5: Recipe Rotation System**
-Meal planning algorithm ensures no recipe repeats until all favorite recipes have been used once, maximizing variety and preventing meal fatigue.
+**Recipe Favorites & Sharing**
 
-**FR-6: Visual Meal Calendar**
-Users view generated meal plan in week-view calendar displaying assigned recipes per meal slot (breakfast/lunch/dinner) with visual indicators for advance preparation requirements.
+- FR012: Users shall favorite both their own recipes and community-shared recipes from other users
+- FR013: Free tier users shall be limited to maximum 10 favorited recipes; premium tier shall have unlimited favorites
+- FR014: When free tier users attempt to exceed 10 favorites, system shall display upgrade modal with no unfavoriting option
+- FR015: Users shall share recipes publicly with community (all four recipe types) in both free and premium tiers
+- FR016: When recipe owner deletes their recipe, it shall be automatically removed from all users' favorites without notifications
+- FR017: Users shall rate and review community-shared recipes with ratings acting as quality filter in search results
 
-**FR-7: Meal Plan Regeneration**
-Users can regenerate entire meal plan or replace individual meal slots while maintaining recipe rotation constraints and preparation timing optimization.
+**Meal Plan Generation**
 
-#### Shopping and Preparation
-**FR-8: Shopping List Generation**
-System automatically generates weekly shopping lists from meal plan with ingredients grouped by category (produce, dairy, pantry, etc.) and quantities aggregated across multiple recipes.
+- FR018: System shall automatically generate meal plans for all future weeks of current month (from next week onwards) in single operation
+- FR019: Generation shall extend into next month when executed at month-end with explicit transition messaging
+- FR020: Current week (today falls within Monday-Sunday) shall be locked and preserved during regeneration
+- FR021: Algorithm shall handle insufficient recipes gracefully by leaving empty meal slots (no minimum count enforced)
+- FR022: Generation shall be non-deterministic, producing different arrangements each time to enable preference-based regeneration
+- FR023: Regeneration shall require confirmation dialog to prevent accidental replacement of all future weeks
+- FR024: Algorithm shall ensure main courses are unique across all weeks until exhausted, then leave slots empty
+- FR025: Appetizers and desserts may repeat after all are used once; accompaniments may repeat freely
+- FR026: Algorithm shall consider dietary restrictions, cuisine variety preferences, and complexity spacing
+- FR027: System shall complete 5-week generation in <5 seconds (P95 performance)
+- FR028: Main courses with accompaniment preference shall be paired with compatible accompaniment recipes
+- FR029: Each week's meal plan shall create and store complete snapshots/copies of all referenced recipes at generation time
 
-**FR-9: Multi-Week Shopping List Access**
-Users can access shopping lists for current week and future weeks, enabling advance shopping or bulk purchasing decisions.
+**Calendar & Visualization**
 
-**FR-10: Advance Preparation Reminders**
-System sends morning notifications with specific timing for advance preparation tasks (e.g., "Marinate chicken tonight for Thursday dinner" or "Start bread dough rising at 2pm").
+- FR030: System shall display month-based calendar view with week navigation showing 3 courses per day (appetizer, main, dessert)
+- FR031: Free tier shall view only first generated week; other weeks shall display "Upgrade to unlock" placeholders
+- FR032: Premium tier shall view all generated weeks with full navigation
+- FR033: Current week shall display visual badge/lock icon with tooltip explaining preservation
+- FR034: Empty meal slots shall display "Browse community recipes" link to community page
 
-#### Community and Discovery
-**FR-11: Recipe Rating and Reviews**
-Users can rate recipes (1-5 stars) and write text reviews after cooking. Ratings aggregate to show community quality scores on shared recipes.
+**Shopping Lists**
 
-**FR-12: Community Recipe Discovery**
-Users browse shared recipes from other users, filtered by rating, cuisine, preparation time, and dietary preferences. Discovery interface highlights highly-rated recipes and trending dishes.
+- FR035: System shall generate separate shopping lists for each week with ingredient grouping and quantity optimization
+- FR036: Shopping lists shall include ingredients from both main recipes and paired accompaniments
+- FR037: Shopping lists shall be accessible for current and all future weeks
 
-#### User Management
-**FR-13: User Profile and Preferences**
-Users manage profile including dietary restrictions (vegetarian, vegan, gluten-free, allergens), cooking skill level, typical weeknight availability, and household size.
+**Notifications & Reminders**
 
-**FR-14: Favorite Recipe Management**
-Users mark recipes as favorites, which feeds the meal planning algorithm. Users can add/remove favorites at any time, directly affecting future meal plan generation.
+- FR038: System shall send morning notifications (8 AM daily) for advance preparation tasks based on recipe requirements
 
-**FR-15: Freemium Access Controls**
-Free tier users limited to 10 recipes maximum. Premium users access unlimited recipes, advanced scheduling preferences, and priority community features.
+**Dashboard & Landing Page**
 
-#### Core Platform
-**FR-16: Home Dashboard**
-Dashboard displays today's assigned meals from meal plan, pending advance preparation tasks, and quick action button to generate/regenerate meal plan.
+- FR039: Home route (/) shall dynamically route authenticated users to Dashboard, unauthenticated users to SEO-optimized landing page
+- FR040: Landing page shall include hero section, key features showcase, how-it-works (3-step), example screenshots, pricing preview, testimonials, and CTAs
+- FR041: Dashboard shall display nearest day's recipes and preparation tasks from generated meal plan with generate/regenerate button
+- FR042: Free tier dashboard shall show nearest day only if it falls within accessible first week; otherwise show upgrade prompt
+- FR043: Premium dashboard shall always show nearest day from any generated week
+- FR044: Empty state dashboard shall display onboarding guide explaining meal planning workflow
 
-**FR-17: Mobile-Responsive Progressive Web App**
-Platform functions as installable PWA with touch-optimized interface for kitchen use, offline recipe access, and responsive design across mobile/tablet/desktop.
+**Admin Panel**
 
-**FR-18: Authentication and Authorization**
-System provides secure user authentication via JWT cookie-based tokens, password reset flows, and role-based access control for user/premium-user roles.
+- FR045: Admin panel shall provide user management (view, edit, suspend/activate accounts, manage premium bypass flags)
+- FR046: Admin panel shall provide contact form inbox (view messages, mark read/resolved, search/filter)
+- FR047: Suspended users shall not be able to log in; their meal plans become inaccessible and shared recipes hidden
+- FR048: All suspended user data shall be preserved for potential reactivation
+
+**Contact & Support**
+
+- FR049: System shall provide public contact form with fields for name, email, subject, and message
+- FR050: System shall send email notifications to admin(s) when new contact form messages are submitted
+
+**Freemium Access Control**
+
+- FR051: System shall support premium bypass configuration via global config file (entire environment) or per-user flag (selective access)
+- FR052: Free tier shall allow unlimited regenerations but restrict visibility to first generated week only
+- FR053: Premium tier shall provide full visibility across all generated weeks and unlimited recipe favorites
 
 ### Non-Functional Requirements
 
-**NFR-1: Performance**
-- Page load times <3 seconds on 3G mobile connections
-- HTML response times <500ms for 95th percentile requests
-- Meal plan generation completes within 5 seconds for up to 50 favorite recipes
-- Shopping list generation completes within 2 seconds for weekly meal plans
+- NFR001: System shall achieve <3 second page load times on mobile devices
+- NFR002: System shall complete 5-week meal plan generation in <5 seconds (P95 latency)
+- NFR003: System shall maintain <0.1% error rate for meal plan generation operations
+- NFR004: System shall provide offline recipe access capability
+- NFR005: System shall be fully mobile-responsive with touch-optimized interface for kitchen use
+- NFR006: System shall support modern mobile browsers (iOS Safari, Android Chrome) with installable PWA experience
+- NFR007: System shall implement OWASP security standards for all security-related features
+- NFR008: System shall encrypt user data and comply with GDPR requirements
+- NFR009: System shall be SEO-optimized with proper meta tags, structured data (Schema.org), semantic HTML for organic acquisition
+- NFR010: System shall avoid vendor lock-in through open standards and portable solutions
+- NFR011: System shall implement comprehensive design system with consistent components, spacing, typography, and color palette
+- NFR012: System shall collect only minimal anonymous analytics (aggregate, anonymized metrics) with privacy-first approach
+- NFR013: System shall validate recipe import files against malicious content (script injection, oversized payloads, DoS attacks)
+- NFR014: System shall use streaming parser for large recipe import files (up to 10MB)
 
-**NFR-2: Availability and Reliability**
-- 99.5% uptime for core platform (4 hours monthly downtime allowance)
-- Graceful degradation when backend unavailable - offline recipe access continues functioning
-- Database backups every 6 hours with point-in-time recovery capability
-- Zero data loss tolerance for user-created recipes and meal plans
-
-**NFR-3: Scalability**
-- Support 10,000 concurrent users without performance degradation
-- Horizontal scaling capability to accommodate 100,000+ users within first year
-- Database design supports multi-tenant architecture for future growth
-- Meal planning algorithm scales linearly with recipe count (O(n) complexity)
-
-**NFR-4: Security**
-- All user data encrypted at rest (AES-256) and in transit (TLS 1.3)
-- JWT cookie-based authentication with secure HTTP-only flags and CSRF protection
-- OWASP Top 10 security standards compliance for all implementations
-- Regular security audits and penetration testing quarterly
-- Password requirements: minimum 8 characters
-
-**NFR-5: Mobile Responsiveness and PWA**
-- Touch-optimized interface with minimum 44x44px tap targets
-- Installable PWA with offline-first architecture using service workers
-- Works on iOS Safari 14+ and Android Chrome 90+
-- Responsive breakpoints: mobile (<768px), tablet (768-1024px), desktop (>1024px)
-- Kitchen-friendly display mode with high contrast and large text options
-
-**NFR-6: Accessibility**
-- WCAG 2.1 Level AA compliance across all user interfaces
-- Screen reader compatible with proper ARIA labels and semantic HTML
-- Keyboard navigation support for all interactive elements
-- Color contrast ratios minimum 4.5:1 for normal text, 3:1 for large text
-- Voice control compatible for hands-free kitchen operation
-
-**NFR-7: Data Privacy and Compliance**
-- GDPR compliance with user data export and deletion capabilities
-- Privacy-first design: no recipe data shared without explicit user consent
-- Cookie consent management for analytics and non-essential tracking
-- User profile data isolated per account with no cross-user data leakage
-- Transparent privacy policy and terms of service accessible from all pages
-
-**NFR-8: Observability and Monitoring**
-- OpenTelemetry instrumentation for distributed tracing across all services
-- Real-time metrics dashboards tracking user engagement, system performance, and error rates
-- Structured logging with correlation IDs for request tracking
-- Alerting on critical failures (auth system down, database unavailable) with 5-minute response SLA
-
-**NFR-9: Internationalization**
-- Multi-language support using rust-i18n with initial English-only launch
-- Measurement unit conversion (metric/imperial) for recipes
-- Date/time formatting localized per user preference
-- Recipe ingredient substitution database supporting regional availability
-
-**NFR-10: Maintainability and Code Quality**
-- Test-Driven Development (TDD) enforced with minimum 80% code coverage
-- Domain-Driven Design (DDD) architecture with clear bounded contexts
-- Event Sourcing via evento for full audit trail and state reconstruction
-- Automated CI/CD pipeline with deployment gates requiring passing tests
-- Code review required for all changes with maximum 24-hour review SLA
+---
 
 ## User Journeys
 
-### Journey 1: New User Onboarding and First Meal Plan
+### Journey 1: New User Onboarding & First Meal Plan Generation
 
-**Actor:** Sarah, 34-year-old working parent with 2 children
+**Persona:** Sarah, busy professional with family, wants meal variety without planning stress
 
-**Goal:** Set up account and generate first automated meal plan
-
-**Context:** Sarah has saved 60+ recipes across Pinterest and bookmarks but only cooks 12 recipes regularly due to planning overwhelm. She heard about imkitchen from a friend.
+**Starting Point:** Discovers imkitchen through search, visits landing page
 
 **Journey Steps:**
 
-1. **Discovery and Registration**
-   - Sarah visits imkitchen.app on her iPhone during lunch break
-   - Views landing page explaining intelligent meal planning automation
-   - Clicks "Get Started" and registers with email/password (minimum 8 characters)
-   - System creates account and logs her in via JWT cookie
+1. **Discovery** - Sarah lands on SEO-optimized landing page, reads value proposition about month-based meal planning with accompaniments
+2. **Registration** - Creates account with email/password authentication
+3. **Profile Setup** - Configures dietary restrictions (gluten-free), cuisine variety preference (0.7 default), and household size (4)
+4. **Recipe Import** - Bulk imports 25 recipes from JSON file exported from previous app (drag-and-drop interface shows real-time progress)
+5. **Recipe Review** - Reviews import summary: 23 successful, 2 failed (missing required fields), duplicates blocked
+6. **Community Discovery** - Browses community recipes, favorites 8 additional recipes (total: 31 favorites)
+7. **First Generation** - Clicks "Generate Meal Plan" button, system generates 4 weeks of meals in 3 seconds
+8. **Free Tier Experience** - Views first week with 3 courses per day, sees "Upgrade to unlock" placeholders on remaining weeks
+9. **Calendar Exploration** - Reviews generated meals, notices main courses paired with appropriate accompaniments (curry with rice)
+10. **Shopping List** - Generates shopping list for first week, sees ingredients grouped by category
+11. **Decision Point** - Satisfied with first week, wants to see all 4 weeks for better planning → upgrades to premium ($9.99/month)
+12. **Premium Experience** - Now sees all 4 weeks, navigates full calendar, reviews entire month's meal plan
 
-2. **Profile Setup**
-   - Onboarding wizard prompts for dietary preferences (selects: no shellfish allergy)
-   - Indicates household size (family of 4)
-   - Sets cooking skill level (intermediate)
-   - Specifies typical weeknight availability (6-7pm, 45 minutes max)
-   - System stores preferences in user profile
+**Success Outcome:** Sarah has a complete month of meals planned with accompaniments in <10 minutes, upgraded to premium for full visibility
 
-3. **Recipe Entry (Free Tier - 10 Recipe Limit)**
-   - Sarah manually creates first recipe: "Chicken Tikka Masala"
-   - Enters ingredients with quantities (chicken breast 2lbs, yogurt 1 cup, spices)
-   - Adds step-by-step instructions (6 steps)
-   - Specifies prep time (20 min), cook time (30 min), advance prep (marinate 4 hours)
-   - Marks recipe as favorite
-   - Repeats for 9 more recipes from her rotation
-   - System shows "10/10 recipes used - Upgrade for unlimited"
-
-4. **First Meal Plan Generation**
-   - From home dashboard, Sarah clicks "Generate Meal Plan"
-   - System analyzes 10 favorite recipes against her profile constraints
-   - Meal planning algorithm runs (completes in 3 seconds)
-   - Generates week-view calendar with breakfast/lunch/dinner assignments
-   - Thursday dinner shows Chicken Tikka Masala with "Prep Required" indicator
-
-5. **Reviewing and Adjusting Plan**
-   - Sarah notices Saturday assigned a complex recipe when she has kids' soccer
-   - Clicks Saturday dinner slot, selects "Replace This Meal"
-   - System regenerates just that slot with simpler recipe option
-   - Sarah approves updated plan
-   - System saves meal plan and makes it active
-
-6. **Shopping List Generation**
-   - Sarah clicks "Shopping List" for current week
-   - System aggregates ingredients across all week's recipes
-   - Groups by category: Produce (onions 3, tomatoes 5), Dairy (yogurt 2 cups), Pantry (garam masala)
-   - Sarah reviews list on phone while at grocery store Tuesday evening
-   - Uses offline PWA capability in store without connectivity issues
-
-7. **Preparation Reminders**
-   - Wednesday 2pm: Push notification "Reminder: Marinate chicken tonight for Thursday's Chicken Tikka Masala"
-   - Sarah opens app, views specific marination instructions
-   - Wednesday 7pm: Sarah marinates chicken, marks task complete in app
-   - Thursday 5:30pm: Notification "Tonight's dinner: Chicken Tikka Masala - Ready to cook!"
-
-8. **Post-Cooking Feedback**
-   - Friday morning: System prompts "How was Thursday's Chicken Tikka Masala?"
-   - Sarah rates 5 stars, writes review "Family loved it, marination reminder was perfect"
-   - Rating stored, influences future community discovery
-
-**Decision Points:**
-- Recipe entry: Manual creation vs discovering community recipes (chose manual due to specific preferences)
-- Meal replacement: Accept algorithm suggestion vs customize further (replaced one meal)
-- Shopping timing: Generate list early vs day-of (generated early for Tuesday shopping)
-
-**Pain Points Resolved:**
-- Eliminated 30 minutes of weekly meal planning time
-- Successfully executed recipe requiring advance preparation without mental overhead
-- Reduced decision fatigue through automated scheduling
+**Pain Points Addressed:**
+- Recipe import eliminated manual entry of 25 recipes
+- Month-based generation provided immediate planning visibility
+- Accompaniment pairing removed meal composition complexity
+- First-week preview demonstrated value before payment
 
 ---
 
-### Journey 2: Experienced User Expanding Recipe Variety
+### Journey 2: Weekly Meal Execution & Adaptive Regeneration
 
-**Actor:** Marcus, 29-year-old cooking enthusiast
+**Persona:** James, home cooking enthusiast, using imkitchen for ongoing meal planning
 
-**Goal:** Discover new community recipes and expand culinary repertoire
-
-**Context:** Marcus has been using imkitchen free tier for 2 months, cooking same 10 recipes. Wants to try new dishes but hesitant about complexity.
+**Starting Point:** Currently in Week 2 of previously generated meal plan
 
 **Journey Steps:**
 
-1. **Hitting Free Tier Limit**
-   - Marcus wants to add new recipe but sees "10/10 recipes - Upgrade to add more"
-   - Reviews premium features: unlimited recipes, advanced scheduling, priority support
-   - Converts to premium ($9.99/month) via secure payment flow
-   - Account upgraded, freemium restrictions removed
+1. **Daily Dashboard** - Opens app on Tuesday morning, dashboard shows today's nearest meal (appetizer, main, dessert) with prep tasks
+2. **Advance Prep Reminder** - Receives 8 AM notification: "Remember to marinate chicken for tonight's dinner"
+3. **Meal Execution** - Follows recipe instructions, successfully prepares meal with auto-paired rice accompaniment
+4. **Mid-Week Disruption** - Thursday dinner plans change unexpectedly (family event), won't cook that night
+5. **Week Lock Protection** - Current week (Week 2) is locked, preserving existing meals; future weeks remain flexible
+6. **Shopping List Use** - Generates shopping list for Week 3 (upcoming week), sees all ingredients including accompaniments
+7. **Grocery Shopping** - Uses shopping list at store with ingredients grouped by category, quantities optimized
+8. **Week Transition** - Monday of Week 3 arrives, system automatically locks Week 3 as "current week"
+9. **Month-End Scenario** - Reaches last week of October, wants more meal plans
+10. **Regeneration** - Clicks "Regenerate" button, confirmation modal warns "This will replace all future weeks. Continue?"
+11. **Extended Generation** - System generates 5 new weeks: remaining October days + 4 weeks into November with transition message
+12. **New Rotation** - Sees fresh meal arrangements (non-deterministic), different cuisine distribution, no repeated main courses
 
-2. **Community Recipe Discovery**
-   - Marcus navigates to "Discover Recipes" tab
-   - Browses community-shared recipes filtered by "Highly Rated" (4+ stars)
-   - Sees "Korean Bulgogi" with 4.8 stars, 47 reviews
-   - Reads reviews highlighting successful advance preparation with app reminders
-   - Views recipe details: 24-hour marinade, 20-min cook time, intermediate difficulty
+**Success Outcome:** James maintains continuous meal planning across month boundaries with protected current week and flexible future weeks
 
-3. **Adding Community Recipe to Favorites**
-   - Marcus clicks "Add to My Recipes"
-   - System copies recipe to his personal collection
-   - Marks as favorite for meal planning inclusion
-   - Recipe now appears in his recipe library
-
-4. **Meal Plan Regeneration with New Recipe**
-   - Marcus clicks "Regenerate Meal Plan" from dashboard
-   - System now includes Korean Bulgogi in rotation alongside original 10 recipes
-   - Algorithm schedules Bulgogi for Saturday (more prep time available)
-   - Advance prep reminder scheduled for Friday evening
-
-5. **Successful Execution and Rating**
-   - Friday 6pm: Reminder to start marinade
-   - Saturday: Cooks Bulgogi successfully
-   - Rates recipe 5 stars, adds review: "First time making Korean food - app made it easy!"
-   - System tracks: Marcus cooked 11 unique recipes this month (vs 10/month average previous)
-
-6. **Sharing Own Recipe to Community**
-   - Marcus creates his own recipe: "Spicy Mango Chicken"
-   - After several successful preparations, decides to share
-   - Clicks "Share to Community" on recipe detail page
-   - Recipe becomes visible to other users in discovery feed
-   - Within week, receives 3 ratings (average 4.3 stars) and positive review
-
-**Outcome:**
-- Recipe variety increased 3x (now rotating 30+ recipes)
-- Confidence to try complex recipes with advance prep requirements
-- Contributing to community, building engagement
+**Pain Points Addressed:**
+- Current week locking preserved in-progress meals during disruption
+- Shopping lists enabled efficient bulk grocery shopping
+- Seamless month transition prevented planning gaps
+- Non-deterministic regeneration allowed preference-based re-planning
 
 ---
 
-### Journey 3: Handling Real-Time Disruptions
+### Journey 3: Community Engagement & Recipe Contribution
 
-**Actor:** Jennifer, 42-year-old working professional
+**Persona:** Maria, passionate home cook, wants to share recipes and discover community favorites
 
-**Goal:** Adapt meal plan when unexpected schedule changes occur
-
-**Context:** Jennifer's Wednesday evening meeting runs late, threatening planned complex dinner.
+**Starting Point:** Existing premium user with 45 favorited recipes
 
 **Journey Steps:**
 
-1. **Disruption Occurs**
-   - 5pm Wednesday: Meeting notification extends 2 hours
-   - Planned dinner: Homemade Pizza (1 hour active time)
-   - Jennifer realizes she won't be home until 7:30pm
+1. **Recipe Creation** - Creates new Thai curry recipe (Main Course type), explicitly sets dietary restrictions and cuisine type
+2. **Accompaniment Configuration** - Enables `accepts_accompaniment=true`, specifies rice as compatible accompaniment
+3. **Community Sharing** - Publishes recipe publicly to community, available to all users (free and premium)
+4. **Recipe Discovery** - Browses community recipes filtered by "Appetizer" type for week's empty slots
+5. **Rating Engagement** - Rates recently tried community recipe 5 stars, writes review: "Perfect weeknight meal!"
+6. **Favorite Management** - Favorites new community recipe, adding to meal plan rotation pool (premium = unlimited favorites)
+7. **Meal Generation Impact** - Next generation includes newly favorited community recipes in rotation
+8. **Recipe Popularity** - Maria's shared Thai curry gains ratings from other users, rises in community search results
+9. **Recipe Deletion Scenario** - Original creator of a favorited recipe deletes it → automatically removed from Maria's favorites
+10. **Adaptation** - Maria notices missing favorite during next generation, browses community for replacement
+11. **Quality Filter** - Low-rated recipes (< 3 stars) buried in search results due to community ratings
+12. **Accompaniment Sharing** - Creates and shares specialized rice pilaf recipe (Accompaniment type) for community use
 
-2. **Quick Meal Replacement**
-   - Opens imkitchen app during meeting break
-   - Navigates to Wednesday dinner slot
-   - Clicks "Replace This Meal"
-   - System offers simpler alternatives from her favorites (≤30 min cook time)
-   - Selects "Quick Stir Fry" (15 min prep, 15 min cook)
+**Success Outcome:** Maria contributes to community ecosystem while discovering high-quality recipes through social rating system
 
-3. **Shopping List Adjustment**
-   - App automatically updates shopping list
-   - Removes pizza-specific ingredients (yeast, mozzarella for tonight)
-   - Adds stir fry ingredients (if not already in list from other meals)
-   - Jennifer checks if she has ingredients at home, confirms ready to cook
+**Pain Points Addressed:**
+- Four recipe types (appetizer, main, dessert, accompaniment) enabled complete meal composition sharing
+- Community ratings provided quality filter without pre-approval moderation
+- Automatic deletion handling prevented broken favorites
+- Premium unlimited favorites removed constraints for active community participants
 
-4. **Successful Recovery**
-   - Arrives home 7:40pm
-   - Prepares Quick Stir Fry, dinner ready by 8:10pm
-   - Family eats together without takeout fallback
-   - Homemade Pizza automatically rescheduled by algorithm to next week
-
-**Pain Point Resolved:**
-- Avoided takeout reliance through quick adaptation
-- Maintained meal plan integrity without re-planning entire week
-- Shopping list stayed synchronized with meal changes
+---
 
 ## UX Design Principles
 
-1. **Kitchen-First Design**
-   - All interfaces optimized for kitchen environment use: large touch targets (44x44px minimum), high contrast for varied lighting, spill-resistant interaction patterns avoiding hover states, and hands-free voice control compatibility for when hands are messy.
-
-2. **Progressive Disclosure**
-   - Display only essential information at each step, revealing complexity gradually as needed. Dashboard shows today's meals and primary actions; detailed recipe steps expand only when cooking; advanced settings hidden behind progressive menus. Minimize cognitive load during high-stress cooking moments.
-
-3. **Trust Through Transparency**
-   - Always explain automated decisions to build user confidence in intelligent scheduling. Show why meal was assigned to specific day ("Saturday: more prep time available"), indicate advance preparation timing rationale, and surface algorithm constraints in human-readable language. Users trust systems they understand.
-
-4. **Instant Feedback and Confirmation**
-   - Provide immediate visual confirmation for all user actions. Recipe saved → green checkmark animation. Meal replaced → calendar updates in real-time. Shopping list item tapped → strike-through with haptic feedback. Eliminate user uncertainty about system state.
-
-5. **Graceful Failure Recovery**
-   - When things go wrong, offer immediate solutions rather than error messages. Can't generate meal plan → suggest adding more recipes with "Add Recipe" button. Network unavailable → show cached content with sync indicator. Failed payment → inline retry with alternative payment method option.
-
-6. **Contextual Intelligence**
-   - Adapt interface based on user context and behavior patterns. Morning: highlight today's prep reminders. Evening: emphasize tonight's cooking steps. Commute time detected: offer quick meal replacement options. Learn from usage patterns to anticipate needs.
-
-7. **Minimize Input Friction**
-   - Reduce manual data entry through smart defaults, autocomplete, and progressive enhancement. Recipe entry suggests common ingredient units, auto-categorizes ingredients, and learns user's frequently used items. Profile preferences inferred from early behavior and refined through usage.
-
-8. **Unified Visual Language**
-   - Maintain consistent design system across entire application: standardized spacing (8px grid), cohesive typography hierarchy (headers, body, captions), predictable color semantics (green = success, yellow = prep required, red = urgent), and reusable component patterns ensuring users feel immersed in unified experience.
-
-9. **Mobile-First Responsive Design**
-   - Design for smallest screen first, progressively enhancing for larger displays. Critical features accessible within thumb reach on mobile, desktop utilizes additional space for side-by-side recipe/instructions view, tablet optimized for kitchen counter propping with landscape orientation support.
-
-10. **Celebration of Success**
-   - Acknowledge and celebrate user achievements to reinforce positive behavior. First meal plan generated → congratulations animation. Week completed → recipe variety metrics visualization. New recipe tried → community sharing prompt. Make progress visible and rewarding to drive engagement.
-
-## Epics
-
-### Epic 1: User Authentication and Profile Management
-**Goal:** Enable secure user registration, authentication, and profile management with freemium tier controls
-
-**Value Delivered:** Users can create accounts, log in securely, and manage their dietary preferences and cooking constraints that feed intelligent meal planning
-
-**Estimated Stories:** 8 stories
-
-**Key Capabilities:**
-- User registration with email/password (min 8 characters)
-- JWT cookie-based secure authentication
-- Password reset flow
-- User profile creation and editing (dietary restrictions, household size, skill level, availability)
-- Freemium tier enforcement (10 recipe limit)
-- Premium upgrade flow with payment processing
-
-**Technical Specification:** See `./docs/tech-spec-epic-1.md` for detailed implementation guide
+1. **Mobile-First Kitchen Optimization** - Touch-optimized interface designed for use in kitchen environments with larger tap targets, clear typography, and offline recipe access
+2. **Instant Value Demonstration** - Month-based generation shows immediate results (all weeks in <5 seconds) to build trust through demonstrated time savings
+3. **Progressive Disclosure** - Freemium model reveals first-week value immediately while naturally introducing premium benefits through locked week placeholders
+4. **Friction Reduction** - One-click generation eliminates complex configuration; system handles timing, accompaniments, and preferences automatically
+5. **Trust Through Transparency** - Explicit confirmation dialogs for destructive actions (regeneration), clear week locking indicators, and visible preference impacts
+6. **Realistic Meal Composition** - Accompaniment pairing reflects how people actually eat (curry with rice, pasta with sauce), not isolated dishes
+7. **Graceful Degradation** - Empty meal slots handled elegantly with community recipe suggestions rather than blocking generation
+8. **Accessibility Priority** - Screen reader support, keyboard navigation, and semantic HTML for inclusive experience
 
 ---
 
-### Epic 2: Recipe Management System
-**Goal:** Provide comprehensive recipe creation, organization, and sharing capabilities with community privacy controls
+## User Interface Design Goals
 
-**Value Delivered:** Users can build their personal recipe library, organize collections, mark favorites, and optionally share recipes with the community
+**Platform & Screens:**
+- Progressive Web App (PWA) with installable experience for iOS Safari and Android Chrome
+- Core screens: Landing Page, Dashboard, Meal Calendar, Recipe Management, Community Browse, Shopping Lists, User Profile, Admin Panel
 
-**Estimated Stories:** 10 stories
+**Design System:**
+- Comprehensive design system with consistent components, spacing (8px grid), typography scale, and cohesive color palette
+- Unified navigation patterns ensuring immersive application experience across all screens
+- Reusable component library for forms, cards, modals, buttons, and data tables
 
-**Key Capabilities:**
-- Manual recipe creation with full details (ingredients, instructions, timing, advance prep)
-- Recipe editing and deletion
-- Recipe organization into user-defined collections
-- Automatic tagging by complexity, cuisine, dietary attributes
-- Privacy controls (private vs shared)
-- Recipe favoriting for meal plan inclusion
-- Community recipe discovery with filtering (rating, cuisine, prep time, dietary)
-- Recipe rating and review system (1-5 stars, text reviews)
+**Key Interaction Patterns:**
+- Week carousel navigation for mobile calendar browsing (swipe gestures)
+- Drag-and-drop recipe import with real-time progress feedback
+- Modal confirmations for destructive actions (regeneration, deletion)
+- Inline upgrade prompts on locked weeks and favorite limits (non-intrusive)
+- Responsive card layouts for recipe browsing with quick-action buttons
 
-**Technical Specification:** See `./docs/tech-spec-epic-2.md` for detailed implementation guide
+**Visual Feedback:**
+- Loading states for generation operations (<5 second completion)
+- Real-time progress indicators for bulk operations (import, generation)
+- Badge/lock icons for current week with tooltips
+- Empty state illustrations with clear CTAs ("Browse community recipes")
+- Success/error toast notifications for user actions
 
----
-
-### Epic 3: Intelligent Meal Planning Engine
-**Goal:** Deliver automated weekly meal plan generation using multi-factor optimization with recipe rotation
-
-**Value Delivered:** Users receive intelligent meal schedules that match recipe complexity to their availability, eliminating planning mental overhead
-
-**Estimated Stories:** 12 stories
-
-**Key Capabilities:**
-- Single meal plan generation with aggregate recipes by week
-- Visual week-view calendar (breakfast/lunch/dinner slots)
-- Multi-factor optimization algorithm (availability, complexity, prep requirements, ingredient freshness)
-- Recipe rotation system (no duplicates until all favorites used once)
-- Advance preparation indicator visualization
-- Individual meal slot replacement
-- Full meal plan regeneration
-- Algorithm transparency (show why meal assigned to specific day)
-- Meal plan persistence and activation
-- Home dashboard displaying today's meals from active plan
-
-**Technical Specification:** See `./docs/tech-spec-epic-3.md` for detailed implementation guide
+**SEO & Performance:**
+- Landing page optimized with meta tags, Schema.org structured data, semantic HTML
+- <3 second page load times on mobile devices
+- Lazy loading for recipe images and calendar weeks
+- Offline-first architecture with service worker caching
 
 ---
 
-### Epic 4: Shopping and Preparation Orchestration
-**Goal:** Automate shopping list generation and provide timely preparation reminders for advance-prep recipes
+## Visual Design References
 
-**Value Delivered:** Users get organized shopping lists and actionable reminders ensuring successful execution of complex recipes
+All requirements have been prototyped in static HTML mockups located in `/mockups/`. These mockups provide visual validation of requirements and serve as reference for implementation.
 
-**Estimated Stories:** 11 stories
+### Mockup-to-Requirement Mapping
 
-**Key Capabilities:**
-- Weekly shopping list generation from meal plan
-- Ingredient aggregation across multiple recipes
-- Category-based ingredient grouping (produce, dairy, pantry, etc.)
-- Multi-week shopping list access (current and future weeks)
-- Shopping list updates when meals replaced
-- Push notification system for preparation reminders
-- Morning reminders with specific advance prep timing
-- Day-of cooking reminders
-- Prep task completion tracking
+| Mockup File | Mapped Requirements | Description |
+|------------|---------------------|-------------|
+| **Public Pages** |
+| `index.html` | FR039, FR040 | SEO-optimized landing page with hero, features showcase, how-it-works, pricing preview, testimonials |
+| `login.html` | FR001 | User authentication with JWT cookie-based login, demo account quick access |
+| `register.html` | FR001, FR002 | User registration with dietary restrictions, household size, cuisine variety preferences |
+| `contact.html` | FR049, FR050 | Public contact form with subject categories and FAQ section |
+| **Authenticated User Pages - Free Tier** |
+| `dashboard-free.html` | FR041, FR042 | Free tier dashboard showing nearest day (Week 1 only), 8/10 favorites counter, premium upsell |
+| `calendar-free.html` | FR030, FR031, FR033, FR034 | Month calendar with Week 1 visible, Weeks 2-5 locked with upgrade prompts, current week lock indicator |
+| **Authenticated User Pages - Premium Tier** |
+| `dashboard-premium.html` | FR043 | Premium dashboard with nearest day from any week, unlimited favorites (47 shown), no upgrade prompts |
+| `calendar-premium.html` | FR032 | Full month calendar with all 5 weeks accessible, week navigation tabs |
+| **Recipe Management** |
+| `recipe-create.html` | FR004, FR005, FR006 | Recipe creation form with 4 types (appetizer, main, dessert, accompaniment), explicit field configuration, main course accepts_accompaniment toggle |
+| `recipes-list.html` | FR004, FR012, FR013 | Recipe library with filters, stats cards showing favorites limit (8/10 for free tier), all 4 recipe types color-coded |
+| `recipe-detail.html` | FR017 | Full recipe view with ingredients checklist, instructions, rating summary (4.8 stars, 23 reviews), suggested accompaniments sidebar |
+| `import.html` | FR007, FR008, FR009, FR010, FR011 | Bulk JSON import with drag-drop, schema documentation, real-time progress (imported/failed/remaining), duplicate detection |
+| **Community & Shopping** |
+| `community.html` | FR015, FR017 | Community recipe browse with stats (2,547 recipes), trending section, filters (type/cuisine/dietary), rating system |
+| `shopping-list.html` | FR035, FR036, FR037 | Per-week shopping lists organized by category (Proteins, Vegetables, Dairy, Bakery, Pantry), quantity aggregation |
+| **Settings & Support** |
+| `profile.html` | FR002, FR003, FR051 | User profile with dietary restrictions, cuisine variety slider (0.7 default), subscription management, notification toggles |
+| **Admin Panel** |
+| `admin-users.html` | FR045, FR047, FR048 | User management with stats cards (2,547 total, 382 premium, 12 suspended), user actions (edit, suspend, reactivate, delete) |
+| `admin-contact.html` | FR046, FR050 | Contact inbox with message stats (347 total, 12 unread), quick actions (mark read, resolve) |
 
-**Technical Specification:** See `./docs/tech-spec-epic-4.md` for detailed implementation guide
+### Freemium Model Demonstrations
+
+The mockups demonstrate freemium restrictions at multiple touchpoints:
+
+- **Week Visibility**: `calendar-free.html` shows Week 1 visible with Weeks 2-5 locked vs `calendar-premium.html` showing all weeks accessible
+- **Favorites Limit**: `recipes-list.html` displays "8/10 favorites" warning for free tier with upgrade prompt
+- **Dashboard Restrictions**: `dashboard-free.html` shows upgrade banners and limited access vs `dashboard-premium.html` with full access
+- **Shopping Lists**: `shopping-list.html` demonstrates Week 1 accessible for free tier with locked weeks requiring upgrade
+
+### Recipe Type Demonstrations
+
+All four recipe types are color-coded consistently across mockups:
+
+- **Appetizer** (Blue badges) - Shown in `recipe-create.html`, `recipes-list.html`, `calendar-premium.html`
+- **Main Course** (Orange badges) - Featured with accompaniment pairing in `calendar-premium.html`, `recipe-detail.html`
+- **Dessert** (Pink badges) - Displayed in daily meal slots across calendar mockups
+- **Accompaniment** (Purple badges) - Shown paired with main courses in `recipe-detail.html` suggested sidebar
+
+### User Flow Demonstrations
+
+**New User Onboarding Flow:**
+`index.html` → `register.html` → `dashboard-free.html` → `calendar-free.html` → `recipes-list.html` → `community.html`
+
+**Recipe Management Flow:**
+`recipes-list.html` → `recipe-create.html` (create) → `recipe-detail.html` (view) → `import.html` (bulk import)
+
+**Meal Planning Flow:**
+`dashboard-free.html` (generate) → `calendar-free.html` (view weeks) → `shopping-list.html` (grocery shopping)
+
+**Community Engagement Flow:**
+`community.html` (discover) → `recipe-detail.html` (rate/review) → `recipes-list.html` (favorite)
+
+**Admin Management Flow:**
+`admin-users.html` (user management) → `admin-contact.html` (support inbox)
+
+### Next Steps
+
+During implementation:
+1. Convert HTML mockups to Askama templates in `templates/pages/`
+2. Extract reusable components from mockups to `templates/components/`
+3. Replace static dummy data with dynamic projections
+4. Implement Twinspark reactive behaviors for forms and polling
+5. Validate acceptance criteria against mockup demonstrations
 
 ---
 
-### Epic 5: Progressive Web App and Mobile Experience
-**Goal:** Deliver installable PWA with offline capabilities and kitchen-optimized mobile interface
+## Epic List
 
-**Value Delivered:** Users access recipes and meal plans in kitchen environment without connectivity concerns, with touch-optimized interface
+**Epic 1: Foundation & User Management**
+- Establish project infrastructure, user authentication, and profile management with dietary restrictions and preferences
+- **Estimated Stories:** 6-8 stories
+- **Key Deliverables:** Project setup, JWT authentication, user registration/login, profile CRUD, admin panel foundation
 
-**Estimated Stories:** 9 stories
+**Epic 2: Recipe Management & Import System**
+- Enable users to create, manage, and bulk import recipes with four types (Appetizer, Main Course, Dessert, Accompaniment)
+- **Estimated Stories:** 7-9 stories
+- **Key Deliverables:** Recipe CRUD operations, JSON bulk import with validation, duplicate detection, real-time progress feedback, recipe favorites
 
-**Key Capabilities:**
-- PWA manifest and service worker implementation
-- Offline recipe access and caching
-- Mobile-responsive design (breakpoints: <768px, 768-1024px, >1024px)
-- Touch-optimized UI with 44x44px tap targets
-- Kitchen-friendly display modes (high contrast, large text)
-- Real-time sync when connectivity restored
-- Cross-browser compatibility (iOS Safari 14+, Android Chrome 90+)
-- Installable app experience
+**Epic 3: Core Meal Planning Engine**
+- Implement month-based meal plan generation algorithm with intelligent accompaniment pairing, dietary filtering, and recipe rotation
+- **Estimated Stories:** 8-10 stories
+- **Key Deliverables:** Generation algorithm, preference-aware scheduling, accompaniment pairing logic, week locking, recipe snapshot system, non-deterministic rotation
 
-**Technical Specification:** See `./docs/tech-spec-epic-5.md` for detailed implementation guide
+**Epic 4: Calendar Visualization & Shopping Lists**
+- Build mobile-responsive calendar interface with week navigation, meal visualization, and per-week shopping list generation
+- **Estimated Stories:** 6-8 stories
+- **Key Deliverables:** Month calendar UI, week carousel navigation, dashboard with nearest day, shopping list generation with ingredient grouping, empty state handling
 
-**Total Stories Across All Epics:** 50 stories
-- Epic 1: 8 stories (Authentication and Profile)
-- Epic 2: 10 stories (Recipe Management)
-- Epic 3: 12 stories (Meal Planning Engine)
-- Epic 4: 11 stories (Shopping and Preparation)
-- Epic 5: 9 stories (PWA and Mobile)
+**Epic 5: Community Features & Freemium Access**
+- Enable recipe sharing, rating system, freemium access controls, and premium tier restrictions with upgrade flows
+- **Estimated Stories:** 7-9 stories
+- **Key Deliverables:** Recipe sharing/privacy, rating and review system, freemium visibility restrictions (first-week-only), upgrade prompts, premium bypass configuration, admin user management
 
-**Note:** Detailed epic breakdown with full user stories, acceptance criteria, and technical notes available in `./docs/epics.md`.
+**Epic 6: Notifications & Landing Page**
+- Implement advance preparation reminders, SEO-optimized landing page, and contact form with admin notifications
+- **Estimated Stories:** 4-6 stories
+- **Key Deliverables:** 8 AM prep notifications, landing page with hero/features/pricing, contact form, email notifications to admins
+
+**Total Estimated Stories:** 38-50 stories
+
+> **Note:** Detailed epic breakdown with full story specifications is available in [epics.md](./epics.md)
+
+---
 
 ## Out of Scope
 
-The following features and capabilities are explicitly excluded from the MVP and deferred to future phases:
+**Deferred to Post-MVP (Phase 2):**
 
-### Advanced Features (Post-MVP)
-- **Advanced Machine Learning Optimization:** Sophisticated ML models for meal planning optimization beyond rule-based algorithm
-- **Grocery Store API Integrations:** Direct ordering through grocery partner APIs
-- **Smart Kitchen Device Integration:** Connected appliances and automated inventory tracking
-- **Video Cooking Guidance:** Step-by-step video instructions and tutorials
-- **Social Sharing and Contests:** Community contests, challenges, and social media integration
-- **Multi-Language Recipe Translation:** Automatic translation of recipes across languages
-- **Nutritional Analysis:** Detailed macro/micronutrient tracking and dietary goal management
-- **Meal Plan Templates:** Pre-built meal plans for specific diets (keto, paleo, Mediterranean)
-- **Family Member Profiles:** Individual profiles for family members with separate preferences
-- **Recipe Scaling Calculator:** Automatic ingredient scaling for different serving sizes
+- **Machine Learning Features** - ML-powered notification timing based on cooking speed patterns, predictive recipe recommendations, adaptive difficulty adjustment
+- **Grocery Store Integrations** - One-tap ordering through partner services, real-time inventory checking, automatic price comparison
+- **Advanced Social Features** - Community contests, chef profiles, recipe collections, public/private sharing settings beyond basic sharing/rating
+- **Smart Kitchen Devices** - Connected appliance integration, automated inventory tracking, IoT temperature monitoring
+- **Video Guidance** - Step-by-step video instructions, AR cooking assistance, live cooking sessions
+- **Extended Planning Factors** - Weather-based suggestions, family calendar integration, energy level tracking, seasonal ingredient preferences
+- **Recipe Collections & Templates** - Curated themed collections, pre-built diet-specific meal plan templates (Keto, Mediterranean, etc.)
+- **Advanced Regeneration** - Partial week regeneration (specific days within locked week), constraint relaxation suggestions when insufficient recipes
+- **Payment Processing** - Credit card payment gateway integration, subscription billing, auto-renewal (premium tier access control included, payment flow deferred)
 
-### Technical Enhancements (Future)
-- **Native Mobile Apps:** iOS and Android native apps (PWA sufficient for MVP)
-- **Voice Control:** Full voice-activated cooking mode
-- **Recipe Image Recognition:** Photo-based recipe import and ingredient detection
-- **Barcode Scanning:** Ingredient scanning for automatic pantry tracking
-- **Calendar Integration:** Sync with Google Calendar, Apple Calendar for meal scheduling
-- **Wearable Integration:** Smart watch notifications and timers
+**Explicitly Out of Scope:**
 
-### Business Features (Future)
-- **Affiliate Programs:** Ingredient affiliate links and commission tracking
-- **Corporate Plans:** Team/family subscriptions with shared meal planning
-- **Recipe Marketplace:** Paid premium recipes from professional chefs
-- **Meal Kit Partnership:** Integration with meal kit delivery services
-- **White Label Solution:** Licensed platform for other food businesses
-
-### Infrastructure (Future)
-- **CDN for Global Performance:** Content delivery network for international users
-- **Advanced Analytics Dashboard:** Business intelligence and user behavior analytics
-- **A/B Testing Framework:** Experimentation platform for feature testing
-- **Multi-Region Deployment:** Geographically distributed infrastructure
-
-### Reasoning
-These features are excluded to maintain focus on core value proposition: intelligent meal planning automation that unlocks recipe variety through timing complexity elimination. MVP prioritizes proving product-market fit and validating key metrics (3x recipe variety increase, 60% planning time reduction) before expanding scope.
-
----
-
-## Assumptions and Dependencies
-
-### Key Assumptions
-
-**User Behavior:**
-- Users will trust automated meal planning systems if they demonstrably save time and reduce decision fatigue
-- Home cooks artificially limit recipe choices primarily due to timing complexity, not skill or ingredient availability
-- Users willing to manually enter 10+ recipes to unlock meal planning value (no import functionality in MVP)
-- 15% free-to-premium conversion achievable with 10 recipe limit
-- Community recipe sharing drives organic growth and engagement
-
-**Technical:**
-- Progressive Web App provides sufficient native-like experience (no native mobile apps required for MVP)
-- SQLite scales adequately to 10,000 concurrent users without performance degradation
-- Push notifications via Web Push API sufficient for preparation reminders
-- TwinSpark provides adequate interactivity without heavy JavaScript frameworks
-- Evento event sourcing library mature enough for production use
-
-**Market:**
-- Post-2020 increase in home cooking represents sustained behavior change, not temporary trend
-- Target users (28-50, household income $50K+) have sufficient smartphone penetration
-- Freemium model viable in meal planning category despite existing free alternatives
-- Users will tolerate manual recipe entry in exchange for automation value
-
-**Operational:**
-- Solo developer or small team (2-3) sufficient for MVP development in 6-9 months
-- Support load manageable with self-service documentation and community forums
-- Email-based support adequate for MVP (no live chat required)
-- Moderation of community recipes manageable with flagging system and periodic review
-
-### Dependencies
-
-**External Services:**
-- SMTP service for transactional emails (password reset, notifications)
-- Payment gateway for premium subscriptions (Stripe or similar, avoiding vendor lock-in)
-- Web hosting/VPS for production deployment
-- Domain registration and SSL certificates
-
-**Browser Support:**
-- iOS Safari 14+ adoption rate sufficient among target users
-- Android Chrome 90+ adoption rate sufficient among target users
-- Progressive enhancement acceptable for older browsers
-
-**Development Tools:**
-- Rust 1.90+ stability and ecosystem maturity
-- evento library stability (1.3+) for event sourcing
-- Askama template engine (0.14+) for server-side rendering
-- TwinSpark library for progressive enhancement
-
-**User-Provided Data:**
-- Users willing to manually create recipe library (minimum 7 recipes for meal planning)
-- Users provide accurate dietary restrictions and availability constraints
-- Users enable push notifications for advance preparation reminders
-
-### Risks if Assumptions Prove False
-
-- **Manual recipe entry friction too high:** May require recipe import functionality earlier than planned
-- **PWA adoption lower than expected:** May necessitate native mobile app development
-- **Freemium conversion below 15%:** May require revised pricing strategy or feature positioning
-- **SQLite scaling issues:** May require migration to PostgreSQL or distributed database
-- **Community moderation burden:** May require dedicated moderation tools or team earlier than planned
-
----
-
-## Next Steps
-
-### For Architecture Phase (Immediate)
-
-**Level 3 projects require architect handoff before story generation.** Start new context window with architect role and provide:
-
-1. **This PRD:** `./docs/PRD.md`
-2. **Epic Breakdown:** `./docs/epics.md` (50 stories across 5 epics: Epic 1-5)
-3. **Product Brief:** `./docs/brief.md`
-4. **Project Analysis:** `./docs/project-workflow-analysis.md`
-
-**Ask architect to:**
-- Run architecture workflow (3-solutioning)
-- Design event-sourced architecture using evento with DDD bounded contexts
-- Create database schema (SQLite with SQLx, event store + read models)
-- Define HTML endpoints and form handling (TwinSpark progressive enhancement, not REST API)
-- Design CQRS query projections from event stream for Askama template rendering
-- Create technical-decisions.md capturing technology choices
-- Generate architecture.md with system diagrams
-
-### Subsequent Planning Steps
-
-**After Architecture Complete:**
-
-1. **UX Specification** (HIGHLY RECOMMENDED for UI-heavy systems)
-   - Run: workflow plan-project → select "UX specification"
-   - Input: PRD.md, epics.md, architecture.md
-   - Output: ux-specification.md with IA, user flows, component library
-   - Optional: Generate AI Frontend Prompt for rapid prototyping
-
-2. **Detailed Story Generation**
-   - Command: workflow generate-stories (future workflow)
-   - Input: epics.md + architecture.md + ux-specification.md
-   - Output: user-stories.md with full acceptance criteria and technical implementation details
-
-3. **Technical Design Documents**
-   - Database schema finalization with migrations
-   - HTML endpoint specification (routes, form handling, TwinSpark actions)
-   - Integration point documentation (SMTP, payment gateway, push notifications)
-
-4. **Testing Strategy**
-   - Unit test approach per domain crate (TDD enforced)
-   - Integration test plan (evento aggregate behavior, HTTP endpoints)
-   - E2E test scenarios (Playwright: registration, meal planning, shopping list flows)
-   - Property-based testing for meal planning algorithm invariants
-
-### Development Preparation
-
-**Before Implementation:**
-
-1. **Set up development environment**
-   - Repository structure with Cargo workspaces
-   - CI/CD pipeline (GitHub Actions or similar)
-   - Development tools (cargo-watch, cargo-tarpaulin, Playwright)
-   - Testing infrastructure (unit, integration, E2E)
-   - Observability stack (OpenTelemetry)
-   - Database migrations and deployment configuration
-
-2. **Create sprint plan**
-   - **Epic 1 first** (8 stories): Authentication enables all subsequent features
-   - **Epics 2-3** (22 stories combined): Recipe management + meal planning deliver core value
-   - **Epics 4-5** (20 stories combined): Shopping/prep + PWA complete MVP experience
-   - **Total: 50 stories across 5-8 months**
-
-3. **Establish monitoring and metrics**
-   - Success metrics from PRD (3x recipe variety, 60% planning time reduction)
-   - Technical monitoring (OpenTelemetry, logs, traces, metrics)
-   - User analytics (funnel tracking, engagement metrics)
-
-### Validation Checkpoints
-
-- [ ] Architecture reviewed and approved
-- [ ] Database schema supports event sourcing and read models
-- [ ] HTML endpoint design reviewed for security and TwinSpark integration
-- [ ] UX specification ensures cohesive user experience
-- [ ] Technical stack validated against constraints (no vendor lock-in, OWASP compliance)
-- [ ] Development timeline confirmed (6-9 months to MVP)
-
-## Document Status
-
-- [ ] Goals and context validated with stakeholders
-- [ ] All functional requirements reviewed
-- [ ] User journeys cover all major personas
-- [ ] Epic structure approved for phased delivery
-- [ ] Ready for architecture phase
-
-_Note: See technical-decisions.md for captured technical context_
-
----
-
-_This PRD adapts to project level Level 3 (Full Product) - providing appropriate detail without overburden._
+- **Multi-household accounts** - Shared family accounts with multiple user access
+- **Meal kit delivery service** - First-party meal kit fulfillment
+- **Nutritional analysis** - Detailed macro/micronutrient tracking and goals
+- **Recipe scaling** - Automatic ingredient adjustment for different serving sizes
+- **Meal swapping** - Drag-and-drop meal rearrangement within calendar
+- **Custom meal slots** - User-defined meal types beyond appetizer/main/dessert
+- **International localization** - Multi-language support, regional ingredient variations
+- **Social messaging** - Direct messaging between users, community forums
+- **Recipe versioning** - Historical tracking of recipe edits and changes

@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}{{ "403 - Access Forbidden - imkitchen"|t }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  *,
+  ::after,
+  ::before {
+    box-sizing: border-box;
+    border-style: solid;
+    border-color: #e5e7eb;
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+
+<body class="bg-gray-50">
+  <!-- Error Content -->
+  <div class="container mx-auto px-4 py-16">
+    <div class="max-w-2xl mx-auto text-center">
+      <!-- Error Icon -->
+      <div class="mb-8">
+        <div class="inline-flex items-center justify-center w-32 h-32 bg-red-100 rounded-full">
+          <svg class="w-16 h-16 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
+            </path>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      <h1 class="text-6xl md:text-8xl font-bold text-gray-900 mb-4">403</h1>
+      <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-4">{{ "Access Forbidden"|t }}</h2>
+      <p class="text-lg text-gray-600 mb-8">
+        {{ "Sorry, you don't have permission to access this page. This area might be restricted to premium members or require special privileges."|t }}
+      </p>
+
+      <!-- Reason Box -->
+      <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-8 text-left">
+        <div class="flex items-start gap-3">
+          <svg class="w-6 h-6 text-yellow-600 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+            </path>
+          </svg>
+          <div class="flex-1">
+            <h3 class="font-bold text-yellow-800 mb-2">{{ "Why am I seeing this?"|t }}</h3>
+            <ul class="text-sm text-yellow-700 space-y-1">
+              <li>• {{ "You're not logged in or your session has expired"|t }}</li>
+              <li>• {{ "This content requires a Premium subscription"|t }}</li>
+              <li>• {{ "You don't have admin privileges for this area"|t }}</li>
+              <li>• {{ "Your account may be suspended or restricted"|t }}</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-col md:flex-row gap-4 justify-center mb-8">
+        <a href="/login"
+          class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition">
+          🔐 {{ "Login / Sign Up"|t }}
+        </a>
+        <a href="/profile"
+          class="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-pink-600 transition">
+          ✨ {{ "Upgrade to Premium"|t }}
+        </a>
+      </div>
+
+      <!-- Premium Features Box -->
+      <div class="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-6 mb-8">
+        <h3 class="font-bold text-lg mb-3">🌟 {{ "Premium Features"|t }}</h3>
+        <div class="grid md:grid-cols-2 gap-3 text-sm text-left">
+          <div class="flex items-start gap-2">
+            <svg class="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor"
+              viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span class="text-gray-700">{{ "Access all 5 weeks of meal plans"|t }}</span>
+          </div>
+          <div class="flex items-start gap-2">
+            <svg class="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor"
+              viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span class="text-gray-700">{{ "Unlimited favorite recipes"|t }}</span>
+          </div>
+          <div class="flex items-start gap-2">
+            <svg class="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor"
+              viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span class="text-gray-700">{{ "Complete shopping lists"|t }}</span>
+          </div>
+          <div class="flex items-start gap-2">
+            <svg class="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor"
+              viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span class="text-gray-700">{{ "Priority support"|t }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Links -->
+      <div class="bg-white rounded-lg shadow-lg p-6">
+        <h3 class="font-bold text-lg mb-4">{{ "Available Pages"|t }}</h3>
+        <div class="grid md:grid-cols-3 gap-4 text-sm">
+          <a href="/" class="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+            <div class="font-semibold text-green-600 mb-1">🏠 {{ "Home"|t }}</div>
+            <div class="text-gray-600">{{ "Landing page"|t }}</div>
+          </a>
+          <a href="/community" class="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+            <div class="font-semibold text-green-600 mb-1">👥 {{ "Community"|t }}</div>
+            <div class="text-gray-600">{{ "Browse recipes"|t }}</div>
+          </a>
+          <a href="/help" class="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+            <div class="font-semibold text-green-600 mb-1">❓ {{ "Help"|t }}</div>
+            <div class="text-gray-600">{{ "Get support"|t }}</div>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="border-t bg-white mt-12">
+    <div class="container mx-auto px-4 py-6 text-center text-gray-600 text-sm">
+      <p>{{ "Questions?"|t }} <a href="/contact" class="text-green-600 hover:text-green-700 font-semibold">{{ "Contact Support"|t }}</a>
+      </p>
+    </div>
+  </div>
+</body>
+{% endblock %}

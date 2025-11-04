@@ -1,0 +1,420 @@
+{% extends "base_public.html" %}
+
+{% block title %} {{ "Help Center - imkitchen"|t }} {% endblock %}
+
+{% block hero %}
+<div class="bg-gradient-to-br from-green-500 to-green-700 text-white py-16">
+  <div class="container mx-auto px-4 text-center">
+    <h1 class="text-4xl md:text-5xl font-bold mb-4">{{ "How can we help you?"|t }}</h1>
+    <p class="text-xl text-green-50 mb-8">{{ "Search our knowledge base or browse categories below"|t }}</p>
+
+    <!-- Search Bar -->
+    <div class="max-w-2xl mx-auto">
+      <div class="relative">
+        <input type="text" placeholder="{{ "Search for help articles..."|t }}"
+          class="w-full px-6 py-4 pr-12 rounded-lg bg-white text-gray-900 focus:ring-4 focus:ring-green-300 focus:outline-none" />
+        <button class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-12">
+  <!-- Help Categories -->
+  <div class="mb-16">
+    <h2 class="text-3xl font-bold mb-8 text-center">{{ "Browse by Category"|t }}</h2>
+    <div class="grid md:grid-cols-3 gap-6">
+      <!-- Getting Started -->
+      <a href="#getting-started" class="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition group">
+        <div class="flex items-start gap-4">
+          <div class="text-4xl">🚀</div>
+          <div class="flex-1">
+            <h3 class="font-bold text-lg mb-2 group-hover:text-green-600">{{ "Getting Started"|t }}</h3>
+            <p class="text-gray-600 text-sm mb-3">{{ "Learn the basics of using imkitchen"|t }}</p>
+            <ul class="text-sm text-gray-500 space-y-1">
+              <li>• {{ "Creating your first account"|t }}</li>
+              <li>• {{ "Setting up preferences"|t }}</li>
+              <li>• {{ "Understanding the interface"|t }}</li>
+              <li>• {{ "Quick start guide"|t }}</li>
+            </ul>
+          </div>
+        </div>
+      </a>
+
+      <!-- Meal Planning -->
+      <a href="#meal-planning" class="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition group">
+        <div class="flex items-start gap-4">
+          <div class="text-4xl">📅</div>
+          <div class="flex-1">
+            <h3 class="font-bold text-lg mb-2 group-hover:text-green-600">{{ "Meal Planning"|t }}</h3>
+            <p class="text-gray-600 text-sm mb-3">{{ "Master meal plan generation"|t }}</p>
+            <ul class="text-sm text-gray-500 space-y-1">
+              <li>• {{ "Generating meal plans"|t }}</li>
+              <li>• {{ "Understanding week locking"|t }}</li>
+              <li>• {{ "Regenerating weeks"|t }}</li>
+              <li>• {{ "Accompaniment pairing"|t }}</li>
+            </ul>
+          </div>
+        </div>
+      </a>
+
+      <!-- Recipe Management -->
+      <a href="#recipes" class="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition group">
+        <div class="flex items-start gap-4">
+          <div class="text-4xl">📖</div>
+          <div class="flex-1">
+            <h3 class="font-bold text-lg mb-2 group-hover:text-green-600">{{ "Recipe Management"|t }}</h3>
+            <p class="text-gray-600 text-sm mb-3">{{ "Create and organize your recipes"|t }}</p>
+            <ul class="text-sm text-gray-500 space-y-1">
+              <li>• {{ "Creating recipes"|t }}</li>
+              <li>• {{ "Recipe types explained"|t }}</li>
+              <li>• {{ "Importing from JSON"|t }}</li>
+              <li>• {{ "Favoriting recipes"|t }}</li>
+            </ul>
+          </div>
+        </div>
+      </a>
+
+      <!-- Community -->
+      <a href="#community" class="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition group">
+        <div class="flex items-start gap-4">
+          <div class="text-4xl">👥</div>
+          <div class="flex-1">
+            <h3 class="font-bold text-lg mb-2 group-hover:text-green-600">{{ "Community"|t }}</h3>
+            <p class="text-gray-600 text-sm mb-3">{{ "Share and discover recipes"|t }}</p>
+            <ul class="text-sm text-gray-500 space-y-1">
+              <li>• {{ "Sharing recipes"|t }}</li>
+              <li>• {{ "Rating and reviews"|t }}</li>
+              <li>• {{ "Finding community recipes"|t }}</li>
+              <li>• {{ "Recipe snapshots"|t }}</li>
+            </ul>
+          </div>
+        </div>
+      </a>
+
+      <!-- Account & Billing -->
+      <a href="#account-billing" class="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition group">
+        <div class="flex items-start gap-4">
+          <div class="text-4xl">💳</div>
+          <div class="flex-1">
+            <h3 class="font-bold text-lg mb-2 group-hover:text-green-600">{{ "Account & Billing"|t }}</h3>
+            <p class="text-gray-600 text-sm mb-3">{{ "Manage your subscription"|t }}</p>
+            <ul class="text-sm text-gray-500 space-y-1">
+              <li>• {{ "Free vs Premium"|t }}</li>
+              <li>• {{ "Upgrading to Premium"|t }}</li>
+              <li>• {{ "Canceling subscription"|t }}</li>
+              <li>• {{ "Billing issues"|t }}</li>
+            </ul>
+          </div>
+        </div>
+      </a>
+
+      <!-- Technical Support -->
+      <a href="#technical" class="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition group">
+        <div class="flex items-start gap-4">
+          <div class="text-4xl">🔧</div>
+          <div class="flex-1">
+            <h3 class="font-bold text-lg mb-2 group-hover:text-green-600">{{ "Technical Support"|t }}</h3>
+            <p class="text-gray-600 text-sm mb-3">{{ "Troubleshooting and FAQs"|t }}</p>
+            <ul class="text-sm text-gray-500 space-y-1">
+              <li>• {{ "Browser compatibility"|t }}</li>
+              <li>• {{ "Login issues"|t }}</li>
+              <li>• {{ "Performance problems"|t }}</li>
+              <li>• {{ "Data sync issues"|t }}</li>
+            </ul>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Popular Articles -->
+  <div class="mb-16">
+    <h2 class="text-3xl font-bold mb-8">{{ "Popular Articles"|t }}</h2>
+    <div class="grid md:grid-cols-2 gap-6">
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-start gap-4">
+          <div class="text-2xl">❓</div>
+          <div class="flex-1">
+            <h3 class="font-bold mb-2 text-green-600 hover:underline cursor-pointer">{{ "How do I generate my first meal plan?"|t }}</h3>
+            <p class="text-gray-600 text-sm mb-2">{{ "Learn how to create your first week of meals using your favorite recipes."|t }}</p>
+            <span class="text-xs text-gray-500">{{ "Getting Started • 3 min read"|t }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-start gap-4">
+          <div class="text-2xl">❓</div>
+          <div class="flex-1">
+            <h3 class="font-bold mb-2 text-green-600 hover:underline cursor-pointer">{{ "What's the difference between Free and Premium?"|t }}</h3>
+            <p class="text-gray-600 text-sm mb-2">{{ "Compare features and understand which tier is right for you."|t }}</p>
+            <span class="text-xs text-gray-500">{{ "Account & Billing • 5 min read"|t }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-start gap-4">
+          <div class="text-2xl">❓</div>
+          <div class="flex-1">
+            <h3 class="font-bold mb-2 text-green-600 hover:underline cursor-pointer">{{ "How does accompaniment pairing work?"|t }}</h3>
+            <p class="text-gray-600 text-sm mb-2">{{ "Understand how main courses are automatically paired with sides like rice and pasta."|t }}</p>
+            <span class="text-xs text-gray-500">{{ "Meal Planning • 4 min read"|t }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-start gap-4">
+          <div class="text-2xl">❓</div>
+          <div class="flex-1">
+            <h3 class="font-bold mb-2 text-green-600 hover:underline cursor-pointer">{{ "How do I import recipes from JSON?"|t }}</h3>
+            <p class="text-gray-600 text-sm mb-2">{{ "Step-by-step guide to bulk importing your recipe collection."|t }}</p>
+            <span class="text-xs text-gray-500">{{ "Recipe Management • 6 min read"|t }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-start gap-4">
+          <div class="text-2xl">❓</div>
+          <div class="flex-1">
+            <h3 class="font-bold mb-2 text-green-600 hover:underline cursor-pointer">{{ "Why is the current week locked from regeneration?"|t }}</h3>
+            <p class="text-gray-600 text-sm mb-2">{{ "Learn about week locking and how it protects your in-progress meals."|t }}</p>
+            <span class="text-xs text-gray-500">{{ "Meal Planning • 3 min read"|t }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-start gap-4">
+          <div class="text-2xl">❓</div>
+          <div class="flex-1">
+            <h3 class="font-bold mb-2 text-green-600 hover:underline cursor-pointer">{{ "What happens to shared recipes when I delete them?"|t }}</h3>
+            <p class="text-gray-600 text-sm mb-2">{{ "Understand recipe snapshots and how deletion affects other users."|t }}</p>
+            <span class="text-xs text-gray-500">{{ "Community • 4 min read"|t }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAQs by Category -->
+  <div id="getting-started" class="mb-16">
+    <h2 class="text-3xl font-bold mb-8">{{ "Frequently Asked Questions"|t }}</h2>
+
+    <!-- Getting Started FAQs -->
+    <div class="bg-white rounded-lg shadow-lg p-8 mb-8">
+      <h3 class="text-2xl font-bold mb-6 flex items-center gap-3">
+        <span class="text-3xl">🚀</span>
+        {{ "Getting Started"|t }}
+      </h3>
+      <div class="space-y-6">
+        <div>
+          <h4 class="font-bold text-lg mb-2">{{ "How do I create an account?"|t }}</h4>
+          <p class="text-gray-700">{{ "Click the \"Get Started\" or \"Register\" button in the top navigation. Fill out the registration form with your name, email, password, and meal preferences (dietary restrictions, household size, cuisine variety). Accept the terms and click \"Create Account.\""|t }}</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-lg mb-2">{{ "What dietary restrictions can I set?"|t }}</h4>
+          <p class="text-gray-700">{{ "You can configure multiple dietary restrictions including Vegetarian, Vegan, Gluten-Free, Dairy-Free, Nut-Free, and Low-Carb. The meal planning algorithm will respect these restrictions when generating meal plans."|t }}</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-lg mb-2">{{ "Do I need to add recipes before generating a meal plan?"|t }}</h4>
+          <p class="text-gray-700">{{ "Yes, you need to have favorited recipes before generating a meal plan. You can create your own recipes, import recipes via JSON, or favorite recipes from the community. We recommend having at least 15-20 favorites for best results."|t }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Meal Planning FAQs -->
+    <div id="meal-planning" class="bg-white rounded-lg shadow-lg p-8 mb-8">
+      <h3 class="text-2xl font-bold mb-6 flex items-center gap-3">
+        <span class="text-3xl">📅</span>
+        {{ "Meal Planning"|t }}
+      </h3>
+      <div class="space-y-6">
+        <div>
+          <h4 class="font-bold text-lg mb-2">{{ "How many weeks does the system generate?"|t }}</h4>
+          <p class="text-gray-700">{{ "The system automatically generates meal plans for all remaining weeks of the current month (from next week onwards). If you're at the end of the month, it will extend into the next month. Typically this generates 3-5 weeks of meals."|t }}</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-lg mb-2">{{ "Can I see all generated weeks on the free tier?"|t }}</h4>
+          <p class="text-gray-700">{{ "No. Free tier users can only view the first generated week. Weeks 2-5 are locked with upgrade prompts. Premium subscribers have full visibility across all generated weeks."|t }}</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-lg mb-2">{{ "Why can't I regenerate the current week?"|t }}</h4>
+          <p class="text-gray-700">{{ "The current week (Monday-Sunday range containing today) is locked to preserve your in-progress meals. This prevents accidentally replacing meals you've already started preparing. You can regenerate all future weeks individually or all at once."|t }}</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-lg mb-2">{{ "What if I don't have enough recipes for all weeks?"|t }}</h4>
+          <p class="text-gray-700">{{ "The system gracefully handles insufficient recipes by leaving empty meal slots. There's no minimum recipe count required. For example, with 10 favorites you might get Week 1 full and Week 2 partial with empty slots."|t }}</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-lg mb-2">{{ "Will I get the same meal plan if I regenerate?"|t }}</h4>
+          <p class="text-gray-700">{{ "No. Generation is non-deterministic - each regeneration produces different meal slot assignments even with the same favorite recipes. This allows you to regenerate until you find an arrangement you prefer."|t }}</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-lg mb-2">{{ "How does accompaniment pairing work?"|t }}</h4>
+          <p class="text-gray-700">{{ "When you create a main course recipe, you can mark it as accepting accompaniments and specify preferred types (rice, pasta, bread, fries, salad, vegetables). The algorithm will automatically pair compatible accompaniment recipes with your main courses when generating meal plans."|t }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recipe Management FAQs -->
+    <div id="recipes" class="bg-white rounded-lg shadow-lg p-8 mb-8">
+      <h3 class="text-2xl font-bold mb-6 flex items-center gap-3">
+        <span class="text-3xl">📖</span>
+        {{ "Recipe Management"|t }}
+      </h3>
+      <div class="space-y-6">
+        <div>
+          <h4 class="font-bold text-lg mb-2">{{ "What are the 4 recipe types?"|t }}</h4>
+          <p class="text-gray-700">{{ "Recipes are categorized into 4 types: <strong>Appetizer</strong> (starters, salads), <strong>Main Course</strong> (entrees), <strong>Dessert</strong> (sweets), and <strong>Accompaniment</strong> (sides like rice, pasta, bread). Each day's meal plan can include an appetizer, main course with optional accompaniment, and dessert."|t }}
+          </p>
+        </div>
+        <div>
+          <h4 class="font-bold text-lg mb-2">{{ "How do I import recipes from JSON?"|t }}</h4>
+          <p class="text-gray-700">{{ "Go to the Recipe Import page, drag and drop JSON files (max 10MB each, up to 20 files per batch), and click Import. The system validates each recipe against the schema and provides a summary showing successful imports, failed recipes, and duplicates. Check our JSON Schema documentation for the required format."|t }}</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-lg mb-2">{{ "How many recipes can I favorite on the free tier?"|t }}</h4>
+          <p class="text-gray-700">{{ "Free tier users can favorite a maximum of 10 recipes. Premium subscribers have unlimited favorites. If you try to favorite more than 10 on the free tier, you'll see an upgrade modal."|t }}
+          </p>
+        </div>
+        <div>
+          <h4 class="font-bold text-lg mb-2">{{ "Are dietary restrictions automatically detected?"|t }}</h4>
+          <p class="text-gray-700">{{ "No. All recipe fields including dietary restrictions, cuisine type, and preferences must be explicitly set by users when creating or importing recipes. The system does not automatically detect or infer these attributes from recipe content."|t }}</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-lg mb-2">{{ "Can I edit recipes I imported from JSON?"|t }}</h4>
+          <p class="text-gray-700">{{ "Yes. Imported recipes are stored in your recipe library just like manually created recipes. You can edit, delete, share, or favorite them like any other recipe."|t }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Community FAQs -->
+    <div id="community" class="bg-white rounded-lg shadow-lg p-8 mb-8">
+      <h3 class="text-2xl font-bold mb-6 flex items-center gap-3">
+        <span class="text-3xl">👥</span>
+        {{ "Community"|t }}
+      </h3>
+      <div class="space-y-6">
+        <div>
+          <h4 class="font-bold text-lg mb-2">{{ "How do I share a recipe with the community?"|t }}</h4>
+          <p class="text-gray-700">{{ "When creating or editing a recipe, check the \"Share with community\" toggle. Shared recipes become publicly visible in community search, allowing other users to discover, favorite, and include them in their meal plans."|t }}</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-lg mb-2">{{ "What happens when someone favorites my shared recipe?"|t }}</h4>
+          <p class="text-gray-700">{{ "When a user favorites your recipe, they can include it in their meal plans. You are not notified when someone favorites your recipe. If you delete a shared recipe, it's automatically removed from all users' favorites."|t }}</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-lg mb-2">{{ "What are recipe snapshots?"|t }}</h4>
+          <p class="text-gray-700">{{ "When meal plans are generated, the system creates complete snapshots/copies of all referenced recipes (including community recipes). This ensures meal plan integrity if the original recipe owner deletes or modifies their recipe. Historical meal plans always retain the original recipe data."|t }}</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-lg mb-2">{{ "Can I rate and review community recipes?"|t }}</h4>
+          <p class="text-gray-700">{{ "Yes. All users (free and premium) can rate and review community recipes. Ratings help maintain quality - low-rated recipes are buried in search results. There's no pre-approval required; the community self-moderates through feedback."|t }}</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-lg mb-2">{{ "Can free tier users share recipes?"|t }}</h4>
+          <p class="text-gray-700">{{ "Yes. Both free and premium tier users can share all 4 recipe types with the community. Recipe sharing is not restricted to premium subscribers."|t }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Account & Billing FAQs -->
+    <div id="account-billing" class="bg-white rounded-lg shadow-lg p-8 mb-8">
+      <h3 class="text-2xl font-bold mb-6 flex items-center gap-3">
+        <span class="text-3xl">💳</span>
+        {{ "Account & Billing"|t }}
+      </h3>
+      <div class="space-y-6">
+        <div>
+          <h4 class="font-bold text-lg mb-2">{{ "What's the difference between Free and Premium?"|t }}</h4>
+          <p class="text-gray-700">
+            {{ "<strong>Free:</strong> View first week only of generated meal plans, max 10 favorite recipes, unlimited regenerations.<br><strong>Premium ($9.99/mo or $59.94/yr):</strong> View all generated weeks (full month visibility), unlimited favorite recipes, priority support, early access to features."|t }}
+          </p>
+        </div>
+        <div>
+          <h4 class="font-bold text-lg mb-2">{{ "How do I upgrade to Premium?"|t }}</h4>
+          <p class="text-gray-700">{{ "Click any \"Upgrade to Premium\" button throughout the app, or go to your Profile/Settings page and select the subscription option. Choose monthly ($9.99/mo) or annual ($59.94/yr, 50% savings) billing. Enter your payment information and confirm."|t }}</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-lg mb-2">{{ "Can I cancel my subscription anytime?"|t }}</h4>
+          <p class="text-gray-700">{{ "Yes. Cancel anytime through your account settings. You'll retain premium access until the end of your paid period, then automatically revert to the free tier. No refunds are provided for partial months or unused portions of annual subscriptions."|t }}</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-lg mb-2">{{ "What happens to my data when I downgrade to free?"|t }}</h4>
+          <p class="text-gray-700">{{ "When downgrading: (1) You can only view the first week of meal plans (others become locked), (2) Favorited recipes exceeding 10 are hidden (not deleted) until you remove some or upgrade, (3) Previously generated meal plans remain accessible according to free tier rules."|t }}</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-lg mb-2">{{ "Do subscriptions auto-renew?"|t }}</h4>
+          <p class="text-gray-700">{{ "Yes. Subscriptions automatically renew at the end of each billing period (monthly or annual). You'll receive an email notification before renewal. Cancel anytime to prevent renewal."|t }}</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-lg mb-2">{{ "What payment methods do you accept?"|t }}</h4>
+          <p class="text-gray-700">{{ "We accept all major credit cards (Visa, MasterCard, American Express, Discover) processed through secure PCI-DSS compliant payment processors. We do not store full card numbers."|t }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Technical Support FAQs -->
+    <div id="technical" class="bg-white rounded-lg shadow-lg p-8 mb-8">
+      <h3 class="text-2xl font-bold mb-6 flex items-center gap-3">
+        <span class="text-3xl">🔧</span>
+        {{ "Technical Support"|t }}
+      </h3>
+      <div class="space-y-6">
+        <div>
+          <h4 class="font-bold text-lg mb-2">{{ "Which browsers are supported?"|t }}</h4>
+          <p class="text-gray-700">{{ "We support modern browsers: Chrome 90+, Firefox 88+, Safari 14+, and Edge 90+. For best experience, keep your browser updated to the latest version."|t }}</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-lg mb-2">{{ "Is the app mobile-responsive?"|t }}</h4>
+          <p class="text-gray-700">{{ "Yes. imkitchen is a Progressive Web App (PWA) designed mobile-first with touch-optimized interfaces, week carousel navigation, and responsive layouts. It works on iOS Safari, Android Chrome, and can be installed as a standalone app."|t }}</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-lg mb-2">{{ "Why can't I log in?"|t }}</h4>
+          <p class="text-gray-700">{{ "Common login issues: (1) Check your email/password are correct, (2) Clear browser cache and cookies, (3) Try password reset if forgotten, (4) If account is suspended by admin, you won't be able to log in - contact support."|t }}</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-lg mb-2">{{ "How long does meal plan generation take?"|t }}</h4>
+          <p class="text-gray-700">{{ "Multi-week generation completes in under 5 seconds for up to 5 weeks (P95 performance). If generation takes longer, check your internet connection or contact support."|t }}</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-lg mb-2">{{ "What if my JSON import fails?"|t }}</h4>
+          <p class="text-gray-700">{{ "The import summary shows which recipes failed and why. Common issues: (1) Invalid JSON format, (2) Missing required fields, (3) File size exceeding 10MB, (4) Duplicate recipes. Review the JSON Schema documentation and ensure your files match the required structure. Only 100% valid recipes are imported."|t }}</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-lg mb-2">{{ "Can I use the app offline?"|t }}</h4>
+          <p class="text-gray-700">{{ "Offline recipe access is supported. You can view previously loaded recipes and meal plans offline. Generating new meal plans, syncing data, and community features require an internet connection."|t }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Still Need Help -->
+  <div class="bg-gradient-to-br from-green-500 to-green-700 text-white rounded-lg shadow-xl p-8 md:p-12 text-center">
+    <h2 class="text-3xl font-bold mb-4">{{ "Still need help?"|t }}</h2>
+    <p class="text-xl text-green-50 mb-8">{{ "Our support team is here to assist you"|t }}</p>
+    <div class="flex flex-col md:flex-row gap-4 justify-center items-center">
+      <a href="/contact"
+        class="px-8 py-4 bg-white text-green-600 font-bold text-lg rounded-lg hover:bg-gray-100 transition">
+        {{ "Contact Support"|t }}
+      </a>
+      <div class="text-green-50">
+        <div class="font-semibold">{{ "Response time: Within 48 hours"|t }}</div>
+        <div class="text-sm">{{ "Premium users get priority support"|t }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

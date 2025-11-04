@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+/* Tailwind v4.1 CSS-based configuration */
+@theme {}
+
+/* Custom component layer */
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900;
+  }
+}
+
+@layer utilities {
+  .shadow-sm {
+    --tw-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  }
+}

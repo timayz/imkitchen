@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Recipe - imkitchen</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 pb-20 md:pb-0">
+    <!-- Top Navigation -->
+    <nav class="bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <a href="dashboard-free.html" class="text-2xl font-bold text-green-600">🍳 imkitchen</a>
+
+                <!-- Desktop Navigation -->
+                <div class="hidden md:flex gap-6 items-center">
+                    <a href="dashboard-free.html" class="text-gray-600 hover:text-gray-900">Dashboard</a>
+                    <a href="calendar-free.html" class="text-gray-600 hover:text-gray-900">Calendar</a>
+                    <a href="recipes-list.html" class="text-gray-900 font-semibold">My Recipes</a>
+                    <a href="community.html" class="text-gray-600 hover:text-gray-900">Community</a>
+                    <a href="profile.html" class="text-gray-600 hover:text-gray-900">Profile</a>
+                </div>
+
+                <div class="hidden md:flex items-center gap-4">
+                    <span class="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded-full font-semibold">Free Tier</span>
+                    <a href="index.html" class="text-gray-600 hover:text-gray-900">Logout</a>
+                </div>
+
+                <!-- Mobile: Account Badge -->
+                <div class="md:hidden">
+                    <span class="px-3 py-1 bg-gray-200 text-gray-700 text-xs rounded-full font-semibold">Free</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+        <div class="flex items-center justify-around">
+            <a href="dashboard-free.html" class="flex flex-col items-center py-2 px-3 text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                </svg>
+                <span class="text-xs mt-1">Dashboard</span>
+            </a>
+            <a href="calendar-free.html" class="flex flex-col items-center py-2 px-3 text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                <span class="text-xs mt-1">Calendar</span>
+            </a>
+            <a href="recipes-list.html" class="flex flex-col items-center py-2 px-3 text-green-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                </svg>
+                <span class="text-xs mt-1 font-semibold">Recipes</span>
+            </a>
+            <a href="community.html" class="flex flex-col items-center py-2 px-3 text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+                <span class="text-xs mt-1">Community</span>
+            </a>
+            <a href="profile.html" class="flex flex-col items-center py-2 px-3 text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                </svg>
+                <span class="text-xs mt-1">Profile</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold mb-2">Create New Recipe</h1>
+            <p class="text-gray-600">Add a recipe to your collection</p>
+        </div>
+
+        <!-- Form -->
+        <form action="recipes-list.html" method="get" class="bg-white rounded-lg shadow-lg p-8">
+            <!-- Recipe Type -->
+            <div class="mb-8">
+                <label class="block text-sm font-semibold text-gray-700 mb-3">Recipe Type *</label>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <label class="flex items-center justify-center p-4 border-2 border-gray-300 rounded-lg hover:border-blue-500 cursor-pointer has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50">
+                        <input type="radio" name="recipe_type" value="appetizer" class="mr-3" required />
+                        <div class="text-center">
+                            <div class="text-3xl mb-1">🥗</div>
+                            <div class="font-semibold">Appetizer</div>
+                        </div>
+                    </label>
+                    <label class="flex items-center justify-center p-4 border-2 border-gray-300 rounded-lg hover:border-orange-500 cursor-pointer has-[:checked]:border-orange-500 has-[:checked]:bg-orange-50">
+                        <input type="radio" name="recipe_type" value="main_course" class="mr-3" checked required />
+                        <div class="text-center">
+                            <div class="text-3xl mb-1">🍛</div>
+                            <div class="font-semibold">Main Course</div>
+                        </div>
+                    </label>
+                    <label class="flex items-center justify-center p-4 border-2 border-gray-300 rounded-lg hover:border-pink-500 cursor-pointer has-[:checked]:border-pink-500 has-[:checked]:bg-pink-50">
+                        <input type="radio" name="recipe_type" value="dessert" class="mr-3" required />
+                        <div class="text-center">
+                            <div class="text-3xl mb-1">🍰</div>
+                            <div class="font-semibold">Dessert</div>
+                        </div>
+                    </label>
+                    <label class="flex items-center justify-center p-4 border-2 border-gray-300 rounded-lg hover:border-purple-500 cursor-pointer has-[:checked]:border-purple-500 has-[:checked]:bg-purple-50">
+                        <input type="radio" name="recipe_type" value="accompaniment" class="mr-3" required />
+                        <div class="text-center">
+                            <div class="text-3xl mb-1">🍚</div>
+                            <div class="font-semibold">Accompaniment</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Basic Information -->
+            <div class="mb-8">
+                <h2 class="text-xl font-bold mb-4">Basic Information</h2>
+
+                <div class="mb-4">
+                    <label for="name" class="block text-sm font-semibold text-gray-700 mb-2">Recipe Name *</label>
+                    <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        placeholder="e.g., Thai Red Curry with Chicken"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        required
+                    />
+                </div>
+
+                <div class="mb-4">
+                    <label for="description" class="block text-sm font-semibold text-gray-700 mb-2">Description *</label>
+                    <textarea
+                        id="description"
+                        name="description"
+                        rows="3"
+                        placeholder="Brief description of the dish"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        required
+                    ></textarea>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="prep_time" class="block text-sm font-semibold text-gray-700 mb-2">Prep Time (minutes) *</label>
+                        <input
+                            type="number"
+                            id="prep_time"
+                            name="prep_time"
+                            min="0"
+                            placeholder="30"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label for="cook_time" class="block text-sm font-semibold text-gray-700 mb-2">Cook Time (minutes) *</label>
+                        <input
+                            type="number"
+                            id="cook_time"
+                            name="cook_time"
+                            min="0"
+                            placeholder="45"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            required
+                        />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ingredients -->
+            <div class="mb-8">
+                <h2 class="text-xl font-bold mb-4">Ingredients</h2>
+                <div class="space-y-3">
+                    <div class="flex gap-3">
+                        <input type="text" placeholder="2 cups" class="w-32 px-4 py-2 border border-gray-300 rounded-lg" />
+                        <input type="text" placeholder="Jasmine rice" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg" />
+                        <button type="button" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">✕</button>
+                    </div>
+                    <div class="flex gap-3">
+                        <input type="text" placeholder="400ml" class="w-32 px-4 py-2 border border-gray-300 rounded-lg" />
+                        <input type="text" placeholder="Coconut milk" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg" />
+                        <button type="button" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">✕</button>
+                    </div>
+                    <div class="flex gap-3">
+                        <input type="text" placeholder="500g" class="w-32 px-4 py-2 border border-gray-300 rounded-lg" />
+                        <input type="text" placeholder="Chicken breast" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg" />
+                        <button type="button" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">✕</button>
+                    </div>
+                </div>
+                <button type="button" class="mt-3 px-4 py-2 bg-green-100 text-green-700 font-semibold rounded-lg hover:bg-green-200">
+                    + Add Ingredient
+                </button>
+            </div>
+
+            <!-- Instructions -->
+            <div class="mb-8">
+                <h2 class="text-xl font-bold mb-4">Instructions</h2>
+                <div class="space-y-3">
+                    <div class="flex gap-3">
+                        <span class="px-3 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg">1</span>
+                        <textarea rows="2" placeholder="First step..." class="flex-1 px-4 py-2 border border-gray-300 rounded-lg"></textarea>
+                        <button type="button" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">✕</button>
+                    </div>
+                    <div class="flex gap-3">
+                        <span class="px-3 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg">2</span>
+                        <textarea rows="2" placeholder="Second step..." class="flex-1 px-4 py-2 border border-gray-300 rounded-lg"></textarea>
+                        <button type="button" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">✕</button>
+                    </div>
+                </div>
+                <button type="button" class="mt-3 px-4 py-2 bg-green-100 text-green-700 font-semibold rounded-lg hover:bg-green-200">
+                    + Add Step
+                </button>
+            </div>
+
+            <!-- Dietary & Preferences -->
+            <div class="mb-8">
+                <h2 class="text-xl font-bold mb-4">Dietary Restrictions & Preferences</h2>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-gray-700 mb-3">Dietary Restrictions</label>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="vegetarian" class="rounded border-gray-300 text-green-600 focus:ring-green-500" />
+                            <span class="ml-2">Vegetarian</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="vegan" class="rounded border-gray-300 text-green-600 focus:ring-green-500" />
+                            <span class="ml-2">Vegan</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="gluten-free" class="rounded border-gray-300 text-green-600 focus:ring-green-500" />
+                            <span class="ml-2">Gluten-Free</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="dairy-free" class="rounded border-gray-300 text-green-600 focus:ring-green-500" />
+                            <span class="ml-2">Dairy-Free</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="nut-free" class="rounded border-gray-300 text-green-600 focus:ring-green-500" />
+                            <span class="ml-2">Nut-Free</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="low-carb" class="rounded border-gray-300 text-green-600 focus:ring-green-500" />
+                            <span class="ml-2">Low-Carb</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="cuisine" class="block text-sm font-semibold text-gray-700 mb-2">Cuisine Type *</label>
+                    <select
+                        id="cuisine"
+                        name="cuisine"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        required
+                    >
+                        <option value="">Select cuisine...</option>
+                        <option value="italian">Italian</option>
+                        <option value="thai" selected>Thai</option>
+                        <option value="chinese">Chinese</option>
+                        <option value="japanese">Japanese</option>
+                        <option value="mexican">Mexican</option>
+                        <option value="indian">Indian</option>
+                        <option value="french">French</option>
+                        <option value="american">American</option>
+                        <option value="mediterranean">Mediterranean</option>
+                        <option value="custom">Custom (specify below)</option>
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label for="custom_cuisine" class="block text-sm font-semibold text-gray-700 mb-2">Custom Cuisine (if selected above)</label>
+                    <input
+                        type="text"
+                        id="custom_cuisine"
+                        name="custom_cuisine"
+                        placeholder="e.g., Korean, Vietnamese"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    />
+                </div>
+            </div>
+
+            <!-- Main Course Specific Options -->
+            <div id="main-course-options" class="mb-8 p-6 bg-orange-50 border border-orange-200 rounded-lg">
+                <h2 class="text-xl font-bold mb-4">Main Course Options</h2>
+
+                <div class="mb-4">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="accepts_accompaniment" class="rounded border-gray-300 text-orange-600 focus:ring-orange-500" />
+                        <span class="ml-2 font-semibold">This main course accepts accompaniments</span>
+                    </label>
+                    <p class="text-sm text-gray-600 mt-2">If checked, the algorithm may pair this main course with sides like rice, pasta, bread, or vegetables.</p>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-gray-700 mb-3">Preferred Accompaniment Types (if applicable)</label>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="acc_rice" class="rounded border-gray-300 text-orange-600 focus:ring-orange-500" />
+                            <span class="ml-2">Rice</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="acc_pasta" class="rounded border-gray-300 text-orange-600 focus:ring-orange-500" />
+                            <span class="ml-2">Pasta</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="acc_bread" class="rounded border-gray-300 text-orange-600 focus:ring-orange-500" />
+                            <span class="ml-2">Bread</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="acc_fries" class="rounded border-gray-300 text-orange-600 focus:ring-orange-500" />
+                            <span class="ml-2">Fries</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="acc_salad" class="rounded border-gray-300 text-orange-600 focus:ring-orange-500" />
+                            <span class="ml-2">Salad</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="acc_vegetables" class="rounded border-gray-300 text-orange-600 focus:ring-orange-500" />
+                            <span class="ml-2">Vegetables</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advance Preparation -->
+            <div class="mb-8">
+                <h2 class="text-xl font-bold mb-4">Advance Preparation</h2>
+                <div class="mb-4">
+                    <label for="advance_prep" class="block text-sm font-semibold text-gray-700 mb-2">Advance Prep Instructions (optional)</label>
+                    <textarea
+                        id="advance_prep"
+                        name="advance_prep"
+                        rows="3"
+                        placeholder="e.g., Marinate chicken overnight, or prepare dough 2 hours before cooking"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    ></textarea>
+                    <p class="text-sm text-gray-500 mt-1">If specified, users will receive morning reminders (8 AM) to prepare</p>
+                </div>
+            </div>
+
+            <!-- Sharing Options -->
+            <div class="mb-8">
+                <h2 class="text-xl font-bold mb-4">Sharing</h2>
+                <label class="flex items-center">
+                    <input type="checkbox" name="share_community" class="rounded border-gray-300 text-green-600 focus:ring-green-500" />
+                    <span class="ml-2 font-semibold">Share with community</span>
+                </label>
+                <p class="text-sm text-gray-600 mt-2">Allow other users to discover and favorite this recipe</p>
+            </div>
+
+            <!-- Submit -->
+            <div class="flex flex-col md:flex-row gap-4">
+                <button
+                    type="submit"
+                    class="flex-1 bg-green-600 text-white font-semibold py-3 rounded-lg hover:bg-green-700 transition"
+                >
+                    Save Recipe
+                </button>
+                <a
+                    href="recipes-list.html"
+                    class="flex-1 bg-gray-200 text-gray-700 font-semibold py-3 rounded-lg hover:bg-gray-300 transition text-center"
+                >
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

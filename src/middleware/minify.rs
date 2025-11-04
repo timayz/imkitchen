@@ -1,5 +1,5 @@
 use axum::{
-    body::{to_bytes, Body},
+    body::{Body, to_bytes},
     http::header,
     response::Response,
 };

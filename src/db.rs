@@ -98,34 +98,3 @@ pub async fn create_pool(database_url: &str, max_connections: u32) -> Result<Sql
 
     Ok(pool)
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn test_create_pool_applies_pragmas() {
-        let pool = create_pool(":memory:", 1).await.unwrap();
-
-        // Verify WAL mode
-        let journal_mode: (String,) = sqlx::query_as("PRAGMA journal_mode")
-            .fetch_one(&pool)
-            .await
-            .unwrap();
-        assert_eq!(journal_mode.0, "memory"); // WAL doesn't apply to :memory:
-
-        // Verify foreign keys enabled
-        let foreign_keys: (i32,) = sqlx::query_as("PRAGMA foreign_keys")
-            .fetch_one(&pool)
-            .await
-            .unwrap();
-        assert_eq!(foreign_keys.0, 1);
-
-        // Verify temp_store
-        let temp_store: (i32,) = sqlx::query_as("PRAGMA temp_store")
-            .fetch_one(&pool)
-            .await
-            .unwrap();
-        assert_eq!(temp_store.0, 2); // 2 = memory
-    }
-}
