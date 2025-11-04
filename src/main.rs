@@ -85,7 +85,7 @@ pub(crate) mod filters {
         // let preferred_language = askama::get_value::<String>(values, "preferred_language")
         //     .expect("Unable to get preferred_language from askama::get_value");
 
-        Ok(rust_i18n::t!(value, locale = "fr_FR" /*locale = preferred_language*/).to_string())
+        Ok(rust_i18n::t!(value, locale = "fr" /*locale = preferred_language*/).to_string())
     }
 
     // pub fn assets(value: &str, values: &dyn askama::Values) -> askama::Result<String> {
