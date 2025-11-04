@@ -2,7 +2,7 @@
 `make check` must succeed, always run `make check` at the end to make sure it succeed, do not ignore test.
 git checkout new, add -A, commit, push.
 create PR: 
-  - title: title of issue 299 
+  - title: title of issue 300 
   - body: 
     - conventional commits multi-paragraph body from issue body for end users that only use WEB UI
     - closed that issue 
@@ -17,10 +17,9 @@ can you create all epics as milestone with associeted stories as issue ? epic ti
 in folder fixtures, create recipe json file structured like "example-recipe.json" from
   [link]
 
-I want to add multi language support. Can you replace all texts in templates/index.html, like 'My text'
-  by '{{ "My test"|t }}' ?
+I want to add multi language support. Can you replace all texts in templates/index.html, like 'My text' by '{{ "My test"|t }}' ?
 
-Now I want you to add them to fr.json like { "My test": "Mon test", "My test 2": "Mon test 2" }. Do add
-  duplicate transalation. 
+Now I want you to add them to fr.json like { "My test": "Mon test", "My test 2": "Mon test 2" }. Do not add duplicate transalation.
+ 
 
 SELECT * FROM table WHERE id IN (SELECT id FROM table ORDER BY RANDOM() LIMIT x)

@@ -1,20 +1,16 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign Up - imkitchen</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
+{% block title %}{{ "Sign Up"|t }} - imkitchen{% endblock %}
+
+{% block body %}
 
 <body class="bg-gray-50">
   <!-- Navigation -->
   <nav class="bg-white shadow-sm">
     <div class="container mx-auto px-4 py-4 flex items-center justify-between">
-      <a href="index.html" class="text-2xl font-bold text-green-600">🍳 imkitchen</a>
+      <a href="/" class="text-2xl font-bold text-green-600">🍳 imkitchen</a>
       <div class="flex gap-4">
-        <a href="login.html" class="px-4 py-2 text-gray-600 hover:text-gray-900">Log In</a>
+        <a href="/login" class="px-4 py-2 text-gray-600 hover:text-gray-900">{{ "Log In"|t }}</a>
       </div>
     </div>
   </nav>
@@ -22,122 +18,123 @@
   <!-- Registration Form -->
   <div class="container mx-auto px-4 py-16 max-w-2xl">
     <div class="bg-white rounded-lg shadow-lg p-8">
-      <h1 class="text-3xl font-bold mb-2 text-center">Create Your Account</h1>
-      <p class="text-gray-600 text-center mb-8">Start planning meals in seconds. No credit card required.</p>
+      <h1 class="text-3xl font-bold mb-2 text-center">{{ "Create Your Account"|t }}</h1>
+      <p class="text-gray-600 text-center mb-8">{{ "Start planning meals in seconds. No credit card required."|t }}</p>
 
-      <form action="dashboard-free.html" method="get">
+      <form action="dashboard-free.html" method="get" autocomplete="off">
         <!-- Account Info -->
         <div class="mb-8">
-          <h2 class="text-lg font-semibold mb-4">Account Information</h2>
+          <h2 class="text-lg font-semibold mb-4">{{ "Account Information"|t }}</h2>
 
           <div class="mb-4">
-            <label for="name" class="block text-sm font-semibold text-gray-700 mb-2">Full Name</label>
-            <input type="text" id="name" name="name" placeholder="John Doe"
+            <label for="email" class="block text-sm font-semibold text-gray-700 mb-2">{{ "Email Address"|t }}</label>
+            <input type="email" id="email" name="email" placeholder="{{ " you@example.com"|t }}"
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              required />
+              autocomplete="new-email" required />
           </div>
 
           <div class="mb-4">
-            <label for="email" class="block text-sm font-semibold text-gray-700 mb-2">Email Address</label>
-            <input type="email" id="email" name="email" placeholder="you@example.com"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              required />
-          </div>
-
-          <div class="mb-4">
-            <label for="password" class="block text-sm font-semibold text-gray-700 mb-2">Password</label>
+            <label for="password" class="block text-sm font-semibold text-gray-700 mb-2">{{ "Password"|t }}</label>
             <input type="password" id="password" name="password" placeholder="••••••••"
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              required />
-            <p class="text-sm text-gray-500 mt-1">At least 8 characters</p>
+              autocomplete="new-password" required />
+            <p class="text-sm text-gray-500 mt-1">{{ "At least 8 characters"|t }}</p>
+          </div>
+
+          <div class="mb-4">
+            <label for="password" class="block text-sm font-semibold text-gray-700 mb-2">{{ "Confirm Password"|t
+              }}</label>
+            <input type="password" id="confirm-password" name="password" placeholder="••••••••"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              autocomplete="new-password" required />
           </div>
         </div>
 
         <!-- Preferences -->
         <div class="mb-8">
-          <h2 class="text-lg font-semibold mb-4">Your Preferences (Optional)</h2>
+          <h2 class="text-lg font-semibold mb-4">{{ "Your Preferences (Optional)"|t }}</h2>
 
           <div class="mb-4">
-            <label class="block text-sm font-semibold text-gray-700 mb-2">Dietary Restrictions</label>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">{{ "Dietary Restrictions"|t }}</label>
             <div class="grid grid-cols-2 gap-3">
               <label class="flex items-center">
                 <input type="checkbox" name="vegetarian"
                   class="rounded border-gray-300 text-green-600 focus:ring-green-500" />
-                <span class="ml-2 text-sm">Vegetarian</span>
+                <span class="ml-2 text-sm">{{ "Vegetarian"|t }}</span>
               </label>
               <label class="flex items-center">
                 <input type="checkbox" name="vegan"
                   class="rounded border-gray-300 text-green-600 focus:ring-green-500" />
-                <span class="ml-2 text-sm">Vegan</span>
+                <span class="ml-2 text-sm">{{ "Vegan"|t }}</span>
               </label>
               <label class="flex items-center">
                 <input type="checkbox" name="gluten-free"
                   class="rounded border-gray-300 text-green-600 focus:ring-green-500" />
-                <span class="ml-2 text-sm">Gluten-Free</span>
+                <span class="ml-2 text-sm">{{ "Gluten-Free"|t }}</span>
               </label>
               <label class="flex items-center">
                 <input type="checkbox" name="dairy-free"
                   class="rounded border-gray-300 text-green-600 focus:ring-green-500" />
-                <span class="ml-2 text-sm">Dairy-Free</span>
+                <span class="ml-2 text-sm">{{ "Dairy-Free"|t }}</span>
               </label>
               <label class="flex items-center">
                 <input type="checkbox" name="nut-free"
                   class="rounded border-gray-300 text-green-600 focus:ring-green-500" />
-                <span class="ml-2 text-sm">Nut-Free</span>
+                <span class="ml-2 text-sm">{{ "Nut-Free"|t }}</span>
               </label>
               <label class="flex items-center">
                 <input type="checkbox" name="low-carb"
                   class="rounded border-gray-300 text-green-600 focus:ring-green-500" />
-                <span class="ml-2 text-sm">Low-Carb</span>
+                <span class="ml-2 text-sm">{{ "Low-Carb"|t }}</span>
               </label>
             </div>
           </div>
 
           <div class="mb-4">
-            <label for="household-size" class="block text-sm font-semibold text-gray-700 mb-2">Household Size</label>
+            <label for="household-size" class="block text-sm font-semibold text-gray-700 mb-2">{{ "Household Size"|t
+              }}</label>
             <input type="number" id="household-size" name="household-size" min="1" max="10" value="2"
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" />
           </div>
 
           <div class="mb-4">
             <label for="cuisine-variety" class="block text-sm font-semibold text-gray-700 mb-2">
-              Cuisine Variety Preference
+              {{ "Cuisine Variety Preference"|t }}
             </label>
             <input type="range" id="cuisine-variety" name="cuisine-variety" min="0" max="100" value="70"
               class="w-full" />
             <div class="flex justify-between text-xs text-gray-500 mt-1">
-              <span>Repeat Often</span>
-              <span class="font-semibold text-green-600">Balanced (Default)</span>
-              <span>Maximum Variety</span>
+              <span>{{ "Repeat Often"|t }}</span>
+              <span class="font-semibold text-green-600">{{ "Balanced (Default)"|t }}</span>
+              <span>{{ "Maximum Variety"|t }}</span>
             </div>
           </div>
         </div>
 
         <!-- Terms -->
         <div class="mb-6">
-          <label class="flex items-start">
-            <input type="checkbox" class="rounded border-gray-300 text-green-600 focus:ring-green-500 mt-1" required />
-            <span class="ml-2 text-sm text-gray-600">
-              I agree to the <a href="#" class="text-green-600 hover:text-green-700">Terms of Service</a> and <a
-                href="#" class="text-green-600 hover:text-green-700">Privacy Policy</a>
-            </span>
-          </label>
+          <p class="text-sm text-gray-600">
+            {{ "By creating an account, you agree to our"|t }}
+            <a href="/terms" class="text-green-600 hover:text-green-700">{{ "Terms of Service"|t }}</a>
+            {{ "and"|t }}
+            <a href="/policy" class="text-green-600 hover:text-green-700">{{ "Privacy Policy"|t }}</a>{{ ","|t }}
+            {{ "and that you understand your right to access, correct, and delete your personal information."|t }}
+          </p>
         </div>
 
         <button type="submit"
           class="w-full bg-green-600 text-white font-semibold py-3 rounded-lg hover:bg-green-700 transition">
-          Create Account
+          {{ "Create Account"|t }}
         </button>
       </form>
 
       <div class="mt-6 text-center">
         <p class="text-gray-600 text-sm">
-          Already have an account?
-          <a href="login.html" class="text-green-600 font-semibold hover:text-green-700">Log in</a>
+          {{ "Already have an account?"|t }}
+          <a href="/login" class="text-green-600 font-semibold hover:text-green-700">{{ "Log in"|t }}</a>
         </p>
       </div>
     </div>
   </div>
 </body>
-
-</html>
+{% endblock %}

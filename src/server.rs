@@ -39,6 +39,8 @@ pub async fn serve(
         .route("/help", get(crate::routes::help::page))
         .route("/terms", get(crate::routes::terms::page))
         .route("/policy", get(crate::routes::policy::page))
+        .route("/register", get(crate::routes::register::page))
+        .route("/login", get(crate::routes::login::page))
         .fallback(crate::routes::fallback)
         .route("/sw.js", get(crate::routes::service_worker::sw))
         .nest_service("/static", crate::assets::AssetsService::new())
