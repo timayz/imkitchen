@@ -1618,7 +1618,6 @@ dependencies = [
  "config",
  "evento",
  "http-body-util",
- "imkitchen-user",
  "mime_guess",
  "minify-html",
  "rust-embed",
@@ -1652,8 +1651,15 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "argon2",
+ "async-trait",
  "bincode",
  "evento",
+ "sea-query",
+ "sea-query-sqlx",
+ "sqlx",
+ "sqlx_migrator",
+ "tokio",
+ "ulid",
  "validator",
 ]
 

@@ -1,13 +1,15 @@
 use bincode::{Decode, Encode};
 
-use crate::{LoggedIn, RegisterFailed, RegisterRequested, Registered, UserEvent};
+use crate::{
+    LoggedIn, RegistrationFailed, RegistrationRequested, RegistrationSucceeded, UserEvent,
+};
 
-#[derive(Encode, Decode, Clone, Debug)]
+#[derive(Encode, Decode, Clone, Debug, PartialEq)]
 pub enum Action {
-    Register,
+    Registration,
 }
 
-#[derive(Default, Encode, Decode, Clone, Debug)]
+#[derive(Default, Encode, Decode, Clone, Debug, PartialEq)]
 pub enum Status {
     #[default]
     Idle,
@@ -17,21 +19,24 @@ pub enum Status {
 
 #[derive(Default, Encode, Decode, Clone, Debug)]
 pub struct User {
-    status: Status,
+    pub status: Status,
 }
 
 #[evento::aggregator]
 impl User {
     async fn handle_register_requested(
         &mut self,
-        _event: UserEvent<RegisterRequested>,
+        _event: UserEvent<RegistrationRequested>,
     ) -> anyhow::Result<()> {
-        self.status = Status::Processing(Action::Register);
+        self.status = Status::Processing(Action::Registration);
 
         Ok(())
     }
 
-    async fn handle_registered(&mut self, _event: UserEvent<Registered>) -> anyhow::Result<()> {
+    async fn handle_registered(
+        &mut self,
+        _event: UserEvent<RegistrationSucceeded>,
+    ) -> anyhow::Result<()> {
         self.status = Status::Idle;
 
         Ok(())
@@ -39,7 +44,7 @@ impl User {
 
     async fn handle_register_failed(
         &mut self,
-        event: UserEvent<RegisterFailed>,
+        event: UserEvent<RegistrationFailed>,
     ) -> anyhow::Result<()> {
         self.status = Status::Failed(event.data.reason);
 
