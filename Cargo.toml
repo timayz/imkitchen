@@ -14,6 +14,7 @@ axum = { version = "0.8", features = ["macros", "multipart"] }
 axum-extra = { version = "0.12", features = ["cookie"] }
 tower = "0.5"
 tower-http = { version = "0.6", features = ["fs", "trace", "compression-br", "compression-gzip"] }
+rust-i18n = "3.1"
 askama = "0.14"
 sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite", "chrono", "uuid"] }
 evento = { version = "1.5", features = ["sqlite"] }
@@ -55,6 +56,7 @@ async-stripe = "stripe"
 [dependencies]
 tokio = { workspace = true }
 axum = { workspace = true }
+rust-i18n = { workspace = true }
 tower-livereload = { workspace = true }
 axum-extra = { workspace = true }
 tower = { workspace = true }

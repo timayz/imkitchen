@@ -1,18 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>imkitchen - Intelligent Meal Planning</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style type="text/tailwindcss">
-        @layer base {
-            body {
-                @apply bg-gray-50 text-gray-900;
-            }
-        }
-    </style>
-</head>
+{% extends "base.html" %}
+{%- import "footer.html" as scope -%}
+
+{% block title %} imkitchen - Intelligent Meal Planning {% endblock %}
+
+{% block body %}
 <body>
     <!-- Hero Section -->
     <div class="bg-gradient-to-br from-green-500 to-green-700 text-white">
@@ -22,33 +13,28 @@
 
                 <!-- Desktop Navigation -->
                 <div class="hidden md:flex gap-4">
-                    <a href="login.html" class="px-4 py-2 hover:bg-white/10 rounded-lg transition">Login</a>
-                    <a href="register.html" class="px-6 py-2 bg-white text-green-600 font-semibold rounded-lg hover:bg-gray-100 transition">Get Started</a>
+                    <a href="/login" class="px-4 py-2 hover:bg-white/10 rounded-lg transition">Login</a>
+                    <a href="/register" class="px-6 py-2 bg-white text-green-600 font-semibold rounded-lg hover:bg-gray-100 transition">Get Started</a>
                 </div>
 
                 <!-- Mobile Menu Button -->
-                <button id="mobile-menu-button" class="md:hidden p-2 hover:bg-white/10 rounded-lg transition">
+                <label for="mobile-menu-button" class="md:hidden p-2 hover:bg-white/10 rounded-lg transition">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                     </svg>
-                </button>
+                </label>
             </div>
+
+            <input id="mobile-menu-button" type="checkbox">
 
             <!-- Mobile Navigation -->
             <div id="mobile-menu" class="hidden md:hidden mt-4 pb-4">
                 <div class="flex flex-col gap-2">
-                    <a href="login.html" class="px-4 py-3 hover:bg-white/10 rounded-lg transition text-center">Login</a>
-                    <a href="register.html" class="px-4 py-3 bg-white text-green-600 font-semibold rounded-lg hover:bg-gray-100 transition text-center">Get Started</a>
+                    <a href="/login" class="px-4 py-3 hover:bg-white/10 rounded-lg transition text-center">Login</a>
+                    <a href="/register" class="px-4 py-3 bg-white text-green-600 font-semibold rounded-lg hover:bg-gray-100 transition text-center">Get Started</a>
                 </div>
             </div>
         </nav>
-
-        <script>
-            document.getElementById('mobile-menu-button')?.addEventListener('click', function() {
-                const menu = document.getElementById('mobile-menu');
-                menu.classList.toggle('hidden');
-            });
-        </script>
 
         <div class="container mx-auto px-4 py-20 text-center">
             <h1 class="text-5xl md:text-6xl font-bold mb-6">Cook More. Plan Less.</h1>
@@ -56,10 +42,10 @@
                 Intelligent meal planning that unlocks your entire recipe collection. Generate weeks of meals in seconds with automatic accompaniment pairing.
             </p>
             <div class="flex gap-4 justify-center flex-wrap">
-                <a href="register.html" class="px-8 py-4 bg-white text-green-600 font-bold text-lg rounded-lg hover:bg-gray-100 transition">
+                <a href="/register" class="px-8 py-4 bg-white text-green-600 font-bold text-lg rounded-lg hover:bg-gray-100 transition">
                     Start Planning Free
                 </a>
-                <a href="#features" class="px-8 py-4 bg-green-600 text-white font-bold text-lg rounded-lg hover:bg-green-800 transition">
+                <a href="/#features" class="px-8 py-4 bg-green-600 text-white font-bold text-lg rounded-lg hover:bg-green-800 transition">
                     See How It Works
                 </a>
             </div>
@@ -330,7 +316,7 @@
                             <span>Community access</span>
                         </li>
                     </ul>
-                    <a href="register.html" class="block text-center px-6 py-3 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition">
+                    <a href="/register" class="block text-center px-6 py-3 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition">
                         Get Started Free
                     </a>
                 </div>
@@ -369,7 +355,7 @@
                             <span>Everything in Free</span>
                         </li>
                     </ul>
-                    <a href="register.html" class="block text-center px-6 py-3 bg-white text-green-600 font-bold rounded-lg hover:bg-gray-100 transition">
+                    <a href="/register" class="block text-center px-6 py-3 bg-white text-green-600 font-bold rounded-lg hover:bg-gray-100 transition">
                         Start Free Trial
                     </a>
                 </div>
@@ -417,7 +403,7 @@
             <p class="text-xl mb-8 text-green-50">
                 Join thousands of home cooks who've unlocked their recipe collections. Start free, upgrade anytime.
             </p>
-            <a href="register.html" class="inline-block px-8 py-4 bg-white text-green-600 font-bold text-lg rounded-lg hover:bg-gray-100 transition">
+            <a href="/register" class="inline-block px-8 py-4 bg-white text-green-600 font-bold text-lg rounded-lg hover:bg-gray-100 transition">
                 Get Started Free
             </a>
             <p class="mt-4 text-green-100 text-sm">No credit card required • Cancel anytime</p>
@@ -425,41 +411,6 @@
     </div>
 
     <!-- Footer -->
-    <footer class="bg-gray-900 text-gray-300 py-12">
-        <div class="container mx-auto px-4">
-            <div class="grid md:grid-cols-4 gap-8 mb-8">
-                <div>
-                    <div class="text-2xl font-bold text-white mb-4">🍳 imkitchen</div>
-                    <p class="text-sm text-gray-400">Intelligent meal planning for home cooks.</p>
-                </div>
-                <div>
-                    <h3 class="font-bold text-white mb-3">Product</h3>
-                    <ul class="space-y-2 text-sm">
-                        <li><a href="#features" class="hover:text-white">Features</a></li>
-                        <li><a href="#pricing" class="hover:text-white">Pricing</a></li>
-                        <li><a href="contact.html" class="hover:text-white">Contact</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h3 class="font-bold text-white mb-3">Resources</h3>
-                    <ul class="space-y-2 text-sm">
-                        <li><a href="help-center.html" class="hover:text-white">Help Center</a></li>
-                        <li><a href="#" class="hover:text-white">API Docs</a></li>
-                        <li><a href="#" class="hover:text-white">JSON Schema</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h3 class="font-bold text-white mb-3">Legal</h3>
-                    <ul class="space-y-2 text-sm">
-                        <li><a href="privacy-policy.html" class="hover:text-white">Privacy Policy</a></li>
-                        <li><a href="terms-of-service.html" class="hover:text-white">Terms of Service</a></li>
-                    </ul>
-                </div>
-            </div>
-            <div class="border-t border-gray-800 pt-8 text-center text-sm text-gray-500">
-                © 2025 imkitchen. All rights reserved.
-            </div>
-        </div>
-    </footer>
+    {% call scope::footer() %}
 </body>
-</html>
+{% endblock %}

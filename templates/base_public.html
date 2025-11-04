@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{%- import "footer.html" as scope -%}
+
+{% block body %}
+
+<body class="bg-gray-50">
+  <!-- Navigation -->
+  <nav class="bg-white shadow-sm">
+
+  <div class="container mx-auto px-4 py-6">
+    <div class="flex items-center justify-between">
+      <a href="/" class="text-2xl font-bold text-green-600">🍳 imkitchen</a>
+
+      <!-- Desktop Navigation -->
+      <div class="hidden md:flex gap-4">
+        <a href="/login" class="px-4 py-2 hover:bg-white/10 rounded-lg transition">Login</a>
+        <a href="/register"
+          class="px-6 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition">Get
+          Started</a>
+      </div>
+
+      <!-- Mobile Menu Button -->
+      <label for="mobile-menu-button" class="md:hidden p-2 hover:bg-white/10 rounded-lg transition">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+      </label>
+    </div>
+
+    <input id="mobile-menu-button" type="checkbox">
+
+    <!-- Mobile Navigation -->
+    <div id="mobile-menu" class="hidden md:hidden mt-4 pb-4">
+      <div class="flex flex-col gap-2">
+        <a href="/login" class="px-4 py-3 hover:bg-white/10 rounded-lg transition text-center">Login</a>
+        <a href="/register"
+          class="px-4 py-3 bg-white text-green-600 font-semibold rounded-lg hover:bg-gray-100 transition text-center">
+          Get Started</a>
+      </div>
+    </div>
+  </div>
+
+  </nav>
+
+  <!-- Hero Section -->
+  {% block hero %}{% endblock %}
+
+  <!-- Main Content -->
+  {% block content %}{% endblock %}
+
+  <!-- Footer -->
+  {% call scope::footer() %}
+</body>
+{% endblock %}

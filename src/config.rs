@@ -5,10 +5,10 @@ use serde::Deserialize;
 pub struct Config {
     pub server: ServerConfig,
     pub database: DatabaseConfig,
-    pub _jwt: JwtConfig,
-    pub _email: EmailConfig,
-    pub _stripe: StripeConfig,
-    pub _features: FeaturesConfig,
+    // pub jwt: JwtConfig,
+    // pub email: EmailConfig,
+    // pub stripe: StripeConfig,
+    // pub features: FeaturesConfig,
     pub monitoring: MonitoringConfig,
 }
 
@@ -20,18 +20,18 @@ pub struct MonitoringConfig {
     pub log_line_number: bool,
 }
 
-#[derive(Debug, Deserialize, Clone)]
-pub struct FeaturesConfig {
-    pub _premium: bool,
-}
+// #[derive(Debug, Deserialize, Clone)]
+// pub struct FeaturesConfig {
+//     pub premium: bool,
+// }
 
-#[derive(Debug, Deserialize, Clone)]
-pub struct EmailConfig {
-    pub _smtp_host: String,
-    pub _smtp_port: u16,
-    pub _smtp_username: String,
-    pub _smtp_password: String,
-}
+// #[derive(Debug, Deserialize, Clone)]
+// pub struct EmailConfig {
+//     pub smtp_host: String,
+//     pub smtp_port: u16,
+//     pub smtp_username: String,
+//     pub smtp_password: String,
+// }
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct ServerConfig {
@@ -44,19 +44,19 @@ pub struct DatabaseConfig {
     pub url: String,
     pub max_connections: u32,
 }
+//
+// #[derive(Debug, Deserialize, Clone)]
+// pub struct JwtConfig {
+//     pub secret: String,
+//     pub expiration_days: i64,
+// }
 
-#[derive(Debug, Deserialize, Clone)]
-pub struct JwtConfig {
-    pub _secret: String,
-    pub _expiration_days: i64,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct StripeConfig {
-    pub _secret_key: String,
-    pub _webhook_secret: String,
-    pub _price_id: String, // Stripe Price ID for $9.99/month subscription
-}
+// #[derive(Debug, Deserialize, Clone)]
+// pub struct StripeConfig {
+//     pub secret_key: String,
+//     pub webhook_secret: String,
+//     pub price_id: String, // Stripe Price ID for $9.99/month subscription
+// }
 
 impl Config {
     /// Load configuration from file and environment variables
@@ -68,7 +68,7 @@ impl Config {
     pub fn load(config_path: Option<String>) -> Result<Self, ConfigError> {
         let config_path = config_path.unwrap_or_else(|| "imkitchen.toml".to_string());
         ConfigBuilder::builder()
-            .set_default("server.host", "127.0.0.1")?
+            .set_default("server.host", "0.0.0.0")?
             .set_default("server.port", 3000)?
             .set_default("database.url", "sqlite:imkitchen.db")?
             .set_default("database.max_connections", 5)?

@@ -3,7 +3,9 @@ use axum::{Router, routing::get};
 use tower_http::{compression::CompressionLayer, trace::TraceLayer};
 
 #[derive(Clone)]
-pub struct AppState {}
+pub struct AppState {
+    pub config: crate::config::Config,
+}
 
 pub async fn serve(
     config: crate::config::Config,
@@ -13,7 +15,7 @@ pub async fn serve(
     tracing::info!("Starting imkitchen server...");
 
     // Use CLI overrides if provided, otherwise use config
-    let host = host_override.unwrap_or(config.server.host);
+    let host = host_override.unwrap_or(config.server.host.to_owned());
     let port = port_override.unwrap_or(config.server.port);
 
     // Set up database connection pools with optimized PRAGMAs
@@ -25,7 +27,7 @@ pub async fn serve(
     let read_pool_size = config.database.max_connections;
     let read_pool = crate::db::create_read_pool(&config.database.url, read_pool_size).await?;
 
-    let state = AppState {};
+    let state = AppState { config };
 
     // Build router with health checks using read pool state
     let app = Router::new()
@@ -33,6 +35,10 @@ pub async fn serve(
         .route("/health", get(crate::routes::health::health))
         .route("/ready", get(crate::routes::health::ready))
         .with_state(read_pool.clone())
+        .route("/", get(crate::routes::index::page))
+        .route("/help", get(crate::routes::help::page))
+        .route("/terms", get(crate::routes::terms::page))
+        .route("/policy", get(crate::routes::policy::page))
         .route("/sw.js", get(crate::routes::service_worker::sw))
         .nest_service("/static", crate::assets::AssetsService::new())
         .with_state(state)
