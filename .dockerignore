@@ -42,5 +42,6 @@ docs/
 node_modules/
 
 # E2E tests
-e2e/playwright-report/
-e2e/test-results/
+playwright-report/
+test-results/
+tests/fixtures/.auth/*.json

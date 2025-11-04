@@ -11,13 +11,11 @@
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
     "test:debug": "playwright test --debug",
-    "lighthouse": "lhci autorun",
-    "playwright:install": "playwright install --with-deps"
+    "lighthouse": "lhci autorun"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.8.3",
     "@lhci/cli": "^0.15.0",
-    "@playwright/test": "^1.40.1",
     "workbox-cli": "^7.1.0"
   },
   "engines": {
