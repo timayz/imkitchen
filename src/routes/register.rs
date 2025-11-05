@@ -1,12 +1,13 @@
 use axum::{
     extract::{Form, Path, State},
-    response::IntoResponse,
+    response::{Html, IntoResponse},
 };
+use axum_extra::extract::CookieJar;
 use imkitchen_user::{Metadata, RegisterInput};
 use serde::Deserialize;
 
-use crate::filters;
-use crate::{extract::template::Template, server::AppState};
+use crate::{auth::build_cookie, filters};
+use crate::{server::AppState, template::Template};
 
 #[derive(askama::Template)]
 #[template(path = "register.html")]
@@ -96,6 +97,7 @@ pub async fn status(
     template: Template<RegisterStatusTemplate>,
     error_template: Template<RegisterStatusErrorTemplate>,
     State(state): State<AppState>,
+    jar: CookieJar,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
     let user = match state.user_command.load(&id).await {
@@ -119,7 +121,29 @@ pub async fn status(
     };
 
     match user.item.status {
-        imkitchen_user::Status::Idle => ([("ts-location", "/")], "").into_response(),
+        imkitchen_user::Status::Idle => {
+                        let auth_cookie = match build_cookie(state.config.jwt, id) {
+                Ok(cookie) => cookie,
+                Err(e) => {
+                    tracing::error!("{e}");
+
+                    return error_template
+                        .render(RegisterStatusErrorTemplate {
+                            error_message: "Something went wrong, please retry later".to_owned(),
+                        })
+                        .into_response();
+                }
+            };
+
+            let jar = jar.add(auth_cookie);
+
+            let mut resp = Html("").into_response();
+            resp.headers_mut()
+                .insert("ts-location", "/".parse().unwrap());
+
+            (jar, resp).into_response()
+
+        }
         imkitchen_user::Status::Failed(reason) => (
             [
                 (

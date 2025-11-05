@@ -1,12 +1,12 @@
 mod assets;
+mod auth;
 mod config;
 mod db;
-mod extract;
-mod jwt;
 mod middleware;
 mod migrate;
 mod routes;
 mod server;
+mod template;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};

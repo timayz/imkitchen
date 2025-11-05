@@ -1,12 +1,14 @@
 use axum::Form;
 use axum::extract::State;
-use axum::response::IntoResponse;
+use axum::response::{Html, IntoResponse};
+use axum_extra::extract::CookieJar;
 use imkitchen_user::{LoginInput, Metadata};
 use serde::Deserialize;
 
-use crate::extract::template::Template;
+use crate::auth::build_cookie;
 use crate::filters;
 use crate::server::AppState;
+use crate::template::Template;
 
 #[derive(askama::Template)]
 #[template(path = "login.html")]
@@ -33,6 +35,7 @@ pub struct ActionInput {
 pub async fn action(
     template: Template<LoginTemplate>,
     State(state): State<AppState>,
+    jar: CookieJar,
     Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {
     match state
@@ -47,7 +50,32 @@ pub async fn action(
         )
         .await
     {
-        Ok(_id) => ([("ts-location", "/")], "").into_response(),
+        Ok(id) => {
+            let auth_cookie = match build_cookie(state.config.jwt, id) {
+                Ok(cookie) => cookie,
+                Err(e) => {
+                    tracing::error!("{e}");
+
+                    return template
+                        .render(LoginTemplate {
+                            email: Some(input.email),
+                            password: Some(input.password),
+                            error_message: Some(
+                                "Something went wrong, please retry later".to_owned(),
+                            ),
+                        })
+                        .into_response();
+                }
+            };
+
+            let jar = jar.add(auth_cookie);
+
+            let mut resp = Html("").into_response();
+            resp.headers_mut()
+                .insert("ts-location", "/".parse().unwrap());
+
+            (jar, resp).into_response()
+        }
         Err(e) => template
             .render(LoginTemplate {
                 email: Some(input.email),

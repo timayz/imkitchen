@@ -1,7 +1,7 @@
 use axum::response::IntoResponse;
 
-use crate::extract::template::Template;
 use crate::filters;
+use crate::template::Template;
 
 pub mod health;
 pub mod help;
