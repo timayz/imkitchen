@@ -11,12 +11,13 @@ authors = ["imkitchen team"]
 [workspace.dependencies]
 tokio = { version = "1.40", features = ["full"] }
 axum = { version = "0.8", features = ["macros", "multipart"] }
-axum-extra = { version = "0.12", features = ["cookie"] }
+axum-extra = { version = "0.12", features = ["cookie", "form", "query"] }
 tower = "0.5"
 tower-http = { version = "0.6", features = ["fs", "trace", "compression-br", "compression-gzip"] }
 rust-i18n = "3.1"
 askama = "0.14"
 sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite", "chrono", "uuid"] }
+sqlx_migrator = { version = "0.18", features = ["sqlite"] }
 evento = { version = "1.5", features = ["sqlite"] }
 argon2 = { version = "0.5", features = ["std"] }
 jsonwebtoken = { version = "10.1", features = ["aws_lc_rs"] }
@@ -41,6 +42,11 @@ base64 = "0.22"
 url = "2.5"
 minify-html = "0.18"
 tower-livereload = "0.9"
+ulid = "1.2"
+sea-query = { version = "1.0.0-rc.14", default-features = false, features = ["derive", "audit", "backend-sqlite"] }
+sea-query-sqlx = { version = "0.8.0-rc.9", features = ["runtime-tokio", "sqlx-sqlite"] }
+async-trait = "0.1"
+futures = "0.3"
 
 [package]
 name = "imkitchen"
@@ -58,7 +64,7 @@ tokio = { workspace = true }
 axum = { workspace = true }
 rust-i18n = { workspace = true }
 tower-livereload = { workspace = true }
-# axum-extra = { workspace = true }
+axum-extra = { workspace = true }
 tower = { workspace = true }
 tower-http = { workspace = true }
 askama = { workspace = true }
@@ -83,7 +89,10 @@ mime_guess = { workspace = true }
 # validator = { workspace = true }
 # base64 = { workspace = true }
 minify-html = { workspace = true }
-# imkitchen-user = { path = "crates/user" }
+sqlx_migrator = { workspace = true }
+jsonwebtoken = { workspace = true }
+futures = { workspace = true }
+imkitchen-user = { path = "crates/user" }
 # imkitchen-recipe = { path = "crates/recipe" }
 # imkitchen-mealplan = { path = "crates/mealplan" }
 # imkitchen-notification = { path = "crates/notification" }

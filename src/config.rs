@@ -5,7 +5,7 @@ use serde::Deserialize;
 pub struct Config {
     pub server: ServerConfig,
     pub database: DatabaseConfig,
-    // pub jwt: JwtConfig,
+    pub jwt: JwtConfig,
     // pub email: EmailConfig,
     // pub stripe: StripeConfig,
     // pub features: FeaturesConfig,
@@ -35,6 +35,7 @@ pub struct MonitoringConfig {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct ServerConfig {
+    // pub url: String,
     pub host: String,
     pub port: u16,
 }
@@ -44,12 +45,14 @@ pub struct DatabaseConfig {
     pub url: String,
     pub max_connections: u32,
 }
-//
-// #[derive(Debug, Deserialize, Clone)]
-// pub struct JwtConfig {
-//     pub secret: String,
-//     pub expiration_days: i64,
-// }
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct JwtConfig {
+    pub audience: String,
+    pub issuer: String,
+    pub secret: String,
+    pub expiration_days: u64,
+}
 
 // #[derive(Debug, Deserialize, Clone)]
 // pub struct StripeConfig {
@@ -68,14 +71,17 @@ impl Config {
     pub fn load(config_path: Option<String>) -> Result<Self, ConfigError> {
         let config_path = config_path.unwrap_or_else(|| "imkitchen.toml".to_string());
         ConfigBuilder::builder()
+            // .set_default("server.url", "https://inkitchen.localhost")?
             .set_default("server.host", "0.0.0.0")?
             .set_default("server.port", 3000)?
             .set_default("database.url", "sqlite:imkitchen.db")?
             .set_default("database.max_connections", 5)?
+            .set_default("jwt.audience", "https://imkitchen.localhost")?
+            .set_default("jwt.issuer", "imkitchen.localhost")?
             .set_default("jwt.secret", "TOKEN-NOT-SECURE-MUST-BE-CHANGE")?
             .set_default("jwt.expiration_days", 7)?
             .set_default("features.premium", true)?
-            .set_default("monitoring.log_level", "debug")?
+            .set_default("monitoring.log_level", "debug,sqlx=info")?
             .set_default("monitoring.log_json", false)?
             .set_default("monitoring.log_target", true)?
             .set_default("monitoring.log_line_number", true)?

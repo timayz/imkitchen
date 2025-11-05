@@ -1,6 +1,6 @@
 # Story 1.1: Project Infrastructure Setup
 
-Status: done
+Status: drafted
 
 ## Story
 
@@ -21,138 +21,110 @@ So that the project foundation supports event-driven architecture and web server
 
 ## Tasks / Subtasks
 
-- [x] Task 1: Initialize Rust workspace with bounded context crates (AC: 1)
-  - [x] Create workspace Cargo.toml in project root with all dependencies as workspace dependencies
-  - [x] Create bounded context crates: crates/imkitchen-user/, crates/imkitchen-recipe/, crates/imkitchen-mealplan/
-  - [x] Each crate Cargo.toml configured to use workspace dependencies
-  - [x] Verify dependency versions: evento 1.5+, axum 0.8.6, sqlx 0.8.2, askama 0.14.0, etc.
+- [ ] Task 1: Initialize Rust workspace (AC: 1)
+  - [ ] Create workspace Cargo.toml with all required dependencies as workspace.dependencies
+  - [ ] Configure workspace members array (root binary + future crates)
+  - [ ] Add all dependencies per architecture.md: evento 1.5+, axum 0.8.6, axum-extra 0.12+, askama 0.14+, askama_web 0.14+, sqlx 0.8.2, validator 0.20+, ulid 1.2+, clap 4.5.23, config 0.15+, tracing, tokio 1.42+, serde, chrono
 
-- [x] Task 2: Implement CLI commands (serve, migrate, reset) (AC: 2)
-  - [x] Create src/main.rs with clap CLI parser
-  - [x] Implement `serve` command that starts axum server
-  - [x] Implement `migrate` command using sqlx::migrate! and evento::sql_migrator
-  - [x] Migrate command creates databases if they don't exist
-  - [x] Implement `reset` command that drops databases and runs migrate
-  - [x] Add command help text and argument validation
+- [ ] Task 2: Implement CLI commands (AC: 2)
+  - [ ] Create src/main.rs with clap CLI parser
+  - [ ] Implement `serve` command to start Axum server
+  - [ ] Implement `migrate` command to run database migrations (must create databases if they don't exist)
+  - [ ] Implement `reset` command to drop databases and rerun migrate
+  - [ ] Create src/server.rs with basic Axum server setup (empty routes for now)
+  - [ ] Create src/migrate.rs with migration runner logic
 
-- [x] Task 3: Set up configuration system (AC: 3)
-  - [x] Create config/ directory
-  - [x] Create config/default.toml with all default settings (committed to git)
-  - [x] Add config/dev.toml to .gitignore
-  - [x] Implement config loading using config crate
-  - [x] Document required config fields in default.toml
+- [ ] Task 3: Configuration system setup (AC: 3)
+  - [ ] Create config/default.toml with default settings (server port, database paths, etc.)
+  - [ ] Add config/dev.toml to .gitignore
+  - [ ] Implement configuration loading in main.rs using config crate
+  - [ ] Document configuration structure in config/default.toml comments
 
-- [x] Task 4: Create database structure (AC: 4, 5)
-  - [x] Set up three SQLite databases: evento.db (write), queries.db (read), validation.db
-  - [x] Create migrations/queries/ directory for read database migrations
-  - [x] Create migrations/validation/ directory for validation database migrations
-  - [x] Ensure migrate command creates databases if they don't exist
-  - [x] Document database separation in README or architecture docs
+- [ ] Task 4: Database initialization (AC: 4, 5)
+  - [ ] Create migrations/queries/ directory for read database migrations
+  - [ ] Create migrations/validation/ directory for validation database migrations
+  - [ ] Configure sqlx migrations in migrate.rs for queries and validation DBs
+  - [ ] Configure evento migration support for write DB (evento.db)
+  - [ ] Test migration commands create all three databases correctly
 
-- [x] Task 5: Configure Playwright E2E testing (AC: 6)
-  - [x] Initialize npm package.json for Playwright
-  - [x] Install Playwright dependencies
-  - [x] Create tests/e2e/ directory
-  - [x] Create example E2E test (e.g., health check or home page load)
-  - [x] Add Playwright config file (playwright.config.ts)
-  - [x] Document E2E test execution in README
+- [ ] Task 5: Testing infrastructure (AC: 6, 7)
+  - [ ] Create tests/ directory for integration tests
+  - [ ] Create tests/e2e/ directory for Playwright tests
+  - [ ] Install Playwright dependencies (package.json with playwright 1.56+)
+  - [ ] Create example E2E test (tests/e2e/smoke.spec.ts) verifying server starts
+  - [ ] Create test helper functions in tests/helpers.rs for database setup using sqlx::migrate! and evento::sql_migrator
+  - [ ] Document DRY pattern for database setup in test helpers
 
-- [x] Task 6: Create Rust test helper functions (AC: 7)
-  - [x] Create tests/ directory in project root
-  - [x] Implement database setup helpers using sqlx::migrate!
-  - [x] Implement evento setup helpers using evento::sql_migrator
-  - [x] Create test fixtures for common test scenarios
-  - [x] Document test helper usage
-
-- [x] Task 7: Verify code quality standards (AC: 8)
-  - [x] Run `cargo clippy --workspace --all-targets --all-features -- -D warnings`
-  - [x] Run `cargo fmt --all`
-  - [x] Fix all clippy warnings (no #[allow(...)] suppressions)
-  - [x] Ensure project compiles without errors
-  - [x] Document code quality commands in README
+- [ ] Task 6: Code quality validation (AC: 8)
+  - [ ] Run `cargo clippy --workspace --all-targets --all-features -- -D warnings` and fix all issues
+  - [ ] Run `cargo fmt --all` to format code
+  - [ ] Verify project compiles: `cargo build --workspace`
+  - [ ] Run basic integration test verifying CLI commands work
 
 ## Dev Notes
 
 ### Architecture Patterns
 
-From [architecture.md](../architecture.md):
-- **Workspace Structure**: Main binary + bounded context crates pattern (imkitchen-user, imkitchen-recipe, imkitchen-mealplan)
-- **Database Separation**: Three SQLite databases following CQRS pattern:
-  - evento.db (write DB) - managed exclusively by evento
-  - queries.db (read DB) - projections for queries
-  - validation.db - async validation constraints
-- **CLI Commands**: serve (start server), migrate (run migrations + create DBs), reset (drop + migrate)
-- **Configuration**: TOML-based (config/default.toml committed, config/dev.toml gitignored)
+**Event-Driven CQRS Architecture:**
+- Three separate SQLite databases: evento.db (write), queries.db (read), validation.db
+- evento manages write DB exclusively - never query directly
+- Query handlers update projections in read DB
+- Validation DB used for async uniqueness checks in command handlers
 
-### Dependency Versions
+**Project Structure:**
+- Workspace with root binary + bounded context crates (added in later stories)
+- All dependencies managed in workspace Cargo.toml for version consistency
+- Configuration via TOML files (default.toml committed, dev.toml local)
 
-All dependencies must be managed using workspace dependencies in root Cargo.toml:
-- evento: 1.5+ (feature: sqlite)
-- axum: 0.8.6
-- axum-extra: 0.12+ (features: form, query)
-- askama: 0.14+
-- askama_web: 0.14+
-- sqlx: 0.8.2 (features: runtime-tokio-rustls, sqlite)
-- validator: 0.20+
-- ulid: 1.2+
-- clap: 4.5.23
-- config: 0.15.0
+**CLI Commands:**
+- `serve` - Start web server (Axum on configured port, default 3000)
+- `migrate` - Run all migrations (creates databases if missing)
+- `reset` - Drop all databases and rerun migrate (development only)
 
-From [CLAUDE.md](/home/snapiz/projects/github/timayz/imkitchen/CLAUDE.md):
-- Migration files must follow format: `{timestamp}_{table_name}.sql` (timestamp format: YYYYMMDDHHmmss)
-- Always create database if it doesn't exist (migrate command requirement)
+**Testing Standards:**
+- Integration tests in tests/ folder (NOT src/)
+- Use sqlx::migrate! and evento::sql_migrator for test database setup
+- DRY principle: Create reusable helper functions for database initialization
+- Playwright for E2E critical flows
 
 ### Project Structure Notes
 
-Expected project structure aligned with architecture.md:
+This story establishes the foundational structure per architecture.md:
 
 ```
 imkitchen/
 ├── Cargo.toml                 # Workspace definition
 ├── config/
-│   ├── default.toml          # Default configuration (committed)
-│   └── dev.toml              # Local dev config (.gitignore)
+│   ├── default.toml          # Committed defaults
+│   └── dev.toml              # .gitignore (local overrides)
 ├── src/
 │   ├── main.rs               # CLI entry point
-│   ├── lib.rs                # Shared app types
-│   ├── server.rs             # Web server (serve command)
-│   └── migrate.rs            # Database migrations
-├── crates/
-│   ├── imkitchen-user/
-│   │   └── Cargo.toml
-│   ├── imkitchen-recipe/
-│   │   └── Cargo.toml
-│   └── imkitchen-mealplan/
-│       └── Cargo.toml
+│   ├── server.rs             # Axum server
+│   └── migrate.rs            # Migration runner
 ├── migrations/
-│   ├── queries/              # Read database migrations
-│   └── validation/           # Validation database migrations
-└── tests/
-    └── e2e/                  # Playwright tests
+│   ├── queries/              # Read DB migrations
+│   └── validation/           # Validation DB migrations
+├── tests/
+│   ├── helpers.rs            # Reusable test utilities
+│   └── e2e/                  # Playwright tests
+├── .gitignore                # Must include config/dev.toml
+└── package.json              # Playwright dependencies
 ```
 
-### Testing Standards
-
-From [CLAUDE.md](/home/snapiz/projects/github/timayz/imkitchen/CLAUDE.md):
-- Always use migrations for database setup (sqlx::migrate! and evento::sql_migrator)
-- Never create tables directly using sqlx::query in tests
-- Apply DRY principle for test database setup - create reusable helpers
-- Test files in tests/ folder (not in src/)
+Additional directories (crates/, templates/, static/) will be added in subsequent stories.
 
 ### References
 
-- [PRD: Epic 1 Overview](../PRD.md#epic-1-foundation--user-management) - Project foundation requirements
-- [Architecture: Project Structure](../architecture.md#project-structure) - Detailed folder structure
-- [Architecture: Technology Stack](../architecture.md#technology-stack-details) - Dependency versions
-- [CLAUDE.md: CLI Configuration](/home/snapiz/projects/github/timayz/imkitchen/CLAUDE.md#cli-and-configuration) - CLI command requirements
-- [CLAUDE.md: Database Guidelines](/home/snapiz/projects/github/timayz/imkitchen/CLAUDE.md#database-guidelines) - Database separation rules
-- [CLAUDE.md: Testing Guidelines](/home/snapiz/projects/github/timayz/imkitchen/CLAUDE.md#testing-guidelines) - Test structure requirements
+- [Source: docs/architecture.md#Project Structure] - Complete directory layout
+- [Source: docs/architecture.md#Technology Stack Details] - Dependency versions
+- [Source: docs/architecture.md#Database Separation] - Three-database pattern
+- [Source: docs/architecture.md#Development Environment] - Setup commands
+- [Source: docs/PRD.md#Goals and Background Context] - Project overview
+- [Source: CLAUDE.md#CLI and Configuration] - CLI command requirements
+- [Source: CLAUDE.md#Database Guidelines] - Database separation rules
+- [Source: CLAUDE.md#Testing Guidelines] - TDD and migration-based test setup
 
 ## Dev Agent Record
-
-### Completion Notes
-**Completed:** 2025-11-01
-**Definition of Done:** All acceptance criteria met, code reviewed, tests passing
 
 ### Context Reference
 
@@ -160,115 +132,16 @@ From [CLAUDE.md](/home/snapiz/projects/github/timayz/imkitchen/CLAUDE.md):
 
 ### Agent Model Used
 
-claude-sonnet-4-5-20250929
+<!-- Will be populated during implementation -->
 
 ### Debug Log References
 
-**Task 1 Plan:**
-- Create workspace Cargo.toml with all dependencies (evento 1.5+, axum 0.8.6, sqlx 0.8.2, etc.)
-- Create bounded context crates: imkitchen-user, imkitchen-recipe, imkitchen-mealplan
-- Configure each crate to use workspace dependencies
-- Verify dependency versions match requirements
-
-**Task 2 Plan:**
-- Implement clap CLI with three commands: serve, migrate, reset
-- Create server.rs with basic axum server setup
-- Create migrate.rs with database migration logic using sqlx::migrate! and evento::sql_migrator
-- Migrate command must create databases if they don't exist
-- Reset command drops databases and runs migrate
-- Add proper error handling and help text
-
-**Task 3 Plan:**
-- Create config/ directory
-- Create config/default.toml with all default configuration (server, databases, logging)
-- Implement config loading using config crate in src/lib.rs
-- Update CLI commands to use configuration
-- Document config fields in default.toml
-
-**Task 5 Plan:**
-- Initialize npm package.json with Playwright
-- Install Playwright dependencies
-- Create tests/e2e/ directory
-- Create example E2E test (health check)
-- Create playwright.config.ts
-- Update .gitignore for node_modules and Playwright artifacts
-
-**Task 6 Plan:**
-- Create tests/helpers/ directory for shared test utilities
-- Implement database setup helper using sqlx::migrate!
-- Implement evento setup helper
-- Create cleanup helpers for test teardown
-- Document test helper usage
+<!-- Will be populated during implementation -->
 
 ### Completion Notes List
 
-**Story Implementation Complete:**
-
-Successfully implemented complete project infrastructure setup including:
-- Rust workspace with 3 bounded context crates (user, recipe, mealplan)
-- CLI with serve, migrate, and reset commands
-- TOML-based configuration system with environment variable support
-- Three-database architecture (evento.db, queries.db, validation.db)
-- Playwright E2E testing framework with example tests
-- Comprehensive test helper functions following DRY principles
-- All code quality checks pass (clippy, fmt)
-
-**Key Technical Decisions:**
-- Used manual SQL for evento schema since evento::sql_migrator API was complex
-- Implemented in-memory databases for test fixtures
-- Configuration supports CLI overrides and environment variables
-- All acceptance criteria met and validated with tests
+<!-- Will be populated during implementation -->
 
 ### File List
 
-**Task 1 - Workspace Structure:**
-- Cargo.toml (workspace root)
-- src/lib.rs
-- src/main.rs (placeholder)
-- crates/imkitchen-user/Cargo.toml
-- crates/imkitchen-user/src/lib.rs
-- crates/imkitchen-user/src/command.rs
-- crates/imkitchen-user/src/event.rs
-- crates/imkitchen-user/src/aggregate.rs
-- crates/imkitchen-recipe/Cargo.toml
-- crates/imkitchen-recipe/src/lib.rs
-- crates/imkitchen-recipe/src/command.rs
-- crates/imkitchen-recipe/src/event.rs
-- crates/imkitchen-recipe/src/aggregate.rs
-- crates/imkitchen-mealplan/Cargo.toml
-- crates/imkitchen-mealplan/src/lib.rs
-- crates/imkitchen-mealplan/src/command.rs
-- crates/imkitchen-mealplan/src/event.rs
-- crates/imkitchen-mealplan/src/aggregate.rs
-- tests/workspace_structure.rs
-
-**Task 2 - CLI Commands:**
-- src/main.rs (complete CLI implementation)
-- src/server.rs
-- src/migrate.rs
-- migrations/queries/20251101164257_initial.sql
-- migrations/validation/20251101164257_initial.sql
-- .gitignore (updated with databases and config/dev.toml)
-- tests/cli_commands.rs
-
-**Task 3 - Configuration System:**
-- config/default.toml
-- src/config.rs
-- src/lib.rs (updated with config export)
-- src/main.rs (updated to use config)
-- src/server.rs (updated to use config)
-- src/migrate.rs (updated to use config)
-- tests/configuration.rs
-
-**Task 4 - Database Structure:**
-- Completed as part of Task 2 (databases created by migrate command)
-
-**Task 5 - Playwright E2E Testing:**
-- package.json
-- playwright.config.ts
-- tests/e2e/example.spec.ts
-- .gitignore (updated with node_modules and Playwright artifacts)
-
-**Task 6 - Test Helper Functions:**
-- tests/helpers/mod.rs
-- tests/database_helpers.rs
+<!-- Will be populated during implementation -->

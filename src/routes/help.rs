@@ -1,7 +1,7 @@
 use axum::response::IntoResponse;
 
-use crate::extract::template::Template;
 use crate::filters;
+use crate::template::Template;
 
 #[derive(askama::Template)]
 #[template(path = "help.html")]
