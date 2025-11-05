@@ -8,7 +8,7 @@ conventional commits multi-paragraph body:
 create PR: 
   - title: same as commit
   - body: 
-    - story tasks / subtasks
+    - story tasks / subtasks, not marked as complete
     - closed that issue xxx
     - do not mention any abort claude code
   - target: alpha
