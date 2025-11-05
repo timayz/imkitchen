@@ -2,14 +2,14 @@ use argon2::{
     Argon2,
     password_hash::{PasswordHasher, SaltString, rand_core::OsRng},
 };
-use evento::{AggregatorName, Executor, SubscribeBuilder};
+use evento::{AggregatorName, Executor, LoadResult, SubscribeBuilder};
 use sea_query::{Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use validator::Validate;
 
 use crate::{
     Metadata, RegistrationFailed, RegistrationRequested, RegistrationSucceeded, User, UserEvent,
-    sql::user_emails::UserEmail,
+    sql::user::User as UserIden,
 };
 
 #[derive(Validate)]
@@ -20,9 +20,14 @@ pub struct RegisterInput {
     pub password: String,
 }
 
+#[derive(Clone)]
 pub struct Command<E: Executor + Clone>(pub E);
 
 impl<E: Executor + Clone> Command<E> {
+    pub async fn load(&self, id: impl Into<String>) -> Result<LoadResult<User>, evento::ReadError> {
+        evento::load(&self.0, id).await
+    }
+
     pub async fn register(
         &self,
         input: RegisterInput,
@@ -54,9 +59,12 @@ async fn handle_registration_requested<E: Executor>(
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
     let statement = Query::insert()
-        .into_table(UserEmail::Table)
-        .columns([UserEmail::Email])
-        .values_panic([event.data.email.to_string().into()])
+        .into_table(UserIden::Table)
+        .columns([UserIden::Id, UserIden::Email])
+        .values_panic([
+            event.aggregator_id.to_string().into(),
+            event.data.email.to_string().into(),
+        ])
         .to_owned();
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
@@ -65,7 +73,6 @@ async fn handle_registration_requested<E: Executor>(
         evento::save::<User>(&event.aggregator_id)
             .data(&RegistrationSucceeded {
                 email: event.data.email,
-                password_hash: event.data.password_hash,
             })?
             .metadata(&event.metadata)?
             .commit(context.executor)
@@ -75,7 +82,7 @@ async fn handle_registration_requested<E: Executor>(
 
     if !e
         .to_string()
-        .contains("UNIQUE constraint failed: user_email.email")
+        .contains("UNIQUE constraint failed: user.email")
     {
         return Err(e.into());
     }

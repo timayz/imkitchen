@@ -11,7 +11,6 @@ pub struct RegistrationRequested {
 #[derive(AggregatorName, Encode, Decode)]
 pub struct RegistrationSucceeded {
     pub email: String,
-    pub password_hash: String,
 }
 
 #[derive(AggregatorName, Encode, Decode)]

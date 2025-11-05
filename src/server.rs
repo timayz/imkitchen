@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use anyhow::Result;
 use axum::{Router, routing::get};
 use tower_http::{compression::CompressionLayer, trace::TraceLayer};
@@ -5,6 +7,7 @@ use tower_http::{compression::CompressionLayer, trace::TraceLayer};
 #[derive(Clone)]
 pub struct AppState {
     pub config: crate::config::Config,
+    pub user_command: imkitchen_user::Command<evento::Sqlite>,
 }
 
 pub async fn serve(
@@ -27,7 +30,22 @@ pub async fn serve(
     let read_pool_size = config.database.max_connections;
     let read_pool = crate::db::create_read_pool(&config.database.url, read_pool_size).await?;
 
-    let state = AppState { config };
+    let evento_executor: evento::Sqlite = write_pool.clone().into();
+    let user_command = imkitchen_user::Command(evento_executor.clone());
+
+    // Start background notification worker
+    tracing::info!("Starting evento subscriptions...");
+
+    let sub_user_command = imkitchen_user::subscribe_command()
+        .data(write_pool.clone())
+        .delay(Duration::from_secs(10))
+        .run(&evento_executor)
+        .await?;
+
+    let state = AppState {
+        config,
+        user_command,
+    };
 
     // Build router with health checks using read pool state
     let app = Router::new()
@@ -39,7 +57,14 @@ pub async fn serve(
         .route("/help", get(crate::routes::help::page))
         .route("/terms", get(crate::routes::terms::page))
         .route("/policy", get(crate::routes::policy::page))
-        .route("/register", get(crate::routes::register::page))
+        .route(
+            "/register",
+            get(crate::routes::register::page).post(crate::routes::register::action),
+        )
+        .route(
+            "/register/status/{id}",
+            get(crate::routes::register::status),
+        )
         .route("/login", get(crate::routes::login::page))
         .fallback(crate::routes::fallback)
         .route("/sw.js", get(crate::routes::service_worker::sw))
@@ -70,9 +95,6 @@ pub async fn serve(
         // Enable Brotli and Gzip compression for all text assets (Story 5.9)
         .layer(CompressionLayer::new().br(true).gzip(true))
         .layer(TraceLayer::new_for_http());
-
-    // Start background notification worker
-    tracing::info!("Starting notification background worker...");
 
     // Start server
     let addr = format!("{}:{}", host, port);
@@ -118,6 +140,12 @@ pub async fn serve(
     tracing::info!("Shutting down evento projections...");
 
     // Shutdown all projection subscriptions
+    let results = futures::future::join_all(vec![sub_user_command.shutdown_and_wait()]).await;
+    for result in results {
+        if let Err(e) = result {
+            tracing::error!("{e}");
+        }
+    }
 
     tracing::info!("All projections shut down successfully");
 

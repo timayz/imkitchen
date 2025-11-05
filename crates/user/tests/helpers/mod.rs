@@ -13,7 +13,7 @@ pub struct TestState {
 pub async fn setup_test_state() -> anyhow::Result<TestState> {
     let pool = SqlitePool::connect("sqlite::memory:").await?;
     let mut migrator = evento::sql_migrator::new_migrator::<sqlx::Sqlite>()?;
-    migrator.add_migration(Box::new(imkitchen_user::sql::user_emails::Migration01))?;
+    migrator.add_migration(Box::new(imkitchen_user::sql::user::Migration01))?;
     let mut conn = pool.acquire().await?;
     migrator.run(&mut conn, &Plan::apply_all()).await?;
 

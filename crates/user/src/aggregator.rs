@@ -20,15 +20,17 @@ pub enum Status {
 #[derive(Default, Encode, Decode, Clone, Debug)]
 pub struct User {
     pub status: Status,
+    pub password_hash: String,
 }
 
 #[evento::aggregator]
 impl User {
     async fn handle_register_requested(
         &mut self,
-        _event: UserEvent<RegistrationRequested>,
+        event: UserEvent<RegistrationRequested>,
     ) -> anyhow::Result<()> {
         self.status = Status::Processing(Action::Registration);
+        self.password_hash = event.data.password_hash;
 
         Ok(())
     }

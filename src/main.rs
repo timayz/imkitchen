@@ -2,6 +2,7 @@ mod assets;
 mod config;
 mod db;
 mod extract;
+mod jwt;
 mod middleware;
 mod migrate;
 mod routes;

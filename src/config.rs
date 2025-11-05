@@ -5,7 +5,7 @@ use serde::Deserialize;
 pub struct Config {
     pub server: ServerConfig,
     pub database: DatabaseConfig,
-    // pub jwt: JwtConfig,
+    pub jwt: JwtConfig,
     // pub email: EmailConfig,
     // pub stripe: StripeConfig,
     // pub features: FeaturesConfig,
@@ -44,12 +44,12 @@ pub struct DatabaseConfig {
     pub url: String,
     pub max_connections: u32,
 }
-//
-// #[derive(Debug, Deserialize, Clone)]
-// pub struct JwtConfig {
-//     pub secret: String,
-//     pub expiration_days: i64,
-// }
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct JwtConfig {
+    pub secret: String,
+    pub expiration_days: i64,
+}
 
 // #[derive(Debug, Deserialize, Clone)]
 // pub struct StripeConfig {
@@ -75,7 +75,7 @@ impl Config {
             .set_default("jwt.secret", "TOKEN-NOT-SECURE-MUST-BE-CHANGE")?
             .set_default("jwt.expiration_days", 7)?
             .set_default("features.premium", true)?
-            .set_default("monitoring.log_level", "debug")?
+            .set_default("monitoring.log_level", "debug,sqlx=info")?
             .set_default("monitoring.log_json", false)?
             .set_default("monitoring.log_target", true)?
             .set_default("monitoring.log_line_number", true)?

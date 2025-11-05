@@ -1,1 +1,1 @@
-pub mod user_emails;
+pub mod user;
