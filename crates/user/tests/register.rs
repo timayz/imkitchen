@@ -5,7 +5,7 @@ mod helpers;
 #[tokio::test]
 async fn validate_unique_emails() -> anyhow::Result<()> {
     let state = helpers::setup_test_state().await?;
-    let command = imkitchen_user::Command(state.evento.clone());
+    let command = imkitchen_user::Command(state.evento.clone(), state.pool.clone());
     let user_1 = command
         .register(
             RegisterInput {

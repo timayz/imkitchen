@@ -20,7 +20,6 @@ pub struct RegistrationFailed {
 
 #[derive(AggregatorName, Encode, Decode)]
 pub struct LoggedIn {
-    pub email: String,
     pub lang: String,
 }
 

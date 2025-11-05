@@ -663,5 +663,11 @@
   "If you have questions, concerns, or disputes regarding these Terms, please contact us:": "Si vous avez des questions, préoccupations ou litiges concernant ces Conditions, veuillez nous contacter :",
   "Support:": "Support :",
   "By creating an account or using imkitchen, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.": "En créant un compte ou en utilisant imkitchen, vous reconnaissez avoir lu, compris et acceptez d'être lié par ces Conditions d'Utilisation.",
-  "If you do not agree to these Terms, you must not access or use our Services.": "Si vous n'acceptez pas ces Conditions, vous ne devez pas accéder ou utiliser nos Services."
+  "If you do not agree to these Terms, you must not access or use our Services.": "Si vous n'acceptez pas ces Conditions, vous ne devez pas accéder ou utiliser nos Services.",
+  "Creating your account...": "Création de votre compte...",
+  "Verifying if email is not aleady taken.": "Vérification que l'email n'est pas déjà pris.",
+  "Something went wrong, please retry later": "Une erreur s'est produite, veuillez réessayer plus tard",
+  "Passwords don't match. Please make sure both fields are identical.": "Les mots de passe ne correspondent pas. Veuillez vous assurer que les deux champs sont identiques.",
+  "Email already exists": "L'adresse e-mail existe déjà",
+  "Invalid email or password. Please try again.": "E-mail ou mot de passe invalide. Veuillez réessayer."
 }

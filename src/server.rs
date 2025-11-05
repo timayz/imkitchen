@@ -31,7 +31,7 @@ pub async fn serve(
     let read_pool = crate::db::create_read_pool(&config.database.url, read_pool_size).await?;
 
     let evento_executor: evento::Sqlite = write_pool.clone().into();
-    let user_command = imkitchen_user::Command(evento_executor.clone());
+    let user_command = imkitchen_user::Command(evento_executor.clone(), read_pool.clone());
 
     // Start background notification worker
     tracing::info!("Starting evento subscriptions...");
@@ -65,7 +65,10 @@ pub async fn serve(
             "/register/status/{id}",
             get(crate::routes::register::status),
         )
-        .route("/login", get(crate::routes::login::page))
+        .route(
+            "/login",
+            get(crate::routes::login::page).post(crate::routes::login::action),
+        )
         .fallback(crate::routes::fallback)
         .route("/sw.js", get(crate::routes::service_worker::sw))
         .nest_service("/static", crate::assets::AssetsService::new())
