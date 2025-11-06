@@ -710,7 +710,7 @@
   "Receive updates about new features and special offers": "Recevoir des mises à jour sur les nouvelles fonctionnalités et offres spéciales",
   "Number of people in your household": "Nombre de personnes dans votre foyer",
   "Repeat Often (0.0)": "Répéter Souvent (0.0)",
-  "Current: 0.7": "Actuel : 0.7",
+  "Current": "Actuel",
   "Maximum Variety (1.0)": "Variété Maximale (1.0)",
   "Controls how often the algorithm repeats similar cuisines. Higher values = more variety.": "Contrôle la fréquence de répétition de cuisines similaires par l'algorithme. Valeurs plus élevées = plus de variété.",
   "Save Preferences": "Enregistrer les Préférences",

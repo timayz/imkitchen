@@ -1158,9 +1158,9 @@ dependencies = [
 
 [[package]]
 name = "evento"
-version = "1.5.1"
+version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81b8c4d62ac50ed4de347d82243b144f677ccafd79df44cdc3db6dd25ebd45ad"
+checksum = "35e207d78f92d15560a6ed13ce78cc76998596432863cf4b49338ff771680881"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1181,9 +1181,9 @@ dependencies = [
 
 [[package]]
 name = "evento-macro"
-version = "1.5.1"
+version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e444da66441192c02ea3bc175ce9b84f0957e79cab5d844c645e36b31ff9c484"
+checksum = "5cdd7b1ed34c2ad99e64e39a7e2317679e04067c6e651ab590f3e33aa6793b19"
 dependencies = [
  "convert_case 0.8.0",
  "proc-macro2",
@@ -1772,6 +1772,7 @@ dependencies = [
  "evento",
  "futures",
  "http-body-util",
+ "imkitchen-shared",
  "imkitchen-user",
  "jsonwebtoken",
  "mime_guess",
@@ -1803,6 +1804,20 @@ name = "imkitchen-recipe"
 version = "0.1.0"
 
 [[package]]
+name = "imkitchen-shared"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "argon2",
+ "bincode",
+ "evento",
+ "sqlx",
+ "thiserror",
+ "ulid",
+ "validator",
+]
+
+[[package]]
 name = "imkitchen-user"
 version = "0.1.0"
 dependencies = [
@@ -1811,12 +1826,12 @@ dependencies = [
  "async-trait",
  "bincode",
  "evento",
+ "imkitchen-shared",
  "sea-query",
  "sea-query-sqlx",
  "sqlx",
  "sqlx_migrator",
  "tokio",
- "ulid",
  "validator",
 ]
 

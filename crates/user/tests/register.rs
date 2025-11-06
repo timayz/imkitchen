@@ -1,4 +1,5 @@
-use imkitchen_user::{Action, Metadata, RegisterInput, Status, User, subscribe_command};
+use imkitchen_shared::Metadata;
+use imkitchen_user::{Action, RegisterInput, Status, subscribe_command};
 
 mod helpers;
 
@@ -25,8 +26,8 @@ async fn validate_unique_emails() -> anyhow::Result<()> {
         )
         .await?;
 
-    let user_1_agg = evento::load::<User, _>(&state.evento, &user_1).await?;
-    let user_2_agg = evento::load::<User, _>(&state.evento, &user_2).await?;
+    let user_1_agg = command.load(&user_1).await?;
+    let user_2_agg = command.load(&user_2).await?;
 
     assert_eq!(
         user_1_agg.item.status,
@@ -42,8 +43,8 @@ async fn validate_unique_emails() -> anyhow::Result<()> {
         .unsafe_oneshot(&state.evento)
         .await?;
 
-    let user_1_agg = evento::load::<User, _>(&state.evento, user_1).await?;
-    let user_2_agg = evento::load::<User, _>(&state.evento, user_2).await?;
+    let user_1_agg = command.load(&user_1).await?;
+    let user_2_agg = command.load(&user_2).await?;
 
     assert_eq!(user_1_agg.item.status, Status::Idle);
     assert_eq!(

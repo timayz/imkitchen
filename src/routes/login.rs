@@ -2,13 +2,14 @@ use axum::Form;
 use axum::extract::State;
 use axum::response::{Html, IntoResponse};
 use axum_extra::extract::CookieJar;
-use imkitchen_user::{LoginInput, Metadata};
+use imkitchen_shared::Metadata;
+use imkitchen_user::LoginInput;
 use serde::Deserialize;
 
 use crate::auth::build_cookie;
 use crate::filters;
 use crate::server::AppState;
-use crate::template::Template;
+use crate::template::{SERVER_ERROR_MESSAGE, Template};
 
 #[derive(askama::Template)]
 #[template(path = "login.html")]
@@ -60,9 +61,7 @@ pub async fn action(
                         .render(LoginTemplate {
                             email: Some(input.email),
                             password: Some(input.password),
-                            error_message: Some(
-                                "Something went wrong, please retry later".to_owned(),
-                            ),
+                            error_message: Some(SERVER_ERROR_MESSAGE.to_owned()),
                         })
                         .into_response();
                 }
@@ -75,6 +74,17 @@ pub async fn action(
                 .insert("ts-location", "/".parse().unwrap());
 
             (jar, resp).into_response()
+        }
+        Err(imkitchen_shared::Error::Unknown(e)) => {
+            tracing::error!("{e}");
+
+            template
+                .render(LoginTemplate {
+                    email: Some(input.email),
+                    password: Some(input.password),
+                    error_message: Some(SERVER_ERROR_MESSAGE.to_owned()),
+                })
+                .into_response()
         }
         Err(e) => template
             .render(LoginTemplate {
