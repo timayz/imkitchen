@@ -2,6 +2,7 @@ use axum::response::IntoResponse;
 
 use crate::template::{NotFoundTemplate, Template};
 
+pub mod admin;
 pub mod health;
 pub mod help;
 pub mod index;

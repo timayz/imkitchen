@@ -89,6 +89,7 @@ pub async fn serve(
             get(crate::routes::profile::notifications::page)
                 .post(crate::routes::profile::notifications::action),
         )
+        .route("/admin/users", get(crate::routes::admin::users::page))
         .route(
             "/profile/security",
             get(crate::routes::profile::security::page)
