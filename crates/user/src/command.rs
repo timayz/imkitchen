@@ -3,14 +3,16 @@ use argon2::{
     password_hash::{PasswordHasher, SaltString, rand_core::OsRng},
 };
 use evento::{AggregatorName, Executor, LoadResult, SubscribeBuilder};
+use imkitchen_shared::{Event, Metadata};
 use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::SqlitePool;
 use validator::Validate;
 
 use crate::{
-    LoggedIn, Metadata, RegistrationFailed, RegistrationRequested, RegistrationSucceeded, User,
-    UserEvent, sql::user::User as UserIden,
+    LoggedIn, RegistrationFailed, RegistrationRequested, RegistrationSucceeded, User,
+    meal_preferences::{self, UserMealPreferences},
+    sql::user::User as UserIden,
 };
 
 #[derive(Validate)]
@@ -30,6 +32,15 @@ pub struct LoginInput {
     pub lang: String,
 }
 
+#[derive(Validate)]
+pub struct UpdateMealPreferencesInput {
+    #[validate(range(min = 1))]
+    pub household_size: u8,
+    pub dietary_restrictions: Vec<String>,
+    #[validate(range(min = 0.0, max = 1.0))]
+    pub cuisine_variety_weight: f32,
+}
+
 #[derive(Clone)]
 pub struct Command<E: Executor + Clone>(pub E, pub SqlitePool);
 
@@ -38,7 +49,18 @@ impl<E: Executor + Clone> Command<E> {
         evento::load(&self.0, id).await
     }
 
-    pub async fn login(&self, input: LoginInput, metadata: Metadata) -> anyhow::Result<String> {
+    pub async fn load_meal_preferences(
+        &self,
+        id: impl Into<String>,
+    ) -> Result<LoadResult<UserMealPreferences>, evento::ReadError> {
+        evento::load(&self.0, id).await
+    }
+
+    pub async fn login(
+        &self,
+        input: LoginInput,
+        metadata: Metadata,
+    ) -> imkitchen_shared::Result<String> {
         input.validate()?;
 
         let statement = Query::select()
@@ -54,7 +76,7 @@ impl<E: Executor + Clone> Command<E> {
             .fetch_optional(&self.1)
             .await?
         else {
-            anyhow::bail!("Invalid email or password. Please try again.");
+            imkitchen_shared::bail!("Invalid email or password. Please try again.");
         };
 
         let user = evento::load::<User, _>(&self.0, &user_id).await?;
@@ -65,7 +87,7 @@ impl<E: Executor + Clone> Command<E> {
             .verify_password(input.password.as_bytes(), &parsed_hash)
             .is_err()
         {
-            anyhow::bail!("Invalid email or password. Please try again.");
+            imkitchen_shared::bail!("Invalid email or password. Please try again.");
         }
 
         Ok(evento::save_with(user)
@@ -79,7 +101,7 @@ impl<E: Executor + Clone> Command<E> {
         &self,
         input: RegisterInput,
         metadata: Metadata,
-    ) -> anyhow::Result<String> {
+    ) -> imkitchen_shared::Result<String> {
         input.validate()?;
 
         let salt = SaltString::generate(&mut OsRng);
@@ -97,12 +119,55 @@ impl<E: Executor + Clone> Command<E> {
             .commit(&self.0)
             .await?)
     }
+
+    pub async fn update_meal_preferences(
+        &self,
+        input: UpdateMealPreferencesInput,
+        metadata: Metadata,
+    ) -> imkitchen_shared::Result<()> {
+        input.validate()?;
+
+        for restriction in &input.dietary_restrictions {
+            if !matches!(
+                restriction.as_str(),
+                "vegetarian" | "vegan" | "gluten-free" | "dairy-free" | "nut-free" | "low-carb"
+            ) {
+                imkitchen_shared::bail!(
+                    "Please select a valid dietary restriction: vegetarian, vegan, gluten-free, dairy-free, nut-free, or low-carb."
+                )
+            }
+        }
+
+        let Some(user_id) = metadata.trigger_by() else {
+            imkitchen_shared::bail!("User not found in metadata");
+        };
+
+        let builder = match evento::load::<UserMealPreferences, _>(&self.0, &user_id).await {
+            Ok(preferences) => evento::save_with(preferences).data(&meal_preferences::Updated {
+                dietary_restrictions: input.dietary_restrictions,
+                household_size: input.household_size,
+                cuisine_variety_weight: input.cuisine_variety_weight,
+            })?,
+            Err(evento::ReadError::NotFound) => {
+                evento::create_with(user_id).data(&meal_preferences::Updated {
+                    dietary_restrictions: input.dietary_restrictions,
+                    household_size: input.household_size,
+                    cuisine_variety_weight: input.cuisine_variety_weight,
+                })?
+            }
+            Err(e) => return Err(e.into()),
+        };
+
+        builder.metadata(&metadata)?.commit(&self.0).await?;
+
+        Ok(())
+    }
 }
 
 #[evento::handler(User)]
 async fn handle_registration_requested<E: Executor>(
     context: &evento::Context<'_, E>,
-    event: UserEvent<RegistrationRequested>,
+    event: Event<RegistrationRequested>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
     let statement = Query::insert()
@@ -148,7 +213,9 @@ async fn handle_registration_requested<E: Executor>(
 pub fn subscribe_command<E: Executor + Clone>() -> SubscribeBuilder<E> {
     evento::subscribe("user-command")
         .handler(handle_registration_requested())
-        .skip::<User, RegistrationFailed>()
         .skip::<User, RegistrationSucceeded>()
+        .skip::<User, RegistrationFailed>()
         .skip::<User, LoggedIn>()
+        .skip::<UserMealPreferences, meal_preferences::Created>()
+        .skip::<UserMealPreferences, meal_preferences::Updated>()
 }

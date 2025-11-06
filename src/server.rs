@@ -69,6 +69,31 @@ pub async fn serve(
             "/login",
             get(crate::routes::login::page).post(crate::routes::login::action),
         )
+        .route(
+            "/profile/account",
+            get(crate::routes::profile::account::page)
+                .post(crate::routes::profile::account::action),
+        )
+        .route(
+            "/profile/meal-preferences",
+            get(crate::routes::profile::meal_preferences::page)
+                .post(crate::routes::profile::meal_preferences::action),
+        )
+        .route(
+            "/profile/subscription",
+            get(crate::routes::profile::subscription::page)
+                .post(crate::routes::profile::subscription::action),
+        )
+        .route(
+            "/profile/notifications",
+            get(crate::routes::profile::notifications::page)
+                .post(crate::routes::profile::notifications::action),
+        )
+        .route(
+            "/profile/security",
+            get(crate::routes::profile::security::page)
+                .post(crate::routes::profile::security::action),
+        )
         .fallback(crate::routes::fallback)
         .route("/sw.js", get(crate::routes::service_worker::sw))
         .nest_service("/static", crate::assets::AssetsService::new())

@@ -5,6 +5,10 @@ use axum::{
 };
 use std::{collections::HashMap, convert::Infallible};
 
+use crate::filters;
+
+pub const SERVER_ERROR_MESSAGE: &str = "Something went wrong, please retry later";
+
 pub struct Template<T> {
     template: Option<T>,
     // preferred_language: String,
@@ -80,3 +84,15 @@ where
         }
     }
 }
+
+#[derive(askama::Template)]
+#[template(path = "404.html")]
+pub struct NotFoundTemplate;
+
+// #[derive(askama::Template)]
+// #[template(path = "403.html")]
+// pub struct ForbiddenTemplate;
+
+#[derive(askama::Template)]
+#[template(path = "500.html")]
+pub struct ServerErrorTemplate;

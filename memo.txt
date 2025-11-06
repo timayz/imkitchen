@@ -4,10 +4,11 @@ git checkout new, add -A, commit, push.
 conventional commits multi-paragraph body:
   - story: 'docs/stories/xxx.md'
   - target audiences: end users that only use WEB UI
+    - do not mention any abort claude code
 create PR: 
   - title: same as commit
   - body: 
-    - story tasks / subtasks
+    - story tasks / subtasks, not marked as complete
     - closed that issue xxx
     - do not mention any abort claude code
   - target: alpha
@@ -22,8 +23,7 @@ in folder fixtures, create recipe json file structured like "example-recipe.json
   [link]
 
 I want to add multi language support. Can you replace all texts in templates/index.html, like 'My text' by '{{ "My test"|t }}' ?
-
-Now I want you to add them to fr.json like { "My test": "Mon test", "My test 2": "Mon test 2" }. Do not add duplicate transalation.
+then I want you to add them to fr.json like { "My test": "Mon test", "My test 2": "Mon test 2" }. Do not add duplicate transalation.
  
 
 SELECT * FROM table WHERE id IN (SELECT id FROM table ORDER BY RANDOM() LIMIT x)

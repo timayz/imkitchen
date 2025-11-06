@@ -1,8 +1,7 @@
 use bincode::{Decode, Encode};
+use imkitchen_shared::Event;
 
-use crate::{
-    LoggedIn, RegistrationFailed, RegistrationRequested, RegistrationSucceeded, UserEvent,
-};
+use crate::{LoggedIn, RegistrationFailed, RegistrationRequested, RegistrationSucceeded};
 
 #[derive(Encode, Decode, Clone, Debug, PartialEq)]
 pub enum Action {
@@ -27,7 +26,7 @@ pub struct User {
 impl User {
     async fn handle_register_requested(
         &mut self,
-        event: UserEvent<RegistrationRequested>,
+        event: Event<RegistrationRequested>,
     ) -> anyhow::Result<()> {
         self.status = Status::Processing(Action::Registration);
         self.password_hash = event.data.password_hash;
@@ -37,7 +36,7 @@ impl User {
 
     async fn handle_registered(
         &mut self,
-        _event: UserEvent<RegistrationSucceeded>,
+        _event: Event<RegistrationSucceeded>,
     ) -> anyhow::Result<()> {
         self.status = Status::Idle;
 
@@ -46,14 +45,14 @@ impl User {
 
     async fn handle_register_failed(
         &mut self,
-        event: UserEvent<RegistrationFailed>,
+        event: Event<RegistrationFailed>,
     ) -> anyhow::Result<()> {
         self.status = Status::Failed(event.data.reason);
 
         Ok(())
     }
 
-    async fn handle_logged_in(&mut self, _event: UserEvent<LoggedIn>) -> anyhow::Result<()> {
+    async fn handle_logged_in(&mut self, _event: Event<LoggedIn>) -> anyhow::Result<()> {
         Ok(())
     }
 }

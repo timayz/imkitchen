@@ -1,0 +1,55 @@
+{% extends "base_user.html" %}
+{% block title %}{{ "Profile & Settings"|t }} - imkitchen{% endblock %}
+
+{% macro nav_item(current, key, content) %}
+<a href="/profile/{{ key }}" class="block w-full text-left px-4 py-3 bg-white{% if current != key %} text-gray-700 hover:bg-gray-50{% else %} text-green-600{% endif %} rounded-lg">
+  {{ content }}
+</a>
+{% endmacro %}
+
+{% macro mobile_nav_item(current, key, content) %}
+<a href="/profile/{{ key }}" class="px-4 py-2 bg-white rounded-lg whitespace-nowrap text-sm{% if current != key %} text-gray-600{% else %} text-green-600{% endif %}">
+  {{ content }}
+</a>
+{% endmacro %}
+
+{% block content %}
+
+<!-- Main Content -->
+<div class="container mx-auto px-4 py-8 max-w-6xl">
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold mb-2">{{ "Profile & Settings"|t }}</h1>
+    <p class="text-gray-600">{{ "Manage your account and preferences"|t }}</p>
+  </div>
+
+  <div class="lg:grid lg:grid-cols-3 gap-8">
+    <!-- Sidebar Navigation - Desktop -->
+    <div class="hidden lg:block space-y-2">
+      {% call nav_item(profile_path, "account", "👤 " ~ ("Account Info"|t)) %}
+      {% call nav_item(profile_path, "meal-preferences", "🍽️ " ~ ("Meal Preferences"|t)) %}
+      {% call nav_item(profile_path, "subscription", "💳 " ~ ("Subscription"|t)) %}
+      {% call nav_item(profile_path, "notifications", "🔔 " ~ ("Notifications"|t)) %}
+      {% call nav_item(profile_path, "security", "🔒 " ~ ("Privacy & Security"|t)) %}
+      {% call nav_item(profile_path, "logout", "⏻ " ~ ("Logout"|t)) %}
+    </div>
+
+    <!-- Mobile Navigation Tabs -->
+    <div class="lg:hidden mb-6 overflow-x-auto">
+      <div class="flex gap-2 min-w-max">
+      {% call mobile_nav_item(profile_path, "account", "👤 " ~ ("Account"|t)) %}
+      {% call mobile_nav_item(profile_path, "meal-preferences", "🍽️ " ~ ("Meals"|t)) %}
+      {% call mobile_nav_item(profile_path, "subscription", "💳 " ~ ("Plan"|t)) %}
+      {% call mobile_nav_item(profile_path, "notifications", "🔔 " ~ ("Alerts"|t)) %}
+      {% call mobile_nav_item(profile_path, "security", "🔒 " ~ ("Security"|t)) %}
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="lg:col-span-2 space-y-6">
+    {% block profile_content %}{% endblock %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -3,10 +3,11 @@ use axum::{
     response::{Html, IntoResponse},
 };
 use axum_extra::extract::CookieJar;
-use imkitchen_user::{Metadata, RegisterInput};
+use imkitchen_shared::Metadata;
+use imkitchen_user::RegisterInput;
 use serde::Deserialize;
 
-use crate::{auth::build_cookie, filters};
+use crate::{auth::build_cookie, filters, template::SERVER_ERROR_MESSAGE};
 use crate::{server::AppState, template::Template};
 
 #[derive(askama::Template)]
@@ -71,6 +72,17 @@ pub async fn action(
             processing: Some(id),
             error_message: None,
         }),
+        Err(imkitchen_shared::Error::Unknown(e)) => {
+            tracing::error!("{e}");
+
+            template.render(RegisterTemplate {
+                email: Some(input.email),
+                password: Some(input.password),
+                confirm_password: Some(input.confirm_password),
+                processing: None,
+                error_message: Some(SERVER_ERROR_MESSAGE.to_string()),
+            })
+        }
         Err(e) => template.render(RegisterTemplate {
             email: Some(input.email),
             password: Some(input.password),

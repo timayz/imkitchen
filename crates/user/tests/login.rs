@@ -1,4 +1,5 @@
-use imkitchen_user::{LoginInput, Metadata, RegisterInput, subscribe_command};
+use imkitchen_shared::Metadata;
+use imkitchen_user::{LoginInput, subscribe_command};
 
 mod helpers;
 
@@ -22,20 +23,7 @@ async fn test_login_failure() -> anyhow::Result<()> {
         "Invalid email or password. Please try again."
     );
 
-    let user = command
-        .register(
-            RegisterInput {
-                email: "john.doe@imkiichen.localhost".to_owned(),
-                password: "my_password".to_owned(),
-            },
-            Metadata::default(),
-        )
-        .await?;
-
-    subscribe_command()
-        .data(state.pool.clone())
-        .unsafe_oneshot(&state.evento)
-        .await?;
+    let user = helpers::create_user(&state, "john.doe").await?;
 
     let resp = command
         .login(

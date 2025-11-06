@@ -1,0 +1,65 @@
+{% extends "profile.html" %}
+{% block title %}{{ "Profile & Settings"|t }} - imkitchen{% endblock %}
+
+{% block profile_content %}
+
+<!-- Notification Settings -->
+<div class="bg-white rounded-lg shadow-lg p-6">
+  <h2 class="text-xl font-bold mb-6">{{ "Notification Settings"|t }}</h2>
+
+  <div class="space-y-4">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 border rounded-lg">
+      <div class="flex-1">
+        <div class="font-semibold">{{ "Morning Prep Reminders"|t }}</div>
+        <div class="text-sm text-gray-600">{{ "Get notified at 8 AM for advance preparation tasks"|t }}</div>
+      </div>
+      <label class="relative inline-flex items-center cursor-pointer">
+        <input type="checkbox" checked class="sr-only peer" />
+        <div
+          class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600">
+        </div>
+      </label>
+    </div>
+
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 border rounded-lg">
+      <div class="flex-1">
+        <div class="font-semibold">{{ "Recipe Updates"|t }}</div>
+        <div class="text-sm text-gray-600">{{ "Notify when shared recipes get new reviews or ratings"|t }}</div>
+      </div>
+      <label class="relative inline-flex items-center cursor-pointer">
+        <input type="checkbox" checked class="sr-only peer" />
+        <div
+          class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600">
+        </div>
+      </label>
+    </div>
+
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 border rounded-lg">
+      <div class="flex-1">
+        <div class="font-semibold">{{ "Weekly Summary"|t }}</div>
+        <div class="text-sm text-gray-600">{{ "Receive weekly meal planning summary every Sunday"|t }}</div>
+      </div>
+      <label class="relative inline-flex items-center cursor-pointer">
+        <input type="checkbox" class="sr-only peer" />
+        <div
+          class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600">
+        </div>
+      </label>
+    </div>
+
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 border rounded-lg">
+      <div class="flex-1">
+        <div class="font-semibold">{{ "Marketing Emails"|t }}</div>
+        <div class="text-sm text-gray-600">{{ "Receive updates about new features and special offers"|t }}</div>
+      </div>
+      <label class="relative inline-flex items-center cursor-pointer">
+        <input type="checkbox" class="sr-only peer" />
+        <div
+          class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600">
+        </div>
+      </label>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

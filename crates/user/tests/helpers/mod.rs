@@ -2,6 +2,8 @@ use evento::{
     Sqlite,
     migrator::{Migrate, Plan},
 };
+use imkitchen_shared::Metadata;
+use imkitchen_user::{RegisterInput, subscribe_command};
 use sqlx::SqlitePool;
 use sqlx_migrator::Info;
 
@@ -21,4 +23,41 @@ pub async fn setup_test_state() -> anyhow::Result<TestState> {
         evento: pool.clone().into(),
         pool,
     })
+}
+
+#[allow(dead_code)]
+pub async fn create_user(state: &TestState, name: impl Into<String>) -> anyhow::Result<String> {
+    let ids = create_users(state, vec![name]).await?;
+
+    Ok(ids.first().unwrap().to_owned())
+}
+
+#[allow(dead_code)]
+pub async fn create_users(
+    state: &TestState,
+    names: impl IntoIterator<Item = impl Into<String>>,
+) -> anyhow::Result<Vec<String>> {
+    let command = imkitchen_user::Command(state.evento.clone(), state.pool.clone());
+
+    let mut ids = vec![];
+    for name in names.into_iter() {
+        let name = name.into();
+        let id = command
+            .register(
+                RegisterInput {
+                    email: format!("{name}@imkiichen.localhost"),
+                    password: "my_password".to_owned(),
+                },
+                Metadata::default(),
+            )
+            .await?;
+        ids.push(id);
+    }
+
+    subscribe_command()
+        .data(state.pool.clone())
+        .unsafe_oneshot(&state.evento)
+        .await?;
+
+    Ok(ids)
 }
