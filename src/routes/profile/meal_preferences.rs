@@ -80,8 +80,6 @@ pub async fn action(
 ) -> impl IntoResponse {
     let dietary_restrictions = HashSet::from_iter(input.dietary_restrictions.iter().cloned());
 
-    println!("{dietary_restrictions:?}");
-
     match state
         .user_command
         .update_meal_preferences(

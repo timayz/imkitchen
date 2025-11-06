@@ -89,9 +89,9 @@ where
 #[template(path = "404.html")]
 pub struct NotFoundTemplate;
 
-#[derive(askama::Template)]
-#[template(path = "403.html")]
-pub struct ForbiddenTemplate;
+// #[derive(askama::Template)]
+// #[template(path = "403.html")]
+// pub struct ForbiddenTemplate;
 
 #[derive(askama::Template)]
 #[template(path = "500.html")]

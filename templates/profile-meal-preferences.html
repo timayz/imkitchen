@@ -1,13 +1,6 @@
 {% extends "profile.html" %}
 {% block title %}{{ "Profile & Settings"|t }} - imkitchen{% endblock %}
 
-{% macro dietary_restriction_item(key, title) %}
-  <label class="flex items-center">
-    <input type="checkbox" name="dietary_restrictions" value="{{ key }}"{% if dietary_restrictions.contains("{{ key }}") %} checked{% endif %} class="rounded border-gray-300 text-green-600" />
-    <span class="ml-2">{{ title|t }}</span>
-  </label>
-{% endmacro %}
-
 {% block profile_content %}
 
 <!-- Meal Preferences -->
@@ -18,12 +11,30 @@
     <div>
       <label class="block text-sm font-semibold text-gray-700 mb-3">{{ "Dietary Restrictions"|t }}</label>
       <div class="grid md:grid-cols-2 gap-3">
-        {% call dietary_restriction_item("vegetarian", "Vegetarian") %}
-        {% call dietary_restriction_item("vegan", "Vegan") %}
-        {% call dietary_restriction_item("gluten-free", "Gluten-Free") %}
-        {% call dietary_restriction_item("dairy-free", "Dairy-Free") %}
-        {% call dietary_restriction_item("nut-free", "Nut-Free") %}
-        {% call dietary_restriction_item("low-carb", "Low-Carb") %}
+        <label class="flex items-center">
+          <input type="checkbox" name="dietary_restrictions" value="vegetarian"{% if dietary_restrictions.contains("vegetarian") %} checked{% endif %} class="rounded border-gray-300 text-green-600" />
+          <span class="ml-2">{{ "Vegetarian"|t }}</span>
+        </label>
+        <label class="flex items-center">
+          <input type="checkbox" name="dietary_restrictions" value="vegan"{% if dietary_restrictions.contains("vegan") %} checked{% endif %} class="rounded border-gray-300 text-green-600" />
+          <span class="ml-2">{{ "Vegan"|t }}</span>
+        </label>
+        <label class="flex items-center">
+          <input type="checkbox" name="dietary_restrictions" value="gluten-free"{% if dietary_restrictions.contains("gluten-free") %} checked{% endif %} class="rounded border-gray-300 text-green-600" />
+          <span class="ml-2">{{ "Gluten-Free"|t }}</span>
+        </label>
+        <label class="flex items-center">
+          <input type="checkbox" name="dietary_restrictions" value="dairy-free"{% if dietary_restrictions.contains("dairy-free") %} checked{% endif %} class="rounded border-gray-300 text-green-600" />
+          <span class="ml-2">{{ "Dairy-Free"|t }}</span>
+        </label>
+        <label class="flex items-center">
+          <input type="checkbox" name="dietary_restrictions" value="nut-free"{% if dietary_restrictions.contains("nut-free") %} checked{% endif %} class="rounded border-gray-300 text-green-600" />
+          <span class="ml-2">{{ "Nut-Free"|t }}</span>
+        </label>
+        <label class="flex items-center">
+          <input type="checkbox" name="dietary_restrictions" value="low-carb"{% if dietary_restrictions.contains("low-carb") %} checked{% endif %} class="rounded border-gray-300 text-green-600" />
+          <span class="ml-2">{{ "Low-Carb"|t }}</span>
+        </label>
       </div>
     </div>
 
