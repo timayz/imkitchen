@@ -11,7 +11,8 @@ use sqlx::{SqlitePool, prelude::FromRow};
 use validator::Validate;
 
 use crate::{
-    LoggedIn, RegistrationFailed, RegistrationRequested, RegistrationSucceeded, Role, User,
+    LoggedIn, MadeAdmin, RegistrationFailed, RegistrationRequested, RegistrationSucceeded, Role,
+    User,
     meal_preferences::{self, UserMealPreferences},
 };
 use imkitchen_db::table::User as UserIden;
@@ -238,9 +239,28 @@ async fn handle_registration_requested<E: Executor>(
     Ok(())
 }
 
+#[evento::handler(User)]
+async fn handle_made_admin<E: Executor>(
+    context: &evento::Context<'_, E>,
+    event: Event<MadeAdmin>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let statement = Query::update()
+        .table(UserIden::Table)
+        .values([(UserIden::Role, event.data.role.to_owned().into())])
+        .and_where(Expr::col(UserIden::Id).eq(event.aggregator_id.to_owned()))
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
+}
+
 pub fn subscribe_command<E: Executor + Clone>() -> SubscribeBuilder<E> {
     evento::subscribe("user-command")
         .handler(handle_registration_requested())
+        .handler(handle_made_admin())
         .skip::<User, RegistrationSucceeded>()
         .skip::<User, RegistrationFailed>()
         .skip::<User, LoggedIn>()
