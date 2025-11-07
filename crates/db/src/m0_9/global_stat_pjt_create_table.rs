@@ -1,23 +1,30 @@
-use sea_query::{Index, IndexCreateStatement, IndexDropStatement};
+use sea_query::{ColumnDef, Table, TableCreateStatement, TableDropStatement};
 
-use crate::table::User;
+use crate::table::GlobalStatPjt;
 
 pub struct Operation;
 
-fn up_statement() -> IndexCreateStatement {
-    Index::create()
-        .name("idx_email")
-        .table(User::Table)
-        .unique()
-        .col(User::Email)
+fn up_statement() -> TableCreateStatement {
+    Table::create()
+        .table(GlobalStatPjt::Table)
+        .col(
+            ColumnDef::new(GlobalStatPjt::Key)
+                .string()
+                .not_null()
+                .string_len(30)
+                .primary_key(),
+        )
+        .col(
+            ColumnDef::new(GlobalStatPjt::Value)
+                .integer()
+                .not_null()
+                .default(0),
+        )
         .to_owned()
 }
 
-fn down_statement() -> IndexDropStatement {
-    Index::drop()
-        .name("idx_email")
-        .table(User::Table)
-        .to_owned()
+fn down_statement() -> TableDropStatement {
+    Table::drop().table(GlobalStatPjt::Table).to_owned()
 }
 
 #[async_trait::async_trait]

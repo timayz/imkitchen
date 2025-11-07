@@ -8,3 +8,24 @@ pub enum User {
     Role,
     CreatedAt,
 }
+
+#[derive(Iden, Clone)]
+pub enum GlobalStatPjt {
+    Table,
+    Key,
+    Value,
+}
+
+#[derive(Iden, Clone)]
+pub enum AdminUserPjt {
+    Table,
+    Id,
+    Email,
+    FullName,
+    Username,
+    Status,
+    AccountType,
+    TotalRecipesCount,
+    SharedRecipesCount,
+    CreatedAt,
+}

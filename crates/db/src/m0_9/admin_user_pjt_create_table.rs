@@ -1,42 +1,69 @@
-use sea_query::{ColumnDef, Expr, Table, TableCreateStatement, TableDropStatement};
+use sea_query::{ColumnDef, Table, TableCreateStatement, TableDropStatement};
 
-use crate::table::User;
+use crate::table::AdminUserPjt;
 
 pub struct Operation;
 
 fn up_statement() -> TableCreateStatement {
     Table::create()
-        .table(User::Table)
+        .table(AdminUserPjt::Table)
         .col(
-            ColumnDef::new(User::Id)
+            ColumnDef::new(AdminUserPjt::Id)
                 .string()
                 .not_null()
                 .string_len(26)
                 .primary_key(),
         )
         .col(
-            ColumnDef::new(User::Email)
+            ColumnDef::new(AdminUserPjt::Email)
                 .string()
                 .not_null()
                 .string_len(20),
         )
         .col(
-            ColumnDef::new(User::Role)
+            ColumnDef::new(AdminUserPjt::FullName)
+                .string()
+                .string_len(25),
+        )
+        .col(
+            ColumnDef::new(AdminUserPjt::Username)
+                .string()
+                .string_len(15),
+        )
+        .col(
+            ColumnDef::new(AdminUserPjt::Status)
                 .string()
                 .not_null()
                 .string_len(15),
         )
         .col(
-            ColumnDef::new(User::CreatedAt)
-                .timestamp_with_time_zone()
+            ColumnDef::new(AdminUserPjt::AccountType)
+                .string()
                 .not_null()
-                .default(Expr::current_timestamp()),
+                .string_len(15),
+        )
+        .col(
+            ColumnDef::new(AdminUserPjt::TotalRecipesCount)
+                .integer()
+                .not_null()
+                .default(0),
+        )
+        .col(
+            ColumnDef::new(AdminUserPjt::SharedRecipesCount)
+                .integer()
+                .not_null()
+                .default(0),
+        )
+        .col(
+            ColumnDef::new(AdminUserPjt::CreatedAt)
+                .timestamp_with_time_zone()
+                .not_null(),
         )
         .to_owned()
 }
 
 fn down_statement() -> TableDropStatement {
-    Table::drop().table(User::Table).to_owned()
+    Table::drop().table(AdminUserPjt::Table).to_owned()
 }
 
 #[async_trait::async_trait]

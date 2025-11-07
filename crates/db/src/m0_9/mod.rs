@@ -1,3 +1,7 @@
+mod admin_user_pjt_create_account_type_idx;
+mod admin_user_pjt_create_status_idx;
+mod admin_user_pjt_create_table;
+mod global_stat_pjt_create_table;
 mod user_create_email_idx;
 mod user_create_table;
 
@@ -13,5 +17,9 @@ sqlx_migrator::sqlite_migration!(
     vec_box![
         user_create_table::Operation,
         user_create_email_idx::Operation,
+        admin_user_pjt_create_table::Operation,
+        admin_user_pjt_create_status_idx::Operation,
+        admin_user_pjt_create_account_type_idx::Operation,
+        global_stat_pjt_create_table::Operation,
     ]
 );
