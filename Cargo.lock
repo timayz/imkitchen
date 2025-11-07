@@ -1783,7 +1783,6 @@ dependencies = [
  "serde",
  "serde_urlencoded",
  "sqlx",
- "sqlx_migrator",
  "tokio",
  "tower",
  "tower-http",
@@ -1796,11 +1795,9 @@ dependencies = [
 name = "imkitchen-db"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "async-trait",
  "evento",
  "sea-query",
- "sea-query-sqlx",
  "sqlx",
  "sqlx_migrator",
 ]
@@ -1837,7 +1834,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "argon2",
- "async-trait",
  "bincode",
  "evento",
  "imkitchen-db",
@@ -1846,7 +1842,6 @@ dependencies = [
  "sea-query-sqlx",
  "serde",
  "sqlx",
- "sqlx_migrator",
  "tokio",
  "validator",
 ]

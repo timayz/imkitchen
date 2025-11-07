@@ -89,7 +89,6 @@ mime_guess = { workspace = true }
 # validator = { workspace = true }
 # base64 = { workspace = true }
 minify-html = { workspace = true }
-sqlx_migrator = { workspace = true }
 jsonwebtoken = { workspace = true }
 futures = { workspace = true }
 imkitchen-shared = { path = "crates/shared" }
@@ -101,7 +100,7 @@ imkitchen-db = { path = "crates/db" }
 
 [dev-dependencies]
 http-body-util = "0.1"
-serde_urlencoded = "0.7.1"
+serde_urlencoded = "0.7"
 
 [[bin]]
 name = "imkitchen"
