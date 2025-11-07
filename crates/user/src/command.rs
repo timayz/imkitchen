@@ -1,3 +1,5 @@
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
 use argon2::{
     Argon2, PasswordHash, PasswordVerifier,
     password_hash::{PasswordHasher, SaltString, rand_core::OsRng},
@@ -11,9 +13,10 @@ use sqlx::{SqlitePool, prelude::FromRow};
 use validator::Validate;
 
 use crate::{
-    LoggedIn, MadeAdmin, RegistrationFailed, RegistrationRequested, RegistrationSucceeded, Role,
-    User,
+    Activated, LoggedIn, MadeAdmin, RegistrationFailed, RegistrationRequested,
+    RegistrationSucceeded, Role, Suspended, User,
     meal_preferences::{self, UserMealPreferences},
+    subscription::{self, UserSubscription},
 };
 use imkitchen_db::table::User as UserIden;
 
@@ -43,6 +46,22 @@ pub struct UpdateMealPreferencesInput {
     pub cuisine_variety_weight: f32,
 }
 
+pub struct SuspendInput {
+    pub id: String,
+}
+
+pub struct MadeAdminInput {
+    pub id: String,
+}
+
+pub struct ActivateInput {
+    pub id: String,
+}
+
+pub struct ToggleLifePremiumInput {
+    pub id: String,
+}
+
 #[derive(Debug, Deserialize, FromRow)]
 pub struct AuthUser {
     pub id: String,
@@ -61,6 +80,13 @@ impl<E: Executor + Clone> Command<E> {
         &self,
         id: impl Into<String>,
     ) -> Result<LoadResult<UserMealPreferences>, evento::ReadError> {
+        evento::load(&self.0, id).await
+    }
+
+    pub async fn load_subscription(
+        &self,
+        id: impl Into<String>,
+    ) -> Result<LoadResult<UserSubscription>, evento::ReadError> {
         evento::load(&self.0, id).await
     }
 
@@ -84,6 +110,26 @@ impl<E: Executor + Clone> Command<E> {
             .await?)
     }
 
+    pub async fn get_user_by_email(
+        &self,
+        email: impl Into<String>,
+    ) -> imkitchen_shared::Result<Option<AuthUser>> {
+        let email = email.into();
+
+        let statement = Query::select()
+            .columns([UserIden::Id, UserIden::Role])
+            .from(UserIden::Table)
+            .and_where(Expr::col(UserIden::Email).eq(Expr::value(email.to_owned())))
+            .limit(1)
+            .to_owned();
+
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+        Ok(sqlx::query_as_with::<_, AuthUser, _>(&sql, values)
+            .fetch_optional(&self.1)
+            .await?)
+    }
+
     pub async fn login(
         &self,
         input: LoginInput,
@@ -91,23 +137,11 @@ impl<E: Executor + Clone> Command<E> {
     ) -> imkitchen_shared::Result<String> {
         input.validate()?;
 
-        let statement = Query::select()
-            .columns([UserIden::Id])
-            .from(UserIden::Table)
-            .and_where(Expr::col(UserIden::Email).eq(Expr::value(input.email.to_owned())))
-            .limit(1)
-            .to_owned();
-
-        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-
-        let Some((user_id,)) = sqlx::query_as_with::<_, (String,), _>(&sql, values)
-            .fetch_optional(&self.1)
-            .await?
-        else {
+        let Some(user) = self.get_user_by_email(input.email).await? else {
             imkitchen_shared::bail!("Invalid email or password. Please try again.");
         };
 
-        let user = evento::load::<User, _>(&self.0, &user_id).await?;
+        let user = self.load(&user.id).await?;
         let parsed_hash = PasswordHash::new(&user.item.password_hash)?;
         let argon2 = Argon2::default();
 
@@ -170,7 +204,7 @@ impl<E: Executor + Clone> Command<E> {
             imkitchen_shared::bail!("User not found in metadata");
         };
 
-        let builder = match evento::load::<UserMealPreferences, _>(&self.0, &user_id).await {
+        let builder = match self.load_meal_preferences(&user_id).await {
             Ok(preferences) => evento::save_with(preferences).data(&meal_preferences::Updated {
                 dietary_restrictions: input.dietary_restrictions,
                 household_size: input.household_size,
@@ -183,6 +217,102 @@ impl<E: Executor + Clone> Command<E> {
                     cuisine_variety_weight: input.cuisine_variety_weight,
                 })?
             }
+            Err(e) => return Err(e.into()),
+        };
+
+        builder.metadata(&metadata)?.commit(&self.0).await?;
+
+        Ok(())
+    }
+
+    pub async fn suspend(
+        &self,
+        input: SuspendInput,
+        metadata: Metadata,
+    ) -> imkitchen_shared::Result<()> {
+        let user = self.load(&input.id).await?;
+
+        if user.item.role == Role::Suspend {
+            return Ok(());
+        }
+
+        evento::save_with(user)
+            .data(&Suspended {
+                role: Role::Suspend.to_string(),
+            })?
+            .metadata(&metadata)?
+            .commit(&self.0)
+            .await?;
+
+        Ok(())
+    }
+
+    pub async fn activate(
+        &self,
+        input: ActivateInput,
+        metadata: Metadata,
+    ) -> imkitchen_shared::Result<()> {
+        let user = self.load(&input.id).await?;
+
+        if user.item.role == Role::User {
+            return Ok(());
+        }
+
+        evento::save_with(user)
+            .data(&Activated {
+                role: Role::User.to_string(),
+            })?
+            .metadata(&metadata)?
+            .commit(&self.0)
+            .await?;
+
+        Ok(())
+    }
+
+    pub async fn made_admin(
+        &self,
+        input: MadeAdminInput,
+        metadata: Metadata,
+    ) -> imkitchen_shared::Result<()> {
+        let user = self.load(&input.id).await?;
+
+        if user.item.role == Role::Admin {
+            return Ok(());
+        }
+
+        evento::save_with(user)
+            .data(&MadeAdmin {
+                role: Role::Admin.to_string(),
+            })?
+            .metadata(&metadata)?
+            .commit(&self.0)
+            .await?;
+
+        Ok(())
+    }
+
+    pub async fn toggle_life_premium(
+        &self,
+        input: ToggleLifePremiumInput,
+        metadata: Metadata,
+    ) -> imkitchen_shared::Result<()> {
+        let expire_at = (SystemTime::now() + Duration::from_secs(10 * 12 * 30 * 24 * 60 * 60))
+            .duration_since(UNIX_EPOCH)?
+            .as_secs();
+
+        let builder = match self.load_subscription(&input.id).await {
+            Ok(subscription) => {
+                let expire_at = if subscription.item.expired {
+                    expire_at
+                } else {
+                    0
+                };
+
+                evento::save_with(subscription)
+                    .data(&subscription::LifePremiumToggled { expire_at })?
+            }
+            Err(evento::ReadError::NotFound) => evento::create_with(input.id)
+                .data(&subscription::LifePremiumToggled { expire_at })?,
             Err(e) => return Err(e.into()),
         };
 
@@ -264,6 +394,9 @@ pub fn subscribe_command<E: Executor + Clone>() -> SubscribeBuilder<E> {
         .skip::<User, RegistrationSucceeded>()
         .skip::<User, RegistrationFailed>()
         .skip::<User, LoggedIn>()
+        .skip::<User, Suspended>()
+        .skip::<User, Activated>()
         .skip::<UserMealPreferences, meal_preferences::Created>()
         .skip::<UserMealPreferences, meal_preferences::Updated>()
+        .skip::<UserSubscription, subscription::LifePremiumToggled>()
 }

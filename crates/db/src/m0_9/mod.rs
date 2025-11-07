@@ -1,5 +1,4 @@
 mod user_create_email_idx;
-mod user_create_role_idx;
 mod user_create_table;
 
 use sqlx_migrator::vec_box;
@@ -14,6 +13,5 @@ sqlx_migrator::sqlite_migration!(
     vec_box![
         user_create_table::Operation,
         user_create_email_idx::Operation,
-        user_create_role_idx::Operation
     ]
 );

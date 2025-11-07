@@ -7,8 +7,11 @@ use imkitchen_shared::Metadata;
 use imkitchen_user::RegisterInput;
 use serde::Deserialize;
 
-use crate::{auth::build_cookie, filters, template::SERVER_ERROR_MESSAGE};
-use crate::{server::AppState, template::Template};
+use crate::{
+    auth::build_cookie,
+    template::{SERVER_ERROR_MESSAGE, filters},
+};
+use crate::{routes::AppState, template::Template};
 
 #[derive(askama::Template)]
 #[template(path = "register.html")]

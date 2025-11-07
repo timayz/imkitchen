@@ -5,9 +5,23 @@ use axum::{
 };
 use std::{collections::HashMap, convert::Infallible};
 
-use crate::filters;
-
 pub const SERVER_ERROR_MESSAGE: &str = "Something went wrong, please retry later";
+
+pub(crate) mod filters {
+    pub fn t(value: &str, _values: &dyn askama::Values) -> askama::Result<String> {
+        // let preferred_language = askama::get_value::<String>(values, "preferred_language")
+        //     .expect("Unable to get preferred_language from askama::get_value");
+
+        Ok(rust_i18n::t!(value, locale = "fr" /*locale = preferred_language*/).to_string())
+    }
+
+    // pub fn assets(value: &str, values: &dyn askama::Values) -> askama::Result<String> {
+    //     let config = askama::get_value::<crate::axum_extra::TemplateConfig>(values, "config")
+    //         .expect("Unable to get config from askama::get_value");
+    //
+    //     Ok(format!("{}/{value}", config.assets_base_url))
+    // }
+}
 
 pub struct Template<T> {
     template: Option<T>,
@@ -24,12 +38,12 @@ impl<T> Template<T> {
     }
 }
 
-impl<T> FromRequestParts<crate::server::AppState> for Template<T> {
+impl<T> FromRequestParts<crate::routes::AppState> for Template<T> {
     type Rejection = Infallible;
 
     async fn from_request_parts(
         _parts: &mut Parts,
-        state: &crate::server::AppState,
+        state: &crate::routes::AppState,
     ) -> Result<Self, Self::Rejection> {
         // let user_language = parts
         //     .extract::<UserLanguage>()
@@ -89,9 +103,9 @@ where
 #[template(path = "404.html")]
 pub struct NotFoundTemplate;
 
-// #[derive(askama::Template)]
-// #[template(path = "403.html")]
-// pub struct ForbiddenTemplate;
+#[derive(askama::Template)]
+#[template(path = "403.html")]
+pub struct ForbiddenTemplate;
 
 #[derive(askama::Template)]
 #[template(path = "500.html")]

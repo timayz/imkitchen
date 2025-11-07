@@ -1,16 +1,17 @@
 mod assets;
 mod auth;
+mod cli;
 mod config;
 mod db;
 mod middleware;
-mod migrate;
 mod routes;
-mod server;
 mod template;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use tracing_subscriber::{EnvFilter, Layer, layer::SubscriberExt, util::SubscriberInitExt};
+
+rust_i18n::i18n!("locales", fallback = "en");
 
 /// imkitchen - Intelligent Meal Planning
 #[derive(Parser)]
@@ -41,6 +42,19 @@ enum Commands {
     Migrate,
     /// Drop database if exists and recreate with migrations
     Reset,
+    /// Set user role
+    UserRole {
+        #[arg(long)]
+        email: String,
+
+        #[arg(long)]
+        role: cli::Role,
+    },
+}
+
+#[derive(Subcommand)]
+enum User {
+    MadeAdmin,
 }
 
 #[tokio::main]
@@ -73,26 +87,9 @@ async fn main() -> Result<()> {
     }
 
     match cli.command {
-        Commands::Serve { host, port } => crate::server::serve(config, host, port).await,
-        Commands::Migrate => crate::migrate::migrate(config).await,
-        Commands::Reset => crate::migrate::reset(config).await,
+        Commands::Serve { host, port } => crate::cli::serve(config, host, port).await,
+        Commands::Migrate => crate::cli::migrate(config).await,
+        Commands::Reset => crate::cli::reset(config).await,
+        Commands::UserRole { email, role } => crate::cli::set_role(config, email, role).await,
     }
-}
-
-rust_i18n::i18n!("locales", fallback = "en");
-
-pub(crate) mod filters {
-    pub fn t(value: &str, _values: &dyn askama::Values) -> askama::Result<String> {
-        // let preferred_language = askama::get_value::<String>(values, "preferred_language")
-        //     .expect("Unable to get preferred_language from askama::get_value");
-
-        Ok(rust_i18n::t!(value, locale = "fr" /*locale = preferred_language*/).to_string())
-    }
-
-    // pub fn assets(value: &str, values: &dyn askama::Values) -> askama::Result<String> {
-    //     let config = askama::get_value::<crate::axum_extra::TemplateConfig>(values, "config")
-    //         .expect("Unable to get config from askama::get_value");
-    //
-    //     Ok(format!("{}/{value}", config.assets_base_url))
-    // }
 }

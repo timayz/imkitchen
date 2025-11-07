@@ -9,8 +9,8 @@ use imkitchen_user::meal_preferences::UserMealPreferences;
 use serde::Deserialize;
 
 use crate::auth::AuthUser;
-use crate::filters;
-use crate::server::AppState;
+use crate::routes::AppState;
+use crate::template::filters;
 use crate::template::{SERVER_ERROR_MESSAGE, ServerErrorTemplate, Template};
 
 #[derive(askama::Template)]

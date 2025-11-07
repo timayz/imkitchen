@@ -3,9 +3,9 @@ use axum::extract::State;
 use axum::response::IntoResponse;
 // use serde::Deserialize;
 
-use crate::filters;
-use crate::server::AppState;
+use crate::routes::AppState;
 use crate::template::Template;
+use crate::template::filters;
 
 #[derive(askama::Template)]
 #[template(path = "profile-security.html")]

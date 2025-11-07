@@ -4,7 +4,8 @@ use bincode::{Decode, Encode};
 use imkitchen_shared::Event;
 
 use crate::{
-    LoggedIn, MadeAdmin, RegistrationFailed, RegistrationRequested, RegistrationSucceeded,
+    Activated, LoggedIn, MadeAdmin, RegistrationFailed, RegistrationRequested,
+    RegistrationSucceeded, Suspended,
 };
 
 #[derive(Encode, Decode, Clone, Debug, PartialEq)]
@@ -39,6 +40,7 @@ pub struct User {
     pub status: Status,
     pub password_hash: String,
     pub role: Role,
+    pub premium_expire_at: u64,
 }
 
 #[evento::aggregator]
@@ -77,6 +79,18 @@ impl User {
 
     async fn handle_made_admin(&mut self, _event: Event<MadeAdmin>) -> anyhow::Result<()> {
         self.role = Role::Admin;
+
+        Ok(())
+    }
+
+    async fn handle_suspended(&mut self, _event: Event<Suspended>) -> anyhow::Result<()> {
+        self.role = Role::Suspend;
+
+        Ok(())
+    }
+
+    async fn handle_activated(&mut self, _event: Event<Activated>) -> anyhow::Result<()> {
+        self.role = Role::User;
 
         Ok(())
     }

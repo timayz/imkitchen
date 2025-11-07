@@ -1,8 +1,8 @@
 use axum::response::IntoResponse;
 
 use crate::auth::AuthUser;
-use crate::filters;
 use crate::template::Template;
+use crate::template::filters;
 
 #[derive(askama::Template)]
 #[template(path = "index.html")]

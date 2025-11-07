@@ -1,18 +1,70 @@
-use axum::response::IntoResponse;
+use axum::{Router, response::IntoResponse};
+use sqlx::SqlitePool;
 
 use crate::template::{NotFoundTemplate, Template};
 
-pub mod admin;
-pub mod health;
-pub mod help;
-pub mod index;
-pub mod login;
-pub mod policy;
-pub mod profile;
-pub mod register;
-pub mod service_worker;
-pub mod terms;
+mod admin;
+mod health;
+mod help;
+mod index;
+mod login;
+mod policy;
+mod profile;
+mod register;
+mod service_worker;
+mod terms;
+
+use axum::routing::get;
+
+#[derive(Clone)]
+pub struct AppState {
+    pub config: crate::config::Config,
+    pub user_command: imkitchen_user::Command<evento::Sqlite>,
+}
 
 pub async fn fallback(template: Template<NotFoundTemplate>) -> impl IntoResponse {
     template.render(NotFoundTemplate)
+}
+
+pub fn router(app_state: AppState, read_pool: SqlitePool) -> Router {
+    Router::new()
+        // Health check endpoints (no auth required)
+        .route("/health", get(health::health))
+        .route("/ready", get(health::ready))
+        .with_state(read_pool)
+        .route("/", get(index::page))
+        .route("/help", get(help::page))
+        .route("/terms", get(terms::page))
+        .route("/policy", get(policy::page))
+        .route("/register", get(register::page).post(register::action))
+        .route("/register/status/{id}", get(register::status))
+        .route(
+            "/login",
+            get(login::page).post(crate::routes::login::action),
+        )
+        .route(
+            "/profile/account",
+            get(profile::account::page).post(profile::account::action),
+        )
+        .route(
+            "/profile/meal-preferences",
+            get(profile::meal_preferences::page).post(profile::meal_preferences::action),
+        )
+        .route(
+            "/profile/subscription",
+            get(profile::subscription::page).post(profile::subscription::action),
+        )
+        .route(
+            "/profile/notifications",
+            get(profile::notifications::page).post(profile::notifications::action),
+        )
+        .route("/admin/users", get(admin::users::page))
+        .route(
+            "/profile/security",
+            get(profile::security::page).post(profile::security::action),
+        )
+        .fallback(fallback)
+        .route("/sw.js", get(service_worker::sw))
+        .nest_service("/static", crate::assets::AssetsService::new())
+        .with_state(app_state)
 }
