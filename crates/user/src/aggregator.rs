@@ -1,11 +1,29 @@
+use std::fmt::Display;
+
 use bincode::{Decode, Encode};
 use imkitchen_shared::Event;
 
-use crate::{LoggedIn, RegistrationFailed, RegistrationRequested, RegistrationSucceeded};
+use crate::{
+    LoggedIn, MadeAdmin, RegistrationFailed, RegistrationRequested, RegistrationSucceeded,
+};
 
 #[derive(Encode, Decode, Clone, Debug, PartialEq)]
 pub enum Action {
     Registration,
+}
+
+#[derive(Default, Encode, Decode, Clone, Debug, PartialEq)]
+pub enum Role {
+    #[default]
+    User,
+    Suspend,
+    Admin,
+}
+
+impl Display for Role {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 #[derive(Default, Encode, Decode, Clone, Debug, PartialEq)]
@@ -20,6 +38,7 @@ pub enum Status {
 pub struct User {
     pub status: Status,
     pub password_hash: String,
+    pub role: Role,
 }
 
 #[evento::aggregator]
@@ -53,6 +72,12 @@ impl User {
     }
 
     async fn handle_logged_in(&mut self, _event: Event<LoggedIn>) -> anyhow::Result<()> {
+        Ok(())
+    }
+
+    async fn handle_made_admin(&mut self, _event: Event<MadeAdmin>) -> anyhow::Result<()> {
+        self.role = Role::Admin;
+
         Ok(())
     }
 }

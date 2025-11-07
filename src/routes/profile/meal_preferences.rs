@@ -41,9 +41,9 @@ pub async fn page(
     template: Template<MealPreferencesTemplate>,
     server_error: Template<ServerErrorTemplate>,
     State(state): State<AppState>,
-    AuthUser(user_id): AuthUser,
+    AuthUser(user): AuthUser,
 ) -> impl IntoResponse {
-    let preferences = match state.user_command.load_meal_preferences(user_id).await {
+    let preferences = match state.user_command.load_meal_preferences(user.id).await {
         Ok(loaded) => loaded.item,
         Err(evento::ReadError::NotFound) => UserMealPreferences::default(),
         Err(e) => {
@@ -75,7 +75,7 @@ pub struct ActionInput {
 pub async fn action(
     template: Template<MealPreferencesTemplate>,
     State(state): State<AppState>,
-    AuthUser(user_id): AuthUser,
+    AuthUser(user): AuthUser,
     Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {
     let dietary_restrictions = HashSet::from_iter(input.dietary_restrictions.iter().cloned());
@@ -88,7 +88,7 @@ pub async fn action(
                 cuisine_variety_weight: input.cuisine_variety_weight,
                 household_size: input.household_size,
             },
-            Metadata::by(user_id),
+            Metadata::by(user.id),
         )
         .await
     {

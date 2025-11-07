@@ -1772,6 +1772,7 @@ dependencies = [
  "evento",
  "futures",
  "http-body-util",
+ "imkitchen-db",
  "imkitchen-shared",
  "imkitchen-user",
  "jsonwebtoken",
@@ -1789,6 +1790,19 @@ dependencies = [
  "tower-livereload",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "imkitchen-db"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "evento",
+ "sea-query",
+ "sea-query-sqlx",
+ "sqlx",
+ "sqlx_migrator",
 ]
 
 [[package]]
@@ -1826,9 +1840,11 @@ dependencies = [
  "async-trait",
  "bincode",
  "evento",
+ "imkitchen-db",
  "imkitchen-shared",
  "sea-query",
  "sea-query-sqlx",
+ "serde",
  "sqlx",
  "sqlx_migrator",
  "tokio",

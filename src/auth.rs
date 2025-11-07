@@ -50,7 +50,7 @@ pub fn build_cookie<'a>(config: JwtConfig, sub: String) -> anyhow::Result<Cookie
         .build())
 }
 
-pub struct AuthUser(pub String);
+pub struct AuthUser(pub imkitchen_user::AuthUser);
 
 impl FromRequestParts<crate::server::AppState> for AuthUser {
     type Rejection = Redirect;
@@ -81,6 +81,18 @@ impl FromRequestParts<crate::server::AppState> for AuthUser {
         )
         .map_err(|_| Redirect::to("/login"))?;
 
-        Ok(AuthUser(token_data.claims.sub))
+        let Some(user) = state
+            .user_command
+            .get_user_by_id(&token_data.claims.sub)
+            .await
+            .map_err(|e| {
+                tracing::error!("{e}");
+                Redirect::to("/login")
+            })?
+        else {
+            return Err(Redirect::to("/login"));
+        };
+
+        Ok(AuthUser(user))
     }
 }

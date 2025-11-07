@@ -21,3 +21,8 @@ pub struct RegistrationFailed {
 pub struct LoggedIn {
     pub lang: String,
 }
+
+#[derive(AggregatorName, Encode, Decode)]
+pub struct MadeAdmin {
+    pub role: String,
+}

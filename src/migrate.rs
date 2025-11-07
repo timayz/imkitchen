@@ -1,7 +1,6 @@
 use anyhow::Result;
 use evento::migrator::{Migrate, Plan};
 use sqlx::migrate::MigrateDatabase;
-use sqlx_migrator::Info;
 
 pub async fn migrate(config: crate::config::Config) -> Result<()> {
     tracing::info!("Running database migrations...");
@@ -17,9 +16,9 @@ pub async fn migrate(config: crate::config::Config) -> Result<()> {
 
     // 2. Run evento migrations for event store tables
     let mut conn = pool.acquire().await?;
-    let mut migrator = evento::sql_migrator::new_migrator::<sqlx::Sqlite>()?;
-    migrator.add_migration(Box::new(imkitchen_user::sql::user::Migration01))?;
-    migrator.run(&mut conn, &Plan::apply_all()).await?;
+    imkitchen_db::migrator::<sqlx::Sqlite>()?
+        .run(&mut conn, &Plan::apply_all())
+        .await?;
     drop(conn);
 
     tracing::info!("Migrations completed successfully");

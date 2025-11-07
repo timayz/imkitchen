@@ -6,14 +6,15 @@ use evento::{AggregatorName, Executor, LoadResult, SubscribeBuilder};
 use imkitchen_shared::{Event, Metadata};
 use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
-use sqlx::SqlitePool;
+use serde::Deserialize;
+use sqlx::{SqlitePool, prelude::FromRow};
 use validator::Validate;
 
 use crate::{
-    LoggedIn, RegistrationFailed, RegistrationRequested, RegistrationSucceeded, User,
+    LoggedIn, RegistrationFailed, RegistrationRequested, RegistrationSucceeded, Role, User,
     meal_preferences::{self, UserMealPreferences},
-    sql::user::User as UserIden,
 };
+use imkitchen_db::table::User as UserIden;
 
 #[derive(Validate)]
 pub struct RegisterInput {
@@ -41,6 +42,12 @@ pub struct UpdateMealPreferencesInput {
     pub cuisine_variety_weight: f32,
 }
 
+#[derive(Debug, Deserialize, FromRow)]
+pub struct AuthUser {
+    pub id: String,
+    pub role: String,
+}
+
 #[derive(Clone)]
 pub struct Command<E: Executor + Clone>(pub E, pub SqlitePool);
 
@@ -54,6 +61,26 @@ impl<E: Executor + Clone> Command<E> {
         id: impl Into<String>,
     ) -> Result<LoadResult<UserMealPreferences>, evento::ReadError> {
         evento::load(&self.0, id).await
+    }
+
+    pub async fn get_user_by_id(
+        &self,
+        id: impl Into<String>,
+    ) -> imkitchen_shared::Result<Option<AuthUser>> {
+        let id = id.into();
+
+        let statement = Query::select()
+            .columns([UserIden::Id, UserIden::Role])
+            .from(UserIden::Table)
+            .and_where(Expr::col(UserIden::Id).eq(Expr::value(id.to_owned())))
+            .limit(1)
+            .to_owned();
+
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+        Ok(sqlx::query_as_with::<_, AuthUser, _>(&sql, values)
+            .fetch_optional(&self.1)
+            .await?)
     }
 
     pub async fn login(
@@ -172,10 +199,11 @@ async fn handle_registration_requested<E: Executor>(
     let pool = context.extract::<sqlx::SqlitePool>();
     let statement = Query::insert()
         .into_table(UserIden::Table)
-        .columns([UserIden::Id, UserIden::Email])
+        .columns([UserIden::Id, UserIden::Email, UserIden::Role])
         .values_panic([
             event.aggregator_id.to_string().into(),
             event.data.email.to_string().into(),
+            Role::User.to_string().into(),
         ])
         .to_owned();
 

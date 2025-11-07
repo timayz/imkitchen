@@ -1,0 +1,40 @@
+use sea_query::{Index, IndexCreateStatement, IndexDropStatement};
+
+use crate::table::User;
+
+pub struct Operation;
+
+fn create_role_idx_statement() -> IndexCreateStatement {
+    Index::create()
+        .name("idx_role")
+        .table(User::Table)
+        .col(User::Role)
+        .to_owned()
+}
+
+fn drop_role_idx_statement() -> IndexDropStatement {
+    Index::drop().name("idx_role").table(User::Table).to_owned()
+}
+
+#[async_trait::async_trait]
+impl sqlx_migrator::Operation<sqlx::Sqlite> for Operation {
+    async fn up(
+        &self,
+        connection: &mut sqlx::SqliteConnection,
+    ) -> Result<(), sqlx_migrator::Error> {
+        let statment = create_role_idx_statement().to_string(sea_query::SqliteQueryBuilder);
+        sqlx::query(&statment).execute(connection).await?;
+
+        Ok(())
+    }
+
+    async fn down(
+        &self,
+        connection: &mut sqlx::SqliteConnection,
+    ) -> Result<(), sqlx_migrator::Error> {
+        let statment = drop_role_idx_statement().to_string(sea_query::SqliteQueryBuilder);
+        sqlx::query(&statment).execute(connection).await?;
+
+        Ok(())
+    }
+}
