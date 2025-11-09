@@ -2,7 +2,7 @@ mod aggregator;
 mod command;
 mod event;
 pub mod meal_preferences;
-pub mod sql;
+pub mod subscription;
 
 pub use aggregator::*;
 pub use command::*;

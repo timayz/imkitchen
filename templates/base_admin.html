@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block body %}
+
+<body class="bg-gray-50 pb-20 md:pb-0">
+  <!-- Top Navigation -->
+  <nav class="bg-gray-900 text-white shadow-lg">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex items-center justify-between">
+        <a href="/" class="text-xl md:text-2xl font-bold text-green-400">🍳 Admin</a>
+
+        <!-- Desktop Navigation -->
+        <div class="hidden md:flex gap-6 items-center">
+          <a href="/admin/users" {% if current_path=="users" %} class="text-white font-semibold" {% else %}
+            class="text-gray-300 hover:text-white" {% endif %}>
+            Users
+          </a>
+          <a href="/admin/contact" {% if current_path=="contact" %} class="text-white font-semibold" {% else %}
+            class="text-gray-300 hover:text-white" {% endif %}>
+            Contact Inbox
+          </a>
+        </div>
+
+        <div class="hidden md:flex items-center gap-4">
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Mobile Bottom Navigation -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-700 z-50">
+    <div class="flex items-center justify-around">
+      <a href="/admin/users" {% if current_path=="users" %}class="flex flex-col items-center py-2 px-3 text-white" {%
+        else %}class="flex flex-col items-center py-2 px-3 text-gray-400" {% endif %}>
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z">
+          </path>
+        </svg>
+        <span class="text-xs mt-1 font-semibold">Users</span>
+      </a>
+      <a href="/admin/contact" {% if current_path=="contact" %}class="flex flex-col items-center py-2 px-3 text-white"
+        {% else %}class="flex flex-col items-center py-2 px-3 text-gray-400" {% endif %}>
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
+          </path>
+        </svg>
+        <span class="text-xs mt-1">Contact</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  {% block content %}
+  {% endblock %}
+</body>
+{% endblock %}

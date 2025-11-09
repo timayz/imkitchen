@@ -3,9 +3,10 @@ use axum::extract::State;
 use axum::response::IntoResponse;
 // use serde::Deserialize;
 
-use crate::filters;
-use crate::server::AppState;
+use crate::auth::AuthUser;
+use crate::routes::AppState;
 use crate::template::Template;
+use crate::template::filters;
 
 #[derive(askama::Template)]
 #[template(path = "profile-subscription.html")]
@@ -13,13 +14,18 @@ pub struct SubscriptionTemplate {
     // pub error_message: Option<String>,
     pub current_path: String,
     pub profile_path: String,
+    pub is_admin: bool,
 }
 
-pub async fn page(template: Template<SubscriptionTemplate>) -> impl IntoResponse {
+pub async fn page(
+    template: Template<SubscriptionTemplate>,
+    AuthUser(user): AuthUser,
+) -> impl IntoResponse {
     template.render(SubscriptionTemplate {
         // error_message: None,
         current_path: "profile".to_owned(),
         profile_path: "subscription".to_owned(),
+        is_admin: user.is_admin(),
     })
 }
 

@@ -7,8 +7,8 @@ use imkitchen_user::LoginInput;
 use serde::Deserialize;
 
 use crate::auth::build_cookie;
-use crate::filters;
-use crate::server::AppState;
+use crate::routes::AppState;
+use crate::template::filters;
 use crate::template::{SERVER_ERROR_MESSAGE, Template};
 
 #[derive(askama::Template)]

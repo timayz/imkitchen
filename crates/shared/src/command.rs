@@ -42,6 +42,12 @@ impl From<argon2::password_hash::Error> for Error {
     }
 }
 
+impl From<std::time::SystemTimeError> for Error {
+    fn from(value: std::time::SystemTimeError) -> Self {
+        Self::Unknown(value.into())
+    }
+}
+
 #[macro_export]
 macro_rules! bail {
     ($msg:literal $(,)?) => {

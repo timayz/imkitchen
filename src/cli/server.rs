@@ -1,14 +1,9 @@
 use std::time::Duration;
 
 use anyhow::Result;
-use axum::{Router, routing::get};
 use tower_http::{compression::CompressionLayer, trace::TraceLayer};
 
-#[derive(Clone)]
-pub struct AppState {
-    pub config: crate::config::Config,
-    pub user_command: imkitchen_user::Command<evento::Sqlite>,
-}
+use crate::routes::AppState;
 
 pub async fn serve(
     config: crate::config::Config,
@@ -42,62 +37,27 @@ pub async fn serve(
         .run(&evento_executor)
         .await?;
 
+    let sub_admin_user_query = crate::query::subscribe_admin_user()
+        .data(write_pool.clone())
+        .delay(Duration::from_secs(10))
+        .run(&evento_executor)
+        .await?;
+
+    let sub_global_stat_query = crate::query::subscribe_global_stat()
+        .data(write_pool.clone())
+        .delay(Duration::from_secs(10))
+        .run(&evento_executor)
+        .await?;
+
     let state = AppState {
         config,
         user_command,
+        pool: read_pool.clone(),
     };
 
     // Build router with health checks using read pool state
-    let app = Router::new()
+    let app = crate::routes::router(state)
         // Health check endpoints (no auth required)
-        .route("/health", get(crate::routes::health::health))
-        .route("/ready", get(crate::routes::health::ready))
-        .with_state(read_pool.clone())
-        .route("/", get(crate::routes::index::page))
-        .route("/help", get(crate::routes::help::page))
-        .route("/terms", get(crate::routes::terms::page))
-        .route("/policy", get(crate::routes::policy::page))
-        .route(
-            "/register",
-            get(crate::routes::register::page).post(crate::routes::register::action),
-        )
-        .route(
-            "/register/status/{id}",
-            get(crate::routes::register::status),
-        )
-        .route(
-            "/login",
-            get(crate::routes::login::page).post(crate::routes::login::action),
-        )
-        .route(
-            "/profile/account",
-            get(crate::routes::profile::account::page)
-                .post(crate::routes::profile::account::action),
-        )
-        .route(
-            "/profile/meal-preferences",
-            get(crate::routes::profile::meal_preferences::page)
-                .post(crate::routes::profile::meal_preferences::action),
-        )
-        .route(
-            "/profile/subscription",
-            get(crate::routes::profile::subscription::page)
-                .post(crate::routes::profile::subscription::action),
-        )
-        .route(
-            "/profile/notifications",
-            get(crate::routes::profile::notifications::page)
-                .post(crate::routes::profile::notifications::action),
-        )
-        .route(
-            "/profile/security",
-            get(crate::routes::profile::security::page)
-                .post(crate::routes::profile::security::action),
-        )
-        .fallback(crate::routes::fallback)
-        .route("/sw.js", get(crate::routes::service_worker::sw))
-        .nest_service("/static", crate::assets::AssetsService::new())
-        .with_state(state)
         // Add cache control middleware (no-cache for HTML, cache for static files)
         .layer(axum::middleware::from_fn(
             crate::middleware::cache_control_middleware,
@@ -168,7 +128,13 @@ pub async fn serve(
     tracing::info!("Shutting down evento projections...");
 
     // Shutdown all projection subscriptions
-    let results = futures::future::join_all(vec![sub_user_command.shutdown_and_wait()]).await;
+    let results = futures::future::join_all(vec![
+        sub_user_command.shutdown_and_wait(),
+        sub_global_stat_query.shutdown_and_wait(),
+        sub_admin_user_query.shutdown_and_wait(),
+    ])
+    .await;
+
     for result in results {
         if let Err(e) = result {
             tracing::error!("{e}");

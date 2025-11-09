@@ -9,8 +9,8 @@ use imkitchen_user::meal_preferences::UserMealPreferences;
 use serde::Deserialize;
 
 use crate::auth::AuthUser;
-use crate::filters;
-use crate::server::AppState;
+use crate::routes::AppState;
+use crate::template::filters;
 use crate::template::{SERVER_ERROR_MESSAGE, ServerErrorTemplate, Template};
 
 #[derive(askama::Template)]
@@ -22,6 +22,7 @@ pub struct MealPreferencesTemplate {
     pub household_size: u8,
     pub dietary_restrictions: HashSet<String>,
     pub cuisine_variety_weight: f32,
+    pub is_admin: bool,
 }
 
 impl Default for MealPreferencesTemplate {
@@ -33,6 +34,7 @@ impl Default for MealPreferencesTemplate {
             household_size: 2,
             dietary_restrictions: HashSet::default(),
             cuisine_variety_weight: 0.7,
+            is_admin: false,
         }
     }
 }
@@ -41,9 +43,9 @@ pub async fn page(
     template: Template<MealPreferencesTemplate>,
     server_error: Template<ServerErrorTemplate>,
     State(state): State<AppState>,
-    AuthUser(user_id): AuthUser,
+    AuthUser(user): AuthUser,
 ) -> impl IntoResponse {
-    let preferences = match state.user_command.load_meal_preferences(user_id).await {
+    let preferences = match state.user_command.load_meal_preferences(&user.id).await {
         Ok(loaded) => loaded.item,
         Err(evento::ReadError::NotFound) => UserMealPreferences::default(),
         Err(e) => {
@@ -59,6 +61,7 @@ pub async fn page(
             household_size: preferences.household_size,
             dietary_restrictions,
             cuisine_variety_weight: preferences.cuisine_variety_weight,
+            is_admin: user.is_admin(),
             ..Default::default()
         })
         .into_response()
@@ -75,7 +78,7 @@ pub struct ActionInput {
 pub async fn action(
     template: Template<MealPreferencesTemplate>,
     State(state): State<AppState>,
-    AuthUser(user_id): AuthUser,
+    AuthUser(user): AuthUser,
     Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {
     let dietary_restrictions = HashSet::from_iter(input.dietary_restrictions.iter().cloned());
@@ -88,7 +91,7 @@ pub async fn action(
                 cuisine_variety_weight: input.cuisine_variety_weight,
                 household_size: input.household_size,
             },
-            Metadata::by(user_id),
+            Metadata::by(user.id),
         )
         .await
     {

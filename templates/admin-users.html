@@ -1,0 +1,206 @@
+{% extends "base_admin.html" %}
+
+{% block title %}Admin - User Management - imkitchen{% endblock %}
+
+
+<!-- Main Content -->
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+  <!-- Header -->
+  <div class="mb-8">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div>
+        <h1 class="text-2xl md:text-3xl font-bold mb-2">User Management</h1>
+        <p class="text-gray-600">Manage user accounts, subscriptions, and access</p>
+      </div>
+      <div>
+        <button class="w-full md:w-auto px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">
+          📊 Export Users
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
+    <div class="bg-white rounded-lg shadow-lg p-4 md:p-6">
+      <div class="text-gray-600 text-xs md:text-sm mb-1">Total Users</div>
+      <div class="text-2xl md:text-3xl font-bold">{{ stats.total }}</div>
+      <div class="text-xs md:text-sm text-green-600 mt-2">↑ {{ stats.total_percent }}% this month</div>
+    </div>
+    <div class="bg-white rounded-lg shadow-lg p-4 md:p-6">
+      <div class="text-gray-600 text-xs md:text-sm mb-1">Premium Users</div>
+      <div class="text-2xl md:text-3xl font-bold text-purple-600">{{ stats.premium }}</div>
+      {% if stats.premium_percent >= 0 %}
+        <div class="text-xs md:text-sm text-green-600 mt-2">↑ {{ stats.premium_percent }}% this month</div>
+      {% else %}
+        <div class="text-xs md:text-sm text-red-600 mt-2">↓ {{ stats.premium_percent }}% this month</div>
+      {% endif %}
+    </div>
+    <div class="bg-white rounded-lg shadow-lg p-4 md:p-6">
+      <div class="text-gray-600 text-xs md:text-sm mb-1">Active Today</div>
+      <div class="text-2xl md:text-3xl font-bold text-blue-600">{{ stats.active_today }}</div>
+      <div class="text-xs md:text-sm text-gray-500 mt-2">{{ stats.active_today_percent }}% of total</div>
+    </div>
+    <div class="bg-white rounded-lg shadow-lg p-4 md:p-6">
+      <div class="text-gray-600 text-xs md:text-sm mb-1">Suspended</div>
+      <div class="text-2xl md:text-3xl font-bold text-red-600">{{ stats.suspended }}</div>
+      <div class="text-xs md:text-sm text-gray-500 mt-2">{{ stats.suspended_percent }}% of total</div>
+    </div>
+  </div>
+
+  <!-- Filters & Search -->
+  <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+    <div class="grid md:grid-cols-4 gap-4">
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Search</label>
+        <input type="text" placeholder="Name, email, username..."
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Account Type</label>
+        <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+          <option value="">All Users</option>
+          <option value="free">Free Tier</option>
+          <option value="premium">Premium</option>
+          <option value="admin">Admins</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+        <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+          <option value="">All Status</option>
+          <option value="active">Active</option>
+          <option value="suspended">Suspended</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Sort By</label>
+        <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+          <option value="recent">Recently Joined</option>
+          <option value="name">Name (A-Z)</option>
+          <option value="recipes">Most Recipes</option>
+          <option value="activity">Most Active</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Users Table -->
+  <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[800px]">
+        <thead class="bg-gray-50 border-b">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">User</th>
+            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
+            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Account Type</th>
+            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Recipes</th>
+            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Joined</th>
+            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          {% for user in users.edges %}
+          <tr id="user-{{ user.node.id }}" class="hover:bg-gray-50{% if user.node.is_admin() %} bg-yellow-50{% endif %}{% if user.node.is_suspended() %} bg-red-50{% endif %}"{% if let (true, true, Some(cursor)) = (loop.last, users.page_info.has_next_page, users.page_info.end_cursor.to_owned()) %}
+            ts-req="/admin/users?after={{ cursor.to_string() }}"
+            ts-req-method="GET"
+            ts-req-selector="children tbody"
+            ts-swap="afterend"
+            ts-trigger="visible once"{% endif %}>
+            <td class="px-6 py-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold{% if user.node.is_premium() %} bg-purple-500{% endif %}{% if user.node.is_suspended() %} bg-red-500{% endif %}{% if user.node.is_admin() %} bg-yellow-500{% endif %}">
+                  {{ user.node.email.chars().next().unwrap() }}
+                </div>
+                <div>
+                  <div class="font-semibold">{{ user.node.full_name.to_owned().unwrap_or("-".to_owned()) }}</div>
+                  <div class="text-sm text-gray-600">{{ user.node.email }}</div>
+                  <div class="text-xs text-gray-500">@{{ user.node.username.to_owned().unwrap_or("".to_owned()) }}</div>
+                </div>
+              </div>
+            </td>
+            <td class="px-6 py-4">
+              {% if user.node.is_active() %}
+                <span class="px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
+                  Active
+                </span>
+              {% endif %}
+              {% if user.node.is_suspended() %}
+                <span class="px-3 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full">
+                  Suspended
+                </span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4">
+              {% if user.node.is_premium() %}
+                <span class="px-3 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded-full">
+                  ✨ Premium
+                </span>
+              {% endif %}
+              {% if user.node.is_free_tier() %}
+                <span class="px-3 py-1 bg-gray-100 text-gray-800 text-xs font-semibold rounded-full">
+                  Free
+                </span>
+              {% endif %}
+              {% if user.node.is_admin() %}
+                <span class="px-3 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full">
+                  👑 Admin
+                </span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4">
+              <div class="font-semibold">{{ user.node.total_recipes_count }}</div>
+              <div class="text-xs text-gray-500">{{ user.node.shared_recipes_count }} shared</div>
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-600">
+              {{ user.node.joined_at() }}
+            </td>
+            <td class="px-6 py-4">
+              <div class="flex gap-2">
+              {% if user.node.is_suspended() %}
+                  <button class="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded hover:bg-green-200"
+                          ts-req="/admin/users/activate/{{ user.node.id }}"
+                          ts-req-method="POST"
+                          ts-req-selector="#user-{{ user.node.id }}"
+                          ts-target="#user-{{ user.node.id }}">
+                    Reactivate
+                  </button>
+              {% else if !user.node.is_admin() %}
+                  <button class="px-3 py-1 bg-red-100 text-red-700 text-xs font-semibold rounded hover:bg-red-200"
+                          ts-req="/admin/users/suspend/{{ user.node.id }}"
+                          ts-req-method="POST"
+                          ts-req-selector="#user-{{ user.node.id }}"
+                          ts-target="#user-{{ user.node.id }}">
+                    Suspend
+                  </button>
+              {% endif %}
+              {% if user.node.is_premium() %}
+                  <button class="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-semibold rounded hover:bg-gray-200"
+                          ts-req="/admin/users/toggle-premium/{{ user.node.id }}"
+                          ts-req-method="POST"
+                          ts-req-selector="#user-{{ user.node.id }}"
+                          ts-target="#user-{{ user.node.id }}">
+                    Downgrade Free Tier
+                  </button>
+              {% else if user.node.is_free_tier() %}
+                  <button class="px-3 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded hover:bg-purple-200"
+                          ts-req="/admin/users/toggle-premium/{{ user.node.id }}"
+                          ts-req-method="POST"
+                          ts-req-selector="#user-{{ user.node.id }}"
+                          ts-target="#user-{{ user.node.id }}">
+                    Upgrade Premium
+                  </button>
+              {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+          <!-- More users... -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

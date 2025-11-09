@@ -1,14 +1,22 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use axum::{extract::FromRequestParts, http::request::Parts, response::Redirect};
+use axum::{
+    extract::FromRequestParts,
+    http::request::Parts,
+    response::{IntoResponse, Redirect, Response},
+};
 use axum_extra::extract::{
     CookieJar,
     cookie::{Cookie, SameSite},
 };
+use imkitchen_user::Role;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 
-use crate::config::JwtConfig;
+use crate::{
+    config::JwtConfig,
+    template::{ForbiddenTemplate, Template},
+};
 
 const AUTH_COOKIE_NAME: &str = "auth_token";
 
@@ -50,14 +58,15 @@ pub fn build_cookie<'a>(config: JwtConfig, sub: String) -> anyhow::Result<Cookie
         .build())
 }
 
-pub struct AuthUser(pub String);
+#[derive(Clone)]
+pub struct AuthUser(pub imkitchen_user::AuthUser);
 
-impl FromRequestParts<crate::server::AppState> for AuthUser {
+impl FromRequestParts<crate::routes::AppState> for AuthUser {
     type Rejection = Redirect;
 
     async fn from_request_parts(
         parts: &mut Parts,
-        state: &crate::server::AppState,
+        state: &crate::routes::AppState,
     ) -> Result<Self, Self::Rejection> {
         // Extract cookie jar
         let jar = CookieJar::from_request_parts(parts, state)
@@ -81,6 +90,49 @@ impl FromRequestParts<crate::server::AppState> for AuthUser {
         )
         .map_err(|_| Redirect::to("/login"))?;
 
-        Ok(AuthUser(token_data.claims.sub))
+        let Some(user) = state
+            .user_command
+            .get_user_by_id(&token_data.claims.sub)
+            .await
+            .map_err(|e| {
+                tracing::error!("{e}");
+                Redirect::to("/login")
+            })?
+        else {
+            return Err(Redirect::to("/login"));
+        };
+
+        if user.role == Role::Suspend.to_string() {
+            return Err(Redirect::to("/login"));
+        }
+
+        parts.extensions.insert(AuthUser(user.clone()));
+
+        Ok(AuthUser(user))
+    }
+}
+
+pub struct AuthAdmin(pub imkitchen_user::AuthUser);
+
+impl FromRequestParts<crate::routes::AppState> for AuthAdmin {
+    type Rejection = Response;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &crate::routes::AppState,
+    ) -> Result<Self, Self::Rejection> {
+        let AuthUser(user) = AuthUser::from_request_parts(parts, state)
+            .await
+            .map_err(|err| err.into_response())?;
+
+        if user.is_admin() {
+            return Ok(AuthAdmin(user));
+        }
+
+        let template = Template::<ForbiddenTemplate>::from_request_parts(parts, state)
+            .await
+            .expect("Infallible");
+
+        Err(template.render(ForbiddenTemplate).into_response())
     }
 }

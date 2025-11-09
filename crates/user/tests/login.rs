@@ -10,7 +10,7 @@ async fn test_login_failure() -> anyhow::Result<()> {
     let resp = command
         .login(
             LoginInput {
-                email: "john.doe@imkiichen.localhost".to_owned(),
+                email: "john.doe@imkitchen.localhost".to_owned(),
                 password: "my_password".to_owned(),
                 lang: "en".to_owned(),
             },
@@ -28,7 +28,7 @@ async fn test_login_failure() -> anyhow::Result<()> {
     let resp = command
         .login(
             LoginInput {
-                email: "john.doe@imkiichen.localhost".to_owned(),
+                email: "john.doe@imkitchen.localhost".to_owned(),
                 password: "my_password3".to_owned(),
                 lang: "en".to_owned(),
             },
@@ -44,7 +44,7 @@ async fn test_login_failure() -> anyhow::Result<()> {
     let resp = command
         .login(
             LoginInput {
-                email: "john.doe@imkiichen.localhos".to_owned(),
+                email: "john.doe@imkitchen.localhos".to_owned(),
                 password: "my_password".to_owned(),
                 lang: "en".to_owned(),
             },
@@ -60,7 +60,7 @@ async fn test_login_failure() -> anyhow::Result<()> {
     let resp = command
         .login(
             LoginInput {
-                email: "john.doe@imkiichen.localhost".to_owned(),
+                email: "john.doe@imkitchen.localhost".to_owned(),
                 password: "my_password".to_owned(),
                 lang: "en".to_owned(),
             },

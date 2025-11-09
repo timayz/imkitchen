@@ -1,7 +1,7 @@
 use axum::response::IntoResponse;
 
-use crate::filters;
 use crate::template::Template;
+use crate::template::filters;
 
 #[derive(askama::Template)]
 #[template(path = "policy.html")]
