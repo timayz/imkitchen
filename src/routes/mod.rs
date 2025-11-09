@@ -1,4 +1,4 @@
-use axum::{Router, response::IntoResponse};
+use axum::{Router, response::IntoResponse, routing::post};
 use sqlx::SqlitePool;
 
 use crate::template::{NotFoundTemplate, Template};
@@ -59,10 +59,16 @@ pub fn router(app_state: AppState) -> Router {
             "/profile/notifications",
             get(profile::notifications::page).post(profile::notifications::action),
         )
-        .route("/admin/users", get(admin::users::page))
         .route(
             "/profile/security",
             get(profile::security::page).post(profile::security::action),
+        )
+        .route("/admin/users", get(admin::users::page))
+        .route("/admin/users/suspend/{id}", post(admin::users::suspend))
+        .route("/admin/users/activate/{id}", post(admin::users::activate))
+        .route(
+            "/admin/users/toggle-premium/{id}",
+            post(admin::users::toggle_premium),
         )
         .fallback(fallback)
         .route("/sw.js", get(service_worker::sw))

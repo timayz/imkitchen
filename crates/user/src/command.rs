@@ -158,6 +158,10 @@ impl<E: Executor + Clone> Command<E> {
             imkitchen_shared::bail!("Invalid email or password. Please try again.");
         }
 
+        if user.item.role == Role::Suspend {
+            imkitchen_shared::bail!("Account suspended");
+        }
+
         Ok(evento::save_with(user)
             .data(&LoggedIn { lang: input.lang })?
             .metadata(&metadata)?
@@ -399,15 +403,51 @@ async fn handle_made_admin<E: Executor>(
     Ok(())
 }
 
+#[evento::handler(User)]
+async fn handle_activated<E: Executor>(
+    context: &evento::Context<'_, E>,
+    event: Event<Activated>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let statement = Query::update()
+        .table(UserIden::Table)
+        .values([(UserIden::Role, event.data.role.to_owned().into())])
+        .and_where(Expr::col(UserIden::Id).eq(event.aggregator_id.to_owned()))
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
+}
+
+#[evento::handler(User)]
+async fn handle_suspended<E: Executor>(
+    context: &evento::Context<'_, E>,
+    event: Event<Suspended>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let statement = Query::update()
+        .table(UserIden::Table)
+        .values([(UserIden::Role, event.data.role.to_owned().into())])
+        .and_where(Expr::col(UserIden::Id).eq(event.aggregator_id.to_owned()))
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
+}
+
 pub fn subscribe_command<E: Executor + Clone>() -> SubscribeBuilder<E> {
     evento::subscribe("user-command")
         .handler(handle_registration_requested())
+        .handler(handle_activated())
+        .handler(handle_suspended())
         .handler(handle_made_admin())
         .skip::<User, RegistrationSucceeded>()
         .skip::<User, RegistrationFailed>()
         .skip::<User, LoggedIn>()
-        .skip::<User, Suspended>()
-        .skip::<User, Activated>()
         .skip::<UserMealPreferences, meal_preferences::Created>()
         .skip::<UserMealPreferences, meal_preferences::Updated>()
         .skip::<UserSubscription, subscription::LifePremiumToggled>()

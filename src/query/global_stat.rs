@@ -10,6 +10,7 @@ use imkitchen_user::{
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 
+#[derive(Default)]
 pub struct AdminUserGlobalStats {
     pub total: u32,
     pub total_percent: u8,

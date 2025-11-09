@@ -30,7 +30,7 @@ pub struct AdminUserIntCursor {
     pub v: i64,
 }
 
-#[derive(Debug, Deserialize, FromRow)]
+#[derive(Debug, Default, Deserialize, FromRow)]
 pub struct AdminUser {
     pub id: String,
     pub email: String,
@@ -213,6 +213,35 @@ pub async fn query_admin_users(
         }
         _ => todo!(),
     }
+}
+
+pub async fn query_admin_user_by_id(
+    pool: &sqlx::SqlitePool,
+    id: impl Into<String>,
+) -> anyhow::Result<AdminUser> {
+    let statment = Query::select()
+        .columns([
+            AdminUserPjt::Id,
+            AdminUserPjt::Email,
+            AdminUserPjt::FullName,
+            AdminUserPjt::Username,
+            AdminUserPjt::Status,
+            AdminUserPjt::AccountType,
+            AdminUserPjt::TotalRecipesCount,
+            AdminUserPjt::SharedRecipesCount,
+            AdminUserPjt::TotalActiveCount,
+            AdminUserPjt::CreatedAt,
+        ])
+        .from(AdminUserPjt::Table)
+        .and_where(Expr::col(AdminUserPjt::Id).eq(id.into()))
+        .limit(1)
+        .to_owned();
+
+    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+
+    Ok(sqlx::query_as_with::<_, AdminUser, _>(&sql, values)
+        .fetch_one(pool)
+        .await?)
 }
 
 pub fn subscribe_admin_user<E: Executor + Clone>() -> SubscribeBuilder<E> {

@@ -103,7 +103,12 @@
         </thead>
         <tbody class="divide-y divide-gray-200">
           {% for user in users.edges %}
-          <tr class="hover:bg-gray-50{% if user.node.is_admin() %} bg-yellow-50{% endif %}{% if user.node.is_suspended() %} bg-red-50{% endif %}"{% if let (true, true, Some(cursor)) = (loop.last, users.page_info.has_next_page, users.page_info.end_cursor.to_owned()) %} ts-req="/admin/users?after={{ cursor.to_string() }}" ts-req-method="GET" ts-req-selector="children tbody" ts-swap="afterend" ts-trigger="visible once"{% endif %}>
+          <tr id="user-{{ user.node.id }}" class="hover:bg-gray-50{% if user.node.is_admin() %} bg-yellow-50{% endif %}{% if user.node.is_suspended() %} bg-red-50{% endif %}"{% if let (true, true, Some(cursor)) = (loop.last, users.page_info.has_next_page, users.page_info.end_cursor.to_owned()) %}
+            ts-req="/admin/users?after={{ cursor.to_string() }}"
+            ts-req-method="GET"
+            ts-req-selector="children tbody"
+            ts-swap="afterend"
+            ts-trigger="visible once"{% endif %}>
             <td class="px-6 py-4">
               <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold{% if user.node.is_premium() %} bg-purple-500{% endif %}{% if user.node.is_suspended() %} bg-red-500{% endif %}{% if user.node.is_admin() %} bg-yellow-500{% endif %}">
@@ -155,20 +160,36 @@
             <td class="px-6 py-4">
               <div class="flex gap-2">
               {% if user.node.is_suspended() %}
-                  <button class="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded hover:bg-green-200">
+                  <button class="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded hover:bg-green-200"
+                          ts-req="/admin/users/activate/{{ user.node.id }}"
+                          ts-req-method="POST"
+                          ts-req-selector="#user-{{ user.node.id }}"
+                          ts-target="#user-{{ user.node.id }}">
                     Reactivate
                   </button>
               {% else if !user.node.is_admin() %}
-                  <button class="px-3 py-1 bg-red-100 text-red-700 text-xs font-semibold rounded hover:bg-red-200">
+                  <button class="px-3 py-1 bg-red-100 text-red-700 text-xs font-semibold rounded hover:bg-red-200"
+                          ts-req="/admin/users/suspend/{{ user.node.id }}"
+                          ts-req-method="POST"
+                          ts-req-selector="#user-{{ user.node.id }}"
+                          ts-target="#user-{{ user.node.id }}">
                     Suspend
                   </button>
               {% endif %}
               {% if user.node.is_premium() %}
-                  <button class="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-semibold rounded hover:bg-gray-200">
+                  <button class="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-semibold rounded hover:bg-gray-200"
+                          ts-req="/admin/users/toggle-premium/{{ user.node.id }}"
+                          ts-req-method="POST"
+                          ts-req-selector="#user-{{ user.node.id }}"
+                          ts-target="#user-{{ user.node.id }}">
                     Downgrade Free Tier
                   </button>
               {% else if user.node.is_free_tier() %}
-                  <button class="px-3 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded hover:bg-purple-200">
+                  <button class="px-3 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded hover:bg-purple-200"
+                          ts-req="/admin/users/toggle-premium/{{ user.node.id }}"
+                          ts-req-method="POST"
+                          ts-req-selector="#user-{{ user.node.id }}"
+                          ts-target="#user-{{ user.node.id }}">
                     Upgrade Premium
                   </button>
               {% endif %}
