@@ -8,7 +8,7 @@ pub struct Config {
     pub jwt: JwtConfig,
     // pub email: EmailConfig,
     // pub stripe: StripeConfig,
-    // pub features: FeaturesConfig,
+    pub features: FeaturesConfig,
     pub monitoring: MonitoringConfig,
 }
 
@@ -20,10 +20,10 @@ pub struct MonitoringConfig {
     pub log_line_number: bool,
 }
 
-// #[derive(Debug, Deserialize, Clone)]
-// pub struct FeaturesConfig {
-//     pub premium: bool,
-// }
+#[derive(Debug, Deserialize, Clone)]
+pub struct FeaturesConfig {
+    pub premium: bool,
+}
 
 // #[derive(Debug, Deserialize, Clone)]
 // pub struct EmailConfig {
@@ -71,7 +71,7 @@ impl Config {
     pub fn load(config_path: Option<String>) -> Result<Self, ConfigError> {
         let config_path = config_path.unwrap_or_else(|| "imkitchen.toml".to_string());
         ConfigBuilder::builder()
-            // .set_default("server.url", "https://inkitchen.localhost")?
+            .set_default("server.url", "https://inkitchen.localhost")?
             .set_default("server.host", "0.0.0.0")?
             .set_default("server.port", 3000)?
             .set_default("database.url", "sqlite:imkitchen.db")?
