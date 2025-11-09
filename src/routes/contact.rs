@@ -1,6 +1,7 @@
 use axum::response::IntoResponse;
 
 use crate::template::{Template, filters};
+use imkitchen_contact::ContactSubject;
 
 #[derive(askama::Template)]
 #[template(path = "contact.html")]

@@ -112,10 +112,7 @@ pub async fn suspend(
 ) -> impl IntoResponse {
     if let Err(e) = app_state
         .user_command
-        .suspend(
-            imkitchen_user::SuspendInput { id: id.to_owned() },
-            Metadata::by(user.id),
-        )
+        .suspend(&id, Metadata::by(user.id))
         .await
     {
         tracing::error!("{e}");
@@ -163,10 +160,7 @@ pub async fn activate(
 ) -> impl IntoResponse {
     if let Err(e) = app_state
         .user_command
-        .activate(
-            imkitchen_user::ActivateInput { id: id.to_owned() },
-            Metadata::by(user.id),
-        )
+        .activate(&id, Metadata::by(user.id))
         .await
     {
         tracing::error!("{e}");
@@ -214,10 +208,7 @@ pub async fn toggle_premium(
 ) -> impl IntoResponse {
     if let Err(e) = app_state
         .user_command
-        .toggle_life_premium(
-            imkitchen_user::ToggleLifePremiumInput { id: id.to_owned() },
-            Metadata::by(user.id.to_owned()),
-        )
+        .toggle_life_premium(&id, Metadata::by(user.id.to_owned()))
         .await
     {
         tracing::error!("{e}");

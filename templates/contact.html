@@ -34,14 +34,13 @@
             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
             required>
             <option value="">{{ "Select a subject..."|t }}</option>
-            <option value="general">{{ "General Inquiry"|t }}</option>
-            <option value="support">{{ "Technical Support"|t }}</option>
-            <option value="billing">{{ "Billing Question"|t }}</option>
-            <option value="feature">{{ "Feature Request"|t }}</option>
-            <option value="bug">{{ "Bug Report"|t }}</option>
-            <option value="feedback">{{ "Feedback"|t }}</option>
-            <option value="partnership">{{ "Partnership Opportunity"|t }}</option>
-            <option value="other">{{ "Other"|t }}</option>
+            <option value="{{ ContactSubject::GeneralInquiry }}">{{ "General Inquiry"|t }}</option>
+            <option value="{{ ContactSubject::TechnicalSupport }}">{{ "Technical Support"|t }}</option>
+            <option value="{{ ContactSubject::BillingQuestion }}">{{ "Billing Question"|t }}</option>
+            <option value="{{ ContactSubject::FeatureRequest }}">{{ "Feature Request"|t }}</option>
+            <option value="{{ ContactSubject::BugReport }}">{{ "Bug Report"|t }}</option>
+            <option value="{{ ContactSubject::PartnershipOpportunity }}">{{ "Partnership Opportunity"|t }}</option>
+            <option value="{{ ContactSubject::Other }}">{{ "Other"|t }}</option>
           </select>
         </div>
 

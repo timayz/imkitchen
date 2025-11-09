@@ -46,22 +46,6 @@ pub struct UpdateMealPreferencesInput {
     pub cuisine_variety_weight: f32,
 }
 
-pub struct SuspendInput {
-    pub id: String,
-}
-
-pub struct MadeAdminInput {
-    pub id: String,
-}
-
-pub struct ActivateInput {
-    pub id: String,
-}
-
-pub struct ToggleLifePremiumInput {
-    pub id: String,
-}
-
 #[derive(Debug, Deserialize, FromRow, Clone)]
 pub struct AuthUser {
     pub id: String,
@@ -246,10 +230,10 @@ impl<E: Executor + Clone> Command<E> {
 
     pub async fn suspend(
         &self,
-        input: SuspendInput,
+        id: impl Into<String>,
         metadata: Metadata,
     ) -> imkitchen_shared::Result<()> {
-        let user = self.load(&input.id).await?;
+        let user = self.load(id).await?;
 
         if user.item.role == Role::Suspend {
             return Ok(());
@@ -268,10 +252,10 @@ impl<E: Executor + Clone> Command<E> {
 
     pub async fn activate(
         &self,
-        input: ActivateInput,
+        id: impl Into<String>,
         metadata: Metadata,
     ) -> imkitchen_shared::Result<()> {
-        let user = self.load(&input.id).await?;
+        let user = self.load(id).await?;
 
         if user.item.role == Role::User {
             return Ok(());
@@ -290,10 +274,10 @@ impl<E: Executor + Clone> Command<E> {
 
     pub async fn made_admin(
         &self,
-        input: MadeAdminInput,
+        id: impl Into<String>,
         metadata: Metadata,
     ) -> imkitchen_shared::Result<()> {
-        let user = self.load(&input.id).await?;
+        let user = self.load(id).await?;
 
         if user.item.role == Role::Admin {
             return Ok(());
@@ -312,14 +296,15 @@ impl<E: Executor + Clone> Command<E> {
 
     pub async fn toggle_life_premium(
         &self,
-        input: ToggleLifePremiumInput,
+        id: impl Into<String>,
         metadata: Metadata,
     ) -> imkitchen_shared::Result<()> {
+        let id = id.into();
         let expire_at = (SystemTime::now() + Duration::from_secs(10 * 12 * 30 * 24 * 60 * 60))
             .duration_since(UNIX_EPOCH)?
             .as_secs();
 
-        let builder = match self.load_subscription(&input.id).await {
+        let builder = match self.load_subscription(&id).await {
             Ok(subscription) => {
                 let expire_at = if subscription.item.expired {
                     expire_at
@@ -330,8 +315,9 @@ impl<E: Executor + Clone> Command<E> {
                 evento::save_with(subscription)
                     .data(&subscription::LifePremiumToggled { expire_at })?
             }
-            Err(evento::ReadError::NotFound) => evento::create_with(input.id)
-                .data(&subscription::LifePremiumToggled { expire_at })?,
+            Err(evento::ReadError::NotFound) => {
+                evento::create_with(id).data(&subscription::LifePremiumToggled { expire_at })?
+            }
             Err(e) => return Err(e.into()),
         };
 

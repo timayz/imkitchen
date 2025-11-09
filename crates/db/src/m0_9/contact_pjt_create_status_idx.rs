@@ -1,21 +1,21 @@
 use sea_query::{Index, IndexCreateStatement, IndexDropStatement};
 
-use crate::table::AdminUserPjt;
+use crate::table::ContactPjt;
 
 pub struct Operation;
 
 fn up_statement() -> IndexCreateStatement {
     Index::create()
-        .name("idx_admin_user_account_type")
-        .table(AdminUserPjt::Table)
-        .col(AdminUserPjt::AccountType)
+        .name("idx_contact_status")
+        .table(ContactPjt::Table)
+        .col(ContactPjt::Status)
         .to_owned()
 }
 
 fn down_statement() -> IndexDropStatement {
     Index::drop()
-        .name("idx_admin_user_account_type")
-        .table(AdminUserPjt::Table)
+        .name("idx_contact_status")
+        .table(ContactPjt::Table)
         .to_owned()
 }
 

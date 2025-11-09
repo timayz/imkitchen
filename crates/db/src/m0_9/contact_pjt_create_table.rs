@@ -1,43 +1,59 @@
 use sea_query::{ColumnDef, Table, TableCreateStatement, TableDropStatement};
 
-use crate::table::User;
+use crate::table::ContactPjt;
 
 pub struct Operation;
 
 fn up_statement() -> TableCreateStatement {
     Table::create()
-        .table(User::Table)
+        .table(ContactPjt::Table)
         .col(
-            ColumnDef::new(User::Id)
+            ColumnDef::new(ContactPjt::Id)
                 .string()
                 .not_null()
                 .string_len(26)
                 .primary_key(),
         )
         .col(
-            ColumnDef::new(User::Email)
+            ColumnDef::new(ContactPjt::Name)
+                .string()
+                .not_null()
+                .string_len(25),
+        )
+        .col(
+            ColumnDef::new(ContactPjt::Email)
                 .string()
                 .not_null()
                 .string_len(320),
         )
         .col(
-            ColumnDef::new(User::Role)
+            ColumnDef::new(ContactPjt::Status)
+                .string()
+                .not_null()
+                .string_len(25),
+        )
+        .col(
+            ColumnDef::new(ContactPjt::Subject)
                 .string()
                 .not_null()
                 .string_len(15),
         )
         .col(
-            ColumnDef::new(User::SubscriptionEndAt)
-                .big_integer()
+            ColumnDef::new(ContactPjt::Message)
+                .string()
                 .not_null()
-                .default(0),
+                .string_len(2000),
         )
-        .col(ColumnDef::new(User::CreatedAt).big_integer().not_null())
+        .col(
+            ColumnDef::new(ContactPjt::CreatedAt)
+                .big_integer()
+                .not_null(),
+        )
         .to_owned()
 }
 
 fn down_statement() -> TableDropStatement {
-    Table::drop().table(User::Table).to_owned()
+    Table::drop().table(ContactPjt::Table).to_owned()
 }
 
 #[async_trait::async_trait]

@@ -43,6 +43,12 @@ pub async fn serve(
         .run(&evento_executor)
         .await?;
 
+    let sub_contact_query = crate::query::subscribe_contact()
+        .data(write_pool.clone())
+        .delay(Duration::from_secs(10))
+        .run(&evento_executor)
+        .await?;
+
     let sub_global_stat_query = crate::query::subscribe_global_stat()
         .data(write_pool.clone())
         .delay(Duration::from_secs(10))
@@ -132,6 +138,7 @@ pub async fn serve(
         sub_user_command.shutdown_and_wait(),
         sub_global_stat_query.shutdown_and_wait(),
         sub_admin_user_query.shutdown_and_wait(),
+        sub_contact_query.shutdown_and_wait(),
     ])
     .await;
 

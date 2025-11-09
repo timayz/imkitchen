@@ -97,6 +97,7 @@ jsonwebtoken = { workspace = true }
 futures = { workspace = true }
 time = { workspace = true }
 imkitchen-shared = { path = "crates/shared" }
+imkitchen-contact = { path = "crates/contact" }
 imkitchen-user = { path = "crates/user" }
 imkitchen-db = { path = "crates/db" }
 # imkitchen-recipe = { path = "crates/recipe" }

@@ -3,6 +3,7 @@ use axum::{
     response::IntoResponse,
 };
 use evento::cursor::{Args, Edge, ReadResult, Value};
+use imkitchen_contact::ContactSubject;
 use serde::Deserialize;
 
 use crate::{
@@ -97,3 +98,162 @@ pub async fn page(
         })
         .into_response()
 }
+
+// pub async fn suspend(
+//     template: Template<UsersTemplate>,
+//     server_error_template: Template<ServerErrorTemplate>,
+//     Path((id,)): Path<(String,)>,
+//     State(app_state): State<AppState>,
+//     AuthAdmin(user): AuthAdmin,
+// ) -> impl IntoResponse {
+//     if let Err(e) = app_state
+//         .user_command
+//         .suspend(
+//             imkitchen_user::SuspendInput { id: id.to_owned() },
+//             Metadata::by(user.id),
+//         )
+//         .await
+//     {
+//         tracing::error!("{e}");
+//
+//         return server_error_template
+//             .render(ServerErrorTemplate)
+//             .into_response();
+//     }
+//
+//     let mut user = match query_admin_user_by_id(&app_state.pool, id).await {
+//         Ok(u) => u,
+//         Err(e) => {
+//             tracing::error!("{e}");
+//
+//             return server_error_template
+//                 .render(ServerErrorTemplate)
+//                 .into_response();
+//         }
+//     };
+//
+//     user.status = AdminUserStatus::Suspended.to_string();
+//
+//     let users = ReadResult {
+//         page_info: Default::default(),
+//         edges: vec![Edge {
+//             cursor: "".to_owned().into(),
+//             node: user,
+//         }],
+//     };
+//
+//     template
+//         .render(UsersTemplate {
+//             users,
+//             ..Default::default()
+//         })
+//         .into_response()
+// }
+//
+// pub async fn activate(
+//     template: Template<UsersTemplate>,
+//     server_error_template: Template<ServerErrorTemplate>,
+//     Path((id,)): Path<(String,)>,
+//     State(app_state): State<AppState>,
+//     AuthAdmin(user): AuthAdmin,
+// ) -> impl IntoResponse {
+//     if let Err(e) = app_state
+//         .user_command
+//         .activate(
+//             imkitchen_user::ActivateInput { id: id.to_owned() },
+//             Metadata::by(user.id),
+//         )
+//         .await
+//     {
+//         tracing::error!("{e}");
+//
+//         return server_error_template
+//             .render(ServerErrorTemplate)
+//             .into_response();
+//     }
+//
+//     let mut user = match query_admin_user_by_id(&app_state.pool, id).await {
+//         Ok(u) => u,
+//         Err(e) => {
+//             tracing::error!("{e}");
+//
+//             return server_error_template
+//                 .render(ServerErrorTemplate)
+//                 .into_response();
+//         }
+//     };
+//
+//     user.status = AdminUserStatus::Active.to_string();
+//
+//     let users = ReadResult {
+//         page_info: Default::default(),
+//         edges: vec![Edge {
+//             cursor: "".to_owned().into(),
+//             node: user,
+//         }],
+//     };
+//
+//     template
+//         .render(UsersTemplate {
+//             users,
+//             ..Default::default()
+//         })
+//         .into_response()
+// }
+//
+// pub async fn toggle_premium(
+//     template: Template<UsersTemplate>,
+//     server_error_template: Template<ServerErrorTemplate>,
+//     Path((id,)): Path<(String,)>,
+//     State(app_state): State<AppState>,
+//     AuthAdmin(user): AuthAdmin,
+// ) -> impl IntoResponse {
+//     if let Err(e) = app_state
+//         .user_command
+//         .toggle_life_premium(
+//             imkitchen_user::ToggleLifePremiumInput { id: id.to_owned() },
+//             Metadata::by(user.id.to_owned()),
+//         )
+//         .await
+//     {
+//         tracing::error!("{e}");
+//
+//         return server_error_template
+//             .render(ServerErrorTemplate)
+//             .into_response();
+//     }
+//
+//     let mut user = match query_admin_user_by_id(&app_state.pool, id).await {
+//         Ok(u) => u,
+//         Err(e) => {
+//             tracing::error!("{e}");
+//
+//             return server_error_template
+//                 .render(ServerErrorTemplate)
+//                 .into_response();
+//         }
+//     };
+//
+//     user.account_type = if user.is_free_tier() {
+//         AdminUserAccountType::Premium.to_string()
+//     } else if user.is_premium() {
+//         AdminUserAccountType::FreeTier.to_string()
+//     } else {
+//         user.account_type
+//     };
+//
+//     let users = ReadResult {
+//         page_info: Default::default(),
+//         edges: vec![Edge {
+//             cursor: "".to_owned().into(),
+//             node: user,
+//         }],
+//     };
+//
+//     template
+//         .render(UsersTemplate {
+//             users,
+//             ..Default::default()
+//         })
+//         .into_response()
+// }

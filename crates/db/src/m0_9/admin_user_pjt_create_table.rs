@@ -18,7 +18,7 @@ fn up_statement() -> TableCreateStatement {
             ColumnDef::new(AdminUserPjt::Email)
                 .string()
                 .not_null()
-                .string_len(20),
+                .string_len(320),
         )
         .col(
             ColumnDef::new(AdminUserPjt::FullName)

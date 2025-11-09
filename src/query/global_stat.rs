@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use evento::{AggregatorName, Executor, SubscribeBuilder};
+use imkitchen_contact::{Contact, FormSubmitted, MarkedAsReadAndReplay, Reopened, Resolved};
 use imkitchen_db::table::GlobalStatPjt;
 use imkitchen_shared::Event;
 use imkitchen_user::{
@@ -48,6 +49,29 @@ pub async fn query_admin_users_global_stats(
     })
 }
 
+#[derive(Default)]
+pub struct ContactGlobalStats {
+    pub total: u32,
+    pub unread: u32,
+    pub today: u32,
+    pub avg_response_time: u32,
+    pub avg_response_time_last_week: u8,
+}
+
+pub async fn query_contact_global_stats(
+    pool: &sqlx::SqlitePool,
+) -> anyhow::Result<ContactGlobalStats> {
+    let stats = query_global_stats(pool, vec!["total_contacts", "unread_contacts"]).await?;
+
+    Ok(ContactGlobalStats {
+        total: stats.get("total_contacts").unwrap_or(&0).to_owned(),
+        unread: stats.get("unread_contacts").unwrap_or(&0).to_owned(),
+        today: 0,
+        avg_response_time: 0,
+        avg_response_time_last_week: 0,
+    })
+}
+
 async fn query_global_stats<I, V>(
     pool: &sqlx::SqlitePool,
     keys: I,
@@ -79,12 +103,16 @@ where
 pub fn subscribe_global_stat<E: Executor + Clone>() -> SubscribeBuilder<E> {
     evento::subscribe("global-stat-query")
         .handler(handle_registration_succeeded())
+        .handler(handle_contact_form_submitted())
+        .handler(handle_contact_marked_as_read_and_replay())
+        .handler(handle_contact_resolved())
         .skip::<User, RegistrationRequested>()
         .skip::<User, RegistrationFailed>()
         .skip::<User, LoggedIn>()
         .skip::<User, Suspended>()
         .skip::<User, Activated>()
         .skip::<User, MadeAdmin>()
+        .skip::<Contact, Reopened>()
 }
 
 #[evento::handler(User)]
@@ -125,6 +153,79 @@ async fn handle_registration_succeeded<E: Executor>(
         .on_conflict(
             OnConflict::column(GlobalStatPjt::Key)
                 .value(GlobalStatPjt::Value, Expr::col(GlobalStatPjt::Value).add(1))
+                .to_owned(),
+        )
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
+}
+
+#[evento::handler(Contact)]
+async fn handle_contact_form_submitted<E: Executor>(
+    context: &evento::Context<'_, E>,
+    _event: Event<FormSubmitted>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let statement = Query::insert()
+        .into_table(GlobalStatPjt::Table)
+        .columns([GlobalStatPjt::Key, GlobalStatPjt::Value])
+        .values_panic(["total_contacts".into(), 1.into()])
+        .values_panic(["unread_contacts".into(), 1.into()])
+        .on_conflict(
+            OnConflict::column(GlobalStatPjt::Key)
+                .value(GlobalStatPjt::Value, Expr::col(GlobalStatPjt::Value).add(1))
+                .to_owned(),
+        )
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
+}
+
+#[evento::handler(Contact)]
+async fn handle_contact_marked_as_read_and_replay<E: Executor>(
+    context: &evento::Context<'_, E>,
+    _event: Event<MarkedAsReadAndReplay>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let statement = Query::insert()
+        .into_table(GlobalStatPjt::Table)
+        .columns([GlobalStatPjt::Key, GlobalStatPjt::Value])
+        .values_panic(["unread_contacts".into(), 1.into()])
+        .on_conflict(
+            OnConflict::column(GlobalStatPjt::Key)
+                .value(GlobalStatPjt::Value, Expr::col(GlobalStatPjt::Value).sub(1))
+                .to_owned(),
+        )
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
+}
+
+#[evento::handler(Contact)]
+async fn handle_contact_resolved<E: Executor>(
+    context: &evento::Context<'_, E>,
+    _event: Event<Resolved>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let statement = Query::insert()
+        .into_table(GlobalStatPjt::Table)
+        .columns([GlobalStatPjt::Key, GlobalStatPjt::Value])
+        .values_panic(["unread_contacts".into(), 1.into()])
+        .on_conflict(
+            OnConflict::column(GlobalStatPjt::Key)
+                .value(GlobalStatPjt::Value, Expr::col(GlobalStatPjt::Value).sub(1))
                 .to_owned(),
         )
         .to_owned();

@@ -1,0 +1,20 @@
+[package]
+name = "imkitchen-contact"
+version = "0.1.0"
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+evento.workspace = true
+bincode.workspace = true
+anyhow.workspace = true
+validator.workspace = true
+argon2.workspace = true
+sqlx.workspace = true
+tokio.workspace = true
+sea-query.workspace = true
+sea-query-sqlx.workspace = true
+serde.workspace = true
+imkitchen-shared = { path = "../shared" }
+imkitchen-db = { path = "../db" }
+

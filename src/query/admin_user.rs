@@ -359,6 +359,7 @@ async fn handle_toggle_life_premium<E: Executor>(
     } else {
         AdminUserAccountType::FreeTier
     };
+
     let statment = Query::update()
         .table(AdminUserPjt::Table)
         .values([(AdminUserPjt::AccountType, account_type.to_string().into())])

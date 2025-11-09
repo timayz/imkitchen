@@ -1,6 +1,5 @@
 use clap::ValueEnum;
 use imkitchen_shared::Metadata;
-use imkitchen_user::{ActivateInput, MadeAdminInput, SuspendInput};
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 pub enum Role {
@@ -25,21 +24,9 @@ pub async fn set_role(
     };
 
     match role {
-        Role::User => {
-            command
-                .activate(ActivateInput { id: user.id }, Metadata::default())
-                .await?
-        }
-        Role::Suspend => {
-            command
-                .suspend(SuspendInput { id: user.id }, Metadata::default())
-                .await?
-        }
-        Role::Admin => {
-            command
-                .made_admin(MadeAdminInput { id: user.id }, Metadata::default())
-                .await?
-        }
+        Role::User => command.activate(user.id, Metadata::default()).await?,
+        Role::Suspend => command.suspend(user.id, Metadata::default()).await?,
+        Role::Admin => command.made_admin(user.id, Metadata::default()).await?,
     }
 
     tracing::info!("{email} now have admin access");
