@@ -3,7 +3,9 @@ mod auth;
 mod cli;
 mod config;
 mod db;
+mod language;
 mod middleware;
+mod query;
 mod routes;
 mod template;
 

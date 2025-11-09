@@ -37,13 +37,26 @@ pub async fn serve(
         .run(&evento_executor)
         .await?;
 
+    let sub_admin_user_query = crate::query::subscribe_admin_user()
+        .data(write_pool.clone())
+        .delay(Duration::from_secs(10))
+        .run(&evento_executor)
+        .await?;
+
+    let sub_global_stat_query = crate::query::subscribe_global_stat()
+        .data(write_pool.clone())
+        .delay(Duration::from_secs(10))
+        .run(&evento_executor)
+        .await?;
+
     let state = AppState {
         config,
         user_command,
+        pool: read_pool.clone(),
     };
 
     // Build router with health checks using read pool state
-    let app = crate::routes::router(state, read_pool.clone())
+    let app = crate::routes::router(state)
         // Health check endpoints (no auth required)
         // Add cache control middleware (no-cache for HTML, cache for static files)
         .layer(axum::middleware::from_fn(
@@ -115,7 +128,13 @@ pub async fn serve(
     tracing::info!("Shutting down evento projections...");
 
     // Shutdown all projection subscriptions
-    let results = futures::future::join_all(vec![sub_user_command.shutdown_and_wait()]).await;
+    let results = futures::future::join_all(vec![
+        sub_user_command.shutdown_and_wait(),
+        sub_global_stat_query.shutdown_and_wait(),
+        sub_admin_user_query.shutdown_and_wait(),
+    ])
+    .await;
+
     for result in results {
         if let Err(e) = result {
             tracing::error!("{e}");

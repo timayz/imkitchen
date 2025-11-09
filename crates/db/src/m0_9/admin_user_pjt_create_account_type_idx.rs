@@ -8,7 +8,6 @@ fn up_statement() -> IndexCreateStatement {
     Index::create()
         .name("idx_account_type")
         .table(AdminUserPjt::Table)
-        .unique()
         .col(AdminUserPjt::AccountType)
         .to_owned()
 }

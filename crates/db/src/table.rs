@@ -27,5 +27,6 @@ pub enum AdminUserPjt {
     AccountType,
     TotalRecipesCount,
     SharedRecipesCount,
+    TotalActiveCount,
     CreatedAt,
 }

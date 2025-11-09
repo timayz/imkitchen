@@ -25,23 +25,27 @@
   <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
     <div class="bg-white rounded-lg shadow-lg p-4 md:p-6">
       <div class="text-gray-600 text-xs md:text-sm mb-1">Total Users</div>
-      <div class="text-2xl md:text-3xl font-bold">2,547</div>
-      <div class="text-xs md:text-sm text-green-600 mt-2">↑ 12% this month</div>
+      <div class="text-2xl md:text-3xl font-bold">{{ stats.total }}</div>
+      <div class="text-xs md:text-sm text-green-600 mt-2">↑ {{ stats.total_percent }}% this month</div>
     </div>
     <div class="bg-white rounded-lg shadow-lg p-4 md:p-6">
       <div class="text-gray-600 text-xs md:text-sm mb-1">Premium Users</div>
-      <div class="text-2xl md:text-3xl font-bold text-purple-600">382</div>
-      <div class="text-xs md:text-sm text-green-600 mt-2">↑ 8% this month</div>
+      <div class="text-2xl md:text-3xl font-bold text-purple-600">{{ stats.premium }}</div>
+      {% if stats.premium_percent >= 0 %}
+        <div class="text-xs md:text-sm text-green-600 mt-2">↑ {{ stats.premium_percent }}% this month</div>
+      {% else %}
+        <div class="text-xs md:text-sm text-red-600 mt-2">↓ {{ stats.premium_percent }}% this month</div>
+      {% endif %}
     </div>
     <div class="bg-white rounded-lg shadow-lg p-4 md:p-6">
       <div class="text-gray-600 text-xs md:text-sm mb-1">Active Today</div>
-      <div class="text-2xl md:text-3xl font-bold text-blue-600">847</div>
-      <div class="text-xs md:text-sm text-gray-500 mt-2">33% of total</div>
+      <div class="text-2xl md:text-3xl font-bold text-blue-600">{{ stats.active_today }}</div>
+      <div class="text-xs md:text-sm text-gray-500 mt-2">{{ stats.active_today_percent }}% of total</div>
     </div>
     <div class="bg-white rounded-lg shadow-lg p-4 md:p-6">
       <div class="text-gray-600 text-xs md:text-sm mb-1">Suspended</div>
-      <div class="text-2xl md:text-3xl font-bold text-red-600">12</div>
-      <div class="text-xs md:text-sm text-gray-500 mt-2">0.5% of total</div>
+      <div class="text-2xl md:text-3xl font-bold text-red-600">{{ stats.suspended }}</div>
+      <div class="text-xs md:text-sm text-gray-500 mt-2">{{ stats.suspended_percent }}% of total</div>
     </div>
   </div>
 
@@ -98,208 +102,83 @@
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200">
-          <!-- User 1 - Premium -->
-          <tr class="hover:bg-gray-50">
+          {% for user in users.edges %}
+          <tr class="hover:bg-gray-50{% if user.node.is_admin() %} bg-yellow-50{% endif %}{% if user.node.is_suspended() %} bg-red-50{% endif %}"{% if let (true, true, Some(cursor)) = (loop.last, users.page_info.has_next_page, users.page_info.end_cursor.to_owned()) %} ts-req="/admin/users?after={{ cursor.to_string() }}" ts-req-method="GET" ts-req-selector="children tbody" ts-swap="afterend" ts-trigger="visible once"{% endif %}>
             <td class="px-6 py-4">
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold">
-                  SM
+                <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold{% if user.node.is_premium() %} bg-purple-500{% endif %}{% if user.node.is_suspended() %} bg-red-500{% endif %}{% if user.node.is_admin() %} bg-yellow-500{% endif %}">
+                  {{ user.node.email.chars().next().unwrap() }}
                 </div>
                 <div>
-                  <div class="font-semibold">Sarah Mitchell</div>
-                  <div class="text-sm text-gray-600">sarah@example.com</div>
-                  <div class="text-xs text-gray-500">@sarah_cooks</div>
+                  <div class="font-semibold">{{ user.node.full_name.to_owned().unwrap_or("-".to_owned()) }}</div>
+                  <div class="text-sm text-gray-600">{{ user.node.email }}</div>
+                  <div class="text-xs text-gray-500">@{{ user.node.username.to_owned().unwrap_or("".to_owned()) }}</div>
                 </div>
               </div>
             </td>
             <td class="px-6 py-4">
-              <span class="px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
-                Active
-              </span>
+              {% if user.node.is_active() %}
+                <span class="px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
+                  Active
+                </span>
+              {% endif %}
+              {% if user.node.is_suspended() %}
+                <span class="px-3 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full">
+                  Suspended
+                </span>
+              {% endif %}
             </td>
             <td class="px-6 py-4">
-              <span class="px-3 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded-full">
-                ✨ Premium
-              </span>
+              {% if user.node.is_premium() %}
+                <span class="px-3 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded-full">
+                  ✨ Premium
+                </span>
+              {% endif %}
+              {% if user.node.is_free_tier() %}
+                <span class="px-3 py-1 bg-gray-100 text-gray-800 text-xs font-semibold rounded-full">
+                  Free
+                </span>
+              {% endif %}
+              {% if user.node.is_admin() %}
+                <span class="px-3 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full">
+                  👑 Admin
+                </span>
+              {% endif %}
             </td>
             <td class="px-6 py-4">
-              <div class="font-semibold">47</div>
-              <div class="text-xs text-gray-500">12 shared</div>
+              <div class="font-semibold">{{ user.node.total_recipes_count }}</div>
+              <div class="text-xs text-gray-500">{{ user.node.shared_recipes_count }} shared</div>
             </td>
             <td class="px-6 py-4 text-sm text-gray-600">
-              Jan 15, 2025
+              {{ user.node.joined_at() }}
             </td>
             <td class="px-6 py-4">
               <div class="flex gap-2">
-                <button class="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded hover:bg-blue-200">
-                  Edit
-                </button>
-                <button class="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-semibold rounded hover:bg-gray-200">
-                  View
-                </button>
+              {% if user.node.is_suspended() %}
+                  <button class="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded hover:bg-green-200">
+                    Reactivate
+                  </button>
+              {% else if !user.node.is_admin() %}
+                  <button class="px-3 py-1 bg-red-100 text-red-700 text-xs font-semibold rounded hover:bg-red-200">
+                    Suspend
+                  </button>
+              {% endif %}
+              {% if user.node.is_premium() %}
+                  <button class="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-semibold rounded hover:bg-gray-200">
+                    Downgrade Free Tier
+                  </button>
+              {% else if user.node.is_free_tier() %}
+                  <button class="px-3 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded hover:bg-purple-200">
+                    Upgrade Premium
+                  </button>
+              {% endif %}
               </div>
             </td>
           </tr>
-
-          <!-- User 2 - Free -->
-          <tr class="hover:bg-gray-50">
-            <td class="px-6 py-4">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
-                  JD
-                </div>
-                <div>
-                  <div class="font-semibold">John Doe</div>
-                  <div class="text-sm text-gray-600">john@example.com</div>
-                  <div class="text-xs text-gray-500">@johncooks</div>
-                </div>
-              </div>
-            </td>
-            <td class="px-6 py-4">
-              <span class="px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
-                Active
-              </span>
-            </td>
-            <td class="px-6 py-4">
-              <span class="px-3 py-1 bg-gray-100 text-gray-800 text-xs font-semibold rounded-full">
-                Free
-              </span>
-            </td>
-            <td class="px-6 py-4">
-              <div class="font-semibold">8</div>
-              <div class="text-xs text-gray-500">2 shared</div>
-            </td>
-            <td class="px-6 py-4 text-sm text-gray-600">
-              Feb 3, 2025
-            </td>
-            <td class="px-6 py-4">
-              <div class="flex gap-2">
-                <button class="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded hover:bg-blue-200">
-                  Edit
-                </button>
-                <button class="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-semibold rounded hover:bg-gray-200">
-                  View
-                </button>
-              </div>
-            </td>
-          </tr>
-
-          <!-- User 3 - Suspended -->
-          <tr class="hover:bg-gray-50 bg-red-50">
-            <td class="px-6 py-4">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center text-white font-bold">
-                  SP
-                </div>
-                <div>
-                  <div class="font-semibold">Spam User</div>
-                  <div class="text-sm text-gray-600">spam@example.com</div>
-                  <div class="text-xs text-gray-500">@spammer123</div>
-                </div>
-              </div>
-            </td>
-            <td class="px-6 py-4">
-              <span class="px-3 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full">
-                Suspended
-              </span>
-            </td>
-            <td class="px-6 py-4">
-              <span class="px-3 py-1 bg-gray-100 text-gray-800 text-xs font-semibold rounded-full">
-                Free
-              </span>
-            </td>
-            <td class="px-6 py-4">
-              <div class="font-semibold">234</div>
-              <div class="text-xs text-red-500">Spam detected</div>
-            </td>
-            <td class="px-6 py-4 text-sm text-gray-600">
-              Oct 12, 2024
-            </td>
-            <td class="px-6 py-4">
-              <div class="flex gap-2">
-                <button onclick="if(confirm('Reactivate this user?')) alert('User reactivated')"
-                  class="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded hover:bg-green-200">
-                  Reactivate
-                </button>
-                <button onclick="if(confirm('Permanently delete this user?')) alert('User deleted')"
-                  class="px-3 py-1 bg-red-100 text-red-700 text-xs font-semibold rounded hover:bg-red-200">
-                  Delete
-                </button>
-              </div>
-            </td>
-          </tr>
-
-          <!-- User 4 - Admin -->
-          <tr class="hover:bg-gray-50 bg-yellow-50">
-            <td class="px-6 py-4">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold">
-                  AD
-                </div>
-                <div>
-                  <div class="font-semibold">Admin User</div>
-                  <div class="text-sm text-gray-600">admin@imkitchen.app</div>
-                  <div class="text-xs text-gray-500">@admin</div>
-                </div>
-              </div>
-            </td>
-            <td class="px-6 py-4">
-              <span class="px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
-                Active
-              </span>
-            </td>
-            <td class="px-6 py-4">
-              <span class="px-3 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full">
-                👑 Admin
-              </span>
-            </td>
-            <td class="px-6 py-4">
-              <div class="font-semibold">0</div>
-              <div class="text-xs text-gray-500">Admin account</div>
-            </td>
-            <td class="px-6 py-4 text-sm text-gray-600">
-              Jan 1, 2025
-            </td>
-            <td class="px-6 py-4">
-              <div class="flex gap-2">
-                <button class="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded hover:bg-blue-200">
-                  Edit
-                </button>
-              </div>
-            </td>
-          </tr>
-
+          {% endfor %}
           <!-- More users... -->
         </tbody>
       </table>
-    </div>
-
-    <!-- Pagination -->
-    <div class="px-6 py-4 border-t bg-gray-50 flex flex-col md:flex-row items-center justify-between gap-4">
-      <div class="text-sm text-gray-600">
-        Showing 1-4 of 2,547 users
-      </div>
-      <div class="flex gap-2 overflow-x-auto">
-        <button class="px-4 py-2 bg-gray-200 text-gray-400 rounded-lg cursor-not-allowed">
-          Previous
-        </button>
-        <button class="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold">
-          1
-        </button>
-        <button class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
-          2
-        </button>
-        <button class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
-          3
-        </button>
-        <span class="px-2 py-2">...</span>
-        <button class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
-          64
-        </button>
-        <button class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
-          Next
-        </button>
-      </div>
     </div>
   </div>
 </div>

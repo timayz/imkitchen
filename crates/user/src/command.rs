@@ -62,10 +62,16 @@ pub struct ToggleLifePremiumInput {
     pub id: String,
 }
 
-#[derive(Debug, Deserialize, FromRow)]
+#[derive(Debug, Deserialize, FromRow, Clone)]
 pub struct AuthUser {
     pub id: String,
     pub role: String,
+}
+
+impl AuthUser {
+    pub fn is_admin(&self) -> bool {
+        self.role == Role::Admin.to_string()
+    }
 }
 
 #[derive(Clone)]
@@ -330,11 +336,17 @@ async fn handle_registration_requested<E: Executor>(
     let pool = context.extract::<sqlx::SqlitePool>();
     let statement = Query::insert()
         .into_table(UserIden::Table)
-        .columns([UserIden::Id, UserIden::Email, UserIden::Role])
+        .columns([
+            UserIden::Id,
+            UserIden::Email,
+            UserIden::Role,
+            UserIden::CreatedAt,
+        ])
         .values_panic([
             event.aggregator_id.to_string().into(),
             event.data.email.to_string().into(),
             Role::User.to_string().into(),
+            event.timestamp.into(),
         ])
         .to_owned();
 

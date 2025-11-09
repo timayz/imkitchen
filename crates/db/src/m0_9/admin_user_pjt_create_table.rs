@@ -55,8 +55,14 @@ fn up_statement() -> TableCreateStatement {
                 .default(0),
         )
         .col(
+            ColumnDef::new(AdminUserPjt::TotalActiveCount)
+                .integer()
+                .not_null()
+                .default(0),
+        )
+        .col(
             ColumnDef::new(AdminUserPjt::CreatedAt)
-                .timestamp_with_time_zone()
+                .big_integer()
                 .not_null(),
         )
         .to_owned()

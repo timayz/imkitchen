@@ -22,6 +22,7 @@ pub struct MealPreferencesTemplate {
     pub household_size: u8,
     pub dietary_restrictions: HashSet<String>,
     pub cuisine_variety_weight: f32,
+    pub is_admin: bool,
 }
 
 impl Default for MealPreferencesTemplate {
@@ -33,6 +34,7 @@ impl Default for MealPreferencesTemplate {
             household_size: 2,
             dietary_restrictions: HashSet::default(),
             cuisine_variety_weight: 0.7,
+            is_admin: false,
         }
     }
 }
@@ -43,7 +45,7 @@ pub async fn page(
     State(state): State<AppState>,
     AuthUser(user): AuthUser,
 ) -> impl IntoResponse {
-    let preferences = match state.user_command.load_meal_preferences(user.id).await {
+    let preferences = match state.user_command.load_meal_preferences(&user.id).await {
         Ok(loaded) => loaded.item,
         Err(evento::ReadError::NotFound) => UserMealPreferences::default(),
         Err(e) => {
@@ -59,6 +61,7 @@ pub async fn page(
             household_size: preferences.household_size,
             dietary_restrictions,
             cuisine_variety_weight: preferences.cuisine_variety_weight,
+            is_admin: user.is_admin(),
             ..Default::default()
         })
         .into_response()

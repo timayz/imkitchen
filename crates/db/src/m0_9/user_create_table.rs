@@ -1,4 +1,4 @@
-use sea_query::{ColumnDef, Expr, Table, TableCreateStatement, TableDropStatement};
+use sea_query::{ColumnDef, Table, TableCreateStatement, TableDropStatement};
 
 use crate::table::User;
 
@@ -26,12 +26,7 @@ fn up_statement() -> TableCreateStatement {
                 .not_null()
                 .string_len(15),
         )
-        .col(
-            ColumnDef::new(User::CreatedAt)
-                .timestamp_with_time_zone()
-                .not_null()
-                .default(Expr::current_timestamp()),
-        )
+        .col(ColumnDef::new(User::CreatedAt).big_integer().not_null())
         .to_owned()
 }
 

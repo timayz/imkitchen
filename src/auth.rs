@@ -58,6 +58,7 @@ pub fn build_cookie<'a>(config: JwtConfig, sub: String) -> anyhow::Result<Cookie
         .build())
 }
 
+#[derive(Clone)]
 pub struct AuthUser(pub imkitchen_user::AuthUser);
 
 impl FromRequestParts<crate::routes::AppState> for AuthUser {
@@ -105,6 +106,8 @@ impl FromRequestParts<crate::routes::AppState> for AuthUser {
             return Err(Redirect::to("/login"));
         }
 
+        parts.extensions.insert(AuthUser(user.clone()));
+
         Ok(AuthUser(user))
     }
 }
@@ -122,7 +125,7 @@ impl FromRequestParts<crate::routes::AppState> for AuthAdmin {
             .await
             .map_err(|err| err.into_response())?;
 
-        if user.role == Role::Admin.to_string() {
+        if user.is_admin() {
             return Ok(AuthAdmin(user));
         }
 

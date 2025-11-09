@@ -20,18 +20,19 @@ use axum::routing::get;
 pub struct AppState {
     pub config: crate::config::Config,
     pub user_command: imkitchen_user::Command<evento::Sqlite>,
+    pub pool: SqlitePool,
 }
 
 pub async fn fallback(template: Template<NotFoundTemplate>) -> impl IntoResponse {
     template.render(NotFoundTemplate)
 }
 
-pub fn router(app_state: AppState, read_pool: SqlitePool) -> Router {
+pub fn router(app_state: AppState) -> Router {
     Router::new()
         // Health check endpoints (no auth required)
         .route("/health", get(health::health))
         .route("/ready", get(health::ready))
-        .with_state(read_pool)
+        .with_state(app_state.pool.clone())
         .route("/", get(index::page))
         .route("/help", get(help::page))
         .route("/terms", get(terms::page))
