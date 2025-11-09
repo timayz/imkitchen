@@ -108,13 +108,13 @@ pub async fn suspend(
     server_error_template: Template<ServerErrorTemplate>,
     Path((id,)): Path<(String,)>,
     State(app_state): State<AppState>,
-    AuthAdmin(_user): AuthAdmin,
+    AuthAdmin(user): AuthAdmin,
 ) -> impl IntoResponse {
     if let Err(e) = app_state
         .user_command
         .suspend(
             imkitchen_user::SuspendInput { id: id.to_owned() },
-            Metadata::by(id.to_owned()),
+            Metadata::by(user.id),
         )
         .await
     {
@@ -159,13 +159,13 @@ pub async fn activate(
     server_error_template: Template<ServerErrorTemplate>,
     Path((id,)): Path<(String,)>,
     State(app_state): State<AppState>,
-    AuthAdmin(_user): AuthAdmin,
+    AuthAdmin(user): AuthAdmin,
 ) -> impl IntoResponse {
     if let Err(e) = app_state
         .user_command
         .activate(
             imkitchen_user::ActivateInput { id: id.to_owned() },
-            Metadata::by(id.to_owned()),
+            Metadata::by(user.id),
         )
         .await
     {
@@ -210,13 +210,13 @@ pub async fn toggle_premium(
     server_error_template: Template<ServerErrorTemplate>,
     Path((id,)): Path<(String,)>,
     State(app_state): State<AppState>,
-    AuthAdmin(_user): AuthAdmin,
+    AuthAdmin(user): AuthAdmin,
 ) -> impl IntoResponse {
     if let Err(e) = app_state
         .user_command
         .toggle_life_premium(
             imkitchen_user::ToggleLifePremiumInput { id: id.to_owned() },
-            Metadata::by(id.to_owned()),
+            Metadata::by(user.id.to_owned()),
         )
         .await
     {
