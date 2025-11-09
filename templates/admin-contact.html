@@ -1,0 +1,276 @@
+{% extends "base_admin.html" %}
+{% block title %}Admin - Contact Inbox - imkitchen{% endblock %}
+
+{% block content %}
+<!-- Main Content -->
+<div class="container mx-auto px-4 py-8">
+  <!-- Header -->
+  <div class="mb-8">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div>
+        <h1 class="text-2xl md:text-3xl font-bold mb-2">Contact Inbox</h1>
+        <p class="text-gray-600">Manage and respond to user contact messages</p>
+      </div>
+      <div>
+        <button class="w-full md:w-auto px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">
+          ✓ Mark All Read
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
+    <div class="bg-white rounded-lg shadow-lg p-4 md:p-6">
+      <div class="text-gray-600 text-xs md:text-sm mb-1">Total Messages</div>
+      <div class="text-2xl md:text-3xl font-bold">347</div>
+      <div class="text-xs md:text-sm text-gray-500 mt-2">All time</div>
+    </div>
+    <div class="bg-white rounded-lg shadow-lg p-4 md:p-6">
+      <div class="text-gray-600 text-xs md:text-sm mb-1">Unread</div>
+      <div class="text-2xl md:text-3xl font-bold text-orange-600">12</div>
+      <div class="text-xs md:text-sm text-orange-600 mt-2">Needs attention</div>
+    </div>
+    <div class="bg-white rounded-lg shadow-lg p-4 md:p-6">
+      <div class="text-gray-600 text-xs md:text-sm mb-1">Today</div>
+      <div class="text-2xl md:text-3xl font-bold text-blue-600">7</div>
+      <div class="text-xs md:text-sm text-gray-500 mt-2">New messages</div>
+    </div>
+    <div class="bg-white rounded-lg shadow-lg p-4 md:p-6">
+      <div class="text-gray-600 text-xs md:text-sm mb-1">Avg Response Time</div>
+      <div class="text-2xl md:text-3xl font-bold text-green-600">8h</div>
+      <div class="text-xs md:text-sm text-green-600 mt-2">↓ 2h from last week</div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+    <div class="grid md:grid-cols-4 gap-4">
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Search</label>
+        <input type="text" placeholder="Name, email, subject..."
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+        <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+          <option value="">All Messages</option>
+          <option value="unread">Unread</option>
+          <option value="read">Read</option>
+          <option value="resolved">Resolved</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Subject</label>
+        <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+          <option value="">All Subjects</option>
+          <option value="general">General Inquiry</option>
+          <option value="support">Technical Support</option>
+          <option value="billing">Billing</option>
+          <option value="feature">Feature Request</option>
+          <option value="bug">Bug Report</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Sort By</label>
+        <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+          <option value="recent">Most Recent</option>
+          <option value="oldest">Oldest First</option>
+          <option value="unread">Unread First</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Messages List -->
+  <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+    <!-- Message 1 - Unread -->
+    <div class="border-b hover:bg-gray-50 cursor-pointer">
+      <div class="px-6 py-4 flex items-start gap-4">
+        <input type="checkbox" class="mt-1 rounded border-gray-300" />
+        <div class="flex-1">
+          <div class="flex items-start justify-between mb-2">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
+                JD
+              </div>
+              <div>
+                <div class="font-bold">John Doe</div>
+                <div class="text-sm text-gray-600">john@example.com</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="px-3 py-1 bg-orange-100 text-orange-800 text-xs font-semibold rounded-full">
+                UNREAD
+              </span>
+              <span class="text-sm text-gray-500">2 hours ago</span>
+            </div>
+          </div>
+          <div class="mb-2">
+            <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded">
+              Technical Support
+            </span>
+          </div>
+          <div class="font-semibold mb-2">Unable to import recipes from JSON</div>
+          <div class="text-sm text-gray-600 line-clamp-2">
+            Hi, I'm trying to import my recipes using the JSON format but I keep getting an error saying "Invalid
+            format". I've downloaded the schema and followed the examples but it's still not working. Can you help?
+          </div>
+          <div class="mt-3 flex flex-col md:flex-row gap-2">
+            <button onclick="alert('Marking as read...')"
+              class="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700">
+              Mark Read & Reply
+            </button>
+            <button onclick="alert('Message resolved')"
+              class="px-4 py-2 bg-blue-100 text-blue-700 text-sm font-semibold rounded-lg hover:bg-blue-200">
+              Resolve
+            </button>
+            <button class="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-200">
+              View Details
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Message 2 - Unread -->
+    <div class="border-b hover:bg-gray-50 cursor-pointer">
+      <div class="px-6 py-4 flex items-start gap-4">
+        <input type="checkbox" class="mt-1 rounded border-gray-300" />
+        <div class="flex-1">
+          <div class="flex items-start justify-between mb-2">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold">
+                SM
+              </div>
+              <div>
+                <div class="font-bold">Sarah Mitchell</div>
+                <div class="text-sm text-gray-600">sarah@example.com</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="px-3 py-1 bg-orange-100 text-orange-800 text-xs font-semibold rounded-full">
+                UNREAD
+              </span>
+              <span class="text-sm text-gray-500">5 hours ago</span>
+            </div>
+          </div>
+          <div class="mb-2">
+            <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded">
+              Feature Request
+            </span>
+          </div>
+          <div class="font-semibold mb-2">Request: Export meal plans to PDF</div>
+          <div class="text-sm text-gray-600 line-clamp-2">
+            Love the app! Would it be possible to add a feature to export meal plans as PDF? I'd like to print them and
+            stick them on my fridge. Thanks!
+          </div>
+          <div class="mt-3 flex flex-col md:flex-row gap-2">
+            <button onclick="alert('Marking as read...')"
+              class="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700">
+              Mark Read & Reply
+            </button>
+            <button onclick="alert('Message resolved')"
+              class="px-4 py-2 bg-blue-100 text-blue-700 text-sm font-semibold rounded-lg hover:bg-blue-200">
+              Resolve
+            </button>
+            <button class="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-200">
+              View Details
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Message 3 - Read & Resolved -->
+    <div class="border-b hover:bg-gray-50 cursor-pointer bg-gray-50 opacity-75">
+      <div class="px-6 py-4 flex items-start gap-4">
+        <input type="checkbox" class="mt-1 rounded border-gray-300" />
+        <div class="flex-1">
+          <div class="flex items-start justify-between mb-2">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white font-bold">
+                MB
+              </div>
+              <div>
+                <div class="font-semibold">Mike Brown</div>
+                <div class="text-sm text-gray-600">mike@example.com</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
+                RESOLVED
+              </span>
+              <span class="text-sm text-gray-500">Yesterday</span>
+            </div>
+          </div>
+          <div class="mb-2">
+            <span class="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded">
+              Billing Question
+            </span>
+          </div>
+          <div class="font-semibold mb-2">Question about annual subscription discount</div>
+          <div class="text-sm text-gray-600 line-clamp-2">
+            Hi, I see you offer 50% discount on annual subscriptions. Does this discount apply if I upgrade from monthly
+            to annual?
+          </div>
+          <div class="mt-3 flex flex-col md:flex-row gap-2">
+            <button class="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-200">
+              View Details
+            </button>
+            <button onclick="alert('Reopening message...')"
+              class="px-4 py-2 bg-orange-100 text-orange-700 text-sm font-semibold rounded-lg hover:bg-orange-200">
+              Reopen
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Message 4 - Read -->
+    <div class="border-b hover:bg-gray-50 cursor-pointer opacity-75">
+      <div class="px-6 py-4 flex items-start gap-4">
+        <input type="checkbox" class="mt-1 rounded border-gray-300" />
+        <div class="flex-1">
+          <div class="flex items-start justify-between mb-2">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-pink-500 rounded-full flex items-center justify-center text-white font-bold">
+                LE
+              </div>
+              <div>
+                <div class="font-semibold">Lisa Evans</div>
+                <div class="text-sm text-gray-600">lisa@example.com</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="px-3 py-1 bg-gray-100 text-gray-800 text-xs font-semibold rounded-full">
+                READ
+              </span>
+              <span class="text-sm text-gray-500">2 days ago</span>
+            </div>
+          </div>
+          <div class="mb-2">
+            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded">
+              Feedback
+            </span>
+          </div>
+          <div class="font-semibold mb-2">Loving the meal planning feature!</div>
+          <div class="text-sm text-gray-600 line-clamp-2">
+            Just wanted to say thank you for creating this app. The automatic meal planning saves me so much time every
+            week. The accompaniment pairing is genius!
+          </div>
+          <div class="mt-3 flex flex-col md:flex-row gap-2">
+            <button onclick="alert('Message resolved')"
+              class="px-4 py-2 bg-blue-100 text-blue-700 text-sm font-semibold rounded-lg hover:bg-blue-200">
+              Resolve
+            </button>
+            <button class="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-200">
+              View Details
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

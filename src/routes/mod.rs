@@ -4,6 +4,7 @@ use sqlx::SqlitePool;
 use crate::template::{NotFoundTemplate, Template};
 
 mod admin;
+mod contact;
 mod health;
 mod help;
 mod index;
@@ -37,6 +38,7 @@ pub fn router(app_state: AppState) -> Router {
         .route("/help", get(help::page))
         .route("/terms", get(terms::page))
         .route("/policy", get(policy::page))
+        .route("/contact", get(contact::page))
         .route("/register", get(register::page).post(register::action))
         .route("/register/status/{id}", get(register::status))
         .route(
@@ -70,6 +72,7 @@ pub fn router(app_state: AppState) -> Router {
             "/admin/users/toggle-premium/{id}",
             post(admin::users::toggle_premium),
         )
+        .route("/admin/contact", get(admin::contact::page))
         .fallback(fallback)
         .route("/sw.js", get(service_worker::sw))
         .nest_service("/static", crate::assets::AssetsService::new())
