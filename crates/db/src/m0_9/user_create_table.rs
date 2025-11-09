@@ -26,6 +26,12 @@ fn up_statement() -> TableCreateStatement {
                 .not_null()
                 .string_len(15),
         )
+        .col(
+            ColumnDef::new(User::SubscriptionEndAt)
+                .big_integer()
+                .not_null()
+                .default(0),
+        )
         .col(ColumnDef::new(User::CreatedAt).big_integer().not_null())
         .to_owned()
 }

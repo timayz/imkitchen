@@ -16,7 +16,7 @@ use crate::{
     Activated, LoggedIn, MadeAdmin, RegistrationFailed, RegistrationRequested,
     RegistrationSucceeded, Role, Suspended, User,
     meal_preferences::{self, UserMealPreferences},
-    subscription::{self, UserSubscription},
+    subscription::{self, LifePremiumToggled, UserSubscription},
 };
 use imkitchen_db::table::User as UserIden;
 
@@ -66,11 +66,20 @@ pub struct ToggleLifePremiumInput {
 pub struct AuthUser {
     pub id: String,
     pub role: String,
+    pub subscription_end_at: i64,
 }
 
 impl AuthUser {
     pub fn is_admin(&self) -> bool {
         self.role == Role::Admin.to_string()
+    }
+
+    pub fn is_premium(&self) -> bool {
+        let Ok(now) = SystemTime::now().duration_since(UNIX_EPOCH) else {
+            return false;
+        };
+
+        self.subscription_end_at as u64 > now.as_secs()
     }
 }
 
@@ -103,7 +112,7 @@ impl<E: Executor + Clone> Command<E> {
         let id = id.into();
 
         let statement = Query::select()
-            .columns([UserIden::Id, UserIden::Role])
+            .columns([UserIden::Id, UserIden::Role, UserIden::SubscriptionEndAt])
             .from(UserIden::Table)
             .and_where(Expr::col(UserIden::Id).eq(Expr::value(id.to_owned())))
             .limit(1)
@@ -123,7 +132,7 @@ impl<E: Executor + Clone> Command<E> {
         let email = email.into();
 
         let statement = Query::select()
-            .columns([UserIden::Id, UserIden::Role])
+            .columns([UserIden::Id, UserIden::Role, UserIden::SubscriptionEndAt])
             .from(UserIden::Table)
             .and_where(Expr::col(UserIden::Email).eq(Expr::value(email.to_owned())))
             .limit(1)
@@ -439,16 +448,34 @@ async fn handle_suspended<E: Executor>(
     Ok(())
 }
 
+#[evento::handler(UserSubscription)]
+async fn handle_life_premium_toggled<E: Executor>(
+    context: &evento::Context<'_, E>,
+    event: Event<LifePremiumToggled>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let statement = Query::update()
+        .table(UserIden::Table)
+        .values([(UserIden::SubscriptionEndAt, event.data.expire_at.into())])
+        .and_where(Expr::col(UserIden::Id).eq(event.aggregator_id.to_owned()))
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
+}
+
 pub fn subscribe_command<E: Executor + Clone>() -> SubscribeBuilder<E> {
     evento::subscribe("user-command")
         .handler(handle_registration_requested())
         .handler(handle_activated())
         .handler(handle_suspended())
         .handler(handle_made_admin())
+        .handler(handle_life_premium_toggled())
         .skip::<User, RegistrationSucceeded>()
         .skip::<User, RegistrationFailed>()
         .skip::<User, LoggedIn>()
         .skip::<UserMealPreferences, meal_preferences::Created>()
         .skip::<UserMealPreferences, meal_preferences::Updated>()
-        .skip::<UserSubscription, subscription::LifePremiumToggled>()
 }
