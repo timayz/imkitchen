@@ -21,6 +21,7 @@ use axum::routing::get;
 pub struct AppState {
     pub config: crate::config::Config,
     pub user_command: imkitchen_user::Command<evento::Sqlite>,
+    pub contact_command: imkitchen_contact::Command<evento::Sqlite>,
     pub pool: SqlitePool,
 }
 
@@ -38,7 +39,7 @@ pub fn router(app_state: AppState) -> Router {
         .route("/help", get(help::page))
         .route("/terms", get(terms::page))
         .route("/policy", get(policy::page))
-        .route("/contact", get(contact::page))
+        .route("/contact", get(contact::page).post(contact::action))
         .route("/register", get(register::page).post(register::action))
         .route("/register/status/{id}", get(register::status))
         .route(
@@ -73,6 +74,12 @@ pub fn router(app_state: AppState) -> Router {
             post(admin::users::toggle_premium),
         )
         .route("/admin/contact", get(admin::contact::page))
+        .route(
+            "/admin/contact/mark-read-and-reply/{id}",
+            post(admin::contact::mark_read_and_reply),
+        )
+        .route("/admin/contact/resolve/{id}", post(admin::contact::resolve))
+        .route("/admin/contact/reopen/{id}", post(admin::contact::reopen))
         .fallback(fallback)
         .route("/sw.js", get(service_worker::sw))
         .nest_service("/static", crate::assets::AssetsService::new())

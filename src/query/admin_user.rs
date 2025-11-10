@@ -75,6 +75,17 @@ impl AdminUser {
 
         created_at.format(&format).unwrap_or_else(|_| "".to_owned())
     }
+
+    pub fn short_name(&self) -> String {
+        self.full_name
+            .to_owned()
+            .unwrap_or(self.email.to_string())
+            .split(' ')
+            .take(2)
+            .map(|w| w.chars().next().unwrap_or('a').to_uppercase().to_string())
+            .collect::<Vec<_>>()
+            .join("")
+    }
 }
 
 pub struct AdminUserSortByRecentlyJoined(AdminUser);

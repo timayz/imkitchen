@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, str::FromStr};
 
 use evento::{Executor, LoadResult};
 use imkitchen_shared::Metadata;
@@ -6,7 +6,7 @@ use serde::Deserialize;
 use sqlx::SqlitePool;
 use validator::Validate;
 
-use crate::{Contact, FormSubmitted, MarkedAsReadAndReplay, Reopened, Resolved};
+use crate::{Contact, FormSubmitted, MarkedReadAndReply, Reopened, Resolved};
 
 #[derive(Debug, Deserialize)]
 pub enum ContactSubject {
@@ -25,6 +25,23 @@ impl Display for ContactSubject {
     }
 }
 
+impl FromStr for ContactSubject {
+    type Err = ();
+
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        match input {
+            "GeneralInquiry" => Ok(Self::GeneralInquiry),
+            "TechnicalSupport" => Ok(Self::TechnicalSupport),
+            "BillingQuestion" => Ok(Self::BillingQuestion),
+            "FeatureRequest" => Ok(Self::FeatureRequest),
+            "BugReport" => Ok(Self::BugReport),
+            "PartnershipOpportunity" => Ok(Self::PartnershipOpportunity),
+            "Other" => Ok(Self::Other),
+            _ => Err(()),
+        }
+    }
+}
+
 #[derive(Debug, Deserialize)]
 pub enum ContactStatus {
     Unread,
@@ -35,6 +52,18 @@ pub enum ContactStatus {
 impl Display for ContactStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self)
+    }
+}
+
+impl FromStr for ContactStatus {
+    type Err = ();
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Read" => Ok(Self::Read),
+            "Unread" => Ok(Self::Unread),
+            "Resolved" => Ok(Self::Resolved),
+            _ => Err(()),
+        }
     }
 }
 
@@ -80,7 +109,7 @@ impl<E: Executor + Clone> Command<E> {
             .await?)
     }
 
-    pub async fn mark_as_read_and_replay(
+    pub async fn mark_read_and_reply(
         &self,
         id: impl Into<String>,
         metadata: Metadata,
@@ -90,7 +119,7 @@ impl<E: Executor + Clone> Command<E> {
             return Ok(());
         }
         evento::save_with(contact)
-            .data(&MarkedAsReadAndReplay {
+            .data(&MarkedReadAndReply {
                 status: ContactStatus::Read.to_string(),
             })?
             .metadata(&metadata)?

@@ -1802,13 +1802,10 @@ name = "imkitchen-contact"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "argon2",
  "bincode",
  "evento",
  "imkitchen-db",
  "imkitchen-shared",
- "sea-query",
- "sea-query-sqlx",
  "serde",
  "sqlx",
  "tokio",

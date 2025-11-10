@@ -1,3 +1,5 @@
+use std::{fmt::Display, str::FromStr};
+
 use bincode::{Decode, Encode};
 use evento::{
     AggregatorName, Executor, SubscribeBuilder,
@@ -5,8 +7,8 @@ use evento::{
     sql::Reader,
 };
 use imkitchen_contact::{
-    Contact as ContactAggregator, ContactStatus, ContactSubject, FormSubmitted,
-    MarkedAsReadAndReplay, Reopened, Resolved,
+    Contact as ContactAggregator, ContactStatus, ContactSubject, FormSubmitted, MarkedReadAndReply,
+    Reopened, Resolved,
 };
 use imkitchen_db::table::ContactPjt;
 use imkitchen_shared::Event;
@@ -46,15 +48,16 @@ impl Contact {
     }
 
     pub fn created_at(&self) -> String {
-        let Ok(created_at) = time::UtcDateTime::from_unix_timestamp(self.created_at) else {
-            return "".to_owned();
-        };
+        super::format_relative_time(self.created_at as u64)
+    }
 
-        let Ok(format) = time::format_description::parse("[month repr:short] [day], [year]") else {
-            return "".to_owned();
-        };
-
-        created_at.format(&format).unwrap_or_else(|_| "".to_owned())
+    pub fn short_name(&self) -> String {
+        self.name
+            .split(' ')
+            .take(2)
+            .map(|w| w.chars().next().unwrap_or('a').to_uppercase().to_string())
+            .collect::<Vec<_>>()
+            .join("")
     }
 }
 
@@ -90,6 +93,23 @@ impl evento::sql::Bind for Contact {
 pub enum ContactSortBy {
     MostRecent,
     OldestFirst,
+}
+
+impl Display for ContactSortBy {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl FromStr for ContactSortBy {
+    type Err = ();
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "MostRecent" => Ok(Self::MostRecent),
+            "OldestFirst" => Ok(Self::OldestFirst),
+            _ => Err(()),
+        }
+    }
 }
 
 pub struct ContactInput {
@@ -166,7 +186,7 @@ pub fn subscribe_contact<E: Executor + Clone>() -> SubscribeBuilder<E> {
     evento::subscribe("contact-query")
         .handler(handle_form_submmited())
         .handler(handle_reopened())
-        .handler(handle_marked_as_read_and_replay())
+        .handler(handle_marked_read_and_reply())
         .handler(handle_resolved())
 }
 
@@ -204,9 +224,9 @@ async fn handle_form_submmited<E: Executor>(
 }
 
 #[evento::handler(ContactAggregator)]
-async fn handle_marked_as_read_and_replay<E: Executor>(
+async fn handle_marked_read_and_reply<E: Executor>(
     context: &evento::Context<'_, E>,
-    event: Event<MarkedAsReadAndReplay>,
+    event: Event<MarkedReadAndReply>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
     let statment = Query::update()

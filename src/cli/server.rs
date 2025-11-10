@@ -27,6 +27,7 @@ pub async fn serve(
 
     let evento_executor: evento::Sqlite = write_pool.clone().into();
     let user_command = imkitchen_user::Command(evento_executor.clone(), read_pool.clone());
+    let contact_command = imkitchen_contact::Command(evento_executor.clone(), read_pool.clone());
 
     // Start background notification worker
     tracing::info!("Starting evento subscriptions...");
@@ -58,6 +59,7 @@ pub async fn serve(
     let state = AppState {
         config,
         user_command,
+        contact_command,
         pool: read_pool.clone(),
     };
 

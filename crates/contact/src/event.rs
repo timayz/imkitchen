@@ -11,7 +11,7 @@ pub struct FormSubmitted {
 }
 
 #[derive(AggregatorName, Encode, Decode)]
-pub struct MarkedAsReadAndReplay {
+pub struct MarkedReadAndReply {
     pub status: String,
 }
 

@@ -28,7 +28,7 @@ pub async fn test_contact_query() -> anyhow::Result<()> {
 
     let fut = read_contacts
         .iter()
-        .map(|id| command.mark_as_read_and_replay(id, Metadata::default()));
+        .map(|id| command.mark_read_and_reply(id, Metadata::default()));
 
     futures::future::join_all(fut).await;
 

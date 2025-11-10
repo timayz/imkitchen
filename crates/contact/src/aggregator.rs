@@ -1,7 +1,7 @@
 use bincode::{Decode, Encode};
 use imkitchen_shared::Event;
 
-use crate::{FormSubmitted, MarkedAsReadAndReplay, Reopened, Resolved};
+use crate::{FormSubmitted, MarkedReadAndReply, Reopened, Resolved};
 
 #[derive(Default, Encode, Decode, Clone, Debug)]
 pub struct Contact {
@@ -16,9 +16,9 @@ impl Contact {
         Ok(())
     }
 
-    async fn handle_marked_as_read_and_replay(
+    async fn handle_marked_read_and_reply(
         &mut self,
-        event: Event<MarkedAsReadAndReplay>,
+        event: Event<MarkedReadAndReply>,
     ) -> anyhow::Result<()> {
         self.status = event.data.status;
 
