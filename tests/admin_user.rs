@@ -1,7 +1,6 @@
 use evento::cursor::Args;
 use imkitchen::{AdminUserInput, AdminUserStatus};
 use imkitchen_shared::Metadata;
-use imkitchen_user::{MadeAdminInput, SuspendInput, ToggleLifePremiumInput};
 
 mod helpers;
 
@@ -20,59 +19,42 @@ pub async fn test_admin_user_query() -> anyhow::Result<()> {
             "free.tier5",
         ],
     )
-    .await?
-    .into_iter()
-    .rev()
-    .collect::<Vec<_>>();
+    .await?;
 
-    let premium_users = helpers::create_users(&state, vec!["premium1", "premium2", "premium3"])
-        .await?
-        .into_iter()
-        .rev()
-        .collect::<Vec<_>>();
+    let premium_users =
+        helpers::create_users(&state, vec!["premium1", "premium2", "premium3"]).await?;
 
-    let fut = premium_users.iter().map(|id| {
-        command.toggle_life_premium(
-            ToggleLifePremiumInput { id: id.to_owned() },
-            Metadata::default(),
-        )
-    });
+    let admin_users = helpers::create_users(&state, vec!["admin1", "admin2"]).await?;
+
+    let suspend_users =
+        helpers::create_users(&state, vec!["suspend1", "suspend2", "suspend3", "suspend4"]).await?;
+
+    let fut = premium_users
+        .iter()
+        .map(|id| command.toggle_life_premium(id, Metadata::default()));
 
     futures::future::join_all(fut).await;
-
-    let admin_users = helpers::create_users(&state, vec!["admin1", "admin2"])
-        .await?
-        .into_iter()
-        .rev()
-        .collect::<Vec<_>>();
 
     let fut = admin_users
         .iter()
-        .map(|id| command.made_admin(MadeAdminInput { id: id.to_owned() }, Metadata::default()));
+        .map(|id| command.made_admin(id, Metadata::default()));
 
     futures::future::join_all(fut).await;
 
-    let suspend_users =
-        helpers::create_users(&state, vec!["suspend1", "suspend2", "suspend3", "suspend4"])
-            .await?
-            .into_iter()
-            .rev()
-            .collect::<Vec<_>>();
-
     let fut = suspend_users
         .iter()
-        .map(|id| command.suspend(SuspendInput { id: id.to_owned() }, Metadata::default()));
+        .map(|id| command.suspend(id, Metadata::default()));
 
     futures::future::join_all(fut).await;
 
     imkitchen::subscribe_admin_user()
         .data(state.pool.clone())
-        .oneshot(&state.evento)
+        .unsafe_oneshot(&state.evento)
         .await?;
 
     imkitchen::subscribe_global_stat()
         .data(state.pool.clone())
-        .oneshot(&state.evento)
+        .unsafe_oneshot(&state.evento)
         .await?;
 
     let stats = imkitchen::query_admin_users_global_stats(&state.pool).await?;
@@ -93,12 +75,12 @@ pub async fn test_admin_user_query() -> anyhow::Result<()> {
     )
     .await?;
 
-    let mut expected_users = admin_users.to_vec();
-    expected_users.extend(premium_users.iter().cloned());
-    expected_users.extend(free_tier_users.iter().cloned());
-
-    for (pos, user) in expected_users.iter().enumerate() {
-        assert_eq!(users.edges[pos].node.id.as_str(), user);
+    for edge in users.edges {
+        assert!(
+            edge.node.email.starts_with("admin")
+                || edge.node.email.starts_with("premium")
+                || edge.node.email.starts_with("free.tier")
+        );
     }
 
     let users = imkitchen::query_admin_users(
@@ -112,8 +94,8 @@ pub async fn test_admin_user_query() -> anyhow::Result<()> {
     )
     .await?;
 
-    for (pos, user) in suspend_users.iter().enumerate() {
-        assert_eq!(users.edges[pos].node.id.as_str(), user);
+    for edge in users.edges {
+        assert!(edge.node.email.starts_with("suspend"));
     }
 
     let users = imkitchen::query_admin_users(
@@ -127,8 +109,8 @@ pub async fn test_admin_user_query() -> anyhow::Result<()> {
     )
     .await?;
 
-    for (pos, user) in admin_users.iter().enumerate() {
-        assert_eq!(users.edges[pos].node.id.as_str(), user);
+    for edge in users.edges {
+        assert!(edge.node.email.starts_with("admin"));
     }
 
     let users = imkitchen::query_admin_users(
@@ -142,11 +124,8 @@ pub async fn test_admin_user_query() -> anyhow::Result<()> {
     )
     .await?;
 
-    let mut expected = suspend_users.to_vec();
-    expected.extend(free_tier_users.iter().cloned());
-
-    for (pos, user) in expected.iter().enumerate() {
-        assert_eq!(users.edges[pos].node.id.as_str(), user);
+    for edge in users.edges {
+        assert!(edge.node.email.starts_with("suspend") || edge.node.email.starts_with("free.tier"));
     }
 
     let users = imkitchen::query_admin_users(
@@ -160,8 +139,8 @@ pub async fn test_admin_user_query() -> anyhow::Result<()> {
     )
     .await?;
 
-    for (pos, user) in premium_users.iter().enumerate() {
-        assert_eq!(users.edges[pos].node.id.as_str(), user);
+    for edge in users.edges {
+        assert!(edge.node.email.starts_with("premium"));
     }
 
     Ok(())

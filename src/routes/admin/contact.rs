@@ -1,56 +1,61 @@
+use std::str::FromStr;
+
 use axum::{
     extract::{Path, Query, State},
     response::IntoResponse,
 };
 use evento::cursor::{Args, Edge, ReadResult, Value};
+use imkitchen_contact::{ContactStatus, ContactSubject};
 use imkitchen_shared::Metadata;
 use serde::Deserialize;
 
 use crate::{
     auth::AuthAdmin,
     query::{
-        AdminUser, AdminUserAccountType, AdminUserGlobalStats, AdminUserInput, AdminUserSortBy,
-        AdminUserStatus, query_admin_user_by_id, query_admin_users, query_admin_users_global_stats,
+        Contact, ContactGlobalStats, ContactInput, ContactSortBy, query_contact_by_id,
+        query_contact_global_stats, query_contacts,
     },
     routes::AppState,
     template::{ServerErrorTemplate, Template},
 };
 
 #[derive(askama::Template)]
-#[template(path = "admin-users.html")]
-pub struct UsersTemplate {
+#[template(path = "admin-contact.html")]
+pub struct ContactTemplate {
     pub current_path: String,
-    pub stats: AdminUserGlobalStats,
-    pub users: ReadResult<AdminUser>,
+    pub stats: ContactGlobalStats,
+    pub contacts: ReadResult<Contact>,
 }
 
-impl Default for UsersTemplate {
+impl Default for ContactTemplate {
     fn default() -> Self {
         Self {
-            current_path: "users".to_owned(),
-            stats: AdminUserGlobalStats::default(),
-            users: ReadResult::default(),
+            current_path: "contact".to_owned(),
+            stats: ContactGlobalStats::default(),
+            contacts: ReadResult::default(),
         }
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct PageQuery {
     pub first: Option<u16>,
     pub after: Option<Value>,
     pub last: Option<u16>,
     pub before: Option<Value>,
+    pub status: Option<String>,
+    pub subject: Option<String>,
+    pub sort_by: Option<String>,
 }
 
 pub async fn page(
-    template: Template<UsersTemplate>,
+    template: Template<ContactTemplate>,
     server_error_template: Template<ServerErrorTemplate>,
     Query(query): Query<PageQuery>,
     State(app_state): State<AppState>,
-
     AuthAdmin(_user): AuthAdmin,
 ) -> impl IntoResponse {
-    let stats = match query_admin_users_global_stats(&app_state.pool).await {
+    let stats = match query_contact_global_stats(&app_state.pool).await {
         Ok(stats) => stats,
         Err(e) => {
             tracing::error!("{e}");
@@ -60,6 +65,12 @@ pub async fn page(
                 .into_response();
         }
     };
+
+    let subject = ContactSubject::from_str(&query.subject.unwrap_or("".to_owned())).ok();
+    let status = ContactStatus::from_str(&query.status.unwrap_or("".to_owned())).ok();
+    let sort_by = ContactSortBy::from_str(&query.sort_by.unwrap_or("".to_owned()))
+        .unwrap_or(ContactSortBy::MostRecent);
+
     let args = Args {
         first: query.first,
         after: query.after,
@@ -73,12 +84,12 @@ pub async fn page(
         Args::forward(args.first.unwrap_or(20).min(40), args.after)
     };
 
-    let users = match query_admin_users(
+    let contacts = match query_contacts(
         &app_state.pool,
-        AdminUserInput {
-            status: None,
-            sort_by: AdminUserSortBy::RecentlyJoined,
-            account_type: None,
+        ContactInput {
+            status,
+            subject,
+            sort_by,
             args,
         },
     )
@@ -95,24 +106,24 @@ pub async fn page(
     };
 
     template
-        .render(UsersTemplate {
+        .render(ContactTemplate {
             stats,
-            users,
+            contacts,
             ..Default::default()
         })
         .into_response()
 }
 
-pub async fn suspend(
-    template: Template<UsersTemplate>,
+pub async fn mark_read_and_reply(
+    template: Template<ContactTemplate>,
     server_error_template: Template<ServerErrorTemplate>,
     Path((id,)): Path<(String,)>,
     State(app_state): State<AppState>,
     AuthAdmin(user): AuthAdmin,
 ) -> impl IntoResponse {
     if let Err(e) = app_state
-        .user_command
-        .suspend(&id, Metadata::by(user.id))
+        .contact_command
+        .mark_read_and_reply(&id, Metadata::by(user.id))
         .await
     {
         tracing::error!("{e}");
@@ -122,7 +133,7 @@ pub async fn suspend(
             .into_response();
     }
 
-    let mut user = match query_admin_user_by_id(&app_state.pool, id).await {
+    let mut contact = match query_contact_by_id(&app_state.pool, id).await {
         Ok(u) => u,
         Err(e) => {
             tracing::error!("{e}");
@@ -133,34 +144,34 @@ pub async fn suspend(
         }
     };
 
-    user.status = AdminUserStatus::Suspended.to_string();
+    contact.status = ContactStatus::Read.to_string();
 
-    let users = ReadResult {
+    let contacts = ReadResult {
         page_info: Default::default(),
         edges: vec![Edge {
             cursor: "".to_owned().into(),
-            node: user,
+            node: contact,
         }],
     };
 
     template
-        .render(UsersTemplate {
-            users,
+        .render(ContactTemplate {
+            contacts,
             ..Default::default()
         })
         .into_response()
 }
 
-pub async fn activate(
-    template: Template<UsersTemplate>,
+pub async fn resolve(
+    template: Template<ContactTemplate>,
     server_error_template: Template<ServerErrorTemplate>,
     Path((id,)): Path<(String,)>,
     State(app_state): State<AppState>,
     AuthAdmin(user): AuthAdmin,
 ) -> impl IntoResponse {
     if let Err(e) = app_state
-        .user_command
-        .activate(&id, Metadata::by(user.id))
+        .contact_command
+        .resolve(&id, Metadata::by(user.id))
         .await
     {
         tracing::error!("{e}");
@@ -170,7 +181,7 @@ pub async fn activate(
             .into_response();
     }
 
-    let mut user = match query_admin_user_by_id(&app_state.pool, id).await {
+    let mut contact = match query_contact_by_id(&app_state.pool, id).await {
         Ok(u) => u,
         Err(e) => {
             tracing::error!("{e}");
@@ -181,34 +192,34 @@ pub async fn activate(
         }
     };
 
-    user.status = AdminUserStatus::Active.to_string();
+    contact.status = ContactStatus::Resolved.to_string();
 
-    let users = ReadResult {
+    let contacts = ReadResult {
         page_info: Default::default(),
         edges: vec![Edge {
             cursor: "".to_owned().into(),
-            node: user,
+            node: contact,
         }],
     };
 
     template
-        .render(UsersTemplate {
-            users,
+        .render(ContactTemplate {
+            contacts,
             ..Default::default()
         })
         .into_response()
 }
 
-pub async fn toggle_premium(
-    template: Template<UsersTemplate>,
+pub async fn reopen(
+    template: Template<ContactTemplate>,
     server_error_template: Template<ServerErrorTemplate>,
     Path((id,)): Path<(String,)>,
     State(app_state): State<AppState>,
     AuthAdmin(user): AuthAdmin,
 ) -> impl IntoResponse {
     if let Err(e) = app_state
-        .user_command
-        .toggle_life_premium(&id, Metadata::by(user.id.to_owned()))
+        .contact_command
+        .reopen(&id, Metadata::by(user.id.to_owned()))
         .await
     {
         tracing::error!("{e}");
@@ -218,7 +229,7 @@ pub async fn toggle_premium(
             .into_response();
     }
 
-    let mut user = match query_admin_user_by_id(&app_state.pool, id).await {
+    let mut contact = match query_contact_by_id(&app_state.pool, id).await {
         Ok(u) => u,
         Err(e) => {
             tracing::error!("{e}");
@@ -229,25 +240,19 @@ pub async fn toggle_premium(
         }
     };
 
-    user.account_type = if user.is_free_tier() {
-        AdminUserAccountType::Premium.to_string()
-    } else if user.is_premium() {
-        AdminUserAccountType::FreeTier.to_string()
-    } else {
-        user.account_type
-    };
+    contact.status = ContactStatus::Read.to_string();
 
-    let users = ReadResult {
+    let contacts = ReadResult {
         page_info: Default::default(),
         edges: vec![Edge {
             cursor: "".to_owned().into(),
-            node: user,
+            node: contact,
         }],
     };
 
     template
-        .render(UsersTemplate {
-            users,
+        .render(ContactTemplate {
+            contacts,
             ..Default::default()
         })
         .into_response()

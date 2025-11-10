@@ -6,7 +6,7 @@ pub struct Operation;
 
 fn up_statement() -> IndexCreateStatement {
     Index::create()
-        .name("idx_status")
+        .name("idx_admin_user_status")
         .table(AdminUserPjt::Table)
         .col(AdminUserPjt::Status)
         .to_owned()
@@ -14,7 +14,7 @@ fn up_statement() -> IndexCreateStatement {
 
 fn down_statement() -> IndexDropStatement {
     Index::drop()
-        .name("idx_status")
+        .name("idx_admin_user_status")
         .table(AdminUserPjt::Table)
         .to_owned()
 }

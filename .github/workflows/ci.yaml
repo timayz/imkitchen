@@ -13,4 +13,4 @@ jobs:
   test:
     uses: timayz/.github/.github/workflows/rust-test.yml@v3
     with:
-      tests: '["cargo test -p imkitchen-recipe", "cargo test -p imkitchen-mealplan", "cargo test -p imkitchen-user", "cargo test -p imkitchen-notification", "cargo test -p imkitchen"]'
+      tests: '["cargo test -p imkitchen-contact", "cargo test -p imkitchen-recipe", "cargo test -p imkitchen-mealplan", "cargo test -p imkitchen-user", "cargo test -p imkitchen-notification", "cargo test -p imkitchen"]'

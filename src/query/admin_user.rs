@@ -75,6 +75,17 @@ impl AdminUser {
 
         created_at.format(&format).unwrap_or_else(|_| "".to_owned())
     }
+
+    pub fn short_name(&self) -> String {
+        self.full_name
+            .to_owned()
+            .unwrap_or(self.email.to_string())
+            .split(' ')
+            .take(2)
+            .map(|w| w.chars().next().unwrap_or('a').to_uppercase().to_string())
+            .collect::<Vec<_>>()
+            .join("")
+    }
 }
 
 pub struct AdminUserSortByRecentlyJoined(AdminUser);
@@ -354,11 +365,13 @@ async fn handle_toggle_life_premium<E: Executor>(
     event: Event<LifePremiumToggled>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
+
     let account_type = if event.data.expire_at > 0 {
         AdminUserAccountType::Premium
     } else {
         AdminUserAccountType::FreeTier
     };
+
     let statment = Query::update()
         .table(AdminUserPjt::Table)
         .values([(AdminUserPjt::AccountType, account_type.to_string().into())])

@@ -1,7 +1,7 @@
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use imkitchen_shared::Metadata;
-use imkitchen_user::{ToggleLifePremiumInput, subscribe_command};
+use imkitchen_user::subscribe_command;
 
 mod helpers;
 
@@ -12,12 +12,7 @@ async fn test_toggle_life_premium() -> anyhow::Result<()> {
     let user = helpers::create_user(&state, "john.doe").await?;
 
     command
-        .toggle_life_premium(
-            ToggleLifePremiumInput {
-                id: user.to_owned(),
-            },
-            Metadata::default(),
-        )
+        .toggle_life_premium(&user, Metadata::default())
         .await?;
 
     let subscription = command.load_subscription(&user).await?;
@@ -28,24 +23,14 @@ async fn test_toggle_life_premium() -> anyhow::Result<()> {
     assert!(subscription.item.expire_at > expire_at);
 
     command
-        .toggle_life_premium(
-            ToggleLifePremiumInput {
-                id: user.to_owned(),
-            },
-            Metadata::default(),
-        )
+        .toggle_life_premium(&user, Metadata::default())
         .await?;
 
     let subscription = command.load_subscription(&user).await?;
     assert!(subscription.item.expired);
 
     command
-        .toggle_life_premium(
-            ToggleLifePremiumInput {
-                id: user.to_owned(),
-            },
-            Metadata::default(),
-        )
+        .toggle_life_premium(&user, Metadata::default())
         .await?;
 
     let subscription = command.load_subscription(&user).await?;

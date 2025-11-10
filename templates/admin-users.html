@@ -112,7 +112,7 @@
             <td class="px-6 py-4">
               <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold{% if user.node.is_premium() %} bg-purple-500{% endif %}{% if user.node.is_suspended() %} bg-red-500{% endif %}{% if user.node.is_admin() %} bg-yellow-500{% endif %}">
-                  {{ user.node.email.chars().next().unwrap() }}
+                  {{ user.node.short_name() }}
                 </div>
                 <div>
                   <div class="font-semibold">{{ user.node.full_name.to_owned().unwrap_or("-".to_owned()) }}</div>

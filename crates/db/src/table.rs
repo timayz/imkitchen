@@ -18,6 +18,18 @@ pub enum GlobalStatPjt {
 }
 
 #[derive(Iden, Clone)]
+pub enum ContactPjt {
+    Table,
+    Id,
+    Email,
+    Name,
+    Status,
+    Subject,
+    Message,
+    CreatedAt,
+}
+
+#[derive(Iden, Clone)]
 pub enum AdminUserPjt {
     Table,
     Id,

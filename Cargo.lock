@@ -1774,6 +1774,7 @@ dependencies = [
  "evento",
  "futures",
  "http-body-util",
+ "imkitchen-contact",
  "imkitchen-db",
  "imkitchen-shared",
  "imkitchen-user",
@@ -1794,6 +1795,21 @@ dependencies = [
  "tower-livereload",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "imkitchen-contact"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "evento",
+ "imkitchen-db",
+ "imkitchen-shared",
+ "serde",
+ "sqlx",
+ "tokio",
+ "validator",
 ]
 
 [[package]]

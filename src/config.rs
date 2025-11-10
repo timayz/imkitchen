@@ -31,6 +31,8 @@ pub struct FeaturesConfig {
 //     pub smtp_port: u16,
 //     pub smtp_username: String,
 //     pub smtp_password: String,
+//     pub from_address: String,
+//     pub admin_emails: Vec<String>,
 // }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -92,6 +94,8 @@ impl Config {
             .set_default("email.smtp_port", "1025")?
             .set_default("email.smtp_username", "")?
             .set_default("email.smtp_password", "")?
+            .set_default("email.from_address", "no-reply@imkitchen.localhost")?
+            .set_default("email.admin_emails[0]", "admin@imkitchen.localhost")?
             .add_source(File::with_name(&config_path).required(false))
             .add_source(Environment::with_prefix("IMKITCHEN"))
             .build()?
