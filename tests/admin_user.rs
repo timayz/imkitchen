@@ -61,6 +61,11 @@ pub async fn test_admin_user_query() -> anyhow::Result<()> {
 
     futures::future::join_all(fut).await;
 
+    imkitchen_user::subscribe_command()
+        .data(state.pool.clone())
+        .unsafe_oneshot(&state.evento)
+        .await?;
+
     imkitchen::subscribe_admin_user()
         .data(state.pool.clone())
         .unsafe_oneshot(&state.evento)
