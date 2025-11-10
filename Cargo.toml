@@ -16,7 +16,7 @@ tower = "0.5"
 tower-http = { version = "0.6", features = ["fs", "trace", "compression-br", "compression-gzip"] }
 rust-i18n = "3.1"
 askama = "0.14"
-sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite", "chrono", "uuid"] }
+sqlx = { version = "0.8", default-features = false, features = ["migrate", "json", "derive","runtime-tokio", "sqlite"] }
 sqlx_migrator = { version = "0.18", features = ["sqlite"] }
 evento = { version = "1.6", features = ["sqlite"] }
 argon2 = { version = "0.5", features = ["std"] }
