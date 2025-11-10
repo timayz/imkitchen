@@ -19,16 +19,15 @@ pub async fn test_admin_user_query() -> anyhow::Result<()> {
             "free.tier5",
         ],
     )
-    .await?
-    .into_iter()
-    .rev()
-    .collect::<Vec<_>>();
+    .await?;
 
-    let premium_users = helpers::create_users(&state, vec!["premium1", "premium2", "premium3"])
-        .await?
-        .into_iter()
-        .rev()
-        .collect::<Vec<_>>();
+    let premium_users =
+        helpers::create_users(&state, vec!["premium1", "premium2", "premium3"]).await?;
+
+    let admin_users = helpers::create_users(&state, vec!["admin1", "admin2"]).await?;
+
+    let suspend_users =
+        helpers::create_users(&state, vec!["suspend1", "suspend2", "suspend3", "suspend4"]).await?;
 
     let fut = premium_users
         .iter()
@@ -36,35 +35,17 @@ pub async fn test_admin_user_query() -> anyhow::Result<()> {
 
     futures::future::join_all(fut).await;
 
-    let admin_users = helpers::create_users(&state, vec!["admin1", "admin2"])
-        .await?
-        .into_iter()
-        .rev()
-        .collect::<Vec<_>>();
-
     let fut = admin_users
         .iter()
         .map(|id| command.made_admin(id, Metadata::default()));
 
     futures::future::join_all(fut).await;
 
-    let suspend_users =
-        helpers::create_users(&state, vec!["suspend1", "suspend2", "suspend3", "suspend4"])
-            .await?
-            .into_iter()
-            .rev()
-            .collect::<Vec<_>>();
-
     let fut = suspend_users
         .iter()
         .map(|id| command.suspend(id, Metadata::default()));
 
     futures::future::join_all(fut).await;
-
-    imkitchen_user::subscribe_command()
-        .data(state.pool.clone())
-        .unsafe_oneshot(&state.evento)
-        .await?;
 
     imkitchen::subscribe_admin_user()
         .data(state.pool.clone())

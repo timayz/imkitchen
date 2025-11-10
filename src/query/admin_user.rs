@@ -365,6 +365,7 @@ async fn handle_toggle_life_premium<E: Executor>(
     event: Event<LifePremiumToggled>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
+
     let account_type = if event.data.expire_at > 0 {
         AdminUserAccountType::Premium
     } else {
