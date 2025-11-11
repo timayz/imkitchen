@@ -58,6 +58,10 @@ pub fn build_cookie<'a>(config: JwtConfig, sub: String) -> anyhow::Result<Cookie
         .build())
 }
 
+pub fn remove_cookie<'a>() -> Cookie<'a> {
+    Cookie::from(AUTH_COOKIE_NAME)
+}
+
 #[derive(Clone)]
 pub struct AuthUser(pub imkitchen_user::AuthUser);
 

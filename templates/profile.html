@@ -31,7 +31,9 @@
       {% call nav_item(profile_path, "subscription", "💳 " ~ ("Subscription"|t)) %}
       {% call nav_item(profile_path, "notifications", "🔔 " ~ ("Notifications"|t)) %}
       {% call nav_item(profile_path, "security", "🔒 " ~ ("Privacy & Security"|t)) %}
-      {% call nav_item(profile_path, "logout", "➜] " ~ ("Logout"|t)) %}
+      <a href="/logout" class="block w-full text-left px-4 py-3 bg-white text-gray-700 hover:bg-gray-50 rounded-lg">
+        ➜] {{ "Logout"|t }}
+      </a>
     </div>
 
     <!-- Mobile Navigation Tabs -->

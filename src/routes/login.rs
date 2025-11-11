@@ -1,12 +1,12 @@
 use axum::Form;
 use axum::extract::State;
-use axum::response::{Html, IntoResponse};
+use axum::response::{Html, IntoResponse, Redirect};
 use axum_extra::extract::CookieJar;
 use imkitchen_shared::Metadata;
 use imkitchen_user::LoginInput;
 use serde::Deserialize;
 
-use crate::auth::build_cookie;
+use crate::auth::{self, build_cookie};
 use crate::routes::AppState;
 use crate::template::filters;
 use crate::template::{SERVER_ERROR_MESSAGE, Template};
@@ -71,7 +71,7 @@ pub async fn action(
 
             let mut resp = Html("").into_response();
             resp.headers_mut()
-                .insert("ts-location", "/".parse().unwrap());
+                .insert("ts-location", "/profile/meal-preferences".parse().unwrap());
 
             (jar, resp).into_response()
         }
@@ -94,4 +94,10 @@ pub async fn action(
             })
             .into_response(),
     }
+}
+
+pub async fn logout(jar: CookieJar) -> impl IntoResponse {
+    let jar = jar.remove(auth::remove_cookie());
+
+    (jar, Redirect::to("/"))
 }
