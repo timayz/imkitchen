@@ -60,17 +60,12 @@ pub async fn page(
                 .into_response();
         }
     };
+
     let args = Args {
         first: query.first,
         after: query.after,
         last: query.last,
         before: query.before,
-    };
-
-    let args = if args.is_backward() {
-        Args::backward(args.last.unwrap_or(20).min(40), args.before)
-    } else {
-        Args::forward(args.first.unwrap_or(20).min(40), args.after)
     };
 
     let users = match query_admin_users(
@@ -79,7 +74,7 @@ pub async fn page(
             status: None,
             sort_by: AdminUserSortBy::RecentlyJoined,
             account_type: None,
-            args,
+            args: args.limit(20),
         },
     )
     .await

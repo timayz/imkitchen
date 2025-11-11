@@ -188,6 +188,7 @@ pub fn subscribe_contact<E: Executor + Clone>() -> SubscribeBuilder<E> {
         .handler(handle_reopened())
         .handler(handle_marked_read_and_reply())
         .handler(handle_resolved())
+        .handler_check_off()
 }
 
 #[evento::handler(ContactAggregator)]

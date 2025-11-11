@@ -67,7 +67,7 @@ async fn test_update_meal_preferences() -> anyhow::Result<()> {
 
     subscribe_command()
         .data(state.pool.clone())
-        .unsafe_oneshot(&state.evento)
+        .unretry_oneshot(&state.evento)
         .await?;
 
     Ok(())

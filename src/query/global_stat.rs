@@ -1,13 +1,10 @@
 use std::collections::HashMap;
 
 use evento::{AggregatorName, Executor, SubscribeBuilder};
-use imkitchen_contact::{Contact, FormSubmitted, MarkedReadAndReply, Reopened, Resolved};
+use imkitchen_contact::{Contact, FormSubmitted, MarkedReadAndReply, Resolved};
 use imkitchen_db::table::GlobalStatPjt;
 use imkitchen_shared::Event;
-use imkitchen_user::{
-    Activated, LoggedIn, MadeAdmin, RegistrationFailed, RegistrationRequested,
-    RegistrationSucceeded, Suspended, User,
-};
+use imkitchen_user::{RegistrationSucceeded, User};
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 
@@ -108,13 +105,7 @@ pub fn subscribe_global_stat<E: Executor + Clone>() -> SubscribeBuilder<E> {
         .handler(handle_contact_form_submitted())
         .handler(handle_contact_marked_read_and_reply())
         .handler(handle_contact_resolved())
-        .skip::<User, RegistrationRequested>()
-        .skip::<User, RegistrationFailed>()
-        .skip::<User, LoggedIn>()
-        .skip::<User, Suspended>()
-        .skip::<User, Activated>()
-        .skip::<User, MadeAdmin>()
-        .skip::<Contact, Reopened>()
+        .handler_check_off()
 }
 
 #[evento::handler(User)]

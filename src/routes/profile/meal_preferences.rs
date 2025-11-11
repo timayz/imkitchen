@@ -5,7 +5,6 @@ use axum::response::IntoResponse;
 use axum_extra::extract::Form;
 use imkitchen_shared::Metadata;
 use imkitchen_user::UpdateMealPreferencesInput;
-use imkitchen_user::meal_preferences::UserMealPreferences;
 use serde::Deserialize;
 
 use crate::auth::AuthUser;
@@ -45,9 +44,12 @@ pub async fn page(
     State(state): State<AppState>,
     AuthUser(user): AuthUser,
 ) -> impl IntoResponse {
-    let preferences = match state.user_command.load_meal_preferences(&user.id).await {
-        Ok(loaded) => loaded.item,
-        Err(evento::ReadError::NotFound) => UserMealPreferences::default(),
+    let preferences = match state
+        .user_command
+        .load_meal_preferences_optional(&user.id)
+        .await
+    {
+        Ok(loaded) => loaded.unwrap_or_default().item,
         Err(e) => {
             tracing::error!("{e}");
             return server_error.render(ServerErrorTemplate).into_response();
