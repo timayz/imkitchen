@@ -154,7 +154,7 @@ pub async fn status(
 
             let mut resp = Html("").into_response();
             resp.headers_mut()
-                .insert("ts-location", "/".parse().unwrap());
+                .insert("ts-location", "/profile/meal-preferences".parse().unwrap());
 
             (jar, resp).into_response()
 

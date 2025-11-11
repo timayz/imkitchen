@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}{{ "Coming Soon - imkitchen"|t }}{% endblock %}
+
+{% block body %}
+
+<body class="bg-gray-50">
+  <!-- Top Navigation -->
+  <nav class="bg-white shadow-sm">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex items-center justify-between">
+        <a href="/" class="text-2xl font-bold text-green-600">🍳 imkitchen</a>
+        <a href="/" class="text-gray-600 hover:text-gray-900">{{ "Back to Home"|t }}</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Coming Soon Content -->
+  <div class="container mx-auto px-4 py-16">
+    <div class="max-w-2xl mx-auto text-center">
+      <!-- Main Icon -->
+      <div class="mb-8">
+        <div
+          class="inline-flex items-center justify-center w-32 h-32 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full">
+          <svg class="w-16 h-16 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Main Message -->
+      <h1 class="text-4xl md:text-6xl font-bold text-gray-900 mb-4">{{ "Coming Soon!"|t }}</h1>
+      <h2 class="text-xl md:text-2xl font-bold text-gray-800 mb-4">{{ "We're Cooking Up Something Special"|t }}</h2>
+      <p class="text-lg text-gray-600 mb-8">
+        {{ "This feature is currently in development. Our team is hard at work preparing a delicious experience for
+        you!"|t }}
+      </p>
+
+      <!-- Progress Indicator -->
+      <div class="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-6 mb-8">
+        <div class="flex items-start gap-3 mb-4">
+          <svg class="w-6 h-6 text-purple-600 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          </svg>
+          <div class="flex-1 text-left">
+            <h3 class="font-bold text-purple-800 mb-2">{{ "What's Being Prepared"|t }}</h3>
+            <ul class="text-sm text-purple-700 space-y-2">
+              <li class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                {{ "Enhanced user experience"|t }}
+              </li>
+              <li class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                {{ "New powerful features"|t }}
+              </li>
+              <li class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                {{ "Mobile-friendly design"|t }}
+              </li>
+              <li class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                {{ "Thorough testing (in progress)"|t }}
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="w-full bg-purple-200 rounded-full h-3 overflow-hidden">
+          <div class="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full transition-all duration-500"
+            style="width: 20%"></div>
+        </div>
+        <p class="text-xs text-purple-600 mt-2">{{ "Development progress"|t }}: 20%</p>
+      </div>
+
+      <!-- Estimated Launch -->
+      <div class="mt-8 text-sm text-gray-500">
+        <p>{{ "Estimated launch:"|t }} <span class="font-semibold text-gray-700">{{ "Q1 2026"|t }}</span></p>
+        <p class="mt-2">{{ "Have questions?"|t }} <a href="/contact"
+            class="text-green-600 hover:text-green-700 font-semibold">{{ "Contact Support"|t }}</a></p>
+      </div>
+    </div>
+  </div>
+</body>
+{% endblock %}
