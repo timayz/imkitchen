@@ -16,7 +16,7 @@ tower = "0.5"
 tower-http = { version = "0.6", features = ["fs", "trace", "compression-br", "compression-gzip"] }
 rust-i18n = "3.1"
 askama = "0.14"
-sqlx = { version = "0.8", default-features = false, features = ["migrate", "json", "derive","runtime-tokio", "sqlite"] }
+sqlx = { version = "0.8", default-features = false, features = ["migrate", "json", "derive", "runtime-tokio", "sqlite"] }
 sqlx_migrator = { version = "0.18", features = ["sqlite"] }
 evento = { version = "1.7", features = ["sqlite"] }
 argon2 = { version = "0.5", features = ["std"] }
@@ -51,7 +51,7 @@ time = "0.3"
 
 [package]
 name = "imkitchen"
-version = "0.8.0"
+version = "0.9.0"
 edition.workspace = true
 
 [package.metadata.cargo-machete]
@@ -72,37 +72,25 @@ askama = { workspace = true }
 sqlx = { workspace = true }
 evento = { workspace = true }
 serde = { workspace = true }
-# serde_json = { workspace = true }
-# uuid = { workspace = true }
-# chrono = { workspace = true }
 bincode = { workspace = true }
 async-trait = { workspace = true }
 anyhow = { workspace = true }
-# thiserror = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 clap = { workspace = true }
 config = { workspace = true }
 rust-embed = { workspace = true }
 mime_guess = { workspace = true }
-# lettre = { workspace = true }
-# urlencoding = { workspace = true }
-# async-stripe = { workspace = true }
-# validator = { workspace = true }
-# base64 = { workspace = true }
 sea-query = { workspace = true }
 sea-query-sqlx = { workspace = true }
 minify-html = { workspace = true }
 jsonwebtoken = { workspace = true }
 futures = { workspace = true }
 time = { workspace = true }
-imkitchen-shared = { path = "crates/shared" }
-imkitchen-contact = { path = "crates/contact" }
-imkitchen-user = { path = "crates/user" }
-imkitchen-db = { path = "crates/db" }
-# imkitchen-recipe = { path = "crates/recipe" }
-# imkitchen-mealplan = { path = "crates/mealplan" }
-# imkitchen-notification = { path = "crates/notification" }
+imkitchen-shared = { path = "crates/shared", version = "0.9.0" }
+imkitchen-contact = { path = "crates/contact", version = "0.9.0" }
+imkitchen-user = { path = "crates/user", version = "0.9.0" }
+imkitchen-db = { path = "crates/db", version = "0.9.0" }
 
 [dev-dependencies]
 http-body-util = "0.1"
