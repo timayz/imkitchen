@@ -786,9 +786,9 @@ dependencies = [
 
 [[package]]
 name = "convert_case"
-version = "0.8.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "baaaa0ecca5b51987b9423ccdc971514dd8b0bb7b4060b983d3664dad3f1f89f"
+checksum = "db05ffb6856bf0ecdf6367558a76a0e8a77b1713044eb92845c692100ed50190"
 dependencies = [
  "unicode-segmentation",
 ]
@@ -1132,9 +1132,9 @@ dependencies = [
 
 [[package]]
 name = "evento"
-version = "1.6.0"
+version = "1.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "35e207d78f92d15560a6ed13ce78cc76998596432863cf4b49338ff771680881"
+checksum = "3b02b0e3e6e360207de304a68212e90dd4e82127d985495fad2486ef32a19649"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1155,11 +1155,11 @@ dependencies = [
 
 [[package]]
 name = "evento-macro"
-version = "1.6.0"
+version = "1.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5cdd7b1ed34c2ad99e64e39a7e2317679e04067c6e651ab590f3e33aa6793b19"
+checksum = "6f3abee35d0b1dface1c66d1899e6920aa16994fc8c760bf5ef5bc842be1ddbb"
 dependencies = [
- "convert_case 0.8.0",
+ "convert_case 0.9.0",
  "proc-macro2",
  "quote",
  "sha3",

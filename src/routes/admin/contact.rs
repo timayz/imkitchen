@@ -78,19 +78,13 @@ pub async fn page(
         before: query.before,
     };
 
-    let args = if args.is_backward() {
-        Args::backward(args.last.unwrap_or(20).min(40), args.before)
-    } else {
-        Args::forward(args.first.unwrap_or(20).min(40), args.after)
-    };
-
     let contacts = match query_contacts(
         &app_state.pool,
         ContactInput {
             status,
             subject,
             sort_by,
-            args,
+            args: args.limit(20),
         },
     )
     .await

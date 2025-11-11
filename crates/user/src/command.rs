@@ -82,11 +82,25 @@ impl<E: Executor + Clone> Command<E> {
         evento::load(&self.0, id).await
     }
 
+    pub async fn load_meal_preferences_optional(
+        &self,
+        id: impl Into<String>,
+    ) -> Result<Option<LoadResult<UserMealPreferences>>, evento::ReadError> {
+        evento::load_optional(&self.0, id).await
+    }
+
     pub async fn load_subscription(
         &self,
         id: impl Into<String>,
     ) -> Result<LoadResult<UserSubscription>, evento::ReadError> {
         evento::load(&self.0, id).await
+    }
+
+    pub async fn load_subscription_optional(
+        &self,
+        id: impl Into<String>,
+    ) -> Result<Option<LoadResult<UserSubscription>>, evento::ReadError> {
+        evento::load_optional(&self.0, id).await
     }
 
     pub async fn get_user_by_id(
@@ -207,23 +221,15 @@ impl<E: Executor + Clone> Command<E> {
             imkitchen_shared::bail!("User not found in metadata");
         };
 
-        let builder = match self.load_meal_preferences(&user_id).await {
-            Ok(preferences) => evento::save_with(preferences).data(&meal_preferences::Updated {
+        evento::save::<UserMealPreferences>(user_id)
+            .data(&meal_preferences::Updated {
                 dietary_restrictions: input.dietary_restrictions,
                 household_size: input.household_size,
                 cuisine_variety_weight: input.cuisine_variety_weight,
-            })?,
-            Err(evento::ReadError::NotFound) => {
-                evento::create_with(user_id).data(&meal_preferences::Updated {
-                    dietary_restrictions: input.dietary_restrictions,
-                    household_size: input.household_size,
-                    cuisine_variety_weight: input.cuisine_variety_weight,
-                })?
-            }
-            Err(e) => return Err(e.into()),
-        };
-
-        builder.metadata(&metadata)?.commit(&self.0).await?;
+            })?
+            .metadata(&metadata)?
+            .commit(&self.0)
+            .await?;
 
         Ok(())
     }
@@ -304,8 +310,8 @@ impl<E: Executor + Clone> Command<E> {
             .duration_since(UNIX_EPOCH)?
             .as_secs();
 
-        let builder = match self.load_subscription(&id).await {
-            Ok(subscription) => {
+        let builder = match self.load_subscription_optional(&id).await? {
+            Some(subscription) => {
                 let expire_at = if subscription.item.expired {
                     expire_at
                 } else {
@@ -315,10 +321,7 @@ impl<E: Executor + Clone> Command<E> {
                 evento::save_with(subscription)
                     .data(&subscription::LifePremiumToggled { expire_at })?
             }
-            Err(evento::ReadError::NotFound) => {
-                evento::create_with(id).data(&subscription::LifePremiumToggled { expire_at })?
-            }
-            Err(e) => return Err(e.into()),
+            _ => evento::create_with(id).data(&subscription::LifePremiumToggled { expire_at })?,
         };
 
         builder.metadata(&metadata)?.commit(&self.0).await?;

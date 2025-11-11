@@ -40,7 +40,7 @@ async fn validate_unique_emails() -> anyhow::Result<()> {
 
     subscribe_command()
         .data(state.pool.clone())
-        .unsafe_oneshot(&state.evento)
+        .unretry_oneshot(&state.evento)
         .await?;
 
     let user_1_agg = command.load(&user_1).await?;
@@ -54,7 +54,7 @@ async fn validate_unique_emails() -> anyhow::Result<()> {
 
     subscribe_command()
         .data(state.pool.clone())
-        .unsafe_oneshot(&state.evento)
+        .unretry_oneshot(&state.evento)
         .await?;
 
     Ok(())

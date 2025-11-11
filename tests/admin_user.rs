@@ -24,22 +24,22 @@ pub async fn test_admin_user_query() -> anyhow::Result<()> {
     let premium_users =
         helpers::create_users(&state, vec!["premium1", "premium2", "premium3"]).await?;
 
-    let admin_users = helpers::create_users(&state, vec!["admin1", "admin2"]).await?;
-
-    let suspend_users =
-        helpers::create_users(&state, vec!["suspend1", "suspend2", "suspend3", "suspend4"]).await?;
-
     let fut = premium_users
         .iter()
         .map(|id| command.toggle_life_premium(id, Metadata::default()));
 
     futures::future::join_all(fut).await;
 
+    let admin_users = helpers::create_users(&state, vec!["admin1", "admin2"]).await?;
+
     let fut = admin_users
         .iter()
         .map(|id| command.made_admin(id, Metadata::default()));
 
     futures::future::join_all(fut).await;
+
+    let suspend_users =
+        helpers::create_users(&state, vec!["suspend1", "suspend2", "suspend3", "suspend4"]).await?;
 
     let fut = suspend_users
         .iter()
@@ -49,12 +49,12 @@ pub async fn test_admin_user_query() -> anyhow::Result<()> {
 
     imkitchen::subscribe_admin_user()
         .data(state.pool.clone())
-        .unsafe_oneshot(&state.evento)
+        .unretry_oneshot(&state.evento)
         .await?;
 
     imkitchen::subscribe_global_stat()
         .data(state.pool.clone())
-        .unsafe_oneshot(&state.evento)
+        .unretry_oneshot(&state.evento)
         .await?;
 
     let stats = imkitchen::query_admin_users_global_stats(&state.pool).await?;

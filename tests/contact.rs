@@ -47,12 +47,12 @@ pub async fn test_contact_query() -> anyhow::Result<()> {
 
     imkitchen::subscribe_contact()
         .data(state.pool.clone())
-        .unsafe_oneshot(&state.evento)
+        .unretry_oneshot(&state.evento)
         .await?;
 
     imkitchen::subscribe_global_stat()
         .data(state.pool.clone())
-        .unsafe_oneshot(&state.evento)
+        .unretry_oneshot(&state.evento)
         .await?;
 
     let stats = imkitchen::query_contact_global_stats(&state.pool).await?;

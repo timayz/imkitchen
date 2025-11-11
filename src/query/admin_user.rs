@@ -3,14 +3,13 @@ use std::{fmt::Display, ops::Deref};
 use bincode::{Decode, Encode};
 use evento::{
     AggregatorName, Executor, SubscribeBuilder,
-    cursor::{Args, Edge, ReadResult},
+    cursor::{Args, ReadResult},
     sql::Reader,
 };
 use imkitchen_db::table::AdminUserPjt;
 use imkitchen_shared::Event;
 use imkitchen_user::{
-    Activated, LoggedIn, MadeAdmin, RegistrationFailed, RegistrationRequested,
-    RegistrationSucceeded, Suspended, User,
+    Activated, MadeAdmin, RegistrationSucceeded, Suspended, User,
     subscription::{LifePremiumToggled, UserSubscription},
 };
 use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
@@ -210,17 +209,7 @@ pub async fn query_admin_users(
                 .execute::<_, AdminUserSortByRecentlyJoined, _>(pool)
                 .await?;
 
-            Ok(ReadResult {
-                page_info: result.page_info,
-                edges: result
-                    .edges
-                    .into_iter()
-                    .map(|e| Edge {
-                        cursor: e.cursor.to_owned(),
-                        node: e.node.0,
-                    })
-                    .collect(),
-            })
+            Ok(result.map(|user| user.0))
         }
         _ => todo!(),
     }
@@ -262,9 +251,7 @@ pub fn subscribe_admin_user<E: Executor + Clone>() -> SubscribeBuilder<E> {
         .handler(handle_activated())
         .handler(handle_made_admin())
         .handler(handle_toggle_life_premium())
-        .skip::<User, RegistrationRequested>()
-        .skip::<User, LoggedIn>()
-        .skip::<User, RegistrationFailed>()
+        .handler_check_off()
 }
 
 #[evento::handler(User)]
