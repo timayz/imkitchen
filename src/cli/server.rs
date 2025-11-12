@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use anyhow::Result;
 use tower_http::{compression::CompressionLayer, trace::TraceLayer};
 
