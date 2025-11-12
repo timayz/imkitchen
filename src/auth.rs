@@ -117,8 +117,6 @@ impl FromRequestParts<crate::routes::AppState> for AuthUser {
             .map_or(0, |d| d.as_secs() as i64);
         }
 
-        println!("{}", user.subscription_end_at);
-
         parts.extensions.insert(AuthUser(user.clone()));
 
         Ok(AuthUser(user))
