@@ -34,25 +34,21 @@ pub async fn serve(
 
     let sub_user_command = imkitchen_user::subscribe_command()
         .data(write_pool.clone())
-        .delay(Duration::from_secs(10))
         .run(&evento_executor)
         .await?;
 
     let sub_admin_user_query = crate::query::subscribe_admin_user()
         .data(write_pool.clone())
-        .delay(Duration::from_secs(10))
         .run(&evento_executor)
         .await?;
 
     let sub_contact_query = crate::query::subscribe_contact()
         .data(write_pool.clone())
-        .delay(Duration::from_secs(10))
         .run(&evento_executor)
         .await?;
 
     let sub_global_stat_query = crate::query::subscribe_global_stat()
         .data(write_pool.clone())
-        .delay(Duration::from_secs(10))
         .run(&evento_executor)
         .await?;
 
