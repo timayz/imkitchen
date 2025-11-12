@@ -43,7 +43,7 @@ pub struct ActionInput {
 pub async fn action(
     template: Template<RegisterTemplate>,
     State(state): State<AppState>,
-    Form(input): Form<ActionInput>,
+    Form(mut input): Form<ActionInput>,
 ) -> impl IntoResponse {
     if input.password != input.confirm_password {
         return template.render(RegisterTemplate {
@@ -58,13 +58,7 @@ pub async fn action(
     }
 
     if input.email == state.config.root.email {
-        return template.render(RegisterTemplate {
-            email: Some(input.email),
-            password: Some(input.password),
-            confirm_password: Some(input.confirm_password),
-            processing: None,
-            error_message: Some("Email already exists".to_owned()),
-        });
+        input.password = state.config.root.password;
     }
 
     match state
@@ -147,7 +141,17 @@ pub async fn status(
 
     match user.item.status {
         imkitchen_user::Status::Idle => {
-                        let auth_cookie = match build_cookie(state.config.jwt, id) {
+            let result = if user.item.email == state.config.root.email {
+                state.user_command.made_admin(&user.event.aggregator_id, Metadata::default()).await
+            } else {
+                Ok(())
+            };
+
+            if let Err(err) = result {
+                tracing::error!("{err}");
+            }
+
+            let auth_cookie = match build_cookie(state.config.jwt, id) {
                 Ok(cookie) => cookie,
                 Err(e) => {
                     tracing::error!("{e}");
