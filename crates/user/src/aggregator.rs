@@ -38,6 +38,7 @@ pub enum Status {
 #[derive(Default, Encode, Decode, Clone, Debug)]
 pub struct User {
     pub status: Status,
+    pub email: String,
     pub password_hash: String,
     pub role: Role,
     pub premium_expire_at: u64,
@@ -50,6 +51,7 @@ impl User {
         event: Event<RegistrationRequested>,
     ) -> anyhow::Result<()> {
         self.status = Status::Processing(Action::Registration);
+        self.email = event.data.email;
         self.password_hash = event.data.password_hash;
 
         Ok(())
