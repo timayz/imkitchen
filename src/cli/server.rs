@@ -56,6 +56,19 @@ pub async fn serve(
         .run(&evento_executor)
         .await?;
 
+    let root_user = user_command.get_user_by_email(&config.root.email).await?;
+    if root_user.is_none() {
+        user_command
+            .register(
+                imkitchen_user::RegisterInput {
+                    email: config.root.email.to_owned(),
+                    password: config.root.password.to_owned(),
+                },
+                imkitchen_shared::Metadata::default(),
+            )
+            .await?;
+    }
+
     let state = AppState {
         config,
         user_command,

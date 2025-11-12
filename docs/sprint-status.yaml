@@ -48,13 +48,13 @@ development_status:
 
   # Epic 2: Recipe Management & Import System
   epic-2: backlog
-  2-1-recipe-creation-four-types: backlog
-  2-2-recipe-editing-and-deletion: backlog
-  2-3-recipe-favorites-system: backlog
-  2-4-recipe-json-import-file-upload-and-validation: backlog
-  2-5-recipe-json-import-real-time-progress-and-summary: backlog
-  2-6-json-schema-documentation: backlog
-  2-7-recipe-snapshot-system-for-meal-plans: backlog
+  2-1-recipe-creation-four-types: drafted
+  2-2-recipe-editing-and-deletion: drafted
+  2-3-recipe-favorites-system: drafted
+  2-4-recipe-json-import-file-upload-and-validation: drafted
+  2-5-recipe-json-import-real-time-progress-and-summary: drafted
+  2-6-json-schema-documentation: drafted
+  2-7-recipe-snapshot-system-for-meal-plans: drafted
   epic-2-retrospective: optional
 
   # Epic 3: Core Meal Planning Engine

@@ -52,6 +52,16 @@ pub async fn action(
         .await
     {
         Ok(id) => {
+            if let (true, Err(err)) = (
+                input.email == state.config.root.email,
+                state
+                    .user_command
+                    .made_admin(&id, Metadata::default())
+                    .await,
+            ) {
+                tracing::error!("{err}");
+            }
+
             let auth_cookie = match build_cookie(state.config.jwt, id) {
                 Ok(cookie) => cookie,
                 Err(e) => {
