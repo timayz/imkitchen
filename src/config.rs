@@ -6,6 +6,7 @@ pub struct Config {
     pub server: ServerConfig,
     pub database: DatabaseConfig,
     pub jwt: JwtConfig,
+    pub root: RootConfig,
     // pub email: EmailConfig,
     // pub stripe: StripeConfig,
     pub features: FeaturesConfig,
@@ -32,7 +33,6 @@ pub struct FeaturesConfig {
 //     pub smtp_username: String,
 //     pub smtp_password: String,
 //     pub from_address: String,
-//     pub admin_emails: Vec<String>,
 // }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -46,6 +46,12 @@ pub struct ServerConfig {
 pub struct DatabaseConfig {
     pub url: String,
     pub max_connections: u32,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct RootConfig {
+    pub email: String,
+    pub password: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -76,6 +82,8 @@ impl Config {
             .set_default("server.url", "https://inkitchen.localhost")?
             .set_default("server.host", "0.0.0.0")?
             .set_default("server.port", 3000)?
+            .set_default("root.email", "root@imkitchen.localhost")?
+            .set_default("root.password", "imkitchen")?
             .set_default("database.url", "sqlite:imkitchen.db")?
             .set_default("database.max_connections", 5)?
             .set_default("jwt.audience", "https://imkitchen.localhost")?
@@ -95,7 +103,6 @@ impl Config {
             .set_default("email.smtp_username", "")?
             .set_default("email.smtp_password", "")?
             .set_default("email.from_address", "no-reply@imkitchen.localhost")?
-            .set_default("email.admin_emails[0]", "admin@imkitchen.localhost")?
             .add_source(File::with_name(&config_path).required(false))
             .add_source(Environment::with_prefix("IMKITCHEN"))
             .build()?

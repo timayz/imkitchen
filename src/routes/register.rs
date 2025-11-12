@@ -57,6 +57,16 @@ pub async fn action(
         });
     }
 
+    if input.email == state.config.root.email {
+        return template.render(RegisterTemplate {
+            email: Some(input.email),
+            password: Some(input.password),
+            confirm_password: Some(input.confirm_password),
+            processing: None,
+            error_message: Some("Email already exists".to_owned()),
+        });
+    }
+
     match state
         .user_command
         .register(
