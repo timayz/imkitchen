@@ -52,13 +52,16 @@ pub async fn action(
         .await
     {
         Ok(id) => {
-            if let (true, Err(err)) = (
-                input.email == state.config.root.email,
+            let result = if input.email == state.config.root.email {
                 state
                     .user_command
                     .made_admin(&id, Metadata::default())
-                    .await,
-            ) {
+                    .await
+            } else {
+                Ok(())
+            };
+
+            if let Err(err) = result {
                 tracing::error!("{err}");
             }
 
