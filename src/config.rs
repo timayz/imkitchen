@@ -104,7 +104,7 @@ impl Config {
             .set_default("email.smtp_password", "")?
             .set_default("email.from_address", "no-reply@imkitchen.localhost")?
             .add_source(File::with_name(&config_path).required(false))
-            .add_source(Environment::with_prefix("IMKITCHEN"))
+            .add_source(Environment::with_prefix("imkitchen").separator("_"))
             .build()?
             .try_deserialize()
     }
