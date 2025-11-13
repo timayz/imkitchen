@@ -47,6 +47,7 @@ sea-query-sqlx = { version = "0.8.0-rc.9", features = ["runtime-tokio", "sqlx-sq
 async-trait = "0.1"
 futures = "0.3"
 time = "0.3"
+strum = { version = "0.27", features = ["derive"] }
 
 [package]
 name = "imkitchen"
