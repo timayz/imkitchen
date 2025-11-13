@@ -15,5 +15,6 @@ tokio.workspace = true
 sea-query.workspace = true
 sea-query-sqlx.workspace = true
 serde.workspace = true
+sha3.workspace = true
 imkitchen-shared = { path = "../shared", version = "0.9.3" }
 imkitchen-db = { path = "../db", version = "0.9.3" }

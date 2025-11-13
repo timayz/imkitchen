@@ -2,9 +2,10 @@ use bincode::{Decode, Encode};
 use evento::AggregatorName;
 use strum::{AsRefStr, Display, EnumString};
 
-#[derive(Encode, Decode, EnumString, AsRefStr, Display)]
+#[derive(Encode, Decode, EnumString, AsRefStr, Display, Default, Clone, Debug)]
 pub enum RecipeType {
     Appetizer,
+    #[default]
     MainCourse,
     Dessert,
     Accompaniment,
@@ -13,7 +14,7 @@ pub enum RecipeType {
 #[derive(Encode, Decode)]
 pub struct Ingredient {
     pub name: String,
-    pub unit: String,
+    pub unit: u16,
     pub unit_type: String,
 }
 
@@ -22,7 +23,7 @@ pub struct Instruction {
     pub description: String,
 }
 
-#[derive(Encode, Decode, EnumString, AsRefStr, Display)]
+#[derive(Encode, Decode, EnumString, AsRefStr, Display, Clone, Debug, Default)]
 pub enum CuisineType {
     Italian,
     Thai,
@@ -33,6 +34,7 @@ pub enum CuisineType {
     French,
     American,
     Mediterranean,
+    #[default]
     Caribbean,
     Custom(String),
 }
@@ -102,7 +104,7 @@ pub struct MainCourseOptionsChanged {
 }
 
 #[derive(AggregatorName, Encode, Decode)]
-pub struct AdvandePreparationChanged {
+pub struct AdvancePreparationChanged {
     pub description: String,
 }
 

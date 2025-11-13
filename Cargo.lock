@@ -1786,6 +1786,7 @@ dependencies = [
  "sea-query",
  "sea-query-sqlx",
  "serde",
+ "sha3",
  "sqlx",
  "strum",
  "tokio",
