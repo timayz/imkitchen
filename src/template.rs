@@ -87,6 +87,15 @@ where
         );
         values.insert("config", Box::new(self.config));
 
+        #[cfg(debug_assertions)]
+        {
+            values.insert("is_dev", Box::new(true));
+        }
+        #[cfg(not(debug_assertions))]
+        {
+            values.insert("is_dev", Box::new(false));
+        }
+
         match self
             .template
             .expect("template must be define using template.template(..)")

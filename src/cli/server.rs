@@ -64,20 +64,6 @@ pub async fn serve(
         .layer(axum::middleware::from_fn(
             crate::middleware::cache_control_middleware,
         ))
-        // LiveReload layer for development (debug builds only) - must be before minification
-        .layer({
-            #[cfg(debug_assertions)]
-            {
-                tower_livereload::LiveReloadLayer::new()
-            }
-            #[cfg(not(debug_assertions))]
-            {
-                use axum::{body::Body, extract::Request, response::Response};
-                axum::middleware::from_fn(|req: Request, next: axum::middleware::Next| async move {
-                    next.run(req).await
-                })
-            }
-        })
         // Minify HTML responses before compression
         .layer(axum::middleware::map_response(
             crate::middleware::minify_html_middleware,
