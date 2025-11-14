@@ -14,7 +14,7 @@ async fn test_update_no_fields() -> anyhow::Result<()> {
 
     let recipe = command.create(Metadata::by(john.to_owned())).await?;
 
-    let mut input = UpdateInput {
+    let input = UpdateInput {
         name: "My first Recipe".to_owned(),
         description: "My first description".to_owned(),
         advance_preparation: "My first advance_preparation".to_owned(),
@@ -160,7 +160,7 @@ async fn test_update_only_cuisine_type() -> anyhow::Result<()> {
     let loaded = command.load(&recipe).await?;
     let event = loaded.event.to_details::<CuisineTypeChanged, Metadata>()?;
 
-    assert_eq!(loaded.event.version, 9);
+    assert_eq!(loaded.event.version, 8);
     assert_eq!(event.unwrap().data.cuisine_type, CuisineType::Italian);
 
     Ok(())
