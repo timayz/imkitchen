@@ -1783,6 +1783,7 @@ dependencies = [
  "evento",
  "imkitchen-db",
  "imkitchen-shared",
+ "imkitchen-user",
  "sea-query",
  "sea-query-sqlx",
  "serde",

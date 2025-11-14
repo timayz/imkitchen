@@ -2,7 +2,7 @@ use bincode::{Decode, Encode};
 use evento::AggregatorName;
 use strum::{AsRefStr, Display, EnumString};
 
-#[derive(Encode, Decode, EnumString, AsRefStr, Display, Default, Clone, Debug)]
+#[derive(Encode, Decode, EnumString, AsRefStr, Display, Default, Clone, Debug, PartialEq)]
 pub enum RecipeType {
     Appetizer,
     #[default]
@@ -11,19 +11,20 @@ pub enum RecipeType {
     Accompaniment,
 }
 
-#[derive(Encode, Decode)]
+#[derive(Encode, Decode, Clone)]
 pub struct Ingredient {
     pub name: String,
     pub unit: u16,
     pub unit_type: String,
 }
 
-#[derive(Encode, Decode)]
+#[derive(Encode, Decode, Clone)]
 pub struct Instruction {
     pub description: String,
+    pub time_before_next: u16,
 }
 
-#[derive(Encode, Decode, EnumString, AsRefStr, Display, Clone, Debug, Default)]
+#[derive(Encode, Decode, EnumString, AsRefStr, Display, Clone, Debug, Default, PartialEq)]
 pub enum CuisineType {
     Italian,
     Thai,
@@ -39,7 +40,7 @@ pub enum CuisineType {
     Custom(String),
 }
 
-#[derive(Encode, Decode, EnumString, AsRefStr, Display)]
+#[derive(Encode, Decode, EnumString, AsRefStr, Display, PartialEq, Clone)]
 pub enum DietaryRestriction {
     Vegetarian,
     Vegan,
@@ -49,7 +50,7 @@ pub enum DietaryRestriction {
     LowCarb,
 }
 
-#[derive(Encode, Decode, EnumString, AsRefStr, Display)]
+#[derive(Encode, Decode, EnumString, AsRefStr, Display, PartialEq, Clone)]
 pub enum AccompanimentType {
     Rice,
     Pasta,

@@ -3,8 +3,8 @@ use imkitchen_shared::Event;
 use sha3::{Digest, Sha3_224};
 
 use crate::{
-    AdvancePreparationChanged, BasicInformationChanged, Created, CuisineType, CuisineTypeChanged,
-    Deleted, DietaryRestrictionsChanged, IngredientsChanged, InstructionsChanged, MadePrivate,
+    AdvancePreparationChanged, BasicInformationChanged, CuisineType, CuisineTypeChanged, Deleted,
+    DietaryRestrictionsChanged, IngredientsChanged, InstructionsChanged, MadePrivate,
     MainCourseOptionsChanged, RecipeType, RecipeTypeChanged, SharedToCommunity,
 };
 
@@ -60,6 +60,7 @@ impl Recipe {
 
         for instruction in event.data.instructions {
             hasher.update(instruction.description);
+            hasher.update(instruction.time_before_next.to_string());
         }
         self.instructions_hash = hasher.finalize()[..].to_vec();
 
