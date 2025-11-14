@@ -10,10 +10,10 @@ mod user_create_table;
 
 use sqlx_migrator::vec_box;
 
-pub struct M0_9;
+pub struct Migration;
 
 sqlx_migrator::sqlite_migration!(
-    M0_9,
+    Migration,
     "main",
     "m0_9",
     vec_box![],
