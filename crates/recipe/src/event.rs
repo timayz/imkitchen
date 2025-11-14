@@ -40,7 +40,7 @@ pub enum CuisineType {
     Custom(String),
 }
 
-#[derive(Encode, Decode, EnumString, AsRefStr, Display, PartialEq, Clone)]
+#[derive(Encode, Decode, EnumString, AsRefStr, Display, PartialEq, Clone, Debug)]
 pub enum DietaryRestriction {
     Vegetarian,
     Vegan,
@@ -50,7 +50,7 @@ pub enum DietaryRestriction {
     LowCarb,
 }
 
-#[derive(Encode, Decode, EnumString, AsRefStr, Display, PartialEq, Clone)]
+#[derive(Encode, Decode, EnumString, AsRefStr, Display, PartialEq, Clone, Debug)]
 pub enum AccompanimentType {
     Rice,
     Pasta,
