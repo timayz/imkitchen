@@ -26,6 +26,7 @@ pub async fn serve(
     let evento_executor: evento::Sqlite = write_pool.clone().into();
     let user_command = imkitchen_user::Command(evento_executor.clone(), read_pool.clone());
     let contact_command = imkitchen_contact::Command(evento_executor.clone(), read_pool.clone());
+    let recipe_command = imkitchen_recipe::Command(evento_executor.clone(), read_pool.clone());
 
     // Start background notification worker
     tracing::info!("Starting evento subscriptions...");
@@ -45,6 +46,11 @@ pub async fn serve(
         .run(&evento_executor)
         .await?;
 
+    let sub_recipe_query = crate::query::subscribe_recipe()
+        .data(write_pool.clone())
+        .run(&evento_executor)
+        .await?;
+
     let sub_global_stat_query = crate::query::subscribe_global_stat()
         .data(write_pool.clone())
         .run(&evento_executor)
@@ -54,6 +60,7 @@ pub async fn serve(
         config,
         user_command,
         contact_command,
+        recipe_command,
         pool: read_pool.clone(),
     };
 
@@ -121,6 +128,7 @@ pub async fn serve(
         sub_global_stat_query.shutdown_and_wait(),
         sub_admin_user_query.shutdown_and_wait(),
         sub_contact_query.shutdown_and_wait(),
+        sub_recipe_query.shutdown_and_wait(),
     ])
     .await;
 

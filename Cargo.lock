@@ -1720,6 +1720,7 @@ dependencies = [
  "http-body-util",
  "imkitchen-contact",
  "imkitchen-db",
+ "imkitchen-recipe",
  "imkitchen-shared",
  "imkitchen-user",
  "jsonwebtoken",

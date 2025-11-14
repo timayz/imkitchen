@@ -80,7 +80,7 @@ fn up_statement() -> TableCreateStatement {
                 .big_integer()
                 .not_null(),
         )
-        .col(ColumnDef::new(RecipePjt::UpdatedAt).big_integer())
+        .col(ColumnDef::new(RecipePjt::UpdatedAt).big_integer().null())
         .to_owned()
 }
 

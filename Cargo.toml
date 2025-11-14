@@ -89,6 +89,7 @@ futures = { workspace = true }
 time = { workspace = true }
 imkitchen-shared = { path = "crates/shared", version = "0.9.4" }
 imkitchen-contact = { path = "crates/contact", version = "0.9.4" }
+imkitchen-recipe = { path = "crates/recipe", version = "0.9.4" }
 imkitchen-user = { path = "crates/user", version = "0.9.4" }
 imkitchen-db = { path = "crates/db", version = "0.9.4" }
 
