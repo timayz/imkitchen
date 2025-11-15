@@ -1731,8 +1731,10 @@ dependencies = [
  "sea-query",
  "sea-query-sqlx",
  "serde",
+ "serde_json",
  "serde_urlencoded",
  "sqlx",
+ "strum",
  "time",
  "tokio",
  "tower",
@@ -3416,6 +3418,7 @@ checksum = "30d190945ff6b2914ef0631c1933ef67ee142b15f00b72d40bf241147d24b522"
 dependencies = [
  "inherent",
  "sea-query-derive",
+ "serde_json",
 ]
 
 [[package]]
@@ -3439,6 +3442,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68873fa1776b4c25a26e7679f8ee22332978c721168ec1b0b32b6583d5a9381d"
 dependencies = [
  "sea-query",
+ "serde_json",
  "sqlx",
 ]
 

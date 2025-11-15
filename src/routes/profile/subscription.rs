@@ -14,7 +14,7 @@ pub struct SubscriptionTemplate {
     // pub error_message: Option<String>,
     pub current_path: String,
     pub profile_path: String,
-    pub is_admin: bool,
+    pub user: imkitchen_user::AuthUser,
 }
 
 pub async fn page(
@@ -25,7 +25,7 @@ pub async fn page(
         // error_message: None,
         current_path: "profile".to_owned(),
         profile_path: "subscription".to_owned(),
-        is_admin: user.is_admin(),
+        user,
     })
 }
 

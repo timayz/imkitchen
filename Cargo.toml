@@ -43,7 +43,7 @@ url = "2.5"
 minify-html = "0.18"
 ulid = "1.2"
 sea-query = { version = "1.0.0-rc.16", default-features = false, features = ["derive", "audit", "backend-sqlite"] }
-sea-query-sqlx = { version = "0.8.0-rc.9", features = ["runtime-tokio", "sqlx-sqlite"] }
+sea-query-sqlx = { version = "0.8.0-rc.9", features = ["runtime-tokio", "sqlx-sqlite", "with-json"] }
 async-trait = "0.1"
 futures = "0.3"
 time = "0.3"
@@ -72,6 +72,7 @@ askama = { workspace = true }
 sqlx = { workspace = true }
 evento = { workspace = true }
 serde = { workspace = true }
+serde_json = { workspace = true }
 bincode = { workspace = true }
 async-trait = { workspace = true }
 anyhow = { workspace = true }
@@ -87,6 +88,7 @@ minify-html = { workspace = true }
 jsonwebtoken = { workspace = true }
 futures = { workspace = true }
 time = { workspace = true }
+strum = { workspace = true }
 imkitchen-shared = { path = "crates/shared", version = "0.9.4" }
 imkitchen-contact = { path = "crates/contact", version = "0.9.4" }
 imkitchen-recipe = { path = "crates/recipe", version = "0.9.4" }

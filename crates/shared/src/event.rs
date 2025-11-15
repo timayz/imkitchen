@@ -2,7 +2,7 @@ use bincode::{Decode, Encode};
 use evento::EventDetails;
 use ulid::Ulid;
 
-#[derive(Encode, Decode)]
+#[derive(Encode, Decode, Clone)]
 pub struct Metadata {
     pub id: String,
     pub trigger_by: Option<String>,
@@ -45,8 +45,11 @@ impl Metadata {
         }
     }
 
-    pub fn trigger_by(&self) -> Option<String> {
-        self.trigger_as.to_owned().or(self.trigger_by.to_owned())
+    pub fn trigger_by(&self) -> crate::Result<String> {
+        match self.trigger_as.to_owned().or(self.trigger_by.to_owned()) {
+            Some(id) => Ok(id),
+            _ => crate::bail!("User not found in metadata"),
+        }
     }
 }
 

@@ -62,7 +62,7 @@ pub fn remove_cookie<'a>() -> Cookie<'a> {
     Cookie::from(AUTH_COOKIE_NAME)
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct AuthUser(pub imkitchen_user::AuthUser);
 
 impl FromRequestParts<crate::routes::AppState> for AuthUser {

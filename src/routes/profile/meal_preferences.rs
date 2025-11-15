@@ -21,7 +21,7 @@ pub struct MealPreferencesTemplate {
     pub household_size: u8,
     pub dietary_restrictions: HashSet<String>,
     pub cuisine_variety_weight: f32,
-    pub is_admin: bool,
+    pub user: imkitchen_user::AuthUser,
 }
 
 impl Default for MealPreferencesTemplate {
@@ -33,7 +33,7 @@ impl Default for MealPreferencesTemplate {
             household_size: 2,
             dietary_restrictions: HashSet::default(),
             cuisine_variety_weight: 0.7,
-            is_admin: false,
+            user: imkitchen_user::AuthUser::default(),
         }
     }
 }
@@ -63,7 +63,7 @@ pub async fn page(
             household_size: preferences.household_size,
             dietary_restrictions,
             cuisine_variety_weight: preferences.cuisine_variety_weight,
-            is_admin: user.is_admin(),
+            user,
             ..Default::default()
         })
         .into_response()

@@ -54,7 +54,13 @@ pub fn router(app_state: AppState) -> Router {
         .route("/reset-password", get(reset_password::page))
         .route("/calendar", get(calendar::page))
         .route("/community", get(community::page))
-        .route("/recipes", get(recipes::page))
+        .route("/recipes", get(recipes::index::page))
+        .route("/recipes/create", get(recipes::index::create))
+        .route(
+            "/recipes/create/status/{id}",
+            get(recipes::index::create_status),
+        )
+        .route("/recipes/edit/{id}", get(recipes::edit::page))
         .route("/logout", get(login::logout))
         .route(
             "/profile/account",

@@ -42,32 +42,45 @@ fn up_statement() -> TableCreateStatement {
             ColumnDef::new(RecipePjt::Description)
                 .string()
                 .not_null()
-                .string_len(2000),
+                .string_len(2000)
+                .default(""),
         )
-        .col(ColumnDef::new(RecipePjt::PrepTime).integer().not_null())
-        .col(ColumnDef::new(RecipePjt::CookTime).integer().not_null())
-        .col(ColumnDef::new(RecipePjt::Ingredients).text().not_null())
-        .col(ColumnDef::new(RecipePjt::Instructions).text().not_null())
+        .col(
+            ColumnDef::new(RecipePjt::PrepTime)
+                .integer()
+                .not_null()
+                .default(0),
+        )
+        .col(
+            ColumnDef::new(RecipePjt::CookTime)
+                .integer()
+                .not_null()
+                .default(0),
+        )
+        .col(ColumnDef::new(RecipePjt::Ingredients).blob().not_null())
+        .col(ColumnDef::new(RecipePjt::Instructions).blob().not_null())
         .col(
             ColumnDef::new(RecipePjt::DietaryRestrictions)
-                .text()
+                .json_binary()
                 .not_null(),
         )
         .col(
             ColumnDef::new(RecipePjt::AcceptAccompaniments)
                 .boolean()
-                .not_null(),
+                .not_null()
+                .default(false),
         )
         .col(
             ColumnDef::new(RecipePjt::PreferredAccompanimentTypes)
-                .text()
+                .json_binary()
                 .not_null(),
         )
         .col(
             ColumnDef::new(RecipePjt::AdvancePreparation)
                 .string()
                 .not_null()
-                .string_len(2000),
+                .string_len(2000)
+                .default(""),
         )
         .col(
             ColumnDef::new(RecipePjt::IsShared)
