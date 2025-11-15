@@ -5,7 +5,7 @@ use sqlx::SqlitePool;
 use validator::Validate;
 
 use crate::{
-    AccompanimentType, AdvancePreparationChanged, BasicInformationChanged, Created, CuisineType,
+    AccompanimentType, AdvancePrepChanged, BasicInformationChanged, Created, CuisineType,
     CuisineTypeChanged, DietaryRestriction, DietaryRestrictionsChanged, Ingredient,
     IngredientsChanged, Instruction, InstructionsChanged, MainCourseOptionsChanged, Recipe,
     RecipeType, RecipeTypeChanged,
@@ -25,10 +25,10 @@ pub struct UpdateInput {
     pub instructions: Vec<Instruction>,
     pub dietary_restrictions: Vec<DietaryRestriction>,
     pub cuisine_type: CuisineType,
-    pub accept_accompaniments: bool,
+    pub accepts_accompaniment: bool,
     pub preferred_accompaniment_types: Vec<AccompanimentType>,
     #[validate(length(min = 3, max = 2000))]
-    pub advance_preparation: String,
+    pub advance_prep: String,
 }
 
 #[derive(Clone)]
@@ -40,6 +40,13 @@ impl<E: Executor + Clone> Command<E> {
         id: impl Into<String>,
     ) -> Result<LoadResult<Recipe>, evento::ReadError> {
         evento::load(&self.0, id).await
+    }
+
+    pub async fn load_optional(
+        &self,
+        id: impl Into<String>,
+    ) -> Result<Option<LoadResult<Recipe>>, evento::ReadError> {
+        evento::load_optional(&self.0, id).await
     }
 
     pub async fn create(&self, metadata: Metadata) -> imkitchen_shared::Result<String> {
@@ -144,7 +151,7 @@ impl<E: Executor + Clone> Command<E> {
         }
 
         let mut hasher = Sha3_224::default();
-        hasher.update(input.accept_accompaniments.to_string());
+        hasher.update(input.accepts_accompaniment.to_string());
 
         for preferred in input.preferred_accompaniment_types.iter() {
             hasher.update(preferred.to_string());
@@ -154,19 +161,19 @@ impl<E: Executor + Clone> Command<E> {
         if recipe.item.main_option_hash != main_option_hash {
             has_data = true;
             builder = builder.data(&MainCourseOptionsChanged {
-                accept_accompaniments: input.accept_accompaniments,
+                accepts_accompaniment: input.accepts_accompaniment,
                 preferred_accompaniment_types: input.preferred_accompaniment_types,
             })?;
         }
 
         let mut hasher = Sha3_224::default();
-        hasher.update(&input.advance_preparation);
+        hasher.update(&input.advance_prep);
 
         let advance_prep_hash = hasher.finalize()[..].to_vec();
         if recipe.item.advance_prep_hash != advance_prep_hash {
             has_data = true;
-            builder = builder.data(&AdvancePreparationChanged {
-                description: input.advance_preparation,
+            builder = builder.data(&AdvancePrepChanged {
+                description: input.advance_prep,
             })?;
         }
         if !has_data {

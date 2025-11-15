@@ -3,13 +3,14 @@ use imkitchen_shared::Event;
 use sha3::{Digest, Sha3_224};
 
 use crate::{
-    AdvancePreparationChanged, BasicInformationChanged, CuisineType, CuisineTypeChanged, Deleted,
+    AdvancePrepChanged, BasicInformationChanged, Created, CuisineType, CuisineTypeChanged, Deleted,
     DietaryRestrictionsChanged, IngredientsChanged, InstructionsChanged, MadePrivate,
     MainCourseOptionsChanged, RecipeType, RecipeTypeChanged, SharedToCommunity,
 };
 
 #[derive(Default, Encode, Decode, Clone, Debug)]
 pub struct Recipe {
+    pub user_id: String,
     pub recipe_type: RecipeType,
     pub cuisine_type: CuisineType,
     pub basic_information_hash: Vec<u8>,
@@ -24,9 +25,11 @@ pub struct Recipe {
 
 #[evento::aggregator]
 impl Recipe {
-    // async fn handle_created(&mut self, event: Event<Created>) -> anyhow::Result<()> {
-    //     Ok(())
-    // }
+    async fn handle_created(&mut self, event: Event<Created>) -> anyhow::Result<()> {
+        self.user_id = event.metadata.trigger_by()?;
+
+        Ok(())
+    }
 
     async fn handle_recipe_type_changed(
         &mut self,
@@ -111,7 +114,7 @@ impl Recipe {
         event: Event<MainCourseOptionsChanged>,
     ) -> anyhow::Result<()> {
         let mut hasher = Sha3_224::default();
-        hasher.update(event.data.accept_accompaniments.to_string());
+        hasher.update(event.data.accepts_accompaniment.to_string());
 
         for preferred in event.data.preferred_accompaniment_types {
             hasher.update(preferred.to_string());
@@ -122,9 +125,9 @@ impl Recipe {
         Ok(())
     }
 
-    async fn handle_advance_preparation_changed(
+    async fn handle_advance_prep_changed(
         &mut self,
-        event: Event<AdvancePreparationChanged>,
+        event: Event<AdvancePrepChanged>,
     ) -> anyhow::Result<()> {
         let mut hasher = Sha3_224::default();
         hasher.update(event.data.description);

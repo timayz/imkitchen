@@ -1,5 +1,5 @@
 use imkitchen_recipe::{
-    AccompanimentType, AdvancePreparationChanged, BasicInformationChanged, CuisineType,
+    AccompanimentType, AdvancePrepChanged, BasicInformationChanged, CuisineType,
     CuisineTypeChanged, DietaryRestriction, DietaryRestrictionsChanged, Ingredient,
     IngredientsChanged, Instruction, InstructionsChanged, MainCourseOptionsChanged, RecipeType,
     RecipeTypeChanged, UpdateInput,
@@ -19,13 +19,13 @@ async fn test_update_no_fields() -> anyhow::Result<()> {
     let input = UpdateInput {
         name: "My first Recipe".to_owned(),
         description: "My first description".to_owned(),
-        advance_preparation: "My first advance_preparation".to_owned(),
+        advance_prep: "My first advance prep".to_owned(),
         dietary_restrictions: vec![
             DietaryRestriction::DairyFree,
             DietaryRestriction::GlutenFree,
         ],
         preferred_accompaniment_types: vec![AccompanimentType::Fries],
-        accept_accompaniments: false,
+        accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
             unit: 1,
@@ -73,13 +73,13 @@ async fn test_update_only_recipe_type() -> anyhow::Result<()> {
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
         description: "My first description".to_owned(),
-        advance_preparation: "My first advance_preparation".to_owned(),
+        advance_prep: "My first advance prep".to_owned(),
         dietary_restrictions: vec![
             DietaryRestriction::DairyFree,
             DietaryRestriction::GlutenFree,
         ],
         preferred_accompaniment_types: vec![AccompanimentType::Fries],
-        accept_accompaniments: false,
+        accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
             unit: 1,
@@ -126,13 +126,13 @@ async fn test_update_only_cuisine_type() -> anyhow::Result<()> {
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
         description: "My first description".to_owned(),
-        advance_preparation: "My first advance_preparation".to_owned(),
+        advance_prep: "My first advance prep".to_owned(),
         dietary_restrictions: vec![
             DietaryRestriction::DairyFree,
             DietaryRestriction::GlutenFree,
         ],
         preferred_accompaniment_types: vec![AccompanimentType::Fries],
-        accept_accompaniments: false,
+        accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
             unit: 1,
@@ -179,13 +179,13 @@ async fn test_update_only_name() -> anyhow::Result<()> {
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
         description: "My first description".to_owned(),
-        advance_preparation: "My first advance_preparation".to_owned(),
+        advance_prep: "My first advance prep".to_owned(),
         dietary_restrictions: vec![
             DietaryRestriction::DairyFree,
             DietaryRestriction::GlutenFree,
         ],
         preferred_accompaniment_types: vec![AccompanimentType::Fries],
-        accept_accompaniments: false,
+        accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
             unit: 1,
@@ -238,13 +238,13 @@ async fn test_update_only_description() -> anyhow::Result<()> {
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
         description: "My first description".to_owned(),
-        advance_preparation: "My first advance_preparation".to_owned(),
+        advance_prep: "My first advance prep".to_owned(),
         dietary_restrictions: vec![
             DietaryRestriction::DairyFree,
             DietaryRestriction::GlutenFree,
         ],
         preferred_accompaniment_types: vec![AccompanimentType::Fries],
-        accept_accompaniments: false,
+        accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
             unit: 1,
@@ -297,13 +297,13 @@ async fn test_update_only_prep_time() -> anyhow::Result<()> {
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
         description: "My first description".to_owned(),
-        advance_preparation: "My first advance_preparation".to_owned(),
+        advance_prep: "My first advance prep".to_owned(),
         dietary_restrictions: vec![
             DietaryRestriction::DairyFree,
             DietaryRestriction::GlutenFree,
         ],
         preferred_accompaniment_types: vec![AccompanimentType::Fries],
-        accept_accompaniments: false,
+        accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
             unit: 1,
@@ -356,13 +356,13 @@ async fn test_update_only_cook_time() -> anyhow::Result<()> {
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
         description: "My first description".to_owned(),
-        advance_preparation: "My first advance_preparation".to_owned(),
+        advance_prep: "My first advance prep".to_owned(),
         dietary_restrictions: vec![
             DietaryRestriction::DairyFree,
             DietaryRestriction::GlutenFree,
         ],
         preferred_accompaniment_types: vec![AccompanimentType::Fries],
-        accept_accompaniments: false,
+        accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
             unit: 1,
@@ -415,13 +415,13 @@ async fn test_update_only_ingredients() -> anyhow::Result<()> {
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
         description: "My first description".to_owned(),
-        advance_preparation: "My first advance_preparation".to_owned(),
+        advance_prep: "My first advance prep".to_owned(),
         dietary_restrictions: vec![
             DietaryRestriction::DairyFree,
             DietaryRestriction::GlutenFree,
         ],
         preferred_accompaniment_types: vec![AccompanimentType::Fries],
-        accept_accompaniments: false,
+        accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
             unit: 1,
@@ -484,13 +484,13 @@ async fn test_update_only_ingredients_empty() -> anyhow::Result<()> {
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
         description: "My first description".to_owned(),
-        advance_preparation: "My first advance_preparation".to_owned(),
+        advance_prep: "My first advance prep".to_owned(),
         dietary_restrictions: vec![
             DietaryRestriction::DairyFree,
             DietaryRestriction::GlutenFree,
         ],
         preferred_accompaniment_types: vec![AccompanimentType::Fries],
-        accept_accompaniments: false,
+        accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
             unit: 1,
@@ -538,13 +538,13 @@ async fn test_update_only_instructions() -> anyhow::Result<()> {
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
         description: "My first description".to_owned(),
-        advance_preparation: "My first advance_preparation".to_owned(),
+        advance_prep: "My first advance prep".to_owned(),
         dietary_restrictions: vec![
             DietaryRestriction::DairyFree,
             DietaryRestriction::GlutenFree,
         ],
         preferred_accompaniment_types: vec![AccompanimentType::Fries],
-        accept_accompaniments: false,
+        accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
             unit: 1,
@@ -610,13 +610,13 @@ async fn test_update_only_dietary_restrictions() -> anyhow::Result<()> {
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
         description: "My first description".to_owned(),
-        advance_preparation: "My first advance_preparation".to_owned(),
+        advance_prep: "My first advance prep".to_owned(),
         dietary_restrictions: vec![
             DietaryRestriction::DairyFree,
             DietaryRestriction::GlutenFree,
         ],
         preferred_accompaniment_types: vec![AccompanimentType::Fries],
-        accept_accompaniments: false,
+        accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
             unit: 1,
@@ -672,7 +672,7 @@ async fn test_update_only_dietary_restrictions() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn test_update_only_accept_accompaniments() -> anyhow::Result<()> {
+async fn test_update_only_accepts_accompaniment() -> anyhow::Result<()> {
     let state = helpers::setup_test_state().await?;
     let command = imkitchen_recipe::Command(state.evento.clone(), state.pool.clone());
     let john = helpers::create_user(&state, "john").await?;
@@ -682,13 +682,13 @@ async fn test_update_only_accept_accompaniments() -> anyhow::Result<()> {
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
         description: "My first description".to_owned(),
-        advance_preparation: "My first advance_preparation".to_owned(),
+        advance_prep: "My first advance prep".to_owned(),
         dietary_restrictions: vec![
             DietaryRestriction::DairyFree,
             DietaryRestriction::GlutenFree,
         ],
         preferred_accompaniment_types: vec![AccompanimentType::Fries],
-        accept_accompaniments: false,
+        accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
             unit: 1,
@@ -709,7 +709,7 @@ async fn test_update_only_accept_accompaniments() -> anyhow::Result<()> {
         .update(input.clone(), Metadata::by(john.to_owned()))
         .await?;
 
-    input.accept_accompaniments = true;
+    input.accepts_accompaniment = true;
 
     command
         .update(input.clone(), Metadata::by(john.to_owned()))
@@ -722,7 +722,7 @@ async fn test_update_only_accept_accompaniments() -> anyhow::Result<()> {
 
     assert_eq!(loaded.event.version, 8);
     let event_data = event.unwrap();
-    assert!(event_data.data.accept_accompaniments);
+    assert!(event_data.data.accepts_accompaniment);
     assert_eq!(event_data.data.preferred_accompaniment_types.len(), 1);
     assert_eq!(
         event_data.data.preferred_accompaniment_types[0],
@@ -743,13 +743,13 @@ async fn test_update_only_preferred_accompaniment_types() -> anyhow::Result<()> 
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
         description: "My first description".to_owned(),
-        advance_preparation: "My first advance_preparation".to_owned(),
+        advance_prep: "My first advance prep".to_owned(),
         dietary_restrictions: vec![
             DietaryRestriction::DairyFree,
             DietaryRestriction::GlutenFree,
         ],
         preferred_accompaniment_types: vec![AccompanimentType::Fries],
-        accept_accompaniments: false,
+        accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
             unit: 1,
@@ -783,7 +783,7 @@ async fn test_update_only_preferred_accompaniment_types() -> anyhow::Result<()> 
 
     assert_eq!(loaded.event.version, 8);
     let event_data = event.unwrap();
-    assert!(!event_data.data.accept_accompaniments);
+    assert!(!event_data.data.accepts_accompaniment);
     assert_eq!(event_data.data.preferred_accompaniment_types.len(), 2);
     assert_eq!(
         event_data.data.preferred_accompaniment_types[0],
@@ -798,7 +798,7 @@ async fn test_update_only_preferred_accompaniment_types() -> anyhow::Result<()> 
 }
 
 #[tokio::test]
-async fn test_update_only_advance_preparation() -> anyhow::Result<()> {
+async fn test_update_only_advance_prep() -> anyhow::Result<()> {
     let state = helpers::setup_test_state().await?;
     let command = imkitchen_recipe::Command(state.evento.clone(), state.pool.clone());
     let john = helpers::create_user(&state, "john").await?;
@@ -808,13 +808,13 @@ async fn test_update_only_advance_preparation() -> anyhow::Result<()> {
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
         description: "My first description".to_owned(),
-        advance_preparation: "My first advance_preparation".to_owned(),
+        advance_prep: "My first advance prep".to_owned(),
         dietary_restrictions: vec![
             DietaryRestriction::DairyFree,
             DietaryRestriction::GlutenFree,
         ],
         preferred_accompaniment_types: vec![AccompanimentType::Fries],
-        accept_accompaniments: false,
+        accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
             unit: 1,
@@ -835,16 +835,14 @@ async fn test_update_only_advance_preparation() -> anyhow::Result<()> {
         .update(input.clone(), Metadata::by(john.to_owned()))
         .await?;
 
-    input.advance_preparation = "Updated advance preparation instructions".to_owned();
+    input.advance_prep = "Updated advance preparation instructions".to_owned();
 
     command
         .update(input.clone(), Metadata::by(john.to_owned()))
         .await?;
 
     let loaded = command.load(&recipe).await?;
-    let event = loaded
-        .event
-        .to_details::<AdvancePreparationChanged, Metadata>()?;
+    let event = loaded.event.to_details::<AdvancePrepChanged, Metadata>()?;
 
     assert_eq!(loaded.event.version, 8);
     let event_data = event.unwrap();

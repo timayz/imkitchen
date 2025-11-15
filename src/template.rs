@@ -9,6 +9,8 @@ use std::{collections::HashMap, convert::Infallible};
 use crate::language::UserLanguage;
 
 pub const SERVER_ERROR_MESSAGE: &str = "Something went wrong, please retry later";
+pub const NOT_FOUND: &str = "Not found";
+pub const FORBIDDEN: &str = "Forbidden";
 
 pub(crate) mod filters {
     pub fn t(value: &str, values: &dyn askama::Values) -> askama::Result<String> {

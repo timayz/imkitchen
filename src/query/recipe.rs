@@ -8,7 +8,7 @@ use evento::{
 };
 use imkitchen_db::table::RecipePjt;
 use imkitchen_recipe::{
-    AccompanimentType, AdvancePreparationChanged, BasicInformationChanged, Created, CuisineType,
+    AccompanimentType, AdvancePrepChanged, BasicInformationChanged, Created, CuisineType,
     CuisineTypeChanged, Deleted, DietaryRestriction, DietaryRestrictionsChanged, Ingredient,
     IngredientsChanged, Instruction, InstructionsChanged, MadePrivate, MainCourseOptionsChanged,
     Recipe as RecipeAggregator, RecipeType, RecipeTypeChanged, SharedToCommunity,
@@ -34,14 +34,14 @@ pub struct RecipeDetail {
     pub cuisine_type: CuisineType,
     pub name: String,
     pub description: String,
-    pub prep_time: i32,
-    pub cook_time: i32,
+    pub prep_time: u16,
+    pub cook_time: u16,
     pub ingredients: Vec<Ingredient>,
     pub instructions: Vec<Instruction>,
     pub dietary_restrictions: Vec<DietaryRestriction>,
-    pub accept_accompaniments: bool,
+    pub accepts_accompaniment: bool,
     pub preferred_accompaniment_types: Vec<AccompanimentType>,
-    pub advance_preparation: String,
+    pub advance_prep: String,
     pub is_shared: bool,
     pub created_at: u64,
     pub updated_at: Option<u64>,
@@ -54,6 +54,7 @@ where
     String: sqlx::Type<R::Database> + for<'r> sqlx::Decode<'r, R::Database>,
     serde_json::Value: sqlx::Type<R::Database> + for<'r> sqlx::Decode<'r, R::Database>,
     i64: sqlx::Type<R::Database> + for<'r> sqlx::Decode<'r, R::Database>,
+    u16: sqlx::Type<R::Database> + for<'r> sqlx::Decode<'r, R::Database>,
     bool: sqlx::Type<R::Database> + for<'r> sqlx::Decode<'r, R::Database>,
     for<'r> &'r str: sqlx::Type<R::Database> + sqlx::Decode<'r, R::Database>,
     for<'r> &'r str: sqlx::ColumnIndex<R>,
@@ -116,9 +117,9 @@ where
             ingredients,
             instructions,
             dietary_restrictions,
-            accept_accompaniments: row.try_get("accept_accompaniments")?,
+            accepts_accompaniment: row.try_get("accepts_accompaniment")?,
             preferred_accompaniment_types,
-            advance_preparation: row.try_get("advance_preparation")?,
+            advance_prep: row.try_get("advance_prep")?,
             is_shared: row.try_get("is_shared")?,
             created_at: created_at as u64,
             updated_at: updated_at.map(|v| v as u64),
@@ -136,7 +137,7 @@ pub struct Recipe {
     pub prep_time: i32,
     pub cook_time: i32,
     pub dietary_restrictions: String,
-    pub accept_accompaniments: bool,
+    pub accepts_accompaniment: bool,
     pub is_shared: bool,
     pub created_at: i64,
 }
@@ -197,7 +198,7 @@ pub async fn query_recipes(
             RecipePjt::PrepTime,
             RecipePjt::CookTime,
             RecipePjt::DietaryRestrictions,
-            RecipePjt::AcceptAccompaniments,
+            RecipePjt::AcceptsAccompaniment,
             RecipePjt::IsShared,
             RecipePjt::CreatedAt,
         ])
@@ -246,7 +247,7 @@ pub async fn query_recipe_by_id(
             RecipePjt::PrepTime,
             RecipePjt::CookTime,
             RecipePjt::DietaryRestrictions,
-            RecipePjt::AcceptAccompaniments,
+            RecipePjt::AcceptsAccompaniment,
             RecipePjt::IsShared,
             RecipePjt::CreatedAt,
         ])
@@ -279,9 +280,9 @@ pub async fn query_recipe_detail_by_id(
             RecipePjt::Ingredients,
             RecipePjt::Instructions,
             RecipePjt::DietaryRestrictions,
-            RecipePjt::AcceptAccompaniments,
+            RecipePjt::AcceptsAccompaniment,
             RecipePjt::PreferredAccompanimentTypes,
-            RecipePjt::AdvancePreparation,
+            RecipePjt::AdvancePrep,
             RecipePjt::IsShared,
             RecipePjt::CreatedAt,
             RecipePjt::UpdatedAt,
@@ -308,7 +309,7 @@ pub fn subscribe_recipe<E: Executor + Clone>() -> SubscribeBuilder<E> {
         .handler(handle_dietary_restrictions_changed())
         .handler(handle_cuisine_type_changed())
         .handler(handle_main_course_options_changed())
-        .handler(handle_advance_preparation_changed())
+        .handler(handle_advance_prep_changed())
         .handler(handle_shared_to_community())
         .handler(handle_made_private())
         .handler(handle_deleted())
@@ -541,8 +542,8 @@ async fn handle_main_course_options_changed<E: Executor>(
         .table(RecipePjt::Table)
         .values([
             (
-                RecipePjt::AcceptAccompaniments,
-                event.data.accept_accompaniments.into(),
+                RecipePjt::AcceptsAccompaniment,
+                event.data.accepts_accompaniment.into(),
             ),
             (
                 RecipePjt::PreferredAccompanimentTypes,
@@ -560,9 +561,9 @@ async fn handle_main_course_options_changed<E: Executor>(
 }
 
 #[evento::handler(RecipeAggregator)]
-async fn handle_advance_preparation_changed<E: Executor>(
+async fn handle_advance_prep_changed<E: Executor>(
     context: &evento::Context<'_, E>,
-    event: Event<AdvancePreparationChanged>,
+    event: Event<AdvancePrepChanged>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
     let timestamp = event.timestamp;
@@ -572,7 +573,7 @@ async fn handle_advance_preparation_changed<E: Executor>(
     let statment = Query::update()
         .table(RecipePjt::Table)
         .values([
-            (RecipePjt::AdvancePreparation, description.into()),
+            (RecipePjt::AdvancePrep, description.into()),
             (RecipePjt::UpdatedAt, timestamp.into()),
         ])
         .and_where(Expr::col(RecipePjt::Id).eq(aggregator_id))

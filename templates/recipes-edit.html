@@ -10,7 +10,7 @@
   </div>
 
   <!-- Form -->
-  <form action="/recipes/edit/{{ recipe.id }}" method="post"
+  <form action="/recipes/edit/{{ id }}" method="post" autocomplete="off"
     ts-req="" ts-req-selector="form"
     class="bg-white rounded-lg shadow-lg p-8">
     <!-- Recipe Type -->
@@ -19,7 +19,7 @@
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <label
           class="flex items-center justify-center p-4 border-2 border-gray-300 rounded-lg hover:border-blue-500 cursor-pointer has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50">
-          <input type="radio" name="recipe_type" value="appetizer" class="mr-3"{% if recipe.recipe_type == RecipeType::Appetizer %} checked{% endif %} required />
+          <input type="radio" name="recipe_type" value="{{ RecipeType::Appetizer }}" class="mr-3 appearance-none"{% if form.recipe_type == RecipeType::Appetizer %} checked{% endif %} required />
           <div class="text-center">
             <div class="text-3xl mb-1">🥗</div>
             <div class="font-semibold">{{ "Appetizer"|t }}</div>
@@ -27,7 +27,7 @@
         </label>
         <label
           class="flex items-center justify-center p-4 border-2 border-gray-300 rounded-lg hover:border-orange-500 cursor-pointer has-[:checked]:border-orange-500 has-[:checked]:bg-orange-50">
-          <input type="radio" name="recipe_type" value="main_course" class="mr-3"{% if recipe.recipe_type == RecipeType::MainCourse %} checked{% endif %} required />
+          <input type="radio" name="recipe_type" value="{{ RecipeType::MainCourse }}" class="mr-3 appearance-none"{% if form.recipe_type == RecipeType::MainCourse %} checked{% endif %} required />
           <div class="text-center">
             <div class="text-3xl mb-1">🍛</div>
             <div class="font-semibold">{{ "Main Course"|t }}</div>
@@ -35,7 +35,7 @@
         </label>
         <label
           class="flex items-center justify-center p-4 border-2 border-gray-300 rounded-lg hover:border-pink-500 cursor-pointer has-[:checked]:border-pink-500 has-[:checked]:bg-pink-50">
-          <input type="radio" name="recipe_type" value="dessert" class="mr-3"{% if recipe.recipe_type == RecipeType::Dessert %} checked{% endif %} required />
+          <input type="radio" name="recipe_type" value="{{ RecipeType::Dessert }}" class="mr-3 appearance-none"{% if form.recipe_type == RecipeType::Dessert %} checked{% endif %} required />
           <div class="text-center">
             <div class="text-3xl mb-1">🍰</div>
             <div class="font-semibold">{{ "Dessert"|t }}</div>
@@ -43,7 +43,7 @@
         </label>
         <label
           class="flex items-center justify-center p-4 border-2 border-gray-300 rounded-lg hover:border-purple-500 cursor-pointer has-[:checked]:border-purple-500 has-[:checked]:bg-purple-50">
-          <input type="radio" name="recipe_type" value="accompaniment" class="mr-3"{% if recipe.recipe_type == RecipeType::Accompaniment %} checked{% endif %} required />
+          <input type="radio" name="recipe_type" value="{{ RecipeType::Accompaniment }}" class="mr-3 appearance-none"{% if form.recipe_type == RecipeType::Accompaniment %} checked{% endif %} required />
           <div class="text-center">
             <div class="text-3xl mb-1">🍚</div>
             <div class="font-semibold">{{ "Accompaniment"|t }}</div>
@@ -58,7 +58,7 @@
 
       <div class="mb-4">
         <label for="name" class="block text-sm font-semibold text-gray-700 mb-2">{{ "Recipe Name"|t }} *</label>
-        <input type="text" id="name" name="name" value="{{ recipe.name }}" placeholder="{{ "e.g., Thai Red Curry with Chicken"|t }}"
+        <input type="text" id="name" name="name" value="{{ form.name }}" placeholder="{{ "e.g., Thai Red Curry with Chicken"|t }}"
           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
           required />
       </div>
@@ -67,21 +67,21 @@
         <label for="description" class="block text-sm font-semibold text-gray-700 mb-2">{{ "Description"|t }} *</label>
         <textarea id="description" name="description" rows="3" placeholder="{{ "Brief description of the dish"|t }}"
           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-          required>{{ recipe.description }}</textarea>
+          required>{{ form.description }}</textarea>
       </div>
 
       <div class="grid md:grid-cols-2 gap-4">
         <div>
           <label for="prep_time" class="block text-sm font-semibold text-gray-700 mb-2">{{ "Prep Time (minutes)"|t }}
             *</label>
-          <input type="number" id="prep_time" name="prep_time" min="0" value={{ recipe.prep_time }} placeholder="30"
+          <input type="number" id="prep_time" name="prep_time" min="0" value={{ form.prep_time }} placeholder="30"
             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
             required />
         </div>
         <div>
           <label for="cook_time" class="block text-sm font-semibold text-gray-700 mb-2">{{ "Cook Time (minutes)"|t }}
             *</label>
-          <input type="number" id="cook_time" name="cook_time" min="0" value="{{ recipe.cook_time }}" placeholder="45"
+          <input type="number" id="cook_time" name="cook_time" min="0" value="{{ form.cook_time }}" placeholder="45"
             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
             required />
         </div>
@@ -93,18 +93,9 @@
       <h2 class="text-xl font-bold mb-4">{{ "Ingredients"|t }}</h2>
       <div class="space-y-3">
         <div class="flex gap-3">
-          <input type="text" placeholder="2 cups" class="w-32 px-4 py-2 border border-gray-300 rounded-lg" />
+          <input type="number" placeholder="2" class="w-24 px-4 py-2 border border-gray-300 rounded-lg" />
+          <input type="text" placeholder="cups" class="w-32 px-4 py-2 border border-gray-300 rounded-lg" />
           <input type="text" placeholder="Jasmine rice" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg" />
-          <button type="button" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">✕</button>
-        </div>
-        <div class="flex gap-3">
-          <input type="text" placeholder="400ml" class="w-32 px-4 py-2 border border-gray-300 rounded-lg" />
-          <input type="text" placeholder="Coconut milk" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg" />
-          <button type="button" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">✕</button>
-        </div>
-        <div class="flex gap-3">
-          <input type="text" placeholder="500g" class="w-32 px-4 py-2 border border-gray-300 rounded-lg" />
-          <input type="text" placeholder="Chicken breast" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg" />
           <button type="button" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">✕</button>
         </div>
       </div>
@@ -124,12 +115,6 @@
             class="flex-1 px-4 py-2 border border-gray-300 rounded-lg"></textarea>
           <button type="button" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">✕</button>
         </div>
-        <div class="flex gap-3">
-          <span class="px-3 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg">2</span>
-          <textarea rows="2" placeholder="{{ "Second step..."|t }}"
-            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg"></textarea>
-          <button type="button" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">✕</button>
-        </div>
       </div>
       <button type="button"
         class="mt-3 px-4 py-2 bg-green-100 text-green-700 font-semibold rounded-lg hover:bg-green-200">
@@ -144,61 +129,25 @@
       <div class="mb-4">
         <label class="block text-sm font-semibold text-gray-700 mb-3">{{ "Dietary Restrictions"|t }}</label>
         <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {% for variant in DietaryRestriction::VARIANTS %}
           <label class="flex items-center">
-            <input type="checkbox" name="vegetarian"
+            <input type="checkbox" name="dietary_restrictions" value="{{ variant }}"{% if variant.exists_in(form.dietary_restrictions) %}checked{% endif %}
               class="rounded border-gray-300 text-green-600 focus:ring-green-500" />
-            <span class="ml-2">{{ "Vegetarian"|t }}</span>
+            <span class="ml-2">{{ variant.to_string().as_str()|t }}</span>
           </label>
-          <label class="flex items-center">
-            <input type="checkbox" name="vegan" class="rounded border-gray-300 text-green-600 focus:ring-green-500" />
-            <span class="ml-2">{{ "Vegan"|t }}</span>
-          </label>
-          <label class="flex items-center">
-            <input type="checkbox" name="gluten-free"
-              class="rounded border-gray-300 text-green-600 focus:ring-green-500" />
-            <span class="ml-2">{{ "Gluten-Free"|t }}</span>
-          </label>
-          <label class="flex items-center">
-            <input type="checkbox" name="dairy-free"
-              class="rounded border-gray-300 text-green-600 focus:ring-green-500" />
-            <span class="ml-2">{{ "Dairy-Free"|t }}</span>
-          </label>
-          <label class="flex items-center">
-            <input type="checkbox" name="nut-free"
-              class="rounded border-gray-300 text-green-600 focus:ring-green-500" />
-            <span class="ml-2">{{ "Nut-Free"|t }}</span>
-          </label>
-          <label class="flex items-center">
-            <input type="checkbox" name="low-carb"
-              class="rounded border-gray-300 text-green-600 focus:ring-green-500" />
-            <span class="ml-2">{{ "Low-Carb"|t }}</span>
-          </label>
+          {% endfor %}
         </div>
       </div>
 
       <div class="mb-4">
         <label for="cuisine" class="block text-sm font-semibold text-gray-700 mb-2">{{ "Cuisine Type"|t }} *</label>
-        <select id="cuisine" name="cuisine"
+        <select id="cuisine" name="cuisine_type"
           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
           required>
-          <option value="">{{ "Select cuisine..."|t }}</option>
-          <option value="italian">{{ "Italian"|t }}</option>
-          <option value="thai" selected>{{ "Thai"|t }}</option>
-          <option value="chinese">{{ "Chinese"|t }}</option>
-          <option value="japanese">{{ "Japanese"|t }}</option>
-          <option value="mexican">{{ "Mexican"|t }}</option>
-          <option value="indian">{{ "Indian"|t }}</option>
-          <option value="french">{{ "French"|t }}</option>
-          <option value="american">{{ "American"|t }}</option>
-          <option value="mediterranean">{{ "Mediterranean"|t }}</option>
-          <option value="custom">{{ "Custom (specify below)"|t }}</option>
+          {% for variant in CuisineType::VARIANTS %}
+          <option{% if &form.cuisine_type == variant %} selected{% endif %} value="{{ variant }}">{{ variant.to_string().as_str()|t }}</option>
+          {% endfor %}
         </select>
-      </div>
-
-      <div class="mb-4">
-        <label for="custom_cuisine" class="block text-sm font-semibold text-gray-700 mb-2">{{ "Custom Cuisine (if selected above)"|t }}</label>
-        <input type="text" id="custom_cuisine" name="custom_cuisine" placeholder="{{ "e.g., Korean, Vietnamese"|t }}"
-          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" />
       </div>
     </div>
 
@@ -208,7 +157,7 @@
 
       <div class="mb-4">
         <label class="flex items-center">
-          <input type="checkbox" name="accepts_accompaniment"
+          <input type="checkbox" name="accepts_accompaniment"{% if form.accepts_accompaniment == "on" %} checked{% endif %}
             class="rounded border-gray-300 text-orange-600 focus:ring-orange-500" />
           <span class="ml-2 font-semibold">{{ "This main course accepts accompaniments"|t }}</span>
         </label>
@@ -218,36 +167,13 @@
       <div class="mb-4">
         <label class="block text-sm font-semibold text-gray-700 mb-3">{{ "Preferred Accompaniment Types (if applicable)"|t }}</label>
         <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {% for variant in AccompanimentType::VARIANTS %}
           <label class="flex items-center">
-            <input type="checkbox" name="acc_rice"
+            <input type="checkbox" name="preferred_accompaniment_types" value="{{ variant }}"{% if variant.exists_in(form.preferred_accompaniment_types) %} checked{% endif %}
               class="rounded border-gray-300 text-orange-600 focus:ring-orange-500" />
-            <span class="ml-2">{{ "Rice"|t }}</span>
+            <span class="ml-2">{{ variant.to_string().as_str()|t }}</span>
           </label>
-          <label class="flex items-center">
-            <input type="checkbox" name="acc_pasta"
-              class="rounded border-gray-300 text-orange-600 focus:ring-orange-500" />
-            <span class="ml-2">{{ "Pasta"|t }}</span>
-          </label>
-          <label class="flex items-center">
-            <input type="checkbox" name="acc_bread"
-              class="rounded border-gray-300 text-orange-600 focus:ring-orange-500" />
-            <span class="ml-2">{{ "Bread"|t }}</span>
-          </label>
-          <label class="flex items-center">
-            <input type="checkbox" name="acc_fries"
-              class="rounded border-gray-300 text-orange-600 focus:ring-orange-500" />
-            <span class="ml-2">{{ "Fries"|t }}</span>
-          </label>
-          <label class="flex items-center">
-            <input type="checkbox" name="acc_salad"
-              class="rounded border-gray-300 text-orange-600 focus:ring-orange-500" />
-            <span class="ml-2">{{ "Salad"|t }}</span>
-          </label>
-          <label class="flex items-center">
-            <input type="checkbox" name="acc_vegetables"
-              class="rounded border-gray-300 text-orange-600 focus:ring-orange-500" />
-            <span class="ml-2">{{ "Vegetables"|t }}</span>
-          </label>
+          {% endfor %}
         </div>
       </div>
     </div>
@@ -258,12 +184,15 @@
       <div class="mb-4">
         <label for="advance_prep" class="block text-sm font-semibold text-gray-700 mb-2">{{ "Advance Prep Instructions (optional)"|t }}</label>
         <textarea id="advance_prep" name="advance_prep" rows="3" placeholder="{{ "e.g., Marinate chicken overnight, or prepare dough 2 hours before cooking"|t }}"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
-          {{ recipe.advance_preparation }}
-        </textarea>
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">{{ form.advance_prep }}</textarea>
         <p class="text-sm text-gray-500 mt-1">{{ "If specified, users will receive morning reminders (8 AM) to prepare"|t }}</p>
       </div>
     </div>
+    {% if let Some(error_message) = error_message %}
+    <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+        <div class="text-sm text-red-700 mt-1">{{ error_message|t }}.</div>
+    </div>
+    {% endif %}
 
     <!-- Submit -->
     <div class="flex flex-col md:flex-row gap-4">

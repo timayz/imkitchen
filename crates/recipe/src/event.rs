@@ -1,8 +1,11 @@
 use bincode::{Decode, Encode};
 use evento::AggregatorName;
-use strum::{AsRefStr, Display, EnumString};
+use serde::Deserialize;
+use strum::{Display, EnumString, VariantArray};
 
-#[derive(Encode, Decode, EnumString, AsRefStr, Display, Default, Clone, Debug, PartialEq)]
+#[derive(
+    Encode, Decode, EnumString, Display, VariantArray, Default, Clone, Debug, PartialEq, Deserialize,
+)]
 pub enum RecipeType {
     Appetizer,
     #[default]
@@ -11,36 +14,39 @@ pub enum RecipeType {
     Accompaniment,
 }
 
-#[derive(Encode, Decode, Clone)]
+#[derive(Encode, Decode, Clone, Deserialize)]
 pub struct Ingredient {
     pub name: String,
     pub unit: u16,
     pub unit_type: String,
 }
 
-#[derive(Encode, Decode, Clone)]
+#[derive(Encode, Decode, Clone, Deserialize)]
 pub struct Instruction {
     pub description: String,
     pub time_before_next: u16,
 }
 
-#[derive(Encode, Decode, EnumString, AsRefStr, Display, Clone, Debug, Default, PartialEq)]
+#[derive(
+    Encode, Decode, EnumString, VariantArray, Display, Clone, Debug, Default, PartialEq, Deserialize,
+)]
 pub enum CuisineType {
-    Italian,
-    Thai,
-    Chinese,
-    Japanese,
-    Mexican,
-    Indian,
-    French,
     American,
-    Mediterranean,
     #[default]
     Caribbean,
-    Custom(String),
+    Chinese,
+    Italian,
+    French,
+    Indian,
+    Japanese,
+    Mediterranean,
+    Mexican,
+    Thai,
 }
 
-#[derive(Encode, Decode, EnumString, AsRefStr, Display, PartialEq, Clone, Debug)]
+#[derive(
+    Encode, Decode, EnumString, VariantArray, Display, PartialEq, Clone, Debug, Deserialize,
+)]
 pub enum DietaryRestriction {
     Vegetarian,
     Vegan,
@@ -50,7 +56,18 @@ pub enum DietaryRestriction {
     LowCarb,
 }
 
-#[derive(Encode, Decode, EnumString, AsRefStr, Display, PartialEq, Clone, Debug)]
+impl DietaryRestriction {
+    pub fn exists_in<'a>(
+        &self,
+        iterator: impl IntoIterator<Item = &'a DietaryRestriction>,
+    ) -> bool {
+        iterator.into_iter().any(|d| d == self)
+    }
+}
+
+#[derive(
+    Encode, Decode, EnumString, Display, VariantArray, PartialEq, Clone, Debug, Deserialize,
+)]
 pub enum AccompanimentType {
     Rice,
     Pasta,
@@ -58,6 +75,12 @@ pub enum AccompanimentType {
     Fries,
     Salad,
     Vegetables,
+}
+
+impl AccompanimentType {
+    pub fn exists_in<'a>(&self, iterator: impl IntoIterator<Item = &'a AccompanimentType>) -> bool {
+        iterator.into_iter().any(|d| d == self)
+    }
 }
 
 #[derive(AggregatorName, Encode, Decode)]
@@ -100,12 +123,12 @@ pub struct CuisineTypeChanged {
 
 #[derive(AggregatorName, Encode, Decode)]
 pub struct MainCourseOptionsChanged {
-    pub accept_accompaniments: bool,
+    pub accepts_accompaniment: bool,
     pub preferred_accompaniment_types: Vec<AccompanimentType>,
 }
 
 #[derive(AggregatorName, Encode, Decode)]
-pub struct AdvancePreparationChanged {
+pub struct AdvancePrepChanged {
     pub description: String,
 }
 

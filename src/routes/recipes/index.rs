@@ -5,6 +5,7 @@ use axum::{
 };
 use imkitchen_recipe::{CuisineType, RecipeType};
 use imkitchen_shared::Metadata;
+use strum::VariantArray;
 
 use crate::{
     auth::AuthUser,

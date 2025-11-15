@@ -119,13 +119,13 @@ pub async fn create_recipes(
             id: id.to_owned(),
             name,
             description: "My first description".to_owned(),
-            advance_preparation: "My first advance_preparation".to_owned(),
+            advance_prep: "My first advance prep".to_owned(),
             dietary_restrictions: vec![
                 DietaryRestriction::DairyFree,
                 DietaryRestriction::GlutenFree,
             ],
             preferred_accompaniment_types: vec![AccompanimentType::Fries],
-            accept_accompaniments: false,
+            accepts_accompaniment: false,
             ingredients: vec![Ingredient {
                 name: "ingredient 1".to_owned(),
                 unit: 1,

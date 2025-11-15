@@ -65,7 +65,7 @@ fn up_statement() -> TableCreateStatement {
                 .not_null(),
         )
         .col(
-            ColumnDef::new(RecipePjt::AcceptAccompaniments)
+            ColumnDef::new(RecipePjt::AcceptsAccompaniment)
                 .boolean()
                 .not_null()
                 .default(false),
@@ -76,7 +76,7 @@ fn up_statement() -> TableCreateStatement {
                 .not_null(),
         )
         .col(
-            ColumnDef::new(RecipePjt::AdvancePreparation)
+            ColumnDef::new(RecipePjt::AdvancePrep)
                 .string()
                 .not_null()
                 .string_len(2000)

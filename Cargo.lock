@@ -1787,6 +1787,7 @@ dependencies = [
  "imkitchen-db",
  "imkitchen-shared",
  "imkitchen-user",
+ "serde",
  "sha3",
  "sqlx",
  "strum",

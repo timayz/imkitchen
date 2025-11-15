@@ -60,7 +60,10 @@ pub fn router(app_state: AppState) -> Router {
             "/recipes/create/status/{id}",
             get(recipes::index::create_status),
         )
-        .route("/recipes/edit/{id}", get(recipes::edit::page))
+        .route(
+            "/recipes/edit/{id}",
+            get(recipes::edit::page).post(recipes::edit::action),
+        )
         .route("/logout", get(login::logout))
         .route(
             "/profile/account",
