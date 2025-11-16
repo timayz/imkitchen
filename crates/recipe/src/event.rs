@@ -17,8 +17,8 @@ pub enum RecipeType {
 #[derive(Encode, Decode, Clone, Deserialize)]
 pub struct Ingredient {
     pub name: String,
-    pub unit: u16,
-    pub unit_type: String,
+    pub quantity: u8,
+    pub unit: String,
 }
 
 #[derive(Encode, Decode, Clone, Deserialize)]

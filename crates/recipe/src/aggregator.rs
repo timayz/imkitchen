@@ -78,8 +78,8 @@ impl Recipe {
 
         for ingredient in event.data.ingredients {
             hasher.update(ingredient.name);
-            hasher.update(ingredient.unit.to_string());
-            hasher.update(ingredient.unit_type);
+            hasher.update(ingredient.quantity.to_string());
+            hasher.update(ingredient.unit);
         }
 
         self.ingredients_hash = hasher.finalize()[..].to_vec();

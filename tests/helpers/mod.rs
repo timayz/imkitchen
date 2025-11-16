@@ -128,8 +128,8 @@ pub async fn create_recipes(
             accepts_accompaniment: false,
             ingredients: vec![Ingredient {
                 name: "ingredient 1".to_owned(),
-                unit: 1,
-                unit_type: "g".to_owned(),
+                quantity: 1,
+                unit: "g".to_owned(),
             }],
             instructions: vec![Instruction {
                 time_before_next: 15,

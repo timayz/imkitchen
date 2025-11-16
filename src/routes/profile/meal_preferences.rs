@@ -9,8 +9,7 @@ use serde::Deserialize;
 
 use crate::auth::AuthUser;
 use crate::routes::AppState;
-use crate::template::filters;
-use crate::template::{SERVER_ERROR_MESSAGE, ServerErrorTemplate, Template};
+use crate::template::{SERVER_ERROR_MESSAGE, ServerErrorTemplate, Template, filters};
 
 #[derive(askama::Template)]
 #[template(path = "profile-meal-preferences.html")]

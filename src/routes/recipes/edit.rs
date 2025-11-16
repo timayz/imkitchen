@@ -31,7 +31,17 @@ pub struct EditForm {
     #[serde(default)]
     pub ingredients: Vec<Ingredient>,
     #[serde(default)]
+    pub ingredients_quantity: Vec<u8>,
+    #[serde(default)]
+    pub ingredients_unit: Vec<String>,
+    #[serde(default)]
+    pub ingredients_name: Vec<String>,
+    #[serde(default)]
     pub instructions: Vec<Instruction>,
+    #[serde(default)]
+    pub instructions_description: Vec<String>,
+    #[serde(default)]
+    pub instructions_time_before_next: Vec<u16>,
     #[serde(default)]
     pub dietary_restrictions: Vec<DietaryRestriction>,
     pub cuisine_type: CuisineType,
@@ -41,6 +51,14 @@ pub struct EditForm {
     pub preferred_accompaniment_types: Vec<AccompanimentType>,
     pub advance_prep: String,
 }
+
+#[derive(askama::Template)]
+#[template(path = "recipes-edit-instruction-row.html")]
+pub struct EditInstructionRowTemplate;
+
+#[derive(askama::Template)]
+#[template(path = "recipes-edit-ingredient-row.html")]
+pub struct EditIngredientRowTemplate;
 
 #[derive(askama::Template)]
 #[template(path = "recipes-edit.html")]
@@ -93,8 +111,6 @@ pub async fn page(
         ""
     };
 
-    println!("{:?}", recipe.dietary_restrictions);
-
     template
         .render(EditTemplate {
             user,
@@ -111,6 +127,11 @@ pub async fn page(
                 accepts_accompaniment: accepts_accompaniment.to_owned(),
                 preferred_accompaniment_types: recipe.preferred_accompaniment_types,
                 advance_prep: recipe.advance_prep,
+                ingredients_unit: vec![],
+                ingredients_name: vec![],
+                ingredients_quantity: vec![],
+                instructions_description: vec![],
+                instructions_time_before_next: vec![],
             },
             id,
             ..Default::default()
@@ -158,6 +179,28 @@ pub async fn action(
         });
     }
 
+    if input.ingredients_name.len() != input.ingredients_quantity.len()
+        || input.ingredients_name.len() != input.ingredients_unit.len()
+    {
+        return template.render(EditTemplate {
+            id,
+            user,
+            form: input,
+            error_message: Some("Bad request".to_owned()),
+            ..Default::default()
+        });
+    }
+
+    if input.instructions_description.len() != input.instructions_time_before_next.len() {
+        return template.render(EditTemplate {
+            id,
+            user,
+            form: input,
+            error_message: Some("Bad request".to_owned()),
+            ..Default::default()
+        });
+    }
+
     if recipe.item.user_id != user.id {
         return template.render(EditTemplate {
             id,
@@ -168,7 +211,28 @@ pub async fn action(
         });
     }
 
-    let form = input.clone();
+    let mut form = input.clone();
+
+    let mut ingredients = vec![];
+    for (pos, name) in input.ingredients_name.iter().skip(2).enumerate() {
+        ingredients.push(Ingredient {
+            name: name.to_owned(),
+            unit: input.ingredients_unit[pos + 2].to_owned(),
+            quantity: input.ingredients_quantity[pos + 2].to_owned(),
+        });
+    }
+
+    form.ingredients = ingredients.to_vec();
+
+    let mut instructions = vec![];
+    for (pos, description) in input.instructions_description.iter().skip(2).enumerate() {
+        instructions.push(Instruction {
+            description: description.to_owned(),
+            time_before_next: input.instructions_time_before_next[pos + 2].to_owned(),
+        });
+    }
+
+    form.instructions = instructions.to_vec();
 
     match app
         .recipe_command
@@ -180,8 +244,8 @@ pub async fn action(
                 description: input.description,
                 prep_time: input.prep_time,
                 cook_time: input.cook_time,
-                ingredients: input.ingredients,
-                instructions: input.instructions,
+                ingredients,
+                instructions,
                 dietary_restrictions: input.dietary_restrictions,
                 cuisine_type: input.cuisine_type,
                 accepts_accompaniment: input.accepts_accompaniment == "on",
@@ -217,4 +281,12 @@ pub async fn action(
             ..Default::default()
         }),
     }
+}
+
+pub async fn ingredient_row(template: Template<EditIngredientRowTemplate>) -> impl IntoResponse {
+    template.render(EditIngredientRowTemplate)
+}
+
+pub async fn instruction_row(template: Template<EditInstructionRowTemplate>) -> impl IntoResponse {
+    template.render(EditInstructionRowTemplate)
 }

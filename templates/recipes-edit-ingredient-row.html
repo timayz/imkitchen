@@ -1,0 +1,9 @@
+<div class="flex gap-3">
+  <input type="number" name="ingredients_quantity" min="1" max="255" value="1"
+    class="w-24 px-4 py-2 border border-gray-300 rounded-lg" required />
+  <input type="text" name="ingredients_unit" maxlength="10" class="w-32 px-4 py-2 border border-gray-300 rounded-lg" />
+  <input type="text" name="ingredients_name" minlength="1" maxlength="30"
+    class="flex-1 px-4 py-2 border border-gray-300 rounded-lg" required />
+  <button ts-trigger="click" ts-action="remove 'parent div'" type="button"
+    class="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">✕</button>
+</div>

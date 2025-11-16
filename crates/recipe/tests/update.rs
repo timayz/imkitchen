@@ -28,8 +28,8 @@ async fn test_update_no_fields() -> anyhow::Result<()> {
         accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
-            unit: 1,
-            unit_type: "g".to_owned(),
+            quantity: 1,
+            unit: "g".to_owned(),
         }],
         instructions: vec![Instruction {
             time_before_next: 15,
@@ -82,8 +82,8 @@ async fn test_update_only_recipe_type() -> anyhow::Result<()> {
         accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
-            unit: 1,
-            unit_type: "g".to_owned(),
+            quantity: 1,
+            unit: "g".to_owned(),
         }],
         instructions: vec![Instruction {
             time_before_next: 15,
@@ -135,8 +135,8 @@ async fn test_update_only_cuisine_type() -> anyhow::Result<()> {
         accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
-            unit: 1,
-            unit_type: "g".to_owned(),
+            quantity: 1,
+            unit: "g".to_owned(),
         }],
         instructions: vec![Instruction {
             time_before_next: 15,
@@ -188,8 +188,8 @@ async fn test_update_only_name() -> anyhow::Result<()> {
         accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
-            unit: 1,
-            unit_type: "g".to_owned(),
+            quantity: 1,
+            unit: "g".to_owned(),
         }],
         instructions: vec![Instruction {
             time_before_next: 15,
@@ -247,8 +247,8 @@ async fn test_update_only_description() -> anyhow::Result<()> {
         accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
-            unit: 1,
-            unit_type: "g".to_owned(),
+            quantity: 1,
+            unit: "g".to_owned(),
         }],
         instructions: vec![Instruction {
             time_before_next: 15,
@@ -306,8 +306,8 @@ async fn test_update_only_prep_time() -> anyhow::Result<()> {
         accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
-            unit: 1,
-            unit_type: "g".to_owned(),
+            quantity: 1,
+            unit: "g".to_owned(),
         }],
         instructions: vec![Instruction {
             time_before_next: 15,
@@ -365,8 +365,8 @@ async fn test_update_only_cook_time() -> anyhow::Result<()> {
         accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
-            unit: 1,
-            unit_type: "g".to_owned(),
+            quantity: 1,
+            unit: "g".to_owned(),
         }],
         instructions: vec![Instruction {
             time_before_next: 15,
@@ -424,8 +424,8 @@ async fn test_update_only_ingredients() -> anyhow::Result<()> {
         accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
-            unit: 1,
-            unit_type: "g".to_owned(),
+            quantity: 1,
+            unit: "g".to_owned(),
         }],
         instructions: vec![Instruction {
             time_before_next: 15,
@@ -445,13 +445,13 @@ async fn test_update_only_ingredients() -> anyhow::Result<()> {
     input.ingredients = vec![
         Ingredient {
             name: "ingredient 1".to_owned(),
-            unit: 2,
-            unit_type: "g".to_owned(),
+            quantity: 2,
+            unit: "g".to_owned(),
         },
         Ingredient {
             name: "ingredient 2".to_owned(),
-            unit: 100,
-            unit_type: "ml".to_owned(),
+            quantity: 100,
+            unit: "ml".to_owned(),
         },
     ];
 
@@ -466,9 +466,9 @@ async fn test_update_only_ingredients() -> anyhow::Result<()> {
     let event_data = event.unwrap();
     assert_eq!(event_data.data.ingredients.len(), 2);
     assert_eq!(event_data.data.ingredients[0].name, "ingredient 1");
-    assert_eq!(event_data.data.ingredients[0].unit, 2);
+    assert_eq!(event_data.data.ingredients[0].quantity, 2);
     assert_eq!(event_data.data.ingredients[1].name, "ingredient 2");
-    assert_eq!(event_data.data.ingredients[1].unit, 100);
+    assert_eq!(event_data.data.ingredients[1].quantity, 100);
 
     Ok(())
 }
@@ -493,8 +493,8 @@ async fn test_update_only_ingredients_empty() -> anyhow::Result<()> {
         accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
-            unit: 1,
-            unit_type: "g".to_owned(),
+            quantity: 1,
+            unit: "g".to_owned(),
         }],
         instructions: vec![Instruction {
             time_before_next: 15,
@@ -547,8 +547,8 @@ async fn test_update_only_instructions() -> anyhow::Result<()> {
         accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
-            unit: 1,
-            unit_type: "g".to_owned(),
+            quantity: 1,
+            unit: "g".to_owned(),
         }],
         instructions: vec![Instruction {
             time_before_next: 15,
@@ -619,8 +619,8 @@ async fn test_update_only_dietary_restrictions() -> anyhow::Result<()> {
         accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
-            unit: 1,
-            unit_type: "g".to_owned(),
+            quantity: 1,
+            unit: "g".to_owned(),
         }],
         instructions: vec![Instruction {
             time_before_next: 15,
@@ -691,8 +691,8 @@ async fn test_update_only_accepts_accompaniment() -> anyhow::Result<()> {
         accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
-            unit: 1,
-            unit_type: "g".to_owned(),
+            quantity: 1,
+            unit: "g".to_owned(),
         }],
         instructions: vec![Instruction {
             time_before_next: 15,
@@ -752,8 +752,8 @@ async fn test_update_only_preferred_accompaniment_types() -> anyhow::Result<()> 
         accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
-            unit: 1,
-            unit_type: "g".to_owned(),
+            quantity: 1,
+            unit: "g".to_owned(),
         }],
         instructions: vec![Instruction {
             time_before_next: 15,
@@ -817,8 +817,8 @@ async fn test_update_only_advance_prep() -> anyhow::Result<()> {
         accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
-            unit: 1,
-            unit_type: "g".to_owned(),
+            quantity: 1,
+            unit: "g".to_owned(),
         }],
         instructions: vec![Instruction {
             time_before_next: 15,

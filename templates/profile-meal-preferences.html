@@ -21,19 +21,19 @@
         </label>
         <label class="flex items-center">
           <input type="checkbox" name="dietary_restrictions" value="gluten-free"{% if dietary_restrictions.contains("gluten-free") %} checked{% endif %} class="rounded border-gray-300 text-green-600" />
-          <span class="ml-2">{{ "Gluten-Free"|t }}</span>
+          <span class="ml-2">{{ "GlutenFree"|t }}</span>
         </label>
         <label class="flex items-center">
           <input type="checkbox" name="dietary_restrictions" value="dairy-free"{% if dietary_restrictions.contains("dairy-free") %} checked{% endif %} class="rounded border-gray-300 text-green-600" />
-          <span class="ml-2">{{ "Dairy-Free"|t }}</span>
+          <span class="ml-2">{{ "DairyFree"|t }}</span>
         </label>
         <label class="flex items-center">
           <input type="checkbox" name="dietary_restrictions" value="nut-free"{% if dietary_restrictions.contains("nut-free") %} checked{% endif %} class="rounded border-gray-300 text-green-600" />
-          <span class="ml-2">{{ "Nut-Free"|t }}</span>
+          <span class="ml-2">{{ "NutFree"|t }}</span>
         </label>
         <label class="flex items-center">
           <input type="checkbox" name="dietary_restrictions" value="low-carb"{% if dietary_restrictions.contains("low-carb") %} checked{% endif %} class="rounded border-gray-300 text-green-600" />
-          <span class="ml-2">{{ "Low-Carb"|t }}</span>
+          <span class="ml-2">{{ "LowCarb"|t }}</span>
         </label>
       </div>
     </div>

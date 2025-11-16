@@ -64,6 +64,14 @@ pub fn router(app_state: AppState) -> Router {
             "/recipes/edit/{id}",
             get(recipes::edit::page).post(recipes::edit::action),
         )
+        .route(
+            "/recipes/_edit/ingredient-row",
+            get(recipes::edit::ingredient_row),
+        )
+        .route(
+            "/recipes/_edit/instruction-row",
+            get(recipes::edit::instruction_row),
+        )
         .route("/logout", get(login::logout))
         .route(
             "/profile/account",
