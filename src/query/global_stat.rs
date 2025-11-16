@@ -3,6 +3,9 @@ use std::collections::HashMap;
 use evento::{AggregatorName, Executor, SubscribeBuilder};
 use imkitchen_contact::{Contact, FormSubmitted, MarkedReadAndReply, Resolved};
 use imkitchen_db::table::GlobalStatPjt;
+use imkitchen_recipe::{
+    Created as RecipeCreated, Deleted as RecipeDeleted, MadePrivate, Recipe, SharedToCommunity,
+};
 use imkitchen_shared::Event;
 use imkitchen_user::{RegistrationSucceeded, User};
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
@@ -71,6 +74,42 @@ pub async fn query_contact_global_stats(
     })
 }
 
+#[derive(Default)]
+pub struct UserGlobalStats {
+    pub total: u32,
+    pub favorite: u32,
+    pub shared: u32,
+    pub from_community: u32,
+}
+
+pub async fn query_user_global_stats(
+    pool: &sqlx::SqlitePool,
+    id: impl Into<String>,
+) -> anyhow::Result<UserGlobalStats> {
+    let id = id.into();
+    let stats = query_global_stats(
+        pool,
+        vec![
+            format!("total_recipes_{id}"),
+            format!("shared_recipes_{id}"),
+        ],
+    )
+    .await?;
+
+    Ok(UserGlobalStats {
+        total: stats
+            .get(&format!("total_recipes_{id}"))
+            .unwrap_or(&0)
+            .to_owned(),
+        shared: stats
+            .get(&format!("shared_recipes_{id}"))
+            .unwrap_or(&0)
+            .to_owned(),
+        favorite: 0,
+        from_community: 0,
+    })
+}
+
 async fn query_global_stats<I, V>(
     pool: &sqlx::SqlitePool,
     keys: I,
@@ -105,6 +144,10 @@ pub fn subscribe_global_stat<E: Executor + Clone>() -> SubscribeBuilder<E> {
         .handler(handle_contact_form_submitted())
         .handler(handle_contact_marked_read_and_reply())
         .handler(handle_contact_resolved())
+        .handler(handle_recipe_created())
+        .handler(handle_recipe_deleted())
+        .handler(handle_recipe_shared_to_community())
+        .handler(handle_recipe_made_private())
         .handler_check_off()
 }
 
@@ -228,6 +271,110 @@ async fn handle_contact_resolved<E: Executor>(
         .into_table(GlobalStatPjt::Table)
         .columns([GlobalStatPjt::Key, GlobalStatPjt::Value])
         .values_panic(["unread_contacts".into(), 1.into()])
+        .on_conflict(
+            OnConflict::column(GlobalStatPjt::Key)
+                .value(GlobalStatPjt::Value, Expr::col(GlobalStatPjt::Value).sub(1))
+                .to_owned(),
+        )
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
+}
+
+#[evento::handler(Recipe)]
+async fn handle_recipe_created<E: Executor>(
+    context: &evento::Context<'_, E>,
+    event: Event<RecipeCreated>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let user_id = event.metadata.trigger_by()?;
+
+    let statement = Query::insert()
+        .into_table(GlobalStatPjt::Table)
+        .columns([GlobalStatPjt::Key, GlobalStatPjt::Value])
+        .values_panic([format!("total_recipes_{user_id}").into(), 1.into()])
+        .on_conflict(
+            OnConflict::column(GlobalStatPjt::Key)
+                .value(GlobalStatPjt::Value, Expr::col(GlobalStatPjt::Value).add(1))
+                .to_owned(),
+        )
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
+}
+
+#[evento::handler(Recipe)]
+async fn handle_recipe_deleted<E: Executor>(
+    context: &evento::Context<'_, E>,
+    event: Event<RecipeDeleted>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let user_id = event.metadata.trigger_by()?;
+
+    let statement = Query::insert()
+        .into_table(GlobalStatPjt::Table)
+        .columns([GlobalStatPjt::Key, GlobalStatPjt::Value])
+        .values_panic([format!("total_recipes_{user_id}").into(), 1.into()])
+        .on_conflict(
+            OnConflict::column(GlobalStatPjt::Key)
+                .value(GlobalStatPjt::Value, Expr::col(GlobalStatPjt::Value).sub(1))
+                .to_owned(),
+        )
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
+}
+
+#[evento::handler(Recipe)]
+async fn handle_recipe_shared_to_community<E: Executor>(
+    context: &evento::Context<'_, E>,
+    event: Event<SharedToCommunity>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let user_id = event.metadata.trigger_by()?;
+
+    let statement = Query::insert()
+        .into_table(GlobalStatPjt::Table)
+        .columns([GlobalStatPjt::Key, GlobalStatPjt::Value])
+        .values_panic([format!("shared_recipes_{user_id}").into(), 1.into()])
+        .on_conflict(
+            OnConflict::column(GlobalStatPjt::Key)
+                .value(GlobalStatPjt::Value, Expr::col(GlobalStatPjt::Value).add(1))
+                .to_owned(),
+        )
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
+}
+
+#[evento::handler(Recipe)]
+async fn handle_recipe_made_private<E: Executor>(
+    context: &evento::Context<'_, E>,
+    event: Event<MadePrivate>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let user_id = event.metadata.trigger_by()?;
+
+    let statement = Query::insert()
+        .into_table(GlobalStatPjt::Table)
+        .columns([GlobalStatPjt::Key, GlobalStatPjt::Value])
+        .values_panic([format!("shared_recipes_{user_id}").into(), 1.into()])
         .on_conflict(
             OnConflict::column(GlobalStatPjt::Key)
                 .value(GlobalStatPjt::Value, Expr::col(GlobalStatPjt::Value).sub(1))

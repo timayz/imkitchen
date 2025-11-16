@@ -46,7 +46,7 @@ pub struct UpdateMealPreferencesInput {
     pub cuisine_variety_weight: f32,
 }
 
-#[derive(Debug, Deserialize, FromRow, Clone)]
+#[derive(Default, Debug, Deserialize, FromRow, Clone)]
 pub struct AuthUser {
     pub id: String,
     pub role: String,
@@ -217,9 +217,7 @@ impl<E: Executor + Clone> Command<E> {
             }
         }
 
-        let Some(user_id) = metadata.trigger_by() else {
-            imkitchen_shared::bail!("User not found in metadata");
-        };
+        let user_id = metadata.trigger_by()?;
 
         evento::save::<UserMealPreferences>(user_id)
             .data(&meal_preferences::Updated {

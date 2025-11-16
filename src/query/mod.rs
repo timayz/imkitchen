@@ -1,10 +1,12 @@
 mod admin_user;
 mod contact;
 mod global_stat;
+mod recipe;
 
 pub use admin_user::*;
 pub use contact::*;
 pub use global_stat::*;
+pub use recipe::*;
 
 use time::OffsetDateTime;
 

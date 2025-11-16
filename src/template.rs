@@ -9,6 +9,8 @@ use std::{collections::HashMap, convert::Infallible};
 use crate::language::UserLanguage;
 
 pub const SERVER_ERROR_MESSAGE: &str = "Something went wrong, please retry later";
+pub const NOT_FOUND: &str = "Not found";
+pub const FORBIDDEN: &str = "Forbidden";
 
 pub(crate) mod filters {
     pub fn t(value: &str, values: &dyn askama::Values) -> askama::Result<String> {
@@ -86,6 +88,15 @@ where
             Box::new(self.preferred_language_iso),
         );
         values.insert("config", Box::new(self.config));
+
+        #[cfg(debug_assertions)]
+        {
+            values.insert("is_dev", Box::new(true));
+        }
+        #[cfg(not(debug_assertions))]
+        {
+            values.insert("is_dev", Box::new(false));
+        }
 
         match self
             .template

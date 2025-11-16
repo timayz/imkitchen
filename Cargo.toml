@@ -41,13 +41,14 @@ urlencoding = "2.1"
 base64 = "0.22"
 url = "2.5"
 minify-html = "0.18"
-tower-livereload = "0.9"
 ulid = "1.2"
 sea-query = { version = "1.0.0-rc.16", default-features = false, features = ["derive", "audit", "backend-sqlite"] }
-sea-query-sqlx = { version = "0.8.0-rc.9", features = ["runtime-tokio", "sqlx-sqlite"] }
+sea-query-sqlx = { version = "0.8.0-rc.9", features = ["runtime-tokio", "sqlx-sqlite", "with-json"] }
 async-trait = "0.1"
 futures = "0.3"
 time = "0.3"
+strum = { version = "0.27", features = ["derive"] }
+sha3 = "0.10"
 
 [package]
 name = "imkitchen"
@@ -64,7 +65,6 @@ async-stripe = "stripe"
 tokio = { workspace = true }
 axum = { workspace = true }
 rust-i18n = { workspace = true }
-tower-livereload = { workspace = true }
 axum-extra = { workspace = true }
 tower = { workspace = true }
 tower-http = { workspace = true }
@@ -72,6 +72,7 @@ askama = { workspace = true }
 sqlx = { workspace = true }
 evento = { workspace = true }
 serde = { workspace = true }
+serde_json = { workspace = true }
 bincode = { workspace = true }
 async-trait = { workspace = true }
 anyhow = { workspace = true }
@@ -87,8 +88,10 @@ minify-html = { workspace = true }
 jsonwebtoken = { workspace = true }
 futures = { workspace = true }
 time = { workspace = true }
+strum = { workspace = true }
 imkitchen-shared = { path = "crates/shared", version = "0.9.4" }
 imkitchen-contact = { path = "crates/contact", version = "0.9.4" }
+imkitchen-recipe = { path = "crates/recipe", version = "0.9.4" }
 imkitchen-user = { path = "crates/user", version = "0.9.4" }
 imkitchen-db = { path = "crates/db", version = "0.9.4" }
 
