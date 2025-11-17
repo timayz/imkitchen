@@ -864,5 +864,8 @@
   "Favorited": "Favoris",
   "Shared": "Partagé",
   "View": "Voir",
-  "Edit": "Modifier"
+  "Edit": "Modifier",
+  "Deleting...": "Suppression...",
+  "Delete Recipe?": "Supprimer la recette ?",
+  "Are you sure you want to delete this recipe? This action cannot be undone.": "Êtes-vous sûr de vouloir supprimer cette recette ? Cette action est irréversible."
 }

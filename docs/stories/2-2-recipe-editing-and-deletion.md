@@ -1,6 +1,6 @@
 # Story 2.2: Recipe Editing and Deletion
 
-Status: drafted
+Status: ready
 
 ## Story
 
