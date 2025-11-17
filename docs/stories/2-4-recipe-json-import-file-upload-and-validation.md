@@ -1,6 +1,6 @@
 # Story 2.4: Recipe JSON Import - File Upload & Validation
 
-Status: drafted
+Status: ready
 
 ## Story
 
