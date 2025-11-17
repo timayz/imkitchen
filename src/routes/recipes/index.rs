@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
@@ -57,8 +59,8 @@ pub struct PageQuery {
     pub after: Option<Value>,
     pub last: Option<u16>,
     pub before: Option<Value>,
-    pub recipe_type: Option<RecipeType>,
-    pub cuisine_type: Option<CuisineType>,
+    pub recipe_type: Option<String>,
+    pub cuisine_type: Option<String>,
     pub sort_by: Option<RecipeSortBy>,
 }
 
@@ -83,12 +85,18 @@ pub async fn page(
         last: input.last,
         before: input.before,
     };
+    let recipe_type = input
+        .recipe_type
+        .and_then(|v| RecipeType::from_str(v.as_str()).ok());
+    let cuisine_type = input
+        .cuisine_type
+        .and_then(|v| CuisineType::from_str(v.as_str()).ok());
     let recipes = match query_recipes(
         &app.pool,
         crate::query::RecipeInput {
             user_id: Some(user.id.to_owned()),
-            recipe_type: input.recipe_type,
-            cuisine_type: input.cuisine_type,
+            recipe_type,
+            cuisine_type,
             is_shared: None,
             sort_by: input.sort_by.unwrap_or_default(),
             args: args.limit(20),

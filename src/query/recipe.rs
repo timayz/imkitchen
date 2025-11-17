@@ -18,7 +18,7 @@ use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use serde::Deserialize;
 use sqlx::prelude::FromRow;
-use strum::{AsRefStr, EnumString};
+use strum::{AsRefStr, Display, EnumString};
 
 #[derive(Debug, Encode, Decode)]
 pub struct RecipeCursor {
@@ -218,7 +218,7 @@ impl evento::sql::Bind for Recipe {
     }
 }
 
-#[derive(Default, Debug, Deserialize, EnumString, AsRefStr)]
+#[derive(Default, Debug, Deserialize, EnumString, Display)]
 pub enum RecipeSortBy {
     #[default]
     RecentlyAdded,
