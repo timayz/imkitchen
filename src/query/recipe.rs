@@ -17,8 +17,7 @@ use imkitchen_shared::Event;
 use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use serde::Deserialize;
-use sqlx::prelude::FromRow;
-use strum::{AsRefStr, Display, EnumString};
+use strum::{Display, EnumString};
 
 #[derive(Debug, Encode, Decode)]
 pub struct RecipeCursor {
@@ -42,9 +41,7 @@ pub struct RecipeDetail {
     pub accepts_accompaniment: bool,
     pub preferred_accompaniment_types: Vec<AccompanimentType>,
     pub advance_prep: String,
-    pub is_shared: bool,
-    pub created_at: u64,
-    pub updated_at: Option<u64>,
+    // pub is_shared: bool,
 }
 
 impl<R: sqlx::Row> sqlx::FromRow<'_, R> for RecipeDetail
@@ -100,8 +97,6 @@ where
                     .map_err(|err| sqlx::Error::InvalidArgument(err.to_string()))?,
             );
         }
-        let created_at: i64 = row.try_get("created_at")?;
-        let updated_at: Option<i64> = row.try_get("updated_at")?;
 
         Ok(RecipeDetail {
             id: row.try_get("id")?,
@@ -120,9 +115,7 @@ where
             accepts_accompaniment: row.try_get("accepts_accompaniment")?,
             preferred_accompaniment_types,
             advance_prep: row.try_get("advance_prep")?,
-            is_shared: row.try_get("is_shared")?,
-            created_at: created_at as u64,
-            updated_at: updated_at.map(|v| v as u64),
+            // is_shared: row.try_get("is_shared")?,
         })
     }
 }
@@ -138,7 +131,7 @@ pub struct Recipe {
     pub cook_time: u16,
     pub dietary_restrictions: Vec<DietaryRestriction>,
     pub accepts_accompaniment: bool,
-    pub is_shared: bool,
+    // pub is_shared: bool,
     pub created_at: u64,
 }
 
@@ -184,7 +177,7 @@ where
             cook_time: row.try_get("cook_time")?,
             dietary_restrictions,
             accepts_accompaniment: row.try_get("accepts_accompaniment")?,
-            is_shared: row.try_get("is_shared")?,
+            // is_shared: row.try_get("is_shared")?,
             created_at: created_at as u64,
         })
     }
@@ -279,36 +272,6 @@ pub async fn query_recipes(
     Ok(reader
         .args(input.args)
         .execute::<_, Recipe, _>(pool)
-        .await?)
-}
-
-pub async fn query_recipe_by_id(
-    pool: &sqlx::SqlitePool,
-    id: impl Into<String>,
-) -> anyhow::Result<Recipe> {
-    let statment = Query::select()
-        .columns([
-            RecipePjt::Id,
-            RecipePjt::RecipeType,
-            RecipePjt::CuisineType,
-            RecipePjt::Name,
-            RecipePjt::Description,
-            RecipePjt::PrepTime,
-            RecipePjt::CookTime,
-            RecipePjt::DietaryRestrictions,
-            RecipePjt::AcceptsAccompaniment,
-            RecipePjt::IsShared,
-            RecipePjt::CreatedAt,
-        ])
-        .from(RecipePjt::Table)
-        .and_where(Expr::col(RecipePjt::Id).eq(id.into()))
-        .limit(1)
-        .to_owned();
-
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
-
-    Ok(sqlx::query_as_with::<_, Recipe, _>(&sql, values)
-        .fetch_one(pool)
         .await?)
 }
 
