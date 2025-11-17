@@ -62,6 +62,14 @@ pub fn router(app_state: AppState) -> Router {
         )
         .route("/recipes/detail/{id}", get(recipes::detail::page))
         .route(
+            "/recipes/delete/status/{id}",
+            get(recipes::detail::delete_status),
+        )
+        .route(
+            "/recipes/delete/{id}",
+            get(recipes::detail::delete_modal).post(recipes::detail::delete_action),
+        )
+        .route(
             "/recipes/edit/{id}",
             get(recipes::edit::page).post(recipes::edit::action),
         )

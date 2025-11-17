@@ -6,7 +6,7 @@ use validator::Validate;
 
 use crate::{
     AccompanimentType, AdvancePrepChanged, BasicInformationChanged, Created, CuisineType,
-    CuisineTypeChanged, DietaryRestriction, DietaryRestrictionsChanged, Ingredient,
+    CuisineTypeChanged, Deleted, DietaryRestriction, DietaryRestrictionsChanged, Ingredient,
     IngredientsChanged, Instruction, InstructionsChanged, MainCourseOptionsChanged, Recipe,
     RecipeType, RecipeTypeChanged,
 };
@@ -67,6 +67,11 @@ impl<E: Executor + Clone> Command<E> {
         input.validate()?;
 
         let recipe = self.load(&input.id).await?;
+
+        if recipe.item.deleted {
+            imkitchen_shared::bail!("Error while updating. Recipe is deleted");
+        }
+
         let mut builder = evento::save_with::<Recipe>(recipe.clone()).metadata(&metadata)?;
         let mut has_data = false;
 
@@ -181,6 +186,24 @@ impl<E: Executor + Clone> Command<E> {
         }
 
         builder.commit(&self.0).await?;
+
+        Ok(())
+    }
+
+    pub async fn delete_with(
+        &self,
+        recipe: LoadResult<Recipe>,
+        metadata: &Metadata,
+    ) -> imkitchen_shared::Result<()> {
+        if recipe.item.deleted {
+            imkitchen_shared::bail!("recipe already deleted");
+        }
+
+        evento::save_with(recipe)
+            .data(&Deleted { deleted: true })?
+            .metadata(metadata)?
+            .commit(&self.0)
+            .await?;
 
         Ok(())
     }

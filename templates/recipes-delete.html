@@ -1,0 +1,18 @@
+{% if let Some(error_message) = error_message %}
+<button ts-trigger="click" ts-req="/recipes/delete/{{ id }}" ts-req-method="POST"
+  class="flex-1 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700">
+  {{ "Delete"|t }}
+</button>
+<div ts-swap-push="#error-message" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+  <div class="text-sm text-red-700 mt-1">{{ error_message|t }}.</div>
+</div>
+{% else %}
+<button disabled class="flex items-start gap-3 flex-1 px-4 py-2 bg-red-700 text-white font-semibold rounded-lg">
+  <div class="flex-shrink-0 mt-0.5">
+    <div class="animate-spin rounded-full h-5 w-5 border-2 border-red-200 border-t-red-700">
+    </div>
+  </div>
+  <div>{{ "Deleting..."|t }}</div>
+  <div ts-trigger="load delay 1s" ts-req="/recipes/delete/status/{{ id }}"></div>
+</button>
+{% endif %}
