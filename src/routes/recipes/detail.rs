@@ -3,6 +3,8 @@ use axum::{
     response::IntoResponse,
 };
 
+use imkitchen_recipe::RecipeType;
+
 use crate::{
     auth::AuthUser,
     query::{RecipeDetail, query_recipe_detail_by_id},
