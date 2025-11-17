@@ -1720,6 +1720,7 @@ dependencies = [
  "http-body-util",
  "imkitchen-contact",
  "imkitchen-db",
+ "imkitchen-recipe",
  "imkitchen-shared",
  "imkitchen-user",
  "jsonwebtoken",
@@ -1730,13 +1731,14 @@ dependencies = [
  "sea-query",
  "sea-query-sqlx",
  "serde",
+ "serde_json",
  "serde_urlencoded",
  "sqlx",
+ "strum",
  "time",
  "tokio",
  "tower",
  "tower-http",
- "tower-livereload",
  "tracing",
  "tracing-subscriber",
 ]
@@ -1778,6 +1780,20 @@ version = "0.9.4"
 [[package]]
 name = "imkitchen-recipe"
 version = "0.9.4"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "evento",
+ "imkitchen-db",
+ "imkitchen-shared",
+ "imkitchen-user",
+ "serde",
+ "sha3",
+ "sqlx",
+ "strum",
+ "tokio",
+ "validator",
+]
 
 [[package]]
 name = "imkitchen-shared"
@@ -3403,6 +3419,7 @@ checksum = "30d190945ff6b2914ef0631c1933ef67ee142b15f00b72d40bf241147d24b522"
 dependencies = [
  "inherent",
  "sea-query-derive",
+ "serde_json",
 ]
 
 [[package]]
@@ -3426,6 +3443,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68873fa1776b4c25a26e7679f8ee22332978c721168ec1b0b32b6583d5a9381d"
 dependencies = [
  "sea-query",
+ "serde_json",
  "sqlx",
 ]
 
@@ -3964,6 +3982,27 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
+name = "strum"
+version = "0.27.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af23d6f6c1a224baef9d3f61e287d2761385a5b88fdab4eb4c6f11aeb54c4bcf"
+dependencies = [
+ "strum_macros",
+]
+
+[[package]]
+name = "strum_macros"
+version = "0.27.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7695ce3845ea4b33927c055a39dc438a45b059f7c1b3d91d38d10355fb8cbca7"
+dependencies = [
+ "heck 0.5.0",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.110",
+]
+
+[[package]]
 name = "subtle"
 version = "2.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4291,20 +4330,6 @@ name = "tower-layer"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "121c2a6cda46980bb0fcd1647ffaf6cd3fc79a013de288782836f6df9c48780e"
-
-[[package]]
-name = "tower-livereload"
-version = "0.9.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5aa6b29b17d4540f2bd9ec304ad39d280c4bdf291d0ea6c4123eeba10939af84"
-dependencies = [
- "bytes",
- "http",
- "http-body",
- "pin-project-lite",
- "tokio",
- "tower",
-]
 
 [[package]]
 name = "tower-service"

@@ -7,11 +7,12 @@ use axum::{
 };
 use axum_extra::extract::{
     CookieJar,
-    cookie::{Cookie, SameSite},
+    cookie::{Cookie, Expiration, SameSite},
 };
 use imkitchen_user::Role;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 
 use crate::{
     config::JwtConfig,
@@ -50,11 +51,14 @@ pub fn generate_token(config: JwtConfig, sub: String) -> anyhow::Result<String> 
 
 pub fn build_cookie<'a>(config: JwtConfig, sub: String) -> anyhow::Result<Cookie<'a>> {
     let token = generate_token(config, sub)?;
+    let now = OffsetDateTime::now_utc();
+    let expires = Expiration::from(now + time::Duration::weeks(1));
 
     Ok(Cookie::build((AUTH_COOKIE_NAME, token))
         .path("/")
         .http_only(true)
         .same_site(SameSite::Strict)
+        .expires(expires)
         .build())
 }
 
@@ -62,7 +66,7 @@ pub fn remove_cookie<'a>() -> Cookie<'a> {
     Cookie::from(AUTH_COOKIE_NAME)
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct AuthUser(pub imkitchen_user::AuthUser);
 
 impl FromRequestParts<crate::routes::AppState> for AuthUser {

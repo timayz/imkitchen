@@ -1,0 +1,151 @@
+{% extends "_user.html" %}
+
+{% block title %}{{ "My Recipes"|t }} - imkitchen{% endblock %}
+{% block content %}
+
+<!-- Main Content -->
+<div class="container mx-auto px-4 py-8">
+  <!-- Header -->
+  <div class="mb-8">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div>
+        <h1 class="text-3xl font-bold mb-2">{{ "My Recipes"|t }}</h1>
+        <p class="text-gray-600">{{ "Manage your recipe collection"|t }}</p>
+      </div>
+      <div class="flex gap-3">
+        <button ts-req="/recipes/create"
+          class="flex-1 md:flex-none px-4 md:px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition text-center text-sm md:text-base">
+          ✏️ {{ "Create Recipe"|t }}
+        </button>
+        <a href="import.html"
+          class="flex-1 md:flex-none px-4 md:px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition text-center text-sm md:text-base">
+          📥 {{ "Import Recipes"|t }}
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="grid md:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white rounded-lg shadow p-6">
+      <div class="text-gray-600 text-sm mb-1">{{ "Total Recipes"|t }}</div>
+      <div class="text-3xl font-bold">{{ stat.total }}</div>
+    </div>
+    <div class="bg-white rounded-lg shadow p-6">
+      <div class="text-gray-600 text-sm mb-1">{{ "Favorited"|t }}</div>
+      <div class="text-3xl font-bold text-yellow-600">{{ stat.favorite }}</div>
+    </div>
+    <div class="bg-white rounded-lg shadow p-6">
+      <div class="text-gray-600 text-sm mb-1">{{ "Shared"|t }}</div>
+      <div class="text-3xl font-bold text-green-600">{{ stat.shared }}</div>
+    </div>
+    <div class="bg-white rounded-lg shadow p-6">
+      <div class="text-gray-600 text-sm mb-1">{{ "From Community"|t }}</div>
+      <div class="text-3xl font-bold text-purple-600">{{ stat.from_community }}</div>
+    </div>
+  </div>
+
+  <!-- Filters & Search -->
+  <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+    <form ts-trigger="change" ts-req="/recipes" ts-req-selector="#recipes-list" ts-req-method="GET" ts-req-strategy="last" ts-target="#recipes-list"
+      class="grid md:grid-cols-4 gap-4" autocomplete="off">
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">{{ "Search"|t }}</label>
+        <input disabled type="text" placeholder="{{ " Search recipes..."|t }}"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">{{ "Recipe Type"|t }}</label>
+        <select name="recipe_type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+          <option value="">{{ "All Types"|t }}</option>
+          {% for variant in RecipeType::VARIANTS %}
+          <option value="{{ variant }}">{{ variant.to_string().as_str()|t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">{{ "Cuisine"|t }}</label>
+        <select name="cuisine_type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+          <option value="">{{ "All Cuisines"|t }}</option>
+          {% for variant in CuisineType::VARIANTS %}
+          <option value="{{ variant }}">{{ variant.to_string().as_str()|t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">{{ "Sort By"|t }}</label>
+        <select name="sort_by" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+          <option value="{{ RecipeSortBy::RecentlyAdded }}">{{ "Recently Added"|t }}</option>
+          <!-- <option value="name">Name (A-Z)</option> -->
+          <!-- <option value="time">Cook Time</option> -->
+          <!-- <option value="rating">Rating</option> -->
+        </select>
+      </div>
+    </form>
+  </div>
+
+  <!-- Recipe Grid -->
+  <div id="recipes-list" class="grid md:grid-cols-3 gap-6">
+    {% for recipe in recipes.edges %}
+    <div id="recipe-{{ recipe.node.id }}"{% if let (true, true, Some(cursor)) = (loop.last, recipes.page_info.has_next_page, recipes.page_info.end_cursor.to_owned()) %}
+            ts-req="/recipes?after={{ cursor.to_string() }}"
+            ts-req-method="GET"
+            ts-req-selector="children #recipes-list"
+            ts-swap="afterend"
+            ts-trigger="visible once"{% endif %}
+            class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
+      <div class="relative">
+        {% match recipe.node.recipe_type %}
+        {% when RecipeType::MainCourse %}
+        <div class="h-48 bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center">
+          <span class="text-6xl">🍛</span>
+        </div>
+        <span class="absolute top-3 left-3 px-3 py-1 bg-orange-600 text-white text-xs font-semibold rounded-full uppercase">
+        {% when RecipeType::Appetizer %}
+        <div class="h-48 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+          <span class="text-6xl">🥗</span>
+        </div>
+        <span class="absolute top-3 left-3 px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-full uppercase">
+        {% when RecipeType::Dessert %}
+        <div class="h-48 bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center">
+          <span class="text-6xl">🍰</span>
+        </div>
+        <span class="absolute top-3 left-3 px-3 py-1 bg-pink-600 text-white text-xs font-semibold rounded-full uppercase">
+        {% when RecipeType::Accompaniment %}
+        <div class="h-48 bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center">
+          <span class="text-6xl">🍚</span>
+        </div>
+        <span class="absolute top-3 left-3 px-3 py-1 bg-purple-600 text-white text-xs font-semibold rounded-full uppercase">
+        {% endmatch %}
+          {{ recipe.node.recipe_type.to_string().as_str()|t }}
+        </span>
+      </div>
+      <div class="p-4">
+        <h3 class="font-bold text-lg mb-2">{{ recipe.node.name }}</h3>
+        <p class="text-sm text-gray-600 mb-3">{{ recipe.node.description }}</p>
+        <div class="flex gap-2 text-xs mb-3">
+          {% for restriction in recipe.node.dietary_restrictions %}
+          <span class="px-2 py-1 bg-green-100 text-green-800 rounded">{{ restriction.to_string().as_str()|t }}</span>
+          {% endfor %}
+          <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded">{{ recipe.node.cuisine_type.to_string().as_str()|t }}</span>
+        </div>
+        <div class="flex items-center justify-between text-sm text-gray-600 mb-3">
+          <span>⏱️ {{ recipe.node.cook_time + recipe.node.prep_time }} min</span>
+          {% if recipe.node.accepts_accompaniment %}
+          <span>🍽️ {{ "Accepts sides"|t }}</span>
+          {% endif %}
+        </div>
+        <div class="flex gap-2">
+          <a href="/recipes/detail/{{ recipe.node.id }}"
+            class="flex-1 px-4 py-2 bg-green-600 text-white text-center font-semibold rounded-lg hover:bg-green-700 transition">
+            {{ "View"|t }}
+          </a>
+          <a href="/recipes/edit/{{ recipe.node.id }}" class="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300">
+            {{ "Edit"|t }}
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

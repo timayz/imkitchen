@@ -27,3 +27,11 @@ then I want you to add them to fr.json like { "My test": "Mon test", "My test 2"
  
 
 SELECT * FROM table WHERE id IN (SELECT id FROM table ORDER BY RANDOM() LIMIT x)
+
+
+change to free-tier rules
+- 7 recipe max are use in meal plan weeks gen order by created at
+- only main course are use in meal plan weeks gen
+- only user recipe are use in meal plan weeks gen
+- user meal preferences not used in meal plan weeks gen
+- can not batch import recipes

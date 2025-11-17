@@ -26,6 +26,7 @@ pub struct AppState {
     pub config: crate::config::Config,
     pub user_command: imkitchen_user::Command<evento::Sqlite>,
     pub contact_command: imkitchen_contact::Command<evento::Sqlite>,
+    pub recipe_command: imkitchen_recipe::Command<evento::Sqlite>,
     pub pool: SqlitePool,
 }
 
@@ -53,7 +54,25 @@ pub fn router(app_state: AppState) -> Router {
         .route("/reset-password", get(reset_password::page))
         .route("/calendar", get(calendar::page))
         .route("/community", get(community::page))
-        .route("/recipes", get(recipes::page))
+        .route("/recipes", get(recipes::index::page))
+        .route("/recipes/create", get(recipes::index::create))
+        .route(
+            "/recipes/create/status/{id}",
+            get(recipes::index::create_status),
+        )
+        .route("/recipes/detail/{id}", get(recipes::detail::page))
+        .route(
+            "/recipes/edit/{id}",
+            get(recipes::edit::page).post(recipes::edit::action),
+        )
+        .route(
+            "/recipes/_edit/ingredient-row",
+            get(recipes::edit::ingredient_row),
+        )
+        .route(
+            "/recipes/_edit/instruction-row",
+            get(recipes::edit::instruction_row),
+        )
         .route("/logout", get(login::logout))
         .route(
             "/profile/account",

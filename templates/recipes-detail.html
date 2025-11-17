@@ -1,0 +1,342 @@
+{% extends "_user.html" %}
+{% block title %}{{ recipe.name }} - imkitchen{% endblock %}
+{% block content %}
+<!-- Main Content -->
+<div class="container mx-auto px-4 py-8 max-w-6xl">
+  <!-- Back Button -->
+  <div class="mb-6">
+    <a href="/recipes" class="text-green-600 hover:text-green-700 font-semibold">
+      ← {{ "Back to My Recipes"|t }}
+    </a>
+  </div>
+
+  <div class="grid lg:grid-cols-3 gap-8">
+    <!-- Main Content -->
+    <div class="lg:col-span-2">
+      <!-- Hero -->
+      <div class="bg-white rounded-lg shadow-lg overflow-hidden mb-6">
+        {% match recipe.recipe_type %}
+        {% when RecipeType::Appetizer %}
+        <div class="h-64 bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center relative">
+          <span class="text-9xl">🥗</span>
+          <span class="absolute top-4 left-4 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-full">
+            {{ RecipeType::Appetizer.to_string().as_str()|t }}
+          </span>
+        </div>
+        {% when RecipeType::MainCourse %}
+        <div class="h-64 bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center relative">
+          <span class="text-9xl">🍛</span>
+          <span class="absolute top-4 left-4 px-4 py-2 bg-orange-600 text-white text-sm font-semibold rounded-full">
+            {{ RecipeType::MainCourse.to_string().as_str()|t }}
+          </span>
+        </div>
+        {% when RecipeType::Dessert %}
+        <div class="h-64 bg-gradient-to-br from-pink-400 to-pink-500 flex items-center justify-center relative">
+          <span class="text-9xl">🍰</span>
+          <span class="absolute top-4 left-4 px-4 py-2 bg-pink-600 text-white text-sm font-semibold rounded-full">
+            {{ RecipeType::Dessert.to_string().as_str()|t }}
+          </span>
+        </div>
+        {% when RecipeType::Accompaniment %}
+        <div class="h-64 bg-gradient-to-br from-purple-400 to-purple-500 flex items-center justify-center relative">
+          <span class="text-9xl">🍚</span>
+          <span class="absolute top-4 left-4 px-4 py-2 bg-purple-600 text-white text-sm font-semibold rounded-full">
+            {{ RecipeType::Accompaniment.to_string().as_str()|t }}
+          </span>
+        </div>
+        {% endmatch %}
+        <div class="p-6">
+          <div class="flex items-start justify-between mb-4">
+            <div>
+              <h1 class="text-3xl font-bold mb-2">{{ recipe.name }}</h1>
+              <p class="text-gray-600">{{ recipe.description }}</p>
+            </div>
+          </div>
+
+          <div class="flex gap-3 mb-4">
+            {% for restriction in recipe.dietary_restrictions %}
+            <span class="px-3 py-1 bg-green-100 text-green-800 text-sm font-semibold rounded-full">{{ restriction.to_string().as_str()|t
+              }}</span>
+            {% endfor %}
+            <span class="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-semibold rounded-full">{{ recipe.cuisine_type.to_string().as_str()|t }}</span>
+            {% if !recipe.accepts_accompaniment %}
+            <span class="px-3 py-1 bg-orange-100 text-orange-800 text-sm font-semibold rounded-full">
+              {{ "Accepts Accompaniments"|t }}</span>
+            {% endif %}
+          </div>
+
+          <div class="flex items-center gap-6 text-sm text-gray-600">
+            <div class="flex items-center gap-2">
+              <span class="text-2xl">⏱️</span>
+              <div>
+                <div class="font-semibold">{{ "Total Time"|t }}</div>
+                <div>{{ recipe.cook_time + recipe.prep_time }} {{ "minutes"|t }}</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-2xl">⭐</span>
+              <div>
+                <div class="font-semibold">{{ "Rating"|t }}</div>
+                <div>4.8 (23 {{ "reviews"|t }})</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ingredients -->
+      <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+        <h2 class="text-2xl font-bold mb-4">{{ "Ingredients"|t }}</h2>
+        <div class="grid md:grid-cols-2 gap-2 md:gap-4">
+          <div class="space-y-2">
+            {% for ingredient in recipe.ingredients.iter().take(recipe.ingredients.len().div_ceil(2)) %}
+            <div class="flex items-start gap-2">
+              <span>{{ ingredient.quantity }} {{ ingredient.unit }} {{ ingredient.name }}</span>
+            </div>
+            {% endfor %}
+          </div>
+          <div class="space-y-2">
+            {% for ingredient in recipe.ingredients.iter().skip(recipe.ingredients.len().div_ceil(2)) %}
+            <div class="flex items-start gap-2">
+              <span>{{ ingredient.quantity }} {{ ingredient.unit }} {{ ingredient.name }}</span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Instructions -->
+      <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+        <h2 class="text-2xl font-bold mb-4">{{ "Instructions"|t }}</h2>
+        <div class="space-y-4">
+          {% for instruction in recipe.instructions %}
+          <div class="flex gap-4">
+            <div
+              class="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">
+              {{ loop.index }}
+            </div>
+            <p class="pt-1">Heat vegetable oil in a large wok or pan over medium-high heat.</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Ratings & Reviews -->
+      <div class="bg-white rounded-lg shadow-lg p-6">
+        <h2 class="text-2xl font-bold mb-6">{{ "Ratings & Reviews"|t }}</h2>
+
+        <!-- Rating Summary -->
+        <div class="flex items-center gap-8 mb-8 pb-8 border-b">
+          <div class="text-center">
+            <div class="text-5xl font-bold mb-2">4.8</div>
+            <div class="flex gap-1 mb-2">
+              <span class="text-yellow-400 text-xl">★★★★★</span>
+            </div>
+            <div class="text-sm text-gray-600">23 {{ "reviews"|t }}</div>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center gap-3 mb-2">
+              <span class="text-sm w-12">5 {{ "star"|t }}</span>
+              <div class="flex-1 bg-gray-200 rounded-full h-2">
+                <div class="bg-yellow-400 h-2 rounded-full" style="width: 80%"></div>
+              </div>
+              <span class="text-sm w-8 text-right">18</span>
+            </div>
+            <div class="flex items-center gap-3 mb-2">
+              <span class="text-sm w-12">4 {{ "star"|t }}</span>
+              <div class="flex-1 bg-gray-200 rounded-full h-2">
+                <div class="bg-yellow-400 h-2 rounded-full" style="width: 15%"></div>
+              </div>
+              <span class="text-sm w-8 text-right">3</span>
+            </div>
+            <div class="flex items-center gap-3 mb-2">
+              <span class="text-sm w-12">3 {{ "star"|t }}</span>
+              <div class="flex-1 bg-gray-200 rounded-full h-2">
+                <div class="bg-yellow-400 h-2 rounded-full" style="width: 5%"></div>
+              </div>
+              <span class="text-sm w-8 text-right">1</span>
+            </div>
+            <div class="flex items-center gap-3 mb-2">
+              <span class="text-sm w-12">2 {{ "star"|t }}</span>
+              <div class="flex-1 bg-gray-200 rounded-full h-2">
+                <div class="bg-gray-200 h-2 rounded-full" style="width: 0%"></div>
+              </div>
+              <span class="text-sm w-8 text-right">0</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-sm w-12">1 {{ "star"|t }}</span>
+              <div class="flex-1 bg-gray-200 rounded-full h-2">
+                <div class="bg-gray-200 h-2 rounded-full" style="width: 5%"></div>
+              </div>
+              <span class="text-sm w-8 text-right">1</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Write Review -->
+        <div class="mb-8 pb-8 border-b">
+          <h3 class="font-bold text-lg mb-4">{{ "Write a Review"|t }}</h3>
+          <div class="mb-4">
+            <label class="block text-sm font-semibold mb-2">{{ "Your Rating"|t }}</label>
+            <div class="flex gap-2">
+              <button class="text-3xl text-gray-300 hover:text-yellow-400">★</button>
+              <button class="text-3xl text-gray-300 hover:text-yellow-400">★</button>
+              <button class="text-3xl text-gray-300 hover:text-yellow-400">★</button>
+              <button class="text-3xl text-gray-300 hover:text-yellow-400">★</button>
+              <button class="text-3xl text-gray-300 hover:text-yellow-400">★</button>
+            </div>
+          </div>
+          <div class="mb-4">
+            <label class="block text-sm font-semibold mb-2">{{ "Your Review"|t }}</label>
+            <textarea rows="4" placeholder="{{ " Share your experience with this recipe..."|t }}"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"></textarea>
+          </div>
+          <button class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">
+            {{ "Submit Review"|t }}
+          </button>
+        </div>
+
+        <!-- Reviews List -->
+        <div class="space-y-6">
+          <!-- Review 1 -->
+          <div class="border-b pb-6">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold">
+                JD
+              </div>
+              <div class="flex-1">
+                <div class="font-semibold">Jane Doe</div>
+                <div class="flex gap-1 text-yellow-400 text-sm">★★★★★</div>
+              </div>
+              <div class="text-sm text-gray-500">2 {{ "days ago"|t }}</div>
+            </div>
+            <p class="text-gray-700">
+              Absolutely delicious! The curry paste makes it so flavorful. I served it with jasmine rice and my family
+              loved it. Will definitely make this again.
+            </p>
+          </div>
+
+          <!-- Review 2 -->
+          <div class="border-b pb-6">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
+                MT
+              </div>
+              <div class="flex-1">
+                <div class="font-semibold">Mike Thompson</div>
+                <div class="flex gap-1 text-yellow-400 text-sm">★★★★★</div>
+              </div>
+              <div class="text-sm text-gray-500">1 {{ "week ago"|t }}</div>
+            </div>
+            <p class="text-gray-700">
+              Great recipe! I added some extra vegetables (carrots and snap peas) and it turned out perfect. The
+              instructions were clear and easy to follow.
+            </p>
+          </div>
+
+          <!-- Review 3 -->
+          <div class="pb-6">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-10 h-10 bg-pink-500 rounded-full flex items-center justify-center text-white font-bold">
+                SE
+              </div>
+              <div class="flex-1">
+                <div class="font-semibold">Sarah Evans</div>
+                <div class="flex gap-1 text-yellow-400 text-sm">★★★★☆</div>
+              </div>
+              <div class="text-sm text-gray-500">2 {{ "weeks ago"|t }}</div>
+            </div>
+            <p class="text-gray-700">
+              Very good curry! A bit spicy for my taste, so I used less curry paste. Otherwise perfect comfort food.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="space-y-6">
+      <!-- Actions -->
+      <div class="bg-white rounded-lg shadow-lg p-6">
+        <h3 class="font-bold text-lg mb-4">{{ "Actions"|t }}</h3>
+        <div class="space-y-3">
+          <a href="/recipes/edit/{{ recipe.id }}" class="w-full block text-center px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">
+            📝 {{ "Edit Recipe"|t }}
+          </a>
+          <button class="w-full px-4 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">
+            👥 {{ "Share to Community"|t }}
+          </button>
+          <button onclick="if(confirm('{{ " Delete this recipe?"|t }}')) alert('{{ "Recipe deleted" |t }}')"
+            class="w-full px-4 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300">
+            🗑️ {{ "Delete"|t }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Suggested Accompaniments -->
+      <!-- <div class="bg-white rounded-lg shadow-lg p-6"> -->
+      <!--   <h3 class="font-bold text-lg mb-4">{{ "Suggested Accompaniments"|t }}</h3> -->
+      <!--   <p class="text-sm text-gray-600 mb-4">{{ "Pairs well with:"|t }}</p> -->
+      <!--   <div class="space-y-3"> -->
+      <!--     <div class="flex items-center gap-3 p-3 bg-purple-50 rounded-lg"> -->
+      <!--       <span class="text-2xl">🍚</span> -->
+      <!--       <div> -->
+      <!--         <div class="font-semibold">Jasmine Rice</div> -->
+      <!--         <div class="text-xs text-gray-600">20 min</div> -->
+      <!--       </div> -->
+      <!--     </div> -->
+      <!--     <div class="flex items-center gap-3 p-3 bg-purple-50 rounded-lg"> -->
+      <!--       <span class="text-2xl">🍜</span> -->
+      <!--       <div> -->
+      <!--         <div class="font-semibold">Rice Noodles</div> -->
+      <!--         <div class="text-xs text-gray-600">15 min</div> -->
+      <!--       </div> -->
+      <!--     </div> -->
+      <!--   </div> -->
+      <!-- </div> -->
+
+      <!-- Nutrition Info (Optional) -->
+      <div class="bg-white rounded-lg shadow-lg p-6">
+        <h3 class="font-bold text-lg mb-4">{{ "Quick Info"|t }}</h3>
+        <div class="space-y-3 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-600">{{ "Prep Time"|t }}</span>
+            <span class="font-semibold">{{ recipe.prep_time }} {{ "min"|t }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600">{{ "Cook Time"|t }}</span>
+            <span class="font-semibold">{{ recipe.cook_time }} {{ "min"|t }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600">{{ "Total Time"|t }}</span>
+            <span class="font-semibold">{{ recipe.cook_time + recipe.prep_time }} {{ "min"|t }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600">{{ "Servings"|t }}</span>
+            <span class="font-semibold">0 {{ "people"|t }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Share Stats -->
+      <div class="bg-white rounded-lg shadow-lg p-6">
+        <h3 class="font-bold text-lg mb-4">{{ "Recipe Stats"|t }}</h3>
+        <div class="space-y-3 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-600">{{ "Times Favorited"|t }}</span>
+            <span class="font-semibold">0</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600">{{ "Views"|t }}</span>
+            <span class="font-semibold">0</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600">{{ "Reviews"|t }}</span>
+            <span class="font-semibold">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

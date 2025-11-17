@@ -43,3 +43,25 @@ pub enum AdminUserPjt {
     TotalActiveCount,
     CreatedAt,
 }
+
+#[derive(Iden, Clone)]
+pub enum RecipePjt {
+    Table,
+    Id,
+    UserId,
+    RecipeType,
+    CuisineType,
+    Name,
+    Description,
+    PrepTime,
+    CookTime,
+    Ingredients,
+    Instructions,
+    DietaryRestrictions,
+    AcceptsAccompaniment,
+    PreferredAccompanimentTypes,
+    AdvancePrep,
+    IsShared,
+    CreatedAt,
+    UpdatedAt,
+}

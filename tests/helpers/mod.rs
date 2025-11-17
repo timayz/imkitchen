@@ -3,6 +3,10 @@ use evento::{
     migrator::{Migrate, Plan},
 };
 use imkitchen_contact::{ContactSubject, SubmitContactFormInput};
+use imkitchen_recipe::{
+    AccompanimentType, CuisineType, DietaryRestriction, Ingredient, Instruction, RecipeType,
+    UpdateInput,
+};
 use imkitchen_shared::Metadata;
 use imkitchen_user::{RegisterInput, subscribe_command};
 use sqlx::SqlitePool;
@@ -93,6 +97,50 @@ pub async fn create_submit_contact_form_all(
                 Metadata::default(),
             )
             .await?;
+        ids.push(id);
+    }
+
+    Ok(ids)
+}
+
+#[allow(dead_code)]
+pub async fn create_recipes(
+    state: &TestState,
+    recipes: impl IntoIterator<Item = (impl Into<String>, RecipeType, CuisineType)>,
+    metadata: Metadata,
+) -> anyhow::Result<Vec<String>> {
+    let command = imkitchen_recipe::Command(state.evento.clone(), state.pool.clone());
+
+    let mut ids = vec![];
+    for (name, recipe_type, cuisine_type) in recipes.into_iter() {
+        let name = name.into();
+        let id = command.create(metadata.clone()).await?;
+        let input = UpdateInput {
+            id: id.to_owned(),
+            name,
+            description: "My first description".to_owned(),
+            advance_prep: "My first advance prep".to_owned(),
+            dietary_restrictions: vec![
+                DietaryRestriction::DairyFree,
+                DietaryRestriction::GlutenFree,
+            ],
+            preferred_accompaniment_types: vec![AccompanimentType::Fries],
+            accepts_accompaniment: false,
+            ingredients: vec![Ingredient {
+                name: "ingredient 1".to_owned(),
+                quantity: 1,
+                unit: "g".to_owned(),
+            }],
+            instructions: vec![Instruction {
+                time_before_next: 15,
+                description: "My first instruction".to_owned(),
+            }],
+            cook_time: 25,
+            prep_time: 10,
+            cuisine_type,
+            recipe_type,
+        };
+        command.update(input, metadata.clone()).await?;
         ids.push(id);
     }
 
