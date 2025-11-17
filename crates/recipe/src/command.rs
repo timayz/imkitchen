@@ -27,7 +27,7 @@ pub struct UpdateInput {
     pub cuisine_type: CuisineType,
     pub accepts_accompaniment: bool,
     pub preferred_accompaniment_types: Vec<AccompanimentType>,
-    #[validate(length(min = 3, max = 2000))]
+    #[validate(length(max = 2000))]
     pub advance_prep: String,
 }
 

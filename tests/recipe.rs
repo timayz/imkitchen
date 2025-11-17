@@ -46,7 +46,7 @@ pub async fn test_recipe_query() -> anyhow::Result<()> {
         .unretry_oneshot(&state.evento)
         .await?;
 
-    let stats = imkitchen::query_user_global_stats(&state.pool, users[0].to_owned()).await?;
+    let stats = imkitchen::query_user_recipe_global_stats(&state.pool, users[0].to_owned()).await?;
     assert_eq!(stats.total, 3);
 
     Ok(())

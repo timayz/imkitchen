@@ -23,7 +23,7 @@ use strum::{AsRefStr, EnumString};
 #[derive(Debug, Encode, Decode)]
 pub struct RecipeCursor {
     pub i: String,
-    pub v: i64,
+    pub v: u64,
 }
 
 #[derive(Default)]
@@ -127,19 +127,67 @@ where
     }
 }
 
-#[derive(Debug, Default, Deserialize, FromRow)]
+#[derive(Debug, Default, Deserialize)]
 pub struct Recipe {
     pub id: String,
-    pub recipe_type: String,
-    pub cuisine_type: String,
+    pub recipe_type: RecipeType,
+    pub cuisine_type: CuisineType,
     pub name: String,
     pub description: String,
-    pub prep_time: i32,
-    pub cook_time: i32,
-    pub dietary_restrictions: String,
+    pub prep_time: u16,
+    pub cook_time: u16,
+    pub dietary_restrictions: Vec<DietaryRestriction>,
     pub accepts_accompaniment: bool,
     pub is_shared: bool,
-    pub created_at: i64,
+    pub created_at: u64,
+}
+
+impl<R: sqlx::Row> sqlx::FromRow<'_, R> for Recipe
+where
+    String: sqlx::Type<R::Database> + for<'r> sqlx::Decode<'r, R::Database>,
+    serde_json::Value: sqlx::Type<R::Database> + for<'r> sqlx::Decode<'r, R::Database>,
+    i64: sqlx::Type<R::Database> + for<'r> sqlx::Decode<'r, R::Database>,
+    u16: sqlx::Type<R::Database> + for<'r> sqlx::Decode<'r, R::Database>,
+    bool: sqlx::Type<R::Database> + for<'r> sqlx::Decode<'r, R::Database>,
+    for<'r> &'r str: sqlx::Type<R::Database> + sqlx::Decode<'r, R::Database>,
+    for<'r> &'r str: sqlx::ColumnIndex<R>,
+{
+    fn from_row(row: &R) -> Result<Self, sqlx::Error> {
+        let recipe_type: String = row.try_get("recipe_type")?;
+        let cuisine_type: String = row.try_get("cuisine_type")?;
+        let dietary_restrictions_json: serde_json::Value = row.try_get("dietary_restrictions")?;
+
+        let dietary_restrictions_vec = dietary_restrictions_json
+            .as_array()
+            .cloned()
+            .unwrap_or_else(Vec::new);
+
+        let mut dietary_restrictions = vec![];
+        for restriction in dietary_restrictions_vec {
+            dietary_restrictions.push(
+                DietaryRestriction::from_str(restriction.as_str().unwrap_or_default())
+                    .map_err(|err| sqlx::Error::InvalidArgument(err.to_string()))?,
+            );
+        }
+
+        let created_at: i64 = row.try_get("created_at")?;
+
+        Ok(Recipe {
+            id: row.try_get("id")?,
+            recipe_type: RecipeType::from_str(recipe_type.as_str())
+                .map_err(|e| sqlx::Error::InvalidArgument(e.to_string()))?,
+            cuisine_type: CuisineType::from_str(cuisine_type.as_str())
+                .map_err(|e| sqlx::Error::InvalidArgument(e.to_string()))?,
+            name: row.try_get("name")?,
+            description: row.try_get("description")?,
+            prep_time: row.try_get("prep_time")?,
+            cook_time: row.try_get("cook_time")?,
+            dietary_restrictions,
+            accepts_accompaniment: row.try_get("accepts_accompaniment")?,
+            is_shared: row.try_get("is_shared")?,
+            created_at: created_at as u64,
+        })
+    }
 }
 
 impl evento::cursor::Cursor for Recipe {
@@ -170,8 +218,9 @@ impl evento::sql::Bind for Recipe {
     }
 }
 
-#[derive(Debug, Deserialize, EnumString, AsRefStr)]
+#[derive(Default, Debug, Deserialize, EnumString, AsRefStr)]
 pub enum RecipeSortBy {
+    #[default]
     RecentlyAdded,
 }
 

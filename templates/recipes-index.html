@@ -85,221 +85,60 @@
 
   <!-- Recipe Grid -->
   <div class="grid md:grid-cols-3 gap-6">
-    <!-- Recipe Card 1 - Favorited -->
+    {% for recipe in recipes.edges %}
     <div class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
       <div class="relative">
+        {% match recipe.node.recipe_type %}
+        {% when RecipeType::MainCourse %}
         <div class="h-48 bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center">
           <span class="text-6xl">🍛</span>
         </div>
-        <button class="absolute top-3 right-3 p-2 bg-white rounded-full shadow-lg">
-          <span class="text-2xl">❤️</span>
-        </button>
-        <span class="absolute top-3 left-3 px-3 py-1 bg-orange-600 text-white text-xs font-semibold rounded-full">
-          {{ "MAIN COURSE"|t }}
-        </span>
-      </div>
-      <div class="p-4">
-        <h3 class="font-bold text-lg mb-2">Thai Red Curry with Chicken</h3>
-        <p class="text-sm text-gray-600 mb-3">Spicy coconut curry with vegetables and tender chicken</p>
-        <div class="flex gap-2 text-xs mb-3">
-          <span class="px-2 py-1 bg-green-100 text-green-800 rounded">{{ "Gluten-Free"|t }}</span>
-          <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded">{{ "Thai"|t }}</span>
-        </div>
-        <div class="flex items-center justify-between text-sm text-gray-600 mb-3">
-          <span>⏱️ 45 min</span>
-          <span>🍽️ {{ "Accepts sides"|t }}</span>
-        </div>
-        <div class="flex gap-2">
-          <a href="recipe-detail.html"
-            class="flex-1 px-4 py-2 bg-green-600 text-white text-center font-semibold rounded-lg hover:bg-green-700 transition">
-            {{ "View"|t }}
-          </a>
-          <button class="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300">
-            {{ "Edit"|t }}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Recipe Card 2 - Not Favorited -->
-    <div class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
-      <div class="relative">
+        <span class="absolute top-3 left-3 px-3 py-1 bg-orange-600 text-white text-xs font-semibold rounded-full uppercase">
+        {% when RecipeType::Appetizer %}
         <div class="h-48 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
           <span class="text-6xl">🥗</span>
         </div>
-        <button class="absolute top-3 right-3 p-2 bg-white rounded-full shadow-lg">
-          <span class="text-2xl">🤍</span>
-        </button>
-        <span class="absolute top-3 left-3 px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-full">
-          {{ "APPETIZER"|t }}
-        </span>
-      </div>
-      <div class="p-4">
-        <h3 class="font-bold text-lg mb-2">Caesar Salad</h3>
-        <p class="text-sm text-gray-600 mb-3">Fresh romaine, parmesan, croutons with homemade Caesar dressing</p>
-        <div class="flex gap-2 text-xs mb-3">
-          <span class="px-2 py-1 bg-green-100 text-green-800 rounded">{{ "Vegetarian"|t }}</span>
-          <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded">{{ "Italian"|t }}</span>
-        </div>
-        <div class="flex items-center justify-between text-sm text-gray-600 mb-3">
-          <span>⏱️ 15 min</span>
-          <span class="text-green-600">👥 {{ "Shared"|t }}</span>
-        </div>
-        <div class="flex gap-2">
-          <a href="recipe-detail.html"
-            class="flex-1 px-4 py-2 bg-green-600 text-white text-center font-semibold rounded-lg hover:bg-green-700 transition">
-            {{ "View"|t }}
-          </a>
-          <button class="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300">
-            {{ "Edit"|t }}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Recipe Card 3 - From Community -->
-    <div class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition border-2 border-purple-200">
-      <div class="relative">
+        <span class="absolute top-3 left-3 px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-full uppercase">
+        {% when RecipeType::Dessert %}
         <div class="h-48 bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center">
           <span class="text-6xl">🍰</span>
         </div>
-        <button class="absolute top-3 right-3 p-2 bg-white rounded-full shadow-lg">
-          <span class="text-2xl">❤️</span>
-        </button>
-        <span class="absolute top-3 left-3 px-3 py-1 bg-pink-600 text-white text-xs font-semibold rounded-full">
-          {{ "DESSERT"|t }}
-        </span>
-        <span class="absolute bottom-3 left-3 px-3 py-1 bg-purple-600 text-white text-xs font-semibold rounded-full">
-          👤 {{ "Community Recipe"|t }}
-        </span>
-      </div>
-      <div class="p-4">
-        <h3 class="font-bold text-lg mb-2">Chocolate Mousse</h3>
-        <p class="text-sm text-gray-600 mb-3">Rich dark chocolate mousse with whipped cream</p>
-        <div class="flex gap-2 text-xs mb-3">
-          <span class="px-2 py-1 bg-green-100 text-green-800 rounded">{{ "Vegetarian"|t }}</span>
-          <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded">{{ "French"|t }}</span>
-          <span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded">⭐ 4.8</span>
-        </div>
-        <div class="flex items-center justify-between text-sm text-gray-600 mb-3">
-          <span>⏱️ 30 min + 2h chill</span>
-          <span class="text-purple-600">by @chef_marie</span>
-        </div>
-        <div class="flex gap-2">
-          <a href="recipe-detail.html"
-            class="flex-1 px-4 py-2 bg-green-600 text-white text-center font-semibold rounded-lg hover:bg-green-700 transition">
-            {{ "View"|t }}
-          </a>
-        </div>
-      </div>
-    </div>
-
-    <!-- Recipe Card 4 - Accompaniment -->
-    <div class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
-      <div class="relative">
+        <span class="absolute top-3 left-3 px-3 py-1 bg-pink-600 text-white text-xs font-semibold rounded-full uppercase">
+        {% when RecipeType::Accompaniment %}
         <div class="h-48 bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center">
           <span class="text-6xl">🍚</span>
         </div>
-        <button class="absolute top-3 right-3 p-2 bg-white rounded-full shadow-lg">
-          <span class="text-2xl">❤️</span>
-        </button>
-        <span class="absolute top-3 left-3 px-3 py-1 bg-purple-600 text-white text-xs font-semibold rounded-full">
-          {{ "ACCOMPANIMENT"|t }}
+        <span class="absolute top-3 left-3 px-3 py-1 bg-purple-600 text-white text-xs font-semibold rounded-full uppercase">
+        {% endmatch %}
+          {{ recipe.node.recipe_type.to_string().as_str()|t }}
         </span>
       </div>
       <div class="p-4">
-        <h3 class="font-bold text-lg mb-2">Jasmine Rice</h3>
-        <p class="text-sm text-gray-600 mb-3">Perfectly cooked fragrant jasmine rice</p>
+        <h3 class="font-bold text-lg mb-2">{{ recipe.node.name }}</h3>
+        <p class="text-sm text-gray-600 mb-3">{{ recipe.node.description }}</p>
         <div class="flex gap-2 text-xs mb-3">
-          <span class="px-2 py-1 bg-green-100 text-green-800 rounded">{{ "Vegan"|t }}</span>
-          <span class="px-2 py-1 bg-green-100 text-green-800 rounded">{{ "Gluten-Free"|t }}</span>
-          <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded">{{ "Thai"|t }}</span>
+          {% for restriction in recipe.node.dietary_restrictions %}
+          <span class="px-2 py-1 bg-green-100 text-green-800 rounded">{{ restriction.to_string().as_str()|t }}</span>
+          {% endfor %}
+          <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded">{{ recipe.node.cuisine_type.to_string().as_str()|t }}</span>
         </div>
         <div class="flex items-center justify-between text-sm text-gray-600 mb-3">
-          <span>⏱️ 20 min</span>
-        </div>
-        <div class="flex gap-2">
-          <a href="recipe-detail.html"
-            class="flex-1 px-4 py-2 bg-green-600 text-white text-center font-semibold rounded-lg hover:bg-green-700 transition">
-            {{ "View"|t }}
-          </a>
-          <button class="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300">
-            {{ "Edit"|t }}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Recipe Card 5 -->
-    <div class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
-      <div class="relative">
-        <div class="h-48 bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
-          <span class="text-6xl">🍝</span>
-        </div>
-        <button class="absolute top-3 right-3 p-2 bg-white rounded-full shadow-lg">
-          <span class="text-2xl">❤️</span>
-        </button>
-        <span class="absolute top-3 left-3 px-3 py-1 bg-orange-600 text-white text-xs font-semibold rounded-full">
-          {{ "MAIN COURSE"|t }}
-        </span>
-      </div>
-      <div class="p-4">
-        <h3 class="font-bold text-lg mb-2">Pasta Carbonara</h3>
-        <p class="text-sm text-gray-600 mb-3">Classic Italian pasta with bacon, egg, and parmesan</p>
-        <div class="flex gap-2 text-xs mb-3">
-          <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded">{{ "Italian"|t }}</span>
-        </div>
-        <div class="flex items-center justify-between text-sm text-gray-600 mb-3">
-          <span>⏱️ 25 min</span>
+          <span>⏱️ {{ recipe.node.cook_time + recipe.node.prep_time }} min</span>
+          {% if recipe.node.accepts_accompaniment %}
           <span>🍽️ {{ "Accepts sides"|t }}</span>
+          {% endif %}
         </div>
         <div class="flex gap-2">
-          <a href="recipe-detail.html"
+          <a href="/recipes/detail/{{ recipe.node.id }}"
             class="flex-1 px-4 py-2 bg-green-600 text-white text-center font-semibold rounded-lg hover:bg-green-700 transition">
             {{ "View"|t }}
           </a>
-          <button class="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300">
+          <a href="/recipes/edit/{{ recipe.node.id }}" class="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300">
             {{ "Edit"|t }}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Recipe Card 6 -->
-    <div class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
-      <div class="relative">
-        <div class="h-48 bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center">
-          <span class="text-6xl">🌮</span>
-        </div>
-        <button class="absolute top-3 right-3 p-2 bg-white rounded-full shadow-lg">
-          <span class="text-2xl">❤️</span>
-        </button>
-        <span class="absolute top-3 left-3 px-3 py-1 bg-orange-600 text-white text-xs font-semibold rounded-full">
-          {{ "MAIN COURSE"|t }}
-        </span>
-      </div>
-      <div class="p-4">
-        <h3 class="font-bold text-lg mb-2">Beef Tacos</h3>
-        <p class="text-sm text-gray-600 mb-3">Seasoned ground beef tacos with fresh toppings</p>
-        <div class="flex gap-2 text-xs mb-3">
-          <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded">{{ "Mexican"|t }}</span>
-        </div>
-        <div class="flex items-center justify-between text-sm text-gray-600 mb-3">
-          <span>⏱️ 30 min</span>
-          <span>🍽️ {{ "Accepts sides"|t }}</span>
-        </div>
-        <div class="flex gap-2">
-          <a href="recipe-detail.html"
-            class="flex-1 px-4 py-2 bg-green-600 text-white text-center font-semibold rounded-lg hover:bg-green-700 transition">
-            {{ "View"|t }}
           </a>
-          <button class="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300">
-            {{ "Edit"|t }}
-          </button>
         </div>
       </div>
     </div>
-  </div>
-
+    {% endfor %}
 </div>
 {% endblock %}

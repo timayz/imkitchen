@@ -1,17 +1,22 @@
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::StatusCode,
     response::IntoResponse,
 };
+use evento::cursor::{Args, ReadResult, Value};
 use imkitchen_recipe::{CuisineType, RecipeType};
 use imkitchen_shared::Metadata;
+use serde::Deserialize;
 use strum::VariantArray;
 
 use crate::{
     auth::AuthUser,
-    query::{UserGlobalStats, query_recipe_detail_by_id},
+    query::{
+        Recipe, RecipeSortBy, UserRecipeGlobalStats, query_recipe_detail_by_id, query_recipes,
+        query_user_recipe_global_stats,
+    },
     routes::AppState,
-    template::{Template, filters},
+    template::{ServerErrorTemplate, Template, filters},
 };
 
 #[derive(askama::Template)]
@@ -31,7 +36,8 @@ pub struct CreateStatusTemplate {
 pub struct IndexTemplate {
     pub current_path: String,
     pub user: imkitchen_user::AuthUser,
-    pub stat: UserGlobalStats,
+    pub stat: UserRecipeGlobalStats,
+    pub recipes: ReadResult<Recipe>,
 }
 
 impl Default for IndexTemplate {
@@ -39,19 +45,73 @@ impl Default for IndexTemplate {
         Self {
             current_path: "recipes".to_owned(),
             user: imkitchen_user::AuthUser::default(),
-            stat: UserGlobalStats::default(),
+            stat: UserRecipeGlobalStats::default(),
+            recipes: ReadResult::default(),
         }
     }
 }
 
+#[derive(Deserialize, Debug)]
+pub struct PageQuery {
+    pub first: Option<u16>,
+    pub after: Option<Value>,
+    pub last: Option<u16>,
+    pub before: Option<Value>,
+    pub recipe_type: Option<RecipeType>,
+    pub cuisine_type: Option<CuisineType>,
+    pub sort_by: Option<RecipeSortBy>,
+}
+
 pub async fn page(
     template: Template<IndexTemplate>,
+    server_error: Template<ServerErrorTemplate>,
     AuthUser(user): AuthUser,
+    State(app): State<AppState>,
+    Query(input): Query<PageQuery>,
 ) -> impl IntoResponse {
-    template.render(IndexTemplate {
-        user,
-        ..Default::default()
-    })
+    let stat = match query_user_recipe_global_stats(&app.pool, &user.id).await {
+        Ok(s) => s,
+        Err(err) => {
+            tracing::error!(user = user.id, err = %err, "Failed to query user recipe global stats");
+
+            return server_error.render(ServerErrorTemplate).into_response();
+        }
+    };
+    let args = Args {
+        first: input.first,
+        after: input.after,
+        last: input.last,
+        before: input.before,
+    };
+    let recipes = match query_recipes(
+        &app.pool,
+        crate::query::RecipeInput {
+            user_id: Some(user.id.to_owned()),
+            recipe_type: input.recipe_type,
+            cuisine_type: input.cuisine_type,
+            is_shared: None,
+            sort_by: input.sort_by.unwrap_or_default(),
+            args: args.limit(20),
+        },
+    )
+    .await
+    {
+        Ok(recipes) => recipes,
+        Err(err) => {
+            tracing::error!(user = user.id, err = %err, "Failed to query user recipes");
+
+            return server_error.render(ServerErrorTemplate).into_response();
+        }
+    };
+
+    template
+        .render(IndexTemplate {
+            user,
+            recipes,
+            stat,
+            ..Default::default()
+        })
+        .into_response()
 }
 
 pub async fn create(

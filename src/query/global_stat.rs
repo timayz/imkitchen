@@ -75,17 +75,17 @@ pub async fn query_contact_global_stats(
 }
 
 #[derive(Default)]
-pub struct UserGlobalStats {
+pub struct UserRecipeGlobalStats {
     pub total: u32,
     pub favorite: u32,
     pub shared: u32,
     pub from_community: u32,
 }
 
-pub async fn query_user_global_stats(
+pub async fn query_user_recipe_global_stats(
     pool: &sqlx::SqlitePool,
     id: impl Into<String>,
-) -> anyhow::Result<UserGlobalStats> {
+) -> anyhow::Result<UserRecipeGlobalStats> {
     let id = id.into();
     let stats = query_global_stats(
         pool,
@@ -96,7 +96,7 @@ pub async fn query_user_global_stats(
     )
     .await?;
 
-    Ok(UserGlobalStats {
+    Ok(UserRecipeGlobalStats {
         total: stats
             .get(&format!("total_recipes_{id}"))
             .unwrap_or(&0)
