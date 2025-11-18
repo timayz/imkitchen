@@ -132,7 +132,7 @@ pub async fn create_recipes(
                 unit: "g".to_owned(),
             }],
             instructions: vec![Instruction {
-                time_before_next: 15,
+                time_next: 15,
                 description: "My first instruction".to_owned(),
             }],
             cook_time: 25,

@@ -9,9 +9,10 @@ use evento::{
 use imkitchen_db::table::RecipePjt;
 use imkitchen_recipe::{
     AccompanimentType, AdvancePrepChanged, BasicInformationChanged, Created, CuisineType,
-    CuisineTypeChanged, Deleted, DietaryRestriction, DietaryRestrictionsChanged, Ingredient,
-    IngredientsChanged, Instruction, InstructionsChanged, MadePrivate, MainCourseOptionsChanged,
-    Recipe as RecipeAggregator, RecipeType, RecipeTypeChanged, SharedToCommunity,
+    CuisineTypeChanged, Deleted, DietaryRestriction, DietaryRestrictionsChanged, Imported,
+    Ingredient, IngredientsChanged, Instruction, InstructionsChanged, MadePrivate,
+    MainCourseOptionsChanged, Recipe as RecipeAggregator, RecipeType, RecipeTypeChanged,
+    SharedToCommunity,
 };
 use imkitchen_shared::Event;
 use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
@@ -314,6 +315,7 @@ pub async fn query_recipe_detail_by_id(
 pub fn subscribe_recipe<E: Executor + Clone>() -> SubscribeBuilder<E> {
     evento::subscribe("recipe-query")
         .handler(handle_created())
+        .handler(handle_imported())
         .handler(handle_recipe_type_changed())
         .handler(handle_basic_information_changed())
         .handler(handle_ingredients_changed())
@@ -364,6 +366,61 @@ async fn handle_created<E: Executor>(
             name.into(),
             ingredients.into(),
             instructions.into(),
+            serde_json::Value::Array(vec![]).into(),
+            serde_json::Value::Array(vec![]).into(),
+            timestamp.into(),
+        ])
+        .to_owned();
+    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
+}
+
+#[evento::handler(RecipeAggregator)]
+async fn handle_imported<E: Executor>(
+    context: &evento::Context<'_, E>,
+    event: Event<Imported>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let timestamp = event.timestamp;
+    let aggregator_id = event.aggregator_id.clone();
+    let user_id = event.metadata.trigger_by().unwrap_or_default();
+    let name = event.data.name;
+    let config = bincode::config::standard();
+    let instructions = bincode::encode_to_vec(event.data.instructions, config)?;
+    let ingredients = bincode::encode_to_vec(event.data.ingredients, config)?;
+
+    let statment = Query::insert()
+        .into_table(RecipePjt::Table)
+        .columns([
+            RecipePjt::Id,
+            RecipePjt::UserId,
+            RecipePjt::Name,
+            RecipePjt::Description,
+            RecipePjt::RecipeType,
+            RecipePjt::CuisineType,
+            RecipePjt::PrepTime,
+            RecipePjt::CookTime,
+            RecipePjt::Ingredients,
+            RecipePjt::Instructions,
+            RecipePjt::AdvancePrep,
+            RecipePjt::DietaryRestrictions,
+            RecipePjt::PreferredAccompanimentTypes,
+            RecipePjt::CreatedAt,
+        ])
+        .values_panic([
+            aggregator_id.into(),
+            user_id.into(),
+            name.into(),
+            event.data.description.into(),
+            event.data.recipe_type.to_string().into(),
+            event.data.cuisine_type.to_string().into(),
+            event.data.prep_time.into(),
+            event.data.cook_time.into(),
+            ingredients.into(),
+            instructions.into(),
+            event.data.advance_prep.into(),
             serde_json::Value::Array(vec![]).into(),
             serde_json::Value::Array(vec![]).into(),
             timestamp.into(),
@@ -580,7 +637,7 @@ async fn handle_advance_prep_changed<E: Executor>(
     let pool = context.extract::<sqlx::SqlitePool>();
     let timestamp = event.timestamp;
     let aggregator_id = event.aggregator_id.clone();
-    let description = event.data.description;
+    let description = event.data.advance_prep;
 
     let statment = Query::update()
         .table(RecipePjt::Table)

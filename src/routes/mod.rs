@@ -60,6 +60,11 @@ pub fn router(app_state: AppState) -> Router {
             "/recipes/create/status/{id}",
             get(recipes::index::create_status),
         )
+        .route(
+            "/recipes/import",
+            get(recipes::import::page).post(recipes::import::action),
+        )
+        .route("/recipes/import/status/{id}", get(recipes::import::status))
         .route("/recipes/detail/{id}", get(recipes::detail::page))
         .route(
             "/recipes/delete/status/{id}",

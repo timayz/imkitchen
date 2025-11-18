@@ -1,0 +1,25 @@
+{
+  "name": "Garlic Bread",
+  "description": "Crispy toasted bread with garlic butter and herbs",
+  "recipe_type": "Accompaniment",
+  "cuisine_type": "Italian",
+  "prep_time": 10,
+  "cook_time": 12,
+  "ingredients": [
+    { "quantity": 1, "unit": "", "name": "French baguette" },
+    { "quantity": 100, "unit": "g", "name": "Butter" },
+    { "quantity": 4, "unit": "cloves", "name": "Garlic" },
+    { "quantity": 2, "unit": "tbsp", "name": "Fresh parsley" },
+    { "quantity": 50, "unit": "g", "name": "Parmesan cheese" },
+    { "quantity": 1, "unit": "tsp", "name": "Salt" }
+  ],
+  "instructions": [
+    { "description": "Preheat oven to 200°C", "time_next": 5 },
+    { "description": "Soften butter and mix with minced garlic, parsley, salt", "time_next": 5 },
+    { "description": "Slice baguette diagonally without cutting through bottom", "time_next": 2 },
+    { "description": "Spread garlic butter between slices", "time_next": 3 },
+    { "description": "Wrap in foil and bake for 10 minutes", "time_next": 10 },
+    { "description": "Unwrap, sprinkle parmesan, bake 2 more minutes", "time_next": 2 }
+  ],
+  "advance_prep": null
+}
