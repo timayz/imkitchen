@@ -1,13 +1,13 @@
 {% extends "_user.html" %}
-{% block title %}Import Recipes - imkitchen{% endblock %}
+{% block title %}{{ "Import Recipes - imkitchen"|t }}{% endblock %}
 {% block content %}
 <!-- Main Content -->
 
 <div class="container mx-auto px-4 py-8 max-w-4xl">
   <!-- Header -->
   <div class="mb-8">
-    <h1 class="text-3xl font-bold mb-2">Import Recipes</h1>
-    <p class="text-gray-600">Bulk import recipes from JSON files</p>
+    <h1 class="text-3xl font-bold mb-2">{{ "Import Recipes"|t }}</h1>
+    <p class="text-gray-600">{{ "Bulk import recipes from JSON files"|t }}</p>
   </div>
 
   <!-- Upload Area -->
@@ -16,9 +16,9 @@
       class="border-4 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-green-500 transition cursor-pointer">
       <label for="recipes">
         <div class="text-6xl mb-4">📥</div>
-        <h3 class="text-xl font-bold mb-2">Drag & Drop JSON Files</h3>
-        <p class="text-gray-600 mb-4">or click to browse</p>
-        <p class="text-sm text-gray-500 mt-4">Max 1MB • Up to 20 files • JSON format only</p>
+        <h3 class="text-xl font-bold mb-2">{{ "Drag & Drop JSON Files"|t }}</h3>
+        <p class="text-gray-600 mb-4">{{ "or click to browse"|t }}</p>
+        <p class="text-sm text-gray-500 mt-4">{{ "Max 1MB • Up to 20 files • JSON format only"|t }}</p>
         <input type="file" id="recipes" class="hidden" multiple accept="application/json" />
       </label>
     </div>
@@ -28,10 +28,10 @@
 
   <!-- Schema Documentation -->
   <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-    <h2 class="font-bold text-xl mb-4">JSON Schema Documentation</h2>
+    <h2 class="font-bold text-xl mb-4">{{ "JSON Schema Documentation"|t }}</h2>
     <p class="text-gray-600 mb-4">
-      Download our <a href="#" class="text-green-600 hover:text-green-700 font-semibold">official JSON schema (v1.0)</a>
-      for third-party tools
+      {{ "Download our"|t }} <a href="#" class="text-green-600 hover:text-green-700 font-semibold">{{ "official JSON schema (v1.0)"|t }}</a>
+      {{ "for third-party tools"|t }}
     </p>
 
     <div class="bg-gray-50 rounded p-4 mb-4 overflow-x-auto">
@@ -42,16 +42,16 @@
   "description": "Spicy coconut curry",
   "recipe_type": "Appetizer|MainCourse|Dessert|Accompaniment",
   "cuisine_type": "Thai|American|Caribbean|Chinese|Italian|French|Indian|Japanese|Mediterranean|Mexican",
-  "prep_time": 15, (minutes > 0)
-  "cook_time": 30, (minutes > 0)
+  "prep_time": 15, ({{ "minutes > 0"|t }})
+  "cook_time": 30, ({{ "minutes > 0"|t }})
   "ingredients": [
     { "quantity": 500, "unit": "g", "name": "Chicken breast" }
     { "quantity": 1, "unit": "", "name": "Lemon" }
   ],
   "instructions": [
-    { "description": "Heat oil in wok", "time_next": 12 (time to wait before next instruction, minutes >= 0) }
+    { "description": "Heat oil in wok", "time_next": 12 ({{ "time to wait before next instruction, minutes >= 0"|t }}) }
   ],
-  "advance_prep": "Marinate chicken 2 hours before" (optional)
+  "advance_prep": "Marinate chicken 2 hours before" ({{ "optional"|t }})
 }
         </code>
       </pre>
