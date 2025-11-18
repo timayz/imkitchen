@@ -4,7 +4,7 @@ use sha3::{Digest, Sha3_224};
 
 use crate::{
     AdvancePrepChanged, BasicInformationChanged, Created, CuisineType, CuisineTypeChanged, Deleted,
-    DietaryRestrictionsChanged, IngredientsChanged, InstructionsChanged, MadePrivate,
+    DietaryRestrictionsChanged, Imported, IngredientsChanged, InstructionsChanged, MadePrivate,
     MainCourseOptionsChanged, RecipeType, RecipeTypeChanged, SharedToCommunity,
 };
 
@@ -27,6 +27,46 @@ pub struct Recipe {
 impl Recipe {
     async fn handle_created(&mut self, event: Event<Created>) -> anyhow::Result<()> {
         self.user_id = event.metadata.trigger_by()?;
+
+        Ok(())
+    }
+
+    async fn handle_imported(&mut self, event: Event<Imported>) -> anyhow::Result<()> {
+        self.user_id = event.metadata.trigger_by()?;
+        self.recipe_type = event.data.recipe_type;
+        self.cuisine_type = event.data.cuisine_type;
+
+        let mut hasher = Sha3_224::default();
+        hasher.update(event.data.name);
+        hasher.update(event.data.description);
+        hasher.update(event.data.prep_time.to_string());
+        hasher.update(event.data.cook_time.to_string());
+
+        self.basic_information_hash = hasher.finalize()[..].to_vec();
+
+        let mut hasher = Sha3_224::default();
+
+        for instruction in event.data.instructions {
+            hasher.update(instruction.description);
+            hasher.update(instruction.time_next.to_string());
+        }
+
+        self.instructions_hash = hasher.finalize()[..].to_vec();
+
+        let mut hasher = Sha3_224::default();
+
+        for ingredient in event.data.ingredients {
+            hasher.update(ingredient.name);
+            hasher.update(ingredient.quantity.to_string());
+            hasher.update(ingredient.unit);
+        }
+
+        self.ingredients_hash = hasher.finalize()[..].to_vec();
+
+        let mut hasher = Sha3_224::default();
+        hasher.update(event.data.advance_prep);
+
+        self.advance_prep_hash = hasher.finalize()[..].to_vec();
 
         Ok(())
     }
@@ -63,7 +103,7 @@ impl Recipe {
 
         for instruction in event.data.instructions {
             hasher.update(instruction.description);
-            hasher.update(instruction.time_before_next.to_string());
+            hasher.update(instruction.time_next.to_string());
         }
         self.instructions_hash = hasher.finalize()[..].to_vec();
 
@@ -130,7 +170,7 @@ impl Recipe {
         event: Event<AdvancePrepChanged>,
     ) -> anyhow::Result<()> {
         let mut hasher = Sha3_224::default();
-        hasher.update(event.data.description);
+        hasher.update(event.data.advance_prep);
 
         self.advance_prep_hash = hasher.finalize()[..].to_vec();
         Ok(())

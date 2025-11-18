@@ -17,14 +17,14 @@ pub enum RecipeType {
 #[derive(Encode, Decode, Clone, Deserialize)]
 pub struct Ingredient {
     pub name: String,
-    pub quantity: u8,
+    pub quantity: u16,
     pub unit: String,
 }
 
 #[derive(Encode, Decode, Clone, Deserialize)]
 pub struct Instruction {
     pub description: String,
-    pub time_before_next: u16,
+    pub time_next: u16,
 }
 
 #[derive(
@@ -89,6 +89,19 @@ pub struct Created {
 }
 
 #[derive(AggregatorName, Encode, Decode)]
+pub struct Imported {
+    pub name: String,
+    pub description: String,
+    pub recipe_type: RecipeType,
+    pub cuisine_type: CuisineType,
+    pub prep_time: u16,
+    pub cook_time: u16,
+    pub ingredients: Vec<Ingredient>,
+    pub instructions: Vec<Instruction>,
+    pub advance_prep: String,
+}
+
+#[derive(AggregatorName, Encode, Decode)]
 pub struct RecipeTypeChanged {
     pub recipe_type: RecipeType,
 }
@@ -129,7 +142,7 @@ pub struct MainCourseOptionsChanged {
 
 #[derive(AggregatorName, Encode, Decode)]
 pub struct AdvancePrepChanged {
-    pub description: String,
+    pub advance_prep: String,
 }
 
 #[derive(AggregatorName, Encode, Decode)]

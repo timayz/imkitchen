@@ -1,0 +1,25 @@
+{
+  "name": "Spaghetti Carbonara",
+  "description": "Classic Italian pasta with creamy egg sauce and pancetta",
+  "recipe_type": "MainCourse",
+  "cuisine_type": "Italian",
+  "prep_time": 10,
+  "cook_time": 20,
+  "ingredients": [
+    { "quantity": 400, "unit": "g", "name": "Spaghetti" },
+    { "quantity": 200, "unit": "g", "name": "Pancetta" },
+    { "quantity": 4, "unit": "", "name": "Egg yolks" },
+    { "quantity": 100, "unit": "g", "name": "Parmesan cheese" },
+    { "quantity": 2, "unit": "cloves", "name": "Garlic" },
+    { "quantity": 1, "unit": "tsp", "name": "Black pepper" }
+  ],
+  "instructions": [
+    { "description": "Bring large pot of salted water to boil", "time_next": 5 },
+    { "description": "Cook spaghetti according to package directions", "time_next": 10 },
+    { "description": "Meanwhile, fry pancetta until crispy", "time_next": 8 },
+    { "description": "Whisk egg yolks with parmesan in bowl", "time_next": 2 },
+    { "description": "Drain pasta, reserve 1 cup pasta water", "time_next": 1 },
+    { "description": "Toss hot pasta with pancetta, add egg mixture off heat, stir quickly", "time_next": 0 }
+  ],
+  "advance_prep": null
+}

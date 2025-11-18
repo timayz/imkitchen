@@ -100,7 +100,7 @@
         <input type="hidden" name="ingredients_name" />
         {% if form.ingredients.is_empty() %}
         <div class="flex gap-3">
-          <input type="number" name="ingredients_quantity" value="1" min="1" max="255" placeholder="2" class="w-24 px-4 py-2 border border-gray-300 rounded-lg" required />
+          <input type="number" name="ingredients_quantity" value="1" min="1" max="65535" placeholder="2" class="w-24 px-4 py-2 border border-gray-300 rounded-lg" required />
           <input type="text" name="ingredients_unit" maxlength="10" placeholder="cups" class="w-32 px-4 py-2 border border-gray-300 rounded-lg" />
           <input type="text" name="ingredients_name" minlength="1" maxlength="30" placeholder="Jasmine rice" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg" required />
           <button ts-trigger="click" ts-action="remove 'parent div'" type="button" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">✕</button>
@@ -108,7 +108,7 @@
         {% endif %}
         {% for ingredient in form.ingredients %}
         <div class="flex gap-3">
-          <input type="number" name="ingredients_quantity" value="{{ ingredient.quantity }}" min="1" max="255" class="w-24 px-4 py-2 border border-gray-300 rounded-lg" required />
+          <input type="number" name="ingredients_quantity" value="{{ ingredient.quantity }}" min="1" max="65535" class="w-24 px-4 py-2 border border-gray-300 rounded-lg" required />
           <input type="text" name="ingredients_unit" value="{{ ingredient.unit }}" maxlength="10" class="w-32 px-4 py-2 border border-gray-300 rounded-lg" />
           <input type="text" name="ingredients_name" value="{{ ingredient.name }}" minlength="1" maxlength="30" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg" required />
           <button ts-trigger="click" ts-action="remove 'parent div'" type="button" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">✕</button>
@@ -126,14 +126,14 @@
       <h2 class="text-xl font-bold mb-4">{{ "Instructions"|t }}</h2>
       <div id="instructions" class="space-y-3">
         <input type="hidden" name="instructions_description"></textarea>
-        <input type="hidden" name="instructions_time_before_next" value="0"></textarea>
+        <input type="hidden" name="instructions_time_next" value="0"></textarea>
         <input type="hidden" name="instructions_description"></textarea>
-        <input type="hidden" name="instructions_time_before_next" value="0"></textarea>
+        <input type="hidden" name="instructions_time_next" value="0"></textarea>
         {% if form.instructions.is_empty() %}
         <div class="flex gap-3">
           <textarea name="instructions_description" rows="2" placeholder="{{ "First step..."|t }}"
             class="flex-1 px-4 py-2 border border-gray-300 rounded-lg" minlength="1" required></textarea>
-          <input type="number" name="instructions_time_before_next" min="0" value="0" class="w-24 px-4 py-2 border border-gray-300 rounded-lg" required />
+          <input type="number" name="instructions_time_next" min="0" value="0" class="w-24 px-4 py-2 border border-gray-300 rounded-lg" required />
           <button ts-trigger="click" ts-action="remove 'parent div'" type="button" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">✕</button>
         </div>
         {% endif %}
@@ -141,7 +141,7 @@
         <div class="flex gap-3">
           <textarea name="instructions_description" rows="2"
               class="flex-1 px-4 py-2 border border-gray-300 rounded-lg" minlength="1" required>{{ instruction.description }}</textarea>
-          <input type="number" name="instructions_time_before_next" min="0" value="{{ instruction.time_before_next }}" class="w-24 px-4 py-2 border border-gray-300 rounded-lg" required />
+          <input type="number" name="instructions_time_next" min="0" value="{{ instruction.time_next }}" class="w-24 px-4 py-2 border border-gray-300 rounded-lg" required />
           <button ts-trigger="click" ts-action="remove 'parent div'" type="button" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">✕</button>
         </div>
         {% endfor %}

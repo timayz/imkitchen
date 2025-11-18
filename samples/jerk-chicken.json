@@ -1,0 +1,27 @@
+{
+  "name": "Jerk Chicken",
+  "description": "Spicy Caribbean grilled chicken with traditional jerk seasoning",
+  "recipe_type": "MainCourse",
+  "cuisine_type": "Caribbean",
+  "prep_time": 20,
+  "cook_time": 40,
+  "ingredients": [
+    { "quantity": 1, "unit": "kg", "name": "Chicken pieces" },
+    { "quantity": 3, "unit": "", "name": "Scotch bonnet peppers" },
+    { "quantity": 6, "unit": "", "name": "Green onions" },
+    { "quantity": 4, "unit": "cloves", "name": "Garlic" },
+    { "quantity": 2, "unit": "tbsp", "name": "Allspice" },
+    { "quantity": 1, "unit": "tbsp", "name": "Thyme" },
+    { "quantity": 2, "unit": "tbsp", "name": "Brown sugar" },
+    { "quantity": 3, "unit": "tbsp", "name": "Soy sauce" },
+    { "quantity": 1, "unit": "", "name": "Lime" }
+  ],
+  "instructions": [
+    { "description": "Blend peppers, onions, garlic, spices, soy sauce, lime juice", "time_next": 5 },
+    { "description": "Score chicken pieces and rub with jerk marinade", "time_next": 5 },
+    { "description": "Marinate in refrigerator for at least 4 hours", "time_next": 0 },
+    { "description": "Preheat grill to medium-high heat", "time_next": 10 },
+    { "description": "Grill chicken, turning occasionally, until cooked through", "time_next": 40 }
+  ],
+  "advance_prep": "Marinate chicken for 4-24 hours before grilling"
+}

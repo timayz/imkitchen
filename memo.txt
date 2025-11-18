@@ -1,16 +1,17 @@
 # after create-story/story-context
 `make check` must succeed, always run `make check` at the end to make sure it succeed, do not ignore test.
+commit base on story: 'docs/stories/xxx.md'
 git checkout new, add -A, commit, push.
 conventional commits multi-paragraph body:
-  - story: 'docs/stories/xxx.md'
   - target audiences: end users that only use WEB UI
-    - do not mention any abort claude code
+  - do not mention any abort claude code
 create PR: 
   - title: same as commit
   - body: 
     - story tasks / subtasks, not marked as complete
     - closed that issue xxx
     - do not mention any abort claude code
+    - AC: 1,2,3 no #1,#2,#3
   - target: alpha
 
 git checkout new,add -A,commit,push,create PR witch closed github issue 141 on merged

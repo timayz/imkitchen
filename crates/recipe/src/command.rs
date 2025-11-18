@@ -6,10 +6,26 @@ use validator::Validate;
 
 use crate::{
     AccompanimentType, AdvancePrepChanged, BasicInformationChanged, Created, CuisineType,
-    CuisineTypeChanged, Deleted, DietaryRestriction, DietaryRestrictionsChanged, Ingredient,
-    IngredientsChanged, Instruction, InstructionsChanged, MainCourseOptionsChanged, Recipe,
-    RecipeType, RecipeTypeChanged,
+    CuisineTypeChanged, Deleted, DietaryRestriction, DietaryRestrictionsChanged, Imported,
+    Ingredient, IngredientsChanged, Instruction, InstructionsChanged, MainCourseOptionsChanged,
+    Recipe, RecipeType, RecipeTypeChanged,
 };
+
+#[derive(Validate, Clone)]
+pub struct ImportInput {
+    pub recipe_type: RecipeType,
+    #[validate(length(min = 3, max = 30))]
+    pub name: String,
+    #[validate(length(min = 3, max = 2000))]
+    pub description: String,
+    pub prep_time: u16,
+    pub cook_time: u16,
+    pub ingredients: Vec<Ingredient>,
+    pub instructions: Vec<Instruction>,
+    pub cuisine_type: CuisineType,
+    #[validate(length(max = 2000))]
+    pub advance_prep: String,
+}
 
 #[derive(Validate, Clone)]
 pub struct UpdateInput {
@@ -55,6 +71,30 @@ impl<E: Executor + Clone> Command<E> {
                 name: "".to_owned(),
             })?
             .metadata(&metadata)?
+            .commit(&self.0)
+            .await?)
+    }
+
+    pub async fn import(
+        &self,
+        input: ImportInput,
+        metadata: &Metadata,
+    ) -> imkitchen_shared::Result<String> {
+        input.validate()?;
+
+        Ok(evento::create::<Recipe>()
+            .data(&Imported {
+                name: input.name,
+                description: input.description,
+                recipe_type: input.recipe_type,
+                cuisine_type: input.cuisine_type,
+                prep_time: input.prep_time,
+                cook_time: input.cook_time,
+                advance_prep: input.advance_prep,
+                ingredients: input.ingredients,
+                instructions: input.instructions,
+            })?
+            .metadata(metadata)?
             .commit(&self.0)
             .await?)
     }
@@ -111,7 +151,7 @@ impl<E: Executor + Clone> Command<E> {
 
         for instruction in input.instructions.iter() {
             hasher.update(&instruction.description);
-            hasher.update(instruction.time_before_next.to_string());
+            hasher.update(instruction.time_next.to_string());
         }
 
         let instructions_hash = hasher.finalize()[..].to_vec();
@@ -178,7 +218,7 @@ impl<E: Executor + Clone> Command<E> {
         if recipe.item.advance_prep_hash != advance_prep_hash {
             has_data = true;
             builder = builder.data(&AdvancePrepChanged {
-                description: input.advance_prep,
+                advance_prep: input.advance_prep,
             })?;
         }
         if !has_data {

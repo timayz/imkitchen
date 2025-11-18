@@ -31,7 +31,7 @@ pub struct EditForm {
     #[serde(default)]
     pub ingredients: Vec<Ingredient>,
     #[serde(default)]
-    pub ingredients_quantity: Vec<u8>,
+    pub ingredients_quantity: Vec<u16>,
     #[serde(default)]
     pub ingredients_unit: Vec<String>,
     #[serde(default)]
@@ -41,7 +41,7 @@ pub struct EditForm {
     #[serde(default)]
     pub instructions_description: Vec<String>,
     #[serde(default)]
-    pub instructions_time_before_next: Vec<u16>,
+    pub instructions_time_next: Vec<u16>,
     #[serde(default)]
     pub dietary_restrictions: Vec<DietaryRestriction>,
     pub cuisine_type: CuisineType,
@@ -131,7 +131,7 @@ pub async fn page(
                 ingredients_name: vec![],
                 ingredients_quantity: vec![],
                 instructions_description: vec![],
-                instructions_time_before_next: vec![],
+                instructions_time_next: vec![],
             },
             id,
             ..Default::default()
@@ -191,7 +191,7 @@ pub async fn action(
         });
     }
 
-    if input.instructions_description.len() != input.instructions_time_before_next.len() {
+    if input.instructions_description.len() != input.instructions_time_next.len() {
         return template.render(EditTemplate {
             id,
             user,
@@ -228,7 +228,7 @@ pub async fn action(
     for (pos, description) in input.instructions_description.iter().skip(2).enumerate() {
         instructions.push(Instruction {
             description: description.to_owned(),
-            time_before_next: input.instructions_time_before_next[pos + 2].to_owned(),
+            time_next: input.instructions_time_next[pos + 2].to_owned(),
         });
     }
 

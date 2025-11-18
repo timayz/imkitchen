@@ -4,7 +4,8 @@ use evento::{AggregatorName, Executor, SubscribeBuilder};
 use imkitchen_contact::{Contact, FormSubmitted, MarkedReadAndReply, Resolved};
 use imkitchen_db::table::GlobalStatPjt;
 use imkitchen_recipe::{
-    Created as RecipeCreated, Deleted as RecipeDeleted, MadePrivate, Recipe, SharedToCommunity,
+    Created as RecipeCreated, Deleted as RecipeDeleted, Imported as RecipeImported, MadePrivate,
+    Recipe, SharedToCommunity,
 };
 use imkitchen_shared::Event;
 use imkitchen_user::{RegistrationSucceeded, User};
@@ -145,6 +146,7 @@ pub fn subscribe_global_stat<E: Executor + Clone>() -> SubscribeBuilder<E> {
         .handler(handle_contact_marked_read_and_reply())
         .handler(handle_contact_resolved())
         .handler(handle_recipe_created())
+        .handler(handle_recipe_imported())
         .handler(handle_recipe_deleted())
         .handler(handle_recipe_shared_to_community())
         .handler(handle_recipe_made_private())
@@ -289,6 +291,32 @@ async fn handle_contact_resolved<E: Executor>(
 async fn handle_recipe_created<E: Executor>(
     context: &evento::Context<'_, E>,
     event: Event<RecipeCreated>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let user_id = event.metadata.trigger_by()?;
+
+    let statement = Query::insert()
+        .into_table(GlobalStatPjt::Table)
+        .columns([GlobalStatPjt::Key, GlobalStatPjt::Value])
+        .values_panic([format!("total_recipes_{user_id}").into(), 1.into()])
+        .on_conflict(
+            OnConflict::column(GlobalStatPjt::Key)
+                .value(GlobalStatPjt::Value, Expr::col(GlobalStatPjt::Value).add(1))
+                .to_owned(),
+        )
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
+}
+
+#[evento::handler(Recipe)]
+async fn handle_recipe_imported<E: Executor>(
+    context: &evento::Context<'_, E>,
+    event: Event<RecipeImported>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
     let user_id = event.metadata.trigger_by()?;

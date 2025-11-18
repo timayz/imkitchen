@@ -32,7 +32,7 @@ async fn test_update_no_fields() -> anyhow::Result<()> {
             unit: "g".to_owned(),
         }],
         instructions: vec![Instruction {
-            time_before_next: 15,
+            time_next: 15,
             description: "My first instruction".to_owned(),
         }],
         cook_time: 25,
@@ -86,7 +86,7 @@ async fn test_update_only_recipe_type() -> anyhow::Result<()> {
             unit: "g".to_owned(),
         }],
         instructions: vec![Instruction {
-            time_before_next: 15,
+            time_next: 15,
             description: "My first instruction".to_owned(),
         }],
         cook_time: 25,
@@ -139,7 +139,7 @@ async fn test_update_only_cuisine_type() -> anyhow::Result<()> {
             unit: "g".to_owned(),
         }],
         instructions: vec![Instruction {
-            time_before_next: 15,
+            time_next: 15,
             description: "My first instruction".to_owned(),
         }],
         cook_time: 25,
@@ -192,7 +192,7 @@ async fn test_update_only_name() -> anyhow::Result<()> {
             unit: "g".to_owned(),
         }],
         instructions: vec![Instruction {
-            time_before_next: 15,
+            time_next: 15,
             description: "My first instruction".to_owned(),
         }],
         cook_time: 25,
@@ -251,7 +251,7 @@ async fn test_update_only_description() -> anyhow::Result<()> {
             unit: "g".to_owned(),
         }],
         instructions: vec![Instruction {
-            time_before_next: 15,
+            time_next: 15,
             description: "My first instruction".to_owned(),
         }],
         cook_time: 25,
@@ -310,7 +310,7 @@ async fn test_update_only_prep_time() -> anyhow::Result<()> {
             unit: "g".to_owned(),
         }],
         instructions: vec![Instruction {
-            time_before_next: 15,
+            time_next: 15,
             description: "My first instruction".to_owned(),
         }],
         cook_time: 25,
@@ -369,7 +369,7 @@ async fn test_update_only_cook_time() -> anyhow::Result<()> {
             unit: "g".to_owned(),
         }],
         instructions: vec![Instruction {
-            time_before_next: 15,
+            time_next: 15,
             description: "My first instruction".to_owned(),
         }],
         cook_time: 25,
@@ -428,7 +428,7 @@ async fn test_update_only_ingredients() -> anyhow::Result<()> {
             unit: "g".to_owned(),
         }],
         instructions: vec![Instruction {
-            time_before_next: 15,
+            time_next: 15,
             description: "My first instruction".to_owned(),
         }],
         cook_time: 25,
@@ -497,7 +497,7 @@ async fn test_update_only_ingredients_empty() -> anyhow::Result<()> {
             unit: "g".to_owned(),
         }],
         instructions: vec![Instruction {
-            time_before_next: 15,
+            time_next: 15,
             description: "My first instruction".to_owned(),
         }],
         cook_time: 25,
@@ -551,7 +551,7 @@ async fn test_update_only_instructions() -> anyhow::Result<()> {
             unit: "g".to_owned(),
         }],
         instructions: vec![Instruction {
-            time_before_next: 15,
+            time_next: 15,
             description: "My first instruction".to_owned(),
         }],
         cook_time: 25,
@@ -567,11 +567,11 @@ async fn test_update_only_instructions() -> anyhow::Result<()> {
 
     input.instructions = vec![
         Instruction {
-            time_before_next: 20,
+            time_next: 20,
             description: "Updated first instruction".to_owned(),
         },
         Instruction {
-            time_before_next: 10,
+            time_next: 10,
             description: "New second instruction".to_owned(),
         },
     ];
@@ -590,7 +590,7 @@ async fn test_update_only_instructions() -> anyhow::Result<()> {
         event_data.data.instructions[0].description,
         "Updated first instruction"
     );
-    assert_eq!(event_data.data.instructions[0].time_before_next, 20);
+    assert_eq!(event_data.data.instructions[0].time_next, 20);
     assert_eq!(
         event_data.data.instructions[1].description,
         "New second instruction"
@@ -623,7 +623,7 @@ async fn test_update_only_dietary_restrictions() -> anyhow::Result<()> {
             unit: "g".to_owned(),
         }],
         instructions: vec![Instruction {
-            time_before_next: 15,
+            time_next: 15,
             description: "My first instruction".to_owned(),
         }],
         cook_time: 25,
@@ -695,7 +695,7 @@ async fn test_update_only_accepts_accompaniment() -> anyhow::Result<()> {
             unit: "g".to_owned(),
         }],
         instructions: vec![Instruction {
-            time_before_next: 15,
+            time_next: 15,
             description: "My first instruction".to_owned(),
         }],
         cook_time: 25,
@@ -756,7 +756,7 @@ async fn test_update_only_preferred_accompaniment_types() -> anyhow::Result<()> 
             unit: "g".to_owned(),
         }],
         instructions: vec![Instruction {
-            time_before_next: 15,
+            time_next: 15,
             description: "My first instruction".to_owned(),
         }],
         cook_time: 25,
@@ -821,7 +821,7 @@ async fn test_update_only_advance_prep() -> anyhow::Result<()> {
             unit: "g".to_owned(),
         }],
         instructions: vec![Instruction {
-            time_before_next: 15,
+            time_next: 15,
             description: "My first instruction".to_owned(),
         }],
         cook_time: 25,
@@ -847,7 +847,7 @@ async fn test_update_only_advance_prep() -> anyhow::Result<()> {
     assert_eq!(loaded.event.version, 8);
     let event_data = event.unwrap();
     assert_eq!(
-        event_data.data.description,
+        event_data.data.advance_prep,
         "Updated advance preparation instructions"
     );
 
