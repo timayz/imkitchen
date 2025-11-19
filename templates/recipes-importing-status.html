@@ -1,5 +1,5 @@
 {% if let Some(id) = id %}
-<div ts-trigger="load delay 1s" ts-req="/recipes/import/status/{{ id }}"></div>
+<div ts-trigger="load delay 1s" ts-req="/recipes/import/{{ id }}/status"></div>
 {% else %}
 <div ts-trigger="load" ts-action="remove #recipes-importing-alert"></div>
 {% endif %}

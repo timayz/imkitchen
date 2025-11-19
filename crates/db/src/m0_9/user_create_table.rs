@@ -27,6 +27,12 @@ fn up_statement() -> TableCreateStatement {
                 .string_len(15),
         )
         .col(
+            ColumnDef::new(User::State)
+                .string()
+                .not_null()
+                .string_len(15),
+        )
+        .col(
             ColumnDef::new(User::SubscriptionEndAt)
                 .big_integer()
                 .not_null()

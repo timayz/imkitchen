@@ -2,11 +2,9 @@ mod assets;
 mod auth;
 mod cli;
 mod config;
-mod db;
 // mod email;
 mod language;
 mod middleware;
-mod query;
 mod routes;
 mod template;
 

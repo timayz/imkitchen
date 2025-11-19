@@ -3,6 +3,7 @@ use axum::{
     response::IntoResponse,
 };
 use axum_extra::extract::Form;
+use imkitchen::query_recipe_detail_by_id;
 use imkitchen_recipe::{
     AccompanimentType, CuisineType, DietaryRestriction, Ingredient, Instruction, RecipeType,
     UpdateInput,
@@ -13,7 +14,6 @@ use strum::VariantArray;
 
 use crate::{
     auth::AuthUser,
-    query::query_recipe_detail_by_id,
     routes::AppState,
     template::{
         FORBIDDEN, ForbiddenTemplate, NOT_FOUND, NotFoundTemplate, SERVER_ERROR_MESSAGE,
@@ -68,6 +68,7 @@ pub struct EditTemplate {
     pub user: imkitchen_user::AuthUser,
     pub form: EditForm,
     pub error_message: Option<String>,
+    pub succeeded: bool,
 }
 
 impl Default for EditTemplate {
@@ -78,6 +79,7 @@ impl Default for EditTemplate {
             form: EditForm::default(),
             error_message: None,
             id: "".to_owned(),
+            succeeded: false,
         }
     }
 }
@@ -260,6 +262,7 @@ pub async fn action(
             id,
             user,
             form,
+            succeeded: true,
             ..Default::default()
         }),
         Err(imkitchen_shared::Error::Unknown(e)) => {

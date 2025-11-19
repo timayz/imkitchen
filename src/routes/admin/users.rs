@@ -3,15 +3,15 @@ use axum::{
     response::IntoResponse,
 };
 use evento::cursor::{Args, Edge, ReadResult, Value};
+use imkitchen::{
+    AdminUser, AdminUserAccountType, AdminUserGlobalStats, AdminUserInput, AdminUserSortBy,
+    AdminUserStatus, query_admin_user_by_id, query_admin_users, query_admin_users_global_stats,
+};
 use imkitchen_shared::Metadata;
 use serde::Deserialize;
 
 use crate::{
     auth::AuthAdmin,
-    query::{
-        AdminUser, AdminUserAccountType, AdminUserGlobalStats, AdminUserInput, AdminUserSortBy,
-        AdminUserStatus, query_admin_user_by_id, query_admin_users, query_admin_users_global_stats,
-    },
     routes::AppState,
     template::{ServerErrorTemplate, Template},
 };

@@ -6,6 +6,7 @@ pub enum User {
     Id,
     Email,
     Role,
+    State,
     SubscriptionEndAt,
     CreatedAt,
 }

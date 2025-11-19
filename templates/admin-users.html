@@ -161,7 +161,7 @@
               <div class="flex gap-2">
               {% if user.node.is_suspended() %}
                   <button class="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded hover:bg-green-200"
-                          ts-req="/admin/users/activate/{{ user.node.id }}"
+                          ts-req="/admin/users/{{ user.node.id }}/activate"
                           ts-req-method="POST"
                           ts-req-selector="#user-{{ user.node.id }}"
                           ts-target="#user-{{ user.node.id }}">
@@ -169,7 +169,7 @@
                   </button>
               {% else if !user.node.is_admin() %}
                   <button class="px-3 py-1 bg-red-100 text-red-700 text-xs font-semibold rounded hover:bg-red-200"
-                          ts-req="/admin/users/suspend/{{ user.node.id }}"
+                          ts-req="/admin/users/{{ user.node.id }}/suspend"
                           ts-req-method="POST"
                           ts-req-selector="#user-{{ user.node.id }}"
                           ts-target="#user-{{ user.node.id }}">
@@ -178,7 +178,7 @@
               {% endif %}
               {% if user.node.is_premium() %}
                   <button class="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-semibold rounded hover:bg-gray-200"
-                          ts-req="/admin/users/toggle-premium/{{ user.node.id }}"
+                          ts-req="/admin/users/{{ user.node.id }}/toggle-premium"
                           ts-req-method="POST"
                           ts-req-selector="#user-{{ user.node.id }}"
                           ts-target="#user-{{ user.node.id }}">
@@ -186,7 +186,7 @@
                   </button>
               {% else if user.node.is_free_tier() %}
                   <button class="px-3 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded hover:bg-purple-200"
-                          ts-req="/admin/users/toggle-premium/{{ user.node.id }}"
+                          ts-req="/admin/users/{{ user.node.id }}/toggle-premium"
                           ts-req-method="POST"
                           ts-req-selector="#user-{{ user.node.id }}"
                           ts-target="#user-{{ user.node.id }}">

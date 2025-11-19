@@ -169,7 +169,7 @@
           </div>
           <div class="mt-3 flex flex-col md:flex-row gap-2">
             {% if contact.node.is_unread() %}
-            <button ts-req="/admin/contact/mark-read-and-reply/{{ contact.node.id }}"
+            <button ts-req="/admin/contact/{{ contact.node.id }}/mark-read-and-reply"
               ts-req-method="POST"
               ts-req-selector="#contact-{{ contact.node.id }}"
               ts-target="#contact-{{ contact.node.id }}"
@@ -178,7 +178,7 @@
             </button>
             {% endif %}
             {% if !contact.node.is_resolved() %}
-            <button ts-req="/admin/contact/resolve/{{ contact.node.id }}"
+            <button ts-req="/admin/contact/{{ contact.node.id }}/resolve"
               ts-req-method="POST"
               ts-req-selector="#contact-{{ contact.node.id }}"
               ts-target="#contact-{{ contact.node.id }}"
@@ -187,7 +187,7 @@
             </button>
             {% endif %}
             {% if contact.node.is_resolved() %}
-            <button ts-req="/admin/contact/reopen/{{ contact.node.id }}"
+            <button ts-req="/admin/contact/{{ contact.node.id }}/reopen"
               ts-req-method="POST"
               ts-req-selector="#contact-{{ contact.node.id }}"
               ts-target="#contact-{{ contact.node.id }}"

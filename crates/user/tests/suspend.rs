@@ -1,5 +1,5 @@
 use imkitchen_shared::Metadata;
-use imkitchen_user::{Role, subscribe_command};
+use imkitchen_user::{Role, State, subscribe_command};
 
 mod helpers;
 
@@ -15,7 +15,7 @@ async fn test_suspend() -> anyhow::Result<()> {
     command.suspend(&user, Metadata::default()).await?;
 
     let loaded = command.load(&user).await?;
-    assert_eq!(loaded.item.role, Role::Suspend);
+    assert_eq!(loaded.item.state, State::Suspended);
 
     command.activate(&user, Metadata::default()).await?;
 

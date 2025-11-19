@@ -9,7 +9,7 @@ use axum_extra::extract::{
     CookieJar,
     cookie::{Cookie, Expiration, SameSite},
 };
-use imkitchen_user::Role;
+use imkitchen_user::State;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
@@ -110,7 +110,7 @@ impl FromRequestParts<crate::routes::AppState> for AuthUser {
             return Err(Redirect::to("/login"));
         };
 
-        if user.role == Role::Suspend.to_string() {
+        if user.state == State::Suspended {
             return Err(Redirect::to("/login"));
         }
 
@@ -118,7 +118,7 @@ impl FromRequestParts<crate::routes::AppState> for AuthUser {
             user.subscription_end_at = (SystemTime::now()
                 + Duration::from_secs(10 * 365 * 24 * 60 * 60))
             .duration_since(UNIX_EPOCH)
-            .map_or(0, |d| d.as_secs() as i64);
+            .map_or(0, |d| d.as_secs());
         }
 
         parts.extensions.insert(AuthUser(user.clone()));

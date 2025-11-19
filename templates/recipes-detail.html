@@ -260,13 +260,13 @@
       <div class="bg-white rounded-lg shadow-lg p-6">
         <h3 class="font-bold text-lg mb-4">{{ "Actions"|t }}</h3>
         <div class="space-y-3">
-          <a href="/recipes/edit/{{ recipe.id }}" class="w-full block text-center px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">
+          <a href="/recipes/{{ recipe.id }}/edit" class="w-full block text-center px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">
             📝 {{ "Edit Recipe"|t }}
           </a>
           <button class="w-full px-4 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">
             👥 {{ "Share to Community"|t }}
           </button>
-          <button ts-trigger="click" ts-req="/recipes/delete/{{ recipe.id }}" ts-target="body" ts-swap="append"
+          <button ts-trigger="click" ts-req="/recipes/{{ recipe.id }}/delete" ts-target="body" ts-swap="append"
             class="w-full px-4 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300">
             🗑️ {{ "Delete"|t }}
           </button>
