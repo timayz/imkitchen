@@ -52,7 +52,7 @@ sha3 = "0.10"
 
 [package]
 name = "imkitchen"
-version = "0.9.4"
+version = "0.10.0"
 edition.workspace = true
 
 [package.metadata.cargo-machete]
@@ -89,11 +89,11 @@ jsonwebtoken = { workspace = true }
 futures = { workspace = true }
 time = { workspace = true }
 strum = { workspace = true }
-imkitchen-shared = { path = "crates/shared", version = "0.9.4" }
-imkitchen-contact = { path = "crates/contact", version = "0.9.4" }
-imkitchen-recipe = { path = "crates/recipe", version = "0.9.4" }
-imkitchen-user = { path = "crates/user", version = "0.9.4" }
-imkitchen-db = { path = "crates/db", version = "0.9.4" }
+imkitchen-shared = { path = "crates/shared", version = "0.10.0" }
+imkitchen-contact = { path = "crates/contact", version = "0.10.0" }
+imkitchen-recipe = { path = "crates/recipe", version = "0.10.0" }
+imkitchen-user = { path = "crates/user", version = "0.10.0" }
+imkitchen-db = { path = "crates/db", version = "0.10.0" }
 
 [dev-dependencies]
 http-body-util = "0.1"
