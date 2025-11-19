@@ -89,7 +89,7 @@
     <!-- Message 1 - Unread -->
     {% for contact in contacts.edges %}
     <div id="contact-{{ contact.node.id }}" class="border-b hover:bg-gray-50 cursor-pointer"{% if let (true, true, Some(cursor)) = (loop.last, contacts.page_info.has_next_page, contacts.page_info.end_cursor.to_owned()) %}
-            ts-req="/admin/contact?after={{ cursor.to_string() }}"
+            ts-req="/admin/contact?after={{ cursor.to_string() }}{% if let Some(sort_by) = query.sort_by %}&sort_by={{ sort_by }}{% endif %}{% if let Some(subject) = query.subject %}&subject={{ subject }}{% endif %}{% if let Some(status) = query.status %}&status={{ status }}{% endif %}"
             ts-req-method="GET"
             ts-req-selector="children #contacts-list"
             ts-swap="afterend"

@@ -25,6 +25,7 @@ pub struct ContactTemplate {
     pub current_path: String,
     pub stats: ContactGlobalStats,
     pub contacts: ReadResult<Contact>,
+    pub query: PageQuery,
 }
 
 impl Default for ContactTemplate {
@@ -33,11 +34,12 @@ impl Default for ContactTemplate {
             current_path: "contact".to_owned(),
             stats: ContactGlobalStats::default(),
             contacts: ReadResult::default(),
+            query: Default::default(),
         }
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Default, Clone)]
 pub struct PageQuery {
     pub first: Option<u16>,
     pub after: Option<Value>,
@@ -66,6 +68,7 @@ pub async fn page(
         }
     };
 
+    let r_query = query.clone();
     let subject = ContactSubject::from_str(&query.subject.unwrap_or("".to_owned())).ok();
     let status = ContactStatus::from_str(&query.status.unwrap_or("".to_owned())).ok();
     let sort_by = ContactSortBy::from_str(&query.sort_by.unwrap_or("".to_owned()))
@@ -103,6 +106,7 @@ pub async fn page(
         .render(ContactTemplate {
             stats,
             contacts,
+            query: r_query,
             ..Default::default()
         })
         .into_response()
