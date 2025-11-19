@@ -88,7 +88,7 @@
   <div id="recipes-list" class="grid md:grid-cols-3 gap-6">
     {% for recipe in recipes.edges %}
     <div id="recipe-{{ recipe.node.id }}"{% if let (true, true, Some(cursor)) = (loop.last, recipes.page_info.has_next_page, recipes.page_info.end_cursor.to_owned()) %}
-            ts-req="/recipes?after={{ cursor.to_string() }}"
+         ts-req="/recipes?after={{ cursor.to_string() }}{% if let Some(recipe_type) = query.recipe_type %}&recipe_type={{ recipe_type }}{% endif %}{% if let Some(cuisine_type) = query.cuisine_type %}&cuisine_type={{ cuisine_type }}{% endif %}"
             ts-req-method="GET"
             ts-req-selector="children #recipes-list"
             ts-swap="afterend"
