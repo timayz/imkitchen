@@ -139,8 +139,8 @@ pub async fn status(
         }
     };
 
-    match user.item.status {
-        imkitchen_user::Status::Idle => {
+    match (user.item.status, user.item.failed_reason) {
+    (imkitchen_user::Status::Idle,_) => {
             let result = if user.item.email == state.config.root.email {
                 state.user_command.made_admin(&user.event.aggregator_id, Metadata::default()).await
             } else {
@@ -173,7 +173,7 @@ pub async fn status(
             (jar, resp).into_response()
 
         }
-        imkitchen_user::Status::Failed(reason) => (
+        (imkitchen_user::Status::Failed, Some(reason)) => (
             [
                 (
                     "ts-swap-push",
@@ -186,7 +186,8 @@ pub async fn status(
             }),
         )
             .into_response(),
-        imkitchen_user::Status::Processing(_) => template
+        (imkitchen_user::Status::Failed,_) => unreachable!(),
+        (imkitchen_user::Status::Processing,_) => template
             .render(RegisterStatusTemplate { id })
             .into_response(),
     }

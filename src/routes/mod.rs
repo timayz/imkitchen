@@ -46,7 +46,7 @@ pub fn router(app_state: AppState) -> Router {
         .route("/policy", get(policy::page))
         .route("/contact", get(contact::page).post(contact::action))
         .route("/register", get(register::page).post(register::action))
-        .route("/register/status/{id}", get(register::status))
+        .route("/register/{id}/status", get(register::status))
         .route(
             "/login",
             get(login::page).post(crate::routes::login::action),
@@ -57,25 +57,25 @@ pub fn router(app_state: AppState) -> Router {
         .route("/recipes", get(recipes::index::page))
         .route("/recipes/create", get(recipes::index::create))
         .route(
-            "/recipes/create/status/{id}",
+            "/recipes/create/{id}/status",
             get(recipes::index::create_status),
         )
         .route(
             "/recipes/import",
             get(recipes::import::page).post(recipes::import::action),
         )
-        .route("/recipes/import/status/{id}", get(recipes::import::status))
-        .route("/recipes/detail/{id}", get(recipes::detail::page))
+        .route("/recipes/import/{id}/status", get(recipes::import::status))
+        .route("/recipes/{id}/detail", get(recipes::detail::page))
         .route(
-            "/recipes/delete/status/{id}",
+            "/recipes/{id}/delete/status",
             get(recipes::detail::delete_status),
         )
         .route(
-            "/recipes/delete/{id}",
+            "/recipes/{id}/delete",
             get(recipes::detail::delete_modal).post(recipes::detail::delete_action),
         )
         .route(
-            "/recipes/edit/{id}",
+            "/recipes/{id}/edit",
             get(recipes::edit::page).post(recipes::edit::action),
         )
         .route(
@@ -108,19 +108,19 @@ pub fn router(app_state: AppState) -> Router {
             get(profile::security::page).post(profile::security::action),
         )
         .route("/admin/users", get(admin::users::page))
-        .route("/admin/users/suspend/{id}", post(admin::users::suspend))
-        .route("/admin/users/activate/{id}", post(admin::users::activate))
+        .route("/admin/users/{id}/suspend", post(admin::users::suspend))
+        .route("/admin/users/{id}/activate", post(admin::users::activate))
         .route(
-            "/admin/users/toggle-premium/{id}",
+            "/admin/users/{id}/toggle-premium",
             post(admin::users::toggle_premium),
         )
         .route("/admin/contact", get(admin::contact::page))
         .route(
-            "/admin/contact/mark-read-and-reply/{id}",
+            "/admin/contact/{id}/mark-read-and-reply",
             post(admin::contact::mark_read_and_reply),
         )
-        .route("/admin/contact/resolve/{id}", post(admin::contact::resolve))
-        .route("/admin/contact/reopen/{id}", post(admin::contact::reopen))
+        .route("/admin/contact/{id}/resolve", post(admin::contact::resolve))
+        .route("/admin/contact/{id}/reopen", post(admin::contact::reopen))
         .fallback(fallback)
         .route("/sw.js", get(service_worker::sw))
         .nest_service("/static", crate::assets::AssetsService::new())

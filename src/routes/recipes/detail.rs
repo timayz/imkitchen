@@ -3,12 +3,12 @@ use axum::{
     response::{IntoResponse, Redirect},
 };
 
+use imkitchen::{RecipeDetail, query_recipe_detail_by_id};
 use imkitchen_recipe::RecipeType;
 use imkitchen_shared::Metadata;
 
 use crate::{
     auth::AuthUser,
-    query::{RecipeDetail, query_recipe_detail_by_id},
     routes::AppState,
     template::{
         FORBIDDEN, ForbiddenTemplate, NOT_FOUND, NotFoundTemplate, SERVER_ERROR_MESSAGE,

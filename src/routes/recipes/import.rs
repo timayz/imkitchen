@@ -4,13 +4,13 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
+use imkitchen::query_recipe_detail_by_id;
 use imkitchen_recipe::{CuisineType, Ingredient, Instruction, RecipeType};
 use imkitchen_shared::Metadata;
 use serde::Deserialize;
 
 use crate::{
     auth::AuthUser,
-    query::query_recipe_detail_by_id,
     routes::AppState,
     template::{SERVER_ERROR_MESSAGE, Template, filters},
 };

@@ -1,5 +1,5 @@
 use imkitchen_shared::Metadata;
-use imkitchen_user::{Action, RegisterInput, Status, subscribe_command};
+use imkitchen_user::{RegisterInput, Status, subscribe_command};
 
 mod helpers;
 
@@ -29,14 +29,8 @@ async fn validate_unique_emails() -> anyhow::Result<()> {
     let user_1_agg = command.load(&user_1).await?;
     let user_2_agg = command.load(&user_2).await?;
 
-    assert_eq!(
-        user_1_agg.item.status,
-        Status::Processing(Action::Registration)
-    );
-    assert_eq!(
-        user_2_agg.item.status,
-        Status::Processing(Action::Registration)
-    );
+    assert_eq!(user_1_agg.item.status, Status::Processing);
+    assert_eq!(user_2_agg.item.status, Status::Processing);
 
     subscribe_command()
         .data(state.pool.clone())
@@ -47,9 +41,10 @@ async fn validate_unique_emails() -> anyhow::Result<()> {
     let user_2_agg = command.load(&user_2).await?;
 
     assert_eq!(user_1_agg.item.status, Status::Idle);
+    assert_eq!(user_2_agg.item.status, Status::Failed);
     assert_eq!(
-        user_2_agg.item.status,
-        Status::Failed("Email already exists".to_owned())
+        user_2_agg.item.failed_reason,
+        Some("Email already exists".to_owned())
     );
 
     subscribe_command()

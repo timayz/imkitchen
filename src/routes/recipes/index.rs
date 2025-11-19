@@ -6,6 +6,10 @@ use axum::{
     response::IntoResponse,
 };
 use evento::cursor::{Args, ReadResult, Value};
+use imkitchen::{
+    Recipe, RecipeSortBy, UserRecipeGlobalStats, query_recipe_detail_by_id, query_recipes,
+    query_user_recipe_global_stats,
+};
 use imkitchen_recipe::{CuisineType, RecipeType};
 use imkitchen_shared::Metadata;
 use serde::Deserialize;
@@ -13,10 +17,6 @@ use strum::VariantArray;
 
 use crate::{
     auth::AuthUser,
-    query::{
-        Recipe, RecipeSortBy, UserRecipeGlobalStats, query_recipe_detail_by_id, query_recipes,
-        query_user_recipe_global_stats,
-    },
     routes::AppState,
     template::{ServerErrorTemplate, Template, filters},
 };
@@ -93,7 +93,7 @@ pub async fn page(
         .and_then(|v| CuisineType::from_str(v.as_str()).ok());
     let recipes = match query_recipes(
         &app.pool,
-        crate::query::RecipeInput {
+        imkitchen::RecipeInput {
             user_id: Some(user.id.to_owned()),
             recipe_type,
             cuisine_type,
@@ -148,7 +148,7 @@ pub async fn create_status(
     State(app): State<AppState>,
 ) -> impl IntoResponse {
     match query_recipe_detail_by_id(&app.pool, &id).await {
-        Ok(Some(_)) => ([("ts-location", format!("/recipes/edit/{id}"))]).into_response(),
+        Ok(Some(_)) => ([("ts-location", format!("/recipes/{id}/edit"))]).into_response(),
         Ok(_) => template.render(CreateStatusTemplate { id }).into_response(),
         Err(err) => {
             tracing::error!(user = user.id,err = %err, "Failed to check recipe creation");

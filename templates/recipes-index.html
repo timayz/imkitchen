@@ -136,11 +136,11 @@
           {% endif %}
         </div>
         <div class="flex gap-2">
-          <a href="/recipes/detail/{{ recipe.node.id }}"
+          <a href="/recipes/{{ recipe.node.id }}/detail"
             class="flex-1 px-4 py-2 bg-green-600 text-white text-center font-semibold rounded-lg hover:bg-green-700 transition">
             {{ "View"|t }}
           </a>
-          <a href="/recipes/edit/{{ recipe.node.id }}" class="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300">
+          <a href="/recipes/{{ recipe.node.id }}/edit" class="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300">
             {{ "Edit"|t }}
           </a>
         </div>

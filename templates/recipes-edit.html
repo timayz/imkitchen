@@ -10,7 +10,7 @@
   </div>
 
   <!-- Form -->
-  <form action="/recipes/edit/{{ id }}" method="post" autocomplete="off"
+  <form action="/recipes/{{ id }}/edit" method="post" autocomplete="off"
     ts-req="" ts-req-selector="form"
     class="bg-white rounded-lg shadow-lg p-8">
     <!-- Recipe Type -->
@@ -232,7 +232,12 @@
       </button>
       <a href="/recipes"
         class="flex-1 bg-gray-200 text-gray-700 font-semibold py-3 rounded-lg hover:bg-gray-300 transition text-center">
+
+        {% if succeeded %}
+        {{ "Back to My Recipes"|t }}
+        {% else %}
         {{ "Cancel"|t }}
+        {% endif %}
       </a>
     </div>
   </form>

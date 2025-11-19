@@ -1,4 +1,7 @@
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::{
+    str::FromStr,
+    time::{Duration, SystemTime, UNIX_EPOCH},
+};
 
 use argon2::{
     Argon2, PasswordHash, PasswordVerifier,
@@ -9,12 +12,12 @@ use imkitchen_shared::{Event, Metadata};
 use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use serde::Deserialize;
-use sqlx::{SqlitePool, prelude::FromRow};
+use sqlx::SqlitePool;
 use validator::Validate;
 
 use crate::{
     Activated, LoggedIn, MadeAdmin, RegistrationFailed, RegistrationRequested,
-    RegistrationSucceeded, Role, Suspended, User,
+    RegistrationSucceeded, Role, State, Status, Suspended, User,
     meal_preferences::{self, UserMealPreferences},
     subscription::{self, LifePremiumToggled, UserSubscription},
 };
@@ -46,16 +49,17 @@ pub struct UpdateMealPreferencesInput {
     pub cuisine_variety_weight: f32,
 }
 
-#[derive(Default, Debug, Deserialize, FromRow, Clone)]
+#[derive(Default, Debug, Deserialize, Clone)]
 pub struct AuthUser {
     pub id: String,
-    pub role: String,
-    pub subscription_end_at: i64,
+    pub role: Role,
+    pub state: State,
+    pub subscription_end_at: u64,
 }
 
 impl AuthUser {
     pub fn is_admin(&self) -> bool {
-        self.role == Role::Admin.to_string()
+        self.role == Role::Admin
     }
 
     pub fn is_premium(&self) -> bool {
@@ -63,7 +67,30 @@ impl AuthUser {
             return false;
         };
 
-        self.subscription_end_at as u64 > now.as_secs()
+        self.subscription_end_at > now.as_secs()
+    }
+}
+
+impl<R: sqlx::Row> sqlx::FromRow<'_, R> for AuthUser
+where
+    String: sqlx::Type<R::Database> + for<'r> sqlx::Decode<'r, R::Database>,
+    i64: sqlx::Type<R::Database> + for<'r> sqlx::Decode<'r, R::Database>,
+    for<'r> &'r str: sqlx::Type<R::Database> + sqlx::Decode<'r, R::Database>,
+    for<'r> &'r str: sqlx::ColumnIndex<R>,
+{
+    fn from_row(row: &R) -> Result<Self, sqlx::Error> {
+        let role: String = row.try_get("role")?;
+        let state: String = row.try_get("state")?;
+        let subscription_end_at: i64 = row.try_get("subscription_end_at")?;
+
+        Ok(Self {
+            id: row.try_get("id")?,
+            role: Role::from_str(role.as_str())
+                .map_err(|e| sqlx::Error::InvalidArgument(e.to_string()))?,
+            state: State::from_str(state.as_str())
+                .map_err(|e| sqlx::Error::InvalidArgument(e.to_string()))?,
+            subscription_end_at: subscription_end_at as u64,
+        })
     }
 }
 
@@ -110,7 +137,12 @@ impl<E: Executor + Clone> Command<E> {
         let id = id.into();
 
         let statement = Query::select()
-            .columns([UserIden::Id, UserIden::Role, UserIden::SubscriptionEndAt])
+            .columns([
+                UserIden::Id,
+                UserIden::Role,
+                UserIden::State,
+                UserIden::SubscriptionEndAt,
+            ])
             .from(UserIden::Table)
             .and_where(Expr::col(UserIden::Id).eq(Expr::value(id.to_owned())))
             .limit(1)
@@ -130,7 +162,12 @@ impl<E: Executor + Clone> Command<E> {
         let email = email.into();
 
         let statement = Query::select()
-            .columns([UserIden::Id, UserIden::Role, UserIden::SubscriptionEndAt])
+            .columns([
+                UserIden::Id,
+                UserIden::Role,
+                UserIden::State,
+                UserIden::SubscriptionEndAt,
+            ])
             .from(UserIden::Table)
             .and_where(Expr::col(UserIden::Email).eq(Expr::value(email.to_owned())))
             .limit(1)
@@ -165,7 +202,7 @@ impl<E: Executor + Clone> Command<E> {
             imkitchen_shared::bail!("Invalid email or password. Please try again.");
         }
 
-        if user.item.role == Role::Suspend {
+        if user.item.state == State::Suspended {
             imkitchen_shared::bail!("Account suspended");
         }
 
@@ -193,6 +230,7 @@ impl<E: Executor + Clone> Command<E> {
             .data(&RegistrationRequested {
                 email: input.email,
                 password_hash,
+                status: crate::Status::Processing,
             })?
             .metadata(&metadata)?
             .commit(&self.0)
@@ -239,13 +277,13 @@ impl<E: Executor + Clone> Command<E> {
     ) -> imkitchen_shared::Result<()> {
         let user = self.load(id).await?;
 
-        if user.item.role == Role::Suspend {
+        if user.item.state == State::Suspended {
             return Ok(());
         }
 
         evento::save_with(user)
             .data(&Suspended {
-                role: Role::Suspend.to_string(),
+                state: State::Suspended,
             })?
             .metadata(&metadata)?
             .commit(&self.0)
@@ -261,13 +299,13 @@ impl<E: Executor + Clone> Command<E> {
     ) -> imkitchen_shared::Result<()> {
         let user = self.load(id).await?;
 
-        if user.item.role == Role::User {
+        if user.item.state == State::Active {
             return Ok(());
         }
 
         evento::save_with(user)
             .data(&Activated {
-                role: Role::User.to_string(),
+                state: State::Active,
             })?
             .metadata(&metadata)?
             .commit(&self.0)
@@ -288,9 +326,7 @@ impl<E: Executor + Clone> Command<E> {
         }
 
         evento::save_with(user)
-            .data(&MadeAdmin {
-                role: Role::Admin.to_string(),
-            })?
+            .data(&MadeAdmin { role: Role::Admin })?
             .metadata(&metadata)?
             .commit(&self.0)
             .await?;
@@ -340,12 +376,14 @@ async fn handle_registration_requested<E: Executor>(
             UserIden::Id,
             UserIden::Email,
             UserIden::Role,
+            UserIden::State,
             UserIden::CreatedAt,
         ])
         .values_panic([
             event.aggregator_id.to_string().into(),
             event.data.email.to_string().into(),
             Role::User.to_string().into(),
+            State::Active.to_string().into(),
             event.timestamp.into(),
         ])
         .to_owned();
@@ -356,6 +394,7 @@ async fn handle_registration_requested<E: Executor>(
         evento::save::<User>(&event.aggregator_id)
             .data(&RegistrationSucceeded {
                 email: event.data.email,
+                status: Status::Idle,
             })?
             .metadata(&event.metadata)?
             .commit(context.executor)
@@ -373,6 +412,7 @@ async fn handle_registration_requested<E: Executor>(
     evento::save::<User>(&event.aggregator_id)
         .data(&RegistrationFailed {
             reason: "Email already exists".to_owned(),
+            status: Status::Failed,
         })?
         .metadata(&event.metadata)?
         .commit(context.executor)
@@ -389,7 +429,7 @@ async fn handle_made_admin<E: Executor>(
     let pool = context.extract::<sqlx::SqlitePool>();
     let statement = Query::update()
         .table(UserIden::Table)
-        .values([(UserIden::Role, event.data.role.to_owned().into())])
+        .values([(UserIden::Role, event.data.role.to_string().into())])
         .and_where(Expr::col(UserIden::Id).eq(event.aggregator_id.to_owned()))
         .to_owned();
 
@@ -407,7 +447,7 @@ async fn handle_activated<E: Executor>(
     let pool = context.extract::<sqlx::SqlitePool>();
     let statement = Query::update()
         .table(UserIden::Table)
-        .values([(UserIden::Role, event.data.role.to_owned().into())])
+        .values([(UserIden::State, event.data.state.to_string().into())])
         .and_where(Expr::col(UserIden::Id).eq(event.aggregator_id.to_owned()))
         .to_owned();
 
@@ -425,7 +465,7 @@ async fn handle_suspended<E: Executor>(
     let pool = context.extract::<sqlx::SqlitePool>();
     let statement = Query::update()
         .table(UserIden::Table)
-        .values([(UserIden::Role, event.data.role.to_owned().into())])
+        .values([(UserIden::State, event.data.state.to_string().into())])
         .and_where(Expr::col(UserIden::Id).eq(event.aggregator_id.to_owned()))
         .to_owned();
 

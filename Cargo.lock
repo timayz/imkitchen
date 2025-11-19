@@ -1823,6 +1823,7 @@ dependencies = [
  "sea-query-sqlx",
  "serde",
  "sqlx",
+ "strum",
  "tokio",
  "validator",
 ]

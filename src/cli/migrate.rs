@@ -12,7 +12,7 @@ pub async fn migrate(config: crate::config::Config) -> Result<()> {
     }
 
     // Set up database connection pool with optimized PRAGMAs
-    let pool = crate::db::create_pool(&config.database.url, 1).await?;
+    let pool = imkitchen::create_pool(&config.database.url, 1).await?;
 
     // 2. Run evento migrations for event store tables
     let mut conn = pool.acquire().await?;

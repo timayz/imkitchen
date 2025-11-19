@@ -5,16 +5,16 @@ use axum::{
     response::IntoResponse,
 };
 use evento::cursor::{Args, Edge, ReadResult, Value};
+use imkitchen::{
+    Contact, ContactGlobalStats, ContactInput, ContactSortBy, query_contact_by_id,
+    query_contact_global_stats, query_contacts,
+};
 use imkitchen_contact::{ContactStatus, ContactSubject};
 use imkitchen_shared::Metadata;
 use serde::Deserialize;
 
 use crate::{
     auth::AuthAdmin,
-    query::{
-        Contact, ContactGlobalStats, ContactInput, ContactSortBy, query_contact_by_id,
-        query_contact_global_stats, query_contacts,
-    },
     routes::AppState,
     template::{ServerErrorTemplate, Template},
 };

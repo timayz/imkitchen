@@ -16,12 +16,12 @@ pub async fn serve(
 
     // Set up database connection pools with optimized PRAGMAs
     // Write pool: 1 connection for evento and all write operations
-    let write_pool = crate::db::create_write_pool(&config.database.url).await?;
+    let write_pool = imkitchen::create_write_pool(&config.database.url).await?;
 
     // Read pool: Multiple connections for read-only queries
     // Use CPU cores as a reasonable default for max connections
     let read_pool_size = config.database.max_connections;
-    let read_pool = crate::db::create_read_pool(&config.database.url, read_pool_size).await?;
+    let read_pool = imkitchen::create_read_pool(&config.database.url, read_pool_size).await?;
 
     let evento_executor: evento::Sqlite = write_pool.clone().into();
     let user_command = imkitchen_user::Command(evento_executor.clone(), read_pool.clone());
@@ -36,22 +36,22 @@ pub async fn serve(
         .run(&evento_executor)
         .await?;
 
-    let sub_admin_user_query = crate::query::subscribe_admin_user()
+    let sub_admin_user_query = imkitchen::subscribe_admin_user()
         .data(write_pool.clone())
         .run(&evento_executor)
         .await?;
 
-    let sub_contact_query = crate::query::subscribe_contact()
+    let sub_contact_query = imkitchen::subscribe_contact()
         .data(write_pool.clone())
         .run(&evento_executor)
         .await?;
 
-    let sub_recipe_query = crate::query::subscribe_recipe()
+    let sub_recipe_query = imkitchen::subscribe_recipe()
         .data(write_pool.clone())
         .run(&evento_executor)
         .await?;
 
-    let sub_global_stat_query = crate::query::subscribe_global_stat()
+    let sub_global_stat_query = imkitchen::subscribe_global_stat()
         .data(write_pool.clone())
         .run(&evento_executor)
         .await?;

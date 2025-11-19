@@ -1,5 +1,5 @@
 {% if let Some(error_message) = error_message %}
-<button ts-trigger="click" ts-req="/recipes/delete/{{ id }}" ts-req-method="POST"
+<button ts-trigger="click" ts-req="/recipes/{{ id }}/delete" ts-req-method="POST"
   class="flex-1 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700">
   {{ "Delete"|t }}
 </button>
@@ -13,6 +13,6 @@
     </div>
   </div>
   <div>{{ "Deleting..."|t }}</div>
-  <div ts-trigger="load delay 1s" ts-req="/recipes/delete/status/{{ id }}"></div>
+  <div ts-trigger="load delay 1s" ts-req="/recipes/{{ id }}/delete/status"></div>
 </button>
 {% endif %}
