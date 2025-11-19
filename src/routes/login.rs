@@ -71,7 +71,7 @@ pub async fn action(
 
             let mut resp = Html("").into_response();
             resp.headers_mut()
-                .insert("ts-location", "/profile/meal-preferences".parse().unwrap());
+                .insert("ts-location", "/recipes".parse().unwrap());
 
             (jar, resp).into_response()
         }
