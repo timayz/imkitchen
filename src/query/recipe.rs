@@ -212,7 +212,7 @@ impl evento::sql::Bind for Recipe {
     }
 }
 
-#[derive(Default, Debug, Deserialize, EnumString, Display)]
+#[derive(Default, Debug, Deserialize, EnumString, Display, Clone)]
 pub enum RecipeSortBy {
     #[default]
     RecentlyAdded,

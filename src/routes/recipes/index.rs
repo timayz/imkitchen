@@ -40,6 +40,7 @@ pub struct IndexTemplate {
     pub user: imkitchen_user::AuthUser,
     pub stat: UserRecipeGlobalStats,
     pub recipes: ReadResult<Recipe>,
+    pub query: PageQuery,
 }
 
 impl Default for IndexTemplate {
@@ -49,11 +50,12 @@ impl Default for IndexTemplate {
             user: imkitchen_user::AuthUser::default(),
             stat: UserRecipeGlobalStats::default(),
             recipes: ReadResult::default(),
+            query: Default::default(),
         }
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Default, Clone)]
 pub struct PageQuery {
     pub first: Option<u16>,
     pub after: Option<Value>,
@@ -79,6 +81,7 @@ pub async fn page(
             return server_error.render(ServerErrorTemplate).into_response();
         }
     };
+    let query = input.clone();
     let args = Args {
         first: input.first,
         after: input.after,
@@ -117,6 +120,7 @@ pub async fn page(
             user,
             recipes,
             stat,
+            query,
             ..Default::default()
         })
         .into_response()
