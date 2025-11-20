@@ -15,7 +15,7 @@
     <div class="lg:col-span-2">
       <!-- Hero -->
       <div class="bg-white rounded-lg shadow-lg overflow-hidden mb-6">
-        {% match recipe.recipe_type %}
+        {% match recipe.recipe_type.0 %}
         {% when RecipeType::Appetizer %}
         <div class="h-64 bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center relative">
           <span class="text-9xl">🥗</span>
@@ -54,7 +54,7 @@
           </div>
 
           <div class="flex gap-3 mb-4">
-            {% for restriction in recipe.dietary_restrictions %}
+            {% for restriction in recipe.dietary_restrictions.iter() %}
             <span class="px-3 py-1 bg-green-100 text-green-800 text-sm font-semibold rounded-full">{{ restriction.to_string().as_str()|t
               }}</span>
             {% endfor %}
@@ -109,7 +109,7 @@
       <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
         <h2 class="text-2xl font-bold mb-4">{{ "Instructions"|t }}</h2>
         <div class="space-y-4">
-          {% for instruction in recipe.instructions %}
+          {% for instruction in recipe.instructions.iter() %}
           <div class="flex gap-4">
             <div
               class="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">

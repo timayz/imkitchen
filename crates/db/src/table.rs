@@ -46,7 +46,7 @@ pub enum AdminUserPjt {
 }
 
 #[derive(Iden, Clone)]
-pub enum RecipePjt {
+pub enum RecipeList {
     Table,
     Id,
     UserId,
@@ -65,4 +65,15 @@ pub enum RecipePjt {
     IsShared,
     CreatedAt,
     UpdatedAt,
+}
+
+#[derive(Iden, Clone)]
+pub enum RecipeUserStat {
+    Table,
+    UserId,
+    Total,
+    Shared,
+    Favorite,
+    FromCommunity,
+    CreatedAt,
 }

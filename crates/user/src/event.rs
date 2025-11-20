@@ -20,7 +20,6 @@ pub enum Role {
     #[default]
     User,
     Admin,
-    Root,
 }
 
 #[derive(

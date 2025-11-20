@@ -6,11 +6,9 @@ use axum::{
     response::IntoResponse,
 };
 use evento::cursor::{Args, ReadResult, Value};
-use imkitchen::{
-    Recipe, RecipeSortBy, UserRecipeGlobalStats, query_recipe_detail_by_id, query_recipes,
-    query_user_recipe_global_stats,
+use imkitchen_recipe::{
+    CuisineType, RecipeListRow, RecipeSortBy, RecipeType, RecipesQuery, UserStat,
 };
-use imkitchen_recipe::{CuisineType, RecipeType};
 use imkitchen_shared::Metadata;
 use serde::Deserialize;
 use strum::VariantArray;
@@ -38,8 +36,8 @@ pub struct CreateStatusTemplate {
 pub struct IndexTemplate {
     pub current_path: String,
     pub user: imkitchen_user::AuthUser,
-    pub stat: UserRecipeGlobalStats,
-    pub recipes: ReadResult<Recipe>,
+    pub stat: UserStat,
+    pub recipes: ReadResult<RecipeListRow>,
     pub query: PageQuery,
 }
 
@@ -48,7 +46,7 @@ impl Default for IndexTemplate {
         Self {
             current_path: "recipes".to_owned(),
             user: imkitchen_user::AuthUser::default(),
-            stat: UserRecipeGlobalStats::default(),
+            stat: UserStat::default(),
             recipes: ReadResult::default(),
             query: Default::default(),
         }
@@ -73,8 +71,8 @@ pub async fn page(
     State(app): State<AppState>,
     Query(input): Query<PageQuery>,
 ) -> impl IntoResponse {
-    let stat = match query_user_recipe_global_stats(&app.pool, &user.id).await {
-        Ok(s) => s,
+    let stat = match app.recipe_query.find_user_stat(&user.id).await {
+        Ok(s) => s.unwrap_or_default(),
         Err(err) => {
             tracing::error!(user = user.id, err = %err, "Failed to query user recipe global stats");
 
@@ -94,18 +92,17 @@ pub async fn page(
     let cuisine_type = input
         .cuisine_type
         .and_then(|v| CuisineType::from_str(v.as_str()).ok());
-    let recipes = match query_recipes(
-        &app.pool,
-        imkitchen::RecipeInput {
+    let recipes = match app
+        .recipe_query
+        .filter(RecipesQuery {
             user_id: Some(user.id.to_owned()),
             recipe_type,
             cuisine_type,
             is_shared: None,
             sort_by: input.sort_by.unwrap_or_default(),
             args: args.limit(20),
-        },
-    )
-    .await
+        })
+        .await
     {
         Ok(recipes) => recipes,
         Err(err) => {
@@ -133,7 +130,7 @@ pub async fn create(
 ) -> impl IntoResponse {
     match app
         .recipe_command
-        .create(Metadata::by(user.id.to_owned()))
+        .create(&Metadata::by(user.id.to_owned()))
         .await
     {
         Ok(id) => template.render(CreateTemplate { id }).into_response(),
@@ -151,7 +148,7 @@ pub async fn create_status(
     Path((id,)): Path<(String,)>,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
-    match query_recipe_detail_by_id(&app.pool, &id).await {
+    match app.recipe_query.find(&id).await {
         Ok(Some(_)) => ([("ts-location", format!("/recipes/{id}/edit"))]).into_response(),
         Ok(_) => template.render(CreateStatusTemplate { id }).into_response(),
         Err(err) => {

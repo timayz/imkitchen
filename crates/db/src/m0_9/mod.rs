@@ -14,7 +14,7 @@ pub struct Migration;
 
 sqlx_migrator::sqlite_migration!(
     Migration,
-    "main",
+    "imkitchen",
     "m0_9",
     vec_box![],
     vec_box![

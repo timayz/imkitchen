@@ -95,7 +95,7 @@
             ts-trigger="visible once"{% endif %}
             class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
       <div class="relative">
-        {% match recipe.node.recipe_type %}
+        {% match recipe.node.recipe_type.0 %}
         {% when RecipeType::MainCourse %}
         <div class="h-48 bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center">
           <span class="text-6xl">🍛</span>
@@ -117,14 +117,14 @@
         </div>
         <span class="absolute top-3 left-3 px-3 py-1 bg-purple-600 text-white text-xs font-semibold rounded-full uppercase">
         {% endmatch %}
-          {{ recipe.node.recipe_type.to_string().as_str()|t }}
+          {{ recipe.node.recipe_type.0.as_ref()|t }}
         </span>
       </div>
       <div class="p-4">
         <h3 class="font-bold text-lg mb-2">{{ recipe.node.name }}</h3>
         <p class="text-sm text-gray-600 mb-3">{{ recipe.node.description }}</p>
         <div class="flex gap-2 text-xs mb-3">
-          {% for restriction in recipe.node.dietary_restrictions %}
+          {% for restriction in recipe.node.dietary_restrictions.iter() %}
           <span class="px-2 py-1 bg-green-100 text-green-800 rounded">{{ restriction.to_string().as_str()|t }}</span>
           {% endfor %}
           <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded">{{ recipe.node.cuisine_type.to_string().as_str()|t }}</span>

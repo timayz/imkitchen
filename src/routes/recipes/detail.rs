@@ -3,8 +3,7 @@ use axum::{
     response::{IntoResponse, Redirect},
 };
 
-use imkitchen::{RecipeDetail, query_recipe_detail_by_id};
-use imkitchen_recipe::RecipeType;
+use imkitchen_recipe::{RecipeRow, RecipeType};
 use imkitchen_shared::Metadata;
 
 use crate::{
@@ -40,7 +39,7 @@ pub struct DeleteStatusTemplate {
 pub struct DetailTemplate {
     pub current_path: String,
     pub user: imkitchen_user::AuthUser,
-    pub recipe: RecipeDetail,
+    pub recipe: RecipeRow,
 }
 
 impl Default for DetailTemplate {
@@ -48,7 +47,7 @@ impl Default for DetailTemplate {
         Self {
             current_path: "recipes".to_owned(),
             user: imkitchen_user::AuthUser::default(),
-            recipe: RecipeDetail::default(),
+            recipe: RecipeRow::default(),
         }
     }
 }
@@ -62,7 +61,7 @@ pub async fn page(
     Path((id,)): Path<(String,)>,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
-    let recipe = match query_recipe_detail_by_id(&app.pool, &id).await {
+    let recipe = match app.recipe_query.find(&id).await {
         Ok(Some(r)) => r,
         Ok(_) => return not_found_error.render(NotFoundTemplate).into_response(),
         Err(err) => {
@@ -149,7 +148,7 @@ pub async fn delete_status(
     AuthUser(user): AuthUser,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    match query_recipe_detail_by_id(&app.pool, &id).await {
+    match app.recipe_query.find(&id).await {
         Ok(Some(_)) => template.render(DeleteStatusTemplate { id }).into_response(),
         Ok(_) => Redirect::to("/recipes").into_response(),
         Err(err) => {
