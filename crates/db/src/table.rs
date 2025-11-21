@@ -19,18 +19,6 @@ pub enum GlobalStatPjt {
 }
 
 #[derive(Iden, Clone)]
-pub enum ContactPjt {
-    Table,
-    Id,
-    Email,
-    Name,
-    Status,
-    Subject,
-    Message,
-    CreatedAt,
-}
-
-#[derive(Iden, Clone)]
 pub enum AdminUserPjt {
     Table,
     Id,
@@ -42,6 +30,29 @@ pub enum AdminUserPjt {
     TotalRecipesCount,
     SharedRecipesCount,
     TotalActiveCount,
+    CreatedAt,
+}
+
+#[derive(Iden, Clone)]
+pub enum ContactList {
+    Table,
+    Id,
+    Email,
+    Name,
+    Status,
+    Subject,
+    Message,
+    CreatedAt,
+}
+
+#[derive(Iden, Clone)]
+pub enum ContactStat {
+    Table,
+    Today,
+    Total,
+    Unread,
+    TodayCount,
+    AvgResponseTime,
     CreatedAt,
 }
 

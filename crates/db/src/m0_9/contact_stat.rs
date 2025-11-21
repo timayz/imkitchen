@@ -1,39 +1,38 @@
 use sea_query::{ColumnDef, Table, TableCreateStatement, TableDropStatement};
 
-use crate::table::RecipeUserStat;
+use crate::table::ContactStat;
 
 pub struct CreateTable;
 
 fn create_table() -> TableCreateStatement {
     Table::create()
-        .table(RecipeUserStat::Table)
+        .table(ContactStat::Table)
         .col(
-            ColumnDef::new(RecipeUserStat::UserId)
-                .string()
-                .string_len(26)
+            ColumnDef::new(ContactStat::Today)
+                .big_integer()
                 .null()
                 .primary_key(),
         )
         .col(
-            ColumnDef::new(RecipeUserStat::Total)
+            ColumnDef::new(ContactStat::Total)
                 .integer()
                 .not_null()
                 .default(0),
         )
         .col(
-            ColumnDef::new(RecipeUserStat::Shared)
+            ColumnDef::new(ContactStat::Unread)
                 .integer()
                 .not_null()
                 .default(0),
         )
         .col(
-            ColumnDef::new(RecipeUserStat::Favorite)
+            ColumnDef::new(ContactStat::TodayCount)
                 .integer()
                 .not_null()
                 .default(0),
         )
         .col(
-            ColumnDef::new(RecipeUserStat::FromCommunity)
+            ColumnDef::new(ContactStat::AvgResponseTime)
                 .integer()
                 .not_null()
                 .default(0),
@@ -42,7 +41,7 @@ fn create_table() -> TableCreateStatement {
 }
 
 fn drop_table() -> TableDropStatement {
-    Table::drop().table(RecipeUserStat::Table).to_owned()
+    Table::drop().table(ContactStat::Table).to_owned()
 }
 
 #[async_trait::async_trait]

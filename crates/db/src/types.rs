@@ -99,24 +99,3 @@ where
         Ok(data)
     }
 }
-//
-// impl<T: bincode::Encode> Encode<'_, sqlx::Sqlite> for Bincode<T> {
-//     fn encode(self, args: &mut SqliteArgumentsBuffer) -> Result<IsNull, BoxDynError> {
-//         let data = self.encode_to().unwrap();
-//         args.push(SqliteArgumentValue::Blob(Arc::new(data)));
-//
-//         Ok(IsNull::No)
-//     }
-//
-//     fn encode_by_ref(&self, args: &mut SqliteArgumentsBuffer) -> Result<IsNull, BoxDynError> {
-//         args.push(SqliteArgumentValue::Blob(Arc::new(self.clone())));
-//
-//         Ok(IsNull::No)
-//     }
-// }
-
-// impl<'r, T: bincode::Decode<()>> Decode<'r, sqlx::Sqlite> for Bincode<T> {
-//     fn decode(value: SqliteValueRef<'r>) -> Result<Self, BoxDynError> {
-//         Ok(value.blob_owned())
-//     }
-// }

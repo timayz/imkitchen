@@ -10,7 +10,7 @@ use imkitchen_contact::{
     Contact as ContactAggregator, ContactStatus, ContactSubject, FormSubmitted, MarkedReadAndReply,
     Reopened, Resolved,
 };
-use imkitchen_db::table::ContactPjt;
+use imkitchen_db::table::ContactList;
 use imkitchen_shared::Event;
 use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
@@ -73,13 +73,13 @@ impl evento::cursor::Cursor for Contact {
 }
 
 impl evento::sql::Bind for Contact {
-    type T = ContactPjt;
+    type T = ContactList;
     type I = [Self::T; 2];
     type V = [Expr; 2];
     type Cursor = Self;
 
     fn columns() -> Self::I {
-        [ContactPjt::CreatedAt, ContactPjt::Id]
+        [ContactList::CreatedAt, ContactList::Id]
     }
 
     fn values(
@@ -125,23 +125,23 @@ pub async fn query_contacts(
 ) -> anyhow::Result<ReadResult<Contact>> {
     let mut statment = Query::select()
         .columns([
-            ContactPjt::Id,
-            ContactPjt::Email,
-            ContactPjt::Status,
-            ContactPjt::Subject,
-            ContactPjt::Message,
-            ContactPjt::Name,
-            ContactPjt::CreatedAt,
+            ContactList::Id,
+            ContactList::Email,
+            ContactList::Status,
+            ContactList::Subject,
+            ContactList::Message,
+            ContactList::Name,
+            ContactList::CreatedAt,
         ])
-        .from(ContactPjt::Table)
+        .from(ContactList::Table)
         .to_owned();
 
     if let Some(subject) = input.subject {
-        statment.and_where(Expr::col(ContactPjt::Subject).eq(subject.to_string()));
+        statment.and_where(Expr::col(ContactList::Subject).eq(subject.to_string()));
     }
 
     if let Some(status) = input.status {
-        statment.and_where(Expr::col(ContactPjt::Status).eq(status.to_string()));
+        statment.and_where(Expr::col(ContactList::Status).eq(status.to_string()));
     }
 
     let mut reader = Reader::new(statment);
@@ -162,16 +162,16 @@ pub async fn query_contact_by_id(
 ) -> anyhow::Result<Contact> {
     let statment = Query::select()
         .columns([
-            ContactPjt::Id,
-            ContactPjt::Email,
-            ContactPjt::Status,
-            ContactPjt::Subject,
-            ContactPjt::Message,
-            ContactPjt::Name,
-            ContactPjt::CreatedAt,
+            ContactList::Id,
+            ContactList::Email,
+            ContactList::Status,
+            ContactList::Subject,
+            ContactList::Message,
+            ContactList::Name,
+            ContactList::CreatedAt,
         ])
-        .from(ContactPjt::Table)
-        .and_where(Expr::col(ContactPjt::Id).eq(id.into()))
+        .from(ContactList::Table)
+        .and_where(Expr::col(ContactList::Id).eq(id.into()))
         .limit(1)
         .to_owned();
 
@@ -198,15 +198,15 @@ async fn handle_form_submmited<E: Executor>(
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
     let statment = Query::insert()
-        .into_table(ContactPjt::Table)
+        .into_table(ContactList::Table)
         .columns([
-            ContactPjt::Id,
-            ContactPjt::Email,
-            ContactPjt::Status,
-            ContactPjt::Subject,
-            ContactPjt::Message,
-            ContactPjt::Name,
-            ContactPjt::CreatedAt,
+            ContactList::Id,
+            ContactList::Email,
+            ContactList::Status,
+            ContactList::Subject,
+            ContactList::Message,
+            ContactList::Name,
+            ContactList::CreatedAt,
         ])
         .values_panic([
             event.aggregator_id.to_owned().into(),
@@ -231,9 +231,9 @@ async fn handle_marked_read_and_reply<E: Executor>(
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
     let statment = Query::update()
-        .table(ContactPjt::Table)
-        .values([(ContactPjt::Status, event.data.status.to_owned().into())])
-        .and_where(Expr::col(ContactPjt::Id).eq(&event.aggregator_id))
+        .table(ContactList::Table)
+        .values([(ContactList::Status, event.data.status.to_owned().into())])
+        .and_where(Expr::col(ContactList::Id).eq(&event.aggregator_id))
         .to_owned();
 
     let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
@@ -249,9 +249,9 @@ async fn handle_resolved<E: Executor>(
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
     let statment = Query::update()
-        .table(ContactPjt::Table)
-        .values([(ContactPjt::Status, event.data.status.to_owned().into())])
-        .and_where(Expr::col(ContactPjt::Id).eq(&event.aggregator_id))
+        .table(ContactList::Table)
+        .values([(ContactList::Status, event.data.status.to_owned().into())])
+        .and_where(Expr::col(ContactList::Id).eq(&event.aggregator_id))
         .to_owned();
 
     let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
@@ -267,9 +267,9 @@ async fn handle_reopened<E: Executor>(
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
     let statment = Query::update()
-        .table(ContactPjt::Table)
-        .values([(ContactPjt::Status, event.data.status.to_owned().into())])
-        .and_where(Expr::col(ContactPjt::Id).eq(&event.aggregator_id))
+        .table(ContactList::Table)
+        .values([(ContactList::Status, event.data.status.to_owned().into())])
+        .and_where(Expr::col(ContactList::Id).eq(&event.aggregator_id))
         .to_owned();
 
     let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);

@@ -5,7 +5,7 @@ use crate::{FormSubmitted, MarkedReadAndReply, Reopened, Resolved};
 
 #[derive(Default, Encode, Decode, Clone, Debug)]
 pub struct Contact {
-    pub status: String,
+    pub status: Status,
 }
 
 #[evento::aggregator]
