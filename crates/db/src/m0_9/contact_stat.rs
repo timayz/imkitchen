@@ -8,9 +8,9 @@ fn create_table() -> TableCreateStatement {
     Table::create()
         .table(ContactStat::Table)
         .col(
-            ColumnDef::new(ContactStat::Today)
-                .big_integer()
-                .null()
+            ColumnDef::new(ContactStat::Day)
+                .string()
+                .string_len(50)
                 .primary_key(),
         )
         .col(

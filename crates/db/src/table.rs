@@ -48,7 +48,7 @@ pub enum ContactList {
 #[derive(Iden, Clone)]
 pub enum ContactStat {
     Table,
-    Today,
+    Day,
     Total,
     Unread,
     AvgResponseTime,

@@ -21,10 +21,10 @@ async fn handle_contact_form_submitted<E: Executor>(
     let pool = context.extract::<sqlx::SqlitePool>();
     let statement = Query::insert()
         .into_table(ContactStat::Table)
-        .columns([ContactStat::Today, ContactStat::Total, ContactStat::Unread])
-        .values_panic([None::<u64>.into(), 1.into(), 1.into()])
+        .columns([ContactStat::Day, ContactStat::Total, ContactStat::Unread])
+        .values_panic(["".into(), 1.into(), 1.into()])
         .on_conflict(
-            OnConflict::column(ContactStat::Today)
+            OnConflict::column(ContactStat::Day)
                 .value(ContactStat::Total, Expr::col(ContactStat::Total).add(1))
                 .value(ContactStat::Unread, Expr::col(ContactStat::Unread).add(1))
                 .to_owned(),
@@ -55,10 +55,10 @@ async fn handle_contact_marked_read_and_reply<E: Executor>(
 
     let statement = Query::insert()
         .into_table(ContactStat::Table)
-        .columns([ContactStat::Today, ContactStat::Unread])
-        .values_panic([None::<u64>.into(), 1.into()])
+        .columns([ContactStat::Day, ContactStat::Unread])
+        .values_panic(["".into(), 1.into()])
         .on_conflict(
-            OnConflict::column(ContactStat::Today)
+            OnConflict::column(ContactStat::Day)
                 .value(ContactStat::Unread, Expr::col(ContactStat::Unread).sub(1))
                 .to_owned(),
         )
@@ -88,10 +88,10 @@ async fn handle_contact_resolved<E: Executor>(
 
     let statement = Query::insert()
         .into_table(ContactStat::Table)
-        .columns([ContactStat::Today, ContactStat::Unread])
-        .values_panic([None::<u64>.into(), 1.into()])
+        .columns([ContactStat::Day, ContactStat::Unread])
+        .values_panic(["".into(), 1.into()])
         .on_conflict(
-            OnConflict::column(ContactStat::Today)
+            OnConflict::column(ContactStat::Day)
                 .value(ContactStat::Unread, Expr::col(ContactStat::Unread).sub(1))
                 .to_owned(),
         )

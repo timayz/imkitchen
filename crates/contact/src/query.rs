@@ -155,7 +155,7 @@ impl Query {
 pub struct Stat {
     pub total: u32,
     pub unread: u32,
-    pub today: u32,
+    // pub today: u32,
     pub avg_response_time: u32,
     // pub avg_response_time_last_week: u8,
 }
@@ -165,12 +165,11 @@ impl Query {
         let statment = sea_query::Query::select()
             .columns([
                 ContactStat::Total,
-                ContactStat::Today,
                 ContactStat::Unread,
                 ContactStat::AvgResponseTime,
             ])
             .from(ContactStat::Table)
-            .and_where(Expr::col(ContactStat::Today).is_not_null())
+            .and_where(Expr::col(ContactStat::Day).eq(""))
             .to_owned();
 
         let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
