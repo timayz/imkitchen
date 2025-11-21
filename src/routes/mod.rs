@@ -26,6 +26,7 @@ pub struct AppState {
     pub config: crate::config::Config,
     pub user_command: imkitchen_user::Command<evento::Sqlite>,
     pub contact_command: imkitchen_contact::Command<evento::Sqlite>,
+    pub contact_query: imkitchen_contact::Query,
     pub recipe_command: imkitchen_recipe::Command<evento::Sqlite>,
     pub recipe_query: imkitchen_recipe::Query,
     pub pool: SqlitePool,

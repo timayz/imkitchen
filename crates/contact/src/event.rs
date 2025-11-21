@@ -1,6 +1,8 @@
 use bincode::{Decode, Encode};
 use evento::AggregatorName;
 
+use crate::{Status, Subject};
+
 #[derive(AggregatorName, Encode, Decode)]
 pub struct FormSubmitted {
     pub name: String,

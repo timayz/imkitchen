@@ -26,6 +26,7 @@ pub async fn serve(
     let evento_executor: evento::Sqlite = write_pool.clone().into();
     let user_command = imkitchen_user::Command(evento_executor.clone(), read_pool.clone());
     let contact_command = imkitchen_contact::Command(evento_executor.clone(), read_pool.clone());
+    let contact_query = imkitchen_contact::Query(read_pool.clone());
     let recipe_command = imkitchen_recipe::Command(evento_executor.clone(), read_pool.clone());
     let recipe_query = imkitchen_recipe::Query(read_pool.clone());
 
@@ -42,8 +43,14 @@ pub async fn serve(
         .run(&evento_executor)
         .await?;
 
-    let sub_contact_query = imkitchen::subscribe_contact()
+    let sub_contact_list = imkitchen_contact::subscribe_list()
         .data(write_pool.clone())
+        .run(&evento_executor)
+        .await?;
+
+    let sub_contact_stat = imkitchen_contact::subscribe_stat()
+        .data(write_pool.clone())
+        .data(contact_query.clone())
         .run(&evento_executor)
         .await?;
 
@@ -66,6 +73,7 @@ pub async fn serve(
         config,
         user_command,
         contact_command,
+        contact_query,
         recipe_command,
         recipe_query,
         pool: read_pool.clone(),
@@ -134,7 +142,8 @@ pub async fn serve(
         sub_user_command.shutdown_and_wait(),
         sub_global_stat_query.shutdown_and_wait(),
         sub_admin_user_query.shutdown_and_wait(),
-        sub_contact_query.shutdown_and_wait(),
+        sub_contact_list.shutdown_and_wait(),
+        sub_contact_stat.shutdown_and_wait(),
         sub_recipe_list.shutdown_and_wait(),
         sub_recipe_user_stat.shutdown_and_wait(),
     ])

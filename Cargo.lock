@@ -1749,11 +1749,17 @@ version = "0.10.0"
 dependencies = [
  "anyhow",
  "bincode",
+ "cfg-if",
  "evento",
+ "futures",
  "imkitchen-db",
  "imkitchen-shared",
+ "sea-query",
+ "sea-query-sqlx",
  "serde",
  "sqlx",
+ "strum",
+ "temp-dir",
  "tokio",
  "validator",
 ]
@@ -1824,6 +1830,7 @@ dependencies = [
  "evento",
  "sqlx",
  "thiserror",
+ "time",
  "ulid",
  "validator",
 ]

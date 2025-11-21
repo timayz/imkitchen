@@ -1,9 +1,3 @@
-mod admin_user;
-mod global_stat;
-
-pub use admin_user::*;
-pub use global_stat::*;
-
 use time::OffsetDateTime;
 
 pub fn format_relative_time(timestamp: u64) -> String {

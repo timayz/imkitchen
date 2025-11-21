@@ -51,7 +51,6 @@ pub enum ContactStat {
     Today,
     Total,
     Unread,
-    TodayCount,
     AvgResponseTime,
     CreatedAt,
 }

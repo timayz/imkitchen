@@ -6,9 +6,7 @@ use axum::{
     response::IntoResponse,
 };
 use evento::cursor::{Args, ReadResult, Value};
-use imkitchen_recipe::{
-    CuisineType, RecipeListRow, RecipeSortBy, RecipeType, RecipesQuery, UserStat,
-};
+use imkitchen_recipe::{CuisineType, RecipeListRow, RecipeType, RecipesQuery, SortBy, UserStat};
 use imkitchen_shared::Metadata;
 use serde::Deserialize;
 use strum::VariantArray;
@@ -61,7 +59,7 @@ pub struct PageQuery {
     pub before: Option<Value>,
     pub recipe_type: Option<String>,
     pub cuisine_type: Option<String>,
-    pub sort_by: Option<RecipeSortBy>,
+    pub sort_by: Option<SortBy>,
 }
 
 pub async fn page(

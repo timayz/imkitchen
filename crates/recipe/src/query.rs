@@ -9,8 +9,7 @@ use sea_query_sqlx::SqlxBinder;
 use sqlx::prelude::FromRow;
 
 use crate::{
-    AccompanimentType, CuisineType, DietaryRestriction, Ingredient, Instruction, RecipeSortBy,
-    RecipeType,
+    AccompanimentType, CuisineType, DietaryRestriction, Ingredient, Instruction, RecipeType, SortBy,
 };
 
 #[derive(Debug, Encode, Decode)]
@@ -89,7 +88,7 @@ pub struct RecipesQuery {
     pub recipe_type: Option<RecipeType>,
     pub cuisine_type: Option<CuisineType>,
     pub is_shared: Option<bool>,
-    pub sort_by: RecipeSortBy,
+    pub sort_by: SortBy,
     pub args: Args,
 }
 
@@ -130,7 +129,7 @@ impl Query {
 
         let mut reader = Reader::new(statment);
 
-        if matches!(query.sort_by, RecipeSortBy::RecentlyAdded) {
+        if matches!(query.sort_by, SortBy::RecentlyAdded) {
             reader.desc();
         }
 

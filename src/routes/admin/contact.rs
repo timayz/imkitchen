@@ -5,26 +5,23 @@ use axum::{
     response::IntoResponse,
 };
 use evento::cursor::{Args, Edge, ReadResult, Value};
-use imkitchen::{
-    Contact, ContactGlobalStats, ContactInput, ContactSortBy, query_contact_by_id,
-    query_contact_global_stats, query_contacts,
-};
-use imkitchen_contact::{ContactStatus, ContactSubject};
+use imkitchen_contact::{ContactRow, FilterQuery, SortBy, Stat, Status, Subject};
 use imkitchen_shared::Metadata;
 use serde::Deserialize;
+use strum::VariantArray;
 
 use crate::{
     auth::AuthAdmin,
     routes::AppState,
-    template::{ServerErrorTemplate, Template},
+    template::{NotFoundTemplate, ServerErrorTemplate, Template},
 };
 
 #[derive(askama::Template)]
 #[template(path = "admin-contact.html")]
 pub struct ContactTemplate {
     pub current_path: String,
-    pub stats: ContactGlobalStats,
-    pub contacts: ReadResult<Contact>,
+    pub stats: Stat,
+    pub contacts: ReadResult<ContactRow>,
     pub query: PageQuery,
 }
 
@@ -32,7 +29,7 @@ impl Default for ContactTemplate {
     fn default() -> Self {
         Self {
             current_path: "contact".to_owned(),
-            stats: ContactGlobalStats::default(),
+            stats: Stat::default(),
             contacts: ReadResult::default(),
             query: Default::default(),
         }
@@ -54,11 +51,11 @@ pub async fn page(
     template: Template<ContactTemplate>,
     server_error_template: Template<ServerErrorTemplate>,
     Query(query): Query<PageQuery>,
-    State(app_state): State<AppState>,
+    State(app): State<AppState>,
     AuthAdmin(_user): AuthAdmin,
 ) -> impl IntoResponse {
-    let stats = match query_contact_global_stats(&app_state.pool).await {
-        Ok(stats) => stats,
+    let stats = match app.contact_query.find_stat(0).await {
+        Ok(stats) => stats.unwrap_or_default(),
         Err(e) => {
             tracing::error!("{e}");
 
@@ -69,10 +66,10 @@ pub async fn page(
     };
 
     let r_query = query.clone();
-    let subject = ContactSubject::from_str(&query.subject.unwrap_or("".to_owned())).ok();
-    let status = ContactStatus::from_str(&query.status.unwrap_or("".to_owned())).ok();
-    let sort_by = ContactSortBy::from_str(&query.sort_by.unwrap_or("".to_owned()))
-        .unwrap_or(ContactSortBy::MostRecent);
+    let subject = Subject::from_str(&query.subject.unwrap_or("".to_owned())).ok();
+    let status = Status::from_str(&query.status.unwrap_or("".to_owned())).ok();
+    let sort_by =
+        SortBy::from_str(&query.sort_by.unwrap_or("".to_owned())).unwrap_or(SortBy::MostRecent);
 
     let args = Args {
         first: query.first,
@@ -81,16 +78,15 @@ pub async fn page(
         before: query.before,
     };
 
-    let contacts = match query_contacts(
-        &app_state.pool,
-        ContactInput {
+    let contacts = match app
+        .contact_query
+        .filter(FilterQuery {
             status,
             subject,
             sort_by,
             args: args.limit(20),
-        },
-    )
-    .await
+        })
+        .await
     {
         Ok(stats) => stats,
         Err(e) => {
@@ -114,14 +110,15 @@ pub async fn page(
 
 pub async fn mark_read_and_reply(
     template: Template<ContactTemplate>,
+    not_found: Template<NotFoundTemplate>,
     server_error_template: Template<ServerErrorTemplate>,
     Path((id,)): Path<(String,)>,
-    State(app_state): State<AppState>,
+    State(app): State<AppState>,
     AuthAdmin(user): AuthAdmin,
 ) -> impl IntoResponse {
-    if let Err(e) = app_state
+    if let Err(e) = app
         .contact_command
-        .mark_read_and_reply(&id, Metadata::by(user.id))
+        .mark_read_and_reply(&id, &Metadata::by(user.id))
         .await
     {
         tracing::error!("{e}");
@@ -131,8 +128,9 @@ pub async fn mark_read_and_reply(
             .into_response();
     }
 
-    let mut contact = match query_contact_by_id(&app_state.pool, id).await {
-        Ok(u) => u,
+    let mut contact = match app.contact_query.find(&id).await {
+        Ok(Some(u)) => u,
+        Ok(_) => return not_found.render(NotFoundTemplate).into_response(),
         Err(e) => {
             tracing::error!("{e}");
 
@@ -142,7 +140,7 @@ pub async fn mark_read_and_reply(
         }
     };
 
-    contact.status = ContactStatus::Read.to_string();
+    contact.status.0 = Status::Read;
 
     let contacts = ReadResult {
         page_info: Default::default(),
@@ -162,14 +160,15 @@ pub async fn mark_read_and_reply(
 
 pub async fn resolve(
     template: Template<ContactTemplate>,
+    not_found: Template<NotFoundTemplate>,
     server_error_template: Template<ServerErrorTemplate>,
     Path((id,)): Path<(String,)>,
-    State(app_state): State<AppState>,
+    State(app): State<AppState>,
     AuthAdmin(user): AuthAdmin,
 ) -> impl IntoResponse {
-    if let Err(e) = app_state
+    if let Err(e) = app
         .contact_command
-        .resolve(&id, Metadata::by(user.id))
+        .resolve(&id, &Metadata::by(user.id))
         .await
     {
         tracing::error!("{e}");
@@ -179,8 +178,9 @@ pub async fn resolve(
             .into_response();
     }
 
-    let mut contact = match query_contact_by_id(&app_state.pool, id).await {
-        Ok(u) => u,
+    let mut contact = match app.contact_query.find(&id).await {
+        Ok(Some(u)) => u,
+        Ok(_) => return not_found.render(NotFoundTemplate).into_response(),
         Err(e) => {
             tracing::error!("{e}");
 
@@ -190,7 +190,7 @@ pub async fn resolve(
         }
     };
 
-    contact.status = ContactStatus::Resolved.to_string();
+    contact.status.0 = Status::Resolved;
 
     let contacts = ReadResult {
         page_info: Default::default(),
@@ -210,14 +210,15 @@ pub async fn resolve(
 
 pub async fn reopen(
     template: Template<ContactTemplate>,
+    not_found: Template<NotFoundTemplate>,
     server_error_template: Template<ServerErrorTemplate>,
     Path((id,)): Path<(String,)>,
-    State(app_state): State<AppState>,
+    State(app): State<AppState>,
     AuthAdmin(user): AuthAdmin,
 ) -> impl IntoResponse {
-    if let Err(e) = app_state
+    if let Err(e) = app
         .contact_command
-        .reopen(&id, Metadata::by(user.id.to_owned()))
+        .reopen(&id, &Metadata::by(user.id))
         .await
     {
         tracing::error!("{e}");
@@ -227,8 +228,9 @@ pub async fn reopen(
             .into_response();
     }
 
-    let mut contact = match query_contact_by_id(&app_state.pool, id).await {
-        Ok(u) => u,
+    let mut contact = match app.contact_query.find(&id).await {
+        Ok(Some(u)) => u,
+        Ok(_) => return not_found.render(NotFoundTemplate).into_response(),
         Err(e) => {
             tracing::error!("{e}");
 
@@ -238,7 +240,7 @@ pub async fn reopen(
         }
     };
 
-    contact.status = ContactStatus::Read.to_string();
+    contact.status.0 = Status::Read;
 
     let contacts = ReadResult {
         page_info: Default::default(),

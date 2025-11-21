@@ -3,7 +3,7 @@ use imkitchen_shared::Metadata;
 use sqlx::SqlitePool;
 use validator::Validate;
 
-use crate::{Contact, FormSubmitted, MarkedReadAndReply, Reopened, Resolved};
+use crate::{Contact, FormSubmitted, MarkedReadAndReply, Reopened, Resolved, Status, Subject};
 
 #[derive(Clone)]
 pub struct Command<E: Executor + Clone>(pub E, pub SqlitePool);

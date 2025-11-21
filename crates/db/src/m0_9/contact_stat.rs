@@ -26,12 +26,6 @@ fn create_table() -> TableCreateStatement {
                 .default(0),
         )
         .col(
-            ColumnDef::new(ContactStat::TodayCount)
-                .integer()
-                .not_null()
-                .default(0),
-        )
-        .col(
             ColumnDef::new(ContactStat::AvgResponseTime)
                 .integer()
                 .not_null()

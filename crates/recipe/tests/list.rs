@@ -1,7 +1,7 @@
 use evento::cursor::Args;
 use imkitchen_recipe::{
     AccompanimentType, Command, CuisineType, DietaryRestriction, Ingredient, Instruction,
-    RecipeSortBy, RecipeType, RecipesQuery, UpdateInput, subscribe_list, subscribe_user_stat,
+    RecipeType, RecipesQuery, SortBy, UpdateInput, subscribe_list, subscribe_user_stat,
 };
 use imkitchen_shared::Metadata;
 use temp_dir::TempDir;
@@ -61,7 +61,7 @@ pub async fn test_recipe_query() -> anyhow::Result<()> {
         .filter(RecipesQuery {
             args: Args::default(),
             user_id: Some("john".to_owned()),
-            sort_by: RecipeSortBy::RecentlyAdded,
+            sort_by: SortBy::RecentlyAdded,
             is_shared: None,
             recipe_type: None,
             cuisine_type: None,
