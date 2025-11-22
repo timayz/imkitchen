@@ -86,7 +86,7 @@ pub struct CreateIdx1;
 
 fn create_idx_1() -> IndexCreateStatement {
     Index::create()
-        .name("idx_contact_V1uhrH")
+        .name("idx_contact_list_V1uhrH")
         .table(ContactList::Table)
         .col(ContactList::Status)
         .to_owned()
@@ -94,7 +94,7 @@ fn create_idx_1() -> IndexCreateStatement {
 
 fn drop_idx_1() -> IndexDropStatement {
     Index::drop()
-        .name("idx_contact_V1uhrH")
+        .name("idx_contact_list_V1uhrH")
         .table(ContactList::Table)
         .to_owned()
 }
@@ -126,7 +126,7 @@ pub struct CreateIdx2;
 
 fn create_idx_2() -> IndexCreateStatement {
     Index::create()
-        .name("idx_contact_c8p3al")
+        .name("idx_contact_list_c8p3al")
         .table(ContactList::Table)
         .col(ContactList::Subject)
         .to_owned()
@@ -134,7 +134,7 @@ fn create_idx_2() -> IndexCreateStatement {
 
 fn drop_idx_2() -> IndexDropStatement {
     Index::drop()
-        .name("idx_contact_c8p3al")
+        .name("idx_contact_list_c8p3al")
         .table(ContactList::Table)
         .to_owned()
 }

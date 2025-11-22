@@ -17,16 +17,17 @@ pub async fn set_role(
     let pool = imkitchen::create_pool(&config.database.url, 1).await?;
     let evento: evento::Sqlite = pool.clone().into();
     let command = imkitchen_user::Command(evento, pool.clone());
+    let metadata = Metadata::default();
 
-    let Some(user) = command.get_user_by_email(&email).await? else {
+    let Some(user) = command.find_by_email(&email).await? else {
         tracing::error!("user {email} not found");
         return Ok(());
     };
 
     match role {
-        Role::User => command.activate(user.id, Metadata::default()).await?,
-        Role::Suspend => command.suspend(user.id, Metadata::default()).await?,
-        Role::Admin => command.made_admin(user.id, Metadata::default()).await?,
+        Role::User => command.activate(user.id, &metadata).await?,
+        Role::Suspend => command.suspend(user.id, &metadata).await?,
+        Role::Admin => command.made_admin(user.id, &metadata).await?,
     }
 
     tracing::info!("{email} now have admin access");

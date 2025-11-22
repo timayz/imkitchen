@@ -25,6 +25,9 @@ use axum::routing::get;
 pub struct AppState {
     pub config: crate::config::Config,
     pub user_command: imkitchen_user::Command<evento::Sqlite>,
+    pub user_subscription_command: imkitchen_user::subscription::Command<evento::Sqlite>,
+    pub user_meal_preference_command: imkitchen_user::meal_preferences::Command<evento::Sqlite>,
+    pub user_query: imkitchen_user::Query,
     pub contact_command: imkitchen_contact::Command<evento::Sqlite>,
     pub contact_query: imkitchen_contact::Query,
     pub recipe_command: imkitchen_recipe::Command<evento::Sqlite>,

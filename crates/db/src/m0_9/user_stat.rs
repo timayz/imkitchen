@@ -1,27 +1,27 @@
 use sea_query::{ColumnDef, Table, TableCreateStatement, TableDropStatement};
 
-use crate::table::ContactStat;
+use crate::table::UserStat;
 
 pub struct CreateTable;
 
 fn create_table() -> TableCreateStatement {
     Table::create()
-        .table(ContactStat::Table)
-        .col(ColumnDef::new(ContactStat::Day).big_integer().primary_key())
+        .table(UserStat::Table)
+        .col(ColumnDef::new(UserStat::Day).big_integer().primary_key())
         .col(
-            ColumnDef::new(ContactStat::Total)
+            ColumnDef::new(UserStat::Total)
                 .integer()
                 .not_null()
                 .default(0),
         )
         .col(
-            ColumnDef::new(ContactStat::Unread)
+            ColumnDef::new(UserStat::Premium)
                 .integer()
                 .not_null()
                 .default(0),
         )
         .col(
-            ColumnDef::new(ContactStat::AvgResponseTime)
+            ColumnDef::new(UserStat::Suspended)
                 .integer()
                 .not_null()
                 .default(0),
@@ -30,7 +30,7 @@ fn create_table() -> TableCreateStatement {
 }
 
 fn drop_table() -> TableDropStatement {
-    Table::drop().table(ContactStat::Table).to_owned()
+    Table::drop().table(UserStat::Table).to_owned()
 }
 
 #[async_trait::async_trait]

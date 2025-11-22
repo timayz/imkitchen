@@ -1,4 +1,4 @@
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use axum::{
     extract::FromRequestParts,
@@ -100,7 +100,7 @@ impl FromRequestParts<crate::routes::AppState> for AuthUser {
 
         let Some(mut user) = state
             .user_command
-            .get_user_by_id(&token_data.claims.sub)
+            .find(&token_data.claims.sub)
             .await
             .map_err(|e| {
                 tracing::error!("{e}");
@@ -110,15 +110,14 @@ impl FromRequestParts<crate::routes::AppState> for AuthUser {
             return Err(Redirect::to("/login"));
         };
 
-        if user.state == State::Suspended {
+        if user.state.0 == State::Suspended {
             return Err(Redirect::to("/login"));
         }
 
         if !state.config.features.premium || user.is_admin() {
-            user.subscription_end_at = (SystemTime::now()
-                + Duration::from_secs(10 * 365 * 24 * 60 * 60))
-            .duration_since(UNIX_EPOCH)
-            .map_or(0, |d| d.as_secs());
+            user.subscription_expire_at = (SystemTime::now() + time::Duration::weeks(10 * 52))
+                .duration_since(UNIX_EPOCH)
+                .map_or(0, |d| d.as_secs());
         }
 
         parts.extensions.insert(AuthUser(user.clone()));

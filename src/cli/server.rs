@@ -25,6 +25,11 @@ pub async fn serve(
 
     let evento_executor: evento::Sqlite = write_pool.clone().into();
     let user_command = imkitchen_user::Command(evento_executor.clone(), read_pool.clone());
+    let user_subscription_command =
+        imkitchen_user::subscription::Command(evento_executor.clone(), read_pool.clone());
+    let user_meal_preference_command =
+        imkitchen_user::meal_preferences::Command(evento_executor.clone(), read_pool.clone());
+    let user_query = imkitchen_user::Query(read_pool.clone());
     let contact_command = imkitchen_contact::Command(evento_executor.clone(), read_pool.clone());
     let contact_query = imkitchen_contact::Query(read_pool.clone());
     let recipe_command = imkitchen_recipe::Command(evento_executor.clone(), read_pool.clone());
@@ -38,7 +43,7 @@ pub async fn serve(
         .run(&evento_executor)
         .await?;
 
-    let sub_admin_user_query = imkitchen::subscribe_admin_user()
+    let sub_user_list = imkitchen_user::subscribe_list()
         .data(write_pool.clone())
         .run(&evento_executor)
         .await?;
@@ -64,7 +69,7 @@ pub async fn serve(
         .run(&evento_executor)
         .await?;
 
-    let sub_global_stat_query = imkitchen::subscribe_global_stat()
+    let sub_user_stat = imkitchen_user::subscribe_stat()
         .data(write_pool.clone())
         .run(&evento_executor)
         .await?;
@@ -72,6 +77,9 @@ pub async fn serve(
     let state = AppState {
         config,
         user_command,
+        user_subscription_command,
+        user_meal_preference_command,
+        user_query,
         contact_command,
         contact_query,
         recipe_command,
@@ -140,8 +148,8 @@ pub async fn serve(
     // Shutdown all projection subscriptions
     let results = futures::future::join_all(vec![
         sub_user_command.shutdown_and_wait(),
-        sub_global_stat_query.shutdown_and_wait(),
-        sub_admin_user_query.shutdown_and_wait(),
+        sub_user_stat.shutdown_and_wait(),
+        sub_user_list.shutdown_and_wait(),
         sub_contact_list.shutdown_and_wait(),
         sub_contact_stat.shutdown_and_wait(),
         sub_recipe_list.shutdown_and_wait(),

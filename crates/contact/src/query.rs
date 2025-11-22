@@ -161,7 +161,7 @@ pub struct Stat {
 }
 
 impl Query {
-    pub async fn find_stat(&self, _day: u64) -> anyhow::Result<Option<Stat>> {
+    pub async fn find_stat(&self, day: u64) -> anyhow::Result<Option<Stat>> {
         let statment = sea_query::Query::select()
             .columns([
                 ContactStat::Total,
@@ -169,7 +169,7 @@ impl Query {
                 ContactStat::AvgResponseTime,
             ])
             .from(ContactStat::Table)
-            .and_where(Expr::col(ContactStat::Day).eq(""))
+            .and_where(Expr::col(ContactStat::Day).eq(day))
             .to_owned();
 
         let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);

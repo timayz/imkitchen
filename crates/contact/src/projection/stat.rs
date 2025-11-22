@@ -22,7 +22,7 @@ async fn handle_contact_form_submitted<E: Executor>(
     let statement = Query::insert()
         .into_table(ContactStat::Table)
         .columns([ContactStat::Day, ContactStat::Total, ContactStat::Unread])
-        .values_panic(["".into(), 1.into(), 1.into()])
+        .values_panic([0.into(), 1.into(), 1.into()])
         .on_conflict(
             OnConflict::column(ContactStat::Day)
                 .value(ContactStat::Total, Expr::col(ContactStat::Total).add(1))
@@ -56,7 +56,7 @@ async fn handle_contact_marked_read_and_reply<E: Executor>(
     let statement = Query::insert()
         .into_table(ContactStat::Table)
         .columns([ContactStat::Day, ContactStat::Unread])
-        .values_panic(["".into(), 1.into()])
+        .values_panic([0.into(), 1.into()])
         .on_conflict(
             OnConflict::column(ContactStat::Day)
                 .value(ContactStat::Unread, Expr::col(ContactStat::Unread).sub(1))
@@ -89,7 +89,7 @@ async fn handle_contact_resolved<E: Executor>(
     let statement = Query::insert()
         .into_table(ContactStat::Table)
         .columns([ContactStat::Day, ContactStat::Unread])
-        .values_panic(["".into(), 1.into()])
+        .values_panic([0.into(), 1.into()])
         .on_conflict(
             OnConflict::column(ContactStat::Day)
                 .value(ContactStat::Unread, Expr::col(ContactStat::Unread).sub(1))

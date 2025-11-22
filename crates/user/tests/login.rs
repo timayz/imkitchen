@@ -1,12 +1,16 @@
 use imkitchen_shared::Metadata;
 use imkitchen_user::{LoginInput, subscribe_command};
+use temp_dir::TempDir;
 
 mod helpers;
 
 #[tokio::test]
 async fn test_login_failure() -> anyhow::Result<()> {
-    let state = helpers::setup_test_state().await?;
+    let dir = TempDir::new()?;
+    let path = dir.child("db.sqlite3");
+    let state = helpers::setup_test_state(path).await?;
     let command = imkitchen_user::Command(state.evento.clone(), state.pool.clone());
+    let metadata = &Metadata::default();
     let resp = command
         .login(
             LoginInput {
@@ -14,7 +18,7 @@ async fn test_login_failure() -> anyhow::Result<()> {
                 password: "my_password".to_owned(),
                 lang: "en".to_owned(),
             },
-            Metadata::default(),
+            &metadata,
         )
         .await;
 
@@ -32,7 +36,7 @@ async fn test_login_failure() -> anyhow::Result<()> {
                 password: "my_password3".to_owned(),
                 lang: "en".to_owned(),
             },
-            Metadata::default(),
+            &metadata,
         )
         .await;
 
@@ -48,7 +52,7 @@ async fn test_login_failure() -> anyhow::Result<()> {
                 password: "my_password".to_owned(),
                 lang: "en".to_owned(),
             },
-            Metadata::default(),
+            &metadata,
         )
         .await;
 
@@ -64,7 +68,7 @@ async fn test_login_failure() -> anyhow::Result<()> {
                 password: "my_password".to_owned(),
                 lang: "en".to_owned(),
             },
-            Metadata::default(),
+            &metadata,
         )
         .await;
 

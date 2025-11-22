@@ -1,32 +1,35 @@
 use sea_query::Iden;
 
 #[derive(Iden, Clone)]
-pub enum User {
+pub enum UserAuth {
     Table,
     Id,
     Email,
     Role,
     State,
-    SubscriptionEndAt,
+    SubscriptionExpireAt,
     CreatedAt,
 }
 
 #[derive(Iden, Clone)]
-pub enum GlobalStatPjt {
+pub enum UserStat {
     Table,
-    Key,
-    Value,
+    Day,
+    Total,
+    Premium,
+    Suspended,
 }
 
 #[derive(Iden, Clone)]
-pub enum AdminUserPjt {
+pub enum UserList {
     Table,
     Id,
     Email,
     FullName,
     Username,
-    Status,
-    AccountType,
+    State,
+    Role,
+    SubscriptionExpireAt,
     TotalRecipesCount,
     SharedRecipesCount,
     TotalActiveCount,
