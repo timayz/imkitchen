@@ -74,8 +74,6 @@ askama = { workspace = true }
 sqlx = { workspace = true }
 evento = { workspace = true }
 serde = { workspace = true }
-serde_json = { workspace = true }
-bincode = { workspace = true }
 async-trait = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }
@@ -84,8 +82,6 @@ clap = { workspace = true }
 config = { workspace = true }
 rust-embed = { workspace = true }
 mime_guess = { workspace = true }
-sea-query = { workspace = true }
-sea-query-sqlx = { workspace = true }
 minify-html = { workspace = true }
 jsonwebtoken = { workspace = true }
 futures = { workspace = true }

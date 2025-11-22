@@ -10,7 +10,7 @@ async fn test_login_failure() -> anyhow::Result<()> {
     let path = dir.child("db.sqlite3");
     let state = helpers::setup_test_state(path).await?;
     let command = imkitchen_user::Command(state.evento.clone(), state.pool.clone());
-    let metadata = &Metadata::default();
+    let metadata = Metadata::default();
     let resp = command
         .login(
             LoginInput {

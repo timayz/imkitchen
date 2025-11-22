@@ -24,6 +24,7 @@ imkitchen-recipe = { path = "../recipe", version = "0.10.0", default-features = 
 tokio.workspace = true
 temp-dir.workspace = true
 futures.workspace = true
+time = { workspace = true, features = ["formatting", "macros"] }
 
 [features]
 default = ["full", "imkitchen-recipe"]
