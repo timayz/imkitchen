@@ -1,15 +1,13 @@
 use bincode::{Decode, Encode};
 use evento::AggregatorName;
 
-#[derive(Encode, Decode)]
-pub struct Slot;
+use crate::Slot;
 
 #[derive(AggregatorName, Encode, Decode)]
-pub struct GenerateRequested {
-    pub week: u16,
-}
+pub struct GenerateRequested;
 
 #[derive(AggregatorName, Encode, Decode)]
-pub struct Generated {
+pub struct WeekGenerated {
+    pub week: u64,
     pub slots: Vec<Slot>,
 }
