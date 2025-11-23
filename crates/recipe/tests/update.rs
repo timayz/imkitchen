@@ -5,16 +5,19 @@ use imkitchen_recipe::{
     RecipeTypeChanged, UpdateInput,
 };
 use imkitchen_shared::Metadata;
+use temp_dir::TempDir;
 
 mod helpers;
 
 #[tokio::test]
 async fn test_update_no_fields() -> anyhow::Result<()> {
-    let state = helpers::setup_test_state().await?;
+    let dir = TempDir::new()?;
+    let path = dir.child("db.sqlite3");
+    let state = helpers::setup_test_state(path).await?;
     let command = imkitchen_recipe::Command(state.evento.clone(), state.pool.clone());
-    let john = helpers::create_user(&state, "john").await?;
+    let john = Metadata::by("john".to_owned());
 
-    let recipe = command.create(Metadata::by(john.to_owned())).await?;
+    let recipe = command.create(&john).await?;
 
     let input = UpdateInput {
         name: "My first Recipe".to_owned(),
@@ -42,9 +45,7 @@ async fn test_update_no_fields() -> anyhow::Result<()> {
         id: recipe.to_owned(),
     };
 
-    command
-        .update(input.clone(), Metadata::by(john.to_owned()))
-        .await?;
+    command.update(input.clone(), &john).await?;
 
     let loaded = command.load(&recipe).await?;
     let event_id = loaded.event.id;
@@ -52,9 +53,7 @@ async fn test_update_no_fields() -> anyhow::Result<()> {
     assert_eq!(loaded.item.recipe_type, RecipeType::MainCourse);
     assert_eq!(loaded.item.cuisine_type, CuisineType::Caribbean);
 
-    command
-        .update(input.clone(), Metadata::by(john.to_owned()))
-        .await?;
+    command.update(input.clone(), &john).await?;
     let loaded = command.load(&recipe).await?;
 
     assert_eq!(loaded.event.id, event_id);
@@ -64,11 +63,13 @@ async fn test_update_no_fields() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn test_update_only_recipe_type() -> anyhow::Result<()> {
-    let state = helpers::setup_test_state().await?;
+    let dir = TempDir::new()?;
+    let path = dir.child("db.sqlite3");
+    let state = helpers::setup_test_state(path).await?;
     let command = imkitchen_recipe::Command(state.evento.clone(), state.pool.clone());
-    let john = helpers::create_user(&state, "john").await?;
+    let john = Metadata::by("john".to_owned());
 
-    let recipe = command.create(Metadata::by(john.to_owned())).await?;
+    let recipe = command.create(&john).await?;
 
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
@@ -96,15 +97,11 @@ async fn test_update_only_recipe_type() -> anyhow::Result<()> {
         id: recipe.to_owned(),
     };
 
-    command
-        .update(input.clone(), Metadata::by(john.to_owned()))
-        .await?;
+    command.update(input.clone(), &john).await?;
 
     input.recipe_type = RecipeType::Dessert;
 
-    command
-        .update(input.clone(), Metadata::by(john.to_owned()))
-        .await?;
+    command.update(input.clone(), &john).await?;
 
     let loaded = command.load(&recipe).await?;
     let event = loaded.event.to_details::<RecipeTypeChanged, Metadata>()?;
@@ -117,11 +114,13 @@ async fn test_update_only_recipe_type() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn test_update_only_cuisine_type() -> anyhow::Result<()> {
-    let state = helpers::setup_test_state().await?;
+    let dir = TempDir::new()?;
+    let path = dir.child("db.sqlite3");
+    let state = helpers::setup_test_state(path).await?;
     let command = imkitchen_recipe::Command(state.evento.clone(), state.pool.clone());
-    let john = helpers::create_user(&state, "john").await?;
+    let john = Metadata::by("john".to_owned());
 
-    let recipe = command.create(Metadata::by(john.to_owned())).await?;
+    let recipe = command.create(&john).await?;
 
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
@@ -149,15 +148,11 @@ async fn test_update_only_cuisine_type() -> anyhow::Result<()> {
         id: recipe.to_owned(),
     };
 
-    command
-        .update(input.clone(), Metadata::by(john.to_owned()))
-        .await?;
+    command.update(input.clone(), &john).await?;
 
     input.cuisine_type = CuisineType::Italian;
 
-    command
-        .update(input.clone(), Metadata::by(john.to_owned()))
-        .await?;
+    command.update(input.clone(), &john).await?;
 
     let loaded = command.load(&recipe).await?;
     let event = loaded.event.to_details::<CuisineTypeChanged, Metadata>()?;
@@ -170,11 +165,13 @@ async fn test_update_only_cuisine_type() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn test_update_only_name() -> anyhow::Result<()> {
-    let state = helpers::setup_test_state().await?;
+    let dir = TempDir::new()?;
+    let path = dir.child("db.sqlite3");
+    let state = helpers::setup_test_state(path).await?;
     let command = imkitchen_recipe::Command(state.evento.clone(), state.pool.clone());
-    let john = helpers::create_user(&state, "john").await?;
+    let john = Metadata::by("john".to_owned());
 
-    let recipe = command.create(Metadata::by(john.to_owned())).await?;
+    let recipe = command.create(&john).await?;
 
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
@@ -202,15 +199,11 @@ async fn test_update_only_name() -> anyhow::Result<()> {
         id: recipe.to_owned(),
     };
 
-    command
-        .update(input.clone(), Metadata::by(john.to_owned()))
-        .await?;
+    command.update(input.clone(), &john).await?;
 
     input.name = "Updated Recipe Name".to_owned();
 
-    command
-        .update(input.clone(), Metadata::by(john.to_owned()))
-        .await?;
+    command.update(input.clone(), &john).await?;
 
     let loaded = command.load(&recipe).await?;
     let event = loaded
@@ -229,11 +222,13 @@ async fn test_update_only_name() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn test_update_only_description() -> anyhow::Result<()> {
-    let state = helpers::setup_test_state().await?;
+    let dir = TempDir::new()?;
+    let path = dir.child("db.sqlite3");
+    let state = helpers::setup_test_state(path).await?;
     let command = imkitchen_recipe::Command(state.evento.clone(), state.pool.clone());
-    let john = helpers::create_user(&state, "john").await?;
+    let john = Metadata::by("john".to_owned());
 
-    let recipe = command.create(Metadata::by(john.to_owned())).await?;
+    let recipe = command.create(&john).await?;
 
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
@@ -261,15 +256,11 @@ async fn test_update_only_description() -> anyhow::Result<()> {
         id: recipe.to_owned(),
     };
 
-    command
-        .update(input.clone(), Metadata::by(john.to_owned()))
-        .await?;
+    command.update(input.clone(), &john).await?;
 
     input.description = "Updated description".to_owned();
 
-    command
-        .update(input.clone(), Metadata::by(john.to_owned()))
-        .await?;
+    command.update(input.clone(), &john).await?;
 
     let loaded = command.load(&recipe).await?;
     let event = loaded
@@ -288,11 +279,13 @@ async fn test_update_only_description() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn test_update_only_prep_time() -> anyhow::Result<()> {
-    let state = helpers::setup_test_state().await?;
+    let dir = TempDir::new()?;
+    let path = dir.child("db.sqlite3");
+    let state = helpers::setup_test_state(path).await?;
     let command = imkitchen_recipe::Command(state.evento.clone(), state.pool.clone());
-    let john = helpers::create_user(&state, "john").await?;
+    let john = Metadata::by("john".to_owned());
 
-    let recipe = command.create(Metadata::by(john.to_owned())).await?;
+    let recipe = command.create(&john).await?;
 
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
@@ -320,15 +313,11 @@ async fn test_update_only_prep_time() -> anyhow::Result<()> {
         id: recipe.to_owned(),
     };
 
-    command
-        .update(input.clone(), Metadata::by(john.to_owned()))
-        .await?;
+    command.update(input.clone(), &john).await?;
 
     input.prep_time = 15;
 
-    command
-        .update(input.clone(), Metadata::by(john.to_owned()))
-        .await?;
+    command.update(input.clone(), &john).await?;
 
     let loaded = command.load(&recipe).await?;
     let event = loaded
@@ -347,11 +336,13 @@ async fn test_update_only_prep_time() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn test_update_only_cook_time() -> anyhow::Result<()> {
-    let state = helpers::setup_test_state().await?;
+    let dir = TempDir::new()?;
+    let path = dir.child("db.sqlite3");
+    let state = helpers::setup_test_state(path).await?;
     let command = imkitchen_recipe::Command(state.evento.clone(), state.pool.clone());
-    let john = helpers::create_user(&state, "john").await?;
+    let john = Metadata::by("john".to_owned());
 
-    let recipe = command.create(Metadata::by(john.to_owned())).await?;
+    let recipe = command.create(&john).await?;
 
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
@@ -379,15 +370,11 @@ async fn test_update_only_cook_time() -> anyhow::Result<()> {
         id: recipe.to_owned(),
     };
 
-    command
-        .update(input.clone(), Metadata::by(john.to_owned()))
-        .await?;
+    command.update(input.clone(), &john).await?;
 
     input.cook_time = 30;
 
-    command
-        .update(input.clone(), Metadata::by(john.to_owned()))
-        .await?;
+    command.update(input.clone(), &john).await?;
 
     let loaded = command.load(&recipe).await?;
     let event = loaded
@@ -406,11 +393,13 @@ async fn test_update_only_cook_time() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn test_update_only_ingredients() -> anyhow::Result<()> {
-    let state = helpers::setup_test_state().await?;
+    let dir = TempDir::new()?;
+    let path = dir.child("db.sqlite3");
+    let state = helpers::setup_test_state(path).await?;
     let command = imkitchen_recipe::Command(state.evento.clone(), state.pool.clone());
-    let john = helpers::create_user(&state, "john").await?;
+    let john = Metadata::by("john".to_owned());
 
-    let recipe = command.create(Metadata::by(john.to_owned())).await?;
+    let recipe = command.create(&john).await?;
 
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
@@ -438,9 +427,7 @@ async fn test_update_only_ingredients() -> anyhow::Result<()> {
         id: recipe.to_owned(),
     };
 
-    command
-        .update(input.clone(), Metadata::by(john.to_owned()))
-        .await?;
+    command.update(input.clone(), &john).await?;
 
     input.ingredients = vec![
         Ingredient {
@@ -455,9 +442,7 @@ async fn test_update_only_ingredients() -> anyhow::Result<()> {
         },
     ];
 
-    command
-        .update(input.clone(), Metadata::by(john.to_owned()))
-        .await?;
+    command.update(input.clone(), &john).await?;
 
     let loaded = command.load(&recipe).await?;
     let event = loaded.event.to_details::<IngredientsChanged, Metadata>()?;
@@ -475,11 +460,13 @@ async fn test_update_only_ingredients() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn test_update_only_ingredients_empty() -> anyhow::Result<()> {
-    let state = helpers::setup_test_state().await?;
+    let dir = TempDir::new()?;
+    let path = dir.child("db.sqlite3");
+    let state = helpers::setup_test_state(path).await?;
     let command = imkitchen_recipe::Command(state.evento.clone(), state.pool.clone());
-    let john = helpers::create_user(&state, "john").await?;
+    let john = Metadata::by("john".to_owned());
 
-    let recipe = command.create(Metadata::by(john.to_owned())).await?;
+    let recipe = command.create(&john).await?;
 
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
@@ -507,15 +494,11 @@ async fn test_update_only_ingredients_empty() -> anyhow::Result<()> {
         id: recipe.to_owned(),
     };
 
-    command
-        .update(input.clone(), Metadata::by(john.to_owned()))
-        .await?;
+    command.update(input.clone(), &john).await?;
 
     input.ingredients = vec![];
 
-    command
-        .update(input.clone(), Metadata::by(john.to_owned()))
-        .await?;
+    command.update(input.clone(), &john).await?;
 
     let loaded = command.load(&recipe).await?;
     let event = loaded.event.to_details::<IngredientsChanged, Metadata>()?;
@@ -529,11 +512,13 @@ async fn test_update_only_ingredients_empty() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn test_update_only_instructions() -> anyhow::Result<()> {
-    let state = helpers::setup_test_state().await?;
+    let dir = TempDir::new()?;
+    let path = dir.child("db.sqlite3");
+    let state = helpers::setup_test_state(path).await?;
     let command = imkitchen_recipe::Command(state.evento.clone(), state.pool.clone());
-    let john = helpers::create_user(&state, "john").await?;
+    let john = Metadata::by("john".to_owned());
 
-    let recipe = command.create(Metadata::by(john.to_owned())).await?;
+    let recipe = command.create(&john).await?;
 
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
@@ -561,9 +546,7 @@ async fn test_update_only_instructions() -> anyhow::Result<()> {
         id: recipe.to_owned(),
     };
 
-    command
-        .update(input.clone(), Metadata::by(john.to_owned()))
-        .await?;
+    command.update(input.clone(), &john).await?;
 
     input.instructions = vec![
         Instruction {
@@ -576,9 +559,7 @@ async fn test_update_only_instructions() -> anyhow::Result<()> {
         },
     ];
 
-    command
-        .update(input.clone(), Metadata::by(john.to_owned()))
-        .await?;
+    command.update(input.clone(), &john).await?;
 
     let loaded = command.load(&recipe).await?;
     let event = loaded.event.to_details::<InstructionsChanged, Metadata>()?;
@@ -601,11 +582,13 @@ async fn test_update_only_instructions() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn test_update_only_dietary_restrictions() -> anyhow::Result<()> {
-    let state = helpers::setup_test_state().await?;
+    let dir = TempDir::new()?;
+    let path = dir.child("db.sqlite3");
+    let state = helpers::setup_test_state(path).await?;
     let command = imkitchen_recipe::Command(state.evento.clone(), state.pool.clone());
-    let john = helpers::create_user(&state, "john").await?;
+    let john = Metadata::by("john".to_owned());
 
-    let recipe = command.create(Metadata::by(john.to_owned())).await?;
+    let recipe = command.create(&john).await?;
 
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
@@ -633,9 +616,7 @@ async fn test_update_only_dietary_restrictions() -> anyhow::Result<()> {
         id: recipe.to_owned(),
     };
 
-    command
-        .update(input.clone(), Metadata::by(john.to_owned()))
-        .await?;
+    command.update(input.clone(), &john).await?;
 
     input.dietary_restrictions = vec![
         DietaryRestriction::Vegan,
@@ -643,9 +624,7 @@ async fn test_update_only_dietary_restrictions() -> anyhow::Result<()> {
         DietaryRestriction::LowCarb,
     ];
 
-    command
-        .update(input.clone(), Metadata::by(john.to_owned()))
-        .await?;
+    command.update(input.clone(), &john).await?;
 
     let loaded = command.load(&recipe).await?;
     let event = loaded
@@ -673,11 +652,13 @@ async fn test_update_only_dietary_restrictions() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn test_update_only_accepts_accompaniment() -> anyhow::Result<()> {
-    let state = helpers::setup_test_state().await?;
+    let dir = TempDir::new()?;
+    let path = dir.child("db.sqlite3");
+    let state = helpers::setup_test_state(path).await?;
     let command = imkitchen_recipe::Command(state.evento.clone(), state.pool.clone());
-    let john = helpers::create_user(&state, "john").await?;
+    let john = Metadata::by("john".to_owned());
 
-    let recipe = command.create(Metadata::by(john.to_owned())).await?;
+    let recipe = command.create(&john).await?;
 
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
@@ -705,15 +686,11 @@ async fn test_update_only_accepts_accompaniment() -> anyhow::Result<()> {
         id: recipe.to_owned(),
     };
 
-    command
-        .update(input.clone(), Metadata::by(john.to_owned()))
-        .await?;
+    command.update(input.clone(), &john).await?;
 
     input.accepts_accompaniment = true;
 
-    command
-        .update(input.clone(), Metadata::by(john.to_owned()))
-        .await?;
+    command.update(input.clone(), &john).await?;
 
     let loaded = command.load(&recipe).await?;
     let event = loaded
@@ -734,11 +711,13 @@ async fn test_update_only_accepts_accompaniment() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn test_update_only_preferred_accompaniment_types() -> anyhow::Result<()> {
-    let state = helpers::setup_test_state().await?;
+    let dir = TempDir::new()?;
+    let path = dir.child("db.sqlite3");
+    let state = helpers::setup_test_state(path).await?;
     let command = imkitchen_recipe::Command(state.evento.clone(), state.pool.clone());
-    let john = helpers::create_user(&state, "john").await?;
+    let john = Metadata::by("john".to_owned());
 
-    let recipe = command.create(Metadata::by(john.to_owned())).await?;
+    let recipe = command.create(&john).await?;
 
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
@@ -766,15 +745,11 @@ async fn test_update_only_preferred_accompaniment_types() -> anyhow::Result<()> 
         id: recipe.to_owned(),
     };
 
-    command
-        .update(input.clone(), Metadata::by(john.to_owned()))
-        .await?;
+    command.update(input.clone(), &john).await?;
 
     input.preferred_accompaniment_types = vec![AccompanimentType::Rice, AccompanimentType::Salad];
 
-    command
-        .update(input.clone(), Metadata::by(john.to_owned()))
-        .await?;
+    command.update(input.clone(), &john).await?;
 
     let loaded = command.load(&recipe).await?;
     let event = loaded
@@ -799,11 +774,13 @@ async fn test_update_only_preferred_accompaniment_types() -> anyhow::Result<()> 
 
 #[tokio::test]
 async fn test_update_only_advance_prep() -> anyhow::Result<()> {
-    let state = helpers::setup_test_state().await?;
+    let dir = TempDir::new()?;
+    let path = dir.child("db.sqlite3");
+    let state = helpers::setup_test_state(path).await?;
     let command = imkitchen_recipe::Command(state.evento.clone(), state.pool.clone());
-    let john = helpers::create_user(&state, "john").await?;
+    let john = Metadata::by("john".to_owned());
 
-    let recipe = command.create(Metadata::by(john.to_owned())).await?;
+    let recipe = command.create(&john).await?;
 
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
@@ -831,15 +808,11 @@ async fn test_update_only_advance_prep() -> anyhow::Result<()> {
         id: recipe.to_owned(),
     };
 
-    command
-        .update(input.clone(), Metadata::by(john.to_owned()))
-        .await?;
+    command.update(input.clone(), &john).await?;
 
     input.advance_prep = "Updated advance preparation instructions".to_owned();
 
-    command
-        .update(input.clone(), Metadata::by(john.to_owned()))
-        .await?;
+    command.update(input.clone(), &john).await?;
 
     let loaded = command.load(&recipe).await?;
     let event = loaded.event.to_details::<AdvancePrepChanged, Metadata>()?;

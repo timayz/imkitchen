@@ -1,28 +1,32 @@
 use imkitchen_shared::Metadata;
 use imkitchen_user::{RegisterInput, Status, subscribe_command};
+use temp_dir::TempDir;
 
 mod helpers;
 
 #[tokio::test]
 async fn validate_unique_emails() -> anyhow::Result<()> {
-    let state = helpers::setup_test_state().await?;
+    let dir = TempDir::new()?;
+    let path = dir.child("db.sqlite3");
+    let state = helpers::setup_test_state(path).await?;
     let command = imkitchen_user::Command(state.evento.clone(), state.pool.clone());
+    let metadata = Metadata::default();
     let user_1 = command
         .register(
             RegisterInput {
-                email: "john.doe@imkiichen.localhost".to_owned(),
+                email: "john.doe@imkitchen.localhost".to_owned(),
                 password: "my_password".to_owned(),
             },
-            Metadata::default(),
+            &metadata,
         )
         .await?;
     let user_2 = command
         .register(
             RegisterInput {
-                email: "john.doe@imkiichen.localhost".to_owned(),
+                email: "john.doe@imkitchen.localhost".to_owned(),
                 password: "my_password_v2".to_owned(),
             },
-            Metadata::default(),
+            &metadata,
         )
         .await?;
 

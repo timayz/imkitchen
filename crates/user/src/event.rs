@@ -1,66 +1,7 @@
 use bincode::{Decode, Encode};
 use evento::AggregatorName;
-use serde::Deserialize;
-use strum::{AsRefStr, Display, EnumString, VariantArray};
 
-#[derive(
-    Encode,
-    Decode,
-    EnumString,
-    VariantArray,
-    Display,
-    AsRefStr,
-    Clone,
-    Debug,
-    Default,
-    PartialEq,
-    Deserialize,
-)]
-pub enum Role {
-    #[default]
-    User,
-    Admin,
-    Root,
-}
-
-#[derive(
-    Encode,
-    Decode,
-    EnumString,
-    VariantArray,
-    Display,
-    AsRefStr,
-    Clone,
-    Debug,
-    Default,
-    PartialEq,
-    Deserialize,
-)]
-pub enum State {
-    #[default]
-    Active,
-    Suspended,
-}
-
-#[derive(
-    Encode,
-    Decode,
-    EnumString,
-    VariantArray,
-    Display,
-    AsRefStr,
-    Clone,
-    Debug,
-    Default,
-    PartialEq,
-    Deserialize,
-)]
-pub enum Status {
-    #[default]
-    Idle,
-    Processing,
-    Failed,
-}
+use crate::{Role, State, Status};
 
 #[derive(AggregatorName, Encode, Decode)]
 pub struct RegistrationRequested {

@@ -11,42 +11,6 @@ use crate::{
     Recipe, RecipeType, RecipeTypeChanged,
 };
 
-#[derive(Validate, Clone)]
-pub struct ImportInput {
-    pub recipe_type: RecipeType,
-    #[validate(length(min = 3, max = 30))]
-    pub name: String,
-    #[validate(length(min = 3, max = 2000))]
-    pub description: String,
-    pub prep_time: u16,
-    pub cook_time: u16,
-    pub ingredients: Vec<Ingredient>,
-    pub instructions: Vec<Instruction>,
-    pub cuisine_type: CuisineType,
-    #[validate(length(max = 2000))]
-    pub advance_prep: String,
-}
-
-#[derive(Validate, Clone)]
-pub struct UpdateInput {
-    pub id: String,
-    pub recipe_type: RecipeType,
-    #[validate(length(min = 3, max = 30))]
-    pub name: String,
-    #[validate(length(min = 3, max = 2000))]
-    pub description: String,
-    pub prep_time: u16,
-    pub cook_time: u16,
-    pub ingredients: Vec<Ingredient>,
-    pub instructions: Vec<Instruction>,
-    pub dietary_restrictions: Vec<DietaryRestriction>,
-    pub cuisine_type: CuisineType,
-    pub accepts_accompaniment: bool,
-    pub preferred_accompaniment_types: Vec<AccompanimentType>,
-    #[validate(length(max = 2000))]
-    pub advance_prep: String,
-}
-
 #[derive(Clone)]
 pub struct Command<E: Executor + Clone>(pub E, pub SqlitePool);
 
@@ -64,17 +28,37 @@ impl<E: Executor + Clone> Command<E> {
     ) -> Result<Option<LoadResult<Recipe>>, evento::ReadError> {
         evento::load_optional(&self.0, id).await
     }
+}
 
-    pub async fn create(&self, metadata: Metadata) -> imkitchen_shared::Result<String> {
+impl<E: Executor + Clone> Command<E> {
+    pub async fn create(&self, metadata: &Metadata) -> imkitchen_shared::Result<String> {
         Ok(evento::create::<Recipe>()
             .data(&Created {
                 name: "".to_owned(),
             })?
-            .metadata(&metadata)?
+            .metadata(metadata)?
             .commit(&self.0)
             .await?)
     }
+}
 
+#[derive(Validate, Clone)]
+pub struct ImportInput {
+    pub recipe_type: RecipeType,
+    #[validate(length(min = 3, max = 30))]
+    pub name: String,
+    #[validate(length(min = 3, max = 2000))]
+    pub description: String,
+    pub prep_time: u16,
+    pub cook_time: u16,
+    pub ingredients: Vec<Ingredient>,
+    pub instructions: Vec<Instruction>,
+    pub cuisine_type: CuisineType,
+    #[validate(length(max = 2000))]
+    pub advance_prep: String,
+}
+
+impl<E: Executor + Clone> Command<E> {
     pub async fn import(
         &self,
         input: ImportInput,
@@ -98,11 +82,33 @@ impl<E: Executor + Clone> Command<E> {
             .commit(&self.0)
             .await?)
     }
+}
 
+#[derive(Validate, Clone)]
+pub struct UpdateInput {
+    pub id: String,
+    pub recipe_type: RecipeType,
+    #[validate(length(min = 3, max = 30))]
+    pub name: String,
+    #[validate(length(min = 3, max = 2000))]
+    pub description: String,
+    pub prep_time: u16,
+    pub cook_time: u16,
+    pub ingredients: Vec<Ingredient>,
+    pub instructions: Vec<Instruction>,
+    pub dietary_restrictions: Vec<DietaryRestriction>,
+    pub cuisine_type: CuisineType,
+    pub accepts_accompaniment: bool,
+    pub preferred_accompaniment_types: Vec<AccompanimentType>,
+    #[validate(length(max = 2000))]
+    pub advance_prep: String,
+}
+
+impl<E: Executor + Clone> Command<E> {
     pub async fn update(
         &self,
         input: UpdateInput,
-        metadata: Metadata,
+        metadata: &Metadata,
     ) -> imkitchen_shared::Result<()> {
         input.validate()?;
 
@@ -112,7 +118,7 @@ impl<E: Executor + Clone> Command<E> {
             imkitchen_shared::bail!("Error while updating. Recipe is deleted");
         }
 
-        let mut builder = evento::save_with::<Recipe>(recipe.clone()).metadata(&metadata)?;
+        let mut builder = evento::save_with::<Recipe>(recipe.clone()).metadata(metadata)?;
         let mut has_data = false;
 
         if recipe.item.recipe_type != input.recipe_type {

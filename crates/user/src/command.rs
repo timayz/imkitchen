@@ -1,7 +1,4 @@
-use std::{
-    str::FromStr,
-    time::{Duration, SystemTime, UNIX_EPOCH},
-};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use argon2::{
     Argon2, PasswordHash, PasswordVerifier,
@@ -11,55 +8,28 @@ use evento::{AggregatorName, Executor, LoadResult, SubscribeBuilder};
 use imkitchen_shared::{Event, Metadata};
 use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
-use serde::Deserialize;
-use sqlx::SqlitePool;
+use sqlx::{SqlitePool, prelude::FromRow};
 use validator::Validate;
 
 use crate::{
     Activated, LoggedIn, MadeAdmin, RegistrationFailed, RegistrationRequested,
     RegistrationSucceeded, Role, State, Status, Suspended, User,
     meal_preferences::{self, UserMealPreferences},
-    subscription::{self, LifePremiumToggled, UserSubscription},
+    subscription::{LifePremiumToggled, UserSubscription},
 };
-use imkitchen_db::table::User as UserIden;
+use imkitchen_db::table::UserAuth as UserIden;
 
-#[derive(Validate)]
-pub struct RegisterInput {
-    #[validate(email)]
-    pub email: String,
-    #[validate(length(min = 8, max = 20))]
-    pub password: String,
-}
-
-#[derive(Validate)]
-pub struct LoginInput {
-    #[validate(email)]
-    pub email: String,
-    #[validate(length(min = 8, max = 20))]
-    pub password: String,
-    pub lang: String,
-}
-
-#[derive(Validate)]
-pub struct UpdateMealPreferencesInput {
-    #[validate(range(min = 1))]
-    pub household_size: u8,
-    pub dietary_restrictions: Vec<String>,
-    #[validate(range(min = 0.0, max = 1.0))]
-    pub cuisine_variety_weight: f32,
-}
-
-#[derive(Default, Debug, Deserialize, Clone)]
+#[derive(Default, Debug, Clone, FromRow)]
 pub struct AuthUser {
     pub id: String,
-    pub role: Role,
-    pub state: State,
-    pub subscription_end_at: u64,
+    pub role: sqlx::types::Text<Role>,
+    pub state: sqlx::types::Text<State>,
+    pub subscription_expire_at: u64,
 }
 
 impl AuthUser {
     pub fn is_admin(&self) -> bool {
-        self.role == Role::Admin
+        self.role.0 == Role::Admin
     }
 
     pub fn is_premium(&self) -> bool {
@@ -67,30 +37,7 @@ impl AuthUser {
             return false;
         };
 
-        self.subscription_end_at > now.as_secs()
-    }
-}
-
-impl<R: sqlx::Row> sqlx::FromRow<'_, R> for AuthUser
-where
-    String: sqlx::Type<R::Database> + for<'r> sqlx::Decode<'r, R::Database>,
-    i64: sqlx::Type<R::Database> + for<'r> sqlx::Decode<'r, R::Database>,
-    for<'r> &'r str: sqlx::Type<R::Database> + sqlx::Decode<'r, R::Database>,
-    for<'r> &'r str: sqlx::ColumnIndex<R>,
-{
-    fn from_row(row: &R) -> Result<Self, sqlx::Error> {
-        let role: String = row.try_get("role")?;
-        let state: String = row.try_get("state")?;
-        let subscription_end_at: i64 = row.try_get("subscription_end_at")?;
-
-        Ok(Self {
-            id: row.try_get("id")?,
-            role: Role::from_str(role.as_str())
-                .map_err(|e| sqlx::Error::InvalidArgument(e.to_string()))?,
-            state: State::from_str(state.as_str())
-                .map_err(|e| sqlx::Error::InvalidArgument(e.to_string()))?,
-            subscription_end_at: subscription_end_at as u64,
-        })
+        self.subscription_expire_at > now.as_secs()
     }
 }
 
@@ -102,38 +49,7 @@ impl<E: Executor + Clone> Command<E> {
         evento::load(&self.0, id).await
     }
 
-    pub async fn load_meal_preferences(
-        &self,
-        id: impl Into<String>,
-    ) -> Result<LoadResult<UserMealPreferences>, evento::ReadError> {
-        evento::load(&self.0, id).await
-    }
-
-    pub async fn load_meal_preferences_optional(
-        &self,
-        id: impl Into<String>,
-    ) -> Result<Option<LoadResult<UserMealPreferences>>, evento::ReadError> {
-        evento::load_optional(&self.0, id).await
-    }
-
-    pub async fn load_subscription(
-        &self,
-        id: impl Into<String>,
-    ) -> Result<LoadResult<UserSubscription>, evento::ReadError> {
-        evento::load(&self.0, id).await
-    }
-
-    pub async fn load_subscription_optional(
-        &self,
-        id: impl Into<String>,
-    ) -> Result<Option<LoadResult<UserSubscription>>, evento::ReadError> {
-        evento::load_optional(&self.0, id).await
-    }
-
-    pub async fn get_user_by_id(
-        &self,
-        id: impl Into<String>,
-    ) -> imkitchen_shared::Result<Option<AuthUser>> {
+    pub async fn find(&self, id: impl Into<String>) -> imkitchen_shared::Result<Option<AuthUser>> {
         let id = id.into();
 
         let statement = Query::select()
@@ -141,7 +57,7 @@ impl<E: Executor + Clone> Command<E> {
                 UserIden::Id,
                 UserIden::Role,
                 UserIden::State,
-                UserIden::SubscriptionEndAt,
+                UserIden::SubscriptionExpireAt,
             ])
             .from(UserIden::Table)
             .and_where(Expr::col(UserIden::Id).eq(Expr::value(id.to_owned())))
@@ -155,7 +71,7 @@ impl<E: Executor + Clone> Command<E> {
             .await?)
     }
 
-    pub async fn get_user_by_email(
+    pub async fn find_by_email(
         &self,
         email: impl Into<String>,
     ) -> imkitchen_shared::Result<Option<AuthUser>> {
@@ -166,7 +82,7 @@ impl<E: Executor + Clone> Command<E> {
                 UserIden::Id,
                 UserIden::Role,
                 UserIden::State,
-                UserIden::SubscriptionEndAt,
+                UserIden::SubscriptionExpireAt,
             ])
             .from(UserIden::Table)
             .and_where(Expr::col(UserIden::Email).eq(Expr::value(email.to_owned())))
@@ -179,15 +95,26 @@ impl<E: Executor + Clone> Command<E> {
             .fetch_optional(&self.1)
             .await?)
     }
+}
 
+#[derive(Validate)]
+pub struct LoginInput {
+    #[validate(email)]
+    pub email: String,
+    #[validate(length(min = 8, max = 20))]
+    pub password: String,
+    pub lang: String,
+}
+
+impl<E: Executor + Clone> Command<E> {
     pub async fn login(
         &self,
         input: LoginInput,
-        metadata: Metadata,
+        metadata: &Metadata,
     ) -> imkitchen_shared::Result<String> {
         input.validate()?;
 
-        let Some(user) = self.get_user_by_email(input.email).await? else {
+        let Some(user) = self.find_by_email(input.email).await? else {
             imkitchen_shared::bail!("Invalid email or password. Please try again.");
         };
 
@@ -208,15 +135,25 @@ impl<E: Executor + Clone> Command<E> {
 
         Ok(evento::save_with(user)
             .data(&LoggedIn { lang: input.lang })?
-            .metadata(&metadata)?
+            .metadata(metadata)?
             .commit(&self.0)
             .await?)
     }
+}
 
+#[derive(Validate)]
+pub struct RegisterInput {
+    #[validate(email)]
+    pub email: String,
+    #[validate(length(min = 8, max = 20))]
+    pub password: String,
+}
+
+impl<E: Executor + Clone> Command<E> {
     pub async fn register(
         &self,
         input: RegisterInput,
-        metadata: Metadata,
+        metadata: &Metadata,
     ) -> imkitchen_shared::Result<String> {
         input.validate()?;
 
@@ -232,48 +169,17 @@ impl<E: Executor + Clone> Command<E> {
                 password_hash,
                 status: crate::Status::Processing,
             })?
-            .metadata(&metadata)?
+            .metadata(metadata)?
             .commit(&self.0)
             .await?)
     }
+}
 
-    pub async fn update_meal_preferences(
-        &self,
-        input: UpdateMealPreferencesInput,
-        metadata: Metadata,
-    ) -> imkitchen_shared::Result<()> {
-        input.validate()?;
-
-        for restriction in &input.dietary_restrictions {
-            if !matches!(
-                restriction.as_str(),
-                "vegetarian" | "vegan" | "gluten-free" | "dairy-free" | "nut-free" | "low-carb"
-            ) {
-                imkitchen_shared::bail!(
-                    "Please select a valid dietary restriction: vegetarian, vegan, gluten-free, dairy-free, nut-free, or low-carb."
-                )
-            }
-        }
-
-        let user_id = metadata.trigger_by()?;
-
-        evento::save::<UserMealPreferences>(user_id)
-            .data(&meal_preferences::Updated {
-                dietary_restrictions: input.dietary_restrictions,
-                household_size: input.household_size,
-                cuisine_variety_weight: input.cuisine_variety_weight,
-            })?
-            .metadata(&metadata)?
-            .commit(&self.0)
-            .await?;
-
-        Ok(())
-    }
-
+impl<E: Executor + Clone> Command<E> {
     pub async fn suspend(
         &self,
         id: impl Into<String>,
-        metadata: Metadata,
+        metadata: &Metadata,
     ) -> imkitchen_shared::Result<()> {
         let user = self.load(id).await?;
 
@@ -285,7 +191,7 @@ impl<E: Executor + Clone> Command<E> {
             .data(&Suspended {
                 state: State::Suspended,
             })?
-            .metadata(&metadata)?
+            .metadata(metadata)?
             .commit(&self.0)
             .await?;
 
@@ -295,7 +201,7 @@ impl<E: Executor + Clone> Command<E> {
     pub async fn activate(
         &self,
         id: impl Into<String>,
-        metadata: Metadata,
+        metadata: &Metadata,
     ) -> imkitchen_shared::Result<()> {
         let user = self.load(id).await?;
 
@@ -307,7 +213,7 @@ impl<E: Executor + Clone> Command<E> {
             .data(&Activated {
                 state: State::Active,
             })?
-            .metadata(&metadata)?
+            .metadata(metadata)?
             .commit(&self.0)
             .await?;
 
@@ -317,7 +223,7 @@ impl<E: Executor + Clone> Command<E> {
     pub async fn made_admin(
         &self,
         id: impl Into<String>,
-        metadata: Metadata,
+        metadata: &Metadata,
     ) -> imkitchen_shared::Result<()> {
         let user = self.load(id).await?;
 
@@ -327,41 +233,26 @@ impl<E: Executor + Clone> Command<E> {
 
         evento::save_with(user)
             .data(&MadeAdmin { role: Role::Admin })?
-            .metadata(&metadata)?
+            .metadata(metadata)?
             .commit(&self.0)
             .await?;
 
         Ok(())
     }
+}
 
-    pub async fn toggle_life_premium(
-        &self,
-        id: impl Into<String>,
-        metadata: Metadata,
-    ) -> imkitchen_shared::Result<()> {
-        let id = id.into();
-        let expire_at = (SystemTime::now() + Duration::from_secs(10 * 12 * 30 * 24 * 60 * 60))
-            .duration_since(UNIX_EPOCH)?
-            .as_secs();
-
-        let builder = match self.load_subscription_optional(&id).await? {
-            Some(subscription) => {
-                let expire_at = if subscription.item.expired {
-                    expire_at
-                } else {
-                    0
-                };
-
-                evento::save_with(subscription)
-                    .data(&subscription::LifePremiumToggled { expire_at })?
-            }
-            _ => evento::create_with(id).data(&subscription::LifePremiumToggled { expire_at })?,
-        };
-
-        builder.metadata(&metadata)?.commit(&self.0).await?;
-
-        Ok(())
-    }
+pub fn subscribe_command<E: Executor + Clone>() -> SubscribeBuilder<E> {
+    evento::subscribe("user-command")
+        .handler(handle_registration_requested())
+        .handler(handle_activated())
+        .handler(handle_suspended())
+        .handler(handle_made_admin())
+        .handler(handle_life_premium_toggled())
+        .skip::<User, RegistrationSucceeded>()
+        .skip::<User, RegistrationFailed>()
+        .skip::<User, LoggedIn>()
+        .skip::<UserMealPreferences, meal_preferences::Created>()
+        .skip::<UserMealPreferences, meal_preferences::Updated>()
 }
 
 #[evento::handler(User)]
@@ -404,7 +295,7 @@ async fn handle_registration_requested<E: Executor>(
 
     if !e
         .to_string()
-        .contains("UNIQUE constraint failed: user.email")
+        .contains("UNIQUE constraint failed: user_auth.email")
     {
         return Err(e.into());
     }
@@ -483,7 +374,7 @@ async fn handle_life_premium_toggled<E: Executor>(
     let pool = context.extract::<sqlx::SqlitePool>();
     let statement = Query::update()
         .table(UserIden::Table)
-        .values([(UserIden::SubscriptionEndAt, event.data.expire_at.into())])
+        .values([(UserIden::SubscriptionExpireAt, event.data.expire_at.into())])
         .and_where(Expr::col(UserIden::Id).eq(event.aggregator_id.to_owned()))
         .to_owned();
 
@@ -491,18 +382,4 @@ async fn handle_life_premium_toggled<E: Executor>(
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
-}
-
-pub fn subscribe_command<E: Executor + Clone>() -> SubscribeBuilder<E> {
-    evento::subscribe("user-command")
-        .handler(handle_registration_requested())
-        .handler(handle_activated())
-        .handler(handle_suspended())
-        .handler(handle_made_admin())
-        .handler(handle_life_premium_toggled())
-        .skip::<User, RegistrationSucceeded>()
-        .skip::<User, RegistrationFailed>()
-        .skip::<User, LoggedIn>()
-        .skip::<UserMealPreferences, meal_preferences::Created>()
-        .skip::<UserMealPreferences, meal_preferences::Updated>()
 }

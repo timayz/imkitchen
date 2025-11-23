@@ -47,7 +47,7 @@ pub async fn action(
                 password: input.password.to_owned(),
                 lang: "en".to_owned(),
             },
-            Metadata::default(),
+            &Metadata::default(),
         )
         .await
     {

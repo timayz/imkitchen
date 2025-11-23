@@ -3,7 +3,6 @@ use axum::{
     response::IntoResponse,
 };
 use axum_extra::extract::Form;
-use imkitchen::query_recipe_detail_by_id;
 use imkitchen_recipe::{
     AccompanimentType, CuisineType, DietaryRestriction, Ingredient, Instruction, RecipeType,
     UpdateInput,
@@ -93,7 +92,7 @@ pub async fn page(
     Path((id,)): Path<(String,)>,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
-    let recipe = match query_recipe_detail_by_id(&app.pool, &id).await {
+    let recipe = match app.recipe_query.find(&id).await {
         Ok(Some(r)) => r,
         Ok(_) => return not_found_error.render(NotFoundTemplate).into_response(),
         Err(err) => {
@@ -117,17 +116,17 @@ pub async fn page(
         .render(EditTemplate {
             user,
             form: EditForm {
-                recipe_type: recipe.recipe_type,
+                recipe_type: recipe.recipe_type.0,
                 name: recipe.name,
                 description: recipe.description,
                 prep_time: recipe.prep_time,
                 cook_time: recipe.cook_time,
-                ingredients: recipe.ingredients,
-                instructions: recipe.instructions,
-                dietary_restrictions: recipe.dietary_restrictions,
-                cuisine_type: recipe.cuisine_type,
+                ingredients: recipe.ingredients.0,
+                instructions: recipe.instructions.0,
+                dietary_restrictions: recipe.dietary_restrictions.0,
+                cuisine_type: recipe.cuisine_type.0,
                 accepts_accompaniment: accepts_accompaniment.to_owned(),
-                preferred_accompaniment_types: recipe.preferred_accompaniment_types,
+                preferred_accompaniment_types: recipe.preferred_accompaniment_types.0,
                 advance_prep: recipe.advance_prep,
                 ingredients_unit: vec![],
                 ingredients_name: vec![],
@@ -254,7 +253,7 @@ pub async fn action(
                 preferred_accompaniment_types: input.preferred_accompaniment_types,
                 advance_prep: input.advance_prep,
             },
-            Metadata::by(user.id.to_owned()),
+            &Metadata::by(user.id.to_owned()),
         )
         .await
     {

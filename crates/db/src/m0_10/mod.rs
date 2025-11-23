@@ -1,7 +1,5 @@
-mod recipe_pjt_create_cuisine_type_idx;
-mod recipe_pjt_create_recipe_type_idx;
-mod recipe_pjt_create_table;
-mod recipe_pjt_create_user_id_idx;
+mod recipe_list;
+mod recipe_user_stat;
 
 use sqlx_migrator::vec_box;
 
@@ -9,13 +7,14 @@ pub struct Migration;
 
 sqlx_migrator::sqlite_migration!(
     Migration,
-    "main",
+    "imkitchen",
     "m0_10",
     vec_box![],
     vec_box![
-        recipe_pjt_create_table::Operation,
-        recipe_pjt_create_recipe_type_idx::Operation,
-        recipe_pjt_create_cuisine_type_idx::Operation,
-        recipe_pjt_create_user_id_idx::Operation,
+        recipe_list::CreateTable,
+        recipe_list::CreateIdx1,
+        recipe_list::CreateIdx2,
+        recipe_list::CreateIdx3,
+        recipe_user_stat::CreateTable,
     ]
 );
