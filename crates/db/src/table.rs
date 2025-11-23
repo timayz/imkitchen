@@ -90,3 +90,17 @@ pub enum RecipeUserStat {
     FromCommunity,
     CreatedAt,
 }
+
+#[derive(Iden, Clone)]
+pub enum MealPlanRecipe {
+    Table,
+    Id,
+    UserId,
+    RecipeType,
+    Name,
+    PrepTime,
+    CookTime,
+    Ingredients,
+    Instructions,
+    AdvancePrep,
+}

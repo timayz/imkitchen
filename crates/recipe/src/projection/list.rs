@@ -36,7 +36,7 @@ async fn handle_created<E: Executor>(
     let pool = context.extract::<sqlx::SqlitePool>();
     let timestamp = event.timestamp;
     let aggregator_id = event.aggregator_id.clone();
-    let user_id = event.metadata.trigger_by().unwrap_or_default();
+    let user_id = event.metadata.trigger_by()?;
     let name = event.data.name;
     let config = bincode::config::standard();
     let instructions = bincode::encode_to_vec(Vec::<Instruction>::default(), config)?;
@@ -83,7 +83,7 @@ async fn handle_imported<E: Executor>(
     let pool = context.extract::<sqlx::SqlitePool>();
     let timestamp = event.timestamp;
     let aggregator_id = event.aggregator_id.clone();
-    let user_id = event.metadata.trigger_by().unwrap_or_default();
+    let user_id = event.metadata.trigger_by()?;
     let name = event.data.name;
     let config = bincode::config::standard();
     let instructions = bincode::encode_to_vec(event.data.instructions, config)?;

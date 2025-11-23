@@ -48,6 +48,11 @@ pub async fn serve(
         .run(&evento_executor)
         .await?;
 
+    let sub_user_stat = imkitchen_user::subscribe_stat()
+        .data(write_pool.clone())
+        .run(&evento_executor)
+        .await?;
+
     let sub_contact_list = imkitchen_contact::subscribe_list()
         .data(write_pool.clone())
         .run(&evento_executor)
@@ -69,7 +74,7 @@ pub async fn serve(
         .run(&evento_executor)
         .await?;
 
-    let sub_user_stat = imkitchen_user::subscribe_stat()
+    let sub_mealplan_command = imkitchen_mealplan::subscribe_command()
         .data(write_pool.clone())
         .run(&evento_executor)
         .await?;
@@ -154,6 +159,7 @@ pub async fn serve(
         sub_contact_stat.shutdown_and_wait(),
         sub_recipe_list.shutdown_and_wait(),
         sub_recipe_user_stat.shutdown_and_wait(),
+        sub_mealplan_command.shutdown_and_wait(),
     ])
     .await;
 

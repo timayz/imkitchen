@@ -241,6 +241,20 @@ impl<E: Executor + Clone> Command<E> {
     }
 }
 
+pub fn subscribe_command<E: Executor + Clone>() -> SubscribeBuilder<E> {
+    evento::subscribe("user-command")
+        .handler(handle_registration_requested())
+        .handler(handle_activated())
+        .handler(handle_suspended())
+        .handler(handle_made_admin())
+        .handler(handle_life_premium_toggled())
+        .skip::<User, RegistrationSucceeded>()
+        .skip::<User, RegistrationFailed>()
+        .skip::<User, LoggedIn>()
+        .skip::<UserMealPreferences, meal_preferences::Created>()
+        .skip::<UserMealPreferences, meal_preferences::Updated>()
+}
+
 #[evento::handler(User)]
 async fn handle_registration_requested<E: Executor>(
     context: &evento::Context<'_, E>,
@@ -368,18 +382,4 @@ async fn handle_life_premium_toggled<E: Executor>(
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
-}
-
-pub fn subscribe_command<E: Executor + Clone>() -> SubscribeBuilder<E> {
-    evento::subscribe("user-command")
-        .handler(handle_registration_requested())
-        .handler(handle_activated())
-        .handler(handle_suspended())
-        .handler(handle_made_admin())
-        .handler(handle_life_premium_toggled())
-        .skip::<User, RegistrationSucceeded>()
-        .skip::<User, RegistrationFailed>()
-        .skip::<User, LoggedIn>()
-        .skip::<UserMealPreferences, meal_preferences::Created>()
-        .skip::<UserMealPreferences, meal_preferences::Updated>()
 }

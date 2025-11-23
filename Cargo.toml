@@ -90,6 +90,7 @@ strum = { workspace = true }
 imkitchen-shared = { path = "crates/shared", version = "0.10.0" }
 imkitchen-contact = { path = "crates/contact", version = "0.10.0" }
 imkitchen-recipe = { path = "crates/recipe", version = "0.10.0" }
+imkitchen-mealplan = { path = "crates/mealplan", version = "0.10.0" }
 imkitchen-user = { path = "crates/user", version = "0.10.0" }
 imkitchen-db = { path = "crates/db", version = "0.10.0" }
 

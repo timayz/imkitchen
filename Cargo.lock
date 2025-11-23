@@ -1719,6 +1719,7 @@ dependencies = [
  "http-body-util",
  "imkitchen-contact",
  "imkitchen-db",
+ "imkitchen-mealplan",
  "imkitchen-recipe",
  "imkitchen-shared",
  "imkitchen-user",

@@ -1,7 +1,7 @@
 {
   "name": "Kung Pao Chicken",
   "description": "Spicy Sichuan stir-fry with peanuts and dried chilies",
-  "recipe_type": "MainCourse",
+  "recipe_type": "Main Course",
   "cuisine_type": "Chinese",
   "prep_time": 20,
   "cook_time": 15,
