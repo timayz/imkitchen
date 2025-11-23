@@ -36,3 +36,4 @@ change to free-tier rules
 - only user recipe are use in meal plan weeks gen
 - user meal preferences not used in meal plan weeks gen
 - can not batch import recipes
+- can not use community recipes in meal plan
