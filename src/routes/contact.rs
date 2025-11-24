@@ -4,14 +4,15 @@ use axum::{
     extract::{Form, State},
     response::IntoResponse,
 };
+use imkitchen_contact::{Subject, SubmitContactFormInput};
 use imkitchen_shared::Metadata;
 use serde::Deserialize;
+use strum::VariantArray;
 
 use crate::{
     routes::AppState,
     template::{Template, filters},
 };
-use imkitchen_contact::{ContactSubject, SubmitContactFormInput};
 
 #[derive(askama::Template)]
 #[template(path = "contact.html")]
@@ -40,7 +41,7 @@ pub async fn action(
     State(app_state): State<AppState>,
     Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {
-    let Ok(subject) = ContactSubject::from_str(&input.subject) else {
+    let Ok(subject) = Subject::from_str(&input.subject) else {
         return template.render(ContactTemplate {
             error_message: Some("invalide subject".into()),
             succeeded: false,
@@ -56,7 +57,7 @@ pub async fn action(
                 subject,
                 message: input.message,
             },
-            Metadata::default(),
+            &Metadata::default(),
         )
         .await
     {

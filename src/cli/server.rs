@@ -25,8 +25,15 @@ pub async fn serve(
 
     let evento_executor: evento::Sqlite = write_pool.clone().into();
     let user_command = imkitchen_user::Command(evento_executor.clone(), read_pool.clone());
+    let user_subscription_command =
+        imkitchen_user::subscription::Command(evento_executor.clone(), read_pool.clone());
+    let user_meal_preference_command =
+        imkitchen_user::meal_preferences::Command(evento_executor.clone(), read_pool.clone());
+    let user_query = imkitchen_user::Query(read_pool.clone());
     let contact_command = imkitchen_contact::Command(evento_executor.clone(), read_pool.clone());
+    let contact_query = imkitchen_contact::Query(read_pool.clone());
     let recipe_command = imkitchen_recipe::Command(evento_executor.clone(), read_pool.clone());
+    let recipe_query = imkitchen_recipe::Query(read_pool.clone());
 
     // Start background notification worker
     tracing::info!("Starting evento subscriptions...");
@@ -36,22 +43,38 @@ pub async fn serve(
         .run(&evento_executor)
         .await?;
 
-    let sub_admin_user_query = imkitchen::subscribe_admin_user()
+    let sub_user_list = imkitchen_user::subscribe_list()
         .data(write_pool.clone())
         .run(&evento_executor)
         .await?;
 
-    let sub_contact_query = imkitchen::subscribe_contact()
+    let sub_user_stat = imkitchen_user::subscribe_stat()
         .data(write_pool.clone())
         .run(&evento_executor)
         .await?;
 
-    let sub_recipe_query = imkitchen::subscribe_recipe()
+    let sub_contact_list = imkitchen_contact::subscribe_list()
         .data(write_pool.clone())
         .run(&evento_executor)
         .await?;
 
-    let sub_global_stat_query = imkitchen::subscribe_global_stat()
+    let sub_contact_stat = imkitchen_contact::subscribe_stat()
+        .data(write_pool.clone())
+        .data(contact_query.clone())
+        .run(&evento_executor)
+        .await?;
+
+    let sub_recipe_list = imkitchen_recipe::subscribe_list()
+        .data(write_pool.clone())
+        .run(&evento_executor)
+        .await?;
+
+    let sub_recipe_user_stat = imkitchen_recipe::subscribe_user_stat()
+        .data(write_pool.clone())
+        .run(&evento_executor)
+        .await?;
+
+    let sub_mealplan_command = imkitchen_mealplan::subscribe_command()
         .data(write_pool.clone())
         .run(&evento_executor)
         .await?;
@@ -59,8 +82,13 @@ pub async fn serve(
     let state = AppState {
         config,
         user_command,
+        user_subscription_command,
+        user_meal_preference_command,
+        user_query,
         contact_command,
+        contact_query,
         recipe_command,
+        recipe_query,
         pool: read_pool.clone(),
     };
 
@@ -125,10 +153,13 @@ pub async fn serve(
     // Shutdown all projection subscriptions
     let results = futures::future::join_all(vec![
         sub_user_command.shutdown_and_wait(),
-        sub_global_stat_query.shutdown_and_wait(),
-        sub_admin_user_query.shutdown_and_wait(),
-        sub_contact_query.shutdown_and_wait(),
-        sub_recipe_query.shutdown_and_wait(),
+        sub_user_stat.shutdown_and_wait(),
+        sub_user_list.shutdown_and_wait(),
+        sub_contact_list.shutdown_and_wait(),
+        sub_contact_stat.shutdown_and_wait(),
+        sub_recipe_list.shutdown_and_wait(),
+        sub_recipe_user_stat.shutdown_and_wait(),
+        sub_mealplan_command.shutdown_and_wait(),
     ])
     .await;
 

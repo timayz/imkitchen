@@ -1,11 +1,11 @@
-use std::collections::HashSet;
-
 use axum::extract::State;
 use axum::response::IntoResponse;
 use axum_extra::extract::Form;
+use imkitchen_recipe::DietaryRestriction;
 use imkitchen_shared::Metadata;
-use imkitchen_user::UpdateMealPreferencesInput;
+use imkitchen_user::meal_preferences::UpdateInput;
 use serde::Deserialize;
+use strum::VariantArray;
 
 use crate::auth::AuthUser;
 use crate::routes::AppState;
@@ -18,7 +18,7 @@ pub struct MealPreferencesTemplate {
     pub current_path: String,
     pub profile_path: String,
     pub household_size: u8,
-    pub dietary_restrictions: HashSet<String>,
+    pub dietary_restrictions: Vec<DietaryRestriction>,
     pub cuisine_variety_weight: f32,
     pub user: imkitchen_user::AuthUser,
 }
@@ -30,7 +30,7 @@ impl Default for MealPreferencesTemplate {
             current_path: "profile".to_owned(),
             profile_path: "meal-preferences".to_owned(),
             household_size: 2,
-            dietary_restrictions: HashSet::default(),
+            dietary_restrictions: Vec::default(),
             cuisine_variety_weight: 0.7,
             user: imkitchen_user::AuthUser::default(),
         }
@@ -44,8 +44,8 @@ pub async fn page(
     AuthUser(user): AuthUser,
 ) -> impl IntoResponse {
     let preferences = match state
-        .user_command
-        .load_meal_preferences_optional(&user.id)
+        .user_meal_preference_command
+        .load_optional(&user.id)
         .await
     {
         Ok(loaded) => loaded.unwrap_or_default().item,
@@ -55,12 +55,10 @@ pub async fn page(
         }
     };
 
-    let dietary_restrictions = HashSet::from_iter(preferences.dietary_restrictions.iter().cloned());
-
     template
         .render(MealPreferencesTemplate {
             household_size: preferences.household_size,
-            dietary_restrictions,
+            dietary_restrictions: preferences.dietary_restrictions,
             cuisine_variety_weight: preferences.cuisine_variety_weight,
             user,
             ..Default::default()
@@ -72,7 +70,7 @@ pub async fn page(
 pub struct ActionInput {
     pub household_size: u8,
     #[serde(default)]
-    pub dietary_restrictions: Vec<String>,
+    pub dietary_restrictions: Vec<DietaryRestriction>,
     pub cuisine_variety_weight: f32,
 }
 
@@ -82,23 +80,21 @@ pub async fn action(
     AuthUser(user): AuthUser,
     Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {
-    let dietary_restrictions = HashSet::from_iter(input.dietary_restrictions.iter().cloned());
-
     match state
-        .user_command
-        .update_meal_preferences(
-            UpdateMealPreferencesInput {
-                dietary_restrictions: input.dietary_restrictions,
+        .user_meal_preference_command
+        .update(
+            UpdateInput {
+                dietary_restrictions: input.dietary_restrictions.to_vec(),
                 cuisine_variety_weight: input.cuisine_variety_weight,
                 household_size: input.household_size,
             },
-            Metadata::by(user.id),
+            &Metadata::by(user.id),
         )
         .await
     {
         Ok(_) => template.render(MealPreferencesTemplate {
             household_size: input.household_size,
-            dietary_restrictions,
+            dietary_restrictions: input.dietary_restrictions,
             cuisine_variety_weight: input.cuisine_variety_weight,
             ..Default::default()
         }),
@@ -108,7 +104,7 @@ pub async fn action(
             template.render(MealPreferencesTemplate {
                 error_message: Some(SERVER_ERROR_MESSAGE.to_owned()),
                 household_size: input.household_size,
-                dietary_restrictions,
+                dietary_restrictions: input.dietary_restrictions,
                 cuisine_variety_weight: input.cuisine_variety_weight,
                 ..Default::default()
             })
@@ -116,7 +112,7 @@ pub async fn action(
         Err(e) => template.render(MealPreferencesTemplate {
             error_message: Some(e.to_string()),
             household_size: input.household_size,
-            dietary_restrictions,
+            dietary_restrictions: input.dietary_restrictions,
             cuisine_variety_weight: input.cuisine_variety_weight,
             ..Default::default()
         }),

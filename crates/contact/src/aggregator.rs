@@ -1,11 +1,11 @@
 use bincode::{Decode, Encode};
 use imkitchen_shared::Event;
 
-use crate::{FormSubmitted, MarkedReadAndReply, Reopened, Resolved};
+use crate::{FormSubmitted, MarkedReadAndReply, Reopened, Resolved, Status};
 
 #[derive(Default, Encode, Decode, Clone, Debug)]
 pub struct Contact {
-    pub status: String,
+    pub status: Status,
 }
 
 #[evento::aggregator]

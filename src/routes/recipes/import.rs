@@ -4,7 +4,6 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
-use imkitchen::query_recipe_detail_by_id;
 use imkitchen_recipe::{CuisineType, Ingredient, Instruction, RecipeType};
 use imkitchen_shared::Metadata;
 use serde::Deserialize;
@@ -129,7 +128,7 @@ pub async fn status(
     AuthUser(user): AuthUser,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    match query_recipe_detail_by_id(&app.pool, &id).await {
+    match app.recipe_query.find(&id).await {
         Ok(Some(_)) => template
             .render(ImportingStatusTemplate { id: None })
             .into_response(),

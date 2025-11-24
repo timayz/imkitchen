@@ -1,23 +1,27 @@
 use imkitchen_shared::Metadata;
 use imkitchen_user::{Role, State, subscribe_command};
+use temp_dir::TempDir;
 
 mod helpers;
 
 #[tokio::test]
 async fn test_suspend() -> anyhow::Result<()> {
-    let state = helpers::setup_test_state().await?;
+    let dir = TempDir::new()?;
+    let path = dir.child("db.sqlite3");
+    let state = helpers::setup_test_state(path).await?;
     let command = imkitchen_user::Command(state.evento.clone(), state.pool.clone());
     let user = helpers::create_user(&state, "john.doe").await?;
+    let metadata = Metadata::default();
 
     let loaded = command.load(&user).await?;
     assert_eq!(loaded.item.role, Role::User);
 
-    command.suspend(&user, Metadata::default()).await?;
+    command.suspend(&user, &metadata).await?;
 
     let loaded = command.load(&user).await?;
     assert_eq!(loaded.item.state, State::Suspended);
 
-    command.activate(&user, Metadata::default()).await?;
+    command.activate(&user, &metadata).await?;
 
     let loaded = command.load(&user).await?;
     assert_eq!(loaded.item.role, Role::User);

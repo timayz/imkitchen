@@ -68,7 +68,7 @@ pub async fn action(
                 email: input.email.to_owned(),
                 password: input.password.to_owned(),
             },
-            Metadata::default(),
+            &Metadata::default(),
         )
         .await
     {
@@ -142,7 +142,7 @@ pub async fn status(
     match (user.item.status, user.item.failed_reason) {
     (imkitchen_user::Status::Idle,_) => {
             let result = if user.item.email == state.config.root.email {
-                state.user_command.made_admin(&user.event.aggregator_id, Metadata::default()).await
+                state.user_command.made_admin(&user.event.aggregator_id, &Metadata::default()).await
             } else {
                 Ok(())
             };

@@ -16,6 +16,7 @@ tower = "0.5"
 tower-http = { version = "0.6", features = ["fs", "trace", "compression-br", "compression-gzip"] }
 rust-i18n = "3.1"
 askama = "0.14"
+cfg-if = "1.0"
 sqlx = { version = "0.8", default-features = false, features = ["migrate", "json", "derive", "runtime-tokio", "sqlite"] }
 sqlx_migrator = { version = "0.18", features = ["sqlite"] }
 evento = { version = "1.7", features = ["sqlite"] }
@@ -46,9 +47,11 @@ sea-query = { version = "1.0.0-rc.16", default-features = false, features = ["de
 sea-query-sqlx = { version = "0.8.0-rc.9", features = ["runtime-tokio", "sqlx-sqlite", "with-json"] }
 async-trait = "0.1"
 futures = "0.3"
-time = "0.3"
+time = { version =  "0.3", features = ["formatting"] }
 strum = { version = "0.27", features = ["derive"] }
 sha3 = "0.10"
+temp-dir = "0.1"
+rand = "0.9"
 
 [package]
 name = "imkitchen"
@@ -72,8 +75,6 @@ askama = { workspace = true }
 sqlx = { workspace = true }
 evento = { workspace = true }
 serde = { workspace = true }
-serde_json = { workspace = true }
-bincode = { workspace = true }
 async-trait = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }
@@ -82,8 +83,6 @@ clap = { workspace = true }
 config = { workspace = true }
 rust-embed = { workspace = true }
 mime_guess = { workspace = true }
-sea-query = { workspace = true }
-sea-query-sqlx = { workspace = true }
 minify-html = { workspace = true }
 jsonwebtoken = { workspace = true }
 futures = { workspace = true }
@@ -92,6 +91,7 @@ strum = { workspace = true }
 imkitchen-shared = { path = "crates/shared", version = "0.10.0" }
 imkitchen-contact = { path = "crates/contact", version = "0.10.0" }
 imkitchen-recipe = { path = "crates/recipe", version = "0.10.0" }
+imkitchen-mealplan = { path = "crates/mealplan", version = "0.10.0" }
 imkitchen-user = { path = "crates/user", version = "0.10.0" }
 imkitchen-db = { path = "crates/db", version = "0.10.0" }
 
@@ -112,3 +112,9 @@ codegen-units = 1
 panic = "abort"
 lto = true
 strip = true
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3

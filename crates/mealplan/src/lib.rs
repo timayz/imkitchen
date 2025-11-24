@@ -1,14 +1,21 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+mod aggregator;
+mod event;
+mod types;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub use aggregator::*;
+pub use event::*;
+pub use types::*;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+cfg_if::cfg_if! {
+    if #[cfg(feature = "full")] {
+        mod command;
+        mod projection;
+        mod query;
+        mod service;
+
+        pub use command::*;
+        pub use projection::*;
+        pub use query::*;
+        pub use service::*;
     }
 }

@@ -1,25 +1,43 @@
 use sea_query::Iden;
 
 #[derive(Iden, Clone)]
-pub enum User {
+pub enum UserAuth {
     Table,
     Id,
     Email,
     Role,
     State,
-    SubscriptionEndAt,
+    SubscriptionExpireAt,
     CreatedAt,
 }
 
 #[derive(Iden, Clone)]
-pub enum GlobalStatPjt {
+pub enum UserStat {
     Table,
-    Key,
-    Value,
+    Day,
+    Total,
+    Premium,
+    Suspended,
 }
 
 #[derive(Iden, Clone)]
-pub enum ContactPjt {
+pub enum UserList {
+    Table,
+    Id,
+    Email,
+    FullName,
+    Username,
+    State,
+    Role,
+    SubscriptionExpireAt,
+    TotalRecipesCount,
+    SharedRecipesCount,
+    TotalActiveCount,
+    CreatedAt,
+}
+
+#[derive(Iden, Clone)]
+pub enum ContactList {
     Table,
     Id,
     Email,
@@ -31,22 +49,17 @@ pub enum ContactPjt {
 }
 
 #[derive(Iden, Clone)]
-pub enum AdminUserPjt {
+pub enum ContactStat {
     Table,
-    Id,
-    Email,
-    FullName,
-    Username,
-    Status,
-    AccountType,
-    TotalRecipesCount,
-    SharedRecipesCount,
-    TotalActiveCount,
+    Day,
+    Total,
+    Unread,
+    AvgResponseTime,
     CreatedAt,
 }
 
 #[derive(Iden, Clone)]
-pub enum RecipePjt {
+pub enum RecipeList {
     Table,
     Id,
     UserId,
@@ -65,4 +78,38 @@ pub enum RecipePjt {
     IsShared,
     CreatedAt,
     UpdatedAt,
+}
+
+#[derive(Iden, Clone)]
+pub enum RecipeUserStat {
+    Table,
+    UserId,
+    Total,
+    Shared,
+    Favorite,
+    FromCommunity,
+    CreatedAt,
+}
+
+#[derive(Iden, Clone)]
+pub enum MealPlanRecipe {
+    Table,
+    Id,
+    UserId,
+    RecipeType,
+    Name,
+    PrepTime,
+    CookTime,
+    Ingredients,
+    Instructions,
+    AdvancePrep,
+}
+
+#[derive(Iden, Clone)]
+pub enum MealPlanWeek {
+    Table,
+    UserId,
+    Week,
+    Status,
+    Slots,
 }
