@@ -86,8 +86,8 @@ pub async fn serve(
         .run(&evento_executor)
         .await?;
 
-    let mut sched_mealplan = imkitchen_mealplan::scheduler(&evento_executor, &read_pool).await?;
-    sched_mealplan.start().await?;
+    // let mut sched_mealplan = imkitchen_mealplan::scheduler(&evento_executor, &read_pool).await?;
+    // sched_mealplan.start().await?;
 
     let state = AppState {
         config,
@@ -182,7 +182,7 @@ pub async fn serve(
         }
     }
 
-    sched_mealplan.shutdown().await?;
+    // sched_mealplan.shutdown().await?;
 
     tracing::info!("All projections shut down successfully");
 

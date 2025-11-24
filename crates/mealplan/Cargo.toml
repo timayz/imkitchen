@@ -11,7 +11,6 @@ anyhow.workspace = true
 sqlx = { workspace = true, optional = true }
 time = { workspace = true, optional = true }
 rand = { workspace = true, optional = true }
-tokio-cron-scheduler = { workspace = true, optional = true }
 cfg-if.workspace = true
 tracing.workspace = true
 strum.workspace = true
@@ -31,4 +30,4 @@ imkitchen-recipe = { path = "../recipe", version = "0.10.0", features = ["defaul
 
 [features]
 default = ["full", "imkitchen-recipe"]
-full = ["sqlx", "imkitchen-db", "time", "rand", "tokio-cron-scheduler"]
+full = ["sqlx", "imkitchen-db", "time", "rand"]

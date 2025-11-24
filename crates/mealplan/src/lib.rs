@@ -12,12 +12,12 @@ cfg_if::cfg_if! {
         mod projection;
         mod query;
         mod service;
-        mod scheduler;
+        // mod scheduler;
 
         pub use command::*;
         pub use projection::*;
         pub use query::*;
         pub use service::*;
-        pub use scheduler::*;
+        // pub use scheduler::*;
     }
 }
