@@ -113,3 +113,10 @@ pub enum MealPlanWeek {
     Status,
     Slots,
 }
+
+#[derive(Iden, Clone)]
+pub enum MealPlanLastWeek {
+    Table,
+    UserId,
+    Week,
+}

@@ -1,5 +1,5 @@
 use evento::{AggregatorName, Executor, LoadResult, SubscribeBuilder};
-use imkitchen_db::table::MealPlanRecipe;
+use imkitchen_db::table::{MealPlanLastWeek, MealPlanRecipe};
 use imkitchen_recipe::{
     AdvancePrepChanged, BasicInformationChanged, Created, CuisineTypeChanged, Deleted,
     DietaryRestrictionsChanged, Imported, Ingredient, IngredientsChanged, Instruction,
@@ -7,7 +7,7 @@ use imkitchen_recipe::{
     RecipeTypeChanged, SharedToCommunity,
 };
 use imkitchen_shared::{Event, Metadata};
-use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
+use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::SqlitePool;
 use time::OffsetDateTime;
@@ -49,9 +49,7 @@ impl<E: Executor + Clone> Command<E> {
             .unwrap_or_else(|| evento::save(&user_id));
 
         let now = OffsetDateTime::now_utc();
-        let weeks = super::service::next_four_mondays(now.unix_timestamp())?
-            .map(|m| m as u64)
-            .to_vec();
+        let weeks = super::service::next_four_mondays(now.unix_timestamp() as u64)?.to_vec();
 
         builder
             .data(&GenerateRequested {
@@ -69,8 +67,8 @@ impl<E: Executor + Clone> Command<E> {
 pub fn subscribe_command<E: Executor + Clone>() -> SubscribeBuilder<E> {
     evento::subscribe("mealplan-command")
         .handler(handle_generation_requested())
+        .handler(handle_week_generated())
         .skip::<MealPlan, GenerationFailed>()
-        .skip::<MealPlan, WeekGenerated>()
         .handler(handle_recipe_created())
         .handler(handle_recipe_imported())
         .handler(handle_recipe_type_changed())
@@ -146,6 +144,33 @@ async fn handle_generation_requested<E: Executor>(
     }
 
     builder.commit(context.executor).await?;
+
+    Ok(())
+}
+
+#[evento::handler(MealPlan)]
+async fn handle_week_generated<E: Executor>(
+    context: &evento::Context<'_, E>,
+    event: Event<WeekGenerated>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+
+    let statement = Query::insert()
+        .into_table(MealPlanLastWeek::Table)
+        .columns([MealPlanLastWeek::UserId, MealPlanLastWeek::Week])
+        .values_panic([
+            event.aggregator_id.to_owned().into(),
+            event.data.week.to_owned().into(),
+        ])
+        .on_conflict(
+            OnConflict::columns([MealPlanLastWeek::UserId])
+                .update_column(MealPlanLastWeek::Week)
+                .to_owned(),
+        )
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
 }

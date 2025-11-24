@@ -72,9 +72,9 @@ pub async fn random(
 
 /// Returns the timestamps of the next 4 Mondays from the given timestamp
 /// All timestamps are set to 00:00:00 (midnight)
-pub fn next_four_mondays(from_timestamp: i64) -> anyhow::Result<[i64; 4]> {
-    let from_date = OffsetDateTime::from_unix_timestamp(from_timestamp)?;
-    let mut mondays = [0i64; 4];
+pub fn next_four_mondays(from_timestamp: u64) -> anyhow::Result<[u64; 4]> {
+    let from_date = OffsetDateTime::from_unix_timestamp(from_timestamp as i64)?;
+    let mut mondays = [0u64; 4];
 
     // Get the current weekday
     let current_weekday = from_date.weekday();
@@ -97,10 +97,36 @@ pub fn next_four_mondays(from_timestamp: i64) -> anyhow::Result<[i64; 4]> {
     // Calculate all 4 Mondays
     for i in 0..4 {
         let monday = first_monday + Duration::weeks(i as i64);
-        mondays[i as usize] = monday.unix_timestamp();
+        mondays[i as usize] = monday.unix_timestamp() as u64;
     }
 
     Ok(mondays)
+}
+
+/// Returns the timestamps of the next 4 Mondays from the given timestamp
+/// All timestamps are set to 00:00:00 (midnight)
+pub fn current_week_monday(from_timestamp: u64) -> anyhow::Result<u64> {
+    let from_date = OffsetDateTime::from_unix_timestamp(from_timestamp as i64)?;
+
+    // Get the current weekday
+    let current_weekday = from_date.weekday();
+
+    // Calculate days until next Monday
+    let days_until_monday = match current_weekday {
+        Weekday::Monday => 7, // If today is Monday, get next Monday
+        Weekday::Tuesday => 6,
+        Weekday::Wednesday => 5,
+        Weekday::Thursday => 4,
+        Weekday::Friday => 3,
+        Weekday::Saturday => 2,
+        Weekday::Sunday => 1,
+    };
+
+    // Calculate the first Monday and reset time to 00:00:00
+    let first_monday = from_date + Duration::days(days_until_monday);
+    let first_monday = first_monday.replace_time(time::Time::MIDNIGHT);
+
+    Ok(first_monday.unix_timestamp() as u64)
 }
 
 #[cfg(test)]
@@ -114,14 +140,14 @@ mod tests {
         let monday = datetime!(2025-01-20 12:00:00 UTC);
         let timestamp = monday.unix_timestamp();
 
-        let result = next_four_mondays(timestamp).unwrap();
+        let result = next_four_mondays(timestamp as u64).unwrap();
 
         // Should get the next 4 Mondays at 00:00:00: Jan 27, Feb 3, Feb 10, Feb 17
         let expected = [
-            datetime!(2025-01-27 00:00:00 UTC).unix_timestamp(),
-            datetime!(2025-02-03 00:00:00 UTC).unix_timestamp(),
-            datetime!(2025-02-10 00:00:00 UTC).unix_timestamp(),
-            datetime!(2025-02-17 00:00:00 UTC).unix_timestamp(),
+            datetime!(2025-01-27 00:00:00 UTC).unix_timestamp() as u64,
+            datetime!(2025-02-03 00:00:00 UTC).unix_timestamp() as u64,
+            datetime!(2025-02-10 00:00:00 UTC).unix_timestamp() as u64,
+            datetime!(2025-02-17 00:00:00 UTC).unix_timestamp() as u64,
         ];
 
         assert_eq!(result, expected);
@@ -133,14 +159,14 @@ mod tests {
         let wednesday = datetime!(2025-01-22 12:00:00 UTC);
         let timestamp = wednesday.unix_timestamp();
 
-        let result = next_four_mondays(timestamp).unwrap();
+        let result = next_four_mondays(timestamp as u64).unwrap();
 
         // Should get the next 4 Mondays at 00:00:00: Jan 27, Feb 3, Feb 10, Feb 17
         let expected = [
-            datetime!(2025-01-27 00:00:00 UTC).unix_timestamp(),
-            datetime!(2025-02-03 00:00:00 UTC).unix_timestamp(),
-            datetime!(2025-02-10 00:00:00 UTC).unix_timestamp(),
-            datetime!(2025-02-17 00:00:00 UTC).unix_timestamp(),
+            datetime!(2025-01-27 00:00:00 UTC).unix_timestamp() as u64,
+            datetime!(2025-02-03 00:00:00 UTC).unix_timestamp() as u64,
+            datetime!(2025-02-10 00:00:00 UTC).unix_timestamp() as u64,
+            datetime!(2025-02-17 00:00:00 UTC).unix_timestamp() as u64,
         ];
 
         assert_eq!(result, expected);
@@ -152,14 +178,14 @@ mod tests {
         let sunday = datetime!(2025-01-26 12:00:00 UTC);
         let timestamp = sunday.unix_timestamp();
 
-        let result = next_four_mondays(timestamp).unwrap();
+        let result = next_four_mondays(timestamp as u64).unwrap();
 
         // Should get the next 4 Mondays at 00:00:00: Jan 27, Feb 3, Feb 10, Feb 17
         let expected = [
-            datetime!(2025-01-27 00:00:00 UTC).unix_timestamp(),
-            datetime!(2025-02-03 00:00:00 UTC).unix_timestamp(),
-            datetime!(2025-02-10 00:00:00 UTC).unix_timestamp(),
-            datetime!(2025-02-17 00:00:00 UTC).unix_timestamp(),
+            datetime!(2025-01-27 00:00:00 UTC).unix_timestamp() as u64,
+            datetime!(2025-02-03 00:00:00 UTC).unix_timestamp() as u64,
+            datetime!(2025-02-10 00:00:00 UTC).unix_timestamp() as u64,
+            datetime!(2025-02-17 00:00:00 UTC).unix_timestamp() as u64,
         ];
 
         assert_eq!(result, expected);
