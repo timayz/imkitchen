@@ -48,8 +48,14 @@ impl<E: Executor + Clone> Command<E> {
             .map(evento::save_with)
             .unwrap_or_else(|| evento::save(&user_id));
 
+        let now = OffsetDateTime::now_utc();
+        let weeks = super::service::next_four_mondays(now.unix_timestamp())?
+            .map(|m| m as u64)
+            .to_vec();
+
         builder
             .data(&GenerateRequested {
+                weeks,
                 status: Status::Processing,
             })?
             .metadata(metadata)?
@@ -101,15 +107,13 @@ async fn handle_generation_requested<E: Executor>(
         return Ok(());
     }
 
-    let now = OffsetDateTime::now_utc();
-    let mondays = super::service::next_four_mondays(now.unix_timestamp())?;
     let main_course_recipes =
         super::service::random(&pool, &user_id, RecipeType::MainCourse).await?;
     let mut main_course_recipes = main_course_recipes.iter();
 
     let mut builder = evento::save::<MealPlan>(&user_id).metadata(&event.metadata)?;
 
-    for monday in mondays {
+    for week in event.data.weeks {
         let mut slots = vec![];
 
         while let Some(recipe_id) = main_course_recipes.by_ref().next() {
@@ -136,7 +140,7 @@ async fn handle_generation_requested<E: Executor>(
 
         builder = builder.data(&WeekGenerated {
             slots,
-            week: monday as u64,
+            week,
             status: Status::Idle,
         })?;
     }

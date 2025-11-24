@@ -9,13 +9,13 @@ pub use types::*;
 cfg_if::cfg_if! {
     if #[cfg(feature = "full")] {
         mod command;
-        // mod projection;
-        // mod query;
+        mod projection;
+        mod query;
         mod service;
 
         pub use command::*;
-        // pub use projection::*;
-        // pub use query::*;
+        pub use projection::*;
+        pub use query::*;
         pub use service::*;
     }
 }

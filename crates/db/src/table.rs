@@ -104,3 +104,12 @@ pub enum MealPlanRecipe {
     Instructions,
     AdvancePrep,
 }
+
+#[derive(Iden, Clone)]
+pub enum MealPlanWeek {
+    Table,
+    UserId,
+    Week,
+    Status,
+    Slots,
+}

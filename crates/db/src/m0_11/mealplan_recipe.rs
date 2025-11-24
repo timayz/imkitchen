@@ -63,6 +63,11 @@ fn create_table() -> TableCreateStatement {
                 .string_len(2000)
                 .default(""),
         )
+        .primary_key(
+            Index::create()
+                .col(MealPlanRecipe::Id)
+                .col(MealPlanRecipe::UserId),
+        )
         .to_owned()
 }
 
@@ -87,47 +92,6 @@ impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateTable {
         connection: &mut sqlx::SqliteConnection,
     ) -> Result<(), sqlx_migrator::Error> {
         let statment = drop_table().to_string(sea_query::SqliteQueryBuilder);
-        sqlx::query(&statment).execute(connection).await?;
-
-        Ok(())
-    }
-}
-
-pub struct CreatePk;
-
-fn create_pk() -> IndexCreateStatement {
-    Index::create()
-        .name("pk_mealplan_recipe")
-        .table(MealPlanRecipe::Table)
-        .col(MealPlanRecipe::UserId)
-        .col(MealPlanRecipe::Id)
-        .to_owned()
-}
-
-fn drop_pk() -> IndexDropStatement {
-    Index::drop()
-        .name("pk_mealplan_recipe")
-        .table(MealPlanRecipe::Table)
-        .to_owned()
-}
-
-#[async_trait::async_trait]
-impl sqlx_migrator::Operation<sqlx::Sqlite> for CreatePk {
-    async fn up(
-        &self,
-        connection: &mut sqlx::SqliteConnection,
-    ) -> Result<(), sqlx_migrator::Error> {
-        let statment = create_pk().to_string(sea_query::SqliteQueryBuilder);
-        sqlx::query(&statment).execute(connection).await?;
-
-        Ok(())
-    }
-
-    async fn down(
-        &self,
-        connection: &mut sqlx::SqliteConnection,
-    ) -> Result<(), sqlx_migrator::Error> {
-        let statment = drop_pk().to_string(sea_query::SqliteQueryBuilder);
         sqlx::query(&statment).execute(connection).await?;
 
         Ok(())

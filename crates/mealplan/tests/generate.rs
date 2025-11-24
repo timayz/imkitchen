@@ -1,6 +1,8 @@
+use imkitchen_mealplan::Status;
 use imkitchen_recipe::{CuisineType, ImportInput, RecipeType};
 use imkitchen_shared::Metadata;
 use temp_dir::TempDir;
+use time::OffsetDateTime;
 
 mod helpers;
 
@@ -10,6 +12,7 @@ async fn test_random() -> anyhow::Result<()> {
     let path = dir.child("db.sqlite3");
     let state = helpers::setup_test_state(path).await?;
     let command = imkitchen_mealplan::Command(state.evento.clone(), state.pool.clone());
+    let query = imkitchen_mealplan::Query(state.pool.clone());
     let recipe_command = imkitchen_recipe::Command(state.evento.clone(), state.pool.clone());
     let john = Metadata::by("john".to_owned());
     let albert = Metadata::by("albert".to_owned());
@@ -66,6 +69,42 @@ async fn test_random() -> anyhow::Result<()> {
 
     assert_ne!(ids1, ids2);
     assert_eq!(ids1.len(), 28);
+
+    imkitchen_mealplan::subscribe_week()
+        .data(state.pool.clone())
+        .unretry_oneshot(&state.evento)
+        .await?;
+
+    command.generate(&john).await?;
+
+    imkitchen_mealplan::subscribe_week()
+        .data(state.pool.clone())
+        .unretry_oneshot(&state.evento)
+        .await?;
+
+    let now = OffsetDateTime::now_utc();
+    let weeks = imkitchen_mealplan::next_four_mondays(now.unix_timestamp())?;
+    for week in weeks {
+        let row = query.find(week as u64, "john").await?.unwrap();
+        assert!(row.slots.is_empty());
+        assert_eq!(row.status.0, Status::Processing);
+    }
+
+    imkitchen_mealplan::subscribe_command()
+        .data(state.pool.clone())
+        .unretry_oneshot(&state.evento)
+        .await?;
+
+    imkitchen_mealplan::subscribe_week()
+        .data(state.pool)
+        .unretry_oneshot(&state.evento)
+        .await?;
+
+    for week in weeks {
+        let row = query.find(week as u64, "john").await?.unwrap();
+        assert!(!row.slots.is_empty());
+        assert_eq!(row.status.0, Status::Idle);
+    }
 
     Ok(())
 }

@@ -1,4 +1,5 @@
 mod mealplan_recipe;
+mod mealplan_week;
 
 use sqlx_migrator::vec_box;
 
@@ -11,9 +12,9 @@ sqlx_migrator::sqlite_migration!(
     vec_box![],
     vec_box![
         mealplan_recipe::CreateTable,
-        mealplan_recipe::CreatePk,
         mealplan_recipe::CreateIdx1,
         mealplan_recipe::CreateIdx2,
-        mealplan_recipe::CreateIdx3
+        mealplan_recipe::CreateIdx3,
+        mealplan_week::CreateTable,
     ]
 );

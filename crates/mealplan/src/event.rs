@@ -6,6 +6,7 @@ use crate::{Slot, Status};
 #[derive(AggregatorName, Encode, Decode)]
 pub struct GenerateRequested {
     pub status: Status,
+    pub weeks: Vec<u64>,
 }
 
 #[derive(AggregatorName, Encode, Decode)]
