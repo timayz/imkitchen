@@ -83,9 +83,9 @@ async fn test_random() -> anyhow::Result<()> {
         .await?;
 
     let now = OffsetDateTime::now_utc();
-    let weeks = imkitchen_mealplan::next_four_mondays(now.unix_timestamp())?;
+    let weeks = imkitchen_mealplan::next_four_mondays(now.unix_timestamp() as u64)?;
     for week in weeks {
-        let row = query.find(week as u64, "john").await?.unwrap();
+        let row = query.find(week, "john").await?.unwrap();
         assert!(row.slots.is_empty());
         assert_eq!(row.status.0, Status::Processing);
     }
@@ -101,7 +101,7 @@ async fn test_random() -> anyhow::Result<()> {
         .await?;
 
     for week in weeks {
-        let row = query.find(week as u64, "john").await?.unwrap();
+        let row = query.find(week, "john").await?.unwrap();
         assert!(!row.slots.is_empty());
         assert_eq!(row.status.0, Status::Idle);
     }

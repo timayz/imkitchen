@@ -32,6 +32,8 @@ pub struct AppState {
     pub contact_query: imkitchen_contact::Query,
     pub recipe_command: imkitchen_recipe::Command<evento::Sqlite>,
     pub recipe_query: imkitchen_recipe::Query,
+    // pub mealplan_command: imkitchen_mealplan::Command<evento::Sqlite>,
+    // pub mealplan_query: imkitchen_mealplan::Query,
     pub pool: SqlitePool,
 }
 

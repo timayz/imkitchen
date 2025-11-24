@@ -1,3 +1,4 @@
+mod mealplan_last_week;
 mod mealplan_recipe;
 mod mealplan_week;
 
@@ -16,5 +17,6 @@ sqlx_migrator::sqlite_migration!(
         mealplan_recipe::CreateIdx2,
         mealplan_recipe::CreateIdx3,
         mealplan_week::CreateTable,
+        mealplan_last_week::CreateTable,
     ]
 );
