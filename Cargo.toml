@@ -51,6 +51,7 @@ time = { version =  "0.3", features = ["formatting"] }
 strum = { version = "0.27", features = ["derive"] }
 sha3 = "0.10"
 temp-dir = "0.1"
+rand = "0.9"
 
 [package]
 name = "imkitchen"

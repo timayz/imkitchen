@@ -213,3 +213,44 @@ impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateIdx2 {
         Ok(())
     }
 }
+
+pub struct CreateIdx3;
+
+fn create_idx_3() -> IndexCreateStatement {
+    Index::create()
+        .name("idk_mealplan_recipe_GffMLT")
+        .table(MealPlanRecipe::Table)
+        .col(MealPlanRecipe::UserId)
+        .col(MealPlanRecipe::RecipeType)
+        .to_owned()
+}
+
+fn drop_idx_3() -> IndexDropStatement {
+    Index::drop()
+        .name("idk_mealplan_recipe_GffMLT")
+        .table(MealPlanRecipe::Table)
+        .to_owned()
+}
+
+#[async_trait::async_trait]
+impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateIdx3 {
+    async fn up(
+        &self,
+        connection: &mut sqlx::SqliteConnection,
+    ) -> Result<(), sqlx_migrator::Error> {
+        let statment = create_idx_3().to_string(sea_query::SqliteQueryBuilder);
+        sqlx::query(&statment).execute(connection).await?;
+
+        Ok(())
+    }
+
+    async fn down(
+        &self,
+        connection: &mut sqlx::SqliteConnection,
+    ) -> Result<(), sqlx_migrator::Error> {
+        let statment = drop_idx_3().to_string(sea_query::SqliteQueryBuilder);
+        sqlx::query(&statment).execute(connection).await?;
+
+        Ok(())
+    }
+}

@@ -1,4 +1,72 @@
+use imkitchen_db::table::MealPlanRecipe;
+use imkitchen_recipe::RecipeType;
+use rand::seq::SliceRandom;
+use sea_query::{
+    Expr, ExprTrait, Func, IntoColumnRef, Order, Query, SimpleExpr, SqliteQueryBuilder,
+};
+use sea_query_sqlx::SqlxBinder;
 use time::{Duration, OffsetDateTime, Weekday};
+
+pub async fn has(
+    pool: &sqlx::SqlitePool,
+    id: impl Into<String>,
+    recipe_type: RecipeType,
+) -> imkitchen_shared::Result<bool> {
+    let id = id.into();
+    let statement = Query::select()
+        .columns([MealPlanRecipe::Id, MealPlanRecipe::Name])
+        .from(MealPlanRecipe::Table)
+        .and_where(Expr::col(MealPlanRecipe::UserId).eq(id))
+        .and_where(Expr::col(MealPlanRecipe::RecipeType).eq(recipe_type.to_string()))
+        .limit(1)
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+    let recipe = sqlx::query_as_with::<_, (String,), _>(&sql, values)
+        .fetch_optional(pool)
+        .await?;
+
+    Ok(recipe.is_some())
+}
+
+pub async fn random(
+    pool: &sqlx::SqlitePool,
+    id: impl Into<String>,
+    recipe_type: RecipeType,
+) -> imkitchen_shared::Result<Vec<String>> {
+    let id = id.into();
+    let statement = Query::select()
+        .columns([MealPlanRecipe::Id, MealPlanRecipe::Name])
+        .from(MealPlanRecipe::Table)
+        .and_where(
+            MealPlanRecipe::Id.into_column_ref().in_subquery(
+                Query::select()
+                    .columns([MealPlanRecipe::Id])
+                    .from(MealPlanRecipe::Table)
+                    .and_where(Expr::col(MealPlanRecipe::UserId).eq(id))
+                    .and_where(Expr::col(MealPlanRecipe::RecipeType).eq(recipe_type.to_string()))
+                    .order_by_expr(SimpleExpr::FunctionCall(Func::random()), Order::Asc)
+                    .limit(7 * 4)
+                    .take(),
+            ),
+        )
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+    let mut recipes = sqlx::query_as_with::<_, (String,), _>(&sql, values)
+        .fetch_all(pool)
+        .await?
+        .iter()
+        .map(|(id,)| id.to_owned())
+        .collect::<Vec<_>>();
+
+    let mut rng = rand::rng();
+    recipes.shuffle(&mut rng);
+
+    Ok(recipes)
+}
 
 /// Returns the timestamps of the next 4 Mondays from the given timestamp
 pub fn next_four_mondays(from_timestamp: i64) -> anyhow::Result<[i64; 4]> {

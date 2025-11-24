@@ -10,8 +10,9 @@ use imkitchen_shared::{Event, Metadata};
 use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::SqlitePool;
+use time::OffsetDateTime;
 
-use crate::{GenerateRequested, MealPlan, Status, WeekGenerated};
+use crate::{GenerateRequested, GenerationFailed, MealPlan, Slot, Status, WeekGenerated};
 
 #[derive(Clone)]
 pub struct Command<E: Executor + Clone>(pub E, pub SqlitePool);
@@ -31,22 +32,38 @@ impl<E: Executor + Clone> Command<E> {
         evento::load_optional(&self.0, id).await
     }
 
-    pub async fn generate(&self, metadata: &Metadata) -> imkitchen_shared::Result<String> {
+    pub async fn generate(&self, metadata: &Metadata) -> imkitchen_shared::Result<()> {
         let user_id = metadata.trigger_by()?;
 
-        Ok(evento::save::<MealPlan>(user_id)
+        let loaded = self.load_optional(&user_id).await?;
+        let processing = loaded
+            .as_ref()
+            .map(|m| m.item.status == Status::Processing)
+            .unwrap_or_default();
+        if processing {
+            imkitchen_shared::bail!("Meal plan status is processing");
+        }
+
+        let builder = loaded
+            .map(evento::save_with)
+            .unwrap_or_else(|| evento::save(&user_id));
+
+        builder
             .data(&GenerateRequested {
                 status: Status::Processing,
             })?
             .metadata(metadata)?
             .commit(&self.0)
-            .await?)
+            .await?;
+
+        Ok(())
     }
 }
 
 pub fn subscribe_command<E: Executor + Clone>() -> SubscribeBuilder<E> {
     evento::subscribe("mealplan-command")
         .handler(handle_generation_requested())
+        .skip::<MealPlan, GenerationFailed>()
         .skip::<MealPlan, WeekGenerated>()
         .handler(handle_recipe_created())
         .handler(handle_recipe_imported())
@@ -69,43 +86,62 @@ async fn handle_generation_requested<E: Executor>(
     event: Event<GenerateRequested>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    // let timestamp = event.timestamp;
-    // let aggregator_id = event.aggregator_id.clone();
-    // let user_id = event.metadata.trigger_by().unwrap_or_default();
-    // let name = event.data.name;
-    // let config = bincode::config::standard();
-    // let instructions = bincode::encode_to_vec(Vec::<Instruction>::default(), config)?;
-    // let ingredients = bincode::encode_to_vec(Vec::<Ingredient>::default(), config)?;
-    //
-    // let statment = Query::insert()
-    //     .into_table(MealPlanRecipe::Table)
-    //     .columns([
-    //         MealPlanRecipe::Id,
-    //         MealPlanRecipe::UserId,
-    //         MealPlanRecipe::RecipeType,
-    //         MealPlanRecipe::CuisineType,
-    //         MealPlanRecipe::Name,
-    //         MealPlanRecipe::Ingredients,
-    //         MealPlanRecipe::Instructions,
-    //         MealPlanRecipe::DietaryRestrictions,
-    //         MealPlanRecipe::PreferredAccompanimentTypes,
-    //         MealPlanRecipe::CreatedAt,
-    //     ])
-    //     .values_panic([
-    //         aggregator_id.into(),
-    //         user_id.into(),
-    //         RecipeType::default().to_string().into(),
-    //         CuisineType::default().to_string().into(),
-    //         name.into(),
-    //         ingredients.into(),
-    //         instructions.into(),
-    //         serde_json::Value::Array(vec![]).into(),
-    //         serde_json::Value::Array(vec![]).into(),
-    //         timestamp.into(),
-    //     ])
-    //     .to_owned();
-    // let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
-    // sqlx::query_with(&sql, values).execute(&pool).await?;
+    let user_id = event.metadata.trigger_by().unwrap_or_default();
+
+    if !super::service::has(&pool, &user_id, RecipeType::MainCourse).await? {
+        evento::save::<MealPlan>(&user_id)
+            .data(&GenerationFailed {
+                reason: "No main course found".to_owned(),
+                status: Status::Failed,
+            })?
+            .metadata(&event.metadata)?
+            .commit(context.executor)
+            .await?;
+
+        return Ok(());
+    }
+
+    let now = OffsetDateTime::now_utc();
+    let mondays = super::service::next_four_mondays(now.unix_timestamp())?;
+    let main_course_recipes =
+        super::service::random(&pool, &user_id, RecipeType::MainCourse).await?;
+    let mut main_course_recipes = main_course_recipes.iter();
+
+    let mut builder = evento::save::<MealPlan>(&user_id).metadata(&event.metadata)?;
+
+    for monday in mondays {
+        let mut slots = vec![];
+
+        while let Some(recipe_id) = main_course_recipes.by_ref().next() {
+            if slots.len() == 7 {
+                break;
+            }
+
+            let appetizer_recipes =
+                super::service::random(&pool, &user_id, RecipeType::Appetizer).await?;
+            let mut appetizer_recipes = appetizer_recipes.iter();
+            let dessert_recipes =
+                super::service::random(&pool, &user_id, RecipeType::Dessert).await?;
+            let mut dessert_recipes = dessert_recipes.iter();
+            slots.push(Slot {
+                appetizer_id: appetizer_recipes.next().cloned(),
+                main_course_id: recipe_id.to_owned(),
+                dessert_id: dessert_recipes.next().cloned(),
+            });
+        }
+
+        if slots.is_empty() {
+            break;
+        }
+
+        builder = builder.data(&WeekGenerated {
+            slots,
+            week: monday as u64,
+            status: Status::Idle,
+        })?;
+    }
+
+    builder.commit(context.executor).await?;
 
     Ok(())
 }

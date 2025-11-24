@@ -4,10 +4,9 @@ use strum::{AsRefStr, Display, EnumString, VariantArray};
 
 #[derive(Encode, Decode)]
 pub struct Slot {
-    pub appetizer_id: String,
+    pub appetizer_id: Option<String>,
     pub main_course_id: String,
-    pub dessert_id: String,
-    pub accompaniment_id: Option<String>,
+    pub dessert_id: Option<String>,
 }
 
 #[derive(

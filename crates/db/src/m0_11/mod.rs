@@ -13,6 +13,7 @@ sqlx_migrator::sqlite_migration!(
         mealplan_recipe::CreateTable,
         mealplan_recipe::CreatePk,
         mealplan_recipe::CreateIdx1,
-        mealplan_recipe::CreateIdx2
+        mealplan_recipe::CreateIdx2,
+        mealplan_recipe::CreateIdx3
     ]
 );

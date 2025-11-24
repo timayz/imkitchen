@@ -9,6 +9,12 @@ pub struct GenerateRequested {
 }
 
 #[derive(AggregatorName, Encode, Decode)]
+pub struct GenerationFailed {
+    pub status: Status,
+    pub reason: String,
+}
+
+#[derive(AggregatorName, Encode, Decode)]
 pub struct WeekGenerated {
     pub week: u64,
     pub status: Status,

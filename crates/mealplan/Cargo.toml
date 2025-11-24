@@ -8,9 +8,9 @@ authors.workspace = true
 evento.workspace = true
 bincode.workspace = true
 anyhow.workspace = true
-validator = { workspace = true, optional = true }
 sqlx = { workspace = true, optional = true }
 time = { workspace = true, optional = true }
+rand = { workspace = true, optional = true }
 cfg-if.workspace = true
 strum.workspace = true
 serde.workspace = true
@@ -25,7 +25,8 @@ tokio.workspace = true
 temp-dir.workspace = true
 futures.workspace = true
 time = { workspace = true, features = ["formatting", "macros"] }
+imkitchen-recipe = { path = "../recipe", version = "0.10.0", features = ["default"] }
 
 [features]
 default = ["full", "imkitchen-recipe"]
-full = ["sqlx", "validator", "imkitchen-db", "time"]
+full = ["sqlx", "imkitchen-db", "time", "rand"]
