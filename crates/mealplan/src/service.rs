@@ -18,6 +18,7 @@ pub async fn has(
         .from(MealPlanRecipe::Table)
         .and_where(Expr::col(MealPlanRecipe::UserId).eq(id))
         .and_where(Expr::col(MealPlanRecipe::RecipeType).eq(recipe_type.to_string()))
+        .and_where(Expr::col(MealPlanRecipe::Name).is_not(""))
         .limit(1)
         .to_owned();
 
@@ -46,6 +47,7 @@ pub async fn random(
                     .from(MealPlanRecipe::Table)
                     .and_where(Expr::col(MealPlanRecipe::UserId).eq(id))
                     .and_where(Expr::col(MealPlanRecipe::RecipeType).eq(recipe_type.to_string()))
+                    .and_where(Expr::col(MealPlanRecipe::Name).is_not(""))
                     .order_by_expr(SimpleExpr::FunctionCall(Func::random()), Order::Asc)
                     .limit(7 * 4)
                     .take(),

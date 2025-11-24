@@ -1,6 +1,6 @@
 # Story 3.2: Month Transition Handling
 
-Status: drafted
+Status: ready
 
 ## Story
 
