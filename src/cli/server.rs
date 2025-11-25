@@ -34,8 +34,8 @@ pub async fn serve(
     let contact_query = imkitchen_contact::Query(read_pool.clone());
     let recipe_command = imkitchen_recipe::Command(evento_executor.clone(), read_pool.clone());
     let recipe_query = imkitchen_recipe::Query(read_pool.clone());
-    // let mealplan_command = imkitchen_mealplan::Command(evento_executor.clone(), read_pool.clone());
-    // let mealplan_query = imkitchen_mealplan::Query(read_pool.clone());
+    let mealplan_command = imkitchen_mealplan::Command(evento_executor.clone(), read_pool.clone());
+    let mealplan_query = imkitchen_mealplan::Query(read_pool.clone());
 
     // Start background notification worker
     tracing::info!("Starting evento subscriptions...");
@@ -99,8 +99,8 @@ pub async fn serve(
         contact_query,
         recipe_command,
         recipe_query,
-        // mealplan_command,
-        // mealplan_query,
+        mealplan_command,
+        mealplan_query,
         pool: read_pool.clone(),
     };
 
