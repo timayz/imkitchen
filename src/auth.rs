@@ -150,3 +150,21 @@ impl FromRequestParts<crate::routes::AppState> for AuthAdmin {
         Err(template.render(ForbiddenTemplate).into_response())
     }
 }
+
+pub struct AuthOptional(pub Option<imkitchen_user::AuthUser>);
+
+impl FromRequestParts<crate::routes::AppState> for AuthOptional {
+    type Rejection = Response;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &crate::routes::AppState,
+    ) -> Result<Self, Self::Rejection> {
+        let user = AuthUser::from_request_parts(parts, state)
+            .await
+            .ok()
+            .map(|auth| auth.0);
+
+        Ok(AuthOptional(user))
+    }
+}

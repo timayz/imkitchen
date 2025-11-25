@@ -17,6 +17,7 @@ mod recipes;
 mod register;
 mod reset_password;
 mod service_worker;
+mod shopping_list;
 mod terms;
 
 use axum::routing::get;
@@ -60,6 +61,7 @@ pub fn router(app_state: AppState) -> Router {
         )
         .route("/reset-password", get(reset_password::page))
         .route("/calendar", get(calendar::page))
+        .route("/calendar/shopping-list", get(shopping_list::page))
         .route("/community", get(community::page))
         .route("/recipes", get(recipes::index::page))
         .route("/recipes/create", get(recipes::index::create))

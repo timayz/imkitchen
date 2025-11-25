@@ -1,4 +1,5 @@
 {% extends "_base.html" %}
+{%- import "_footer.html" as scope -%}
 
 {% block body %}
 
@@ -70,6 +71,9 @@
 
   <!-- Main Content -->
   {% block content %}{% endblock %}
+
+  <!-- Footer -->
+  {% call scope::small_footer() %}
 
 </body>
 {% endblock %}

@@ -6,26 +6,26 @@ use crate::{
 };
 
 #[derive(askama::Template)]
-#[template(path = "community.html")]
-pub struct CommunityTemplate {
+#[template(path = "shopping-list.html")]
+pub struct ShoppingListTemplate {
     pub current_path: String,
     pub user: imkitchen_user::AuthUser,
 }
 
-impl Default for CommunityTemplate {
+impl Default for ShoppingListTemplate {
     fn default() -> Self {
         Self {
-            current_path: "community".to_owned(),
+            current_path: "calendar".to_owned(),
             user: imkitchen_user::AuthUser::default(),
         }
     }
 }
 
 pub async fn page(
-    template: Template<CommunityTemplate>,
+    template: Template<ShoppingListTemplate>,
     AuthUser(user): AuthUser,
 ) -> impl IntoResponse {
-    template.render(CommunityTemplate {
+    template.render(ShoppingListTemplate {
         user,
         ..Default::default()
     })

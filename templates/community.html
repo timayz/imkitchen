@@ -1,0 +1,292 @@
+{% extends "_user.html" %}
+{% block title %}Community Recipes - imkitchen{% endblock %}
+{% block content %}
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold mb-2">Community Recipes <span class="px-3 py-1 bg-orange-500 text-white text-sm rounded-full font-semibold">🚀 Coming soon</span></h1>
+            <p class="text-gray-600">Discover recipes shared by other home cooks</p>
+        </div>
+
+        <!-- Search & Filters -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <div class="grid md:grid-cols-5 gap-4">
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Search Recipes</label>
+                    <input
+                        type="text"
+                        placeholder="Search by name or ingredient..."
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                    />
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Recipe Type</label>
+                    <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                        <option value="">All Types</option>
+                        <option value="appetizer">Appetizer</option>
+                        <option value="main">Main Course</option>
+                        <option value="dessert">Dessert</option>
+                        <option value="accompaniment">Accompaniment</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Cuisine</label>
+                    <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                        <option value="">All Cuisines</option>
+                        <option value="italian">Italian</option>
+                        <option value="thai">Thai</option>
+                        <option value="chinese">Chinese</option>
+                        <option value="japanese">Japanese</option>
+                        <option value="mexican">Mexican</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Sort By</label>
+                    <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                        <option value="popular">Most Popular</option>
+                        <option value="recent">Recently Added</option>
+                        <option value="rating">Highest Rated</option>
+                        <option value="favorites">Most Favorited</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Dietary Filters -->
+            <div class="mt-4 pt-4 border-t">
+                <label class="block text-sm font-semibold text-gray-700 mb-3">Dietary Restrictions</label>
+                <div class="flex flex-wrap gap-3">
+                    <label class="flex items-center">
+                        <input type="checkbox" class="rounded border-gray-300 text-green-600" />
+                        <span class="ml-2 text-sm">Vegetarian</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" class="rounded border-gray-300 text-green-600" />
+                        <span class="ml-2 text-sm">Vegan</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" class="rounded border-gray-300 text-green-600" />
+                        <span class="ml-2 text-sm">Gluten-Free</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" class="rounded border-gray-300 text-green-600" />
+                        <span class="ml-2 text-sm">Dairy-Free</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" class="rounded border-gray-300 text-green-600" />
+                        <span class="ml-2 text-sm">Nut-Free</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" class="rounded border-gray-300 text-green-600" />
+                        <span class="ml-2 text-sm">Low-Carb</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Featured Recipes -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold mb-4">🔥 Trending This Week</h2>
+            <div class="grid md:grid-cols-4 gap-6">
+                <!-- Trending Recipe 1 -->
+                <div class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
+                    <div class="relative">
+                        <div class="h-40 bg-gradient-to-br from-red-400 to-orange-500 flex items-center justify-center">
+                            <span class="text-5xl">🍜</span>
+                        </div>
+                        <button onclick="alert('Favoriting...')" class="absolute top-3 right-3 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100">
+                            <span class="text-xl">🤍</span>
+                        </button>
+                        <span class="absolute top-3 left-3 px-3 py-1 bg-orange-600 text-white text-xs font-semibold rounded-full">
+                            MAIN
+                        </span>
+                        <span class="absolute bottom-3 left-3 px-2 py-1 bg-red-600 text-white text-xs font-bold rounded-full">
+                            🔥 TRENDING
+                        </span>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-bold mb-2">Authentic Ramen</h3>
+                        <div class="flex items-center gap-2 text-xs mb-2">
+                            <span class="text-yellow-500">⭐ 4.9</span>
+                            <span class="text-gray-400">•</span>
+                            <span class="text-gray-600">142 reviews</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm text-gray-600 mb-3">
+                            <span>⏱️ 60 min</span>
+                            <span class="text-purple-600">@ramen_master</span>
+                        </div>
+                        <a href="/recipes/1" class="block w-full px-4 py-2 bg-green-600 text-white text-center font-semibold rounded-lg hover:bg-green-700 transition">
+                            View Recipe
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Trending Recipe 2 -->
+                <div class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
+                    <div class="relative">
+                        <div class="h-40 bg-gradient-to-br from-pink-400 to-red-500 flex items-center justify-center">
+                            <span class="text-5xl">🍰</span>
+                        </div>
+                        <button onclick="alert('Favoriting...')" class="absolute top-3 right-3 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100">
+                            <span class="text-xl">🤍</span>
+                        </button>
+                        <span class="absolute top-3 left-3 px-3 py-1 bg-pink-600 text-white text-xs font-semibold rounded-full">
+                            DESSERT
+                        </span>
+                        <span class="absolute bottom-3 left-3 px-2 py-1 bg-red-600 text-white text-xs font-bold rounded-full">
+                            🔥 TRENDING
+                        </span>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-bold mb-2">Tiramisu</h3>
+                        <div class="flex items-center gap-2 text-xs mb-2">
+                            <span class="text-yellow-500">⭐ 4.8</span>
+                            <span class="text-gray-400">•</span>
+                            <span class="text-gray-600">98 reviews</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm text-gray-600 mb-3">
+                            <span>⏱️ 30 min + chill</span>
+                            <span class="text-purple-600">@chef_marie</span>
+                        </div>
+                        <a href="/recipes/2" class="block w-full px-4 py-2 bg-green-600 text-white text-center font-semibold rounded-lg hover:bg-green-700 transition">
+                            View Recipe
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Trending Recipe 3 -->
+                <div class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
+                    <div class="relative">
+                        <div class="h-40 bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
+                            <span class="text-5xl">🥗</span>
+                        </div>
+                        <button onclick="alert('Favoriting...')" class="absolute top-3 right-3 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100">
+                            <span class="text-xl">🤍</span>
+                        </button>
+                        <span class="absolute top-3 left-3 px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-full">
+                            APPETIZER
+                        </span>
+                        <span class="absolute bottom-3 left-3 px-2 py-1 bg-red-600 text-white text-xs font-bold rounded-full">
+                            🔥 TRENDING
+                        </span>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-bold mb-2">Greek Salad</h3>
+                        <div class="flex items-center gap-2 text-xs mb-2">
+                            <span class="text-yellow-500">⭐ 4.7</span>
+                            <span class="text-gray-400">•</span>
+                            <span class="text-gray-600">76 reviews</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm text-gray-600 mb-3">
+                            <span>⏱️ 15 min</span>
+                            <span class="text-purple-600">@healthy_eats</span>
+                        </div>
+                        <a href="/recipes/3" class="block w-full px-4 py-2 bg-green-600 text-white text-center font-semibold rounded-lg hover:bg-green-700 transition">
+                            View Recipe
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Trending Recipe 4 -->
+                <div class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
+                    <div class="relative">
+                        <div class="h-40 bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
+                            <span class="text-5xl">🍕</span>
+                        </div>
+                        <button onclick="alert('Favoriting...')" class="absolute top-3 right-3 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100">
+                            <span class="text-xl">🤍</span>
+                        </button>
+                        <span class="absolute top-3 left-3 px-3 py-1 bg-orange-600 text-white text-xs font-semibold rounded-full">
+                            MAIN
+                        </span>
+                        <span class="absolute bottom-3 left-3 px-2 py-1 bg-red-600 text-white text-xs font-bold rounded-full">
+                            🔥 TRENDING
+                        </span>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-bold mb-2">Neapolitan Pizza</h3>
+                        <div class="flex items-center gap-2 text-xs mb-2">
+                            <span class="text-yellow-500">⭐ 5.0</span>
+                            <span class="text-gray-400">•</span>
+                            <span class="text-gray-600">203 reviews</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm text-gray-600 mb-3">
+                            <span>⏱️ 90 min</span>
+                            <span class="text-purple-600">@pizza_pro</span>
+                        </div>
+                        <a href="/recipes/4" class="block w-full px-4 py-2 bg-green-600 text-white text-center font-semibold rounded-lg hover:bg-green-700 transition">
+                            View Recipe
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- All Community Recipes -->
+        <div>
+            <h2 class="text-2xl font-bold mb-4">All Community Recipes</h2>
+            <div class="grid md:grid-cols-4 gap-6">
+                <!-- Recipe cards continue with same pattern... -->
+                <!-- Recipe 5 -->
+                <div class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
+                    <div class="relative">
+                        <div class="h-40 bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center">
+                            <span class="text-5xl">🍚</span>
+                        </div>
+                        <button onclick="alert('Favoriting...')" class="absolute top-3 right-3 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100">
+                            <span class="text-xl">🤍</span>
+                        </button>
+                        <span class="absolute top-3 left-3 px-3 py-1 bg-purple-600 text-white text-xs font-semibold rounded-full">
+                            ACCOMPANIMENT
+                        </span>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-bold mb-2">Saffron Rice</h3>
+                        <div class="flex items-center gap-2 text-xs mb-2">
+                            <span class="text-yellow-500">⭐ 4.6</span>
+                            <span class="text-gray-400">•</span>
+                            <span class="text-gray-600">45 reviews</span>
+                        </div>
+                        <div class="flex gap-2 text-xs mb-2">
+                            <span class="px-2 py-0.5 bg-green-100 text-green-800 rounded">Vegan</span>
+                            <span class="px-2 py-0.5 bg-green-100 text-green-800 rounded">GF</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm text-gray-600 mb-3">
+                            <span>⏱️ 25 min</span>
+                            <span class="text-purple-600">@rice_lover</span>
+                        </div>
+                        <a href="/recipes/5" class="block w-full px-4 py-2 bg-green-600 text-white text-center font-semibold rounded-lg hover:bg-green-700 transition">
+                            View Recipe
+                        </a>
+                    </div>
+                </div>
+
+                <!-- More recipe cards... (abbreviated for brevity) -->
+                <!-- You can add more cards here following the same pattern -->
+            </div>
+
+            <!-- Pagination -->
+            <div class="mt-8 flex items-center justify-center gap-2">
+                <button class="px-4 py-2 bg-gray-200 text-gray-400 rounded-lg cursor-not-allowed">
+                    Previous
+                </button>
+                <button class="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold">
+                    1
+                </button>
+                <button class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+                    2
+                </button>
+                <button class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+                    3
+                </button>
+                <span class="px-2">...</span>
+                <button class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+                    15
+                </button>
+                <button class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+                    Next
+                </button>
+            </div>
+        </div>
+    </div>
+{% endblock %}
