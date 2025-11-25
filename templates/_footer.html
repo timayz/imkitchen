@@ -29,7 +29,21 @@
       </div>
     </div>
     <div class="border-t border-gray-800 pt-8 text-center text-sm text-gray-500">
-      {{ "© 2025 imkitchen. All rights reserved."|t }}
+      © 2025 imkitchen.
+    </div>
+  </div>
+</footer>
+{% endmacro %}
+
+{% macro small_footer %}
+<footer class="bg-gray-50 text-gray-300 py-4">
+  <div class="container mx-auto px-4">
+    <div class="text-center text-sm text-gray-500">
+      © 2025 imkitchen.
+      <a href="/policy" class="ml-4 hover:text-gray-900">{{ "Privacy Policy"|t }}</a>
+      <a href="/terms" class="ml-4 hover:text-gray-900">{{ "Terms of Service"|t }}</a>
+      <a href="/help" class="ml-4 hover:text-gray-900">{{ "Help Center"|t }}</a>
+      <a href="/contact" class="ml-4 hover:text-gray-900">{{ "Contact"|t }}</a>
     </div>
   </div>
 </footer>
