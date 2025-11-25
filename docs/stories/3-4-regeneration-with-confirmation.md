@@ -1,6 +1,6 @@
 # Story 3.4: Regeneration with Confirmation
 
-Status: drafted
+Status: ready 
 
 ## Story
 
