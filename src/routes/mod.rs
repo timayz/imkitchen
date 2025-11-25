@@ -33,8 +33,8 @@ pub struct AppState {
     pub contact_query: imkitchen_contact::Query,
     pub recipe_command: imkitchen_recipe::Command<evento::Sqlite>,
     pub recipe_query: imkitchen_recipe::Query,
-    // pub mealplan_command: imkitchen_mealplan::Command<evento::Sqlite>,
-    // pub mealplan_query: imkitchen_mealplan::Query,
+    pub mealplan_command: imkitchen_mealplan::Command<evento::Sqlite>,
+    pub mealplan_query: imkitchen_mealplan::Query,
     pub pool: SqlitePool,
 }
 
@@ -61,6 +61,14 @@ pub fn router(app_state: AppState) -> Router {
         )
         .route("/reset-password", get(reset_password::page))
         .route("/calendar", get(calendar::page))
+        .route(
+            "/calendar/regenerate",
+            get(calendar::regenerate_modal).post(calendar::regenerate_action),
+        )
+        .route(
+            "/calendar/regenerate/status",
+            get(calendar::regenerate_status),
+        )
         .route("/calendar/shopping-list", get(shopping_list::page))
         .route("/community", get(community::page))
         .route("/recipes", get(recipes::index::page))

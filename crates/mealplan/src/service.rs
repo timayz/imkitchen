@@ -70,6 +70,12 @@ pub async fn random(
     Ok(recipes)
 }
 
+/// Returns the timestamps of the next 4 Mondays from now
+/// All timestamps are set to 00:00:00 (midnight)
+pub fn next_four_mondays_from_now() -> anyhow::Result<[u64; 4]> {
+    next_four_mondays(OffsetDateTime::now_utc().unix_timestamp() as u64)
+}
+
 /// Returns the timestamps of the next 4 Mondays from the given timestamp
 /// All timestamps are set to 00:00:00 (midnight)
 pub fn next_four_mondays(from_timestamp: u64) -> anyhow::Result<[u64; 4]> {
@@ -105,7 +111,7 @@ pub fn next_four_mondays(from_timestamp: u64) -> anyhow::Result<[u64; 4]> {
 
 /// Returns the timestamps of the next 4 Mondays from the given timestamp
 /// All timestamps are set to 00:00:00 (midnight)
-pub fn current_week_monday(from_timestamp: u64) -> anyhow::Result<u64> {
+pub fn week_monday_of(from_timestamp: u64) -> anyhow::Result<u64> {
     let from_date = OffsetDateTime::from_unix_timestamp(from_timestamp as i64)?;
 
     // Get the current weekday
