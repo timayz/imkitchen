@@ -73,14 +73,14 @@ development_status:
 
   # Epic 4: Calendar Visualization & Shopping Lists
   epic-4: backlog
-  4-1-monthly-calendar-view: backlog
-  4-2-week-carousel-navigation-mobile: backlog
-  4-3-dashboard-with-nearest-day-display: backlog
-  4-4-freemium-calendar-restrictions-first-week-only: backlog
-  4-5-dashboard-freemium-restrictions: backlog
-  4-6-shopping-list-generation-per-week: backlog
-  4-7-shopping-list-access-current-and-future-weeks: backlog
-  4-8-empty-slot-community-recipe-links: backlog
+  4-1-monthly-calendar-view: drafted
+  4-2-week-carousel-navigation-mobile: drafted
+  4-3-dashboard-with-nearest-day-display: drafted
+  4-4-freemium-calendar-restrictions-first-week-only: drafted
+  4-5-dashboard-freemium-restrictions: drafted
+  4-6-shopping-list-generation-per-week: drafted
+  4-7-shopping-list-access-current-and-future-weeks: drafted
+  4-8-empty-slot-community-recipe-links: drafted
   epic-4-retrospective: optional
 
   # Epic 5: Community Features & Freemium Access
