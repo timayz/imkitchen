@@ -57,7 +57,7 @@ pub fn build_cookie<'a>(config: JwtConfig, sub: String) -> anyhow::Result<Cookie
     Ok(Cookie::build((AUTH_COOKIE_NAME, token))
         .path("/")
         .http_only(true)
-        .same_site(SameSite::Strict)
+        .same_site(SameSite::Lax)
         .expires(expires)
         .build())
 }
