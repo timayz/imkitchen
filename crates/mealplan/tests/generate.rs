@@ -2,7 +2,6 @@ use imkitchen_mealplan::Status;
 use imkitchen_recipe::{CuisineType, ImportInput, RecipeType};
 use imkitchen_shared::Metadata;
 use temp_dir::TempDir;
-use time::OffsetDateTime;
 
 mod helpers;
 
@@ -82,10 +81,9 @@ async fn test_random() -> anyhow::Result<()> {
         .unretry_oneshot(&state.evento)
         .await?;
 
-    let now = OffsetDateTime::now_utc();
-    let weeks = imkitchen_mealplan::next_four_mondays(now.unix_timestamp() as u64)?;
+    let weeks = imkitchen_mealplan::next_four_mondays_from_now();
     for week in weeks {
-        let row = query.find(week, "john").await?.unwrap();
+        let row = query.find(week.start, "john").await?.unwrap();
         assert!(row.slots.is_empty());
         assert_eq!(row.status.0, Status::Processing);
     }
@@ -101,7 +99,7 @@ async fn test_random() -> anyhow::Result<()> {
         .await?;
 
     for week in weeks {
-        let row = query.find(week, "john").await?.unwrap();
+        let row = query.find(week.start, "john").await?.unwrap();
         assert!(!row.slots.is_empty());
         assert_eq!(row.status.0, Status::Idle);
     }

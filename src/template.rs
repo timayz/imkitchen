@@ -13,11 +13,58 @@ pub const NOT_FOUND: &str = "Not found";
 pub const FORBIDDEN: &str = "Forbidden";
 
 pub(crate) mod filters {
+    use time::OffsetDateTime;
+
     pub fn t(value: &str, values: &dyn askama::Values) -> askama::Result<String> {
         let preferred_language = askama::get_value::<String>(values, "preferred_language")
             .expect("Unable to get preferred_language from askama::get_value");
 
         Ok(rust_i18n::t!(value, locale = preferred_language).to_string())
+    }
+
+    pub fn date(value: &u64, values: &dyn askama::Values) -> askama::Result<String> {
+        let preferred_language = askama::get_value::<String>(values, "preferred_language")
+            .expect("Unable to get preferred_language from askama::get_value");
+
+        let date = OffsetDateTime::from_unix_timestamp(*value as i64)
+            .map_err(|e| askama::Error::Custom(Box::new(e)))?;
+
+        let month = rust_i18n::t!(format!("{}_sm", date.month()), locale = preferred_language);
+        let weekday = rust_i18n::t!(date.weekday().to_string(), locale = preferred_language);
+
+        Ok(rust_i18n::t!(
+            "date_format",
+            locale = preferred_language,
+            month = month,
+            weekday = weekday,
+            day = date.day()
+        )
+        .to_string())
+    }
+
+    pub fn month_year(a: &u64, values: &dyn askama::Values, b: &u64) -> askama::Result<String> {
+        let preferred_language = askama::get_value::<String>(values, "preferred_language")
+            .expect("Unable to get preferred_language from askama::get_value");
+
+        let date_a = OffsetDateTime::from_unix_timestamp(*a as i64)
+            .map_err(|e| askama::Error::Custom(Box::new(e)))?;
+
+        let date_b = OffsetDateTime::from_unix_timestamp(*b as i64)
+            .map_err(|e| askama::Error::Custom(Box::new(e)))?;
+
+        let month_a = rust_i18n::t!(format!("{}", date_a.month()), locale = preferred_language);
+
+        if date_a.month() == date_b.month() {
+            return Ok(format!("{month_a} {}", date_a.year()));
+        }
+
+        let month_b = rust_i18n::t!(format!("{}", date_b.month()), locale = preferred_language);
+
+        Ok(format!(
+            "{month_a} {} - {month_b} {}",
+            date_a.year(),
+            date_b.year()
+        ))
     }
 
     // pub fn assets(value: &str, values: &dyn askama::Values) -> askama::Result<String> {

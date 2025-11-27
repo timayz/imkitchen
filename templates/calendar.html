@@ -5,8 +5,10 @@
     <div class="container mx-auto px-4 py-8">
         <!-- Header -->
         <div class="mb-8">
-          <h1 class="text-3xl font-bold mb-2">Meal Calendar <span class="px-3 py-1 bg-orange-500 text-white text-sm rounded-full font-semibold">🚀 Coming soon</span></h1>
-            <p class="text-gray-600">November 2025 - Full Access to All 5 Weeks</p>
+          <h1 class="text-3xl font-bold mb-2">Meal Calendar</h1>
+          {% if let Some(current) = current %}
+          <p class="text-gray-600">{{ current.start|month_year(current.end) }}</p>
+          {% endif %}
         </div>
 
         <!-- Week Navigation -->
@@ -14,57 +16,44 @@
             <!-- Mobile: Stack vertically -->
             <div class="flex flex-col gap-3 md:hidden">
                 <div class="flex items-center justify-between gap-2">
-                    <button disabled class="px-3 py-2 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed text-sm">
-                        ← Prev
-                    </button>
-                    <button class="px-3 py-2 bg-green-600 text-white rounded-lg font-semibold text-sm flex-1">
-                        Week 1 (Nov 4-10)
-                    </button>
+                    <a href="/calendar/week-{{ index }}/shopping-list"
+                      class="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm">
+                        🛒 Shopping Lists
+                    </a>
+                    <a href="/calendar/week-{{ index }}" class="px-3 py-2 bg-green-600 text-white rounded-lg font-semibold text-sm flex-1">
+                      Week {{ index }}
+                    </a>
                     <button id="regenerate-btn-sm" ts-trigger="click" ts-req="/calendar/regenerate" ts-target="body" ts-swap="append"
                       class="px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm">
-                        🔄
+                        🔄 Regenerate
                     </button>
                 </div>
                 <div class="overflow-x-auto">
                     <div class="flex gap-2 min-w-max">
-                        <button onclick="window.location.hash='week2'" class="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm whitespace-nowrap">
-                            Week 2
-                        </button>
-                        <button onclick="window.location.hash='week3'" class="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm whitespace-nowrap">
-                            Week 3
-                        </button>
-                        <button onclick="window.location.hash='week4'" class="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm whitespace-nowrap">
-                            Week 4
-                        </button>
-                        <button onclick="window.location.hash='week5'" class="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm whitespace-nowrap">
-                            Week 5
-                        </button>
+                      {% for week in weeks %}
+                        {% if loop.index != index as usize %}
+                          <a href="/calendar/week-{{ loop.index }}" class="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm whitespace-nowrap">
+                            Week {{ loop.index }}
+                          </a>
+                        {% endif %}
+                      {% endfor %}
                     </div>
                 </div>
             </div>
 
             <!-- Desktop: Original layout -->
             <div class="hidden md:flex items-center justify-between">
-                <button disabled class="px-4 py-2 bg-gray-100 text-gray-400 rounded-lg cursor-not-allowed">
-                    ← Previous
-                </button>
-
+                <a href="/calendar/week-{{ index }}/shopping-list" 
+                  class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+                    🛒 Shopping Lists
+                </a>
                 <div class="flex gap-2">
-                    <button class="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold">
-                        Week 1 (Nov 4-10)
-                    </button>
-                    <button onclick="window.location.hash='week2'" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
-                        Week 2 (Nov 11-17)
-                    </button>
-                    <button onclick="window.location.hash='week3'" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
-                        Week 3 (Nov 18-24)
-                    </button>
-                    <button onclick="window.location.hash='week4'" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
-                        Week 4 (Nov 25-Dec 1)
-                    </button>
-                    <button onclick="window.location.hash='week5'" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
-                        Week 5 (Dec 2-8)
-                    </button>
+                    {% for week in weeks %}
+                    <a href="/calendar/week-{{ loop.index }}"
+                      class="px-4 py-2 rounded-lg {% if loop.index == index as usize %}text-white bg-green-600 font-semibold{% else %}bg-gray-200 text-gray-700 hover:bg-gray-300{% endif %}">
+                      Week {{ loop.index }}
+                    </a>
+                    {% endfor %}
                 </div>
 
                 <button id="regenerate-btn" ts-trigger="click" ts-req="/calendar/regenerate" ts-target="body" ts-swap="append"
@@ -74,229 +63,46 @@
             </div>
         </div>
 
+        {% if let Some(current) = current %}
         <!-- Calendar Grid - Week 1 -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4 mb-8">
-            <!-- Day Headers (hidden on mobile) -->
-            <div class="hidden lg:block font-bold text-center py-2">Monday</div>
-            <div class="hidden lg:block font-bold text-center py-2">Tuesday</div>
-            <div class="hidden lg:block font-bold text-center py-2">Wednesday</div>
-            <div class="hidden lg:block font-bold text-center py-2">Thursday</div>
-            <div class="hidden lg:block font-bold text-center py-2">Friday</div>
-            <div class="hidden lg:block font-bold text-center py-2">Saturday</div>
-            <div class="hidden lg:block font-bold text-center py-2">Sunday</div>
-
+          {% for slot in current.slots.0 %}
             <!-- Monday 11/4 -->
-            <div class="bg-white rounded-lg shadow p-4 min-h-[300px] md:min-h-[250px] border-2 border-green-500">
+            <div class="bg-white rounded-lg shadow p-4 min-h-[300px] md:min-h-[250px]{% if slot.day == weekday %} border-2 border-green-500{% endif %}">
                 <div class="mb-3">
                     <div class="flex items-center justify-between mb-1">
-                        <span class="font-bold text-lg lg:text-base">Monday, Nov 4</span>
+                      <span class="font-bold text-lg lg:text-base">{{ slot.day|date }}</span>
+                        <!-- <span class="font-bold text-lg lg:text-base">Monday, Nov 4</span> -->
+                        {% if slot.day == weekday %}
                         <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Today</span>
+                        {% endif %}
                     </div>
-                    <div class="text-xs text-gray-500 lg:hidden">Week 1</div>
+                    <div class="text-xs text-gray-500 lg:hidden">Week {{ index }}</div>
                 </div>
                 <div class="space-y-3">
+                    {% if let Some(appetizer) = slot.appetizer %}
                     <div class="p-2 bg-blue-50 rounded text-sm">
                         <div class="text-xs text-blue-600 font-semibold">APPETIZER</div>
-                        <div class="font-semibold">🥗 Caesar Salad</div>
-                        <div class="text-xs text-gray-600">15 min</div>
+                        <div class="font-semibold">🥗 {{ appetizer.name }}</div>
                     </div>
+                    {% endif %}
                     <div class="p-2 bg-orange-50 rounded text-sm">
                         <div class="text-xs text-orange-600 font-semibold">MAIN</div>
-                        <div class="font-semibold">🍛 Thai Red Curry</div>
-                        <div class="text-xs text-gray-600">+ 🍚 Jasmine Rice</div>
+                        <div class="font-semibold">🍛 {{ slot.main_course.name }}</div>
+                        {% if let Some(accompaniment) = slot.accompaniment %}
+                        <div class="text-xs text-gray-600">+ 🍚 {{ accompaniment.name }}</div>
+                        {% endif %}
                     </div>
+                    {% if let Some(dessert) = slot.dessert %}
                     <div class="p-2 bg-pink-50 rounded text-sm">
                         <div class="text-xs text-pink-600 font-semibold">DESSERT</div>
-                        <div class="font-semibold">🍰 Chocolate Mousse</div>
-                        <div class="text-xs text-yellow-700">⏰ Prep in AM</div>
+                        <div class="font-semibold">🍰 {{ dessert.name }}</div>
                     </div>
+                    {% endif %}
                 </div>
             </div>
-
-            <!-- Tuesday 11/5 -->
-            <div class="bg-white rounded-lg shadow p-4 min-h-[300px] md:min-h-[250px]">
-                <div class="mb-3">
-                    <div class="font-bold text-lg lg:text-base mb-1">Tuesday, Nov 5</div>
-                    <div class="text-xs text-gray-500 lg:hidden">Week 1</div>
-                </div>
-                <div class="space-y-3">
-                    <div class="p-2 bg-orange-50 rounded text-sm">
-                        <div class="text-xs text-orange-600 font-semibold">MAIN</div>
-                        <div class="font-semibold">🍝 Pasta Carbonara</div>
-                        <div class="text-xs text-gray-600">+ 🥖 Garlic Bread</div>
-                    </div>
-                    <div class="p-2 bg-pink-50 rounded text-sm">
-                        <div class="text-xs text-pink-600 font-semibold">DESSERT</div>
-                        <div class="font-semibold">🍨 Tiramisu</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Wednesday 11/6 -->
-            <div class="bg-white rounded-lg shadow p-4 min-h-[300px] md:min-h-[250px]">
-                <div class="mb-3">
-                    <div class="font-bold text-lg lg:text-base mb-1">Wednesday, Nov 6</div>
-                    <div class="text-xs text-gray-500 lg:hidden">Week 1</div>
-                </div>
-                <div class="space-y-3">
-                    <div class="p-2 bg-blue-50 rounded text-sm">
-                        <div class="text-xs text-blue-600 font-semibold">APPETIZER</div>
-                        <div class="font-semibold">🥟 Gyoza</div>
-                    </div>
-                    <div class="p-2 bg-orange-50 rounded text-sm">
-                        <div class="text-xs text-orange-600 font-semibold">MAIN</div>
-                        <div class="font-semibold">🍜 Chicken Ramen</div>
-                    </div>
-                    <div class="p-2 bg-pink-50 rounded text-sm">
-                        <div class="text-xs text-pink-600 font-semibold">DESSERT</div>
-                        <div class="font-semibold">🍵 Mochi</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Thursday 11/7 -->
-            <div class="bg-white rounded-lg shadow p-4 min-h-[300px] md:min-h-[250px]">
-                <div class="mb-3">
-                    <div class="font-bold text-lg lg:text-base mb-1">Thursday, Nov 7</div>
-                    <div class="text-xs text-gray-500 lg:hidden">Week 1</div>
-                </div>
-                <div class="space-y-3">
-                    <div class="p-2 bg-orange-50 rounded text-sm">
-                        <div class="text-xs text-orange-600 font-semibold">MAIN</div>
-                        <div class="font-semibold">🌮 Beef Tacos</div>
-                        <div class="text-xs text-gray-600">+ 🍚 Mexican Rice</div>
-                    </div>
-                    <div class="p-2 bg-pink-50 rounded text-sm">
-                        <div class="text-xs text-pink-600 font-semibold">DESSERT</div>
-                        <div class="font-semibold">🍮 Flan</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Friday 11/8 -->
-            <div class="bg-white rounded-lg shadow p-4 min-h-[300px] md:min-h-[250px]">
-                <div class="mb-3">
-                    <div class="font-bold text-lg lg:text-base mb-1">Friday, Nov 8</div>
-                    <div class="text-xs text-gray-500 lg:hidden">Week 1</div>
-                </div>
-                <div class="space-y-3">
-                    <div class="p-2 bg-blue-50 rounded text-sm">
-                        <div class="text-xs text-blue-600 font-semibold">APPETIZER</div>
-                        <div class="font-semibold">🥗 Coleslaw</div>
-                    </div>
-                    <div class="p-2 bg-orange-50 rounded text-sm">
-                        <div class="text-xs text-orange-600 font-semibold">MAIN</div>
-                        <div class="font-semibold">🐟 Fish & Chips</div>
-                        <div class="text-xs text-gray-600">+ 🍟 Fries</div>
-                    </div>
-                    <div class="p-2 bg-pink-50 rounded text-sm">
-                        <div class="text-xs text-pink-600 font-semibold">DESSERT</div>
-                        <div class="font-semibold">🍰 Cheesecake</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Saturday 11/9 -->
-            <div class="bg-white rounded-lg shadow p-4 min-h-[300px] md:min-h-[250px]">
-                <div class="mb-3">
-                    <div class="font-bold text-lg lg:text-base mb-1">Saturday, Nov 9</div>
-                    <div class="text-xs text-gray-500 lg:hidden">Week 1</div>
-                </div>
-                <div class="space-y-3">
-                    <div class="p-2 bg-blue-50 rounded text-sm">
-                        <div class="text-xs text-blue-600 font-semibold">APPETIZER</div>
-                        <div class="font-semibold">🥗 Caprese Salad</div>
-                    </div>
-                    <div class="p-2 bg-orange-50 rounded text-sm">
-                        <div class="text-xs text-orange-600 font-semibold">MAIN</div>
-                        <div class="font-semibold">🍕 Margherita Pizza</div>
-                    </div>
-                    <div class="p-2 bg-pink-50 rounded text-sm">
-                        <div class="text-xs text-pink-600 font-semibold">DESSERT</div>
-                        <div class="font-semibold">🍦 Gelato</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Sunday 11/10 -->
-            <div class="bg-white rounded-lg shadow p-4 min-h-[300px] md:min-h-[250px]">
-                <div class="mb-3">
-                    <div class="font-bold text-lg lg:text-base mb-1">Sunday, Nov 10</div>
-                    <div class="text-xs text-gray-500 lg:hidden">Week 1</div>
-                </div>
-                <div class="space-y-3">
-                    <div class="p-2 bg-orange-50 rounded text-sm">
-                        <div class="text-xs text-orange-600 font-semibold">MAIN</div>
-                        <div class="font-semibold">🍗 Roast Chicken</div>
-                        <div class="text-xs text-gray-600">+ 🥔 Roast Potatoes</div>
-                    </div>
-                    <div class="p-2 bg-pink-50 rounded text-sm">
-                        <div class="text-xs text-pink-600 font-semibold">DESSERT</div>
-                        <div class="font-semibold">🍰 Apple Pie</div>
-                    </div>
-                </div>
-            </div>
+          {% endfor %}
         </div>
-
-        <!-- Week 2 Preview (Collapsible) -->
-        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-bold">Week 2 (Nov 11-17)</h2>
-                <button onclick="this.nextElementSibling.classList.toggle('hidden')" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
-                    Toggle Preview
-                </button>
-            </div>
-            <div class="hidden">
-                <div class="grid grid-cols-7 gap-2">
-                    <div class="text-xs text-center p-2 bg-gray-50 rounded">
-                        <div class="font-bold mb-1">Mon 11/11</div>
-                        <div class="text-gray-600">🍲 Beef Stew</div>
-                    </div>
-                    <div class="text-xs text-center p-2 bg-gray-50 rounded">
-                        <div class="font-bold mb-1">Tue 11/12</div>
-                        <div class="text-gray-600">🍣 Sushi Rolls</div>
-                    </div>
-                    <div class="text-xs text-center p-2 bg-gray-50 rounded">
-                        <div class="font-bold mb-1">Wed 11/13</div>
-                        <div class="text-gray-600">🥘 Paella</div>
-                    </div>
-                    <div class="text-xs text-center p-2 bg-gray-50 rounded">
-                        <div class="font-bold mb-1">Thu 11/14</div>
-                        <div class="text-gray-600">🍔 Burgers</div>
-                    </div>
-                    <div class="text-xs text-center p-2 bg-gray-50 rounded">
-                        <div class="font-bold mb-1">Fri 11/15</div>
-                        <div class="text-gray-600">🍤 Shrimp Scampi</div>
-                    </div>
-                    <div class="text-xs text-center p-2 bg-gray-50 rounded">
-                        <div class="font-bold mb-1">Sat 11/16</div>
-                        <div class="text-gray-600">🥙 Falafel Wraps</div>
-                    </div>
-                    <div class="text-xs text-center p-2 bg-gray-50 rounded">
-                        <div class="font-bold mb-1">Sun 11/17</div>
-                        <div class="text-gray-600">🍝 Lasagna</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Quick Actions -->
-        <div class="grid md:grid-cols-3 gap-6">
-            <a href="/calendar/shopping-list" class="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition text-center">
-                <div class="text-4xl mb-3">🛒</div>
-                <h3 class="font-bold text-lg mb-2">Shopping Lists</h3>
-                <p class="text-sm text-gray-600">View shopping lists for all 5 weeks</p>
-            </a>
-            <a href="/recipes" class="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition text-center">
-                <div class="text-4xl mb-3">📚</div>
-                <h3 class="font-bold text-lg mb-2">My Recipes</h3>
-                <p class="text-sm text-gray-600">Manage your 47 favorite recipes</p>
-            </a>
-            <button onclick="alert('Week regeneration coming soon!')" class="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition text-center">
-                <div class="text-4xl mb-3">🔄</div>
-                <h3 class="font-bold text-lg mb-2">Regenerate Week</h3>
-                <p class="text-sm text-gray-600">Regenerate individual weeks</p>
-            </button>
-        </div>
+        {% endif %}
     </div>
 {% endblock %}

@@ -13,7 +13,8 @@ fn create_table() -> TableCreateStatement {
                 .not_null()
                 .string_len(26),
         )
-        .col(ColumnDef::new(MealPlanWeek::Week).big_integer().not_null())
+        .col(ColumnDef::new(MealPlanWeek::Start).big_integer().not_null())
+        .col(ColumnDef::new(MealPlanWeek::End).big_integer().not_null())
         .col(
             ColumnDef::new(MealPlanWeek::Status)
                 .string()
@@ -24,7 +25,7 @@ fn create_table() -> TableCreateStatement {
         .primary_key(
             Index::create()
                 .col(MealPlanWeek::UserId)
-                .col(MealPlanWeek::Week),
+                .col(MealPlanWeek::Start),
         )
         .to_owned()
 }

@@ -1,138 +1,76 @@
-use imkitchen_db::table::MealPlanRecipe;
-use imkitchen_recipe::RecipeType;
-use rand::seq::SliceRandom;
-use sea_query::{
-    Expr, ExprTrait, Func, IntoColumnRef, Order, Query, SimpleExpr, SqliteQueryBuilder,
-};
-use sea_query_sqlx::SqlxBinder;
 use time::{Duration, OffsetDateTime, Weekday};
 
-pub async fn has(
-    pool: &sqlx::SqlitePool,
-    id: impl Into<String>,
-    recipe_type: RecipeType,
-) -> imkitchen_shared::Result<bool> {
-    let id = id.into();
-    let statement = Query::select()
-        .columns([MealPlanRecipe::Id, MealPlanRecipe::Name])
-        .from(MealPlanRecipe::Table)
-        .and_where(Expr::col(MealPlanRecipe::UserId).eq(id))
-        .and_where(Expr::col(MealPlanRecipe::RecipeType).eq(recipe_type.to_string()))
-        .and_where(Expr::col(MealPlanRecipe::Name).is_not(""))
-        .limit(1)
-        .to_owned();
-
-    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-
-    let recipe = sqlx::query_as_with::<_, (String,), _>(&sql, values)
-        .fetch_optional(pool)
-        .await?;
-
-    Ok(recipe.is_some())
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Week {
+    pub start: OffsetDateTime,
+    pub end: OffsetDateTime,
 }
 
-pub async fn random(
-    pool: &sqlx::SqlitePool,
-    id: impl Into<String>,
-    recipe_type: RecipeType,
-) -> imkitchen_shared::Result<Vec<String>> {
-    let id = id.into();
-    let statement = Query::select()
-        .columns([MealPlanRecipe::Id, MealPlanRecipe::Name])
-        .from(MealPlanRecipe::Table)
-        .and_where(
-            MealPlanRecipe::Id.into_column_ref().in_subquery(
-                Query::select()
-                    .columns([MealPlanRecipe::Id])
-                    .from(MealPlanRecipe::Table)
-                    .and_where(Expr::col(MealPlanRecipe::UserId).eq(id))
-                    .and_where(Expr::col(MealPlanRecipe::RecipeType).eq(recipe_type.to_string()))
-                    .and_where(Expr::col(MealPlanRecipe::Name).is_not(""))
-                    .order_by_expr(SimpleExpr::FunctionCall(Func::random()), Order::Asc)
-                    .limit(7 * 4)
-                    .take(),
-            ),
-        )
-        .to_owned();
+pub fn weekday_from_now() -> OffsetDateTime {
+    OffsetDateTime::now_utc().replace_time(time::Time::MIDNIGHT)
+}
 
-    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+/// Returns the weeks including current and next 4 weeks from now
+/// Each week contains start (Monday 00:00:00) and end (Sunday 23:59:59)
+pub fn current_and_next_four_weeks_from_now() -> [Week; 5] {
+    current_and_next_four_weeks(OffsetDateTime::now_utc())
+}
 
-    let mut recipes = sqlx::query_as_with::<_, (String,), _>(&sql, values)
-        .fetch_all(pool)
-        .await?
-        .iter()
-        .map(|(id,)| id.to_owned())
-        .collect::<Vec<_>>();
+/// Returns the weeks including current and next 4 weeks from the given date
+/// Each week contains start (Monday 00:00:00) and end (Sunday 23:59:59)
+pub fn current_and_next_four_weeks(from_date: OffsetDateTime) -> [Week; 5] {
+    let mut weeks = [Week {
+        start: OffsetDateTime::UNIX_EPOCH,
+        end: OffsetDateTime::UNIX_EPOCH,
+    }; 5];
 
-    let mut rng = rand::rng();
-    recipes.shuffle(&mut rng);
+    // Get the current weekday
+    let current_weekday = from_date.weekday();
 
-    Ok(recipes)
+    // Calculate days until current week's Monday
+    let days_since_monday = match current_weekday {
+        Weekday::Monday => 0,
+        Weekday::Tuesday => 1,
+        Weekday::Wednesday => 2,
+        Weekday::Thursday => 3,
+        Weekday::Friday => 4,
+        Weekday::Saturday => 5,
+        Weekday::Sunday => 6,
+    };
+
+    // Calculate the current week's Monday and reset time to 00:00:00
+    let current_monday = from_date - Duration::days(days_since_monday);
+    let current_monday = current_monday.replace_time(time::Time::MIDNIGHT);
+
+    // Calculate all 5 weeks
+    for i in 0..5 {
+        let monday = current_monday + Duration::weeks(i as i64);
+        let sunday = monday + Duration::days(6);
+        let sunday_end = sunday.replace_time(time::Time::from_hms(23, 59, 59).unwrap());
+
+        weeks[i as usize] = Week {
+            start: monday,
+            end: sunday_end,
+        };
+    }
+
+    weeks
 }
 
 /// Returns the timestamps of the next 4 Mondays from now
 /// All timestamps are set to 00:00:00 (midnight)
-pub fn next_four_mondays_from_now() -> anyhow::Result<[u64; 4]> {
-    next_four_mondays(OffsetDateTime::now_utc().unix_timestamp() as u64)
+pub fn next_four_mondays_from_now() -> [Week; 4] {
+    next_four_mondays(OffsetDateTime::now_utc())
 }
 
 /// Returns the timestamps of the next 4 Mondays from the given timestamp
 /// All timestamps are set to 00:00:00 (midnight)
-pub fn next_four_mondays(from_timestamp: u64) -> anyhow::Result<[u64; 4]> {
-    let from_date = OffsetDateTime::from_unix_timestamp(from_timestamp as i64)?;
-    let mut mondays = [0u64; 4];
+pub fn next_four_mondays(from_date: OffsetDateTime) -> [Week; 4] {
+    // Get all weeks (current + next 4)
+    let weeks = current_and_next_four_weeks(from_date);
 
-    // Get the current weekday
-    let current_weekday = from_date.weekday();
-
-    // Calculate days until next Monday
-    let days_until_monday = match current_weekday {
-        Weekday::Monday => 7, // If today is Monday, get next Monday
-        Weekday::Tuesday => 6,
-        Weekday::Wednesday => 5,
-        Weekday::Thursday => 4,
-        Weekday::Friday => 3,
-        Weekday::Saturday => 2,
-        Weekday::Sunday => 1,
-    };
-
-    // Calculate the first Monday and reset time to 00:00:00
-    let first_monday = from_date + Duration::days(days_until_monday);
-    let first_monday = first_monday.replace_time(time::Time::MIDNIGHT);
-
-    // Calculate all 4 Mondays
-    for i in 0..4 {
-        let monday = first_monday + Duration::weeks(i as i64);
-        mondays[i as usize] = monday.unix_timestamp() as u64;
-    }
-
-    Ok(mondays)
-}
-
-/// Returns the timestamps of the next 4 Mondays from the given timestamp
-/// All timestamps are set to 00:00:00 (midnight)
-pub fn week_monday_of(from_timestamp: u64) -> anyhow::Result<u64> {
-    let from_date = OffsetDateTime::from_unix_timestamp(from_timestamp as i64)?;
-
-    // Get the current weekday
-    let current_weekday = from_date.weekday();
-
-    // Calculate days until next Monday
-    let days_until_monday = match current_weekday {
-        Weekday::Monday => 7, // If today is Monday, get next Monday
-        Weekday::Tuesday => 6,
-        Weekday::Wednesday => 5,
-        Weekday::Thursday => 4,
-        Weekday::Friday => 3,
-        Weekday::Saturday => 2,
-        Weekday::Sunday => 1,
-    };
-
-    // Calculate the first Monday and reset time to 00:00:00
-    let first_monday = from_date + Duration::days(days_until_monday);
-    let first_monday = first_monday.replace_time(time::Time::MIDNIGHT);
-
-    Ok(first_monday.unix_timestamp() as u64)
+    // Extract the start timestamps (Mondays) from weeks 1-4 (skip week 0 which is current)
+    [weeks[1], weeks[2], weeks[3], weeks[4]]
 }
 
 #[cfg(test)]
@@ -141,57 +79,102 @@ mod tests {
     use time::macros::datetime;
 
     #[test]
-    fn test_next_four_mondays_from_monday() {
+    fn test_current_and_next_four_weeks_from_monday() {
         // Start from Monday, 2025-01-20
         let monday = datetime!(2025-01-20 12:00:00 UTC);
-        let timestamp = monday.unix_timestamp();
 
-        let result = next_four_mondays(timestamp as u64).unwrap();
+        let result = current_and_next_four_weeks(monday);
 
-        // Should get the next 4 Mondays at 00:00:00: Jan 27, Feb 3, Feb 10, Feb 17
+        // Should get current week (Jan 20-26) and next 4 weeks
         let expected = [
-            datetime!(2025-01-27 00:00:00 UTC).unix_timestamp() as u64,
-            datetime!(2025-02-03 00:00:00 UTC).unix_timestamp() as u64,
-            datetime!(2025-02-10 00:00:00 UTC).unix_timestamp() as u64,
-            datetime!(2025-02-17 00:00:00 UTC).unix_timestamp() as u64,
+            Week {
+                start: datetime!(2025-01-20 00:00:00 UTC),
+                end: datetime!(2025-01-26 23:59:59 UTC),
+            },
+            Week {
+                start: datetime!(2025-01-27 00:00:00 UTC),
+                end: datetime!(2025-02-02 23:59:59 UTC),
+            },
+            Week {
+                start: datetime!(2025-02-03 00:00:00 UTC),
+                end: datetime!(2025-02-09 23:59:59 UTC),
+            },
+            Week {
+                start: datetime!(2025-02-10 00:00:00 UTC),
+                end: datetime!(2025-02-16 23:59:59 UTC),
+            },
+            Week {
+                start: datetime!(2025-02-17 00:00:00 UTC),
+                end: datetime!(2025-02-23 23:59:59 UTC),
+            },
         ];
 
         assert_eq!(result, expected);
     }
 
     #[test]
-    fn test_next_four_mondays_from_wednesday() {
+    fn test_current_and_next_four_weeks_from_wednesday() {
         // Start from Wednesday, 2025-01-22
         let wednesday = datetime!(2025-01-22 12:00:00 UTC);
-        let timestamp = wednesday.unix_timestamp();
 
-        let result = next_four_mondays(timestamp as u64).unwrap();
+        let result = current_and_next_four_weeks(wednesday);
 
-        // Should get the next 4 Mondays at 00:00:00: Jan 27, Feb 3, Feb 10, Feb 17
+        // Should get current week (Jan 20-26) and next 4 weeks
         let expected = [
-            datetime!(2025-01-27 00:00:00 UTC).unix_timestamp() as u64,
-            datetime!(2025-02-03 00:00:00 UTC).unix_timestamp() as u64,
-            datetime!(2025-02-10 00:00:00 UTC).unix_timestamp() as u64,
-            datetime!(2025-02-17 00:00:00 UTC).unix_timestamp() as u64,
+            Week {
+                start: datetime!(2025-01-20 00:00:00 UTC),
+                end: datetime!(2025-01-26 23:59:59 UTC),
+            },
+            Week {
+                start: datetime!(2025-01-27 00:00:00 UTC),
+                end: datetime!(2025-02-02 23:59:59 UTC),
+            },
+            Week {
+                start: datetime!(2025-02-03 00:00:00 UTC),
+                end: datetime!(2025-02-09 23:59:59 UTC),
+            },
+            Week {
+                start: datetime!(2025-02-10 00:00:00 UTC),
+                end: datetime!(2025-02-16 23:59:59 UTC),
+            },
+            Week {
+                start: datetime!(2025-02-17 00:00:00 UTC),
+                end: datetime!(2025-02-23 23:59:59 UTC),
+            },
         ];
 
         assert_eq!(result, expected);
     }
 
     #[test]
-    fn test_next_four_mondays_from_sunday() {
+    fn test_current_and_next_four_weeks_from_sunday() {
         // Start from Sunday, 2025-01-26
         let sunday = datetime!(2025-01-26 12:00:00 UTC);
-        let timestamp = sunday.unix_timestamp();
 
-        let result = next_four_mondays(timestamp as u64).unwrap();
+        let result = current_and_next_four_weeks(sunday);
 
-        // Should get the next 4 Mondays at 00:00:00: Jan 27, Feb 3, Feb 10, Feb 17
+        // Should get current week (Jan 20-26) and next 4 weeks
         let expected = [
-            datetime!(2025-01-27 00:00:00 UTC).unix_timestamp() as u64,
-            datetime!(2025-02-03 00:00:00 UTC).unix_timestamp() as u64,
-            datetime!(2025-02-10 00:00:00 UTC).unix_timestamp() as u64,
-            datetime!(2025-02-17 00:00:00 UTC).unix_timestamp() as u64,
+            Week {
+                start: datetime!(2025-01-20 00:00:00 UTC),
+                end: datetime!(2025-01-26 23:59:59 UTC),
+            },
+            Week {
+                start: datetime!(2025-01-27 00:00:00 UTC),
+                end: datetime!(2025-02-02 23:59:59 UTC),
+            },
+            Week {
+                start: datetime!(2025-02-03 00:00:00 UTC),
+                end: datetime!(2025-02-09 23:59:59 UTC),
+            },
+            Week {
+                start: datetime!(2025-02-10 00:00:00 UTC),
+                end: datetime!(2025-02-16 23:59:59 UTC),
+            },
+            Week {
+                start: datetime!(2025-02-17 00:00:00 UTC),
+                end: datetime!(2025-02-23 23:59:59 UTC),
+            },
         ];
 
         assert_eq!(result, expected);
