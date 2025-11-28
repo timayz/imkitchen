@@ -1,7 +1,7 @@
 {
   "name": "Jerk Chicken",
   "description": "Spicy Caribbean grilled chicken with traditional jerk seasoning",
-  "recipe_type": "Main Course",
+  "recipe_type": "MainCourse",
   "cuisine_type": "Caribbean",
   "prep_time": 20,
   "cook_time": 40,

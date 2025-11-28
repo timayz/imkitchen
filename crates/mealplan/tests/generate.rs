@@ -57,14 +57,20 @@ async fn test_random() -> anyhow::Result<()> {
         "john",
         imkitchen_recipe::RecipeType::MainCourse,
     )
-    .await?;
+    .await?
+    .iter()
+    .map(|r| r.id.to_owned())
+    .collect::<Vec<_>>();
 
     let ids2 = imkitchen_mealplan::random(
         &state.pool,
         "john",
         imkitchen_recipe::RecipeType::MainCourse,
     )
-    .await?;
+    .await?
+    .iter()
+    .map(|r| r.id.to_owned())
+    .collect::<Vec<_>>();
 
     assert_ne!(ids1, ids2);
     assert_eq!(ids1.len(), 28);

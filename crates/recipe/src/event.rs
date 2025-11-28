@@ -1,9 +1,7 @@
 use bincode::{Decode, Encode};
 use evento::AggregatorName;
 
-use crate::{
-    AccompanimentType, CuisineType, DietaryRestriction, Ingredient, Instruction, RecipeType,
-};
+use crate::{CuisineType, DietaryRestriction, Ingredient, Instruction, RecipeType};
 
 #[derive(AggregatorName, Encode, Decode)]
 pub struct Created {
@@ -59,7 +57,6 @@ pub struct CuisineTypeChanged {
 #[derive(AggregatorName, Encode, Decode)]
 pub struct MainCourseOptionsChanged {
     pub accepts_accompaniment: bool,
-    pub preferred_accompaniment_types: Vec<AccompanimentType>,
 }
 
 #[derive(AggregatorName, Encode, Decode)]

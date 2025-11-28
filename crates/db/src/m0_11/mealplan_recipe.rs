@@ -57,6 +57,17 @@ fn create_table() -> TableCreateStatement {
                 .not_null(),
         )
         .col(
+            ColumnDef::new(MealPlanRecipe::DietaryRestrictions)
+                .json_binary()
+                .not_null(),
+        )
+        .col(
+            ColumnDef::new(MealPlanRecipe::AcceptsAccompaniment)
+                .boolean()
+                .not_null()
+                .default(false),
+        )
+        .col(
             ColumnDef::new(MealPlanRecipe::AdvancePrep)
                 .string()
                 .not_null()

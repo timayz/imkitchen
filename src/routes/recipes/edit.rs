@@ -4,8 +4,7 @@ use axum::{
 };
 use axum_extra::extract::Form;
 use imkitchen_recipe::{
-    AccompanimentType, CuisineType, DietaryRestriction, Ingredient, Instruction, RecipeType,
-    UpdateInput,
+    CuisineType, DietaryRestriction, Ingredient, Instruction, RecipeType, UpdateInput,
 };
 use imkitchen_shared::Metadata;
 use serde::Deserialize;
@@ -46,8 +45,6 @@ pub struct EditForm {
     pub cuisine_type: CuisineType,
     #[serde(default)]
     pub accepts_accompaniment: String,
-    #[serde(default)]
-    pub preferred_accompaniment_types: Vec<AccompanimentType>,
     pub advance_prep: String,
 }
 
@@ -126,7 +123,6 @@ pub async fn page(
                 dietary_restrictions: recipe.dietary_restrictions.0,
                 cuisine_type: recipe.cuisine_type.0,
                 accepts_accompaniment: accepts_accompaniment.to_owned(),
-                preferred_accompaniment_types: recipe.preferred_accompaniment_types.0,
                 advance_prep: recipe.advance_prep,
                 ingredients_unit: vec![],
                 ingredients_name: vec![],
@@ -250,7 +246,6 @@ pub async fn action(
                 dietary_restrictions: input.dietary_restrictions,
                 cuisine_type: input.cuisine_type,
                 accepts_accompaniment: input.accepts_accompaniment == "on",
-                preferred_accompaniment_types: input.preferred_accompaniment_types,
                 advance_prep: input.advance_prep,
             },
             &Metadata::by(user.id.to_owned()),

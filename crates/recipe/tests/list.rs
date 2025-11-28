@@ -1,7 +1,7 @@
 use evento::cursor::Args;
 use imkitchen_recipe::{
-    AccompanimentType, Command, CuisineType, DietaryRestriction, Ingredient, Instruction,
-    RecipeType, RecipesQuery, SortBy, UpdateInput, subscribe_list, subscribe_user_stat,
+    Command, CuisineType, DietaryRestriction, Ingredient, Instruction, RecipeType, RecipesQuery,
+    SortBy, UpdateInput, subscribe_list, subscribe_user_stat,
 };
 use imkitchen_shared::Metadata;
 use temp_dir::TempDir;
@@ -95,7 +95,6 @@ pub async fn create_recipes(
                 DietaryRestriction::DairyFree,
                 DietaryRestriction::GlutenFree,
             ],
-            preferred_accompaniment_types: vec![AccompanimentType::Fries],
             accepts_accompaniment: false,
             ingredients: vec![Ingredient {
                 name: "ingredient 1".to_owned(),

@@ -1,7 +1,7 @@
 {
   "name": "Thai Red Curry",
   "description": "Spicy coconut curry with chicken and vegetables",
-  "recipe_type": "Main Course",
+  "recipe_type": "MainCourse",
   "cuisine_type": "Thai",
   "prep_time": 15,
   "cook_time": 30,

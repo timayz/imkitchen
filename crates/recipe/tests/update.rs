@@ -1,8 +1,7 @@
 use imkitchen_recipe::{
-    AccompanimentType, AdvancePrepChanged, BasicInformationChanged, CuisineType,
-    CuisineTypeChanged, DietaryRestriction, DietaryRestrictionsChanged, Ingredient,
-    IngredientsChanged, Instruction, InstructionsChanged, MainCourseOptionsChanged, RecipeType,
-    RecipeTypeChanged, UpdateInput,
+    AdvancePrepChanged, BasicInformationChanged, CuisineType, CuisineTypeChanged,
+    DietaryRestriction, DietaryRestrictionsChanged, Ingredient, IngredientsChanged, Instruction,
+    InstructionsChanged, MainCourseOptionsChanged, RecipeType, RecipeTypeChanged, UpdateInput,
 };
 use imkitchen_shared::Metadata;
 use temp_dir::TempDir;
@@ -27,7 +26,6 @@ async fn test_update_no_fields() -> anyhow::Result<()> {
             DietaryRestriction::DairyFree,
             DietaryRestriction::GlutenFree,
         ],
-        preferred_accompaniment_types: vec![AccompanimentType::Fries],
         accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
@@ -79,7 +77,6 @@ async fn test_update_only_recipe_type() -> anyhow::Result<()> {
             DietaryRestriction::DairyFree,
             DietaryRestriction::GlutenFree,
         ],
-        preferred_accompaniment_types: vec![AccompanimentType::Fries],
         accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
@@ -130,7 +127,6 @@ async fn test_update_only_cuisine_type() -> anyhow::Result<()> {
             DietaryRestriction::DairyFree,
             DietaryRestriction::GlutenFree,
         ],
-        preferred_accompaniment_types: vec![AccompanimentType::Fries],
         accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
@@ -181,7 +177,6 @@ async fn test_update_only_name() -> anyhow::Result<()> {
             DietaryRestriction::DairyFree,
             DietaryRestriction::GlutenFree,
         ],
-        preferred_accompaniment_types: vec![AccompanimentType::Fries],
         accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
@@ -238,7 +233,6 @@ async fn test_update_only_description() -> anyhow::Result<()> {
             DietaryRestriction::DairyFree,
             DietaryRestriction::GlutenFree,
         ],
-        preferred_accompaniment_types: vec![AccompanimentType::Fries],
         accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
@@ -295,7 +289,6 @@ async fn test_update_only_prep_time() -> anyhow::Result<()> {
             DietaryRestriction::DairyFree,
             DietaryRestriction::GlutenFree,
         ],
-        preferred_accompaniment_types: vec![AccompanimentType::Fries],
         accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
@@ -352,7 +345,6 @@ async fn test_update_only_cook_time() -> anyhow::Result<()> {
             DietaryRestriction::DairyFree,
             DietaryRestriction::GlutenFree,
         ],
-        preferred_accompaniment_types: vec![AccompanimentType::Fries],
         accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
@@ -409,7 +401,6 @@ async fn test_update_only_ingredients() -> anyhow::Result<()> {
             DietaryRestriction::DairyFree,
             DietaryRestriction::GlutenFree,
         ],
-        preferred_accompaniment_types: vec![AccompanimentType::Fries],
         accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
@@ -476,7 +467,6 @@ async fn test_update_only_ingredients_empty() -> anyhow::Result<()> {
             DietaryRestriction::DairyFree,
             DietaryRestriction::GlutenFree,
         ],
-        preferred_accompaniment_types: vec![AccompanimentType::Fries],
         accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
@@ -528,7 +518,6 @@ async fn test_update_only_instructions() -> anyhow::Result<()> {
             DietaryRestriction::DairyFree,
             DietaryRestriction::GlutenFree,
         ],
-        preferred_accompaniment_types: vec![AccompanimentType::Fries],
         accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
@@ -598,7 +587,6 @@ async fn test_update_only_dietary_restrictions() -> anyhow::Result<()> {
             DietaryRestriction::DairyFree,
             DietaryRestriction::GlutenFree,
         ],
-        preferred_accompaniment_types: vec![AccompanimentType::Fries],
         accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
@@ -668,7 +656,6 @@ async fn test_update_only_accepts_accompaniment() -> anyhow::Result<()> {
             DietaryRestriction::DairyFree,
             DietaryRestriction::GlutenFree,
         ],
-        preferred_accompaniment_types: vec![AccompanimentType::Fries],
         accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
@@ -700,74 +687,6 @@ async fn test_update_only_accepts_accompaniment() -> anyhow::Result<()> {
     assert_eq!(loaded.event.version, 8);
     let event_data = event.unwrap();
     assert!(event_data.data.accepts_accompaniment);
-    assert_eq!(event_data.data.preferred_accompaniment_types.len(), 1);
-    assert_eq!(
-        event_data.data.preferred_accompaniment_types[0],
-        AccompanimentType::Fries
-    );
-
-    Ok(())
-}
-
-#[tokio::test]
-async fn test_update_only_preferred_accompaniment_types() -> anyhow::Result<()> {
-    let dir = TempDir::new()?;
-    let path = dir.child("db.sqlite3");
-    let state = helpers::setup_test_state(path).await?;
-    let command = imkitchen_recipe::Command(state.evento.clone(), state.pool.clone());
-    let john = Metadata::by("john".to_owned());
-
-    let recipe = command.create(&john).await?;
-
-    let mut input = UpdateInput {
-        name: "My first Recipe".to_owned(),
-        description: "My first description".to_owned(),
-        advance_prep: "My first advance prep".to_owned(),
-        dietary_restrictions: vec![
-            DietaryRestriction::DairyFree,
-            DietaryRestriction::GlutenFree,
-        ],
-        preferred_accompaniment_types: vec![AccompanimentType::Fries],
-        accepts_accompaniment: false,
-        ingredients: vec![Ingredient {
-            name: "ingredient 1".to_owned(),
-            quantity: 1,
-            unit: "g".to_owned(),
-        }],
-        instructions: vec![Instruction {
-            time_next: 15,
-            description: "My first instruction".to_owned(),
-        }],
-        cook_time: 25,
-        prep_time: 10,
-        cuisine_type: CuisineType::Caribbean,
-        recipe_type: RecipeType::MainCourse,
-        id: recipe.to_owned(),
-    };
-
-    command.update(input.clone(), &john).await?;
-
-    input.preferred_accompaniment_types = vec![AccompanimentType::Rice, AccompanimentType::Salad];
-
-    command.update(input.clone(), &john).await?;
-
-    let loaded = command.load(&recipe).await?;
-    let event = loaded
-        .event
-        .to_details::<MainCourseOptionsChanged, Metadata>()?;
-
-    assert_eq!(loaded.event.version, 8);
-    let event_data = event.unwrap();
-    assert!(!event_data.data.accepts_accompaniment);
-    assert_eq!(event_data.data.preferred_accompaniment_types.len(), 2);
-    assert_eq!(
-        event_data.data.preferred_accompaniment_types[0],
-        AccompanimentType::Rice
-    );
-    assert_eq!(
-        event_data.data.preferred_accompaniment_types[1],
-        AccompanimentType::Salad
-    );
 
     Ok(())
 }
@@ -790,7 +709,6 @@ async fn test_update_only_advance_prep() -> anyhow::Result<()> {
             DietaryRestriction::DairyFree,
             DietaryRestriction::GlutenFree,
         ],
-        preferred_accompaniment_types: vec![AccompanimentType::Fries],
         accepts_accompaniment: false,
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),

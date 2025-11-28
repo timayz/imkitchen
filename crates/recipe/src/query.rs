@@ -8,9 +8,7 @@ use sea_query::{Expr, ExprTrait, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::prelude::FromRow;
 
-use crate::{
-    AccompanimentType, CuisineType, DietaryRestriction, Ingredient, Instruction, RecipeType, SortBy,
-};
+use crate::{CuisineType, DietaryRestriction, Ingredient, Instruction, RecipeType, SortBy};
 
 #[derive(Debug, Encode, Decode)]
 pub struct RecipeQueryCursor {
@@ -32,7 +30,6 @@ pub struct RecipeRow {
     pub instructions: imkitchen_db::types::Bincode<Vec<Instruction>>,
     pub dietary_restrictions: sqlx::types::Json<Vec<DietaryRestriction>>,
     pub accepts_accompaniment: bool,
-    pub preferred_accompaniment_types: sqlx::types::Json<Vec<AccompanimentType>>,
     pub advance_prep: String,
     // pub is_shared: bool,
 }
@@ -154,7 +151,6 @@ impl Query {
                 RecipeList::Instructions,
                 RecipeList::DietaryRestrictions,
                 RecipeList::AcceptsAccompaniment,
-                RecipeList::PreferredAccompanimentTypes,
                 RecipeList::AdvancePrep,
                 RecipeList::IsShared,
                 RecipeList::CreatedAt,

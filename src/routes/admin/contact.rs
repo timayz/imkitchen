@@ -13,7 +13,7 @@ use strum::VariantArray;
 use crate::{
     auth::AuthAdmin,
     routes::AppState,
-    template::{NotFoundTemplate, ServerErrorTemplate, Template},
+    template::{NotFoundTemplate, ServerErrorTemplate, Template, filters},
 };
 
 #[derive(askama::Template)]

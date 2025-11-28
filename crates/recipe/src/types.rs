@@ -18,8 +18,6 @@ use strum::{AsRefStr, Display, EnumString, VariantArray};
 pub enum RecipeType {
     Appetizer,
     #[default]
-    #[serde(rename = "Main Course")]
-    #[strum(serialize = "Main Course")]
     MainCourse,
     Dessert,
     Accompaniment,
@@ -80,17 +78,9 @@ pub enum CuisineType {
 pub enum DietaryRestriction {
     Vegetarian,
     Vegan,
-    #[serde(rename = "Gluten Free")]
-    #[strum(serialize = "Gluten Free")]
     GlutenFree,
-    #[serde(rename = "Dairy Free")]
-    #[strum(serialize = "Dairy Free")]
     DairyFree,
-    #[serde(rename = "Nut Free")]
-    #[strum(serialize = "Nut Free")]
     NutFree,
-    #[serde(rename = "Low Carb")]
-    #[strum(serialize = "Low Carb")]
     LowCarb,
 }
 
@@ -103,37 +93,8 @@ impl DietaryRestriction {
     }
 }
 
-#[derive(
-    Encode,
-    Decode,
-    EnumString,
-    Display,
-    VariantArray,
-    PartialEq,
-    Clone,
-    Debug,
-    Deserialize,
-    AsRefStr,
-)]
-pub enum AccompanimentType {
-    Rice,
-    Pasta,
-    Bread,
-    Fries,
-    Salad,
-    Vegetables,
-}
-
-impl AccompanimentType {
-    pub fn exists_in<'a>(&self, iterator: impl IntoIterator<Item = &'a AccompanimentType>) -> bool {
-        iterator.into_iter().any(|d| d == self)
-    }
-}
-
 #[derive(Default, Debug, Deserialize, EnumString, Display, Clone)]
 pub enum SortBy {
     #[default]
-    #[serde(rename = "Recently Added")]
-    #[strum(serialize = "Recently Added")]
     RecentlyAdded,
 }

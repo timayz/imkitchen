@@ -73,7 +73,6 @@ pub enum RecipeList {
     Instructions,
     DietaryRestrictions,
     AcceptsAccompaniment,
-    PreferredAccompanimentTypes,
     AdvancePrep,
     IsShared,
     CreatedAt,
@@ -102,6 +101,8 @@ pub enum MealPlanRecipe {
     CookTime,
     Ingredients,
     Instructions,
+    DietaryRestrictions,
+    AcceptsAccompaniment,
     AdvancePrep,
 }
 

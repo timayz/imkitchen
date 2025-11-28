@@ -8,15 +8,6 @@ pub struct SlotRecipe {
     pub name: String,
 }
 
-impl From<&(String, String)> for SlotRecipe {
-    fn from(value: &(String, String)) -> Self {
-        SlotRecipe {
-            id: value.0.to_owned(),
-            name: value.1.to_owned(),
-        }
-    }
-}
-
 #[derive(Encode, Decode)]
 pub struct Slot {
     pub day: u64,
