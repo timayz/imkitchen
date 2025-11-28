@@ -177,18 +177,13 @@ async fn handle_generation_requested<E: Executor>(
     }
 
     let main_course_recipes = random(&pool, &user_id, RecipeType::MainCourse).await?;
-    let mut main_course_recipes = main_course_recipes.iter();
-
+    let mut main_course_recipes = main_course_recipes.iter().cycle().take(7 * 4);
     let mut builder = evento::save::<MealPlan>(&user_id).metadata(&event.metadata)?;
 
     for (start, end) in event.data.weeks {
         let mut slots = vec![];
 
         while let Some(recipe) = main_course_recipes.by_ref().next() {
-            if slots.len() == 7 {
-                break;
-            }
-
             let day = OffsetDateTime::from_unix_timestamp(start as i64)?
                 + Duration::days((slots.len()) as i64);
 
@@ -203,6 +198,10 @@ async fn handle_generation_requested<E: Executor>(
                 dessert: dessert_recipes.next().map(|r| r.into()),
                 accompaniment: None,
             });
+
+            if slots.len() == 7 {
+                break;
+            }
         }
 
         if slots.is_empty() {
