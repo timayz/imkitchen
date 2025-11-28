@@ -1743,6 +1743,7 @@ dependencies = [
  "imkitchen-db",
  "imkitchen-recipe",
  "imkitchen-shared",
+ "imkitchen-user",
  "rand 0.9.2",
  "sea-query",
  "sea-query-sqlx",

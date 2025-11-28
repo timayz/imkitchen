@@ -29,9 +29,9 @@ impl Default for MealPreferencesTemplate {
             error_message: None,
             current_path: "profile".to_owned(),
             profile_path: "meal-preferences".to_owned(),
-            household_size: 2,
+            household_size: 4,
             dietary_restrictions: Vec::default(),
-            cuisine_variety_weight: 0.7,
+            cuisine_variety_weight: 1.0,
             user: imkitchen_user::AuthUser::default(),
         }
     }

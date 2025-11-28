@@ -21,6 +21,7 @@ sea-query-sqlx.workspace = true
 imkitchen-shared = { path = "../shared", version = "0.11.0" }
 imkitchen-db = { path = "../db", version = "0.11.0", optional = true }
 imkitchen-recipe = { path = "../recipe", version = "0.11.0", default-features = false, optional = true }
+imkitchen-user = { path = "../user", version = "0.11.0", default-features = false, optional = true }
 
 [dev-dependencies]
 tokio.workspace = true
@@ -30,5 +31,5 @@ time = { workspace = true, features = ["formatting", "macros"] }
 imkitchen-recipe = { path = "../recipe", version = "0.11.0", features = ["default"] }
 
 [features]
-default = ["full", "imkitchen-recipe"]
+default = ["full", "imkitchen-recipe", "imkitchen-user"]
 full = ["sqlx", "serde_json", "imkitchen-db", "time", "rand"]

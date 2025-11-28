@@ -7,6 +7,7 @@ use imkitchen_recipe::{
     RecipeTypeChanged, SharedToCommunity,
 };
 use imkitchen_shared::{Event, Metadata};
+use imkitchen_user::meal_preferences::UserMealPreferences;
 use rand::seq::SliceRandom;
 use sea_query::{
     Expr, ExprTrait, Func, IntoColumnRef, OnConflict, Order, Query, SimpleExpr, SqliteQueryBuilder,
@@ -118,11 +119,36 @@ impl From<&RandomRecipe> for SlotRecipe {
     }
 }
 
+pub struct RandomOpts {
+    pub recipe_type: RecipeType,
+    pub weight: f32,
+}
+
 pub async fn random(
     pool: &sqlx::SqlitePool,
     id: impl Into<String>,
     recipe_type: RecipeType,
 ) -> imkitchen_shared::Result<Vec<RandomRecipe>> {
+    random_with(
+        pool,
+        id,
+        RandomOpts {
+            recipe_type,
+            weight: 1.0,
+        },
+    )
+    .await
+}
+
+pub async fn random_with(
+    pool: &sqlx::SqlitePool,
+    id: impl Into<String>,
+    opts: RandomOpts,
+) -> imkitchen_shared::Result<Vec<RandomRecipe>> {
+    if opts.weight < 0.1 {
+        imkitchen_shared::bail!("weight must be greater than or equal to 0.1");
+    }
+
     let id = id.into();
     let statement = Query::select()
         .columns([
@@ -138,7 +164,9 @@ pub async fn random(
                     .columns([MealPlanRecipe::Id])
                     .from(MealPlanRecipe::Table)
                     .and_where(Expr::col(MealPlanRecipe::UserId).eq(id))
-                    .and_where(Expr::col(MealPlanRecipe::RecipeType).eq(recipe_type.to_string()))
+                    .and_where(
+                        Expr::col(MealPlanRecipe::RecipeType).eq(opts.recipe_type.to_string()),
+                    )
                     .and_where(Expr::col(MealPlanRecipe::Name).is_not(""))
                     .order_by_expr(SimpleExpr::FunctionCall(Func::random()), Order::Asc)
                     .limit(7 * 4)
@@ -155,6 +183,7 @@ pub async fn random(
 
     let mut rng = rand::rng();
     recipes.shuffle(&mut rng);
+    recipes.truncate((recipes.len() as f32 * opts.weight).ceil() as usize);
 
     Ok(recipes)
 }
@@ -200,7 +229,19 @@ async fn handle_generation_requested<E: Executor>(
         return Ok(());
     }
 
-    let main_course_recipes = random(&pool, &user_id, RecipeType::MainCourse).await?;
+    let preferences = evento::load_optional::<UserMealPreferences, _>(context.executor, &user_id)
+        .await?
+        .unwrap_or_default();
+
+    let main_course_recipes = random_with(
+        &pool,
+        &user_id,
+        RandomOpts {
+            recipe_type: RecipeType::MainCourse,
+            weight: preferences.item.cuisine_variety_weight,
+        },
+    )
+    .await?;
     let mut main_course_recipes = main_course_recipes.iter().cycle().take(7 * 4);
     let mut builder = evento::save::<MealPlan>(&user_id).metadata(&event.metadata)?;
 

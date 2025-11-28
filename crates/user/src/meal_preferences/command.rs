@@ -11,7 +11,7 @@ pub struct UpdateInput {
     #[validate(range(min = 1))]
     pub household_size: u8,
     pub dietary_restrictions: Vec<DietaryRestriction>,
-    #[validate(range(min = 0.0, max = 1.0))]
+    #[validate(range(min = 0.1, max = 1.0))]
     pub cuisine_variety_weight: f32,
 }
 
