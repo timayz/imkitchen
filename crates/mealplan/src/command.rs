@@ -106,7 +106,6 @@ async fn has(
 pub struct RandomRecipe {
     pub id: String,
     pub name: String,
-    pub dietary_restrictions: sqlx::types::Json<Vec<DietaryRestriction>>,
     pub accepts_accompaniment: bool,
 }
 
@@ -122,6 +121,7 @@ impl From<&RandomRecipe> for SlotRecipe {
 pub struct RandomOpts {
     pub recipe_type: RecipeType,
     pub weight: f32,
+    pub dietary_restrictions: Vec<DietaryRestriction>,
 }
 
 pub async fn random(
@@ -135,6 +135,7 @@ pub async fn random(
         RandomOpts {
             recipe_type,
             weight: 1.0,
+            dietary_restrictions: vec![],
         },
     )
     .await
@@ -150,28 +151,52 @@ pub async fn random_with(
     }
 
     let id = id.into();
+    let mut sub_statement = Query::select()
+        .columns([MealPlanRecipe::Id])
+        .from(MealPlanRecipe::Table)
+        .and_where(Expr::col(MealPlanRecipe::UserId).eq(id))
+        .and_where(Expr::col(MealPlanRecipe::RecipeType).eq(opts.recipe_type.to_string()))
+        .and_where(Expr::col(MealPlanRecipe::Name).is_not(""))
+        .to_owned();
+
+    if !opts.dietary_restrictions.is_empty() {
+        let in_clause = opts
+            .dietary_restrictions
+            .iter()
+            .map(|_| "?")
+            .collect::<Vec<_>>()
+            .join(", ");
+
+        sub_statement.and_where(Expr::cust_with_values(
+            format!(
+                "(SELECT COUNT(*) FROM json_each(dietary_restrictions) WHERE value IN ({})) = ?",
+                in_clause
+            ),
+            opts.dietary_restrictions
+                .iter()
+                .map(|t| sea_query::Value::String(Some(*Box::new(t.to_string()))))
+                .chain(std::iter::once(sea_query::Value::Int(Some(
+                    opts.dietary_restrictions.len() as i32,
+                ))))
+                .collect::<Vec<_>>(),
+        ));
+    }
+
+    sub_statement
+        .order_by_expr(SimpleExpr::FunctionCall(Func::random()), Order::Asc)
+        .limit(7 * 4);
+
     let statement = Query::select()
         .columns([
             MealPlanRecipe::Id,
             MealPlanRecipe::Name,
             MealPlanRecipe::AcceptsAccompaniment,
-            MealPlanRecipe::DietaryRestrictions,
         ])
         .from(MealPlanRecipe::Table)
         .and_where(
-            MealPlanRecipe::Id.into_column_ref().in_subquery(
-                Query::select()
-                    .columns([MealPlanRecipe::Id])
-                    .from(MealPlanRecipe::Table)
-                    .and_where(Expr::col(MealPlanRecipe::UserId).eq(id))
-                    .and_where(
-                        Expr::col(MealPlanRecipe::RecipeType).eq(opts.recipe_type.to_string()),
-                    )
-                    .and_where(Expr::col(MealPlanRecipe::Name).is_not(""))
-                    .order_by_expr(SimpleExpr::FunctionCall(Func::random()), Order::Asc)
-                    .limit(7 * 4)
-                    .take(),
-            ),
+            MealPlanRecipe::Id
+                .into_column_ref()
+                .in_subquery(sub_statement),
         )
         .to_owned();
 
@@ -239,12 +264,14 @@ async fn handle_generation_requested<E: Executor>(
         RandomOpts {
             recipe_type: RecipeType::MainCourse,
             weight: preferences.item.cuisine_variety_weight,
+            dietary_restrictions: preferences.item.dietary_restrictions,
         },
     )
     .await?;
     let mut main_course_recipes = main_course_recipes.iter().cycle().take(7 * 4);
     let mut builder = evento::save::<MealPlan>(&user_id).metadata(&event.metadata)?;
 
+    let mut has_data = false;
     for (start, end) in event.data.weeks {
         let mut slots = vec![];
 
@@ -290,6 +317,21 @@ async fn handle_generation_requested<E: Executor>(
             end,
             status: Status::Idle,
         })?;
+
+        has_data = true;
+    }
+
+    if !has_data {
+        evento::save::<MealPlan>(&user_id)
+            .data(&GenerationFailed {
+                reason: "No main course found".to_owned(),
+                status: Status::Failed,
+            })?
+            .metadata(&event.metadata)?
+            .commit(context.executor)
+            .await?;
+
+        return Ok(());
     }
 
     builder.commit(context.executor).await?;
