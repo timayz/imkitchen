@@ -1,11 +1,11 @@
 {% extends "_user.html" %}
-{% block title %}Meal Calendar - imkitchen{% endblock %}
+{% block title %}{{ "Meal Calendar"|t }} - imkitchen{% endblock %}
 {% block content %}
     <!-- Main Content -->
     <div class="container mx-auto px-4 py-8">
         <!-- Header -->
         <div class="mb-8">
-          <h1 class="text-3xl font-bold mb-2">Meal Calendar</h1>
+          <h1 class="text-3xl font-bold mb-2">{{ "Meal Calendar"|t }}</h1>
           {% if let Some(current) = current %}
           <p class="text-gray-600">{{ current.start|month_year(current.end) }}</p>
           {% endif %}
@@ -18,14 +18,14 @@
                 <div class="flex items-center justify-between gap-2">
                     <a href="/calendar/week-{{ index }}/shopping-list"
                       class="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm">
-                        🛒 Shopping Lists
+                        🛒 {{ "Shopping Lists"|t }}
                     </a>
                     <a href="/calendar/week-{{ index }}" class="px-3 py-2 bg-green-600 text-white rounded-lg font-semibold text-sm flex-1">
-                      Week {{ index }}
+                      {{ "Week"|t }} {{ index }}
                     </a>
                     <button id="regenerate-btn-sm" ts-trigger="click" ts-req="/calendar/regenerate" ts-target="body" ts-swap="append"
                       class="px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm">
-                        🔄 Regenerate
+                        🔄 {{ "Regenerate"|t }}
                     </button>
                 </div>
                 <div class="overflow-x-auto">
@@ -33,7 +33,7 @@
                       {% for week in weeks %}
                         {% if loop.index != index as usize %}
                           <a href="/calendar/week-{{ loop.index }}" class="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm whitespace-nowrap">
-                            Week {{ loop.index }}
+                            {{ "Week"|t }} {{ loop.index }}
                           </a>
                         {% endif %}
                       {% endfor %}
@@ -43,22 +43,22 @@
 
             <!-- Desktop: Original layout -->
             <div class="hidden md:flex items-center justify-between">
-                <a href="/calendar/week-{{ index }}/shopping-list" 
+                <a href="/calendar/week-{{ index }}/shopping-list"
                   class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
-                    🛒 Shopping Lists
+                    🛒 {{ "Shopping Lists"|t }}
                 </a>
                 <div class="flex gap-2">
                     {% for week in weeks %}
                     <a href="/calendar/week-{{ loop.index }}"
                       class="px-4 py-2 rounded-lg {% if loop.index == index as usize %}text-white bg-green-600 font-semibold{% else %}bg-gray-200 text-gray-700 hover:bg-gray-300{% endif %}">
-                      Week {{ loop.index }}
+                      {{ "Week"|t }} {{ loop.index }}
                     </a>
                     {% endfor %}
                 </div>
 
                 <button id="regenerate-btn" ts-trigger="click" ts-req="/calendar/regenerate" ts-target="body" ts-swap="append"
                   class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
-                    🔄 Regenerate
+                    🔄 {{ "Regenerate"|t }}
                 </button>
             </div>
         </div>
@@ -74,20 +74,20 @@
                       <span class="font-bold text-lg lg:text-base">{{ slot.day|date }}</span>
                         <!-- <span class="font-bold text-lg lg:text-base">Monday, Nov 4</span> -->
                         {% if slot.day == weekday %}
-                        <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Today</span>
+                        <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">{{ "Today"|t }}</span>
                         {% endif %}
                     </div>
-                    <div class="text-xs text-gray-500 lg:hidden">Week {{ index }}</div>
+                    <div class="text-xs text-gray-500 lg:hidden">{{ "Week"|t }} {{ index }}</div>
                 </div>
                 <div class="space-y-3">
                     {% if let Some(appetizer) = slot.appetizer %}
                     <div class="p-2 bg-blue-50 rounded text-sm">
-                        <div class="text-xs text-blue-600 font-semibold">APPETIZER</div>
+                        <div class="text-xs text-blue-600 font-semibold">{{ "APPETIZER"|t }}</div>
                         <div class="font-semibold">🥗 {{ appetizer.name }}</div>
                     </div>
                     {% endif %}
                     <div class="p-2 bg-orange-50 rounded text-sm">
-                        <div class="text-xs text-orange-600 font-semibold">MAIN</div>
+                        <div class="text-xs text-orange-600 font-semibold">{{ "MAIN"|t }}</div>
                         <div class="font-semibold">🍛 {{ slot.main_course.name }}</div>
                         {% if let Some(accompaniment) = slot.accompaniment %}
                         <div class="text-xs text-gray-600">+ 🍚 {{ accompaniment.name }}</div>
@@ -95,7 +95,7 @@
                     </div>
                     {% if let Some(dessert) = slot.dessert %}
                     <div class="p-2 bg-pink-50 rounded text-sm">
-                        <div class="text-xs text-pink-600 font-semibold">DESSERT</div>
+                        <div class="text-xs text-pink-600 font-semibold">{{ "DESSERT"|t }}</div>
                         <div class="font-semibold">🍰 {{ dessert.name }}</div>
                     </div>
                     {% endif %}

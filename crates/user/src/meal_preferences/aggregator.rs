@@ -14,9 +14,9 @@ pub struct UserMealPreferences {
 impl Default for UserMealPreferences {
     fn default() -> Self {
         Self {
-            household_size: 2,
+            household_size: 4,
             dietary_restrictions: vec![],
-            cuisine_variety_weight: 0.2,
+            cuisine_variety_weight: 1.0,
         }
     }
 }
