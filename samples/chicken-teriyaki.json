@@ -1,7 +1,7 @@
 {
   "name": "Chicken Teriyaki",
   "description": "Sweet and savory glazed chicken with Japanese flavors",
-  "recipe_type": "Main Course",
+  "recipe_type": "MainCourse",
   "cuisine_type": "Japanese",
   "prep_time": 15,
   "cook_time": 25,

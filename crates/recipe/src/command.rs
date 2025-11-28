@@ -5,10 +5,10 @@ use sqlx::SqlitePool;
 use validator::Validate;
 
 use crate::{
-    AccompanimentType, AdvancePrepChanged, BasicInformationChanged, Created, CuisineType,
-    CuisineTypeChanged, Deleted, DietaryRestriction, DietaryRestrictionsChanged, Imported,
-    Ingredient, IngredientsChanged, Instruction, InstructionsChanged, MainCourseOptionsChanged,
-    Recipe, RecipeType, RecipeTypeChanged,
+    AdvancePrepChanged, BasicInformationChanged, Created, CuisineType, CuisineTypeChanged, Deleted,
+    DietaryRestriction, DietaryRestrictionsChanged, Imported, Ingredient, IngredientsChanged,
+    Instruction, InstructionsChanged, MainCourseOptionsChanged, Recipe, RecipeType,
+    RecipeTypeChanged,
 };
 
 #[derive(Clone)]
@@ -99,7 +99,6 @@ pub struct UpdateInput {
     pub dietary_restrictions: Vec<DietaryRestriction>,
     pub cuisine_type: CuisineType,
     pub accepts_accompaniment: bool,
-    pub preferred_accompaniment_types: Vec<AccompanimentType>,
     #[validate(length(max = 2000))]
     pub advance_prep: String,
 }
@@ -204,16 +203,11 @@ impl<E: Executor + Clone> Command<E> {
         let mut hasher = Sha3_224::default();
         hasher.update(input.accepts_accompaniment.to_string());
 
-        for preferred in input.preferred_accompaniment_types.iter() {
-            hasher.update(preferred.to_string());
-        }
-
         let main_option_hash = hasher.finalize()[..].to_vec();
         if recipe.item.main_option_hash != main_option_hash {
             has_data = true;
             builder = builder.data(&MainCourseOptionsChanged {
                 accepts_accompaniment: input.accepts_accompaniment,
-                preferred_accompaniment_types: input.preferred_accompaniment_types,
             })?;
         }
 

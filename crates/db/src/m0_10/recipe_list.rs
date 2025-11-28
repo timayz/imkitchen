@@ -74,11 +74,6 @@ fn create_table() -> TableCreateStatement {
                 .default(false),
         )
         .col(
-            ColumnDef::new(RecipeList::PreferredAccompanimentTypes)
-                .json_binary()
-                .not_null(),
-        )
-        .col(
             ColumnDef::new(RecipeList::AdvancePrep)
                 .string()
                 .not_null()

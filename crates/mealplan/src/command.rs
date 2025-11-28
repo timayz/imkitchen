@@ -2,8 +2,8 @@ use evento::{AggregatorName, Executor, LoadResult, SubscribeBuilder};
 use imkitchen_db::table::{MealPlanLastWeek, MealPlanRecipe};
 use imkitchen_recipe::{
     AdvancePrepChanged, BasicInformationChanged, Created, CuisineTypeChanged, Deleted,
-    DietaryRestrictionsChanged, Imported, Ingredient, IngredientsChanged, Instruction,
-    InstructionsChanged, MadePrivate, MainCourseOptionsChanged, Recipe, RecipeType,
+    DietaryRestriction, DietaryRestrictionsChanged, Imported, Ingredient, IngredientsChanged,
+    Instruction, InstructionsChanged, MadePrivate, MainCourseOptionsChanged, Recipe, RecipeType,
     RecipeTypeChanged, SharedToCommunity,
 };
 use imkitchen_shared::{Event, Metadata};
@@ -12,10 +12,12 @@ use sea_query::{
     Expr, ExprTrait, Func, IntoColumnRef, OnConflict, Order, Query, SimpleExpr, SqliteQueryBuilder,
 };
 use sea_query_sqlx::SqlxBinder;
-use sqlx::SqlitePool;
+use sqlx::{SqlitePool, prelude::FromRow};
 use time::{Duration, OffsetDateTime};
 
-use crate::{GenerateRequested, GenerationFailed, MealPlan, Slot, Status, WeekGenerated};
+use crate::{
+    GenerateRequested, GenerationFailed, MealPlan, Slot, SlotRecipe, Status, WeekGenerated,
+};
 
 #[derive(Clone)]
 pub struct Command<E: Executor + Clone>(pub E, pub SqlitePool);
@@ -99,14 +101,36 @@ async fn has(
     Ok(recipe.is_some())
 }
 
+#[derive(Default, FromRow)]
+pub struct RandomRecipe {
+    pub id: String,
+    pub name: String,
+    pub dietary_restrictions: sqlx::types::Json<Vec<DietaryRestriction>>,
+    pub accepts_accompaniment: bool,
+}
+
+impl From<&RandomRecipe> for SlotRecipe {
+    fn from(value: &RandomRecipe) -> Self {
+        SlotRecipe {
+            id: value.id.to_owned(),
+            name: value.name.to_owned(),
+        }
+    }
+}
+
 pub async fn random(
     pool: &sqlx::SqlitePool,
     id: impl Into<String>,
     recipe_type: RecipeType,
-) -> imkitchen_shared::Result<Vec<(String, String)>> {
+) -> imkitchen_shared::Result<Vec<RandomRecipe>> {
     let id = id.into();
     let statement = Query::select()
-        .columns([MealPlanRecipe::Id, MealPlanRecipe::Name])
+        .columns([
+            MealPlanRecipe::Id,
+            MealPlanRecipe::Name,
+            MealPlanRecipe::AcceptsAccompaniment,
+            MealPlanRecipe::DietaryRestrictions,
+        ])
         .from(MealPlanRecipe::Table)
         .and_where(
             MealPlanRecipe::Id.into_column_ref().in_subquery(
@@ -125,7 +149,7 @@ pub async fn random(
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-    let mut recipes = sqlx::query_as_with::<_, (String, String), _>(&sql, values)
+    let mut recipes = sqlx::query_as_with::<_, RandomRecipe, _>(&sql, values)
         .fetch_all(pool)
         .await?;
 
@@ -149,9 +173,9 @@ pub fn subscribe_command<E: Executor + Clone>() -> SubscribeBuilder<E> {
         .handler(handle_recipe_advance_prep_changed())
         .handler(handle_recipe_made_private())
         .handler(handle_recipe_deleted())
-        .skip::<Recipe, MainCourseOptionsChanged>()
+        .handler(handle_main_course_options_changed())
+        .handler(handle_dietary_restrictions_changed())
         .skip::<Recipe, SharedToCommunity>()
-        .skip::<Recipe, DietaryRestrictionsChanged>()
         .skip::<Recipe, CuisineTypeChanged>()
 }
 
@@ -189,14 +213,25 @@ async fn handle_generation_requested<E: Executor>(
 
             let appetizer_recipes = random(&pool, &user_id, RecipeType::Appetizer).await?;
             let mut appetizer_recipes = appetizer_recipes.iter();
+
+            let accompaniment_recipes = random(&pool, &user_id, RecipeType::Accompaniment).await?;
+            let mut accompaniment_recipes = accompaniment_recipes.iter();
+
             let dessert_recipes = random(&pool, &user_id, RecipeType::Dessert).await?;
             let mut dessert_recipes = dessert_recipes.iter();
+
+            let accompaniment = if recipe.accepts_accompaniment {
+                accompaniment_recipes.next().map(|r| r.into())
+            } else {
+                None
+            };
+
             slots.push(Slot {
                 day: day.unix_timestamp() as u64,
                 appetizer: appetizer_recipes.next().map(|r| r.into()),
                 main_course: recipe.into(),
                 dessert: dessert_recipes.next().map(|r| r.into()),
-                accompaniment: None,
+                accompaniment,
             });
 
             if slots.len() == 7 {
@@ -270,6 +305,7 @@ async fn handle_recipe_created<E: Executor>(
             MealPlanRecipe::Name,
             MealPlanRecipe::Ingredients,
             MealPlanRecipe::Instructions,
+            MealPlanRecipe::DietaryRestrictions,
         ])
         .values_panic([
             aggregator_id.into(),
@@ -278,6 +314,7 @@ async fn handle_recipe_created<E: Executor>(
             name.into(),
             ingredients.into(),
             instructions.into(),
+            serde_json::Value::Array(vec![]).into(),
         ])
         .to_owned();
     let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
@@ -310,6 +347,7 @@ async fn handle_recipe_imported<E: Executor>(
             MealPlanRecipe::CookTime,
             MealPlanRecipe::Ingredients,
             MealPlanRecipe::Instructions,
+            MealPlanRecipe::DietaryRestrictions,
             MealPlanRecipe::AdvancePrep,
         ])
         .values_panic([
@@ -321,6 +359,7 @@ async fn handle_recipe_imported<E: Executor>(
             event.data.cook_time.into(),
             ingredients.into(),
             instructions.into(),
+            serde_json::Value::Array(vec![]).into(),
             event.data.advance_prep.into(),
         ])
         .to_owned();
@@ -479,6 +518,58 @@ async fn handle_recipe_deleted<E: Executor>(
     let statment = Query::delete()
         .from_table(MealPlanRecipe::Table)
         .and_where(Expr::col(MealPlanRecipe::Id).eq(&event.aggregator_id))
+        .to_owned();
+
+    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
+}
+
+#[evento::handler(Recipe)]
+async fn handle_dietary_restrictions_changed<E: Executor>(
+    context: &evento::Context<'_, E>,
+    event: Event<DietaryRestrictionsChanged>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let dietary_restrictions = event
+        .data
+        .dietary_restrictions
+        .iter()
+        .map(|d| serde_json::Value::String(d.to_string()))
+        .collect::<Vec<_>>();
+    let user_id = event.metadata.trigger_by()?;
+    let statment = Query::update()
+        .table(MealPlanRecipe::Table)
+        .values([(
+            MealPlanRecipe::DietaryRestrictions,
+            serde_json::Value::Array(dietary_restrictions).into(),
+        )])
+        .and_where(Expr::col(MealPlanRecipe::Id).eq(&event.aggregator_id))
+        .and_where(Expr::col(MealPlanRecipe::UserId).eq(user_id))
+        .to_owned();
+
+    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
+}
+
+#[evento::handler(Recipe)]
+async fn handle_main_course_options_changed<E: Executor>(
+    context: &evento::Context<'_, E>,
+    event: Event<MainCourseOptionsChanged>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let user_id = event.metadata.trigger_by()?;
+    let statment = Query::update()
+        .table(MealPlanRecipe::Table)
+        .values([(
+            MealPlanRecipe::AcceptsAccompaniment,
+            event.data.accepts_accompaniment.into(),
+        )])
+        .and_where(Expr::col(MealPlanRecipe::Id).eq(&event.aggregator_id))
+        .and_where(Expr::col(MealPlanRecipe::UserId).eq(user_id))
         .to_owned();
 
     let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);

@@ -11,5 +11,19 @@
   "September_sm": "Sep",
   "October_sm": "Oct",
   "November_sm": "Nov",
-  "December_sm": "Dec"
+  "December_sm": "Dec",
+  "MainCourse": "Main Course",
+  "RecentlyAdded": "Recently Added",
+  "GlutenFree": "Gluten-Free",
+  "DairyFree": "Dairy-Free",
+  "NutFree": "Nut-Free",
+  "LowCarb": "Low-Carb",
+  "GeneralInquiry": "General Inquiry",
+  "BillingQuestion": "Billing Question",
+  "FeatureRequest": "Feature Request",
+  "BugReport": "Bug Report",
+  "PartnershipOpportunity": "Partnership Opportunity",
+  "TechnicalSupport": "Technical Support",
+  "MostRecent": "Most Recent",
+  "OldestFirst": "Oldest First"
 }

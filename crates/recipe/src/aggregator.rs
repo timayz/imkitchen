@@ -156,10 +156,6 @@ impl Recipe {
         let mut hasher = Sha3_224::default();
         hasher.update(event.data.accepts_accompaniment.to_string());
 
-        for preferred in event.data.preferred_accompaniment_types {
-            hasher.update(preferred.to_string());
-        }
-
         self.main_option_hash = hasher.finalize()[..].to_vec();
 
         Ok(())

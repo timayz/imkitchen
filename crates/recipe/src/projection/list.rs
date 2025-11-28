@@ -53,7 +53,6 @@ async fn handle_created<E: Executor>(
             RecipeList::Ingredients,
             RecipeList::Instructions,
             RecipeList::DietaryRestrictions,
-            RecipeList::PreferredAccompanimentTypes,
             RecipeList::CreatedAt,
         ])
         .values_panic([
@@ -64,7 +63,6 @@ async fn handle_created<E: Executor>(
             name.into(),
             ingredients.into(),
             instructions.into(),
-            serde_json::Value::Array(vec![]).into(),
             serde_json::Value::Array(vec![]).into(),
             timestamp.into(),
         ])
@@ -104,7 +102,6 @@ async fn handle_imported<E: Executor>(
             RecipeList::Instructions,
             RecipeList::AdvancePrep,
             RecipeList::DietaryRestrictions,
-            RecipeList::PreferredAccompanimentTypes,
             RecipeList::CreatedAt,
         ])
         .values_panic([
@@ -119,7 +116,6 @@ async fn handle_imported<E: Executor>(
             ingredients.into(),
             instructions.into(),
             event.data.advance_prep.into(),
-            serde_json::Value::Array(vec![]).into(),
             serde_json::Value::Array(vec![]).into(),
             timestamp.into(),
         ])
@@ -297,12 +293,6 @@ async fn handle_main_course_options_changed<E: Executor>(
     event: Event<MainCourseOptionsChanged>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    let preferred_accompaniment_types = event
-        .data
-        .preferred_accompaniment_types
-        .iter()
-        .map(|a| serde_json::Value::String(a.to_string()))
-        .collect::<Vec<_>>();
     let timestamp = event.timestamp;
     let aggregator_id = &event.aggregator_id;
     let statment = Query::update()
@@ -311,10 +301,6 @@ async fn handle_main_course_options_changed<E: Executor>(
             (
                 RecipeList::AcceptsAccompaniment,
                 event.data.accepts_accompaniment.into(),
-            ),
-            (
-                RecipeList::PreferredAccompanimentTypes,
-                serde_json::Value::Array(preferred_accompaniment_types).into(),
             ),
             (RecipeList::UpdatedAt, timestamp.into()),
         ])
