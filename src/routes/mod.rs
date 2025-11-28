@@ -60,7 +60,6 @@ pub fn router(app_state: AppState) -> Router {
             get(login::page).post(crate::routes::login::action),
         )
         .route("/reset-password", get(reset_password::page))
-        .route("/calendar", get(calendar::page))
         .route(
             "/calendar/regenerate",
             get(calendar::regenerate_modal).post(calendar::regenerate_action),
@@ -69,7 +68,11 @@ pub fn router(app_state: AppState) -> Router {
             "/calendar/regenerate/status",
             get(calendar::regenerate_status),
         )
-        .route("/calendar/shopping-list", get(shopping_list::page))
+        .route("/calendar/week-{index}", get(calendar::page))
+        .route(
+            "/calendar/week-{index}/shopping-list",
+            get(shopping_list::page),
+        )
         .route("/community", get(community::page))
         .route("/recipes", get(recipes::index::page))
         .route("/recipes/create", get(recipes::index::create))

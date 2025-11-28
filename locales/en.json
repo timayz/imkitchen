@@ -1,0 +1,15 @@
+{
+  "date_format": "%{weekday}, %{month} %{day}",
+  "January_sm": "Jan",
+  "February_sm": "Feb",
+  "March_sm": "Mar",
+  "April_sm": "Apr",
+  "May_sm": "May",
+  "June_sm": "Jun",
+  "July_sm": "Jul",
+  "August_sm": "Aug",
+  "September_sm": "Sep",
+  "October_sm": "Oct",
+  "November_sm": "Nov",
+  "December_sm": "Dec"
+}

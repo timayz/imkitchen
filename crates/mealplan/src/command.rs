@@ -7,10 +7,13 @@ use imkitchen_recipe::{
     RecipeTypeChanged, SharedToCommunity,
 };
 use imkitchen_shared::{Event, Metadata};
-use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
+use rand::seq::SliceRandom;
+use sea_query::{
+    Expr, ExprTrait, Func, IntoColumnRef, OnConflict, Order, Query, SimpleExpr, SqliteQueryBuilder,
+};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::SqlitePool;
-use time::OffsetDateTime;
+use time::{Duration, OffsetDateTime};
 
 use crate::{GenerateRequested, GenerationFailed, MealPlan, Slot, Status, WeekGenerated};
 
@@ -48,8 +51,16 @@ impl<E: Executor + Clone> Command<E> {
             .map(evento::save_with)
             .unwrap_or_else(|| evento::save(&user_id));
 
-        let now = OffsetDateTime::now_utc();
-        let weeks = super::service::next_four_mondays(now.unix_timestamp() as u64)?.to_vec();
+        let weeks = super::service::next_four_mondays_from_now()
+            .to_vec()
+            .iter()
+            .map(|week| {
+                (
+                    week.start.unix_timestamp() as u64,
+                    week.end.unix_timestamp() as u64,
+                )
+            })
+            .collect();
 
         builder
             .data(&GenerateRequested {
@@ -62,6 +73,66 @@ impl<E: Executor + Clone> Command<E> {
 
         Ok(())
     }
+}
+
+async fn has(
+    pool: &sqlx::SqlitePool,
+    id: impl Into<String>,
+    recipe_type: RecipeType,
+) -> imkitchen_shared::Result<bool> {
+    let id = id.into();
+    let statement = Query::select()
+        .columns([MealPlanRecipe::Id])
+        .from(MealPlanRecipe::Table)
+        .and_where(Expr::col(MealPlanRecipe::UserId).eq(id))
+        .and_where(Expr::col(MealPlanRecipe::RecipeType).eq(recipe_type.to_string()))
+        .and_where(Expr::col(MealPlanRecipe::Name).is_not(""))
+        .limit(1)
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+    let recipe = sqlx::query_as_with::<_, (String,), _>(&sql, values)
+        .fetch_optional(pool)
+        .await?;
+
+    Ok(recipe.is_some())
+}
+
+pub async fn random(
+    pool: &sqlx::SqlitePool,
+    id: impl Into<String>,
+    recipe_type: RecipeType,
+) -> imkitchen_shared::Result<Vec<(String, String)>> {
+    let id = id.into();
+    let statement = Query::select()
+        .columns([MealPlanRecipe::Id, MealPlanRecipe::Name])
+        .from(MealPlanRecipe::Table)
+        .and_where(
+            MealPlanRecipe::Id.into_column_ref().in_subquery(
+                Query::select()
+                    .columns([MealPlanRecipe::Id])
+                    .from(MealPlanRecipe::Table)
+                    .and_where(Expr::col(MealPlanRecipe::UserId).eq(id))
+                    .and_where(Expr::col(MealPlanRecipe::RecipeType).eq(recipe_type.to_string()))
+                    .and_where(Expr::col(MealPlanRecipe::Name).is_not(""))
+                    .order_by_expr(SimpleExpr::FunctionCall(Func::random()), Order::Asc)
+                    .limit(7 * 4)
+                    .take(),
+            ),
+        )
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+    let mut recipes = sqlx::query_as_with::<_, (String, String), _>(&sql, values)
+        .fetch_all(pool)
+        .await?;
+
+    let mut rng = rand::rng();
+    recipes.shuffle(&mut rng);
+
+    Ok(recipes)
 }
 
 pub fn subscribe_command<E: Executor + Clone>() -> SubscribeBuilder<E> {
@@ -92,7 +163,7 @@ async fn handle_generation_requested<E: Executor>(
     let pool = context.extract::<sqlx::SqlitePool>();
     let user_id = event.metadata.trigger_by().unwrap_or_default();
 
-    if !super::service::has(&pool, &user_id, RecipeType::MainCourse).await? {
+    if !has(&pool, &user_id, RecipeType::MainCourse).await? {
         evento::save::<MealPlan>(&user_id)
             .data(&GenerationFailed {
                 reason: "No main course found".to_owned(),
@@ -105,31 +176,32 @@ async fn handle_generation_requested<E: Executor>(
         return Ok(());
     }
 
-    let main_course_recipes =
-        super::service::random(&pool, &user_id, RecipeType::MainCourse).await?;
-    let mut main_course_recipes = main_course_recipes.iter();
-
+    let main_course_recipes = random(&pool, &user_id, RecipeType::MainCourse).await?;
+    let mut main_course_recipes = main_course_recipes.iter().cycle().take(7 * 4);
     let mut builder = evento::save::<MealPlan>(&user_id).metadata(&event.metadata)?;
 
-    for week in event.data.weeks {
+    for (start, end) in event.data.weeks {
         let mut slots = vec![];
 
-        while let Some(recipe_id) = main_course_recipes.by_ref().next() {
+        while let Some(recipe) = main_course_recipes.by_ref().next() {
+            let day = OffsetDateTime::from_unix_timestamp(start as i64)?
+                + Duration::days((slots.len()) as i64);
+
+            let appetizer_recipes = random(&pool, &user_id, RecipeType::Appetizer).await?;
+            let mut appetizer_recipes = appetizer_recipes.iter();
+            let dessert_recipes = random(&pool, &user_id, RecipeType::Dessert).await?;
+            let mut dessert_recipes = dessert_recipes.iter();
+            slots.push(Slot {
+                day: day.unix_timestamp() as u64,
+                appetizer: appetizer_recipes.next().map(|r| r.into()),
+                main_course: recipe.into(),
+                dessert: dessert_recipes.next().map(|r| r.into()),
+                accompaniment: None,
+            });
+
             if slots.len() == 7 {
                 break;
             }
-
-            let appetizer_recipes =
-                super::service::random(&pool, &user_id, RecipeType::Appetizer).await?;
-            let mut appetizer_recipes = appetizer_recipes.iter();
-            let dessert_recipes =
-                super::service::random(&pool, &user_id, RecipeType::Dessert).await?;
-            let mut dessert_recipes = dessert_recipes.iter();
-            slots.push(Slot {
-                appetizer_id: appetizer_recipes.next().cloned(),
-                main_course_id: recipe_id.to_owned(),
-                dessert_id: dessert_recipes.next().cloned(),
-            });
         }
 
         if slots.is_empty() {
@@ -138,7 +210,8 @@ async fn handle_generation_requested<E: Executor>(
 
         builder = builder.data(&WeekGenerated {
             slots,
-            week,
+            start,
+            end,
             status: Status::Idle,
         })?;
     }
@@ -157,14 +230,14 @@ async fn handle_week_generated<E: Executor>(
 
     let statement = Query::insert()
         .into_table(MealPlanLastWeek::Table)
-        .columns([MealPlanLastWeek::UserId, MealPlanLastWeek::Week])
+        .columns([MealPlanLastWeek::UserId, MealPlanLastWeek::Start])
         .values_panic([
             event.aggregator_id.to_owned().into(),
-            event.data.week.to_owned().into(),
+            event.data.start.to_owned().into(),
         ])
         .on_conflict(
             OnConflict::columns([MealPlanLastWeek::UserId])
-                .update_column(MealPlanLastWeek::Week)
+                .update_column(MealPlanLastWeek::Start)
                 .to_owned(),
         )
         .to_owned();

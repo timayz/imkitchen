@@ -25,23 +25,25 @@ async fn handle_generate_requested<E: Executor>(
         .into_table(MealPlanWeek::Table)
         .columns([
             MealPlanWeek::UserId,
-            MealPlanWeek::Week,
+            MealPlanWeek::Start,
+            MealPlanWeek::End,
             MealPlanWeek::Status,
             MealPlanWeek::Slots,
         ])
         .to_owned();
 
-    for week in &event.data.weeks {
+    for (start, end) in &event.data.weeks {
         statement.values_panic([
             event.aggregator_id.to_owned().into(),
-            week.to_owned().into(),
+            start.to_owned().into(),
+            end.to_owned().into(),
             event.data.status.to_string().into(),
             slots.clone().into(),
         ]);
     }
 
     statement.on_conflict(
-        OnConflict::columns([MealPlanWeek::UserId, MealPlanWeek::Week])
+        OnConflict::columns([MealPlanWeek::UserId, MealPlanWeek::Start])
             .update_columns([MealPlanWeek::Status, MealPlanWeek::Slots])
             .to_owned(),
     );
@@ -68,7 +70,7 @@ async fn handle_week_generated<E: Executor>(
             (MealPlanWeek::Slots, slots.into()),
         ])
         .and_where(Expr::col(MealPlanWeek::UserId).eq(&event.aggregator_id))
-        .and_where(Expr::col(MealPlanWeek::Week).eq(event.data.week))
+        .and_where(Expr::col(MealPlanWeek::Start).eq(event.data.start))
         .to_owned();
     let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;

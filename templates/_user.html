@@ -16,7 +16,7 @@
                 <!-- Desktop Navigation -->
                 <div class="hidden md:flex gap-6 items-center">
                     <a href="/" class="text-gray-600{% if current_path == "dashboard"%} font-semibold{% else %} hover:text-gray-900{% endif %}">{{ "Dashboard"|t }}</a>
-                    <a href="/calendar" class="text-gray-600{% if current_path == "calendar"%} font-semibold{% else %} hover:text-gray-900{% endif %}">{{ "Calendar"|t }}</a>
+                    <a href="/calendar/week-1" class="text-gray-600{% if current_path == "calendar"%} font-semibold{% else %} hover:text-gray-900{% endif %}">{{ "Calendar"|t }}</a>
                     <a href="/recipes" class="text-gray-600{% if current_path == "recipes"%} font-semibold{% else %} hover:text-gray-900{% endif %}">{{ "My Recipes"|t }}</a>
                     <a href="/community" class="text-gray-600{% if current_path == "community"%} font-semibold{% else %} hover:text-gray-900{% endif %}">{{ "Community"|t }}</a>
                 </div>
@@ -39,7 +39,7 @@
                 </svg>
                 <!-- <span class="text-xs mt-1">{{ "Dashboard"|t }}</span> -->
             </a>
-            <a href="/calendar" class="flex flex-col items-center py-2 px-3{% if current_path == "calendar"%} text-green-600{% else %} text-gray-600{% endif %}">
+            <a href="/calendar/week-1" class="flex flex-col items-center py-2 px-3{% if current_path == "calendar"%} text-green-600{% else %} text-gray-600{% endif %}">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                 </svg>

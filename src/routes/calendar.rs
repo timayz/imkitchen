@@ -1,14 +1,14 @@
 use axum::{
-    extract::State,
+    extract::{Path, State},
     response::{IntoResponse, Redirect},
 };
-use imkitchen_mealplan::Status;
+use imkitchen_mealplan::{Status, WeekListRow, WeekRow};
 use imkitchen_shared::Metadata;
 
 use crate::{
     auth::AuthUser,
     routes::AppState,
-    template::{SERVER_ERROR_MESSAGE, Template, filters},
+    template::{SERVER_ERROR_MESSAGE, ServerErrorTemplate, Template, filters},
 };
 
 #[derive(askama::Template)]
@@ -30,6 +30,10 @@ pub struct RegenerateTemplate {
 pub struct CalendarTemplate {
     pub current_path: String,
     pub user: imkitchen_user::AuthUser,
+    pub weeks: Vec<WeekListRow>,
+    pub weekday: u64,
+    pub current: Option<WeekRow>,
+    pub index: u8,
 }
 
 impl Default for CalendarTemplate {
@@ -37,18 +41,73 @@ impl Default for CalendarTemplate {
         Self {
             current_path: "calendar".to_owned(),
             user: imkitchen_user::AuthUser::default(),
+            weeks: Default::default(),
+            current: None,
+            weekday: 0,
+            index: 0,
         }
     }
 }
 
 pub async fn page(
     template: Template<CalendarTemplate>,
+    server_error: Template<ServerErrorTemplate>,
     AuthUser(user): AuthUser,
+    State(app): State<AppState>,
+    Path((mut index,)): Path<(u8,)>,
 ) -> impl IntoResponse {
-    template.render(CalendarTemplate {
-        user,
-        ..Default::default()
-    })
+    let week_from_now = imkitchen_mealplan::current_and_next_four_weeks_from_now()[0];
+    let weeks = match app
+        .mealplan_query
+        .filter_last_from(week_from_now.start, &user.id)
+        .await
+    {
+        Ok(weeks) => weeks,
+        Err(err) => {
+            tracing::error!(
+                user = user.id,
+                index = index,
+                err = %err,
+                "failed to get current_and_next_four_weeks_from_now on calendar page"
+            );
+
+            return server_error.render(ServerErrorTemplate).into_response();
+        }
+    };
+
+    if index == 0 {
+        index += 1;
+    }
+
+    let current = match weeks.get((index - 1) as usize) {
+        Some(week) => match app.mealplan_query.find_utc(week.start, &user.id).await {
+            Ok(week) => week,
+            Err(err) => {
+                tracing::error!(
+                    user = user.id,
+                    index = index,
+                    err = %err,
+                    "failed to get current_and_next_four_weeks_from_now on calendar page"
+                );
+
+                return server_error.render(ServerErrorTemplate).into_response();
+            }
+        },
+        _ => None,
+    };
+
+    let weekday = imkitchen_mealplan::weekday_from_now().unix_timestamp() as u64;
+
+    template
+        .render(CalendarTemplate {
+            user,
+            weeks,
+            current,
+            weekday,
+            index,
+            ..Default::default()
+        })
+        .into_response()
 }
 
 pub async fn regenerate_action(
@@ -103,30 +162,23 @@ pub async fn regenerate_status(
         Err(err) => {
             tracing::error!(user = user.id, err = %err,"Failed to check meal plan regeneration status");
 
-            return Redirect::to("/calendar").into_response();
+            return Redirect::to("/calendar/week-1").into_response();
         }
     };
 
     if meal_plan.item.status == Status::Failed {
-        return Redirect::to("/calendar").into_response();
+        return Redirect::to("/calendar/week-1").into_response();
     }
 
-    let mondays = match imkitchen_mealplan::next_four_mondays_from_now() {
-        Ok(m) => m,
-        Err(err) => {
-            tracing::error!(user = user.id, err = %err,"Failed to next four mondays when meal plan regeneration status");
+    let week_from_now = imkitchen_mealplan::next_four_mondays_from_now()[0];
 
-            return Redirect::to("/calendar").into_response();
-        }
-    };
-
-    let week = match app.mealplan_query.find(mondays[0], &user.id).await {
+    let week = match app.mealplan_query.find(week_from_now.start, &user.id).await {
         Ok(Some(week)) => week,
         Ok(_) => return template.render(RegenerateStatusTemplate).into_response(),
         Err(err) => {
             tracing::error!(user = user.id, err = %err,"Failed to check meal plan regeneration status");
 
-            return Redirect::to("/calendar").into_response();
+            return Redirect::to("/calendar/week-1").into_response();
         }
     };
 
@@ -134,7 +186,7 @@ pub async fn regenerate_status(
         return template.render(RegenerateStatusTemplate).into_response();
     }
 
-    Redirect::to("/calendar").into_response()
+    Redirect::to("/calendar/week-1").into_response()
 }
 
 pub async fn regenerate_modal(template: Template<RegenerateModalTemplate>) -> impl IntoResponse {

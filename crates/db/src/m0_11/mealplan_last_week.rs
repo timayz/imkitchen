@@ -15,7 +15,7 @@ fn create_table() -> TableCreateStatement {
                 .primary_key(),
         )
         .col(
-            ColumnDef::new(MealPlanLastWeek::Week)
+            ColumnDef::new(MealPlanLastWeek::Start)
                 .big_integer()
                 .not_null(),
         )

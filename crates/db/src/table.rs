@@ -109,7 +109,8 @@ pub enum MealPlanRecipe {
 pub enum MealPlanWeek {
     Table,
     UserId,
-    Week,
+    Start,
+    End,
     Status,
     Slots,
 }
@@ -118,5 +119,5 @@ pub enum MealPlanWeek {
 pub enum MealPlanLastWeek {
     Table,
     UserId,
-    Week,
+    Start,
 }
