@@ -9,7 +9,7 @@ sqlx_migrator::sqlite_migration!(
     Migration,
     "imkitchen",
     "m0_10",
-    vec_box![],
+    vec_box![crate::m0_9::Migration],
     vec_box![
         recipe_list::CreateTable,
         recipe_list::CreateIdx1,

@@ -86,7 +86,7 @@ pub struct FilterQuery {
 
 impl Query {
     pub async fn filter(&self, input: FilterQuery) -> anyhow::Result<ReadResult<UserListRow>> {
-        let mut statment = sea_query::Query::select()
+        let mut statement = sea_query::Query::select()
             .columns([
                 UserList::Id,
                 UserList::Email,
@@ -104,16 +104,16 @@ impl Query {
             .to_owned();
 
         if let Some(account_type) = input.role {
-            statment.and_where(Expr::col(UserList::Role).eq(account_type.to_string()));
+            statement.and_where(Expr::col(UserList::Role).eq(account_type.to_string()));
         }
 
         if let Some(status) = input.state {
-            statment.and_where(Expr::col(UserList::State).eq(status.to_string()));
+            statement.and_where(Expr::col(UserList::State).eq(status.to_string()));
         }
 
         match input.sort_by {
             UserSortBy::RecentlyJoined => {
-                let result = Reader::new(statment)
+                let result = Reader::new(statement)
                     .desc()
                     .args(input.args)
                     .execute::<_, UserSortByRecentlyJoined, _>(&self.0)
@@ -126,7 +126,7 @@ impl Query {
     }
 
     pub async fn find(&self, id: impl Into<String>) -> anyhow::Result<Option<UserListRow>> {
-        let statment = sea_query::Query::select()
+        let statement = sea_query::Query::select()
             .columns([
                 UserList::Id,
                 UserList::Email,
@@ -145,7 +145,7 @@ impl Query {
             .limit(1)
             .to_owned();
 
-        let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
         Ok(sqlx::query_as_with::<_, UserListRow, _>(&sql, values)
             .fetch_optional(&self.0)
@@ -219,13 +219,13 @@ pub struct UserStatRow {
 
 impl Query {
     pub async fn find_stat(&self, day: u64) -> anyhow::Result<Option<UserStatRow>> {
-        let statment = sea_query::Query::select()
+        let statement = sea_query::Query::select()
             .columns([UserStat::Total, UserStat::Premium, UserStat::Suspended])
             .from(UserStat::Table)
             .and_where(Expr::col(UserStat::Day).eq(day))
             .to_owned();
 
-        let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
         Ok(sqlx::query_as_with::<_, UserStatRow, _>(&sql, values)
             .fetch_optional(&self.0)
             .await?)

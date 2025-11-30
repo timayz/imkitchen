@@ -20,7 +20,7 @@ async fn handle_form_submmited<E: Executor>(
     event: Event<FormSubmitted>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    let statment = Query::insert()
+    let statement = Query::insert()
         .into_table(ContactList::Table)
         .columns([
             ContactList::Id,
@@ -41,7 +41,7 @@ async fn handle_form_submmited<E: Executor>(
             event.timestamp.into(),
         ])
         .to_owned();
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
@@ -53,13 +53,13 @@ async fn handle_marked_read_and_reply<E: Executor>(
     event: Event<MarkedReadAndReply>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    let statment = Query::update()
+    let statement = Query::update()
         .table(ContactList::Table)
         .values([(ContactList::Status, event.data.status.to_string().into())])
         .and_where(Expr::col(ContactList::Id).eq(&event.aggregator_id))
         .to_owned();
 
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
@@ -71,13 +71,13 @@ async fn handle_resolved<E: Executor>(
     event: Event<Resolved>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    let statment = Query::update()
+    let statement = Query::update()
         .table(ContactList::Table)
         .values([(ContactList::Status, event.data.status.to_string().into())])
         .and_where(Expr::col(ContactList::Id).eq(&event.aggregator_id))
         .to_owned();
 
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
@@ -89,13 +89,13 @@ async fn handle_reopened<E: Executor>(
     event: Event<Reopened>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    let statment = Query::update()
+    let statement = Query::update()
         .table(ContactList::Table)
         .values([(ContactList::Status, event.data.status.to_string().into())])
         .and_where(Expr::col(ContactList::Id).eq(&event.aggregator_id))
         .to_owned();
 
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())

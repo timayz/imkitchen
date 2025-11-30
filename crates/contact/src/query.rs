@@ -94,7 +94,7 @@ pub struct FilterQuery {
 
 impl Query {
     pub async fn filter(&self, input: FilterQuery) -> anyhow::Result<ReadResult<ContactRow>> {
-        let mut statment = sea_query::Query::select()
+        let mut statement = sea_query::Query::select()
             .columns([
                 ContactList::Id,
                 ContactList::Email,
@@ -108,14 +108,14 @@ impl Query {
             .to_owned();
 
         if let Some(subject) = input.subject {
-            statment.and_where(Expr::col(ContactList::Subject).eq(subject.to_string()));
+            statement.and_where(Expr::col(ContactList::Subject).eq(subject.to_string()));
         }
 
         if let Some(status) = input.status {
-            statment.and_where(Expr::col(ContactList::Status).eq(status.to_string()));
+            statement.and_where(Expr::col(ContactList::Status).eq(status.to_string()));
         }
 
-        let mut reader = Reader::new(statment);
+        let mut reader = Reader::new(statement);
 
         if matches!(input.sort_by, SortBy::MostRecent) {
             reader.desc();
@@ -128,7 +128,7 @@ impl Query {
     }
 
     pub async fn find(&self, id: impl Into<String>) -> anyhow::Result<Option<ContactRow>> {
-        let statment = sea_query::Query::select()
+        let statement = sea_query::Query::select()
             .columns([
                 ContactList::Id,
                 ContactList::Email,
@@ -143,7 +143,7 @@ impl Query {
             .limit(1)
             .to_owned();
 
-        let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
         Ok(sqlx::query_as_with::<_, ContactRow, _>(&sql, values)
             .fetch_optional(&self.0)
@@ -162,7 +162,7 @@ pub struct Stat {
 
 impl Query {
     pub async fn find_stat(&self, day: u64) -> anyhow::Result<Option<Stat>> {
-        let statment = sea_query::Query::select()
+        let statement = sea_query::Query::select()
             .columns([
                 ContactStat::Total,
                 ContactStat::Unread,
@@ -172,7 +172,7 @@ impl Query {
             .and_where(Expr::col(ContactStat::Day).eq(day))
             .to_owned();
 
-        let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
         Ok(sqlx::query_as_with::<_, Stat, _>(&sql, values)
             .fetch_optional(&self.0)
             .await?)

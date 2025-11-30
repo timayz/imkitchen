@@ -91,7 +91,7 @@ pub struct RecipesQuery {
 
 impl Query {
     pub async fn filter(&self, query: RecipesQuery) -> anyhow::Result<ReadResult<RecipeListRow>> {
-        let mut statment = sea_query::Query::select()
+        let mut statement = sea_query::Query::select()
             .columns([
                 RecipeList::Id,
                 RecipeList::RecipeType,
@@ -109,22 +109,22 @@ impl Query {
             .to_owned();
 
         if let Some(user_id) = query.user_id {
-            statment.and_where(Expr::col(RecipeList::UserId).eq(user_id));
+            statement.and_where(Expr::col(RecipeList::UserId).eq(user_id));
         }
 
         if let Some(recipe_type) = query.recipe_type {
-            statment.and_where(Expr::col(RecipeList::RecipeType).eq(recipe_type.to_string()));
+            statement.and_where(Expr::col(RecipeList::RecipeType).eq(recipe_type.to_string()));
         }
 
         if let Some(cuisine_type) = query.cuisine_type {
-            statment.and_where(Expr::col(RecipeList::CuisineType).eq(cuisine_type.to_string()));
+            statement.and_where(Expr::col(RecipeList::CuisineType).eq(cuisine_type.to_string()));
         }
 
         if let Some(is_shared) = query.is_shared {
-            statment.and_where(Expr::col(RecipeList::IsShared).eq(is_shared));
+            statement.and_where(Expr::col(RecipeList::IsShared).eq(is_shared));
         }
 
-        let mut reader = Reader::new(statment);
+        let mut reader = Reader::new(statement);
 
         if matches!(query.sort_by, SortBy::RecentlyAdded) {
             reader.desc();
@@ -137,7 +137,7 @@ impl Query {
     }
 
     pub async fn find(&self, id: impl Into<String>) -> anyhow::Result<Option<RecipeRow>> {
-        let statment = sea_query::Query::select()
+        let statement = sea_query::Query::select()
             .columns([
                 RecipeList::Id,
                 RecipeList::UserId,
@@ -161,7 +161,7 @@ impl Query {
             .limit(1)
             .to_owned();
 
-        let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
         Ok(sqlx::query_as_with::<_, RecipeRow, _>(&sql, values)
             .fetch_optional(&self.0)
@@ -183,7 +183,7 @@ impl Query {
         user_id: impl Into<String>,
     ) -> anyhow::Result<Option<UserStat>> {
         let user_id = user_id.into();
-        let statment = sea_query::Query::select()
+        let statement = sea_query::Query::select()
             .columns([
                 RecipeUserStat::Total,
                 RecipeUserStat::Shared,
@@ -194,7 +194,7 @@ impl Query {
             .and_where(Expr::col(RecipeUserStat::UserId).eq(user_id))
             .to_owned();
 
-        let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
         Ok(sqlx::query_as_with::<_, UserStat, _>(&sql, values)
             .fetch_optional(&self.0)

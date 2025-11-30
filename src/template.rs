@@ -42,6 +42,27 @@ pub(crate) mod filters {
         .to_string())
     }
 
+    pub fn date_year(value: &u64, values: &dyn askama::Values) -> askama::Result<String> {
+        let preferred_language = askama::get_value::<String>(values, "preferred_language")
+            .expect("Unable to get preferred_language from askama::get_value");
+
+        let date = OffsetDateTime::from_unix_timestamp(*value as i64)
+            .map_err(|e| askama::Error::Custom(Box::new(e)))?;
+
+        let month = rust_i18n::t!(format!("{}", date.month()), locale = preferred_language);
+        let weekday = rust_i18n::t!(date.weekday().to_string(), locale = preferred_language);
+
+        Ok(rust_i18n::t!(
+            "date_year_format",
+            locale = preferred_language,
+            month = month,
+            weekday = weekday,
+            day = date.day(),
+            year = date.year()
+        )
+        .to_string())
+    }
+
     pub fn month_year(a: &u64, values: &dyn askama::Values, b: &u64) -> askama::Result<String> {
         let preferred_language = askama::get_value::<String>(values, "preferred_language")
             .expect("Unable to get preferred_language from askama::get_value");

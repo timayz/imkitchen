@@ -379,7 +379,7 @@ async fn handle_recipe_created<E: Executor>(
     let instructions = bincode::encode_to_vec(Vec::<Instruction>::default(), config)?;
     let ingredients = bincode::encode_to_vec(Vec::<Ingredient>::default(), config)?;
 
-    let statment = Query::insert()
+    let statement = Query::insert()
         .into_table(MealPlanRecipe::Table)
         .columns([
             MealPlanRecipe::Id,
@@ -400,7 +400,7 @@ async fn handle_recipe_created<E: Executor>(
             serde_json::Value::Array(vec![]).into(),
         ])
         .to_owned();
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
@@ -419,7 +419,7 @@ async fn handle_recipe_imported<E: Executor>(
     let instructions = bincode::encode_to_vec(event.data.instructions, config)?;
     let ingredients = bincode::encode_to_vec(event.data.ingredients, config)?;
 
-    let statment = Query::insert()
+    let statement = Query::insert()
         .into_table(MealPlanRecipe::Table)
         .columns([
             MealPlanRecipe::Id,
@@ -446,7 +446,7 @@ async fn handle_recipe_imported<E: Executor>(
             event.data.advance_prep.into(),
         ])
         .to_owned();
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
@@ -459,7 +459,7 @@ async fn handle_recipe_type_changed<E: Executor>(
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
     let user_id = event.metadata.trigger_by()?;
-    let statment = Query::update()
+    let statement = Query::update()
         .table(MealPlanRecipe::Table)
         .values([(
             MealPlanRecipe::RecipeType,
@@ -469,7 +469,7 @@ async fn handle_recipe_type_changed<E: Executor>(
         .and_where(Expr::col(MealPlanRecipe::UserId).eq(user_id))
         .to_owned();
 
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
@@ -487,7 +487,7 @@ async fn handle_recipe_basic_information_changed<E: Executor>(
     let prep_time = event.data.prep_time;
     let cook_time = event.data.cook_time;
 
-    let statment = Query::update()
+    let statement = Query::update()
         .table(MealPlanRecipe::Table)
         .values([
             (MealPlanRecipe::Name, name.into()),
@@ -498,7 +498,7 @@ async fn handle_recipe_basic_information_changed<E: Executor>(
         .and_where(Expr::col(MealPlanRecipe::UserId).eq(user_id))
         .to_owned();
 
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
@@ -514,14 +514,14 @@ async fn handle_recipe_ingredients_changed<E: Executor>(
     let ingredients = bincode::encode_to_vec(&event.data.ingredients, config)?;
     let user_id = event.metadata.trigger_by()?;
     let aggregator_id = &event.aggregator_id;
-    let statment = Query::update()
+    let statement = Query::update()
         .table(MealPlanRecipe::Table)
         .values([(MealPlanRecipe::Ingredients, ingredients.into())])
         .and_where(Expr::col(MealPlanRecipe::Id).eq(aggregator_id))
         .and_where(Expr::col(MealPlanRecipe::UserId).eq(user_id))
         .to_owned();
 
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
@@ -537,14 +537,14 @@ async fn handle_recipe_instructions_changed<E: Executor>(
     let instructions = bincode::encode_to_vec(&event.data.instructions, config)?;
     let user_id = event.metadata.trigger_by()?;
     let aggregator_id = &event.aggregator_id;
-    let statment = Query::update()
+    let statement = Query::update()
         .table(MealPlanRecipe::Table)
         .values([(MealPlanRecipe::Instructions, instructions.into())])
         .and_where(Expr::col(MealPlanRecipe::Id).eq(aggregator_id))
         .and_where(Expr::col(MealPlanRecipe::UserId).eq(user_id))
         .to_owned();
 
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
@@ -560,14 +560,14 @@ async fn handle_recipe_advance_prep_changed<E: Executor>(
     let aggregator_id = event.aggregator_id.clone();
     let description = event.data.advance_prep;
 
-    let statment = Query::update()
+    let statement = Query::update()
         .table(MealPlanRecipe::Table)
         .values([(MealPlanRecipe::AdvancePrep, description.into())])
         .and_where(Expr::col(MealPlanRecipe::Id).eq(aggregator_id))
         .and_where(Expr::col(MealPlanRecipe::UserId).eq(user_id))
         .to_owned();
 
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
@@ -580,13 +580,13 @@ async fn handle_recipe_made_private<E: Executor>(
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
     let user_id = event.metadata.trigger_by()?;
-    let statment = Query::delete()
+    let statement = Query::delete()
         .from_table(MealPlanRecipe::Table)
         .and_where(Expr::col(MealPlanRecipe::Id).eq(&event.aggregator_id))
         .and_where(Expr::col(MealPlanRecipe::UserId).not_equals(user_id))
         .to_owned();
 
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
@@ -598,12 +598,12 @@ async fn handle_recipe_deleted<E: Executor>(
     event: Event<Deleted>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    let statment = Query::delete()
+    let statement = Query::delete()
         .from_table(MealPlanRecipe::Table)
         .and_where(Expr::col(MealPlanRecipe::Id).eq(&event.aggregator_id))
         .to_owned();
 
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
@@ -622,7 +622,7 @@ async fn handle_dietary_restrictions_changed<E: Executor>(
         .map(|d| serde_json::Value::String(d.to_string()))
         .collect::<Vec<_>>();
     let user_id = event.metadata.trigger_by()?;
-    let statment = Query::update()
+    let statement = Query::update()
         .table(MealPlanRecipe::Table)
         .values([(
             MealPlanRecipe::DietaryRestrictions,
@@ -632,7 +632,7 @@ async fn handle_dietary_restrictions_changed<E: Executor>(
         .and_where(Expr::col(MealPlanRecipe::UserId).eq(user_id))
         .to_owned();
 
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
@@ -645,7 +645,7 @@ async fn handle_main_course_options_changed<E: Executor>(
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
     let user_id = event.metadata.trigger_by()?;
-    let statment = Query::update()
+    let statement = Query::update()
         .table(MealPlanRecipe::Table)
         .values([(
             MealPlanRecipe::AcceptsAccompaniment,
@@ -655,7 +655,7 @@ async fn handle_main_course_options_changed<E: Executor>(
         .and_where(Expr::col(MealPlanRecipe::UserId).eq(user_id))
         .to_owned();
 
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())

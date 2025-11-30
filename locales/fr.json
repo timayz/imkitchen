@@ -1,5 +1,6 @@
 {
   "date_format": "%{weekday} %{day} %{month}",
+  "date_year_format": "%{weekday} %{day} %{month} %{year}",
   "Monday": "Lundi",
   "Tuesday": "Mardi",
   "Wednesday": "Mercredi",
@@ -142,6 +143,7 @@
   "Respects dietary restrictions and cuisine variety preferences.": "Respecte les restrictions alimentaires et les préférences de variété culinaire.",
   "Smart Rotation": "Rotation Intelligente",
   "No duplicate main courses across weeks. Maximum variety guaranteed.": "Aucun plat principal en double entre les semaines. Variété maximale garantie.",
+  "Shopping List": "Liste de Courses",
   "Shopping Lists": "Listes de Courses",
   "Separate lists per week with ingredient grouping and quantity optimization.": "Listes séparées par semaine avec regroupement des ingrédients et optimisation des quantités.",
   "Community Sharing": "Partage Communautaire",
