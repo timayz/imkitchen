@@ -74,8 +74,8 @@ impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateTable {
         &self,
         connection: &mut sqlx::SqliteConnection,
     ) -> Result<(), sqlx_migrator::Error> {
-        let statment = create_table().to_string(sea_query::SqliteQueryBuilder);
-        sqlx::query(&statment).execute(connection).await?;
+        let statement = create_table().to_string(sea_query::SqliteQueryBuilder);
+        sqlx::query(&statement).execute(connection).await?;
 
         Ok(())
     }
@@ -84,8 +84,8 @@ impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateTable {
         &self,
         connection: &mut sqlx::SqliteConnection,
     ) -> Result<(), sqlx_migrator::Error> {
-        let statment = drop_table().to_string(sea_query::SqliteQueryBuilder);
-        sqlx::query(&statment).execute(connection).await?;
+        let statement = drop_table().to_string(sea_query::SqliteQueryBuilder);
+        sqlx::query(&statement).execute(connection).await?;
 
         Ok(())
     }
@@ -114,8 +114,8 @@ impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateIdx1 {
         &self,
         connection: &mut sqlx::SqliteConnection,
     ) -> Result<(), sqlx_migrator::Error> {
-        let statment = create_idx_1().to_string(sea_query::SqliteQueryBuilder);
-        sqlx::query(&statment).execute(connection).await?;
+        let statement = create_idx_1().to_string(sea_query::SqliteQueryBuilder);
+        sqlx::query(&statement).execute(connection).await?;
 
         Ok(())
     }
@@ -124,8 +124,8 @@ impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateIdx1 {
         &self,
         connection: &mut sqlx::SqliteConnection,
     ) -> Result<(), sqlx_migrator::Error> {
-        let statment = drop_idx_1().to_string(sea_query::SqliteQueryBuilder);
-        sqlx::query(&statment).execute(connection).await?;
+        let statement = drop_idx_1().to_string(sea_query::SqliteQueryBuilder);
+        sqlx::query(&statement).execute(connection).await?;
 
         Ok(())
     }
@@ -154,8 +154,8 @@ impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateIdx2 {
         &self,
         connection: &mut sqlx::SqliteConnection,
     ) -> Result<(), sqlx_migrator::Error> {
-        let statment = create_idx_2().to_string(sea_query::SqliteQueryBuilder);
-        sqlx::query(&statment).execute(connection).await?;
+        let statement = create_idx_2().to_string(sea_query::SqliteQueryBuilder);
+        sqlx::query(&statement).execute(connection).await?;
 
         Ok(())
     }
@@ -164,8 +164,8 @@ impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateIdx2 {
         &self,
         connection: &mut sqlx::SqliteConnection,
     ) -> Result<(), sqlx_migrator::Error> {
-        let statment = drop_idx_2().to_string(sea_query::SqliteQueryBuilder);
-        sqlx::query(&statment).execute(connection).await?;
+        let statement = drop_idx_2().to_string(sea_query::SqliteQueryBuilder);
+        sqlx::query(&statement).execute(connection).await?;
 
         Ok(())
     }

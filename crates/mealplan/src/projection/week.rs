@@ -63,7 +63,7 @@ async fn handle_week_generated<E: Executor>(
     let config = bincode::config::standard();
     let slots = bincode::encode_to_vec(&event.data.slots, config)?;
 
-    let statment = Query::update()
+    let statement = Query::update()
         .table(MealPlanWeek::Table)
         .values([
             (MealPlanWeek::Status, event.data.status.to_string().into()),
@@ -72,7 +72,7 @@ async fn handle_week_generated<E: Executor>(
         .and_where(Expr::col(MealPlanWeek::UserId).eq(&event.aggregator_id))
         .and_where(Expr::col(MealPlanWeek::Start).eq(event.data.start))
         .to_owned();
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())

@@ -80,7 +80,11 @@ pub async fn page(
     }
 
     let current = match weeks.get((index - 1) as usize) {
-        Some(week) => match app.mealplan_query.find_utc(week.start, &user.id).await {
+        Some(week) => match app
+            .mealplan_query
+            .find_from_unix_timestamp(week.start, &user.id)
+            .await
+        {
             Ok(week) => week,
             Err(err) => {
                 tracing::error!(

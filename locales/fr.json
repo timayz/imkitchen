@@ -1,5 +1,6 @@
 {
   "date_format": "%{weekday} %{day} %{month}",
+  "date_year_format": "%{weekday} %{day} %{month} %{year}",
   "Monday": "Lundi",
   "Tuesday": "Mardi",
   "Wednesday": "Mercredi",
@@ -142,6 +143,7 @@
   "Respects dietary restrictions and cuisine variety preferences.": "Respecte les restrictions alimentaires et les préférences de variété culinaire.",
   "Smart Rotation": "Rotation Intelligente",
   "No duplicate main courses across weeks. Maximum variety guaranteed.": "Aucun plat principal en double entre les semaines. Variété maximale garantie.",
+  "Shopping List": "Liste de Courses",
   "Shopping Lists": "Listes de Courses",
   "Separate lists per week with ingredient grouping and quantity optimization.": "Listes séparées par semaine avec regroupement des ingrédients et optimisation des quantités.",
   "Community Sharing": "Partage Communautaire",
@@ -918,5 +920,16 @@
   "time to wait before next instruction, minutes >= 0": "temps d'attente avant l'instruction suivante, minutes >= 0",
   "optional": "optionnel",
   "Importing...": "Importation en cours...",
-  "Creating validated recipes.": "Validation et création de vos recettes."
+  "Creating validated recipes.": "Validation et création de vos recettes.",
+  "Welcome back, Michael!": "Re-bonjour, Michael!",
+  "Here's what's cooking today": "Au menu aujourd'hui",
+  "Today's Meal Plan": "Menu du Jour",
+  "Main Course": "Plat Principal",
+  "Prep Reminder:": "Rappel de Préparation :",
+  "Quick Actions": "Actions Rapides",
+  "Shopping List": "Liste de Courses",
+  "Import Recipes": "Importer des Recettes",
+  "Tomorrow's Prep Reminder": "Préparations de Demain",
+  "This Week at a Glance": "Aperçu de la Semaine",
+  "View Full Calendar →": "Voir le Calendrier Complet →"
 }

@@ -25,7 +25,7 @@ async fn handle_registration_succeeded<E: Executor>(
     event: Event<RegistrationSucceeded>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    let statment = Query::insert()
+    let statement = Query::insert()
         .into_table(UserList::Table)
         .columns([
             UserList::Id,
@@ -42,7 +42,7 @@ async fn handle_registration_succeeded<E: Executor>(
             event.timestamp.into(),
         ])
         .to_owned();
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
@@ -54,13 +54,13 @@ async fn handle_suspended<E: Executor>(
     event: Event<Suspended>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    let statment = Query::update()
+    let statement = Query::update()
         .table(UserList::Table)
         .values([(UserList::State, State::Suspended.to_string().into())])
         .and_where(Expr::col(UserList::Id).eq(&event.aggregator_id))
         .to_owned();
 
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
@@ -72,13 +72,13 @@ async fn handle_activated<E: Executor>(
     event: Event<Activated>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    let statment = Query::update()
+    let statement = Query::update()
         .table(UserList::Table)
         .values([(UserList::State, State::Active.to_string().into())])
         .and_where(Expr::col(UserList::Id).eq(&event.aggregator_id))
         .to_owned();
 
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
@@ -90,13 +90,13 @@ async fn handle_made_admin<E: Executor>(
     event: Event<MadeAdmin>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    let statment = Query::update()
+    let statement = Query::update()
         .table(UserList::Table)
         .values([(UserList::Role, Role::Admin.to_string().into())])
         .and_where(Expr::col(UserList::Id).eq(&event.aggregator_id))
         .to_owned();
 
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
@@ -109,13 +109,13 @@ async fn handle_toggle_life_premium<E: Executor>(
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
 
-    let statment = Query::update()
+    let statement = Query::update()
         .table(UserList::Table)
         .values([(UserList::SubscriptionExpireAt, event.data.expire_at.into())])
         .and_where(Expr::col(UserList::Id).eq(&event.aggregator_id))
         .to_owned();
 
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())

@@ -1,36 +1,33 @@
-use sea_query::{ColumnDef, Table, TableCreateStatement, TableDropStatement};
+use sea_query::{ColumnDef, Index, Table, TableCreateStatement, TableDropStatement};
 
-use crate::table::UserStat;
+use crate::table::MealPlanSlot;
 
 pub struct CreateTable;
 
 fn create_table() -> TableCreateStatement {
     Table::create()
-        .table(UserStat::Table)
-        .col(ColumnDef::new(UserStat::Day).big_integer().primary_key())
+        .table(MealPlanSlot::Table)
         .col(
-            ColumnDef::new(UserStat::Total)
-                .integer()
+            ColumnDef::new(MealPlanSlot::UserId)
+                .string()
                 .not_null()
-                .default(0),
+                .string_len(26),
         )
-        .col(
-            ColumnDef::new(UserStat::Premium)
-                .integer()
-                .not_null()
-                .default(0),
-        )
-        .col(
-            ColumnDef::new(UserStat::Suspended)
-                .integer()
-                .not_null()
-                .default(0),
+        .col(ColumnDef::new(MealPlanSlot::Day).big_integer().not_null())
+        .col(ColumnDef::new(MealPlanSlot::MainCourse).blob().not_null())
+        .col(ColumnDef::new(MealPlanSlot::Appetizer).blob().null())
+        .col(ColumnDef::new(MealPlanSlot::Accompaniment).blob().null())
+        .col(ColumnDef::new(MealPlanSlot::Dessert).blob().null())
+        .primary_key(
+            Index::create()
+                .col(MealPlanSlot::UserId)
+                .col(MealPlanSlot::Day),
         )
         .to_owned()
 }
 
 fn drop_table() -> TableDropStatement {
-    Table::drop().table(UserStat::Table).to_owned()
+    Table::drop().table(MealPlanSlot::Table).to_owned()
 }
 
 #[async_trait::async_trait]

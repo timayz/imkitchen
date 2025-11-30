@@ -3,6 +3,7 @@ use sqlx::SqlitePool;
 
 use crate::template::{NotFoundTemplate, Template};
 
+mod about;
 mod admin;
 mod calendar;
 mod community;
@@ -10,6 +11,7 @@ mod contact;
 mod health;
 mod help;
 mod index;
+mod kitchen;
 mod login;
 mod policy;
 mod profile;
@@ -49,6 +51,8 @@ pub fn router(app_state: AppState) -> Router {
         .route("/ready", get(health::ready))
         .with_state(app_state.pool.clone())
         .route("/", get(index::page))
+        .route("/kitchen/{day}", get(kitchen::page))
+        .route("/about", get(about::page))
         .route("/help", get(help::page))
         .route("/terms", get(terms::page))
         .route("/policy", get(policy::page))

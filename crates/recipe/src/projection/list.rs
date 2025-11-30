@@ -42,7 +42,7 @@ async fn handle_created<E: Executor>(
     let instructions = bincode::encode_to_vec(Vec::<Instruction>::default(), config)?;
     let ingredients = bincode::encode_to_vec(Vec::<Ingredient>::default(), config)?;
 
-    let statment = Query::insert()
+    let statement = Query::insert()
         .into_table(RecipeList::Table)
         .columns([
             RecipeList::Id,
@@ -67,7 +67,7 @@ async fn handle_created<E: Executor>(
             timestamp.into(),
         ])
         .to_owned();
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
@@ -87,7 +87,7 @@ async fn handle_imported<E: Executor>(
     let instructions = bincode::encode_to_vec(event.data.instructions, config)?;
     let ingredients = bincode::encode_to_vec(event.data.ingredients, config)?;
 
-    let statment = Query::insert()
+    let statement = Query::insert()
         .into_table(RecipeList::Table)
         .columns([
             RecipeList::Id,
@@ -120,7 +120,7 @@ async fn handle_imported<E: Executor>(
             timestamp.into(),
         ])
         .to_owned();
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
@@ -132,7 +132,7 @@ async fn handle_recipe_type_changed<E: Executor>(
     event: Event<RecipeTypeChanged>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    let statment = Query::update()
+    let statement = Query::update()
         .table(RecipeList::Table)
         .values([
             (
@@ -144,7 +144,7 @@ async fn handle_recipe_type_changed<E: Executor>(
         .and_where(Expr::col(RecipeList::Id).eq(&event.aggregator_id))
         .to_owned();
 
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
@@ -163,7 +163,7 @@ async fn handle_basic_information_changed<E: Executor>(
     let prep_time = event.data.prep_time;
     let cook_time = event.data.cook_time;
 
-    let statment = Query::update()
+    let statement = Query::update()
         .table(RecipeList::Table)
         .values([
             (RecipeList::Name, name.into()),
@@ -175,7 +175,7 @@ async fn handle_basic_information_changed<E: Executor>(
         .and_where(Expr::col(RecipeList::Id).eq(aggregator_id))
         .to_owned();
 
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
@@ -191,7 +191,7 @@ async fn handle_ingredients_changed<E: Executor>(
     let ingredients = bincode::encode_to_vec(&event.data.ingredients, config)?;
     let timestamp = event.timestamp;
     let aggregator_id = &event.aggregator_id;
-    let statment = Query::update()
+    let statement = Query::update()
         .table(RecipeList::Table)
         .values([
             (RecipeList::Ingredients, ingredients.into()),
@@ -200,7 +200,7 @@ async fn handle_ingredients_changed<E: Executor>(
         .and_where(Expr::col(RecipeList::Id).eq(aggregator_id))
         .to_owned();
 
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
@@ -216,7 +216,7 @@ async fn handle_instructions_changed<E: Executor>(
     let instructions = bincode::encode_to_vec(&event.data.instructions, config)?;
     let timestamp = event.timestamp;
     let aggregator_id = &event.aggregator_id;
-    let statment = Query::update()
+    let statement = Query::update()
         .table(RecipeList::Table)
         .values([
             (RecipeList::Instructions, instructions.into()),
@@ -225,7 +225,7 @@ async fn handle_instructions_changed<E: Executor>(
         .and_where(Expr::col(RecipeList::Id).eq(aggregator_id))
         .to_owned();
 
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
@@ -245,7 +245,7 @@ async fn handle_dietary_restrictions_changed<E: Executor>(
         .collect::<Vec<_>>();
     let timestamp = event.timestamp;
     let aggregator_id = &event.aggregator_id;
-    let statment = Query::update()
+    let statement = Query::update()
         .table(RecipeList::Table)
         .values([
             (
@@ -257,7 +257,7 @@ async fn handle_dietary_restrictions_changed<E: Executor>(
         .and_where(Expr::col(RecipeList::Id).eq(aggregator_id))
         .to_owned();
 
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
@@ -269,7 +269,7 @@ async fn handle_cuisine_type_changed<E: Executor>(
     event: Event<CuisineTypeChanged>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    let statment = Query::update()
+    let statement = Query::update()
         .table(RecipeList::Table)
         .values([
             (
@@ -281,7 +281,7 @@ async fn handle_cuisine_type_changed<E: Executor>(
         .and_where(Expr::col(RecipeList::Id).eq(&event.aggregator_id))
         .to_owned();
 
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
@@ -295,7 +295,7 @@ async fn handle_main_course_options_changed<E: Executor>(
     let pool = context.extract::<sqlx::SqlitePool>();
     let timestamp = event.timestamp;
     let aggregator_id = &event.aggregator_id;
-    let statment = Query::update()
+    let statement = Query::update()
         .table(RecipeList::Table)
         .values([
             (
@@ -307,7 +307,7 @@ async fn handle_main_course_options_changed<E: Executor>(
         .and_where(Expr::col(RecipeList::Id).eq(aggregator_id))
         .to_owned();
 
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
@@ -323,7 +323,7 @@ async fn handle_advance_prep_changed<E: Executor>(
     let aggregator_id = event.aggregator_id.clone();
     let description = event.data.advance_prep;
 
-    let statment = Query::update()
+    let statement = Query::update()
         .table(RecipeList::Table)
         .values([
             (RecipeList::AdvancePrep, description.into()),
@@ -332,7 +332,7 @@ async fn handle_advance_prep_changed<E: Executor>(
         .and_where(Expr::col(RecipeList::Id).eq(aggregator_id))
         .to_owned();
 
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
@@ -344,7 +344,7 @@ async fn handle_shared_to_community<E: Executor>(
     event: Event<SharedToCommunity>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    let statment = Query::update()
+    let statement = Query::update()
         .table(RecipeList::Table)
         .values([
             (RecipeList::IsShared, event.data.shared.into()),
@@ -353,7 +353,7 @@ async fn handle_shared_to_community<E: Executor>(
         .and_where(Expr::col(RecipeList::Id).eq(&event.aggregator_id))
         .to_owned();
 
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
@@ -365,7 +365,7 @@ async fn handle_made_private<E: Executor>(
     event: Event<MadePrivate>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    let statment = Query::update()
+    let statement = Query::update()
         .table(RecipeList::Table)
         .values([
             (RecipeList::IsShared, event.data.shared.into()),
@@ -374,7 +374,7 @@ async fn handle_made_private<E: Executor>(
         .and_where(Expr::col(RecipeList::Id).eq(&event.aggregator_id))
         .to_owned();
 
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
@@ -386,12 +386,12 @@ async fn handle_deleted<E: Executor>(
     event: Event<Deleted>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    let statment = Query::delete()
+    let statement = Query::delete()
         .from_table(RecipeList::Table)
         .and_where(Expr::col(RecipeList::Id).eq(&event.aggregator_id))
         .to_owned();
 
-    let (sql, values) = statment.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())

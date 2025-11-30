@@ -86,6 +86,11 @@ pub async fn serve(
         .run(&evento_executor)
         .await?;
 
+    let sub_mealplan_slot = imkitchen_mealplan::subscribe_slot()
+        .data(write_pool.clone())
+        .run(&evento_executor)
+        .await?;
+
     // let mut sched_mealplan = imkitchen_mealplan::scheduler(&evento_executor, &read_pool).await?;
     // sched_mealplan.start().await?;
 
@@ -173,6 +178,7 @@ pub async fn serve(
         sub_recipe_user_stat.shutdown_and_wait(),
         sub_mealplan_command.shutdown_and_wait(),
         sub_mealplan_week.shutdown_and_wait(),
+        sub_mealplan_slot.shutdown_and_wait(),
     ])
     .await;
 
