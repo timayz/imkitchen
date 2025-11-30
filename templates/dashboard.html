@@ -1,13 +1,15 @@
 {% extends "_user.html" %}
 {% block title %}Dashboard - imkitchen{% endblock %}
 {% block content %}
-
+    {% if generate_next_weeks_needed %}
+      <div ts-trigger="load" ts-req="/calendar/regenerate" ts-req-method="POST" ts-swap="none"></div>
+    {% endif %}
     <!-- Main Content -->
     <div class="container mx-auto px-4 py-8">
         <!-- Welcome -->
         <div class="mb-8">
-            <h1 class="text-3xl font-bold mb-2">Welcome back, Michael!</h1>
-            <p class="text-gray-600">Here's what's cooking today</p>
+            <h1 class="text-3xl font-bold mb-2">{{ "Welcome back, Michael!"|t }}</h1>
+            <p class="text-gray-600">{{ "Here's what's cooking today"|t }}</p>
         </div>
 
         <!-- Today's Meals -->
@@ -18,7 +20,7 @@
                 <div class="flex items-center justify-between mb-6">
                     <div>
                       <h2 class="text-2xl font-bold">{{ slot.day|date_year }}</h2>
-                        <p class="text-gray-600">Today's Meal Plan</p>
+                        <p class="text-gray-600">{{ "Today's Meal Plan"|t }}</p>
                     </div>
                 </div>
 
@@ -30,14 +32,14 @@
                         <div class="flex-1">
                             <div class="flex items-center justify-between mb-2">
                                 <div>
-                                    <div class="text-xs text-blue-600 font-semibold uppercase mb-1">Appetizer</div>
+                                    <div class="text-xs text-blue-600 font-semibold uppercase mb-1">{{ "Appetizer"|t }}</div>
                                     <a href="/recipes/{{ appetizer.id }}/detail"><h3 class="font-bold text-lg">{{ appetizer.name }}</h3></a>
                                 </div>
-                                <div class="text-sm text-gray-600">⏱️ {{ appetizer.total_prep_time() }} min</div>
+                                <div class="text-sm text-gray-600">⏱️ {{ appetizer.total_prep_time() }} {{ "min"|t }}</div>
                             </div>
                             {% if appetizer.advance_prep != "" %}
                             <div class="mt-3 p-2 bg-yellow-100 border border-yellow-300 rounded text-sm text-yellow-800">
-                              ⏰ <strong>Prep Reminder:</strong> {{ appetizer.advance_prep }}
+                              ⏰ <strong>{{ "Prep Reminder:"|t }}</strong> {{ appetizer.advance_prep }}
                             </div>
                             {% endif %}
                         </div>
@@ -52,15 +54,15 @@
                         <div class="flex-1">
                             <div class="flex items-center justify-between mb-2">
                                 <div>
-                                    <div class="text-xs text-orange-600 font-semibold uppercase mb-1">Main Course</div>
+                                    <div class="text-xs text-orange-600 font-semibold uppercase mb-1">{{ "Main Course"|t }}</div>
                                     <a href="/recipes/{{ slot.main_course.id }}/detail"><h3 class="font-bold text-lg">{{ slot.main_course.name }}</h3></a>
                                 </div>
-                                <div class="text-sm text-gray-600">⏱️ {{ slot.main_course.total_prep_time() }} min</div>
+                                <div class="text-sm text-gray-600">⏱️ {{ slot.main_course.total_prep_time() }} {{ "min"|t }}</div>
                             </div>
 
                             {% if slot.main_course.advance_prep != "" %}
                             <div class="mt-3 p-2 bg-yellow-100 border border-yellow-300 rounded text-sm text-yellow-800">
-                              ⏰ <strong>Prep Reminder:</strong> {{ slot.main_course.advance_prep }}
+                              ⏰ <strong>{{ "Prep Reminder:"|t }}</strong> {{ slot.main_course.advance_prep }}
                             </div>
                             {% endif %}
 
@@ -70,16 +72,16 @@
                                 <div class="flex items-center gap-3">
                                     <span class="text-2xl">🍚</span>
                                     <div>
-                                        <div class="text-xs text-purple-600 font-semibold uppercase">Accompaniment</div>
+                                        <div class="text-xs text-purple-600 font-semibold uppercase">{{ "Accompaniment"|t }}</div>
                                         <a href="/recipes/{{ accompaniment.id }}/detail" class="font-semibold">{{ accompaniment.name }}</a>
-                                        <div class="text-xs text-gray-600">⏱️ {{ accompaniment.total_prep_time() }} min</div>
+                                        <div class="text-xs text-gray-600">⏱️ {{ accompaniment.total_prep_time() }} {{ "min"|t }}</div>
                                     </div>
                                 </div>
                             </div>
 
                             {% if accompaniment.advance_prep != "" %}
                             <div class="mt-3 p-2 bg-yellow-100 border border-yellow-300 rounded text-sm text-yellow-800">
-                              ⏰ <strong>Prep Reminder:</strong> {{ accompaniment.advance_prep }}
+                              ⏰ <strong>{{ "Prep Reminder:"|t }}</strong> {{ accompaniment.advance_prep }}
                             </div>
                             {% endif %}
                             {% endif %}
@@ -96,14 +98,14 @@
                         <div class="flex-1">
                             <div class="flex items-center justify-between mb-2">
                                 <div>
-                                    <div class="text-xs text-pink-600 font-semibold uppercase mb-1">Dessert</div>
+                                    <div class="text-xs text-pink-600 font-semibold uppercase mb-1">{{ "Dessert"|t }}</div>
                                     <a href="/recipes/{{ dessert.id }}/detail"><h3 class="font-bold text-lg">{{ dessert.name }}</h3></a>
                                 </div>
-                                <div class="text-sm text-gray-600">⏱️ {{ dessert.total_prep_time() }} min</div>
+                                <div class="text-sm text-gray-600">⏱️ {{ dessert.total_prep_time() }} {{ "min"|t }}</div>
                             </div>
                             {% if dessert.advance_prep != "" %}
                             <div class="mt-3 p-2 bg-yellow-100 border border-yellow-300 rounded text-sm text-yellow-800">
-                              ⏰ <strong>Prep Reminder:</strong> {{ dessert.advance_prep }}
+                              ⏰ <strong>{{ "Prep Reminder:"|t }}</strong> {{ dessert.advance_prep }}
                             </div>
                             {% endif %}
                         </div>
@@ -117,16 +119,16 @@
             <div class="space-y-6">
                 <!-- Actions -->
                 <div class="bg-white rounded-lg shadow-lg p-6">
-                    <h3 class="font-bold text-lg mb-4">Quick Actions</h3>
+                    <h3 class="font-bold text-lg mb-4">{{ "Quick Actions"|t }}</h3>
                     <div class="space-y-3">
                         <!-- <a href="/kitchen" class="block w-full px-4 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition text-center"> -->
                         <!--     🍛 My kitchen -->
                         <!-- </a> -->
                         <a href="/calendar/week-1/shopping-list" class="block w-full px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition text-center">
-                            🛒 Shopping List
+                            🛒 {{ "Shopping List"|t }}
                         </a>
                         <a href="/recipes/import" class="block w-full px-4 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition text-center">
-                            ➕ Import Recipes
+                            ➕ {{ "Import Recipes"|t }}
                         </a>
                     </div>
                 </div>
@@ -134,7 +136,7 @@
                 <!-- Advance preps -->
                 {% if let Some(remiders) = prep_remiders %}
                 <div class="bg-white rounded-lg shadow-lg p-6">
-                  <h3 class="font-bold text-lg mb-4">Tomorrow's Prep Reminder</h3>
+                  <h3 class="font-bold text-lg mb-4">{{ "Tomorrow's Prep Reminder"|t }}</h3>
                   {% for recipe in remiders %}
                   <a href="/recipes/{{ recipe.id }}/detail">
                     <div class="mt-3 p-2 bg-yellow-100 border border-yellow-300 rounded text-sm text-yellow-800">
@@ -150,7 +152,7 @@
         <!-- Upcoming Week Preview -->
         {% if let (Some(slot), Some(week)) = (slot.as_ref(), week.as_ref()) %}
         <div class="bg-white rounded-lg shadow-lg p-6">
-            <h2 class="text-xl font-bold mb-4">This Week at a Glance</h2>
+            <h2 class="text-xl font-bold mb-4">{{ "This Week at a Glance"|t }}</h2>
             <div class="grid md:grid-cols-7 gap-4">
                 {% for week_slot in week.slots.iter() %}
                 <a href="/kitchen/{{ week_slot.day }}" class="p-4 {% if week_slot.day != slot.day %}bg-gray-50 border border-gray-200{% else %}bg-green-50 border-2 border-green-500{% endif %} rounded-lg hover:border-green-500">
@@ -172,7 +174,7 @@
             </div>
             <div class="mt-4 text-center">
                 <a href="/calendar/week-1" class="text-green-600 font-semibold hover:text-green-700">
-                    View Full Month Calendar →
+                    {{ "View Full Calendar →"|t }}
                 </a>
             </div>
         </div>

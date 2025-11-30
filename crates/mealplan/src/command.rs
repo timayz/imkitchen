@@ -38,6 +38,27 @@ impl<E: Executor + Clone> Command<E> {
         evento::load_optional(&self.0, id).await
     }
 
+    pub async fn find_last_week(
+        &self,
+        user_id: impl Into<String>,
+    ) -> imkitchen_shared::Result<Option<u64>> {
+        let id = user_id.into();
+        let statement = Query::select()
+            .columns([MealPlanLastWeek::Start])
+            .from(MealPlanLastWeek::Table)
+            .and_where(Expr::col(MealPlanRecipe::UserId).eq(id))
+            .limit(1)
+            .to_owned();
+
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+        let week = sqlx::query_as_with::<_, (u64,), _>(&sql, values)
+            .fetch_optional(&self.1)
+            .await?;
+
+        Ok(week.map(|w| w.0))
+    }
+
     pub async fn generate(&self, metadata: &Metadata) -> imkitchen_shared::Result<()> {
         let user_id = metadata.trigger_by()?;
 

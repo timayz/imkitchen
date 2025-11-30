@@ -18,6 +18,7 @@ pub struct DashboardTemplate {
     pub slot: Option<SlotRow>,
     pub week: Option<WeekRow>,
     pub prep_remiders: Option<Vec<DaySlotRecipe>>,
+    pub generate_next_weeks_needed: bool,
 }
 
 impl Default for DashboardTemplate {
@@ -28,6 +29,7 @@ impl Default for DashboardTemplate {
             slot: None,
             week: None,
             prep_remiders: None,
+            generate_next_weeks_needed: false,
         }
     }
 }
@@ -75,7 +77,7 @@ pub async fn page(
         .find_last_from(week_from_now.start, &user.id)
         .await
     {
-        Ok(weeks) => weeks,
+        Ok(week) => week,
         Err(err) => {
             tracing::error!(
                 user = user.id,
@@ -87,16 +89,31 @@ pub async fn page(
         }
     };
 
+    let generate_next_weeks_needed = match (
+        week.as_ref(),
+        app.mealplan_command.find_last_week(&user.id).await,
+    ) {
+        (Some(week), Ok(Some(last_week))) => week.start == last_week,
+        (_, Err(err)) => {
+            tracing::error!(
+                user = user.id,
+                err = %err,
+                "failed to get find last week on dashboard page"
+            );
+
+            return server_error.render(ServerErrorTemplate).into_response();
+        }
+        _ => false,
+    };
+
     dashboard
         .render(DashboardTemplate {
             user,
             slot,
             week,
             prep_remiders,
+            generate_next_weeks_needed,
             ..Default::default()
         })
         .into_response()
 }
-
-// @TODO: if on last week generated, add html element on dashboard page that will call action to
-// generate mealplan for next four weeks. Use MealPlanLastWeek to detect last week

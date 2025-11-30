@@ -920,5 +920,16 @@
   "time to wait before next instruction, minutes >= 0": "temps d'attente avant l'instruction suivante, minutes >= 0",
   "optional": "optionnel",
   "Importing...": "Importation en cours...",
-  "Creating validated recipes.": "Validation et création de vos recettes."
+  "Creating validated recipes.": "Validation et création de vos recettes.",
+  "Welcome back, Michael!": "Re-bonjour, Michael!",
+  "Here's what's cooking today": "Au menu aujourd'hui",
+  "Today's Meal Plan": "Menu du Jour",
+  "Main Course": "Plat Principal",
+  "Prep Reminder:": "Rappel de Préparation :",
+  "Quick Actions": "Actions Rapides",
+  "Shopping List": "Liste de Courses",
+  "Import Recipes": "Importer des Recettes",
+  "Tomorrow's Prep Reminder": "Préparations de Demain",
+  "This Week at a Glance": "Aperçu de la Semaine",
+  "View Full Calendar →": "Voir le Calendrier Complet →"
 }
