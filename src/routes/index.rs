@@ -8,7 +8,9 @@ use crate::template::{ServerErrorTemplate, Template, filters};
 
 #[derive(askama::Template)]
 #[template(path = "index.html")]
-pub struct IndexTemplate;
+pub struct IndexTemplate {
+    pub show_nav: bool,
+}
 
 #[derive(askama::Template)]
 #[template(path = "dashboard.html")]
@@ -42,7 +44,9 @@ pub async fn page(
     State(app): State<AppState>,
 ) -> impl IntoResponse {
     let Some(user) = user else {
-        return template.render(IndexTemplate).into_response();
+        return template
+            .render(IndexTemplate { show_nav: true })
+            .into_response();
     };
 
     let day = imkitchen_mealplan::weekday_from_now();
