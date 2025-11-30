@@ -88,6 +88,16 @@ pub(crate) mod filters {
         ))
     }
 
+    pub fn weekday(value: &u64, values: &dyn askama::Values) -> askama::Result<String> {
+        let preferred_language = askama::get_value::<String>(values, "preferred_language")
+            .expect("Unable to get preferred_language from askama::get_value");
+
+        let date = OffsetDateTime::from_unix_timestamp(*value as i64)
+            .map_err(|e| askama::Error::Custom(Box::new(e)))?;
+
+        Ok(rust_i18n::t!(date.weekday().to_string(), locale = preferred_language).to_string())
+    }
+
     // pub fn assets(value: &str, values: &dyn askama::Values) -> askama::Result<String> {
     //     let config = askama::get_value::<crate::axum_extra::TemplateConfig>(values, "config")
     //         .expect("Unable to get config from askama::get_value");

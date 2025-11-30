@@ -1,6 +1,6 @@
 use axum::extract::State;
 use axum::response::IntoResponse;
-use imkitchen_mealplan::SlotRow;
+use imkitchen_mealplan::{DaySlotRecipe, SlotRow, WeekRow};
 
 use crate::auth::AuthOptional;
 use crate::routes::AppState;
@@ -16,6 +16,8 @@ pub struct DashboardTemplate {
     pub current_path: String,
     pub user: imkitchen_user::AuthUser,
     pub slot: Option<SlotRow>,
+    pub week: Option<WeekRow>,
+    pub prep_remiders: Option<Vec<DaySlotRecipe>>,
 }
 
 impl Default for DashboardTemplate {
@@ -24,6 +26,8 @@ impl Default for DashboardTemplate {
             current_path: "dashboard".to_owned(),
             user: imkitchen_user::AuthUser::default(),
             slot: None,
+            week: None,
+            prep_remiders: None,
         }
     }
 }
@@ -48,11 +52,47 @@ pub async fn page(
             return server_error.render(ServerErrorTemplate).into_response();
         }
     };
+    let prep_remiders = if let Some(ref slot) = slot {
+        match app
+            .mealplan_query
+            .next_prep_remiders_from(slot.day, &user.id)
+            .await
+        {
+            Ok(remiders) => remiders,
+            Err(err) => {
+                tracing::error!(user = user.id, err = %err, "failed to find next slot");
+
+                return server_error.render(ServerErrorTemplate).into_response();
+            }
+        }
+    } else {
+        None
+    };
+
+    let week_from_now = imkitchen_mealplan::current_and_next_four_weeks_from_now()[0];
+    let week = match app
+        .mealplan_query
+        .find_last_from(week_from_now.start, &user.id)
+        .await
+    {
+        Ok(weeks) => weeks,
+        Err(err) => {
+            tracing::error!(
+                user = user.id,
+                err = %err,
+                "failed to get find last week on dashboard page"
+            );
+
+            return server_error.render(ServerErrorTemplate).into_response();
+        }
+    };
 
     dashboard
         .render(DashboardTemplate {
             user,
             slot,
+            week,
+            prep_remiders,
             ..Default::default()
         })
         .into_response()
