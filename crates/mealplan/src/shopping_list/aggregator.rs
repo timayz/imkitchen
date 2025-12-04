@@ -25,6 +25,7 @@ impl ShoppingList {
             .collect();
 
         self.ingredients.insert(event.data.week, ingredients);
+        self.checked.remove(&event.data.week);
 
         if self.ingredients.len() <= 5 {
             return Ok(());
