@@ -1,4 +1,5 @@
-use imkitchen_db::table::{MealPlanSlot, MealPlanWeek};
+use imkitchen_db::table::{MealPlanShoppingList, MealPlanSlot, MealPlanWeek};
+use imkitchen_recipe::Ingredient;
 use sea_query::{Expr, ExprTrait, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::prelude::FromRow;
@@ -222,5 +223,41 @@ impl Query {
         }
 
         Ok(Some(remiders))
+    }
+}
+
+#[derive(Default, FromRow)]
+pub struct ShoppingListWeekRow {
+    pub week: u64,
+    pub ingredients: imkitchen_db::types::Bincode<Vec<Ingredient>>,
+}
+
+impl Query {
+    pub async fn next_shopping_list_from(
+        &self,
+        week: u64,
+        user_id: impl Into<String>,
+    ) -> anyhow::Result<Option<ShoppingListWeekRow>> {
+        let user_id = user_id.into();
+        let week = OffsetDateTime::from_unix_timestamp(week.try_into()?)?;
+        let statement = sea_query::Query::select()
+            .columns([
+                MealPlanShoppingList::Week,
+                MealPlanShoppingList::Ingredients,
+            ])
+            .from(MealPlanShoppingList::Table)
+            .and_where(Expr::col(MealPlanShoppingList::UserId).eq(&user_id))
+            .and_where(Expr::col(MealPlanShoppingList::Week).gte(week.unix_timestamp()))
+            .order_by_expr(Expr::col(MealPlanShoppingList::Week), sea_query::Order::Asc)
+            .limit(1)
+            .to_owned();
+
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+        Ok(
+            sqlx::query_as_with::<_, ShoppingListWeekRow, _>(&sql, values)
+                .fetch_optional(&self.0)
+                .await?,
+        )
     }
 }

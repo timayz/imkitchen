@@ -1,5 +1,6 @@
 mod aggregator;
 mod event;
+pub mod shopping_list;
 mod types;
 
 pub use aggregator::*;

@@ -18,14 +18,14 @@
                 <div class="flex items-center justify-between gap-2">
                     <a href="/calendar/week-{{ index }}/shopping-list"
                       class="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm">
-                        🛒 {{ "Shopping List"|t }}
+                        🛒
                     </a>
                     <a href="/calendar/week-{{ index }}" class="px-3 py-2 bg-green-600 text-white rounded-lg font-semibold text-sm flex-1">
                       {{ "Week"|t }} {{ index }}
                     </a>
                     <button id="regenerate-btn-sm" ts-trigger="click" ts-req="/calendar/regenerate" ts-target="body" ts-swap="append"
                       class="px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm">
-                        🔄 {{ "Regenerate"|t }}
+                        🔄
                     </button>
                 </div>
                 <div class="overflow-x-auto">

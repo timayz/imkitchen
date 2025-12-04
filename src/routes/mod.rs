@@ -37,6 +37,7 @@ pub struct AppState {
     pub recipe_query: imkitchen_recipe::Query,
     pub mealplan_command: imkitchen_mealplan::Command<evento::Sqlite>,
     pub mealplan_query: imkitchen_mealplan::Query,
+    pub shopping_list_command: imkitchen_mealplan::shopping_list::Command<evento::Sqlite>,
     pub pool: SqlitePool,
 }
 
@@ -76,6 +77,10 @@ pub fn router(app_state: AppState) -> Router {
         .route(
             "/calendar/week-{index}/shopping-list",
             get(shopping_list::page),
+        )
+        .route(
+            "/calendar/week-{timestamp}/shopping-list/toggle",
+            post(shopping_list::toggle_action),
         )
         .route("/community", get(community::page))
         .route("/recipes", get(recipes::index::page))
