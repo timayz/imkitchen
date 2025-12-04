@@ -45,7 +45,7 @@ impl<E: Executor + Clone> Command<E> {
 #[derive(Validate, Clone)]
 pub struct ImportInput {
     pub recipe_type: RecipeType,
-    #[validate(length(min = 3, max = 30))]
+    #[validate(length(min = 3, max = 50))]
     pub name: String,
     #[validate(length(min = 3, max = 2000))]
     pub description: String,
@@ -88,7 +88,7 @@ impl<E: Executor + Clone> Command<E> {
 pub struct UpdateInput {
     pub id: String,
     pub recipe_type: RecipeType,
-    #[validate(length(min = 3, max = 30))]
+    #[validate(length(min = 3, max = 50))]
     pub name: String,
     #[validate(length(min = 3, max = 2000))]
     pub description: String,

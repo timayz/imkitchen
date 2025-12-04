@@ -73,13 +73,6 @@
                 <div>{{ recipe.cook_time + recipe.prep_time }} {{ "minutes"|t }}</div>
               </div>
             </div>
-            <div class="flex items-center gap-2">
-              <span class="text-2xl">⭐</span>
-              <div>
-                <div class="font-semibold">{{ "Rating"|t }}</div>
-                <div>4.8 (23 {{ "reviews"|t }})</div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -115,141 +108,9 @@
               class="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">
               {{ loop.index }}
             </div>
-            <p class="pt-1">Heat vegetable oil in a large wok or pan over medium-high heat.</p>
+            <p class="pt-1">{{ instruction.description }}</p>
           </div>
           {% endfor %}
-        </div>
-      </div>
-
-      <!-- Ratings & Reviews -->
-      <div class="bg-white rounded-lg shadow-lg p-6">
-        <h2 class="text-2xl font-bold mb-6">{{ "Ratings & Reviews"|t }}</h2>
-
-        <!-- Rating Summary -->
-        <div class="flex items-center gap-8 mb-8 pb-8 border-b">
-          <div class="text-center">
-            <div class="text-5xl font-bold mb-2">4.8</div>
-            <div class="flex gap-1 mb-2">
-              <span class="text-yellow-400 text-xl">★★★★★</span>
-            </div>
-            <div class="text-sm text-gray-600">23 {{ "reviews"|t }}</div>
-          </div>
-          <div class="flex-1">
-            <div class="flex items-center gap-3 mb-2">
-              <span class="text-sm w-12">5 {{ "star"|t }}</span>
-              <div class="flex-1 bg-gray-200 rounded-full h-2">
-                <div class="bg-yellow-400 h-2 rounded-full" style="width: 80%"></div>
-              </div>
-              <span class="text-sm w-8 text-right">18</span>
-            </div>
-            <div class="flex items-center gap-3 mb-2">
-              <span class="text-sm w-12">4 {{ "star"|t }}</span>
-              <div class="flex-1 bg-gray-200 rounded-full h-2">
-                <div class="bg-yellow-400 h-2 rounded-full" style="width: 15%"></div>
-              </div>
-              <span class="text-sm w-8 text-right">3</span>
-            </div>
-            <div class="flex items-center gap-3 mb-2">
-              <span class="text-sm w-12">3 {{ "star"|t }}</span>
-              <div class="flex-1 bg-gray-200 rounded-full h-2">
-                <div class="bg-yellow-400 h-2 rounded-full" style="width: 5%"></div>
-              </div>
-              <span class="text-sm w-8 text-right">1</span>
-            </div>
-            <div class="flex items-center gap-3 mb-2">
-              <span class="text-sm w-12">2 {{ "star"|t }}</span>
-              <div class="flex-1 bg-gray-200 rounded-full h-2">
-                <div class="bg-gray-200 h-2 rounded-full" style="width: 0%"></div>
-              </div>
-              <span class="text-sm w-8 text-right">0</span>
-            </div>
-            <div class="flex items-center gap-3">
-              <span class="text-sm w-12">1 {{ "star"|t }}</span>
-              <div class="flex-1 bg-gray-200 rounded-full h-2">
-                <div class="bg-gray-200 h-2 rounded-full" style="width: 5%"></div>
-              </div>
-              <span class="text-sm w-8 text-right">1</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Write Review -->
-        <div class="mb-8 pb-8 border-b">
-          <h3 class="font-bold text-lg mb-4">{{ "Write a Review"|t }}</h3>
-          <div class="mb-4">
-            <label class="block text-sm font-semibold mb-2">{{ "Your Rating"|t }}</label>
-            <div class="flex gap-2">
-              <button class="text-3xl text-gray-300 hover:text-yellow-400">★</button>
-              <button class="text-3xl text-gray-300 hover:text-yellow-400">★</button>
-              <button class="text-3xl text-gray-300 hover:text-yellow-400">★</button>
-              <button class="text-3xl text-gray-300 hover:text-yellow-400">★</button>
-              <button class="text-3xl text-gray-300 hover:text-yellow-400">★</button>
-            </div>
-          </div>
-          <div class="mb-4">
-            <label class="block text-sm font-semibold mb-2">{{ "Your Review"|t }}</label>
-            <textarea rows="4" placeholder="{{ " Share your experience with this recipe..."|t }}"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"></textarea>
-          </div>
-          <button class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">
-            {{ "Submit Review"|t }}
-          </button>
-        </div>
-
-        <!-- Reviews List -->
-        <div class="space-y-6">
-          <!-- Review 1 -->
-          <div class="border-b pb-6">
-            <div class="flex items-center gap-3 mb-3">
-              <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold">
-                JD
-              </div>
-              <div class="flex-1">
-                <div class="font-semibold">Jane Doe</div>
-                <div class="flex gap-1 text-yellow-400 text-sm">★★★★★</div>
-              </div>
-              <div class="text-sm text-gray-500">2 {{ "days ago"|t }}</div>
-            </div>
-            <p class="text-gray-700">
-              Absolutely delicious! The curry paste makes it so flavorful. I served it with jasmine rice and my family
-              loved it. Will definitely make this again.
-            </p>
-          </div>
-
-          <!-- Review 2 -->
-          <div class="border-b pb-6">
-            <div class="flex items-center gap-3 mb-3">
-              <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
-                MT
-              </div>
-              <div class="flex-1">
-                <div class="font-semibold">Mike Thompson</div>
-                <div class="flex gap-1 text-yellow-400 text-sm">★★★★★</div>
-              </div>
-              <div class="text-sm text-gray-500">1 {{ "week ago"|t }}</div>
-            </div>
-            <p class="text-gray-700">
-              Great recipe! I added some extra vegetables (carrots and snap peas) and it turned out perfect. The
-              instructions were clear and easy to follow.
-            </p>
-          </div>
-
-          <!-- Review 3 -->
-          <div class="pb-6">
-            <div class="flex items-center gap-3 mb-3">
-              <div class="w-10 h-10 bg-pink-500 rounded-full flex items-center justify-center text-white font-bold">
-                SE
-              </div>
-              <div class="flex-1">
-                <div class="font-semibold">Sarah Evans</div>
-                <div class="flex gap-1 text-yellow-400 text-sm">★★★★☆</div>
-              </div>
-              <div class="text-sm text-gray-500">2 {{ "weeks ago"|t }}</div>
-            </div>
-            <p class="text-gray-700">
-              Very good curry! A bit spicy for my taste, so I used less curry paste. Otherwise perfect comfort food.
-            </p>
-          </div>
         </div>
       </div>
     </div>
