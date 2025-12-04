@@ -1,0 +1,174 @@
+use std::collections::HashMap;
+
+use evento::{AggregatorName, Executor, LoadResult, SubscribeBuilder};
+use imkitchen_db::table::MealPlanRecipe;
+use imkitchen_recipe::Ingredient;
+use imkitchen_shared::{Event, Metadata};
+use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
+use sea_query_sqlx::SqlxBinder;
+use sqlx::SqlitePool;
+
+use crate::{
+    GenerateRequested, MealPlan, WeekGenerated,
+    shopping_list::{Checked, Generated, Resetted, ShoppingList, Unchecked},
+};
+
+#[derive(Clone)]
+pub struct Command<E: Executor + Clone>(pub E, pub SqlitePool);
+
+impl<E: Executor + Clone> Command<E> {
+    pub async fn load(
+        &self,
+        id: impl Into<String>,
+    ) -> Result<Option<LoadResult<ShoppingList>>, evento::ReadError> {
+        evento::load_optional(&self.0, id).await
+    }
+}
+
+pub struct ToggleInput {
+    pub week: u64,
+    pub name: String,
+}
+
+impl<E: Executor + Clone> Command<E> {
+    pub async fn toggle(
+        &self,
+        input: ToggleInput,
+        metadata: &Metadata,
+    ) -> imkitchen_shared::Result<()> {
+        let user_id = metadata.trigger_by()?;
+        let Some(loaded) = self.load(&user_id).await? else {
+            imkitchen_shared::bail!("ingredient not found");
+        };
+
+        let Some(ingredients) = loaded.item.ingredients.get(&input.week) else {
+            imkitchen_shared::bail!("ingredient not found");
+        };
+
+        if !ingredients.contains(&input.name) {
+            imkitchen_shared::bail!("ingredient not found");
+        }
+
+        let checked = loaded
+            .item
+            .checked
+            .get(&input.week)
+            .and_then(|v| v.get(&input.name))
+            .is_some();
+
+        if checked {
+            evento::save_with(loaded)
+                .data(&Unchecked {
+                    week: input.week,
+                    ingredient: input.name,
+                })?
+                .metadata(metadata)?
+                .commit(&self.0)
+                .await?;
+        } else {
+            evento::save_with(loaded)
+                .data(&Checked {
+                    week: input.week,
+                    ingredient: input.name,
+                })?
+                .metadata(metadata)?
+                .commit(&self.0)
+                .await?;
+        }
+
+        Ok(())
+    }
+}
+
+impl<E: Executor + Clone> Command<E> {
+    pub async fn reset(&self, week: u64, metadata: &Metadata) -> imkitchen_shared::Result<()> {
+        let user_id = metadata.trigger_by()?;
+
+        evento::save::<ShoppingList>(&user_id)
+            .data(&Resetted { week })?
+            .metadata(metadata)?
+            .commit(&self.0)
+            .await?;
+
+        Ok(())
+    }
+}
+
+pub fn subscribe_command<E: Executor + Clone>() -> SubscribeBuilder<E> {
+    evento::subscribe("shopping-list-command")
+        .handler(handle_week_generated())
+        .skip::<MealPlan, GenerateRequested>()
+}
+
+#[evento::handler(MealPlan)]
+async fn handle_week_generated<E: Executor>(
+    context: &evento::Context<'_, E>,
+    event: Event<WeekGenerated>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let recipe_ids = event
+        .data
+        .slots
+        .iter()
+        .flat_map(|slot| {
+            let mut ids = vec![slot.main_course.id.to_owned()];
+
+            if let Some(ref r) = slot.appetizer {
+                ids.push(r.id.to_owned());
+            }
+
+            if let Some(ref r) = slot.dessert {
+                ids.push(r.id.to_owned());
+            }
+
+            if let Some(ref r) = slot.accompaniment {
+                ids.push(r.id.to_owned());
+            }
+
+            ids
+        })
+        .collect::<Vec<_>>();
+
+    let statement = Query::select()
+        .columns([MealPlanRecipe::Ingredients])
+        .from(MealPlanRecipe::Table)
+        .and_where(Expr::col(MealPlanRecipe::UserId).eq(&event.aggregator_id))
+        .and_where(Expr::col(MealPlanRecipe::Id).is_in(recipe_ids))
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    let recipe_ingredients =
+        sqlx::query_as_with::<_, (imkitchen_db::types::Bincode<Vec<Ingredient>>,), _>(&sql, values)
+            .fetch_all(&pool)
+            .await?;
+
+    let mut ingredients = HashMap::new();
+    for (recipe_ingredients,) in recipe_ingredients {
+        for ingredient in recipe_ingredients.0 {
+            let entry = ingredients
+                .entry(format!(
+                    "{}_{}",
+                    ingredient.name.to_lowercase(),
+                    ingredient.unit.to_lowercase()
+                ))
+                .or_insert(Ingredient {
+                    name: ingredient.name,
+                    quantity: 0,
+                    unit: ingredient.unit,
+                });
+
+            entry.quantity += ingredient.quantity;
+        }
+    }
+
+    evento::save::<ShoppingList>(&event.aggregator_id)
+        .data(&Generated {
+            week: event.data.start,
+            ingredients: ingredients.values().cloned().collect(),
+        })?
+        .metadata(&event.metadata)?
+        .commit(context.executor)
+        .await?;
+
+    Ok(())
+}

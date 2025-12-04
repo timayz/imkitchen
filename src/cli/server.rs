@@ -36,6 +36,8 @@ pub async fn serve(
     let recipe_query = imkitchen_recipe::Query(read_pool.clone());
     let mealplan_command = imkitchen_mealplan::Command(evento_executor.clone(), read_pool.clone());
     let mealplan_query = imkitchen_mealplan::Query(read_pool.clone());
+    let shopping_list_command =
+        imkitchen_mealplan::shopping_list::Command(evento_executor.clone(), read_pool.clone());
 
     // Start background notification worker
     tracing::info!("Starting evento subscriptions...");
@@ -91,6 +93,16 @@ pub async fn serve(
         .run(&evento_executor)
         .await?;
 
+    let sub_mealplan_shopping_list = imkitchen_mealplan::subscribe_shopping_list()
+        .data(write_pool.clone())
+        .run(&evento_executor)
+        .await?;
+
+    let sub_shopping_list_command = imkitchen_mealplan::shopping_list::subscribe_command()
+        .data(write_pool.clone())
+        .run(&evento_executor)
+        .await?;
+
     // let mut sched_mealplan = imkitchen_mealplan::scheduler(&evento_executor, &read_pool).await?;
     // sched_mealplan.start().await?;
 
@@ -106,6 +118,7 @@ pub async fn serve(
         recipe_query,
         mealplan_command,
         mealplan_query,
+        shopping_list_command,
         pool: read_pool.clone(),
     };
 
@@ -179,6 +192,8 @@ pub async fn serve(
         sub_mealplan_command.shutdown_and_wait(),
         sub_mealplan_week.shutdown_and_wait(),
         sub_mealplan_slot.shutdown_and_wait(),
+        sub_mealplan_shopping_list.shutdown_and_wait(),
+        sub_shopping_list_command.shutdown_and_wait(),
     ])
     .await;
 

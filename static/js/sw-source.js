@@ -29,7 +29,7 @@ if (workbox) {
 
   // HTML pages: Network-first with cache fallback
   workbox.routing.registerRoute(
-    ({request}) => request.mode === 'navigate',
+    ({ request }) => request.mode === 'navigate',
     new workbox.strategies.NetworkFirst({
       cacheName: 'pages-v1',
       plugins: [
@@ -46,7 +46,7 @@ if (workbox) {
 
   // Images: Cache-first for fast offline access
   workbox.routing.registerRoute(
-    ({request}) => request.destination === 'image',
+    ({ request }) => request.destination === 'image',
     new workbox.strategies.CacheFirst({
       cacheName: 'images-v1',
       plugins: [
@@ -60,10 +60,11 @@ if (workbox) {
 
   // API/Data endpoints: Network-first with cache fallback
   workbox.routing.registerRoute(
-    ({url}) => url.pathname.startsWith('/api') ||
-               url.pathname.startsWith('/recipes') ||
-               url.pathname.startsWith('/plan') ||
-               url.pathname.startsWith('/shopping'),
+    ({ url }) => url.pathname === '/' ||
+      url.pathname.startsWith('/recipes') ||
+      url.pathname.startsWith('/calendar') ||
+      url.pathname.startsWith('/profile') ||
+      url.pathname.startsWith('/community'),
     new workbox.strategies.NetworkFirst({
       cacheName: 'api-v1',
       plugins: [
@@ -77,7 +78,7 @@ if (workbox) {
 
   // Static assets: Cache-first with long expiration
   workbox.routing.registerRoute(
-    ({request}) =>
+    ({ request }) =>
       request.destination === 'style' ||
       request.destination === 'script' ||
       request.destination === 'font',
@@ -108,7 +109,7 @@ if (workbox) {
   });
 
   // Serve offline fallback when navigation fails
-  workbox.routing.setCatchHandler(({event}) => {
+  workbox.routing.setCatchHandler(({ event }) => {
     if (event.request.mode === 'navigate') {
       return caches.match(OFFLINE_FALLBACK_URL);
     }

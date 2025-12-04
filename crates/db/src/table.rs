@@ -133,3 +133,11 @@ pub enum MealPlanSlot {
     Accompaniment,
     Dessert,
 }
+
+#[derive(Iden, Clone)]
+pub enum MealPlanShoppingList {
+    Table,
+    UserId,
+    Week,
+    Ingredients,
+}
