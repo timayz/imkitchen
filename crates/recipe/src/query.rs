@@ -31,7 +31,7 @@ pub struct RecipeRow {
     pub dietary_restrictions: sqlx::types::Json<Vec<DietaryRestriction>>,
     pub accepts_accompaniment: bool,
     pub advance_prep: String,
-    // pub is_shared: bool,
+    pub is_shared: bool,
 }
 
 #[derive(Debug, Default, FromRow)]
