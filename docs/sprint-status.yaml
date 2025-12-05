@@ -85,15 +85,15 @@ development_status:
 
   # Epic 5: Community Features & Freemium Access
   epic-5: backlog
-  5-1-recipe-sharing-public-private: backlog
-  5-2-community-recipe-browse-and-discovery: backlog
-  5-3-recipe-rating-system: backlog
-  5-4-freemium-favorite-limit-10-max: backlog
-  5-5-upgrade-prompts-multiple-touchpoints: backlog
-  5-6-premium-access-control-logic: backlog
-  5-7-admin-user-management-panel: backlog
-  5-8-admin-contact-form-inbox: backlog
-  5-9-recipe-deletion-impact-favorites-cascade: backlog
+  5-1-recipe-sharing-public-private: drafted
+  5-2-community-recipe-browse-and-discovery: drafted
+  5-3-recipe-rating-system: drafted
+  5-4-freemium-favorite-limit-10-max: drafted
+  5-5-upgrade-prompts-multiple-touchpoints: drafted
+  5-6-premium-access-control-logic: drafted
+  5-7-admin-user-management-panel: drafted
+  5-8-admin-contact-form-inbox: drafted
+  5-9-recipe-deletion-impact-favorites-cascade: drafted
   epic-5-retrospective: optional
 
   # Epic 6: Notifications & Landing Page
