@@ -5,6 +5,40 @@ use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 
 use crate::{Created, Deleted, Imported, MadePrivate, Recipe, SharedToCommunity};
+use sqlx::prelude::FromRow;
+
+#[derive(Default, FromRow)]
+pub struct UserStat {
+    pub total: u32,
+    pub favorite: u32,
+    pub shared: u32,
+    pub from_community: u32,
+}
+
+impl super::Query {
+    pub async fn find_user_stat(
+        &self,
+        user_id: impl Into<String>,
+    ) -> anyhow::Result<Option<UserStat>> {
+        let user_id = user_id.into();
+        let statement = sea_query::Query::select()
+            .columns([
+                RecipeUserStat::Total,
+                RecipeUserStat::Shared,
+                RecipeUserStat::Favorite,
+                RecipeUserStat::FromCommunity,
+            ])
+            .from(RecipeUserStat::Table)
+            .and_where(Expr::col(RecipeUserStat::UserId).eq(user_id))
+            .to_owned();
+
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+        Ok(sqlx::query_as_with::<_, UserStat, _>(&sql, values)
+            .fetch_optional(&self.0)
+            .await?)
+    }
+}
 
 pub fn subscribe_user_stat<E: Executor + Clone>() -> SubscribeBuilder<E> {
     evento::subscribe("recipe-user-stat")

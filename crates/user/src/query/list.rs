@@ -5,15 +5,20 @@ use std::{
 
 use bincode::{Decode, Encode};
 use evento::{
+    AggregatorName, Executor, SubscribeBuilder,
     cursor::{Args, ReadResult},
     sql::Reader,
 };
-use imkitchen_db::table::{UserList, UserStat};
-use sea_query::{Expr, ExprTrait, SqliteQueryBuilder};
+use imkitchen_db::table::UserList;
+use imkitchen_shared::Event;
+use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::prelude::FromRow;
 
-use crate::{Role, State, UserSortBy};
+use crate::{
+    Activated, MadeAdmin, RegistrationSucceeded, Role, State, Suspended, User, UserSortBy,
+    subscription::{LifePremiumToggled, UserSubscription},
+};
 
 #[derive(Debug, Default, FromRow)]
 pub struct UserListRow {
@@ -74,9 +79,6 @@ impl UserListRow {
     }
 }
 
-#[derive(Clone)]
-pub struct Query(pub sqlx::SqlitePool);
-
 pub struct FilterQuery {
     pub state: Option<State>,
     pub role: Option<Role>,
@@ -84,7 +86,7 @@ pub struct FilterQuery {
     pub args: Args,
 }
 
-impl Query {
+impl super::Query {
     pub async fn filter(&self, input: FilterQuery) -> anyhow::Result<ReadResult<UserListRow>> {
         let mut statement = sea_query::Query::select()
             .columns([
@@ -210,24 +212,114 @@ pub struct UserCursorInt {
     pub v: i64,
 }
 
-#[derive(Default, FromRow)]
-pub struct UserStatRow {
-    pub total: u32,
-    pub premium: u32,
-    pub suspended: u32,
+pub fn subscribe_list<E: Executor + Clone>() -> SubscribeBuilder<E> {
+    evento::subscribe("user-list")
+        .handler(handle_registration_succeeded())
+        .handler(handle_suspended())
+        .handler(handle_activated())
+        .handler(handle_made_admin())
+        .handler(handle_toggle_life_premium())
+        .handler_check_off()
 }
 
-impl Query {
-    pub async fn find_stat(&self, day: u64) -> anyhow::Result<Option<UserStatRow>> {
-        let statement = sea_query::Query::select()
-            .columns([UserStat::Total, UserStat::Premium, UserStat::Suspended])
-            .from(UserStat::Table)
-            .and_where(Expr::col(UserStat::Day).eq(day))
-            .to_owned();
+#[evento::handler(User)]
+async fn handle_registration_succeeded<E: Executor>(
+    context: &evento::Context<'_, E>,
+    event: Event<RegistrationSucceeded>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let statement = Query::insert()
+        .into_table(UserList::Table)
+        .columns([
+            UserList::Id,
+            UserList::Email,
+            UserList::State,
+            UserList::Role,
+            UserList::CreatedAt,
+        ])
+        .values_panic([
+            event.aggregator_id.to_owned().into(),
+            event.data.email.to_owned().into(),
+            State::Active.to_string().into(),
+            Role::User.to_string().into(),
+            event.timestamp.into(),
+        ])
+        .to_owned();
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    sqlx::query_with(&sql, values).execute(&pool).await?;
 
-        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-        Ok(sqlx::query_as_with::<_, UserStatRow, _>(&sql, values)
-            .fetch_optional(&self.0)
-            .await?)
-    }
+    Ok(())
+}
+
+#[evento::handler(User)]
+async fn handle_suspended<E: Executor>(
+    context: &evento::Context<'_, E>,
+    event: Event<Suspended>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let statement = Query::update()
+        .table(UserList::Table)
+        .values([(UserList::State, State::Suspended.to_string().into())])
+        .and_where(Expr::col(UserList::Id).eq(&event.aggregator_id))
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
+}
+
+#[evento::handler(User)]
+async fn handle_activated<E: Executor>(
+    context: &evento::Context<'_, E>,
+    event: Event<Activated>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let statement = Query::update()
+        .table(UserList::Table)
+        .values([(UserList::State, State::Active.to_string().into())])
+        .and_where(Expr::col(UserList::Id).eq(&event.aggregator_id))
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
+}
+
+#[evento::handler(User)]
+async fn handle_made_admin<E: Executor>(
+    context: &evento::Context<'_, E>,
+    event: Event<MadeAdmin>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let statement = Query::update()
+        .table(UserList::Table)
+        .values([(UserList::Role, Role::Admin.to_string().into())])
+        .and_where(Expr::col(UserList::Id).eq(&event.aggregator_id))
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
+}
+
+#[evento::handler(UserSubscription)]
+async fn handle_toggle_life_premium<E: Executor>(
+    context: &evento::Context<'_, E>,
+    event: Event<LifePremiumToggled>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+
+    let statement = Query::update()
+        .table(UserList::Table)
+        .values([(UserList::SubscriptionExpireAt, event.data.expire_at.into())])
+        .and_where(Expr::col(UserList::Id).eq(&event.aggregator_id))
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
 }

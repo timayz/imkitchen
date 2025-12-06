@@ -1680,6 +1680,7 @@ dependencies = [
  "imkitchen-mealplan",
  "imkitchen-recipe",
  "imkitchen-shared",
+ "imkitchen-shopping",
  "imkitchen-user",
  "jsonwebtoken",
  "mime_guess",
@@ -1796,6 +1797,27 @@ dependencies = [
  "time",
  "ulid",
  "validator",
+]
+
+[[package]]
+name = "imkitchen-shopping"
+version = "0.12.1"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "cfg-if",
+ "evento",
+ "futures",
+ "imkitchen-db",
+ "imkitchen-mealplan",
+ "imkitchen-recipe",
+ "imkitchen-shared",
+ "sea-query",
+ "sea-query-sqlx",
+ "sqlx",
+ "temp-dir",
+ "time",
+ "tokio",
 ]
 
 [[package]]

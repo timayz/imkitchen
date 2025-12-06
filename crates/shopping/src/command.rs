@@ -2,16 +2,14 @@ use std::collections::HashMap;
 
 use evento::{AggregatorName, Executor, LoadResult, SubscribeBuilder};
 use imkitchen_db::table::MealPlanRecipe;
+use imkitchen_mealplan::{GenerateRequested, MealPlan, WeekGenerated};
 use imkitchen_recipe::Ingredient;
 use imkitchen_shared::{Event, Metadata};
 use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::SqlitePool;
 
-use crate::{
-    GenerateRequested, MealPlan, WeekGenerated,
-    shopping_list::{Checked, Generated, Resetted, ShoppingList, Unchecked},
-};
+use crate::{Checked, Generated, Resetted, Shopping, Unchecked};
 
 #[derive(Clone)]
 pub struct Command<E: Executor + Clone>(pub E, pub SqlitePool);
@@ -20,7 +18,7 @@ impl<E: Executor + Clone> Command<E> {
     pub async fn load(
         &self,
         id: impl Into<String>,
-    ) -> Result<Option<LoadResult<ShoppingList>>, evento::ReadError> {
+    ) -> Result<Option<LoadResult<Shopping>>, evento::ReadError> {
         evento::load_optional(&self.0, id).await
     }
 }
@@ -84,7 +82,7 @@ impl<E: Executor + Clone> Command<E> {
     pub async fn reset(&self, week: u64, metadata: &Metadata) -> imkitchen_shared::Result<()> {
         let user_id = metadata.trigger_by()?;
 
-        evento::save::<ShoppingList>(&user_id)
+        evento::save::<Shopping>(&user_id)
             .data(&Resetted { week })?
             .metadata(metadata)?
             .commit(&self.0)
@@ -95,7 +93,7 @@ impl<E: Executor + Clone> Command<E> {
 }
 
 pub fn subscribe_command<E: Executor + Clone>() -> SubscribeBuilder<E> {
-    evento::subscribe("shopping-list-command")
+    evento::subscribe("shopping-command")
         .handler(handle_week_generated())
         .skip::<MealPlan, GenerateRequested>()
 }
@@ -161,7 +159,7 @@ async fn handle_week_generated<E: Executor>(
         }
     }
 
-    evento::save::<ShoppingList>(&event.aggregator_id)
+    evento::save::<Shopping>(&event.aggregator_id)
         .data(&Generated {
             week: event.data.start,
             ingredients: ingredients.values().cloned().collect(),

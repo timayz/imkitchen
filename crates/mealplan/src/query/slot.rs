@@ -6,6 +6,7 @@ use imkitchen_shared::Event;
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::prelude::FromRow;
+use time::OffsetDateTime;
 
 #[derive(Default, FromRow)]
 pub struct MealPlanRecipeRow {
@@ -29,6 +30,105 @@ impl From<&MealPlanRecipeRow> for DaySlotRecipe {
             instructions: value.instructions.0.to_owned(),
             advance_prep: value.advance_prep.to_owned(),
         }
+    }
+}
+
+#[derive(Default, FromRow)]
+pub struct SlotRow {
+    pub day: u64,
+    pub main_course: imkitchen_db::types::Bincode<DaySlotRecipe>,
+    pub appetizer: Option<imkitchen_db::types::Bincode<DaySlotRecipe>>,
+    pub accompaniment: Option<imkitchen_db::types::Bincode<DaySlotRecipe>>,
+    pub dessert: Option<imkitchen_db::types::Bincode<DaySlotRecipe>>,
+}
+
+impl super::Query {
+    pub async fn next_slot_from(
+        &self,
+        day: OffsetDateTime,
+        user_id: impl Into<String>,
+    ) -> anyhow::Result<Option<SlotRow>> {
+        let user_id = user_id.into();
+        let statement = sea_query::Query::select()
+            .columns([
+                MealPlanSlot::Day,
+                MealPlanSlot::MainCourse,
+                MealPlanSlot::Appetizer,
+                MealPlanSlot::Accompaniment,
+                MealPlanSlot::Dessert,
+            ])
+            .from(MealPlanSlot::Table)
+            .and_where(Expr::col(MealPlanSlot::UserId).eq(&user_id))
+            .and_where(Expr::col(MealPlanSlot::Day).gte(day.unix_timestamp()))
+            .order_by_expr(Expr::col(MealPlanSlot::Day), sea_query::Order::Asc)
+            .limit(1)
+            .to_owned();
+
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+        Ok(sqlx::query_as_with::<_, SlotRow, _>(&sql, values)
+            .fetch_optional(&self.0)
+            .await?)
+    }
+
+    pub async fn next_prep_remiders_from(
+        &self,
+        day: u64,
+        user_id: impl Into<String>,
+    ) -> anyhow::Result<Option<Vec<DaySlotRecipe>>> {
+        let day = OffsetDateTime::from_unix_timestamp(day.try_into()?)?;
+        let next_day = day + time::Duration::days(1);
+        let Some(slot) = self.next_slot_from(next_day, user_id).await? else {
+            return Ok(None);
+        };
+
+        let mut remiders = vec![];
+
+        if !slot.main_course.advance_prep.is_empty() {
+            remiders.push(slot.main_course.0);
+        }
+
+        let recipe = slot.appetizer.and_then(|r| {
+            if !r.advance_prep.is_empty() {
+                Some(r.0)
+            } else {
+                None
+            }
+        });
+
+        if let Some(recipe) = recipe {
+            remiders.push(recipe);
+        }
+
+        let recipe = slot.accompaniment.and_then(|r| {
+            if !r.advance_prep.is_empty() {
+                Some(r.0)
+            } else {
+                None
+            }
+        });
+
+        if let Some(recipe) = recipe {
+            remiders.push(recipe);
+        }
+
+        let recipe = slot.dessert.and_then(|r| {
+            if !r.advance_prep.is_empty() {
+                Some(r.0)
+            } else {
+                None
+            }
+        });
+
+        if let Some(recipe) = recipe {
+            remiders.push(recipe);
+        }
+
+        if remiders.is_empty() {
+            return Ok(None);
+        }
+
+        Ok(Some(remiders))
     }
 }
 
