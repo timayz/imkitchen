@@ -7,6 +7,6 @@ use crate::template::filters;
 #[template(path = "policy.html")]
 pub struct PolicyTemplate;
 
-pub async fn page(template: Template<PolicyTemplate>) -> impl IntoResponse {
+pub async fn page(template: Template) -> impl IntoResponse {
     template.render(PolicyTemplate)
 }

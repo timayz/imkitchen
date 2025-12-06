@@ -9,7 +9,7 @@ use strum::VariantArray;
 
 use crate::auth::AuthUser;
 use crate::routes::AppState;
-use crate::template::{SERVER_ERROR_MESSAGE, ServerErrorTemplate, Template, filters};
+use crate::template::{SERVER_ERROR_MESSAGE, Template, filters};
 
 #[derive(askama::Template)]
 #[template(path = "profile-meal-preferences.html")]
@@ -37,29 +37,23 @@ impl Default for MealPreferencesTemplate {
     }
 }
 
+#[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn page(
-    template: Template<MealPreferencesTemplate>,
-    server_error: Template<ServerErrorTemplate>,
+    template: Template,
     State(state): State<AppState>,
     AuthUser(user): AuthUser,
 ) -> impl IntoResponse {
-    let preferences = match state
-        .user_meal_preference_command
-        .load_optional(&user.id)
-        .await
-    {
-        Ok(loaded) => loaded.unwrap_or_default().item,
-        Err(e) => {
-            tracing::error!("{e}");
-            return server_error.render(ServerErrorTemplate).into_response();
-        }
-    };
+    let preferences = crate::try_anyhow_response!(
+        state.user_meal_preference_command.load_optional(&user.id),
+        template
+    );
+    let preferences = preferences.unwrap_or_default();
 
     template
         .render(MealPreferencesTemplate {
-            household_size: preferences.household_size,
-            dietary_restrictions: preferences.dietary_restrictions,
-            cuisine_variety_weight: preferences.cuisine_variety_weight,
+            household_size: preferences.item.household_size,
+            dietary_restrictions: preferences.item.dietary_restrictions,
+            cuisine_variety_weight: preferences.item.cuisine_variety_weight,
             user,
             ..Default::default()
         })
@@ -75,7 +69,7 @@ pub struct ActionInput {
 }
 
 pub async fn action(
-    template: Template<MealPreferencesTemplate>,
+    template: Template,
     State(state): State<AppState>,
     AuthUser(user): AuthUser,
     Form(input): Form<ActionInput>,

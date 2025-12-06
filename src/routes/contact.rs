@@ -21,7 +21,7 @@ pub struct ContactTemplate {
     pub succeeded: bool,
 }
 
-pub async fn page(template: Template<ContactTemplate>) -> impl IntoResponse {
+pub async fn page(template: Template) -> impl IntoResponse {
     template.render(ContactTemplate {
         succeeded: false,
         error_message: None,
@@ -37,7 +37,7 @@ pub struct ActionInput {
 }
 
 pub async fn action(
-    template: Template<ContactTemplate>,
+    template: Template,
     State(app_state): State<AppState>,
     Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {

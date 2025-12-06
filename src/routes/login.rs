@@ -19,7 +19,7 @@ pub struct LoginTemplate {
     pub password: Option<String>,
 }
 
-pub async fn page(template: Template<LoginTemplate>) -> impl IntoResponse {
+pub async fn page(template: Template) -> impl IntoResponse {
     template.render(LoginTemplate {
         error_message: None,
         email: None,
@@ -34,7 +34,7 @@ pub struct ActionInput {
 }
 
 pub async fn action(
-    template: Template<LoginTemplate>,
+    template: Template,
     State(state): State<AppState>,
     jar: CookieJar,
     Form(input): Form<ActionInput>,

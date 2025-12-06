@@ -17,10 +17,7 @@ pub struct SecurityTemplate {
     pub user: imkitchen_user::AuthUser,
 }
 
-pub async fn page(
-    template: Template<SecurityTemplate>,
-    AuthUser(user): AuthUser,
-) -> impl IntoResponse {
+pub async fn page(template: Template, AuthUser(user): AuthUser) -> impl IntoResponse {
     template.render(SecurityTemplate {
         // error_message: None,
         current_path: "profile".to_owned(),
@@ -35,7 +32,7 @@ pub async fn page(
 // }
 
 pub async fn action(
-    _template: Template<SecurityTemplate>,
+    _template: Template,
     State(_app): State<AppState>,
     // Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {

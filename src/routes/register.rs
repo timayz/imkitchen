@@ -23,7 +23,7 @@ pub struct RegisterTemplate {
     pub confirm_password: Option<String>,
 }
 
-pub async fn page(template: Template<RegisterTemplate>) -> impl IntoResponse {
+pub async fn page(template: Template) -> impl IntoResponse {
     template.render(RegisterTemplate {
         processing: None,
         error_message: None,
@@ -41,7 +41,7 @@ pub struct ActionInput {
 }
 
 pub async fn action(
-    template: Template<RegisterTemplate>,
+    template: Template,
     State(state): State<AppState>,
     Form(mut input): Form<ActionInput>,
 ) -> impl IntoResponse {
@@ -113,8 +113,7 @@ pub struct RegisterStatusErrorTemplate {
 }
 
 pub async fn status(
-    template: Template<RegisterStatusTemplate>,
-    error_template: Template<RegisterStatusErrorTemplate>,
+    template: Template,
     State(state): State<AppState>,
     jar: CookieJar,
     Path((id,)): Path<(String,)>,
@@ -131,7 +130,7 @@ pub async fn status(
                 ),
                 ("ts-swap", "skip"),
             ],
-                error_template
+                template
                 .render(RegisterStatusErrorTemplate {
                     error_message: "Something went wrong, please retry later".to_owned(),
                 }))
@@ -156,7 +155,7 @@ pub async fn status(
                 Err(e) => {
                     tracing::error!("{e}");
 
-                    return error_template
+                    return template
                         .render(RegisterStatusErrorTemplate {
                             error_message: "Something went wrong, please retry later".to_owned(),
                         })
@@ -181,7 +180,7 @@ pub async fn status(
                 ),
                 ("ts-swap", "skip"),
             ],
-            error_template.render(RegisterStatusErrorTemplate {
+            template.render(RegisterStatusErrorTemplate {
                 error_message: reason,
             }),
         )

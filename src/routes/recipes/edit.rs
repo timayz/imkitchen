@@ -13,10 +13,7 @@ use strum::VariantArray;
 use crate::{
     auth::AuthUser,
     routes::AppState,
-    template::{
-        FORBIDDEN, ForbiddenTemplate, NOT_FOUND, NotFoundTemplate, SERVER_ERROR_MESSAGE,
-        ServerErrorTemplate, Template, filters,
-    },
+    template::{FORBIDDEN, ForbiddenTemplate, NOT_FOUND, SERVER_ERROR_MESSAGE, Template, filters},
 };
 
 #[derive(Deserialize, Default, Clone)]
@@ -80,27 +77,17 @@ impl Default for EditTemplate {
     }
 }
 
+#[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn page(
-    template: Template<EditTemplate>,
-    server_error: Template<ServerErrorTemplate>,
-    not_found_error: Template<NotFoundTemplate>,
-    forbidden_error: Template<ForbiddenTemplate>,
+    template: Template,
     AuthUser(user): AuthUser,
     Path((id,)): Path<(String,)>,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
-    let recipe = match app.recipe_query.find(&id).await {
-        Ok(Some(r)) => r,
-        Ok(_) => return not_found_error.render(NotFoundTemplate).into_response(),
-        Err(err) => {
-            tracing::error!(recipe = id, user = user.id, err = %err,"Failed to get recipe");
-
-            return server_error.render(ServerErrorTemplate).into_response();
-        }
-    };
+    let recipe = crate::try_anyhow_opt_response!(app.recipe_query.find(&id), template);
 
     if recipe.user_id != user.id {
-        return forbidden_error.render(ForbiddenTemplate).into_response();
+        return template.render(ForbiddenTemplate).into_response();
     }
 
     let accepts_accompaniment = if recipe.accepts_accompaniment {
@@ -137,7 +124,7 @@ pub async fn page(
 }
 
 pub async fn action(
-    template: Template<EditTemplate>,
+    template: Template,
     State(app): State<AppState>,
     AuthUser(user): AuthUser,
     Path((id,)): Path<(String,)>,
@@ -280,10 +267,10 @@ pub async fn action(
     }
 }
 
-pub async fn ingredient_row(template: Template<EditIngredientRowTemplate>) -> impl IntoResponse {
+pub async fn ingredient_row(template: Template) -> impl IntoResponse {
     template.render(EditIngredientRowTemplate)
 }
 
-pub async fn instruction_row(template: Template<EditInstructionRowTemplate>) -> impl IntoResponse {
+pub async fn instruction_row(template: Template) -> impl IntoResponse {
     template.render(EditInstructionRowTemplate)
 }

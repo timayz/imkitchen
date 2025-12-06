@@ -8,7 +8,7 @@ use imkitchen_shared::Metadata;
 use crate::{
     auth::AuthUser,
     routes::AppState,
-    template::{SERVER_ERROR_MESSAGE, ServerErrorTemplate, Template, filters},
+    template::{SERVER_ERROR_MESSAGE, Template, filters},
 };
 
 #[derive(askama::Template)]
@@ -49,54 +49,30 @@ impl Default for CalendarTemplate {
     }
 }
 
+#[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn page(
-    template: Template<CalendarTemplate>,
-    server_error: Template<ServerErrorTemplate>,
+    template: Template,
     AuthUser(user): AuthUser,
     State(app): State<AppState>,
     Path((mut index,)): Path<(u8,)>,
 ) -> impl IntoResponse {
     let week_from_now = imkitchen_mealplan::current_and_next_four_weeks_from_now()[0];
-    let weeks = match app
-        .mealplan_query
-        .filter_last_from(week_from_now.start, &user.id)
-        .await
-    {
-        Ok(weeks) => weeks,
-        Err(err) => {
-            tracing::error!(
-                user = user.id,
-                index = index,
-                err = %err,
-                "failed to get current_and_next_four_weeks_from_now on calendar page"
-            );
-
-            return server_error.render(ServerErrorTemplate).into_response();
-        }
-    };
+    let weeks = crate::try_anyhow_response!(
+        app.mealplan_query
+            .filter_last_from(week_from_now.start, &user.id),
+        template
+    );
 
     if index == 0 {
         index += 1;
     }
 
     let current = match weeks.get((index - 1) as usize) {
-        Some(week) => match app
-            .mealplan_query
-            .find_from_unix_timestamp(week.start, &user.id)
-            .await
-        {
-            Ok(week) => week,
-            Err(err) => {
-                tracing::error!(
-                    user = user.id,
-                    index = index,
-                    err = %err,
-                    "failed to get current_and_next_four_weeks_from_now on calendar page"
-                );
-
-                return server_error.render(ServerErrorTemplate).into_response();
-            }
-        },
+        Some(week) => crate::try_anyhow_response!(
+            app.mealplan_query
+                .find_from_unix_timestamp(week.start, &user.id),
+            template
+        ),
         _ => None,
     };
 
@@ -115,7 +91,7 @@ pub async fn page(
 }
 
 pub async fn regenerate_action(
-    template: Template<RegenerateTemplate>,
+    template: Template,
     State(app): State<AppState>,
     AuthUser(user): AuthUser,
 ) -> impl IntoResponse {
@@ -156,7 +132,7 @@ pub async fn regenerate_action(
 }
 
 pub async fn regenerate_status(
-    template: Template<RegenerateStatusTemplate>,
+    template: Template,
     State(app): State<AppState>,
     AuthUser(user): AuthUser,
 ) -> impl IntoResponse {
@@ -193,6 +169,6 @@ pub async fn regenerate_status(
     Redirect::to("/calendar/week-1").into_response()
 }
 
-pub async fn regenerate_modal(template: Template<RegenerateModalTemplate>) -> impl IntoResponse {
+pub async fn regenerate_modal(template: Template) -> impl IntoResponse {
     template.render(RegenerateModalTemplate)
 }

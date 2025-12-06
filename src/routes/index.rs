@@ -4,7 +4,7 @@ use imkitchen_mealplan::{DaySlotRecipe, SlotRow, WeekRow};
 
 use crate::auth::AuthOptional;
 use crate::routes::AppState;
-use crate::template::{ServerErrorTemplate, Template, filters};
+use crate::template::{Template, filters};
 
 #[derive(askama::Template)]
 #[template(path = "index.html")]
@@ -36,10 +36,9 @@ impl Default for DashboardTemplate {
     }
 }
 
+#[tracing::instrument(skip_all, fields(user = tracing::field::Empty))]
 pub async fn page(
-    template: Template<IndexTemplate>,
-    server_error: Template<ServerErrorTemplate>,
-    dashboard: Template<DashboardTemplate>,
+    template: Template,
     AuthOptional(user): AuthOptional,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
@@ -49,68 +48,36 @@ pub async fn page(
             .into_response();
     };
 
+    tracing::Span::current().record("user", &user.id);
+
     let day = imkitchen_mealplan::weekday_from_now();
-    let slot = match app.mealplan_query.next_slot_from(day, &user.id).await {
-        Ok(slot) => slot,
-        Err(err) => {
-            tracing::error!(user = user.id, err = %err, "failed to find slot");
-
-            return server_error.render(ServerErrorTemplate).into_response();
-        }
-    };
+    let slot =
+        crate::try_anyhow_response!(app.mealplan_query.next_slot_from(day, &user.id), template);
     let prep_remiders = if let Some(ref slot) = slot {
-        match app
-            .mealplan_query
-            .next_prep_remiders_from(slot.day, &user.id)
-            .await
-        {
-            Ok(remiders) => remiders,
-            Err(err) => {
-                tracing::error!(user = user.id, err = %err, "failed to find next slot");
-
-                return server_error.render(ServerErrorTemplate).into_response();
-            }
-        }
+        crate::try_anyhow_response!(
+            app.mealplan_query
+                .next_prep_remiders_from(slot.day, &user.id),
+            template
+        )
     } else {
         None
     };
 
     let week_from_now = imkitchen_mealplan::current_and_next_four_weeks_from_now()[0];
-    let week = match app
-        .mealplan_query
-        .find_last_from(week_from_now.start, &user.id)
-        .await
-    {
-        Ok(week) => week,
-        Err(err) => {
-            tracing::error!(
-                user = user.id,
-                err = %err,
-                "failed to get find last week on dashboard page"
-            );
+    let week = crate::try_anyhow_response!(
+        app.mealplan_query
+            .find_last_from(week_from_now.start, &user.id),
+        template
+    );
+    let last_week =
+        crate::try_anyhow_response!(app.mealplan_command.find_last_week(&user.id), template);
 
-            return server_error.render(ServerErrorTemplate).into_response();
-        }
-    };
-
-    let generate_next_weeks_needed = match (
-        week.as_ref(),
-        app.mealplan_command.find_last_week(&user.id).await,
-    ) {
-        (Some(week), Ok(Some(last_week))) => week.start == last_week,
-        (_, Err(err)) => {
-            tracing::error!(
-                user = user.id,
-                err = %err,
-                "failed to get find last week on dashboard page"
-            );
-
-            return server_error.render(ServerErrorTemplate).into_response();
-        }
+    let generate_next_weeks_needed = match (week.as_ref(), last_week) {
+        (Some(week), Some(last_week)) => week.start == last_week,
         _ => false,
     };
 
-    dashboard
+    template
         .render(DashboardTemplate {
             user,
             slot,

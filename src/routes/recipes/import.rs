@@ -62,10 +62,7 @@ impl Default for ImportTemplate {
     }
 }
 
-pub async fn page(
-    template: Template<ImportTemplate>,
-    AuthUser(user): AuthUser,
-) -> impl IntoResponse {
+pub async fn page(template: Template, AuthUser(user): AuthUser) -> impl IntoResponse {
     template.render(ImportTemplate {
         user,
         ..Default::default()
@@ -73,7 +70,7 @@ pub async fn page(
 }
 
 pub async fn action(
-    template: Template<ImportingTemplate>,
+    template: Template,
     State(app): State<AppState>,
     AuthUser(user): AuthUser,
     Json(recipes): Json<Vec<ImportJson>>,
@@ -123,7 +120,7 @@ pub async fn action(
 }
 
 pub async fn status(
-    template: Template<ImportingStatusTemplate>,
+    template: Template,
     State(app): State<AppState>,
     AuthUser(user): AuthUser,
     Path((id,)): Path<(String,)>,

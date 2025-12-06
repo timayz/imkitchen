@@ -6,6 +6,6 @@ use crate::template::{Template, filters};
 #[template(path = "coming-soon.html")]
 pub struct ResetPasswordTemplate;
 
-pub async fn page(template: Template<ResetPasswordTemplate>) -> impl IntoResponse {
+pub async fn page(template: Template) -> impl IntoResponse {
     template.render(ResetPasswordTemplate)
 }
