@@ -1,12 +1,12 @@
 use axum::{
     RequestPartsExt,
     extract::FromRequestParts,
-    http::{StatusCode, request::Parts},
+    http::{StatusCode, request::Parts, status},
     response::{Html, IntoResponse, Response},
 };
 use std::{collections::HashMap, convert::Infallible};
 
-use crate::language::UserLanguage;
+use crate::{language::UserLanguage, routes::AppState};
 
 pub const SERVER_ERROR_MESSAGE: &str = "Something went wrong, please retry later";
 pub const NOT_FOUND: &str = "Not found";
@@ -202,3 +202,44 @@ pub struct ForbiddenTemplate;
 #[derive(askama::Template)]
 #[template(path = "500.html")]
 pub struct ServerErrorTemplate;
+
+pub async fn into_page_response<T>(
+    result: imkitchen_shared::Result<Option<T>>,
+    parts: &mut Parts,
+    state: &AppState,
+) -> Result<T, impl IntoResponse + use<T>> {
+    match result {
+        Ok(Some(r)) => Ok(r),
+        Ok(_) => Err(
+            Template::<NotFoundTemplate>::from_request_parts(parts, state)
+                .await
+                .expect("Infallible")
+                .render(NotFoundTemplate)
+                .into_response(),
+        ),
+        Err(imkitchen_shared::Error::Validate(err)) => {
+            Err((status::StatusCode::BAD_REQUEST, err.to_string()).into_response())
+        }
+        Err(imkitchen_shared::Error::Forbidden) => Err(
+            Template::<ForbiddenTemplate>::from_request_parts(parts, state)
+                .await
+                .expect("Infallible")
+                .render(ForbiddenTemplate)
+                .into_response(),
+        ),
+        Err(imkitchen_shared::Error::Server(err)) => {
+            Err((status::StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response())
+        }
+        Err(imkitchen_shared::Error::Unknown(err)) => {
+            tracing::error!("{err}");
+
+            Err(
+                Template::<ServerErrorTemplate>::from_request_parts(parts, state)
+                    .await
+                    .expect("Infallible")
+                    .render(ServerErrorTemplate)
+                    .into_response(),
+            )
+        }
+    }
+}

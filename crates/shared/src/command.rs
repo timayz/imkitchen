@@ -1,12 +1,15 @@
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error("{0}")]
+    #[error("bad request: {0}")]
     Validate(#[from] validator::ValidationErrors),
 
-    #[error("{0}")]
+    #[error("forbidden")]
+    Forbidden,
+
+    #[error("server error: {0}")]
     Server(String),
 
-    #[error("{0}")]
+    #[error("internal server error: {0}")]
     Unknown(#[from] anyhow::Error),
 }
 

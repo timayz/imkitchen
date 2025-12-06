@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use axum::{Router, response::IntoResponse, routing::post};
 use sqlx::SqlitePool;
 

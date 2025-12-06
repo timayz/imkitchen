@@ -1,4 +1,5 @@
 use axum::extract::State;
+use axum::http::request::Parts;
 use axum::response::IntoResponse;
 use imkitchen_mealplan::{DaySlotRecipe, SlotRow, WeekRow};
 
@@ -36,88 +37,70 @@ impl Default for DashboardTemplate {
     }
 }
 
+#[tracing::instrument(skip_all, fields(user = tracing::field::Empty))]
 pub async fn page(
     template: Template<IndexTemplate>,
-    server_error: Template<ServerErrorTemplate>,
     dashboard: Template<DashboardTemplate>,
     AuthOptional(user): AuthOptional,
     State(app): State<AppState>,
+    mut parts: Parts,
 ) -> impl IntoResponse {
+    crate::template::into_page_response(
+        page_handler(template, dashboard, user, &app).await,
+        &mut parts,
+        &app,
+    )
+    .await
+}
+
+pub async fn page_handler(
+    template: Template<IndexTemplate>,
+    dashboard: Template<DashboardTemplate>,
+    user: Option<imkitchen_user::AuthUser>,
+    app: &AppState,
+) -> imkitchen_shared::Result<Option<impl IntoResponse + use<>>> {
     let Some(user) = user else {
-        return template
-            .render(IndexTemplate { show_nav: true })
-            .into_response();
+        return Ok(Some(
+            template
+                .render(IndexTemplate { show_nav: true })
+                .into_response(),
+        ));
     };
+
+    tracing::Span::current().record("user", &user.id);
 
     let day = imkitchen_mealplan::weekday_from_now();
-    let slot = match app.mealplan_query.next_slot_from(day, &user.id).await {
-        Ok(slot) => slot,
-        Err(err) => {
-            tracing::error!(user = user.id, err = %err, "failed to find slot");
-
-            return server_error.render(ServerErrorTemplate).into_response();
-        }
-    };
+    let slot = app.mealplan_query.next_slot_from(day, &user.id).await?;
     let prep_remiders = if let Some(ref slot) = slot {
-        match app
-            .mealplan_query
+        app.mealplan_query
             .next_prep_remiders_from(slot.day, &user.id)
-            .await
-        {
-            Ok(remiders) => remiders,
-            Err(err) => {
-                tracing::error!(user = user.id, err = %err, "failed to find next slot");
-
-                return server_error.render(ServerErrorTemplate).into_response();
-            }
-        }
+            .await?
     } else {
         None
     };
 
     let week_from_now = imkitchen_mealplan::current_and_next_four_weeks_from_now()[0];
-    let week = match app
+    let week = app
         .mealplan_query
         .find_last_from(week_from_now.start, &user.id)
-        .await
-    {
-        Ok(week) => week,
-        Err(err) => {
-            tracing::error!(
-                user = user.id,
-                err = %err,
-                "failed to get find last week on dashboard page"
-            );
+        .await?;
+    let last_week = app.mealplan_command.find_last_week(&user.id).await?;
 
-            return server_error.render(ServerErrorTemplate).into_response();
-        }
-    };
-
-    let generate_next_weeks_needed = match (
-        week.as_ref(),
-        app.mealplan_command.find_last_week(&user.id).await,
-    ) {
-        (Some(week), Ok(Some(last_week))) => week.start == last_week,
-        (_, Err(err)) => {
-            tracing::error!(
-                user = user.id,
-                err = %err,
-                "failed to get find last week on dashboard page"
-            );
-
-            return server_error.render(ServerErrorTemplate).into_response();
-        }
+    let generate_next_weeks_needed = match (week.as_ref(), last_week) {
+        (Some(week), Some(last_week)) => week.start == last_week,
         _ => false,
     };
 
-    dashboard
-        .render(DashboardTemplate {
-            user,
-            slot,
-            week,
-            prep_remiders,
-            generate_next_weeks_needed,
-            ..Default::default()
-        })
-        .into_response()
+    Ok(Some(
+        dashboard
+            .render(DashboardTemplate {
+                user,
+                slot,
+                week,
+                prep_remiders,
+                generate_next_weeks_needed,
+                ..Default::default()
+            })
+            .into_response(),
+    ))
 }
