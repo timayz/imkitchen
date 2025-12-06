@@ -5,7 +5,7 @@ use imkitchen_mealplan::{DaySlotRecipe, SlotRow, WeekRow};
 
 use crate::auth::AuthOptional;
 use crate::routes::AppState;
-use crate::template::{ServerErrorTemplate, Template, filters};
+use crate::template::{Template, filters};
 
 #[derive(askama::Template)]
 #[template(path = "index.html")]
