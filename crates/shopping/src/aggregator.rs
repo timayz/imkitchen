@@ -3,17 +3,17 @@ use std::collections::{HashMap, HashSet};
 use bincode::{Decode, Encode};
 use imkitchen_shared::Event;
 
-use crate::shopping_list::{Checked, Generated, Resetted, Unchecked};
+use crate::{Checked, Generated, Resetted, Unchecked};
 
 #[derive(Default, Encode, Decode, Clone, Debug)]
-pub struct ShoppingList {
+pub struct Shopping {
     pub user_id: String,
     pub checked: HashMap<u64, HashSet<String>>,
     pub ingredients: HashMap<u64, HashSet<String>>,
 }
 
 #[evento::aggregator]
-impl ShoppingList {
+impl Shopping {
     async fn handle_generated(&mut self, event: Event<Generated>) -> anyhow::Result<()> {
         self.user_id = event.metadata.trigger_by()?;
 

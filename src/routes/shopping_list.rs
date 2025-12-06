@@ -4,8 +4,9 @@ use axum::{
     extract::{Json, Path, State},
     response::IntoResponse,
 };
-use imkitchen_mealplan::{ShoppingListWeekRow, WeekListRow, shopping_list::ToggleInput};
+use imkitchen_mealplan::WeekListRow;
 use imkitchen_shared::Metadata;
+use imkitchen_shopping::{ListWeekRow, ToggleInput};
 use serde::Deserialize;
 
 use crate::{
@@ -15,18 +16,18 @@ use crate::{
 };
 
 #[derive(askama::Template)]
-#[template(path = "shopping-list.html")]
-pub struct ShoppingListTemplate {
+#[template(path = "shopping.html")]
+pub struct ShoppingTemplate {
     pub current_path: String,
     pub user: imkitchen_user::AuthUser,
     pub weeks: Vec<WeekListRow>,
-    pub current: Option<ShoppingListWeekRow>,
+    pub current: Option<ListWeekRow>,
     pub recipes: Option<HashSet<String>>,
     pub checked: Option<HashSet<String>>,
     pub index: u8,
 }
 
-impl Default for ShoppingListTemplate {
+impl Default for ShoppingTemplate {
     fn default() -> Self {
         Self {
             current_path: "calendar".to_owned(),
@@ -41,7 +42,7 @@ impl Default for ShoppingListTemplate {
 }
 
 pub async fn page(
-    template: Template<ShoppingListTemplate>,
+    template: Template<ShoppingTemplate>,
     server_error: Template<ServerErrorTemplate>,
     AuthUser(user): AuthUser,
     State(app): State<AppState>,
@@ -71,11 +72,7 @@ pub async fn page(
     }
 
     let current = match weeks.get((index - 1) as usize) {
-        Some(week) => match app
-            .mealplan_query
-            .next_shopping_list_from(week.start, &user.id)
-            .await
-        {
+        Some(week) => match app.shopping_query.next_from(week.start, &user.id).await {
             Ok(Some(mut row)) => {
                 row.ingredients.sort_by_key(|i| i.name.to_owned());
                 Some(row)
@@ -96,7 +93,7 @@ pub async fn page(
     };
 
     let checked = match weeks.get((index - 1) as usize) {
-        Some(week) => match app.shopping_list_command.load(&user.id).await {
+        Some(week) => match app.shopping_command.load(&user.id).await {
             Ok(Some(loaded)) => loaded.item.checked.get(&week.start).cloned(),
             Ok(_) => None,
             Err(err) => {
@@ -155,7 +152,7 @@ pub async fn page(
     };
 
     template
-        .render(ShoppingListTemplate {
+        .render(ShoppingTemplate {
             user,
             weeks,
             recipes,
@@ -180,7 +177,7 @@ pub async fn toggle_action(
     Json(input): Json<ToggleJson>,
 ) -> impl IntoResponse {
     match app
-        .shopping_list_command
+        .shopping_command
         .toggle(
             ToggleInput {
                 week,

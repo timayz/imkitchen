@@ -1,10 +1,13 @@
+use crate::{Contact, FormSubmitted, MarkedReadAndReply, Reopened, Resolved};
 use bincode::{Decode, Encode};
+use evento::{AggregatorName, Executor, SubscribeBuilder};
 use evento::{
     cursor::{Args, ReadResult},
     sql::Reader,
 };
-use imkitchen_db::table::{ContactList, ContactStat};
-use sea_query::{Expr, ExprTrait, SqliteQueryBuilder};
+use imkitchen_db::table::ContactList;
+use imkitchen_shared::Event;
+use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::prelude::FromRow;
 
@@ -82,9 +85,6 @@ impl evento::sql::Bind for ContactRow {
     }
 }
 
-#[derive(Clone)]
-pub struct Query(pub sqlx::SqlitePool);
-
 pub struct FilterQuery {
     pub status: Option<Status>,
     pub subject: Option<Subject>,
@@ -92,7 +92,7 @@ pub struct FilterQuery {
     pub args: Args,
 }
 
-impl Query {
+impl super::Query {
     pub async fn filter(&self, input: FilterQuery) -> anyhow::Result<ReadResult<ContactRow>> {
         let mut statement = sea_query::Query::select()
             .columns([
@@ -151,30 +151,98 @@ impl Query {
     }
 }
 
-#[derive(Default, Debug, FromRow)]
-pub struct Stat {
-    pub total: u32,
-    pub unread: u32,
-    // pub today: u32,
-    pub avg_response_time: u32,
-    // pub avg_response_time_last_week: u8,
+pub fn subscribe_list<E: Executor + Clone>() -> SubscribeBuilder<E> {
+    evento::subscribe("contact-list")
+        .handler(handle_form_submmited())
+        .handler(handle_reopened())
+        .handler(handle_marked_read_and_reply())
+        .handler(handle_resolved())
+        .handler_check_off()
 }
 
-impl Query {
-    pub async fn find_stat(&self, day: u64) -> anyhow::Result<Option<Stat>> {
-        let statement = sea_query::Query::select()
-            .columns([
-                ContactStat::Total,
-                ContactStat::Unread,
-                ContactStat::AvgResponseTime,
-            ])
-            .from(ContactStat::Table)
-            .and_where(Expr::col(ContactStat::Day).eq(day))
-            .to_owned();
+#[evento::handler(Contact)]
+async fn handle_form_submmited<E: Executor>(
+    context: &evento::Context<'_, E>,
+    event: Event<FormSubmitted>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let statement = Query::insert()
+        .into_table(ContactList::Table)
+        .columns([
+            ContactList::Id,
+            ContactList::Email,
+            ContactList::Status,
+            ContactList::Subject,
+            ContactList::Message,
+            ContactList::Name,
+            ContactList::CreatedAt,
+        ])
+        .values_panic([
+            event.aggregator_id.to_owned().into(),
+            event.data.email.to_owned().into(),
+            event.data.status.to_string().into(),
+            event.data.subject.to_string().into(),
+            event.data.message.to_owned().into(),
+            event.data.name.to_owned().into(),
+            event.timestamp.into(),
+        ])
+        .to_owned();
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    sqlx::query_with(&sql, values).execute(&pool).await?;
 
-        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-        Ok(sqlx::query_as_with::<_, Stat, _>(&sql, values)
-            .fetch_optional(&self.0)
-            .await?)
-    }
+    Ok(())
+}
+
+#[evento::handler(Contact)]
+async fn handle_marked_read_and_reply<E: Executor>(
+    context: &evento::Context<'_, E>,
+    event: Event<MarkedReadAndReply>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let statement = Query::update()
+        .table(ContactList::Table)
+        .values([(ContactList::Status, event.data.status.to_string().into())])
+        .and_where(Expr::col(ContactList::Id).eq(&event.aggregator_id))
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
+}
+
+#[evento::handler(Contact)]
+async fn handle_resolved<E: Executor>(
+    context: &evento::Context<'_, E>,
+    event: Event<Resolved>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let statement = Query::update()
+        .table(ContactList::Table)
+        .values([(ContactList::Status, event.data.status.to_string().into())])
+        .and_where(Expr::col(ContactList::Id).eq(&event.aggregator_id))
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
+}
+
+#[evento::handler(Contact)]
+async fn handle_reopened<E: Executor>(
+    context: &evento::Context<'_, E>,
+    event: Event<Reopened>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let statement = Query::update()
+        .table(ContactList::Table)
+        .values([(ContactList::Status, event.data.status.to_string().into())])
+        .and_where(Expr::col(ContactList::Id).eq(&event.aggregator_id))
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
 }

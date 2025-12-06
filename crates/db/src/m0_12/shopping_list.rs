@@ -1,38 +1,30 @@
 use sea_query::{ColumnDef, Index, Table, TableCreateStatement, TableDropStatement};
 
-use crate::table::MealPlanShoppingList;
+use crate::table::ShoppingList;
 
 pub struct CreateTable;
 
 fn create_table() -> TableCreateStatement {
     Table::create()
-        .table(MealPlanShoppingList::Table)
+        .table(ShoppingList::Table)
         .col(
-            ColumnDef::new(MealPlanShoppingList::UserId)
+            ColumnDef::new(ShoppingList::UserId)
                 .string()
                 .not_null()
                 .string_len(26),
         )
-        .col(
-            ColumnDef::new(MealPlanShoppingList::Week)
-                .big_integer()
-                .not_null(),
-        )
-        .col(
-            ColumnDef::new(MealPlanShoppingList::Ingredients)
-                .blob()
-                .not_null(),
-        )
+        .col(ColumnDef::new(ShoppingList::Week).big_integer().not_null())
+        .col(ColumnDef::new(ShoppingList::Ingredients).blob().not_null())
         .primary_key(
             Index::create()
-                .col(MealPlanShoppingList::UserId)
-                .col(MealPlanShoppingList::Week),
+                .col(ShoppingList::UserId)
+                .col(ShoppingList::Week),
         )
         .to_owned()
 }
 
 fn drop_table() -> TableDropStatement {
-    Table::drop().table(MealPlanShoppingList::Table).to_owned()
+    Table::drop().table(ShoppingList::Table).to_owned()
 }
 
 #[async_trait::async_trait]

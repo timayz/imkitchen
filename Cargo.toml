@@ -93,6 +93,7 @@ imkitchen-shared = { path = "crates/shared", version = "0.12.1" }
 imkitchen-contact = { path = "crates/contact", version = "0.12.1" }
 imkitchen-recipe = { path = "crates/recipe", version = "0.12.1" }
 imkitchen-mealplan = { path = "crates/mealplan", version = "0.12.1" }
+imkitchen-shopping = { path = "crates/shopping", version = "0.12.1" }
 imkitchen-user = { path = "crates/user", version = "0.12.1" }
 imkitchen-db = { path = "crates/db", version = "0.12.1" }
 

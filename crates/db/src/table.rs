@@ -135,7 +135,7 @@ pub enum MealPlanSlot {
 }
 
 #[derive(Iden, Clone)]
-pub enum MealPlanShoppingList {
+pub enum ShoppingList {
     Table,
     UserId,
     Week,
