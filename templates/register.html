@@ -21,7 +21,7 @@
       <h1 class="text-3xl font-bold mb-2 text-center">{{ "Create Your Account"|t }}</h1>
       <p class="text-gray-600 text-center mb-8">{{ "Start planning meals in seconds. No credit card required."|t }}</p>
 
-      <form id="register-form" ts-req="" ts-req-selector="#register-form" method="post" action="/register" autocomplete="off">
+      <form ts-req="" ts-target="form button" method="post" action="/register" autocomplete="off">
         <!-- Account Info -->
         <div class="mb-8">
           <h2 class="text-lg font-semibold mb-4">{{ "Account Information"|t }}</h2>
@@ -64,31 +64,10 @@
           </p>
         </div>
 
-        {% if let Some(error_message) = error_message %}
-        <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-            <div class="text-sm text-red-700 mt-1">{{ error_message|t }}.</div>
-        </div>
-        {% endif %}
-
-        {% if let Some(id) = processing %}
-        <div id="processing-alert" class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <div class="flex items-start gap-3">
-                  <div class="flex-shrink-0 mt-0.5">
-                      <div class="animate-spin rounded-full h-5 w-5 border-2 border-yellow-200 border-t-yellow-600"></div>
-                  </div>
-                  <div class="flex-1">
-                      <div class="font-semibold text-yellow-800">{{ "Creating your account..."|t }}</div>
-                      <div class="text-sm text-yellow-700 mt-1">{{ "Verifying if email is not aleady taken."|t }}</div>
-                  </div>
-              </div>
-        </div>
-        <div ts-trigger="load delay 1s" ts-req="/register/{{ id }}/status" ts-req-method="GET"></div>
-        {% else %}
         <button type="submit"
-          class="w-full bg-green-600 text-white font-semibold py-3 rounded-lg hover:bg-green-700 transition">
+          class="w-full bg-green-600 text-white font-semibold py-3 rounded-lg hover:bg-green-700 transition cursor-pointer">
           {{ "Create Account"|t }}
         </button>
-        {% endif %}
       </form>
 
       <div class="mt-6 text-center">
@@ -99,5 +78,11 @@
       </div>
     </div>
   </div>
+  
+  <!-- Toast Container (Fixed Position) -->
+  <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2 max-w-md">
+      <!-- Toasts will be dynamically added here -->
+  </div>
+
 </body>
 {% endblock %}

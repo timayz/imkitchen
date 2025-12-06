@@ -69,7 +69,7 @@ pub async fn page(
     State(app): State<AppState>,
     Query(input): Query<PageQuery>,
 ) -> impl IntoResponse {
-    let stat = crate::try_anyhow_response!(app.recipe_query.find_user_stat(&user.id), template)
+    let stat = crate::try_page_response!(app.recipe_query.find_user_stat(&user.id), template)
         .unwrap_or_default();
 
     let query = input.clone();
@@ -89,7 +89,7 @@ pub async fn page(
         .cuisine_type
         .and_then(|v| CuisineType::from_str(v.as_str()).ok());
 
-    let recipes = crate::try_anyhow_response!(
+    let recipes = crate::try_page_response!(
         app.recipe_query.filter(RecipesQuery {
             user_id: Some(user.id.to_owned()),
             recipe_type,

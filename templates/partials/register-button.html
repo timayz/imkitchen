@@ -1,0 +1,12 @@
+{% if let Some(id) = id %}
+<button type="submit" disabled
+  class="w-full bg-green-600 text-white font-semibold py-3 rounded-lg transition">
+  <div class="animate-spin rounded-full h-5 w-5 border-2 border-green-200 border-t-green-600 shrink-0 m-auto"></div>
+  <div ts-trigger="load delay 1s" ts-req="/register/{{ id }}/status" ts-req-method="GET" ts-target="parent button"></div>
+</button>
+{% else %}
+<button type="submit"
+  class="w-full bg-green-600 text-white font-semibold py-3 rounded-lg hover:bg-green-700 transition cursor-pointer">
+    {{ "Create Account"|t }}
+</button>
+{% endif %}

@@ -52,9 +52,9 @@ pub async fn page(
 
     let day = imkitchen_mealplan::weekday_from_now();
     let slot =
-        crate::try_anyhow_response!(app.mealplan_query.next_slot_from(day, &user.id), template);
+        crate::try_page_response!(app.mealplan_query.next_slot_from(day, &user.id), template);
     let prep_remiders = if let Some(ref slot) = slot {
-        crate::try_anyhow_response!(
+        crate::try_page_response!(
             app.mealplan_query
                 .next_prep_remiders_from(slot.day, &user.id),
             template
@@ -64,13 +64,13 @@ pub async fn page(
     };
 
     let week_from_now = imkitchen_mealplan::current_and_next_four_weeks_from_now()[0];
-    let week = crate::try_anyhow_response!(
+    let week = crate::try_page_response!(
         app.mealplan_query
             .find_last_from(week_from_now.start, &user.id),
         template
     );
     let last_week =
-        crate::try_anyhow_response!(app.mealplan_command.find_last_week(&user.id), template);
+        crate::try_page_response!(app.mealplan_command.find_last_week(&user.id), template);
 
     let generate_next_weeks_needed = match (week.as_ref(), last_week) {
         (Some(week), Some(last_week)) => week.start == last_week,

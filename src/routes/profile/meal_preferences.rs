@@ -43,7 +43,7 @@ pub async fn page(
     State(state): State<AppState>,
     AuthUser(user): AuthUser,
 ) -> impl IntoResponse {
-    let preferences = crate::try_anyhow_response!(
+    let preferences = crate::try_page_response!(
         state.user_meal_preference_command.load_optional(&user.id),
         template
     );
