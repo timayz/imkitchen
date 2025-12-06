@@ -49,7 +49,7 @@ pub async fn page(
     Path((mut index,)): Path<(u8,)>,
 ) -> impl IntoResponse {
     let week_from_now = imkitchen_mealplan::current_and_next_four_weeks_from_now()[0];
-    let weeks = crate::try_anyhow_response!(
+    let weeks = crate::try_page_response!(
         app.mealplan_query
             .filter_last_from(week_from_now.start, &user.id),
         template
@@ -60,25 +60,24 @@ pub async fn page(
     }
 
     let current = match weeks.get((index - 1) as usize) {
-        Some(week) => crate::try_anyhow_response!(
-            app.shopping_query.next_from(week.start, &user.id),
-            template
-        )
-        .map(|mut r| {
-            r.ingredients.sort_by_key(|i| i.name.to_owned());
-            r
-        }),
+        Some(week) => {
+            crate::try_page_response!(app.shopping_query.next_from(week.start, &user.id), template)
+                .map(|mut r| {
+                    r.ingredients.sort_by_key(|i| i.name.to_owned());
+                    r
+                })
+        }
         _ => None,
     };
 
     let checked = match weeks.get((index - 1) as usize) {
-        Some(week) => crate::try_anyhow_response!(app.shopping_command.load(&user.id), template)
+        Some(week) => crate::try_page_response!(app.shopping_command.load(&user.id), template)
             .and_then(|loaded| loaded.item.checked.get(&week.start).cloned()),
         _ => None,
     };
 
     let recipes = match weeks.get((index - 1) as usize) {
-        Some(week) => crate::try_anyhow_response!(
+        Some(week) => crate::try_page_response!(
             app.mealplan_query
                 .find_from_unix_timestamp(week.start, &user.id),
             template
@@ -132,7 +131,7 @@ pub async fn toggle_action(
     Path((week,)): Path<(u64,)>,
     Json(input): Json<ToggleJson>,
 ) -> impl IntoResponse {
-    crate::try_anyhow_response!(
+    crate::try_page_response!(
         app.shopping_command.toggle(
             ToggleInput {
                 week,

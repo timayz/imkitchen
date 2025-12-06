@@ -41,10 +41,9 @@ pub async fn page(
     template: Template,
     Query(query): Query<PageQuery>,
     State(app_state): State<AppState>,
-
     AuthAdmin(user): AuthAdmin,
 ) -> impl IntoResponse {
-    let stat = crate::try_anyhow_opt_response!(app_state.user_query.find_stat(0), template);
+    let stat = crate::try_page_opt_response!(app_state.user_query.find_stat(0), template);
 
     let args = Args {
         first: query.first,
@@ -53,7 +52,7 @@ pub async fn page(
         before: query.before,
     };
 
-    let users = crate::try_anyhow_response!(
+    let users = crate::try_page_response!(
         app_state.user_query.filter(FilterQuery {
             state: None,
             sort_by: UserSortBy::RecentlyJoined,
@@ -79,12 +78,12 @@ pub async fn suspend(
     State(app_state): State<AppState>,
     AuthAdmin(user): AuthAdmin,
 ) -> impl IntoResponse {
-    crate::try_anyhow_response!(
+    crate::try_page_response!(
         app_state.user_command.suspend(&id, &Metadata::by(user.id)),
         template
     );
 
-    let mut user = crate::try_anyhow_opt_response!(app_state.user_query.find(&id), template);
+    let mut user = crate::try_page_opt_response!(app_state.user_query.find(&id), template);
 
     user.state.0 = UserState::Suspended;
 
@@ -111,12 +110,12 @@ pub async fn activate(
     State(app_state): State<AppState>,
     AuthAdmin(user): AuthAdmin,
 ) -> impl IntoResponse {
-    crate::try_anyhow_response!(
+    crate::try_page_response!(
         app_state.user_command.activate(&id, &Metadata::by(user.id)),
         template
     );
 
-    let mut user = crate::try_anyhow_opt_response!(app_state.user_query.find(&id), template);
+    let mut user = crate::try_page_opt_response!(app_state.user_query.find(&id), template);
 
     user.state.0 = UserState::Active;
 
@@ -143,14 +142,14 @@ pub async fn toggle_premium(
     State(app_state): State<AppState>,
     AuthAdmin(user): AuthAdmin,
 ) -> impl IntoResponse {
-    let expire_at = crate::try_anyhow_response!(
+    let expire_at = crate::try_page_response!(
         app_state
             .user_subscription_command
             .toggle_life_premium(&id, &Metadata::by(user.id.to_owned())),
         template
     );
 
-    let mut user = crate::try_anyhow_opt_response!(app_state.user_query.find(&id), template);
+    let mut user = crate::try_page_opt_response!(app_state.user_query.find(&id), template);
 
     user.subscription_expire_at = expire_at;
 

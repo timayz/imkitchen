@@ -55,7 +55,7 @@ pub async fn page(
     AuthAdmin(user): AuthAdmin,
 ) -> impl IntoResponse {
     let stats =
-        crate::try_anyhow_response!(app.contact_query.find_stat(0), template).unwrap_or_default();
+        crate::try_page_response!(app.contact_query.find_stat(0), template).unwrap_or_default();
 
     let r_query = query.clone();
     let subject = Subject::from_str(&query.subject.unwrap_or("".to_owned())).ok();
@@ -70,7 +70,7 @@ pub async fn page(
         before: query.before,
     };
 
-    let contacts = crate::try_anyhow_response!(
+    let contacts = crate::try_page_response!(
         app.contact_query.filter(FilterQuery {
             status,
             subject,
@@ -97,13 +97,13 @@ pub async fn mark_read_and_reply(
     State(app): State<AppState>,
     AuthAdmin(user): AuthAdmin,
 ) -> impl IntoResponse {
-    crate::try_anyhow_response!(
+    crate::try_page_response!(
         app.contact_command
             .mark_read_and_reply(&id, &Metadata::by(user.id)),
         template
     );
 
-    let mut contact = crate::try_anyhow_opt_response!(app.contact_query.find(&id), template);
+    let mut contact = crate::try_page_opt_response!(app.contact_query.find(&id), template);
 
     contact.status.0 = Status::Read;
 
@@ -130,12 +130,12 @@ pub async fn resolve(
     State(app): State<AppState>,
     AuthAdmin(user): AuthAdmin,
 ) -> impl IntoResponse {
-    crate::try_anyhow_response!(
+    crate::try_page_response!(
         app.contact_command.resolve(&id, &Metadata::by(user.id)),
         template
     );
 
-    let mut contact = crate::try_anyhow_opt_response!(app.contact_query.find(&id), template);
+    let mut contact = crate::try_page_opt_response!(app.contact_query.find(&id), template);
 
     contact.status.0 = Status::Resolved;
 
@@ -162,12 +162,12 @@ pub async fn reopen(
     State(app): State<AppState>,
     AuthAdmin(user): AuthAdmin,
 ) -> impl IntoResponse {
-    crate::try_anyhow_response!(
+    crate::try_page_response!(
         app.contact_command.reopen(&id, &Metadata::by(user.id)),
         template
     );
 
-    let mut contact = crate::try_anyhow_opt_response!(app.contact_query.find(&id), template);
+    let mut contact = crate::try_page_opt_response!(app.contact_query.find(&id), template);
 
     contact.status.0 = Status::Read;
 
