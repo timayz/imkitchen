@@ -21,10 +21,7 @@ impl Default for CommunityTemplate {
     }
 }
 
-pub async fn page(
-    template: Template<CommunityTemplate>,
-    AuthUser(user): AuthUser,
-) -> impl IntoResponse {
+pub async fn page(template: Template, AuthUser(user): AuthUser) -> impl IntoResponse {
     template.render(CommunityTemplate {
         user,
         ..Default::default()

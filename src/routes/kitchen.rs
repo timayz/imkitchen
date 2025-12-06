@@ -16,10 +16,7 @@ impl Default for KitchenTemplate {
     }
 }
 
-pub async fn page(
-    template: Template<KitchenTemplate>,
-    Path((_id,)): Path<(String,)>,
-) -> impl IntoResponse {
+pub async fn page(template: Template, Path((_id,)): Path<(String,)>) -> impl IntoResponse {
     template
         .render(KitchenTemplate {
             ..Default::default()

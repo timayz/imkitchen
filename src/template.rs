@@ -1,12 +1,12 @@
 use axum::{
     RequestPartsExt,
     extract::FromRequestParts,
-    http::{StatusCode, request::Parts, status},
+    http::{StatusCode, request::Parts},
     response::{Html, IntoResponse, Response},
 };
 use std::{collections::HashMap, convert::Infallible};
 
-use crate::{language::UserLanguage, routes::AppState};
+use crate::language::UserLanguage;
 
 pub const SERVER_ERROR_MESSAGE: &str = "Something went wrong, please retry later";
 pub const NOT_FOUND: &str = "Not found";
@@ -106,22 +106,46 @@ pub(crate) mod filters {
     // }
 }
 
-pub struct Template<T> {
-    template: Option<T>,
+pub struct Template {
     preferred_language: String,
     preferred_language_iso: String,
     config: crate::config::Config,
 }
 
-impl<T> Template<T> {
-    pub fn render(mut self, t: T) -> Self {
-        self.template = Some(t);
+impl Template {
+    pub fn render<T: askama::Template>(&self, template: T) -> Response {
+        let mut values: HashMap<&str, Box<dyn std::any::Any>> = HashMap::new();
+        values.insert(
+            "preferred_language",
+            Box::new(self.preferred_language.to_owned()),
+        );
+        values.insert(
+            "preferred_language_iso",
+            Box::new(self.preferred_language_iso.to_owned()),
+        );
+        values.insert("config", Box::new(self.config.clone()));
 
-        self
+        #[cfg(debug_assertions)]
+        {
+            values.insert("is_dev", Box::new(true));
+        }
+        #[cfg(not(debug_assertions))]
+        {
+            values.insert("is_dev", Box::new(false));
+        }
+
+        match template.render_with_values(&values) {
+            Ok(html) => Html(html).into_response(),
+            Err(err) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to render template. Error: {err}"),
+            )
+                .into_response(),
+        }
     }
 }
 
-impl<T> FromRequestParts<crate::routes::AppState> for Template<T> {
+impl FromRequestParts<crate::routes::AppState> for Template {
     type Rejection = Infallible;
 
     async fn from_request_parts(
@@ -146,48 +170,10 @@ impl<T> FromRequestParts<crate::routes::AppState> for Template<T> {
             .to_owned();
 
         Ok(Template {
-            template: None,
             preferred_language,
             preferred_language_iso,
             config: state.config.clone(),
         })
-    }
-}
-
-impl<T> IntoResponse for Template<T>
-where
-    T: askama::Template,
-{
-    fn into_response(self) -> Response {
-        let mut values: HashMap<&str, Box<dyn std::any::Any>> = HashMap::new();
-        values.insert("preferred_language", Box::new(self.preferred_language));
-        values.insert(
-            "preferred_language_iso",
-            Box::new(self.preferred_language_iso),
-        );
-        values.insert("config", Box::new(self.config));
-
-        #[cfg(debug_assertions)]
-        {
-            values.insert("is_dev", Box::new(true));
-        }
-        #[cfg(not(debug_assertions))]
-        {
-            values.insert("is_dev", Box::new(false));
-        }
-
-        match self
-            .template
-            .expect("template must be define using template.template(..)")
-            .render_with_values(&values)
-        {
-            Ok(html) => Html(html).into_response(),
-            Err(err) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to render template. Error: {err}"),
-            )
-                .into_response(),
-        }
     }
 }
 
@@ -203,43 +189,39 @@ pub struct ForbiddenTemplate;
 #[template(path = "500.html")]
 pub struct ServerErrorTemplate;
 
-pub async fn into_page_response<T>(
-    result: imkitchen_shared::Result<Option<T>>,
-    parts: &mut Parts,
-    state: &AppState,
-) -> Result<T, impl IntoResponse + use<T>> {
-    match result {
-        Ok(Some(r)) => Ok(r),
-        Ok(_) => Err(
-            Template::<NotFoundTemplate>::from_request_parts(parts, state)
-                .await
-                .expect("Infallible")
-                .render(NotFoundTemplate)
-                .into_response(),
-        ),
-        Err(imkitchen_shared::Error::Validate(err)) => {
-            Err((status::StatusCode::BAD_REQUEST, err.to_string()).into_response())
-        }
-        Err(imkitchen_shared::Error::Forbidden) => Err(
-            Template::<ForbiddenTemplate>::from_request_parts(parts, state)
-                .await
-                .expect("Infallible")
-                .render(ForbiddenTemplate)
-                .into_response(),
-        ),
-        Err(imkitchen_shared::Error::Server(err)) => {
-            Err((status::StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response())
-        }
-        Err(imkitchen_shared::Error::Unknown(err)) => {
-            tracing::error!("{err}");
+#[macro_export]
+macro_rules! try_anyhow_opt_response {
+    ($result:expr, $template:expr) => {
+        match $result.await {
+            Ok(Some(r)) => r,
+            Ok(_) => {
+                return $template
+                    .render($crate::template::NotFoundTemplate)
+                    .into_response()
+            }
+            Err(err) => {
+                tracing::error!("{err}");
 
-            Err(
-                Template::<ServerErrorTemplate>::from_request_parts(parts, state)
-                    .await
-                    .expect("Infallible")
-                    .render(ServerErrorTemplate)
-                    .into_response(),
-            )
+                return $template
+                    .render($crate::template::ServerErrorTemplate)
+                    .into_response();
+            }
         }
-    }
+    };
+}
+
+#[macro_export]
+macro_rules! try_anyhow_response {
+    ($result:expr, $template:expr) => {
+        match $result.await {
+            Ok(r) => r,
+            Err(err) => {
+                tracing::error!("{err}");
+
+                return $template
+                    .render($crate::template::ServerErrorTemplate)
+                    .into_response();
+            }
+        }
+    };
 }

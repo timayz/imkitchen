@@ -143,7 +143,7 @@ impl FromRequestParts<crate::routes::AppState> for AuthAdmin {
             return Ok(AuthAdmin(user));
         }
 
-        let template = Template::<ForbiddenTemplate>::from_request_parts(parts, state)
+        let template = Template::from_request_parts(parts, state)
             .await
             .expect("Infallible");
 

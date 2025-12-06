@@ -14,7 +14,7 @@ use strum::VariantArray;
 use crate::{
     auth::AuthUser,
     routes::AppState,
-    template::{ServerErrorTemplate, Template, filters},
+    template::{Template, filters},
 };
 
 #[derive(askama::Template)]
@@ -62,53 +62,44 @@ pub struct PageQuery {
     pub sort_by: Option<SortBy>,
 }
 
+#[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn page(
-    template: Template<IndexTemplate>,
-    server_error: Template<ServerErrorTemplate>,
+    template: Template,
     AuthUser(user): AuthUser,
     State(app): State<AppState>,
     Query(input): Query<PageQuery>,
 ) -> impl IntoResponse {
-    let stat = match app.recipe_query.find_user_stat(&user.id).await {
-        Ok(s) => s.unwrap_or_default(),
-        Err(err) => {
-            tracing::error!(user = user.id, err = %err, "Failed to query user recipe global stats");
+    let stat = crate::try_anyhow_response!(app.recipe_query.find_user_stat(&user.id), template)
+        .unwrap_or_default();
 
-            return server_error.render(ServerErrorTemplate).into_response();
-        }
-    };
     let query = input.clone();
+
     let args = Args {
         first: input.first,
         after: input.after,
         last: input.last,
         before: input.before,
     };
+
     let recipe_type = input
         .recipe_type
         .and_then(|v| RecipeType::from_str(v.as_str()).ok());
+
     let cuisine_type = input
         .cuisine_type
         .and_then(|v| CuisineType::from_str(v.as_str()).ok());
-    let recipes = match app
-        .recipe_query
-        .filter(RecipesQuery {
+
+    let recipes = crate::try_anyhow_response!(
+        app.recipe_query.filter(RecipesQuery {
             user_id: Some(user.id.to_owned()),
             recipe_type,
             cuisine_type,
             is_shared: None,
             sort_by: input.sort_by.unwrap_or_default(),
             args: args.limit(20),
-        })
-        .await
-    {
-        Ok(recipes) => recipes,
-        Err(err) => {
-            tracing::error!(user = user.id, err = %err, "Failed to query user recipes");
-
-            return server_error.render(ServerErrorTemplate).into_response();
-        }
-    };
+        }),
+        template
+    );
 
     template
         .render(IndexTemplate {
@@ -122,7 +113,7 @@ pub async fn page(
 }
 
 pub async fn create(
-    template: Template<CreateTemplate>,
+    template: Template,
     AuthUser(user): AuthUser,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
@@ -141,7 +132,7 @@ pub async fn create(
 }
 
 pub async fn create_status(
-    template: Template<CreateStatusTemplate>,
+    template: Template,
     AuthUser(user): AuthUser,
     Path((id,)): Path<(String,)>,
     State(app): State<AppState>,

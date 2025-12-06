@@ -9,10 +9,7 @@ use imkitchen_shared::Metadata;
 use crate::{
     auth::AuthUser,
     routes::AppState,
-    template::{
-        FORBIDDEN, ForbiddenTemplate, NOT_FOUND, NotFoundTemplate, SERVER_ERROR_MESSAGE,
-        ServerErrorTemplate, Template, filters,
-    },
+    template::{FORBIDDEN, ForbiddenTemplate, NOT_FOUND, SERVER_ERROR_MESSAGE, Template, filters},
 };
 
 #[derive(askama::Template)]
@@ -52,27 +49,17 @@ impl Default for DetailTemplate {
     }
 }
 
+#[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn page(
-    template: Template<DetailTemplate>,
-    server_error: Template<ServerErrorTemplate>,
-    not_found_error: Template<NotFoundTemplate>,
-    forbidden_error: Template<ForbiddenTemplate>,
+    template: Template,
     AuthUser(user): AuthUser,
     Path((id,)): Path<(String,)>,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
-    let recipe = match app.recipe_query.find(&id).await {
-        Ok(Some(r)) => r,
-        Ok(_) => return not_found_error.render(NotFoundTemplate).into_response(),
-        Err(err) => {
-            tracing::error!(recipe = id, user = user.id, err = %err,"Failed to get recipe");
-
-            return server_error.render(ServerErrorTemplate).into_response();
-        }
-    };
+    let recipe = crate::try_anyhow_opt_response!(app.recipe_query.find(&id), template);
 
     if recipe.user_id != user.id {
-        return forbidden_error.render(ForbiddenTemplate).into_response();
+        return template.render(ForbiddenTemplate).into_response();
     }
 
     template
@@ -85,7 +72,7 @@ pub async fn page(
 }
 
 pub async fn delete_action(
-    template: Template<DeleteTemplate>,
+    template: Template,
     State(app): State<AppState>,
     AuthUser(user): AuthUser,
     Path((id,)): Path<(String,)>,
@@ -143,7 +130,7 @@ pub async fn delete_action(
 }
 
 pub async fn delete_status(
-    template: Template<DeleteStatusTemplate>,
+    template: Template,
     State(app): State<AppState>,
     AuthUser(user): AuthUser,
     Path((id,)): Path<(String,)>,
@@ -159,9 +146,6 @@ pub async fn delete_status(
     }
 }
 
-pub async fn delete_modal(
-    template: Template<DeleteModalTemplate>,
-    Path((id,)): Path<(String,)>,
-) -> impl IntoResponse {
+pub async fn delete_modal(template: Template, Path((id,)): Path<(String,)>) -> impl IntoResponse {
     template.render(DeleteModalTemplate { id })
 }

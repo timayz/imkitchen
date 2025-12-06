@@ -13,7 +13,7 @@ use strum::VariantArray;
 use crate::{
     auth::AuthAdmin,
     routes::AppState,
-    template::{NotFoundTemplate, ServerErrorTemplate, Template, filters},
+    template::{Template, filters},
 };
 
 #[derive(askama::Template)]
@@ -47,23 +47,15 @@ pub struct PageQuery {
     pub sort_by: Option<String>,
 }
 
+#[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn page(
-    template: Template<ContactTemplate>,
-    server_error_template: Template<ServerErrorTemplate>,
+    template: Template,
     Query(query): Query<PageQuery>,
     State(app): State<AppState>,
-    AuthAdmin(_user): AuthAdmin,
+    AuthAdmin(user): AuthAdmin,
 ) -> impl IntoResponse {
-    let stats = match app.contact_query.find_stat(0).await {
-        Ok(stats) => stats.unwrap_or_default(),
-        Err(e) => {
-            tracing::error!("{e}");
-
-            return server_error_template
-                .render(ServerErrorTemplate)
-                .into_response();
-        }
-    };
+    let stats =
+        crate::try_anyhow_response!(app.contact_query.find_stat(0), template).unwrap_or_default();
 
     let r_query = query.clone();
     let subject = Subject::from_str(&query.subject.unwrap_or("".to_owned())).ok();
@@ -78,25 +70,15 @@ pub async fn page(
         before: query.before,
     };
 
-    let contacts = match app
-        .contact_query
-        .filter(FilterQuery {
+    let contacts = crate::try_anyhow_response!(
+        app.contact_query.filter(FilterQuery {
             status,
             subject,
             sort_by,
             args: args.limit(20),
-        })
-        .await
-    {
-        Ok(stats) => stats,
-        Err(e) => {
-            tracing::error!("{e}");
-
-            return server_error_template
-                .render(ServerErrorTemplate)
-                .into_response();
-        }
-    };
+        }),
+        template
+    );
 
     template
         .render(ContactTemplate {
@@ -108,37 +90,20 @@ pub async fn page(
         .into_response()
 }
 
+#[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn mark_read_and_reply(
-    template: Template<ContactTemplate>,
-    not_found: Template<NotFoundTemplate>,
-    server_error_template: Template<ServerErrorTemplate>,
+    template: Template,
     Path((id,)): Path<(String,)>,
     State(app): State<AppState>,
     AuthAdmin(user): AuthAdmin,
 ) -> impl IntoResponse {
-    if let Err(e) = app
-        .contact_command
-        .mark_read_and_reply(&id, &Metadata::by(user.id))
-        .await
-    {
-        tracing::error!("{e}");
+    crate::try_anyhow_response!(
+        app.contact_command
+            .mark_read_and_reply(&id, &Metadata::by(user.id)),
+        template
+    );
 
-        return server_error_template
-            .render(ServerErrorTemplate)
-            .into_response();
-    }
-
-    let mut contact = match app.contact_query.find(&id).await {
-        Ok(Some(u)) => u,
-        Ok(_) => return not_found.render(NotFoundTemplate).into_response(),
-        Err(e) => {
-            tracing::error!("{e}");
-
-            return server_error_template
-                .render(ServerErrorTemplate)
-                .into_response();
-        }
-    };
+    let mut contact = crate::try_anyhow_opt_response!(app.contact_query.find(&id), template);
 
     contact.status.0 = Status::Read;
 
@@ -158,37 +123,19 @@ pub async fn mark_read_and_reply(
         .into_response()
 }
 
+#[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn resolve(
-    template: Template<ContactTemplate>,
-    not_found: Template<NotFoundTemplate>,
-    server_error_template: Template<ServerErrorTemplate>,
+    template: Template,
     Path((id,)): Path<(String,)>,
     State(app): State<AppState>,
     AuthAdmin(user): AuthAdmin,
 ) -> impl IntoResponse {
-    if let Err(e) = app
-        .contact_command
-        .resolve(&id, &Metadata::by(user.id))
-        .await
-    {
-        tracing::error!("{e}");
+    crate::try_anyhow_response!(
+        app.contact_command.resolve(&id, &Metadata::by(user.id)),
+        template
+    );
 
-        return server_error_template
-            .render(ServerErrorTemplate)
-            .into_response();
-    }
-
-    let mut contact = match app.contact_query.find(&id).await {
-        Ok(Some(u)) => u,
-        Ok(_) => return not_found.render(NotFoundTemplate).into_response(),
-        Err(e) => {
-            tracing::error!("{e}");
-
-            return server_error_template
-                .render(ServerErrorTemplate)
-                .into_response();
-        }
-    };
+    let mut contact = crate::try_anyhow_opt_response!(app.contact_query.find(&id), template);
 
     contact.status.0 = Status::Resolved;
 
@@ -208,37 +155,19 @@ pub async fn resolve(
         .into_response()
 }
 
+#[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn reopen(
-    template: Template<ContactTemplate>,
-    not_found: Template<NotFoundTemplate>,
-    server_error_template: Template<ServerErrorTemplate>,
+    template: Template,
     Path((id,)): Path<(String,)>,
     State(app): State<AppState>,
     AuthAdmin(user): AuthAdmin,
 ) -> impl IntoResponse {
-    if let Err(e) = app
-        .contact_command
-        .reopen(&id, &Metadata::by(user.id))
-        .await
-    {
-        tracing::error!("{e}");
+    crate::try_anyhow_response!(
+        app.contact_command.reopen(&id, &Metadata::by(user.id)),
+        template
+    );
 
-        return server_error_template
-            .render(ServerErrorTemplate)
-            .into_response();
-    }
-
-    let mut contact = match app.contact_query.find(&id).await {
-        Ok(Some(u)) => u,
-        Ok(_) => return not_found.render(NotFoundTemplate).into_response(),
-        Err(e) => {
-            tracing::error!("{e}");
-
-            return server_error_template
-                .render(ServerErrorTemplate)
-                .into_response();
-        }
-    };
+    let mut contact = crate::try_anyhow_opt_response!(app.contact_query.find(&id), template);
 
     contact.status.0 = Status::Read;
 

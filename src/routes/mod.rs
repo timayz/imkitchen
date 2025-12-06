@@ -42,7 +42,7 @@ pub struct AppState {
     pub pool: SqlitePool,
 }
 
-pub async fn fallback(template: Template<NotFoundTemplate>) -> impl IntoResponse {
+pub async fn fallback(template: Template) -> impl IntoResponse {
     template.render(NotFoundTemplate)
 }
 

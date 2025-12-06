@@ -8,6 +8,6 @@ pub struct IndexTemplate {
     pub show_nav: bool,
 }
 
-pub async fn page(template: Template<IndexTemplate>) -> impl IntoResponse {
+pub async fn page(template: Template) -> impl IntoResponse {
     template.render(IndexTemplate { show_nav: false })
 }

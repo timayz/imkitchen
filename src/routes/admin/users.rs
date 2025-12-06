@@ -8,11 +8,7 @@ use imkitchen_user::{FilterQuery, Role, State as UserState, UserListRow, UserSor
 use serde::Deserialize;
 use strum::VariantArray;
 
-use crate::{
-    auth::AuthAdmin,
-    routes::AppState,
-    template::{NotFoundTemplate, ServerErrorTemplate, Template},
-};
+use crate::{auth::AuthAdmin, routes::AppState, template::Template};
 
 #[derive(askama::Template)]
 #[template(path = "admin-users.html")]
@@ -40,26 +36,15 @@ pub struct PageQuery {
     pub before: Option<Value>,
 }
 
+#[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn page(
-    template: Template<UsersTemplate>,
-    server_error_template: Template<ServerErrorTemplate>,
-    not_found: Template<NotFoundTemplate>,
+    template: Template,
     Query(query): Query<PageQuery>,
     State(app_state): State<AppState>,
 
-    AuthAdmin(_user): AuthAdmin,
+    AuthAdmin(user): AuthAdmin,
 ) -> impl IntoResponse {
-    let stat = match app_state.user_query.find_stat(0).await {
-        Ok(Some(stats)) => stats,
-        Ok(_) => return not_found.render(NotFoundTemplate).into_response(),
-        Err(e) => {
-            tracing::error!("{e}");
-
-            return server_error_template
-                .render(ServerErrorTemplate)
-                .into_response();
-        }
-    };
+    let stat = crate::try_anyhow_opt_response!(app_state.user_query.find_stat(0), template);
 
     let args = Args {
         first: query.first,
@@ -68,25 +53,15 @@ pub async fn page(
         before: query.before,
     };
 
-    let users = match app_state
-        .user_query
-        .filter(FilterQuery {
+    let users = crate::try_anyhow_response!(
+        app_state.user_query.filter(FilterQuery {
             state: None,
             sort_by: UserSortBy::RecentlyJoined,
             role: None,
             args: args.limit(20),
-        })
-        .await
-    {
-        Ok(stats) => stats,
-        Err(e) => {
-            tracing::error!("{e}");
-
-            return server_error_template
-                .render(ServerErrorTemplate)
-                .into_response();
-        }
-    };
+        }),
+        template
+    );
 
     template
         .render(UsersTemplate {
@@ -97,37 +72,19 @@ pub async fn page(
         .into_response()
 }
 
+#[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn suspend(
-    template: Template<UsersTemplate>,
-    server_error_template: Template<ServerErrorTemplate>,
-    not_found: Template<NotFoundTemplate>,
+    template: Template,
     Path((id,)): Path<(String,)>,
     State(app_state): State<AppState>,
     AuthAdmin(user): AuthAdmin,
 ) -> impl IntoResponse {
-    if let Err(e) = app_state
-        .user_command
-        .suspend(&id, &Metadata::by(user.id))
-        .await
-    {
-        tracing::error!("{e}");
+    crate::try_anyhow_response!(
+        app_state.user_command.suspend(&id, &Metadata::by(user.id)),
+        template
+    );
 
-        return server_error_template
-            .render(ServerErrorTemplate)
-            .into_response();
-    }
-
-    let mut user = match app_state.user_query.find(&id).await {
-        Ok(Some(u)) => u,
-        Ok(_) => return not_found.render(NotFoundTemplate).into_response(),
-        Err(e) => {
-            tracing::error!("{e}");
-
-            return server_error_template
-                .render(ServerErrorTemplate)
-                .into_response();
-        }
-    };
+    let mut user = crate::try_anyhow_opt_response!(app_state.user_query.find(&id), template);
 
     user.state.0 = UserState::Suspended;
 
@@ -147,37 +104,19 @@ pub async fn suspend(
         .into_response()
 }
 
+#[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn activate(
-    template: Template<UsersTemplate>,
-    server_error_template: Template<ServerErrorTemplate>,
-    not_found: Template<NotFoundTemplate>,
+    template: Template,
     Path((id,)): Path<(String,)>,
     State(app_state): State<AppState>,
     AuthAdmin(user): AuthAdmin,
 ) -> impl IntoResponse {
-    if let Err(e) = app_state
-        .user_command
-        .activate(&id, &Metadata::by(user.id))
-        .await
-    {
-        tracing::error!("{e}");
+    crate::try_anyhow_response!(
+        app_state.user_command.activate(&id, &Metadata::by(user.id)),
+        template
+    );
 
-        return server_error_template
-            .render(ServerErrorTemplate)
-            .into_response();
-    }
-
-    let mut user = match app_state.user_query.find(&id).await {
-        Ok(Some(u)) => u,
-        Ok(_) => return not_found.render(NotFoundTemplate).into_response(),
-        Err(e) => {
-            tracing::error!("{e}");
-
-            return server_error_template
-                .render(ServerErrorTemplate)
-                .into_response();
-        }
-    };
+    let mut user = crate::try_anyhow_opt_response!(app_state.user_query.find(&id), template);
 
     user.state.0 = UserState::Active;
 
@@ -197,40 +136,21 @@ pub async fn activate(
         .into_response()
 }
 
+#[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn toggle_premium(
-    template: Template<UsersTemplate>,
-    server_error_template: Template<ServerErrorTemplate>,
-    not_found: Template<NotFoundTemplate>,
+    template: Template,
     Path((id,)): Path<(String,)>,
     State(app_state): State<AppState>,
     AuthAdmin(user): AuthAdmin,
 ) -> impl IntoResponse {
-    let expire_at = match app_state
-        .user_subscription_command
-        .toggle_life_premium(&id, &Metadata::by(user.id.to_owned()))
-        .await
-    {
-        Ok(expire_at) => expire_at,
-        Err(e) => {
-            tracing::error!("{e}");
+    let expire_at = crate::try_anyhow_response!(
+        app_state
+            .user_subscription_command
+            .toggle_life_premium(&id, &Metadata::by(user.id.to_owned())),
+        template
+    );
 
-            return server_error_template
-                .render(ServerErrorTemplate)
-                .into_response();
-        }
-    };
-
-    let mut user = match app_state.user_query.find(&id).await {
-        Ok(Some(u)) => u,
-        Ok(_) => return not_found.render(NotFoundTemplate).into_response(),
-        Err(e) => {
-            tracing::error!("{e}");
-
-            return server_error_template
-                .render(ServerErrorTemplate)
-                .into_response();
-        }
-    };
+    let mut user = crate::try_anyhow_opt_response!(app_state.user_query.find(&id), template);
 
     user.subscription_expire_at = expire_at;
 
