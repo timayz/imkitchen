@@ -241,6 +241,14 @@ macro_rules! try_page_response {
 }
 
 #[derive(askama::Template)]
+#[template(path = "partials/toast-success.html")]
+pub struct ToastSuccessTemplate<'a> {
+    pub original: Option<&'a str>,
+    pub message: &'a str,
+    pub description: Option<&'a str>,
+}
+
+#[derive(askama::Template)]
 #[template(path = "partials/toast-error.html")]
 pub struct ToastErrorTemplate<'a> {
     pub original: Option<&'a str>,

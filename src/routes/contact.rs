@@ -11,21 +11,15 @@ use strum::VariantArray;
 
 use crate::{
     routes::AppState,
-    template::{Template, filters},
+    template::{Template, ToastErrorTemplate, ToastSuccessTemplate, filters},
 };
 
 #[derive(askama::Template)]
 #[template(path = "contact.html")]
-pub struct ContactTemplate {
-    pub error_message: Option<String>,
-    pub succeeded: bool,
-}
+pub struct ContactTemplate;
 
 pub async fn page(template: Template) -> impl IntoResponse {
-    template.render(ContactTemplate {
-        succeeded: false,
-        error_message: None,
-    })
+    template.render(ContactTemplate)
 }
 
 #[derive(Deserialize)]
@@ -42,15 +36,15 @@ pub async fn action(
     Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {
     let Ok(subject) = Subject::from_str(&input.subject) else {
-        return template.render(ContactTemplate {
-            error_message: Some("invalide subject".into()),
-            succeeded: false,
+        return template.render(ToastErrorTemplate {
+            original: None,
+            message: "invalid subject",
+            description: None,
         });
     };
 
-    match app_state
-        .contact_command
-        .submit_contact_form(
+    crate::try_response!(
+        app_state.contact_command.submit_contact_form(
             SubmitContactFormInput {
                 name: input.name,
                 email: input.email,
@@ -58,16 +52,16 @@ pub async fn action(
                 message: input.message,
             },
             &Metadata::default(),
-        )
-        .await
-    {
-        Ok(_) => template.render(ContactTemplate {
-            succeeded: true,
-            error_message: None,
-        }),
-        Err(e) => template.render(ContactTemplate {
-            succeeded: false,
-            error_message: Some(e.to_string()),
-        }),
-    }
+        ),
+        template,
+        None::<ContactTemplate>
+    );
+
+    template
+        .render(ToastSuccessTemplate {
+            original: None,
+            message: "Contact form submitted successfully",
+            description: None,
+        })
+        .into_response()
 }
