@@ -131,7 +131,7 @@ pub async fn toggle_action(
     Path((week,)): Path<(u64,)>,
     Json(input): Json<ToggleJson>,
 ) -> impl IntoResponse {
-    crate::try_page_response!(
+    crate::try_response!(
         app.shopping_command.toggle(
             ToggleInput {
                 week,
@@ -139,7 +139,8 @@ pub async fn toggle_action(
             },
             &Metadata::by(user.id.to_owned()),
         ),
-        template
+        template,
+        None::<ShoppingTemplate>
     );
 
     "<div></div>".into_response()
