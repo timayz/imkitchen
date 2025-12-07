@@ -89,7 +89,7 @@ pub async fn action(
     template
         .render(ToastSuccessTemplate {
             original: None,
-            message: "Meal preferences successfully updated",
+            message: "Meal preferences updated successfully",
             description: None,
         })
         .into_response()
