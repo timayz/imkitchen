@@ -108,7 +108,7 @@ pub(crate) mod filters {
 
 pub struct Template {
     preferred_language: String,
-    preferred_language_iso: String,
+    pub preferred_language_iso: String,
     config: crate::config::Config,
 }
 

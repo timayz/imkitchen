@@ -1,6 +1,6 @@
 use axum::Form;
 use axum::extract::State;
-use axum::response::{Html, IntoResponse, Redirect};
+use axum::response::{IntoResponse, Redirect};
 use axum_extra::extract::CookieJar;
 use imkitchen_shared::Metadata;
 use imkitchen_user::LoginInput;
@@ -8,20 +8,18 @@ use serde::Deserialize;
 
 use crate::auth::{self, build_cookie};
 use crate::routes::AppState;
-use crate::template::filters;
 use crate::template::{SERVER_ERROR_MESSAGE, Template};
+use crate::template::{ToastErrorTemplate, filters};
 
 #[derive(askama::Template)]
 #[template(path = "login.html")]
 pub struct LoginTemplate {
-    pub error_message: Option<String>,
     pub email: Option<String>,
     pub password: Option<String>,
 }
 
 pub async fn page(template: Template) -> impl IntoResponse {
     template.render(LoginTemplate {
-        error_message: None,
         email: None,
         password: None,
     })
@@ -39,61 +37,37 @@ pub async fn action(
     jar: CookieJar,
     Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {
-    match state
-        .user_command
-        .login(
+    let id = crate::try_response!(
+        state.user_command.login(
             LoginInput {
                 email: input.email.to_owned(),
                 password: input.password.to_owned(),
-                lang: "en".to_owned(),
+                lang: template.preferred_language_iso.to_owned(),
             },
             &Metadata::default(),
-        )
-        .await
-    {
-        Ok(id) => {
-            let auth_cookie = match build_cookie(state.config.jwt, id) {
-                Ok(cookie) => cookie,
-                Err(e) => {
-                    tracing::error!("{e}");
+        ),
+        template,
+        None::<LoginTemplate>
+    );
 
-                    return template
-                        .render(LoginTemplate {
-                            email: Some(input.email),
-                            password: Some(input.password),
-                            error_message: Some(SERVER_ERROR_MESSAGE.to_owned()),
-                        })
-                        .into_response();
-                }
-            };
-
-            let jar = jar.add(auth_cookie);
-
-            let mut resp = Html("").into_response();
-            resp.headers_mut()
-                .insert("ts-location", "/".parse().unwrap());
-
-            (jar, resp).into_response()
-        }
-        Err(imkitchen_shared::Error::Unknown(e)) => {
+    let auth_cookie = match build_cookie(state.config.jwt, id) {
+        Ok(cookie) => cookie,
+        Err(e) => {
             tracing::error!("{e}");
 
-            template
-                .render(LoginTemplate {
-                    email: Some(input.email),
-                    password: Some(input.password),
-                    error_message: Some(SERVER_ERROR_MESSAGE.to_owned()),
+            return template
+                .render(ToastErrorTemplate {
+                    original: None,
+                    message: SERVER_ERROR_MESSAGE,
+                    description: None,
                 })
-                .into_response()
+                .into_response();
         }
-        Err(e) => template
-            .render(LoginTemplate {
-                email: Some(input.email),
-                password: Some(input.password),
-                error_message: Some(e.to_string()),
-            })
-            .into_response(),
-    }
+    };
+
+    let jar = jar.add(auth_cookie);
+
+    (jar, Redirect::to("/")).into_response()
 }
 
 pub async fn logout(jar: CookieJar) -> impl IntoResponse {
