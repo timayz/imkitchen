@@ -13,7 +13,7 @@
         <p class="text-gray-600">{{ "Manage your recipe collection"|t }}</p>
       </div>
       <div class="flex gap-3">
-        <button ts-req="/recipes/create"
+        <button ts-req="/recipes/create" ts-req-method="post"
           class="flex-1 md:flex-none px-4 md:px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition text-center text-sm md:text-base">
           ✏️ {{ "Create Recipe"|t }}
         </button>

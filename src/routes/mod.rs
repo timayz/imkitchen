@@ -82,7 +82,7 @@ pub fn router(app_state: AppState) -> Router {
         )
         .route("/community", get(community::page))
         .route("/recipes", get(recipes::index::page))
-        .route("/recipes/create", get(recipes::index::create))
+        .route("/recipes/create", post(recipes::index::create))
         .route(
             "/recipes/create/{id}/status",
             get(recipes::index::create_status),
