@@ -3,6 +3,9 @@ pub enum Error {
     #[error("{0}")]
     Validate(#[from] validator::ValidationErrors),
 
+    #[error("forbidden")]
+    Forbidden,
+
     #[error("{0}")]
     Server(String),
 

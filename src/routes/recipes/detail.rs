@@ -9,7 +9,7 @@ use imkitchen_shared::Metadata;
 use crate::{
     auth::AuthUser,
     routes::AppState,
-    template::{FORBIDDEN, ForbiddenTemplate, NOT_FOUND, Template, ToastErrorTemplate, filters},
+    template::{ForbiddenTemplate, Template, filters},
 };
 
 #[derive(askama::Template)]
@@ -22,7 +22,7 @@ pub struct DeleteModalTemplate {
 #[template(path = "partials/recipes-delete-button.html")]
 pub struct DeleteButtonTemplate<'a> {
     pub id: &'a str,
-    pub loading: bool,
+    pub status: crate::template::Status,
 }
 
 #[derive(askama::Template)]
@@ -79,19 +79,11 @@ pub async fn delete_action(
     );
 
     if recipe.item.deleted {
-        return template.render(ToastErrorTemplate {
-            message: NOT_FOUND,
-            description: None,
-            original: None,
-        });
+        crate::try_response!(sync: Ok(None::<()>), template, None::<DeleteButtonTemplate>);
     }
 
     if recipe.item.user_id != user.id {
-        return template.render(ToastErrorTemplate {
-            message: FORBIDDEN,
-            description: None,
-            original: None,
-        });
+        crate::try_response!(sync: Err(imkitchen_shared::Error::Forbidden), template, None::<DeleteButtonTemplate>);
     }
 
     crate::try_response!(
@@ -104,7 +96,7 @@ pub async fn delete_action(
     template
         .render(DeleteButtonTemplate {
             id: &id,
-            loading: true,
+            status: crate::template::Status::Pending,
         })
         .into_response()
 }
@@ -121,13 +113,13 @@ pub async fn delete_status(
         template,
         Some(DeleteButtonTemplate {
             id: &id,
-            loading: false
+            status: crate::template::Status::Idle,
         })
     ) {
         Some(_) => template
             .render(DeleteButtonTemplate {
                 id: &id,
-                loading: true,
+                status: crate::template::Status::Checking,
             })
             .into_response(),
         _ => Redirect::to("/recipes").into_response(),

@@ -12,6 +12,12 @@ pub const SERVER_ERROR_MESSAGE: &str = "Something went wrong, please retry later
 pub const NOT_FOUND: &str = "Not found";
 pub const FORBIDDEN: &str = "Forbidden";
 
+pub enum Status {
+    Idle,
+    Pending,
+    Checking,
+}
+
 pub(crate) mod filters {
     use time::OffsetDateTime;
 
@@ -312,6 +318,9 @@ macro_rules! try_response {
                 tracing::error!("{err}");
                 $crate::try_response!(@render $template, $fallback, $crate::template::SERVER_ERROR_MESSAGE)
             }
+            Err(imkitchen_shared::Error::Forbidden) => {
+                $crate::try_response!(@render $template, $fallback, $crate::template::FORBIDDEN)
+            }
             Err(err) => {
                 $crate::try_response!(@render $template, $fallback, err.to_string().as_str())
             }
@@ -328,6 +337,9 @@ macro_rules! try_response {
             Err(imkitchen_shared::Error::Unknown(err)) => {
                 tracing::error!("{err}");
                 $crate::try_response!(@render $template, $fallback, $crate::template::SERVER_ERROR_MESSAGE)
+            }
+            Err(imkitchen_shared::Error::Forbidden) => {
+                $crate::try_response!(@render $template, $fallback, $crate::template::FORBIDDEN)
             }
             Err(err) => {
                 $crate::try_response!(@render $template, $fallback, err.to_string().as_str())
