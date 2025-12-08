@@ -175,7 +175,7 @@
           <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded">{{ recipe.node.cuisine_type.to_string().as_str()|t }}</span>
         </div>
         <div class="flex items-center justify-between text-sm text-gray-600 mb-3">
-          <span>⏱️ {{ recipe.node.cook_time + recipe.node.prep_time }} min</span>
+          <span>⏱️ {{ (recipe.node.cook_time + recipe.node.prep_time)|minutes }}</span>
           {% if recipe.node.accepts_accompaniment %}
           <span>🍽️ {{ "Accepts sides"|t }}</span>
           {% endif %}

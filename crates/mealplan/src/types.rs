@@ -30,8 +30,8 @@ pub struct DaySlotRecipe {
 }
 
 impl DaySlotRecipe {
-    pub fn total_prep_time(&self) -> u32 {
-        (self.prep_time + self.cook_time).into()
+    pub fn total_prep_time(&self) -> u16 {
+        self.prep_time + self.cook_time
     }
 }
 

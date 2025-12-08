@@ -70,7 +70,7 @@
               <span class="text-2xl">⏱️</span>
               <div>
                 <div class="font-semibold">{{ "Total Time"|t }}</div>
-                <div>{{ recipe.cook_time + recipe.prep_time }} {{ "minutes"|t }}</div>
+                <div>{{ (recipe.cook_time + recipe.prep_time)|minutes }}</div>
               </div>
             </div>
           </div>
@@ -105,7 +105,7 @@
           {% for instruction in recipe.instructions.iter() %}
           <div class="flex gap-4">
             <div
-              class="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">
+              class="shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">
               {{ loop.index }}
             </div>
             <p class="pt-1">{{ instruction.description }}</p>
@@ -148,15 +148,15 @@
         <div class="space-y-3 text-sm">
           <div class="flex justify-between">
             <span class="text-gray-600">{{ "Prep Time"|t }}</span>
-            <span class="font-semibold">{{ recipe.prep_time }} {{ "min"|t }}</span>
+            <span class="font-semibold">{{ recipe.prep_time|minutes }}</span>
           </div>
           <div class="flex justify-between">
             <span class="text-gray-600">{{ "Cook Time"|t }}</span>
-            <span class="font-semibold">{{ recipe.cook_time }} {{ "min"|t }}</span>
+            <span class="font-semibold">{{ recipe.cook_time|minutes }}</span>
           </div>
           <div class="flex justify-between">
             <span class="text-gray-600">{{ "Total Time"|t }}</span>
-            <span class="font-semibold">{{ recipe.cook_time + recipe.prep_time }} {{ "min"|t }}</span>
+            <span class="font-semibold">{{ (recipe.cook_time + recipe.prep_time)|minutes }}</span>
           </div>
           <div class="flex justify-between">
             <span class="text-gray-600">{{ "Servings"|t }}</span>
