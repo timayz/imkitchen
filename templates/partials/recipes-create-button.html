@@ -1,11 +1,16 @@
-{% if let Some(id) = id %}
-<button disabled ts-trigger="load delay 1s" ts-req="/recipes/create/{{ id }}/status"
+{% match status %}
+{% when Status::Pending %}
+<button id="create-button" disabled
   class="flex-1 gap-3 md:flex-none px-4 md:px-6 py-3 bg-green-500 text-white font-semibold rounded-lg transition text-center text-sm md:text-base">
   <div class="animate-spin rounded-full h-5 w-5 border-2 border-green-200 border-t-green-600 shrink-0 m-auto"></div>
 </button>
-{% else %}
-<button ts-req="/recipes/create" ts-req-method="post"
+<div ts-swap="append" ts-swap-push="body" ts-trigger="load delay 1s" ts-req="/recipes/create/{{ id }}/status"></div>
+{% when Status::Checking %}
+<div ts-trigger="load delay 1s" ts-req="/recipes/create/{{ id }}/status"></div>
+{% when Status::Idle %}
+<div ts-trigger="load" ts-action="remove"></div>
+<button id="#create-button" ts-swap-push="#create-button" ts-req="/recipes/create" ts-req-method="post"
   class="flex-1 md:flex-none px-4 md:px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition text-center text-sm md:text-base">
     ✏️ {{ "Create Recipe"|t }}
 </button>
-{% endif %}
+{% endmatch %}

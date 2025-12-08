@@ -12,14 +12,8 @@ use strum::VariantArray;
 use crate::{
     auth::AuthUser,
     routes::AppState,
-    template::{Template, filters},
+    template::{Status, Template, filters},
 };
-
-#[derive(askama::Template)]
-#[template(path = "partials/recipes-create-button.html")]
-pub struct CreateButtonTemplate {
-    pub id: Option<String>,
-}
 
 #[derive(askama::Template)]
 #[template(path = "recipes-index.html")]
@@ -104,6 +98,13 @@ pub async fn page(
         .into_response()
 }
 
+#[derive(askama::Template)]
+#[template(path = "partials/recipes-create-button.html")]
+pub struct CreateButtonTemplate<'a> {
+    pub id: &'a str,
+    pub status: Status,
+}
+
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn create(
     template: Template,
@@ -117,7 +118,10 @@ pub async fn create(
     );
 
     template
-        .render(CreateButtonTemplate { id: Some(id) })
+        .render(CreateButtonTemplate {
+            id: &id,
+            status: Status::Pending,
+        })
         .into_response()
 }
 
@@ -131,11 +135,14 @@ pub async fn create_status(
     match crate::try_response!(anyhow:
         app.recipe_query.find(&id),
         template,
-        Some(CreateButtonTemplate { id: None })
+        Some(CreateButtonTemplate { id: &id, status: Status::Idle })
     ) {
         Some(_) => Redirect::to(&format!("/recipes/{id}/edit")).into_response(),
         _ => template
-            .render(CreateButtonTemplate { id: Some(id) })
+            .render(CreateButtonTemplate {
+                id: &id,
+                status: Status::Checking,
+            })
             .into_response(),
     }
 }
