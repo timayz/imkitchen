@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html {% if let Ok(lang)="preferred_language_iso" |value::<String> %}lang="{{ lang }}"{% endif %}>
+<html lang="{{ "html_lang"|t }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -11,7 +11,7 @@
     <link rel="icon" type="image/png" href={{ "/static/icons/icon-192.png?v=" ~ env!("CARGO_PKG_VERSION") }}>
 
     <!-- PWA Manifest -->
-    <link rel="manifest" href={{ "/static/manifest.json?v=" ~ env!("CARGO_PKG_VERSION") }}>
+    <link rel="manifest" href={{ "/manifest.json?v=" ~ env!("CARGO_PKG_VERSION") }}>
     <meta name="theme-color" content="#2563eb">
 
     <!-- iOS PWA Support -->
