@@ -1,0 +1,11 @@
+{% if loading %}
+<button disabled ts-trigger="load delay 1s" ts-req="/recipes/{{ id }}/delete/status"
+  class="flex-1 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg">
+    <div class="animate-spin rounded-full h-5 w-5 border-2 border-red-200 border-t-red-600 shrink-0 m-auto"></div>
+</button>
+{% else %}
+<button ts-trigger="click" ts-req="/recipes/{{ id }}/delete" ts-req-method="POST"
+  class="flex-1 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700">
+    {{ "Delete"|t }}
+</button>
+{% endif %}

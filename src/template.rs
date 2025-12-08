@@ -258,115 +258,104 @@ pub struct ToastErrorTemplate<'a> {
 
 #[macro_export]
 macro_rules! try_response {
+    // Internal helper for rendering error responses
+    (@render $template:expr, $fallback:expr, $message:expr) => {
+        match $fallback {
+            Some(t) => {
+                return $template
+                    .render($crate::template::ToastErrorTemplate {
+                        original: Some(&$template.to_string(t)),
+                        message: $message,
+                        description: None,
+                    })
+                    .into_response();
+            }
+            _ => {
+                return (
+                    [("ts-swap", "skip")],
+                    $template.render($crate::template::ToastErrorTemplate {
+                        original: None,
+                        message: $message,
+                        description: None,
+                    }),
+                )
+                    .into_response();
+            }
+        }
+    };
+
+    // Result<T, Error> with Unknown variant handling
     ($result:expr, $template:expr, $fallback:expr) => {
-        match $result.await {
+        $crate::try_response!(sync: $result.await, $template, $fallback)
+    };
+
+    // Result<Option<T>, Error> with Unknown variant handling
+    (opt: $result:expr, $template:expr, $fallback:expr) => {
+        $crate::try_response!(sync opt: $result.await, $template, $fallback)
+    };
+
+    // Result<T, anyhow::Error> - all errors treated as server errors
+    (anyhow: $result:expr, $template:expr, $fallback:expr) => {
+        $crate::try_response!(sync anyhow: $result.await, $template, $fallback)
+    };
+
+    // Result<Option<T>, anyhow::Error> - all errors treated as server errors
+    (anyhow_opt: $result:expr, $template:expr, $fallback:expr) => {
+        $crate::try_response!(sync anyhow_opt: $result.await, $template, $fallback)
+    };
+
+    // Result<T, Error> with Unknown variant handling
+    (sync: $result:expr, $template:expr, $fallback:expr) => {
+        match $result {
             Ok(r) => r,
             Err(imkitchen_shared::Error::Unknown(err)) => {
                 tracing::error!("{err}");
-
-                return $template
-                    .render($crate::template::ToastErrorTemplate {
-                        original: $fallback.map(|t| $template.to_string(t)).as_deref(),
-                        message: $crate::template::SERVER_ERROR_MESSAGE,
-                        description: None,
-                    })
-                    .into_response();
+                $crate::try_response!(@render $template, $fallback, $crate::template::SERVER_ERROR_MESSAGE)
             }
             Err(err) => {
-                return $template
-                    .render($crate::template::ToastErrorTemplate {
-                        original: $fallback.map(|t| $template.to_string(t)).as_deref(),
-                        message: err.to_string().as_str(),
-                        description: None,
-                    })
-                    .into_response();
+                $crate::try_response!(@render $template, $fallback, err.to_string().as_str())
             }
         }
     };
-}
 
-#[macro_export]
-macro_rules! try_anyhow_opt_response {
-    ($result:expr, $template:expr, $fallback:expr) => {
-        match $result.await {
+    // Result<Option<T>, Error> with Unknown variant handling
+    (sync opt: $result:expr, $template:expr, $fallback:expr) => {
+        match $result {
             Ok(Some(r)) => r,
             Ok(_) => {
-                return $template
-                    .render($crate::template::ToastErrorTemplate {
-                        original: $fallback.map(|t| $template.to_string(t)).as_deref(),
-                        message: $crate::template::NOT_FOUND.to_owned(),
-                        description: None,
-                    })
-                    .into_response();
+                $crate::try_response!(@render $template, $fallback, $crate::template::NOT_FOUND)
             }
             Err(imkitchen_shared::Error::Unknown(err)) => {
                 tracing::error!("{err}");
-
-                return $template
-                    .render($crate::template::ToastErrorTemplate {
-                        original: $fallback.map(|t| $template.to_string(t)).as_deref(),
-                        message: $crate::template::SERVER_ERROR_MESSAGE.to_owned(),
-                        description: None,
-                    })
-                    .into_response();
+                $crate::try_response!(@render $template, $fallback, $crate::template::SERVER_ERROR_MESSAGE)
             }
             Err(err) => {
-                return $template
-                    .render($crate::template::ToastErrorTemplate {
-                        original: $fallback.map(|t| $template.to_string(t)).as_deref(),
-                        message: err.to_string(),
-                        description: None,
-                    })
-                    .into_response();
+                $crate::try_response!(@render $template, $fallback, err.to_string().as_str())
             }
         }
     };
-}
 
-#[macro_export]
-macro_rules! try_anyhow_response {
-    ($result:expr, $template:expr, $fallback:expr) => {
-        match $result.await {
+    // Result<T, anyhow::Error> - all errors treated as server errors
+    (sync anyhow: $result:expr, $template:expr, $fallback:expr) => {
+        match $result {
             Ok(r) => r,
             Err(err) => {
                 tracing::error!("{err}");
-
-                return $template
-                    .render($crate::template::ToastErrorTemplate {
-                        original: $fallback.map(|t| $template.to_string(t)).as_deref(),
-                        message: $crate::template::SERVER_ERROR_MESSAGE,
-                        description: None,
-                    })
-                    .into_response();
+                $crate::try_response!(@render $template, $fallback, $crate::template::SERVER_ERROR_MESSAGE)
             }
         }
     };
-}
 
-#[macro_export]
-macro_rules! try_opt_response {
-    ($result:expr, $template:expr, $fallback:expr) => {
-        match $result.await {
+    // Result<Option<T>, anyhow::Error> - all errors treated as server errors
+    (sync anyhow_opt: $result:expr, $template:expr, $fallback:expr) => {
+        match $result {
             Ok(Some(r)) => r,
             Ok(_) => {
-                return $template
-                    .render($crate::template::ToastErrorTemplate {
-                        original: $fallback.map(|t| $template.to_string(t)).as_deref(),
-                        message: $crate::template::NOT_FOUND.to_owned(),
-                        description: None,
-                    })
-                    .into_response();
+                $crate::try_response!(@render $template, $fallback, $crate::template::NOT_FOUND)
             }
             Err(err) => {
                 tracing::error!("{err}");
-
-                return $template
-                    .render($crate::template::ToastErrorTemplate {
-                        original: $fallback.map(|t| $template.to_string(t)).as_deref(),
-                        message: $crate::template::SERVER_ERROR_MESSAGE.to_owned(),
-                        description: None,
-                    })
-                    .into_response();
+                $crate::try_response!(@render $template, $fallback, $crate::template::SERVER_ERROR_MESSAGE)
             }
         }
     };

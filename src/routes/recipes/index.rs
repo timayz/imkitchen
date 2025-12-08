@@ -128,7 +128,7 @@ pub async fn create_status(
     Path((id,)): Path<(String,)>,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
-    match crate::try_anyhow_response!(
+    match crate::try_response!(anyhow:
         app.recipe_query.find(&id),
         template,
         Some(CreateButtonTemplate { id: None })

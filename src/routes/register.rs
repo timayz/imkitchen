@@ -86,7 +86,7 @@ pub async fn status(
     jar: CookieJar,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    let user = crate::try_anyhow_response!(
+    let user = crate::try_response!(anyhow:
         app.user_command.load(&id),
         template,
         Some(RegisterButtonTemplate { id: None })
