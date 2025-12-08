@@ -9,7 +9,7 @@ use imkitchen_shared::Metadata;
 use crate::{
     auth::AuthUser,
     routes::AppState,
-    template::{ForbiddenTemplate, Template, filters},
+    template::{ForbiddenTemplate, Status, Template, filters},
 };
 
 #[derive(askama::Template)]
@@ -96,7 +96,7 @@ pub async fn delete_action(
     template
         .render(DeleteButtonTemplate {
             id: &id,
-            status: crate::template::Status::Pending,
+            status: Status::Pending,
         })
         .into_response()
 }
@@ -113,13 +113,13 @@ pub async fn delete_status(
         template,
         Some(DeleteButtonTemplate {
             id: &id,
-            status: crate::template::Status::Idle,
+            status: Status::Idle,
         })
     ) {
         Some(_) => template
             .render(DeleteButtonTemplate {
                 id: &id,
-                status: crate::template::Status::Checking,
+                status: Status::Checking,
             })
             .into_response(),
         _ => Redirect::to("/recipes").into_response(),

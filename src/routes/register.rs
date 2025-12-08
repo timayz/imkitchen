@@ -9,15 +9,9 @@ use serde::Deserialize;
 
 use crate::{
     auth::build_cookie,
-    template::{SERVER_ERROR_MESSAGE, ToastErrorTemplate, filters},
+    template::{Status, ToastErrorTemplate, filters},
 };
 use crate::{routes::AppState, template::Template};
-
-#[derive(askama::Template)]
-#[template(path = "partials/register-button.html")]
-pub struct RegisterButtonTemplate {
-    pub id: Option<String>,
-}
 
 #[derive(askama::Template)]
 #[template(path = "register.html")]
@@ -33,6 +27,13 @@ pub async fn page(template: Template) -> impl IntoResponse {
         password: None,
         confirm_password: None,
     })
+}
+
+#[derive(askama::Template)]
+#[template(path = "partials/register-button.html")]
+pub struct RegisterButtonTemplate<'a> {
+    pub id: &'a str,
+    pub status: Status,
 }
 
 #[derive(Deserialize)]
@@ -76,7 +77,10 @@ pub async fn action(
     );
 
     template
-        .render(RegisterButtonTemplate { id: Some(id) })
+        .render(RegisterButtonTemplate {
+            id: &id,
+            status: Status::Pending,
+        })
         .into_response()
 }
 
@@ -89,7 +93,7 @@ pub async fn status(
     let user = crate::try_response!(anyhow:
         app.user_command.load(&id),
         template,
-        Some(RegisterButtonTemplate { id: None })
+        Some(RegisterButtonTemplate { id: &id, status: Status::Idle })
     );
 
     match (user.item.status, user.item.failed_reason) {
@@ -99,43 +103,42 @@ pub async fn status(
                     app.user_command
                         .made_admin(&user.event.aggregator_id, &Metadata::default()),
                     template,
-                    Some(RegisterButtonTemplate { id: None })
+                    Some(RegisterButtonTemplate {
+                        id: &id,
+                        status: Status::Checking
+                    })
                 );
 
                 return Redirect::to("/login").into_response();
             }
 
-            let auth_cookie = match build_cookie(app.config.jwt, id) {
-                Ok(cookie) => cookie,
-                Err(e) => {
-                    tracing::error!("{e}");
-
-                    return template
-                        .render(ToastErrorTemplate {
-                            original: Some(
-                                &template.to_string(RegisterButtonTemplate { id: None }),
-                            ),
-                            message: SERVER_ERROR_MESSAGE,
-                            description: None,
-                        })
-                        .into_response();
-                }
-            };
+            let auth_cookie = crate::try_response!(sync anyhow:
+                build_cookie(app.config.jwt, id.to_owned()),
+                template,
+                Some(RegisterButtonTemplate {
+                    id: &id,
+                    status: Status::Idle
+                })
+            );
 
             let jar = jar.add(auth_cookie);
 
             (jar, Redirect::to("/")).into_response()
         }
-        (imkitchen_user::Status::Failed, Some(reason)) => template
-            .render(ToastErrorTemplate {
-                original: Some(&template.to_string(RegisterButtonTemplate { id: None })),
-                message: &reason,
-                description: None,
+        (imkitchen_user::Status::Failed, Some(reason)) => crate::try_response!(sync:
+            Err(imkitchen_shared::Error::Server(reason)),
+            template,
+            Some(RegisterButtonTemplate {
+                id: &id,
+                status: Status::Idle
             })
-            .into_response(),
+        ),
         (imkitchen_user::Status::Failed, _) => unreachable!(),
         (imkitchen_user::Status::Processing, _) => template
-            .render(RegisterButtonTemplate { id: Some(id) })
+            .render(RegisterButtonTemplate {
+                id: &id,
+                status: Status::Checking,
+            })
             .into_response(),
     }
 }
