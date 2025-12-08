@@ -9,9 +9,11 @@ use axum::{
 /// - All other routes: No caching (prevent browser cache)
 pub async fn cache_control_middleware(req: Request<Body>, next: Next) -> Response<Body> {
     // Clone the path before moving req
+    #[cfg(not(debug_assertions))]
     let path = req.uri().path().to_string();
     let mut response = next.run(req).await;
 
+    #[cfg(not(debug_assertions))]
     // Check if this is a static file request
     let is_static_file = path.starts_with("/static/")
         || path.starts_with("/icons/")
@@ -35,6 +37,9 @@ pub async fn cache_control_middleware(req: Request<Body>, next: Next) -> Respons
         || path.ends_with(".woff2")
         || path.ends_with(".ttf")
         || path.ends_with(".eot");
+
+    #[cfg(debug_assertions)]
+    let is_static_file = false;
 
     let headers = response.headers_mut();
 
