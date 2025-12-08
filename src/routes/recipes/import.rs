@@ -34,13 +34,13 @@ pub struct ImportJson {
 }
 
 #[derive(askama::Template)]
-#[template(path = "recipes-importing-status.html")]
+#[template(path = "partials/recipes-importing-status.html")]
 pub struct ImportingStatusTemplate {
     pub id: Option<String>,
 }
 
 #[derive(askama::Template)]
-#[template(path = "recipes-importing.html")]
+#[template(path = "partials/recipes-importing.html")]
 pub struct ImportingTemplate {
     pub id: Option<String>,
     pub error_recipes: Vec<ErrorRecipe>,
