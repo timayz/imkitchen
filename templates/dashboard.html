@@ -6,6 +6,57 @@
     {% endif %}
     <!-- Main Content -->
     <div class="container mx-auto px-4 py-8">
+
+        <!-- Empty State -->
+        {% if slot.is_none() && week.is_none() %}
+        <div class="max-w-2xl mx-auto">
+            <div class="bg-white rounded-lg shadow-lg p-12 text-center">
+                <div class="text-6xl mb-6">👨‍🍳</div>
+                <h2 class="text-2xl font-bold mb-4">{{ "Welcome to imkitchen!"|t }}</h2>
+                <p class="text-gray-600 mb-8">
+                    {{ "Your kitchen is empty. Let's start by importing some delicious recipes and planning your meals for the week."|t }}
+                </p>
+
+                <!-- Getting Started Steps -->
+                <div class="space-y-4 mb-8 text-left">
+                    <div class="flex items-start gap-4 p-4 bg-blue-50 rounded-lg">
+                        <div class="shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">1</div>
+                        <div>
+                            <h3 class="font-semibold mb-1">{{ "Create Your First Recipe"|t }}</h3>
+                            <p class="text-sm text-gray-600">{{ "Add recipes from the web or create your own custom recipes"|t }}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-4 p-4 bg-green-50 rounded-lg">
+                        <div class="shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">2</div>
+                        <div>
+                            <h3 class="font-semibold mb-1">{{ "Plan Your Week"|t }}</h3>
+                            <p class="text-sm text-gray-600">{{ "Organize your meals on the calendar and let us generate your shopping list"|t }}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-4 p-4 bg-purple-50 rounded-lg">
+                        <div class="shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold">3</div>
+                        <div>
+                            <h3 class="font-semibold mb-1">{{ "Cook & Enjoy"|t }}</h3>
+                            <p class="text-sm text-gray-600">{{ "Follow your meal plan and enjoy home-cooked meals every day"|t }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Call to Action -->
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a href="/recipes" class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition">
+                        ➕ {{ "Create Recipe"|t }}
+                    </a>
+                    <a href="/calendar/week-1" class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition">
+                        📅 {{ "View Calendar"|t }}
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+
         <!-- Welcome -->
         <div class="mb-8">
             <h1 class="text-3xl font-bold mb-2">{{ "Welcome back, Michael!"|t }}</h1>
@@ -178,6 +229,7 @@
                 </a>
             </div>
         </div>
+        {% endif %}
         {% endif %}
     </div>
 {% endblock %}

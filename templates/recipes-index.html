@@ -5,6 +5,51 @@
 
 <!-- Main Content -->
 <div class="container mx-auto px-4 py-8">
+  <!-- Empty State -->
+  {% if recipes.edges.is_empty() %}
+  <div id="recipes-list" class="max-w-2xl mx-auto">
+    <div class="bg-white rounded-lg shadow-lg p-12 text-center">
+      <div class="text-6xl mb-6">📖</div>
+      <h2 class="text-2xl font-bold mb-4">{{ "No Recipes Yet"|t }}</h2>
+      <p class="text-gray-600 mb-8">
+        {{ "Your recipe collection is empty. Start by creating your first recipe or importing recipes from the web."|t }}
+      </p>
+
+      <!-- Getting Started Options -->
+      <div class="grid md:grid-cols-2 gap-4 mb-8">
+        <div class="p-6 bg-green-50 border-2 border-green-200 rounded-lg text-left">
+          <div class="text-3xl mb-3">✏️</div>
+          <h3 class="font-semibold mb-2">{{ "Create a Recipe"|t }}</h3>
+          <p class="text-sm text-gray-600 mb-4">{{ "Build your own custom recipe from scratch with your unique ingredients and instructions"|t }}</p>
+          <button ts-req="/recipes/create" ts-req-method="post"
+            class="w-full px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition">
+            {{ "Create Recipe"|t }}
+          </button>
+        </div>
+
+        <div class="p-6 bg-blue-50 border-2 border-blue-200 rounded-lg text-left">
+          <div class="text-3xl mb-3">📥</div>
+          <h3 class="font-semibold mb-2">{{ "Import Recipes"|t }}</h3>
+          <p class="text-sm text-gray-600 mb-4">{{ "Import multiple recipes at once from your favorite cooking websites with a simple URL"|t }}</p>
+          <a href="/recipes/import"
+            class="block w-full px-4 py-2 bg-blue-600 text-white text-center font-semibold rounded-lg hover:bg-blue-700 transition">
+            {{ "Import Recipes"|t }}
+          </a>
+        </div>
+      </div>
+
+      <!-- Tips -->
+      <div class="bg-gray-50 rounded-lg p-4 text-sm text-gray-600 text-left">
+        <p class="font-semibold mb-2">💡 {{ "Tips:"|t }}</p>
+        <ul class="space-y-1 list-disc list-inside">
+          <li>{{ "You can import recipes from popular cooking websites"|t }}</li>
+          <li>{{ "Create custom recipes with ingredients, instructions, and dietary restrictions"|t }}</li>
+          <li>{{ "Organize recipes by type: Main Course, Appetizer, Dessert, or Accompaniment"|t }}</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  {% else %}
   <!-- Header -->
   <div class="mb-8">
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -147,5 +192,7 @@
       </div>
     </div>
     {% endfor %}
+  </div>
+  {% endif %}
 </div>
 {% endblock %}

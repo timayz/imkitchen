@@ -59,6 +59,14 @@ impl<E: Executor + Clone> Command<E> {
         Ok(week.map(|w| w.0))
     }
 
+    pub async fn has(
+        &self,
+        id: impl Into<String>,
+        recipe_type: RecipeType,
+    ) -> imkitchen_shared::Result<bool> {
+        has(&self.1, id, recipe_type).await
+    }
+
     pub async fn generate(&self, metadata: &Metadata) -> imkitchen_shared::Result<()> {
         let user_id = metadata.trigger_by()?;
 

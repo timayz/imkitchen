@@ -30,6 +30,8 @@ pub struct CalendarTemplate {
     pub weekday: u64,
     pub current: Option<WeekRow>,
     pub index: u8,
+    pub is_empty_state: bool,
+    pub generation_needed: bool,
 }
 
 impl Default for CalendarTemplate {
@@ -41,6 +43,8 @@ impl Default for CalendarTemplate {
             current: None,
             weekday: 0,
             index: 0,
+            is_empty_state: false,
+            generation_needed: false,
         }
     }
 }
@@ -74,6 +78,21 @@ pub async fn page(
 
     let weekday = imkitchen_mealplan::weekday_from_now().unix_timestamp() as u64;
 
+    let is_empty_state = current
+        .as_ref()
+        .map(|c| c.slots.is_empty())
+        .unwrap_or(weeks.is_empty());
+
+    let generation_needed = if is_empty_state {
+        crate::try_page_response!(
+            app.mealplan_command
+                .has(&user.id, imkitchen_recipe::RecipeType::MainCourse),
+            template
+        )
+    } else {
+        false
+    };
+
     template
         .render(CalendarTemplate {
             user,
@@ -81,6 +100,8 @@ pub async fn page(
             current,
             weekday,
             index,
+            is_empty_state,
+            generation_needed,
             ..Default::default()
         })
         .into_response()
