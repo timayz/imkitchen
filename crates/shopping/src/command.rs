@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use evento::{AggregatorName, Executor, LoadResult, SubscribeBuilder};
 use imkitchen_db::table::MealPlanRecipe;
-use imkitchen_mealplan::{GenerateRequested, MealPlan, WeekGenerated};
+use imkitchen_mealplan::{GenerateRequested, GenerationFailed, MealPlan, WeekGenerated};
 use imkitchen_recipe::Ingredient;
 use imkitchen_shared::{Event, Metadata};
 use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
@@ -96,6 +96,7 @@ pub fn subscribe_command<E: Executor + Clone>() -> SubscribeBuilder<E> {
     evento::subscribe("shopping-command")
         .handler(handle_week_generated())
         .skip::<MealPlan, GenerateRequested>()
+        .skip::<MealPlan, GenerationFailed>()
 }
 
 #[evento::handler(MealPlan)]

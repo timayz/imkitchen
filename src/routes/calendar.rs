@@ -8,7 +8,7 @@ use imkitchen_shared::Metadata;
 use crate::{
     auth::AuthUser,
     routes::AppState,
-    template::{SERVER_ERROR_MESSAGE, Template, filters},
+    template::{Status as TemplateStatus, Template, filters},
 };
 
 #[derive(askama::Template)]
@@ -16,13 +16,9 @@ use crate::{
 pub struct RegenerateModalTemplate;
 
 #[derive(askama::Template)]
-#[template(path = "calendar-regenerate-status.html")]
-pub struct RegenerateStatusTemplate;
-
-#[derive(askama::Template)]
-#[template(path = "calendar-regenerate.html")]
-pub struct RegenerateTemplate {
-    pub error_message: Option<String>,
+#[template(path = "partials/calendar-generate-button.html")]
+pub struct RegenerateButtonTemplate {
+    pub status: TemplateStatus,
 }
 
 #[derive(askama::Template)]
@@ -90,80 +86,92 @@ pub async fn page(
         .into_response()
 }
 
+#[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn regenerate_action(
     template: Template,
     State(app): State<AppState>,
     AuthUser(user): AuthUser,
 ) -> impl IntoResponse {
-    let status = match app.mealplan_command.load_optional(&user.id).await {
-        Ok(Some(r)) => r.item.status,
-        Ok(_) => Status::Idle,
-        Err(err) => {
-            tracing::error!(user = user.id, err = %err,"Failed to regenerate meal plan");
-
-            return template.render(RegenerateTemplate {
-                error_message: Some(SERVER_ERROR_MESSAGE.to_owned()),
-            });
-        }
-    };
+    let status =
+        crate::try_response!(anyhow: app.mealplan_command.load_optional(&user.id), template)
+            .map(|r| r.item.status)
+            .unwrap_or(Status::Idle);
 
     if status == Status::Processing {
-        return template.render(RegenerateTemplate {
-            error_message: Some("Invalid status".to_owned()),
-        });
+        crate::try_response!(sync:
+            Err(imkitchen_shared::Error::Server(
+                "Mealplan already generating".to_owned()
+            )),
+            template
+        );
     }
 
-    match app
-        .mealplan_command
-        .generate(&Metadata::by(user.id.to_owned()))
-        .await
-    {
-        Ok(_) => template.render(RegenerateTemplate {
-            error_message: None,
-        }),
-        Err(err) => {
-            tracing::error!(user = user.id, err = %err, "Failed to regenerate meal plan");
+    crate::try_response!(
+        app.mealplan_command
+            .generate(&Metadata::by(user.id.to_owned())),
+        template
+    );
 
-            template.render(RegenerateTemplate {
-                error_message: Some(SERVER_ERROR_MESSAGE.to_owned()),
-            })
-        }
-    }
+    template
+        .render(RegenerateButtonTemplate {
+            status: TemplateStatus::Pending,
+        })
+        .into_response()
 }
 
+#[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn regenerate_status(
     template: Template,
     State(app): State<AppState>,
     AuthUser(user): AuthUser,
 ) -> impl IntoResponse {
-    let meal_plan = match app.mealplan_command.load_optional(&user.id).await {
-        Ok(Some(loaded)) => loaded,
-        Ok(_) => return template.render(RegenerateStatusTemplate).into_response(),
-        Err(err) => {
-            tracing::error!(user = user.id, err = %err,"Failed to check meal plan regeneration status");
-
-            return Redirect::to("/calendar/week-1").into_response();
+    let meal_plan = match crate::try_response!(anyhow: app.mealplan_command.load_optional(&user.id), template)
+    {
+        Some(loaded) => loaded,
+        _ => {
+            return template
+                .render(RegenerateButtonTemplate {
+                    status: TemplateStatus::Checking,
+                })
+                .into_response();
         }
     };
 
     if meal_plan.item.status == Status::Failed {
-        return Redirect::to("/calendar/week-1").into_response();
+        crate::try_response!(sync:
+            Err(imkitchen_shared::Error::Server(
+                meal_plan.item.reason.unwrap_or_default()
+            )),
+            template,
+            Some(RegenerateButtonTemplate {status: TemplateStatus::Idle})
+        );
     }
 
     let week_from_now = imkitchen_mealplan::next_four_mondays_from_now()[0];
 
-    let week = match app.mealplan_query.find(week_from_now.start, &user.id).await {
-        Ok(Some(week)) => week,
-        Ok(_) => return template.render(RegenerateStatusTemplate).into_response(),
-        Err(err) => {
-            tracing::error!(user = user.id, err = %err,"Failed to check meal plan regeneration status");
-
-            return Redirect::to("/calendar/week-1").into_response();
+    let week = match crate::try_response!(anyhow:
+        app.mealplan_query.find(week_from_now.start, &user.id),
+        template,
+        Some(RegenerateButtonTemplate {
+            status: TemplateStatus::Idle
+        })
+    ) {
+        Some(week) => week,
+        _ => {
+            return template
+                .render(RegenerateButtonTemplate {
+                    status: TemplateStatus::Checking,
+                })
+                .into_response();
         }
     };
 
     if week.status.0 == Status::Processing {
-        return template.render(RegenerateStatusTemplate).into_response();
+        return template
+            .render(RegenerateButtonTemplate {
+                status: TemplateStatus::Checking,
+            })
+            .into_response();
     }
 
     Redirect::to("/calendar/week-1").into_response()
