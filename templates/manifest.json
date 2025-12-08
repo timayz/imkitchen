@@ -1,7 +1,7 @@
 {
-  "name": "imkitchen - Intelligent Meal Planning",
+  "name": "{{ "imkitchen - Intelligent Meal Planning"|t }}",
   "short_name": "imkitchen",
-  "description": "Automated meal planning and cooking optimization",
+  "description": "{{ "Automated meal planning and cooking optimization"|t }}",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -38,53 +38,26 @@
   ],
   "screenshots": [
     {
-      "src": "/static/screenshots/dashboard-mobile.png",
+      "src": "/static/{{ "screenshots/dashboard-mobile"|t }}.png",
       "sizes": "750x1334",
       "type": "image/png",
       "platform": "narrow",
-      "label": "Dashboard with today's meals"
+      "label": "{{ "Dashboard with today's meals"|t }}"
     },
     {
-      "src": "/static/screenshots/recipe-detail-mobile.png",
+      "src": "/static/{{ "screenshots/recipe-detail-mobile"|t }}.png",
       "sizes": "750x1334",
       "type": "image/png",
       "platform": "narrow",
-      "label": "Recipe instructions"
+      "label": "{{ "Recipe instructions"|t }}"
     },
     {
-      "src": "/static/screenshots/meal-calendar-desktop.png",
+      "src": "/static/{{ "screenshots/meal-calendar-mobile" }}.png",
       "sizes": "1920x1080",
       "type": "image/png",
       "platform": "wide",
-      "label": "Weekly meal calendar"
+      "label": "{{ "Weekly meal calendar"|t }}"
     }
   ],
-  "shortcuts": [
-    {
-      "name": "Today's Meals",
-      "short_name": "Today",
-      "description": "View today's meal plan",
-      "url": "/",
-      "icons": [
-        {
-          "src": "/static/icons/shortcut-dashboard.png",
-          "sizes": "96x96",
-          "type": "image/png"
-        }
-      ]
-    },
-    {
-      "name": "Recipes",
-      "short_name": "Recipes",
-      "description": "Browse your recipe library",
-      "url": "/recipes",
-      "icons": [
-        {
-          "src": "/static/icons/shortcut-recipes.png",
-          "sizes": "96x96",
-          "type": "image/png"
-        }
-      ]
-    }
-  ]
+  "shortcuts": []
 }

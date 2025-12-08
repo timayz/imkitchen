@@ -8,7 +8,11 @@ use imkitchen_user::{FilterQuery, Role, State as UserState, UserListRow, UserSor
 use serde::Deserialize;
 use strum::VariantArray;
 
-use crate::{auth::AuthAdmin, routes::AppState, template::Template};
+use crate::{
+    auth::AuthAdmin,
+    routes::AppState,
+    template::{Template, filters},
+};
 
 #[derive(askama::Template)]
 #[template(path = "admin-users.html")]

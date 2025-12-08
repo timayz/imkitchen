@@ -1,4 +1,5 @@
 {
+  "html_lang": "fr",
   "date_format": "%{weekday} %{day} %{month}",
   "date_year_format": "%{weekday} %{day} %{month} %{year}",
   "Monday": "Lundi",
@@ -964,5 +965,13 @@
   "Access organized shopping lists for each week's meals": "Accédez à des listes de courses organisées pour les repas de chaque semaine",
   "Back to Dashboard": "Retour au Tableau de Bord",
   "Creating Your Weekly Meal Plan...": "Création de Votre Plan de Repas Hebdomadaire...",
-  "We're selecting the perfect recipes for you.": "Nous sélectionnons les recettes parfaites pour vous."
+  "We're selecting the perfect recipes for you.": "Nous sélectionnons les recettes parfaites pour vous.",
+  "Automated meal planning and cooking optimization": "Planification automatisée des repas et optimisation de la cuisine",
+  "imkitchen - Intelligent Meal Planning": "imkitchen - Planification Intelligente des Repas",
+  "screenshots/dashboard-mobile": "screenshots/dashboard-mobile-fr",
+  "Dashboard with today's meals": "Tableau de bord avec les repas du jour",
+  "screenshots/recipe-detail-mobile": "screenshots/recipe-detail-mobile-fr",
+  "Recipe instructions": "Instructions de recette",
+  "screenshots/meal-calendar-mobile": "screenshots/meal-calendar-mobile-fr",
+  "Weekly meal calendar": "Calendrier hebdomadaire des repas"
 }

@@ -13,6 +13,7 @@ mod help;
 mod index;
 mod kitchen;
 mod login;
+mod manifest;
 mod policy;
 mod profile;
 mod recipes;
@@ -153,6 +154,7 @@ pub fn router(app_state: AppState) -> Router {
         .route("/admin/contact/{id}/reopen", post(admin::contact::reopen))
         .fallback(fallback)
         .route("/sw.js", get(service_worker::sw))
+        .route("/manifest.json", get(manifest::asset))
         .nest_service("/static", crate::assets::AssetsService::new())
         .with_state(app_state)
 }
