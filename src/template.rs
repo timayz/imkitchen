@@ -94,6 +94,27 @@ pub(crate) mod filters {
         ))
     }
 
+    pub fn minutes(minutes: &u16, values: &dyn askama::Values) -> askama::Result<String> {
+        let preferred_language = askama::get_value::<String>(values, "preferred_language")
+            .expect("Unable to get preferred_language from askama::get_value");
+
+        let hours = minutes / 60;
+        let remaining_minutes = minutes % 60;
+
+        let value = match (hours, remaining_minutes) {
+            (0, m) => format!("{} min", m),
+            (1, 0) => format!("1 {}", rust_i18n::t!("hour", locale = preferred_language)),
+            (h, 0) => format!(
+                "{} {}",
+                h,
+                rust_i18n::t!("hours", locale = preferred_language)
+            ),
+            (h, m) => format!("{}h {}min", h, m),
+        };
+
+        Ok(value)
+    }
+
     pub fn weekday(value: &u64, values: &dyn askama::Values) -> askama::Result<String> {
         let preferred_language = askama::get_value::<String>(values, "preferred_language")
             .expect("Unable to get preferred_language from askama::get_value");
