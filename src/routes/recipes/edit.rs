@@ -13,7 +13,7 @@ use strum::VariantArray;
 use crate::{
     auth::AuthUser,
     routes::AppState,
-    template::{FORBIDDEN, ForbiddenTemplate, NOT_FOUND, SERVER_ERROR_MESSAGE, Template, filters},
+    template::{ForbiddenTemplate, Template, ToastSuccessTemplate, filters},
 };
 
 #[derive(Deserialize, Default, Clone)]
@@ -60,8 +60,6 @@ pub struct EditTemplate {
     pub current_path: String,
     pub user: imkitchen_user::AuthUser,
     pub form: EditForm,
-    pub error_message: Option<String>,
-    pub succeeded: bool,
 }
 
 impl Default for EditTemplate {
@@ -70,9 +68,7 @@ impl Default for EditTemplate {
             current_path: "recipes".to_owned(),
             user: imkitchen_user::AuthUser::default(),
             form: EditForm::default(),
-            error_message: None,
             id: "".to_owned(),
-            succeeded: false,
         }
     }
 }
@@ -123,6 +119,7 @@ pub async fn page(
         .into_response()
 }
 
+#[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn action(
     template: Template,
     State(app): State<AppState>,
@@ -130,72 +127,40 @@ pub async fn action(
     Path((id,)): Path<(String,)>,
     Form(input): Form<EditForm>,
 ) -> impl IntoResponse {
-    let recipe = match app.recipe_command.load_optional(&id).await {
-        Ok(Some(loaded)) => loaded,
-        Ok(_) => {
-            return template.render(EditTemplate {
-                id,
-                user,
-                form: input,
-                error_message: Some(NOT_FOUND.to_owned()),
-                ..Default::default()
-            });
-        }
-        Err(e) => {
-            tracing::error!(recipe = id,user = user.id, err = %e,"Faield to load recipe from action");
-            return template.render(EditTemplate {
-                id,
-                user,
-                form: input,
-                error_message: Some(SERVER_ERROR_MESSAGE.to_owned()),
-                ..Default::default()
-            });
-        }
-    };
+    let recipe = crate::try_response!(anyhow_opt:
+        app.recipe_command.load_optional(&id),
+        template
+    );
 
     if recipe.item.deleted {
-        return template.render(EditTemplate {
-            id,
-            user,
-            form: input,
-            error_message: Some(NOT_FOUND.to_owned()),
-            ..Default::default()
-        });
+        crate::try_response!(sync: Ok(None::<()>), template);
     }
 
     if input.ingredients_name.len() != input.ingredients_quantity.len()
         || input.ingredients_name.len() != input.ingredients_unit.len()
     {
-        return template.render(EditTemplate {
-            id,
-            user,
-            form: input,
-            error_message: Some("Bad request".to_owned()),
-            ..Default::default()
-        });
+        crate::try_response!(sync:
+            Err(imkitchen_shared::Error::Server(
+                "ingredients_name, ingredients_quantity and ingredients_unit size not matched"
+                    .to_owned()
+            )),
+            template
+        );
     }
 
     if input.instructions_description.len() != input.instructions_time_next.len() {
-        return template.render(EditTemplate {
-            id,
-            user,
-            form: input,
-            error_message: Some("Bad request".to_owned()),
-            ..Default::default()
-        });
+        crate::try_response!(sync:
+            Err(imkitchen_shared::Error::Server(
+                "instructions_description and instructions_time_next size not matched"
+                    .to_owned()
+            )),
+            template
+        );
     }
 
     if recipe.item.user_id != user.id {
-        return template.render(EditTemplate {
-            id,
-            user,
-            form: input,
-            error_message: Some(FORBIDDEN.to_owned()),
-            ..Default::default()
-        });
+        crate::try_response!(sync: Err(imkitchen_shared::Error::Forbidden), template);
     }
-
-    let mut form = input.clone();
 
     let mut ingredients = vec![];
     for (pos, name) in input.ingredients_name.iter().skip(2).enumerate() {
@@ -206,8 +171,6 @@ pub async fn action(
         });
     }
 
-    form.ingredients = ingredients.to_vec();
-
     let mut instructions = vec![];
     for (pos, description) in input.instructions_description.iter().skip(2).enumerate() {
         instructions.push(Instruction {
@@ -216,11 +179,8 @@ pub async fn action(
         });
     }
 
-    form.instructions = instructions.to_vec();
-
-    match app
-        .recipe_command
-        .update(
+    crate::try_response!(
+        app.recipe_command.update(
             UpdateInput {
                 id: id.to_owned(),
                 recipe_type: input.recipe_type,
@@ -236,35 +196,17 @@ pub async fn action(
                 advance_prep: input.advance_prep,
             },
             &Metadata::by(user.id.to_owned()),
-        )
-        .await
-    {
-        Ok(_) => template.render(EditTemplate {
-            id,
-            user,
-            form,
-            succeeded: true,
-            ..Default::default()
-        }),
-        Err(imkitchen_shared::Error::Unknown(e)) => {
-            tracing::error!("{e}");
+        ),
+        template
+    );
 
-            template.render(EditTemplate {
-                id,
-                user,
-                error_message: Some(SERVER_ERROR_MESSAGE.to_owned()),
-                form,
-                ..Default::default()
-            })
-        }
-        Err(e) => template.render(EditTemplate {
-            id,
-            user,
-            error_message: Some(e.to_string()),
-            form,
-            ..Default::default()
-        }),
-    }
+    template
+        .render(ToastSuccessTemplate {
+            original: None,
+            message: "Recipe saved successfully",
+            description: None,
+        })
+        .into_response()
 }
 
 pub async fn ingredient_row(template: Template) -> impl IntoResponse {

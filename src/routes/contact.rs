@@ -53,8 +53,7 @@ pub async fn action(
             },
             &Metadata::default(),
         ),
-        template,
-        None::<ContactTemplate>
+        template
     );
 
     template

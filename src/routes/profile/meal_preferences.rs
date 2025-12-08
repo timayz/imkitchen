@@ -82,8 +82,7 @@ pub async fn action(
             },
             &Metadata::by(user.id),
         ),
-        template,
-        None::<MealPreferencesTemplate>
+        template
     );
 
     template

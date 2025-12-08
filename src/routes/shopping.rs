@@ -139,8 +139,7 @@ pub async fn toggle_action(
             },
             &Metadata::by(user.id.to_owned()),
         ),
-        template,
-        None::<ShoppingTemplate>
+        template
     );
 
     "<div></div>".into_response()

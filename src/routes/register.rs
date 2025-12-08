@@ -72,8 +72,7 @@ pub async fn action(
             },
             &Metadata::default()
         ),
-        template,
-        None::<RegisterButtonTemplate>
+        template
     );
 
     template

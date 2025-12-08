@@ -311,6 +311,46 @@ macro_rules! try_response {
     };
 
     // Result<T, Error> with Unknown variant handling
+    ($result:expr, $template:expr) => {
+        $crate::try_response!(sync: $result.await, $template, None::<$crate::template::NotFoundTemplate>)
+    };
+
+    // Result<Option<T>, Error> with Unknown variant handling
+    (opt: $result:expr, $template:expr) => {
+        $crate::try_response!(sync opt: $result.await, $template, None::<$crate::template::NotFoundTemplate>)
+    };
+
+    // Result<T, anyhow::Error> - all errors treated as server errors
+    (anyhow: $result:expr, $template:expr) => {
+        $crate::try_response!(sync anyhow: $result.await, $template, None::<$crate::template::NotFoundTemplate>)
+    };
+
+    // Result<Option<T>, anyhow::Error> - all errors treated as server errors
+    (anyhow_opt: $result:expr, $template:expr) => {
+        $crate::try_response!(sync anyhow_opt: $result.await, $template, None::<$crate::template::NotFoundTemplate>)
+    };
+
+    // Result<T, Error> with Unknown variant handling
+    (sync: $result:expr, $template:expr) => {
+        $crate::try_response!(sync: $result, $template, None::<$crate::template::NotFoundTemplate>)
+    };
+
+    // Result<Option<T>, Error> with Unknown variant handling
+    (sync opt: $result:expr, $template:expr) => {
+        $crate::try_response!(sync opt: $result, $template, None::<$crate::template::NotFoundTemplate>)
+    };
+
+    // Result<T, anyhow::Error> - all errors treated as server errors
+    (sync anyhow: $result:expr, $template:expr) => {
+        $crate::try_response!(sync anyhow: $result, $template, None::<$crate::template::NotFoundTemplate>)
+    };
+
+    // Result<Option<T>, anyhow::Error> - all errors treated as server errors
+    (sync anyhow_opt: $result:expr, $template:expr) => {
+        $crate::try_response!(sync anyhow_opt: $result, $template, None::<$crate::template::NotFoundTemplate>)
+    };
+
+    // Result<T, Error> with Unknown variant handling
     (sync: $result:expr, $template:expr, $fallback:expr) => {
         match $result {
             Ok(r) => r,

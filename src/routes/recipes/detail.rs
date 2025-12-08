@@ -74,23 +74,21 @@ pub async fn delete_action(
 ) -> impl IntoResponse {
     let recipe = crate::try_response!(anyhow_opt:
         app.recipe_command.load_optional(&id),
-        template,
-        None::<DeleteButtonTemplate>
+        template
     );
 
     if recipe.item.deleted {
-        crate::try_response!(sync: Ok(None::<()>), template, None::<DeleteButtonTemplate>);
+        crate::try_response!(sync: Ok(None::<()>), template);
     }
 
     if recipe.item.user_id != user.id {
-        crate::try_response!(sync: Err(imkitchen_shared::Error::Forbidden), template, None::<DeleteButtonTemplate>);
+        crate::try_response!(sync: Err(imkitchen_shared::Error::Forbidden), template);
     }
 
     crate::try_response!(
         app.recipe_command
             .delete_with(recipe, &Metadata::by(user.id.to_owned())),
-        template,
-        None::<DeleteButtonTemplate>
+        template
     );
 
     template

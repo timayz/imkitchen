@@ -113,8 +113,7 @@ pub async fn create(
 ) -> impl IntoResponse {
     let id = crate::try_response!(
         app.recipe_command.create(&Metadata::by(user.id.to_owned())),
-        template,
-        None::<CreateButtonTemplate>
+        template
     );
 
     template

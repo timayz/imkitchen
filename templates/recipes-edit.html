@@ -11,7 +11,7 @@
 
   <!-- Form -->
   <form action="/recipes/{{ id }}/edit" method="post" autocomplete="off"
-    ts-req="" ts-req-selector="form"
+    ts-req="" ts-swap="skip"
     class="bg-white rounded-lg shadow-lg p-8">
     <!-- Recipe Type -->
     <div class="mb-8">
@@ -205,11 +205,6 @@
         <p class="text-sm text-gray-500 mt-1">{{ "If specified, users will receive morning reminders (8 AM) to prepare"|t }}</p>
       </div>
     </div>
-    {% if let Some(error_message) = error_message %}
-    <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-        <div class="text-sm text-red-700 mt-1">{{ error_message|t }}.</div>
-    </div>
-    {% endif %}
 
     <!-- Submit -->
     <div class="flex flex-col md:flex-row gap-4">
@@ -220,11 +215,7 @@
       <a href="/recipes"
         class="flex-1 bg-gray-200 text-gray-700 font-semibold py-3 rounded-lg hover:bg-gray-300 transition text-center">
 
-        {% if succeeded %}
         {{ "Back to My Recipes"|t }}
-        {% else %}
-        {{ "Cancel"|t }}
-        {% endif %}
       </a>
     </div>
   </form>

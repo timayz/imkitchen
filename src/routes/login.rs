@@ -46,8 +46,7 @@ pub async fn action(
             },
             &Metadata::default(),
         ),
-        template,
-        None::<LoginTemplate>
+        template
     );
 
     let auth_cookie = match build_cookie(state.config.jwt, id) {
