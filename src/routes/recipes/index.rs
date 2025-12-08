@@ -1,33 +1,19 @@
-use std::str::FromStr;
-
 use axum::{
     extract::{Path, Query, State},
-    http::StatusCode,
-    response::IntoResponse,
+    response::{IntoResponse, Redirect},
 };
 use evento::cursor::{Args, ReadResult, Value};
 use imkitchen_recipe::{CuisineType, RecipeListRow, RecipeType, RecipesQuery, SortBy, UserStat};
 use imkitchen_shared::Metadata;
 use serde::Deserialize;
+use std::str::FromStr;
 use strum::VariantArray;
 
 use crate::{
     auth::AuthUser,
     routes::AppState,
-    template::{Template, filters},
+    template::{Status, Template, filters},
 };
-
-#[derive(askama::Template)]
-#[template(path = "recipes-create.html")]
-pub struct CreateTemplate {
-    pub id: String,
-}
-
-#[derive(askama::Template)]
-#[template(path = "recipes-create-status.html")]
-pub struct CreateStatusTemplate {
-    pub id: String,
-}
 
 #[derive(askama::Template)]
 #[template(path = "recipes-index.html")]
@@ -69,7 +55,7 @@ pub async fn page(
     State(app): State<AppState>,
     Query(input): Query<PageQuery>,
 ) -> impl IntoResponse {
-    let stat = crate::try_anyhow_response!(app.recipe_query.find_user_stat(&user.id), template)
+    let stat = crate::try_page_response!(app.recipe_query.find_user_stat(&user.id), template)
         .unwrap_or_default();
 
     let query = input.clone();
@@ -89,7 +75,7 @@ pub async fn page(
         .cuisine_type
         .and_then(|v| CuisineType::from_str(v.as_str()).ok());
 
-    let recipes = crate::try_anyhow_response!(
+    let recipes = crate::try_page_response!(
         app.recipe_query.filter(RecipesQuery {
             user_id: Some(user.id.to_owned()),
             recipe_type,
@@ -112,37 +98,50 @@ pub async fn page(
         .into_response()
 }
 
+#[derive(askama::Template)]
+#[template(path = "partials/recipes-create-button.html")]
+pub struct CreateButtonTemplate<'a> {
+    pub id: &'a str,
+    pub status: Status,
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn create(
     template: Template,
     AuthUser(user): AuthUser,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
-    match app
-        .recipe_command
-        .create(&Metadata::by(user.id.to_owned()))
-        .await
-    {
-        Ok(id) => template.render(CreateTemplate { id }).into_response(),
-        Err(err) => {
-            tracing::error!(user_id = user.id, err = %err, "Failed to create recipe");
+    let id = crate::try_response!(
+        app.recipe_command.create(&Metadata::by(user.id.to_owned())),
+        template
+    );
 
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
-        }
-    }
+    template
+        .render(CreateButtonTemplate {
+            id: &id,
+            status: Status::Pending,
+        })
+        .into_response()
 }
 
+#[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn create_status(
     template: Template,
     AuthUser(user): AuthUser,
     Path((id,)): Path<(String,)>,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
-    match app.recipe_query.find(&id).await {
-        Ok(Some(_)) => ([("ts-location", format!("/recipes/{id}/edit"))]).into_response(),
-        Ok(_) => template.render(CreateStatusTemplate { id }).into_response(),
-        Err(err) => {
-            tracing::error!(user = user.id,err = %err, "Failed to check recipe creation");
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
-        }
+    match crate::try_response!(anyhow:
+        app.recipe_query.find(&id),
+        template,
+        Some(CreateButtonTemplate { id: &id, status: Status::Idle })
+    ) {
+        Some(_) => Redirect::to(&format!("/recipes/{id}/edit")).into_response(),
+        _ => template
+            .render(CreateButtonTemplate {
+                id: &id,
+                status: Status::Checking,
+            })
+            .into_response(),
     }
 }

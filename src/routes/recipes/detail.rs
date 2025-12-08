@@ -9,26 +9,20 @@ use imkitchen_shared::Metadata;
 use crate::{
     auth::AuthUser,
     routes::AppState,
-    template::{FORBIDDEN, ForbiddenTemplate, NOT_FOUND, SERVER_ERROR_MESSAGE, Template, filters},
+    template::{ForbiddenTemplate, Status, Template, filters},
 };
 
 #[derive(askama::Template)]
-#[template(path = "recipes-delete-modal.html")]
+#[template(path = "partials/recipes-delete-modal.html")]
 pub struct DeleteModalTemplate {
     pub id: String,
 }
 
 #[derive(askama::Template)]
-#[template(path = "recipes-delete.html")]
-pub struct DeleteTemplate {
-    pub id: String,
-    pub error_message: Option<String>,
-}
-
-#[derive(askama::Template)]
-#[template(path = "recipes-delete-status.html")]
-pub struct DeleteStatusTemplate {
-    pub id: String,
+#[template(path = "partials/recipes-delete-button.html")]
+pub struct DeleteButtonTemplate<'a> {
+    pub id: &'a str,
+    pub status: crate::template::Status,
 }
 
 #[derive(askama::Template)]
@@ -56,7 +50,7 @@ pub async fn page(
     Path((id,)): Path<(String,)>,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
-    let recipe = crate::try_anyhow_opt_response!(app.recipe_query.find(&id), template);
+    let recipe = crate::try_page_response!(opt: app.recipe_query.find(&id), template);
 
     if recipe.user_id != user.id {
         return template.render(ForbiddenTemplate).into_response();
@@ -71,78 +65,62 @@ pub async fn page(
         .into_response()
 }
 
+#[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn delete_action(
     template: Template,
     State(app): State<AppState>,
     AuthUser(user): AuthUser,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    let recipe = match app.recipe_command.load_optional(&id).await {
-        Ok(Some(r)) => r,
-        Ok(_) => {
-            return template.render(DeleteTemplate {
-                id,
-                error_message: Some(NOT_FOUND.to_owned()),
-            });
-        }
-        Err(err) => {
-            tracing::error!(recipe = id, user = user.id, err = %err,"Failed to delete recipe");
-
-            return template.render(DeleteTemplate {
-                id,
-                error_message: Some(SERVER_ERROR_MESSAGE.to_owned()),
-            });
-        }
-    };
+    let recipe = crate::try_response!(anyhow_opt:
+        app.recipe_command.load_optional(&id),
+        template
+    );
 
     if recipe.item.deleted {
-        return template.render(DeleteTemplate {
-            id,
-            error_message: Some(NOT_FOUND.to_owned()),
-        });
+        crate::try_response!(sync: Ok(None::<()>), template);
     }
 
     if recipe.item.user_id != user.id {
-        return template.render(DeleteTemplate {
-            id,
-            error_message: Some(FORBIDDEN.to_owned()),
-        });
+        crate::try_response!(sync: Err(imkitchen_shared::Error::Forbidden), template);
     }
 
-    match app
-        .recipe_command
-        .delete_with(recipe, &Metadata::by(user.id.to_owned()))
-        .await
-    {
-        Ok(_) => template.render(DeleteTemplate {
-            id,
-            error_message: None,
-        }),
-        Err(err) => {
-            tracing::error!(recipe = id, user = user.id, err = %err, "Failed to delete recipe");
+    crate::try_response!(
+        app.recipe_command
+            .delete_with(recipe, &Metadata::by(user.id.to_owned())),
+        template
+    );
 
-            template.render(DeleteTemplate {
-                id,
-                error_message: Some(SERVER_ERROR_MESSAGE.to_owned()),
-            })
-        }
-    }
+    template
+        .render(DeleteButtonTemplate {
+            id: &id,
+            status: Status::Pending,
+        })
+        .into_response()
 }
 
+#[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn delete_status(
     template: Template,
     State(app): State<AppState>,
     AuthUser(user): AuthUser,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    match app.recipe_query.find(&id).await {
-        Ok(Some(_)) => template.render(DeleteStatusTemplate { id }).into_response(),
-        Ok(_) => Redirect::to("/recipes").into_response(),
-        Err(err) => {
-            tracing::error!(recipe = id, user = user.id, err = %err,"Failed to check recipe delete status");
-
-            Redirect::to("/recipes").into_response()
-        }
+    match crate::try_response!(anyhow:
+        app.recipe_query.find(&id),
+        template,
+        Some(DeleteButtonTemplate {
+            id: &id,
+            status: Status::Idle,
+        })
+    ) {
+        Some(_) => template
+            .render(DeleteButtonTemplate {
+                id: &id,
+                status: Status::Checking,
+            })
+            .into_response(),
+        _ => Redirect::to("/recipes").into_response(),
     }
 }
 

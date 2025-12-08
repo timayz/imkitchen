@@ -9,12 +9,11 @@ use strum::VariantArray;
 
 use crate::auth::AuthUser;
 use crate::routes::AppState;
-use crate::template::{SERVER_ERROR_MESSAGE, Template, filters};
+use crate::template::{Template, ToastSuccessTemplate, filters};
 
 #[derive(askama::Template)]
 #[template(path = "profile-meal-preferences.html")]
 pub struct MealPreferencesTemplate {
-    pub error_message: Option<String>,
     pub current_path: String,
     pub profile_path: String,
     pub household_size: u8,
@@ -26,7 +25,6 @@ pub struct MealPreferencesTemplate {
 impl Default for MealPreferencesTemplate {
     fn default() -> Self {
         Self {
-            error_message: None,
             current_path: "profile".to_owned(),
             profile_path: "meal-preferences".to_owned(),
             household_size: 4,
@@ -43,7 +41,7 @@ pub async fn page(
     State(state): State<AppState>,
     AuthUser(user): AuthUser,
 ) -> impl IntoResponse {
-    let preferences = crate::try_anyhow_response!(
+    let preferences = crate::try_page_response!(
         state.user_meal_preference_command.load_optional(&user.id),
         template
     );
@@ -68,47 +66,30 @@ pub struct ActionInput {
     pub cuisine_variety_weight: f32,
 }
 
+#[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn action(
     template: Template,
     State(state): State<AppState>,
     AuthUser(user): AuthUser,
     Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {
-    match state
-        .user_meal_preference_command
-        .update(
+    crate::try_response!(
+        state.user_meal_preference_command.update(
             UpdateInput {
                 dietary_restrictions: input.dietary_restrictions.to_vec(),
                 cuisine_variety_weight: input.cuisine_variety_weight,
                 household_size: input.household_size,
             },
             &Metadata::by(user.id),
-        )
-        .await
-    {
-        Ok(_) => template.render(MealPreferencesTemplate {
-            household_size: input.household_size,
-            dietary_restrictions: input.dietary_restrictions,
-            cuisine_variety_weight: input.cuisine_variety_weight,
-            ..Default::default()
-        }),
-        Err(imkitchen_shared::Error::Unknown(e)) => {
-            tracing::error!("{e}");
+        ),
+        template
+    );
 
-            template.render(MealPreferencesTemplate {
-                error_message: Some(SERVER_ERROR_MESSAGE.to_owned()),
-                household_size: input.household_size,
-                dietary_restrictions: input.dietary_restrictions,
-                cuisine_variety_weight: input.cuisine_variety_weight,
-                ..Default::default()
-            })
-        }
-        Err(e) => template.render(MealPreferencesTemplate {
-            error_message: Some(e.to_string()),
-            household_size: input.household_size,
-            dietary_restrictions: input.dietary_restrictions,
-            cuisine_variety_weight: input.cuisine_variety_weight,
-            ..Default::default()
-        }),
-    }
+    template
+        .render(ToastSuccessTemplate {
+            original: None,
+            message: "Meal preferences updated successfully",
+            description: None,
+        })
+        .into_response()
 }

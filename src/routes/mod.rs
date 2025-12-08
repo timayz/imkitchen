@@ -19,7 +19,7 @@ mod recipes;
 mod register;
 mod reset_password;
 mod service_worker;
-mod shopping_list;
+mod shopping;
 mod terms;
 
 use axum::routing::get;
@@ -75,14 +75,14 @@ pub fn router(app_state: AppState) -> Router {
             get(calendar::regenerate_status),
         )
         .route("/calendar/week-{index}", get(calendar::page))
-        .route("/calendar/week-{index}/shopping", get(shopping_list::page))
+        .route("/calendar/week-{index}/shopping", get(shopping::page))
         .route(
             "/calendar/week-{timestamp}/shopping/toggle",
-            post(shopping_list::toggle_action),
+            post(shopping::toggle_action),
         )
         .route("/community", get(community::page))
         .route("/recipes", get(recipes::index::page))
-        .route("/recipes/create", get(recipes::index::create))
+        .route("/recipes/create", post(recipes::index::create))
         .route(
             "/recipes/create/{id}/status",
             get(recipes::index::create_status),

@@ -1,6 +1,6 @@
 use axum::{
     extract::{Form, Path, State},
-    response::{Html, IntoResponse},
+    response::{IntoResponse, Redirect},
 };
 use axum_extra::extract::CookieJar;
 use imkitchen_shared::Metadata;
@@ -9,15 +9,13 @@ use serde::Deserialize;
 
 use crate::{
     auth::build_cookie,
-    template::{SERVER_ERROR_MESSAGE, filters},
+    template::{Status, ToastErrorTemplate, filters},
 };
 use crate::{routes::AppState, template::Template};
 
 #[derive(askama::Template)]
 #[template(path = "register.html")]
 pub struct RegisterTemplate {
-    pub processing: Option<String>,
-    pub error_message: Option<String>,
     pub email: Option<String>,
     pub password: Option<String>,
     pub confirm_password: Option<String>,
@@ -25,12 +23,17 @@ pub struct RegisterTemplate {
 
 pub async fn page(template: Template) -> impl IntoResponse {
     template.render(RegisterTemplate {
-        processing: None,
-        error_message: None,
         email: None,
         password: None,
         confirm_password: None,
     })
+}
+
+#[derive(askama::Template)]
+#[template(path = "partials/register-button.html")]
+pub struct RegisterButtonTemplate<'a> {
+    pub id: &'a str,
+    pub status: Status,
 }
 
 #[derive(Deserialize)]
@@ -42,152 +45,99 @@ pub struct ActionInput {
 
 pub async fn action(
     template: Template,
-    State(state): State<AppState>,
+    State(app): State<AppState>,
     Form(mut input): Form<ActionInput>,
 ) -> impl IntoResponse {
     if input.password != input.confirm_password {
-        return template.render(RegisterTemplate {
-            email: Some(input.email),
-            password: Some(input.password),
-            confirm_password: Some(input.confirm_password),
-            processing: None,
-            error_message: Some(
-                "Passwords don't match. Please make sure both fields are identical.".to_owned(),
-            ),
-        });
+        return (
+            [("ts-swap", "skip")],
+            template.render(ToastErrorTemplate {
+                original: None,
+                message: "Passwords don't match. Please make sure both fields are identical.",
+                description: None,
+            }),
+        )
+            .into_response();
     }
 
-    if input.email == state.config.root.email {
-        input.password = state.config.root.password;
+    if input.email == app.config.root.email {
+        input.password = app.config.root.password;
     }
 
-    match state
-        .user_command
-        .register(
+    let id = crate::try_response!(
+        app.user_command.register(
             RegisterInput {
                 email: input.email.to_owned(),
                 password: input.password.to_owned(),
             },
-            &Metadata::default(),
-        )
-        .await
-    {
-        Ok(id) => template.render(RegisterTemplate {
-            email: Some(input.email),
-            password: Some(input.password),
-            confirm_password: Some(input.confirm_password),
-            processing: Some(id),
-            error_message: None,
-        }),
-        Err(imkitchen_shared::Error::Unknown(e)) => {
-            tracing::error!("{e}");
+            &Metadata::default()
+        ),
+        template
+    );
 
-            template.render(RegisterTemplate {
-                email: Some(input.email),
-                password: Some(input.password),
-                confirm_password: Some(input.confirm_password),
-                processing: None,
-                error_message: Some(SERVER_ERROR_MESSAGE.to_string()),
-            })
-        }
-        Err(e) => template.render(RegisterTemplate {
-            email: Some(input.email),
-            password: Some(input.password),
-            confirm_password: Some(input.confirm_password),
-            processing: None,
-            error_message: Some(e.to_string()),
-        }),
-    }
-}
-
-#[derive(askama::Template)]
-#[template(path = "partials/register-status.html")]
-pub struct RegisterStatusTemplate {
-    pub id: String,
-}
-
-#[derive(askama::Template)]
-#[template(path = "partials/register-status-error.html")]
-pub struct RegisterStatusErrorTemplate {
-    pub error_message: String,
+    template
+        .render(RegisterButtonTemplate {
+            id: &id,
+            status: Status::Pending,
+        })
+        .into_response()
 }
 
 pub async fn status(
     template: Template,
-    State(state): State<AppState>,
+    State(app): State<AppState>,
     jar: CookieJar,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    let user = match state.user_command.load(&id).await {
-        Ok(user) => user,
-        Err(e) => {
-            tracing::error!("{e}");
-            return (
-            [
-                (
-                    "ts-swap-push",
-                    "replace: #processing-alert <= #processing-error,afterend: #processing-error <= button",
-                ),
-                ("ts-swap", "skip"),
-            ],
-                template
-                .render(RegisterStatusErrorTemplate {
-                    error_message: "Something went wrong, please retry later".to_owned(),
-                }))
-                .into_response();
-        }
-    };
+    let user = crate::try_response!(anyhow:
+        app.user_command.load(&id),
+        template,
+        Some(RegisterButtonTemplate { id: &id, status: Status::Idle })
+    );
 
     match (user.item.status, user.item.failed_reason) {
-    (imkitchen_user::Status::Idle,_) => {
-            let result = if user.item.email == state.config.root.email {
-                state.user_command.made_admin(&user.event.aggregator_id, &Metadata::default()).await
-            } else {
-                Ok(())
-            };
+        (imkitchen_user::Status::Idle, _) => {
+            if user.item.email == app.config.root.email {
+                crate::try_response!(
+                    app.user_command
+                        .made_admin(&user.event.aggregator_id, &Metadata::default()),
+                    template,
+                    Some(RegisterButtonTemplate {
+                        id: &id,
+                        status: Status::Checking
+                    })
+                );
 
-            if let Err(err) = result {
-                tracing::error!("{err}");
+                return Redirect::to("/login").into_response();
             }
 
-            let auth_cookie = match build_cookie(state.config.jwt, id) {
-                Ok(cookie) => cookie,
-                Err(e) => {
-                    tracing::error!("{e}");
-
-                    return template
-                        .render(RegisterStatusErrorTemplate {
-                            error_message: "Something went wrong, please retry later".to_owned(),
-                        })
-                        .into_response();
-                }
-            };
+            let auth_cookie = crate::try_response!(sync anyhow:
+                build_cookie(app.config.jwt, id.to_owned()),
+                template,
+                Some(RegisterButtonTemplate {
+                    id: &id,
+                    status: Status::Idle
+                })
+            );
 
             let jar = jar.add(auth_cookie);
 
-            let mut resp = Html("").into_response();
-            resp.headers_mut()
-                .insert("ts-location", "/".parse().unwrap());
-
-            (jar, resp).into_response()
-
+            (jar, Redirect::to("/")).into_response()
         }
-        (imkitchen_user::Status::Failed, Some(reason)) => (
-            [
-                (
-                    "ts-swap-push",
-                    "replace: #processing-alert <= #processing-error,afterend: #processing-error <= button",
-                ),
-                ("ts-swap", "skip"),
-            ],
-            template.render(RegisterStatusErrorTemplate {
-                error_message: reason,
-            }),
-        )
-            .into_response(),
-        (imkitchen_user::Status::Failed,_) => unreachable!(),
-        (imkitchen_user::Status::Processing,_) => template
-            .render(RegisterStatusTemplate { id })
+        (imkitchen_user::Status::Failed, Some(reason)) => crate::try_response!(sync:
+            Err(imkitchen_shared::Error::Server(reason)),
+            template,
+            Some(RegisterButtonTemplate {
+                id: &id,
+                status: Status::Idle
+            })
+        ),
+        (imkitchen_user::Status::Failed, _) => unreachable!(),
+        (imkitchen_user::Status::Processing, _) => template
+            .render(RegisterButtonTemplate {
+                id: &id,
+                status: Status::Checking,
+            })
             .into_response(),
     }
 }

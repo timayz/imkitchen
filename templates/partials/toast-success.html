@@ -1,0 +1,26 @@
+{% if let Some(original) = original %}
+{{ original|safe }}
+{% endif %}
+
+<div ts-swap-push="#toast-container" ts-swap="append" ts-trigger="load delay 5s" ts-action="remove"
+  class="bg-white border-l-4 border-green-500 rounded-lg shadow-lg p-4 transform transition-all duration-300">
+  <div class="flex items-center gap-3">
+    <svg class="w-5 h-5 text-green-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+    </svg>
+    {% if let Some(description) = description %}
+    <div class="flex-1">
+      <div class="text-sm font-semibold text-gray-800">{{ message|t }}</div>
+      <div class="text-xs text-gray-600 mt-1">{{ description|t }}</div>
+    </div>
+    {% else %}
+    <div class="flex-1 text-sm font-semibold text-gray-800">{{ message|t }}</div>
+    {% endif %}
+
+    <button ts-trigger="click" ts-action="remove" ts-target="parent [ts-swap-push]" class="text-gray-400 hover:text-gray-600">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+    </button>
+  </div>
+</div>

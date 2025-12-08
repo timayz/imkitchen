@@ -12,6 +12,12 @@ pub const SERVER_ERROR_MESSAGE: &str = "Something went wrong, please retry later
 pub const NOT_FOUND: &str = "Not found";
 pub const FORBIDDEN: &str = "Forbidden";
 
+pub enum Status {
+    Idle,
+    Pending,
+    Checking,
+}
+
 pub(crate) mod filters {
     use time::OffsetDateTime;
 
@@ -108,12 +114,15 @@ pub(crate) mod filters {
 
 pub struct Template {
     preferred_language: String,
-    preferred_language_iso: String,
+    pub preferred_language_iso: String,
     config: crate::config::Config,
 }
 
 impl Template {
-    pub fn render<T: askama::Template>(&self, template: T) -> Response {
+    fn render_with_values<T: askama::Template>(
+        &self,
+        template: T,
+    ) -> Result<String, askama::Error> {
         let mut values: HashMap<&str, Box<dyn std::any::Any>> = HashMap::new();
         values.insert(
             "preferred_language",
@@ -134,7 +143,18 @@ impl Template {
             values.insert("is_dev", Box::new(false));
         }
 
-        match template.render_with_values(&values) {
+        template.render_with_values(&values)
+    }
+
+    pub fn to_string<T: askama::Template>(&self, template: T) -> String {
+        match self.render_with_values(template) {
+            Ok(html) => html,
+            Err(err) => format!("Failed to render template. Error: {err}"),
+        }
+    }
+
+    pub fn render<T: askama::Template>(&self, template: T) -> Response {
+        match self.render_with_values(template) {
             Ok(html) => Html(html).into_response(),
             Err(err) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -190,8 +210,21 @@ pub struct ForbiddenTemplate;
 pub struct ServerErrorTemplate;
 
 #[macro_export]
-macro_rules! try_anyhow_opt_response {
+macro_rules! try_page_response {
     ($result:expr, $template:expr) => {
+        match $result.await {
+            Ok(r) => r,
+            Err(err) => {
+                tracing::error!("{err}");
+
+                return $template
+                    .render($crate::template::ServerErrorTemplate)
+                    .into_response();
+            }
+        }
+    };
+
+    (opt: $result:expr, $template:expr) => {
         match $result.await {
             Ok(Some(r)) => r,
             Ok(_) => {
@@ -210,17 +243,168 @@ macro_rules! try_anyhow_opt_response {
     };
 }
 
+#[derive(askama::Template)]
+#[template(path = "partials/toast-success.html")]
+pub struct ToastSuccessTemplate<'a> {
+    pub original: Option<&'a str>,
+    pub message: &'a str,
+    pub description: Option<&'a str>,
+}
+
+#[derive(askama::Template)]
+#[template(path = "partials/toast-error.html")]
+pub struct ToastErrorTemplate<'a> {
+    pub original: Option<&'a str>,
+    pub message: &'a str,
+    pub description: Option<&'a str>,
+}
+
 #[macro_export]
-macro_rules! try_anyhow_response {
+macro_rules! try_response {
+    // Internal helper for rendering error responses
+    (@render $template:expr, $fallback:expr, $message:expr) => {
+        match $fallback {
+            Some(t) => {
+                return $template
+                    .render($crate::template::ToastErrorTemplate {
+                        original: Some(&$template.to_string(t)),
+                        message: $message,
+                        description: None,
+                    })
+                    .into_response();
+            }
+            _ => {
+                return (
+                    [("ts-swap", "skip")],
+                    $template.render($crate::template::ToastErrorTemplate {
+                        original: None,
+                        message: $message,
+                        description: None,
+                    }),
+                )
+                    .into_response();
+            }
+        }
+    };
+
+    // Result<T, Error> with Unknown variant handling
+    ($result:expr, $template:expr, $fallback:expr) => {
+        $crate::try_response!(sync: $result.await, $template, $fallback)
+    };
+
+    // Result<Option<T>, Error> with Unknown variant handling
+    (opt: $result:expr, $template:expr, $fallback:expr) => {
+        $crate::try_response!(sync opt: $result.await, $template, $fallback)
+    };
+
+    // Result<T, anyhow::Error> - all errors treated as server errors
+    (anyhow: $result:expr, $template:expr, $fallback:expr) => {
+        $crate::try_response!(sync anyhow: $result.await, $template, $fallback)
+    };
+
+    // Result<Option<T>, anyhow::Error> - all errors treated as server errors
+    (anyhow_opt: $result:expr, $template:expr, $fallback:expr) => {
+        $crate::try_response!(sync anyhow_opt: $result.await, $template, $fallback)
+    };
+
+    // Result<T, Error> with Unknown variant handling
     ($result:expr, $template:expr) => {
-        match $result.await {
+        $crate::try_response!(sync: $result.await, $template, None::<$crate::template::NotFoundTemplate>)
+    };
+
+    // Result<Option<T>, Error> with Unknown variant handling
+    (opt: $result:expr, $template:expr) => {
+        $crate::try_response!(sync opt: $result.await, $template, None::<$crate::template::NotFoundTemplate>)
+    };
+
+    // Result<T, anyhow::Error> - all errors treated as server errors
+    (anyhow: $result:expr, $template:expr) => {
+        $crate::try_response!(sync anyhow: $result.await, $template, None::<$crate::template::NotFoundTemplate>)
+    };
+
+    // Result<Option<T>, anyhow::Error> - all errors treated as server errors
+    (anyhow_opt: $result:expr, $template:expr) => {
+        $crate::try_response!(sync anyhow_opt: $result.await, $template, None::<$crate::template::NotFoundTemplate>)
+    };
+
+    // Result<T, Error> with Unknown variant handling
+    (sync: $result:expr, $template:expr) => {
+        $crate::try_response!(sync: $result, $template, None::<$crate::template::NotFoundTemplate>)
+    };
+
+    // Result<Option<T>, Error> with Unknown variant handling
+    (sync opt: $result:expr, $template:expr) => {
+        $crate::try_response!(sync opt: $result, $template, None::<$crate::template::NotFoundTemplate>)
+    };
+
+    // Result<T, anyhow::Error> - all errors treated as server errors
+    (sync anyhow: $result:expr, $template:expr) => {
+        $crate::try_response!(sync anyhow: $result, $template, None::<$crate::template::NotFoundTemplate>)
+    };
+
+    // Result<Option<T>, anyhow::Error> - all errors treated as server errors
+    (sync anyhow_opt: $result:expr, $template:expr) => {
+        $crate::try_response!(sync anyhow_opt: $result, $template, None::<$crate::template::NotFoundTemplate>)
+    };
+
+    // Result<T, Error> with Unknown variant handling
+    (sync: $result:expr, $template:expr, $fallback:expr) => {
+        match $result {
+            Ok(r) => r,
+            Err(imkitchen_shared::Error::Unknown(err)) => {
+                tracing::error!("{err}");
+                $crate::try_response!(@render $template, $fallback, $crate::template::SERVER_ERROR_MESSAGE)
+            }
+            Err(imkitchen_shared::Error::Forbidden) => {
+                $crate::try_response!(@render $template, $fallback, $crate::template::FORBIDDEN)
+            }
+            Err(err) => {
+                $crate::try_response!(@render $template, $fallback, err.to_string().as_str())
+            }
+        }
+    };
+
+    // Result<Option<T>, Error> with Unknown variant handling
+    (sync opt: $result:expr, $template:expr, $fallback:expr) => {
+        match $result {
+            Ok(Some(r)) => r,
+            Ok(_) => {
+                $crate::try_response!(@render $template, $fallback, $crate::template::NOT_FOUND)
+            }
+            Err(imkitchen_shared::Error::Unknown(err)) => {
+                tracing::error!("{err}");
+                $crate::try_response!(@render $template, $fallback, $crate::template::SERVER_ERROR_MESSAGE)
+            }
+            Err(imkitchen_shared::Error::Forbidden) => {
+                $crate::try_response!(@render $template, $fallback, $crate::template::FORBIDDEN)
+            }
+            Err(err) => {
+                $crate::try_response!(@render $template, $fallback, err.to_string().as_str())
+            }
+        }
+    };
+
+    // Result<T, anyhow::Error> - all errors treated as server errors
+    (sync anyhow: $result:expr, $template:expr, $fallback:expr) => {
+        match $result {
             Ok(r) => r,
             Err(err) => {
                 tracing::error!("{err}");
+                $crate::try_response!(@render $template, $fallback, $crate::template::SERVER_ERROR_MESSAGE)
+            }
+        }
+    };
 
-                return $template
-                    .render($crate::template::ServerErrorTemplate)
-                    .into_response();
+    // Result<Option<T>, anyhow::Error> - all errors treated as server errors
+    (sync anyhow_opt: $result:expr, $template:expr, $fallback:expr) => {
+        match $result {
+            Ok(Some(r)) => r,
+            Ok(_) => {
+                $crate::try_response!(@render $template, $fallback, $crate::template::NOT_FOUND)
+            }
+            Err(err) => {
+                tracing::error!("{err}");
+                $crate::try_response!(@render $template, $fallback, $crate::template::SERVER_ERROR_MESSAGE)
             }
         }
     };
