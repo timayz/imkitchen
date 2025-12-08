@@ -43,7 +43,7 @@ pub async fn page(
     State(app_state): State<AppState>,
     AuthAdmin(user): AuthAdmin,
 ) -> impl IntoResponse {
-    let stat = crate::try_page_opt_response!(app_state.user_query.find_stat(0), template);
+    let stat = crate::try_page_response!(opt: app_state.user_query.find_stat(0), template);
 
     let args = Args {
         first: query.first,
@@ -83,7 +83,7 @@ pub async fn suspend(
         template
     );
 
-    let mut user = crate::try_page_opt_response!(app_state.user_query.find(&id), template);
+    let mut user = crate::try_page_response!(opt: app_state.user_query.find(&id), template);
 
     user.state.0 = UserState::Suspended;
 
@@ -115,7 +115,7 @@ pub async fn activate(
         template
     );
 
-    let mut user = crate::try_page_opt_response!(app_state.user_query.find(&id), template);
+    let mut user = crate::try_page_response!(opt: app_state.user_query.find(&id), template);
 
     user.state.0 = UserState::Active;
 
@@ -149,7 +149,7 @@ pub async fn toggle_premium(
         template
     );
 
-    let mut user = crate::try_page_opt_response!(app_state.user_query.find(&id), template);
+    let mut user = crate::try_page_response!(opt: app_state.user_query.find(&id), template);
 
     user.subscription_expire_at = expire_at;
 

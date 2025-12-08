@@ -210,15 +210,10 @@ pub struct ForbiddenTemplate;
 pub struct ServerErrorTemplate;
 
 #[macro_export]
-macro_rules! try_page_opt_response {
+macro_rules! try_page_response {
     ($result:expr, $template:expr) => {
         match $result.await {
-            Ok(Some(r)) => r,
-            Ok(_) => {
-                return $template
-                    .render($crate::template::NotFoundTemplate)
-                    .into_response()
-            }
+            Ok(r) => r,
             Err(err) => {
                 tracing::error!("{err}");
 
@@ -228,13 +223,15 @@ macro_rules! try_page_opt_response {
             }
         }
     };
-}
 
-#[macro_export]
-macro_rules! try_page_response {
-    ($result:expr, $template:expr) => {
+    (opt: $result:expr, $template:expr) => {
         match $result.await {
-            Ok(r) => r,
+            Ok(Some(r)) => r,
+            Ok(_) => {
+                return $template
+                    .render($crate::template::NotFoundTemplate)
+                    .into_response()
+            }
             Err(err) => {
                 tracing::error!("{err}");
 

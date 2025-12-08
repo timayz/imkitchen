@@ -103,7 +103,7 @@ pub async fn mark_read_and_reply(
         template
     );
 
-    let mut contact = crate::try_page_opt_response!(app.contact_query.find(&id), template);
+    let mut contact = crate::try_page_response!(opt: app.contact_query.find(&id), template);
 
     contact.status.0 = Status::Read;
 
@@ -135,7 +135,7 @@ pub async fn resolve(
         template
     );
 
-    let mut contact = crate::try_page_opt_response!(app.contact_query.find(&id), template);
+    let mut contact = crate::try_page_response!(opt: app.contact_query.find(&id), template);
 
     contact.status.0 = Status::Resolved;
 
@@ -167,7 +167,7 @@ pub async fn reopen(
         template
     );
 
-    let mut contact = crate::try_page_opt_response!(app.contact_query.find(&id), template);
+    let mut contact = crate::try_page_response!(opt: app.contact_query.find(&id), template);
 
     contact.status.0 = Status::Read;
 
