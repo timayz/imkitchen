@@ -75,7 +75,10 @@ pub fn router(app_state: AppState) -> Router {
             get(calendar::regenerate_status),
         )
         .route("/calendar/week-{index}", get(calendar::page))
-        .route("/calendar/week-{index}/shopping", get(shopping::page))
+        .route(
+            "/calendar/week-{index}/shopping",
+            get(shopping::page).post(shopping::reset_all_action),
+        )
         .route(
             "/calendar/week-{timestamp}/shopping/toggle",
             post(shopping::toggle_action),

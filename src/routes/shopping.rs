@@ -131,16 +131,65 @@ pub async fn toggle_action(
     Path((week,)): Path<(u64,)>,
     Json(input): Json<ToggleJson>,
 ) -> impl IntoResponse {
-    crate::try_response!(
-        app.shopping_command.toggle(
-            ToggleInput {
-                week,
-                name: input.name,
-            },
-            &Metadata::by(user.id.to_owned()),
-        ),
-        template
-    );
+    let current = crate::try_page_response!(app.shopping_query.next_from(week, &user.id), template)
+        .map(|mut r| {
+            r.ingredients.sort_by_key(|i| i.name.to_owned());
+            r
+        });
 
-    "<div></div>".into_response()
+    let checked = if current.is_some() {
+        crate::try_response!(
+            app.shopping_command.toggle(
+                ToggleInput {
+                    week,
+                    name: input.name,
+                },
+                &Metadata::by(user.id.to_owned()),
+            ),
+            template
+        );
+        crate::try_page_response!(app.shopping_command.load(&user.id), template)
+            .and_then(|loaded| loaded.item.checked.get(&week).cloned())
+    } else {
+        None
+    };
+
+    template
+        .render(ShoppingTemplate {
+            user,
+            current,
+            checked,
+            ..Default::default()
+        })
+        .into_response()
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn reset_all_action(
+    template: Template,
+    AuthUser(user): AuthUser,
+    State(app): State<AppState>,
+    Path((week,)): Path<(u64,)>,
+) -> impl IntoResponse {
+    let current = crate::try_page_response!(app.shopping_query.next_from(week, &user.id), template)
+        .map(|mut r| {
+            r.ingredients.sort_by_key(|i| i.name.to_owned());
+            r
+        });
+
+    if current.is_some() {
+        crate::try_response!(
+            app.shopping_command
+                .reset(week, &Metadata::by(user.id.to_owned())),
+            template
+        );
+    }
+
+    template
+        .render(ShoppingTemplate {
+            user,
+            current,
+            ..Default::default()
+        })
+        .into_response()
 }
