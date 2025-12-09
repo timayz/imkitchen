@@ -15,7 +15,7 @@ if (workbox) {
   // Configure cache ID and update behavior
   workbox.core.setCacheNameDetails({
     prefix: 'imkitchen',
-    suffix: 'v1'
+    suffix: 'v{{ env!("CARGO_PKG_VERSION") }}'
   });
 
   // Skip waiting and claim clients immediately on update
@@ -31,7 +31,7 @@ if (workbox) {
   workbox.routing.registerRoute(
     ({ request }) => request.mode === 'navigate',
     new workbox.strategies.NetworkFirst({
-      cacheName: 'pages-v1',
+      cacheName: 'pages-v{{ env!("CARGO_PKG_VERSION") }}',
       plugins: [
         new workbox.expiration.ExpirationPlugin({
           maxEntries: 50,
@@ -48,7 +48,7 @@ if (workbox) {
   workbox.routing.registerRoute(
     ({ request }) => request.destination === 'image',
     new workbox.strategies.CacheFirst({
-      cacheName: 'images-v1',
+      cacheName: 'images-v{{ env!("CARGO_PKG_VERSION") }}',
       plugins: [
         new workbox.expiration.ExpirationPlugin({
           maxEntries: 100,
@@ -66,7 +66,7 @@ if (workbox) {
       url.pathname.startsWith('/profile') ||
       url.pathname.startsWith('/community'),
     new workbox.strategies.NetworkFirst({
-      cacheName: 'api-v1',
+      cacheName: 'api-v{{ env!("CARGO_PKG_VERSION") }}',
       plugins: [
         new workbox.expiration.ExpirationPlugin({
           maxEntries: 100,
@@ -83,7 +83,7 @@ if (workbox) {
       request.destination === 'script' ||
       request.destination === 'font',
     new workbox.strategies.CacheFirst({
-      cacheName: 'static-v1',
+      cacheName: 'static-v{{ env!("CARGO_PKG_VERSION") }}',
       plugins: [
         new workbox.expiration.ExpirationPlugin({
           maxEntries: 60,
@@ -100,7 +100,7 @@ if (workbox) {
   self.addEventListener('install', (event) => {
     event.waitUntil(
       Promise.all([
-        caches.open('pages-v1').then((cache) => {
+        caches.open('pages-v{{ env!("CARGO_PKG_VERSION") }}').then((cache) => {
           return cache.add(OFFLINE_FALLBACK_URL);
         }),
         checkStorageQuota()

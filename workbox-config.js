@@ -7,7 +7,7 @@ module.exports = {
   globPatterns: [
     '**/*.{css,js,png,svg,ico,woff2,woff,ttf,eot}'
   ],
-  swDest: 'static/sw.js',
+  swDest: 'templates/sw.js',
   swSrc: 'static/js/sw-source.js',
 
   // Prepend /static/ to all URLs since files are served under /static prefix

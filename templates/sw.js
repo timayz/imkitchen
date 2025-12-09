@@ -15,7 +15,7 @@ if (workbox) {
   // Configure cache ID and update behavior
   workbox.core.setCacheNameDetails({
     prefix: 'imkitchen',
-    suffix: 'v1'
+    suffix: 'v{{ env!("CARGO_PKG_VERSION") }}'
   });
 
   // Skip waiting and claim clients immediately on update
@@ -23,7 +23,7 @@ if (workbox) {
   workbox.core.clientsClaim();
 
   // Precache static assets (manifest injected by Workbox CLI)
-  workbox.precaching.precacheAndRoute([{"revision":"f4344d48705d592a26c1187be924d899","url":"/static/css/main.css"},{"revision":"9c0bf863e65d6c208a57bd2b63896df7","url":"/static/icons/apple-touch-icon.png"},{"revision":"92b24651b31dd4e8c233330512d4fdf3","url":"/static/icons/icon-192-maskable.png"},{"revision":"14aae3946b6c97d6b80693c6edef76a6","url":"/static/icons/icon-192.png"},{"revision":"e7e8f5a5500290d14ac25e8ae14c4e1b","url":"/static/icons/icon-512-maskable.png"},{"revision":"da087846670ad8ca9784a40e7febfd69","url":"/static/icons/icon-512.png"},{"revision":"2c0121d0b07c2d3c9a3a22b207441dcd","url":"/static/icons/icon-maskable.svg"},{"revision":"18e1cf596913c6fcced548f0ee5852b6","url":"/static/icons/icon.svg"},{"revision":"a8feda6f7d2cbc7d651e6cd627dbb496","url":"/static/icons/shortcut-dashboard.png"},{"revision":"a8feda6f7d2cbc7d651e6cd627dbb496","url":"/static/icons/shortcut-recipes.png"},{"revision":"9faae8de3ae27a94a5aae5d090fc8cc0","url":"/static/js/pwa-install.js"},{"revision":"b5e2072526ca6c25c365bec6263d3fbe","url":"/static/js/pwa-install.min.js"},{"revision":"75acdb0fd2fcb02ae7839e33302fdbdb","url":"/static/js/sw-register.js"},{"revision":"d4c762f315946e41ec2a97a09080f571","url":"/static/js/sw-register.min.js"},{"revision":"6339cb5de238612f07657132ad8580d9","url":"/static/js/sw-source.min.js"},{"revision":"c10a1b3bf2335c6c61b5c4b35ef2eef5","url":"/static/js/twinspark.js"},{"revision":"9a1a07b8d76aa3358a6a02a955379e55","url":"/static/js/twinspark.min.js"},{"revision":"17a371c907aa569828a81bdd2bde76bd","url":"/static/screenshots/dashboard-mobile.png"},{"revision":"140e8a6cfb51ad453f54b23769b106d9","url":"/static/screenshots/dashboard-mobile.svg"},{"revision":"758bb95bf894e397a88dbd982dec8f71","url":"/static/screenshots/meal-calendar-desktop.png"},{"revision":"345c0e789c18b393c64560e9463cf1f9","url":"/static/screenshots/meal-calendar-desktop.svg"},{"revision":"f7ea03ffd8722e7664e4d523995c68e6","url":"/static/screenshots/recipe-detail-mobile.png"},{"revision":"36515dc1e40312ed29b96e7d9a1117e7","url":"/static/screenshots/recipe-detail-mobile.svg"}] || []);
+  workbox.precaching.precacheAndRoute([{"revision":"b373b3ffb238e463469f60751db3989c","url":"/static/css/main.css"},{"revision":"9c0bf863e65d6c208a57bd2b63896df7","url":"/static/icons/apple-touch-icon.png"},{"revision":"92b24651b31dd4e8c233330512d4fdf3","url":"/static/icons/icon-192-maskable.png"},{"revision":"14aae3946b6c97d6b80693c6edef76a6","url":"/static/icons/icon-192.png"},{"revision":"e7e8f5a5500290d14ac25e8ae14c4e1b","url":"/static/icons/icon-512-maskable.png"},{"revision":"da087846670ad8ca9784a40e7febfd69","url":"/static/icons/icon-512.png"},{"revision":"2c0121d0b07c2d3c9a3a22b207441dcd","url":"/static/icons/icon-maskable.svg"},{"revision":"18e1cf596913c6fcced548f0ee5852b6","url":"/static/icons/icon.svg"},{"revision":"9faae8de3ae27a94a5aae5d090fc8cc0","url":"/static/js/pwa-install.js"},{"revision":"b5e2072526ca6c25c365bec6263d3fbe","url":"/static/js/pwa-install.min.js"},{"revision":"75acdb0fd2fcb02ae7839e33302fdbdb","url":"/static/js/sw-register.js"},{"revision":"d4c762f315946e41ec2a97a09080f571","url":"/static/js/sw-register.min.js"},{"revision":"c10a1b3bf2335c6c61b5c4b35ef2eef5","url":"/static/js/twinspark.js"},{"revision":"9a1a07b8d76aa3358a6a02a955379e55","url":"/static/js/twinspark.min.js"},{"revision":"f93e9568ea93bb5ab454eceef25f434a","url":"/static/screenshots/dashboard-mobile-1.png"},{"revision":"359bb6fcd18745e4150f6a1f307464e6","url":"/static/screenshots/dashboard-mobile-fr-1.png"},{"revision":"a49088d775e07650014683b7e405f4c0","url":"/static/screenshots/dashboard-mobile-fr.png"},{"revision":"3ccb7d803be80dd72904b9537e029603","url":"/static/screenshots/dashboard-mobile.png"},{"revision":"a6cc18851d4d4b75a780fc98678e810b","url":"/static/screenshots/meal-calendar-mobile-fr.png"},{"revision":"a0202fa3c85876b7719a83bd292e6c83","url":"/static/screenshots/meal-calendar-mobile.png"},{"revision":"85a49f6c3850bd88c2bda34013939619","url":"/static/screenshots/recipe-detail-mobile-1.png"},{"revision":"a21cd819d15485355af49c915aca1aa2","url":"/static/screenshots/recipe-detail-mobile-fr-1.png"},{"revision":"1dd1eded4a1e27f114e9334544350682","url":"/static/screenshots/recipe-detail-mobile-fr.png"},{"revision":"b3a9ec7ab99723ef7d69b15590c130ef","url":"/static/screenshots/recipe-detail-mobile.png"}] || []);
 
   // Runtime caching strategies
 
@@ -31,7 +31,7 @@ if (workbox) {
   workbox.routing.registerRoute(
     ({ request }) => request.mode === 'navigate',
     new workbox.strategies.NetworkFirst({
-      cacheName: 'pages-v1',
+      cacheName: 'pages-v{{ env!("CARGO_PKG_VERSION") }}',
       plugins: [
         new workbox.expiration.ExpirationPlugin({
           maxEntries: 50,
@@ -48,7 +48,7 @@ if (workbox) {
   workbox.routing.registerRoute(
     ({ request }) => request.destination === 'image',
     new workbox.strategies.CacheFirst({
-      cacheName: 'images-v1',
+      cacheName: 'images-v{{ env!("CARGO_PKG_VERSION") }}',
       plugins: [
         new workbox.expiration.ExpirationPlugin({
           maxEntries: 100,
@@ -66,7 +66,7 @@ if (workbox) {
       url.pathname.startsWith('/profile') ||
       url.pathname.startsWith('/community'),
     new workbox.strategies.NetworkFirst({
-      cacheName: 'api-v1',
+      cacheName: 'api-v{{ env!("CARGO_PKG_VERSION") }}',
       plugins: [
         new workbox.expiration.ExpirationPlugin({
           maxEntries: 100,
@@ -83,7 +83,7 @@ if (workbox) {
       request.destination === 'script' ||
       request.destination === 'font',
     new workbox.strategies.CacheFirst({
-      cacheName: 'static-v1',
+      cacheName: 'static-v{{ env!("CARGO_PKG_VERSION") }}',
       plugins: [
         new workbox.expiration.ExpirationPlugin({
           maxEntries: 60,
@@ -100,7 +100,7 @@ if (workbox) {
   self.addEventListener('install', (event) => {
     event.waitUntil(
       Promise.all([
-        caches.open('pages-v1').then((cache) => {
+        caches.open('pages-v{{ env!("CARGO_PKG_VERSION") }}').then((cache) => {
           return cache.add(OFFLINE_FALLBACK_URL);
         }),
         checkStorageQuota()

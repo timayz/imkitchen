@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use evento::{AggregatorName, Executor, LoadResult, SubscribeBuilder};
 use imkitchen_db::table::MealPlanRecipe;
 use imkitchen_mealplan::{GenerateRequested, GenerationFailed, MealPlan, WeekGenerated};
@@ -9,6 +7,7 @@ use imkitchen_user::meal_preferences::UserMealPreferences;
 use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::SqlitePool;
+use std::collections::HashMap;
 
 use crate::{Checked, Generated, Resetted, Shopping, Unchecked};
 
@@ -153,22 +152,11 @@ async fn handle_week_generated<E: Executor>(
     let mut ingredients = HashMap::new();
     for (recipe_ingredients, household_size) in recipe_ingredients {
         for ingredient in recipe_ingredients.0 {
-            let entry = ingredients
-                .entry(format!(
-                    "{}_{}",
-                    ingredient.name.to_lowercase(),
-                    ingredient
-                        .unit
-                        .as_ref()
-                        .map(|u| u.to_string())
-                        .unwrap_or_default()
-                        .to_lowercase()
-                ))
-                .or_insert(Ingredient {
-                    name: ingredient.name,
-                    quantity: 0,
-                    unit: ingredient.unit,
-                });
+            let entry = ingredients.entry(ingredient.key()).or_insert(Ingredient {
+                name: ingredient.name,
+                quantity: 0,
+                unit: ingredient.unit,
+            });
 
             entry.quantity += ((preferences.item.household_size as u32 * ingredient.quantity
                 / household_size as u32) as f64)
