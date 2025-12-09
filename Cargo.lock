@@ -1813,6 +1813,7 @@ dependencies = [
  "imkitchen-mealplan",
  "imkitchen-recipe",
  "imkitchen-shared",
+ "imkitchen-user",
  "sea-query",
  "sea-query-sqlx",
  "sqlx",

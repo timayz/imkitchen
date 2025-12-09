@@ -35,6 +35,12 @@ fn create_table() -> TableCreateStatement {
                 .string_len(30),
         )
         .col(
+            ColumnDef::new(MealPlanRecipe::HouseholdSize)
+                .integer()
+                .not_null()
+                .default(4),
+        )
+        .col(
             ColumnDef::new(MealPlanRecipe::PrepTime)
                 .integer()
                 .not_null()

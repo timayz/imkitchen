@@ -1,10 +1,13 @@
+use std::str::FromStr;
+
 use axum::{
     extract::{Path, State},
     response::IntoResponse,
 };
 use axum_extra::extract::Form;
 use imkitchen_recipe::{
-    CuisineType, DietaryRestriction, Ingredient, Instruction, RecipeType, UpdateInput,
+    CuisineType, DietaryRestriction, Ingredient, IngredientUnit, Instruction, RecipeType,
+    UpdateInput,
 };
 use imkitchen_shared::Metadata;
 use serde::Deserialize;
@@ -21,12 +24,13 @@ pub struct EditForm {
     pub recipe_type: RecipeType,
     pub name: String,
     pub description: String,
+    pub household_size: u16,
     pub prep_time: u16,
     pub cook_time: u16,
     #[serde(default)]
     pub ingredients: Vec<Ingredient>,
     #[serde(default)]
-    pub ingredients_quantity: Vec<u16>,
+    pub ingredients_quantity: Vec<u32>,
     #[serde(default)]
     pub ingredients_unit: Vec<String>,
     #[serde(default)]
@@ -99,6 +103,7 @@ pub async fn page(
                 recipe_type: recipe.recipe_type.0,
                 name: recipe.name,
                 description: recipe.description,
+                household_size: recipe.household_size,
                 prep_time: recipe.prep_time,
                 cook_time: recipe.cook_time,
                 ingredients: recipe.ingredients.0,
@@ -166,7 +171,7 @@ pub async fn action(
     for (pos, name) in input.ingredients_name.iter().skip(2).enumerate() {
         ingredients.push(Ingredient {
             name: name.to_owned(),
-            unit: input.ingredients_unit[pos + 2].to_owned(),
+            unit: IngredientUnit::from_str(&input.ingredients_unit[pos + 2]).ok(),
             quantity: input.ingredients_quantity[pos + 2].to_owned(),
         });
     }
@@ -186,6 +191,7 @@ pub async fn action(
                 recipe_type: input.recipe_type,
                 name: input.name,
                 description: input.description,
+                household_size: input.household_size,
                 prep_time: input.prep_time,
                 cook_time: input.cook_time,
                 ingredients,

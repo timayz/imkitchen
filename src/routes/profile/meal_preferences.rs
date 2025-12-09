@@ -16,7 +16,7 @@ use crate::template::{Template, ToastSuccessTemplate, filters};
 pub struct MealPreferencesTemplate {
     pub current_path: String,
     pub profile_path: String,
-    pub household_size: u8,
+    pub household_size: u16,
     pub dietary_restrictions: Vec<DietaryRestriction>,
     pub cuisine_variety_weight: f32,
     pub user: imkitchen_user::AuthUser,
@@ -60,7 +60,7 @@ pub async fn page(
 
 #[derive(Deserialize, Debug)]
 pub struct ActionInput {
-    pub household_size: u8,
+    pub household_size: u16,
     #[serde(default)]
     pub dietary_restrictions: Vec<DietaryRestriction>,
     pub cuisine_variety_weight: f32,

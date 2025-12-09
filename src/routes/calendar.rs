@@ -12,7 +12,7 @@ use crate::{
 };
 
 #[derive(askama::Template)]
-#[template(path = "calendar-regenerate-modal.html")]
+#[template(path = "partials/calendar-regenerate-modal.html")]
 pub struct RegenerateModalTemplate;
 
 #[derive(askama::Template)]

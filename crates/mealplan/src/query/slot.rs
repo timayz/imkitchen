@@ -171,6 +171,7 @@ async fn handle_week_generated<E: Executor>(
         .columns([
             MealPlanRecipe::Id,
             MealPlanRecipe::Name,
+            MealPlanRecipe::HouseholdSize,
             MealPlanRecipe::PrepTime,
             MealPlanRecipe::CookTime,
             MealPlanRecipe::AdvancePrep,

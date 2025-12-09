@@ -1,7 +1,7 @@
 use evento::cursor::Args;
 use imkitchen_recipe::{
-    Command, CuisineType, DietaryRestriction, Ingredient, Instruction, RecipeType, RecipesQuery,
-    SortBy, UpdateInput, subscribe_list, subscribe_user_stat,
+    Command, CuisineType, DietaryRestriction, Ingredient, IngredientUnit, Instruction, RecipeType,
+    RecipesQuery, SortBy, UpdateInput, subscribe_list, subscribe_user_stat,
 };
 use imkitchen_shared::Metadata;
 use temp_dir::TempDir;
@@ -99,12 +99,13 @@ pub async fn create_recipes(
             ingredients: vec![Ingredient {
                 name: "ingredient 1".to_owned(),
                 quantity: 1,
-                unit: "g".to_owned(),
+                unit: Some(IngredientUnit::G),
             }],
             instructions: vec![Instruction {
                 time_next: 15,
                 description: "My first instruction".to_owned(),
             }],
+            household_size: 4,
             cook_time: 25,
             prep_time: 10,
             cuisine_type,

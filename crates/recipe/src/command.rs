@@ -49,6 +49,8 @@ pub struct ImportInput {
     pub name: String,
     #[validate(length(min = 3, max = 2000))]
     pub description: String,
+    #[validate(range(min = 1))]
+    pub household_size: u16,
     pub prep_time: u16,
     pub cook_time: u16,
     pub ingredients: Vec<Ingredient>,
@@ -72,6 +74,7 @@ impl<E: Executor + Clone> Command<E> {
                 description: input.description,
                 recipe_type: input.recipe_type,
                 cuisine_type: input.cuisine_type,
+                household_size: input.household_size,
                 prep_time: input.prep_time,
                 cook_time: input.cook_time,
                 advance_prep: input.advance_prep,
@@ -92,6 +95,8 @@ pub struct UpdateInput {
     pub name: String,
     #[validate(length(min = 3, max = 2000))]
     pub description: String,
+    #[validate(range(min = 1))]
+    pub household_size: u16,
     pub prep_time: u16,
     pub cook_time: u16,
     pub ingredients: Vec<Ingredient>,
@@ -137,6 +142,7 @@ impl<E: Executor + Clone> Command<E> {
         let mut hasher = Sha3_224::default();
         hasher.update(&input.name);
         hasher.update(&input.description);
+        hasher.update(input.household_size.to_string());
         hasher.update(input.prep_time.to_string());
         hasher.update(input.cook_time.to_string());
 
@@ -147,6 +153,7 @@ impl<E: Executor + Clone> Command<E> {
             builder = builder.data(&BasicInformationChanged {
                 name: input.name,
                 description: input.description,
+                household_size: input.household_size,
                 prep_time: input.prep_time,
                 cook_time: input.cook_time,
             })?;
@@ -173,7 +180,9 @@ impl<E: Executor + Clone> Command<E> {
         for ingredient in input.ingredients.iter() {
             hasher.update(&ingredient.name);
             hasher.update(ingredient.quantity.to_string());
-            hasher.update(&ingredient.unit);
+            if let Some(unit) = &ingredient.unit {
+                hasher.update(unit.to_string());
+            }
         }
 
         let ingredient_hash = hasher.finalize()[..].to_vec();

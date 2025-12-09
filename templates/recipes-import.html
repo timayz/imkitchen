@@ -38,15 +38,16 @@
       <pre class="text-sm">
         <code>
 {
-  "name": "Thai Red Curry",
-  "description": "Spicy coconut curry",
+  "name": "Thai Red Curry", (min 3,max 50 length)
+  "description": "Spicy coconut curry", (min 3, max 2000 length)
   "recipe_type": "Appetizer|MainCourse|Dessert|Accompaniment",
   "cuisine_type": "Thai|American|Caribbean|Chinese|Italian|French|Indian|Japanese|Mediterranean|Mexican",
+  "household_size": 2, (u16 > 0)
   "prep_time": 15, ({{ "minutes > 0"|t }})
   "cook_time": 30, ({{ "minutes > 0"|t }})
   "ingredients": [
-    { "quantity": 500, "unit": "g", "name": "Chicken breast" }, (quantity as u16)
-    { "quantity": 1, "unit": "", "name": "Lemon" }
+    { "quantity": 500, "unit": "G", "name": "Chicken breast" }, (quantity as u16, unit as "G"|"ML"|null)
+    { "quantity": 1, "unit": null, "name": "Lemon" }
   ],
   "instructions": [
     { "description": "Heat oil in wok", "time_next": 12 ({{ "time to wait before next instruction, minutes >= 0"|t }}) }

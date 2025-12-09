@@ -20,9 +20,6 @@ git checkout new,add -A,commit,push,create PR witch closed github issue 141 on m
 can you create all epics as milestone with associeted stories as issue ? epic title format
   "v0.{epic_num}", issue title format "{story_title}" with label story.
 
-in folder fixtures, create recipe json file structured like "example-recipe.json" from
-  [link]
-
 I want to add multi language support. Can you replace all texts in templates/index.html, like 'My text' by '{{ "My test"|t }}' ?
 then I want you to add them to fr.json like { "My test": "Mon test", "My test 2": "Mon test 2" }. Do not add duplicate transalation.
  
@@ -34,3 +31,6 @@ change to free-tier rules
 - user meal preferences not used in meal plan weeks gen
 - can not batch import recipes
 - can not use community recipes in meal plan
+
+#scrap recipe
+no parenthetical descriptions, no duplicate ingredients, add ingredient quantity in instruction if needed, no ingredient name plurial

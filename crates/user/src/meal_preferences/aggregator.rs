@@ -6,7 +6,7 @@ use crate::meal_preferences::{Created, Updated};
 
 #[derive(Encode, Decode, Clone, Debug)]
 pub struct UserMealPreferences {
-    pub household_size: u8,
+    pub household_size: u16,
     pub dietary_restrictions: Vec<DietaryRestriction>,
     pub cuisine_variety_weight: f32,
 }

@@ -18,7 +18,7 @@
       <label class="block text-sm font-semibold text-gray-700 mb-3">{{ "Recipe Type"|t }} *</label>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <label
-          class="flex items-center justify-center p-4 border-2 border-gray-300 rounded-lg hover:border-blue-500 cursor-pointer has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50">
+          class="flex items-center justify-center p-4 border-2 border-gray-300 rounded-lg hover:border-blue-500 cursor-pointer has-checked:border-blue-500 has-checked:bg-blue-50">
           <input type="radio" name="recipe_type" value="{{ RecipeType::Appetizer }}" class="mr-3 appearance-none"{% if form.recipe_type == RecipeType::Appetizer %} checked{% endif %} required />
           <div class="text-center">
             <div class="text-3xl mb-1">🥗</div>
@@ -26,7 +26,7 @@
           </div>
         </label>
         <label
-          class="flex items-center justify-center p-4 border-2 border-gray-300 rounded-lg hover:border-orange-500 cursor-pointer has-[:checked]:border-orange-500 has-[:checked]:bg-orange-50">
+          class="flex items-center justify-center p-4 border-2 border-gray-300 rounded-lg hover:border-orange-500 cursor-pointer has-checked:border-orange-500 has-checked:bg-orange-50">
           <input type="radio" name="recipe_type" value="{{ RecipeType::MainCourse }}" class="mr-3 appearance-none"{% if form.recipe_type == RecipeType::MainCourse %} checked{% endif %} required />
           <div class="text-center">
             <div class="text-3xl mb-1">🍛</div>
@@ -34,7 +34,7 @@
           </div>
         </label>
         <label
-          class="flex items-center justify-center p-4 border-2 border-gray-300 rounded-lg hover:border-pink-500 cursor-pointer has-[:checked]:border-pink-500 has-[:checked]:bg-pink-50">
+          class="flex items-center justify-center p-4 border-2 border-gray-300 rounded-lg hover:border-pink-500 cursor-pointer has-checked:border-pink-500 has-checked:bg-pink-50">
           <input type="radio" name="recipe_type" value="{{ RecipeType::Dessert }}" class="mr-3 appearance-none"{% if form.recipe_type == RecipeType::Dessert %} checked{% endif %} required />
           <div class="text-center">
             <div class="text-3xl mb-1">🍰</div>
@@ -42,7 +42,7 @@
           </div>
         </label>
         <label
-          class="flex items-center justify-center p-4 border-2 border-gray-300 rounded-lg hover:border-purple-500 cursor-pointer has-[:checked]:border-purple-500 has-[:checked]:bg-purple-50">
+          class="flex items-center justify-center p-4 border-2 border-gray-300 rounded-lg hover:border-purple-500 cursor-pointer has-checked:border-purple-500 has-checked:bg-purple-50">
           <input type="radio" name="recipe_type" value="{{ RecipeType::Accompaniment }}" class="mr-3 appearance-none"{% if form.recipe_type == RecipeType::Accompaniment %} checked{% endif %} required />
           <div class="text-center">
             <div class="text-3xl mb-1">🍚</div>
@@ -70,7 +70,14 @@
           required>{{ form.description }}</textarea>
       </div>
 
-      <div class="grid md:grid-cols-2 gap-4">
+      <div class="grid md:grid-cols-3 gap-4">
+        <div>
+          <label for="household_size" class="block text-sm font-semibold text-gray-700 mb-2">{{ "Household Size"|t }}
+            *</label>
+          <input type="number" id="household_size" name="household_size" min="1" value={{ form.household_size }} placeholder="4"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            required />
+        </div>
         <div>
           <label for="prep_time" class="block text-sm font-semibold text-gray-700 mb-2">{{ "Prep Time (minutes)"|t }}
             *</label>
@@ -99,19 +106,33 @@
         <input type="hidden" name="ingredients_unit" />
         <input type="hidden" name="ingredients_name" />
         {% if form.ingredients.is_empty() %}
-        <div class="flex gap-3">
-          <input type="number" name="ingredients_quantity" value="1" min="1" max="65535" placeholder="2" class="w-24 px-4 py-2 border border-gray-300 rounded-lg" required />
-          <input type="text" name="ingredients_unit" maxlength="10" placeholder="cups" class="w-32 px-4 py-2 border border-gray-300 rounded-lg" />
-          <input type="text" name="ingredients_name" minlength="1" maxlength="30" placeholder="Jasmine rice" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg" required />
-          <button ts-trigger="click" ts-action="remove 'parent div'" type="button" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">✕</button>
+        <div class="flex flex-col sm:flex-row gap-3">
+          <div class="flex gap-2 sm:gap-3 flex-1 sm:contents">
+            <input type="number" name="ingredients_quantity" value="1" min="1" max="65535" placeholder="2" class="w-16 sm:w-24 px-2 sm:px-4 py-2 border border-gray-300 rounded-lg text-sm sm:text-base" required />
+            <select name="ingredients_unit" class="w-16 sm:w-16 px-1 sm:px-4 py-2 border border-gray-300 rounded-lg text-sm sm:text-base">
+              <option value=""></option>
+              {% for unit in IngredientUnit::VARIANTS %}
+              <option value="{{ unit }}">{{ unit.to_string().to_lowercase() }}</option>
+              {% endfor %}
+            </select>
+            <input type="text" name="ingredients_name" minlength="1" maxlength="30" placeholder="Jasmine rice" class="flex-1 min-w-0 px-2 sm:px-4 py-2 border border-gray-300 rounded-lg text-sm sm:text-base" required />
+          </div>
+          <button ts-trigger="click" ts-action="remove 'parent div'" type="button" class="shrink-0 px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">✕</button>
         </div>
         {% endif %}
         {% for ingredient in form.ingredients %}
-        <div class="flex gap-3">
-          <input type="number" name="ingredients_quantity" value="{{ ingredient.quantity }}" min="1" max="65535" class="w-24 px-4 py-2 border border-gray-300 rounded-lg" required />
-          <input type="text" name="ingredients_unit" value="{{ ingredient.unit }}" maxlength="10" class="w-32 px-4 py-2 border border-gray-300 rounded-lg" />
-          <input type="text" name="ingredients_name" value="{{ ingredient.name }}" minlength="1" maxlength="30" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg" required />
-          <button ts-trigger="click" ts-action="remove 'parent div'" type="button" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">✕</button>
+        <div class="flex flex-col sm:flex-row gap-3">
+          <div class="flex gap-2 sm:gap-3 flex-1 sm:contents">
+            <input type="number" name="ingredients_quantity" value="{{ ingredient.quantity }}" min="1" max="65535" class="w-16 sm:w-24 px-2 sm:px-4 py-2 border border-gray-300 rounded-lg text-sm sm:text-base" required />
+            <select name="ingredients_unit" class="w-16 sm:w-16 px-1 sm:px-4 py-2 border border-gray-300 rounded-lg text-sm sm:text-base">
+              <option value=""{% if ingredient.unit.is_none() %} selected{% endif %}></option>
+              {% for unit in IngredientUnit::VARIANTS %}
+              <option value="{{ unit }}"{% if ingredient.unit.as_ref() == Some(unit) %} selected{% endif %}>{{ unit.to_string().to_lowercase() }}</option>
+              {% endfor %}
+            </select>
+            <input type="text" name="ingredients_name" value="{{ ingredient.name }}" minlength="1" maxlength="30" class="flex-1 min-w-0 px-2 sm:px-4 py-2 border border-gray-300 rounded-lg text-sm sm:text-base" required />
+          </div>
+          <button ts-trigger="click" ts-action="remove 'parent div'" type="button" class="shrink-0 px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">✕</button>
         </div>
         {% endfor %}
       </div>
@@ -130,19 +151,23 @@
         <input type="hidden" name="instructions_description"></textarea>
         <input type="hidden" name="instructions_time_next" value="0"></textarea>
         {% if form.instructions.is_empty() %}
-        <div class="flex gap-3">
+        <div class="flex flex-col sm:flex-row gap-3">
           <textarea name="instructions_description" rows="2" placeholder="{{ "First step..."|t }}"
-            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg" minlength="1" required></textarea>
-          <input type="number" name="instructions_time_next" min="0" value="0" class="w-24 px-4 py-2 border border-gray-300 rounded-lg" required />
-          <button ts-trigger="click" ts-action="remove 'parent div'" type="button" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">✕</button>
+            class="flex-1 min-w-0 px-2 sm:px-4 py-2 border border-gray-300 rounded-lg text-sm sm:text-base" minlength="1" required></textarea>
+          <div class="flex gap-3">
+            <input type="number" name="instructions_time_next" min="0" value="0" class="w-24 px-2 sm:px-4 py-2 border border-gray-300 rounded-lg text-sm sm:text-base" required />
+            <button ts-trigger="click" ts-action="remove 'parent div'" type="button" class="shrink-0 px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">✕</button>
+          </div>
         </div>
         {% endif %}
         {% for instruction in form.instructions %}
-        <div class="flex gap-3">
+        <div class="flex flex-col sm:flex-row gap-3">
           <textarea name="instructions_description" rows="2"
-              class="flex-1 px-4 py-2 border border-gray-300 rounded-lg" minlength="1" required>{{ instruction.description }}</textarea>
-          <input type="number" name="instructions_time_next" min="0" value="{{ instruction.time_next }}" class="w-24 px-4 py-2 border border-gray-300 rounded-lg" required />
-          <button ts-trigger="click" ts-action="remove 'parent div'" type="button" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">✕</button>
+              class="flex-1 min-w-0 px-2 sm:px-4 py-2 border border-gray-300 rounded-lg text-sm sm:text-base" minlength="1" required>{{ instruction.description }}</textarea>
+          <div class="flex gap-3">
+            <input type="number" name="instructions_time_next" min="0" value="{{ instruction.time_next }}" class="w-24 px-2 sm:px-4 py-2 border border-gray-300 rounded-lg text-sm sm:text-base" required />
+            <button ts-trigger="click" ts-action="remove 'parent div'" type="button" class="shrink-0 px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">✕</button>
+          </div>
         </div>
         {% endfor %}
       </div>

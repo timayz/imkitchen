@@ -1,7 +1,8 @@
 use imkitchen_recipe::{
     AdvancePrepChanged, BasicInformationChanged, CuisineType, CuisineTypeChanged,
-    DietaryRestriction, DietaryRestrictionsChanged, Ingredient, IngredientsChanged, Instruction,
-    InstructionsChanged, MainCourseOptionsChanged, RecipeType, RecipeTypeChanged, UpdateInput,
+    DietaryRestriction, DietaryRestrictionsChanged, Ingredient, IngredientUnit, IngredientsChanged,
+    Instruction, InstructionsChanged, MainCourseOptionsChanged, RecipeType, RecipeTypeChanged,
+    UpdateInput,
 };
 use imkitchen_shared::Metadata;
 use temp_dir::TempDir;
@@ -30,12 +31,13 @@ async fn test_update_no_fields() -> anyhow::Result<()> {
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
             quantity: 1,
-            unit: "g".to_owned(),
+            unit: Some(IngredientUnit::G),
         }],
         instructions: vec![Instruction {
             time_next: 15,
             description: "My first instruction".to_owned(),
         }],
+        household_size: 4,
         cook_time: 25,
         prep_time: 10,
         cuisine_type: CuisineType::Caribbean,
@@ -81,12 +83,13 @@ async fn test_update_only_recipe_type() -> anyhow::Result<()> {
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
             quantity: 1,
-            unit: "g".to_owned(),
+            unit: Some(IngredientUnit::G),
         }],
         instructions: vec![Instruction {
             time_next: 15,
             description: "My first instruction".to_owned(),
         }],
+        household_size: 4,
         cook_time: 25,
         prep_time: 10,
         cuisine_type: CuisineType::Caribbean,
@@ -131,12 +134,13 @@ async fn test_update_only_cuisine_type() -> anyhow::Result<()> {
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
             quantity: 1,
-            unit: "g".to_owned(),
+            unit: Some(IngredientUnit::G),
         }],
         instructions: vec![Instruction {
             time_next: 15,
             description: "My first instruction".to_owned(),
         }],
+        household_size: 4,
         cook_time: 25,
         prep_time: 10,
         cuisine_type: CuisineType::Caribbean,
@@ -181,12 +185,13 @@ async fn test_update_only_name() -> anyhow::Result<()> {
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
             quantity: 1,
-            unit: "g".to_owned(),
+            unit: Some(IngredientUnit::G),
         }],
         instructions: vec![Instruction {
             time_next: 15,
             description: "My first instruction".to_owned(),
         }],
+        household_size: 4,
         cook_time: 25,
         prep_time: 10,
         cuisine_type: CuisineType::Caribbean,
@@ -237,12 +242,13 @@ async fn test_update_only_description() -> anyhow::Result<()> {
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
             quantity: 1,
-            unit: "g".to_owned(),
+            unit: Some(IngredientUnit::G),
         }],
         instructions: vec![Instruction {
             time_next: 15,
             description: "My first instruction".to_owned(),
         }],
+        household_size: 4,
         cook_time: 25,
         prep_time: 10,
         cuisine_type: CuisineType::Caribbean,
@@ -293,12 +299,13 @@ async fn test_update_only_prep_time() -> anyhow::Result<()> {
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
             quantity: 1,
-            unit: "g".to_owned(),
+            unit: Some(IngredientUnit::G),
         }],
         instructions: vec![Instruction {
             time_next: 15,
             description: "My first instruction".to_owned(),
         }],
+        household_size: 4,
         cook_time: 25,
         prep_time: 10,
         cuisine_type: CuisineType::Caribbean,
@@ -349,12 +356,13 @@ async fn test_update_only_cook_time() -> anyhow::Result<()> {
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
             quantity: 1,
-            unit: "g".to_owned(),
+            unit: Some(IngredientUnit::G),
         }],
         instructions: vec![Instruction {
             time_next: 15,
             description: "My first instruction".to_owned(),
         }],
+        household_size: 4,
         cook_time: 25,
         prep_time: 10,
         cuisine_type: CuisineType::Caribbean,
@@ -405,12 +413,13 @@ async fn test_update_only_ingredients() -> anyhow::Result<()> {
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
             quantity: 1,
-            unit: "g".to_owned(),
+            unit: Some(IngredientUnit::G),
         }],
         instructions: vec![Instruction {
             time_next: 15,
             description: "My first instruction".to_owned(),
         }],
+        household_size: 4,
         cook_time: 25,
         prep_time: 10,
         cuisine_type: CuisineType::Caribbean,
@@ -424,12 +433,12 @@ async fn test_update_only_ingredients() -> anyhow::Result<()> {
         Ingredient {
             name: "ingredient 1".to_owned(),
             quantity: 2,
-            unit: "g".to_owned(),
+            unit: Some(IngredientUnit::G),
         },
         Ingredient {
             name: "ingredient 2".to_owned(),
             quantity: 100,
-            unit: "ml".to_owned(),
+            unit: Some(IngredientUnit::ML),
         },
     ];
 
@@ -471,12 +480,13 @@ async fn test_update_only_ingredients_empty() -> anyhow::Result<()> {
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
             quantity: 1,
-            unit: "g".to_owned(),
+            unit: Some(IngredientUnit::G),
         }],
         instructions: vec![Instruction {
             time_next: 15,
             description: "My first instruction".to_owned(),
         }],
+        household_size: 4,
         cook_time: 25,
         prep_time: 10,
         cuisine_type: CuisineType::Caribbean,
@@ -522,12 +532,13 @@ async fn test_update_only_instructions() -> anyhow::Result<()> {
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
             quantity: 1,
-            unit: "g".to_owned(),
+            unit: Some(IngredientUnit::G),
         }],
         instructions: vec![Instruction {
             time_next: 15,
             description: "My first instruction".to_owned(),
         }],
+        household_size: 4,
         cook_time: 25,
         prep_time: 10,
         cuisine_type: CuisineType::Caribbean,
@@ -591,12 +602,13 @@ async fn test_update_only_dietary_restrictions() -> anyhow::Result<()> {
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
             quantity: 1,
-            unit: "g".to_owned(),
+            unit: Some(IngredientUnit::G),
         }],
         instructions: vec![Instruction {
             time_next: 15,
             description: "My first instruction".to_owned(),
         }],
+        household_size: 4,
         cook_time: 25,
         prep_time: 10,
         cuisine_type: CuisineType::Caribbean,
@@ -660,12 +672,13 @@ async fn test_update_only_accepts_accompaniment() -> anyhow::Result<()> {
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
             quantity: 1,
-            unit: "g".to_owned(),
+            unit: Some(IngredientUnit::G),
         }],
         instructions: vec![Instruction {
             time_next: 15,
             description: "My first instruction".to_owned(),
         }],
+        household_size: 4,
         cook_time: 25,
         prep_time: 10,
         cuisine_type: CuisineType::Caribbean,
@@ -713,12 +726,13 @@ async fn test_update_only_advance_prep() -> anyhow::Result<()> {
         ingredients: vec![Ingredient {
             name: "ingredient 1".to_owned(),
             quantity: 1,
-            unit: "g".to_owned(),
+            unit: Some(IngredientUnit::G),
         }],
         instructions: vec![Instruction {
             time_next: 15,
             description: "My first instruction".to_owned(),
         }],
+        household_size: 4,
         cook_time: 25,
         prep_time: 10,
         cuisine_type: CuisineType::Caribbean,

@@ -39,6 +39,7 @@ impl Recipe {
         let mut hasher = Sha3_224::default();
         hasher.update(event.data.name);
         hasher.update(event.data.description);
+        hasher.update(event.data.household_size.to_string());
         hasher.update(event.data.prep_time.to_string());
         hasher.update(event.data.cook_time.to_string());
 
@@ -58,7 +59,10 @@ impl Recipe {
         for ingredient in event.data.ingredients {
             hasher.update(ingredient.name);
             hasher.update(ingredient.quantity.to_string());
-            hasher.update(ingredient.unit);
+
+            if let Some(unit) = ingredient.unit {
+                hasher.update(unit.to_string());
+            }
         }
 
         self.ingredients_hash = hasher.finalize()[..].to_vec();
@@ -87,6 +91,7 @@ impl Recipe {
         let mut hasher = Sha3_224::default();
         hasher.update(event.data.name);
         hasher.update(event.data.description);
+        hasher.update(event.data.household_size.to_string());
         hasher.update(event.data.prep_time.to_string());
         hasher.update(event.data.cook_time.to_string());
 
@@ -119,7 +124,10 @@ impl Recipe {
         for ingredient in event.data.ingredients {
             hasher.update(ingredient.name);
             hasher.update(ingredient.quantity.to_string());
-            hasher.update(ingredient.unit);
+
+            if let Some(unit) = ingredient.unit {
+                hasher.update(unit.to_string());
+            }
         }
 
         self.ingredients_hash = hasher.finalize()[..].to_vec();

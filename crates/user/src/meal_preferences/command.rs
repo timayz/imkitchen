@@ -9,7 +9,7 @@ use super::{Updated, UserMealPreferences};
 #[derive(Validate)]
 pub struct UpdateInput {
     #[validate(range(min = 1))]
-    pub household_size: u8,
+    pub household_size: u16,
     pub dietary_restrictions: Vec<DietaryRestriction>,
     #[validate(range(min = 0.1, max = 1.0))]
     pub cuisine_variety_weight: f32,

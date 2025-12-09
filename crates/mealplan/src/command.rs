@@ -455,6 +455,7 @@ async fn handle_recipe_imported<E: Executor>(
             MealPlanRecipe::UserId,
             MealPlanRecipe::Name,
             MealPlanRecipe::RecipeType,
+            MealPlanRecipe::HouseholdSize,
             MealPlanRecipe::PrepTime,
             MealPlanRecipe::CookTime,
             MealPlanRecipe::Ingredients,
@@ -467,6 +468,7 @@ async fn handle_recipe_imported<E: Executor>(
             user_id.into(),
             name.into(),
             event.data.recipe_type.to_string().into(),
+            event.data.household_size.into(),
             event.data.prep_time.into(),
             event.data.cook_time.into(),
             ingredients.into(),
@@ -513,6 +515,7 @@ async fn handle_recipe_basic_information_changed<E: Executor>(
     let user_id = event.metadata.trigger_by()?;
     let aggregator_id = event.aggregator_id.clone();
     let name = event.data.name;
+    let household_size = event.data.household_size;
     let prep_time = event.data.prep_time;
     let cook_time = event.data.cook_time;
 
@@ -520,6 +523,7 @@ async fn handle_recipe_basic_information_changed<E: Executor>(
         .table(MealPlanRecipe::Table)
         .values([
             (MealPlanRecipe::Name, name.into()),
+            (MealPlanRecipe::HouseholdSize, household_size.into()),
             (MealPlanRecipe::PrepTime, prep_time.into()),
             (MealPlanRecipe::CookTime, cook_time.into()),
         ])
