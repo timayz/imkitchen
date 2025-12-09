@@ -17,6 +17,7 @@ async fn test_login_failure() -> anyhow::Result<()> {
                 email: "john.doe@imkitchen.localhost".to_owned(),
                 password: "my_password".to_owned(),
                 lang: "en".to_owned(),
+                timezone: "UTC".to_owned(),
             },
             &metadata,
         )
@@ -35,6 +36,7 @@ async fn test_login_failure() -> anyhow::Result<()> {
                 email: "john.doe@imkitchen.localhost".to_owned(),
                 password: "my_password3".to_owned(),
                 lang: "en".to_owned(),
+                timezone: "UTC".to_owned(),
             },
             &metadata,
         )
@@ -51,6 +53,7 @@ async fn test_login_failure() -> anyhow::Result<()> {
                 email: "john.doe@imkitchen.localhos".to_owned(),
                 password: "my_password".to_owned(),
                 lang: "en".to_owned(),
+                timezone: "UTC".to_owned(),
             },
             &metadata,
         )
@@ -67,6 +70,7 @@ async fn test_login_failure() -> anyhow::Result<()> {
                 email: "john.doe@imkitchen.localhost".to_owned(),
                 password: "my_password".to_owned(),
                 lang: "en".to_owned(),
+                timezone: "UTC".to_owned(),
             },
             &metadata,
         )

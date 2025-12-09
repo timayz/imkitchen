@@ -16,6 +16,8 @@ async fn validate_unique_emails() -> anyhow::Result<()> {
             RegisterInput {
                 email: "john.doe@imkitchen.localhost".to_owned(),
                 password: "my_password".to_owned(),
+                lang: "en".to_owned(),
+                timezone: "UTC".to_owned(),
             },
             &metadata,
         )
@@ -25,6 +27,8 @@ async fn validate_unique_emails() -> anyhow::Result<()> {
             RegisterInput {
                 email: "john.doe@imkitchen.localhost".to_owned(),
                 password: "my_password_v2".to_owned(),
+                lang: "en".to_owned(),
+                timezone: "UTC".to_owned(),
             },
             &metadata,
         )

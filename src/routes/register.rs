@@ -69,6 +69,8 @@ pub async fn action(
             RegisterInput {
                 email: input.email.to_owned(),
                 password: input.password.to_owned(),
+                lang: template.preferred_language_iso.to_owned(),
+                timezone: template.timezone.to_owned(),
             },
             &Metadata::default()
         ),

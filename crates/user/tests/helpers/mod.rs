@@ -50,6 +50,8 @@ pub async fn create_users(
                 RegisterInput {
                     email: format!("{name}@imkitchen.localhost"),
                     password: "my_password".to_owned(),
+                    lang: "en".to_owned(),
+                    timezone: "UTC".to_owned(),
                 },
                 &Metadata::default(),
             )

@@ -8,12 +8,16 @@ pub struct RegistrationRequested {
     pub email: String,
     pub password_hash: String,
     pub status: Status,
+    pub lang: String,
+    pub timezone: String,
 }
 
 #[derive(AggregatorName, Encode, Decode)]
 pub struct RegistrationSucceeded {
     pub email: String,
     pub status: Status,
+    pub lang: String,
+    pub timezone: String,
 }
 
 #[derive(AggregatorName, Encode, Decode)]
@@ -25,6 +29,7 @@ pub struct RegistrationFailed {
 #[derive(AggregatorName, Encode, Decode)]
 pub struct LoggedIn {
     pub lang: String,
+    pub timezone: String,
 }
 
 #[derive(AggregatorName, Encode, Decode)]

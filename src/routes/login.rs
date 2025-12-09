@@ -40,9 +40,10 @@ pub async fn action(
     let id = crate::try_response!(
         state.user_command.login(
             LoginInput {
-                email: input.email.to_owned(),
-                password: input.password.to_owned(),
+                email: input.email,
+                password: input.password,
                 lang: template.preferred_language_iso.to_owned(),
+                timezone: template.timezone.to_owned(),
             },
             &Metadata::default(),
         ),
