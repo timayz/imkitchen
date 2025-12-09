@@ -1,10 +1,13 @@
+use std::str::FromStr;
+
 use axum::{
     extract::{Path, State},
     response::IntoResponse,
 };
 use axum_extra::extract::Form;
 use imkitchen_recipe::{
-    CuisineType, DietaryRestriction, Ingredient, Instruction, RecipeType, UpdateInput,
+    CuisineType, DietaryRestriction, Ingredient, IngredientUnit, Instruction, RecipeType,
+    UpdateInput,
 };
 use imkitchen_shared::Metadata;
 use serde::Deserialize;
@@ -166,7 +169,7 @@ pub async fn action(
     for (pos, name) in input.ingredients_name.iter().skip(2).enumerate() {
         ingredients.push(Ingredient {
             name: name.to_owned(),
-            unit: input.ingredients_unit[pos + 2].to_owned(),
+            unit: IngredientUnit::from_str(&input.ingredients_unit[pos + 2]).ok(),
             quantity: input.ingredients_quantity[pos + 2].to_owned(),
         });
     }

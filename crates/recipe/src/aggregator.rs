@@ -58,7 +58,10 @@ impl Recipe {
         for ingredient in event.data.ingredients {
             hasher.update(ingredient.name);
             hasher.update(ingredient.quantity.to_string());
-            hasher.update(ingredient.unit);
+
+            if let Some(unit) = ingredient.unit {
+                hasher.update(unit.to_string());
+            }
         }
 
         self.ingredients_hash = hasher.finalize()[..].to_vec();
@@ -119,7 +122,10 @@ impl Recipe {
         for ingredient in event.data.ingredients {
             hasher.update(ingredient.name);
             hasher.update(ingredient.quantity.to_string());
-            hasher.update(ingredient.unit);
+
+            if let Some(unit) = ingredient.unit {
+                hasher.update(unit.to_string());
+            }
         }
 
         self.ingredients_hash = hasher.finalize()[..].to_vec();

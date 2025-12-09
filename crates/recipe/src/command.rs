@@ -173,7 +173,9 @@ impl<E: Executor + Clone> Command<E> {
         for ingredient in input.ingredients.iter() {
             hasher.update(&ingredient.name);
             hasher.update(ingredient.quantity.to_string());
-            hasher.update(&ingredient.unit);
+            if let Some(unit) = &ingredient.unit {
+                hasher.update(unit.to_string());
+            }
         }
 
         let ingredient_hash = hasher.finalize()[..].to_vec();

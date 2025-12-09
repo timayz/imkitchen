@@ -148,7 +148,12 @@ async fn handle_week_generated<E: Executor>(
                 .entry(format!(
                     "{}_{}",
                     ingredient.name.to_lowercase(),
-                    ingredient.unit.to_lowercase()
+                    ingredient
+                        .unit
+                        .as_ref()
+                        .map(|u| u.to_string())
+                        .unwrap_or_default()
+                        .to_lowercase()
                 ))
                 .or_insert(Ingredient {
                     name: ingredient.name,

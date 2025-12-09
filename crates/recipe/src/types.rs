@@ -23,11 +23,30 @@ pub enum RecipeType {
     Accompaniment,
 }
 
+#[derive(
+    Encode,
+    Decode,
+    EnumString,
+    Display,
+    VariantArray,
+    Default,
+    Clone,
+    Debug,
+    PartialEq,
+    Deserialize,
+    AsRefStr,
+)]
+pub enum IngredientUnit {
+    #[default]
+    G,
+    ML,
+}
+
 #[derive(Encode, Decode, Clone, Deserialize)]
 pub struct Ingredient {
     pub name: String,
     pub quantity: u16,
-    pub unit: String,
+    pub unit: Option<IngredientUnit>,
 }
 
 #[derive(Encode, Decode, Clone, Deserialize)]

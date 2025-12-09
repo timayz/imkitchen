@@ -17,28 +17,28 @@
       <div class="bg-white rounded-lg shadow-lg overflow-hidden mb-6">
         {% match recipe.recipe_type.0 %}
         {% when RecipeType::Appetizer %}
-        <div class="h-64 bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center relative">
+        <div class="h-64 bg-linear-to-br from-blue-400 to-blue-500 flex items-center justify-center relative">
           <span class="text-9xl">🥗</span>
           <span class="absolute top-4 left-4 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-full">
             {{ RecipeType::Appetizer.to_string().as_str()|t }}
           </span>
         </div>
         {% when RecipeType::MainCourse %}
-        <div class="h-64 bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center relative">
+        <div class="h-64 bg-linear-to-br from-orange-400 to-red-500 flex items-center justify-center relative">
           <span class="text-9xl">🍛</span>
           <span class="absolute top-4 left-4 px-4 py-2 bg-orange-600 text-white text-sm font-semibold rounded-full">
             {{ RecipeType::MainCourse.to_string().as_str()|t }}
           </span>
         </div>
         {% when RecipeType::Dessert %}
-        <div class="h-64 bg-gradient-to-br from-pink-400 to-pink-500 flex items-center justify-center relative">
+        <div class="h-64 bg-linear-to-br from-pink-400 to-pink-500 flex items-center justify-center relative">
           <span class="text-9xl">🍰</span>
           <span class="absolute top-4 left-4 px-4 py-2 bg-pink-600 text-white text-sm font-semibold rounded-full">
             {{ RecipeType::Dessert.to_string().as_str()|t }}
           </span>
         </div>
         {% when RecipeType::Accompaniment %}
-        <div class="h-64 bg-gradient-to-br from-purple-400 to-purple-500 flex items-center justify-center relative">
+        <div class="h-64 bg-linear-to-br from-purple-400 to-purple-500 flex items-center justify-center relative">
           <span class="text-9xl">🍚</span>
           <span class="absolute top-4 left-4 px-4 py-2 bg-purple-600 text-white text-sm font-semibold rounded-full">
             {{ RecipeType::Accompaniment.to_string().as_str()|t }}
@@ -84,14 +84,14 @@
           <div class="space-y-2">
             {% for ingredient in recipe.ingredients.iter().take(recipe.ingredients.len().div_ceil(2)) %}
             <div class="flex items-start gap-2">
-              <span>{{ ingredient.quantity }} {{ ingredient.unit }} {{ ingredient.name }}</span>
+              <span>{{ ingredient.quantity }}{% if let Some(unit) = ingredient.unit %} {{ unit.to_string().to_lowercase() }}{%endif%} {{ ingredient.name }}</span>
             </div>
             {% endfor %}
           </div>
           <div class="space-y-2">
             {% for ingredient in recipe.ingredients.iter().skip(recipe.ingredients.len().div_ceil(2)) %}
             <div class="flex items-start gap-2">
-              <span>{{ ingredient.quantity }} {{ ingredient.unit }} {{ ingredient.name }}</span>
+              <span>{{ ingredient.quantity }}{% if let Some(unit) = ingredient.unit %} {{ unit.to_string().to_lowercase() }}{%endif%} {{ ingredient.name }}</span>
             </div>
             {% endfor %}
           </div>
