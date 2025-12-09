@@ -1,7 +1,7 @@
 use evento::{AggregatorName, Executor, LoadResult, SubscribeBuilder};
 use imkitchen_db::table::{MealPlanLastWeek, MealPlanRecipe};
 use imkitchen_recipe::{
-    AdvancePrepChanged, BasicInformationChanged, Created, CuisineTypeChanged, Deleted,
+    AdvancePrepChanged, BasicInformationChanged, Created, CuisineType, CuisineTypeChanged, Deleted,
     DietaryRestriction, DietaryRestrictionsChanged, Imported, Ingredient, IngredientsChanged,
     Instruction, InstructionsChanged, MadePrivate, MainCourseOptionsChanged, Recipe, RecipeType,
     RecipeTypeChanged, SharedToCommunity,
@@ -250,6 +250,7 @@ pub fn subscribe_command<E: Executor + Clone>() -> SubscribeBuilder<E> {
         .handler(handle_recipe_created())
         .handler(handle_recipe_imported())
         .handler(handle_recipe_type_changed())
+        .handler(handle_recipe_cuisine_type_changed())
         .handler(handle_recipe_basic_information_changed())
         .handler(handle_recipe_ingredients_changed())
         .handler(handle_recipe_instructions_changed())
@@ -259,7 +260,6 @@ pub fn subscribe_command<E: Executor + Clone>() -> SubscribeBuilder<E> {
         .handler(handle_main_course_options_changed())
         .handler(handle_dietary_restrictions_changed())
         .skip::<Recipe, SharedToCommunity>()
-        .skip::<Recipe, CuisineTypeChanged>()
 }
 
 #[evento::handler(MealPlan)]
@@ -414,6 +414,7 @@ async fn handle_recipe_created<E: Executor>(
             MealPlanRecipe::Id,
             MealPlanRecipe::UserId,
             MealPlanRecipe::RecipeType,
+            MealPlanRecipe::CuisineType,
             MealPlanRecipe::Name,
             MealPlanRecipe::Ingredients,
             MealPlanRecipe::Instructions,
@@ -423,6 +424,7 @@ async fn handle_recipe_created<E: Executor>(
             aggregator_id.into(),
             user_id.into(),
             RecipeType::default().to_string().into(),
+            CuisineType::default().to_string().into(),
             name.into(),
             ingredients.into(),
             instructions.into(),
@@ -455,6 +457,7 @@ async fn handle_recipe_imported<E: Executor>(
             MealPlanRecipe::UserId,
             MealPlanRecipe::Name,
             MealPlanRecipe::RecipeType,
+            MealPlanRecipe::CuisineType,
             MealPlanRecipe::HouseholdSize,
             MealPlanRecipe::PrepTime,
             MealPlanRecipe::CookTime,
@@ -468,6 +471,7 @@ async fn handle_recipe_imported<E: Executor>(
             user_id.into(),
             name.into(),
             event.data.recipe_type.to_string().into(),
+            event.data.cuisine_type.to_string().into(),
             event.data.household_size.into(),
             event.data.prep_time.into(),
             event.data.cook_time.into(),
@@ -495,6 +499,29 @@ async fn handle_recipe_type_changed<E: Executor>(
         .values([(
             MealPlanRecipe::RecipeType,
             event.data.recipe_type.to_string().into(),
+        )])
+        .and_where(Expr::col(MealPlanRecipe::Id).eq(&event.aggregator_id))
+        .and_where(Expr::col(MealPlanRecipe::UserId).eq(user_id))
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
+}
+
+#[evento::handler(Recipe)]
+async fn handle_recipe_cuisine_type_changed<E: Executor>(
+    context: &evento::Context<'_, E>,
+    event: Event<CuisineTypeChanged>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let user_id = event.metadata.trigger_by()?;
+    let statement = Query::update()
+        .table(MealPlanRecipe::Table)
+        .values([(
+            MealPlanRecipe::CuisineType,
+            event.data.cuisine_type.to_string().into(),
         )])
         .and_where(Expr::col(MealPlanRecipe::Id).eq(&event.aggregator_id))
         .and_where(Expr::col(MealPlanRecipe::UserId).eq(user_id))

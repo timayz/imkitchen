@@ -104,6 +104,7 @@ pub struct LoginInput {
     #[validate(length(min = 8, max = 20))]
     pub password: String,
     pub lang: String,
+    pub timezone: String,
 }
 
 impl<E: Executor + Clone> Command<E> {
@@ -134,7 +135,10 @@ impl<E: Executor + Clone> Command<E> {
         }
 
         Ok(evento::save_with(user)
-            .data(&LoggedIn { lang: input.lang })?
+            .data(&LoggedIn {
+                lang: input.lang,
+                timezone: input.timezone,
+            })?
             .metadata(metadata)?
             .commit(&self.0)
             .await?)
@@ -147,6 +151,8 @@ pub struct RegisterInput {
     pub email: String,
     #[validate(length(min = 8, max = 20))]
     pub password: String,
+    pub lang: String,
+    pub timezone: String,
 }
 
 impl<E: Executor + Clone> Command<E> {
@@ -168,6 +174,8 @@ impl<E: Executor + Clone> Command<E> {
                 email: input.email,
                 password_hash,
                 status: crate::Status::Processing,
+                lang: input.lang,
+                timezone: input.timezone,
             })?
             .metadata(metadata)?
             .commit(&self.0)
@@ -286,6 +294,8 @@ async fn handle_registration_requested<E: Executor>(
             .data(&RegistrationSucceeded {
                 email: event.data.email,
                 status: Status::Idle,
+                lang: event.data.lang,
+                timezone: event.data.timezone,
             })?
             .metadata(&event.metadata)?
             .commit(context.executor)

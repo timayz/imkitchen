@@ -97,6 +97,7 @@ pub enum MealPlanRecipe {
     Id,
     UserId,
     RecipeType,
+    CuisineType,
     Name,
     HouseholdSize,
     PrepTime,

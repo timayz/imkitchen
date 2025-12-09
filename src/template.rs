@@ -136,6 +136,7 @@ pub(crate) mod filters {
 pub struct Template {
     preferred_language: String,
     pub preferred_language_iso: String,
+    pub timezone: String,
     config: crate::config::Config,
 }
 
@@ -210,9 +211,17 @@ impl FromRequestParts<crate::routes::AppState> for Template {
             .0
             .to_owned();
 
+        let timezone = parts
+            .headers
+            .get("TS-Timezone")
+            .and_then(|v| v.to_str().ok())
+            .map(String::from)
+            .unwrap_or_else(|| "UTC".to_string());
+
         Ok(Template {
             preferred_language,
             preferred_language_iso,
+            timezone,
             config: state.config.clone(),
         })
     }

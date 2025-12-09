@@ -29,6 +29,12 @@ fn create_table() -> TableCreateStatement {
                 .string_len(25),
         )
         .col(
+            ColumnDef::new(MealPlanRecipe::CuisineType)
+                .string()
+                .not_null()
+                .string_len(25),
+        )
+        .col(
             ColumnDef::new(MealPlanRecipe::Name)
                 .string()
                 .not_null()
