@@ -1,20 +1,25 @@
-use axum::{body::Body, http::header, response::Response};
+use axum::{http::header, response::IntoResponse};
+
+use crate::template::Template;
+
+#[derive(askama::Template)]
+#[template(path = "sw.js")]
+pub struct ServiceWorkerTemplate;
 
 /// Serve service worker at /sw.js (must be at root for scope: '/')
-pub async fn sw() -> Response {
-    match crate::assets::Assets::get("/sw.js") {
-        Some(content) => Response::builder()
-            .header(
-                header::CONTENT_TYPE,
+pub async fn asset(template: Template) -> impl IntoResponse {
+    (
+        [
+            (
+                header::CONTENT_TYPE.as_str(),
                 "application/javascript; charset=utf-8",
-            )
-            .header(header::CACHE_CONTROL, "no-cache, no-store, must-revalidate")
-            .header("Service-Worker-Allowed", "/")
-            .body(Body::from(content.data))
-            .unwrap(),
-        None => Response::builder()
-            .status(404)
-            .body(Body::from("Service worker not found"))
-            .unwrap(),
-    }
+            ),
+            (
+                header::CACHE_CONTROL.as_str(),
+                "no-cache, no-store, must-revalidate",
+            ),
+            ("Service-Worker-Allowed", "/"),
+        ],
+        template.render(ServiceWorkerTemplate),
+    )
 }

@@ -45,6 +45,13 @@
       "label": "{{ "Dashboard with today's meals"|t }}"
     },
     {
+      "src": "/static/{{ "screenshots/dashboard-mobile"|t }}-1.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "platform": "narrow",
+      "label": "{{ "Dashboard with today's meals"|t }}"
+    },
+    {
       "src": "/static/{{ "screenshots/recipe-detail-mobile"|t }}.png",
       "sizes": "750x1334",
       "type": "image/png",
@@ -52,10 +59,17 @@
       "label": "{{ "Recipe instructions"|t }}"
     },
     {
-      "src": "/static/{{ "screenshots/meal-calendar-mobile" }}.png",
-      "sizes": "1920x1080",
+      "src": "/static/{{ "screenshots/recipe-detail-mobile"|t }}-1.png",
+      "sizes": "750x1334",
       "type": "image/png",
-      "platform": "wide",
+      "platform": "narrow",
+      "label": "{{ "Recipe instructions"|t }}"
+    },
+    {
+      "src": "/static/{{ "screenshots/meal-calendar-mobile" }}.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "platform": "narrow",
       "label": "{{ "Weekly meal calendar"|t }}"
     }
   ],

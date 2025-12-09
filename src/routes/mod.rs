@@ -153,7 +153,7 @@ pub fn router(app_state: AppState) -> Router {
         .route("/admin/contact/{id}/resolve", post(admin::contact::resolve))
         .route("/admin/contact/{id}/reopen", post(admin::contact::reopen))
         .fallback(fallback)
-        .route("/sw.js", get(service_worker::sw))
+        .route("/sw.js", get(service_worker::asset))
         .route("/manifest.json", get(manifest::asset))
         .nest_service("/static", crate::assets::AssetsService::new())
         .with_state(app_state)
