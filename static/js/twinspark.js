@@ -1380,6 +1380,7 @@
         'Accept': 'text/html+partial',
         'TS-URL': location.pathname + location.search,
         'TS-Origin': elid(req.el),
+        'TS-Timezone': Intl.DateTimeFormat().resolvedOptions().timeZone,
         'TS-Target': elid(findTarget(req.el))
       }
     };
