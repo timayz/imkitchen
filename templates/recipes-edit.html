@@ -127,7 +127,7 @@
             <select name="ingredients_unit" class="w-16 sm:w-16 px-1 sm:px-4 py-2 border border-gray-300 rounded-lg text-sm sm:text-base">
               <option value=""{% if ingredient.unit.is_none() %} selected{% endif %}></option>
               {% for unit in IngredientUnit::VARIANTS %}
-              <option value="{{ unit }}"{% if ingredient.unit.as_ref() == Some(unit) %} selected{% endif %}>{{ unit.to_string().to_lowercase() }}</option>
+              <option value="{{ unit }}"{% if ingredient.unit.as_ref().as_ref() == Some(unit) %} selected{% endif %}>{{ unit.to_string().to_lowercase() }}</option>
               {% endfor %}
             </select>
             <input type="text" name="ingredients_name" value="{{ ingredient.name }}" minlength="1" maxlength="30" class="flex-1 min-w-0 px-2 sm:px-4 py-2 border border-gray-300 rounded-lg text-sm sm:text-base" required />
