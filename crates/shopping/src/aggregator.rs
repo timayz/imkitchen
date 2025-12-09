@@ -17,12 +17,7 @@ impl Shopping {
     async fn handle_generated(&mut self, event: Event<Generated>) -> anyhow::Result<()> {
         self.user_id = event.metadata.trigger_by()?;
 
-        let ingredients = event
-            .data
-            .ingredients
-            .iter()
-            .map(|i| i.name.to_owned())
-            .collect();
+        let ingredients = event.data.ingredients.iter().map(|i| i.key()).collect();
 
         self.ingredients.insert(event.data.week, ingredients);
         self.checked.remove(&event.data.week);

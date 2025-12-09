@@ -85,6 +85,12 @@ pub struct Ingredient {
     pub unit: Option<IngredientUnit>,
 }
 
+impl Ingredient {
+    pub fn key(&self) -> String {
+        format!("{}-{}", self.name, self.unit.format(0))
+    }
+}
+
 #[derive(Encode, Decode, Clone, Deserialize)]
 pub struct Instruction {
     pub description: String,
