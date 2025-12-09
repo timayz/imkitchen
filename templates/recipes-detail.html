@@ -84,14 +84,14 @@
           <div class="space-y-2">
             {% for ingredient in recipe.ingredients.iter().take(recipe.ingredients.len().div_ceil(2)) %}
             <div class="flex items-start gap-2">
-              <span>{{ ingredient.quantity }}{% if let Some(unit) = ingredient.unit %} {{ unit.to_string().to_lowercase() }}{%endif%} {{ ingredient.name }}</span>
+              <span>{{ ingredient.unit.format(ingredient.quantity.to_owned()) }} {{ ingredient.name }}</span>
             </div>
             {% endfor %}
           </div>
           <div class="space-y-2">
             {% for ingredient in recipe.ingredients.iter().skip(recipe.ingredients.len().div_ceil(2)) %}
             <div class="flex items-start gap-2">
-              <span>{{ ingredient.quantity }}{% if let Some(unit) = ingredient.unit %} {{ unit.to_string().to_lowercase() }}{%endif%} {{ ingredient.name }}</span>
+              <span>{{ ingredient.unit.format(ingredient.quantity.to_owned()) }} {{ ingredient.name }}</span>
             </div>
             {% endfor %}
           </div>

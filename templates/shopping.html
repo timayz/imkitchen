@@ -86,7 +86,7 @@
                                 />
                                 <div class="flex-1">
                                   <div class="font-semibold">{{ ingredient.name }}</div>
-                                  <div class="text-sm text-gray-600">{{ ingredient.quantity }}{% if let Some(unit) = ingredient.unit %} {{ unit.to_string().to_lowercase() }}{% endif %}</div>
+                                  <div class="text-sm text-gray-600">{{ ingredient.unit.format(ingredient.quantity.to_owned()) }}</div>
                                 </div>
                             </label>
                             {% endfor %}

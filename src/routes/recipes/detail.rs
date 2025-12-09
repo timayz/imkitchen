@@ -3,7 +3,7 @@ use axum::{
     response::{IntoResponse, Redirect},
 };
 
-use imkitchen_recipe::{RecipeRow, RecipeType};
+use imkitchen_recipe::{IngredientUnitFormat, RecipeRow, RecipeType};
 use imkitchen_shared::Metadata;
 
 use crate::{
