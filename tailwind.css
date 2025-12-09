@@ -17,6 +17,15 @@
     border-style: solid;
     border-color: #e5e7eb;
   }
+
+  form.ts-active button,
+  button.ts-active {
+    opacity: 0.8;
+  }
+
+  button:not(:disabled) {
+    cursor: pointer;
+  }
 }
 
 @layer utilities {
