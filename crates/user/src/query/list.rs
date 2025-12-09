@@ -29,6 +29,7 @@ pub struct UserListRow {
     pub role: sqlx::types::Text<Role>,
     pub state: sqlx::types::Text<State>,
     pub total_recipes_count: i64,
+    pub total_active_count: i64,
     pub shared_recipes_count: i64,
     pub subscription_expire_at: u64,
     pub created_at: i64,
@@ -123,7 +124,32 @@ impl super::Query {
 
                 Ok(result.map(|user| user.0))
             }
-            _ => todo!(),
+            UserSortBy::Name => {
+                let result = Reader::new(statement)
+                    .args(input.args)
+                    .execute::<_, UserSortByName, _>(&self.0)
+                    .await?;
+
+                Ok(result.map(|user| user.0))
+            }
+            UserSortBy::MostActive => {
+                let result = Reader::new(statement)
+                    .desc()
+                    .args(input.args)
+                    .execute::<_, UserSortByMostActive, _>(&self.0)
+                    .await?;
+
+                Ok(result.map(|user| user.0))
+            }
+            UserSortBy::MostRecipes => {
+                let result = Reader::new(statement)
+                    .desc()
+                    .args(input.args)
+                    .execute::<_, UserSortByMostRecipes, _>(&self.0)
+                    .await?;
+
+                Ok(result.map(|user| user.0))
+            }
         }
     }
 
@@ -193,6 +219,141 @@ impl evento::sql::Bind for UserSortByRecentlyJoined {
 }
 
 impl sqlx::FromRow<'_, sqlx::sqlite::SqliteRow> for UserSortByRecentlyJoined {
+    fn from_row(row: &'_ sqlx::sqlite::SqliteRow) -> Result<Self, sqlx::Error> {
+        let row = UserListRow::from_row(row)?;
+
+        Ok(Self(row))
+    }
+}
+
+pub struct UserSortByName(UserListRow);
+
+impl Deref for UserSortByName {
+    type Target = UserListRow;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl evento::cursor::Cursor for UserSortByName {
+    type T = UserCursorString;
+
+    fn serialize(&self) -> Self::T {
+        Self::T {
+            i: self.id.to_owned(),
+            v: self.email.to_owned(),
+        }
+    }
+}
+
+impl evento::sql::Bind for UserSortByName {
+    type T = UserList;
+    type I = [Self::T; 2];
+    type V = [Expr; 2];
+    type Cursor = Self;
+
+    fn columns() -> Self::I {
+        [UserList::Email, UserList::Id]
+    }
+
+    fn values(
+        cursor: <<Self as evento::sql::Bind>::Cursor as evento::cursor::Cursor>::T,
+    ) -> Self::V {
+        [cursor.v.into(), cursor.i.into()]
+    }
+}
+
+impl sqlx::FromRow<'_, sqlx::sqlite::SqliteRow> for UserSortByName {
+    fn from_row(row: &'_ sqlx::sqlite::SqliteRow) -> Result<Self, sqlx::Error> {
+        let row = UserListRow::from_row(row)?;
+
+        Ok(Self(row))
+    }
+}
+
+pub struct UserSortByMostActive(UserListRow);
+
+impl Deref for UserSortByMostActive {
+    type Target = UserListRow;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl evento::cursor::Cursor for UserSortByMostActive {
+    type T = UserCursorInt;
+
+    fn serialize(&self) -> Self::T {
+        Self::T {
+            i: self.id.to_owned(),
+            v: self.total_active_count,
+        }
+    }
+}
+
+impl evento::sql::Bind for UserSortByMostActive {
+    type T = UserList;
+    type I = [Self::T; 2];
+    type V = [Expr; 2];
+    type Cursor = Self;
+
+    fn columns() -> Self::I {
+        [UserList::TotalActiveCount, UserList::Id]
+    }
+
+    fn values(
+        cursor: <<Self as evento::sql::Bind>::Cursor as evento::cursor::Cursor>::T,
+    ) -> Self::V {
+        [cursor.v.into(), cursor.i.into()]
+    }
+}
+
+impl sqlx::FromRow<'_, sqlx::sqlite::SqliteRow> for UserSortByMostActive {
+    fn from_row(row: &'_ sqlx::sqlite::SqliteRow) -> Result<Self, sqlx::Error> {
+        let row = UserListRow::from_row(row)?;
+
+        Ok(Self(row))
+    }
+}
+
+pub struct UserSortByMostRecipes(UserListRow);
+
+impl Deref for UserSortByMostRecipes {
+    type Target = UserListRow;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl evento::cursor::Cursor for UserSortByMostRecipes {
+    type T = UserCursorInt;
+
+    fn serialize(&self) -> Self::T {
+        Self::T {
+            i: self.id.to_owned(),
+            v: self.total_recipes_count,
+        }
+    }
+}
+
+impl evento::sql::Bind for UserSortByMostRecipes {
+    type T = UserList;
+    type I = [Self::T; 2];
+    type V = [Expr; 2];
+    type Cursor = Self;
+
+    fn columns() -> Self::I {
+        [UserList::TotalRecipesCount, UserList::Id]
+    }
+
+    fn values(
+        cursor: <<Self as evento::sql::Bind>::Cursor as evento::cursor::Cursor>::T,
+    ) -> Self::V {
+        [cursor.v.into(), cursor.i.into()]
+    }
+}
+
+impl sqlx::FromRow<'_, sqlx::sqlite::SqliteRow> for UserSortByMostRecipes {
     fn from_row(row: &'_ sqlx::sqlite::SqliteRow) -> Result<Self, sqlx::Error> {
         let row = UserListRow::from_row(row)?;
 

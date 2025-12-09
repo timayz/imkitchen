@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use axum::{
     extract::{Path, Query, State},
     response::IntoResponse,
@@ -20,6 +22,7 @@ pub struct UsersTemplate {
     pub current_path: String,
     pub stat: UserStatRow,
     pub users: ReadResult<UserListRow>,
+    pub query: PageQuery,
 }
 
 impl Default for UsersTemplate {
@@ -28,16 +31,20 @@ impl Default for UsersTemplate {
             current_path: "users".to_owned(),
             stat: UserStatRow::default(),
             users: ReadResult::default(),
+            query: Default::default(),
         }
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Default, Clone)]
 pub struct PageQuery {
     pub first: Option<u16>,
     pub after: Option<Value>,
     pub last: Option<u16>,
     pub before: Option<Value>,
+    pub state: Option<String>,
+    pub role: Option<String>,
+    pub sort_by: Option<String>,
 }
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
@@ -49,6 +56,12 @@ pub async fn page(
 ) -> impl IntoResponse {
     let stat = crate::try_page_response!(opt: app_state.user_query.find_stat(0), template);
 
+    let r_query = query.clone();
+    let role = Role::from_str(&query.role.unwrap_or("".to_owned())).ok();
+    let state = UserState::from_str(&query.state.unwrap_or("".to_owned())).ok();
+    let sort_by = UserSortBy::from_str(&query.sort_by.unwrap_or("".to_owned()))
+        .unwrap_or(UserSortBy::RecentlyJoined);
+
     let args = Args {
         first: query.first,
         after: query.after,
@@ -58,9 +71,9 @@ pub async fn page(
 
     let users = crate::try_page_response!(
         app_state.user_query.filter(FilterQuery {
-            state: None,
-            sort_by: UserSortBy::RecentlyJoined,
-            role: None,
+            state,
+            sort_by,
+            role,
             args: args.limit(20),
         }),
         template
@@ -70,6 +83,7 @@ pub async fn page(
         .render(UsersTemplate {
             stat,
             users,
+            query: r_query,
             ..Default::default()
         })
         .into_response()
