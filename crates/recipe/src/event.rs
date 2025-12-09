@@ -14,6 +14,7 @@ pub struct Imported {
     pub description: String,
     pub recipe_type: RecipeType,
     pub cuisine_type: CuisineType,
+    pub household_size: u16,
     pub prep_time: u16,
     pub cook_time: u16,
     pub ingredients: Vec<Ingredient>,
@@ -30,6 +31,7 @@ pub struct RecipeTypeChanged {
 pub struct BasicInformationChanged {
     pub name: String,
     pub description: String,
+    pub household_size: u16,
     pub prep_time: u16,
     pub cook_time: u16,
 }

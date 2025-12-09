@@ -30,6 +30,7 @@ pub struct RecipeRow {
     pub cuisine_type: sqlx::types::Text<CuisineType>,
     pub name: String,
     pub description: String,
+    pub household_size: u16,
     pub prep_time: u16,
     pub cook_time: u16,
     pub ingredients: imkitchen_db::types::Bincode<Vec<Ingredient>>,
@@ -148,6 +149,7 @@ impl super::Query {
                 RecipeList::CuisineType,
                 RecipeList::Name,
                 RecipeList::Description,
+                RecipeList::HouseholdSize,
                 RecipeList::PrepTime,
                 RecipeList::CookTime,
                 RecipeList::Ingredients,
@@ -258,6 +260,7 @@ async fn handle_imported<E: Executor>(
             RecipeList::Description,
             RecipeList::RecipeType,
             RecipeList::CuisineType,
+            RecipeList::HouseholdSize,
             RecipeList::PrepTime,
             RecipeList::CookTime,
             RecipeList::Ingredients,
@@ -273,6 +276,7 @@ async fn handle_imported<E: Executor>(
             event.data.description.into(),
             event.data.recipe_type.to_string().into(),
             event.data.cuisine_type.to_string().into(),
+            event.data.household_size.into(),
             event.data.prep_time.into(),
             event.data.cook_time.into(),
             ingredients.into(),
@@ -322,6 +326,7 @@ async fn handle_basic_information_changed<E: Executor>(
     let aggregator_id = event.aggregator_id.clone();
     let name = event.data.name;
     let description = event.data.description;
+    let household_size = event.data.household_size;
     let prep_time = event.data.prep_time;
     let cook_time = event.data.cook_time;
 
@@ -330,6 +335,7 @@ async fn handle_basic_information_changed<E: Executor>(
         .values([
             (RecipeList::Name, name.into()),
             (RecipeList::Description, description.into()),
+            (RecipeList::HouseholdSize, household_size.into()),
             (RecipeList::PrepTime, prep_time.into()),
             (RecipeList::CookTime, cook_time.into()),
             (RecipeList::UpdatedAt, timestamp.into()),

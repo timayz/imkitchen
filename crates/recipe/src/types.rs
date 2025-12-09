@@ -43,17 +43,17 @@ pub enum IngredientUnit {
 }
 
 pub trait IngredientUnitFormat {
-    fn format(&self, value: u16) -> String;
+    fn format(&self, value: u32) -> String;
 }
 
 impl IngredientUnitFormat for Option<IngredientUnit> {
-    fn format(&self, value: u16) -> String {
+    fn format(&self, value: u32) -> String {
         match self {
             Some(IngredientUnit::ML) => {
                 if value >= 1000 {
                     let liters = value as f64 / 1000.0;
                     if liters.fract() == 0.0 {
-                        format!("{} L", liters as u16)
+                        format!("{} L", liters as u32)
                     } else {
                         format!("{} L", liters)
                     }
@@ -65,7 +65,7 @@ impl IngredientUnitFormat for Option<IngredientUnit> {
                 if value >= 1000 {
                     let kg = value as f64 / 1000.0;
                     if kg.fract() == 0.0 {
-                        format!("{} kg", kg as u16)
+                        format!("{} kg", kg as u32)
                     } else {
                         format!("{} kg", kg)
                     }
@@ -81,7 +81,7 @@ impl IngredientUnitFormat for Option<IngredientUnit> {
 #[derive(Encode, Decode, Clone, Deserialize)]
 pub struct Ingredient {
     pub name: String,
-    pub quantity: u16,
+    pub quantity: u32,
     pub unit: Option<IngredientUnit>,
 }
 

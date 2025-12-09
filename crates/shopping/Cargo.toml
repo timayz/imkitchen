@@ -16,6 +16,7 @@ sea-query-sqlx.workspace = true
 imkitchen-shared = { path = "../shared", version = "0.12.1" }
 imkitchen-db = { path = "../db", version = "0.12.1", optional = true }
 imkitchen-recipe = { path = "../recipe", version = "0.12.1", default-features = false, optional = true }
+imkitchen-user = { path = "../user", version = "0.12.1", default-features = false, features = ["imkitchen-recipe"], optional = true }
 imkitchen-mealplan = { path = "../mealplan", version = "0.12.1", default-features = false, features = ["imkitchen-recipe"], optional = true }
 
 [dev-dependencies]
@@ -25,5 +26,5 @@ futures.workspace = true
 time = { workspace = true, features = ["formatting", "macros"] }
 
 [features]
-default = ["full", "imkitchen-recipe", "imkitchen-mealplan"]
+default = ["full", "imkitchen-user", "imkitchen-recipe", "imkitchen-mealplan"]
 full = ["sqlx", "imkitchen-db", "time"]

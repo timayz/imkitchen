@@ -126,6 +126,7 @@ async fn import_recipe(
         advance_prep: "".to_owned(),
         ingredients: vec![],
         instructions: vec![],
+        household_size: 4,
         cook_time: 25,
         prep_time: 10,
         cuisine_type: CuisineType::Caribbean,

@@ -24,12 +24,13 @@ pub struct EditForm {
     pub recipe_type: RecipeType,
     pub name: String,
     pub description: String,
+    pub household_size: u16,
     pub prep_time: u16,
     pub cook_time: u16,
     #[serde(default)]
     pub ingredients: Vec<Ingredient>,
     #[serde(default)]
-    pub ingredients_quantity: Vec<u16>,
+    pub ingredients_quantity: Vec<u32>,
     #[serde(default)]
     pub ingredients_unit: Vec<String>,
     #[serde(default)]
@@ -102,6 +103,7 @@ pub async fn page(
                 recipe_type: recipe.recipe_type.0,
                 name: recipe.name,
                 description: recipe.description,
+                household_size: recipe.household_size,
                 prep_time: recipe.prep_time,
                 cook_time: recipe.cook_time,
                 ingredients: recipe.ingredients.0,
@@ -189,6 +191,7 @@ pub async fn action(
                 recipe_type: input.recipe_type,
                 name: input.name,
                 description: input.description,
+                household_size: input.household_size,
                 prep_time: input.prep_time,
                 cook_time: input.cook_time,
                 ingredients,

@@ -5,6 +5,7 @@ use imkitchen_db::table::MealPlanRecipe;
 use imkitchen_mealplan::{GenerateRequested, GenerationFailed, MealPlan, WeekGenerated};
 use imkitchen_recipe::Ingredient;
 use imkitchen_shared::{Event, Metadata};
+use imkitchen_user::meal_preferences::UserMealPreferences;
 use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::SqlitePool;
@@ -105,6 +106,12 @@ async fn handle_week_generated<E: Executor>(
     event: Event<WeekGenerated>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
+
+    let preferences =
+        evento::load_optional::<UserMealPreferences, _>(context.executor, &event.aggregator_id)
+            .await?
+            .unwrap_or_default();
+
     let recipe_ids = event
         .data
         .slots
@@ -129,7 +136,7 @@ async fn handle_week_generated<E: Executor>(
         .collect::<Vec<_>>();
 
     let statement = Query::select()
-        .columns([MealPlanRecipe::Ingredients])
+        .columns([MealPlanRecipe::Ingredients, MealPlanRecipe::HouseholdSize])
         .from(MealPlanRecipe::Table)
         .and_where(Expr::col(MealPlanRecipe::UserId).eq(&event.aggregator_id))
         .and_where(Expr::col(MealPlanRecipe::Id).is_in(recipe_ids))
@@ -137,12 +144,14 @@ async fn handle_week_generated<E: Executor>(
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     let recipe_ingredients =
-        sqlx::query_as_with::<_, (imkitchen_db::types::Bincode<Vec<Ingredient>>,), _>(&sql, values)
-            .fetch_all(&pool)
-            .await?;
+        sqlx::query_as_with::<_, (imkitchen_db::types::Bincode<Vec<Ingredient>>, u16), _>(
+            &sql, values,
+        )
+        .fetch_all(&pool)
+        .await?;
 
     let mut ingredients = HashMap::new();
-    for (recipe_ingredients,) in recipe_ingredients {
+    for (recipe_ingredients, household_size) in recipe_ingredients {
         for ingredient in recipe_ingredients.0 {
             let entry = ingredients
                 .entry(format!(
@@ -161,7 +170,9 @@ async fn handle_week_generated<E: Executor>(
                     unit: ingredient.unit,
                 });
 
-            entry.quantity += ingredient.quantity;
+            entry.quantity += ((preferences.item.household_size as u32 * ingredient.quantity
+                / household_size as u32) as f64)
+                .ceil() as u32;
         }
     }
 

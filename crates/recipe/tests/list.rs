@@ -105,6 +105,7 @@ pub async fn create_recipes(
                 time_next: 15,
                 description: "My first instruction".to_owned(),
             }],
+            household_size: 4,
             cook_time: 25,
             prep_time: 10,
             cuisine_type,
