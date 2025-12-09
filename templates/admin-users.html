@@ -47,7 +47,8 @@
 
   <!-- Filters & Search -->
   <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-    <div class="grid md:grid-cols-4 gap-4">
+    <form ts-trigger="change" ts-req="/admin/users" ts-req-selector="#users-list" ts-req-method="GET" ts-req-strategy="last" ts-target="#users-list"
+      class="grid md:grid-cols-4 gap-4" autocomplete="off">
       <div>
         <label class="block text-sm font-semibold text-gray-700 mb-2">Search</label>
         <input type="text" placeholder="Name, email, username..."
@@ -55,7 +56,7 @@
       </div>
       <div>
         <label class="block text-sm font-semibold text-gray-700 mb-2">Role</label>
-        <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+        <select name="role" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
           <option value="">All Users</option>
           {% for role in Role::VARIANTS %}
           <option value="{{ role }}">{{ role }}</option>
@@ -64,7 +65,7 @@
       </div>
       <div>
         <label class="block text-sm font-semibold text-gray-700 mb-2">State</label>
-        <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+        <select name="state" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
           <option value="">All Status</option>
           {% for state in UserState::VARIANTS %}
           <option value="{{ state }}">{{ state }}</option>
@@ -73,18 +74,17 @@
       </div>
       <div>
         <label class="block text-sm font-semibold text-gray-700 mb-2">Sort By</label>
-        <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
-          <option value="recent">Recently Joined</option>
-          <!-- <option value="name">Name (A-Z)</option> -->
-          <!-- <option value="recipes">Most Recipes</option> -->
-          <!-- <option value="activity">Most Active</option> -->
+        <select name="sort_by" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+          {% for sort_by in UserSortBy::VARIANTS %}
+          <option value="{{ sort_by }}">{{ sort_by.as_ref()|t }}</option>
+          {% endfor %}
         </select>
       </div>
-    </div>
+    </form>
   </div>
 
   <!-- Users Table -->
-  <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+  <div id="users-list" class="bg-white rounded-lg shadow-lg overflow-hidden">
     <div class="overflow-x-auto">
       <table class="w-full min-w-[800px]">
         <thead class="bg-gray-50 border-b">
@@ -100,7 +100,7 @@
         <tbody class="divide-y divide-gray-200">
           {% for user in users.edges %}
           <tr id="user-{{ user.node.id }}" class="hover:bg-gray-50{% if user.node.is_admin() %} bg-yellow-50{% endif %}{% if user.node.is_suspended() %} bg-red-50{% endif %}"{% if let (true, true, Some(cursor)) = (loop.last, users.page_info.has_next_page, users.page_info.end_cursor.to_owned()) %}
-            ts-req="/admin/users?after={{ cursor.to_string() }}"
+            ts-req="/admin/users?after={{ cursor.to_string() }}{% if let Some(sort_by) = query.sort_by %}&sort_by={{ sort_by }}{% endif %}{% if let Some(role) = query.role %}&role={{ role }}{% endif %}{% if let Some(state) = query.state %}&state={{ state }}{% endif %}"
             ts-req-method="GET"
             ts-req-selector="children tbody"
             ts-swap="afterend"

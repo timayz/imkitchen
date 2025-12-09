@@ -60,8 +60,21 @@ pub enum Status {
     Failed,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(
+    Encode,
+    Decode,
+    EnumString,
+    Display,
+    VariantArray,
+    Default,
+    Clone,
+    Debug,
+    PartialEq,
+    Deserialize,
+    AsRefStr,
+)]
 pub enum UserSortBy {
+    #[default]
     RecentlyJoined,
     Name,
     MostRecipes,
