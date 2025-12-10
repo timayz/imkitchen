@@ -129,7 +129,7 @@ pub async fn regenerate_action(
 
     crate::try_response!(
         app.mealplan_command
-            .generate(&Metadata::by(user.id.to_owned())),
+            .generate(user.is_premium(), &Metadata::by(user.id.to_owned())),
         template
     );
 

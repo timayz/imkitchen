@@ -228,6 +228,10 @@ impl FromRequestParts<crate::routes::AppState> for Template {
 }
 
 #[derive(askama::Template)]
+#[template(path = "partials/upgrade-modal.html")]
+pub struct UpgradeModalTemplate;
+
+#[derive(askama::Template)]
 #[template(path = "404.html")]
 pub struct NotFoundTemplate;
 

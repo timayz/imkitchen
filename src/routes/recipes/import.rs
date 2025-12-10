@@ -11,7 +11,7 @@ use serde::Deserialize;
 use crate::{
     auth::AuthUser,
     routes::AppState,
-    template::{SERVER_ERROR_MESSAGE, Template, filters},
+    template::{SERVER_ERROR_MESSAGE, Template, UpgradeModalTemplate, filters},
 };
 
 #[derive(Deserialize, Default, Clone)]
@@ -76,6 +76,10 @@ pub async fn action(
     AuthUser(user): AuthUser,
     Json(recipes): Json<Vec<ImportJson>>,
 ) -> impl IntoResponse {
+    if !user.is_premium() {
+        return ([("ts-swap", "skip")], template.render(UpgradeModalTemplate)).into_response();
+    }
+
     let mut id = None;
     let mut error_recipes = vec![];
 
