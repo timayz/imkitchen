@@ -1,5 +1,5 @@
 {% extends "_user.html" %}
-{% block title %}Shopping Lists - imkitchen{% endblock %}
+{% block title %}{{ "Shopping Lists"|t }} - imkitchen{% endblock %}
 {% block content %}
     <!-- Main Content -->
     <div class="container mx-auto px-4 py-8">
@@ -7,8 +7,8 @@
         <div class="mb-8">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                    <h1 class="text-3xl font-bold mb-2">Shopping Lists</h1>
-                    <p class="text-gray-600">Weekly shopping lists for your meal plans</p>
+                    <h1 class="text-3xl font-bold mb-2">{{ "Shopping Lists"|t }}</h1>
+                    <p class="text-gray-600">{{ "Weekly shopping lists for your meal plans"|t }}</p>
                 </div>
             </div>
         </div>
@@ -19,7 +19,7 @@
             <div class="flex flex-col gap-3 md:hidden">
                 <div class="flex items-center justify-between gap-2">
                   <a href="/calendar/week-{{ index }}" class="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm">
-                       Calendar
+                       {{ "Calendar"|t }}
                   </a>
                   <a href="/calendar/week-{{ index }}/shopping" class="px-3 py-2 bg-green-600 text-white rounded-lg font-semibold text-sm flex-1">
                       {{ "Week"|t }} {{ index }}
@@ -27,7 +27,7 @@
                   {% if let Some(current) = current %}
                   <button ts-req="/calendar/week-{{ current.week }}/shopping" ts-req-method="post" ts-swap="morph" ts-target="body"
                     class="px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm">
-                        🔄 Reset
+                        {{ "🔄 Reset"|t }}
                   </button>
                   {% endif %}
                 </div>
@@ -47,7 +47,7 @@
             <!-- Desktop: Original layout -->
             <div class="hidden md:flex items-center justify-between">
                 <a href="/calendar/week-{{ index }}" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
-                    Calendar
+                    {{ "Calendar"|t }}
                 </a>
 
                 <div class="flex gap-2">
@@ -62,7 +62,7 @@
                 {% if let Some(current) = current %}
                 <button ts-req="/calendar/week-{{ current.week }}/shopping" ts-req-method="post" ts-swap="morph" ts-target="body"
                   class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 cursor-pointer">
-                    🔄 Reset all
+                    {{ "🔄 Reset all"|t }}
                 </button>
                 {% endif %}
             </div>
@@ -96,12 +96,12 @@
 
                 <!-- Shopping Tips -->
                 <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                    <h3 class="font-bold text-lg mb-3 text-blue-900">💡 Shopping Tips</h3>
+                    <h3 class="font-bold text-lg mb-3 text-blue-900">{{ "💡 Shopping Tips"|t }}</h3>
                     <ul class="space-y-2 text-sm text-blue-800">
-                        <li>• Shop for fresh vegetables and proteins early in the week</li>
-                        <li>• Pantry items can be bought in bulk to save money</li>
-                        <li>• Check your pantry before shopping - you may already have some items</li>
-                        <li>• Consider buying extra of frequently used items (olive oil, garlic, onions)</li>
+                        <li>{{ "• Shop for fresh vegetables and proteins early in the week"|t }}</li>
+                        <li>{{ "• Pantry items can be bought in bulk to save money"|t }}</li>
+                        <li>{{ "• Check your pantry before shopping - you may already have some items"|t }}</li>
+                        <li>{{ "• Consider buying extra of frequently used items (olive oil, garlic, onions)"|t }}</li>
                     </ul>
                 </div>
             </div>
@@ -110,23 +110,23 @@
             <div class="space-y-6">
                 <!-- Summary -->
                 <div id="shopping-summary" class="bg-white rounded-lg shadow-lg p-6">
-                    <h3 class="font-bold text-lg mb-4">List Summary</h3>
+                    <h3 class="font-bold text-lg mb-4">{{ "List Summary"|t }}</h3>
                     <div class="space-y-3 text-sm">
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Total Items</span>
+                            <span class="text-gray-600">{{ "Total Items"|t }}</span>
                             <span class="font-bold">{{ current.ingredients.len() }}</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Checked Off</span>
+                            <span class="text-gray-600">{{ "Checked Off"|t }}</span>
                             <span class="font-bold text-green-600">{% if let Some(checked) = checked %}{{ checked.len() }}{% else %}0{% endif %}</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-600">Remaining</span>
+                            <span class="text-gray-600">{{ "Remaining"|t }}</span>
                             <span class="font-bold">{% if let Some(checked) = checked %}{{ current.ingredients.len() - checked.len() }}{% else %}{{ current.ingredients.len() }}{% endif %}</span>
                         </div>
                     </div>
                     <div class="mt-4 pt-4 border-t">
-                        <div class="text-sm text-gray-600 mb-2">Progress</div>
+                        <div class="text-sm text-gray-600 mb-2">{{ "Progress"|t }}</div>
                         <div class="w-full bg-gray-200 rounded-full h-2">
                             <div class="bg-green-600 h-2 rounded-full" style="width: {% if let Some(checked) = checked %}{{  ((100 * checked.len() / current.ingredients.len()) as f64).round() }}{% else %}0{% endif %}%"></div>
                         </div>
@@ -136,7 +136,7 @@
                 <!-- Recipes Included -->
                 {% if let Some(recipes) = recipes %}
                 <div class="bg-white rounded-lg shadow-lg p-6">
-                    <h3 class="font-bold text-lg mb-4">Recipes Included</h3>
+                    <h3 class="font-bold text-lg mb-4">{{ "Recipes Included"|t }}</h3>
                     <div class="space-y-2 text-sm">
                         {% for name in recipes.iter() %}
                         <div class="p-2 bg-gray-50 rounded">{{ name }}</div>
