@@ -24,13 +24,5 @@ I want to add multi language support. Can you replace all texts in templates/ind
 then I want you to add them to fr.json like { "My test": "Mon test", "My test 2": "Mon test 2" }. Do not add duplicate transalation.
  
 
-change to free-tier rules
-- 7 recipe max are use in meal plan weeks gen order by created at
-- only main course are use in meal plan weeks gen
-- only user recipe are use in meal plan weeks gen
-- user meal preferences not used in meal plan weeks gen
-- can not batch import recipes
-- can not use community recipes in meal plan
-
 #scrap recipe
 no parenthetical descriptions, no duplicate ingredients, add ingredient quantity in instruction if needed, no ingredient name plurial

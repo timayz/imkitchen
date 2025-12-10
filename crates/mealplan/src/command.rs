@@ -67,7 +67,11 @@ impl<E: Executor + Clone> Command<E> {
         has(&self.1, id, recipe_type).await
     }
 
-    pub async fn generate(&self, metadata: &Metadata) -> imkitchen_shared::Result<()> {
+    pub async fn generate(
+        &self,
+        is_premium: bool,
+        metadata: &Metadata,
+    ) -> imkitchen_shared::Result<()> {
         let user_id = metadata.trigger_by()?;
 
         let loaded = self.load_optional(&user_id).await?;
@@ -97,6 +101,7 @@ impl<E: Executor + Clone> Command<E> {
         builder
             .data(&GenerateRequested {
                 weeks,
+                is_premium,
                 status: Status::Processing,
             })?
             .metadata(metadata)?
@@ -131,7 +136,7 @@ async fn has(
     Ok(recipe.is_some())
 }
 
-#[derive(Default, FromRow)]
+#[derive(Default, FromRow, Clone)]
 pub struct RandomRecipe {
     pub id: String,
     pub name: String,
@@ -242,6 +247,43 @@ pub async fn random_with(
     Ok(recipes)
 }
 
+pub async fn first_week_main_recipes(
+    pool: &sqlx::SqlitePool,
+    id: impl Into<String>,
+) -> imkitchen_shared::Result<Vec<RandomRecipe>> {
+    let id = id.into();
+
+    let statement = Query::select()
+        .columns([
+            MealPlanRecipe::Id,
+            MealPlanRecipe::Name,
+            MealPlanRecipe::AcceptsAccompaniment,
+        ])
+        .from(MealPlanRecipe::Table)
+        .and_where(Expr::col(MealPlanRecipe::UserId).eq(id))
+        .and_where(Expr::col(MealPlanRecipe::RecipeType).eq(RecipeType::MainCourse.to_string()))
+        .and_where(Expr::col(MealPlanRecipe::Name).is_not(""))
+        .limit(7)
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+    let row = sqlx::query_as_with::<_, RandomRecipe, _>(&sql, values)
+        .fetch_all(pool)
+        .await?;
+
+    let mut recipes = vec![];
+
+    for _ in 0..3 {
+        let mut rng = rand::rng();
+        let mut r = row.to_vec();
+        r.shuffle(&mut rng);
+        recipes.extend(r);
+    }
+
+    Ok(recipes)
+}
+
 pub fn subscribe_command<E: Executor + Clone>() -> SubscribeBuilder<E> {
     evento::subscribe("mealplan-command")
         .handler(handle_generation_requested())
@@ -268,7 +310,7 @@ async fn handle_generation_requested<E: Executor>(
     event: Event<GenerateRequested>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    let user_id = event.metadata.trigger_by().unwrap_or_default();
+    let user_id = event.metadata.trigger_by()?;
 
     if !has(&pool, &user_id, RecipeType::MainCourse).await? {
         evento::save::<MealPlan>(&user_id)
@@ -283,20 +325,26 @@ async fn handle_generation_requested<E: Executor>(
         return Ok(());
     }
 
-    let preferences = evento::load_optional::<UserMealPreferences, _>(context.executor, &user_id)
-        .await?
-        .unwrap_or_default();
+    let main_course_recipes = if event.data.is_premium {
+        let preferences =
+            evento::load_optional::<UserMealPreferences, _>(context.executor, &user_id)
+                .await?
+                .unwrap_or_default();
 
-    let main_course_recipes = random_with(
-        &pool,
-        &user_id,
-        RandomOpts {
-            recipe_type: RecipeType::MainCourse,
-            weight: preferences.item.cuisine_variety_weight,
-            dietary_restrictions: preferences.item.dietary_restrictions,
-        },
-    )
-    .await?;
+        random_with(
+            &pool,
+            &user_id,
+            RandomOpts {
+                recipe_type: RecipeType::MainCourse,
+                weight: preferences.item.cuisine_variety_weight,
+                dietary_restrictions: preferences.item.dietary_restrictions,
+            },
+        )
+        .await?
+    } else {
+        first_week_main_recipes(&pool, &user_id).await?
+    };
+
     let mut main_course_recipes = main_course_recipes.iter().cycle().take(7 * 4);
     let mut builder = evento::save::<MealPlan>(&user_id).metadata(&event.metadata)?;
 
@@ -308,13 +356,27 @@ async fn handle_generation_requested<E: Executor>(
             let day = OffsetDateTime::from_unix_timestamp(start as i64)?
                 + Duration::days((slots.len()) as i64);
 
-            let appetizer_recipes = random(&pool, &user_id, RecipeType::Appetizer).await?;
+            let appetizer_recipes = if event.data.is_premium {
+                random(&pool, &user_id, RecipeType::Appetizer).await?
+            } else {
+                vec![]
+            };
+
             let mut appetizer_recipes = appetizer_recipes.iter();
 
-            let accompaniment_recipes = random(&pool, &user_id, RecipeType::Accompaniment).await?;
+            let accompaniment_recipes = if event.data.is_premium {
+                random(&pool, &user_id, RecipeType::Accompaniment).await?
+            } else {
+                vec![]
+            };
+
             let mut accompaniment_recipes = accompaniment_recipes.iter();
 
-            let dessert_recipes = random(&pool, &user_id, RecipeType::Dessert).await?;
+            let dessert_recipes = if event.data.is_premium {
+                random(&pool, &user_id, RecipeType::Dessert).await?
+            } else {
+                vec![]
+            };
             let mut dessert_recipes = dessert_recipes.iter();
 
             let accompaniment = if recipe.accepts_accompaniment {

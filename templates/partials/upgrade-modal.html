@@ -1,0 +1,112 @@
+<!-- Upgrade Modal - shown to non-premium users -->
+<div id="upgrade-modal" ts-swap-push="body" ts-swap="append" class="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <!-- Header with gradient -->
+        <div class="bg-linear-to-br from-green-500 to-green-700 text-white p-6 rounded-t-lg relative">
+            <button ts-trigger="click" ts-action="remove #upgrade-modal"
+                    class="absolute top-4 right-4 text-white hover:text-green-100 transition">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+            <div class="text-center pr-8">
+                <div class="text-5xl mb-3">🚀</div>
+                <h3 class="text-2xl font-bold mb-2">{{ "Unlock Your Full Kitchen Potential"|t }}</h3>
+                <p class="text-green-100">{{ "Get unlimited recipes and complete meal planning"|t }}</p>
+            </div>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6">
+
+            <!-- Premium Features -->
+            <div class="mb-6">
+                <h4 class="font-bold text-lg mb-4 text-gray-800">{{ "What You'll Get with Premium:"|t }}</h4>
+                <div class="space-y-3">
+                    <div class="flex items-start gap-3">
+                        <div class="shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-0.5">
+                            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-800">{{ "Unlimited Recipes in Your Meal Plan"|t }}</p>
+                            <p class="text-sm text-gray-600">{{ "Use your entire recipe collection, not just 7"|t }}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-3">
+                        <div class="shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-0.5">
+                            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-800">{{ "Complete Meal Experience"|t }}</p>
+                            <p class="text-sm text-gray-600">{{ "Include appetizers, sides, and desserts with automatic pairing"|t }}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-3">
+                        <div class="shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-0.5">
+                            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-800">{{ "Advanced Meal Preferences"|t }}</p>
+                            <p class="text-sm text-gray-600">{{ "Control variety levels, portion sizes, and dietary restrictions"|t }}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-3">
+                        <div class="shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-0.5">
+                            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-800">{{ "Batch Recipe Import"|t }}</p>
+                            <p class="text-sm text-gray-600">{{ "Import up to 20 recipes at once from JSON files"|t }}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-3">
+                        <div class="shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-0.5">
+                            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-800">{{ "Priority Support & Early Access"|t }}</p>
+                            <p class="text-sm text-gray-600">{{ "Get help faster and try new features first"|t }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pricing -->
+            <div class="bg-linear-to-br from-green-500 to-green-700 text-white rounded-lg p-6 mb-6">
+                <div class="text-center">
+                    <div class="text-4xl font-bold mb-1">$9.99<span class="text-lg font-normal">{{ "/month"|t }}</span></div>
+                    <div class="text-green-100 text-sm mb-4">{{ "or $59.94/year (save 50%)"|t }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="border-t bg-gray-50 p-6 rounded-b-lg">
+            <div class="flex flex-col gap-3">
+                <a href="/profile/subscription"
+                   class="block text-center px-6 py-3 bg-linear-to-r from-green-500 to-green-600 text-white font-bold rounded-lg hover:from-green-600 hover:to-green-700 transition shadow-lg">
+                    {{ "Upgrade to Premium Now"|t }}
+                </a>
+                <button ts-trigger="click" ts-action="remove #upgrade-modal"
+                        class="px-6 py-2 text-gray-600 font-semibold hover:text-gray-800 transition">
+                    {{ "Maybe Later"|t }}
+                </button>
+            </div>
+            <p class="text-center text-xs text-gray-500 mt-4">{{ "Cancel anytime • No commitment"|t }}</p>
+        </div>
+    </div>
+</div>

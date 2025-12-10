@@ -40,8 +40,8 @@ async fn test_random() -> anyhow::Result<()> {
         .await?;
     }
 
-    command.generate(&john).await?;
-    let result = command.generate(&john).await;
+    command.generate(true, &john).await?;
+    let result = command.generate(true, &john).await;
     assert_eq!(
         &result.unwrap_err().to_string(),
         "Meal plan status is processing"
@@ -80,7 +80,7 @@ async fn test_random() -> anyhow::Result<()> {
         .unretry_oneshot(&state.evento)
         .await?;
 
-    command.generate(&john).await?;
+    command.generate(true, &john).await?;
 
     imkitchen_mealplan::subscribe_week()
         .data(state.pool.clone())

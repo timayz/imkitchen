@@ -79,8 +79,10 @@
         <p class="text-gray-700 mb-4">{{ "Our free tier includes:"|t }}</p>
         <ul class="list-disc list-inside text-gray-700 mb-4 space-y-2">
           <li>{{ "Meal plan generation for all future weeks of current month"|t }}</li>
-          <li>{{ "Visibility limited to first generated week only"|t }}</li>
-          <li>{{ "Maximum of 10 favorite recipes"|t }}</li>
+          <li>{{ "Maximum of 7 recipes used in meal plan generation (ordered by creation date)"|t }}</li>
+          <li>{{ "Only main courses used in meal plan generation"|t }}</li>
+          <li>{{ "Meal preferences not applied in meal plan generation"|t }}</li>
+          <li>{{ "Cannot batch import recipes"|t }}</li>
           <li>{{ "Unlimited regenerations"|t }}</li>
           <li>{{ "Full access to recipe management and community features"|t }}</li>
         </ul>
@@ -93,8 +95,10 @@
         </ul>
         <p class="text-gray-700 mb-4">{{ "Premium benefits include:"|t }}</p>
         <ul class="list-disc list-inside text-gray-700 mb-4 space-y-2">
-          <li>{{ "View all generated weeks (full month visibility)"|t }}</li>
-          <li>{{ "Unlimited favorite recipes"|t }}</li>
+          <li>{{ "Unlimited recipes in meal plan generation"|t }}</li>
+          <li>{{ "All recipe types in meal plan (appetizers, sides, desserts)"|t }}</li>
+          <li>{{ "Meal preferences applied in meal plan generation"|t }}</li>
+          <li>{{ "Batch recipe import"|t }}</li>
           <li>{{ "Priority support"|t }}</li>
           <li>{{ "Early access to new features"|t }}</li>
         </ul>
@@ -149,8 +153,9 @@
           {{ "When you downgrade to the free tier after cancellation:"|t }}
         </p>
         <ul class="list-disc list-inside text-gray-700 mb-4 space-y-2">
-          <li>{{ "You can only view the first week of generated meal plans"|t }}</li>
-          <li>{{ "Favorite recipes exceeding 10 will be hidden (not deleted) until you remove some or upgrade"|t }}</li>
+          <li>{{ "Meal plan generation limited to 7 recipes (main courses only)"|t }}</li>
+          <li>{{ "Meal preferences will not be applied in meal plan generation"|t }}</li>
+          <li>{{ "Batch recipe import will be disabled"|t }}</li>
           <li>{{ "Previously generated meal plans remain accessible according to free tier rules"|t }}</li>
         </ul>
       </section>
