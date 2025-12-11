@@ -63,6 +63,10 @@ impl Recipe {
             if let Some(unit) = ingredient.unit {
                 hasher.update(unit.to_string());
             }
+
+            if let Some(category) = ingredient.category {
+                hasher.update(category.to_string());
+            }
         }
 
         self.ingredients_hash = hasher.finalize()[..].to_vec();
@@ -127,6 +131,10 @@ impl Recipe {
 
             if let Some(unit) = ingredient.unit {
                 hasher.update(unit.to_string());
+            }
+
+            if let Some(category) = ingredient.category {
+                hasher.update(category.to_string());
             }
         }
 

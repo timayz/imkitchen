@@ -27,5 +27,18 @@
   "PartnershipOpportunity": "Partnership Opportunity",
   "TechnicalSupport": "Technical Support",
   "MostRecent": "Most Recent",
-  "OldestFirst": "Oldest First"
+  "OldestFirst": "Oldest First",
+  "shopping_Frozen": "❄️ Frozen",
+  "shopping_Refrigerated": "🧊 Refrigerated",
+  "shopping_Grocery": "🥫 Grocery",
+  "shopping_FruitsAndVegetables": "🥬 Fruits & Vegetables",
+  "shopping_Butcher": "🥩 Butcher",
+  "shopping_Seafood": "🐟 Seafood",
+  "shopping_DairyAndEggs": "🥛 Dairy & Eggs",
+  "shopping_Bakery": "🥖 Bakery",
+  "shopping_SnacksAndConfectionery": "🍬 Snacks & Confectionery",
+  "shopping_Unknown": "❓ Unknown",
+  "FruitsAndVegetables": "Fruits & Vegetables",
+  "DairyAndEggs": "Dairy & Eggs",
+  "SnacksAndConfectionery": "Snacks & Confectionery"
 }

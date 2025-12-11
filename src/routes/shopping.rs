@@ -1,11 +1,11 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use axum::{
     extract::{Json, Path, State},
     response::IntoResponse,
 };
 use imkitchen_mealplan::WeekListRow;
-use imkitchen_recipe::IngredientUnitFormat;
+use imkitchen_recipe::{Ingredient, IngredientUnitFormat};
 use imkitchen_shared::Metadata;
 use imkitchen_shopping::{ListWeekRow, ToggleInput};
 use serde::Deserialize;
@@ -25,6 +25,7 @@ pub struct ShoppingTemplate {
     pub current: Option<ListWeekRow>,
     pub recipes: Option<HashSet<String>>,
     pub checked: Option<HashSet<String>>,
+    pub ingredients: Option<Vec<(String, Vec<Ingredient>)>>,
     pub index: u8,
 }
 
@@ -37,6 +38,7 @@ impl Default for ShoppingTemplate {
             current: None,
             recipes: None,
             checked: None,
+            ingredients: None,
             index: 0,
         }
     }
@@ -70,6 +72,33 @@ pub async fn page(
         }
         _ => None,
     };
+
+    let ingredients = current.as_ref().map(|r| {
+        let mut categories = HashMap::new();
+
+        for ingredient in r.ingredients.iter() {
+            match &ingredient.category {
+                Some(c) => {
+                    let entry = categories.entry(format!("shopping_{c}")).or_insert(vec![]);
+                    entry.push(ingredient.clone());
+                }
+                _ => {
+                    let entry = categories
+                        .entry("shopping_Unknown".to_owned())
+                        .or_insert(vec![]);
+                    entry.push(ingredient.clone());
+                }
+            };
+        }
+
+        let mut categories = categories
+            .into_iter()
+            .collect::<Vec<(String, Vec<Ingredient>)>>();
+
+        categories.sort_by_key(|(k, _)| k.to_owned());
+
+        categories
+    });
 
     let checked = match weeks.get((index - 1) as usize) {
         Some(week) => crate::try_page_response!(app.shopping_command.load(&user.id), template)
@@ -114,6 +143,7 @@ pub async fn page(
             current,
             index,
             checked,
+            ingredients,
             ..Default::default()
         })
         .into_response()
@@ -138,6 +168,33 @@ pub async fn toggle_action(
             r
         });
 
+    let ingredients = current.as_ref().map(|r| {
+        let mut categories = HashMap::new();
+
+        for ingredient in r.ingredients.iter() {
+            match &ingredient.category {
+                Some(c) => {
+                    let entry = categories.entry(format!("shopping_{c}")).or_insert(vec![]);
+                    entry.push(ingredient.clone());
+                }
+                _ => {
+                    let entry = categories
+                        .entry("shopping_Unknown".to_owned())
+                        .or_insert(vec![]);
+                    entry.push(ingredient.clone());
+                }
+            };
+        }
+
+        let mut categories = categories
+            .into_iter()
+            .collect::<Vec<(String, Vec<Ingredient>)>>();
+
+        categories.sort_by_key(|(k, _)| k.to_owned());
+
+        categories
+    });
+
     let checked = if current.is_some() {
         crate::try_response!(
             app.shopping_command.toggle(
@@ -159,6 +216,7 @@ pub async fn toggle_action(
         .render(ShoppingTemplate {
             user,
             current,
+            ingredients,
             checked,
             ..Default::default()
         })

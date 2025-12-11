@@ -156,6 +156,7 @@ async fn handle_week_generated<E: Executor>(
                 name: ingredient.name,
                 quantity: 0,
                 unit: ingredient.unit,
+                category: ingredient.category,
             });
 
             entry.quantity += ((preferences.item.household_size as u32 * ingredient.quantity

@@ -42,6 +42,41 @@ pub enum IngredientUnit {
     ML,
 }
 
+#[derive(
+    Encode,
+    Decode,
+    EnumString,
+    Display,
+    VariantArray,
+    Default,
+    Clone,
+    Debug,
+    PartialEq,
+    Deserialize,
+    AsRefStr,
+)]
+pub enum IngredientCategory {
+    /// Frozen products: frozen vegetables, ready meals, ice cream, frozen seafood
+    #[default]
+    Frozen,
+    /// Fresh/refrigerated products: dairy, deli meats, prepared meals, fresh desserts
+    Refrigerated,
+    /// Grocery - savory: canned goods, appetizers, pasta/rice, sauces, oils, world foods
+    Grocery,
+    /// Fruits and vegetables: fresh fruits, fresh vegetables, herbs, organic produce
+    FruitsAndVegetables,
+    /// Butcher: red meat, white meat, ground meat, specialty items
+    Butcher,
+    /// Fishmonger: fresh fish, seafood, prepared seafood dishes, sushi
+    Seafood,
+    /// Dairy and eggs: milk, butter, cream, yogurt, eggs
+    DairyAndEggs,
+    /// Bakery: bread, pastries, cakes, gluten-free options
+    Bakery,
+    /// Snacks and confectionery: cookies, chocolate, chips, energy bars
+    SnacksAndConfectionery,
+}
+
 pub trait IngredientUnitFormat {
     fn format(&self, value: u32) -> String;
 }
@@ -83,6 +118,7 @@ pub struct Ingredient {
     pub name: String,
     pub quantity: u32,
     pub unit: Option<IngredientUnit>,
+    pub category: Option<IngredientCategory>,
 }
 
 impl Ingredient {

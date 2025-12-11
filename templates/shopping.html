@@ -19,7 +19,7 @@
             <div class="flex flex-col gap-3 md:hidden">
                 <div class="flex items-center justify-between gap-2">
                   <a href="/calendar/week-{{ index }}" class="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm">
-                       {{ "Calendar"|t }}
+                       📅
                   </a>
                   <a href="/calendar/week-{{ index }}/shopping" class="px-3 py-2 bg-green-600 text-white rounded-lg font-semibold text-sm flex-1">
                       {{ "Week"|t }} {{ index }}
@@ -47,7 +47,7 @@
             <!-- Desktop: Original layout -->
             <div class="hidden md:flex items-center justify-between">
                 <a href="/calendar/week-{{ index }}" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
-                    {{ "Calendar"|t }}
+                    📅 {{ "Calendar"|t }}
                 </a>
 
                 <div class="flex gap-2">
@@ -69,16 +69,16 @@
         </div>
 
         <!-- Shopping List Content -->
-        {% if let Some(current) = current %}
+        {% if let (Some(current), Some(categories)) = (current.as_ref(), ingredients.as_ref()) %}
         <div class="grid lg:grid-cols-3 gap-6">
             <!-- Main Shopping List -->
             <div id="ingredients-list" class="lg:col-span-2">
                 <div class="bg-white rounded-lg shadow-lg p-4 md:p-6 mb-6">
-                    <!-- Proteins -->
+                    {% for (name, ingredients) in categories %}
                     <div class="mb-6">
-                        <!-- <h3 class="font-bold text-lg mb-3 pb-2 border-b-2 border-green-500">🥩 Proteins</h3> -->
+                      <h3 class="font-bold text-lg mb-3 pb-2 border-b-2 border-green-500">{{ name|t }}</h3>
                         <div class="space-y-2">
-                            {% for ingredient in current.ingredients.iter() %}
+                            {% for ingredient in ingredients.iter() %}
                             <label class="flex items-start gap-3 p-3 hover:bg-gray-50 rounded cursor-pointer">
                               <input{% if let Some(checked) = checked.as_ref() %}{% if checked.contains(ingredient.key().as_str()) %} checked{% endif %}{%endif%} type="checkbox" class="mt-1 rounded border-gray-300 text-green-600" autocomplete="off"
                                   ts-trigger="change" ts-req="/calendar/week-{{ current.week }}/shopping/toggle" ts-json="{{ "{ \"name\": \"" ~ ingredient.key() ~ "\"}" }}"
@@ -92,6 +92,7 @@
                             {% endfor %}
                         </div>
                     </div>
+                    {% endfor %}
                 </div>
 
                 <!-- Shopping Tips -->

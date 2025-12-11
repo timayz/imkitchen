@@ -180,8 +180,13 @@ impl<E: Executor + Clone> Command<E> {
         for ingredient in input.ingredients.iter() {
             hasher.update(&ingredient.name);
             hasher.update(ingredient.quantity.to_string());
+
             if let Some(unit) = &ingredient.unit {
                 hasher.update(unit.to_string());
+            }
+
+            if let Some(catagory) = &ingredient.category {
+                hasher.update(catagory.to_string());
             }
         }
 

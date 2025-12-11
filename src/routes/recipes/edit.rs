@@ -6,8 +6,8 @@ use axum::{
 };
 use axum_extra::extract::Form;
 use imkitchen_recipe::{
-    CuisineType, DietaryRestriction, Ingredient, IngredientUnit, Instruction, RecipeType,
-    UpdateInput,
+    CuisineType, DietaryRestriction, Ingredient, IngredientCategory, IngredientUnit, Instruction,
+    RecipeType, UpdateInput,
 };
 use imkitchen_shared::Metadata;
 use serde::Deserialize;
@@ -35,6 +35,8 @@ pub struct EditForm {
     pub ingredients_unit: Vec<String>,
     #[serde(default)]
     pub ingredients_name: Vec<String>,
+    #[serde(default)]
+    pub ingredients_category: Vec<String>,
     #[serde(default)]
     pub instructions: Vec<Instruction>,
     #[serde(default)]
@@ -115,6 +117,7 @@ pub async fn page(
                 ingredients_unit: vec![],
                 ingredients_name: vec![],
                 ingredients_quantity: vec![],
+                ingredients_category: vec![],
                 instructions_description: vec![],
                 instructions_time_next: vec![],
             },
@@ -143,10 +146,11 @@ pub async fn action(
 
     if input.ingredients_name.len() != input.ingredients_quantity.len()
         || input.ingredients_name.len() != input.ingredients_unit.len()
+        || input.ingredients_name.len() != input.ingredients_category.len()
     {
         crate::try_response!(sync:
             Err(imkitchen_shared::Error::Server(
-                "ingredients_name, ingredients_quantity and ingredients_unit size not matched"
+                "ingredients_name, ingredients_quantity, ingredients_unit and ingredients_category size not matched"
                     .to_owned()
             )),
             template
@@ -172,6 +176,7 @@ pub async fn action(
         ingredients.push(Ingredient {
             name: name.to_owned(),
             unit: IngredientUnit::from_str(&input.ingredients_unit[pos + 2]).ok(),
+            category: IngredientCategory::from_str(&input.ingredients_category[pos + 2]).ok(),
             quantity: input.ingredients_quantity[pos + 2].to_owned(),
         });
     }
