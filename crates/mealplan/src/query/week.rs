@@ -71,7 +71,7 @@ impl super::Query {
     ) -> anyhow::Result<Vec<WeekListRow>> {
         let user_id = user_id.into();
         let start: u64 = start
-            .replace_time(time::Time::MIDNIGHT)
+            .replace_time(time::Time::from_hms(12, 0, 0)?)
             .unix_timestamp()
             .try_into()?;
         let statement = sea_query::Query::select()
@@ -100,7 +100,7 @@ impl super::Query {
     ) -> anyhow::Result<Option<WeekRow>> {
         let user_id = user_id.into();
         let start: u64 = start
-            .replace_time(time::Time::MIDNIGHT)
+            .replace_time(time::Time::from_hms(12, 0, 0)?)
             .unix_timestamp()
             .try_into()?;
         let statement = sea_query::Query::select()
