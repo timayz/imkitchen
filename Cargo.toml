@@ -11,7 +11,7 @@ authors = ["imkitchen team"]
 [workspace.dependencies]
 tokio = { version = "1.40", features = ["full"] }
 axum = { version = "0.8", features = ["macros", "multipart"] }
-axum-extra = { version = "0.12", features = ["cookie", "form", "query"] }
+axum-extra = { version = "0.12", features = ["cookie", "form", "query", "typed-header"] }
 tower = "0.5"
 tower-http = { version = "0.6", features = ["fs", "trace", "compression-br", "compression-gzip"] }
 rust-i18n = "3.1"

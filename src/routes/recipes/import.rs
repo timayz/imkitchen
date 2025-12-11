@@ -51,7 +51,7 @@ pub struct ImportingTemplate {
 #[template(path = "recipes-import.html")]
 pub struct ImportTemplate {
     pub current_path: String,
-    pub user: imkitchen_user::AuthUser,
+    pub user: AuthUser,
 }
 
 impl Default for ImportTemplate {
@@ -63,7 +63,7 @@ impl Default for ImportTemplate {
     }
 }
 
-pub async fn page(template: Template, AuthUser(user): AuthUser) -> impl IntoResponse {
+pub async fn page(template: Template, user: AuthUser) -> impl IntoResponse {
     template.render(ImportTemplate {
         user,
         ..Default::default()
@@ -73,7 +73,7 @@ pub async fn page(template: Template, AuthUser(user): AuthUser) -> impl IntoResp
 pub async fn action(
     template: Template,
     State(app): State<AppState>,
-    AuthUser(user): AuthUser,
+    user: AuthUser,
     Json(recipes): Json<Vec<ImportJson>>,
 ) -> impl IntoResponse {
     if !user.is_premium() {
@@ -128,7 +128,7 @@ pub async fn action(
 pub async fn status(
     template: Template,
     State(app): State<AppState>,
-    AuthUser(user): AuthUser,
+    user: AuthUser,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
     match app.recipe_query.find(&id).await {

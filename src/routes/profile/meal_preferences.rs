@@ -19,7 +19,7 @@ pub struct MealPreferencesTemplate {
     pub household_size: u16,
     pub dietary_restrictions: Vec<DietaryRestriction>,
     pub cuisine_variety_weight: f32,
-    pub user: imkitchen_user::AuthUser,
+    pub user: AuthUser,
 }
 
 impl Default for MealPreferencesTemplate {
@@ -30,7 +30,7 @@ impl Default for MealPreferencesTemplate {
             household_size: 4,
             dietary_restrictions: Vec::default(),
             cuisine_variety_weight: 1.0,
-            user: imkitchen_user::AuthUser::default(),
+            user: AuthUser::default(),
         }
     }
 }
@@ -39,7 +39,7 @@ impl Default for MealPreferencesTemplate {
 pub async fn page(
     template: Template,
     State(state): State<AppState>,
-    AuthUser(user): AuthUser,
+    user: AuthUser,
 ) -> impl IntoResponse {
     let preferences = crate::try_page_response!(
         state.user_meal_preference_command.load_optional(&user.id),
@@ -70,7 +70,7 @@ pub struct ActionInput {
 pub async fn action(
     template: Template,
     State(state): State<AppState>,
-    AuthUser(user): AuthUser,
+    user: AuthUser,
     Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {
     crate::try_response!(
@@ -80,7 +80,7 @@ pub async fn action(
                 cuisine_variety_weight: input.cuisine_variety_weight,
                 household_size: input.household_size,
             },
-            &Metadata::by(user.id),
+            &Metadata::by(user.id.to_owned()),
         ),
         template
     );

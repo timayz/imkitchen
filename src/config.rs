@@ -59,7 +59,7 @@ pub struct JwtConfig {
     pub audience: String,
     pub issuer: String,
     pub secret: String,
-    pub expiration_days: u64,
+    pub expiration_days: u16,
 }
 
 // #[derive(Debug, Deserialize, Clone)]
@@ -89,7 +89,7 @@ impl Config {
             .set_default("jwt.audience", "https://imkitchen.localhost")?
             .set_default("jwt.issuer", "imkitchen.localhost")?
             .set_default("jwt.secret", "TOKEN-NOT-SECURE-MUST-BE-CHANGE")?
-            .set_default("jwt.expiration_days", 7)?
+            .set_default("jwt.expiration_days", 14)?
             .set_default("features.premium", true)?
             .set_default("monitoring.log_level", "debug,sqlx=info")?
             .set_default("monitoring.log_json", false)?

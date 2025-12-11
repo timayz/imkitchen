@@ -1,13 +1,20 @@
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::{
+    ops::Deref,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use axum::{
     extract::FromRequestParts,
     http::request::Parts,
     response::{IntoResponse, Redirect, Response},
 };
-use axum_extra::extract::{
-    CookieJar,
-    cookie::{Cookie, Expiration, SameSite},
+use axum_extra::{
+    TypedHeader,
+    extract::{
+        CookieJar,
+        cookie::{Cookie, Expiration, SameSite},
+    },
+    headers::UserAgent,
 };
 use imkitchen_user::State;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
@@ -21,61 +28,69 @@ use crate::{
 
 const AUTH_COOKIE_NAME: &str = "auth_token";
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
-    aud: String, // Optional. Audience
+    aud: String,            // Optional. Audience
     exp: u64, // Required (validate_exp defaults to true in validation). Expiration time (as UTC timestamp)
     iat: u64, // Optional. Issued at (as UTC timestamp)
     iss: String, // Optional. Issuer
-    sub: String, // Optional. Subject (whom token refers to)
+    pub(crate) sub: String, // Optional. Subject (whom token refers to)
+    pub(crate) rev: String, // Optional. Subject (whom token refers to)
 }
 
-pub fn generate_token(config: JwtConfig, sub: String) -> anyhow::Result<String> {
-    let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
+pub fn build_cookie<'a>(config: JwtConfig, sub: String, rev: String) -> anyhow::Result<Cookie<'a>> {
+    let now = OffsetDateTime::now_utc();
+    let expire_days = time::Duration::days(config.expiration_days.into());
+    let auth_expires = Expiration::from(now + expire_days);
     let claims = Claims {
-        aud: config.audience,
-        exp: now + config.expiration_days * 24 * 60 * 60,
-        iat: now,
-        iss: config.issuer,
+        aud: config.audience.to_owned(),
+        exp: (now + expire_days).unix_timestamp().try_into()?,
+        iat: now.unix_timestamp().try_into()?,
+        iss: config.issuer.to_owned(),
         sub,
+        rev,
     };
 
-    let token = encode(
+    let auth_token = encode(
         &Header::default(),
         &claims,
         &EncodingKey::from_secret(config.secret.as_bytes()),
     )?;
 
-    Ok(token)
-}
-
-pub fn build_cookie<'a>(config: JwtConfig, sub: String) -> anyhow::Result<Cookie<'a>> {
-    let token = generate_token(config, sub)?;
-    let now = OffsetDateTime::now_utc();
-    let expires = Expiration::from(now + time::Duration::weeks(1));
-
-    Ok(Cookie::build((AUTH_COOKIE_NAME, token))
+    Ok(Cookie::build((AUTH_COOKIE_NAME, auth_token))
         .path("/")
         .http_only(true)
         .same_site(SameSite::Lax)
-        .expires(expires)
+        .expires(auth_expires)
         .build())
 }
 
-pub fn remove_cookie<'a>() -> Cookie<'a> {
+pub fn auth_cookie<'a>() -> Cookie<'a> {
     Cookie::from(AUTH_COOKIE_NAME)
 }
 
 #[derive(Clone, Default)]
-pub struct AuthUser(pub imkitchen_user::AuthUser);
+pub struct AuthToken(Claims);
 
-impl FromRequestParts<crate::routes::AppState> for AuthUser {
+impl Deref for AuthToken {
+    type Target = Claims;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl FromRequestParts<crate::routes::AppState> for AuthToken {
     type Rejection = Redirect;
 
     async fn from_request_parts(
         parts: &mut Parts,
         state: &crate::routes::AppState,
     ) -> Result<Self, Self::Rejection> {
+        if let Some(claims) = parts.extensions.get::<Claims>() {
+            return Ok(AuthToken(claims.clone()));
+        }
+
         // Extract cookie jar
         let jar = CookieJar::from_request_parts(parts, state)
             .await
@@ -98,14 +113,71 @@ impl FromRequestParts<crate::routes::AppState> for AuthUser {
         )
         .map_err(|_| Redirect::to("/login"))?;
 
-        let Some(mut user) = state
+        parts.extensions.insert(token_data.claims.clone());
+
+        Ok(AuthToken(token_data.claims))
+    }
+}
+
+impl FromRequestParts<crate::routes::AppState> for Option<AuthToken> {
+    type Rejection = Response;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &crate::routes::AppState,
+    ) -> Result<Self, Self::Rejection> {
+        Ok(AuthToken::from_request_parts(parts, state).await.ok())
+    }
+}
+
+#[derive(Clone, Default)]
+pub struct AuthUser(imkitchen_user::AuthUser);
+
+impl Deref for AuthUser {
+    type Target = imkitchen_user::AuthUser;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl FromRequestParts<crate::routes::AppState> for AuthUser {
+    type Rejection = Redirect;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &crate::routes::AppState,
+    ) -> Result<Self, Self::Rejection> {
+        let user_agent = TypedHeader::<UserAgent>::from_request_parts(parts, state)
+            .await
+            .map_err(|_| Redirect::to("/login"))?;
+
+        let claims = AuthToken::from_request_parts(parts, state).await?;
+
+        let Some(login) = state
             .user_command
-            .find(&token_data.claims.sub)
+            .find_login(&claims.sub)
             .await
             .map_err(|e| {
                 tracing::error!("{e}");
                 Redirect::to("/login")
             })?
+        else {
+            return Err(Redirect::to("/login"));
+        };
+
+        if login.revision != claims.rev {
+            return Err(Redirect::to("/login"));
+        }
+
+        if login.user_agent != user_agent.to_string() {
+            return Err(Redirect::to("/login"));
+        }
+
+        let Some(mut user) = state.user_command.find(&login.user_id).await.map_err(|e| {
+            tracing::error!("{e}");
+            Redirect::to("/login")
+        })?
         else {
             return Err(Redirect::to("/login"));
         };
@@ -120,13 +192,32 @@ impl FromRequestParts<crate::routes::AppState> for AuthUser {
                 .map_or(0, |d| d.as_secs());
         }
 
-        parts.extensions.insert(AuthUser(user.clone()));
+        parts.extensions.insert(user.clone());
 
         Ok(AuthUser(user))
     }
 }
 
-pub struct AuthAdmin(pub imkitchen_user::AuthUser);
+impl FromRequestParts<crate::routes::AppState> for Option<AuthUser> {
+    type Rejection = Response;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &crate::routes::AppState,
+    ) -> Result<Self, Self::Rejection> {
+        Ok(AuthUser::from_request_parts(parts, state).await.ok())
+    }
+}
+
+pub struct AuthAdmin(imkitchen_user::AuthUser);
+
+impl Deref for AuthAdmin {
+    type Target = imkitchen_user::AuthUser;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 impl FromRequestParts<crate::routes::AppState> for AuthAdmin {
     type Rejection = Response;
@@ -148,23 +239,5 @@ impl FromRequestParts<crate::routes::AppState> for AuthAdmin {
             .expect("Infallible");
 
         Err(template.render(ForbiddenTemplate).into_response())
-    }
-}
-
-pub struct AuthOptional(pub Option<imkitchen_user::AuthUser>);
-
-impl FromRequestParts<crate::routes::AppState> for AuthOptional {
-    type Rejection = Response;
-
-    async fn from_request_parts(
-        parts: &mut Parts,
-        state: &crate::routes::AppState,
-    ) -> Result<Self, Self::Rejection> {
-        let user = AuthUser::from_request_parts(parts, state)
-            .await
-            .ok()
-            .map(|auth| auth.0);
-
-        Ok(AuthOptional(user))
     }
 }

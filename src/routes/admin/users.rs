@@ -52,7 +52,7 @@ pub async fn page(
     template: Template,
     Query(query): Query<PageQuery>,
     State(app_state): State<AppState>,
-    AuthAdmin(user): AuthAdmin,
+    user: AuthAdmin,
 ) -> impl IntoResponse {
     let stat = crate::try_page_response!(opt: app_state.user_query.find_stat(0), template);
 
@@ -94,10 +94,12 @@ pub async fn suspend(
     template: Template,
     Path((id,)): Path<(String,)>,
     State(app_state): State<AppState>,
-    AuthAdmin(user): AuthAdmin,
+    user: AuthAdmin,
 ) -> impl IntoResponse {
     crate::try_page_response!(
-        app_state.user_command.suspend(&id, &Metadata::by(user.id)),
+        app_state
+            .user_command
+            .suspend(&id, &Metadata::by(user.id.to_owned())),
         template
     );
 
@@ -126,10 +128,12 @@ pub async fn activate(
     template: Template,
     Path((id,)): Path<(String,)>,
     State(app_state): State<AppState>,
-    AuthAdmin(user): AuthAdmin,
+    user: AuthAdmin,
 ) -> impl IntoResponse {
     crate::try_page_response!(
-        app_state.user_command.activate(&id, &Metadata::by(user.id)),
+        app_state
+            .user_command
+            .activate(&id, &Metadata::by(user.id.to_owned())),
         template
     );
 
@@ -158,7 +162,7 @@ pub async fn toggle_premium(
     template: Template,
     Path((id,)): Path<(String,)>,
     State(app_state): State<AppState>,
-    AuthAdmin(user): AuthAdmin,
+    user: AuthAdmin,
 ) -> impl IntoResponse {
     let expire_at = crate::try_page_response!(
         app_state

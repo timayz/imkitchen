@@ -1,8 +1,9 @@
 use axum::extract::State;
 use axum::response::IntoResponse;
+use axum_extra::extract::CookieJar;
 use imkitchen_mealplan::{DaySlotRecipe, SlotRow, WeekRow};
 
-use crate::auth::AuthOptional;
+use crate::auth::{AuthToken, AuthUser};
 use crate::routes::AppState;
 use crate::template::{Template, filters};
 
@@ -16,7 +17,7 @@ pub struct IndexTemplate {
 #[template(path = "dashboard.html")]
 pub struct DashboardTemplate {
     pub current_path: String,
-    pub user: imkitchen_user::AuthUser,
+    pub user: AuthUser,
     pub slot: Option<SlotRow>,
     pub week: Option<WeekRow>,
     pub prep_remiders: Option<Vec<DaySlotRecipe>>,
@@ -27,7 +28,7 @@ impl Default for DashboardTemplate {
     fn default() -> Self {
         Self {
             current_path: "dashboard".to_owned(),
-            user: imkitchen_user::AuthUser::default(),
+            user: AuthUser::default(),
             slot: None,
             week: None,
             prep_remiders: None,
@@ -39,10 +40,12 @@ impl Default for DashboardTemplate {
 #[tracing::instrument(skip_all, fields(user = tracing::field::Empty))]
 pub async fn page(
     template: Template,
-    AuthOptional(user): AuthOptional,
+    user: Option<AuthUser>,
+    token: Option<AuthToken>,
     State(app): State<AppState>,
+    jar: CookieJar,
 ) -> impl IntoResponse {
-    let Some(user) = user else {
+    let (Some(user), Some(token)) = (user, token) else {
         return template
             .render(IndexTemplate { show_nav: true })
             .into_response();
@@ -77,14 +80,23 @@ pub async fn page(
         _ => false,
     };
 
-    template
-        .render(DashboardTemplate {
+    let auth_cookie = crate::try_page_response!(sync:
+        crate::auth::build_cookie(app.config.jwt, token.sub.to_owned(), token.rev.to_owned()),
+        template
+    );
+
+    let jar = jar.add(auth_cookie);
+
+    (
+        jar,
+        template.render(DashboardTemplate {
             user,
             slot,
             week,
             prep_remiders,
             generate_next_weeks_needed,
             ..Default::default()
-        })
+        }),
+    )
         .into_response()
 }

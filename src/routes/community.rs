@@ -9,19 +9,19 @@ use crate::{
 #[template(path = "community.html")]
 pub struct CommunityTemplate {
     pub current_path: String,
-    pub user: imkitchen_user::AuthUser,
+    pub user: AuthUser,
 }
 
 impl Default for CommunityTemplate {
     fn default() -> Self {
         Self {
             current_path: "community".to_owned(),
-            user: imkitchen_user::AuthUser::default(),
+            user: AuthUser::default(),
         }
     }
 }
 
-pub async fn page(template: Template, AuthUser(user): AuthUser) -> impl IntoResponse {
+pub async fn page(template: Template, user: AuthUser) -> impl IntoResponse {
     template.render(CommunityTemplate {
         user,
         ..Default::default()

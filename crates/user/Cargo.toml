@@ -13,6 +13,7 @@ argon2.workspace = true
 sqlx = { workspace = true, optional = true }
 strum.workspace = true
 time = { workspace = true, optional = true }
+ulid = { workspace = true, optional = true }
 sea-query.workspace = true
 sea-query-sqlx.workspace = true
 cfg-if.workspace = true
@@ -28,4 +29,4 @@ futures.workspace = true
 
 [features]
 default = ["full", "imkitchen-recipe"]
-full = ["sqlx", "validator", "imkitchen-db", "time"]
+full = ["sqlx", "validator", "imkitchen-db", "time", "ulid"]

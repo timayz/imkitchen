@@ -62,7 +62,7 @@ pub struct EditIngredientRowTemplate;
 pub struct EditTemplate {
     pub id: String,
     pub current_path: String,
-    pub user: imkitchen_user::AuthUser,
+    pub user: AuthUser,
     pub form: EditForm,
 }
 
@@ -70,7 +70,7 @@ impl Default for EditTemplate {
     fn default() -> Self {
         Self {
             current_path: "recipes".to_owned(),
-            user: imkitchen_user::AuthUser::default(),
+            user: AuthUser::default(),
             form: EditForm::default(),
             id: "".to_owned(),
         }
@@ -80,7 +80,7 @@ impl Default for EditTemplate {
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn page(
     template: Template,
-    AuthUser(user): AuthUser,
+    user: AuthUser,
     Path((id,)): Path<(String,)>,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
@@ -128,7 +128,7 @@ pub async fn page(
 pub async fn action(
     template: Template,
     State(app): State<AppState>,
-    AuthUser(user): AuthUser,
+    user: AuthUser,
     Path((id,)): Path<(String,)>,
     Form(input): Form<EditForm>,
 ) -> impl IntoResponse {

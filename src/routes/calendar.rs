@@ -25,7 +25,7 @@ pub struct RegenerateButtonTemplate {
 #[template(path = "calendar.html")]
 pub struct CalendarTemplate {
     pub current_path: String,
-    pub user: imkitchen_user::AuthUser,
+    pub user: AuthUser,
     pub weeks: Vec<WeekListRow>,
     pub weekday: u64,
     pub current: Option<WeekRow>,
@@ -38,7 +38,7 @@ impl Default for CalendarTemplate {
     fn default() -> Self {
         Self {
             current_path: "calendar".to_owned(),
-            user: imkitchen_user::AuthUser::default(),
+            user: AuthUser::default(),
             weeks: Default::default(),
             current: None,
             weekday: 0,
@@ -52,7 +52,7 @@ impl Default for CalendarTemplate {
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn page(
     template: Template,
-    AuthUser(user): AuthUser,
+    user: AuthUser,
     State(app): State<AppState>,
     Path((mut index,)): Path<(u8,)>,
 ) -> impl IntoResponse {
@@ -111,7 +111,7 @@ pub async fn page(
 pub async fn regenerate_action(
     template: Template,
     State(app): State<AppState>,
-    AuthUser(user): AuthUser,
+    user: AuthUser,
 ) -> impl IntoResponse {
     let status =
         crate::try_response!(anyhow: app.mealplan_command.load_optional(&user.id), template)
@@ -144,7 +144,7 @@ pub async fn regenerate_action(
 pub async fn regenerate_status(
     template: Template,
     State(app): State<AppState>,
-    AuthUser(user): AuthUser,
+    user: AuthUser,
 ) -> impl IntoResponse {
     let meal_plan = match crate::try_response!(anyhow: app.mealplan_command.load_optional(&user.id), template)
     {

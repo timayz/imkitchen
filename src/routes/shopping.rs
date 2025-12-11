@@ -20,7 +20,7 @@ use crate::{
 #[template(path = "shopping.html")]
 pub struct ShoppingTemplate {
     pub current_path: String,
-    pub user: imkitchen_user::AuthUser,
+    pub user: AuthUser,
     pub weeks: Vec<WeekListRow>,
     pub current: Option<ListWeekRow>,
     pub recipes: Option<HashSet<String>>,
@@ -32,7 +32,7 @@ impl Default for ShoppingTemplate {
     fn default() -> Self {
         Self {
             current_path: "calendar".to_owned(),
-            user: imkitchen_user::AuthUser::default(),
+            user: AuthUser::default(),
             weeks: Default::default(),
             current: None,
             recipes: None,
@@ -45,7 +45,7 @@ impl Default for ShoppingTemplate {
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn page(
     template: Template,
-    AuthUser(user): AuthUser,
+    user: AuthUser,
     State(app): State<AppState>,
     Path((mut index,)): Path<(u8,)>,
 ) -> impl IntoResponse {
@@ -127,7 +127,7 @@ pub struct ToggleJson {
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn toggle_action(
     template: Template,
-    AuthUser(user): AuthUser,
+    user: AuthUser,
     State(app): State<AppState>,
     Path((week,)): Path<(u64,)>,
     Json(input): Json<ToggleJson>,
@@ -168,7 +168,7 @@ pub async fn toggle_action(
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn reset_all_action(
     template: Template,
-    AuthUser(user): AuthUser,
+    user: AuthUser,
     State(app): State<AppState>,
     Path((week,)): Path<(u64,)>,
 ) -> impl IntoResponse {
