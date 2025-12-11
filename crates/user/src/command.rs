@@ -182,6 +182,28 @@ impl<E: Executor + Clone> Command<E> {
             .fetch_one(&self.write_db)
             .await?)
     }
+
+    pub async fn delete_login(
+        &self,
+        id: String,
+        revision: String,
+        user_agent: String,
+    ) -> imkitchen_shared::Result<()> {
+        let statement = Query::delete()
+            .from_table(UserLogin::Table)
+            .and_where(Expr::col(UserLogin::Id).eq(id))
+            .and_where(Expr::col(UserLogin::Revision).eq(revision))
+            .and_where(Expr::col(UserLogin::UserAgent).eq(user_agent))
+            .to_owned();
+
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+        sqlx::query_with(&sql, values)
+            .execute(&self.write_db)
+            .await?;
+
+        Ok(())
+    }
 }
 
 #[derive(Deserialize, FromRow, Debug)]

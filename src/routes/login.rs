@@ -8,7 +8,7 @@ use imkitchen_shared::Metadata;
 use imkitchen_user::LoginInput;
 use serde::Deserialize;
 
-use crate::auth::{self, build_cookie};
+use crate::auth::{self, AuthToken, build_cookie};
 use crate::routes::AppState;
 use crate::template::{SERVER_ERROR_MESSAGE, Template};
 use crate::template::{ToastErrorTemplate, filters};
@@ -74,8 +74,23 @@ pub async fn action(
     (jar, Redirect::to("/")).into_response()
 }
 
-pub async fn logout(jar: CookieJar) -> impl IntoResponse {
+pub async fn logout(
+    jar: CookieJar,
+    token: AuthToken,
+    template: Template,
+    State(app): State<AppState>,
+    TypedHeader(user_agent): TypedHeader<UserAgent>,
+) -> impl IntoResponse {
+    crate::try_response!(
+        app.user_command.delete_login(
+            token.sub.to_owned(),
+            token.rev.to_owned(),
+            user_agent.to_string(),
+        ),
+        template
+    );
+
     let jar = jar.remove(auth::auth_cookie());
 
-    (jar, Redirect::to("/"))
+    (jar, Redirect::to("/")).into_response()
 }
