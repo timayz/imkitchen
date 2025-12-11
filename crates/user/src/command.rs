@@ -184,7 +184,7 @@ impl<E: Executor + Clone> Command<E> {
     }
 }
 
-#[derive(Deserialize, FromRow)]
+#[derive(Deserialize, FromRow, Debug)]
 pub struct UserLoginRow {
     pub id: String,
     pub revision: String,

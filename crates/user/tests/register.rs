@@ -9,7 +9,11 @@ async fn validate_unique_emails() -> anyhow::Result<()> {
     let dir = TempDir::new()?;
     let path = dir.child("db.sqlite3");
     let state = helpers::setup_test_state(path).await?;
-    let command = imkitchen_user::Command(state.evento.clone(), state.pool.clone());
+    let command = imkitchen_user::Command {
+        evento: state.evento.clone(),
+        read_db: state.pool.clone(),
+        write_db: state.pool.clone(),
+    };
     let metadata = Metadata::default();
     let user_1 = command
         .register(
@@ -18,10 +22,12 @@ async fn validate_unique_emails() -> anyhow::Result<()> {
                 password: "my_password".to_owned(),
                 lang: "en".to_owned(),
                 timezone: "UTC".to_owned(),
+                user_agent: "".to_owned(),
             },
             &metadata,
         )
-        .await?;
+        .await?
+        .user_id;
     let user_2 = command
         .register(
             RegisterInput {
@@ -29,10 +35,12 @@ async fn validate_unique_emails() -> anyhow::Result<()> {
                 password: "my_password_v2".to_owned(),
                 lang: "en".to_owned(),
                 timezone: "UTC".to_owned(),
+                user_agent: "".to_owned(),
             },
             &metadata,
         )
-        .await?;
+        .await?
+        .user_id;
 
     let user_1_agg = command.load(&user_1).await?;
     let user_2_agg = command.load(&user_2).await?;

@@ -10,7 +10,11 @@ pub async fn test_admin_user_query() -> anyhow::Result<()> {
     let dir = TempDir::new()?;
     let path = dir.child("db.sqlite3");
     let state = helpers::setup_test_state(path).await?;
-    let command = imkitchen_user::Command(state.evento.clone(), state.pool.clone());
+    let command = imkitchen_user::Command {
+        evento: state.evento.clone(),
+        read_db: state.pool.clone(),
+        write_db: state.pool.clone(),
+    };
     let query = imkitchen_user::Query(state.pool.clone());
     let subscription_command =
         imkitchen_user::subscription::Command(state.evento.clone(), state.pool.clone());
