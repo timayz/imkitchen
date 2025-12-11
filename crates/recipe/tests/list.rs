@@ -100,6 +100,7 @@ pub async fn create_recipes(
                 name: "ingredient 1".to_owned(),
                 quantity: 1,
                 unit: Some(IngredientUnit::G),
+                category: None,
             }],
             instructions: vec![Instruction {
                 time_next: 15,

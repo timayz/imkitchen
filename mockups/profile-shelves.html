@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Store Shelves - Profile & Settings - imkitchen</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 pb-20 md:pb-0">
+    <!-- Top Navigation -->
+    <nav class="bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <a href="dashboard-free.html" class="text-2xl font-bold text-green-600">🍳 imkitchen</a>
+
+                <!-- Desktop Navigation -->
+                <div class="hidden md:flex gap-6 items-center">
+                    <a href="dashboard-free.html" class="text-gray-600 hover:text-gray-900">Dashboard</a>
+                    <a href="calendar-free.html" class="text-gray-600 hover:text-gray-900">Calendar</a>
+                    <a href="recipes-list.html" class="text-gray-600 hover:text-gray-900">My Recipes</a>
+                    <a href="community.html" class="text-gray-600 hover:text-gray-900">Community</a>
+                    <a href="profile.html" class="text-gray-900 font-semibold">Profile</a>
+                </div>
+
+                <div class="hidden md:flex items-center gap-4">
+                    <span class="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded-full font-semibold">Free Tier</span>
+                    <a href="index.html" class="text-gray-600 hover:text-gray-900">Logout</a>
+                </div>
+
+                <!-- Mobile: Account Badge -->
+                <div class="md:hidden">
+                    <span class="px-3 py-1 bg-gray-200 text-gray-700 text-xs rounded-full font-semibold">Free</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+        <div class="flex items-center justify-around">
+            <a href="dashboard-free.html" class="flex flex-col items-center py-2 px-3 text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                </svg>
+                <span class="text-xs mt-1">Dashboard</span>
+            </a>
+            <a href="calendar-free.html" class="flex flex-col items-center py-2 px-3 text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                <span class="text-xs mt-1">Calendar</span>
+            </a>
+            <a href="recipes-list.html" class="flex flex-col items-center py-2 px-3 text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                </svg>
+                <span class="text-xs mt-1">Recipes</span>
+            </a>
+            <a href="community.html" class="flex flex-col items-center py-2 px-3 text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+                <span class="text-xs mt-1">Community</span>
+            </a>
+            <a href="profile.html" class="flex flex-col items-center py-2 px-3 text-green-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                </svg>
+                <span class="text-xs mt-1 font-semibold">Profile</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold mb-2">Profile & Settings</h1>
+            <p class="text-gray-600">Manage your account and preferences</p>
+        </div>
+
+        <div class="lg:grid lg:grid-cols-3 gap-8">
+            <!-- Sidebar Navigation - Desktop -->
+            <div class="hidden lg:block space-y-2">
+                <a href="profile.html" class="block w-full text-left px-4 py-3 bg-white text-gray-700 hover:bg-gray-50 rounded-lg">
+                    👤 Account Info
+                </a>
+                <a href="profile.html" class="block w-full text-left px-4 py-3 bg-white text-gray-700 hover:bg-gray-50 rounded-lg">
+                    🍽️ Meal Preferences
+                </a>
+                <a href="profile-shelves.html" class="block w-full text-left px-4 py-3 bg-green-600 text-white font-semibold rounded-lg">
+                    🛒 Store Shelves
+                </a>
+                <a href="profile.html" class="block w-full text-left px-4 py-3 bg-white text-gray-700 hover:bg-gray-50 rounded-lg">
+                    💳 Subscription
+                </a>
+                <a href="profile.html" class="block w-full text-left px-4 py-3 bg-white text-gray-700 hover:bg-gray-50 rounded-lg">
+                    🔔 Notifications
+                </a>
+                <a href="profile.html" class="block w-full text-left px-4 py-3 bg-white text-gray-700 hover:bg-gray-50 rounded-lg">
+                    🔒 Privacy & Security
+                </a>
+            </div>
+
+            <!-- Mobile Navigation Tabs -->
+            <div class="lg:hidden mb-6 overflow-x-auto">
+                <div class="flex gap-2 min-w-max">
+                    <a href="profile.html" class="px-4 py-2 bg-white text-gray-700 rounded-lg whitespace-nowrap text-sm">
+                        👤 Account
+                    </a>
+                    <a href="profile.html" class="px-4 py-2 bg-white text-gray-700 rounded-lg whitespace-nowrap text-sm">
+                        🍽️ Meals
+                    </a>
+                    <a href="profile-shelves.html" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg whitespace-nowrap text-sm">
+                        🛒 Shelves
+                    </a>
+                    <a href="profile.html" class="px-4 py-2 bg-white text-gray-700 rounded-lg whitespace-nowrap text-sm">
+                        💳 Plan
+                    </a>
+                    <a href="profile.html" class="px-4 py-2 bg-white text-gray-700 rounded-lg whitespace-nowrap text-sm">
+                        🔔 Alerts
+                    </a>
+                    <a href="profile.html" class="px-4 py-2 bg-white text-gray-700 rounded-lg whitespace-nowrap text-sm">
+                        🔒 Security
+                    </a>
+                </div>
+            </div>
+
+            <!-- Main Content Area -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Store Shelves Management -->
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                        <div>
+                            <h2 class="text-xl font-bold mb-1">Store Shelves</h2>
+                            <p class="text-sm text-gray-600">Organize your shopping list by store layout</p>
+                        </div>
+                        <button onclick="openShelfModal()" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 whitespace-nowrap">
+                            + Add Shelf
+                        </button>
+                    </div>
+
+                    <!-- Info Banner -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                        <div class="flex items-start gap-3">
+                            <span class="text-blue-600 text-xl">💡</span>
+                            <div class="flex-1">
+                                <p class="text-sm text-blue-900">
+                                    Customize how ingredients are grouped in your shopping lists. Add ingredients to each shelf and arrange shelves in the order you walk through your grocery store for faster shopping.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Shelves List - Draggable -->
+                    <div class="space-y-3">
+                        <!-- Shelf 1 - Proteins (Expanded View) -->
+                        <div class="border-2 border-green-300 rounded-lg bg-green-50">
+                            <div class="p-4">
+                                <div class="flex items-center gap-3">
+                                    <!-- Drag Handle -->
+                                    <button class="text-gray-400 hover:text-gray-600 cursor-move">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path>
+                                        </svg>
+                                    </button>
+
+                                    <!-- Shelf Icon & Name -->
+                                    <div class="flex-1 flex items-center gap-3">
+                                        <span class="text-2xl">🥩</span>
+                                        <div class="flex-1">
+                                            <div class="font-semibold">Proteins</div>
+                                            <div class="text-xs text-gray-600">8 ingredients assigned</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Actions -->
+                                    <div class="flex gap-2">
+                                        <button onclick="openEditShelfModal()" class="px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-100 rounded">
+                                            Edit
+                                        </button>
+                                        <button onclick="toggleShelfExpand(this)" class="px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-200 rounded">
+                                            <span class="collapse-icon">▼</span>
+                                        </button>
+                                        <button onclick="if(confirm('Delete this shelf?')) alert('Deleted')" class="px-3 py-1.5 text-sm text-red-600 hover:bg-red-100 rounded">
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Ingredients List (Expandable) -->
+                            <div class="shelf-ingredients px-4 pb-4">
+                                <div class="border-t border-green-200 pt-4">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <h4 class="text-sm font-semibold text-gray-700">Ingredients in this shelf</h4>
+                                        <button onclick="openAddIngredientModal('Proteins')" class="text-xs px-3 py-1.5 bg-green-600 text-white rounded hover:bg-green-700">
+                                            + Add Ingredient
+                                        </button>
+                                    </div>
+
+                                    <!-- Ingredients Grid -->
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        <div class="flex items-center justify-between bg-white p-2 rounded border border-gray-200">
+                                            <span class="text-sm">Chicken breast</span>
+                                            <button onclick="alert('Remove ingredient')" class="text-red-500 hover:text-red-700">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        <div class="flex items-center justify-between bg-white p-2 rounded border border-gray-200">
+                                            <span class="text-sm">Ground beef</span>
+                                            <button onclick="alert('Remove ingredient')" class="text-red-500 hover:text-red-700">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        <div class="flex items-center justify-between bg-white p-2 rounded border border-gray-200">
+                                            <span class="text-sm">Fish fillets</span>
+                                            <button onclick="alert('Remove ingredient')" class="text-red-500 hover:text-red-700">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        <div class="flex items-center justify-between bg-white p-2 rounded border border-gray-200">
+                                            <span class="text-sm">Eggs</span>
+                                            <button onclick="alert('Remove ingredient')" class="text-red-500 hover:text-red-700">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        <div class="flex items-center justify-between bg-white p-2 rounded border border-gray-200">
+                                            <span class="text-sm">Pork chops</span>
+                                            <button onclick="alert('Remove ingredient')" class="text-red-500 hover:text-red-700">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        <div class="flex items-center justify-between bg-white p-2 rounded border border-gray-200">
+                                            <span class="text-sm">Tofu</span>
+                                            <button onclick="alert('Remove ingredient')" class="text-red-500 hover:text-red-700">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        <div class="flex items-center justify-between bg-white p-2 rounded border border-gray-200">
+                                            <span class="text-sm">Bacon</span>
+                                            <button onclick="alert('Remove ingredient')" class="text-red-500 hover:text-red-700">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        <div class="flex items-center justify-between bg-white p-2 rounded border border-gray-200">
+                                            <span class="text-sm">Shrimp</span>
+                                            <button onclick="alert('Remove ingredient')" class="text-red-500 hover:text-red-700">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Shelf 2 - Vegetables (Collapsed) -->
+                        <div class="border-2 border-gray-200 rounded-lg hover:border-green-300 transition-colors">
+                            <div class="p-4">
+                                <div class="flex items-center gap-3">
+                                    <button class="text-gray-400 hover:text-gray-600 cursor-move">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path>
+                                        </svg>
+                                    </button>
+
+                                    <div class="flex-1 flex items-center gap-3">
+                                        <span class="text-2xl">🥬</span>
+                                        <div class="flex-1">
+                                            <div class="font-semibold">Vegetables</div>
+                                            <div class="text-xs text-gray-500">12 ingredients assigned</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex gap-2">
+                                        <button onclick="openEditShelfModal()" class="px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded">
+                                            Edit
+                                        </button>
+                                        <button onclick="toggleShelfExpand(this)" class="px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded">
+                                            <span class="expand-icon">▶</span>
+                                        </button>
+                                        <button onclick="if(confirm('Delete this shelf?')) alert('Deleted')" class="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded">
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="shelf-ingredients hidden px-4 pb-4">
+                                <div class="border-t border-gray-200 pt-4">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <h4 class="text-sm font-semibold text-gray-700">Ingredients in this shelf</h4>
+                                        <button onclick="openAddIngredientModal('Vegetables')" class="text-xs px-3 py-1.5 bg-green-600 text-white rounded hover:bg-green-700">
+                                            + Add Ingredient
+                                        </button>
+                                    </div>
+                                    <div class="text-sm text-gray-500">Click expand to view ingredients</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Shelf 3 - Pantry & Staples (Collapsed) -->
+                        <div class="border-2 border-gray-200 rounded-lg hover:border-green-300 transition-colors">
+                            <div class="p-4">
+                                <div class="flex items-center gap-3">
+                                    <button class="text-gray-400 hover:text-gray-600 cursor-move">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path>
+                                        </svg>
+                                    </button>
+
+                                    <div class="flex-1 flex items-center gap-3">
+                                        <span class="text-2xl">🥫</span>
+                                        <div class="flex-1">
+                                            <div class="font-semibold">Pantry & Staples</div>
+                                            <div class="text-xs text-gray-500">15 ingredients assigned</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex gap-2">
+                                        <button onclick="openEditShelfModal()" class="px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded">
+                                            Edit
+                                        </button>
+                                        <button onclick="toggleShelfExpand(this)" class="px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded">
+                                            <span class="expand-icon">▶</span>
+                                        </button>
+                                        <button onclick="if(confirm('Delete this shelf?')) alert('Deleted')" class="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded">
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Shelf 4 - Dairy (Collapsed) -->
+                        <div class="border-2 border-gray-200 rounded-lg hover:border-green-300 transition-colors">
+                            <div class="p-4">
+                                <div class="flex items-center gap-3">
+                                    <button class="text-gray-400 hover:text-gray-600 cursor-move">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path>
+                                        </svg>
+                                    </button>
+
+                                    <div class="flex-1 flex items-center gap-3">
+                                        <span class="text-2xl">🥛</span>
+                                        <div class="flex-1">
+                                            <div class="font-semibold">Dairy</div>
+                                            <div class="text-xs text-gray-500">6 ingredients assigned</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex gap-2">
+                                        <button onclick="openEditShelfModal()" class="px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded">
+                                            Edit
+                                        </button>
+                                        <button onclick="toggleShelfExpand(this)" class="px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded">
+                                            <span class="expand-icon">▶</span>
+                                        </button>
+                                        <button onclick="if(confirm('Delete this shelf?')) alert('Deleted')" class="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded">
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Shelf 5 - Bakery (Collapsed) -->
+                        <div class="border-2 border-gray-200 rounded-lg hover:border-green-300 transition-colors">
+                            <div class="p-4">
+                                <div class="flex items-center gap-3">
+                                    <button class="text-gray-400 hover:text-gray-600 cursor-move">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path>
+                                        </svg>
+                                    </button>
+
+                                    <div class="flex-1 flex items-center gap-3">
+                                        <span class="text-2xl">🥖</span>
+                                        <div class="flex-1">
+                                            <div class="font-semibold">Bakery</div>
+                                            <div class="text-xs text-gray-500">4 ingredients assigned</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex gap-2">
+                                        <button onclick="openEditShelfModal()" class="px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded">
+                                            Edit
+                                        </button>
+                                        <button onclick="toggleShelfExpand(this)" class="px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded">
+                                            <span class="expand-icon">▶</span>
+                                        </button>
+                                        <button onclick="if(confirm('Delete this shelf?')) alert('Deleted')" class="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded">
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Save Button -->
+                    <div class="mt-6 pt-6 border-t">
+                        <button onclick="alert('Shelf configuration saved!')" class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Preview Example -->
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h2 class="text-xl font-bold mb-4">Shopping List Preview</h2>
+                    <p class="text-sm text-gray-600 mb-4">
+                        This is how your shopping list will be organized based on your shelf configuration
+                    </p>
+
+                    <div class="border rounded-lg p-4 space-y-4">
+                        <!-- Example Section 1 -->
+                        <div>
+                            <h3 class="font-bold text-sm mb-2 pb-1 border-b border-green-500 flex items-center gap-2">
+                                <span>🥩</span> Proteins
+                            </h3>
+                            <div class="space-y-1">
+                                <div class="text-sm text-gray-700 pl-7">• Chicken breast - 1.5 kg</div>
+                                <div class="text-sm text-gray-700 pl-7">• Ground beef - 800g</div>
+                            </div>
+                        </div>
+
+                        <!-- Example Section 2 -->
+                        <div>
+                            <h3 class="font-bold text-sm mb-2 pb-1 border-b border-green-500 flex items-center gap-2">
+                                <span>🥬</span> Vegetables
+                            </h3>
+                            <div class="space-y-1">
+                                <div class="text-sm text-gray-700 pl-7">• Bell peppers - 6 pieces</div>
+                                <div class="text-sm text-gray-700 pl-7">• Tomatoes - 12 medium</div>
+                            </div>
+                        </div>
+
+                        <!-- Example Section 3 -->
+                        <div>
+                            <h3 class="font-bold text-sm mb-2 pb-1 border-b border-green-500 flex items-center gap-2">
+                                <span>🥫</span> Pantry & Staples
+                            </h3>
+                            <div class="space-y-1">
+                                <div class="text-sm text-gray-700 pl-7">• Jasmine rice - 2 kg</div>
+                                <div class="text-sm text-gray-700 pl-7">• Olive oil - 500ml</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Shelf Modal -->
+    <div id="shelf-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold">Add New Shelf</h3>
+                <button onclick="closeShelfModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <form class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Shelf Name</label>
+                    <input
+                        type="text"
+                        placeholder="e.g., Snacks & Beverages"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                    />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Icon</label>
+                    <div class="grid grid-cols-6 gap-2">
+                        <button type="button" class="text-2xl p-2 border-2 border-transparent hover:border-green-500 rounded">🥩</button>
+                        <button type="button" class="text-2xl p-2 border-2 border-transparent hover:border-green-500 rounded">🥬</button>
+                        <button type="button" class="text-2xl p-2 border-2 border-transparent hover:border-green-500 rounded">🥫</button>
+                        <button type="button" class="text-2xl p-2 border-2 border-transparent hover:border-green-500 rounded">🥛</button>
+                        <button type="button" class="text-2xl p-2 border-2 border-transparent hover:border-green-500 rounded">🥖</button>
+                        <button type="button" class="text-2xl p-2 border-2 border-transparent hover:border-green-500 rounded">🧊</button>
+                        <button type="button" class="text-2xl p-2 border-2 border-transparent hover:border-green-500 rounded">🌿</button>
+                        <button type="button" class="text-2xl p-2 border-2 border-transparent hover:border-green-500 rounded">🍎</button>
+                        <button type="button" class="text-2xl p-2 border-2 border-transparent hover:border-green-500 rounded">🍺</button>
+                        <button type="button" class="text-2xl p-2 border-2 border-transparent hover:border-green-500 rounded">🧁</button>
+                        <button type="button" class="text-2xl p-2 border-2 border-transparent hover:border-green-500 rounded">🥤</button>
+                        <button type="button" class="text-2xl p-2 border-2 border-transparent hover:border-green-500 rounded">🍬</button>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closeShelfModal()" class="flex-1 px-4 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300">
+                        Cancel
+                    </button>
+                    <button type="submit" onclick="alert('Shelf added!'); closeShelfModal(); return false;" class="flex-1 px-4 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">
+                        Add Shelf
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Ingredient Modal -->
+    <div id="ingredient-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold">Add Ingredient</h3>
+                <button onclick="closeIngredientModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <form class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Ingredient Name</label>
+                    <input
+                        type="text"
+                        placeholder="e.g., Tomatoes, Olive oil, Rice"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                    />
+                    <p class="text-xs text-gray-500 mt-1">Enter the name of the ingredient as it appears in recipes</p>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closeIngredientModal()" class="flex-1 px-4 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300">
+                        Cancel
+                    </button>
+                    <button type="submit" onclick="alert('Ingredient added!'); closeIngredientModal(); return false;" class="flex-1 px-4 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">
+                        Add Ingredient
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Modal functions
+        function openShelfModal() {
+            document.getElementById('shelf-modal').classList.remove('hidden');
+        }
+
+        function closeShelfModal() {
+            document.getElementById('shelf-modal').classList.add('hidden');
+        }
+
+        function openEditShelfModal() {
+            document.getElementById('shelf-modal').classList.remove('hidden');
+            // In real implementation, populate form with shelf data
+        }
+
+        function openAddIngredientModal(shelfName) {
+            document.getElementById('ingredient-modal').classList.remove('hidden');
+            // In real implementation, set shelf context
+        }
+
+        function closeIngredientModal() {
+            document.getElementById('ingredient-modal').classList.add('hidden');
+        }
+
+        // Expand/Collapse shelf ingredients
+        function toggleShelfExpand(button) {
+            const shelfDiv = button.closest('.border-2');
+            const ingredientsDiv = shelfDiv.querySelector('.shelf-ingredients');
+            const isHidden = ingredientsDiv.classList.contains('hidden');
+
+            if (isHidden) {
+                ingredientsDiv.classList.remove('hidden');
+                button.innerHTML = '<span class="collapse-icon">▼</span>';
+                shelfDiv.classList.add('border-green-300', 'bg-green-50');
+                shelfDiv.classList.remove('border-gray-200');
+            } else {
+                ingredientsDiv.classList.add('hidden');
+                button.innerHTML = '<span class="expand-icon">▶</span>';
+                shelfDiv.classList.remove('border-green-300', 'bg-green-50');
+                shelfDiv.classList.add('border-gray-200');
+            }
+        }
+    </script>
+</body>
+</html>

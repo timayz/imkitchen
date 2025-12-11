@@ -101,9 +101,11 @@
       <div id="ingredients" class="space-y-3">
         <input type="hidden" name="ingredients_quantity" value="0" />
         <input type="hidden" name="ingredients_unit" />
+        <input type="hidden" name="ingredients_category" />
         <input type="hidden" name="ingredients_name" />
         <input type="hidden" name="ingredients_quantity" value="0" />
         <input type="hidden" name="ingredients_unit" />
+        <input type="hidden" name="ingredients_category" />
         <input type="hidden" name="ingredients_name" />
         {% if form.ingredients.is_empty() %}
         <div class="flex flex-col sm:flex-row gap-3">
@@ -117,7 +119,15 @@
             </select>
             <input type="text" name="ingredients_name" minlength="1" maxlength="30" placeholder="Jasmine rice" class="flex-1 min-w-0 px-2 sm:px-4 py-2 border border-gray-300 rounded-lg text-sm sm:text-base" required />
           </div>
-          <button ts-trigger="click" ts-action="remove 'parent div'" type="button" class="shrink-0 px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">✕</button>
+          <div class="flex gap-2 sm:gap-3 flex-1 sm:contents">
+            <select name="ingredients_category" class="w-52 px-1 sm:px-4 py-2 border border-gray-300 rounded-lg text-sm sm:text-base">
+              <option value=""></option>
+              {% for category in IngredientCategory::VARIANTS %}
+              <option value="{{ category }}">{{ category.as_ref()|t }}</option>
+              {% endfor %}
+            </select>
+            <button ts-trigger="click" ts-action="remove 'parent div'" type="button" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">✕</button>
+          </div>
         </div>
         {% endif %}
         {% for ingredient in form.ingredients %}
@@ -132,7 +142,15 @@
             </select>
             <input type="text" name="ingredients_name" value="{{ ingredient.name }}" minlength="1" maxlength="30" class="flex-1 min-w-0 px-2 sm:px-4 py-2 border border-gray-300 rounded-lg text-sm sm:text-base" required />
           </div>
-          <button ts-trigger="click" ts-action="remove 'parent div'" type="button" class="shrink-0 px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">✕</button>
+          <div class="flex gap-2 sm:gap-3 flex-1 sm:contents">
+            <select name="ingredients_category" class="w-52 px-1 sm:px-4 py-2 border border-gray-300 rounded-lg text-sm sm:text-base">
+              <option value=""{% if ingredient.category.is_none() %} selected{% endif %}></option>
+              {% for category in IngredientCategory::VARIANTS %}
+              <option value="{{ category }}"{% if ingredient.category.as_ref().as_ref() == Some(category) %} selected{% endif %}>{{ category.as_ref()|t }}</option>
+              {% endfor %}
+            </select>
+            <button ts-trigger="click" ts-action="remove 'parent div'" type="button" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">✕</button>
+          </div>
         </div>
         {% endfor %}
       </div>

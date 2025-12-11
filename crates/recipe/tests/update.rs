@@ -32,6 +32,7 @@ async fn test_update_no_fields() -> anyhow::Result<()> {
             name: "ingredient 1".to_owned(),
             quantity: 1,
             unit: Some(IngredientUnit::G),
+            category: None,
         }],
         instructions: vec![Instruction {
             time_next: 15,
@@ -84,6 +85,7 @@ async fn test_update_only_recipe_type() -> anyhow::Result<()> {
             name: "ingredient 1".to_owned(),
             quantity: 1,
             unit: Some(IngredientUnit::G),
+            category: None,
         }],
         instructions: vec![Instruction {
             time_next: 15,
@@ -135,6 +137,7 @@ async fn test_update_only_cuisine_type() -> anyhow::Result<()> {
             name: "ingredient 1".to_owned(),
             quantity: 1,
             unit: Some(IngredientUnit::G),
+            category: None,
         }],
         instructions: vec![Instruction {
             time_next: 15,
@@ -186,6 +189,7 @@ async fn test_update_only_name() -> anyhow::Result<()> {
             name: "ingredient 1".to_owned(),
             quantity: 1,
             unit: Some(IngredientUnit::G),
+            category: None,
         }],
         instructions: vec![Instruction {
             time_next: 15,
@@ -243,6 +247,7 @@ async fn test_update_only_description() -> anyhow::Result<()> {
             name: "ingredient 1".to_owned(),
             quantity: 1,
             unit: Some(IngredientUnit::G),
+            category: None,
         }],
         instructions: vec![Instruction {
             time_next: 15,
@@ -300,6 +305,7 @@ async fn test_update_only_prep_time() -> anyhow::Result<()> {
             name: "ingredient 1".to_owned(),
             quantity: 1,
             unit: Some(IngredientUnit::G),
+            category: None,
         }],
         instructions: vec![Instruction {
             time_next: 15,
@@ -357,6 +363,7 @@ async fn test_update_only_cook_time() -> anyhow::Result<()> {
             name: "ingredient 1".to_owned(),
             quantity: 1,
             unit: Some(IngredientUnit::G),
+            category: None,
         }],
         instructions: vec![Instruction {
             time_next: 15,
@@ -414,6 +421,7 @@ async fn test_update_only_ingredients() -> anyhow::Result<()> {
             name: "ingredient 1".to_owned(),
             quantity: 1,
             unit: Some(IngredientUnit::G),
+            category: None,
         }],
         instructions: vec![Instruction {
             time_next: 15,
@@ -434,11 +442,13 @@ async fn test_update_only_ingredients() -> anyhow::Result<()> {
             name: "ingredient 1".to_owned(),
             quantity: 2,
             unit: Some(IngredientUnit::G),
+            category: None,
         },
         Ingredient {
             name: "ingredient 2".to_owned(),
             quantity: 100,
             unit: Some(IngredientUnit::ML),
+            category: None,
         },
     ];
 
@@ -481,6 +491,7 @@ async fn test_update_only_ingredients_empty() -> anyhow::Result<()> {
             name: "ingredient 1".to_owned(),
             quantity: 1,
             unit: Some(IngredientUnit::G),
+            category: None,
         }],
         instructions: vec![Instruction {
             time_next: 15,
@@ -533,6 +544,7 @@ async fn test_update_only_instructions() -> anyhow::Result<()> {
             name: "ingredient 1".to_owned(),
             quantity: 1,
             unit: Some(IngredientUnit::G),
+            category: None,
         }],
         instructions: vec![Instruction {
             time_next: 15,
@@ -603,6 +615,7 @@ async fn test_update_only_dietary_restrictions() -> anyhow::Result<()> {
             name: "ingredient 1".to_owned(),
             quantity: 1,
             unit: Some(IngredientUnit::G),
+            category: None,
         }],
         instructions: vec![Instruction {
             time_next: 15,
@@ -673,6 +686,7 @@ async fn test_update_only_accepts_accompaniment() -> anyhow::Result<()> {
             name: "ingredient 1".to_owned(),
             quantity: 1,
             unit: Some(IngredientUnit::G),
+            category: None,
         }],
         instructions: vec![Instruction {
             time_next: 15,
@@ -727,6 +741,7 @@ async fn test_update_only_advance_prep() -> anyhow::Result<()> {
             name: "ingredient 1".to_owned(),
             quantity: 1,
             unit: Some(IngredientUnit::G),
+            category: None,
         }],
         instructions: vec![Instruction {
             time_next: 15,

@@ -46,8 +46,8 @@
   "prep_time": 15, ({{ "minutes > 0"|t }})
   "cook_time": 30, ({{ "minutes > 0"|t }})
   "ingredients": [
-    { "quantity": 500, "unit": "G", "name": "Chicken breast" }, (quantity as u16, unit as "G"|"ML"|null)
-    { "quantity": 1, "unit": null, "name": "Lemon" }
+    { "quantity": 500, "unit": "G|ML", "name": "Chicken breast", category: null }, (quantity as u16)
+    { "quantity": 1, "unit": null, "name": "Lemon", category: "Frozen|Refrigerated|Grocery|FruitsAndVegetables|Butcher|Seafood|DairyAndEggs|Bakery|SnacksAndConfectionery" }
   ],
   "instructions": [
     { "description": "Heat oil in wok", "time_next": 12 ({{ "time to wait before next instruction, minutes >= 0"|t }}) }
