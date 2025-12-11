@@ -258,6 +258,19 @@ macro_rules! try_page_response {
         }
     };
 
+    (sync: $result:expr, $template:expr) => {
+        match $result {
+            Ok(r) => r,
+            Err(err) => {
+                tracing::error!("{err}");
+
+                return $template
+                    .render($crate::template::ServerErrorTemplate)
+                    .into_response();
+            }
+        }
+    };
+
     (opt: $result:expr, $template:expr) => {
         match $result.await {
             Ok(Some(r)) => r,

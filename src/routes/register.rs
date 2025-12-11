@@ -2,7 +2,7 @@ use axum::{
     extract::{Form, Path, State},
     response::{IntoResponse, Redirect},
 };
-use axum_extra::extract::CookieJar;
+use axum_extra::{TypedHeader, extract::CookieJar, headers::UserAgent};
 use imkitchen_shared::Metadata;
 use imkitchen_user::RegisterInput;
 use serde::Deserialize;
@@ -46,6 +46,8 @@ pub struct ActionInput {
 pub async fn action(
     template: Template,
     State(app): State<AppState>,
+    TypedHeader(user_agent): TypedHeader<UserAgent>,
+    jar: CookieJar,
     Form(mut input): Form<ActionInput>,
 ) -> impl IntoResponse {
     if input.password != input.confirm_password {
@@ -64,31 +66,44 @@ pub async fn action(
         input.password = app.config.root.password;
     }
 
-    let id = crate::try_response!(
+    let login = crate::try_response!(
         app.user_command.register(
             RegisterInput {
                 email: input.email.to_owned(),
                 password: input.password.to_owned(),
                 lang: template.preferred_language_iso.to_owned(),
                 timezone: template.timezone.to_owned(),
+                user_agent: user_agent.to_string(),
             },
             &Metadata::default()
         ),
         template
     );
 
-    template
-        .render(RegisterButtonTemplate {
-            id: &id,
-            status: Status::Pending,
+    let auth_cookie = crate::try_response!(sync anyhow:
+        build_cookie(app.config.jwt, login.id.to_owned(), login.revision.to_owned()),
+        template,
+        Some(RegisterButtonTemplate {
+            id: &login.user_id,
+            status: Status::Idle
         })
+    );
+
+    let jar = jar.add(auth_cookie);
+
+    (
+        jar,
+        template.render(RegisterButtonTemplate {
+            id: &login.user_id,
+            status: Status::Pending,
+        }),
+    )
         .into_response()
 }
 
 pub async fn status(
     template: Template,
     State(app): State<AppState>,
-    jar: CookieJar,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
     let user = crate::try_response!(anyhow:
@@ -99,32 +114,21 @@ pub async fn status(
 
     match (user.item.status, user.item.failed_reason) {
         (imkitchen_user::Status::Idle, _) => {
-            if user.item.email == app.config.root.email {
-                crate::try_response!(
-                    app.user_command
-                        .made_admin(&user.event.aggregator_id, &Metadata::default()),
-                    template,
-                    Some(RegisterButtonTemplate {
-                        id: &id,
-                        status: Status::Checking
-                    })
-                );
-
-                return Redirect::to("/login").into_response();
+            if user.item.email != app.config.root.email {
+                return Redirect::to("/").into_response();
             }
 
-            let auth_cookie = crate::try_response!(sync anyhow:
-                build_cookie(app.config.jwt, id.to_owned()),
+            crate::try_response!(
+                app.user_command
+                    .made_admin(&user.event.aggregator_id, &Metadata::default()),
                 template,
                 Some(RegisterButtonTemplate {
                     id: &id,
-                    status: Status::Idle
+                    status: Status::Checking
                 })
             );
 
-            let jar = jar.add(auth_cookie);
-
-            (jar, Redirect::to("/")).into_response()
+            Redirect::to("/login").into_response()
         }
         (imkitchen_user::Status::Failed, Some(reason)) => crate::try_response!(sync:
             Err(imkitchen_shared::Error::Server(reason)),

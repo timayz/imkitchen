@@ -19,7 +19,7 @@ use crate::{
 #[template(path = "recipes-index.html")]
 pub struct IndexTemplate {
     pub current_path: String,
-    pub user: imkitchen_user::AuthUser,
+    pub user: AuthUser,
     pub stat: UserStat,
     pub recipes: ReadResult<RecipeListRow>,
     pub query: PageQuery,
@@ -29,7 +29,7 @@ impl Default for IndexTemplate {
     fn default() -> Self {
         Self {
             current_path: "recipes".to_owned(),
-            user: imkitchen_user::AuthUser::default(),
+            user: AuthUser::default(),
             stat: UserStat::default(),
             recipes: ReadResult::default(),
             query: Default::default(),
@@ -51,7 +51,7 @@ pub struct PageQuery {
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn page(
     template: Template,
-    AuthUser(user): AuthUser,
+    user: AuthUser,
     State(app): State<AppState>,
     Query(input): Query<PageQuery>,
 ) -> impl IntoResponse {
@@ -108,7 +108,7 @@ pub struct CreateButtonTemplate<'a> {
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn create(
     template: Template,
-    AuthUser(user): AuthUser,
+    user: AuthUser,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
     let id = crate::try_response!(
@@ -127,7 +127,7 @@ pub async fn create(
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn create_status(
     template: Template,
-    AuthUser(user): AuthUser,
+    user: AuthUser,
     Path((id,)): Path<(String,)>,
     State(app): State<AppState>,
 ) -> impl IntoResponse {

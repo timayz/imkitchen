@@ -40,23 +40,28 @@ pub async fn create_users(
     state: &TestState,
     names: impl IntoIterator<Item = impl Into<String>>,
 ) -> anyhow::Result<Vec<String>> {
-    let command = imkitchen_user::Command(state.evento.clone(), state.pool.clone());
+    let command = imkitchen_user::Command {
+        evento: state.evento.clone(),
+        read_db: state.pool.clone(),
+        write_db: state.pool.clone(),
+    };
 
     let mut ids = vec![];
     for name in names.into_iter() {
         let name = name.into();
-        let id = command
+        let login = command
             .register(
                 RegisterInput {
                     email: format!("{name}@imkitchen.localhost"),
                     password: "my_password".to_owned(),
                     lang: "en".to_owned(),
                     timezone: "UTC".to_owned(),
+                    user_agent: "".to_owned(),
                 },
                 &Metadata::default(),
             )
             .await?;
-        ids.push(id);
+        ids.push(login.user_id);
     }
 
     subscribe_command()

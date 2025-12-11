@@ -16,7 +16,11 @@ pub async fn set_role(
     // Set up database connection pool with optimized PRAGMAs
     let pool = imkitchen::create_pool(&config.database.url, 1).await?;
     let evento: evento::Sqlite = pool.clone().into();
-    let command = imkitchen_user::Command(evento, pool.clone());
+    let command = imkitchen_user::Command {
+        evento,
+        read_db: pool.clone(),
+        write_db: pool.clone(),
+    };
     let metadata = Metadata::default();
 
     let Some(user) = command.find_by_email(&email).await? else {

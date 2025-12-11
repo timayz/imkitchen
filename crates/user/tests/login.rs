@@ -9,7 +9,11 @@ async fn test_login_failure() -> anyhow::Result<()> {
     let dir = TempDir::new()?;
     let path = dir.child("db.sqlite3");
     let state = helpers::setup_test_state(path).await?;
-    let command = imkitchen_user::Command(state.evento.clone(), state.pool.clone());
+    let command = imkitchen_user::Command {
+        evento: state.evento.clone(),
+        read_db: state.pool.clone(),
+        write_db: state.pool.clone(),
+    };
     let metadata = Metadata::default();
     let resp = command
         .login(
@@ -18,6 +22,7 @@ async fn test_login_failure() -> anyhow::Result<()> {
                 password: "my_password".to_owned(),
                 lang: "en".to_owned(),
                 timezone: "UTC".to_owned(),
+                user_agent: "".to_owned(),
             },
             &metadata,
         )
@@ -37,6 +42,7 @@ async fn test_login_failure() -> anyhow::Result<()> {
                 password: "my_password3".to_owned(),
                 lang: "en".to_owned(),
                 timezone: "UTC".to_owned(),
+                user_agent: "".to_owned(),
             },
             &metadata,
         )
@@ -54,6 +60,7 @@ async fn test_login_failure() -> anyhow::Result<()> {
                 password: "my_password".to_owned(),
                 lang: "en".to_owned(),
                 timezone: "UTC".to_owned(),
+                user_agent: "".to_owned(),
             },
             &metadata,
         )
@@ -71,12 +78,13 @@ async fn test_login_failure() -> anyhow::Result<()> {
                 password: "my_password".to_owned(),
                 lang: "en".to_owned(),
                 timezone: "UTC".to_owned(),
+                user_agent: "".to_owned(),
             },
             &metadata,
         )
         .await;
 
-    assert_eq!(resp.unwrap(), user);
+    assert_eq!(resp.unwrap().user_id, user);
 
     subscribe_command()
         .data(state.pool.clone())

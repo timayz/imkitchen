@@ -14,10 +14,10 @@ pub struct AccountTemplate {
     // pub error_message: Option<String>,
     pub current_path: String,
     pub profile_path: String,
-    pub user: imkitchen_user::AuthUser,
+    pub user: AuthUser,
 }
 
-pub async fn page(template: Template, AuthUser(user): AuthUser) -> impl IntoResponse {
+pub async fn page(template: Template, user: AuthUser) -> impl IntoResponse {
     template.render(AccountTemplate {
         // error_message: None,
         current_path: "profile".to_owned(),

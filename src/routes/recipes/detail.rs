@@ -29,7 +29,7 @@ pub struct DeleteButtonTemplate<'a> {
 #[template(path = "recipes-detail.html")]
 pub struct DetailTemplate {
     pub current_path: String,
-    pub user: imkitchen_user::AuthUser,
+    pub user: AuthUser,
     pub recipe: RecipeRow,
 }
 
@@ -37,7 +37,7 @@ impl Default for DetailTemplate {
     fn default() -> Self {
         Self {
             current_path: "recipes".to_owned(),
-            user: imkitchen_user::AuthUser::default(),
+            user: AuthUser::default(),
             recipe: RecipeRow::default(),
         }
     }
@@ -46,7 +46,7 @@ impl Default for DetailTemplate {
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn page(
     template: Template,
-    AuthUser(user): AuthUser,
+    user: AuthUser,
     Path((id,)): Path<(String,)>,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
@@ -69,7 +69,7 @@ pub async fn page(
 pub async fn delete_action(
     template: Template,
     State(app): State<AppState>,
-    AuthUser(user): AuthUser,
+    user: AuthUser,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
     let recipe = crate::try_response!(anyhow_opt:
@@ -103,7 +103,7 @@ pub async fn delete_action(
 pub async fn delete_status(
     template: Template,
     State(app): State<AppState>,
-    AuthUser(user): AuthUser,
+    user: AuthUser,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
     match crate::try_response!(anyhow:

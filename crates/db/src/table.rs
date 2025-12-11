@@ -1,13 +1,23 @@
 use sea_query::Iden;
 
 #[derive(Iden, Clone)]
-pub enum UserAuth {
+pub enum User {
     Table,
     Id,
     Email,
     Role,
     State,
     SubscriptionExpireAt,
+    CreatedAt,
+}
+
+#[derive(Iden, Clone)]
+pub enum UserLogin {
+    Table,
+    Id,
+    UserId,
+    Revision,
+    UserAgent,
     CreatedAt,
 }
 

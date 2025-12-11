@@ -24,7 +24,11 @@ pub async fn serve(
     let read_pool = imkitchen::create_read_pool(&config.database.url, read_pool_size).await?;
 
     let evento_executor: evento::Sqlite = write_pool.clone().into();
-    let user_command = imkitchen_user::Command(evento_executor.clone(), read_pool.clone());
+    let user_command = imkitchen_user::Command {
+        evento: evento_executor.clone(),
+        read_db: read_pool.clone(),
+        write_db: write_pool.clone(),
+    };
     let user_subscription_command =
         imkitchen_user::subscription::Command(evento_executor.clone(), read_pool.clone());
     let user_meal_preference_command =
