@@ -1,6 +1,6 @@
 [package]
 name = "imkitchen-mealplan"
-version = "0.12.2"
+version = "0.12.3"
 edition.workspace = true
 authors.workspace = true
 
@@ -18,17 +18,17 @@ serde.workspace = true
 serde_json = { workspace = true, optional = true }
 sea-query.workspace = true
 sea-query-sqlx.workspace = true
-imkitchen-shared = { path = "../shared", version = "0.12.2" }
-imkitchen-db = { path = "../db", version = "0.12.2", optional = true }
-imkitchen-recipe = { path = "../recipe", version = "0.12.2", default-features = false, optional = true }
-imkitchen-user = { path = "../user", version = "0.12.2", default-features = false, features = ["imkitchen-recipe"], optional = true }
+imkitchen-shared = { path = "../shared", version = "0.12.3" }
+imkitchen-db = { path = "../db", version = "0.12.3", optional = true }
+imkitchen-recipe = { path = "../recipe", version = "0.12.3", default-features = false, optional = true }
+imkitchen-user = { path = "../user", version = "0.12.3", default-features = false, features = ["imkitchen-recipe"], optional = true }
 
 [dev-dependencies]
 tokio.workspace = true
 temp-dir.workspace = true
 futures.workspace = true
 time = { workspace = true, features = ["formatting", "macros"] }
-imkitchen-recipe = { path = "../recipe", version = "0.12.2", features = ["default"] }
+imkitchen-recipe = { path = "../recipe", version = "0.12.3", features = ["default"] }
 
 [features]
 default = ["full", "imkitchen-recipe", "imkitchen-user"]
