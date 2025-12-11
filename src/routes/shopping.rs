@@ -4,7 +4,7 @@ use axum::{
     extract::{Json, Path, State},
     response::IntoResponse,
 };
-use imkitchen_mealplan::WeekListRow;
+use imkitchen_mealplan::{WeekListRow, WeekRow};
 use imkitchen_recipe::{Ingredient, IngredientUnitFormat};
 use imkitchen_shared::Metadata;
 use imkitchen_shopping::{ListWeekRow, ToggleInput};
@@ -23,7 +23,7 @@ pub struct ShoppingTemplate {
     pub user: AuthUser,
     pub weeks: Vec<WeekListRow>,
     pub current: Option<ListWeekRow>,
-    pub recipes: Option<HashSet<String>>,
+    pub recipes: Option<Vec<String>>,
     pub checked: Option<HashSet<String>>,
     pub ingredients: Option<Vec<(String, Vec<Ingredient>)>>,
     pub index: u8,
@@ -65,40 +65,11 @@ pub async fn page(
     let current = match weeks.get((index - 1) as usize) {
         Some(week) => {
             crate::try_page_response!(app.shopping_query.next_from(week.start, &user.id), template)
-                .map(|mut r| {
-                    r.ingredients.sort_by_key(|i| i.name.to_owned());
-                    r
-                })
         }
         _ => None,
     };
 
-    let ingredients = current.as_ref().map(|r| {
-        let mut categories = HashMap::new();
-
-        for ingredient in r.ingredients.iter() {
-            match &ingredient.category {
-                Some(c) => {
-                    let entry = categories.entry(format!("shopping_{c}")).or_insert(vec![]);
-                    entry.push(ingredient.clone());
-                }
-                _ => {
-                    let entry = categories
-                        .entry("shopping_Unknown".to_owned())
-                        .or_insert(vec![]);
-                    entry.push(ingredient.clone());
-                }
-            };
-        }
-
-        let mut categories = categories
-            .into_iter()
-            .collect::<Vec<(String, Vec<Ingredient>)>>();
-
-        categories.sort_by_key(|(k, _)| k.to_owned());
-
-        categories
-    });
+    let ingredients = current.as_ref().map(|r| to_categories(&r.ingredients.0));
 
     let checked = match weeks.get((index - 1) as usize) {
         Some(week) => crate::try_page_response!(app.shopping_command.load(&user.id), template)
@@ -112,26 +83,7 @@ pub async fn page(
                 .find_from_unix_timestamp(week.start, &user.id),
             template
         )
-        .and_then(|week| {
-            let mut recipes = HashSet::new();
-            for slot in week.slots.iter() {
-                recipes.insert(format!("🍛 {}", slot.main_course.name));
-
-                if let Some(ref r) = slot.appetizer {
-                    recipes.insert(format!("🥗 {}", r.name));
-                }
-
-                if let Some(ref r) = slot.accompaniment {
-                    recipes.insert(format!("🍚 {}", r.name));
-                }
-
-                if let Some(ref r) = slot.dessert {
-                    recipes.insert(format!("🍰 {}", r.name));
-                }
-            }
-
-            Some(recipes)
-        }),
+        .and_then(|week| Some(to_recipes(week))),
         _ => None,
     };
 
@@ -162,38 +114,8 @@ pub async fn toggle_action(
     Path((week,)): Path<(u64,)>,
     Json(input): Json<ToggleJson>,
 ) -> impl IntoResponse {
-    let current = crate::try_page_response!(app.shopping_query.next_from(week, &user.id), template)
-        .map(|mut r| {
-            r.ingredients.sort_by_key(|i| i.name.to_owned());
-            r
-        });
-
-    let ingredients = current.as_ref().map(|r| {
-        let mut categories = HashMap::new();
-
-        for ingredient in r.ingredients.iter() {
-            match &ingredient.category {
-                Some(c) => {
-                    let entry = categories.entry(format!("shopping_{c}")).or_insert(vec![]);
-                    entry.push(ingredient.clone());
-                }
-                _ => {
-                    let entry = categories
-                        .entry("shopping_Unknown".to_owned())
-                        .or_insert(vec![]);
-                    entry.push(ingredient.clone());
-                }
-            };
-        }
-
-        let mut categories = categories
-            .into_iter()
-            .collect::<Vec<(String, Vec<Ingredient>)>>();
-
-        categories.sort_by_key(|(k, _)| k.to_owned());
-
-        categories
-    });
+    let current = crate::try_page_response!(app.shopping_query.next_from(week, &user.id), template);
+    let ingredients = current.as_ref().map(|r| to_categories(&r.ingredients.0));
 
     let checked = if current.is_some() {
         crate::try_response!(
@@ -230,11 +152,13 @@ pub async fn reset_all_action(
     State(app): State<AppState>,
     Path((week,)): Path<(u64,)>,
 ) -> impl IntoResponse {
-    let current = crate::try_page_response!(app.shopping_query.next_from(week, &user.id), template)
-        .map(|mut r| {
-            r.ingredients.sort_by_key(|i| i.name.to_owned());
-            r
-        });
+    let current = crate::try_page_response!(app.shopping_query.next_from(week, &user.id), template);
+    let ingredients = current.as_ref().map(|r| to_categories(&r.ingredients.0));
+    let recipes = crate::try_page_response!(
+        app.mealplan_query.find_from_unix_timestamp(week, &user.id),
+        template
+    )
+    .and_then(|week| Some(to_recipes(week)));
 
     if current.is_some() {
         crate::try_response!(
@@ -248,7 +172,62 @@ pub async fn reset_all_action(
         .render(ShoppingTemplate {
             user,
             current,
+            ingredients,
+            recipes,
             ..Default::default()
         })
         .into_response()
+}
+
+fn to_categories(ingredients: &[Ingredient]) -> Vec<(String, Vec<Ingredient>)> {
+    let mut categories = HashMap::new();
+    let mut ingredients = ingredients.to_vec();
+    ingredients.sort_by_key(|i| i.name.to_owned());
+
+    for ingredient in ingredients.iter() {
+        match &ingredient.category {
+            Some(c) => {
+                let entry = categories.entry(format!("shopping_{c}")).or_insert(vec![]);
+                entry.push(ingredient.clone());
+            }
+            _ => {
+                let entry = categories
+                    .entry("shopping_Unknown".to_owned())
+                    .or_insert(vec![]);
+                entry.push(ingredient.clone());
+            }
+        };
+    }
+
+    let mut categories = categories
+        .into_iter()
+        .collect::<Vec<(String, Vec<Ingredient>)>>();
+
+    categories.sort_by_key(|(k, _)| k.to_owned());
+
+    categories
+}
+
+fn to_recipes(week: WeekRow) -> Vec<String> {
+    let mut recipes = HashSet::new();
+    for slot in week.slots.iter() {
+        recipes.insert(format!("🍛 {}", slot.main_course.name));
+
+        if let Some(ref r) = slot.appetizer {
+            recipes.insert(format!("🥗 {}", r.name));
+        }
+
+        if let Some(ref r) = slot.accompaniment {
+            recipes.insert(format!("🍚 {}", r.name));
+        }
+
+        if let Some(ref r) = slot.dessert {
+            recipes.insert(format!("🍰 {}", r.name));
+        }
+    }
+
+    let mut recipes = recipes.into_iter().collect::<Vec<_>>();
+    recipes.sort();
+
+    recipes
 }
