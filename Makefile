@@ -34,6 +34,9 @@ reset:
 migrate:
 	cargo run migrate
 
+clean:
+	cargo clean -p imkitchen
+
 # Run Clippy linter for code quality
 lint:
 	cargo clippy --workspace --all-targets --all-features -- -D warnings
