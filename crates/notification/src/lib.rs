@@ -1,14 +1,10 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+mod contact;
+mod service;
+pub(crate) mod template;
+mod user;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub use contact::*;
+pub use service::*;
+pub use user::*;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+rust_i18n::i18n!("locales", fallback = "en");

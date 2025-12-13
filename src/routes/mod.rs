@@ -1,4 +1,8 @@
-use axum::{Router, response::IntoResponse, routing::post};
+use axum::{
+    Router,
+    response::IntoResponse,
+    routing::{get, post},
+};
 use sqlx::SqlitePool;
 
 use crate::template::{NotFoundTemplate, Template};
@@ -23,14 +27,13 @@ mod service_worker;
 mod shopping;
 mod terms;
 
-use axum::routing::get;
-
 #[derive(Clone)]
 pub struct AppState {
     pub config: crate::config::Config,
     pub user_command: imkitchen_user::Command<evento::Sqlite>,
     pub user_subscription_command: imkitchen_user::subscription::Command<evento::Sqlite>,
     pub user_meal_preference_command: imkitchen_user::meal_preferences::Command<evento::Sqlite>,
+    pub user_reset_password_command: imkitchen_user::reset_password::Command<evento::Sqlite>,
     pub user_query: imkitchen_user::Query,
     pub contact_command: imkitchen_contact::Command<evento::Sqlite>,
     pub contact_query: imkitchen_contact::Query,
@@ -66,7 +69,14 @@ pub fn router(app_state: AppState) -> Router {
             "/login",
             get(login::page).post(crate::routes::login::action),
         )
-        .route("/reset-password", get(reset_password::page))
+        .route(
+            "/reset-password",
+            get(reset_password::page).post(reset_password::action),
+        )
+        .route(
+            "/reset-password/new/{id}",
+            get(reset_password::new_page).post(reset_password::new_action),
+        )
         .route(
             "/calendar/regenerate",
             get(calendar::regenerate_modal).post(calendar::regenerate_action),

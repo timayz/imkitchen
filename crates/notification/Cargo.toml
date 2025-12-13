@@ -5,3 +5,14 @@ edition.workspace = true
 authors.workspace = true
 
 [dependencies]
+askama = { workspace = true }
+lettre = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+serde = { workspace = true }
+rust-i18n = { workspace = true }
+time = { workspace = true }
+evento.workspace = true
+imkitchen-user = { path = "../user", version = "0.12.4", default-features = false }
+imkitchen-shared = { path = "../shared", version = "0.12.4", default-features = false }
+imkitchen-contact = { path = "../contact", version = "0.12.4", default-features = false }

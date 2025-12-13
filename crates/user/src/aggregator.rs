@@ -3,7 +3,7 @@ use imkitchen_shared::Event;
 
 use crate::{
     Activated, LoggedIn, MadeAdmin, RegistrationFailed, RegistrationRequested,
-    RegistrationSucceeded, Role, State, Status, Suspended,
+    RegistrationSucceeded, Role, State, Status, Suspended, reset_password::Resetted,
 };
 
 #[derive(Default, Encode, Decode, Clone, Debug)]
@@ -50,6 +50,12 @@ impl User {
     }
 
     async fn handle_logged_in(&mut self, _event: Event<LoggedIn>) -> anyhow::Result<()> {
+        Ok(())
+    }
+
+    async fn handle_password_resetted(&mut self, event: Event<Resetted>) -> anyhow::Result<()> {
+        self.password_hash = event.data.password_hash;
+
         Ok(())
     }
 

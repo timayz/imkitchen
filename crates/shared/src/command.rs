@@ -51,6 +51,12 @@ impl From<std::time::SystemTimeError> for Error {
     }
 }
 
+impl From<std::num::TryFromIntError> for Error {
+    fn from(value: std::num::TryFromIntError) -> Self {
+        Self::Unknown(value.into())
+    }
+}
+
 #[macro_export]
 macro_rules! bail {
     ($msg:literal $(,)?) => {

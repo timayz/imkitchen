@@ -9,6 +9,7 @@ pub struct FormSubmitted {
     pub email: String,
     pub subject: Subject,
     pub message: String,
+    pub to: String,
     pub status: Status,
 }
 

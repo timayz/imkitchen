@@ -1,4 +1,5 @@
 use config::{Config as ConfigBuilder, ConfigError, Environment, File};
+use imkitchen_notification::EmailConfig;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone)]
@@ -7,7 +8,7 @@ pub struct Config {
     pub database: DatabaseConfig,
     pub jwt: JwtConfig,
     pub root: RootConfig,
-    // pub email: EmailConfig,
+    pub email: EmailConfig,
     // pub stripe: StripeConfig,
     pub features: FeaturesConfig,
     pub monitoring: MonitoringConfig,
@@ -26,18 +27,9 @@ pub struct FeaturesConfig {
     pub premium: bool,
 }
 
-// #[derive(Debug, Deserialize, Clone)]
-// pub struct EmailConfig {
-//     pub smtp_host: String,
-//     pub smtp_port: u16,
-//     pub smtp_username: String,
-//     pub smtp_password: String,
-//     pub from_address: String,
-// }
-
 #[derive(Debug, Deserialize, Clone)]
 pub struct ServerConfig {
-    // pub url: String,
+    pub url: String,
     pub host: String,
     pub port: u16,
 }
@@ -79,7 +71,7 @@ impl Config {
     pub fn load(config_path: Option<String>) -> Result<Self, ConfigError> {
         let config_path = config_path.unwrap_or_else(|| "imkitchen.toml".to_string());
         ConfigBuilder::builder()
-            .set_default("server.url", "https://inkitchen.localhost")?
+            .set_default("server.url", "https://imkitchen.localhost")?
             .set_default("server.host", "0.0.0.0")?
             .set_default("server.port", 3000)?
             .set_default("root.email", "root@imkitchen.localhost")?
@@ -103,6 +95,7 @@ impl Config {
             .set_default("email.smtp_username", "")?
             .set_default("email.smtp_password", "")?
             .set_default("email.from_address", "no-reply@imkitchen.localhost")?
+            .set_default("email.contact_address", "contact@imkitchen.localhost")?
             .add_source(File::with_name(&config_path).required(false))
             .add_source(Environment::with_prefix("imkitchen").separator("_"))
             .build()?

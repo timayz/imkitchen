@@ -18,6 +18,7 @@ use crate::{
     Activated, LoggedIn, MadeAdmin, RegistrationFailed, RegistrationRequested,
     RegistrationSucceeded, Role, State, Status, Suspended, User,
     meal_preferences::{self, UserMealPreferences},
+    reset_password::{self, Resetted, UserResetPassword},
     subscription::{LifePremiumToggled, UserSubscription},
 };
 use imkitchen_db::table::{User as UserIden, UserLogin};
@@ -379,11 +380,14 @@ pub fn subscribe_command<E: Executor + Clone>() -> SubscribeBuilder<E> {
         .handler(handle_suspended())
         .handler(handle_made_admin())
         .handler(handle_life_premium_toggled())
+        .handler(handle_reset_password_resetted())
         .skip::<User, RegistrationSucceeded>()
+        .skip::<User, reset_password::Resetted>()
         .skip::<User, RegistrationFailed>()
         .skip::<User, LoggedIn>()
         .skip::<UserMealPreferences, meal_preferences::Created>()
         .skip::<UserMealPreferences, meal_preferences::Updated>()
+        .skip::<UserResetPassword, reset_password::ResetRequested>()
 }
 
 #[evento::handler(User)]
@@ -509,6 +513,31 @@ async fn handle_life_premium_toggled<E: Executor>(
         .table(UserIden::Table)
         .values([(UserIden::SubscriptionExpireAt, event.data.expire_at.into())])
         .and_where(Expr::col(UserIden::Id).eq(event.aggregator_id.to_owned()))
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
+}
+
+#[evento::handler(UserResetPassword)]
+async fn handle_reset_password_resetted<E: Executor>(
+    context: &evento::Context<'_, E>,
+    event: Event<Resetted>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+
+    let id = event.metadata.trigger_by()?;
+    evento::save::<User>(&id)
+        .data(&event.data)?
+        .metadata(&event.metadata)?
+        .commit(context.executor)
+        .await?;
+
+    let statement = Query::delete()
+        .from_table(UserLogin::Table)
+        .and_where(Expr::col(UserLogin::UserId).eq(id))
         .to_owned();
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
