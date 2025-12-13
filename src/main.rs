@@ -2,7 +2,6 @@ mod assets;
 mod auth;
 mod cli;
 mod config;
-// mod email;
 mod language;
 mod middleware;
 mod routes;

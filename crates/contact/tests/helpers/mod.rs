@@ -48,6 +48,7 @@ pub async fn create_submit_all(
         let id = command
             .submit_contact_form(
                 SubmitContactFormInput {
+                    to: "contact@imkitchen.localhost".to_owned(),
                     email: format!("{name}@imkitchen.localhost"),
                     name: "my name".to_owned(),
                     subject: Subject::Other,

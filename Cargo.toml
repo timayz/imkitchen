@@ -22,7 +22,7 @@ sqlx_migrator = { version = "0.18", features = ["sqlite"] }
 evento = { version = "1.7", features = ["sqlite"] }
 argon2 = { version = "0.5", features = ["std"] }
 jsonwebtoken = { version = "10.1", features = ["aws_lc_rs"] }
-lettre = { version = "0.11", features = ["tokio1-native-tls", "builder"] }
+lettre = { version = "0.11", features = ["rustls-tls", "builder"] }
 async-stripe = { version = "0.41", features = ["runtime-tokio-hyper", "webhook-events"] }
 validator = { version = "0.20", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"] }
@@ -97,6 +97,7 @@ imkitchen-mealplan = { path = "crates/mealplan", version = "0.12.5" }
 imkitchen-shopping = { path = "crates/shopping", version = "0.12.5" }
 imkitchen-user = { path = "crates/user", version = "0.12.5" }
 imkitchen-db = { path = "crates/db", version = "0.12.5" }
+imkitchen-notification = { path = "crates/notification", version = "0.12.5" }
 
 [dev-dependencies]
 http-body-util = "0.1"

@@ -1,4 +1,5 @@
 use anyhow::Result;
+use imkitchen_notification::EmailService;
 use tower_http::{compression::CompressionLayer, trace::TraceLayer};
 
 use crate::routes::AppState;
@@ -13,6 +14,8 @@ pub async fn serve(
     // Use CLI overrides if provided, otherwise use config
     let host = host_override.unwrap_or(config.server.host.to_owned());
     let port = port_override.unwrap_or(config.server.port);
+
+    let email_service = EmailService::new(&config.email)?;
 
     // Set up database connection pools with optimized PRAGMAs
     // Write pool: 1 connection for evento and all write operations
@@ -33,6 +36,8 @@ pub async fn serve(
         imkitchen_user::subscription::Command(evento_executor.clone(), read_pool.clone());
     let user_meal_preference_command =
         imkitchen_user::meal_preferences::Command(evento_executor.clone(), read_pool.clone());
+    let user_reset_password_command =
+        imkitchen_user::reset_password::Command(evento_executor.clone(), read_pool.clone());
     let user_query = imkitchen_user::Query(read_pool.clone());
     let contact_command = imkitchen_contact::Command(evento_executor.clone(), read_pool.clone());
     let contact_query = imkitchen_contact::Query(read_pool.clone());
@@ -45,6 +50,16 @@ pub async fn serve(
 
     // Start background notification worker
     tracing::info!("Starting evento subscriptions...");
+
+    let sub_notification_contact = imkitchen_notification::subscribe_contact()
+        .data(email_service.clone())
+        .unretry_run(&evento_executor)
+        .await?;
+
+    let sub_notification_user = imkitchen_notification::subscribe_user()
+        .data(email_service)
+        .unretry_run(&evento_executor)
+        .await?;
 
     let sub_user_command = imkitchen_user::subscribe_command()
         .data(write_pool.clone())
@@ -115,6 +130,7 @@ pub async fn serve(
         user_command,
         user_subscription_command,
         user_meal_preference_command,
+        user_reset_password_command,
         user_query,
         contact_command,
         contact_query,
@@ -187,6 +203,8 @@ pub async fn serve(
 
     // Shutdown all projection subscriptions
     let results = futures::future::join_all(vec![
+        sub_notification_contact.shutdown_and_wait(),
+        sub_notification_user.shutdown_and_wait(),
         sub_user_command.shutdown_and_wait(),
         sub_user_stat.shutdown_and_wait(),
         sub_user_list.shutdown_and_wait(),

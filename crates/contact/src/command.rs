@@ -27,6 +27,8 @@ impl<E: Executor + Clone> Command<E> {
 #[derive(Validate)]
 pub struct SubmitContactFormInput {
     #[validate(email)]
+    pub to: String,
+    #[validate(email)]
     pub email: String,
     #[validate(length(min = 1, max = 25))]
     pub name: String,
@@ -45,6 +47,7 @@ impl<E: Executor + Clone> Command<E> {
 
         Ok(evento::create::<Contact>()
             .data(&FormSubmitted {
+                to: input.to,
                 name: input.name,
                 email: input.email,
                 subject: input.subject,
