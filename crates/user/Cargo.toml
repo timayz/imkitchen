@@ -1,6 +1,6 @@
 [package]
 name = "imkitchen-user"
-version = "0.12.5"
+version = "0.12.6"
 edition.workspace = true
 authors.workspace = true
 
@@ -18,9 +18,9 @@ sea-query.workspace = true
 sea-query-sqlx.workspace = true
 cfg-if.workspace = true
 serde.workspace = true
-imkitchen-shared = { path = "../shared", version = "0.12.5" }
-imkitchen-db = { path = "../db", version = "0.12.5", optional = true }
-imkitchen-recipe = { path = "../recipe", version = "0.12.5", default-features = false, optional = true }
+imkitchen-shared = { path = "../shared", version = "0.12.6" }
+imkitchen-db = { path = "../db", version = "0.12.6", optional = true }
+imkitchen-recipe = { path = "../recipe", version = "0.12.6", default-features = false, optional = true }
 
 [dev-dependencies]
 tokio.workspace = true

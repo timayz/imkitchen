@@ -1,6 +1,6 @@
 [package]
 name = "imkitchen-notification"
-version = "0.12.5"
+version = "0.12.6"
 edition.workspace = true
 authors.workspace = true
 
@@ -13,6 +13,6 @@ serde = { workspace = true }
 rust-i18n = { workspace = true }
 time = { workspace = true }
 evento.workspace = true
-imkitchen-user = { path = "../user", version = "0.12.4", features = ["imkitchen-recipe"], default-features = false }
-imkitchen-shared = { path = "../shared", version = "0.12.4", default-features = false }
-imkitchen-contact = { path = "../contact", version = "0.12.4", default-features = false }
+imkitchen-user = { path = "../user", version = "0.12.6", features = ["imkitchen-recipe"], default-features = false }
+imkitchen-shared = { path = "../shared", version = "0.12.6", default-features = false }
+imkitchen-contact = { path = "../contact", version = "0.12.6", default-features = false }
