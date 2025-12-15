@@ -30,18 +30,19 @@ mod terms;
 #[derive(Clone)]
 pub struct AppState {
     pub config: crate::config::Config,
-    pub user_command: imkitchen_user::Command<evento::Sqlite>,
-    pub user_subscription_command: imkitchen_user::subscription::Command<evento::Sqlite>,
-    pub user_meal_preference_command: imkitchen_user::meal_preferences::Command<evento::Sqlite>,
-    pub user_reset_password_command: imkitchen_user::reset_password::Command<evento::Sqlite>,
+    pub user_command: imkitchen_user::Command<evento::sql::RwSqlite>,
+    pub user_subscription_command: imkitchen_user::subscription::Command<evento::sql::RwSqlite>,
+    pub user_meal_preference_command:
+        imkitchen_user::meal_preferences::Command<evento::sql::RwSqlite>,
+    pub user_reset_password_command: imkitchen_user::reset_password::Command<evento::sql::RwSqlite>,
     pub user_query: imkitchen_user::Query,
-    pub contact_command: imkitchen_contact::Command<evento::Sqlite>,
+    pub contact_command: imkitchen_contact::Command<evento::sql::RwSqlite>,
     pub contact_query: imkitchen_contact::Query,
-    pub recipe_command: imkitchen_recipe::Command<evento::Sqlite>,
+    pub recipe_command: imkitchen_recipe::Command<evento::sql::RwSqlite>,
     pub recipe_query: imkitchen_recipe::Query,
-    pub mealplan_command: imkitchen_mealplan::Command<evento::Sqlite>,
+    pub mealplan_command: imkitchen_mealplan::Command<evento::sql::RwSqlite>,
     pub mealplan_query: imkitchen_mealplan::Query,
-    pub shopping_command: imkitchen_shopping::Command<evento::Sqlite>,
+    pub shopping_command: imkitchen_shopping::Command<evento::sql::RwSqlite>,
     pub shopping_query: imkitchen_shopping::Query,
     pub pool: SqlitePool,
 }

@@ -26,7 +26,7 @@ pub async fn serve(
     let read_pool_size = config.database.max_connections;
     let read_pool = imkitchen::create_read_pool(&config.database.url, read_pool_size).await?;
 
-    let evento_executor: evento::Sqlite = write_pool.clone().into();
+    let evento_executor: evento::sql::RwSqlite = (read_pool.clone(), write_pool.clone()).into();
     let user_command = imkitchen_user::Command {
         evento: evento_executor.clone(),
         read_db: read_pool.clone(),
