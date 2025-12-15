@@ -5,7 +5,7 @@ port = 3000
 
 [root]
 email = "root@imkitchen.localhost"
-password = ""
+password = "imkitchen"
 
 [database]
 url = "sqlite:/var/lib/imkitchen/db.sqlite3"
