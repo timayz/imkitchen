@@ -24,7 +24,8 @@ services:
   # imkitchen-migrate - Database migration init container
   # Runs migrations before the main app starts
   imkitchen-migrate:
-    image: timayz/imkitchen:latest
+    # image: timayz/imkitchen:latest
+    build: .
     pull_policy: always
     container_name: imkitchen-migrate
     command: ["migrate", "--config", "/etc/imkitchen/config.toml"]
@@ -40,7 +41,8 @@ services:
   # imkitchen - Main application
   # Access web UI at: http://localhost:3000
   imkitchen:
-    image: timayz/imkitchen:latest
+    # image: timayz/imkitchen:latest
+    build: .
     pull_policy: always
     container_name: imkitchen-app
     command: ["serve", "--config", "/etc/imkitchen/config.toml"]
