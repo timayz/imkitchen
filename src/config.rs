@@ -97,7 +97,7 @@ impl Config {
             .set_default("email.from_address", "no-reply@imkitchen.localhost")?
             .set_default("email.contact_address", "contact@imkitchen.localhost")?
             .add_source(File::with_name(&config_path).required(false))
-            .add_source(Environment::with_prefix("imkitchen").separator("_"))
+            .add_source(Environment::with_prefix("imkitchen").separator("__"))
             .build()?
             .try_deserialize()
     }
