@@ -1,16 +1,21 @@
 [server]
+url = "https://imkitchen.localhost"
 host = "0.0.0.0"
 port = 3000
 
+[root]
+email = "admin@imkitchen.app"
+password = ""
+
 [database]
 url = "sqlite:/var/lib/imkitchen/db.sqlite3"
-max_connections = 5
+max_connections = 10
 
 [jwt]
 audience = "https://imkitchen.localhost"
 issuer = "imkitchen.localhost"
 secret = "TOKEN-NOT-SECURE-MUST-BE-CHANGE"
-expiration_days = 7
+expiration_days = 14
 
 [features]
 premium = true
@@ -20,4 +25,14 @@ log_level = "info"
 log_json = false
 log_target = true
 log_line_number = true
+
+[email]
+smtp_host = "maildev"
+smtp_port ="1080"
+smtp_username = ""
+smtp_password = ""
+from_address = "no-reply@imkitchen.localhost"
+contact_address = "contact@imkitchen.localhost"
+
+
 
