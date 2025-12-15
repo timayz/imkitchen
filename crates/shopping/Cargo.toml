@@ -1,6 +1,6 @@
 [package]
 name = "imkitchen-shopping"
-version = "0.12.6"
+version = "0.12.7"
 edition.workspace = true
 authors.workspace = true
 
@@ -13,11 +13,11 @@ time = { workspace = true, optional = true }
 cfg-if.workspace = true
 sea-query.workspace = true
 sea-query-sqlx.workspace = true
-imkitchen-shared = { path = "../shared", version = "0.12.6" }
-imkitchen-db = { path = "../db", version = "0.12.6", optional = true }
-imkitchen-recipe = { path = "../recipe", version = "0.12.6", default-features = false, optional = true }
-imkitchen-user = { path = "../user", version = "0.12.6", default-features = false, features = ["imkitchen-recipe"], optional = true }
-imkitchen-mealplan = { path = "../mealplan", version = "0.12.6", default-features = false, features = ["imkitchen-recipe"], optional = true }
+imkitchen-shared = { path = "../shared", version = "0.12.7" }
+imkitchen-db = { path = "../db", version = "0.12.7", optional = true }
+imkitchen-recipe = { path = "../recipe", version = "0.12.7", default-features = false, optional = true }
+imkitchen-user = { path = "../user", version = "0.12.7", default-features = false, features = ["imkitchen-recipe"], optional = true }
+imkitchen-mealplan = { path = "../mealplan", version = "0.12.7", default-features = false, features = ["imkitchen-recipe"], optional = true }
 
 [dev-dependencies]
 tokio.workspace = true

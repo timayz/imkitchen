@@ -1779,7 +1779,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen"
-version = "0.12.6"
+version = "0.12.7"
 dependencies = [
  "anyhow",
  "askama",
@@ -1819,7 +1819,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-contact"
-version = "0.12.6"
+version = "0.12.7"
 dependencies = [
  "anyhow",
  "bincode",
@@ -1840,7 +1840,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-db"
-version = "0.12.6"
+version = "0.12.7"
 dependencies = [
  "async-trait",
  "bincode",
@@ -1852,7 +1852,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-mealplan"
-version = "0.12.6"
+version = "0.12.7"
 dependencies = [
  "anyhow",
  "bincode",
@@ -1878,7 +1878,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-notification"
-version = "0.12.6"
+version = "0.12.7"
 dependencies = [
  "anyhow",
  "askama",
@@ -1895,7 +1895,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-recipe"
-version = "0.12.6"
+version = "0.12.7"
 dependencies = [
  "anyhow",
  "bincode",
@@ -1917,7 +1917,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-shared"
-version = "0.12.6"
+version = "0.12.7"
 dependencies = [
  "anyhow",
  "argon2",
@@ -1932,7 +1932,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-shopping"
-version = "0.12.6"
+version = "0.12.7"
 dependencies = [
  "anyhow",
  "bincode",
@@ -1954,7 +1954,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-user"
-version = "0.12.6"
+version = "0.12.7"
 dependencies = [
  "anyhow",
  "argon2",
