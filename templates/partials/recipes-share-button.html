@@ -1,0 +1,11 @@
+{% if is_shared %}
+<button ts-trigger="click" ts-req="/recipes/{{ id }}/detail/make-private"
+  class="w-full px-4 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">
+    👥 {{ "Make private"|t }}
+</button>
+{% else %}
+<button ts-trigger="click" ts-req="/recipes/{{ id }}/detail/share-to-community"
+  class="w-full px-4 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">
+    👥 {{ "Share to Community"|t }}
+</button>
+{% endif %}

@@ -109,11 +109,19 @@ pub fn router(app_state: AppState) -> Router {
         .route("/recipes/import/{id}/status", get(recipes::import::status))
         .route("/recipes/{id}/detail", get(recipes::detail::page))
         .route(
-            "/recipes/{id}/delete/status",
+            "/recipes/{id}/detail/make-private",
+            get(recipes::detail::make_private_action),
+        )
+        .route(
+            "/recipes/{id}/detail/share-to-community",
+            get(recipes::detail::share_to_community_action),
+        )
+        .route(
+            "/recipes/{id}/detail/delete/status",
             get(recipes::detail::delete_status),
         )
         .route(
-            "/recipes/{id}/delete",
+            "/recipes/{id}/detail/delete",
             get(recipes::detail::delete_modal).post(recipes::detail::delete_action),
         )
         .route(

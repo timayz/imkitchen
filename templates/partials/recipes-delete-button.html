@@ -4,12 +4,12 @@
   class="flex-1 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg">
     <div class="animate-spin rounded-full h-5 w-5 border-2 border-red-200 border-t-red-600 shrink-0 m-auto"></div>
 </button>
-<div ts-swap="append" ts-swap-push="body" ts-trigger="load delay 300ms" ts-req="/recipes/{{ id }}/delete/status"></div>
+<div ts-swap="append" ts-swap-push="body" ts-trigger="load delay 300ms" ts-req="/recipes/{{ id }}/detail/delete/status"></div>
 {% when Status::Checking %}
-<div ts-trigger="load delay 600ms" ts-req="/recipes/{{ id }}/delete/status"></div>
+<div ts-trigger="load delay 600ms" ts-req="/recipes/{{ id }}/detail/delete/status"></div>
 {% when Status::Idle %}
 <div ts-trigger="load" ts-action="remove"></div>
-<button id="delete-button" ts-swap-push="#delete-button" ts-trigger="click" ts-req="/recipes/{{ id }}/delete" ts-req-method="POST"
+<button id="delete-button" ts-swap-push="#delete-button" ts-trigger="click" ts-req="/recipes/{{ id }}/detail/delete" ts-req-method="POST"
   class="flex-1 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700">
     {{ "Delete"|t }}
 </button>

@@ -23,7 +23,7 @@ async fn test_delete() -> anyhow::Result<()> {
 
     let err = command.delete_with(loaded, &john).await.unwrap_err();
 
-    assert_eq!(err.to_string(), "recipe already deleted".to_owned());
+    assert_eq!(err.to_string(), "recipe not found".to_owned());
 
     Ok(())
 }
