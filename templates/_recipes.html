@@ -1,0 +1,70 @@
+{% extends "_user.html" %}
+
+{% block content %}
+    <!-- Main Content with Sidebar -->
+<div class="container mx-auto px-4 py-8">
+  <div class="flex flex-col lg:flex-row gap-6">
+            <!-- Sidebar Navigation -->
+            <div class="lg:w-64 shrink-0">
+                <!-- Mobile: Horizontal tabs -->
+                <div class="lg:hidden flex gap-2 mb-4 overflow-x-auto pb-2">
+                  <a href="/recipes" class="shrink-0 px-4 py-2 {% if recipes_path == "user" %}bg-green-600 text-white{% else %}bg-gray-200 text-gray-700 hover:bg-gray-300{% endif %} font-semibold rounded-lg whitespace-nowrap">
+                        📖 My Recipes
+                    </a>
+                    <a href="/recipes/favorites" class="shrink-0 px-4 py-2 {% if recipes_path == "favorites" %}bg-green-600 text-white{% else %}bg-gray-200 text-gray-700 hover:bg-gray-300{% endif %} font-semibold rounded-lg whitespace-nowrap">
+                        ❤️ Favorites
+                    </a>
+                    <a href="/recipes/community" class="shrink-0 px-4 py-2 {% if recipes_path == "community" %}bg-green-600 text-white{% else %}bg-gray-200 text-gray-700 hover:bg-gray-300{% endif %} font-semibold rounded-lg whitespace-nowrap">
+                        🌍 Community
+                    </a>
+                </div>
+
+                <!-- Desktop: Vertical sidebar -->
+                <div class="hidden lg:block bg-white rounded-lg shadow-lg p-4 sticky top-4">
+                    <h3 class="font-bold text-gray-800 mb-4 text-lg">Recipe Browser</h3>
+
+                    <nav class="space-y-2">
+                      <a href="/recipes" class="w-full flex items-center gap-3 px-4 py-3 {% if recipes_path == "user" %}bg-green-100 text-green-800{% else %}text-gray-700 hover:bg-gray-100{% endif %} font-semibold rounded-lg text-left">
+                            <span class="text-xl">📖</span>
+                            <div>
+                                <div>My Recipes</div>
+                                <div class="text-xs font-normal text-green-600">47 recipes</div>
+                            </div>
+                        </a>
+
+                        <a href="/recipes/favorites" class="w-full flex items-center gap-3 px-4 py-3 {% if recipes_path == "favorites" %}bg-green-100 text-green-800{% else %}text-gray-700 hover:bg-gray-100{% endif %} rounded-lg text-left">
+                            <span class="text-xl">❤️</span>
+                            <div>
+                                <div>Favorites</div>
+                                <div class="text-xs text-gray-500">10 saved</div>
+                            </div>
+                        </a>
+
+                        <a href="/recipes/community" class="w-full flex items-center gap-3 px-4 py-3 {% if recipes_path == "community" %}bg-green-100 text-green-800{% else %}text-gray-700 hover:bg-gray-100{% endif %} rounded-lg text-left">
+                            <span class="text-xl">🌍</span>
+                            <div>
+                                <div>Community</div>
+                                <div class="text-xs text-gray-500">Discover recipes</div>
+                            </div>
+                        </a>
+                    </nav>
+
+                    <!-- Quick Actions -->
+                    <div class="mt-6 pt-6 border-t space-y-2">
+                        <button ts-req="/recipes/create" ts-req-method="post" class="block w-full px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 text-center text-sm">
+                            ✏️ Create Recipe
+                        </button>
+                        <a href="/recipes/import" class="block w-full px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 text-center text-sm">
+                            📥 Import
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content Area -->
+            <div class="flex-1 min-w-0">
+{% block recipes_content %}{% endblock %}
+            </div>
+  </div>
+</div>
+{% endblock %}

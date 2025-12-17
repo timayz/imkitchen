@@ -10,7 +10,6 @@ use crate::template::{NotFoundTemplate, Template};
 mod about;
 mod admin;
 mod calendar;
-mod community;
 mod contact;
 mod health;
 mod help;
@@ -95,12 +94,21 @@ pub fn router(app_state: AppState) -> Router {
             "/calendar/week-{timestamp}/shopping/toggle",
             post(shopping::toggle_action),
         )
-        .route("/community", get(community::page))
         .route("/recipes", get(recipes::index::page))
+        .route("/recipes/community", get(recipes::community::page))
+        .route("/recipes/favorites", get(recipes::favorites::page))
         .route("/recipes/create", post(recipes::index::create))
         .route(
             "/recipes/create/{id}/status",
             get(recipes::index::create_status),
+        )
+        .route(
+            "/recipes/create-mobile",
+            post(recipes::index::create_mobile),
+        )
+        .route(
+            "/recipes/create-mobile/{id}/status",
+            get(recipes::index::create_mobile_status),
         )
         .route(
             "/recipes/import",

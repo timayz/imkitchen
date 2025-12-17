@@ -19,15 +19,14 @@ async fn handle_form_submitted<E: Executor>(
     service
         .send_plain(
             &event.data.to,
-            "New message from contact page",
+            event.data.subject.to_string(),
             format!(
                 r#"
-Email: {}
-Name: {}
-Subject: {}
-Message: {}
+{} <{}>,
+
+{}
             "#,
-                event.data.email, event.data.name, event.data.subject, event.data.message
+                event.data.name, event.data.email, event.data.message
             ),
         )
         .await?;
