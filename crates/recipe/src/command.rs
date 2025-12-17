@@ -7,8 +7,8 @@ use validator::Validate;
 use crate::{
     AdvancePrepChanged, BasicInformationChanged, Created, CuisineType, CuisineTypeChanged, Deleted,
     DietaryRestriction, DietaryRestrictionsChanged, Imported, Ingredient, IngredientsChanged,
-    Instruction, InstructionsChanged, MainCourseOptionsChanged, Recipe, RecipeType,
-    RecipeTypeChanged,
+    Instruction, InstructionsChanged, MadePrivate, MainCourseOptionsChanged, Recipe, RecipeType,
+    RecipeTypeChanged, SharedToCommunity,
 };
 
 #[derive(Clone)]
@@ -119,7 +119,7 @@ impl<E: Executor + Clone> Command<E> {
         let recipe = self.load(&input.id).await?;
 
         if recipe.item.deleted {
-            imkitchen_shared::bail!("Error while updating. Recipe is deleted");
+            imkitchen_shared::bail!("Error while updating. Recipe not found");
         }
 
         let mut builder = evento::save_with::<Recipe>(recipe.clone()).metadata(metadata)?;
@@ -244,13 +244,57 @@ impl<E: Executor + Clone> Command<E> {
         Ok(())
     }
 
+    pub async fn share_to_community_with(
+        &self,
+        recipe: LoadResult<Recipe>,
+        metadata: &Metadata,
+    ) -> imkitchen_shared::Result<()> {
+        if recipe.item.deleted {
+            imkitchen_shared::bail!("recipe not found");
+        }
+
+        if recipe.item.is_shared {
+            return Ok(());
+        }
+
+        evento::save_with(recipe)
+            .data(&SharedToCommunity { shared: true })?
+            .metadata(metadata)?
+            .commit(&self.0)
+            .await?;
+
+        Ok(())
+    }
+
+    pub async fn make_private_with(
+        &self,
+        recipe: LoadResult<Recipe>,
+        metadata: &Metadata,
+    ) -> imkitchen_shared::Result<()> {
+        if recipe.item.deleted {
+            imkitchen_shared::bail!("recipe not found");
+        }
+
+        if !recipe.item.is_shared {
+            return Ok(());
+        }
+
+        evento::save_with(recipe)
+            .data(&MadePrivate { shared: false })?
+            .metadata(metadata)?
+            .commit(&self.0)
+            .await?;
+
+        Ok(())
+    }
+
     pub async fn delete_with(
         &self,
         recipe: LoadResult<Recipe>,
         metadata: &Metadata,
     ) -> imkitchen_shared::Result<()> {
         if recipe.item.deleted {
-            imkitchen_shared::bail!("recipe already deleted");
+            imkitchen_shared::bail!("recipe not found");
         }
 
         evento::save_with(recipe)

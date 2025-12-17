@@ -19,7 +19,7 @@ pub struct Recipe {
     pub dietary_restrictions_hash: Vec<u8>,
     pub main_option_hash: Vec<u8>,
     pub advance_prep_hash: Vec<u8>,
-    pub shared: bool,
+    pub is_shared: bool,
     pub deleted: bool,
 }
 
@@ -192,13 +192,13 @@ impl Recipe {
         &mut self,
         event: Event<SharedToCommunity>,
     ) -> anyhow::Result<()> {
-        self.shared = event.data.shared;
+        self.is_shared = event.data.shared;
 
         Ok(())
     }
 
     async fn handle_made_private(&mut self, event: Event<MadePrivate>) -> anyhow::Result<()> {
-        self.shared = event.data.shared;
+        self.is_shared = event.data.shared;
 
         Ok(())
     }
