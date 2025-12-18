@@ -86,11 +86,13 @@ impl evento::sql::Bind for RecipeListRow {
 }
 
 pub struct RecipesQuery {
+    pub exclude_ids: Option<Vec<String>>,
     pub user_id: Option<String>,
     pub recipe_type: Option<RecipeType>,
     pub cuisine_type: Option<CuisineType>,
     pub is_shared: Option<bool>,
     pub dietary_restrictions: Vec<DietaryRestriction>,
+    pub dietary_where_any: bool,
     pub sort_by: SortBy,
     pub args: Args,
 }
@@ -119,6 +121,14 @@ impl super::Query {
             statement.and_where(Expr::col(RecipeList::UserId).eq(user_id));
         }
 
+        if let Some(is_shared) = query.is_shared {
+            statement.and_where(Expr::col(RecipeList::IsShared).eq(is_shared));
+        }
+
+        if let Some(exclude_ids) = query.exclude_ids {
+            statement.and_where(Expr::col(RecipeList::Id).is_not_in(exclude_ids));
+        }
+
         if let Some(recipe_type) = query.recipe_type {
             statement.and_where(Expr::col(RecipeList::RecipeType).eq(recipe_type.to_string()));
         }
@@ -127,11 +137,7 @@ impl super::Query {
             statement.and_where(Expr::col(RecipeList::CuisineType).eq(cuisine_type.to_string()));
         }
 
-        if let Some(is_shared) = query.is_shared {
-            statement.and_where(Expr::col(RecipeList::IsShared).eq(is_shared));
-        }
-
-        if !query.dietary_restrictions.is_empty() {
+        if !query.dietary_restrictions.is_empty() && !query.dietary_where_any {
             let in_clause = query
                 .dietary_restrictions
                 .iter()
@@ -148,6 +154,27 @@ impl super::Query {
                     query.dietary_restrictions.len() as i32,
                 ))))
                 .collect::<Vec<_>>(),
+            ));
+        }
+
+        if !query.dietary_restrictions.is_empty() && query.dietary_where_any {
+            let in_clause = query
+                .dietary_restrictions
+                .iter()
+                .map(|_| "?")
+                .collect::<Vec<_>>()
+                .join(", ");
+
+            statement.and_where(Expr::cust_with_values(
+                format!(
+                    "(SELECT COUNT(*) FROM json_each(dietary_restrictions) WHERE value IN ({}))",
+                    in_clause
+                ),
+                query
+                    .dietary_restrictions
+                    .iter()
+                    .map(|t| sea_query::Value::String(Some(*Box::new(t.to_string()))))
+                    .collect::<Vec<_>>(),
             ));
         }
 

@@ -1,36 +1,18 @@
 use axum::{
     extract::{Path, State},
-    response::{IntoResponse, Redirect},
+    response::IntoResponse,
 };
 
-use imkitchen_recipe::{IngredientUnitFormat, RecipeRow, RecipeType};
-use imkitchen_shared::Metadata;
+use evento::cursor::{Args, ReadResult};
+use imkitchen_recipe::{
+    IngredientUnitFormat, RecipeListRow, RecipeRow, RecipeType, RecipesQuery, UserStat,
+};
 
 use crate::{
     auth::AuthUser,
     routes::AppState,
-    template::{ForbiddenTemplate, NotFoundTemplate, Status, Template, filters},
+    template::{NotFoundTemplate, Template, filters},
 };
-
-#[derive(askama::Template)]
-#[template(path = "partials/recipes-delete-modal.html")]
-pub struct DeleteModalTemplate {
-    pub id: String,
-}
-
-#[derive(askama::Template)]
-#[template(path = "partials/recipes-share-button.html")]
-pub struct ShareButtonTemplate<'a> {
-    pub id: &'a str,
-    pub is_shared: bool,
-}
-
-#[derive(askama::Template)]
-#[template(path = "partials/recipes-delete-button.html")]
-pub struct DeleteButtonTemplate<'a> {
-    pub id: &'a str,
-    pub status: crate::template::Status,
-}
 
 #[derive(askama::Template)]
 #[template(path = "recipes-community-detail.html")]
@@ -38,6 +20,9 @@ pub struct DetailTemplate {
     pub current_path: String,
     pub user: AuthUser,
     pub recipe: RecipeRow,
+    pub stat: UserStat,
+    pub cook_recipes: ReadResult<RecipeListRow>,
+    pub similar_recipes: ReadResult<RecipeListRow>,
 }
 
 impl Default for DetailTemplate {
@@ -46,6 +31,9 @@ impl Default for DetailTemplate {
             current_path: "recipes".to_owned(),
             user: AuthUser::default(),
             recipe: RecipeRow::default(),
+            stat: UserStat::default(),
+            cook_recipes: Default::default(),
+            similar_recipes: Default::default(),
         }
     }
 }
@@ -63,142 +51,162 @@ pub async fn page(
         return template.render(NotFoundTemplate).into_response();
     }
 
+    let stat =
+        crate::try_page_response!(app.recipe_query.find_user_stat(&recipe.user_id), template)
+            .unwrap_or_default();
+
+    let exclude_ids = vec![recipe.id.to_owned()];
+
+    let cook_recipes = crate::try_page_response!(
+        app.recipe_query.filter(RecipesQuery {
+            exclude_ids: Some(exclude_ids),
+            user_id: Some(recipe.user_id.to_owned()),
+            recipe_type: None,
+            cuisine_type: None,
+            is_shared: Some(true),
+            dietary_restrictions: vec![],
+            dietary_where_any: false,
+            sort_by: imkitchen_recipe::SortBy::RecentlyAdded,
+            args: Args::forward(2, None),
+        }),
+        template
+    );
+
+    let mut exclude_ids = cook_recipes
+        .edges
+        .iter()
+        .map(|n| n.node.id.to_owned())
+        .collect::<Vec<_>>();
+
+    exclude_ids.push(recipe.id.to_owned());
+
+    let mut similar_recipes = crate::try_page_response!(
+        app.recipe_query.filter(RecipesQuery {
+            exclude_ids: Some(exclude_ids.to_vec()),
+            user_id: None,
+            recipe_type: Some(recipe.recipe_type.0.to_owned()),
+            cuisine_type: Some(recipe.cuisine_type.0.to_owned()),
+            is_shared: Some(true),
+            dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
+            dietary_where_any: false,
+            sort_by: imkitchen_recipe::SortBy::RecentlyAdded,
+            args: Args::forward(6, None),
+        }),
+        template
+    );
+
+    if similar_recipes.edges.len() < 6 {
+        let mut similar_ids = similar_recipes
+            .edges
+            .iter()
+            .map(|n| n.node.id.to_owned())
+            .collect::<Vec<_>>();
+        similar_ids.extend(exclude_ids.to_vec());
+
+        let more_recipes = crate::try_page_response!(
+            app.recipe_query.filter(RecipesQuery {
+                exclude_ids: Some(similar_ids),
+                user_id: None,
+                recipe_type: Some(recipe.recipe_type.0.to_owned()),
+                cuisine_type: Some(recipe.cuisine_type.0.to_owned()),
+                is_shared: Some(true),
+                dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
+                dietary_where_any: true,
+                sort_by: imkitchen_recipe::SortBy::RecentlyAdded,
+                args: Args::forward(6, None),
+            }),
+            template
+        );
+
+        similar_recipes.edges.extend(more_recipes.edges);
+    }
+
+    if similar_recipes.edges.len() < 6 {
+        let mut similar_ids = similar_recipes
+            .edges
+            .iter()
+            .map(|n| n.node.id.to_owned())
+            .collect::<Vec<_>>();
+        similar_ids.extend(exclude_ids.to_vec());
+
+        let more_recipes = crate::try_page_response!(
+            app.recipe_query.filter(RecipesQuery {
+                exclude_ids: Some(similar_ids),
+                user_id: None,
+                recipe_type: Some(recipe.recipe_type.0.to_owned()),
+                cuisine_type: None,
+                is_shared: Some(true),
+                dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
+                dietary_where_any: false,
+                sort_by: imkitchen_recipe::SortBy::RecentlyAdded,
+                args: Args::forward(6, None),
+            }),
+            template
+        );
+
+        similar_recipes.edges.extend(more_recipes.edges);
+    }
+
+    if similar_recipes.edges.len() < 6 {
+        let mut similar_ids = similar_recipes
+            .edges
+            .iter()
+            .map(|n| n.node.id.to_owned())
+            .collect::<Vec<_>>();
+        similar_ids.extend(exclude_ids.to_vec());
+
+        let more_recipes = crate::try_page_response!(
+            app.recipe_query.filter(RecipesQuery {
+                exclude_ids: Some(similar_ids),
+                user_id: None,
+                recipe_type: Some(recipe.recipe_type.0.to_owned()),
+                cuisine_type: None,
+                is_shared: Some(true),
+                dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
+                dietary_where_any: true,
+                sort_by: imkitchen_recipe::SortBy::RecentlyAdded,
+                args: Args::forward(6, None),
+            }),
+            template
+        );
+
+        similar_recipes.edges.extend(more_recipes.edges);
+    }
+
+    if similar_recipes.edges.len() < 6 {
+        let mut similar_ids = similar_recipes
+            .edges
+            .iter()
+            .map(|n| n.node.id.to_owned())
+            .collect::<Vec<_>>();
+        similar_ids.extend(exclude_ids);
+
+        let more_recipes = crate::try_page_response!(
+            app.recipe_query.filter(RecipesQuery {
+                exclude_ids: Some(similar_ids),
+                user_id: None,
+                recipe_type: Some(recipe.recipe_type.0.to_owned()),
+                cuisine_type: None,
+                is_shared: Some(true),
+                dietary_restrictions: vec![],
+                dietary_where_any: false,
+                sort_by: imkitchen_recipe::SortBy::RecentlyAdded,
+                args: Args::forward(6, None),
+            }),
+            template
+        );
+
+        similar_recipes.edges.extend(more_recipes.edges);
+    }
+
     template
         .render(DetailTemplate {
             user,
             recipe,
+            stat,
+            cook_recipes,
+            similar_recipes,
             ..Default::default()
         })
         .into_response()
-}
-
-#[tracing::instrument(skip_all, fields(user = user.id))]
-pub async fn share_to_community_action(
-    template: Template,
-    State(app): State<AppState>,
-    user: AuthUser,
-    Path((id,)): Path<(String,)>,
-) -> impl IntoResponse {
-    let recipe = crate::try_response!(anyhow_opt:
-        app.recipe_command.load_optional(&id),
-        template
-    );
-
-    if recipe.item.deleted {
-        crate::try_response!(sync: Ok(None::<()>), template);
-    }
-
-    if recipe.item.user_id != user.id {
-        crate::try_response!(sync: Err(imkitchen_shared::Error::Forbidden), template);
-    }
-
-    crate::try_response!(
-        app.recipe_command
-            .share_to_community_with(recipe, &Metadata::by(user.id.to_owned())),
-        template
-    );
-
-    template
-        .render(ShareButtonTemplate {
-            id: &id,
-            is_shared: true,
-        })
-        .into_response()
-}
-
-#[tracing::instrument(skip_all, fields(user = user.id))]
-pub async fn make_private_action(
-    template: Template,
-    State(app): State<AppState>,
-    user: AuthUser,
-    Path((id,)): Path<(String,)>,
-) -> impl IntoResponse {
-    let recipe = crate::try_response!(anyhow_opt:
-        app.recipe_command.load_optional(&id),
-        template
-    );
-
-    if recipe.item.deleted {
-        crate::try_response!(sync: Ok(None::<()>), template);
-    }
-
-    if recipe.item.user_id != user.id {
-        crate::try_response!(sync: Err(imkitchen_shared::Error::Forbidden), template);
-    }
-
-    crate::try_response!(
-        app.recipe_command
-            .make_private_with(recipe, &Metadata::by(user.id.to_owned())),
-        template
-    );
-
-    template
-        .render(ShareButtonTemplate {
-            id: &id,
-            is_shared: false,
-        })
-        .into_response()
-}
-
-#[tracing::instrument(skip_all, fields(user = user.id))]
-pub async fn delete_action(
-    template: Template,
-    State(app): State<AppState>,
-    user: AuthUser,
-    Path((id,)): Path<(String,)>,
-) -> impl IntoResponse {
-    let recipe = crate::try_response!(anyhow_opt:
-        app.recipe_command.load_optional(&id),
-        template
-    );
-
-    if recipe.item.deleted {
-        crate::try_response!(sync: Ok(None::<()>), template);
-    }
-
-    if recipe.item.user_id != user.id {
-        crate::try_response!(sync: Err(imkitchen_shared::Error::Forbidden), template);
-    }
-
-    crate::try_response!(
-        app.recipe_command
-            .delete_with(recipe, &Metadata::by(user.id.to_owned())),
-        template
-    );
-
-    template
-        .render(DeleteButtonTemplate {
-            id: &id,
-            status: Status::Pending,
-        })
-        .into_response()
-}
-
-#[tracing::instrument(skip_all, fields(user = user.id))]
-pub async fn delete_status(
-    template: Template,
-    State(app): State<AppState>,
-    user: AuthUser,
-    Path((id,)): Path<(String,)>,
-) -> impl IntoResponse {
-    match crate::try_response!(anyhow:
-        app.recipe_query.find(&id),
-        template,
-        Some(DeleteButtonTemplate {
-            id: &id,
-            status: Status::Idle,
-        })
-    ) {
-        Some(_) => template
-            .render(DeleteButtonTemplate {
-                id: &id,
-                status: Status::Checking,
-            })
-            .into_response(),
-        _ => Redirect::to("/recipes").into_response(),
-    }
-}
-
-pub async fn delete_modal(template: Template, Path((id,)): Path<(String,)>) -> impl IntoResponse {
-    template.render(DeleteModalTemplate { id })
 }

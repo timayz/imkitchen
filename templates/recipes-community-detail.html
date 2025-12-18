@@ -71,7 +71,7 @@
             2,847 views
           </span>
           <span class="text-gray-400">•</span>
-          <span>Shared 3 days ago</span>
+          <span>3 days ago</span>
         </div>
 
         <!-- Action Buttons (YouTube Style) -->
@@ -139,7 +139,7 @@
             </div>
             <div>
               <div class="font-semibold">@curry_king</div>
-              <div class="text-sm text-gray-600">42 recipes shared</div>
+              <div class="text-sm text-gray-600">{{ stat.shared }} recipes shared</div>
             </div>
           </div>
           <!-- <button class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-full transition"> -->
@@ -190,49 +190,15 @@
       <div class="bg-white rounded-xl shadow-lg p-4 md:p-6 mb-4">
         <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
           <span>Ingredients</span>
-          <span class="text-sm font-normal text-gray-500">(10 items)</span>
+          <span class="text-sm font-normal text-gray-500">({{ recipe.ingredients.len() }} items)</span>
         </h2>
         <div class="grid md:grid-cols-2 gap-3">
+          {% for ingredient in recipe.ingredients.iter() %}
           <div class="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg">
             <div class="w-5 h-5 rounded-full border-2 border-gray-300 shrink-0 mt-0.5"></div>
-            <span>500g Chicken breast, diced</span>
+            <span>{{ ingredient.unit.format(ingredient.quantity.to_owned()) }} {{ ingredient.name }}</span>
           </div>
-          <div class="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg">
-            <div class="w-5 h-5 rounded-full border-2 border-gray-300 shrink-0 mt-0.5"></div>
-            <span>400ml Coconut milk</span>
-          </div>
-          <div class="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg">
-            <div class="w-5 h-5 rounded-full border-2 border-gray-300 shrink-0 mt-0.5"></div>
-            <span>3 tbsp Red curry paste</span>
-          </div>
-          <div class="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg">
-            <div class="w-5 h-5 rounded-full border-2 border-gray-300 shrink-0 mt-0.5"></div>
-            <span>1 Red bell pepper, sliced</span>
-          </div>
-          <div class="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg">
-            <div class="w-5 h-5 rounded-full border-2 border-gray-300 shrink-0 mt-0.5"></div>
-            <span>1 cup Bamboo shoots</span>
-          </div>
-          <div class="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg">
-            <div class="w-5 h-5 rounded-full border-2 border-gray-300 shrink-0 mt-0.5"></div>
-            <span>2 Kaffir lime leaves</span>
-          </div>
-          <div class="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg">
-            <div class="w-5 h-5 rounded-full border-2 border-gray-300 shrink-0 mt-0.5"></div>
-            <span>2 tbsp Fish sauce</span>
-          </div>
-          <div class="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg">
-            <div class="w-5 h-5 rounded-full border-2 border-gray-300 shrink-0 mt-0.5"></div>
-            <span>1 tbsp Palm sugar</span>
-          </div>
-          <div class="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg">
-            <div class="w-5 h-5 rounded-full border-2 border-gray-300 shrink-0 mt-0.5"></div>
-            <span>Fresh basil leaves</span>
-          </div>
-          <div class="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg">
-            <div class="w-5 h-5 rounded-full border-2 border-gray-300 shrink-0 mt-0.5"></div>
-            <span>2 tbsp Vegetable oil</span>
-          </div>
+          {% endfor %}
         </div>
       </div>
 
@@ -240,49 +206,15 @@
       <div class="bg-white rounded-xl shadow-lg p-4 md:p-6 mb-4">
         <h2 class="text-xl font-bold mb-4">Instructions</h2>
         <div class="space-y-4">
+          {% for instruction in recipe.instructions.iter() %}
           <div class="flex gap-4">
             <div
               class="shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">
-              1
+              {{ loop.index }}
             </div>
-            <p class="pt-1">Heat vegetable oil in a large wok or pan over medium-high heat.</p>
+            <p class="pt-1">{{ instruction.description }}</p>
           </div>
-          <div class="flex gap-4">
-            <div
-              class="shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">
-              2
-            </div>
-            <p class="pt-1">Add red curry paste and fry for 1-2 minutes until fragrant.</p>
-          </div>
-          <div class="flex gap-4">
-            <div
-              class="shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">
-              3
-            </div>
-            <p class="pt-1">Add chicken pieces and stir-fry until they turn white on the outside.</p>
-          </div>
-          <div class="flex gap-4">
-            <div
-              class="shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">
-              4
-            </div>
-            <p class="pt-1">Pour in coconut milk and bring to a gentle simmer.</p>
-          </div>
-          <div class="flex gap-4">
-            <div
-              class="shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">
-              5
-            </div>
-            <p class="pt-1">Add bell peppers, bamboo shoots, kaffir lime leaves, fish sauce, and palm sugar. Simmer for
-              15-20 minutes until chicken is cooked through and vegetables are tender.</p>
-          </div>
-          <div class="flex gap-4">
-            <div
-              class="shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">
-              6
-            </div>
-            <p class="pt-1">Taste and adjust seasoning if needed. Garnish with fresh basil leaves before serving.</p>
-          </div>
+          {% endfor %}
         </div>
       </div>
 
@@ -473,121 +405,80 @@
     <!-- Right Sidebar - Suggestions (YouTube Style) -->
     <div class="xl:w-96 shrink-0">
       <div class="sticky top-4 space-y-4">
+        {% if !cook_recipes.edges.is_empty() %}
         <h3 class="font-bold text-gray-800 mb-3">More from this cook</h3>
 
-        <!-- Suggestion Card 1 -->
-        <a href="#" class="flex gap-3 group">
-          <div
-            class="w-40 h-24 bg-linear-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center shrink-0">
-            <span class="text-4xl">🥬</span>
-          </div>
-          <div class="flex-1 min-w-0">
-            <h4 class="font-semibold text-sm group-hover:text-green-600 line-clamp-2 mb-1">Pad Thai with Shrimp -
-              Restaurant Style</h4>
-            <p class="text-xs text-gray-600">@curry_king</p>
-            <p class="text-xs text-gray-500">1.2K views • 2 weeks ago</p>
-          </div>
-        </a>
-
-        <!-- Suggestion Card 2 -->
-        <a href="#" class="flex gap-3 group">
-          <div
-            class="w-40 h-24 bg-linear-to-br from-amber-400 to-orange-500 rounded-lg flex items-center justify-center shrink-0">
-            <span class="text-4xl">🍲</span>
-          </div>
-          <div class="flex-1 min-w-0">
-            <h4 class="font-semibold text-sm group-hover:text-green-600 line-clamp-2 mb-1">Tom Yum Soup - Spicy & Sour
-              Perfection</h4>
-            <p class="text-xs text-gray-600">@curry_king</p>
-            <p class="text-xs text-gray-500">856 views • 1 month ago</p>
-          </div>
-        </a>
-
-        <h3 class="font-bold text-gray-800 mb-3 mt-6 pt-4 border-t">Similar recipes</h3>
-
-        <!-- Suggestion Card 3 -->
-        <a href="#" class="flex gap-3 group">
-          <div
-            class="w-40 h-24 bg-linear-to-br from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center shrink-0">
-            <span class="text-4xl">🍛</span>
-          </div>
-          <div class="flex-1 min-w-0">
-            <h4 class="font-semibold text-sm group-hover:text-green-600 line-clamp-2 mb-1">Chicken Tikka Masala - Creamy
-              Indian Classic</h4>
-            <p class="text-xs text-gray-600">@indian_chef</p>
-            <p class="text-xs text-gray-500">3.4K views • 3 days ago</p>
-          </div>
-        </a>
-
-        <!-- Suggestion Card 4 -->
-        <a href="#" class="flex gap-3 group">
-          <div
-            class="w-40 h-24 bg-linear-to-br from-red-400 to-red-600 rounded-lg flex items-center justify-center shrink-0">
-            <span class="text-4xl">🌶️</span>
-          </div>
-          <div class="flex-1 min-w-0">
-            <h4 class="font-semibold text-sm group-hover:text-green-600 line-clamp-2 mb-1">Massaman Curry - Sweet &
-              Savory Thai</h4>
-            <p class="text-xs text-gray-600">@bangkok_bites</p>
-            <p class="text-xs text-gray-500">2.1K views • 1 week ago</p>
-          </div>
-        </a>
-
-        <!-- Suggestion Card 5 -->
-        <a href="#" class="flex gap-3 group">
-          <div
-            class="w-40 h-24 bg-linear-to-br from-green-400 to-teal-500 rounded-lg flex items-center justify-center shrink-0">
-            <span class="text-4xl">🥥</span>
-          </div>
-          <div class="flex-1 min-w-0">
-            <h4 class="font-semibold text-sm group-hover:text-green-600 line-clamp-2 mb-1">Green Curry with Vegetables -
-              Vegan Version</h4>
-            <p class="text-xs text-gray-600">@plant_based_chef</p>
-            <p class="text-xs text-gray-500">987 views • 2 weeks ago</p>
-          </div>
-        </a>
-
-        <!-- Suggestion Card 6 -->
-        <a href="#" class="flex gap-3 group">
-          <div
-            class="w-40 h-24 bg-linear-to-br from-orange-400 to-red-500 rounded-lg flex items-center justify-center shrink-0">
-            <span class="text-4xl">🍜</span>
-          </div>
-          <div class="flex-1 min-w-0">
-            <h4 class="font-semibold text-sm group-hover:text-green-600 line-clamp-2 mb-1">Japanese Katsu Curry -
-              Comfort Food</h4>
-            <p class="text-xs text-gray-600">@tokyo_kitchen</p>
-            <p class="text-xs text-gray-500">4.2K views • 5 days ago</p>
-          </div>
-        </a>
-
-        <!-- Suggestion Card 7 -->
-        <a href="#" class="flex gap-3 group">
-          <div
-            class="w-40 h-24 bg-linear-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center shrink-0">
-            <span class="text-4xl">🍚</span>
-          </div>
-          <div class="flex-1 min-w-0">
-            <h4 class="font-semibold text-sm group-hover:text-green-600 line-clamp-2 mb-1">Coconut Rice - Perfect
-              Accompaniment</h4>
-            <p class="text-xs text-gray-600">@asian_sides</p>
-            <p class="text-xs text-gray-500">1.5K views • 3 weeks ago</p>
-          </div>
-        </a>
-
-        <!-- Suggestion Card 8 -->
-        <a href="#" class="flex gap-3 group">
+        {% for cook_recipe in cook_recipes.edges.iter() %}
+        <a href="/recipes/{{ cook_recipe.node.id }}/community" class="flex gap-3 group">
+          {% match cook_recipe.node.recipe_type.0 %}
+          {% when RecipeType::Appetizer %}
           <div
             class="w-40 h-24 bg-linear-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center shrink-0">
             <span class="text-4xl">🥗</span>
           </div>
+          {% when RecipeType::MainCourse %}
+          <div
+            class="w-40 h-24 bg-linear-to-br from-orange-400 to-red-600 rounded-lg flex items-center justify-center shrink-0">
+            <span class="text-4xl">🍛</span>
+          </div>
+          {% when RecipeType::Dessert %}
+          <div
+            class="w-40 h-24 bg-linear-to-br from-pink-400 to-pink-600 rounded-lg flex items-center justify-center shrink-0">
+            <span class="text-4xl">🍰</span>
+          </div>
+          {% when RecipeType::Accompaniment %}
+          <div
+            class="w-40 h-24 bg-linear-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center shrink-0">
+            <span class="text-4xl">🍚</span>
+          </div>
+          {% endmatch %}
           <div class="flex-1 min-w-0">
-            <h4 class="font-semibold text-sm group-hover:text-green-600 line-clamp-2 mb-1">Thai Papaya Salad - Som Tam
-              Classic</h4>
+            <h4 class="font-semibold text-sm group-hover:text-green-600 line-clamp-2 mb-1">{{ cook_recipe.node.name }}
+            </h4>
             <p class="text-xs text-gray-600">@curry_king</p>
-            <p class="text-xs text-gray-500">678 views • 1 month ago</p>
+            <p class="text-xs text-gray-500">1.2K views • 2 weeks ago</p>
           </div>
         </a>
+        {% endfor %}
+
+        <h3 class="font-bold text-gray-800 mb-3 mt-6 pt-4 border-t">Similar recipes</h3>
+        {% else %}
+        <h3 class="font-bold text-gray-800 mb-3">Similar recipes</h3>
+        {% endif %}
+
+        {% for similar_recipe in similar_recipes.edges.iter() %}
+        <a href="/recipes/{{ similar_recipe.node.id }}/community" class="flex gap-3 group">
+          {% match similar_recipe.node.recipe_type.0 %}
+          {% when RecipeType::Appetizer %}
+          <div
+            class="w-40 h-24 bg-linear-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center shrink-0">
+            <span class="text-4xl">🥗</span>
+          </div>
+          {% when RecipeType::MainCourse %}
+          <div
+            class="w-40 h-24 bg-linear-to-br from-orange-400 to-red-600 rounded-lg flex items-center justify-center shrink-0">
+            <span class="text-4xl">🍛</span>
+          </div>
+          {% when RecipeType::Dessert %}
+          <div
+            class="w-40 h-24 bg-linear-to-br from-pink-400 to-pink-600 rounded-lg flex items-center justify-center shrink-0">
+            <span class="text-4xl">🍰</span>
+          </div>
+          {% when RecipeType::Accompaniment %}
+          <div
+            class="w-40 h-24 bg-linear-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center shrink-0">
+            <span class="text-4xl">🍚</span>
+          </div>
+          {% endmatch %}
+          <div class="flex-1 min-w-0">
+            <h4 class="font-semibold text-sm group-hover:text-green-600 line-clamp-2 mb-1">{{ similar_recipe.node.name
+              }}
+            </h4>
+            <p class="text-xs text-gray-600">@curry_king</p>
+            <p class="text-xs text-gray-500">1.2K views • 2 weeks ago</p>
+          </div>
+        </a>
+        {% endfor %}
       </div>
     </div>
   </div>

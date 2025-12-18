@@ -80,11 +80,13 @@ pub async fn page(
 
     let recipes = crate::try_page_response!(
         app.recipe_query.filter(RecipesQuery {
+            exclude_ids: None,
             user_id: None,
             recipe_type,
             cuisine_type,
             is_shared: Some(true),
             dietary_restrictions: input.dietary_restrictions,
+            dietary_where_any: false,
             sort_by: input.sort_by.unwrap_or_default(),
             args: args.limit(20),
         }),
