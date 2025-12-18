@@ -84,7 +84,7 @@
                             <div class="flex items-center justify-between mb-2">
                                 <div>
                                     <div class="text-xs text-blue-600 font-semibold uppercase mb-1">{{ "Appetizer"|t }}</div>
-                                    <a href="/recipes/{{ appetizer.id }}/detail"><h3 class="font-bold text-lg">{{ appetizer.name }}</h3></a>
+                                    <a href="/recipes/{{ appetizer.id }}/community"><h3 class="font-bold text-lg">{{ appetizer.name }}</h3></a>
                                 </div>
                                 <div class="text-sm text-gray-600">⏱️ {{ &appetizer.total_prep_time()|minutes }}</div>
                             </div>
@@ -106,7 +106,7 @@
                             <div class="flex items-center justify-between mb-2">
                                 <div>
                                     <div class="text-xs text-orange-600 font-semibold uppercase mb-1">{{ "Main Course"|t }}</div>
-                                    <a href="/recipes/{{ slot.main_course.id }}/detail"><h3 class="font-bold text-lg">{{ slot.main_course.name }}</h3></a>
+                                    <a href="/recipes/{{ slot.main_course.id }}/community"><h3 class="font-bold text-lg">{{ slot.main_course.name }}</h3></a>
                                 </div>
                                 <div class="text-sm text-gray-600">⏱️ {{ &slot.main_course.total_prep_time()|minutes }}</div>
                             </div>
@@ -124,7 +124,7 @@
                                     <span class="text-2xl">🍚</span>
                                     <div>
                                         <div class="text-xs text-purple-600 font-semibold uppercase">{{ "Accompaniment"|t }}</div>
-                                        <a href="/recipes/{{ accompaniment.id }}/detail" class="font-semibold">{{ accompaniment.name }}</a>
+                                        <a href="/recipes/{{ accompaniment.id }}/community" class="font-semibold">{{ accompaniment.name }}</a>
                                         <div class="text-xs text-gray-600">⏱️ {{ &accompaniment.total_prep_time()|minutes }}</div>
                                     </div>
                                 </div>
@@ -150,7 +150,7 @@
                             <div class="flex items-center justify-between mb-2">
                                 <div>
                                     <div class="text-xs text-pink-600 font-semibold uppercase mb-1">{{ "Dessert"|t }}</div>
-                                    <a href="/recipes/{{ dessert.id }}/detail"><h3 class="font-bold text-lg">{{ dessert.name }}</h3></a>
+                                    <a href="/recipes/{{ dessert.id }}/community"><h3 class="font-bold text-lg">{{ dessert.name }}</h3></a>
                                 </div>
                                 <div class="text-sm text-gray-600">⏱️ {{ &dessert.total_prep_time()|minutes }}</div>
                             </div>
@@ -227,7 +227,7 @@
                 <div class="bg-white rounded-lg shadow-lg p-6">
                   <h3 class="font-bold text-lg mb-4">{{ "Tomorrow's Prep Reminder"|t }}</h3>
                   {% for recipe in remiders %}
-                  <a href="/recipes/{{ recipe.id }}/detail">
+                  <a href="/recipes/{{ recipe.id }}/community">
                     <div class="mt-3 p-2 bg-yellow-100 border border-yellow-300 rounded text-sm text-yellow-800">
                       ⏰ <strong>{{ recipe.name }}:</strong> {{ recipe.advance_prep }}
                     </div>
