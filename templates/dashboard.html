@@ -184,6 +184,44 @@
                     </div>
                 </div>
 
+                {% if !user.is_premium() %}
+                <!-- Premium Upgrade Banner -->
+                <div class="bg-linear-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4">
+                    <div class="flex flex-col gap-4">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="text-2xl">✨</span>
+                                <h3 class="font-bold text-lg text-amber-900">{{ "Unlock the Full Experience"|t }}</h3>
+                            </div>
+                            <p class="text-amber-800 text-sm mb-3">{{ "You're on the free plan. Upgrade to Premium to get:"|t }}</p>
+                            <div class="grid grid-cols-1 gap-2 text-sm">
+                                <div class="flex items-center gap-2 text-amber-700">
+                                    <span class="text-green-600">✓</span>
+                                    <span>{{ "Unlimited recipes in plan"|t }}</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-amber-700">
+                                    <span class="text-green-600">✓</span>
+                                    <span>{{ "Appetizers, desserts & sides"|t }}</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-amber-700">
+                                    <span class="text-green-600">✓</span>
+                                    <span>{{ "Meal preferences applied"|t }}</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-amber-700">
+                                    <span class="text-green-600">✓</span>
+                                    <span>{{ "Batch recipe import"|t }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <a href="/upgrade" class="block w-full px-6 py-3 bg-linear-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-lg hover:from-amber-600 hover:to-orange-600 transition shadow-md text-center">
+                                {{ "Upgrade to Premium"|t }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
                 <!-- Advance preps -->
                 {% if let Some(remiders) = prep_remiders %}
                 <div class="bg-white rounded-lg shadow-lg p-6">

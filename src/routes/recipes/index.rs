@@ -83,6 +83,7 @@ pub async fn page(
             recipe_type,
             cuisine_type,
             is_shared: None,
+            dietary_restrictions: vec![],
             sort_by: input.sort_by.unwrap_or_default(),
             args: args.limit(20),
         }),

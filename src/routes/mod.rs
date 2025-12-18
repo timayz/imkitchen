@@ -96,7 +96,6 @@ pub fn router(app_state: AppState) -> Router {
         )
         .route("/recipes", get(recipes::index::page))
         .route("/recipes/community", get(recipes::community::page))
-        .route("/recipes/favorites", get(recipes::favorites::page))
         .route("/recipes/create", post(recipes::index::create))
         .route(
             "/recipes/create/{id}/status",
@@ -131,6 +130,10 @@ pub fn router(app_state: AppState) -> Router {
         .route(
             "/recipes/{id}/detail/delete",
             get(recipes::detail::delete_modal).post(recipes::detail::delete_action),
+        )
+        .route(
+            "/recipes/{id}/community",
+            get(recipes::community_detail::page),
         )
         .route(
             "/recipes/{id}/edit",

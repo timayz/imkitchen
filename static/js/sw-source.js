@@ -8,30 +8,46 @@
 // Reference: https://developers.google.com/web/tools/workbox/guides/using-bundlers
 importScripts('https://storage.googleapis.com/workbox-cdn/releases/7.1.0/workbox-sw.js');
 
-// Initialize Workbox
+// ============================================================
+// Cache Configuration
+// ============================================================
+
+const APP_VERSION = 'v{{ env!("CARGO_PKG_VERSION") }}';
+const OFFLINE_FALLBACK_URL = '/offline';
+
+const CACHE = {
+  precache: 'imkitchen-precache-' + APP_VERSION,
+  pages: 'pages-' + APP_VERSION,
+  images: 'images-' + APP_VERSION,
+  api: 'api-' + APP_VERSION,
+  static: 'static-' + APP_VERSION
+};
+
+const CACHE_PREFIXES = Object.values(CACHE).map((name) => name.replace(APP_VERSION, ''));
+
+// ============================================================
+// Workbox Configuration
+// ============================================================
+
 if (workbox) {
   console.log('Workbox loaded successfully');
 
-  // Configure cache ID and update behavior
   workbox.core.setCacheNameDetails({
     prefix: 'imkitchen',
-    suffix: 'v{{ env!("CARGO_PKG_VERSION") }}'
+    suffix: APP_VERSION
   });
 
-  // Skip waiting and claim clients immediately on update
   workbox.core.skipWaiting();
   workbox.core.clientsClaim();
 
   // Precache static assets (manifest injected by Workbox CLI)
   workbox.precaching.precacheAndRoute(self.__WB_MANIFEST || []);
 
-  // Runtime caching strategies
-
   // HTML pages: Network-first with cache fallback
   workbox.routing.registerRoute(
     ({ request }) => request.mode === 'navigate',
     new workbox.strategies.NetworkFirst({
-      cacheName: 'pages-v{{ env!("CARGO_PKG_VERSION") }}',
+      cacheName: CACHE.pages,
       plugins: [
         new workbox.expiration.ExpirationPlugin({
           maxEntries: 50,
@@ -48,7 +64,7 @@ if (workbox) {
   workbox.routing.registerRoute(
     ({ request }) => request.destination === 'image',
     new workbox.strategies.CacheFirst({
-      cacheName: 'images-v{{ env!("CARGO_PKG_VERSION") }}',
+      cacheName: CACHE.images,
       plugins: [
         new workbox.expiration.ExpirationPlugin({
           maxEntries: 100,
@@ -63,10 +79,9 @@ if (workbox) {
     ({ url }) => url.pathname === '/' ||
       url.pathname.startsWith('/recipes') ||
       url.pathname.startsWith('/calendar') ||
-      url.pathname.startsWith('/profile') ||
-      url.pathname.startsWith('/community'),
+      url.pathname.startsWith('/profile'),
     new workbox.strategies.NetworkFirst({
-      cacheName: 'api-v{{ env!("CARGO_PKG_VERSION") }}',
+      cacheName: CACHE.api,
       plugins: [
         new workbox.expiration.ExpirationPlugin({
           maxEntries: 100,
@@ -83,7 +98,7 @@ if (workbox) {
       request.destination === 'script' ||
       request.destination === 'font',
     new workbox.strategies.CacheFirst({
-      cacheName: 'static-v{{ env!("CARGO_PKG_VERSION") }}',
+      cacheName: CACHE.static,
       plugins: [
         new workbox.expiration.ExpirationPlugin({
           maxEntries: 60,
@@ -93,21 +108,6 @@ if (workbox) {
     })
   );
 
-  // Offline fallback for navigation requests
-  const OFFLINE_FALLBACK_URL = '/offline';
-
-  // Precache the offline page and monitor storage quota
-  self.addEventListener('install', (event) => {
-    event.waitUntil(
-      Promise.all([
-        caches.open('pages-v{{ env!("CARGO_PKG_VERSION") }}').then((cache) => {
-          return cache.add(OFFLINE_FALLBACK_URL);
-        }),
-        checkStorageQuota()
-      ])
-    );
-  });
-
   // Serve offline fallback when navigation fails
   workbox.routing.setCatchHandler(({ event }) => {
     if (event.request.mode === 'navigate') {
@@ -116,38 +116,66 @@ if (workbox) {
     return Response.error();
   });
 
-  /**
-   * Check storage quota and log warnings when approaching limits
-   * Helps prevent unbounded cache growth on low-storage devices
-   */
-  async function checkStorageQuota() {
-    if ('storage' in navigator && 'estimate' in navigator.storage) {
-      try {
-        const estimate = await navigator.storage.estimate();
-        const usage = estimate.usage || 0;
-        const quota = estimate.quota || 0;
-        const percentUsed = quota > 0 ? (usage / quota) * 100 : 0;
-
-        console.log(`Storage: ${(usage / 1024 / 1024).toFixed(2)} MB used of ${(quota / 1024 / 1024).toFixed(2)} MB (${percentUsed.toFixed(1)}%)`);
-
-        // Warn when approaching quota limits
-        if (percentUsed > 90) {
-          console.warn('Storage quota critical: ' + percentUsed.toFixed(1) + '% used. Consider clearing old caches.');
-        } else if (percentUsed > 75) {
-          console.warn('Storage quota high: ' + percentUsed.toFixed(1) + '% used.');
-        }
-
-        return estimate;
-      } catch (error) {
-        console.error('Failed to check storage quota:', error);
-      }
-    } else {
-      console.log('Storage estimation API not available');
-    }
-  }
-
 } else {
   console.error('Workbox failed to load');
+}
+
+// ============================================================
+// Service Worker Lifecycle
+// ============================================================
+
+// Precache the offline page and monitor storage quota
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    Promise.all([
+      caches.open(CACHE.pages).then((cache) => cache.add(OFFLINE_FALLBACK_URL)),
+      checkStorageQuota()
+    ])
+  );
+});
+
+// Clean up old caches that don't match current version
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames
+          .filter((cacheName) => {
+            const isOurCache = CACHE_PREFIXES.some((prefix) => cacheName.startsWith(prefix));
+            return isOurCache && !cacheName.endsWith(APP_VERSION);
+          })
+          .map((cacheName) => {
+            console.log('Deleting old cache:', cacheName);
+            return caches.delete(cacheName);
+          })
+      );
+    })
+  );
+});
+
+/**
+ * Check storage quota and log warnings when approaching limits
+ */
+async function checkStorageQuota() {
+  if (!('storage' in navigator && 'estimate' in navigator.storage)) {
+    console.log('Storage estimation API not available');
+    return;
+  }
+
+  try {
+    const { usage = 0, quota = 0 } = await navigator.storage.estimate();
+    const percentUsed = quota > 0 ? (usage / quota) * 100 : 0;
+
+    console.log(`Storage: ${(usage / 1024 / 1024).toFixed(2)} MB used of ${(quota / 1024 / 1024).toFixed(2)} MB (${percentUsed.toFixed(1)}%)`);
+
+    if (percentUsed > 90) {
+      console.warn('Storage quota critical: ' + percentUsed.toFixed(1) + '% used. Consider clearing old caches.');
+    } else if (percentUsed > 75) {
+      console.warn('Storage quota high: ' + percentUsed.toFixed(1) + '% used.');
+    }
+  } catch (error) {
+    console.error('Failed to check storage quota:', error);
+  }
 }
 
 // ============================================================

@@ -2,7 +2,6 @@
 {% block title %}{{ "Recipes"|t }} - imkitchen{% endblock %}
 
 {% block recipes_content %}
- <!-- View: My Recipes (Owned) -->
 <div>
   <!-- Header -->
   <div class="mb-6">
@@ -12,207 +11,141 @@
 
   <!-- Mobile Quick Actions -->
   <div class="lg:hidden flex gap-2 mb-4">
-    <button ts-req="/recipes/create-mobile" ts-req-method="post" class="flex-1 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 text-center text-sm">
+    <button ts-req="/recipes/create-mobile" ts-req-method="post"
+      class="flex-1 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 text-center text-sm">
       ✏️ Create
     </button>
-    <a href="/recipes/import" class="flex-1 px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 text-center text-sm">
+    <a href="/recipes/import"
+      class="flex-1 px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 text-center text-sm">
       📥 Import
     </a>
   </div>
 
   <!-- Filters -->
   <div class="bg-white rounded-lg shadow-lg p-4 mb-6">
-    <div class="grid md:grid-cols-4 gap-4">
+    <form ts-trigger="change" ts-req="/recipes" ts-req-selector="#recipes-list" ts-req-method="GET"
+      ts-req-strategy="last" ts-target="#recipes-list" class="grid md:grid-cols-4 gap-4" autocomplete="off">
       <div>
         <label class="block text-sm font-semibold text-gray-700 mb-2">Search</label>
-        <input type="text" placeholder="Search recipes..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" />
+        <input disabled type="text" placeholder="Search recipes..."
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" />
       </div>
       <div>
         <label class="block text-sm font-semibold text-gray-700 mb-2">Recipe Type</label>
-        <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
-          <option value="">All Types</option>
-          <option value="appetizer">Appetizer</option>
-          <option value="main">Main Course</option>
-          <option value="dessert">Dessert</option>
-          <option value="accompaniment">Accompaniment</option>
+        <select name="recipe_type"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+          <option value="">{{ "All Types"|t }}</option>
+          {% for variant in RecipeType::VARIANTS %}
+          <option value="{{ variant }}">{{ variant.to_string().as_str()|t }}</option>
+          {% endfor %}
         </select>
       </div>
       <div>
         <label class="block text-sm font-semibold text-gray-700 mb-2">Cuisine</label>
-        <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
-          <option value="">All Cuisines</option>
-          <option value="italian">Italian</option>
-          <option value="thai">Thai</option>
-          <option value="chinese">Chinese</option>
-          <option value="japanese">Japanese</option>
-          <option value="mexican">Mexican</option>
+        <select name="cuisine_type"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+          <option value="">{{ "All Cuisines"|t }}</option>
+          {% for variant in CuisineType::VARIANTS %}
+          <option value="{{ variant }}">{{ variant.to_string().as_str()|t }}</option>
+          {% endfor %}
         </select>
       </div>
       <div>
         <label class="block text-sm font-semibold text-gray-700 mb-2">Sort By</label>
-        <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
-          <option value="recent">Recently Added</option>
-          <option value="name">Name (A-Z)</option>
-          <option value="time">Cook Time</option>
+        <select name="sort_by"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+          <option value="{{ SortBy::RecentlyAdded }}">{{ "Recently Added"|t }}</option>
+          <!-- <option value="name">Name (A-Z)</option> -->
+          <!-- <option value="time">Cook Time</option> -->
         </select>
       </div>
-    </div>
+    </form>
   </div>
 
-                    <!-- Recipe Grid -->
-                    <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-                        <!-- Recipe Card 1 - Favorited -->
-                        <div class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
-                            <div class="relative">
-                                <div class="h-40 bg-linear-to-br from-orange-400 to-red-500 flex items-center justify-center">
-                                    <span class="text-5xl">🍛</span>
-                                </div>
-                                <button class="absolute top-3 right-3 p-2 bg-white rounded-full shadow-lg">
-                                    <span class="text-xl">❤️</span>
-                                </button>
-                                <span class="absolute top-3 left-3 px-3 py-1 bg-orange-600 text-white text-xs font-semibold rounded-full">
-                                    MAIN
-                                </span>
-                            </div>
-                            <div class="p-4">
-                                <h3 class="font-bold mb-2">Thai Red Curry</h3>
-                                <div class="flex gap-2 text-xs mb-2">
-                                    <span class="px-2 py-0.5 bg-green-100 text-green-800 rounded">GF</span>
-                                    <span class="px-2 py-0.5 bg-blue-100 text-blue-800 rounded">Thai</span>
-                                </div>
-                                <div class="flex items-center justify-between text-sm text-gray-600 mb-3">
-                                    <span>⏱️ 45 min</span>
-                                    <span class="text-green-600">👥 Shared</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Recipe Card 2 -->
-                        <div class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
-                            <div class="relative">
-                                <div class="h-40 bg-linear-to-br from-blue-400 to-blue-600 flex items-center justify-center">
-                                    <span class="text-5xl">🥗</span>
-                                </div>
-                                <button class="absolute top-3 right-3 p-2 bg-white rounded-full shadow-lg">
-                                    <span class="text-xl">🤍</span>
-                                </button>
-                                <span class="absolute top-3 left-3 px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-full">
-                                    APPETIZER
-                                </span>
-                            </div>
-                            <div class="p-4">
-                                <h3 class="font-bold mb-2">Caesar Salad</h3>
-                                <div class="flex gap-2 text-xs mb-2">
-                                    <span class="px-2 py-0.5 bg-green-100 text-green-800 rounded">Vegetarian</span>
-                                    <span class="px-2 py-0.5 bg-blue-100 text-blue-800 rounded">Italian</span>
-                                </div>
-                                <div class="flex items-center justify-between text-sm text-gray-600 mb-3">
-                                    <span>⏱️ 15 min</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Recipe Card 3 - From Community -->
-                        <div class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition border-2 border-purple-200">
-                            <div class="relative">
-                                <div class="h-40 bg-linear-to-br from-pink-400 to-pink-600 flex items-center justify-center">
-                                    <span class="text-5xl">🍰</span>
-                                </div>
-                                <button class="absolute top-3 right-3 p-2 bg-white rounded-full shadow-lg">
-                                    <span class="text-xl">❤️</span>
-                                </button>
-                                <span class="absolute top-3 left-3 px-3 py-1 bg-pink-600 text-white text-xs font-semibold rounded-full">
-                                    DESSERT
-                                </span>
-                                <span class="absolute bottom-3 left-3 px-2 py-1 bg-purple-600 text-white text-xs font-semibold rounded-full">
-                                    👤 Community
-                                </span>
-                            </div>
-                            <div class="p-4">
-                                <h3 class="font-bold mb-2">Chocolate Mousse</h3>
-                                <div class="flex gap-2 text-xs mb-2">
-                                    <span class="px-2 py-0.5 bg-blue-100 text-blue-800 rounded">French</span>
-                                    <span class="px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded">⭐ 4.8</span>
-                                </div>
-                                <div class="flex items-center justify-between text-sm text-gray-600 mb-3">
-                                    <span>⏱️ 30 min</span>
-                                    <span class="text-purple-600">@chef_marie</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Recipe Card 4 -->
-                        <div class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
-                            <div class="relative">
-                                <div class="h-40 bg-linear-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
-                                    <span class="text-5xl">🍝</span>
-                                </div>
-                                <button class="absolute top-3 right-3 p-2 bg-white rounded-full shadow-lg">
-                                    <span class="text-xl">❤️</span>
-                                </button>
-                                <span class="absolute top-3 left-3 px-3 py-1 bg-orange-600 text-white text-xs font-semibold rounded-full">
-                                    MAIN
-                                </span>
-                            </div>
-                            <div class="p-4">
-                                <h3 class="font-bold mb-2">Pasta Carbonara</h3>
-                                <div class="flex gap-2 text-xs mb-2">
-                                    <span class="px-2 py-0.5 bg-blue-100 text-blue-800 rounded">Italian</span>
-                                </div>
-                                <div class="flex items-center justify-between text-sm text-gray-600 mb-3">
-                                    <span>⏱️ 25 min</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Recipe Card 5 -->
-                        <div class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
-                            <div class="relative">
-                                <div class="h-40 bg-linear-to-br from-red-400 to-red-600 flex items-center justify-center">
-                                    <span class="text-5xl">🌮</span>
-                                </div>
-                                <button class="absolute top-3 right-3 p-2 bg-white rounded-full shadow-lg">
-                                    <span class="text-xl">❤️</span>
-                                </button>
-                                <span class="absolute top-3 left-3 px-3 py-1 bg-orange-600 text-white text-xs font-semibold rounded-full">
-                                    MAIN
-                                </span>
-                            </div>
-                            <div class="p-4">
-                                <h3 class="font-bold mb-2">Beef Tacos</h3>
-                                <div class="flex gap-2 text-xs mb-2">
-                                    <span class="px-2 py-0.5 bg-blue-100 text-blue-800 rounded">Mexican</span>
-                                </div>
-                                <div class="flex items-center justify-between text-sm text-gray-600 mb-3">
-                                    <span>⏱️ 30 min</span>
-                                </div>
-                            </div>
-                        </div>
-
-    <!-- Recipe Card 6 -->
-    <div class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
-      <div class="relative">
-        <div class="h-40 bg-linear-to-br from-purple-400 to-purple-600 flex items-center justify-center">
-          <span class="text-5xl">🍚</span>
-        </div>
-        <button class="absolute top-3 right-3 p-2 bg-white rounded-full shadow-lg">
-          <span class="text-xl">❤️</span>
-        </button>
-        <span class="absolute top-3 left-3 px-3 py-1 bg-purple-600 text-white text-xs font-semibold rounded-full">
-          ACCOMPANIMENT
-        </span>
-      </div>
-      <div class="p-4">
-        <h3 class="font-bold mb-2">Jasmine Rice</h3>
-        <div class="flex gap-2 text-xs mb-2">
-          <span class="px-2 py-0.5 bg-green-100 text-green-800 rounded">Vegan</span>
-          <span class="px-2 py-0.5 bg-green-100 text-green-800 rounded">GF</span>
-        </div>
-        <div class="flex items-center justify-between text-sm text-gray-600 mb-3">
-          <span>⏱️ 20 min</span>
-        </div>
+  <!-- Recipe Grid -->
+  <div id="recipes-list" class="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+    {% if recipes.edges.is_empty() %}
+    <div class="col-span-full">
+      <div class="bg-white rounded-lg shadow-lg p-12 flex flex-col items-center justify-center text-center">
+        <span class="text-6xl mb-4">🍽️</span>
+        <h3 class="text-xl font-semibold text-gray-700 mb-2">{{ "No recipes found"|t }}</h3>
+        <p class="text-gray-500">{{ "Try adjusting your filters or create a new recipe"|t }}</p>
       </div>
     </div>
+    {% else %}
+    {% for recipe in recipes.edges %}
+    <a id="recipe-{{ recipe.node.id }}" href="/recipes/{{ recipe.node.id }}/detail" {% if let (true, true,
+      Some(cursor))=(loop.last, recipes.page_info.has_next_page, recipes.page_info.end_cursor.to_owned()) %}
+      ts-req="/recipes?after={{ cursor.to_string() }}{% if let Some(recipe_type) = query.recipe_type %}&recipe_type={{ recipe_type }}{% endif %}{% if let Some(cuisine_type) = query.cuisine_type %}&cuisine_type={{ cuisine_type }}{% endif %}"
+      ts-req-method="GET" ts-req-selector="children #recipes-list" ts-swap="afterend" ts-trigger="visible once" {% endif
+      %} class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
+      <div class="relative">
+        {% match recipe.node.recipe_type.0 %}
+        {% when RecipeType::MainCourse %}
+        <div class="h-40 bg-linear-to-br from-orange-400 to-red-500 flex items-center justify-center">
+          <span class="text-5xl">🍛</span>
+        </div>
+        <!-- <button class="absolute top-3 right-3 p-2 bg-white rounded-full shadow-lg"> -->
+        <!--   <span class="text-xl">❤️</span> -->
+        <!-- </button> -->
+        <span class="absolute top-3 left-3 px-3 py-1 bg-orange-600 text-white text-xs font-semibold rounded-full">
+          {{ recipe.node.recipe_type.as_ref()|t }}
+        </span>
+        {% when RecipeType::Appetizer %}
+        <div class="h-40 bg-linear-to-br from-blue-400 to-blue-500 flex items-center justify-center">
+          <span class="text-5xl">🥗</span>
+        </div>
+        <!-- <button class="absolute top-3 right-3 p-2 bg-white rounded-full shadow-lg"> -->
+        <!--   <span class="text-xl">❤️</span> -->
+        <!-- </button> -->
+        <span class="absolute top-3 left-3 px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-full">
+          {{ recipe.node.recipe_type.as_ref()|t }}
+        </span>
+        {% when RecipeType::Dessert %}
+        <div class="h-40 bg-linear-to-br from-pink-400 to-pink-500 flex items-center justify-center">
+          <span class="text-5xl">🍰</span>
+        </div>
+        <!-- <button class="absolute top-3 right-3 p-2 bg-white rounded-full shadow-lg"> -->
+        <!--   <span class="text-xl">❤️</span> -->
+        <!-- </button> -->
+        <span class="absolute top-3 left-3 px-3 py-1 bg-pink-600 text-white text-xs font-semibold rounded-full">
+          {{ recipe.node.recipe_type.as_ref()|t }}
+        </span>
+        {% when RecipeType::Accompaniment %}
+        <div class="h-40 bg-linear-to-br from-purple-400 to-purple-500 flex items-center justify-center">
+          <span class="text-5xl">🍚</span>
+        </div>
+        <!-- <button class="absolute top-3 right-3 p-2 bg-white rounded-full shadow-lg"> -->
+        <!--   <span class="text-xl">❤️</span> -->
+        <!-- </button> -->
+        <span class="absolute top-3 left-3 px-3 py-1 bg-purple-600 text-white text-xs font-semibold rounded-full">
+          {{ recipe.node.recipe_type.as_ref()|t }}
+        </span>
+        {% endmatch %}
+        <!-- <span class="absolute bottom-3 left-3 px-2 py-1 bg-purple-600 text-white text-xs font-semibold rounded-full"> -->
+        <!--   👤 Community -->
+        <!-- </span> -->
+      </div>
+      <div class="p-4">
+        <h3 class="font-bold mb-2">{{ recipe.node.name }}</h3>
+        <div class="flex gap-2 text-xs mb-2">
+          {% for restriction in recipe.node.dietary_restrictions.iter() %}
+          <span class="px-2 py-0.5 bg-green-100 text-green-800 rounded">{{ restriction.as_ref()|t }}</span>
+          {% endfor %}
+          <span class="px-2 py-0.5 bg-blue-100 text-blue-800 rounded">{{ recipe.node.cuisine_type.as_ref()|t }}</span>
+        </div>
+        <div class="flex items-center justify-between text-sm text-gray-600 mb-3">
+          <span>⏱️ {{ (recipe.node.cook_time + recipe.node.prep_time)|minutes }}</span>
+          <!-- {# if let Some(owner) = recipe.node.owner #} -->
+          <!-- <span class="text-purple-600">@{#{ owner }#}</span> -->
+          <!-- {# else if recipe.node.is_shared #} -->
+          <!-- <span class="text-green-600">👥 Shared</span> -->
+          <!-- {# endif #} -->
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+    {% endif %}
   </div>
 </div>
 {% endblock %}

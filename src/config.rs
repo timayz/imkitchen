@@ -58,7 +58,7 @@ pub struct JwtConfig {
 // pub struct StripeConfig {
 //     pub secret_key: String,
 //     pub webhook_secret: String,
-//     pub price_id: String, // Stripe Price ID for $9.99/month subscription
+//     pub price_id: String, // Stripe Price ID for $4.99/month subscription
 // }
 
 impl Config {

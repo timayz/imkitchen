@@ -109,7 +109,7 @@ pub(crate) mod filters {
                 h,
                 rust_i18n::t!("hours", locale = preferred_language)
             ),
-            (h, m) => format!("{}h {}min", h, m),
+            (h, m) => format!("{} h {} min", h, m),
         };
 
         Ok(value)

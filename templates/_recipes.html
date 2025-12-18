@@ -11,9 +11,6 @@
                   <a href="/recipes" class="shrink-0 px-4 py-2 {% if recipes_path == "user" %}bg-green-600 text-white{% else %}bg-gray-200 text-gray-700 hover:bg-gray-300{% endif %} font-semibold rounded-lg whitespace-nowrap">
                         📖 My Recipes
                     </a>
-                    <a href="/recipes/favorites" class="shrink-0 px-4 py-2 {% if recipes_path == "favorites" %}bg-green-600 text-white{% else %}bg-gray-200 text-gray-700 hover:bg-gray-300{% endif %} font-semibold rounded-lg whitespace-nowrap">
-                        ❤️ Favorites
-                    </a>
                     <a href="/recipes/community" class="shrink-0 px-4 py-2 {% if recipes_path == "community" %}bg-green-600 text-white{% else %}bg-gray-200 text-gray-700 hover:bg-gray-300{% endif %} font-semibold rounded-lg whitespace-nowrap">
                         🌍 Community
                     </a>
@@ -28,15 +25,7 @@
                             <span class="text-xl">📖</span>
                             <div>
                                 <div>My Recipes</div>
-                                <div class="text-xs font-normal text-green-600">47 recipes</div>
-                            </div>
-                        </a>
-
-                        <a href="/recipes/favorites" class="w-full flex items-center gap-3 px-4 py-3 {% if recipes_path == "favorites" %}bg-green-100 text-green-800{% else %}text-gray-700 hover:bg-gray-100{% endif %} rounded-lg text-left">
-                            <span class="text-xl">❤️</span>
-                            <div>
-                                <div>Favorites</div>
-                                <div class="text-xs text-gray-500">10 saved</div>
+                                <div class="text-xs font-normal text-green-600">{{ stat.total }} recipes</div>
                             </div>
                         </a>
 

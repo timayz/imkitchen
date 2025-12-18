@@ -44,6 +44,7 @@ pub struct RecipeRow {
 #[derive(Debug, Default, FromRow)]
 pub struct RecipeListRow {
     pub id: String,
+    pub user_id: String,
     pub recipe_type: sqlx::types::Text<RecipeType>,
     pub cuisine_type: sqlx::types::Text<CuisineType>,
     pub name: String,
@@ -52,7 +53,7 @@ pub struct RecipeListRow {
     pub cook_time: u16,
     pub dietary_restrictions: sqlx::types::Json<Vec<DietaryRestriction>>,
     pub accepts_accompaniment: bool,
-    // pub is_shared: bool,
+    pub is_shared: bool,
     pub created_at: u64,
 }
 
@@ -89,6 +90,7 @@ pub struct RecipesQuery {
     pub recipe_type: Option<RecipeType>,
     pub cuisine_type: Option<CuisineType>,
     pub is_shared: Option<bool>,
+    pub dietary_restrictions: Vec<DietaryRestriction>,
     pub sort_by: SortBy,
     pub args: Args,
 }
@@ -98,6 +100,7 @@ impl super::Query {
         let mut statement = sea_query::Query::select()
             .columns([
                 RecipeList::Id,
+                RecipeList::UserId,
                 RecipeList::RecipeType,
                 RecipeList::CuisineType,
                 RecipeList::Name,
@@ -126,6 +129,26 @@ impl super::Query {
 
         if let Some(is_shared) = query.is_shared {
             statement.and_where(Expr::col(RecipeList::IsShared).eq(is_shared));
+        }
+
+        if !query.dietary_restrictions.is_empty() {
+            let in_clause = query
+                .dietary_restrictions
+                .iter()
+                .map(|_| "?")
+                .collect::<Vec<_>>()
+                .join(", ");
+
+            statement.and_where(Expr::cust_with_values(
+                format!("(SELECT COUNT(*) FROM json_each(dietary_restrictions) WHERE value IN ({})) = ?", in_clause),
+            query.dietary_restrictions
+                .iter()
+                .map(|t| sea_query::Value::String(Some(*Box::new(t.to_string()))))
+                .chain(std::iter::once(sea_query::Value::Int(Some(
+                    query.dietary_restrictions.len() as i32,
+                ))))
+                .collect::<Vec<_>>(),
+            ));
         }
 
         let mut reader = Reader::new(statement);

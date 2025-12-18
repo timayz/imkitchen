@@ -1,0 +1,595 @@
+{% extends "_user.html" %}
+{% block title %}{{ recipe.name }} - imkitchen{% endblock %}
+{% block content %}
+<!-- Main Content -->
+<div class="container mx-auto px-4 py-6 max-w-7xl">
+  <!-- Back Button -->
+  <div class="mb-4">
+    <a href="/recipes/community" class="text-green-600 hover:text-green-700 font-semibold flex items-center gap-2">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+      </svg>
+      Back to Community
+    </a>
+  </div>
+
+  <div class="flex flex-col xl:flex-row gap-6">
+    <!-- Main Content Area -->
+    <div class="flex-1 min-w-0">
+      <!-- Recipe Hero/Image -->
+      <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-4">
+        {% match recipe.recipe_type.0 %}
+        {% when RecipeType::Appetizer %}
+        <div
+          class="h-64 md:h-80 lg:h-96 bg-linear-to-br from-blue-400 to-blue-500 flex items-center justify-center relative">
+          <span class="text-8xl md:text-9xl">🍛</span>
+          <span class="absolute top-4 left-4 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-full">
+            {{ RecipeType::Appetizer.as_ref()|t }}
+          </span>
+        </div>
+        {% when RecipeType::MainCourse %}
+        <div
+          class="h-64 md:h-80 lg:h-96 bg-linear-to-br from-orange-400 to-red-500 flex items-center justify-center relative">
+          <span class="text-8xl md:text-9xl">🍛</span>
+          <span class="absolute top-4 left-4 px-4 py-2 bg-orange-600 text-white text-sm font-semibold rounded-full">
+            {{ RecipeType::MainCourse.as_ref()|t }}
+          </span>
+        </div>
+        {% when RecipeType::Dessert %}
+        <div
+          class="h-64 md:h-80 lg:h-96 bg-linear-to-br from-pink-400 to-pink-500 flex items-center justify-center relative">
+          <span class="text-8xl md:text-9xl">🍛</span>
+          <span class="absolute top-4 left-4 px-4 py-2 bg-pink-600 text-white text-sm font-semibold rounded-full">
+            {{ RecipeType::Dessert.as_ref()|t }}
+          </span>
+        </div>
+        {% when RecipeType::Accompaniment %}
+        <div
+          class="h-64 md:h-80 lg:h-96 bg-linear-to-br from-purple-400 to-purple-500 flex items-center justify-center relative">
+          <span class="text-8xl md:text-9xl">🍛</span>
+          <span class="absolute top-4 left-4 px-4 py-2 bg-purple-600 text-white text-sm font-semibold rounded-full">
+            {{ RecipeType::Accompaniment.as_ref()|t }}
+          </span>
+        </div>
+        {% endmatch %}
+      </div>
+
+      <!-- Title & Action Bar (YouTube Style) -->
+      <div class="bg-white rounded-xl shadow-lg p-4 md:p-6 mb-4">
+        <h1 class="text-xl md:text-2xl font-bold mb-3">{{ recipe.name }}</h1>
+
+        <!-- Stats Row -->
+        <div class="flex flex-wrap items-center gap-3 text-sm text-gray-600 mb-4 pb-4 border-b">
+          <span class="flex items-center gap-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
+              </path>
+            </svg>
+            2,847 views
+          </span>
+          <span class="text-gray-400">•</span>
+          <span>Shared 3 days ago</span>
+        </div>
+
+        <!-- Action Buttons (YouTube Style) -->
+        <div class="flex flex-wrap items-center gap-2 md:gap-3">
+          <!-- Like Button -->
+          <button class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
+              </path>
+            </svg>
+            <span class="font-semibold">127</span>
+          </button>
+
+          <!-- Dislike Button -->
+          <button class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition">
+            <svg class="w-5 h-5 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
+              </path>
+            </svg>
+          </button>
+
+          <!-- Copy to My Recipes -->
+          <button
+            class="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-full transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z">
+              </path>
+            </svg>
+            <span class="hidden sm:inline font-semibold">Add to My Recipes</span>
+            <span class="sm:hidden font-semibold">Copy</span>
+          </button>
+
+          <!-- Share Button -->
+          <!-- <button class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition"> -->
+          <!--   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"> -->
+          <!--     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" -->
+          <!--       d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"> -->
+          <!--     </path> -->
+          <!--   </svg> -->
+          <!--   <span class="hidden sm:inline font-semibold">Share</span> -->
+          <!-- </button> -->
+
+          <!-- More Options -->
+          <!-- <button class="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition"> -->
+          <!--   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"> -->
+          <!--     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" -->
+          <!--       d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"> -->
+          <!--     </path> -->
+          <!--   </svg> -->
+          <!-- </button> -->
+        </div>
+      </div>
+
+      <!-- Author & Description Card (YouTube Style) -->
+      <div class="bg-white rounded-xl shadow-lg p-4 md:p-6 mb-4">
+        <!-- Author Info -->
+        <div class="flex items-center justify-between mb-4 pb-4 border-b">
+          <div class="flex items-center gap-3">
+            <div
+              class="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+              CK
+            </div>
+            <div>
+              <div class="font-semibold">@curry_king</div>
+              <div class="text-sm text-gray-600">42 recipes shared</div>
+            </div>
+          </div>
+          <!-- <button class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-full transition"> -->
+          <!--   Follow -->
+          <!-- </button> -->
+        </div>
+
+        <!-- Description (Expandable) -->
+        <div class="bg-gray-50 rounded-lg p-4">
+          <div class="flex flex-wrap gap-3 mb-3">
+            {% for restriction in recipe.dietary_restrictions.iter() %}
+            <span class="px-3 py-1 bg-green-100 text-green-800 text-sm font-semibold rounded-full">{{
+              restriction.as_ref()|t }}</span>
+            {% endfor %}
+            <span class="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-semibold rounded-full">{{
+              recipe.cuisine_type.as_ref()|t }}</span>
+            {% if recipe.accepts_accompaniment %}
+            <span class="px-3 py-1 bg-orange-100 text-orange-800 text-sm font-semibold rounded-full">Accepts
+              Accompaniments</span>
+            {% endif %}
+          </div>
+
+          <div class="flex flex-wrap gap-4 text-sm text-gray-600 mb-3">
+            <span class="flex items-center gap-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              {{ (recipe.cook_time + recipe.prep_time)|minutes }}
+            </span>
+            <span>Prep: {{ recipe.prep_time|minutes }}</span>
+            <span>Cook: {{ recipe.cook_time|minutes }}</span>
+            <span class="flex items-center gap-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                </path>
+              </svg>
+              {{ recipe.household_size }}
+            </span>
+          </div>
+
+          <p class="text-gray-700 mb-3">{{ recipe.description }}</p>
+        </div>
+      </div>
+
+      <!-- Ingredients Section -->
+      <div class="bg-white rounded-xl shadow-lg p-4 md:p-6 mb-4">
+        <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+          <span>Ingredients</span>
+          <span class="text-sm font-normal text-gray-500">(10 items)</span>
+        </h2>
+        <div class="grid md:grid-cols-2 gap-3">
+          <div class="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg">
+            <div class="w-5 h-5 rounded-full border-2 border-gray-300 shrink-0 mt-0.5"></div>
+            <span>500g Chicken breast, diced</span>
+          </div>
+          <div class="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg">
+            <div class="w-5 h-5 rounded-full border-2 border-gray-300 shrink-0 mt-0.5"></div>
+            <span>400ml Coconut milk</span>
+          </div>
+          <div class="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg">
+            <div class="w-5 h-5 rounded-full border-2 border-gray-300 shrink-0 mt-0.5"></div>
+            <span>3 tbsp Red curry paste</span>
+          </div>
+          <div class="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg">
+            <div class="w-5 h-5 rounded-full border-2 border-gray-300 shrink-0 mt-0.5"></div>
+            <span>1 Red bell pepper, sliced</span>
+          </div>
+          <div class="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg">
+            <div class="w-5 h-5 rounded-full border-2 border-gray-300 shrink-0 mt-0.5"></div>
+            <span>1 cup Bamboo shoots</span>
+          </div>
+          <div class="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg">
+            <div class="w-5 h-5 rounded-full border-2 border-gray-300 shrink-0 mt-0.5"></div>
+            <span>2 Kaffir lime leaves</span>
+          </div>
+          <div class="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg">
+            <div class="w-5 h-5 rounded-full border-2 border-gray-300 shrink-0 mt-0.5"></div>
+            <span>2 tbsp Fish sauce</span>
+          </div>
+          <div class="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg">
+            <div class="w-5 h-5 rounded-full border-2 border-gray-300 shrink-0 mt-0.5"></div>
+            <span>1 tbsp Palm sugar</span>
+          </div>
+          <div class="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg">
+            <div class="w-5 h-5 rounded-full border-2 border-gray-300 shrink-0 mt-0.5"></div>
+            <span>Fresh basil leaves</span>
+          </div>
+          <div class="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg">
+            <div class="w-5 h-5 rounded-full border-2 border-gray-300 shrink-0 mt-0.5"></div>
+            <span>2 tbsp Vegetable oil</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Instructions Section -->
+      <div class="bg-white rounded-xl shadow-lg p-4 md:p-6 mb-4">
+        <h2 class="text-xl font-bold mb-4">Instructions</h2>
+        <div class="space-y-4">
+          <div class="flex gap-4">
+            <div
+              class="shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">
+              1
+            </div>
+            <p class="pt-1">Heat vegetable oil in a large wok or pan over medium-high heat.</p>
+          </div>
+          <div class="flex gap-4">
+            <div
+              class="shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">
+              2
+            </div>
+            <p class="pt-1">Add red curry paste and fry for 1-2 minutes until fragrant.</p>
+          </div>
+          <div class="flex gap-4">
+            <div
+              class="shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">
+              3
+            </div>
+            <p class="pt-1">Add chicken pieces and stir-fry until they turn white on the outside.</p>
+          </div>
+          <div class="flex gap-4">
+            <div
+              class="shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">
+              4
+            </div>
+            <p class="pt-1">Pour in coconut milk and bring to a gentle simmer.</p>
+          </div>
+          <div class="flex gap-4">
+            <div
+              class="shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">
+              5
+            </div>
+            <p class="pt-1">Add bell peppers, bamboo shoots, kaffir lime leaves, fish sauce, and palm sugar. Simmer for
+              15-20 minutes until chicken is cooked through and vegetables are tender.</p>
+          </div>
+          <div class="flex gap-4">
+            <div
+              class="shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">
+              6
+            </div>
+            <p class="pt-1">Taste and adjust seasoning if needed. Garnish with fresh basil leaves before serving.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comments Section (YouTube Style) -->
+      <div class="bg-white rounded-xl shadow-lg p-4 md:p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-xl font-bold">23 Comments</h2>
+          <button class="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"></path>
+            </svg>
+            Sort by
+          </button>
+        </div>
+
+        <!-- Add Comment -->
+        <div class="flex gap-3 mb-8">
+          <div
+            class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold shrink-0">
+            ME
+          </div>
+          <div class="flex-1">
+            <input type="text" placeholder="Add a comment..."
+              class="w-full px-0 py-2 border-b border-gray-300 focus:border-gray-900 focus:outline-none bg-transparent" />
+            <div class="flex justify-end gap-2 mt-2 hidden">
+              <button class="px-4 py-2 text-gray-600 font-semibold rounded-full hover:bg-gray-100">Cancel</button>
+              <button class="px-4 py-2 bg-gray-200 text-gray-400 font-semibold rounded-full">Comment</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Comments List -->
+        <div class="space-y-6">
+          <!-- Comment 1 -->
+          <div class="flex gap-3">
+            <div
+              class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold shrink-0">
+              JD
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="font-semibold text-sm">@jane_doe</span>
+                <span class="text-xs text-gray-500">2 days ago</span>
+              </div>
+              <p class="text-gray-800 mb-2">
+                Absolutely delicious! The curry paste makes it so flavorful. I served it with jasmine rice and my family
+                loved it. Will definitely make this again.
+              </p>
+              <div class="flex items-center gap-4">
+                <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
+                    </path>
+                  </svg>
+                  <span class="text-xs">24</span>
+                </button>
+                <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+                  <svg class="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
+                    </path>
+                  </svg>
+                </button>
+                <button class="text-xs font-semibold text-gray-600 hover:text-gray-900">Reply</button>
+              </div>
+
+              <!-- Reply (nested) -->
+              <div class="flex gap-3 mt-4 ml-2">
+                <div
+                  class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0">
+                  CK
+                </div>
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="font-semibold text-sm">@curry_king</span>
+                    <span class="bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded">Author</span>
+                    <span class="text-xs text-gray-500">1 day ago</span>
+                  </div>
+                  <p class="text-gray-800 mb-2">
+                    Thank you so much! So happy your family enjoyed it!
+                  </p>
+                  <div class="flex items-center gap-4">
+                    <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
+                        </path>
+                      </svg>
+                      <span class="text-xs">5</span>
+                    </button>
+                    <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+                      <svg class="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
+                        </path>
+                      </svg>
+                    </button>
+                    <button class="text-xs font-semibold text-gray-600 hover:text-gray-900">Reply</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Comment 2 -->
+          <div class="flex gap-3">
+            <div
+              class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold shrink-0">
+              MT
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="font-semibold text-sm">@mike_thompson</span>
+                <span class="text-xs text-gray-500">1 week ago</span>
+              </div>
+              <p class="text-gray-800 mb-2">
+                Great recipe! I added some extra vegetables (carrots and snap peas) and it turned out perfect. The
+                instructions were clear and easy to follow.
+              </p>
+              <div class="flex items-center gap-4">
+                <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
+                    </path>
+                  </svg>
+                  <span class="text-xs">18</span>
+                </button>
+                <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+                  <svg class="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
+                    </path>
+                  </svg>
+                </button>
+                <button class="text-xs font-semibold text-gray-600 hover:text-gray-900">Reply</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Comment 3 -->
+          <div class="flex gap-3">
+            <div
+              class="w-10 h-10 bg-pink-500 rounded-full flex items-center justify-center text-white font-bold shrink-0">
+              SE
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="font-semibold text-sm">@sarah_evans</span>
+                <span class="text-xs text-gray-500">2 weeks ago</span>
+              </div>
+              <p class="text-gray-800 mb-2">
+                Very good curry! A bit spicy for my taste, so I used less curry paste. Otherwise perfect comfort food.
+                Any suggestions for making it milder?
+              </p>
+              <div class="flex items-center gap-4">
+                <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
+                    </path>
+                  </svg>
+                  <span class="text-xs">12</span>
+                </button>
+                <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+                  <svg class="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
+                    </path>
+                  </svg>
+                </button>
+                <button class="text-xs font-semibold text-gray-600 hover:text-gray-900">Reply</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Load More Comments -->
+          <button
+            class="w-full py-3 text-center text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg">
+            Show more comments
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Sidebar - Suggestions (YouTube Style) -->
+    <div class="xl:w-96 shrink-0">
+      <div class="sticky top-4 space-y-4">
+        <h3 class="font-bold text-gray-800 mb-3">More from this cook</h3>
+
+        <!-- Suggestion Card 1 -->
+        <a href="#" class="flex gap-3 group">
+          <div
+            class="w-40 h-24 bg-linear-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center shrink-0">
+            <span class="text-4xl">🥬</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <h4 class="font-semibold text-sm group-hover:text-green-600 line-clamp-2 mb-1">Pad Thai with Shrimp -
+              Restaurant Style</h4>
+            <p class="text-xs text-gray-600">@curry_king</p>
+            <p class="text-xs text-gray-500">1.2K views • 2 weeks ago</p>
+          </div>
+        </a>
+
+        <!-- Suggestion Card 2 -->
+        <a href="#" class="flex gap-3 group">
+          <div
+            class="w-40 h-24 bg-linear-to-br from-amber-400 to-orange-500 rounded-lg flex items-center justify-center shrink-0">
+            <span class="text-4xl">🍲</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <h4 class="font-semibold text-sm group-hover:text-green-600 line-clamp-2 mb-1">Tom Yum Soup - Spicy & Sour
+              Perfection</h4>
+            <p class="text-xs text-gray-600">@curry_king</p>
+            <p class="text-xs text-gray-500">856 views • 1 month ago</p>
+          </div>
+        </a>
+
+        <h3 class="font-bold text-gray-800 mb-3 mt-6 pt-4 border-t">Similar recipes</h3>
+
+        <!-- Suggestion Card 3 -->
+        <a href="#" class="flex gap-3 group">
+          <div
+            class="w-40 h-24 bg-linear-to-br from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center shrink-0">
+            <span class="text-4xl">🍛</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <h4 class="font-semibold text-sm group-hover:text-green-600 line-clamp-2 mb-1">Chicken Tikka Masala - Creamy
+              Indian Classic</h4>
+            <p class="text-xs text-gray-600">@indian_chef</p>
+            <p class="text-xs text-gray-500">3.4K views • 3 days ago</p>
+          </div>
+        </a>
+
+        <!-- Suggestion Card 4 -->
+        <a href="#" class="flex gap-3 group">
+          <div
+            class="w-40 h-24 bg-linear-to-br from-red-400 to-red-600 rounded-lg flex items-center justify-center shrink-0">
+            <span class="text-4xl">🌶️</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <h4 class="font-semibold text-sm group-hover:text-green-600 line-clamp-2 mb-1">Massaman Curry - Sweet &
+              Savory Thai</h4>
+            <p class="text-xs text-gray-600">@bangkok_bites</p>
+            <p class="text-xs text-gray-500">2.1K views • 1 week ago</p>
+          </div>
+        </a>
+
+        <!-- Suggestion Card 5 -->
+        <a href="#" class="flex gap-3 group">
+          <div
+            class="w-40 h-24 bg-linear-to-br from-green-400 to-teal-500 rounded-lg flex items-center justify-center shrink-0">
+            <span class="text-4xl">🥥</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <h4 class="font-semibold text-sm group-hover:text-green-600 line-clamp-2 mb-1">Green Curry with Vegetables -
+              Vegan Version</h4>
+            <p class="text-xs text-gray-600">@plant_based_chef</p>
+            <p class="text-xs text-gray-500">987 views • 2 weeks ago</p>
+          </div>
+        </a>
+
+        <!-- Suggestion Card 6 -->
+        <a href="#" class="flex gap-3 group">
+          <div
+            class="w-40 h-24 bg-linear-to-br from-orange-400 to-red-500 rounded-lg flex items-center justify-center shrink-0">
+            <span class="text-4xl">🍜</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <h4 class="font-semibold text-sm group-hover:text-green-600 line-clamp-2 mb-1">Japanese Katsu Curry -
+              Comfort Food</h4>
+            <p class="text-xs text-gray-600">@tokyo_kitchen</p>
+            <p class="text-xs text-gray-500">4.2K views • 5 days ago</p>
+          </div>
+        </a>
+
+        <!-- Suggestion Card 7 -->
+        <a href="#" class="flex gap-3 group">
+          <div
+            class="w-40 h-24 bg-linear-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center shrink-0">
+            <span class="text-4xl">🍚</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <h4 class="font-semibold text-sm group-hover:text-green-600 line-clamp-2 mb-1">Coconut Rice - Perfect
+              Accompaniment</h4>
+            <p class="text-xs text-gray-600">@asian_sides</p>
+            <p class="text-xs text-gray-500">1.5K views • 3 weeks ago</p>
+          </div>
+        </a>
+
+        <!-- Suggestion Card 8 -->
+        <a href="#" class="flex gap-3 group">
+          <div
+            class="w-40 h-24 bg-linear-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center shrink-0">
+            <span class="text-4xl">🥗</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <h4 class="font-semibold text-sm group-hover:text-green-600 line-clamp-2 mb-1">Thai Papaya Salad - Som Tam
+              Classic</h4>
+            <p class="text-xs text-gray-600">@curry_king</p>
+            <p class="text-xs text-gray-500">678 views • 1 month ago</p>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

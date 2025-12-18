@@ -1,10 +1,9 @@
-use axum::{
-    extract::{Path, Query, State},
-    response::{IntoResponse, Redirect},
-};
+use axum::{extract::State, response::IntoResponse};
+use axum_extra::extract::Query;
 use evento::cursor::{Args, ReadResult, Value};
-use imkitchen_recipe::{CuisineType, RecipeListRow, RecipeType, RecipesQuery, SortBy, UserStat};
-use imkitchen_shared::Metadata;
+use imkitchen_recipe::{
+    CuisineType, DietaryRestriction, RecipeListRow, RecipeType, RecipesQuery, SortBy, UserStat,
+};
 use serde::Deserialize;
 use std::str::FromStr;
 use strum::VariantArray;
@@ -12,7 +11,7 @@ use strum::VariantArray;
 use crate::{
     auth::AuthUser,
     routes::AppState,
-    template::{Status, Template, filters},
+    template::{Template, filters},
 };
 
 #[derive(askama::Template)]
@@ -48,6 +47,8 @@ pub struct PageQuery {
     pub recipe_type: Option<String>,
     pub cuisine_type: Option<String>,
     pub sort_by: Option<SortBy>,
+    #[serde(default)]
+    pub dietary_restrictions: Vec<DietaryRestriction>,
 }
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
@@ -79,10 +80,11 @@ pub async fn page(
 
     let recipes = crate::try_page_response!(
         app.recipe_query.filter(RecipesQuery {
-            user_id: Some(user.id.to_owned()),
+            user_id: None,
             recipe_type,
             cuisine_type,
-            is_shared: None,
+            is_shared: Some(true),
+            dietary_restrictions: input.dietary_restrictions,
             sort_by: input.sort_by.unwrap_or_default(),
             args: args.limit(20),
         }),
