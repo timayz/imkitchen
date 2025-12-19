@@ -9,7 +9,7 @@
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
       </svg>
-      Back to Community
+      {{ "Back to Community"|t }}
     </a>
   </div>
 
@@ -103,8 +103,8 @@
                 d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z">
               </path>
             </svg>
-            <span class="hidden sm:inline font-semibold">Add to My Recipes</span>
-            <span class="sm:hidden font-semibold">Copy</span>
+            <span class="hidden sm:inline font-semibold">{{ "Add to My Recipes"|t }}</span>
+            <span class="sm:hidden font-semibold">{{ "Copy"|t }}</span>
           </button>
 
           <!-- Share Button -->
@@ -141,7 +141,7 @@
               {% if let Some(username)= recipe.username %}
               <div class="font-semibold">@{{ username }}</div>
               {% endif %}
-              <div class="text-sm text-gray-600">{{ stat.shared }} recipes shared</div>
+              <div class="text-sm text-gray-600">{{ stat.shared }} {{ "recipes shared"|t }}</div>
             </div>
           </div>
           <!-- <button class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-full transition"> -->
@@ -159,8 +159,7 @@
             <span class="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-semibold rounded-full">{{
               recipe.cuisine_type.as_ref()|t }}</span>
             {% if recipe.accepts_accompaniment %}
-            <span class="px-3 py-1 bg-orange-100 text-orange-800 text-sm font-semibold rounded-full">Accepts
-              Accompaniments</span>
+            <span class="px-3 py-1 bg-orange-100 text-orange-800 text-sm font-semibold rounded-full">{{ "Accepts Accompaniments"|t }}</span>
             {% endif %}
           </div>
 
@@ -172,8 +171,8 @@
               </svg>
               {{ (recipe.cook_time + recipe.prep_time)|minutes }}
             </span>
-            <span>Prep: {{ recipe.prep_time|minutes }}</span>
-            <span>Cook: {{ recipe.cook_time|minutes }}</span>
+            <span>{{ "Prep:"|t }} {{ recipe.prep_time|minutes }}</span>
+            <span>{{ "Cook:"|t }} {{ recipe.cook_time|minutes }}</span>
             <span class="flex items-center gap-1">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -191,8 +190,8 @@
       <!-- Ingredients Section -->
       <div class="bg-white rounded-xl shadow-lg p-4 md:p-6 mb-4">
         <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
-          <span>Ingredients</span>
-          <span class="text-sm font-normal text-gray-500">({{ recipe.ingredients.len() }} items)</span>
+          <span>{{ "Ingredients"|t }}</span>
+          <span class="text-sm font-normal text-gray-500">({{ recipe.ingredients.len() }} {{ "items"|t }})</span>
         </h2>
         <div class="grid md:grid-cols-2 gap-3">
           {% for ingredient in recipe.ingredients.iter() %}
@@ -206,7 +205,7 @@
 
       <!-- Instructions Section -->
       <div class="bg-white rounded-xl shadow-lg p-4 md:p-6 mb-4">
-        <h2 class="text-xl font-bold mb-4">Instructions</h2>
+        <h2 class="text-xl font-bold mb-4">{{ "Instructions"|t }}</h2>
         <div class="space-y-4">
           {% for instruction in recipe.instructions.iter() %}
           <div class="flex gap-4">
@@ -408,7 +407,7 @@
     <div class="xl:w-96 shrink-0">
       <div class="sticky top-4 space-y-4">
         {% if !cook_recipes.edges.is_empty() %}
-        <h3 class="font-bold text-gray-800 mb-3">More from this cook</h3>
+        <h3 class="font-bold text-gray-800 mb-3">{{ "More from this cook"|t }}</h3>
 
         {% for cook_recipe in cook_recipes.edges.iter() %}
         <a href="/recipes/{{ cook_recipe.node.id }}/community" class="flex gap-3 group">
@@ -445,9 +444,9 @@
         </a>
         {% endfor %}
 
-        <h3 class="font-bold text-gray-800 mb-3 mt-6 pt-4 border-t">Similar recipes</h3>
+        <h3 class="font-bold text-gray-800 mb-3 mt-6 pt-4 border-t">{{ "Similar recipes"|t }}</h3>
         {% else %}
-        <h3 class="font-bold text-gray-800 mb-3">Similar recipes</h3>
+        <h3 class="font-bold text-gray-800 mb-3">{{ "Similar recipes"|t }}</h3>
         {% endif %}
 
         {% for similar_recipe in similar_recipes.edges.iter() %}

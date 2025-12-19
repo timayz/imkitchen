@@ -122,7 +122,7 @@ impl super::Query {
             .column((User::Table, User::Username))
             .from(RecipeList::Table)
             .join(
-                sea_query::JoinType::InnerJoin,
+                sea_query::JoinType::LeftJoin,
                 User::Table,
                 Expr::col((RecipeList::Table, RecipeList::UserId)).equals((User::Table, User::Id)),
             )
@@ -228,7 +228,7 @@ impl super::Query {
             .column((User::Table, User::Username))
             .from(RecipeList::Table)
             .join(
-                sea_query::JoinType::InnerJoin,
+                sea_query::JoinType::LeftJoin,
                 User::Table,
                 Expr::col((RecipeList::Table, RecipeList::UserId)).equals((User::Table, User::Id)),
             )
