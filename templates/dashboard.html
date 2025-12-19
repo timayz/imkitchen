@@ -59,7 +59,7 @@
 
         <!-- Welcome -->
         <div class="mb-8">
-            <h1 class="text-3xl font-bold mb-2">{{ "Welcome back, Michael!"|t }}</h1>
+          <h1 class="text-3xl font-bold mb-2">{{ "Welcome Back"|t }}{% if let Some(username) = user.username %}, @{{ username }}{% endif %}</h1>
             <p class="text-gray-600">{{ "Here's what's cooking today"|t }}</p>
         </div>
 

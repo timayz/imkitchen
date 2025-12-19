@@ -149,7 +149,9 @@
         </div>
         <div class="flex items-center justify-between text-sm text-gray-600 mb-3">
           <span>⏱️ {{ (recipe.node.cook_time + recipe.node.prep_time)|minutes }}</span>
-          <span class="text-purple-600">@curry_king</span>
+          {% if let Some(username) = recipe.node.username %}
+          <span class="text-purple-600">@{{ username }}</span>
+          {% endif %}
         </div>
       </div>
     </a>
@@ -158,33 +160,3 @@
   </div>
 </div>
 {% endblock %}
-<!-- Community Recipe 3 -->
-<div class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
-  <div class="relative">
-    <div class="h-40 bg-linear-to-br from-amber-400 to-orange-500 flex items-center justify-center">
-      <span class="text-5xl">🍲</span>
-    </div>
-    <button class="absolute top-3 right-3 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100">
-      <span class="text-xl">🤍</span>
-    </button>
-    <span class="absolute top-3 left-3 px-3 py-1 bg-orange-600 text-white text-xs font-semibold rounded-full">
-      MAIN
-    </span>
-  </div>
-  <div class="p-4">
-    <h3 class="font-bold mb-2">Chicken Tikka Masala</h3>
-    <div class="flex items-center gap-2 text-xs mb-2">
-      <span class="text-yellow-500">⭐ 4.8</span>
-      <span class="text-gray-400">•</span>
-      <span class="text-gray-600">112 reviews</span>
-    </div>
-    <div class="flex gap-2 text-xs mb-2">
-      <span class="px-2 py-0.5 bg-green-100 text-green-800 rounded">GF</span>
-      <span class="px-2 py-0.5 bg-blue-100 text-blue-800 rounded">Indian</span>
-    </div>
-    <div class="flex items-center justify-between text-sm text-gray-600 mb-3">
-      <span>⏱️ 50 min</span>
-      <span class="text-purple-600">@curry_king</span>
-    </div>
-  </div>
-</div>
