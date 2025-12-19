@@ -153,6 +153,10 @@ pub fn router(app_state: AppState) -> Router {
             get(profile::account::page).post(profile::account::action),
         )
         .route(
+            "/profile/account/set-username",
+            post(profile::account::set_username_action),
+        )
+        .route(
             "/profile/meal-preferences",
             get(profile::meal_preferences::page).post(profile::meal_preferences::action),
         )

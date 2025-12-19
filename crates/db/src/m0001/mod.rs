@@ -24,6 +24,7 @@ sqlx_migrator::sqlite_migration!(
     vec_box![
         user::CreateTable,
         user::CreateUk1,
+        user::CreateUk2,
         user_login::CreateTable,
         user_login::CreateIdx1,
         user_login::CreateUk1,

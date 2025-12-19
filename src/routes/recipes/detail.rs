@@ -13,6 +13,10 @@ use crate::{
 };
 
 #[derive(askama::Template)]
+#[template(path = "partials/set-username-modal.html")]
+pub struct SetUsernameModalTemplate;
+
+#[derive(askama::Template)]
 #[template(path = "partials/recipes-delete-modal.html")]
 pub struct DeleteModalTemplate {
     pub id: String,
@@ -90,6 +94,14 @@ pub async fn share_to_community_action(
 
     if recipe.item.user_id != user.id {
         crate::try_response!(sync: Err(imkitchen_shared::Error::Forbidden), template);
+    }
+
+    if user.username.is_none() {
+        return (
+            [("ts-swap", "skip")],
+            template.render(SetUsernameModalTemplate),
+        )
+            .into_response();
     }
 
     crate::try_response!(

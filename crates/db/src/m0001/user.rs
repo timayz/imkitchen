@@ -1,7 +1,4 @@
-use sea_query::{
-    ColumnDef, Index, IndexCreateStatement, IndexDropStatement, Table, TableCreateStatement,
-    TableDropStatement,
-};
+use sea_query::{ColumnDef, Table, TableCreateStatement, TableDropStatement};
 
 use crate::table::User;
 
@@ -23,6 +20,7 @@ fn create_table() -> TableCreateStatement {
                 .not_null()
                 .string_len(320),
         )
+        .col(ColumnDef::new(User::Username).string().string_len(15))
         .col(
             ColumnDef::new(User::Role)
                 .string()
@@ -73,22 +71,22 @@ impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateTable {
 }
 
 pub struct CreateUk1;
-
-fn create_uk_1() -> IndexCreateStatement {
-    Index::create()
-        .name("uk_user_fN5xcl")
-        .table(User::Table)
-        .unique()
-        .col(User::Email)
-        .to_owned()
-}
-
-fn drop_uk_1() -> IndexDropStatement {
-    Index::drop()
-        .name("uk_user_fN5xcl")
-        .table(User::Table)
-        .to_owned()
-}
+//
+// fn create_uk_1() -> IndexCreateStatement {
+//     Index::create()
+//         .name("uk_user_fN5xcl")
+//         .table(User::Table)
+//         .unique()
+//         .col(User::Email)
+//         .to_owned()
+// }
+//
+// fn drop_uk_1() -> IndexDropStatement {
+//     Index::drop()
+//         .name("uk_user_fN5xcl")
+//         .table(User::Table)
+//         .to_owned()
+// }
 
 #[async_trait::async_trait]
 impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateUk1 {
@@ -96,8 +94,12 @@ impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateUk1 {
         &self,
         connection: &mut sqlx::SqliteConnection,
     ) -> Result<(), sqlx_migrator::Error> {
-        let statement = create_uk_1().to_string(sea_query::SqliteQueryBuilder);
-        sqlx::query(&statement).execute(connection).await?;
+        // let statement = create_uk_1().to_string(sea_query::SqliteQueryBuilder);
+        // sqlx::query(&statement).execute(connection).await?;
+
+        sqlx::query(r#"CREATE UNIQUE INDEX "uk_user_fN5xcl" on "user" ("email" COLLATE NOCASE)"#)
+            .execute(connection)
+            .await?;
 
         Ok(())
     }
@@ -106,8 +108,63 @@ impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateUk1 {
         &self,
         connection: &mut sqlx::SqliteConnection,
     ) -> Result<(), sqlx_migrator::Error> {
-        let statement = drop_uk_1().to_string(sea_query::SqliteQueryBuilder);
-        sqlx::query(&statement).execute(connection).await?;
+        // let statement = drop_uk_1().to_string(sea_query::SqliteQueryBuilder);
+        // sqlx::query(&statement).execute(connection).await?;
+
+        sqlx::query(r#"DROP INDEX "uk_user_fN5xcl""#)
+            .execute(connection)
+            .await?;
+
+        Ok(())
+    }
+}
+
+pub struct CreateUk2;
+
+// fn create_uk_2() -> IndexCreateStatement {
+//     Index::create()
+//         .name("uk_user_yNpV2x")
+//         .table(User::Table)
+//         .unique()
+//         .col(Expr::cust("username COLLATE NOCASE"))
+//         .to_owned()
+// }
+//
+// fn drop_uk_2() -> IndexDropStatement {
+//     Index::drop()
+//         .name("uk_user_yNpV2x")
+//         .table(User::Table)
+//         .to_owned()
+// }
+
+#[async_trait::async_trait]
+impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateUk2 {
+    async fn up(
+        &self,
+        connection: &mut sqlx::SqliteConnection,
+    ) -> Result<(), sqlx_migrator::Error> {
+        // let statement = create_uk_2().to_string(sea_query::SqliteQueryBuilder);
+        // sqlx::query(&statement).execute(connection).await?;
+
+        sqlx::query(
+            r#"CREATE UNIQUE INDEX "uk_user_yNpV2x" on "user" ("username" COLLATE NOCASE)"#,
+        )
+        .execute(connection)
+        .await?;
+
+        Ok(())
+    }
+
+    async fn down(
+        &self,
+        connection: &mut sqlx::SqliteConnection,
+    ) -> Result<(), sqlx_migrator::Error> {
+        // let statement = drop_uk_2().to_string(sea_query::SqliteQueryBuilder);
+        // sqlx::query(&statement).execute(connection).await?;
+
+        sqlx::query(r#"DROP INDEX "uk_user_yNpV2x""#)
+            .execute(connection)
+            .await?;
 
         Ok(())
     }

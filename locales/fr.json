@@ -739,6 +739,7 @@
   "Something went wrong, please retry later": "Une erreur s'est produite, veuillez réessayer plus tard",
   "Passwords don't match. Please make sure both fields are identical.": "Les mots de passe ne correspondent pas. Veuillez vous assurer que les deux champs sont identiques.",
   "Email already exists": "L'adresse e-mail existe déjà",
+  "Username already used": "Nom d'utilisateur déjà utilisé",
   "Invalid email or password. Please try again.": "E-mail ou mot de passe invalide. Veuillez réessayer.",
   "Profile & Settings": "Profil & Paramètres",
   "Manage your account and preferences": "Gérez votre compte et vos préférences",
