@@ -71,7 +71,7 @@
             2,847 views
           </span>
           <span class="text-gray-400">•</span>
-          <span>3 days ago</span>
+          <span>{{ recipe.created_at|relative_time }}</span>
         </div>
 
         <!-- Action Buttons (YouTube Style) -->
@@ -159,7 +159,8 @@
             <span class="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-semibold rounded-full">{{
               recipe.cuisine_type.as_ref()|t }}</span>
             {% if recipe.accepts_accompaniment %}
-            <span class="px-3 py-1 bg-orange-100 text-orange-800 text-sm font-semibold rounded-full">{{ "Accepts Accompaniments"|t }}</span>
+            <span class="px-3 py-1 bg-orange-100 text-orange-800 text-sm font-semibold rounded-full">{{ "Accepts
+              Accompaniments"|t }}</span>
             {% endif %}
           </div>
 
@@ -439,7 +440,7 @@
             {% if let Some(username)= cook_recipe.node.username %}
             <p class="text-xs text-gray-600">@{{ username }}</p>
             {% endif %}
-            <p class="text-xs text-gray-500">1.2K views • 2 weeks ago</p>
+            <p class="text-xs text-gray-500">1.2K views • {{ cook_recipe.node.created_at|relative_time }}</p>
           </div>
         </a>
         {% endfor %}
@@ -480,7 +481,7 @@
             {% if let Some(username)= similar_recipe.node.username %}
             <p class="text-xs text-gray-600">@{{ username }}</p>
             {% endif %}
-            <p class="text-xs text-gray-500">1.2K views • 2 weeks ago</p>
+            <p class="text-xs text-gray-500">1.2K views • {{ similar_recipe.node.created_at|relative_time }}</p>
           </div>
         </a>
         {% endfor %}

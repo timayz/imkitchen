@@ -40,6 +40,7 @@ pub struct RecipeRow {
     pub accepts_accompaniment: bool,
     pub advance_prep: String,
     pub is_shared: bool,
+    pub created_at: u64,
 }
 
 #[derive(Debug, Default, FromRow)]
