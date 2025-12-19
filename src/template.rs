@@ -158,9 +158,7 @@ pub(crate) mod filters {
                         .to_string()
                 }
             }
-            s if s < 172800 => {
-                rust_i18n::t!("yesterday", locale = preferred_language).to_string()
-            }
+            s if s < 172800 => rust_i18n::t!("yesterday", locale = preferred_language).to_string(),
             s if s < 604800 => {
                 rust_i18n::t!("days ago", locale = preferred_language, count = days).to_string()
             }
