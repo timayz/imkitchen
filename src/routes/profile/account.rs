@@ -1,11 +1,13 @@
-// use axum::Form;
+use axum::Form;
 use axum::extract::State;
 use axum::response::IntoResponse;
-// use serde::Deserialize;
+use imkitchen_user::SetUsernameInput;
+use serde::Deserialize;
 
 use crate::auth::AuthUser;
 use crate::routes::AppState;
 use crate::template::Template;
+use crate::template::ToastErrorTemplate;
 use crate::template::filters;
 
 #[derive(askama::Template)]
@@ -37,4 +39,38 @@ pub async fn action(
     // Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {
     ""
+}
+
+#[derive(Deserialize)]
+pub struct SetUsernameActionInput {
+    pub username: String,
+}
+
+pub async fn set_username_action(
+    template: Template,
+    user: AuthUser,
+    State(app): State<AppState>,
+    Form(input): Form<SetUsernameActionInput>,
+) -> impl IntoResponse {
+    if user.username.is_some() {
+        return (
+            [("ts-swap", "skip")],
+            template.render(ToastErrorTemplate {
+                original: None,
+                message: "Username has already been set.",
+                description: None,
+            }),
+        )
+            .into_response();
+    }
+
+    crate::try_response!(
+        app.user_command.set_username(SetUsernameInput {
+            user_id: user.id.to_owned(),
+            username: input.username
+        }),
+        template
+    );
+
+    "<div ts-trigger=\"load\" ts-action=\"remove\"></div>".into_response()
 }

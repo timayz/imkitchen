@@ -10,7 +10,7 @@ use evento::{
     cursor::{Args, ReadResult},
     sql::Reader,
 };
-use imkitchen_db::table::RecipeList;
+use imkitchen_db::table::{RecipeList, User};
 use imkitchen_shared::Event;
 use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
@@ -26,6 +26,7 @@ pub struct RecipeQueryCursor {
 pub struct RecipeRow {
     pub id: String,
     pub user_id: String,
+    pub username: Option<String>,
     pub recipe_type: sqlx::types::Text<RecipeType>,
     pub cuisine_type: sqlx::types::Text<CuisineType>,
     pub name: String,
@@ -39,11 +40,14 @@ pub struct RecipeRow {
     pub accepts_accompaniment: bool,
     pub advance_prep: String,
     pub is_shared: bool,
+    pub created_at: u64,
 }
 
 #[derive(Debug, Default, FromRow)]
 pub struct RecipeListRow {
     pub id: String,
+    pub user_id: String,
+    pub username: Option<String>,
     pub recipe_type: sqlx::types::Text<RecipeType>,
     pub cuisine_type: sqlx::types::Text<CuisineType>,
     pub name: String,
@@ -52,7 +56,7 @@ pub struct RecipeListRow {
     pub cook_time: u16,
     pub dietary_restrictions: sqlx::types::Json<Vec<DietaryRestriction>>,
     pub accepts_accompaniment: bool,
-    // pub is_shared: bool,
+    pub is_shared: bool,
     pub created_at: u64,
 }
 
@@ -68,13 +72,16 @@ impl evento::cursor::Cursor for RecipeListRow {
 }
 
 impl evento::sql::Bind for RecipeListRow {
-    type T = RecipeList;
+    type T = (RecipeList, RecipeList);
     type I = [Self::T; 2];
     type V = [Expr; 2];
     type Cursor = Self;
 
     fn columns() -> Self::I {
-        [RecipeList::CreatedAt, RecipeList::Id]
+        [
+            (RecipeList::Table, RecipeList::CreatedAt),
+            (RecipeList::Table, RecipeList::Id),
+        ]
     }
 
     fn values(
@@ -85,10 +92,13 @@ impl evento::sql::Bind for RecipeListRow {
 }
 
 pub struct RecipesQuery {
+    pub exclude_ids: Option<Vec<String>>,
     pub user_id: Option<String>,
     pub recipe_type: Option<RecipeType>,
     pub cuisine_type: Option<CuisineType>,
     pub is_shared: Option<bool>,
+    pub dietary_restrictions: Vec<DietaryRestriction>,
+    pub dietary_where_any: bool,
     pub sort_by: SortBy,
     pub args: Args,
 }
@@ -97,23 +107,39 @@ impl super::Query {
     pub async fn filter(&self, query: RecipesQuery) -> anyhow::Result<ReadResult<RecipeListRow>> {
         let mut statement = sea_query::Query::select()
             .columns([
-                RecipeList::Id,
-                RecipeList::RecipeType,
-                RecipeList::CuisineType,
-                RecipeList::Name,
-                RecipeList::Description,
-                RecipeList::PrepTime,
-                RecipeList::CookTime,
-                RecipeList::DietaryRestrictions,
-                RecipeList::AcceptsAccompaniment,
-                RecipeList::IsShared,
-                RecipeList::CreatedAt,
+                (RecipeList::Table, RecipeList::Id),
+                (RecipeList::Table, RecipeList::UserId),
+                (RecipeList::Table, RecipeList::RecipeType),
+                (RecipeList::Table, RecipeList::CuisineType),
+                (RecipeList::Table, RecipeList::Name),
+                (RecipeList::Table, RecipeList::Description),
+                (RecipeList::Table, RecipeList::PrepTime),
+                (RecipeList::Table, RecipeList::CookTime),
+                (RecipeList::Table, RecipeList::DietaryRestrictions),
+                (RecipeList::Table, RecipeList::AcceptsAccompaniment),
+                (RecipeList::Table, RecipeList::IsShared),
+                (RecipeList::Table, RecipeList::CreatedAt),
             ])
+            .column((User::Table, User::Username))
             .from(RecipeList::Table)
+            .join(
+                sea_query::JoinType::LeftJoin,
+                User::Table,
+                Expr::col((RecipeList::Table, RecipeList::UserId)).equals((User::Table, User::Id)),
+            )
             .to_owned();
 
         if let Some(user_id) = query.user_id {
             statement.and_where(Expr::col(RecipeList::UserId).eq(user_id));
+        }
+
+        if let Some(is_shared) = query.is_shared {
+            statement.and_where(Expr::col(RecipeList::IsShared).eq(is_shared));
+        }
+
+        if let Some(exclude_ids) = query.exclude_ids {
+            statement
+                .and_where(Expr::col((RecipeList::Table, RecipeList::Id)).is_not_in(exclude_ids));
         }
 
         if let Some(recipe_type) = query.recipe_type {
@@ -124,8 +150,45 @@ impl super::Query {
             statement.and_where(Expr::col(RecipeList::CuisineType).eq(cuisine_type.to_string()));
         }
 
-        if let Some(is_shared) = query.is_shared {
-            statement.and_where(Expr::col(RecipeList::IsShared).eq(is_shared));
+        if !query.dietary_restrictions.is_empty() && !query.dietary_where_any {
+            let in_clause = query
+                .dietary_restrictions
+                .iter()
+                .map(|_| "?")
+                .collect::<Vec<_>>()
+                .join(", ");
+
+            statement.and_where(Expr::cust_with_values(
+                format!("(SELECT COUNT(*) FROM json_each(dietary_restrictions) WHERE value IN ({})) = ?", in_clause),
+            query.dietary_restrictions
+                .iter()
+                .map(|t| sea_query::Value::String(Some(*Box::new(t.to_string()))))
+                .chain(std::iter::once(sea_query::Value::Int(Some(
+                    query.dietary_restrictions.len() as i32,
+                ))))
+                .collect::<Vec<_>>(),
+            ));
+        }
+
+        if !query.dietary_restrictions.is_empty() && query.dietary_where_any {
+            let in_clause = query
+                .dietary_restrictions
+                .iter()
+                .map(|_| "?")
+                .collect::<Vec<_>>()
+                .join(", ");
+
+            statement.and_where(Expr::cust_with_values(
+                format!(
+                    "(SELECT COUNT(*) FROM json_each(dietary_restrictions) WHERE value IN ({}))",
+                    in_clause
+                ),
+                query
+                    .dietary_restrictions
+                    .iter()
+                    .map(|t| sea_query::Value::String(Some(*Box::new(t.to_string()))))
+                    .collect::<Vec<_>>(),
+            ));
         }
 
         let mut reader = Reader::new(statement);
@@ -143,7 +206,6 @@ impl super::Query {
     pub async fn find(&self, id: impl Into<String>) -> anyhow::Result<Option<RecipeRow>> {
         let statement = sea_query::Query::select()
             .columns([
-                RecipeList::Id,
                 RecipeList::UserId,
                 RecipeList::RecipeType,
                 RecipeList::CuisineType,
@@ -158,11 +220,20 @@ impl super::Query {
                 RecipeList::AcceptsAccompaniment,
                 RecipeList::AdvancePrep,
                 RecipeList::IsShared,
-                RecipeList::CreatedAt,
                 RecipeList::UpdatedAt,
             ])
+            .columns([
+                (RecipeList::Table, RecipeList::Id),
+                (RecipeList::Table, RecipeList::CreatedAt),
+            ])
+            .column((User::Table, User::Username))
             .from(RecipeList::Table)
-            .and_where(Expr::col(RecipeList::Id).eq(id.into()))
+            .join(
+                sea_query::JoinType::LeftJoin,
+                User::Table,
+                Expr::col((RecipeList::Table, RecipeList::UserId)).equals((User::Table, User::Id)),
+            )
+            .and_where(Expr::col((RecipeList::Table, RecipeList::Id)).eq(id.into()))
             .limit(1)
             .to_owned();
 

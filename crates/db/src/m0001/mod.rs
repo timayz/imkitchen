@@ -24,6 +24,7 @@ sqlx_migrator::sqlite_migration!(
     vec_box![
         user::CreateTable,
         user::CreateUk1,
+        user::CreateUk2,
         user_login::CreateTable,
         user_login::CreateIdx1,
         user_login::CreateUk1,
@@ -39,6 +40,9 @@ sqlx_migrator::sqlite_migration!(
         recipe_list::CreateIdx1,
         recipe_list::CreateIdx2,
         recipe_list::CreateIdx3,
+        recipe_list::CreateIdx4,
+        recipe_list::CreateIdx5,
+        recipe_list::CreateIdx6,
         recipe_user_stat::CreateTable,
         mealplan_recipe::CreateTable,
         mealplan_recipe::CreateIdx1,

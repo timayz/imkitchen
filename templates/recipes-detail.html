@@ -20,28 +20,28 @@
         <div class="h-64 bg-linear-to-br from-blue-400 to-blue-500 flex items-center justify-center relative">
           <span class="text-9xl">🥗</span>
           <span class="absolute top-4 left-4 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-full">
-            {{ RecipeType::Appetizer.to_string().as_str()|t }}
+            {{ RecipeType::Appetizer.as_ref()|t }}
           </span>
         </div>
         {% when RecipeType::MainCourse %}
         <div class="h-64 bg-linear-to-br from-orange-400 to-red-500 flex items-center justify-center relative">
           <span class="text-9xl">🍛</span>
           <span class="absolute top-4 left-4 px-4 py-2 bg-orange-600 text-white text-sm font-semibold rounded-full">
-            {{ RecipeType::MainCourse.to_string().as_str()|t }}
+            {{ RecipeType::MainCourse.as_ref()|t }}
           </span>
         </div>
         {% when RecipeType::Dessert %}
         <div class="h-64 bg-linear-to-br from-pink-400 to-pink-500 flex items-center justify-center relative">
           <span class="text-9xl">🍰</span>
           <span class="absolute top-4 left-4 px-4 py-2 bg-pink-600 text-white text-sm font-semibold rounded-full">
-            {{ RecipeType::Dessert.to_string().as_str()|t }}
+            {{ RecipeType::Dessert.as_ref()|t }}
           </span>
         </div>
         {% when RecipeType::Accompaniment %}
         <div class="h-64 bg-linear-to-br from-purple-400 to-purple-500 flex items-center justify-center relative">
           <span class="text-9xl">🍚</span>
           <span class="absolute top-4 left-4 px-4 py-2 bg-purple-600 text-white text-sm font-semibold rounded-full">
-            {{ RecipeType::Accompaniment.to_string().as_str()|t }}
+            {{ RecipeType::Accompaniment.as_ref()|t }}
           </span>
         </div>
         {% endmatch %}
@@ -55,11 +55,11 @@
 
           <div class="flex gap-3 mb-4">
             {% for restriction in recipe.dietary_restrictions.iter() %}
-            <span class="px-3 py-1 bg-green-100 text-green-800 text-sm font-semibold rounded-full">{{ restriction.to_string().as_str()|t
+            <span class="px-3 py-1 bg-green-100 text-green-800 text-sm font-semibold rounded-full">{{ restriction.as_ref()|t
               }}</span>
             {% endfor %}
-            <span class="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-semibold rounded-full">{{ recipe.cuisine_type.to_string().as_str()|t }}</span>
-            {% if !recipe.accepts_accompaniment %}
+            <span class="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-semibold rounded-full">{{ recipe.cuisine_type.as_ref()|t }}</span>
+            {% if recipe.accepts_accompaniment %}
             <span class="px-3 py-1 bg-orange-100 text-orange-800 text-sm font-semibold rounded-full">
               {{ "Accepts Accompaniments"|t }}</span>
             {% endif %}

@@ -6,10 +6,12 @@ use argon2::{
 };
 use evento::{AggregatorName, Executor, LoadResult, SubscribeBuilder};
 use imkitchen_shared::{Event, Metadata};
+use regex::Regex;
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use serde::Deserialize;
 use sqlx::{SqlitePool, prelude::FromRow};
+use std::sync::LazyLock;
 use time::OffsetDateTime;
 use ulid::Ulid;
 use validator::Validate;
@@ -23,9 +25,12 @@ use crate::{
 };
 use imkitchen_db::table::{User as UserIden, UserLogin};
 
+static RE_ALPHA_NUM: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^[A-Za-z0-9_]+$").unwrap());
+
 #[derive(Default, Debug, Clone, FromRow)]
 pub struct AuthUser {
     pub id: String,
+    pub username: Option<String>,
     pub role: sqlx::types::Text<Role>,
     pub state: sqlx::types::Text<State>,
     pub subscription_expire_at: u64,
@@ -42,6 +47,10 @@ impl AuthUser {
         };
 
         self.subscription_expire_at > now.as_secs()
+    }
+
+    pub fn username(&self) -> String {
+        self.username.to_owned().unwrap_or("john_doe".to_owned())
     }
 }
 
@@ -63,6 +72,7 @@ impl<E: Executor + Clone> Command<E> {
         let statement = Query::select()
             .columns([
                 UserIden::Id,
+                UserIden::Username,
                 UserIden::Role,
                 UserIden::State,
                 UserIden::SubscriptionExpireAt,
@@ -88,6 +98,7 @@ impl<E: Executor + Clone> Command<E> {
         let statement = Query::select()
             .columns([
                 UserIden::Id,
+                UserIden::Username,
                 UserIden::Role,
                 UserIden::State,
                 UserIden::SubscriptionExpireAt,
@@ -204,6 +215,40 @@ impl<E: Executor + Clone> Command<E> {
             .await?;
 
         Ok(())
+    }
+}
+
+#[derive(Validate)]
+pub struct SetUsernameInput {
+    pub user_id: String,
+    #[validate(length(min = 3, max = 15), regex(path = *RE_ALPHA_NUM, message = "Only letters (A-Z, a-z) and numbers (0-9) are allowed."))]
+    pub username: String,
+}
+
+impl<E: Executor + Clone> Command<E> {
+    pub async fn set_username(&self, input: SetUsernameInput) -> imkitchen_shared::Result<()> {
+        input.validate()?;
+
+        let statement = Query::update()
+            .table(UserIden::Table)
+            .value(UserIden::Username, input.username)
+            .and_where(Expr::col(UserIden::Id).eq(input.user_id))
+            .to_owned();
+
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+        let Err(e) = sqlx::query_with(&sql, values).execute(&self.write_db).await else {
+            return Ok(());
+        };
+
+        if !e
+            .to_string()
+            .contains("UNIQUE constraint failed: user.username")
+        {
+            return Err(e.into());
+        }
+
+        imkitchen_shared::bail!("Username already used")
     }
 }
 

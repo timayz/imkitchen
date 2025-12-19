@@ -59,7 +59,7 @@
 
         <!-- Welcome -->
         <div class="mb-8">
-            <h1 class="text-3xl font-bold mb-2">{{ "Welcome back, Michael!"|t }}</h1>
+          <h1 class="text-3xl font-bold mb-2">{{ "Welcome Back"|t }}{% if let Some(username) = user.username %}, @{{ username }}{% endif %}</h1>
             <p class="text-gray-600">{{ "Here's what's cooking today"|t }}</p>
         </div>
 
@@ -84,7 +84,7 @@
                             <div class="flex items-center justify-between mb-2">
                                 <div>
                                     <div class="text-xs text-blue-600 font-semibold uppercase mb-1">{{ "Appetizer"|t }}</div>
-                                    <a href="/recipes/{{ appetizer.id }}/detail"><h3 class="font-bold text-lg">{{ appetizer.name }}</h3></a>
+                                    <a href="/recipes/{{ appetizer.id }}/community"><h3 class="font-bold text-lg">{{ appetizer.name }}</h3></a>
                                 </div>
                                 <div class="text-sm text-gray-600">⏱️ {{ &appetizer.total_prep_time()|minutes }}</div>
                             </div>
@@ -106,7 +106,7 @@
                             <div class="flex items-center justify-between mb-2">
                                 <div>
                                     <div class="text-xs text-orange-600 font-semibold uppercase mb-1">{{ "Main Course"|t }}</div>
-                                    <a href="/recipes/{{ slot.main_course.id }}/detail"><h3 class="font-bold text-lg">{{ slot.main_course.name }}</h3></a>
+                                    <a href="/recipes/{{ slot.main_course.id }}/community"><h3 class="font-bold text-lg">{{ slot.main_course.name }}</h3></a>
                                 </div>
                                 <div class="text-sm text-gray-600">⏱️ {{ &slot.main_course.total_prep_time()|minutes }}</div>
                             </div>
@@ -124,7 +124,7 @@
                                     <span class="text-2xl">🍚</span>
                                     <div>
                                         <div class="text-xs text-purple-600 font-semibold uppercase">{{ "Accompaniment"|t }}</div>
-                                        <a href="/recipes/{{ accompaniment.id }}/detail" class="font-semibold">{{ accompaniment.name }}</a>
+                                        <a href="/recipes/{{ accompaniment.id }}/community" class="font-semibold">{{ accompaniment.name }}</a>
                                         <div class="text-xs text-gray-600">⏱️ {{ &accompaniment.total_prep_time()|minutes }}</div>
                                     </div>
                                 </div>
@@ -150,7 +150,7 @@
                             <div class="flex items-center justify-between mb-2">
                                 <div>
                                     <div class="text-xs text-pink-600 font-semibold uppercase mb-1">{{ "Dessert"|t }}</div>
-                                    <a href="/recipes/{{ dessert.id }}/detail"><h3 class="font-bold text-lg">{{ dessert.name }}</h3></a>
+                                    <a href="/recipes/{{ dessert.id }}/community"><h3 class="font-bold text-lg">{{ dessert.name }}</h3></a>
                                 </div>
                                 <div class="text-sm text-gray-600">⏱️ {{ &dessert.total_prep_time()|minutes }}</div>
                             </div>
@@ -184,12 +184,50 @@
                     </div>
                 </div>
 
+                {% if !user.is_premium() %}
+                <!-- Premium Upgrade Banner -->
+                <div class="bg-linear-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4">
+                    <div class="flex flex-col gap-4">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="text-2xl">✨</span>
+                                <h3 class="font-bold text-lg text-amber-900">{{ "Unlock the Full Experience"|t }}</h3>
+                            </div>
+                            <p class="text-amber-800 text-sm mb-3">{{ "You're on the free plan. Upgrade to Premium to get:"|t }}</p>
+                            <div class="grid grid-cols-1 gap-2 text-sm">
+                                <div class="flex items-center gap-2 text-amber-700">
+                                    <span class="text-green-600">✓</span>
+                                    <span>{{ "Unlimited recipes in plan"|t }}</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-amber-700">
+                                    <span class="text-green-600">✓</span>
+                                    <span>{{ "Appetizers, desserts & sides"|t }}</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-amber-700">
+                                    <span class="text-green-600">✓</span>
+                                    <span>{{ "Meal preferences applied"|t }}</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-amber-700">
+                                    <span class="text-green-600">✓</span>
+                                    <span>{{ "Batch recipe import"|t }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <a href="/upgrade" class="block w-full px-6 py-3 bg-linear-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-lg hover:from-amber-600 hover:to-orange-600 transition shadow-md text-center">
+                                {{ "Upgrade to Premium"|t }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
                 <!-- Advance preps -->
                 {% if let Some(remiders) = prep_remiders %}
                 <div class="bg-white rounded-lg shadow-lg p-6">
                   <h3 class="font-bold text-lg mb-4">{{ "Tomorrow's Prep Reminder"|t }}</h3>
                   {% for recipe in remiders %}
-                  <a href="/recipes/{{ recipe.id }}/detail">
+                  <a href="/recipes/{{ recipe.id }}/community">
                     <div class="mt-3 p-2 bg-yellow-100 border border-yellow-300 rounded text-sm text-yellow-800">
                       ⏰ <strong>{{ recipe.name }}:</strong> {{ recipe.advance_prep }}
                     </div>

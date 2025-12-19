@@ -19,6 +19,7 @@ use crate::{
 #[template(path = "recipes-index.html")]
 pub struct IndexTemplate {
     pub current_path: String,
+    pub recipes_path: String,
     pub user: AuthUser,
     pub stat: UserStat,
     pub recipes: ReadResult<RecipeListRow>,
@@ -29,6 +30,7 @@ impl Default for IndexTemplate {
     fn default() -> Self {
         Self {
             current_path: "recipes".to_owned(),
+            recipes_path: "user".to_owned(),
             user: AuthUser::default(),
             stat: UserStat::default(),
             recipes: ReadResult::default(),
@@ -77,10 +79,13 @@ pub async fn page(
 
     let recipes = crate::try_page_response!(
         app.recipe_query.filter(RecipesQuery {
+            exclude_ids: None,
             user_id: Some(user.id.to_owned()),
             recipe_type,
             cuisine_type,
             is_shared: None,
+            dietary_restrictions: vec![],
+            dietary_where_any: false,
             sort_by: input.sort_by.unwrap_or_default(),
             args: args.limit(20),
         }),
@@ -139,6 +144,54 @@ pub async fn create_status(
         Some(_) => Redirect::to(&format!("/recipes/{id}/edit")).into_response(),
         _ => template
             .render(CreateButtonTemplate {
+                id: &id,
+                status: Status::Checking,
+            })
+            .into_response(),
+    }
+}
+
+#[derive(askama::Template)]
+#[template(path = "partials/recipes-create-mobile-button.html")]
+pub struct CreateMobileButtonTemplate<'a> {
+    pub id: &'a str,
+    pub status: Status,
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn create_mobile(
+    template: Template,
+    user: AuthUser,
+    State(app): State<AppState>,
+) -> impl IntoResponse {
+    let id = crate::try_response!(
+        app.recipe_command.create(&Metadata::by(user.id.to_owned())),
+        template
+    );
+
+    template
+        .render(CreateMobileButtonTemplate {
+            id: &id,
+            status: Status::Pending,
+        })
+        .into_response()
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn create_mobile_status(
+    template: Template,
+    user: AuthUser,
+    Path((id,)): Path<(String,)>,
+    State(app): State<AppState>,
+) -> impl IntoResponse {
+    match crate::try_response!(anyhow:
+        app.recipe_query.find(&id),
+        template,
+        Some(CreateMobileButtonTemplate { id: &id, status: Status::Idle })
+    ) {
+        Some(_) => Redirect::to(&format!("/recipes/{id}/edit")).into_response(),
+        _ => template
+            .render(CreateMobileButtonTemplate {
                 id: &id,
                 status: Status::Checking,
             })

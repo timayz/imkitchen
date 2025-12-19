@@ -60,6 +60,9 @@ pub async fn test_recipe_query() -> anyhow::Result<()> {
     let result = query
         .filter(RecipesQuery {
             args: Args::default(),
+            exclude_ids: None,
+            dietary_where_any: false,
+            dietary_restrictions: vec![],
             user_id: Some("john".to_owned()),
             sort_by: SortBy::RecentlyAdded,
             is_shared: None,

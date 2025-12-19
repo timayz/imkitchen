@@ -10,7 +10,6 @@ use crate::template::{NotFoundTemplate, Template};
 mod about;
 mod admin;
 mod calendar;
-mod community;
 mod contact;
 mod health;
 mod help;
@@ -95,12 +94,20 @@ pub fn router(app_state: AppState) -> Router {
             "/calendar/week-{timestamp}/shopping/toggle",
             post(shopping::toggle_action),
         )
-        .route("/community", get(community::page))
         .route("/recipes", get(recipes::index::page))
+        .route("/recipes/community", get(recipes::community::page))
         .route("/recipes/create", post(recipes::index::create))
         .route(
             "/recipes/create/{id}/status",
             get(recipes::index::create_status),
+        )
+        .route(
+            "/recipes/create-mobile",
+            post(recipes::index::create_mobile),
+        )
+        .route(
+            "/recipes/create-mobile/{id}/status",
+            get(recipes::index::create_mobile_status),
         )
         .route(
             "/recipes/import",
@@ -125,6 +132,10 @@ pub fn router(app_state: AppState) -> Router {
             get(recipes::detail::delete_modal).post(recipes::detail::delete_action),
         )
         .route(
+            "/recipes/{id}/community",
+            get(recipes::community_detail::page),
+        )
+        .route(
             "/recipes/{id}/edit",
             get(recipes::edit::page).post(recipes::edit::action),
         )
@@ -140,6 +151,10 @@ pub fn router(app_state: AppState) -> Router {
         .route(
             "/profile/account",
             get(profile::account::page).post(profile::account::action),
+        )
+        .route(
+            "/profile/account/set-username",
+            post(profile::account::set_username_action),
         )
         .route(
             "/profile/meal-preferences",

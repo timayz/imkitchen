@@ -248,3 +248,124 @@ impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateIdx3 {
         Ok(())
     }
 }
+
+pub struct CreateIdx4;
+
+fn create_idx_4() -> IndexCreateStatement {
+    Index::create()
+        .name("idx_recipe_list_QJBhvl")
+        .table(RecipeList::Table)
+        .col(RecipeList::IsShared)
+        .col(RecipeList::CuisineType)
+        .to_owned()
+}
+
+fn drop_idx_4() -> IndexDropStatement {
+    Index::drop()
+        .name("idx_recipe_list_QJBhvl")
+        .table(RecipeList::Table)
+        .to_owned()
+}
+
+#[async_trait::async_trait]
+impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateIdx4 {
+    async fn up(
+        &self,
+        connection: &mut sqlx::SqliteConnection,
+    ) -> Result<(), sqlx_migrator::Error> {
+        let statement = create_idx_4().to_string(sea_query::SqliteQueryBuilder);
+        sqlx::query(&statement).execute(connection).await?;
+
+        Ok(())
+    }
+
+    async fn down(
+        &self,
+        connection: &mut sqlx::SqliteConnection,
+    ) -> Result<(), sqlx_migrator::Error> {
+        let statement = drop_idx_4().to_string(sea_query::SqliteQueryBuilder);
+        sqlx::query(&statement).execute(connection).await?;
+
+        Ok(())
+    }
+}
+
+pub struct CreateIdx5;
+
+fn create_idx_5() -> IndexCreateStatement {
+    Index::create()
+        .name("idx_recipe_list_kXJfAR")
+        .table(RecipeList::Table)
+        .col(RecipeList::IsShared)
+        .col(RecipeList::RecipeType)
+        .to_owned()
+}
+
+fn drop_idx_5() -> IndexDropStatement {
+    Index::drop()
+        .name("idx_recipe_list_kXJfAR")
+        .table(RecipeList::Table)
+        .to_owned()
+}
+
+#[async_trait::async_trait]
+impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateIdx5 {
+    async fn up(
+        &self,
+        connection: &mut sqlx::SqliteConnection,
+    ) -> Result<(), sqlx_migrator::Error> {
+        let statement = create_idx_5().to_string(sea_query::SqliteQueryBuilder);
+        sqlx::query(&statement).execute(connection).await?;
+
+        Ok(())
+    }
+
+    async fn down(
+        &self,
+        connection: &mut sqlx::SqliteConnection,
+    ) -> Result<(), sqlx_migrator::Error> {
+        let statement = drop_idx_5().to_string(sea_query::SqliteQueryBuilder);
+        sqlx::query(&statement).execute(connection).await?;
+
+        Ok(())
+    }
+}
+pub struct CreateIdx6;
+
+fn create_idx_6() -> IndexCreateStatement {
+    Index::create()
+        .name("idx_recipe_list_P4CTqO")
+        .table(RecipeList::Table)
+        .col(RecipeList::IsShared)
+        .to_owned()
+}
+
+fn drop_idx_6() -> IndexDropStatement {
+    Index::drop()
+        .name("idx_recipe_list_P4CTqO")
+        .table(RecipeList::Table)
+        .to_owned()
+}
+
+#[async_trait::async_trait]
+impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateIdx6 {
+    async fn up(
+        &self,
+        connection: &mut sqlx::SqliteConnection,
+    ) -> Result<(), sqlx_migrator::Error> {
+        let statement = create_idx_6().to_string(sea_query::SqliteQueryBuilder);
+        sqlx::query(&statement).execute(connection).await?;
+
+        Ok(())
+    }
+
+    async fn down(
+        &self,
+        connection: &mut sqlx::SqliteConnection,
+    ) -> Result<(), sqlx_migrator::Error> {
+        let statement = drop_idx_6().to_string(sea_query::SqliteQueryBuilder);
+        sqlx::query(&statement).execute(connection).await?;
+
+        Ok(())
+    }
+}

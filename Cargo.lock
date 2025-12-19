@@ -1965,6 +1965,7 @@ dependencies = [
  "imkitchen-db",
  "imkitchen-recipe",
  "imkitchen-shared",
+ "regex",
  "sea-query",
  "sea-query-sqlx",
  "serde",

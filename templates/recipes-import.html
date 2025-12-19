@@ -12,16 +12,16 @@
 
   <!-- Upload Area -->
   <div class="bg-white rounded-lg shadow-lg p-8 mb-6">
+      <label for="recipes">
     <div id="recipes-drop"
       class="border-4 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-green-500 transition cursor-pointer">
-      <label for="recipes">
         <div class="text-6xl mb-4">📥</div>
         <h3 class="text-xl font-bold mb-2">{{ "Drag & Drop JSON Files"|t }}</h3>
         <p class="text-gray-600 mb-4">{{ "or click to browse"|t }}</p>
         <p class="text-sm text-gray-500 mt-4">{{ "Max 1MB • Up to 20 files • JSON format only"|t }}</p>
         <input type="file" id="recipes" class="hidden" multiple accept="application/json" />
-      </label>
     </div>
+      </label>
   </div>
 
   <div id="recipes-area" ts-trigger="importRecipes" ts-req="/recipes/import" ts-req-method="post" ts-swap="inner"></div>

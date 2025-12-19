@@ -9,6 +9,7 @@ evento.workspace = true
 bincode.workspace = true
 anyhow.workspace = true
 validator = { workspace = true, optional = true }
+regex = { workspace = true, optional = true }
 argon2.workspace = true
 sqlx = { workspace = true, optional = true }
 strum.workspace = true
@@ -29,4 +30,4 @@ futures.workspace = true
 
 [features]
 default = ["full", "imkitchen-recipe"]
-full = ["sqlx", "validator", "imkitchen-db", "time", "ulid"]
+full = ["sqlx", "validator", "imkitchen-db", "time", "ulid", "regex"]
