@@ -87,6 +87,9 @@ pub enum RecipeList {
     AcceptsAccompaniment,
     AdvancePrep,
     IsShared,
+    TotalViews,
+    TotalLikes,
+    TotalComments,
     CreatedAt,
     UpdatedAt,
 }
@@ -100,6 +103,16 @@ pub enum RecipeUserStat {
     Favorite,
     FromCommunity,
     CreatedAt,
+}
+
+#[derive(Iden, Clone)]
+pub enum RecipeRating {
+    Table,
+    RecipeId,
+    UserId,
+    Viewed,
+    Liked,
+    Unliked,
 }
 
 #[derive(Iden, Clone)]

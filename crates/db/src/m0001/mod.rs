@@ -5,6 +5,7 @@ mod mealplan_recipe;
 mod mealplan_slot;
 mod mealplan_week;
 mod recipe_list;
+mod recipe_rating;
 mod recipe_user_stat;
 mod shopping_list;
 mod user;
@@ -44,6 +45,8 @@ sqlx_migrator::sqlite_migration!(
         recipe_list::CreateIdx5,
         recipe_list::CreateIdx6,
         recipe_user_stat::CreateTable,
+        recipe_rating::CreateTable,
+        recipe_rating::CreateIdx1,
         mealplan_recipe::CreateTable,
         mealplan_recipe::CreateIdx1,
         mealplan_recipe::CreateIdx2,

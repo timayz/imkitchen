@@ -1,0 +1,36 @@
+<!-- Like Button -->
+<button id="like-btn" ts-swap-push="#like-btn" ts-req="/recipes/{{ id }}/{% if liked %}un{% endif %}check-like"
+  ts-req-method="post" class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition">
+  {% if liked %}
+  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+    <path
+      d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3v11zm2-11v11h6.263a2 2 0 001.789-1.106l3.5-7A2 2 0 0018.763 11H14V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11z">
+    </path>
+  </svg>
+  {% else %}
+  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+      d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
+    </path>
+  </svg>
+  {% endif %}
+  <span class="font-semibold">{{ total|views }}</span>
+</button>
+
+<!-- Dislike Button -->
+<button id="unlike-btn" ts-swap-push="#unlike-btn" ts-req="/recipes/{{ id }}/{% if unliked %}un{% endif %}check-unlike"
+  ts-req-method="post" class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition">
+  {% if unliked %}
+  <svg class="w-5 h-5 transform rotate-180" fill="currentColor" viewBox="0 0 24 24">
+    <path
+      d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3v11zm2-11v11h6.263a2 2 0 001.789-1.106l3.5-7A2 2 0 0018.763 11H14V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11z">
+    </path>
+  </svg>
+  {% else %}
+  <svg class="w-5 h-5 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+      d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
+    </path>
+  </svg>
+  {% endif %}
+</button>
