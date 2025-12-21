@@ -39,6 +39,7 @@ pub struct AppState {
     pub contact_query: imkitchen_contact::Query,
     pub recipe_command: imkitchen_recipe::Command<evento::sql::RwSqlite>,
     pub recipe_query: imkitchen_recipe::Query,
+    pub rating_command: imkitchen_recipe::rating::Command<evento::sql::RwSqlite>,
     pub mealplan_command: imkitchen_mealplan::Command<evento::sql::RwSqlite>,
     pub mealplan_query: imkitchen_mealplan::Query,
     pub shopping_command: imkitchen_shopping::Command<evento::sql::RwSqlite>,
@@ -134,6 +135,26 @@ pub fn router(app_state: AppState) -> Router {
         .route(
             "/recipes/{id}/community",
             get(recipes::community_detail::page),
+        )
+        .route(
+            "/recipes/{id}/check-in",
+            post(recipes::community_detail::check_in),
+        )
+        .route(
+            "/recipes/{id}/check-like",
+            post(recipes::community_detail::check_like),
+        )
+        .route(
+            "/recipes/{id}/uncheck-like",
+            post(recipes::community_detail::uncheck_like),
+        )
+        .route(
+            "/recipes/{id}/check-unlike",
+            post(recipes::community_detail::check_unlike),
+        )
+        .route(
+            "/recipes/{id}/uncheck-unlike",
+            post(recipes::community_detail::uncheck_unlike),
         )
         .route(
             "/recipes/{id}/edit",

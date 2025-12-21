@@ -43,6 +43,8 @@ pub async fn serve(
     let contact_query = imkitchen_contact::Query(read_pool.clone());
     let recipe_command = imkitchen_recipe::Command(evento_executor.clone(), read_pool.clone());
     let recipe_query = imkitchen_recipe::Query(read_pool.clone());
+    let rating_command =
+        imkitchen_recipe::rating::Command(evento_executor.clone(), read_pool.clone());
     let mealplan_command = imkitchen_mealplan::Command(evento_executor.clone(), read_pool.clone());
     let mealplan_query = imkitchen_mealplan::Query(read_pool.clone());
     let shopping_command = imkitchen_shopping::Command(evento_executor.clone(), read_pool.clone());
@@ -97,6 +99,11 @@ pub async fn serve(
         .run(&evento_executor)
         .await?;
 
+    let sub_rating_command = imkitchen_recipe::rating::subscribe_command()
+        .data(write_pool.clone())
+        .run(&evento_executor)
+        .await?;
+
     let sub_mealplan_command = imkitchen_mealplan::subscribe_command()
         .data(write_pool.clone())
         .run(&evento_executor)
@@ -136,6 +143,7 @@ pub async fn serve(
         contact_query,
         recipe_command,
         recipe_query,
+        rating_command,
         mealplan_command,
         mealplan_query,
         shopping_command,
@@ -212,6 +220,7 @@ pub async fn serve(
         sub_contact_stat.shutdown_and_wait(),
         sub_recipe_list.shutdown_and_wait(),
         sub_recipe_user_stat.shutdown_and_wait(),
+        sub_rating_command.shutdown_and_wait(),
         sub_mealplan_command.shutdown_and_wait(),
         sub_mealplan_week.shutdown_and_wait(),
         sub_mealplan_slot.shutdown_and_wait(),

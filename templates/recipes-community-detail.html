@@ -1,11 +1,13 @@
 {% extends "_user.html" %}
 {% block title %}{{ recipe.name }} - imkitchen{% endblock %}
 {% block content %}
+<div ts-trigger="load" ts-req="/recipes/{{ recipe.id }}/check-in" ts-req-method="post" ts-swap="skip"></div>
 <!-- Main Content -->
 <div class="container mx-auto px-4 py-6 max-w-7xl">
   <!-- Back Button -->
   <div class="mb-4">
-    <a href="/recipes/community" class="text-green-600 hover:text-green-700 font-semibold flex items-center gap-2">
+    <a href="/recipes/community"
+      class="text-green-600 hover:text-green-700 font-semibold inline-flex items-center gap-2">
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
       </svg>
@@ -68,7 +70,7 @@
                 d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
               </path>
             </svg>
-            2,847 views
+            {{ recipe.total_views|views }} {{ "views"|t }}
           </span>
           <span class="text-gray-400">•</span>
           <span>{{ recipe.created_at|relative_time }}</span>
@@ -77,22 +79,42 @@
         <!-- Action Buttons (YouTube Style) -->
         <div class="flex flex-wrap items-center gap-2 md:gap-3">
           <!-- Like Button -->
-          <button class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition">
+          <button id="like-btn" ts-req="/recipes/{{ recipe.id }}/{% if rating.liked %}un{% endif %}check-like"
+            ts-req-method="post"
+            class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition">
+            {% if rating.liked %}
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path
+                d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3v11zm2-11v11h6.263a2 2 0 001.789-1.106l3.5-7A2 2 0 0018.763 11H14V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11z">
+              </path>
+            </svg>
+            {% else %}
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
               </path>
             </svg>
-            <span class="font-semibold">127</span>
+            {% endif %}
+            <span class="font-semibold">{{ &recipe.total_ulikes()|views }}</span>
           </button>
 
           <!-- Dislike Button -->
-          <button class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition">
+          <button id="unlike-btn" ts-req="/recipes/{{ recipe.id }}/{% if rating.unliked %}un{% endif %}check-unlike"
+            ts-req-method="post"
+            class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition">
+            {% if rating.unliked %}
+            <svg class="w-5 h-5 transform rotate-180" fill="currentColor" viewBox="0 0 24 24">
+              <path
+                d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3v11zm2-11v11h6.263a2 2 0 001.789-1.106l3.5-7A2 2 0 0018.763 11H14V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11z">
+              </path>
+            </svg>
+            {% else %}
             <svg class="w-5 h-5 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
               </path>
             </svg>
+            {% endif %}
           </button>
 
           <!-- Copy to My Recipes -->
@@ -219,189 +241,6 @@
           {% endfor %}
         </div>
       </div>
-
-      <!-- Comments Section (YouTube Style) -->
-      <div class="bg-white rounded-xl shadow-lg p-4 md:p-6">
-        <div class="flex items-center justify-between mb-6">
-          <h2 class="text-xl font-bold">23 Comments</h2>
-          <button class="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"></path>
-            </svg>
-            Sort by
-          </button>
-        </div>
-
-        <!-- Add Comment -->
-        <div class="flex gap-3 mb-8">
-          <div
-            class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold shrink-0">
-            ME
-          </div>
-          <div class="flex-1">
-            <input type="text" placeholder="Add a comment..."
-              class="w-full px-0 py-2 border-b border-gray-300 focus:border-gray-900 focus:outline-none bg-transparent" />
-            <div class="flex justify-end gap-2 mt-2 hidden">
-              <button class="px-4 py-2 text-gray-600 font-semibold rounded-full hover:bg-gray-100">Cancel</button>
-              <button class="px-4 py-2 bg-gray-200 text-gray-400 font-semibold rounded-full">Comment</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Comments List -->
-        <div class="space-y-6">
-          <!-- Comment 1 -->
-          <div class="flex gap-3">
-            <div
-              class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold shrink-0">
-              JD
-            </div>
-            <div class="flex-1">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="font-semibold text-sm">@jane_doe</span>
-                <span class="text-xs text-gray-500">2 days ago</span>
-              </div>
-              <p class="text-gray-800 mb-2">
-                Absolutely delicious! The curry paste makes it so flavorful. I served it with jasmine rice and my family
-                loved it. Will definitely make this again.
-              </p>
-              <div class="flex items-center gap-4">
-                <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
-                    </path>
-                  </svg>
-                  <span class="text-xs">24</span>
-                </button>
-                <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-                  <svg class="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
-                    </path>
-                  </svg>
-                </button>
-                <button class="text-xs font-semibold text-gray-600 hover:text-gray-900">Reply</button>
-              </div>
-
-              <!-- Reply (nested) -->
-              <div class="flex gap-3 mt-4 ml-2">
-                <div
-                  class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0">
-                  CK
-                </div>
-                <div class="flex-1">
-                  <div class="flex items-center gap-2 mb-1">
-                    <span class="font-semibold text-sm">@curry_king</span>
-                    <span class="bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded">Author</span>
-                    <span class="text-xs text-gray-500">1 day ago</span>
-                  </div>
-                  <p class="text-gray-800 mb-2">
-                    Thank you so much! So happy your family enjoyed it!
-                  </p>
-                  <div class="flex items-center gap-4">
-                    <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
-                        </path>
-                      </svg>
-                      <span class="text-xs">5</span>
-                    </button>
-                    <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-                      <svg class="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
-                        </path>
-                      </svg>
-                    </button>
-                    <button class="text-xs font-semibold text-gray-600 hover:text-gray-900">Reply</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Comment 2 -->
-          <div class="flex gap-3">
-            <div
-              class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold shrink-0">
-              MT
-            </div>
-            <div class="flex-1">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="font-semibold text-sm">@mike_thompson</span>
-                <span class="text-xs text-gray-500">1 week ago</span>
-              </div>
-              <p class="text-gray-800 mb-2">
-                Great recipe! I added some extra vegetables (carrots and snap peas) and it turned out perfect. The
-                instructions were clear and easy to follow.
-              </p>
-              <div class="flex items-center gap-4">
-                <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
-                    </path>
-                  </svg>
-                  <span class="text-xs">18</span>
-                </button>
-                <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-                  <svg class="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
-                    </path>
-                  </svg>
-                </button>
-                <button class="text-xs font-semibold text-gray-600 hover:text-gray-900">Reply</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Comment 3 -->
-          <div class="flex gap-3">
-            <div
-              class="w-10 h-10 bg-pink-500 rounded-full flex items-center justify-center text-white font-bold shrink-0">
-              SE
-            </div>
-            <div class="flex-1">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="font-semibold text-sm">@sarah_evans</span>
-                <span class="text-xs text-gray-500">2 weeks ago</span>
-              </div>
-              <p class="text-gray-800 mb-2">
-                Very good curry! A bit spicy for my taste, so I used less curry paste. Otherwise perfect comfort food.
-                Any suggestions for making it milder?
-              </p>
-              <div class="flex items-center gap-4">
-                <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
-                    </path>
-                  </svg>
-                  <span class="text-xs">12</span>
-                </button>
-                <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-                  <svg class="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
-                    </path>
-                  </svg>
-                </button>
-                <button class="text-xs font-semibold text-gray-600 hover:text-gray-900">Reply</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Load More Comments -->
-          <button
-            class="w-full py-3 text-center text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg">
-            Show more comments
-          </button>
-        </div>
-      </div>
     </div>
 
     <!-- Right Sidebar - Suggestions (YouTube Style) -->
@@ -438,9 +277,10 @@
             <h4 class="font-semibold text-sm group-hover:text-green-600 line-clamp-2 mb-1">{{ cook_recipe.node.name }}
             </h4>
             {% if let Some(username)= cook_recipe.node.username %}
-            <p class="text-xs text-gray-600">@{{ username }}</p>
+            <p class="text-xs text-gray-600 mb-1">@{{ username }}</p>
             {% endif %}
-            <p class="text-xs text-gray-500">1.2K views • {{ cook_recipe.node.created_at|relative_time }}</p>
+            <p class="text-xs text-gray-500">{{ cook_recipe.node.total_views|views }} {{ "views"|t }} • {{
+              cook_recipe.node.created_at|relative_time }}</p>
           </div>
         </a>
         {% endfor %}
@@ -479,9 +319,10 @@
               }}
             </h4>
             {% if let Some(username)= similar_recipe.node.username %}
-            <p class="text-xs text-gray-600">@{{ username }}</p>
+            <p class="text-xs text-gray-600 mb-1">@{{ username }}</p>
             {% endif %}
-            <p class="text-xs text-gray-500">1.2K views • {{ similar_recipe.node.created_at|relative_time }}</p>
+            <p class="text-xs text-gray-500">{{ similar_recipe.node.total_views|views }} {{ "views"|t }} • {{
+              similar_recipe.node.created_at|relative_time }}</p>
           </div>
         </a>
         {% endfor %}

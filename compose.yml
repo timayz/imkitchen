@@ -1,6 +1,8 @@
 services:
   traefik:
     image: "traefik:v3.6"
+    group_add:
+      - "${DOCKER_GID:-999}"
     ports:
       - "80:80"
       - "443:443"
@@ -12,12 +14,10 @@ services:
       - "traefik.http.routers.api.entrypoints=https"
       - "traefik.http.routers.api.service=api@internal"
     volumes:
-      - "${DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock:ro"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - ".docker/traefik/traefik.yaml:/etc/traefik/traefik.yml"
       - ".docker/traefik/dynamic.yaml:/etc/traefik/dynamic.yml"
       - ".docker/traefik/certs:/etc/traefik/certs"
-    environment:
-      - DOCKER_SOCK_FILE=/var/run/docker.sock
     extra_hosts:
       - host.docker.internal:host-gateway
 

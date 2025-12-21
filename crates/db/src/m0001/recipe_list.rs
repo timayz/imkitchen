@@ -93,6 +93,24 @@ fn create_table() -> TableCreateStatement {
                 .default(false),
         )
         .col(
+            ColumnDef::new(RecipeList::TotalViews)
+                .integer()
+                .not_null()
+                .default(0),
+        )
+        .col(
+            ColumnDef::new(RecipeList::TotalLikes)
+                .integer()
+                .not_null()
+                .default(0),
+        )
+        .col(
+            ColumnDef::new(RecipeList::TotalComments)
+                .integer()
+                .not_null()
+                .default(0),
+        )
+        .col(
             ColumnDef::new(RecipeList::CreatedAt)
                 .big_integer()
                 .not_null(),
@@ -330,6 +348,7 @@ impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateIdx5 {
         Ok(())
     }
 }
+
 pub struct CreateIdx6;
 
 fn create_idx_6() -> IndexCreateStatement {

@@ -6,7 +6,9 @@ use axum::{
 use evento::cursor::{Args, ReadResult};
 use imkitchen_recipe::{
     IngredientUnitFormat, RecipeListRow, RecipeRow, RecipeType, RecipesQuery, UserStat,
+    rating::RecipeRatingRow,
 };
+use imkitchen_shared::Metadata;
 
 use crate::{
     auth::AuthUser,
@@ -21,6 +23,7 @@ pub struct DetailTemplate {
     pub user: AuthUser,
     pub recipe: RecipeRow,
     pub stat: UserStat,
+    pub rating: RecipeRatingRow,
     pub cook_recipes: ReadResult<RecipeListRow>,
     pub similar_recipes: ReadResult<RecipeListRow>,
 }
@@ -34,6 +37,7 @@ impl Default for DetailTemplate {
             stat: UserStat::default(),
             cook_recipes: Default::default(),
             similar_recipes: Default::default(),
+            rating: Default::default(),
         }
     }
 }
@@ -54,6 +58,12 @@ pub async fn page(
     let stat =
         crate::try_page_response!(app.recipe_query.find_user_stat(&recipe.user_id), template)
             .unwrap_or_default();
+
+    let rating = crate::try_page_response!(
+        app.rating_command.find(&recipe.id, &recipe.user_id),
+        template
+    )
+    .unwrap_or_default();
 
     let exclude_ids = vec![recipe.id.to_owned()];
 
@@ -206,7 +216,139 @@ pub async fn page(
             stat,
             cook_recipes,
             similar_recipes,
+            rating,
             ..Default::default()
         })
+        .into_response()
+}
+
+pub async fn check_in(
+    template: Template,
+    user: AuthUser,
+    State(app): State<AppState>,
+    Path((id,)): Path<(String,)>,
+) -> impl IntoResponse {
+    crate::try_response!(
+        app.rating_command
+            .view(id, &Metadata::by(user.id.to_owned())),
+        template
+    );
+    "<div></div>".into_response()
+}
+
+#[derive(askama::Template)]
+#[template(path = "partials/recipes-community-detail-like-button.html")]
+pub struct LikeButtonTemplate {
+    pub id: String,
+    pub total: u64,
+    pub liked: bool,
+    pub unliked: bool,
+}
+
+pub async fn check_like(
+    template: Template,
+    user: AuthUser,
+    State(app): State<AppState>,
+    Path((id,)): Path<(String,)>,
+) -> impl IntoResponse {
+    crate::try_response!(
+        app.rating_command
+            .check_like(&id, &Metadata::by(user.id.to_owned())),
+        template
+    );
+
+    let mut recipe = crate::try_response!(anyhow_opt: app.recipe_query.find(&id), template);
+    recipe.total_likes += 1;
+
+    (
+        [("ts-swap", "skip")],
+        template.render(LikeButtonTemplate {
+            id,
+            total: recipe.total_ulikes(),
+            liked: true,
+            unliked: false,
+        }),
+    )
+        .into_response()
+}
+
+pub async fn uncheck_like(
+    template: Template,
+    user: AuthUser,
+    State(app): State<AppState>,
+    Path((id,)): Path<(String,)>,
+) -> impl IntoResponse {
+    crate::try_response!(
+        app.rating_command
+            .uncheck_like(&id, &Metadata::by(user.id.to_owned())),
+        template
+    );
+
+    let mut recipe = crate::try_response!(anyhow_opt: app.recipe_query.find(&id), template);
+    recipe.total_likes -= 1;
+
+    (
+        [("ts-swap", "skip")],
+        template.render(LikeButtonTemplate {
+            id,
+            total: recipe.total_ulikes(),
+            liked: false,
+            unliked: false,
+        }),
+    )
+        .into_response()
+}
+
+pub async fn check_unlike(
+    template: Template,
+    user: AuthUser,
+    State(app): State<AppState>,
+    Path((id,)): Path<(String,)>,
+) -> impl IntoResponse {
+    crate::try_response!(
+        app.rating_command
+            .check_unlike(&id, &Metadata::by(user.id.to_owned())),
+        template
+    );
+
+    let mut recipe = crate::try_response!(anyhow_opt: app.recipe_query.find(&id), template);
+    recipe.total_likes -= 1;
+
+    (
+        [("ts-swap", "skip")],
+        template.render(LikeButtonTemplate {
+            id,
+            total: recipe.total_ulikes(),
+            liked: false,
+            unliked: true,
+        }),
+    )
+        .into_response()
+}
+
+pub async fn uncheck_unlike(
+    template: Template,
+    user: AuthUser,
+    State(app): State<AppState>,
+    Path((id,)): Path<(String,)>,
+) -> impl IntoResponse {
+    crate::try_response!(
+        app.rating_command
+            .uncheck_unlike(&id, &Metadata::by(user.id.to_owned())),
+        template
+    );
+
+    let mut recipe = crate::try_response!(anyhow_opt: app.recipe_query.find(&id), template);
+    recipe.total_likes += 1;
+
+    (
+        [("ts-swap", "skip")],
+        template.render(LikeButtonTemplate {
+            id,
+            total: recipe.total_ulikes(),
+            liked: false,
+            unliked: false,
+        }),
+    )
         .into_response()
 }

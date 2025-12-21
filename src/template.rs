@@ -194,6 +194,38 @@ pub(crate) mod filters {
         Ok(value)
     }
 
+    pub fn views(count: &u64, _values: &dyn askama::Values) -> askama::Result<String> {
+        let value = match *count {
+            n if n >= 1_000_000_000 => {
+                let billions = n as f64 / 1_000_000_000.0;
+                if billions >= 10.0 {
+                    format!("{}B", (billions.round()) as u64)
+                } else {
+                    format!("{:.1}B", billions).replace(".0B", "B")
+                }
+            }
+            n if n >= 1_000_000 => {
+                let millions = n as f64 / 1_000_000.0;
+                if millions >= 10.0 {
+                    format!("{}M", (millions.round()) as u64)
+                } else {
+                    format!("{:.1}M", millions).replace(".0M", "M")
+                }
+            }
+            n if n >= 1_000 => {
+                let thousands = n as f64 / 1_000.0;
+                if thousands >= 10.0 {
+                    format!("{}K", (thousands.round()) as u64)
+                } else {
+                    format!("{:.1}K", thousands).replace(".0K", "K")
+                }
+            }
+            n => n.to_string(),
+        };
+
+        Ok(value)
+    }
+
     // pub fn assets(value: &str, values: &dyn askama::Values) -> askama::Result<String> {
     //     let config = askama::get_value::<crate::axum_extra::TemplateConfig>(values, "config")
     //         .expect("Unable to get config from askama::get_value");

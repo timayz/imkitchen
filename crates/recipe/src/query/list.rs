@@ -40,7 +40,16 @@ pub struct RecipeRow {
     pub accepts_accompaniment: bool,
     pub advance_prep: String,
     pub is_shared: bool,
+    pub total_views: u64,
+    pub total_likes: i64,
+    pub total_comments: u64,
     pub created_at: u64,
+}
+
+impl RecipeRow {
+    pub fn total_ulikes(&self) -> u64 {
+        self.total_likes.try_into().unwrap_or(0)
+    }
 }
 
 #[derive(Debug, Default, FromRow)]
@@ -57,6 +66,7 @@ pub struct RecipeListRow {
     pub dietary_restrictions: sqlx::types::Json<Vec<DietaryRestriction>>,
     pub accepts_accompaniment: bool,
     pub is_shared: bool,
+    pub total_views: u64,
     pub created_at: u64,
 }
 
@@ -118,6 +128,7 @@ impl super::Query {
                 (RecipeList::Table, RecipeList::DietaryRestrictions),
                 (RecipeList::Table, RecipeList::AcceptsAccompaniment),
                 (RecipeList::Table, RecipeList::IsShared),
+                (RecipeList::Table, RecipeList::TotalViews),
                 (RecipeList::Table, RecipeList::CreatedAt),
             ])
             .column((User::Table, User::Username))
@@ -220,6 +231,9 @@ impl super::Query {
                 RecipeList::AcceptsAccompaniment,
                 RecipeList::AdvancePrep,
                 RecipeList::IsShared,
+                RecipeList::TotalViews,
+                RecipeList::TotalLikes,
+                RecipeList::TotalComments,
                 RecipeList::UpdatedAt,
             ])
             .columns([

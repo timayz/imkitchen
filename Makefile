@@ -16,13 +16,13 @@ cert.install:
 		sudo mkcert -install
 
 up:
-	sudo docker compose up -d --remove-orphans
+	DOCKER_GID=$(getent group docker | cut -d: -f3) docker compose up -d --remove-orphans
 
 stop:
-	sudo docker compose stop
+	DOCKER_GID=$(getent group docker | cut -d: -f3) docker compose stop
 
 down:
-	sudo docker compose down -v --rmi local --remove-orphans
+	DOCKER_GID=$(getent group docker | cut -d: -f3) docker compose down -v --rmi local --remove-orphans
 
 # Watch and run server on code changes
 dev:
