@@ -1,14 +1,7 @@
 use bincode::{Decode, Encode};
-use imkitchen_shared::Event;
 
-#[derive(Encode, Decode, Clone, Debug)]
+#[derive(Encode, Decode, Clone, Debug, Default)]
 pub struct RecipeRating {}
-
-impl Default for RecipeRating {
-    fn default() -> Self {
-        Self {}
-    }
-}
 
 #[evento::aggregator]
 impl RecipeRating {
