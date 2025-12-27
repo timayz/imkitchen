@@ -6,7 +6,7 @@ authors.workspace = true
 
 [dependencies]
 evento.workspace = true
-bincode.workspace = true
+bitcode.workspace = true
 anyhow.workspace = true
 sqlx = { workspace = true, optional = true }
 time = { workspace = true, optional = true }

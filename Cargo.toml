@@ -15,11 +15,11 @@ axum-extra = { version = "0.12", features = ["cookie", "form", "query", "typed-h
 tower = "0.5"
 tower-http = { version = "0.6", features = ["fs", "trace", "compression-br", "compression-gzip"] }
 rust-i18n = "3.1"
-askama = "0.14"
+askama = "0.15"
 cfg-if = "1.0"
 sqlx = { version = "0.8", default-features = false, features = ["migrate", "json", "derive", "runtime-tokio", "sqlite"] }
 sqlx_migrator = { version = "0.18", features = ["sqlite"] }
-evento = { version = "1.8", features = ["sqlite", "rw"] }
+evento = { version = "2.0.0-alpha.6", features = ["sqlite", "rw"] }
 argon2 = { version = "0.5", features = ["std"] }
 jsonwebtoken = { version = "10.1", features = ["aws_lc_rs"] }
 lettre = { version = "0.11", features = ["rustls-tls", "builder"] }
@@ -36,7 +36,7 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 clap = { version = "4.5", features = ["derive"] }
 config = { version = "0.15", features = ["toml"] }
-bincode = "2.0"
+bitcode = "0.6"
 rust-embed = "8.8"
 mime_guess = "2.0"
 urlencoding = "2.1"
@@ -92,13 +92,13 @@ time = { workspace = true }
 strum = { workspace = true }
 cfg-if = { workspace = true }
 imkitchen-shared = { path = "crates/shared", version = "0.12.8" }
-imkitchen-contact = { path = "crates/contact", version = "0.12.8" }
-imkitchen-recipe = { path = "crates/recipe", version = "0.12.8" }
-imkitchen-mealplan = { path = "crates/mealplan", version = "0.12.8" }
-imkitchen-shopping = { path = "crates/shopping", version = "0.12.8" }
+# imkitchen-contact = { path = "crates/contact", version = "0.12.8" }
+# imkitchen-recipe = { path = "crates/recipe", version = "0.12.8" }
+# imkitchen-mealplan = { path = "crates/mealplan", version = "0.12.8" }
+# imkitchen-shopping = { path = "crates/shopping", version = "0.12.8" }
 imkitchen-user = { path = "crates/user", version = "0.12.8" }
 imkitchen-db = { path = "crates/db", version = "0.12.8" }
-imkitchen-notification = { path = "crates/notification", version = "0.12.8" }
+# imkitchen-notification = { path = "crates/notification", version = "0.12.8" }
 
 [dev-dependencies]
 http-body-util = "0.1"

@@ -106,7 +106,7 @@ pub async fn action(
             Ok(recipe_id) => {
                 id = Some(recipe_id);
             }
-            Err(imkitchen_shared::Error::Unknown(err)) => {
+            Err(imkitchen_shared::Error::Server(err)) => {
                 tracing::error!(user = user.id, err = %err,"failed to import recipes");
 
                 error_recipes.push(ErrorRecipe {

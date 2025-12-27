@@ -1,16 +1,11 @@
 use axum::{
-    extract::{Form, Path, State},
+    extract::{Form, State},
     response::{IntoResponse, Redirect},
 };
-use axum_extra::{TypedHeader, extract::CookieJar, headers::UserAgent};
-use imkitchen_shared::Metadata;
 use imkitchen_user::RegisterInput;
 use serde::Deserialize;
 
-use crate::{
-    auth::build_cookie,
-    template::{Status, ToastErrorTemplate, filters},
-};
+use crate::template::{ToastErrorTemplate, filters};
 use crate::{routes::AppState, template::Template};
 
 #[derive(askama::Template)]
@@ -29,13 +24,6 @@ pub async fn page(template: Template) -> impl IntoResponse {
     })
 }
 
-#[derive(askama::Template)]
-#[template(path = "partials/register-button.html")]
-pub struct RegisterButtonTemplate<'a> {
-    pub id: &'a str,
-    pub status: Status,
-}
-
 #[derive(Deserialize)]
 pub struct ActionInput {
     pub email: String,
@@ -46,8 +34,6 @@ pub struct ActionInput {
 pub async fn action(
     template: Template,
     State(app): State<AppState>,
-    TypedHeader(user_agent): TypedHeader<UserAgent>,
-    jar: CookieJar,
     Form(mut input): Form<ActionInput>,
 ) -> impl IntoResponse {
     if input.password != input.confirm_password {
@@ -66,84 +52,31 @@ pub async fn action(
         input.password = app.config.root.password;
     }
 
-    let login = crate::try_response!(
-        app.user_command.register(
+    let id = crate::try_response!(
+        imkitchen_user::Command::register(
+            &app.executor,
+            &app.read_db,
+            &app.write_db,
             RegisterInput {
                 email: input.email.to_owned(),
                 password: input.password.to_owned(),
                 lang: template.preferred_language_iso.to_owned(),
                 timezone: template.timezone.to_owned(),
-                user_agent: user_agent.to_string(),
             },
-            &Metadata::default()
         ),
         template
     );
 
-    let auth_cookie = crate::try_response!(sync anyhow:
-        build_cookie(app.config.jwt, login.id.to_owned(), login.revision.to_owned()),
-        template,
-        Some(RegisterButtonTemplate {
-            id: &login.user_id,
-            status: Status::Idle
-        })
-    );
-
-    let jar = jar.add(auth_cookie);
-
-    (
-        jar,
-        template.render(RegisterButtonTemplate {
-            id: &login.user_id,
-            status: Status::Pending,
-        }),
-    )
-        .into_response()
-}
-
-pub async fn status(
-    template: Template,
-    State(app): State<AppState>,
-    Path((id,)): Path<(String,)>,
-) -> impl IntoResponse {
-    let user = crate::try_response!(anyhow:
-        app.user_command.load(&id),
-        template,
-        Some(RegisterButtonTemplate { id: &id, status: Status::Idle })
-    );
-
-    match (user.item.status, user.item.failed_reason) {
-        (imkitchen_user::Status::Idle, _) => {
-            if user.item.email != app.config.root.email {
-                return Redirect::to("/").into_response();
-            }
-
-            crate::try_response!(
-                app.user_command
-                    .made_admin(&user.event.aggregator_id, &Metadata::default()),
-                template,
-                Some(RegisterButtonTemplate {
-                    id: &id,
-                    status: Status::Checking
-                })
-            );
-
-            Redirect::to("/login").into_response()
-        }
-        (imkitchen_user::Status::Failed, Some(reason)) => crate::try_response!(sync:
-            Err(imkitchen_shared::Error::Server(reason)),
-            template,
-            Some(RegisterButtonTemplate {
-                id: &id,
-                status: Status::Idle
-            })
-        ),
-        (imkitchen_user::Status::Failed, _) => unreachable!(),
-        (imkitchen_user::Status::Processing, _) => template
-            .render(RegisterButtonTemplate {
-                id: &id,
-                status: Status::Checking,
-            })
-            .into_response(),
+    if input.email != app.config.root.email {
+        return Redirect::to("/login").into_response();
     }
+
+    let command = crate::try_response!(anyhow_opt:
+        imkitchen_user::load(&app.executor, &app.read_db,&id),
+        template
+    );
+
+    crate::try_response!(command.made_admin(), template);
+
+    Redirect::to("/login").into_response()
 }

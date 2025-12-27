@@ -120,7 +120,7 @@ pub async fn regenerate_action(
 
     if status == Status::Processing {
         crate::try_response!(sync:
-            Err(imkitchen_shared::Error::Server(
+            Err(imkitchen_shared::Error::User(
                 "Mealplan already generating".to_owned()
             )),
             template
@@ -160,7 +160,7 @@ pub async fn regenerate_status(
 
     if meal_plan.item.status == Status::Failed {
         crate::try_response!(sync:
-            Err(imkitchen_shared::Error::Server(
+            Err(imkitchen_shared::Error::User(
                 meal_plan.item.reason.unwrap_or_default()
             )),
             template,

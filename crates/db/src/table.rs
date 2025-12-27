@@ -5,10 +5,10 @@ pub enum User {
     Table,
     Id,
     Email,
+    Password,
     Username,
     Role,
     State,
-    SubscriptionExpireAt,
     CreatedAt,
 }
 

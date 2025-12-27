@@ -36,15 +36,15 @@ impl<E: Executor + Clone> Command<E> {
     ) -> imkitchen_shared::Result<()> {
         let user_id = metadata.trigger_by()?;
         let Some(loaded) = self.load(&user_id).await? else {
-            imkitchen_shared::bail!("ingredient not found");
+            imkitchen_shared::user!("ingredient not found");
         };
 
         let Some(ingredients) = loaded.item.ingredients.get(&input.week) else {
-            imkitchen_shared::bail!("ingredient not found");
+            imkitchen_shared::user!("ingredient not found");
         };
 
         if !ingredients.contains(&input.name) {
-            imkitchen_shared::bail!("ingredient not found");
+            imkitchen_shared::user!("ingredient not found");
         }
 
         let checked = loaded

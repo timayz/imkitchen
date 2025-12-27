@@ -152,12 +152,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7d902e3d592a523def97af8f317b08ce16b7ab854c1985a0c671e6f15cebc236"
 
 [[package]]
-name = "askama"
-version = "0.14.0"
+name = "arrayvec"
+version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f75363874b771be265f4ffe307ca705ef6f3baa19011c149da8674a87f1b75c4"
+checksum = "7c02d123df017efcdfbd739ef81735b36c5ba83ec3c59c80a9d7ecc718f92e50"
+
+[[package]]
+name = "askama"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "21c01049339e624573a8027fe9392219f64d315a0ad24712b469611b3138f042"
 dependencies = [
- "askama_derive",
+ "askama_macros",
  "itoa",
  "percent-encoding",
  "serde",
@@ -166,9 +172,9 @@ dependencies = [
 
 [[package]]
 name = "askama_derive"
-version = "0.14.0"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "129397200fe83088e8a68407a8e2b1f826cf0086b21ccdb866a722c8bcd3a94f"
+checksum = "e393a25182a000666df345c2bdaa9ab6b0c243974ec7d29e377d6feea651778d"
 dependencies = [
  "askama_parser",
  "basic-toml",
@@ -182,14 +188,24 @@ dependencies = [
 ]
 
 [[package]]
-name = "askama_parser"
-version = "0.14.0"
+name = "askama_macros"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d6ab5630b3d5eaf232620167977f95eb51f3432fc76852328774afbd242d4358"
+checksum = "4e8bb77385d2954705452516f99511835be34b4c4a15a70800623b91406b1db9"
 dependencies = [
- "memchr",
+ "askama_derive",
+]
+
+[[package]]
+name = "askama_parser"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fb6401aa356822013db13e8f756011cd5042e7e61d37456bb8b7ef26feb8ebca"
+dependencies = [
+ "rustc-hash",
  "serde",
  "serde_derive",
+ "unicode-ident",
  "winnow",
 ]
 
@@ -431,6 +447,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "bitcode"
+version = "0.6.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0a6ed1b54d8dc333e7be604d00fa9262f4635485ffea923647b6521a5fff045d"
+dependencies = [
+ "arrayvec",
+ "bitcode_derive",
+ "bytemuck",
+ "glam",
+ "serde",
+]
+
+[[package]]
+name = "bitcode_derive"
+version = "0.6.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "238b90427dfad9da4a9abd60f3ec1cdee6b80454bde49ed37f1781dd8e9dc7f9"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.111",
+]
+
+[[package]]
 name = "bitflags"
 version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -536,6 +576,12 @@ dependencies = [
  "quote",
  "syn 1.0.109",
 ]
+
+[[package]]
+name = "bytemuck"
+version = "1.24.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1fbdf580320f38b612e485521afda1ee26d10cc9884efaaa750d383e13e3c5f4"
 
 [[package]]
 name = "byteorder"
@@ -1120,7 +1166,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -1147,21 +1193,30 @@ dependencies = [
 
 [[package]]
 name = "evento"
-version = "1.8.0"
+version = "2.0.0-alpha.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d32fc683543fc463b95fb9d709cb6dd698490fa0259cf683c30aa091e3a446da"
+checksum = "f583fa84f079e07772c61cefaaed95805ef50a485fbfc4ac24acb26b7767d977"
+dependencies = [
+ "evento-core",
+ "evento-sql",
+ "evento-sql-migrator",
+ "sqlx_migrator",
+]
+
+[[package]]
+name = "evento-core"
+version = "2.0.0-alpha.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "51381d961a9558fdb24762e5d40bf6ad03ee382003b0498d512c7afda561fb6b"
 dependencies = [
  "anyhow",
  "async-trait",
  "backon",
  "base64",
- "bincode",
+ "bitcode",
  "evento-macro",
- "sea-query",
- "sea-query-sqlx",
  "serde",
  "sqlx",
- "sqlx_migrator",
  "thiserror",
  "tokio",
  "tracing",
@@ -1170,15 +1225,42 @@ dependencies = [
 
 [[package]]
 name = "evento-macro"
-version = "1.8.0"
+version = "2.0.0-alpha.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4244185519e68a0badbd2022910c326db104fc20f94e000d37cc0622e6bd1dd1"
+checksum = "80f3eec78aa695e497661219751ca64a227453ca3be31296c0cefe8ea8c675bf"
 dependencies = [
  "convert_case 0.10.0",
- "proc-macro2",
  "quote",
- "sha3",
  "syn 2.0.111",
+]
+
+[[package]]
+name = "evento-sql"
+version = "2.0.0-alpha.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fe8b1d448779df8ff14d5d31a63a2d5735ebff7062586848fc29e07f4c6a8cb2"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bitcode",
+ "evento-core",
+ "sea-query",
+ "sea-query-sqlx",
+ "sqlx",
+ "ulid",
+]
+
+[[package]]
+name = "evento-sql-migrator"
+version = "2.0.0-alpha.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "470fc208946c8158ead892c10fc2ed459a7fb4fc62d90ffcdcf3acd9f9e40e2d"
+dependencies = [
+ "async-trait",
+ "evento-sql",
+ "sea-query",
+ "sqlx",
+ "sqlx_migrator",
 ]
 
 [[package]]
@@ -1394,6 +1476,12 @@ dependencies = [
  "r-efi",
  "wasip2",
 ]
+
+[[package]]
+name = "glam"
+version = "0.30.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bd47b05dddf0005d850e5644cae7f2b14ac3df487979dbfff3b56f20b1a6ae46"
 
 [[package]]
 name = "glob"
@@ -1792,13 +1880,8 @@ dependencies = [
  "evento",
  "futures",
  "http-body-util",
- "imkitchen-contact",
  "imkitchen-db",
- "imkitchen-mealplan",
- "imkitchen-notification",
- "imkitchen-recipe",
  "imkitchen-shared",
- "imkitchen-shopping",
  "imkitchen-user",
  "jsonwebtoken",
  "mime_guess",
@@ -1822,7 +1905,7 @@ name = "imkitchen-contact"
 version = "0.12.8"
 dependencies = [
  "anyhow",
- "bincode",
+ "bitcode",
  "cfg-if",
  "evento",
  "futures",
@@ -1843,7 +1926,7 @@ name = "imkitchen-db"
 version = "0.12.8"
 dependencies = [
  "async-trait",
- "bincode",
+ "bitcode",
  "evento",
  "sea-query",
  "sqlx",
@@ -1855,7 +1938,7 @@ name = "imkitchen-mealplan"
 version = "0.12.8"
 dependencies = [
  "anyhow",
- "bincode",
+ "bitcode",
  "cfg-if",
  "evento",
  "futures",
@@ -1898,7 +1981,7 @@ name = "imkitchen-recipe"
 version = "0.12.8"
 dependencies = [
  "anyhow",
- "bincode",
+ "bitcode",
  "cfg-if",
  "evento",
  "imkitchen-db",
@@ -1922,7 +2005,7 @@ version = "0.12.8"
 dependencies = [
  "anyhow",
  "argon2",
- "bincode",
+ "bitcode",
  "evento",
  "sqlx",
  "thiserror",
@@ -1936,7 +2019,7 @@ name = "imkitchen-shopping"
 version = "0.12.8"
 dependencies = [
  "anyhow",
- "bincode",
+ "bitcode",
  "cfg-if",
  "evento",
  "futures",
@@ -1959,7 +2042,7 @@ version = "0.12.8"
 dependencies = [
  "anyhow",
  "argon2",
- "bincode",
+ "bitcode",
  "cfg-if",
  "evento",
  "futures",
@@ -2060,6 +2143,7 @@ checksum = "cad0aaf716e798876e02217ae420bd730370a175ffd59870018c4aa4daa1513e"
 dependencies = [
  "jiff",
  "sqlx-core",
+ "sqlx-postgres",
  "sqlx-sqlite",
 ]
 
@@ -2446,7 +2530,7 @@ version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -3682,7 +3766,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -4316,6 +4400,7 @@ checksum = "5c2c8e2e8d41ea801686ee27a74946ecf7c4f5c1032433676a3070993fd8ca13"
 dependencies = [
  "async-trait",
  "clap",
+ "crc32fast",
  "sqlx",
  "thiserror",
  "tracing",
@@ -4451,7 +4536,7 @@ dependencies = [
  "getrandom 0.3.4",
  "once_cell",
  "rustix",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -5145,7 +5230,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

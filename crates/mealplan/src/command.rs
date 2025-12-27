@@ -80,7 +80,7 @@ impl<E: Executor + Clone> Command<E> {
             .map(|m| m.item.status == Status::Processing)
             .unwrap_or_default();
         if processing {
-            imkitchen_shared::bail!("Meal plan status is processing");
+            imkitchen_shared::user!("Meal plan status is processing");
         }
 
         let builder = loaded
@@ -181,7 +181,7 @@ pub async fn random_with(
     opts: RandomOpts,
 ) -> imkitchen_shared::Result<Vec<RandomRecipe>> {
     if opts.weight < 0.1 {
-        imkitchen_shared::bail!("weight must be greater than or equal to 0.1");
+        imkitchen_shared::user!("weight must be greater than or equal to 0.1");
     }
 
     let id = id.into();
