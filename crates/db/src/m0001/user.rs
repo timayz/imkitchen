@@ -20,6 +20,12 @@ fn create_table() -> TableCreateStatement {
                 .not_null()
                 .string_len(320),
         )
+        .col(
+            ColumnDef::new(User::Password)
+                .string()
+                .not_null()
+                .string_len(100),
+        )
         .col(ColumnDef::new(User::Username).string().string_len(15))
         .col(
             ColumnDef::new(User::Role)
@@ -32,12 +38,6 @@ fn create_table() -> TableCreateStatement {
                 .string()
                 .not_null()
                 .string_len(15),
-        )
-        .col(
-            ColumnDef::new(User::SubscriptionExpireAt)
-                .big_integer()
-                .not_null()
-                .default(0),
         )
         .col(ColumnDef::new(User::CreatedAt).big_integer().not_null())
         .to_owned()

@@ -1,82 +1,67 @@
-use bincode::{Decode, Encode};
-use evento::AggregatorName;
-
 use crate::{CuisineType, DietaryRestriction, Ingredient, Instruction, RecipeType};
 
-#[derive(AggregatorName, Encode, Decode)]
-pub struct Created {
-    pub name: String,
-}
+#[evento::aggregator]
+pub enum Recipe {
+    Created {
+        name: String,
+    },
 
-#[derive(AggregatorName, Encode, Decode)]
-pub struct Imported {
-    pub name: String,
-    pub description: String,
-    pub recipe_type: RecipeType,
-    pub cuisine_type: CuisineType,
-    pub household_size: u16,
-    pub prep_time: u16,
-    pub cook_time: u16,
-    pub ingredients: Vec<Ingredient>,
-    pub instructions: Vec<Instruction>,
-    pub advance_prep: String,
-}
+    Imported {
+        name: String,
+        description: String,
+        recipe_type: RecipeType,
+        cuisine_type: CuisineType,
+        household_size: u16,
+        prep_time: u16,
+        cook_time: u16,
+        ingredients: Vec<Ingredient>,
+        instructions: Vec<Instruction>,
+        advance_prep: String,
+    },
 
-#[derive(AggregatorName, Encode, Decode)]
-pub struct RecipeTypeChanged {
-    pub recipe_type: RecipeType,
-}
+    RecipeTypeChanged {
+        recipe_type: RecipeType,
+    },
 
-#[derive(AggregatorName, Encode, Decode)]
-pub struct BasicInformationChanged {
-    pub name: String,
-    pub description: String,
-    pub household_size: u16,
-    pub prep_time: u16,
-    pub cook_time: u16,
-}
+    BasicInformationChanged {
+        name: String,
+        description: String,
+        household_size: u16,
+        prep_time: u16,
+        cook_time: u16,
+    },
 
-#[derive(AggregatorName, Encode, Decode)]
-pub struct IngredientsChanged {
-    pub ingredients: Vec<Ingredient>,
-}
+    IngredientsChanged {
+        ingredients: Vec<Ingredient>,
+    },
 
-#[derive(AggregatorName, Encode, Decode)]
-pub struct InstructionsChanged {
-    pub instructions: Vec<Instruction>,
-}
+    InstructionsChanged {
+        instructions: Vec<Instruction>,
+    },
 
-#[derive(AggregatorName, Encode, Decode)]
-pub struct DietaryRestrictionsChanged {
-    pub dietary_restrictions: Vec<DietaryRestriction>,
-}
+    DietaryRestrictionsChanged {
+        dietary_restrictions: Vec<DietaryRestriction>,
+    },
 
-#[derive(AggregatorName, Encode, Decode)]
-pub struct CuisineTypeChanged {
-    pub cuisine_type: CuisineType,
-}
+    CuisineTypeChanged {
+        cuisine_type: CuisineType,
+    },
 
-#[derive(AggregatorName, Encode, Decode)]
-pub struct MainCourseOptionsChanged {
-    pub accepts_accompaniment: bool,
-}
+    MainCourseOptionsChanged {
+        accepts_accompaniment: bool,
+    },
 
-#[derive(AggregatorName, Encode, Decode)]
-pub struct AdvancePrepChanged {
-    pub advance_prep: String,
-}
+    AdvancePrepChanged {
+        advance_prep: String,
+    },
 
-#[derive(AggregatorName, Encode, Decode)]
-pub struct SharedToCommunity {
-    pub shared: bool,
-}
-
-#[derive(AggregatorName, Encode, Decode)]
-pub struct MadePrivate {
-    pub shared: bool,
-}
-
-#[derive(AggregatorName, Encode, Decode)]
-pub struct Deleted {
-    pub deleted: bool,
+    SharedToCommunity {
+        shared: bool,
+    },
+    MadePrivate {
+        shared: bool,
+    },
+    Deleted {
+        deleted: bool,
+    },
 }

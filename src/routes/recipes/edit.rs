@@ -149,7 +149,7 @@ pub async fn action(
         || input.ingredients_name.len() != input.ingredients_category.len()
     {
         crate::try_response!(sync:
-            Err(imkitchen_shared::Error::Server(
+            Err(imkitchen_shared::Error::User(
                 "ingredients_name, ingredients_quantity, ingredients_unit and ingredients_category size not matched"
                     .to_owned()
             )),
@@ -159,7 +159,7 @@ pub async fn action(
 
     if input.instructions_description.len() != input.instructions_time_next.len() {
         crate::try_response!(sync:
-            Err(imkitchen_shared::Error::Server(
+            Err(imkitchen_shared::Error::User(
                 "instructions_description and instructions_time_next size not matched"
                     .to_owned()
             )),

@@ -1,5 +1,5 @@
 use config::{Config as ConfigBuilder, ConfigError, Environment, File};
-use imkitchen_notification::EmailConfig;
+// use imkitchen_notification::EmailConfig;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone)]
@@ -8,7 +8,7 @@ pub struct Config {
     pub database: DatabaseConfig,
     pub jwt: JwtConfig,
     pub root: RootConfig,
-    pub email: EmailConfig,
+    // pub email: EmailConfig,
     // pub stripe: StripeConfig,
     pub features: FeaturesConfig,
     pub monitoring: MonitoringConfig,

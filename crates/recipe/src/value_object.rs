@@ -1,4 +1,4 @@
-use bincode::{Decode, Encode};
+use bitcode::{Decode, Encode};
 use serde::Deserialize;
 use strum::{AsRefStr, Display, EnumString, VariantArray};
 
@@ -113,7 +113,7 @@ impl IngredientUnitFormat for Option<IngredientUnit> {
     }
 }
 
-#[derive(Encode, Decode, Clone, Deserialize)]
+#[derive(Encode, Decode, Clone, Deserialize, Debug, PartialEq)]
 pub struct Ingredient {
     pub name: String,
     pub quantity: u32,
@@ -127,7 +127,7 @@ impl Ingredient {
     }
 }
 
-#[derive(Encode, Decode, Clone, Deserialize)]
+#[derive(Encode, Decode, Clone, Deserialize, Debug, PartialEq)]
 pub struct Instruction {
     pub description: String,
     pub time_next: u16,

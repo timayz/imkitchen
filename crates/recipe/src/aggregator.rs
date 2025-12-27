@@ -1,5 +1,5 @@
-use bincode::{Decode, Encode};
-use imkitchen_shared::Event;
+use bitcode::{Decode, Encode};
+use evento::metadata::Event;
 use sha3::{Digest, Sha3_224};
 
 use crate::{
@@ -23,16 +23,15 @@ pub struct Recipe {
     pub deleted: bool,
 }
 
-#[evento::aggregator]
 impl Recipe {
     async fn handle_created(&mut self, event: Event<Created>) -> anyhow::Result<()> {
-        self.user_id = event.metadata.trigger_by()?;
+        self.user_id = event.metadata.user()?;
 
         Ok(())
     }
 
     async fn handle_imported(&mut self, event: Event<Imported>) -> anyhow::Result<()> {
-        self.user_id = event.metadata.trigger_by()?;
+        self.user_id = event.metadata.user()?;
         self.recipe_type = event.data.recipe_type;
         self.cuisine_type = event.data.cuisine_type;
 

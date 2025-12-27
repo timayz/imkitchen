@@ -21,6 +21,7 @@ pub enum Status {
 pub(crate) mod filters {
     use time::OffsetDateTime;
 
+    #[askama::filter_fn]
     pub fn t(value: &str, values: &dyn askama::Values) -> askama::Result<String> {
         let preferred_language = askama::get_value::<String>(values, "preferred_language")
             .expect("Unable to get preferred_language from askama::get_value");
@@ -28,6 +29,7 @@ pub(crate) mod filters {
         Ok(rust_i18n::t!(value, locale = preferred_language).to_string())
     }
 
+    #[askama::filter_fn]
     pub fn date(value: &u64, values: &dyn askama::Values) -> askama::Result<String> {
         let preferred_language = askama::get_value::<String>(values, "preferred_language")
             .expect("Unable to get preferred_language from askama::get_value");
@@ -48,6 +50,7 @@ pub(crate) mod filters {
         .to_string())
     }
 
+    #[askama::filter_fn]
     pub fn date_year(value: &u64, values: &dyn askama::Values) -> askama::Result<String> {
         let preferred_language = askama::get_value::<String>(values, "preferred_language")
             .expect("Unable to get preferred_language from askama::get_value");
@@ -69,6 +72,7 @@ pub(crate) mod filters {
         .to_string())
     }
 
+    #[askama::filter_fn]
     pub fn month_year(a: &u64, values: &dyn askama::Values, b: &u64) -> askama::Result<String> {
         let preferred_language = askama::get_value::<String>(values, "preferred_language")
             .expect("Unable to get preferred_language from askama::get_value");
@@ -94,6 +98,7 @@ pub(crate) mod filters {
         ))
     }
 
+    #[askama::filter_fn]
     pub fn minutes(minutes: &u16, values: &dyn askama::Values) -> askama::Result<String> {
         let preferred_language = askama::get_value::<String>(values, "preferred_language")
             .expect("Unable to get preferred_language from askama::get_value");
@@ -115,6 +120,7 @@ pub(crate) mod filters {
         Ok(value)
     }
 
+    #[askama::filter_fn]
     pub fn weekday(value: &u64, values: &dyn askama::Values) -> askama::Result<String> {
         let preferred_language = askama::get_value::<String>(values, "preferred_language")
             .expect("Unable to get preferred_language from askama::get_value");
@@ -125,6 +131,7 @@ pub(crate) mod filters {
         Ok(rust_i18n::t!(date.weekday().to_string(), locale = preferred_language).to_string())
     }
 
+    #[askama::filter_fn]
     pub fn relative_time(timestamp: &u64, values: &dyn askama::Values) -> askama::Result<String> {
         let preferred_language = askama::get_value::<String>(values, "preferred_language")
             .expect("Unable to get preferred_language from askama::get_value");
@@ -194,6 +201,7 @@ pub(crate) mod filters {
         Ok(value)
     }
 
+    #[askama::filter_fn]
     pub fn views(count: &u64, _values: &dyn askama::Values) -> askama::Result<String> {
         let value = match *count {
             n if n >= 1_000_000_000 => {
@@ -226,6 +234,7 @@ pub(crate) mod filters {
         Ok(value)
     }
 
+    // #[askama::filter_fn]
     // pub fn assets(value: &str, values: &dyn askama::Values) -> askama::Result<String> {
     //     let config = askama::get_value::<crate::axum_extra::TemplateConfig>(values, "config")
     //         .expect("Unable to get config from askama::get_value");
@@ -342,7 +351,7 @@ pub struct ForbiddenTemplate;
 
 #[derive(askama::Template)]
 #[template(path = "500.html")]
-pub struct ServerErrorTemplate;
+pub struct ServerTemplate;
 
 #[macro_export]
 macro_rules! try_page_response {
@@ -353,7 +362,7 @@ macro_rules! try_page_response {
                 tracing::error!("{err}");
 
                 return $template
-                    .render($crate::template::ServerErrorTemplate)
+                    .render($crate::template::ServerTemplate)
                     .into_response();
             }
         }
@@ -366,7 +375,7 @@ macro_rules! try_page_response {
                 tracing::error!("{err}");
 
                 return $template
-                    .render($crate::template::ServerErrorTemplate)
+                    .render($crate::template::ServerTemplate)
                     .into_response();
             }
         }
@@ -384,7 +393,7 @@ macro_rules! try_page_response {
                 tracing::error!("{err}");
 
                 return $template
-                    .render($crate::template::ServerErrorTemplate)
+                    .render($crate::template::ServerTemplate)
                     .into_response();
             }
         }
@@ -499,7 +508,7 @@ macro_rules! try_response {
     (sync: $result:expr, $template:expr, $fallback:expr) => {
         match $result {
             Ok(r) => r,
-            Err(imkitchen_shared::Error::Unknown(err)) => {
+            Err(imkitchen_shared::Error::Server(err)) => {
                 tracing::error!("{err}");
                 $crate::try_response!(@render $template, $fallback, $crate::template::SERVER_ERROR_MESSAGE)
             }
@@ -519,7 +528,7 @@ macro_rules! try_response {
             Ok(_) => {
                 $crate::try_response!(@render $template, $fallback, $crate::template::NOT_FOUND)
             }
-            Err(imkitchen_shared::Error::Unknown(err)) => {
+            Err(imkitchen_shared::Error::Server(err)) => {
                 tracing::error!("{err}");
                 $crate::try_response!(@render $template, $fallback, $crate::template::SERVER_ERROR_MESSAGE)
             }
