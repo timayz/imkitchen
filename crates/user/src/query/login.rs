@@ -1,9 +1,10 @@
-use evento::{
-    Action, Aggregator, Executor, LoadResult, Projection, SubscriptionBuilder, metadata::Event,
-};
+use evento::{Action, Executor, Projection, SubscriptionBuilder, metadata::Event};
 use sqlx::SqlitePool;
 
-use crate::{Activated, LoggedIn, Logout, MadeAdmin, Registered, Role, State, Suspended, User};
+use crate::{
+    Activated, LoggedIn, Logout, MadeAdmin, Registered, Role, State, Suspended, User,
+    password::ResetCompleted,
+};
 
 #[derive(Default, Clone, Debug)]
 pub struct LoginRow {
@@ -42,6 +43,8 @@ fn create_projection<E: Executor>() -> Projection<LoginView, E> {
         .handler(handle_actived())
         .handler(handle_susended())
         .handler(handle_made_admin())
+        .handler(handle_reset_completed())
+        .handler(handle_registered())
 }
 
 pub async fn load<'a, E: Executor>(
@@ -115,6 +118,23 @@ async fn handle_logout<E: Executor>(
     match action {
         Action::Apply(data) => {
             data.rows.retain(|r| r.id != event.data.access_id);
+        }
+        Action::Handle(_context) => {}
+    };
+
+    Ok(())
+}
+
+#[evento::handler]
+async fn handle_reset_completed<E: Executor>(
+    event: Event<ResetCompleted>,
+    action: Action<'_, LoginView, E>,
+) -> anyhow::Result<()> {
+    match action {
+        Action::Apply(data) => {
+            if data.id == event.metadata.user()? {
+                data.rows = vec![];
+            }
         }
         Action::Handle(_context) => {}
     };

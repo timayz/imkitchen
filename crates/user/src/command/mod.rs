@@ -1,15 +1,15 @@
-use evento::{
-    Action, Aggregator, Executor, LoadResult, Projection, SubscriptionBuilder, metadata::Event,
-};
+use evento::{Action, Executor, Projection, SubscriptionBuilder, metadata::Event};
 use sqlx::SqlitePool;
 
-use crate::{Activated, MadeAdmin, Registered, Role, State, Suspended, User};
+use crate::{
+    Activated, MadeAdmin, Registered, Role, State, Suspended, User,
+    repository::{self, FindType},
+};
 
 mod activate;
 mod login;
 mod made_admin;
 mod register;
-mod repository;
 mod set_username;
 mod suspend;
 
@@ -24,6 +24,7 @@ pub struct Command {
 
 fn create_projection<E: Executor>() -> Projection<CommandData, E> {
     Projection::new("user-command")
+        .handler(handle_registered())
         .handler(handle_actived())
         .handler(handle_susended())
         .handler(handle_made_admin())
@@ -55,7 +56,7 @@ async fn restore(
     id: String,
 ) -> anyhow::Result<Option<CommandData>> {
     let pool = context.extract::<SqlitePool>();
-    Ok(repository::find(&pool, repository::FindType::Id(id))
+    Ok(repository::find(&pool, FindType::Id(id))
         .await?
         .map(|row| CommandData {
             role: row.role.0,
@@ -64,15 +65,57 @@ async fn restore(
 }
 
 #[evento::handler]
+async fn handle_registered<E: Executor>(
+    event: Event<Registered>,
+    action: Action<'_, CommandData, E>,
+) -> anyhow::Result<()> {
+    match action {
+        Action::Apply(data) => {
+            data.state = State::Active;
+            data.role = Role::User;
+        }
+        Action::Handle(context) => {
+            let pool = context.extract::<SqlitePool>();
+            repository::update(
+                &pool,
+                repository::UpdateInput {
+                    id: event.aggregator_id.to_owned(),
+                    username: None,
+                    password: None,
+                    role: Some(Role::User),
+                    state: Some(State::Active),
+                },
+            )
+            .await?;
+        }
+    };
+
+    Ok(())
+}
+
+#[evento::handler]
 async fn handle_made_admin<E: Executor>(
-    _event: Event<MadeAdmin>,
+    event: Event<MadeAdmin>,
     action: Action<'_, CommandData, E>,
 ) -> anyhow::Result<()> {
     match action {
         Action::Apply(data) => {
             data.role = Role::Admin;
         }
-        Action::Handle(_context) => {}
+        Action::Handle(context) => {
+            let pool = context.extract::<SqlitePool>();
+            repository::update(
+                &pool,
+                repository::UpdateInput {
+                    id: event.aggregator_id.to_owned(),
+                    username: None,
+                    password: None,
+                    role: Some(Role::Admin),
+                    state: None,
+                },
+            )
+            .await?;
+        }
     };
 
     Ok(())
@@ -80,14 +123,27 @@ async fn handle_made_admin<E: Executor>(
 
 #[evento::handler]
 async fn handle_actived<E: Executor>(
-    _event: Event<Activated>,
+    event: Event<Activated>,
     action: Action<'_, CommandData, E>,
 ) -> anyhow::Result<()> {
     match action {
         Action::Apply(data) => {
             data.state = State::Active;
         }
-        Action::Handle(_context) => {}
+        Action::Handle(context) => {
+            let pool = context.extract::<SqlitePool>();
+            repository::update(
+                &pool,
+                repository::UpdateInput {
+                    id: event.aggregator_id.to_owned(),
+                    username: None,
+                    password: None,
+                    role: None,
+                    state: Some(State::Active),
+                },
+            )
+            .await?;
+        }
     };
 
     Ok(())
@@ -95,14 +151,27 @@ async fn handle_actived<E: Executor>(
 
 #[evento::handler]
 async fn handle_susended<E: Executor>(
-    _event: Event<Suspended>,
+    event: Event<Suspended>,
     action: Action<'_, CommandData, E>,
 ) -> anyhow::Result<()> {
     match action {
         Action::Apply(data) => {
             data.state = State::Suspended;
         }
-        Action::Handle(_context) => {}
+        Action::Handle(context) => {
+            let pool = context.extract::<SqlitePool>();
+            repository::update(
+                &pool,
+                repository::UpdateInput {
+                    id: event.aggregator_id.to_owned(),
+                    username: None,
+                    password: None,
+                    role: None,
+                    state: Some(State::Suspended),
+                },
+            )
+            .await?;
+        }
     };
 
     Ok(())

@@ -1,13 +1,22 @@
-use evento::{Executor, LoadResult};
+use evento::{
+    Action, Executor, Projection,
+    metadata::{Event, Metadata},
+};
 use imkitchen_recipe::DietaryRestriction;
-use imkitchen_shared::Metadata;
-use sqlx::SqlitePool;
 use validator::Validate;
 
-use super::{Updated, UserMealPreferences};
+use super::{Changed, MealPreferences};
+
+#[evento::command]
+pub struct Command {
+    pub household_size: u16,
+    pub dietary_restrictions: Vec<DietaryRestriction>,
+    pub cuisine_variety_weight: f32,
+}
 
 #[derive(Validate)]
 pub struct UpdateInput {
+    pub user_id: String,
     #[validate(range(min = 1))]
     pub household_size: u16,
     pub dietary_restrictions: Vec<DietaryRestriction>,
@@ -15,42 +24,57 @@ pub struct UpdateInput {
     pub cuisine_variety_weight: f32,
 }
 
-#[derive(Clone)]
-pub struct Command<E: Executor + Clone>(pub E, pub SqlitePool);
-
-impl<E: Executor + Clone> Command<E> {
-    pub async fn load(
-        &self,
-        id: impl Into<String>,
-    ) -> Result<LoadResult<UserMealPreferences>, evento::ReadError> {
-        evento::load(&self.0, id).await
-    }
-
-    pub async fn load_optional(
-        &self,
-        id: impl Into<String>,
-    ) -> Result<Option<LoadResult<UserMealPreferences>>, evento::ReadError> {
-        evento::load_optional(&self.0, id).await
-    }
-
-    pub async fn update(
-        &self,
-        input: UpdateInput,
-        metadata: &Metadata,
-    ) -> imkitchen_shared::Result<()> {
+impl<'a, E: Executor + Clone> Command<'a, E> {
+    pub async fn update(executor: &E, input: UpdateInput) -> imkitchen_shared::Result<()> {
         input.validate()?;
-        let user_id = metadata.trigger_by()?;
 
-        evento::save::<UserMealPreferences>(user_id)
-            .data(&Updated {
+        evento::aggregator(&input.user_id)
+            .event(&Changed {
                 dietary_restrictions: input.dietary_restrictions,
                 household_size: input.household_size,
                 cuisine_variety_weight: input.cuisine_variety_weight,
-            })?
-            .metadata(metadata)?
-            .commit(&self.0)
+            })
+            .metadata(&Metadata::new(input.user_id))
+            .commit(executor)
             .await?;
 
         Ok(())
     }
+}
+
+fn create_projection<E: Executor>() -> Projection<CommandData, E> {
+    Projection::new("user-meal-preferences-command").handler(handle_updated())
+}
+
+pub async fn load<'a, E: Executor>(
+    executor: &'a E,
+    id: impl Into<String>,
+) -> Result<Option<Command<'a, E>>, anyhow::Error> {
+    let id = id.into();
+
+    Ok(create_projection()
+        .load::<MealPreferences>(&id)
+        .filter_events_by_name(false)
+        .execute(executor)
+        .await?
+        .map(|loaded| Command::new(id, loaded, executor)))
+}
+
+impl evento::Snapshot for CommandData {}
+
+#[evento::handler]
+async fn handle_updated<E: Executor>(
+    event: Event<Changed>,
+    action: Action<'_, CommandData, E>,
+) -> anyhow::Result<()> {
+    match action {
+        Action::Apply(data) => {
+            data.household_size = event.data.household_size;
+            data.dietary_restrictions = event.data.dietary_restrictions;
+            data.cuisine_variety_weight = event.data.cuisine_variety_weight;
+        }
+        Action::Handle(_context) => {}
+    };
+
+    Ok(())
 }

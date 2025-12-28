@@ -1,5 +1,5 @@
 use imkitchen_db::table::User;
-use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
+use sea_query::{Expr, ExprTrait, OnConflictUpdate, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::{SqlitePool, prelude::FromRow};
 use time::OffsetDateTime;
@@ -20,7 +20,7 @@ pub enum FindType {
     Email(String),
 }
 
-pub(super) async fn find(
+pub(crate) async fn find(
     pool: &SqlitePool,
     arg_type: FindType,
 ) -> imkitchen_shared::Result<Option<UserRow>> {
@@ -82,16 +82,35 @@ pub(super) async fn create(
     Ok(())
 }
 
-pub async fn update_username(
-    pool: &SqlitePool,
-    id: String,
-    username: String,
-) -> imkitchen_shared::Result<()> {
-    let statement = Query::update()
+pub struct UpdateInput {
+    pub id: String,
+    pub username: Option<String>,
+    pub password: Option<String>,
+    pub role: Option<Role>,
+    pub state: Option<State>,
+}
+
+pub async fn update(pool: &SqlitePool, input: UpdateInput) -> imkitchen_shared::Result<()> {
+    let mut statement = Query::update()
         .table(User::Table)
-        .value(User::Username, username)
-        .and_where(Expr::col(User::Id).eq(id))
+        .and_where(Expr::col(User::Id).eq(input.id))
         .to_owned();
+
+    if let Some(username) = input.username {
+        statement.value(User::Username, username);
+    }
+
+    if let Some(password) = input.password {
+        statement.value(User::Password, password);
+    }
+
+    if let Some(role) = input.role {
+        statement.value(User::Role, role.as_ref());
+    }
+
+    if let Some(state) = input.state {
+        statement.value(User::State, state.as_ref());
+    }
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(pool).await?;

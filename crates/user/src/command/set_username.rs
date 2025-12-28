@@ -39,7 +39,17 @@ impl<'a, E: Executor + Clone> super::Command<'a, E> {
             imkitchen_shared::user!("Username has already been set");
         }
 
-        repository::update_username(write_db, user.id, input.username).await?;
+        repository::update(
+            write_db,
+            repository::UpdateInput {
+                id: user.id,
+                username: Some(input.username),
+                password: None,
+                role: None,
+                state: None,
+            },
+        )
+        .await?;
 
         Ok(())
     }

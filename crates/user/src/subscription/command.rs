@@ -1,51 +1,78 @@
-use evento::{Executor, LoadResult};
-use imkitchen_shared::Metadata;
-use sqlx::SqlitePool;
-use std::time::{SystemTime, UNIX_EPOCH};
+use evento::{
+    Action, Executor, Projection,
+    metadata::{Event, Metadata},
+};
+use time::UtcDateTime;
+use validator::Validate;
 
-use super::{LifePremiumToggled, UserSubscription};
+use crate::subscription::{LifePremiumToggled, Subscription};
 
-#[derive(Clone)]
-pub struct Command<E: Executor + Clone>(pub E, pub SqlitePool);
+#[evento::command]
+pub struct Command {
+    pub expire_at: u64,
+}
 
-impl<E: Executor + Clone> Command<E> {
-    pub async fn load(
-        &self,
-        id: impl Into<String>,
-    ) -> Result<LoadResult<UserSubscription>, evento::ReadError> {
-        evento::load(&self.0, id).await
-    }
+#[derive(Validate)]
+pub struct UpdateInput {
+    pub user_id: String,
+}
 
-    pub async fn load_optional(
-        &self,
-        id: impl Into<String>,
-    ) -> Result<Option<LoadResult<UserSubscription>>, evento::ReadError> {
-        evento::load_optional(&self.0, id).await
-    }
-
+impl<'a, E: Executor + Clone> Command<'a, E> {
     pub async fn toggle_life_premium(
         &self,
-        id: impl Into<String>,
-        metadata: &Metadata,
-    ) -> imkitchen_shared::Result<u64> {
-        let id = id.into();
-        let mut expire_at = (SystemTime::now() + time::Duration::weeks(10 * 52))
-            .duration_since(UNIX_EPOCH)?
-            .as_secs();
-
-        let builder = match self.load_optional(&id).await? {
-            Some(subscription) => {
-                if !subscription.item.expired {
-                    expire_at = 0;
-                }
-
-                evento::save_with(subscription).data(&LifePremiumToggled { expire_at })?
-            }
-            _ => evento::create_with(id).data(&LifePremiumToggled { expire_at })?,
+        request_by: impl Into<String>,
+    ) -> imkitchen_shared::Result<()> {
+        let now = UtcDateTime::now();
+        let expire_at = if self.expire_at > now.unix_timestamp().try_into()? {
+            0
+        } else {
+            (now + time::Duration::weeks(10 * 53)).unix_timestamp()
         };
 
-        builder.metadata(metadata)?.commit(&self.0).await?;
+        self.aggregator()
+            .event(&LifePremiumToggled {
+                expire_at: expire_at.try_into()?,
+            })
+            .metadata(&Metadata::new(request_by))
+            .commit(self.executor)
+            .await?;
 
-        Ok(expire_at)
+        Ok(())
     }
+}
+
+fn create_projection<E: Executor>() -> Projection<CommandData, E> {
+    Projection::new("user-subscription-command").handler(handle_life_premium_toggled())
+}
+
+pub async fn load<'a, E: Executor>(
+    executor: &'a E,
+    id: impl Into<String>,
+) -> Result<Command<'a, E>, anyhow::Error> {
+    let id = id.into();
+
+    Ok(create_projection()
+        .load::<Subscription>(&id)
+        .filter_events_by_name(false)
+        .execute(executor)
+        .await?
+        .map(|loaded| Command::new(id.to_owned(), loaded, executor))
+        .unwrap_or_else(|| Command::new(id, Default::default(), executor)))
+}
+
+impl evento::Snapshot for CommandData {}
+
+#[evento::handler]
+async fn handle_life_premium_toggled<E: Executor>(
+    event: Event<LifePremiumToggled>,
+    action: Action<'_, CommandData, E>,
+) -> anyhow::Result<()> {
+    match action {
+        Action::Apply(data) => {
+            data.expire_at = event.data.expire_at;
+        }
+        Action::Handle(_context) => {}
+    };
+
+    Ok(())
 }

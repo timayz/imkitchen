@@ -9,7 +9,7 @@ mod recipe_rating;
 mod recipe_user_stat;
 mod shopping_list;
 mod user;
-mod user_list;
+mod user_admin;
 mod user_login;
 mod user_stat;
 
@@ -30,9 +30,9 @@ sqlx_migrator::sqlite_migration!(
         user_login::CreateIdx1,
         user_login::CreateUk1,
         user_stat::CreateTable,
-        user_list::CreateTable,
-        user_list::CreateIdx1,
-        user_list::CreateIdx2,
+        user_admin::CreateTable,
+        user_admin::CreateIdx1,
+        user_admin::CreateIdx2,
         contact_list::CreateTable,
         contact_list::CreateIdx1,
         contact_list::CreateIdx2,

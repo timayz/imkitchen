@@ -3,69 +3,73 @@ use sea_query::{
     TableDropStatement,
 };
 
-use crate::table::UserList;
+use crate::table::UserAdmin;
 
 pub struct CreateTable;
 
 fn create_table() -> TableCreateStatement {
     Table::create()
-        .table(UserList::Table)
+        .table(UserAdmin::Table)
         .col(
-            ColumnDef::new(UserList::Id)
+            ColumnDef::new(UserAdmin::Id)
                 .string()
                 .not_null()
                 .string_len(26)
                 .primary_key(),
         )
         .col(
-            ColumnDef::new(UserList::Email)
+            ColumnDef::new(UserAdmin::Email)
                 .string()
                 .not_null()
                 .string_len(320),
         )
-        .col(ColumnDef::new(UserList::FullName).string().string_len(25))
-        .col(ColumnDef::new(UserList::Username).string().string_len(15))
+        .col(ColumnDef::new(UserAdmin::FullName).string().string_len(25))
+        .col(ColumnDef::new(UserAdmin::Username).string().string_len(15))
         .col(
-            ColumnDef::new(UserList::State)
+            ColumnDef::new(UserAdmin::State)
                 .string()
                 .not_null()
                 .string_len(15),
         )
         .col(
-            ColumnDef::new(UserList::Role)
+            ColumnDef::new(UserAdmin::Role)
                 .string()
                 .not_null()
                 .string_len(15),
         )
         .col(
-            ColumnDef::new(UserList::TotalRecipesCount)
+            ColumnDef::new(UserAdmin::TotalRecipesCount)
                 .integer()
                 .not_null()
                 .default(0),
         )
         .col(
-            ColumnDef::new(UserList::SharedRecipesCount)
+            ColumnDef::new(UserAdmin::SharedRecipesCount)
                 .integer()
                 .not_null()
                 .default(0),
         )
         .col(
-            ColumnDef::new(UserList::TotalActiveCount)
+            ColumnDef::new(UserAdmin::TotalActiveCount)
                 .integer()
                 .not_null()
                 .default(0),
         )
         .col(
-            ColumnDef::new(UserList::SubscriptionExpireAt)
+            ColumnDef::new(UserAdmin::SubscriptionExpireAt)
                 .big_integer()
                 .default(0),
         )
-        .col(ColumnDef::new(UserList::CreatedAt).big_integer().not_null())
+        .col(
+            ColumnDef::new(UserAdmin::CreatedAt)
+                .big_integer()
+                .not_null(),
+        )
         .to_owned()
 }
 
 fn drop_table() -> TableDropStatement {
-    Table::drop().table(UserList::Table).to_owned()
+    Table::drop().table(UserAdmin::Table).to_owned()
 }
 
 #[async_trait::async_trait]
@@ -96,15 +100,15 @@ pub struct CreateIdx1;
 fn create_idx_1() -> IndexCreateStatement {
     Index::create()
         .name("idx_user_list_D0nmGG")
-        .table(UserList::Table)
-        .col(UserList::State)
+        .table(UserAdmin::Table)
+        .col(UserAdmin::State)
         .to_owned()
 }
 
 fn drop_idx_1() -> IndexDropStatement {
     Index::drop()
         .name("idx_user_list_D0nmGG")
-        .table(UserList::Table)
+        .table(UserAdmin::Table)
         .to_owned()
 }
 
@@ -136,15 +140,15 @@ pub struct CreateIdx2;
 fn create_idx_2() -> IndexCreateStatement {
     Index::create()
         .name("idx_user_list_rmnGYD")
-        .table(UserList::Table)
-        .col(UserList::Role)
+        .table(UserAdmin::Table)
+        .col(UserAdmin::Role)
         .to_owned()
 }
 
 fn drop_idx_2() -> IndexDropStatement {
     Index::drop()
         .name("idx_user_list_rmnGYD")
-        .table(UserList::Table)
+        .table(UserAdmin::Table)
         .to_owned()
 }
 

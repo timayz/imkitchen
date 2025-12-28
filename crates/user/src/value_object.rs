@@ -39,24 +39,3 @@ pub enum State {
     Active,
     Suspended,
 }
-
-#[derive(
-    Encode,
-    Decode,
-    EnumString,
-    Display,
-    VariantArray,
-    Default,
-    Clone,
-    Debug,
-    PartialEq,
-    Deserialize,
-    AsRefStr,
-)]
-pub enum UserSortBy {
-    #[default]
-    RecentlyJoined,
-    Name,
-    MostRecipes,
-    MostActive,
-}

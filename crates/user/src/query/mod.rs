@@ -1,9 +1,3 @@
+pub mod admin;
 pub mod login;
-// mod list;
-// mod stat;
-//
-// pub use list::*;
-// pub use stat::*;
-
-#[derive(Clone)]
-pub struct Query(pub sqlx::SqlitePool);
+pub mod stat;

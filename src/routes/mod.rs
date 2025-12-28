@@ -9,7 +9,7 @@ use sqlx::SqlitePool;
 use crate::template::{NotFoundTemplate, Template};
 
 mod about;
-// mod admin;
+mod admin;
 // mod calendar;
 // mod contact;
 mod health;
@@ -19,10 +19,10 @@ mod index;
 mod login;
 mod manifest;
 mod policy;
-// mod profile;
+mod profile;
 // mod recipes;
 mod register;
-// mod reset_password;
+mod reset_password;
 mod service_worker;
 // mod shopping;
 mod terms;
@@ -72,14 +72,14 @@ pub fn router(app_state: AppState) -> Router {
             "/login",
             get(login::page).post(crate::routes::login::action),
         )
-        // .route(
-        //     "/reset-password",
-        //     get(reset_password::page).post(reset_password::action),
-        // )
-        // .route(
-        //     "/reset-password/new/{id}",
-        //     get(reset_password::new_page).post(reset_password::new_action),
-        // )
+        .route(
+            "/reset-password",
+            get(reset_password::page).post(reset_password::action),
+        )
+        .route(
+            "/reset-password/new/{id}",
+            get(reset_password::new_page).post(reset_password::new_action),
+        )
         // .route(
         //     "/calendar/regenerate",
         //     get(calendar::regenerate_modal).post(calendar::regenerate_action),
@@ -179,29 +179,29 @@ pub fn router(app_state: AppState) -> Router {
         //     "/profile/account/set-username",
         //     post(profile::account::set_username_action),
         // )
-        // .route(
-        //     "/profile/meal-preferences",
-        //     get(profile::meal_preferences::page).post(profile::meal_preferences::action),
-        // )
-        // .route(
-        //     "/profile/subscription",
-        //     get(profile::subscription::page).post(profile::subscription::action),
-        // )
+        .route(
+            "/profile/meal-preferences",
+            get(profile::meal_preferences::page).post(profile::meal_preferences::action),
+        )
+        .route(
+            "/profile/subscription",
+            get(profile::subscription::page).post(profile::subscription::action),
+        )
         // .route(
         //     "/profile/notifications",
         //     get(profile::notifications::page).post(profile::notifications::action),
         // )
-        // .route(
-        //     "/profile/security",
-        //     get(profile::security::page).post(profile::security::action),
-        // )
-        // .route("/admin/users", get(admin::users::page))
-        // .route("/admin/users/{id}/suspend", post(admin::users::suspend))
-        // .route("/admin/users/{id}/activate", post(admin::users::activate))
-        // .route(
-        //     "/admin/users/{id}/toggle-premium",
-        //     post(admin::users::toggle_premium),
-        // )
+        .route(
+            "/profile/security",
+            get(profile::security::page).post(profile::security::action),
+        )
+        .route("/admin/users", get(admin::users::page))
+        .route("/admin/users/{id}/suspend", post(admin::users::suspend))
+        .route("/admin/users/{id}/activate", post(admin::users::activate))
+        .route(
+            "/admin/users/{id}/toggle-premium",
+            post(admin::users::toggle_premium),
+        )
         // .route("/admin/contact", get(admin::contact::page))
         // .route(
         //     "/admin/contact/{id}/mark-read-and-reply",

@@ -6,7 +6,7 @@ use evento::{Aggregator, Executor, metadata::Metadata};
 use sqlx::SqlitePool;
 use validator::Validate;
 
-use crate::{Registered, command::repository};
+use crate::{Registered, repository};
 
 #[derive(Validate)]
 pub struct RegisterInput {

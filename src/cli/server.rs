@@ -77,10 +77,10 @@ pub async fn serve(
         .start(&executor)
         .await?;
 
-    // let sub_user_list = imkitchen_user::subscribe_list()
-    //     .data(write_pool.clone())
-    //     .run(&evento_executor)
-    //     .await?;
+    let sub_user_admin = imkitchen_user::admin::subscription()
+        .data(write_pool.clone())
+        .start(&executor)
+        .await?;
     //
     // let sub_user_stat = imkitchen_user::subscribe_stat()
     //     .data(write_pool.clone())
@@ -226,8 +226,8 @@ pub async fn serve(
         //     sub_notification_user.shutdown_and_wait(),
         sub_user_command.shutdown(),
         sub_user_login.shutdown(),
+        sub_user_admin.shutdown(),
         //     sub_user_stat.shutdown_and_wait(),
-        //     sub_user_list.shutdown_and_wait(),
         //     sub_contact_list.shutdown_and_wait(),
         //     sub_contact_stat.shutdown_and_wait(),
         //     sub_recipe_list.shutdown_and_wait(),

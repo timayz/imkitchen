@@ -14,7 +14,7 @@
         {% for restriction in DietaryRestriction::VARIANTS %}
         <label class="flex items-center">
           <input type="checkbox" name="dietary_restrictions" value="{{ restriction }}"{% if restriction.exists_in(dietary_restrictions) %} checked{% endif %} class="rounded border-gray-300 text-green-600" />
-          <span class="ml-2">{{ restriction.to_string().as_str()|t }}</span>
+          <span class="ml-2">{{ restriction.as_ref()|t }}</span>
         </label>
         {% endfor %}
       </div>

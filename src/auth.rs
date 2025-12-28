@@ -165,8 +165,6 @@ impl FromRequestParts<crate::routes::AppState> for AuthUser {
             return Err(Redirect::to("/login"));
         };
 
-        println!("{:?}", login);
-
         let has_access = login
             .rows
             .iter()

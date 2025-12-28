@@ -32,7 +32,7 @@ pub enum UserStat {
 }
 
 #[derive(Iden, Clone)]
-pub enum UserList {
+pub enum UserAdmin {
     Table,
     Id,
     Email,

@@ -8,6 +8,7 @@ authors.workspace = true
 evento.workspace = true
 bitcode.workspace = true
 anyhow.workspace = true
+tracing.workspace = true
 validator = { workspace = true, optional = true }
 regex = { workspace = true, optional = true }
 argon2.workspace = true
