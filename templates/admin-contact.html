@@ -23,22 +23,22 @@
   <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
     <div class="bg-white rounded-lg shadow-lg p-4 md:p-6">
       <div class="text-gray-600 text-xs md:text-sm mb-1">Total Messages</div>
-      <div class="text-2xl md:text-3xl font-bold">{{ stats.total }}</div>
+      <div class="text-2xl md:text-3xl font-bold">{{ stat.total }}</div>
       <div class="text-xs md:text-sm text-gray-500 mt-2">All time</div>
     </div>
     <div class="bg-white rounded-lg shadow-lg p-4 md:p-6">
       <div class="text-gray-600 text-xs md:text-sm mb-1">Unread</div>
-      <div class="text-2xl md:text-3xl font-bold text-orange-600">{{ stats.unread }}</div>
+      <div class="text-2xl md:text-3xl font-bold text-orange-600">{{ stat.unread }}</div>
       <div class="text-xs md:text-sm text-orange-600 mt-2">Needs attention</div>
     </div>
     <div class="bg-white rounded-lg shadow-lg p-4 md:p-6">
       <div class="text-gray-600 text-xs md:text-sm mb-1">Today</div>
-      <div class="text-2xl md:text-3xl font-bold text-blue-600">0</div>
+      <div class="text-2xl md:text-3xl font-bold text-blue-600">{{ today }}</div>
       <div class="text-xs md:text-sm text-gray-500 mt-2">New messages</div>
     </div>
     <div class="bg-white rounded-lg shadow-lg p-4 md:p-6">
       <div class="text-gray-600 text-xs md:text-sm mb-1">Avg Response Time</div>
-      <div class="text-2xl md:text-3xl font-bold text-green-600">{{ stats.avg_response_time }}h</div>
+      <div class="text-2xl md:text-3xl font-bold text-green-600">{{ stat.avg_response_time }}h</div>
       <div class="text-xs md:text-sm text-green-600 mt-2">↓ 0h from last week</div>
     </div>
   </div>
@@ -121,7 +121,7 @@
                 READ
               </span>
             {% endif %}
-            <span class="text-sm text-gray-500">{{ contact.node.created_at() }}</span>
+            <span class="text-sm text-gray-500">{{ contact.node.created_at|relative_time }}</span>
             </div>
           </div>
           <div class="mb-2">

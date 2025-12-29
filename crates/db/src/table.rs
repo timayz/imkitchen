@@ -49,7 +49,7 @@ pub enum UserAdmin {
 }
 
 #[derive(Iden, Clone)]
-pub enum ContactList {
+pub enum ContactAdmin {
     Table,
     Id,
     Email,
@@ -61,10 +61,11 @@ pub enum ContactList {
 }
 
 #[derive(Iden, Clone)]
-pub enum ContactStat {
+pub enum ContactGlobalStat {
     Table,
     Day,
     Total,
+    Today,
     Unread,
     AvgResponseTime,
     CreatedAt,

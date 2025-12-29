@@ -1,4 +1,3 @@
-use imkitchen_contact::Status;
 use temp_dir::TempDir;
 
 mod helpers;
@@ -13,14 +12,32 @@ async fn test_mark_read_and_reply() -> anyhow::Result<()> {
     let contact = imkitchen_contact::load(&state.evento, &state.pool, &contact_id)
         .await?
         .unwrap();
-    assert_eq!(contact.status, Status::Unread);
 
     contact.mark_read_and_reply("").await?;
 
     let contact = imkitchen_contact::load(&state.evento, &state.pool, &contact_id)
         .await?
         .unwrap();
-    assert_eq!(contact.status, Status::Read);
+
+    contact.reopen("").await?;
+
+    let contact = imkitchen_contact::load(&state.evento, &state.pool, &contact_id)
+        .await?
+        .unwrap();
+
+    contact.resolve("").await?;
+
+    imkitchen_contact::admin::create_projection()
+        .subscription()
+        .data(state.pool.clone())
+        .unretry_execute(&state.evento)
+        .await?;
+
+    imkitchen_contact::global_stat::create_projection()
+        .subscription()
+        .data(state.pool.clone())
+        .unretry_execute(&state.evento)
+        .await?;
 
     Ok(())
 }

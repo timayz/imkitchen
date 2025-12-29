@@ -6,6 +6,7 @@ authors.workspace = true
 
 [dependencies]
 evento.workspace = true
+time.workspace = true
 bitcode.workspace = true
 anyhow.workspace = true
 validator = { workspace = true, optional = true }

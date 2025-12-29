@@ -1194,7 +1194,7 @@ dependencies = [
 [[package]]
 name = "evento"
 version = "2.0.0-alpha.9"
-source = "git+https://github.com/timayz/evento.git?rev=4d7f401#4d7f4013c66ec004c89f79eb31eb5c86f0352a78"
+source = "git+https://github.com/timayz/evento.git?rev=edc412f#edc412f24370abba890e7847f89bde35a8ac0b17"
 dependencies = [
  "evento-core",
  "evento-sql",
@@ -1205,7 +1205,7 @@ dependencies = [
 [[package]]
 name = "evento-core"
 version = "2.0.0-alpha.9"
-source = "git+https://github.com/timayz/evento.git?rev=4d7f401#4d7f4013c66ec004c89f79eb31eb5c86f0352a78"
+source = "git+https://github.com/timayz/evento.git?rev=edc412f#edc412f24370abba890e7847f89bde35a8ac0b17"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1224,7 +1224,7 @@ dependencies = [
 [[package]]
 name = "evento-macro"
 version = "2.0.0-alpha.9"
-source = "git+https://github.com/timayz/evento.git?rev=4d7f401#4d7f4013c66ec004c89f79eb31eb5c86f0352a78"
+source = "git+https://github.com/timayz/evento.git?rev=edc412f#edc412f24370abba890e7847f89bde35a8ac0b17"
 dependencies = [
  "convert_case 0.10.0",
  "quote",
@@ -1234,7 +1234,7 @@ dependencies = [
 [[package]]
 name = "evento-sql"
 version = "2.0.0-alpha.9"
-source = "git+https://github.com/timayz/evento.git?rev=4d7f401#4d7f4013c66ec004c89f79eb31eb5c86f0352a78"
+source = "git+https://github.com/timayz/evento.git?rev=edc412f#edc412f24370abba890e7847f89bde35a8ac0b17"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1249,7 +1249,7 @@ dependencies = [
 [[package]]
 name = "evento-sql-migrator"
 version = "2.0.0-alpha.9"
-source = "git+https://github.com/timayz/evento.git?rev=4d7f401#4d7f4013c66ec004c89f79eb31eb5c86f0352a78"
+source = "git+https://github.com/timayz/evento.git?rev=edc412f#edc412f24370abba890e7847f89bde35a8ac0b17"
 dependencies = [
  "async-trait",
  "evento-sql",
@@ -1875,7 +1875,9 @@ dependencies = [
  "evento",
  "futures",
  "http-body-util",
+ "imkitchen-contact",
  "imkitchen-db",
+ "imkitchen-notification",
  "imkitchen-recipe",
  "imkitchen-shared",
  "imkitchen-user",
@@ -1913,6 +1915,7 @@ dependencies = [
  "sqlx",
  "strum",
  "temp-dir",
+ "time",
  "tokio",
  "validator",
 ]

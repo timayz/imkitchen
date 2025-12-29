@@ -4,8 +4,7 @@ use axum::{
     extract::{Form, State},
     response::IntoResponse,
 };
-use imkitchen_contact::{Subject, SubmitContactFormInput};
-use imkitchen_shared::Metadata;
+use imkitchen_contact::{Subject, SubmitFormInput};
 use serde::Deserialize;
 use strum::VariantArray;
 
@@ -44,15 +43,15 @@ pub async fn action(
     };
 
     crate::try_response!(
-        app_state.contact_command.submit_contact_form(
-            SubmitContactFormInput {
+        imkitchen_contact::Command::submit_form(
+            &app_state.executor,
+            SubmitFormInput {
                 to: app_state.config.email.contact_address,
                 name: input.name,
                 email: input.email,
                 subject,
                 message: input.message,
             },
-            &Metadata::default(),
         ),
         template
     );

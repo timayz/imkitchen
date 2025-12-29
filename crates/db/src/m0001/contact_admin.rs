@@ -3,52 +3,52 @@ use sea_query::{
     TableDropStatement,
 };
 
-use crate::table::ContactList;
+use crate::table::ContactAdmin;
 
 pub struct CreateTable;
 
 fn create_table() -> TableCreateStatement {
     Table::create()
-        .table(ContactList::Table)
+        .table(ContactAdmin::Table)
         .col(
-            ColumnDef::new(ContactList::Id)
+            ColumnDef::new(ContactAdmin::Id)
                 .string()
                 .not_null()
                 .string_len(26)
                 .primary_key(),
         )
         .col(
-            ColumnDef::new(ContactList::Name)
+            ColumnDef::new(ContactAdmin::Name)
                 .string()
                 .not_null()
                 .string_len(25),
         )
         .col(
-            ColumnDef::new(ContactList::Email)
+            ColumnDef::new(ContactAdmin::Email)
                 .string()
                 .not_null()
                 .string_len(320),
         )
         .col(
-            ColumnDef::new(ContactList::Status)
+            ColumnDef::new(ContactAdmin::Status)
                 .string()
                 .not_null()
                 .string_len(25),
         )
         .col(
-            ColumnDef::new(ContactList::Subject)
+            ColumnDef::new(ContactAdmin::Subject)
                 .string()
                 .not_null()
                 .string_len(15),
         )
         .col(
-            ColumnDef::new(ContactList::Message)
+            ColumnDef::new(ContactAdmin::Message)
                 .string()
                 .not_null()
                 .string_len(2000),
         )
         .col(
-            ColumnDef::new(ContactList::CreatedAt)
+            ColumnDef::new(ContactAdmin::CreatedAt)
                 .big_integer()
                 .not_null(),
         )
@@ -56,7 +56,7 @@ fn create_table() -> TableCreateStatement {
 }
 
 fn drop_table() -> TableDropStatement {
-    Table::drop().table(ContactList::Table).to_owned()
+    Table::drop().table(ContactAdmin::Table).to_owned()
 }
 
 #[async_trait::async_trait]
@@ -87,15 +87,15 @@ pub struct CreateIdx1;
 fn create_idx_1() -> IndexCreateStatement {
     Index::create()
         .name("idx_contact_list_V1uhrH")
-        .table(ContactList::Table)
-        .col(ContactList::Status)
+        .table(ContactAdmin::Table)
+        .col(ContactAdmin::Status)
         .to_owned()
 }
 
 fn drop_idx_1() -> IndexDropStatement {
     Index::drop()
         .name("idx_contact_list_V1uhrH")
-        .table(ContactList::Table)
+        .table(ContactAdmin::Table)
         .to_owned()
 }
 
@@ -127,15 +127,15 @@ pub struct CreateIdx2;
 fn create_idx_2() -> IndexCreateStatement {
     Index::create()
         .name("idx_contact_list_c8p3al")
-        .table(ContactList::Table)
-        .col(ContactList::Subject)
+        .table(ContactAdmin::Table)
+        .col(ContactAdmin::Subject)
         .to_owned()
 }
 
 fn drop_idx_2() -> IndexDropStatement {
     Index::drop()
         .name("idx_contact_list_c8p3al")
-        .table(ContactList::Table)
+        .table(ContactAdmin::Table)
         .to_owned()
 }
 

@@ -31,28 +31,6 @@ pub async fn serve(
         evento::Sqlite::from(write_pool.clone()),
     )
         .into();
-    // let user_command = imkitchen_user::Command {
-    //     evento: evento_executor.clone(),
-    //     read_db: read_pool.clone(),
-    //     write_db: write_pool.clone(),
-    // };
-    // let user_subscription_command =
-    //     imkitchen_user::subscription::Command(evento_executor.clone(), read_pool.clone());
-    // let user_meal_preference_command =
-    //     imkitchen_user::meal_preferences::Command(evento_executor.clone(), read_pool.clone());
-    // let user_reset_password_command =
-    //     imkitchen_user::reset_password::Command(evento_executor.clone(), read_pool.clone());
-    // let user_query = imkitchen_user::Query(read_pool.clone());
-    // let contact_command = imkitchen_contact::Command(evento_executor.clone(), read_pool.clone());
-    // let contact_query = imkitchen_contact::Query(read_pool.clone());
-    // let recipe_command = imkitchen_recipe::Command(evento_executor.clone(), read_pool.clone());
-    // let recipe_query = imkitchen_recipe::Query(read_pool.clone());
-    // let rating_command =
-    //     imkitchen_recipe::rating::Command(evento_executor.clone(), read_pool.clone());
-    // let mealplan_command = imkitchen_mealplan::Command(evento_executor.clone(), read_pool.clone());
-    // let mealplan_query = imkitchen_mealplan::Query(read_pool.clone());
-    // let shopping_command = imkitchen_shopping::Command(evento_executor.clone(), read_pool.clone());
-    // let shopping_query = imkitchen_shopping::Query(read_pool.clone());
 
     // Start background notification worker
     tracing::info!("Starting evento subscriptions...");
@@ -86,22 +64,16 @@ pub async fn serve(
         .data(write_pool.clone())
         .start(&executor)
         .await?;
-    //
-    // let sub_user_stat = imkitchen_user::subscribe_stat()
-    //     .data(write_pool.clone())
-    //     .run(&evento_executor)
-    //     .await?;
-    //
-    // let sub_contact_list = imkitchen_contact::subscribe_list()
-    //     .data(write_pool.clone())
-    //     .run(&evento_executor)
-    //     .await?;
-    //
-    // let sub_contact_stat = imkitchen_contact::subscribe_stat()
-    //     .data(write_pool.clone())
-    //     .data(contact_query.clone())
-    //     .run(&evento_executor)
-    //     .await?;
+
+    let sub_contact_admin = imkitchen_contact::admin::subscription()
+        .data(write_pool.clone())
+        .start(&executor)
+        .await?;
+
+    let sub_contact_global_stat = imkitchen_contact::global_stat::subscription()
+        .data(write_pool.clone())
+        .start(&executor)
+        .await?;
     //
     // let sub_recipe_list = imkitchen_recipe::subscribe_list()
     //     .data(write_pool.clone())
@@ -148,20 +120,6 @@ pub async fn serve(
 
     let state = AppState {
         config,
-        // user_command,
-        // user_subscription_command,
-        // user_meal_preference_command,
-        // user_reset_password_command,
-        // user_query,
-        // contact_command,
-        // contact_query,
-        // recipe_command,
-        // recipe_query,
-        // rating_command,
-        // mealplan_command,
-        // mealplan_query,
-        // shopping_command,
-        // shopping_query,
         executor: executor.clone(),
         read_db: read_pool.clone(),
         write_db: write_pool.clone(),
@@ -233,9 +191,8 @@ pub async fn serve(
         sub_user_login.shutdown(),
         sub_user_admin.shutdown(),
         sub_user_global_stat.shutdown(),
-        //     sub_user_stat.shutdown_and_wait(),
-        //     sub_contact_list.shutdown_and_wait(),
-        //     sub_contact_stat.shutdown_and_wait(),
+        sub_contact_admin.shutdown(),
+        sub_contact_global_stat.shutdown(),
         //     sub_recipe_list.shutdown_and_wait(),
         //     sub_recipe_user_stat.shutdown_and_wait(),
         //     sub_rating_command.shutdown_and_wait(),

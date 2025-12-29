@@ -1,5 +1,5 @@
-mod contact_list;
-mod contact_stat;
+mod contact_admin;
+mod contact_global_stat;
 mod mealplan_last_week;
 mod mealplan_recipe;
 mod mealplan_slot;
@@ -33,10 +33,10 @@ sqlx_migrator::sqlite_migration!(
         user_admin::CreateTable,
         user_admin::CreateIdx1,
         user_admin::CreateIdx2,
-        contact_list::CreateTable,
-        contact_list::CreateIdx1,
-        contact_list::CreateIdx2,
-        contact_stat::CreateTable,
+        contact_admin::CreateTable,
+        contact_admin::CreateIdx1,
+        contact_admin::CreateIdx2,
+        contact_global_stat::CreateTable,
         recipe_list::CreateTable,
         recipe_list::CreateIdx1,
         recipe_list::CreateIdx2,
