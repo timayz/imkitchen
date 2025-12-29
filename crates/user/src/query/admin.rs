@@ -1,8 +1,3 @@
-use std::{
-    ptr::dangling,
-    time::{SystemTime, UNIX_EPOCH},
-};
-
 use evento::{
     Action, Executor, Projection, SubscriptionBuilder,
     cursor::{Args, ReadResult},
@@ -14,6 +9,7 @@ use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use serde::Deserialize;
 use sqlx::{SqlitePool, prelude::FromRow};
+use std::time::{SystemTime, UNIX_EPOCH};
 use strum::{AsRefStr, Display, EnumString, VariantArray};
 
 use crate::{
@@ -165,7 +161,7 @@ pub async fn filter(
     }
 }
 
-fn create_projection<E: Executor>() -> Projection<AdminView, E> {
+pub fn create_projection<E: Executor>() -> Projection<AdminView, E> {
     Projection::new("user-admin-view")
         .handler(handle_actived())
         .handler(handle_susended())
@@ -182,6 +178,7 @@ pub async fn load<'a, E: Executor>(
     let id = id.into();
 
     Ok(create_projection()
+        .no_safety_check()
         .load::<User>(&id)
         .aggregator::<Subscription>(id)
         .data(pool.clone())
@@ -191,7 +188,7 @@ pub async fn load<'a, E: Executor>(
 }
 
 pub fn subscription<E: Executor>() -> SubscriptionBuilder<AdminView, E> {
-    create_projection().subscription()
+    create_projection().no_safety_check().subscription()
 }
 
 #[evento::snapshot]

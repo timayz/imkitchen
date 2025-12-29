@@ -8,7 +8,7 @@ use evento::cursor::{Args, Edge, ReadResult, Value};
 use imkitchen_user::{
     Role, State as UserState,
     admin::{AdminView, FilterQuery, UserSortBy},
-    stat::UserStatRow,
+    global_stat::{FilterQuery as FilterQueryStat, GlobalStatView},
 };
 use serde::Deserialize;
 use strum::VariantArray;
@@ -23,18 +23,24 @@ use crate::{
 #[template(path = "admin-users.html")]
 pub struct UsersTemplate {
     pub current_path: String,
-    pub stat: UserStatRow,
+    pub stat: GlobalStatView,
     pub users: ReadResult<AdminView>,
     pub query: PageQuery,
+    pub total_percent: i64,
+    pub suspended_percent: i64,
+    pub premium_percent: i64,
 }
 
 impl Default for UsersTemplate {
     fn default() -> Self {
         Self {
             current_path: "users".to_owned(),
-            stat: UserStatRow::default(),
+            stat: GlobalStatView::default(),
             users: ReadResult::default(),
             query: Default::default(),
+            premium_percent: 0,
+            suspended_percent: 0,
+            total_percent: 0,
         }
     }
 }
@@ -57,8 +63,31 @@ pub async fn page(
     State(app): State<AppState>,
     admin: AuthAdmin,
 ) -> impl IntoResponse {
-    // let stat = crate::try_page_response!(opt: app_state.user_query.find_stat(0), template);
-    let stat = UserStatRow::default();
+    let stat = crate::try_page_response!(
+        imkitchen_user::global_stat::find_global(&app.read_db,),
+        template
+    )
+    .unwrap_or_default();
+
+    let stats = crate::try_page_response!(
+        imkitchen_user::global_stat::filter(
+            &app.read_db,
+            FilterQueryStat {
+                args: Args::backward(1, None)
+            }
+        ),
+        template
+    );
+
+    let current_stat = stats
+        .edges
+        .first()
+        .map(|e| e.node.clone())
+        .unwrap_or_default();
+
+    let total_percent = current_stat.total_percent(&stat);
+    let suspended_percent = stat.suspended_percent();
+    let premium_percent = current_stat.premium_percent(&stat);
 
     let r_query = query.clone();
     let role = Role::from_str(&query.role.unwrap_or("".to_owned())).ok();
@@ -91,6 +120,9 @@ pub async fn page(
             stat,
             users,
             query: r_query,
+            suspended_percent,
+            total_percent,
+            premium_percent,
             ..Default::default()
         })
         .into_response()

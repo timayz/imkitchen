@@ -52,9 +52,9 @@ pub async fn load<'a, E: Executor>(
     let id = id.into();
 
     Ok(create_projection()
+        .no_safety_check()
         .load::<Subscription>(&id)
-        .filter_events_by_name(false)
-        .execute(executor)
+        .execute_all(executor)
         .await?
         .map(|loaded| Command::new(id.to_owned(), loaded, executor))
         .unwrap_or_else(|| Command::new(id, Default::default(), executor)))

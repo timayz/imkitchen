@@ -34,16 +34,16 @@ impl<'a, E: Executor + Clone> Command<'a, E> {
         executor: &'a E,
         pool: &'a SqlitePool,
         input: RequestInput,
-    ) -> imkitchen_shared::Result<()> {
+    ) -> imkitchen_shared::Result<Option<String>> {
         input.validate()?;
 
         let Some(user) =
             crate::repository::find(pool, FindType::Email(input.email.to_owned())).await?
         else {
-            return Ok(());
+            return Ok(None);
         };
 
-        evento::create()
+        let id = evento::create()
             .event(&ResetRequested {
                 user_id: user.id,
                 email: input.email,
@@ -54,7 +54,7 @@ impl<'a, E: Executor + Clone> Command<'a, E> {
             .commit(executor)
             .await?;
 
-        Ok(())
+        Ok(Some(id))
     }
 }
 
@@ -123,9 +123,9 @@ pub async fn load<'a, E: Executor>(
     let id = id.into();
 
     Ok(create_projection()
+        .no_safety_check()
         .load::<Password>(&id)
-        .filter_events_by_name(false)
-        .execute(executor)
+        .execute_all(executor)
         .await?
         .map(|loaded| Command::new(id, loaded, executor)))
 }

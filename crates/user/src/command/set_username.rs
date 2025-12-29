@@ -1,7 +1,5 @@
 use evento::Executor;
-use imkitchen_db::table::User;
 use regex::Regex;
-use sea_query::{Expr, ExprTrait, Query};
 use sqlx::SqlitePool;
 use std::sync::LazyLock;
 use validator::Validate;

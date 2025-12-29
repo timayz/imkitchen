@@ -10,8 +10,8 @@ mod recipe_user_stat;
 mod shopping_list;
 mod user;
 mod user_admin;
+mod user_global_stat;
 mod user_login;
-mod user_stat;
 
 use sqlx_migrator::vec_box;
 
@@ -29,7 +29,7 @@ sqlx_migrator::sqlite_migration!(
         user_login::CreateTable,
         user_login::CreateIdx1,
         user_login::CreateUk1,
-        user_stat::CreateTable,
+        user_global_stat::CreateTable,
         user_admin::CreateTable,
         user_admin::CreateIdx1,
         user_admin::CreateIdx2,

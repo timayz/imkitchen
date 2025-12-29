@@ -1,36 +1,46 @@
 use sea_query::{ColumnDef, Table, TableCreateStatement, TableDropStatement};
 
-use crate::table::UserStat;
+use crate::table::UserGlobalStat;
 
 pub struct CreateTable;
 
 fn create_table() -> TableCreateStatement {
     Table::create()
-        .table(UserStat::Table)
-        .col(ColumnDef::new(UserStat::Day).big_integer().primary_key())
+        .table(UserGlobalStat::Table)
         .col(
-            ColumnDef::new(UserStat::Total)
+            ColumnDef::new(UserGlobalStat::Month)
+                .string()
+                .string_len(20)
+                .primary_key(),
+        )
+        .col(
+            ColumnDef::new(UserGlobalStat::Total)
                 .integer()
                 .not_null()
                 .default(0),
         )
         .col(
-            ColumnDef::new(UserStat::Premium)
+            ColumnDef::new(UserGlobalStat::Premium)
                 .integer()
                 .not_null()
                 .default(0),
         )
         .col(
-            ColumnDef::new(UserStat::Suspended)
+            ColumnDef::new(UserGlobalStat::Suspended)
                 .integer()
                 .not_null()
                 .default(0),
+        )
+        .col(
+            ColumnDef::new(UserGlobalStat::CreatedAt)
+                .big_integer()
+                .not_null(),
         )
         .to_owned()
 }
 
 fn drop_table() -> TableDropStatement {
-    Table::drop().table(UserStat::Table).to_owned()
+    Table::drop().table(UserGlobalStat::Table).to_owned()
 }
 
 #[async_trait::async_trait]

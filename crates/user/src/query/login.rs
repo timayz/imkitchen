@@ -36,7 +36,7 @@ impl LoginView {
     }
 }
 
-fn create_projection<E: Executor>() -> Projection<LoginView, E> {
+pub fn create_projection<E: Executor>() -> Projection<LoginView, E> {
     Projection::new("user-login-view")
         .handler(handle_logged_in())
         .handler(handle_logout())
@@ -55,6 +55,7 @@ pub async fn load<'a, E: Executor>(
     let id = id.into();
 
     Ok(create_projection()
+        .no_safety_check()
         .load::<User>(&id)
         .data(pool.clone())
         .execute(executor)
@@ -63,7 +64,7 @@ pub async fn load<'a, E: Executor>(
 }
 
 pub fn subscription<E: Executor>() -> SubscriptionBuilder<LoginView, E> {
-    create_projection().subscription()
+    create_projection().no_safety_check().subscription()
 }
 
 #[evento::snapshot]

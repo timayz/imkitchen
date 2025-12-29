@@ -45,22 +45,13 @@ pub async fn page(
         template
     );
 
-    match preferences {
-        Some(preferences) => template.render(MealPreferencesTemplate {
-            household_size: preferences.household_size,
-            dietary_restrictions: preferences.dietary_restrictions.to_vec(),
-            cuisine_variety_weight: preferences.cuisine_variety_weight,
-            user,
-            ..Default::default()
-        }),
-        _ => template.render(MealPreferencesTemplate {
-            household_size: 4,
-            dietary_restrictions: vec![],
-            cuisine_variety_weight: 1.0,
-            user,
-            ..Default::default()
-        }),
-    }
+    template.render(MealPreferencesTemplate {
+        household_size: preferences.household_size,
+        dietary_restrictions: preferences.dietary_restrictions.to_vec(),
+        cuisine_variety_weight: preferences.cuisine_variety_weight,
+        user,
+        ..Default::default()
+    })
 }
 
 #[derive(Deserialize, Debug)]
@@ -78,16 +69,17 @@ pub async fn action(
     user: AuthUser,
     Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {
+    let preferences = crate::try_response!(anyhow:
+        imkitchen_user::meal_preferences::load(&app.executor, &user.id),
+        template
+    );
+
     crate::try_response!(
-        imkitchen_user::meal_preferences::Command::update(
-            &app.executor,
-            UpdateInput {
-                user_id: user.id.to_owned(),
-                dietary_restrictions: input.dietary_restrictions.to_vec(),
-                cuisine_variety_weight: input.cuisine_variety_weight,
-                household_size: input.household_size,
-            }
-        ),
+        preferences.update(UpdateInput {
+            dietary_restrictions: input.dietary_restrictions.to_vec(),
+            cuisine_variety_weight: input.cuisine_variety_weight,
+            household_size: input.household_size,
+        }),
         template
     );
 

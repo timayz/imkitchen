@@ -16,7 +16,6 @@ pub struct Command {
 
 #[derive(Validate)]
 pub struct UpdateInput {
-    pub user_id: String,
     #[validate(range(min = 1))]
     pub household_size: u16,
     pub dietary_restrictions: Vec<DietaryRestriction>,
@@ -25,17 +24,17 @@ pub struct UpdateInput {
 }
 
 impl<'a, E: Executor + Clone> Command<'a, E> {
-    pub async fn update(executor: &E, input: UpdateInput) -> imkitchen_shared::Result<()> {
+    pub async fn update(&self, input: UpdateInput) -> imkitchen_shared::Result<()> {
         input.validate()?;
 
-        evento::aggregator(&input.user_id)
+        self.aggregator()
             .event(&Changed {
                 dietary_restrictions: input.dietary_restrictions,
                 household_size: input.household_size,
                 cuisine_variety_weight: input.cuisine_variety_weight,
             })
-            .metadata(&Metadata::new(input.user_id))
-            .commit(executor)
+            .metadata(&Metadata::new(self.aggregator_id.to_owned()))
+            .commit(self.executor)
             .await?;
 
         Ok(())
@@ -49,15 +48,30 @@ fn create_projection<E: Executor>() -> Projection<CommandData, E> {
 pub async fn load<'a, E: Executor>(
     executor: &'a E,
     id: impl Into<String>,
-) -> Result<Option<Command<'a, E>>, anyhow::Error> {
+) -> Result<Command<'a, E>, anyhow::Error> {
     let id = id.into();
 
     Ok(create_projection()
+        .no_safety_check()
         .load::<MealPreferences>(&id)
-        .filter_events_by_name(false)
-        .execute(executor)
+        .execute_all(executor)
         .await?
-        .map(|loaded| Command::new(id, loaded, executor)))
+        .map(|loaded| Command::new(&id, loaded, executor))
+        .unwrap_or_else(|| {
+            Command::new(
+                &id,
+                evento::LoadResult {
+                    item: CommandData {
+                        household_size: 4,
+                        dietary_restrictions: vec![],
+                        cuisine_variety_weight: 1.0,
+                    },
+                    version: 0,
+                    routing_key: None,
+                },
+                executor,
+            )
+        }))
 }
 
 impl evento::Snapshot for CommandData {}

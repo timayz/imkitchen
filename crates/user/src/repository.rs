@@ -1,5 +1,5 @@
 use imkitchen_db::table::User;
-use sea_query::{Expr, ExprTrait, OnConflictUpdate, Query, SqliteQueryBuilder};
+use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::{SqlitePool, prelude::FromRow};
 use time::OffsetDateTime;

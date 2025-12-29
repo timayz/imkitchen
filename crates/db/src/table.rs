@@ -23,12 +23,13 @@ pub enum UserLogin {
 }
 
 #[derive(Iden, Clone)]
-pub enum UserStat {
+pub enum UserGlobalStat {
     Table,
-    Day,
+    Month,
     Total,
     Premium,
     Suspended,
+    CreatedAt,
 }
 
 #[derive(Iden, Clone)]

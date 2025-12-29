@@ -2,7 +2,7 @@ use argon2::{
     Argon2, PasswordHasher,
     password_hash::{SaltString, rand_core::OsRng},
 };
-use evento::{Aggregator, Executor, metadata::Metadata};
+use evento::{Executor, metadata::Metadata};
 use sqlx::SqlitePool;
 use validator::Validate;
 

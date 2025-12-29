@@ -22,7 +22,7 @@ pub struct Command {
     pub state: State,
 }
 
-fn create_projection<E: Executor>() -> Projection<CommandData, E> {
+pub fn create_projection<E: Executor>() -> Projection<CommandData, E> {
     Projection::new("user-command")
         .handler(handle_registered())
         .handler(handle_actived())
@@ -38,16 +38,16 @@ pub async fn load<'a, E: Executor>(
     let id = id.into();
 
     Ok(create_projection()
+        .no_safety_check()
         .load::<User>(&id)
         .data(pool.clone())
-        .filter_events_by_name(false)
-        .execute(executor)
+        .execute_all(executor)
         .await?
         .map(|loaded| Command::new(id, loaded, executor)))
 }
 
 pub fn subscription<E: Executor>() -> SubscriptionBuilder<CommandData, E> {
-    create_projection().subscription()
+    create_projection().no_safety_check().subscription()
 }
 
 #[evento::snapshot]
