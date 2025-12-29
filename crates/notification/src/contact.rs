@@ -1,35 +1,46 @@
-use evento::{AggregatorName, Executor, SubscribeBuilder};
-use imkitchen_contact::{Contact, FormSubmitted};
-use imkitchen_shared::Event;
+use evento::{Action, Executor, Projection, Snapshot, SubscriptionBuilder, metadata::Event};
+use imkitchen_contact::FormSubmitted;
 
 use crate::EmailService;
 
-pub fn subscribe_contact<E: Executor + Clone>() -> SubscribeBuilder<E> {
-    evento::subscribe("notification-contact")
-        .handler(handle_form_submitted())
-        .handler_check_off()
+#[derive(Default, Clone)]
+pub struct ContactView;
+
+impl Snapshot for ContactView {}
+
+pub fn create_projection<E: Executor>() -> Projection<ContactView, E> {
+    Projection::new("notification-contact").handler(handle_form_submitted())
 }
 
-#[evento::handler(Contact)]
+pub fn subscription<E: Executor>() -> SubscriptionBuilder<ContactView, E> {
+    create_projection().no_safety_check().subscription()
+}
+
+#[evento::handler]
 async fn handle_form_submitted<E: Executor>(
-    context: &evento::Context<'_, E>,
     event: Event<FormSubmitted>,
+    action: Action<'_, ContactView, E>,
 ) -> anyhow::Result<()> {
-    let service = context.extract::<EmailService>();
-    service
-        .send_plain(
-            &event.data.to,
-            event.data.subject.to_string(),
-            format!(
-                r#"
+    match action {
+        Action::Apply(_data) => {}
+        Action::Handle(context) => {
+            let service = context.extract::<EmailService>();
+            service
+                .send_plain(
+                    &event.data.to,
+                    event.data.subject.to_string(),
+                    format!(
+                        r#"
 {} <{}>,
 
 {}
             "#,
-                event.data.name, event.data.email, event.data.message
-            ),
-        )
-        .await?;
+                        event.data.name, event.data.email, event.data.message
+                    ),
+                )
+                .await?;
+        }
+    };
 
     Ok(())
 }

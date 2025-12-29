@@ -1,4 +1,5 @@
 use anyhow::Result;
+use imkitchen_notification::EmailService;
 // use imkitchen_notification::EmailService;
 use tower_http::{compression::CompressionLayer, trace::TraceLayer};
 
@@ -15,7 +16,7 @@ pub async fn serve(
     let host = host_override.unwrap_or(config.server.host.to_owned());
     let port = port_override.unwrap_or(config.server.port);
 
-    // let email_service = EmailService::new(&config.email)?;
+    let email_service = EmailService::new(&config.email)?;
 
     // Set up database connection pools with optimized PRAGMAs
     // Write pool: 1 connection for evento and all write operations
@@ -35,15 +36,15 @@ pub async fn serve(
     // Start background notification worker
     tracing::info!("Starting evento subscriptions...");
 
-    // let sub_notification_contact = imkitchen_notification::subscribe_contact()
-    //     .data(email_service.clone())
-    //     .unretry_run(&evento_executor)
-    //     .await?;
-    //
-    // let sub_notification_user = imkitchen_notification::subscribe_user()
-    //     .data(email_service)
-    //     .unretry_run(&evento_executor)
-    //     .await?;
+    let sub_notification_contact = imkitchen_notification::contact::subscription()
+        .data(email_service.clone())
+        .start(&executor)
+        .await?;
+
+    let sub_notification_user = imkitchen_notification::user::subscription()
+        .data(email_service)
+        .start(&executor)
+        .await?;
 
     let sub_user_command = imkitchen_user::subscription()
         .data(write_pool.clone())
@@ -185,8 +186,8 @@ pub async fn serve(
 
     // Shutdown all projection subscriptions
     let results = futures::future::join_all(vec![
-        //     sub_notification_contact.shutdown_and_wait(),
-        //     sub_notification_user.shutdown_and_wait(),
+        sub_notification_contact.shutdown(),
+        sub_notification_user.shutdown(),
         sub_user_command.shutdown(),
         sub_user_login.shutdown(),
         sub_user_admin.shutdown(),
