@@ -5,7 +5,7 @@ use crate::Deleted;
 impl<'a, E: Executor + Clone> super::Command<'a, E> {
     pub async fn delete(&self, request_by: impl Into<String>) -> imkitchen_shared::Result<()> {
         if self.is_deleted {
-            imkitchen_shared::not_found!("recipe not found");
+            imkitchen_shared::not_found!("recipe");
         }
 
         let request_by = request_by.into();

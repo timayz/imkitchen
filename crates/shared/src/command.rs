@@ -6,7 +6,7 @@ pub enum Error {
     #[error("forbidden {0}")]
     Forbidden(String),
 
-    #[error("not found {0}")]
+    #[error("{0} not found")]
     NotFound(String),
 
     #[error("{0}")]

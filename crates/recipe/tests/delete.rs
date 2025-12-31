@@ -1,4 +1,3 @@
-use imkitchen_shared::Metadata;
 use temp_dir::TempDir;
 
 mod helpers;
@@ -8,20 +7,22 @@ async fn test_delete() -> anyhow::Result<()> {
     let dir = TempDir::new()?;
     let path = dir.child("db.sqlite3");
     let state = helpers::setup_test_state(path).await?;
-    let command = imkitchen_recipe::Command(state.evento.clone(), state.pool.clone());
-    let john = Metadata::by("john".to_owned());
 
-    let recipe = command.create(&john).await?;
-    let loaded = command.load(&recipe).await?;
-    assert!(!loaded.item.deleted);
+    let recipe_id =
+        imkitchen_recipe::Command::create(&state.evento, "john", "john_doe".to_owned()).await?;
+    let recipe = imkitchen_recipe::load(&state.evento, &state.pool, &recipe_id)
+        .await?
+        .unwrap();
+    assert!(!recipe.is_deleted);
 
-    command.delete_with(loaded, &john).await?;
+    recipe.delete("john").await?;
 
-    let loaded = command.load(&recipe).await?;
+    let recipe = imkitchen_recipe::load(&state.evento, &state.pool, &recipe_id)
+        .await?
+        .unwrap();
+    assert!(recipe.is_deleted);
 
-    assert!(loaded.item.deleted);
-
-    let err = command.delete_with(loaded, &john).await.unwrap_err();
+    let err = recipe.delete("john").await.unwrap_err();
 
     assert_eq!(err.to_string(), "recipe not found".to_owned());
 
