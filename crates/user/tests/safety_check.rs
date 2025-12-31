@@ -1,4 +1,6 @@
-use imkitchen_user::{LoggedIn, Logout, MadeAdmin, password::ResetRequested};
+use imkitchen_user::{
+    LoggedIn, Logout, MadeAdmin, Registered, UsernameChanged, password::ResetRequested,
+};
 use temp_dir::TempDir;
 mod helpers;
 
@@ -40,6 +42,10 @@ async fn test_safety_check() -> anyhow::Result<()> {
 
     user.set_username(&state.pool, &state.pool, "john_smith".to_owned())
         .await?;
+
+    let user = imkitchen_user::load(&state.evento, &state.pool, &id)
+        .await?
+        .unwrap();
 
     user.made_admin().await?;
     let user = imkitchen_user::load(&state.evento, &state.pool, &id)
@@ -86,6 +92,7 @@ async fn test_safety_check() -> anyhow::Result<()> {
     imkitchen_user::create_projection()
         .skip::<LoggedIn>()
         .skip::<Logout>()
+        .skip::<UsernameChanged>()
         .subscription()
         .data(state.pool.clone())
         .unretry_execute(&state.evento)
@@ -94,6 +101,7 @@ async fn test_safety_check() -> anyhow::Result<()> {
     imkitchen_user::admin::create_projection()
         .skip::<LoggedIn>()
         .skip::<Logout>()
+        .skip::<UsernameChanged>()
         .subscription()
         .data(state.pool.clone())
         .unretry_execute(&state.evento)
@@ -101,6 +109,7 @@ async fn test_safety_check() -> anyhow::Result<()> {
 
     imkitchen_user::login::create_projection()
         .skip::<ResetRequested>()
+        .skip::<Registered>()
         .subscription()
         .data(state.pool.clone())
         .unretry_execute(&state.evento)
@@ -110,6 +119,7 @@ async fn test_safety_check() -> anyhow::Result<()> {
         .skip::<LoggedIn>()
         .skip::<Logout>()
         .skip::<MadeAdmin>()
+        .skip::<UsernameChanged>()
         .subscription()
         .data(state.pool.clone())
         .unretry_execute(&state.evento)
