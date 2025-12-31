@@ -512,7 +512,7 @@ macro_rules! try_response {
                 tracing::error!("{err}");
                 $crate::try_response!(@render $template, $fallback, $crate::template::SERVER_ERROR_MESSAGE)
             }
-            Err(imkitchen_shared::Error::Forbidden) => {
+            Err(imkitchen_shared::Error::Forbidden(_)) => {
                 $crate::try_response!(@render $template, $fallback, $crate::template::FORBIDDEN)
             }
             Err(err) => {
@@ -532,7 +532,7 @@ macro_rules! try_response {
                 tracing::error!("{err}");
                 $crate::try_response!(@render $template, $fallback, $crate::template::SERVER_ERROR_MESSAGE)
             }
-            Err(imkitchen_shared::Error::Forbidden) => {
+            Err(imkitchen_shared::Error::Forbidden(_)) => {
                 $crate::try_response!(@render $template, $fallback, $crate::template::FORBIDDEN)
             }
             Err(err) => {

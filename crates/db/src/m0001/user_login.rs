@@ -23,17 +23,25 @@ fn create_table() -> TableCreateStatement {
                 .not_null()
                 .string_len(26),
         )
-        .col(
-            ColumnDef::new(UserLogin::Revision)
-                .string()
-                .not_null()
-                .string_len(26),
-        )
+        .col(ColumnDef::new(UserLogin::Username).string().string_len(15))
         .col(ColumnDef::new(UserLogin::UserAgent).string().not_null())
         .col(
-            ColumnDef::new(UserLogin::CreatedAt)
+            ColumnDef::new(UserLogin::Role)
+                .string()
+                .not_null()
+                .string_len(15),
+        )
+        .col(
+            ColumnDef::new(UserLogin::State)
+                .string()
+                .not_null()
+                .string_len(15),
+        )
+        .col(
+            ColumnDef::new(UserLogin::SubscriptionExpireAt)
                 .big_integer()
-                .not_null(),
+                .not_null()
+                .default(0),
         )
         .to_owned()
 }

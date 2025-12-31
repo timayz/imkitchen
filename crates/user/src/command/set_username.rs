@@ -1,10 +1,10 @@
-use evento::Executor;
+use evento::{Executor, metadata::Metadata};
 use regex::Regex;
 use sqlx::SqlitePool;
 use std::sync::LazyLock;
 use validator::Validate;
 
-use crate::command::repository;
+use crate::{UsernameChanged, command::repository};
 
 static RE_ALPHA_NUM: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^[A-Za-z0-9_]+$").unwrap());
 
@@ -37,17 +37,31 @@ impl<'a, E: Executor + Clone> super::Command<'a, E> {
             imkitchen_shared::user!("Username has already been set");
         }
 
+        if repository::is_username_exists(read_db, &input.username).await? {
+            imkitchen_shared::user!("Username already used");
+        }
+
         repository::update(
             write_db,
             repository::UpdateInput {
-                id: user.id,
-                username: Some(input.username),
+                id: user.id.to_owned(),
+                username: Some(input.username.to_owned()),
                 password: None,
                 role: None,
                 state: None,
+                version: self.event_version + 1,
+                routing_key: self.event_routing_key.to_owned(),
             },
         )
         .await?;
+
+        self.aggregator()
+            .event(&UsernameChanged {
+                value: input.username,
+            })
+            .metadata(&Metadata::new(user.id))
+            .commit(self.executor)
+            .await?;
 
         Ok(())
     }

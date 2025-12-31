@@ -3,53 +3,53 @@ use sea_query::{
     TableDropStatement,
 };
 
-use crate::table::RecipeRating;
+use crate::table::RecipeRatingCommand;
 
 pub struct CreateTable;
 
 fn create_table() -> TableCreateStatement {
     Table::create()
-        .table(RecipeRating::Table)
+        .table(RecipeRatingCommand::Table)
         .col(
-            ColumnDef::new(RecipeRating::RecipeId)
+            ColumnDef::new(RecipeRatingCommand::RecipeId)
                 .string()
                 .string_len(26)
                 .null(),
         )
         .col(
-            ColumnDef::new(RecipeRating::UserId)
+            ColumnDef::new(RecipeRatingCommand::UserId)
                 .string()
                 .string_len(26)
                 .null(),
         )
         .col(
-            ColumnDef::new(RecipeRating::Viewed)
+            ColumnDef::new(RecipeRatingCommand::Viewed)
                 .boolean()
                 .not_null()
                 .default(false),
         )
         .col(
-            ColumnDef::new(RecipeRating::Liked)
+            ColumnDef::new(RecipeRatingCommand::Liked)
                 .boolean()
                 .not_null()
                 .default(false),
         )
         .col(
-            ColumnDef::new(RecipeRating::Unliked)
+            ColumnDef::new(RecipeRatingCommand::Unliked)
                 .boolean()
                 .not_null()
                 .default(false),
         )
         .primary_key(
             Index::create()
-                .col(RecipeRating::RecipeId)
-                .col(RecipeRating::UserId),
+                .col(RecipeRatingCommand::RecipeId)
+                .col(RecipeRatingCommand::UserId),
         )
         .to_owned()
 }
 
 fn drop_table() -> TableDropStatement {
-    Table::drop().table(RecipeRating::Table).to_owned()
+    Table::drop().table(RecipeRatingCommand::Table).to_owned()
 }
 
 #[async_trait::async_trait]
@@ -80,15 +80,15 @@ pub struct CreateIdx1;
 fn create_idx_1() -> IndexCreateStatement {
     Index::create()
         .name("idx_recipe_rating_P4CTqO")
-        .table(RecipeRating::Table)
-        .col(RecipeRating::RecipeId)
+        .table(RecipeRatingCommand::Table)
+        .col(RecipeRatingCommand::RecipeId)
         .to_owned()
 }
 
 fn drop_idx_1() -> IndexDropStatement {
     Index::drop()
         .name("idx_recipe_rating_P4CTqO")
-        .table(RecipeRating::Table)
+        .table(RecipeRatingCommand::Table)
         .to_owned()
 }
 

@@ -131,10 +131,10 @@ impl FromRequestParts<crate::routes::AppState> for Option<AuthToken> {
 }
 
 #[derive(Clone, Default)]
-pub struct AuthUser(imkitchen_user::login::LoginView);
+pub struct AuthUser(imkitchen_user::login::Login);
 
 impl Deref for AuthUser {
-    type Target = imkitchen_user::login::LoginView;
+    type Target = imkitchen_user::login::Login;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -154,27 +154,29 @@ impl FromRequestParts<crate::routes::AppState> for AuthUser {
 
         let claims = AuthToken::from_request_parts(parts, state).await?;
 
-        let Some(mut login) =
-            imkitchen_user::login::load(&state.executor, &state.read_db, &claims.sub)
-                .await
-                .map_err(|e| {
-                    tracing::error!("{e}");
-                    Redirect::to("/login")
-                })?
+        let Some(user) = imkitchen_user::login::load(&state.executor, &state.read_db, &claims.sub)
+            .await
+            .map_err(|e| {
+                tracing::error!("{e}");
+                Redirect::to("/login")
+            })?
         else {
             return Err(Redirect::to("/login"));
         };
 
-        let has_access = login
-            .rows
+        let Some(login) = user
+            .logins
             .iter()
-            .any(|r| r.id == claims.acc && r.user_agent == user_agent.to_string());
-
-        if !has_access {
+            .find(|l| l.id == claims.acc && l.user_agent == user_agent.to_string())
+        else {
             return Err(Redirect::to("/login"));
-        }
+        };
 
-        if login.state == State::Suspended {
+        let mut login = login.clone();
+
+        login.id = user.id;
+
+        if login.state.0 == State::Suspended {
             return Err(Redirect::to("/login"));
         }
 
@@ -201,10 +203,10 @@ impl FromRequestParts<crate::routes::AppState> for Option<AuthUser> {
     }
 }
 
-pub struct AuthAdmin(imkitchen_user::login::LoginView);
+pub struct AuthAdmin(imkitchen_user::login::Login);
 
 impl Deref for AuthAdmin {
-    type Target = imkitchen_user::login::LoginView;
+    type Target = imkitchen_user::login::Login;
 
     fn deref(&self) -> &Self::Target {
         &self.0

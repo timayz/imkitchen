@@ -176,6 +176,7 @@ pub fn subscription<E: Executor>() -> SubscriptionBuilder<AdminView, E> {
 async fn restore(
     context: &evento::context::RwContext,
     id: String,
+    _aggregators: &std::collections::HashMap<String, String>,
 ) -> anyhow::Result<Option<AdminView>> {
     let pool = context.extract::<SqlitePool>();
     find(&pool, id).await

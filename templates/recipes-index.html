@@ -11,7 +11,7 @@
 
   <!-- Mobile Quick Actions -->
   <div class="lg:hidden flex gap-2 mb-4">
-    <button ts-req="/recipes/create-mobile" ts-req-method="post"
+    <button ts-req="/recipes/create" ts-req-method="post"
       class="flex-1 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 text-center text-sm">
       ✏️ {{ "Create"|t }}
     </button>
@@ -36,7 +36,7 @@
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
           <option value="">{{ "All Types"|t }}</option>
           {% for variant in RecipeType::VARIANTS %}
-          <option value="{{ variant }}">{{ variant.to_string().as_str()|t }}</option>
+          <option value="{{ variant }}">{{ variant.as_ref()|t }}</option>
           {% endfor %}
         </select>
       </div>
@@ -46,7 +46,7 @@
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
           <option value="">{{ "All Cuisines"|t }}</option>
           {% for variant in CuisineType::VARIANTS %}
-          <option value="{{ variant }}">{{ variant.to_string().as_str()|t }}</option>
+          <option value="{{ variant }}">{{ variant.as_ref()|t }}</option>
           {% endfor %}
         </select>
       </div>

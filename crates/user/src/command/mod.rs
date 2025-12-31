@@ -1,4 +1,4 @@
-use evento::{Action, Executor, Projection, SubscriptionBuilder, metadata::Event};
+use evento::{Action, Executor, Projection, Snapshot, SubscriptionBuilder, metadata::Event};
 use sqlx::SqlitePool;
 
 use crate::{
@@ -15,11 +15,14 @@ mod suspend;
 
 pub use login::LoginInput;
 pub use register::RegisterInput;
+pub use set_username::SetUsernameInput;
 
 #[evento::command]
 pub struct Command {
     pub role: Role,
     pub state: State,
+    pub version: u16,
+    pub routing_key: Option<String>,
 }
 
 pub fn create_projection<E: Executor>() -> Projection<CommandData, E> {
@@ -50,19 +53,50 @@ pub fn subscription<E: Executor>() -> SubscriptionBuilder<CommandData, E> {
     create_projection().no_safety_check().subscription()
 }
 
-#[evento::snapshot]
-async fn restore(
-    context: &evento::context::RwContext,
-    id: String,
-) -> anyhow::Result<Option<CommandData>> {
-    let pool = context.extract::<SqlitePool>();
-    Ok(repository::find(&pool, FindType::Id(id))
-        .await?
-        .map(|row| CommandData {
-            role: row.role.0,
-            state: row.state.0,
-        }))
+impl Snapshot for CommandData {
+    fn restore_version(&self) -> u16 {
+        self.version
+    }
+
+    fn restore_routing_key(&self) -> Option<String> {
+        self.routing_key.to_owned()
+    }
+
+    fn restore<'a>(
+        context: &'a evento::context::RwContext,
+        id: String,
+        _aggregators: &'a std::collections::HashMap<String, String>,
+    ) -> std::pin::Pin<Box<dyn Future<Output = anyhow::Result<Option<Self>>> + Send + 'a>> {
+        Box::pin(async {
+            let pool = context.extract::<SqlitePool>();
+            Ok(repository::find(&pool, FindType::Id(id))
+                .await?
+                .map(|row| CommandData {
+                    role: row.role.0,
+                    state: row.state.0,
+                    version: row.version,
+                    routing_key: row.routing_key,
+                }))
+        })
+    }
 }
+
+// #[evento::snapshot]
+// async fn restore(
+//     context: &evento::context::RwContext,
+//     id: String,
+//     _aggregators: &std::collections::HashMap<String, String>,
+// ) -> anyhow::Result<Option<CommandData>> {
+//     let pool = context.extract::<SqlitePool>();
+//     Ok(repository::find(&pool, FindType::Id(id))
+//         .await?
+//         .map(|row| CommandData {
+//             role: row.role.0,
+//             state: row.state.0,
+//             version: row.version,
+//             routing_key: row.routing_key,
+//         }))
+// }
 
 #[evento::handler]
 async fn handle_registered<E: Executor>(
@@ -84,6 +118,8 @@ async fn handle_registered<E: Executor>(
                     password: None,
                     role: Some(Role::User),
                     state: Some(State::Active),
+                    version: event.version,
+                    routing_key: event.routing_key.to_owned(),
                 },
             )
             .await?;
@@ -112,6 +148,8 @@ async fn handle_made_admin<E: Executor>(
                     password: None,
                     role: Some(Role::Admin),
                     state: None,
+                    version: event.version,
+                    routing_key: event.routing_key.to_owned(),
                 },
             )
             .await?;
@@ -140,6 +178,8 @@ async fn handle_actived<E: Executor>(
                     password: None,
                     role: None,
                     state: Some(State::Active),
+                    version: event.version,
+                    routing_key: event.routing_key.to_owned(),
                 },
             )
             .await?;
@@ -168,6 +208,8 @@ async fn handle_susended<E: Executor>(
                     password: None,
                     role: None,
                     state: Some(State::Suspended),
+                    version: event.version,
+                    routing_key: event.routing_key.to_owned(),
                 },
             )
             .await?;

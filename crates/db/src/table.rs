@@ -10,6 +10,8 @@ pub enum User {
     Role,
     State,
     CreatedAt,
+    Version,
+    RoutingKey,
 }
 
 #[derive(Iden, Clone)]
@@ -17,9 +19,11 @@ pub enum UserLogin {
     Table,
     Id,
     UserId,
-    Revision,
+    Username,
+    Role,
+    State,
     UserAgent,
-    CreatedAt,
+    SubscriptionExpireAt,
 }
 
 #[derive(Iden, Clone)]
@@ -72,10 +76,30 @@ pub enum ContactGlobalStat {
 }
 
 #[derive(Iden, Clone)]
-pub enum RecipeList {
+pub enum RecipeCommand {
     Table,
     Id,
-    UserId,
+    OwnerId,
+    RecipeType,
+    CuisineType,
+    IsShared,
+    BasicInformationHash,
+    IngredientsHash,
+    InstructionsHash,
+    DietaryRestrictionsHash,
+    AdvancePrepHash,
+    AcceptsAccompaniment,
+    IsDeleted,
+    Version,
+    RoutingKey,
+}
+
+#[derive(Iden, Clone)]
+pub enum RecipeUser {
+    Table,
+    Id,
+    OwnerId,
+    OwnerName,
     RecipeType,
     CuisineType,
     Name,
@@ -108,7 +132,7 @@ pub enum RecipeUserStat {
 }
 
 #[derive(Iden, Clone)]
-pub enum RecipeRating {
+pub enum RecipeRatingCommand {
     Table,
     RecipeId,
     UserId,

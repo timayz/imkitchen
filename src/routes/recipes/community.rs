@@ -2,7 +2,9 @@ use axum::{extract::State, response::IntoResponse};
 use axum_extra::extract::Query;
 use evento::cursor::{Args, ReadResult, Value};
 use imkitchen_recipe::{
-    CuisineType, DietaryRestriction, RecipeListRow, RecipeType, RecipesQuery, SortBy, UserStat,
+    CuisineType, DietaryRestriction, RecipeType, SortBy,
+    user::{RecipesQuery, UserViewList},
+    user_stat::UserStatView,
 };
 use serde::Deserialize;
 use std::str::FromStr;
@@ -20,8 +22,8 @@ pub struct CommunityTemplate {
     pub current_path: String,
     pub recipes_path: String,
     pub user: AuthUser,
-    pub stat: UserStat,
-    pub recipes: ReadResult<RecipeListRow>,
+    pub stat: UserStatView,
+    pub recipes: ReadResult<UserViewList>,
     pub query: PageQuery,
 }
 
@@ -31,7 +33,7 @@ impl Default for CommunityTemplate {
             current_path: "recipes".to_owned(),
             recipes_path: "community".to_owned(),
             user: AuthUser::default(),
-            stat: UserStat::default(),
+            stat: UserStatView::default(),
             recipes: ReadResult::default(),
             query: Default::default(),
         }
@@ -58,8 +60,11 @@ pub async fn page(
     State(app): State<AppState>,
     Query(input): Query<PageQuery>,
 ) -> impl IntoResponse {
-    let stat = crate::try_page_response!(app.recipe_query.find_user_stat(&user.id), template)
-        .unwrap_or_default();
+    let stat = crate::try_page_response!(
+        imkitchen_recipe::user_stat::find_user_stat(&app.read_db, &user.id),
+        template
+    )
+    .unwrap_or_default();
 
     let query = input.clone();
 
@@ -79,17 +84,20 @@ pub async fn page(
         .and_then(|v| CuisineType::from_str(v.as_str()).ok());
 
     let recipes = crate::try_page_response!(
-        app.recipe_query.filter(RecipesQuery {
-            exclude_ids: None,
-            user_id: None,
-            recipe_type,
-            cuisine_type,
-            is_shared: Some(true),
-            dietary_restrictions: input.dietary_restrictions,
-            dietary_where_any: false,
-            sort_by: input.sort_by.unwrap_or_default(),
-            args: args.limit(20),
-        }),
+        imkitchen_recipe::user::filter(
+            &app.read_db,
+            RecipesQuery {
+                exclude_ids: None,
+                user_id: None,
+                recipe_type,
+                cuisine_type,
+                is_shared: Some(true),
+                dietary_restrictions: input.dietary_restrictions,
+                dietary_where_any: false,
+                sort_by: input.sort_by.unwrap_or_default(),
+                args: args.limit(20),
+            }
+        ),
         template
     );
 

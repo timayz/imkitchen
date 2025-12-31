@@ -3,8 +3,8 @@ pub enum Error {
     #[error("{0}")]
     Validate(#[from] validator::ValidationErrors),
 
-    #[error("forbidden")]
-    Forbidden,
+    #[error("forbidden {0}")]
+    Forbidden(String),
 
     #[error("not found {0}")]
     NotFound(String),
@@ -84,5 +84,18 @@ macro_rules! not_found {
     };
     ($fmt:expr, $($arg:tt)*) => {
         return Err($crate::Error::NotFound(format!($fmt, $($arg)*)))
+    };
+}
+
+#[macro_export]
+macro_rules! forbidden {
+    ($msg:literal $(,)?) => {
+        return Err($crate::Error::Forbidden(format!($msg)))
+    };
+    ($err:expr $(,)?) => {
+        return Err($crate::Error::Forbidden(format!($err)))
+    };
+    ($fmt:expr, $($arg:tt)*) => {
+        return Err($crate::Error::Forbidden(format!($fmt, $($arg)*)))
     };
 }

@@ -1,6 +1,5 @@
 use anyhow::Result;
 use imkitchen_notification::EmailService;
-// use imkitchen_notification::EmailService;
 use tower_http::{compression::CompressionLayer, trace::TraceLayer};
 
 use crate::routes::AppState;
@@ -76,20 +75,25 @@ pub async fn serve(
         .start(&executor)
         .await?;
     //
-    // let sub_recipe_list = imkitchen_recipe::subscribe_list()
-    //     .data(write_pool.clone())
-    //     .run(&evento_executor)
-    //     .await?;
-    //
-    // let sub_recipe_user_stat = imkitchen_recipe::subscribe_user_stat()
-    //     .data(write_pool.clone())
-    //     .run(&evento_executor)
-    //     .await?;
-    //
-    // let sub_rating_command = imkitchen_recipe::rating::subscribe_command()
-    //     .data(write_pool.clone())
-    //     .run(&evento_executor)
-    //     .await?;
+    let sub_recipe_command = imkitchen_recipe::subscription()
+        .data(write_pool.clone())
+        .start(&executor)
+        .await?;
+
+    let sub_recipe_user = imkitchen_recipe::user::subscription()
+        .data(write_pool.clone())
+        .start(&executor)
+        .await?;
+
+    let sub_recipe_user_stat = imkitchen_recipe::user_stat::subscription()
+        .data(write_pool.clone())
+        .start(&executor)
+        .await?;
+
+    let sub_rating_command = imkitchen_recipe::rating::subscription()
+        .data(write_pool.clone())
+        .start(&executor)
+        .await?;
     //
     // let sub_mealplan_command = imkitchen_mealplan::subscribe_command()
     //     .data(write_pool.clone())
@@ -194,9 +198,10 @@ pub async fn serve(
         sub_user_global_stat.shutdown(),
         sub_contact_admin.shutdown(),
         sub_contact_global_stat.shutdown(),
-        //     sub_recipe_list.shutdown_and_wait(),
-        //     sub_recipe_user_stat.shutdown_and_wait(),
-        //     sub_rating_command.shutdown_and_wait(),
+        sub_recipe_command.shutdown(),
+        sub_recipe_user.shutdown(),
+        sub_recipe_user_stat.shutdown(),
+        sub_rating_command.shutdown(),
         //     sub_mealplan_command.shutdown_and_wait(),
         //     sub_mealplan_week.shutdown_and_wait(),
         //     sub_mealplan_slot.shutdown_and_wait(),

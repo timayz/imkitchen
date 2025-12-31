@@ -96,6 +96,8 @@ impl<'a, E: Executor + Clone> Command<'a, E> {
                 password: Some(password_hash),
                 role: None,
                 state: None,
+                version: self.event_version + 1,
+                routing_key: self.event_routing_key.to_owned(),
             },
         )
         .await?;

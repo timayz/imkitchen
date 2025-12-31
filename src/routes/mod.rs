@@ -20,7 +20,7 @@ mod login;
 mod manifest;
 mod policy;
 mod profile;
-// mod recipes;
+mod recipes;
 mod register;
 mod reset_password;
 mod service_worker;
@@ -82,9 +82,9 @@ pub fn router(app_state: AppState) -> Router {
         //     "/calendar/week-{timestamp}/shopping/toggle",
         //     post(shopping::toggle_action),
         // )
-        // .route("/recipes", get(recipes::index::page))
-        // .route("/recipes/community", get(recipes::community::page))
-        // .route("/recipes/create", post(recipes::index::create))
+        .route("/recipes", get(recipes::index::page))
+        .route("/recipes/community", get(recipes::community::page))
+        .route("/recipes/create", post(recipes::index::create))
         // .route(
         //     "/recipes/create/{id}/status",
         //     get(recipes::index::create_status),
@@ -97,73 +97,73 @@ pub fn router(app_state: AppState) -> Router {
         //     "/recipes/create-mobile/{id}/status",
         //     get(recipes::index::create_mobile_status),
         // )
-        // .route(
-        //     "/recipes/import",
-        //     get(recipes::import::page).post(recipes::import::action),
-        // )
-        // .route("/recipes/import/{id}/status", get(recipes::import::status))
-        // .route("/recipes/{id}/detail", get(recipes::detail::page))
-        // .route(
-        //     "/recipes/{id}/detail/make-private",
-        //     get(recipes::detail::make_private_action),
-        // )
-        // .route(
-        //     "/recipes/{id}/detail/share-to-community",
-        //     get(recipes::detail::share_to_community_action),
-        // )
-        // .route(
-        //     "/recipes/{id}/detail/delete/status",
-        //     get(recipes::detail::delete_status),
-        // )
-        // .route(
-        //     "/recipes/{id}/detail/delete",
-        //     get(recipes::detail::delete_modal).post(recipes::detail::delete_action),
-        // )
-        // .route(
-        //     "/recipes/{id}/community",
-        //     get(recipes::community_detail::page),
-        // )
-        // .route(
-        //     "/recipes/{id}/check-in",
-        //     post(recipes::community_detail::check_in),
-        // )
-        // .route(
-        //     "/recipes/{id}/check-like",
-        //     post(recipes::community_detail::check_like),
-        // )
-        // .route(
-        //     "/recipes/{id}/uncheck-like",
-        //     post(recipes::community_detail::uncheck_like),
-        // )
-        // .route(
-        //     "/recipes/{id}/check-unlike",
-        //     post(recipes::community_detail::check_unlike),
-        // )
-        // .route(
-        //     "/recipes/{id}/uncheck-unlike",
-        //     post(recipes::community_detail::uncheck_unlike),
-        // )
-        // .route(
-        //     "/recipes/{id}/edit",
-        //     get(recipes::edit::page).post(recipes::edit::action),
-        // )
-        // .route(
-        //     "/recipes/_edit/ingredient-row",
-        //     get(recipes::edit::ingredient_row),
-        // )
-        // .route(
-        //     "/recipes/_edit/instruction-row",
-        //     get(recipes::edit::instruction_row),
-        // )
+        .route(
+            "/recipes/import",
+            get(recipes::import::page).post(recipes::import::action),
+        )
+        .route("/recipes/import/{id}/status", get(recipes::import::status))
+        .route("/recipes/{id}/detail", get(recipes::detail::page))
+        .route(
+            "/recipes/{id}/detail/make-private",
+            get(recipes::detail::make_private_action),
+        )
+        .route(
+            "/recipes/{id}/detail/share-to-community",
+            get(recipes::detail::share_to_community_action),
+        )
+        .route(
+            "/recipes/{id}/detail/delete/status",
+            get(recipes::detail::delete_status),
+        )
+        .route(
+            "/recipes/{id}/detail/delete",
+            get(recipes::detail::delete_modal).post(recipes::detail::delete_action),
+        )
+        .route(
+            "/recipes/{id}/community",
+            get(recipes::community_detail::page),
+        )
+        .route(
+            "/recipes/{id}/check-in",
+            post(recipes::community_detail::check_in),
+        )
+        .route(
+            "/recipes/{id}/check-like",
+            post(recipes::community_detail::check_like),
+        )
+        .route(
+            "/recipes/{id}/uncheck-like",
+            post(recipes::community_detail::uncheck_like),
+        )
+        .route(
+            "/recipes/{id}/check-unlike",
+            post(recipes::community_detail::check_unlike),
+        )
+        .route(
+            "/recipes/{id}/uncheck-unlike",
+            post(recipes::community_detail::uncheck_unlike),
+        )
+        .route(
+            "/recipes/{id}/edit",
+            get(recipes::edit::page).post(recipes::edit::action),
+        )
+        .route(
+            "/recipes/_edit/ingredient-row",
+            get(recipes::edit::ingredient_row),
+        )
+        .route(
+            "/recipes/_edit/instruction-row",
+            get(recipes::edit::instruction_row),
+        )
         .route("/logout", get(login::logout))
         // .route(
         //     "/profile/account",
         //     get(profile::account::page).post(profile::account::action),
         // )
-        // .route(
-        //     "/profile/account/set-username",
-        //     post(profile::account::set_username_action),
-        // )
+        .route(
+            "/profile/account/set-username",
+            post(profile::account::set_username_action),
+        )
         .route(
             "/profile/meal-preferences",
             get(profile::meal_preferences::page).post(profile::meal_preferences::action),

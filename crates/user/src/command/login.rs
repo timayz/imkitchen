@@ -51,9 +51,15 @@ impl<'a, E: Executor + Clone> super::Command<'a, E> {
 
         let access_id = Ulid::new().to_string();
 
+        let subscription = crate::subscription::load(executor, &user.id).await?;
+
         command
             .aggregator()
             .event(&LoggedIn {
+                role: user.role.0.to_owned(),
+                state: user.state.0.to_owned(),
+                username: user.username,
+                subscription_expire_at: subscription.expire_at,
                 lang: input.lang,
                 timezone: input.timezone,
                 user_agent: input.user_agent,

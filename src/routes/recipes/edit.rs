@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use axum::{
     extract::{Path, State},
     response::IntoResponse,
@@ -9,8 +7,8 @@ use imkitchen_recipe::{
     CuisineType, DietaryRestriction, Ingredient, IngredientCategory, IngredientUnit, Instruction,
     RecipeType, UpdateInput,
 };
-use imkitchen_shared::Metadata;
 use serde::Deserialize;
+use std::str::FromStr;
 use strum::VariantArray;
 
 use crate::{
@@ -86,9 +84,9 @@ pub async fn page(
     Path((id,)): Path<(String,)>,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
-    let recipe = crate::try_page_response!(opt: app.recipe_query.find(&id), template);
+    let recipe = crate::try_page_response!(opt: imkitchen_recipe::user::load(&app.executor, &app.read_db, &id), template).item;
 
-    if recipe.user_id != user.id {
+    if recipe.owner_id != user.id {
         return template.render(ForbiddenTemplate).into_response();
     }
 
@@ -135,14 +133,7 @@ pub async fn action(
     Path((id,)): Path<(String,)>,
     Form(input): Form<EditForm>,
 ) -> impl IntoResponse {
-    let recipe = crate::try_response!(anyhow_opt:
-        app.recipe_command.load_optional(&id),
-        template
-    );
-
-    if recipe.item.deleted {
-        crate::try_response!(sync: Ok(None::<()>), template);
-    }
+    let recipe = crate::try_response!(anyhow_opt: imkitchen_recipe::load(&app.executor, &app.read_db, &id), template);
 
     if input.ingredients_name.len() != input.ingredients_quantity.len()
         || input.ingredients_name.len() != input.ingredients_unit.len()
@@ -167,10 +158,6 @@ pub async fn action(
         );
     }
 
-    if recipe.item.user_id != user.id {
-        crate::try_response!(sync: Err(imkitchen_shared::Error::Forbidden), template);
-    }
-
     let mut ingredients = vec![];
     for (pos, name) in input.ingredients_name.iter().skip(2).enumerate() {
         ingredients.push(Ingredient {
@@ -190,7 +177,7 @@ pub async fn action(
     }
 
     crate::try_response!(
-        app.recipe_command.update(
+        recipe.update(
             UpdateInput {
                 id: id.to_owned(),
                 recipe_type: input.recipe_type,
@@ -206,7 +193,7 @@ pub async fn action(
                 accepts_accompaniment: input.accepts_accompaniment == "on",
                 advance_prep: input.advance_prep,
             },
-            &Metadata::by(user.id.to_owned()),
+            &user.id
         ),
         template
     );

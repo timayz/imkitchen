@@ -3,124 +3,129 @@ use sea_query::{
     TableDropStatement,
 };
 
-use crate::table::RecipeList;
+use crate::table::RecipeUser;
 
 pub struct CreateTable;
 
 fn create_table() -> TableCreateStatement {
     Table::create()
-        .table(RecipeList::Table)
+        .table(RecipeUser::Table)
         .col(
-            ColumnDef::new(RecipeList::Id)
+            ColumnDef::new(RecipeUser::Id)
                 .string()
                 .not_null()
                 .string_len(26)
                 .primary_key(),
         )
         .col(
-            ColumnDef::new(RecipeList::UserId)
+            ColumnDef::new(RecipeUser::OwnerId)
                 .string()
                 .not_null()
                 .string_len(26),
         )
         .col(
-            ColumnDef::new(RecipeList::RecipeType)
+            ColumnDef::new(RecipeUser::OwnerName)
+                .string()
+                .string_len(15),
+        )
+        .col(
+            ColumnDef::new(RecipeUser::RecipeType)
                 .string()
                 .not_null()
                 .string_len(25),
         )
         .col(
-            ColumnDef::new(RecipeList::CuisineType)
+            ColumnDef::new(RecipeUser::CuisineType)
                 .string()
                 .not_null()
                 .string_len(25),
         )
         .col(
-            ColumnDef::new(RecipeList::Name)
+            ColumnDef::new(RecipeUser::Name)
                 .string()
                 .not_null()
                 .string_len(30),
         )
         .col(
-            ColumnDef::new(RecipeList::Description)
+            ColumnDef::new(RecipeUser::Description)
                 .string()
                 .not_null()
                 .string_len(2000)
                 .default(""),
         )
         .col(
-            ColumnDef::new(RecipeList::HouseholdSize)
+            ColumnDef::new(RecipeUser::HouseholdSize)
                 .integer()
                 .not_null()
                 .default(4),
         )
         .col(
-            ColumnDef::new(RecipeList::PrepTime)
+            ColumnDef::new(RecipeUser::PrepTime)
                 .integer()
                 .not_null()
                 .default(0),
         )
         .col(
-            ColumnDef::new(RecipeList::CookTime)
+            ColumnDef::new(RecipeUser::CookTime)
                 .integer()
                 .not_null()
                 .default(0),
         )
-        .col(ColumnDef::new(RecipeList::Ingredients).blob().not_null())
-        .col(ColumnDef::new(RecipeList::Instructions).blob().not_null())
+        .col(ColumnDef::new(RecipeUser::Ingredients).blob().not_null())
+        .col(ColumnDef::new(RecipeUser::Instructions).blob().not_null())
         .col(
-            ColumnDef::new(RecipeList::DietaryRestrictions)
+            ColumnDef::new(RecipeUser::DietaryRestrictions)
                 .json_binary()
                 .not_null(),
         )
         .col(
-            ColumnDef::new(RecipeList::AcceptsAccompaniment)
+            ColumnDef::new(RecipeUser::AcceptsAccompaniment)
                 .boolean()
                 .not_null()
                 .default(false),
         )
         .col(
-            ColumnDef::new(RecipeList::AdvancePrep)
+            ColumnDef::new(RecipeUser::AdvancePrep)
                 .string()
                 .not_null()
                 .string_len(2000)
                 .default(""),
         )
         .col(
-            ColumnDef::new(RecipeList::IsShared)
+            ColumnDef::new(RecipeUser::IsShared)
                 .boolean()
                 .not_null()
                 .default(false),
         )
         .col(
-            ColumnDef::new(RecipeList::TotalViews)
+            ColumnDef::new(RecipeUser::TotalViews)
                 .integer()
                 .not_null()
                 .default(0),
         )
         .col(
-            ColumnDef::new(RecipeList::TotalLikes)
+            ColumnDef::new(RecipeUser::TotalLikes)
                 .integer()
                 .not_null()
                 .default(0),
         )
         .col(
-            ColumnDef::new(RecipeList::TotalComments)
+            ColumnDef::new(RecipeUser::TotalComments)
                 .integer()
                 .not_null()
                 .default(0),
         )
         .col(
-            ColumnDef::new(RecipeList::CreatedAt)
+            ColumnDef::new(RecipeUser::CreatedAt)
                 .big_integer()
                 .not_null(),
         )
-        .col(ColumnDef::new(RecipeList::UpdatedAt).big_integer().null())
+        .col(ColumnDef::new(RecipeUser::UpdatedAt).big_integer().null())
         .to_owned()
 }
 
 fn drop_table() -> TableDropStatement {
-    Table::drop().table(RecipeList::Table).to_owned()
+    Table::drop().table(RecipeUser::Table).to_owned()
 }
 
 #[async_trait::async_trait]
@@ -151,16 +156,16 @@ pub struct CreateIdx1;
 fn create_idx_1() -> IndexCreateStatement {
     Index::create()
         .name("idx_recipe_list_6jagKS")
-        .table(RecipeList::Table)
-        .col(RecipeList::UserId)
-        .col(RecipeList::CuisineType)
+        .table(RecipeUser::Table)
+        .col(RecipeUser::OwnerId)
+        .col(RecipeUser::CuisineType)
         .to_owned()
 }
 
 fn drop_idx_1() -> IndexDropStatement {
     Index::drop()
         .name("idx_recipe_list_6jagKS")
-        .table(RecipeList::Table)
+        .table(RecipeUser::Table)
         .to_owned()
 }
 
@@ -192,16 +197,16 @@ pub struct CreateIdx2;
 fn create_idx_2() -> IndexCreateStatement {
     Index::create()
         .name("idx_recipe_list_FctFNN")
-        .table(RecipeList::Table)
-        .col(RecipeList::UserId)
-        .col(RecipeList::RecipeType)
+        .table(RecipeUser::Table)
+        .col(RecipeUser::OwnerId)
+        .col(RecipeUser::RecipeType)
         .to_owned()
 }
 
 fn drop_idx_2() -> IndexDropStatement {
     Index::drop()
         .name("idx_recipe_list_FctFNN")
-        .table(RecipeList::Table)
+        .table(RecipeUser::Table)
         .to_owned()
 }
 
@@ -232,15 +237,15 @@ pub struct CreateIdx3;
 fn create_idx_3() -> IndexCreateStatement {
     Index::create()
         .name("idx_recipe_list_KSDt5k")
-        .table(RecipeList::Table)
-        .col(RecipeList::UserId)
+        .table(RecipeUser::Table)
+        .col(RecipeUser::OwnerId)
         .to_owned()
 }
 
 fn drop_idx_3() -> IndexDropStatement {
     Index::drop()
         .name("idx_recipe_list_KSDt5k")
-        .table(RecipeList::Table)
+        .table(RecipeUser::Table)
         .to_owned()
 }
 
@@ -272,16 +277,16 @@ pub struct CreateIdx4;
 fn create_idx_4() -> IndexCreateStatement {
     Index::create()
         .name("idx_recipe_list_QJBhvl")
-        .table(RecipeList::Table)
-        .col(RecipeList::IsShared)
-        .col(RecipeList::CuisineType)
+        .table(RecipeUser::Table)
+        .col(RecipeUser::IsShared)
+        .col(RecipeUser::CuisineType)
         .to_owned()
 }
 
 fn drop_idx_4() -> IndexDropStatement {
     Index::drop()
         .name("idx_recipe_list_QJBhvl")
-        .table(RecipeList::Table)
+        .table(RecipeUser::Table)
         .to_owned()
 }
 
@@ -313,16 +318,16 @@ pub struct CreateIdx5;
 fn create_idx_5() -> IndexCreateStatement {
     Index::create()
         .name("idx_recipe_list_kXJfAR")
-        .table(RecipeList::Table)
-        .col(RecipeList::IsShared)
-        .col(RecipeList::RecipeType)
+        .table(RecipeUser::Table)
+        .col(RecipeUser::IsShared)
+        .col(RecipeUser::RecipeType)
         .to_owned()
 }
 
 fn drop_idx_5() -> IndexDropStatement {
     Index::drop()
         .name("idx_recipe_list_kXJfAR")
-        .table(RecipeList::Table)
+        .table(RecipeUser::Table)
         .to_owned()
 }
 
@@ -354,15 +359,15 @@ pub struct CreateIdx6;
 fn create_idx_6() -> IndexCreateStatement {
     Index::create()
         .name("idx_recipe_list_P4CTqO")
-        .table(RecipeList::Table)
-        .col(RecipeList::IsShared)
+        .table(RecipeUser::Table)
+        .col(RecipeUser::IsShared)
         .to_owned()
 }
 
 fn drop_idx_6() -> IndexDropStatement {
     Index::drop()
         .name("idx_recipe_list_P4CTqO")
-        .table(RecipeList::Table)
+        .table(RecipeUser::Table)
         .to_owned()
 }
 
