@@ -1,5 +1,4 @@
 use imkitchen_contact::Status;
-use imkitchen_shared::Metadata;
 use temp_dir::TempDir;
 
 mod helpers;
@@ -9,16 +8,19 @@ async fn test_resolved() -> anyhow::Result<()> {
     let dir = TempDir::new()?;
     let path = dir.child("db.sqlite3");
     let state = helpers::setup_test_state(path).await?;
-    let command = imkitchen_contact::Command(state.evento.clone(), state.pool.clone());
-    let contact = helpers::create_submit(&state, "john.doe").await?;
+    let contact_id = helpers::create_submit(&state, "john.doe").await?;
 
-    let loaded = command.load(&contact).await?;
-    assert_eq!(loaded.item.status, Status::Unread);
+    let contact = imkitchen_contact::load(&state.evento, &state.pool, &contact_id)
+        .await?
+        .unwrap();
+    assert_eq!(contact.status, Status::Unread);
 
-    command.resolve(&contact, &Metadata::default()).await?;
+    contact.resolve("").await?;
 
-    let loaded = command.load(&contact).await?;
-    assert_eq!(loaded.item.status, Status::Resolved);
+    let contact = imkitchen_contact::load(&state.evento, &state.pool, &contact_id)
+        .await?
+        .unwrap();
+    assert_eq!(contact.status, Status::Resolved);
 
     Ok(())
 }

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 pub(crate) mod filters {
-
+    #[askama::filter_fn]
     pub fn t(value: &str, values: &dyn askama::Values) -> askama::Result<String> {
         let lang = askama::get_value::<String>(values, "lang")
             .expect("Unable to get lang from askama::get_value");

@@ -1,5 +1,4 @@
 {% extends "_user.html" %}
-{% block title %}{{ "Profile & Settings"|t }} - imkitchen{% endblock %}
 
 {% macro nav_item(current, key, content) %}
 <a href="/profile/{{ key }}" class="block w-full text-left px-4 py-3 bg-white{% if current != key %} text-gray-700 hover:bg-gray-50{% else %} text-green-600{% endif %} rounded-lg">
@@ -26,11 +25,11 @@
   <div class="lg:grid lg:grid-cols-3 gap-8">
     <!-- Sidebar Navigation - Desktop -->
     <div class="hidden lg:block space-y-2">
-      <!-- {% call nav_item(profile_path, "account", "👤 " ~ ("Account Info"|t)) %} -->
-      {% call nav_item(profile_path, "meal-preferences", "🍽️ " ~ ("Meal Preferences"|t)) %}
-      {% call nav_item(profile_path, "subscription", "💳 " ~ ("Subscription"|t)) %}
-      <!-- {% call nav_item(profile_path, "notifications", "🔔 " ~ ("Notifications"|t)) %} -->
-      {% call nav_item(profile_path, "security", "🔒 " ~ ("Privacy & Security"|t)) %}
+    <!-- {% call nav_item(profile_path, "account", "👤 " ~ ("Account Info"|t)) %}{% endcall %} -->
+      {% call nav_item(profile_path, "meal-preferences", "🍽️ " ~ ("Meal Preferences"|t)) %}{% endcall %}
+      {% call nav_item(profile_path, "subscription", "💳 " ~ ("Subscription"|t)) %}{% endcall %}
+      <!-- {% call nav_item(profile_path, "notifications", "🔔 " ~ ("Notifications"|t)) %}{% endcall %} -->
+      {% call nav_item(profile_path, "security", "🔒 " ~ ("Privacy & Security"|t)) %}{% endcall %}
       <a href="/logout" class="block w-full text-left px-4 py-3 bg-white text-gray-700 hover:bg-gray-50 rounded-lg">
         ➜] {{ "Logout"|t }}
       </a>
@@ -39,11 +38,11 @@
     <!-- Mobile Navigation Tabs -->
     <div class="lg:hidden mb-6 overflow-x-auto">
       <div class="flex gap-2 min-w-max">
-      <!-- {% call mobile_nav_item(profile_path, "account", "👤 " ~ ("Account"|t)) %} -->
-      {% call mobile_nav_item(profile_path, "meal-preferences", "🍽️ " ~ ("Meals"|t)) %}
-      {% call mobile_nav_item(profile_path, "subscription", "💳 " ~ ("Plan"|t)) %}
-      <!-- {% call mobile_nav_item(profile_path, "notifications", "🔔 " ~ ("Alerts"|t)) %} -->
-      {% call mobile_nav_item(profile_path, "security", "🔒 " ~ ("Security"|t)) %}
+      <!-- {% call mobile_nav_item(profile_path, "account", "👤 " ~ ("Account"|t)) %}{% endcall %} -->
+      {% call mobile_nav_item(profile_path, "meal-preferences", "🍽️ " ~ ("Meals"|t)) %}{% endcall %}
+      {% call mobile_nav_item(profile_path, "subscription", "💳 " ~ ("Plan"|t)) %}{% endcall %}
+      <!-- {% call mobile_nav_item(profile_path, "notifications", "🔔 " ~ ("Alerts"|t)) %}{% endcall %} -->
+      {% call mobile_nav_item(profile_path, "security", "🔒 " ~ ("Security"|t)) %}{% endcall %}
       </div>
     </div>
 

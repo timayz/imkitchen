@@ -1,19 +1,18 @@
 pub mod meal_preferences;
-pub mod reset_password;
+pub mod password;
 pub mod subscription;
 
 mod aggregator;
-mod event;
-mod types;
+mod value_object;
 
 pub use aggregator::*;
-pub use event::*;
-pub use types::*;
+pub use value_object::*;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "full")] {
         mod command;
         mod query;
+        pub(crate) mod repository;
 
         pub use command::*;
         pub use query::*;

@@ -1,8 +1,7 @@
 use crate::{DaySlotRecipe, MealPlan, WeekGenerated};
-use evento::{AggregatorName, Executor, SubscribeBuilder};
+use evento::Executor;
 use imkitchen_db::table::{MealPlanRecipe, MealPlanSlot};
 use imkitchen_recipe::{Ingredient, Instruction};
-use imkitchen_shared::Event;
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::prelude::FromRow;
@@ -14,8 +13,8 @@ pub struct MealPlanRecipeRow {
     pub name: String,
     pub prep_time: u16,
     pub cook_time: u16,
-    pub ingredients: imkitchen_db::types::Bincode<Vec<Ingredient>>,
-    pub instructions: imkitchen_db::types::Bincode<Vec<Instruction>>,
+    pub ingredients: evento::sql_types::Bitcode<Vec<Ingredient>>,
+    pub instructions: evento::sql_types::Bitcode<Vec<Instruction>>,
     pub advance_prep: String,
 }
 

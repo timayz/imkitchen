@@ -4,8 +4,7 @@ use evento::{
     Sqlite,
     migrator::{Migrate, Plan},
 };
-use imkitchen_contact::{Subject, SubmitContactFormInput};
-use imkitchen_shared::Metadata;
+use imkitchen_contact::{Subject, SubmitFormInput};
 use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
 
 pub struct TestState {
@@ -40,23 +39,20 @@ pub async fn create_submit_all(
     state: &TestState,
     names: impl IntoIterator<Item = impl Into<String>>,
 ) -> anyhow::Result<Vec<String>> {
-    let command = imkitchen_contact::Command(state.evento.clone(), state.pool.clone());
-
     let mut ids = vec![];
     for name in names.into_iter() {
         let name = name.into();
-        let id = command
-            .submit_contact_form(
-                SubmitContactFormInput {
-                    to: "contact@imkitchen.localhost".to_owned(),
-                    email: format!("{name}@imkitchen.localhost"),
-                    name: "my name".to_owned(),
-                    subject: Subject::Other,
-                    message: "my message".to_owned(),
-                },
-                &Metadata::default(),
-            )
-            .await?;
+        let id = imkitchen_contact::Command::submit_form(
+            &state.evento,
+            SubmitFormInput {
+                to: "contact@imkitchen.localhost".to_owned(),
+                email: format!("{name}@imkitchen.localhost"),
+                name: "my name".to_owned(),
+                subject: Subject::Other,
+                message: "my message".to_owned(),
+            },
+        )
+        .await?;
         ids.push(id);
     }
 

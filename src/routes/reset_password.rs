@@ -3,8 +3,7 @@ use axum::{
     extract::{Path, State},
     response::IntoResponse,
 };
-use imkitchen_shared::Metadata;
-use imkitchen_user::reset_password::{RequestInput, ResetInput};
+use imkitchen_user::password::{RequestInput, ResetInput};
 use serde::Deserialize;
 
 use crate::{
@@ -36,21 +35,18 @@ pub async fn action(
     State(app): State<AppState>,
     Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {
-    if let Some(user) =
-        crate::try_response!(anyhow: app.user_command.find_by_email(&input.email), template)
-    {
-        crate::try_response!(
-            app.user_reset_password_command.request(
-                RequestInput {
-                    email: input.email.to_owned(),
-                    lang: template.preferred_language_iso.to_owned(),
-                    host: app.config.server.url,
-                },
-                &Metadata::by(user.id),
-            ),
-            template
-        );
-    };
+    crate::try_response!(
+        imkitchen_user::password::Command::request(
+            &app.executor,
+            &app.read_db,
+            RequestInput {
+                email: input.email.to_owned(),
+                lang: template.preferred_language_iso.to_owned(),
+                host: app.config.server.url,
+            },
+        ),
+        template
+    );
 
     template.render(ResetPasswordCheckTemplate { email: input.email })
 }
@@ -93,7 +89,15 @@ pub async fn new_action(
             .into_response();
     }
 
-    crate::try_response!(opt: app.user_reset_password_command.reset(ResetInput{id, password: input.password}), template);
+    let command = crate::try_response!(anyhow_opt:
+        imkitchen_user::password::load(&app.executor, id),
+        template
+    );
+
+    crate::try_response!(opt:
+        command.reset(&app.write_db,ResetInput{password: input.password}),
+        template
+    );
 
     template.render(ResetPasswordSucessTemplate).into_response()
 }

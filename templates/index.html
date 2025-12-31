@@ -6,7 +6,7 @@
 {% block body %}
 <body>
     <!-- Hero Section -->
-    <div class="bg-gradient-to-br from-green-500 to-green-700 text-white">
+    <div class="bg-linear-to-br from-green-500 to-green-700 text-white">
         <nav class="container mx-auto px-4 py-6">
             <div class="flex items-center justify-between">
               <a href="/"><div class="text-2xl font-bold">🍳 imkitchen</div></a>
@@ -324,7 +324,7 @@
                 </div>
 
                 <!-- Premium Tier -->
-                <div class="bg-gradient-to-br from-green-500 to-green-700 text-white rounded-lg shadow-xl p-8 border-2 border-green-600 relative">
+                <div class="bg-linear-to-br from-green-500 to-green-700 text-white rounded-lg shadow-xl p-8 border-2 border-green-600 relative">
                     <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-400 text-gray-900 px-4 py-1 rounded-full text-sm font-bold">
                         {{ "MOST POPULAR"|t }}
                     </div>
@@ -399,7 +399,7 @@
     </div>
 
     <!-- Final CTA -->
-    <div class="bg-gradient-to-br from-green-500 to-green-700 text-white py-16">
+    <div class="bg-linear-to-br from-green-500 to-green-700 text-white py-16">
         <div class="container mx-auto px-4 text-center max-w-3xl">
             <h2 class="text-4xl font-bold mb-6">{{ "Ready to Cook More and Plan Less?"|t }}</h2>
             <p class="text-xl mb-8 text-green-50">
@@ -414,5 +414,6 @@
 
     <!-- Footer -->
     {% call scope::footer() %}
+    {% endcall %}
 </body>
 {% endblock %}

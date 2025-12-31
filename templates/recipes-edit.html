@@ -206,7 +206,7 @@
           <label class="flex items-center">
             <input type="checkbox" name="dietary_restrictions" value="{{ variant }}"{% if variant.exists_in(form.dietary_restrictions) %}checked{% endif %}
               class="rounded border-gray-300 text-green-600 focus:ring-green-500" />
-            <span class="ml-2">{{ variant.to_string().as_str()|t }}</span>
+            <span class="ml-2">{{ variant.as_ref()|t }}</span>
           </label>
           {% endfor %}
         </div>
@@ -218,7 +218,7 @@
           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
           required>
           {% for variant in CuisineType::VARIANTS %}
-          <option{% if &form.cuisine_type == variant %} selected{% endif %} value="{{ variant }}">{{ variant.to_string().as_str()|t }}</option>
+          <option{% if &form.cuisine_type == variant %} selected{% endif %} value="{{ variant }}">{{ variant.as_ref()|t }}</option>
           {% endfor %}
         </select>
       </div>

@@ -5,8 +5,11 @@ use axum::{
     response::IntoResponse,
 };
 use evento::cursor::{Args, Edge, ReadResult, Value};
-use imkitchen_contact::{ContactRow, FilterQuery, SortBy, Stat, Status, Subject};
-use imkitchen_shared::Metadata;
+use imkitchen_contact::{
+    Status, Subject,
+    admin::{AdminView, FilterQuery, SortBy},
+    global_stat::GlobalStatView,
+};
 use serde::Deserialize;
 use strum::VariantArray;
 
@@ -20,8 +23,9 @@ use crate::{
 #[template(path = "admin-contact.html")]
 pub struct ContactTemplate {
     pub current_path: String,
-    pub stats: Stat,
-    pub contacts: ReadResult<ContactRow>,
+    pub stat: GlobalStatView,
+    pub today: u32,
+    pub contacts: ReadResult<AdminView>,
     pub query: PageQuery,
 }
 
@@ -29,8 +33,9 @@ impl Default for ContactTemplate {
     fn default() -> Self {
         Self {
             current_path: "contact".to_owned(),
-            stats: Stat::default(),
+            stat: GlobalStatView::default(),
             contacts: ReadResult::default(),
+            today: 0,
             query: Default::default(),
         }
     }
@@ -54,8 +59,18 @@ pub async fn page(
     State(app): State<AppState>,
     user: AuthAdmin,
 ) -> impl IntoResponse {
-    let stats =
-        crate::try_page_response!(app.contact_query.find_stat(0), template).unwrap_or_default();
+    let stat = crate::try_page_response!(
+        imkitchen_contact::global_stat::find_global(&app.read_db),
+        template
+    )
+    .unwrap_or_default();
+
+    let now = time::UtcDateTime::now().unix_timestamp() as u64;
+    let today_stat = crate::try_page_response!(
+        imkitchen_contact::global_stat::find(&app.read_db, now),
+        template
+    )
+    .unwrap_or_default();
 
     let r_query = query.clone();
     let subject = Subject::from_str(&query.subject.unwrap_or("".to_owned())).ok();
@@ -71,20 +86,24 @@ pub async fn page(
     };
 
     let contacts = crate::try_page_response!(
-        app.contact_query.filter(FilterQuery {
-            status,
-            subject,
-            sort_by,
-            args: args.limit(20),
-        }),
+        imkitchen_contact::admin::filter(
+            &app.read_db,
+            FilterQuery {
+                status,
+                subject,
+                sort_by,
+                args: args.limit(20),
+            }
+        ),
         template
     );
 
     template
         .render(ContactTemplate {
-            stats,
+            stat,
             contacts,
             query: r_query,
+            today: today_stat.today,
             ..Default::default()
         })
         .into_response()
@@ -97,15 +116,17 @@ pub async fn mark_read_and_reply(
     State(app): State<AppState>,
     user: AuthAdmin,
 ) -> impl IntoResponse {
-    crate::try_page_response!(
-        app.contact_command
-            .mark_read_and_reply(&id, &Metadata::by(user.id.to_owned())),
+    let contact = crate::try_response!(anyhow_opt:
+        imkitchen_contact::load(&app.executor, &app.read_db, &id),
         template
     );
 
-    let mut contact = crate::try_page_response!(opt: app.contact_query.find(&id), template);
+    crate::try_response!(contact.mark_read_and_reply(&user.id), template);
 
-    contact.status.0 = Status::Read;
+    let contact = crate::try_response!(anyhow_opt:
+        imkitchen_contact::admin::load(&app.executor, &app.read_db,&id),
+        template
+    );
 
     let contacts = ReadResult {
         page_info: Default::default(),
@@ -130,15 +151,17 @@ pub async fn resolve(
     State(app): State<AppState>,
     user: AuthAdmin,
 ) -> impl IntoResponse {
-    crate::try_page_response!(
-        app.contact_command
-            .resolve(&id, &Metadata::by(user.id.to_owned())),
+    let contact = crate::try_response!(anyhow_opt:
+        imkitchen_contact::load(&app.executor, &app.read_db, &id),
         template
     );
 
-    let mut contact = crate::try_page_response!(opt: app.contact_query.find(&id), template);
+    crate::try_response!(contact.resolve(&user.id), template);
 
-    contact.status.0 = Status::Resolved;
+    let contact = crate::try_response!(anyhow_opt:
+        imkitchen_contact::admin::load(&app.executor, &app.read_db,&id),
+        template
+    );
 
     let contacts = ReadResult {
         page_info: Default::default(),
@@ -163,15 +186,17 @@ pub async fn reopen(
     State(app): State<AppState>,
     user: AuthAdmin,
 ) -> impl IntoResponse {
-    crate::try_page_response!(
-        app.contact_command
-            .reopen(&id, &Metadata::by(user.id.to_owned())),
+    let contact = crate::try_response!(anyhow_opt:
+        imkitchen_contact::load(&app.executor, &app.read_db, &id),
         template
     );
 
-    let mut contact = crate::try_page_response!(opt: app.contact_query.find(&id), template);
+    crate::try_response!(contact.reopen(&user.id), template);
 
-    contact.status.0 = Status::Read;
+    let contact = crate::try_response!(anyhow_opt:
+        imkitchen_contact::admin::load(&app.executor, &app.read_db,&id),
+        template
+    );
 
     let contacts = ReadResult {
         page_info: Default::default(),

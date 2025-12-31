@@ -4,8 +4,7 @@ use evento::{
     Sqlite,
     migrator::{Migrate, Plan},
 };
-use imkitchen_shared::Metadata;
-use imkitchen_user::{RegisterInput, subscribe_command};
+use imkitchen_user::{Command, RegisterInput};
 use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
 
 pub struct TestState {
@@ -40,34 +39,23 @@ pub async fn create_users(
     state: &TestState,
     names: impl IntoIterator<Item = impl Into<String>>,
 ) -> anyhow::Result<Vec<String>> {
-    let command = imkitchen_user::Command {
-        evento: state.evento.clone(),
-        read_db: state.pool.clone(),
-        write_db: state.pool.clone(),
-    };
-
     let mut ids = vec![];
     for name in names.into_iter() {
         let name = name.into();
-        let login = command
-            .register(
-                RegisterInput {
-                    email: format!("{name}@imkitchen.localhost"),
-                    password: "my_password".to_owned(),
-                    lang: "en".to_owned(),
-                    timezone: "UTC".to_owned(),
-                    user_agent: "".to_owned(),
-                },
-                &Metadata::default(),
-            )
-            .await?;
-        ids.push(login.user_id);
-    }
-
-    subscribe_command()
-        .data(state.pool.clone())
-        .unretry_oneshot(&state.evento)
+        let id = Command::register(
+            &state.evento,
+            &state.pool,
+            &state.pool,
+            RegisterInput {
+                email: format!("{name}@imkitchen.localhost"),
+                password: "my_password".to_owned(),
+                lang: "en".to_owned(),
+                timezone: "UTC".to_owned(),
+            },
+        )
         .await?;
+        ids.push(id);
+    }
 
     Ok(ids)
 }

@@ -1,15 +1,30 @@
-use bincode::{Decode, Encode};
-
-#[derive(Encode, Decode, Clone, Debug, Default)]
-pub struct RecipeRating {}
-
 #[evento::aggregator]
-impl RecipeRating {
-    // async fn handle_created(&mut self, event: Event<Created>) -> anyhow::Result<()> {
-    //     self.household_size = event.data.household_size;
-    //     self.dietary_restrictions = event.data.dietary_restrictions;
-    //     self.cuisine_variety_weight = event.data.cuisine_variety_weight;
-    //
-    //     Ok(())
-    // }
+pub enum Rating {
+    LikeChecked,
+    LikeUnchecked,
+    UnlikeChecked,
+    UnlikeUnchecked,
+    Viewed,
+
+    CommentAdded {
+        id: String,
+        message: String,
+        reply_to: Option<String>,
+    },
+
+    CommentLikeCheked {
+        comment_id: String,
+    },
+
+    CommentLikeUnchecked {
+        comment_id: String,
+    },
+
+    CommentUnlikeChecked {
+        comment_id: String,
+    },
+
+    CommentUnlikeUnchecked {
+        comment_id: String,
+    },
 }

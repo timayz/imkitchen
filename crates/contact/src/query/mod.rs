@@ -1,8 +1,2 @@
-mod list;
-mod stat;
-
-pub use list::*;
-pub use stat::*;
-
-#[derive(Clone)]
-pub struct Query(pub sqlx::SqlitePool);
+pub mod admin;
+pub mod global_stat;

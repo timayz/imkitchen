@@ -160,7 +160,7 @@
               CK
             </div>
             <div>
-              {% if let Some(username)= recipe.username %}
+              {% if let Some(username)= recipe.owner_name %}
               <div class="font-semibold">@{{ username }}</div>
               {% endif %}
               <div class="text-sm text-gray-600">{{ stat.shared }} {{ "recipes shared"|t }}</div>
@@ -276,7 +276,7 @@
           <div class="flex-1 min-w-0">
             <h4 class="font-semibold text-sm group-hover:text-green-600 line-clamp-2 mb-1">{{ cook_recipe.node.name }}
             </h4>
-            {% if let Some(username)= cook_recipe.node.username %}
+            {% if let Some(username)= cook_recipe.node.owner_name %}
             <p class="text-xs text-gray-600 mb-1">@{{ username }}</p>
             {% endif %}
             <p class="text-xs text-gray-500">{{ cook_recipe.node.total_views|views }} {{ "views"|t }} • {{
@@ -318,7 +318,7 @@
             <h4 class="font-semibold text-sm group-hover:text-green-600 line-clamp-2 mb-1">{{ similar_recipe.node.name
               }}
             </h4>
-            {% if let Some(username)= similar_recipe.node.username %}
+            {% if let Some(username)= similar_recipe.node.owner_name %}
             <p class="text-xs text-gray-600 mb-1">@{{ username }}</p>
             {% endif %}
             <p class="text-xs text-gray-500">{{ similar_recipe.node.total_views|views }} {{ "views"|t }} • {{

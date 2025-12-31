@@ -1,12 +1,10 @@
 pub mod rating;
 
 mod aggregator;
-mod event;
-mod types;
+mod value_object;
 
 pub use aggregator::*;
-pub use event::*;
-pub use types::*;
+pub use value_object::*;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "full")] {

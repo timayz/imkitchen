@@ -83,7 +83,7 @@ impl Config {
             .set_default("jwt.secret", "TOKEN-NOT-SECURE-MUST-BE-CHANGE")?
             .set_default("jwt.expiration_days", 14)?
             .set_default("features.premium", true)?
-            .set_default("monitoring.log_level", "debug,sqlx=info")?
+            .set_default("monitoring.log_level", "debug,sqlx=info,tower_http=info")?
             .set_default("monitoring.log_json", false)?
             .set_default("monitoring.log_target", true)?
             .set_default("monitoring.log_line_number", true)?

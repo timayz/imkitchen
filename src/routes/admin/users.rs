@@ -5,8 +5,11 @@ use axum::{
     response::IntoResponse,
 };
 use evento::cursor::{Args, Edge, ReadResult, Value};
-use imkitchen_shared::Metadata;
-use imkitchen_user::{FilterQuery, Role, State as UserState, UserListRow, UserSortBy, UserStatRow};
+use imkitchen_user::{
+    Role, State as UserState,
+    admin::{AdminView, FilterQuery, UserSortBy},
+    global_stat::{FilterQuery as FilterQueryStat, GlobalStatView},
+};
 use serde::Deserialize;
 use strum::VariantArray;
 
@@ -20,18 +23,24 @@ use crate::{
 #[template(path = "admin-users.html")]
 pub struct UsersTemplate {
     pub current_path: String,
-    pub stat: UserStatRow,
-    pub users: ReadResult<UserListRow>,
+    pub stat: GlobalStatView,
+    pub users: ReadResult<AdminView>,
     pub query: PageQuery,
+    pub total_percent: i64,
+    pub suspended_percent: i64,
+    pub premium_percent: i64,
 }
 
 impl Default for UsersTemplate {
     fn default() -> Self {
         Self {
             current_path: "users".to_owned(),
-            stat: UserStatRow::default(),
+            stat: GlobalStatView::default(),
             users: ReadResult::default(),
             query: Default::default(),
+            premium_percent: 0,
+            suspended_percent: 0,
+            total_percent: 0,
         }
     }
 }
@@ -47,14 +56,38 @@ pub struct PageQuery {
     pub sort_by: Option<String>,
 }
 
-#[tracing::instrument(skip_all, fields(user = user.id))]
+#[tracing::instrument(skip_all, fields(admin = admin.id))]
 pub async fn page(
     template: Template,
     Query(query): Query<PageQuery>,
-    State(app_state): State<AppState>,
-    user: AuthAdmin,
+    State(app): State<AppState>,
+    admin: AuthAdmin,
 ) -> impl IntoResponse {
-    let stat = crate::try_page_response!(opt: app_state.user_query.find_stat(0), template);
+    let stat = crate::try_page_response!(
+        imkitchen_user::global_stat::find_global(&app.read_db,),
+        template
+    )
+    .unwrap_or_default();
+
+    let stats = crate::try_page_response!(
+        imkitchen_user::global_stat::filter(
+            &app.read_db,
+            FilterQueryStat {
+                args: Args::backward(1, None)
+            }
+        ),
+        template
+    );
+
+    let current_stat = stats
+        .edges
+        .first()
+        .map(|e| e.node.clone())
+        .unwrap_or_default();
+
+    let total_percent = current_stat.total_percent(&stat);
+    let suspended_percent = stat.suspended_percent();
+    let premium_percent = current_stat.premium_percent(&stat);
 
     let r_query = query.clone();
     let role = Role::from_str(&query.role.unwrap_or("".to_owned())).ok();
@@ -70,12 +103,15 @@ pub async fn page(
     };
 
     let users = crate::try_page_response!(
-        app_state.user_query.filter(FilterQuery {
-            state,
-            sort_by,
-            role,
-            args: args.limit(20),
-        }),
+        imkitchen_user::admin::filter(
+            &app.read_db,
+            FilterQuery {
+                state,
+                sort_by,
+                role,
+                args: args.limit(20),
+            }
+        ),
         template
     );
 
@@ -84,28 +120,31 @@ pub async fn page(
             stat,
             users,
             query: r_query,
+            suspended_percent,
+            total_percent,
+            premium_percent,
             ..Default::default()
         })
         .into_response()
 }
 
-#[tracing::instrument(skip_all, fields(user = user.id))]
+#[tracing::instrument(skip_all, fields(admin = admin.id))]
 pub async fn suspend(
     template: Template,
     Path((id,)): Path<(String,)>,
-    State(app_state): State<AppState>,
-    user: AuthAdmin,
+    State(app): State<AppState>,
+    admin: AuthAdmin,
 ) -> impl IntoResponse {
-    crate::try_page_response!(
-        app_state
-            .user_command
-            .suspend(&id, &Metadata::by(user.id.to_owned())),
+    let user = crate::try_response!(anyhow_opt:
+        imkitchen_user::load(&app.executor, &app.read_db, &id),
         template
     );
+    crate::try_response!(user.suspend(&admin.id), template);
 
-    let mut user = crate::try_page_response!(opt: app_state.user_query.find(&id), template);
-
-    user.state.0 = UserState::Suspended;
+    let user = crate::try_response!(anyhow_opt:
+        imkitchen_user::admin::load(&app.executor, &app.read_db, &id),
+        template
+    );
 
     let users = ReadResult {
         page_info: Default::default(),
@@ -123,23 +162,23 @@ pub async fn suspend(
         .into_response()
 }
 
-#[tracing::instrument(skip_all, fields(user = user.id))]
+#[tracing::instrument(skip_all, fields(admin = admin.id))]
 pub async fn activate(
     template: Template,
     Path((id,)): Path<(String,)>,
-    State(app_state): State<AppState>,
-    user: AuthAdmin,
+    State(app): State<AppState>,
+    admin: AuthAdmin,
 ) -> impl IntoResponse {
-    crate::try_page_response!(
-        app_state
-            .user_command
-            .activate(&id, &Metadata::by(user.id.to_owned())),
+    let user = crate::try_response!(anyhow_opt:
+        imkitchen_user::load(&app.executor, &app.read_db, &id),
         template
     );
+    crate::try_response!(user.activate(&admin.id), template);
 
-    let mut user = crate::try_page_response!(opt: app_state.user_query.find(&id), template);
-
-    user.state.0 = UserState::Active;
+    let user = crate::try_response!(anyhow_opt:
+        imkitchen_user::admin::load(&app.executor, &app.read_db, &id),
+        template
+    );
 
     let users = ReadResult {
         page_info: Default::default(),
@@ -157,23 +196,23 @@ pub async fn activate(
         .into_response()
 }
 
-#[tracing::instrument(skip_all, fields(user = user.id))]
+#[tracing::instrument(skip_all, fields(admin = admin.id))]
 pub async fn toggle_premium(
     template: Template,
     Path((id,)): Path<(String,)>,
-    State(app_state): State<AppState>,
-    user: AuthAdmin,
+    State(app): State<AppState>,
+    admin: AuthAdmin,
 ) -> impl IntoResponse {
-    let expire_at = crate::try_page_response!(
-        app_state
-            .user_subscription_command
-            .toggle_life_premium(&id, &Metadata::by(user.id.to_owned())),
+    let subscription = crate::try_response!(anyhow:
+        imkitchen_user::subscription::load(&app.executor, &id),
         template
     );
+    crate::try_response!(subscription.toggle_life_premium(&admin.id), template);
 
-    let mut user = crate::try_page_response!(opt: app_state.user_query.find(&id), template);
-
-    user.subscription_expire_at = expire_at;
+    let user = crate::try_response!(anyhow_opt:
+        imkitchen_user::admin::load(&app.executor, &app.read_db, &id),
+        template
+    );
 
     let users = ReadResult {
         page_info: Default::default(),
