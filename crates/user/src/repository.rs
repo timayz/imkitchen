@@ -98,17 +98,11 @@ pub struct UpdateInput {
     pub password: Option<String>,
     pub role: Option<Role>,
     pub state: Option<State>,
-    pub version: u16,
-    pub routing_key: Option<String>,
 }
 
 pub async fn update(pool: &SqlitePool, input: UpdateInput) -> imkitchen_shared::Result<()> {
     let mut statement = Query::update()
         .table(User::Table)
-        .values([
-            (User::Version, input.version.into()),
-            (User::RoutingKey, input.routing_key.into()),
-        ])
         .and_where(Expr::col(User::Id).eq(input.id))
         .to_owned();
 

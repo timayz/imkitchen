@@ -1,4 +1,4 @@
-use evento::{Action, Executor, Projection, Snapshot, SubscriptionBuilder, metadata::Event};
+use evento::{Executor, Projection, Snapshot, metadata::Event};
 use sqlx::SqlitePool;
 
 use crate::{
@@ -21,16 +21,15 @@ pub use set_username::SetUsernameInput;
 pub struct Command {
     pub role: Role,
     pub state: State,
-    pub version: u16,
-    pub routing_key: Option<String>,
 }
 
-pub fn create_projection<E: Executor>() -> Projection<CommandData, E> {
-    Projection::new("user-command")
+pub fn create_projection(id: impl Into<String>) -> Projection<CommandData> {
+    Projection::new::<User>(id)
         .handler(handle_registered())
         .handler(handle_actived())
         .handler(handle_susended())
         .handler(handle_made_admin())
+        .safety_check()
 }
 
 pub async fn load<'a, E: Executor>(
@@ -40,181 +39,78 @@ pub async fn load<'a, E: Executor>(
 ) -> Result<Option<Command<'a, E>>, anyhow::Error> {
     let id = id.into();
 
-    Ok(create_projection()
-        .no_safety_check()
-        .load::<User>(&id)
+    let Some(data) = create_projection(&id)
         .data(pool.clone())
-        .execute_all(executor)
+        .execute(executor)
         .await?
-        .map(|loaded| Command::new(id, loaded, executor)))
-}
+    else {
+        return Ok(None);
+    };
 
-pub fn subscription<E: Executor>() -> SubscriptionBuilder<CommandData, E> {
-    create_projection().no_safety_check().subscription()
+    Ok(Some(Command::new(
+        id,
+        data.get_cursor_version()?,
+        data,
+        executor,
+    )))
 }
 
 impl Snapshot for CommandData {
-    fn restore_version(&self) -> u16 {
-        self.version
-    }
-
-    fn restore_routing_key(&self) -> Option<String> {
-        self.routing_key.to_owned()
-    }
-
-    fn restore<'a>(
-        context: &'a evento::context::RwContext,
-        id: String,
-        _aggregators: &'a std::collections::HashMap<String, String>,
-    ) -> std::pin::Pin<Box<dyn Future<Output = anyhow::Result<Option<Self>>> + Send + 'a>> {
-        Box::pin(async {
-            let pool = context.extract::<SqlitePool>();
-            Ok(repository::find(&pool, FindType::Id(id))
-                .await?
-                .map(|row| CommandData {
-                    role: row.role.0,
-                    state: row.state.0,
-                    version: row.version,
-                    routing_key: row.routing_key,
-                }))
-        })
-    }
+    // fn restore_version(&self) -> u16 {
+    //     self.version
+    // }
+    //
+    // fn restore_routing_key(&self) -> Option<String> {
+    //     self.routing_key.to_owned()
+    // }
+    //
+    // fn restore<'a>(
+    //     context: &'a evento::context::RwContext,
+    //     id: String,
+    //     _aggregators: &'a std::collections::HashMap<String, String>,
+    // ) -> std::pin::Pin<Box<dyn Future<Output = anyhow::Result<Option<Self>>> + Send + 'a>> {
+    //     Box::pin(async {
+    //         let pool = context.extract::<SqlitePool>();
+    //         Ok(repository::find(&pool, FindType::Id(id))
+    //             .await?
+    //             .map(|row| CommandData {
+    //                 role: row.role.0,
+    //                 state: row.state.0,
+    //                 version: row.version,
+    //                 routing_key: row.routing_key,
+    //             }))
+    //     })
+    // }
 }
 
-// #[evento::snapshot]
-// async fn restore(
-//     context: &evento::context::RwContext,
-//     id: String,
-//     _aggregators: &std::collections::HashMap<String, String>,
-// ) -> anyhow::Result<Option<CommandData>> {
-//     let pool = context.extract::<SqlitePool>();
-//     Ok(repository::find(&pool, FindType::Id(id))
-//         .await?
-//         .map(|row| CommandData {
-//             role: row.role.0,
-//             state: row.state.0,
-//             version: row.version,
-//             routing_key: row.routing_key,
-//         }))
-// }
-
 #[evento::handler]
-async fn handle_registered<E: Executor>(
-    event: Event<Registered>,
-    action: Action<'_, CommandData, E>,
+async fn handle_registered(
+    _event: Event<Registered>,
+    data: &mut CommandData,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.state = State::Active;
-            data.role = Role::User;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<SqlitePool>();
-            repository::update(
-                &pool,
-                repository::UpdateInput {
-                    id: event.aggregator_id.to_owned(),
-                    username: None,
-                    password: None,
-                    role: Some(Role::User),
-                    state: Some(State::Active),
-                    version: event.version,
-                    routing_key: event.routing_key.to_owned(),
-                },
-            )
-            .await?;
-        }
-    };
+    data.state = State::Active;
+    data.role = Role::User;
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_made_admin<E: Executor>(
-    event: Event<MadeAdmin>,
-    action: Action<'_, CommandData, E>,
-) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.role = Role::Admin;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<SqlitePool>();
-            repository::update(
-                &pool,
-                repository::UpdateInput {
-                    id: event.aggregator_id.to_owned(),
-                    username: None,
-                    password: None,
-                    role: Some(Role::Admin),
-                    state: None,
-                    version: event.version,
-                    routing_key: event.routing_key.to_owned(),
-                },
-            )
-            .await?;
-        }
-    };
+async fn handle_made_admin(_event: Event<MadeAdmin>, data: &mut CommandData) -> anyhow::Result<()> {
+    data.role = Role::Admin;
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_actived<E: Executor>(
-    event: Event<Activated>,
-    action: Action<'_, CommandData, E>,
-) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.state = State::Active;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<SqlitePool>();
-            repository::update(
-                &pool,
-                repository::UpdateInput {
-                    id: event.aggregator_id.to_owned(),
-                    username: None,
-                    password: None,
-                    role: None,
-                    state: Some(State::Active),
-                    version: event.version,
-                    routing_key: event.routing_key.to_owned(),
-                },
-            )
-            .await?;
-        }
-    };
+async fn handle_actived(_event: Event<Activated>, data: &mut CommandData) -> anyhow::Result<()> {
+    data.state = State::Active;
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_susended<E: Executor>(
-    event: Event<Suspended>,
-    action: Action<'_, CommandData, E>,
-) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.state = State::Suspended;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<SqlitePool>();
-            repository::update(
-                &pool,
-                repository::UpdateInput {
-                    id: event.aggregator_id.to_owned(),
-                    username: None,
-                    password: None,
-                    role: None,
-                    state: Some(State::Suspended),
-                    version: event.version,
-                    routing_key: event.routing_key.to_owned(),
-                },
-            )
-            .await?;
-        }
-    };
+async fn handle_susended(_event: Event<Suspended>, data: &mut CommandData) -> anyhow::Result<()> {
+    data.state = State::Suspended;
 
     Ok(())
 }

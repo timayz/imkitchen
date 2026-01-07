@@ -147,16 +147,9 @@ pub enum MealPlanRecipe {
     Id,
     UserId,
     RecipeType,
-    CuisineType,
     Name,
-    HouseholdSize,
-    PrepTime,
-    CookTime,
-    Ingredients,
-    Instructions,
-    DietaryRestrictions,
     AcceptsAccompaniment,
-    AdvancePrep,
+    DietaryRestrictions,
 }
 
 #[derive(Iden, Clone)]

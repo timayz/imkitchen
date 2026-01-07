@@ -52,7 +52,6 @@ sqlx_migrator::sqlite_migration!(
         mealplan_recipe::CreateTable,
         mealplan_recipe::CreateIdx1,
         mealplan_recipe::CreateIdx2,
-        mealplan_recipe::CreateIdx3,
         mealplan_week::CreateTable,
         mealplan_last_week::CreateTable,
         mealplan_slot::CreateTable,

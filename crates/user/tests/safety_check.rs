@@ -1,6 +1,4 @@
-use imkitchen_user::{
-    LoggedIn, Logout, MadeAdmin, Registered, UsernameChanged, password::ResetRequested,
-};
+use imkitchen_user::{LoggedIn, Logout, MadeAdmin, UsernameChanged};
 use temp_dir::TempDir;
 mod helpers;
 
@@ -89,38 +87,12 @@ async fn test_safety_check() -> anyhow::Result<()> {
         .unwrap();
     user.logout(access_id).await?;
 
-    imkitchen_user::create_projection()
-        .skip::<LoggedIn>()
-        .skip::<Logout>()
-        .skip::<UsernameChanged>()
-        .subscription()
-        .data(state.pool.clone())
-        .unretry_execute(&state.evento)
-        .await?;
-
-    imkitchen_user::admin::create_projection()
-        .skip::<LoggedIn>()
-        .skip::<Logout>()
-        .skip::<UsernameChanged>()
-        .subscription()
-        .data(state.pool.clone())
-        .unretry_execute(&state.evento)
-        .await?;
-
-    imkitchen_user::login::create_projection()
-        .skip::<ResetRequested>()
-        .skip::<Registered>()
-        .subscription()
-        .data(state.pool.clone())
-        .unretry_execute(&state.evento)
-        .await?;
-
-    imkitchen_user::global_stat::create_projection()
+    imkitchen_user::global_stat::subscription()
+        .safety_check()
         .skip::<LoggedIn>()
         .skip::<Logout>()
         .skip::<MadeAdmin>()
         .skip::<UsernameChanged>()
-        .subscription()
         .data(state.pool.clone())
         .unretry_execute(&state.evento)
         .await?;

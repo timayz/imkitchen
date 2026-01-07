@@ -19,7 +19,7 @@ askama = "0.15"
 cfg-if = "1.0"
 sqlx = { version = "0.8", default-features = false, features = ["migrate", "json", "derive", "runtime-tokio", "sqlite"] }
 sqlx_migrator = { version = "0.18", features = ["sqlite"] }
-evento = { git = "https://github.com/timayz/evento.git", rev = "96b3ba", features = ["sqlite", "rw"] }
+evento = { git = "https://github.com/timayz/evento.git", rev = "7ce424c", features = ["sqlite", "rw"] }
 # evento = { version = "2.0.0-alpha.9", features = ["sqlite", "rw"] }
 argon2 = { version = "0.5", features = ["std"] }
 jsonwebtoken = { version = "10.1", features = ["aws_lc_rs"] }
@@ -95,7 +95,7 @@ cfg-if = { workspace = true }
 imkitchen-shared = { path = "crates/shared", version = "0.12.8" }
 imkitchen-contact = { path = "crates/contact", version = "0.12.8" }
 imkitchen-recipe = { path = "crates/recipe", version = "0.12.8" }
-# imkitchen-mealplan = { path = "crates/mealplan", version = "0.12.8" }
+imkitchen-mealplan = { path = "crates/mealplan", version = "0.12.8" }
 # imkitchen-shopping = { path = "crates/shopping", version = "0.12.8" }
 imkitchen-user = { path = "crates/user", version = "0.12.8" }
 imkitchen-db = { path = "crates/db", version = "0.12.8" }

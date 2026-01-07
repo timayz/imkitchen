@@ -1,15 +1,15 @@
-use bincode::{Decode, Encode};
+use bitcode::{Decode, Encode};
 use imkitchen_recipe::{Ingredient, Instruction};
 use serde::Deserialize;
 use strum::{AsRefStr, Display, EnumString, VariantArray};
 
-#[derive(Encode, Decode)]
+#[derive(Encode, Decode, Clone, Debug, PartialEq)]
 pub struct SlotRecipe {
     pub id: String,
     pub name: String,
 }
 
-#[derive(Encode, Decode)]
+#[derive(Encode, Decode, Clone, PartialEq, Debug)]
 pub struct Slot {
     pub day: u64,
     pub appetizer: Option<SlotRecipe>,
@@ -18,7 +18,7 @@ pub struct Slot {
     pub dessert: Option<SlotRecipe>,
 }
 
-#[derive(Encode, Decode, Default)]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Debug)]
 pub struct DaySlotRecipe {
     pub id: String,
     pub name: String,

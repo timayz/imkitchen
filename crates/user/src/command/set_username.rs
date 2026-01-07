@@ -49,8 +49,6 @@ impl<'a, E: Executor + Clone> super::Command<'a, E> {
                 password: None,
                 role: None,
                 state: None,
-                version: self.event_version + 1,
-                routing_key: self.event_routing_key.to_owned(),
             },
         )
         .await?;

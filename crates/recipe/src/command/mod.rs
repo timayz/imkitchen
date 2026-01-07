@@ -1,4 +1,4 @@
-use evento::{Action, Executor, Projection, SubscriptionBuilder, metadata::Event};
+use evento::{Executor, Projection, Snapshot, metadata::Event};
 use imkitchen_db::table::RecipeCommand;
 use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
@@ -37,8 +37,8 @@ pub struct Command {
     pub is_deleted: bool,
 }
 
-pub fn create_projection<E: Executor>() -> Projection<CommandData, E> {
-    Projection::new("recipe-command")
+pub fn create_projection(id: impl Into<String>) -> Projection<CommandData> {
+    Projection::new::<Recipe>(id)
         .handler(handle_created())
         .handler(handle_deleted())
         .handler(handle_imported())
@@ -52,6 +52,7 @@ pub fn create_projection<E: Executor>() -> Projection<CommandData, E> {
         .handler(handle_basic_information_changed())
         .handler(handle_main_course_options_changed())
         .handler(handle_dietary_restrictions_changed())
+        .safety_check()
 }
 
 pub async fn load<'a, E: Executor>(
@@ -61,93 +62,69 @@ pub async fn load<'a, E: Executor>(
 ) -> Result<Option<Command<'a, E>>, anyhow::Error> {
     let id = id.into();
 
-    Ok(create_projection()
-        .no_safety_check()
-        .load::<Recipe>(&id)
+    let Some(data) = create_projection(&id)
         .data(pool.clone())
-        .execute_all(executor)
+        .execute(executor)
         .await?
-        .map(|loaded| Command::new(id, loaded, executor)))
+    else {
+        return Ok(None);
+    };
+
+    Ok(Some(Command::new(
+        id,
+        data.get_cursor_version()?,
+        data,
+        executor,
+    )))
 }
 
-pub fn subscription<E: Executor>() -> SubscriptionBuilder<CommandData, E> {
-    create_projection().no_safety_check().subscription()
-}
+impl Snapshot for CommandData {}
 
-#[evento::snapshot]
-async fn restore(
-    context: &evento::context::RwContext,
-    id: String,
-    _aggregators: &std::collections::HashMap<String, String>,
-) -> anyhow::Result<Option<CommandData>> {
-    let pool = context.extract::<SqlitePool>();
-    let statement = Query::select()
-        .columns([
-            RecipeCommand::OwnerId,
-            RecipeCommand::RecipeType,
-            RecipeCommand::CuisineType,
-            RecipeCommand::IsShared,
-            RecipeCommand::BasicInformationHash,
-            RecipeCommand::IngredientsHash,
-            RecipeCommand::InstructionsHash,
-            RecipeCommand::DietaryRestrictionsHash,
-            RecipeCommand::AdvancePrepHash,
-            RecipeCommand::AcceptsAccompaniment,
-            RecipeCommand::IsDeleted,
-        ])
-        .from(RecipeCommand::Table)
-        .and_where(Expr::col(RecipeCommand::Id).eq(id))
-        .to_owned();
-
-    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-
-    Ok(sqlx::query_as_with(&sql, values)
-        .fetch_optional(&pool)
-        .await?)
-}
+// #[evento::snapshot]
+// async fn restore(
+//     context: &evento::context::RwContext,
+//     id: String,
+//     _aggregators: &std::collections::HashMap<String, String>,
+// ) -> anyhow::Result<Option<CommandData>> {
+//     let pool = context.extract::<SqlitePool>();
+//     let statement = Query::select()
+//         .columns([
+//             RecipeCommand::OwnerId,
+//             RecipeCommand::RecipeType,
+//             RecipeCommand::CuisineType,
+//             RecipeCommand::IsShared,
+//             RecipeCommand::BasicInformationHash,
+//             RecipeCommand::IngredientsHash,
+//             RecipeCommand::InstructionsHash,
+//             RecipeCommand::DietaryRestrictionsHash,
+//             RecipeCommand::AdvancePrepHash,
+//             RecipeCommand::AcceptsAccompaniment,
+//             RecipeCommand::IsDeleted,
+//         ])
+//         .from(RecipeCommand::Table)
+//         .and_where(Expr::col(RecipeCommand::Id).eq(id))
+//         .to_owned();
+//
+//     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+//
+//     Ok(sqlx::query_as_with(&sql, values)
+//         .fetch_optional(&pool)
+//         .await?)
+// }
 
 #[evento::handler]
-async fn handle_created<E: Executor>(
-    event: Event<Created>,
-    action: Action<'_, CommandData, E>,
-) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.owner_id = event.metadata.user()?;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<SqlitePool>();
-            let statement = Query::insert()
-                .into_table(RecipeCommand::Table)
-                .columns([
-                    RecipeCommand::Id,
-                    RecipeCommand::OwnerId,
-                    RecipeCommand::RecipeType,
-                    RecipeCommand::CuisineType,
-                ])
-                .values([
-                    event.aggregator_id.to_owned().into(),
-                    event.metadata.user()?.into(),
-                    RecipeType::default().to_string().into(),
-                    CuisineType::default().to_string().into(),
-                ])?
-                .to_owned();
-
-            let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-
-            sqlx::query_with(&sql, values).execute(&pool).await?;
-        }
-    };
+async fn handle_created(event: Event<Created>, data: &mut CommandData) -> anyhow::Result<()> {
+    data.owner_id = event.metadata.user()?;
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_imported<E: Executor>(
-    event: Event<Imported>,
-    action: Action<'_, CommandData, E>,
-) -> anyhow::Result<()> {
-    let id = event.aggregator_id.to_owned();
+async fn handle_imported(event: Event<Imported>, data: &mut CommandData) -> anyhow::Result<()> {
+    data.owner_id = event.metadata.user()?;
+    data.recipe_type.0 = event.data.recipe_type;
+    data.cuisine_type.0 = event.data.cuisine_type;
+
     let mut hasher = Sha3_224::default();
     hasher.update(event.data.name);
     hasher.update(event.data.description);
@@ -155,7 +132,7 @@ async fn handle_imported<E: Executor>(
     hasher.update(event.data.prep_time.to_string());
     hasher.update(event.data.cook_time.to_string());
 
-    let basic_information_hash = hasher.finalize()[..].to_vec();
+    data.basic_information_hash = hasher.finalize()[..].to_vec();
 
     let mut hasher = Sha3_224::default();
 
@@ -164,7 +141,7 @@ async fn handle_imported<E: Executor>(
         hasher.update(instruction.time_next.to_string());
     }
 
-    let instructions_hash = hasher.finalize()[..].to_vec();
+    data.instructions_hash = hasher.finalize()[..].to_vec();
 
     let mut hasher = Sha3_224::default();
 
@@ -181,86 +158,30 @@ async fn handle_imported<E: Executor>(
         }
     }
 
-    let ingredients_hash = hasher.finalize()[..].to_vec();
+    data.ingredients_hash = hasher.finalize()[..].to_vec();
 
     let mut hasher = Sha3_224::default();
     hasher.update(event.data.advance_prep);
 
-    let advance_prep_hash = hasher.finalize()[..].to_vec();
-
-    match action {
-        Action::Apply(data) => {
-            data.owner_id = event.metadata.user()?;
-            data.recipe_type.0 = event.data.recipe_type;
-            data.cuisine_type.0 = event.data.cuisine_type;
-            data.basic_information_hash = basic_information_hash;
-            data.instructions_hash = instructions_hash;
-            data.ingredients_hash = ingredients_hash;
-            data.advance_prep_hash = advance_prep_hash;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<SqlitePool>();
-            let statement = Query::insert()
-                .into_table(RecipeCommand::Table)
-                .columns([
-                    RecipeCommand::Id,
-                    RecipeCommand::OwnerId,
-                    RecipeCommand::RecipeType,
-                    RecipeCommand::CuisineType,
-                    RecipeCommand::BasicInformationHash,
-                    RecipeCommand::IngredientsHash,
-                    RecipeCommand::InstructionsHash,
-                    RecipeCommand::AdvancePrepHash,
-                ])
-                .values([
-                    id.into(),
-                    event.metadata.user()?.into(),
-                    event.data.recipe_type.to_string().into(),
-                    event.data.cuisine_type.to_string().into(),
-                    basic_information_hash.into(),
-                    ingredients_hash.into(),
-                    instructions_hash.into(),
-                    advance_prep_hash.into(),
-                ])?
-                .to_owned();
-
-            let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-
-            sqlx::query_with(&sql, values).execute(&pool).await?;
-        }
-    };
+    data.advance_prep_hash = hasher.finalize()[..].to_vec();
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_recipe_type_changed<E: Executor>(
+async fn handle_recipe_type_changed(
     event: Event<RecipeTypeChanged>,
-    action: Action<'_, CommandData, E>,
+    data: &mut CommandData,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.recipe_type.0 = event.data.recipe_type;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<SqlitePool>();
-            update(
-                &pool,
-                &event.aggregator_id,
-                RecipeCommand::RecipeType,
-                event.data.recipe_type.to_string(),
-            )
-            .await?;
-        }
-    };
+    data.recipe_type.0 = event.data.recipe_type;
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_basic_information_changed<E: Executor>(
+async fn handle_basic_information_changed(
     event: Event<BasicInformationChanged>,
-    action: Action<'_, CommandData, E>,
+    data: &mut CommandData,
 ) -> anyhow::Result<()> {
     let id = event.aggregator_id.to_owned();
     let mut hasher = Sha3_224::default();
@@ -270,31 +191,15 @@ async fn handle_basic_information_changed<E: Executor>(
     hasher.update(event.data.prep_time.to_string());
     hasher.update(event.data.cook_time.to_string());
 
-    let basic_information_hash = hasher.finalize()[..].to_vec();
-
-    match action {
-        Action::Apply(data) => {
-            data.basic_information_hash = basic_information_hash;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<SqlitePool>();
-            update(
-                &pool,
-                id,
-                RecipeCommand::BasicInformationHash,
-                basic_information_hash,
-            )
-            .await?;
-        }
-    };
+    data.basic_information_hash = hasher.finalize()[..].to_vec();
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_instructions_changed<E: Executor>(
+async fn handle_instructions_changed(
     event: Event<InstructionsChanged>,
-    action: Action<'_, CommandData, E>,
+    data: &mut CommandData,
 ) -> anyhow::Result<()> {
     let id = event.aggregator_id.to_owned();
     let mut hasher = Sha3_224::default();
@@ -304,33 +209,16 @@ async fn handle_instructions_changed<E: Executor>(
         hasher.update(instruction.time_next.to_string());
     }
 
-    let instructions_hash = hasher.finalize()[..].to_vec();
-
-    match action {
-        Action::Apply(data) => {
-            data.instructions_hash = instructions_hash;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<SqlitePool>();
-            update(
-                &pool,
-                id,
-                RecipeCommand::InstructionsHash,
-                instructions_hash,
-            )
-            .await?;
-        }
-    };
+    data.instructions_hash = hasher.finalize()[..].to_vec();
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_ingredients_changed<E: Executor>(
+async fn handle_ingredients_changed(
     event: Event<IngredientsChanged>,
-    action: Action<'_, CommandData, E>,
+    data: &mut CommandData,
 ) -> anyhow::Result<()> {
-    let id = event.aggregator_id.to_owned();
     let mut hasher = Sha3_224::default();
 
     for ingredient in event.data.ingredients {
@@ -346,176 +234,83 @@ async fn handle_ingredients_changed<E: Executor>(
         }
     }
 
-    let ingredients_hash = hasher.finalize()[..].to_vec();
-
-    match action {
-        Action::Apply(data) => {
-            data.ingredients_hash = ingredients_hash;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<SqlitePool>();
-            update(&pool, id, RecipeCommand::IngredientsHash, ingredients_hash).await?;
-        }
-    };
+    data.ingredients_hash = hasher.finalize()[..].to_vec();
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_dietary_restrictions_changed<E: Executor>(
+async fn handle_dietary_restrictions_changed(
     event: Event<DietaryRestrictionsChanged>,
-    action: Action<'_, CommandData, E>,
+    data: &mut CommandData,
 ) -> anyhow::Result<()> {
-    let id = event.aggregator_id.to_owned();
     let mut hasher = Sha3_224::default();
 
     for restriction in event.data.dietary_restrictions {
         hasher.update(restriction.to_string());
     }
 
-    let dietary_restrictions_hash = hasher.finalize()[..].to_vec();
-
-    match action {
-        Action::Apply(data) => {
-            data.dietary_restrictions_hash = dietary_restrictions_hash;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<SqlitePool>();
-            update(
-                &pool,
-                id,
-                RecipeCommand::DietaryRestrictionsHash,
-                dietary_restrictions_hash,
-            )
-            .await?;
-        }
-    };
+    data.dietary_restrictions_hash = hasher.finalize()[..].to_vec();
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_cuinine_type_changed<E: Executor>(
+async fn handle_cuinine_type_changed(
     event: Event<CuisineTypeChanged>,
-    action: Action<'_, CommandData, E>,
+    data: &mut CommandData,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.cuisine_type.0 = event.data.cuisine_type;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<SqlitePool>();
-            update(
-                &pool,
-                &event.aggregator_id,
-                RecipeCommand::CuisineType,
-                event.data.cuisine_type.to_string(),
-            )
-            .await?;
-        }
-    };
+    data.cuisine_type.0 = event.data.cuisine_type;
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_main_course_options_changed<E: Executor>(
+async fn handle_main_course_options_changed(
     event: Event<MainCourseOptionsChanged>,
-    action: Action<'_, CommandData, E>,
+    data: &mut CommandData,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.accepts_accompaniment = event.data.accepts_accompaniment;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<SqlitePool>();
-            update(
-                &pool,
-                &event.aggregator_id,
-                RecipeCommand::AcceptsAccompaniment,
-                event.data.accepts_accompaniment,
-            )
-            .await?;
-        }
-    };
+    data.accepts_accompaniment = event.data.accepts_accompaniment;
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_advance_prep_changed<E: Executor>(
+async fn handle_advance_prep_changed(
     event: Event<AdvancePrepChanged>,
-    action: Action<'_, CommandData, E>,
+    data: &mut CommandData,
 ) -> anyhow::Result<()> {
-    let id = event.aggregator_id.to_owned();
     let mut hasher = Sha3_224::default();
     hasher.update(event.data.advance_prep);
 
-    let advance_prep_hash = hasher.finalize()[..].to_vec();
-
-    match action {
-        Action::Apply(data) => {
-            data.advance_prep_hash = advance_prep_hash;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<SqlitePool>();
-            update(&pool, id, RecipeCommand::AdvancePrepHash, advance_prep_hash).await?;
-        }
-    };
+    data.advance_prep_hash = hasher.finalize()[..].to_vec();
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_shared_to_community<E: Executor>(
-    event: Event<SharedToCommunity>,
-    action: Action<'_, CommandData, E>,
+async fn handle_shared_to_community(
+    _event: Event<SharedToCommunity>,
+    data: &mut CommandData,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.is_shared = true;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<SqlitePool>();
-            update(&pool, &event.aggregator_id, RecipeCommand::IsShared, true).await?;
-        }
-    };
+    data.is_shared = true;
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_made_private<E: Executor>(
-    event: Event<MadePrivate>,
-    action: Action<'_, CommandData, E>,
+async fn handle_made_private(
+    _event: Event<MadePrivate>,
+    data: &mut CommandData,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.is_shared = false;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<SqlitePool>();
-            update(&pool, &event.aggregator_id, RecipeCommand::IsShared, false).await?;
-        }
-    };
+    data.is_shared = false;
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_deleted<E: Executor>(
-    event: Event<Deleted>,
-    action: Action<'_, CommandData, E>,
-) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.is_deleted = true;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<SqlitePool>();
-            update(&pool, &event.aggregator_id, RecipeCommand::IsDeleted, true).await?;
-        }
-    };
+async fn handle_deleted(event: Event<Deleted>, data: &mut CommandData) -> anyhow::Result<()> {
+    data.is_deleted = true;
 
     Ok(())
 }

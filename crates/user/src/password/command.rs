@@ -3,7 +3,7 @@ use argon2::{
     password_hash::{SaltString, rand_core::OsRng},
 };
 use evento::{
-    Action, Executor, Projection,
+    Executor, Projection, Snapshot,
     metadata::{Event, Metadata},
 };
 use sqlx::SqlitePool;
@@ -96,8 +96,6 @@ impl<'a, E: Executor + Clone> Command<'a, E> {
                 password: Some(password_hash),
                 role: None,
                 state: None,
-                version: self.event_version + 1,
-                routing_key: self.event_routing_key.to_owned(),
             },
         )
         .await?;
@@ -112,8 +110,8 @@ impl<'a, E: Executor + Clone> Command<'a, E> {
     }
 }
 
-fn create_projection<E: Executor>() -> Projection<CommandData, E> {
-    Projection::new("user-password-command")
+fn create_projection(id: impl Into<String>) -> Projection<CommandData> {
+    Projection::new::<Password>(id)
         .handler(handle_reset_requested())
         .handler(handle_reset_completed())
 }
@@ -124,47 +122,41 @@ pub async fn load<'a, E: Executor>(
 ) -> Result<Option<Command<'a, E>>, anyhow::Error> {
     let id = id.into();
 
-    Ok(create_projection()
-        .no_safety_check()
-        .load::<Password>(&id)
-        .execute_all(executor)
-        .await?
-        .map(|loaded| Command::new(id, loaded, executor)))
+    let Some(data) = create_projection(&id).execute(executor).await? else {
+        return Ok(None);
+    };
+
+    Ok(Some(Command::new(
+        id,
+        data.get_cursor_version()?,
+        data,
+        executor,
+    )))
 }
 
 impl evento::Snapshot for CommandData {}
 
 #[evento::handler]
-async fn handle_reset_requested<E: Executor>(
+async fn handle_reset_requested(
     event: Event<ResetRequested>,
-    action: Action<'_, CommandData, E>,
+    data: &mut CommandData,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.user_id = event.data.user_id.to_owned();
-            data.completed = false;
-            data.expire_at = (OffsetDateTime::from_unix_timestamp(event.timestamp.try_into()?)?
-                + time::Duration::minutes(15))
-            .unix_timestamp()
-            .try_into()?;
-        }
-        Action::Handle(_context) => {}
-    };
+    data.user_id = event.data.user_id.to_owned();
+    data.completed = false;
+    data.expire_at = (OffsetDateTime::from_unix_timestamp(event.timestamp.try_into()?)?
+        + time::Duration::minutes(15))
+    .unix_timestamp()
+    .try_into()?;
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_reset_completed<E: Executor>(
+async fn handle_reset_completed(
     _event: Event<ResetCompleted>,
-    action: Action<'_, CommandData, E>,
+    data: &mut CommandData,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.completed = true;
-        }
-        Action::Handle(_context) => {}
-    };
+    data.completed = true;
 
     Ok(())
 }

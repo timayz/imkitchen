@@ -27,14 +27,7 @@ async fn test_mark_read_and_reply() -> anyhow::Result<()> {
 
     contact.resolve("").await?;
 
-    imkitchen_contact::admin::create_projection()
-        .subscription()
-        .data(state.pool.clone())
-        .unretry_execute(&state.evento)
-        .await?;
-
-    imkitchen_contact::global_stat::create_projection()
-        .subscription()
+    imkitchen_contact::global_stat::subscription()
         .data(state.pool.clone())
         .unretry_execute(&state.evento)
         .await?;

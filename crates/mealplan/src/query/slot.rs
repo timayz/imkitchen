@@ -35,10 +35,10 @@ impl From<&MealPlanRecipeRow> for DaySlotRecipe {
 #[derive(Default, FromRow)]
 pub struct SlotRow {
     pub day: u64,
-    pub main_course: imkitchen_db::types::Bincode<DaySlotRecipe>,
-    pub appetizer: Option<imkitchen_db::types::Bincode<DaySlotRecipe>>,
-    pub accompaniment: Option<imkitchen_db::types::Bincode<DaySlotRecipe>>,
-    pub dessert: Option<imkitchen_db::types::Bincode<DaySlotRecipe>>,
+    pub main_course: evento::sql_types::Bitcode<DaySlotRecipe>,
+    pub appetizer: Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
+    pub accompaniment: Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
+    pub dessert: Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
 }
 
 impl super::Query {

@@ -1,6 +1,5 @@
 use imkitchen_mealplan::Status;
 use imkitchen_recipe::{CuisineType, ImportInput, RecipeType};
-use imkitchen_shared::Metadata;
 use temp_dir::TempDir;
 
 mod helpers;
@@ -10,7 +9,7 @@ async fn test_random() -> anyhow::Result<()> {
     let dir = TempDir::new()?;
     let path = dir.child("db.sqlite3");
     let state = helpers::setup_test_state(path).await?;
-    let command = imkitchen_mealplan::Command(state.evento.clone(), state.pool.clone());
+    let command = imkitchen_mealplan::Recipe(state.evento.clone(), state.pool.clone());
     let query = imkitchen_mealplan::Query(state.pool.clone());
     let recipe_command = imkitchen_recipe::Command(state.evento.clone(), state.pool.clone());
     let john = Metadata::by("john".to_owned());

@@ -1,4 +1,8 @@
-use evento::{Action, Executor, Projection, Snapshot, SubscriptionBuilder, metadata::Event};
+use evento::{
+    Executor, Snapshot,
+    metadata::Event,
+    subscription::{Context, SubscriptionBuilder},
+};
 use imkitchen_db::table::ContactGlobalStat;
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
@@ -44,79 +48,60 @@ pub async fn find(pool: &SqlitePool, day: u64) -> anyhow::Result<Option<GlobalSt
         .await?)
 }
 
-pub fn create_projection<E: Executor>() -> Projection<GlobalStatView, E> {
-    Projection::new("contact-global-stat-view")
+pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
+    SubscriptionBuilder::new("contact-global-stat-view")
         .handler(handle_contact_form_submitted())
         .handler(handle_contact_marked_read_and_reply())
         .handler(handle_contact_resolved())
 }
 
-pub fn subscription<E: Executor>() -> SubscriptionBuilder<GlobalStatView, E> {
-    create_projection().no_safety_check().subscription()
-}
-
-#[evento::handler]
+#[evento::sub_handler]
 async fn handle_contact_form_submitted<E: Executor>(
+    context: &Context<'_, E>,
     event: Event<FormSubmitted>,
-    action: Action<'_, GlobalStatView, E>,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(_data) => {}
-        Action::Handle(context) => {
-            let pool = context.extract::<sqlx::SqlitePool>();
-            update_submitted(&pool, GLOBAL_TIMESTAMP).await?;
-            update_submitted(&pool, event.timestamp).await?;
-        }
-    };
+    let pool = context.extract::<sqlx::SqlitePool>();
+    update_submitted(&pool, GLOBAL_TIMESTAMP).await?;
+    update_submitted(&pool, event.timestamp).await?;
 
     Ok(())
 }
 
-#[evento::handler]
+#[evento::sub_handler]
 async fn handle_contact_marked_read_and_reply<E: Executor>(
+    context: &Context<'_, E>,
     event: Event<MarkedReadAndReply>,
-    action: Action<'_, GlobalStatView, E>,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(_data) => {}
-        Action::Handle(context) => {
-            let pool = context.extract::<sqlx::SqlitePool>();
-            let Some(contact) = super::admin::find(&pool, &event.aggregator_id).await? else {
-                return Ok(());
-            };
-
-            if !contact.is_unread() {
-                return Ok(());
-            }
-            update(&pool, ContactGlobalStat::Unread, GLOBAL_TIMESTAMP, false).await?;
-            update(&pool, ContactGlobalStat::Unread, event.timestamp, false).await?;
-        }
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let Some(contact) = super::admin::find(&pool, &event.aggregator_id).await? else {
+        return Ok(());
     };
+
+    if !contact.is_unread() {
+        return Ok(());
+    }
+    update(&pool, ContactGlobalStat::Unread, GLOBAL_TIMESTAMP, false).await?;
+    update(&pool, ContactGlobalStat::Unread, event.timestamp, false).await?;
 
     Ok(())
 }
 
-#[evento::handler]
+#[evento::sub_handler]
 async fn handle_contact_resolved<E: Executor>(
+    context: &Context<'_, E>,
     event: Event<Resolved>,
-    action: Action<'_, GlobalStatView, E>,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(_data) => {}
-        Action::Handle(context) => {
-            let pool = context.extract::<sqlx::SqlitePool>();
-            let Some(contact) = super::admin::find(&pool, &event.aggregator_id).await? else {
-                return Ok(());
-            };
-
-            if !contact.is_unread() {
-                return Ok(());
-            }
-
-            update(&pool, ContactGlobalStat::Unread, GLOBAL_TIMESTAMP, false).await?;
-            update(&pool, ContactGlobalStat::Unread, event.timestamp, false).await?;
-        }
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let Some(contact) = super::admin::find(&pool, &event.aggregator_id).await? else {
+        return Ok(());
     };
+
+    if !contact.is_unread() {
+        return Ok(());
+    }
+
+    update(&pool, ContactGlobalStat::Unread, GLOBAL_TIMESTAMP, false).await?;
+    update(&pool, ContactGlobalStat::Unread, event.timestamp, false).await?;
 
     Ok(())
 }

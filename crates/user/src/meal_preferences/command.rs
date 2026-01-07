@@ -1,5 +1,5 @@
 use evento::{
-    Action, Executor, Projection,
+    Executor, Projection, Snapshot,
     metadata::{Event, Metadata},
 };
 use imkitchen_recipe::DietaryRestriction;
@@ -41,8 +41,10 @@ impl<'a, E: Executor + Clone> Command<'a, E> {
     }
 }
 
-fn create_projection<E: Executor>() -> Projection<CommandData, E> {
-    Projection::new("user-meal-preferences-command").handler(handle_updated())
+fn create_projection(id: impl Into<String>) -> Projection<CommandData> {
+    Projection::new::<MealPreferences>(id)
+        .handler(handle_updated())
+        .safety_check()
 }
 
 pub async fn load<'a, E: Executor>(
@@ -51,44 +53,32 @@ pub async fn load<'a, E: Executor>(
 ) -> Result<Command<'a, E>, anyhow::Error> {
     let id = id.into();
 
-    Ok(create_projection()
-        .no_safety_check()
-        .load::<MealPreferences>(&id)
-        .execute_all(executor)
-        .await?
-        .map(|loaded| Command::new(&id, loaded, executor))
-        .unwrap_or_else(|| {
-            Command::new(
-                &id,
-                evento::LoadResult {
-                    item: CommandData {
-                        household_size: 4,
-                        dietary_restrictions: vec![],
-                        cuisine_variety_weight: 1.0,
-                    },
-                    version: 0,
-                    routing_key: None,
-                },
-                executor,
-            )
-        }))
+    let result = create_projection(&id).execute(executor).await?;
+
+    let cmd = match result {
+        Some(data) => Command::new(id, data.get_cursor_version()?, data, executor),
+        _ => Command::new(
+            id,
+            0,
+            CommandData {
+                household_size: 4,
+                dietary_restrictions: vec![],
+                cuisine_variety_weight: 1.0,
+            },
+            executor,
+        ),
+    };
+
+    Ok(cmd)
 }
 
 impl evento::Snapshot for CommandData {}
 
 #[evento::handler]
-async fn handle_updated<E: Executor>(
-    event: Event<Changed>,
-    action: Action<'_, CommandData, E>,
-) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.household_size = event.data.household_size;
-            data.dietary_restrictions = event.data.dietary_restrictions;
-            data.cuisine_variety_weight = event.data.cuisine_variety_weight;
-        }
-        Action::Handle(_context) => {}
-    };
+async fn handle_updated(event: Event<Changed>, data: &mut CommandData) -> anyhow::Result<()> {
+    data.household_size = event.data.household_size;
+    data.dietary_restrictions = event.data.dietary_restrictions;
+    data.cuisine_variety_weight = event.data.cuisine_variety_weight;
 
     Ok(())
 }

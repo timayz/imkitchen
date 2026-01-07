@@ -18,6 +18,12 @@ pub enum Error {
 
 pub type Result<T> = std::result::Result<T, Error>;
 
+impl From<time::error::ComponentRange> for Error {
+    fn from(value: time::error::ComponentRange) -> Self {
+        Self::Server(value.into())
+    }
+}
+
 impl From<sqlx::Error> for Error {
     fn from(value: sqlx::Error) -> Self {
         Self::Server(value.into())

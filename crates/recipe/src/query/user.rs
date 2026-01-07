@@ -6,13 +6,13 @@ use crate::{
     rating::{LikeChecked, LikeUnchecked, UnlikeChecked, UnlikeUnchecked, Viewed},
 };
 use evento::{
-    Action, Cursor, Executor, LoadResult, Projection, SubscriptionBuilder,
+    Cursor, Executor, Projection, Snapshot,
     cursor::{Args, ReadResult},
     metadata::Event,
     sql::Reader,
 };
 use imkitchen_db::table::RecipeUser;
-use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
+use sea_query::{Expr, ExprTrait, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::{SqlitePool, prelude::FromRow};
 
@@ -213,8 +213,8 @@ pub async fn find(pool: &SqlitePool, id: impl Into<String>) -> anyhow::Result<Op
         .await?)
 }
 
-pub fn create_projection<E: Executor>() -> Projection<UserView, E> {
-    Projection::new("recipe-user-view")
+pub fn create_projection(id: impl Into<String>) -> Projection<UserView> {
+    Projection::new::<Recipe>(id)
         .handler(handle_created())
         .handler(handle_imported())
         .handler(handle_recipe_type_changed())
@@ -239,659 +239,215 @@ pub async fn load<E: Executor>(
     executor: &E,
     pool: &SqlitePool,
     id: impl Into<String>,
-) -> Result<Option<LoadResult<UserView>>, anyhow::Error> {
+) -> Result<Option<UserView>, anyhow::Error> {
     let id = id.into();
 
-    create_projection()
-        .no_safety_check()
-        .load::<Recipe>(&id)
+    create_projection(&id)
         .data(pool.clone())
         .execute(executor)
         .await
 }
 
-pub fn subscription<E: Executor>() -> SubscriptionBuilder<UserView, E> {
-    create_projection().no_safety_check().subscription()
-}
+impl Snapshot for UserView {}
 
-#[evento::snapshot]
-async fn restore(
-    context: &evento::context::RwContext,
-    id: String,
-    _aggregators: &std::collections::HashMap<String, String>,
-) -> anyhow::Result<Option<UserView>> {
-    let pool = context.extract::<SqlitePool>();
-
-    Ok(Some(find(&pool, id).await?.unwrap_or_default()))
-}
+//
+// #[evento::snapshot]
+// async fn restore(
+//     context: &evento::context::RwContext,
+//     id: String,
+//     _aggregators: &std::collections::HashMap<String, String>,
+// ) -> anyhow::Result<Option<UserView>> {
+//     let pool = context.extract::<SqlitePool>();
+//
+//     Ok(Some(find(&pool, id).await?.unwrap_or_default()))
+// }
 
 #[evento::handler]
-async fn handle_created<E: Executor>(
-    event: Event<Created>,
-    action: Action<'_, UserView, E>,
-) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.owner_id = event.metadata.user()?;
-            data.owner_name = event.data.owner_name.to_owned();
-            data.created_at = event.timestamp;
-            data.id = event.aggregator_id.to_owned();
-            data.name = event.data.name;
-            data.household_size = 4;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<sqlx::SqlitePool>();
-            let timestamp = event.timestamp;
-            let aggregator_id = event.aggregator_id.clone();
-            let user_id = event.metadata.user()?;
-            let name = event.data.name;
-            let instructions = bitcode::encode(&Vec::<Instruction>::default());
-            let ingredients = bitcode::encode(&Vec::<Ingredient>::default());
-
-            let statement = Query::insert()
-                .into_table(RecipeUser::Table)
-                .columns([
-                    RecipeUser::Id,
-                    RecipeUser::OwnerId,
-                    RecipeUser::OwnerName,
-                    RecipeUser::RecipeType,
-                    RecipeUser::CuisineType,
-                    RecipeUser::Name,
-                    RecipeUser::Ingredients,
-                    RecipeUser::Instructions,
-                    RecipeUser::DietaryRestrictions,
-                    RecipeUser::CreatedAt,
-                ])
-                .values_panic([
-                    aggregator_id.into(),
-                    user_id.into(),
-                    event.data.owner_name.to_owned().into(),
-                    RecipeType::default().to_string().into(),
-                    CuisineType::default().to_string().into(),
-                    name.into(),
-                    ingredients.into(),
-                    instructions.into(),
-                    serde_json::Value::Array(vec![]).into(),
-                    timestamp.into(),
-                ])
-                .to_owned();
-            let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-            sqlx::query_with(&sql, values).execute(&pool).await?;
-        }
-    };
+async fn handle_created(event: Event<Created>, data: &mut UserView) -> anyhow::Result<()> {
+    data.owner_id = event.metadata.user()?;
+    data.owner_name = event.data.owner_name.to_owned();
+    data.created_at = event.timestamp;
+    data.id = event.aggregator_id.to_owned();
+    data.name = event.data.name;
+    data.household_size = 4;
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_imported<E: Executor>(
-    event: Event<Imported>,
-    action: Action<'_, UserView, E>,
-) -> anyhow::Result<()> {
-    let instructions = bitcode::encode(&event.data.instructions);
-    let ingredients = bitcode::encode(&event.data.ingredients);
-
-    match action {
-        Action::Apply(data) => {
-            data.owner_id = event.metadata.user()?;
-            data.owner_name = event.data.owner_name.to_owned();
-            data.id = event.aggregator_id.to_owned();
-            data.name = event.data.name;
-            data.description = event.data.description;
-            data.recipe_type.0 = event.data.recipe_type;
-            data.cuisine_type.0 = event.data.cuisine_type;
-            data.prep_time = event.data.prep_time;
-            data.cook_time = event.data.cook_time;
-            data.advance_prep = event.data.advance_prep;
-            data.ingredients.0 = event.data.ingredients;
-            data.instructions.0 = event.data.instructions;
-            data.household_size = event.data.household_size;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<sqlx::SqlitePool>();
-            let timestamp = event.timestamp;
-            let aggregator_id = event.aggregator_id.clone();
-            let user_id = event.metadata.user()?;
-            let name = event.data.name;
-
-            let statement = Query::insert()
-                .into_table(RecipeUser::Table)
-                .columns([
-                    RecipeUser::Id,
-                    RecipeUser::OwnerId,
-                    RecipeUser::OwnerName,
-                    RecipeUser::Name,
-                    RecipeUser::Description,
-                    RecipeUser::RecipeType,
-                    RecipeUser::CuisineType,
-                    RecipeUser::HouseholdSize,
-                    RecipeUser::PrepTime,
-                    RecipeUser::CookTime,
-                    RecipeUser::Ingredients,
-                    RecipeUser::Instructions,
-                    RecipeUser::AdvancePrep,
-                    RecipeUser::DietaryRestrictions,
-                    RecipeUser::CreatedAt,
-                ])
-                .values_panic([
-                    aggregator_id.into(),
-                    user_id.into(),
-                    event.data.owner_name.to_owned().into(),
-                    name.into(),
-                    event.data.description.into(),
-                    event.data.recipe_type.to_string().into(),
-                    event.data.cuisine_type.to_string().into(),
-                    event.data.household_size.into(),
-                    event.data.prep_time.into(),
-                    event.data.cook_time.into(),
-                    ingredients.into(),
-                    instructions.into(),
-                    event.data.advance_prep.into(),
-                    serde_json::Value::Array(vec![]).into(),
-                    timestamp.into(),
-                ])
-                .to_owned();
-            let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-            sqlx::query_with(&sql, values).execute(&pool).await?;
-        }
-    };
+async fn handle_imported(event: Event<Imported>, data: &mut UserView) -> anyhow::Result<()> {
+    data.owner_id = event.metadata.user()?;
+    data.owner_name = event.data.owner_name.to_owned();
+    data.id = event.aggregator_id.to_owned();
+    data.name = event.data.name;
+    data.description = event.data.description;
+    data.recipe_type.0 = event.data.recipe_type;
+    data.cuisine_type.0 = event.data.cuisine_type;
+    data.prep_time = event.data.prep_time;
+    data.cook_time = event.data.cook_time;
+    data.advance_prep = event.data.advance_prep;
+    data.ingredients.0 = event.data.ingredients;
+    data.instructions.0 = event.data.instructions;
+    data.household_size = event.data.household_size;
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_recipe_type_changed<E: Executor>(
+async fn handle_recipe_type_changed(
     event: Event<RecipeTypeChanged>,
-    action: Action<'_, UserView, E>,
+    data: &mut UserView,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.recipe_type.0 = event.data.recipe_type;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<sqlx::SqlitePool>();
-            let statement = Query::update()
-                .table(RecipeUser::Table)
-                .values([
-                    (
-                        RecipeUser::RecipeType,
-                        event.data.recipe_type.to_string().into(),
-                    ),
-                    (RecipeUser::UpdatedAt, event.timestamp.into()),
-                ])
-                .and_where(Expr::col(RecipeUser::Id).eq(&event.aggregator_id))
-                .to_owned();
-
-            let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-            sqlx::query_with(&sql, values).execute(&pool).await?;
-        }
-    };
+    data.recipe_type.0 = event.data.recipe_type;
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_basic_information_changed<E: Executor>(
+async fn handle_basic_information_changed(
     event: Event<BasicInformationChanged>,
-    action: Action<'_, UserView, E>,
+    data: &mut UserView,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.name = event.data.name;
-            data.description = event.data.description;
-            data.household_size = event.data.household_size;
-            data.prep_time = event.data.prep_time;
-            data.cook_time = event.data.cook_time;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<sqlx::SqlitePool>();
-            let timestamp = event.timestamp;
-            let aggregator_id = event.aggregator_id.clone();
-            let name = event.data.name;
-            let description = event.data.description;
-            let household_size = event.data.household_size;
-            let prep_time = event.data.prep_time;
-            let cook_time = event.data.cook_time;
-
-            let statement = Query::update()
-                .table(RecipeUser::Table)
-                .values([
-                    (RecipeUser::Name, name.into()),
-                    (RecipeUser::Description, description.into()),
-                    (RecipeUser::HouseholdSize, household_size.into()),
-                    (RecipeUser::PrepTime, prep_time.into()),
-                    (RecipeUser::CookTime, cook_time.into()),
-                    (RecipeUser::UpdatedAt, timestamp.into()),
-                ])
-                .and_where(Expr::col(RecipeUser::Id).eq(aggregator_id))
-                .to_owned();
-
-            let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-            sqlx::query_with(&sql, values).execute(&pool).await?;
-        }
-    };
+    data.name = event.data.name;
+    data.description = event.data.description;
+    data.household_size = event.data.household_size;
+    data.prep_time = event.data.prep_time;
+    data.cook_time = event.data.cook_time;
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_ingredients_changed<E: Executor>(
+async fn handle_ingredients_changed(
     event: Event<IngredientsChanged>,
-    action: Action<'_, UserView, E>,
+    data: &mut UserView,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.ingredients.0 = event.data.ingredients;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<sqlx::SqlitePool>();
-            let ingredients = bitcode::encode(&event.data.ingredients);
-            let timestamp = event.timestamp;
-            let aggregator_id = &event.aggregator_id;
-            let statement = Query::update()
-                .table(RecipeUser::Table)
-                .values([
-                    (RecipeUser::Ingredients, ingredients.into()),
-                    (RecipeUser::UpdatedAt, timestamp.into()),
-                ])
-                .and_where(Expr::col(RecipeUser::Id).eq(aggregator_id))
-                .to_owned();
-
-            let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-            sqlx::query_with(&sql, values).execute(&pool).await?;
-        }
-    };
+    data.ingredients.0 = event.data.ingredients;
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_instructions_changed<E: Executor>(
+async fn handle_instructions_changed(
     event: Event<InstructionsChanged>,
-    action: Action<'_, UserView, E>,
+    data: &mut UserView,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.instructions.0 = event.data.instructions;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<sqlx::SqlitePool>();
-            let instructions = bitcode::encode(&event.data.instructions);
-            let timestamp = event.timestamp;
-            let aggregator_id = &event.aggregator_id;
-            let statement = Query::update()
-                .table(RecipeUser::Table)
-                .values([
-                    (RecipeUser::Instructions, instructions.into()),
-                    (RecipeUser::UpdatedAt, timestamp.into()),
-                ])
-                .and_where(Expr::col(RecipeUser::Id).eq(aggregator_id))
-                .to_owned();
-
-            let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-            sqlx::query_with(&sql, values).execute(&pool).await?;
-        }
-    };
+    data.instructions.0 = event.data.instructions;
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_dietary_restrictions_changed<E: Executor>(
+async fn handle_dietary_restrictions_changed(
     event: Event<DietaryRestrictionsChanged>,
-    action: Action<'_, UserView, E>,
+    data: &mut UserView,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.dietary_restrictions.0 = event.data.dietary_restrictions;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<sqlx::SqlitePool>();
-            let dietary_restrictions = event
-                .data
-                .dietary_restrictions
-                .iter()
-                .map(|d| serde_json::Value::String(d.to_string()))
-                .collect::<Vec<_>>();
-            let timestamp = event.timestamp;
-            let aggregator_id = &event.aggregator_id;
-            let statement = Query::update()
-                .table(RecipeUser::Table)
-                .values([
-                    (
-                        RecipeUser::DietaryRestrictions,
-                        serde_json::Value::Array(dietary_restrictions).into(),
-                    ),
-                    (RecipeUser::UpdatedAt, timestamp.into()),
-                ])
-                .and_where(Expr::col(RecipeUser::Id).eq(aggregator_id))
-                .to_owned();
-
-            let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-            sqlx::query_with(&sql, values).execute(&pool).await?;
-        }
-    };
+    data.dietary_restrictions.0 = event.data.dietary_restrictions;
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_cuisine_type_changed<E: Executor>(
+async fn handle_cuisine_type_changed(
     event: Event<CuisineTypeChanged>,
-    action: Action<'_, UserView, E>,
+    data: &mut UserView,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.cuisine_type.0 = event.data.cuisine_type;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<sqlx::SqlitePool>();
-            let statement = Query::update()
-                .table(RecipeUser::Table)
-                .values([
-                    (
-                        RecipeUser::CuisineType,
-                        event.data.cuisine_type.to_string().into(),
-                    ),
-                    (RecipeUser::UpdatedAt, event.timestamp.into()),
-                ])
-                .and_where(Expr::col(RecipeUser::Id).eq(&event.aggregator_id))
-                .to_owned();
-
-            let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-            sqlx::query_with(&sql, values).execute(&pool).await?;
-        }
-    };
+    data.cuisine_type.0 = event.data.cuisine_type;
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_main_course_options_changed<E: Executor>(
+async fn handle_main_course_options_changed(
     event: Event<MainCourseOptionsChanged>,
-    action: Action<'_, UserView, E>,
+    data: &mut UserView,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.accepts_accompaniment = event.data.accepts_accompaniment;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<sqlx::SqlitePool>();
-            let timestamp = event.timestamp;
-            let aggregator_id = &event.aggregator_id;
-            let statement = Query::update()
-                .table(RecipeUser::Table)
-                .values([
-                    (
-                        RecipeUser::AcceptsAccompaniment,
-                        event.data.accepts_accompaniment.into(),
-                    ),
-                    (RecipeUser::UpdatedAt, timestamp.into()),
-                ])
-                .and_where(Expr::col(RecipeUser::Id).eq(aggregator_id))
-                .to_owned();
-
-            let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-            sqlx::query_with(&sql, values).execute(&pool).await?;
-        }
-    };
+    data.accepts_accompaniment = event.data.accepts_accompaniment;
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_advance_prep_changed<E: Executor>(
+async fn handle_advance_prep_changed(
     event: Event<AdvancePrepChanged>,
-    action: Action<'_, UserView, E>,
+    data: &mut UserView,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.advance_prep = event.data.advance_prep;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<sqlx::SqlitePool>();
-            let timestamp = event.timestamp;
-            let aggregator_id = event.aggregator_id.clone();
-            let description = event.data.advance_prep;
-
-            let statement = Query::update()
-                .table(RecipeUser::Table)
-                .values([
-                    (RecipeUser::AdvancePrep, description.into()),
-                    (RecipeUser::UpdatedAt, timestamp.into()),
-                ])
-                .and_where(Expr::col(RecipeUser::Id).eq(aggregator_id))
-                .to_owned();
-
-            let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-            sqlx::query_with(&sql, values).execute(&pool).await?;
-        }
-    };
+    data.advance_prep = event.data.advance_prep;
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_shared_to_community<E: Executor>(
+async fn handle_shared_to_community(
     event: Event<SharedToCommunity>,
-    action: Action<'_, UserView, E>,
+    data: &mut UserView,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.is_shared = true;
-            data.owner_name = Some(event.data.owner_name);
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<sqlx::SqlitePool>();
-            let statement = Query::update()
-                .table(RecipeUser::Table)
-                .values([
-                    (RecipeUser::IsShared, true.into()),
-                    (RecipeUser::UpdatedAt, event.timestamp.into()),
-                    (
-                        RecipeUser::OwnerName,
-                        event.data.owner_name.to_owned().into(),
-                    ),
-                ])
-                .and_where(Expr::col(RecipeUser::Id).eq(&event.aggregator_id))
-                .to_owned();
-
-            let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-            sqlx::query_with(&sql, values).execute(&pool).await?;
-        }
-    };
-    Ok(())
-}
-
-#[evento::handler]
-async fn handle_made_private<E: Executor>(
-    event: Event<MadePrivate>,
-    action: Action<'_, UserView, E>,
-) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.is_shared = false;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<sqlx::SqlitePool>();
-            let statement = Query::update()
-                .table(RecipeUser::Table)
-                .values([
-                    (RecipeUser::IsShared, false.into()),
-                    (RecipeUser::UpdatedAt, event.timestamp.into()),
-                ])
-                .and_where(Expr::col(RecipeUser::Id).eq(&event.aggregator_id))
-                .to_owned();
-
-            let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-            sqlx::query_with(&sql, values).execute(&pool).await?;
-        }
-    };
-    Ok(())
-}
-
-#[evento::handler]
-async fn handle_deleted<E: Executor>(
-    event: Event<Deleted>,
-    action: Action<'_, UserView, E>,
-) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.created_at = 0;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<sqlx::SqlitePool>();
-            let statement = Query::delete()
-                .from_table(RecipeUser::Table)
-                .and_where(Expr::col(RecipeUser::Id).eq(&event.aggregator_id))
-                .to_owned();
-
-            let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-            sqlx::query_with(&sql, values).execute(&pool).await?;
-        }
-    };
-    Ok(())
-}
-
-#[evento::handler]
-async fn handle_viewed<E: Executor>(
-    event: Event<Viewed>,
-    action: Action<'_, UserView, E>,
-) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.total_views += 1;
-        }
-        Action::Handle(context) => {
-            let pool: SqlitePool = context.extract();
-            let statement = Query::update()
-                .table(RecipeUser::Table)
-                .value(
-                    RecipeUser::TotalViews,
-                    Expr::col(RecipeUser::TotalViews).add(1),
-                )
-                .and_where(Expr::col(RecipeUser::Id).eq(&event.aggregator_id))
-                .to_owned();
-
-            let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-            sqlx::query_with(&sql, values).execute(&pool).await?;
-        }
-    };
+    data.is_shared = true;
+    data.owner_name = Some(event.data.owner_name);
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_like_checked<E: Executor>(
-    event: Event<LikeChecked>,
-    action: Action<'_, UserView, E>,
+async fn handle_made_private(
+    _event: Event<MadePrivate>,
+    data: &mut UserView,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.total_likes += 1;
-        }
-        Action::Handle(context) => {
-            let pool: SqlitePool = context.extract();
-
-            let statement = Query::update()
-                .table(RecipeUser::Table)
-                .value(
-                    RecipeUser::TotalLikes,
-                    Expr::col(RecipeUser::TotalLikes).add(1),
-                )
-                .and_where(Expr::col(RecipeUser::Id).eq(&event.aggregator_id))
-                .to_owned();
-
-            let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-            sqlx::query_with(&sql, values).execute(&pool).await?;
-        }
-    };
+    data.is_shared = false;
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_like_unchecked<E: Executor>(
-    event: Event<LikeUnchecked>,
-    action: Action<'_, UserView, E>,
-) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.total_likes -= 1;
-        }
-        Action::Handle(context) => {
-            let pool: SqlitePool = context.extract();
-            let statement = Query::update()
-                .table(RecipeUser::Table)
-                .value(
-                    RecipeUser::TotalLikes,
-                    Expr::col(RecipeUser::TotalLikes).sub(1),
-                )
-                .and_where(Expr::col(RecipeUser::Id).eq(&event.aggregator_id))
-                .to_owned();
-
-            let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-            sqlx::query_with(&sql, values).execute(&pool).await?;
-        }
-    };
+async fn handle_deleted(_event: Event<Deleted>, data: &mut UserView) -> anyhow::Result<()> {
+    data.created_at = 0;
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_unlike_checked<E: Executor>(
-    event: Event<UnlikeChecked>,
-    action: Action<'_, UserView, E>,
-) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.total_likes -= 1;
-        }
-        Action::Handle(context) => {
-            let pool: SqlitePool = context.extract();
-
-            let statement = Query::update()
-                .table(RecipeUser::Table)
-                .value(
-                    RecipeUser::TotalLikes,
-                    Expr::col(RecipeUser::TotalLikes).sub(1),
-                )
-                .and_where(Expr::col(RecipeUser::Id).eq(&event.aggregator_id))
-                .to_owned();
-
-            let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-            sqlx::query_with(&sql, values).execute(&pool).await?;
-        }
-    };
+async fn handle_viewed(_event: Event<Viewed>, data: &mut UserView) -> anyhow::Result<()> {
+    data.total_views += 1;
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_unlike_unchecked<E: Executor>(
-    event: Event<UnlikeUnchecked>,
-    action: Action<'_, UserView, E>,
+async fn handle_like_checked(
+    _event: Event<LikeChecked>,
+    data: &mut UserView,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.total_likes += 1;
-        }
-        Action::Handle(context) => {
-            let pool: SqlitePool = context.extract();
+    data.total_likes += 1;
 
-            let statement = Query::update()
-                .table(RecipeUser::Table)
-                .value(
-                    RecipeUser::TotalLikes,
-                    Expr::col(RecipeUser::TotalLikes).add(1),
-                )
-                .and_where(Expr::col(RecipeUser::Id).eq(&event.aggregator_id))
-                .to_owned();
+    Ok(())
+}
 
-            let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-            sqlx::query_with(&sql, values).execute(&pool).await?;
-        }
-    };
+#[evento::handler]
+async fn handle_like_unchecked(
+    _event: Event<LikeUnchecked>,
+    data: &mut UserView,
+) -> anyhow::Result<()> {
+    data.total_likes -= 1;
+
+    Ok(())
+}
+
+#[evento::handler]
+async fn handle_unlike_checked(
+    _event: Event<UnlikeChecked>,
+    data: &mut UserView,
+) -> anyhow::Result<()> {
+    data.total_likes -= 1;
+
+    Ok(())
+}
+
+#[evento::handler]
+async fn handle_unlike_unchecked(
+    _event: Event<UnlikeUnchecked>,
+    data: &mut UserView,
+) -> anyhow::Result<()> {
+    data.total_likes += 1;
 
     Ok(())
 }

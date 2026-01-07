@@ -1,4 +1,8 @@
-use evento::{Action, Executor, Projection, SubscriptionBuilder, metadata::Event};
+use evento::{
+    Executor,
+    metadata::Event,
+    subscription::{Context, SubscriptionBuilder},
+};
 use imkitchen_db::table::RecipeUserStat;
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
@@ -37,8 +41,8 @@ pub async fn find_user_stat(
         .await?)
 }
 
-pub fn create_projection<E: Executor>() -> Projection<UserStatView, E> {
-    Projection::new("recipe-user-stat-view")
+pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
+    SubscriptionBuilder::new("recipe-user-stat-view")
         .handler(handle_created())
         .handler(handle_imported())
         .handler(handle_deleted())
@@ -46,176 +50,147 @@ pub fn create_projection<E: Executor>() -> Projection<UserStatView, E> {
         .handler(handle_made_private())
 }
 
-pub fn subscription<E: Executor>() -> SubscriptionBuilder<UserStatView, E> {
-    create_projection().no_safety_check().subscription()
-}
-
-#[evento::handler]
+#[evento::sub_handler]
 async fn handle_created<E: Executor>(
+    context: &Context<'_, E>,
     event: Event<Created>,
-    action: Action<'_, UserStatView, E>,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(_data) => {}
-        Action::Handle(context) => {
-            let pool = context.extract::<sqlx::SqlitePool>();
-            let user_id = event.metadata.user()?;
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let user_id = event.metadata.user()?;
 
-            let statement = Query::insert()
-                .into_table(RecipeUserStat::Table)
-                .columns([RecipeUserStat::UserId, RecipeUserStat::Total])
-                .values_panic([user_id.into(), 1.into()])
-                .on_conflict(
-                    OnConflict::column(RecipeUserStat::UserId)
-                        .value(
-                            RecipeUserStat::Total,
-                            Expr::col(RecipeUserStat::Total).add(1),
-                        )
-                        .to_owned(),
+    let statement = Query::insert()
+        .into_table(RecipeUserStat::Table)
+        .columns([RecipeUserStat::UserId, RecipeUserStat::Total])
+        .values_panic([user_id.into(), 1.into()])
+        .on_conflict(
+            OnConflict::column(RecipeUserStat::UserId)
+                .value(
+                    RecipeUserStat::Total,
+                    Expr::col(RecipeUserStat::Total).add(1),
                 )
-                .to_owned();
+                .to_owned(),
+        )
+        .to_owned();
 
-            let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-            sqlx::query_with(&sql, values).execute(&pool).await?;
-        }
-    };
+    sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
 }
 
-#[evento::handler]
+#[evento::sub_handler]
 async fn handle_imported<E: Executor>(
+    context: &Context<'_, E>,
     event: Event<Imported>,
-    action: Action<'_, UserStatView, E>,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(_data) => {}
-        Action::Handle(context) => {
-            let pool = context.extract::<sqlx::SqlitePool>();
-            let user_id = event.metadata.user()?;
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let user_id = event.metadata.user()?;
 
-            let statement = Query::insert()
-                .into_table(RecipeUserStat::Table)
-                .columns([RecipeUserStat::UserId, RecipeUserStat::Total])
-                .values_panic([user_id.into(), 1.into()])
-                .on_conflict(
-                    OnConflict::column(RecipeUserStat::UserId)
-                        .value(
-                            RecipeUserStat::Total,
-                            Expr::col(RecipeUserStat::Total).add(1),
-                        )
-                        .to_owned(),
+    let statement = Query::insert()
+        .into_table(RecipeUserStat::Table)
+        .columns([RecipeUserStat::UserId, RecipeUserStat::Total])
+        .values_panic([user_id.into(), 1.into()])
+        .on_conflict(
+            OnConflict::column(RecipeUserStat::UserId)
+                .value(
+                    RecipeUserStat::Total,
+                    Expr::col(RecipeUserStat::Total).add(1),
                 )
-                .to_owned();
+                .to_owned(),
+        )
+        .to_owned();
 
-            let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-            sqlx::query_with(&sql, values).execute(&pool).await?;
-        }
-    };
+    sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
 }
 
-#[evento::handler]
+#[evento::sub_handler]
 async fn handle_deleted<E: Executor>(
+    context: &Context<'_, E>,
     event: Event<Deleted>,
-    action: Action<'_, UserStatView, E>,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(_data) => {}
-        Action::Handle(context) => {
-            let pool = context.extract::<sqlx::SqlitePool>();
-            let user_id = event.metadata.user()?;
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let user_id = event.metadata.user()?;
 
-            let statement = Query::insert()
-                .into_table(RecipeUserStat::Table)
-                .columns([RecipeUserStat::UserId, RecipeUserStat::Total])
-                .values_panic([user_id.into(), 1.into()])
-                .on_conflict(
-                    OnConflict::column(RecipeUserStat::UserId)
-                        .value(
-                            RecipeUserStat::Total,
-                            Expr::col(RecipeUserStat::Total).sub(1),
-                        )
-                        .to_owned(),
+    let statement = Query::insert()
+        .into_table(RecipeUserStat::Table)
+        .columns([RecipeUserStat::UserId, RecipeUserStat::Total])
+        .values_panic([user_id.into(), 1.into()])
+        .on_conflict(
+            OnConflict::column(RecipeUserStat::UserId)
+                .value(
+                    RecipeUserStat::Total,
+                    Expr::col(RecipeUserStat::Total).sub(1),
                 )
-                .to_owned();
+                .to_owned(),
+        )
+        .to_owned();
 
-            let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-            sqlx::query_with(&sql, values).execute(&pool).await?;
-        }
-    };
+    sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
 }
 
-#[evento::handler]
+#[evento::sub_handler]
 async fn handle_shared_to_community<E: Executor>(
+    context: &Context<'_, E>,
     event: Event<SharedToCommunity>,
-    action: Action<'_, UserStatView, E>,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(_data) => {}
-        Action::Handle(context) => {
-            let pool = context.extract::<sqlx::SqlitePool>();
-            let user_id = event.metadata.user()?;
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let user_id = event.metadata.user()?;
 
-            let statement = Query::insert()
-                .into_table(RecipeUserStat::Table)
-                .columns([RecipeUserStat::UserId, RecipeUserStat::Shared])
-                .values_panic([user_id.into(), 1.into()])
-                .on_conflict(
-                    OnConflict::column(RecipeUserStat::UserId)
-                        .value(
-                            RecipeUserStat::Shared,
-                            Expr::col(RecipeUserStat::Shared).add(1),
-                        )
-                        .to_owned(),
+    let statement = Query::insert()
+        .into_table(RecipeUserStat::Table)
+        .columns([RecipeUserStat::UserId, RecipeUserStat::Shared])
+        .values_panic([user_id.into(), 1.into()])
+        .on_conflict(
+            OnConflict::column(RecipeUserStat::UserId)
+                .value(
+                    RecipeUserStat::Shared,
+                    Expr::col(RecipeUserStat::Shared).add(1),
                 )
-                .to_owned();
+                .to_owned(),
+        )
+        .to_owned();
 
-            let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-            sqlx::query_with(&sql, values).execute(&pool).await?;
-        }
-    };
+    sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
 }
 
-#[evento::handler]
+#[evento::sub_handler]
 async fn handle_made_private<E: Executor>(
+    context: &Context<'_, E>,
     event: Event<MadePrivate>,
-    action: Action<'_, UserStatView, E>,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(_data) => {}
-        Action::Handle(context) => {
-            let pool = context.extract::<sqlx::SqlitePool>();
-            let user_id = event.metadata.user()?;
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let user_id = event.metadata.user()?;
 
-            let statement = Query::insert()
-                .into_table(RecipeUserStat::Table)
-                .columns([RecipeUserStat::UserId, RecipeUserStat::Shared])
-                .values_panic([user_id.into(), 1.into()])
-                .on_conflict(
-                    OnConflict::column(RecipeUserStat::UserId)
-                        .value(
-                            RecipeUserStat::Shared,
-                            Expr::col(RecipeUserStat::Shared).sub(1),
-                        )
-                        .to_owned(),
+    let statement = Query::insert()
+        .into_table(RecipeUserStat::Table)
+        .columns([RecipeUserStat::UserId, RecipeUserStat::Shared])
+        .values_panic([user_id.into(), 1.into()])
+        .on_conflict(
+            OnConflict::column(RecipeUserStat::UserId)
+                .value(
+                    RecipeUserStat::Shared,
+                    Expr::col(RecipeUserStat::Shared).sub(1),
                 )
-                .to_owned();
+                .to_owned(),
+        )
+        .to_owned();
 
-            let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-            sqlx::query_with(&sql, values).execute(&pool).await?;
-        }
-    };
+    sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
 }

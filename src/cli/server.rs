@@ -45,59 +45,59 @@ pub async fn serve(
         .start(&executor)
         .await?;
 
-    let sub_user_command = imkitchen_user::subscription()
-        .data(write_pool.clone())
-        .start(&executor)
-        .await?;
-
-    let sub_user_login = imkitchen_user::login::subscription()
-        .data(write_pool.clone())
-        .start(&executor)
-        .await?;
-
-    let sub_user_admin = imkitchen_user::admin::subscription()
-        .data(write_pool.clone())
-        .start(&executor)
-        .await?;
-
-    let sub_user_global_stat = imkitchen_user::global_stat::subscription()
-        .data(write_pool.clone())
-        .start(&executor)
-        .await?;
-
-    let sub_contact_admin = imkitchen_contact::admin::subscription()
-        .data(write_pool.clone())
-        .start(&executor)
-        .await?;
-
+    // let sub_user_command = imkitchen_user::subscription()
+    //     .data(write_pool.clone())
+    //     .start(&executor)
+    //     .await?;
+    //
+    // let sub_user_login = imkitchen_user::login::subscription()
+    //     .data(write_pool.clone())
+    //     .start(&executor)
+    //     .await?;
+    //
+    // let sub_user_admin = imkitchen_user::admin::subscription()
+    //     .data(write_pool.clone())
+    //     .start(&executor)
+    //     .await?;
+    //
+    // let sub_user_global_stat = imkitchen_user::global_stat::subscription()
+    //     .data(write_pool.clone())
+    //     .start(&executor)
+    //     .await?;
+    //
+    // let sub_contact_admin = imkitchen_contact::admin::subscription()
+    //     .data(write_pool.clone())
+    //     .start(&executor)
+    //     .await?;
+    //
     let sub_contact_global_stat = imkitchen_contact::global_stat::subscription()
         .data(write_pool.clone())
         .start(&executor)
         .await?;
+    // //
+    // let sub_recipe_command = imkitchen_recipe::subscription()
+    //     .data(write_pool.clone())
+    //     .start(&executor)
+    //     .await?;
     //
-    let sub_recipe_command = imkitchen_recipe::subscription()
-        .data(write_pool.clone())
-        .start(&executor)
-        .await?;
-
-    let sub_recipe_user = imkitchen_recipe::user::subscription()
-        .data(write_pool.clone())
-        .start(&executor)
-        .await?;
-
+    // let sub_recipe_user = imkitchen_recipe::user::subscription()
+    //     .data(write_pool.clone())
+    //     .start(&executor)
+    //     .await?;
+    //
     let sub_recipe_user_stat = imkitchen_recipe::user_stat::subscription()
         .data(write_pool.clone())
         .start(&executor)
         .await?;
-
-    let sub_rating_command = imkitchen_recipe::rating::subscription()
-        .data(write_pool.clone())
-        .start(&executor)
-        .await?;
     //
-    // let sub_mealplan_command = imkitchen_mealplan::subscribe_command()
+    // let sub_rating_command = imkitchen_recipe::rating::subscription()
     //     .data(write_pool.clone())
-    //     .run(&evento_executor)
+    //     .start(&executor)
+    //     .await?;
+    //
+    // let sub_mealplan_command = imkitchen_mealplan::subscription()
+    //     .data(write_pool.clone())
+    //     .start(&executor)
     //     .await?;
     //
     // let sub_mealplan_week = imkitchen_mealplan::subscribe_week()
@@ -192,17 +192,17 @@ pub async fn serve(
     let results = futures::future::join_all(vec![
         sub_notification_contact.shutdown(),
         sub_notification_user.shutdown(),
-        sub_user_command.shutdown(),
-        sub_user_login.shutdown(),
-        sub_user_admin.shutdown(),
-        sub_user_global_stat.shutdown(),
-        sub_contact_admin.shutdown(),
+        // sub_user_command.shutdown(),
+        // sub_user_login.shutdown(),
+        // sub_user_admin.shutdown(),
+        // sub_user_global_stat.shutdown(),
+        // sub_contact_admin.shutdown(),
         sub_contact_global_stat.shutdown(),
-        sub_recipe_command.shutdown(),
-        sub_recipe_user.shutdown(),
+        // sub_recipe_command.shutdown(),
+        // sub_recipe_user.shutdown(),
         sub_recipe_user_stat.shutdown(),
-        sub_rating_command.shutdown(),
-        //     sub_mealplan_command.shutdown_and_wait(),
+        // sub_rating_command.shutdown(),
+        // sub_mealplan_command.shutdown(),
         //     sub_mealplan_week.shutdown_and_wait(),
         //     sub_mealplan_slot.shutdown_and_wait(),
         //     sub_shopping_list.shutdown_and_wait(),

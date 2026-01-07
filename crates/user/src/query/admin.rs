@@ -1,5 +1,5 @@
 use evento::{
-    Action, Executor, Projection, SubscriptionBuilder,
+    Cursor, Executor, Projection, Snapshot,
     cursor::{Args, ReadResult},
     metadata::Event,
     sql::Reader,
@@ -17,18 +17,26 @@ use crate::{
     subscription::{LifePremiumToggled, Subscription},
 };
 
-#[derive(Default, Clone, FromRow)]
+#[derive(Default, Clone, FromRow, Cursor, Debug)]
 pub struct AdminView {
+    #[cursor(by_recently_joined, UserAdmin::Id, 1)]
+    #[cursor(by_most_active, UserAdmin::Id, 1)]
+    #[cursor(by_most_recipes, UserAdmin::Id, 1)]
+    #[cursor(by_name, UserAdmin::Id, 1)]
     pub id: String,
+    #[cursor(by_name, UserAdmin::Email, 2)]
     pub email: String,
     pub full_name: Option<String>,
     pub username: Option<String>,
     pub role: sqlx::types::Text<Role>,
     pub state: sqlx::types::Text<State>,
+    #[cursor(by_most_recipes, UserAdmin::TotalRecipesCount, 2)]
     pub total_recipes_count: i64,
+    #[cursor(by_most_active, UserAdmin::TotalActiveCount, 2)]
     pub total_active_count: i64,
     pub shared_recipes_count: i64,
     pub subscription_expire_at: u64,
+    #[cursor(by_recently_joined, UserAdmin::CreatedAt, 2)]
     pub created_at: u64,
 }
 
@@ -127,7 +135,7 @@ pub async fn filter(
             let result = Reader::new(statement)
                 .desc()
                 .args(input.args)
-                .execute::<_, UserSortByRecentlyJoined, _>(pool)
+                .execute::<_, AdminViewByRecentlyJoined, _>(pool)
                 .await?;
 
             Ok(result.map(|user| user.0))
@@ -135,7 +143,7 @@ pub async fn filter(
         UserSortBy::Name => {
             let result = Reader::new(statement)
                 .args(input.args)
-                .execute::<_, UserSortByName, _>(pool)
+                .execute::<_, AdminViewByName, _>(pool)
                 .await?;
 
             Ok(result.map(|user| user.0))
@@ -144,7 +152,7 @@ pub async fn filter(
             let result = Reader::new(statement)
                 .desc()
                 .args(input.args)
-                .execute::<_, UserSortByMostActive, _>(pool)
+                .execute::<_, AdminViewByMostActive, _>(pool)
                 .await?;
 
             Ok(result.map(|user| user.0))
@@ -153,7 +161,7 @@ pub async fn filter(
             let result = Reader::new(statement)
                 .desc()
                 .args(input.args)
-                .execute::<_, UserSortByMostRecipes, _>(pool)
+                .execute::<_, AdminViewByMostRecipes, _>(pool)
                 .await?;
 
             Ok(result.map(|user| user.0))
@@ -161,8 +169,8 @@ pub async fn filter(
     }
 }
 
-pub fn create_projection<E: Executor>() -> Projection<AdminView, E> {
-    Projection::new("user-admin-view")
+pub fn create_projection(id: impl Into<String>) -> Projection<AdminView> {
+    Projection::new::<User>(id)
         .handler(handle_actived())
         .handler(handle_susended())
         .handler(handle_made_admin())
@@ -177,237 +185,86 @@ pub async fn load<'a, E: Executor>(
 ) -> Result<Option<AdminView>, anyhow::Error> {
     let id = id.into();
 
-    Ok(create_projection()
-        .no_safety_check()
-        .load::<User>(&id)
+    create_projection(&id)
         .aggregator::<Subscription>(id)
         .data(pool.clone())
         .execute(executor)
-        .await?
-        .map(|r| r.item))
+        .await
 }
 
-pub fn subscription<E: Executor>() -> SubscriptionBuilder<AdminView, E> {
-    create_projection().no_safety_check().subscription()
-}
+impl Snapshot for AdminView {}
 
-#[evento::snapshot]
-async fn restore(
-    context: &evento::context::RwContext,
-    id: String,
-    _aggregators: &std::collections::HashMap<String, String>,
-) -> anyhow::Result<Option<AdminView>> {
-    let pool = context.extract::<SqlitePool>();
-
-    let statement = Query::select()
-        .columns([
-            UserAdmin::Id,
-            UserAdmin::Email,
-            UserAdmin::FullName,
-            UserAdmin::Username,
-            UserAdmin::State,
-            UserAdmin::Role,
-            UserAdmin::SubscriptionExpireAt,
-            UserAdmin::TotalRecipesCount,
-            UserAdmin::SharedRecipesCount,
-            UserAdmin::TotalActiveCount,
-            UserAdmin::CreatedAt,
-        ])
-        .from(UserAdmin::Table)
-        .and_where(Expr::col(UserAdmin::Id).eq(id))
-        .limit(1)
-        .to_owned();
-
-    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    Ok(sqlx::query_as_with(&sql, values)
-        .fetch_optional(&pool)
-        .await?)
-}
+// #[evento::snapshot]
+// async fn restore(
+//     context: &evento::context::RwContext,
+//     id: String,
+//     _aggregators: &std::collections::HashMap<String, String>,
+// ) -> anyhow::Result<Option<AdminView>> {
+//     let pool = context.extract::<SqlitePool>();
+//
+//     let statement = Query::select()
+//         .columns([
+//             UserAdmin::Id,
+//             UserAdmin::Email,
+//             UserAdmin::FullName,
+//             UserAdmin::Username,
+//             UserAdmin::State,
+//             UserAdmin::Role,
+//             UserAdmin::SubscriptionExpireAt,
+//             UserAdmin::TotalRecipesCount,
+//             UserAdmin::SharedRecipesCount,
+//             UserAdmin::TotalActiveCount,
+//             UserAdmin::CreatedAt,
+//         ])
+//         .from(UserAdmin::Table)
+//         .and_where(Expr::col(UserAdmin::Id).eq(id))
+//         .limit(1)
+//         .to_owned();
+//
+//     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+//     Ok(sqlx::query_as_with(&sql, values)
+//         .fetch_optional(&pool)
+//         .await?)
+// }
 
 #[evento::handler]
-async fn handle_registered<E: Executor>(
-    event: Event<Registered>,
-    action: Action<'_, AdminView, E>,
-) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.id = event.aggregator_id.to_owned();
-            data.email = event.data.email.to_owned();
-            data.role.0 = Role::User;
-            data.state.0 = State::Active;
-            data.created_at = event.timestamp;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<SqlitePool>();
-            let statement = Query::insert()
-                .into_table(UserAdmin::Table)
-                .columns([
-                    UserAdmin::Id,
-                    UserAdmin::Email,
-                    UserAdmin::Role,
-                    UserAdmin::State,
-                    UserAdmin::CreatedAt,
-                ])
-                .values_panic([
-                    event.aggregator_id.to_owned().into(),
-                    event.data.email.to_owned().into(),
-                    Role::User.to_string().into(),
-                    State::Active.to_string().into(),
-                    event.timestamp.into(),
-                ])
-                .on_conflict(OnConflict::column(UserAdmin::Id).do_nothing().to_owned())
-                .to_owned();
-
-            let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-            sqlx::query_with(&sql, values).execute(&pool).await?;
-        }
-    };
+async fn handle_registered(event: Event<Registered>, data: &mut AdminView) -> anyhow::Result<()> {
+    data.id = event.aggregator_id.to_owned();
+    data.email = event.data.email.to_owned();
+    data.role.0 = Role::User;
+    data.state.0 = State::Active;
+    data.created_at = event.timestamp;
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_made_admin<E: Executor>(
-    event: Event<MadeAdmin>,
-    action: Action<'_, AdminView, E>,
-) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.role.0 = Role::Admin;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<SqlitePool>();
-            update(
-                &pool,
-                UpdateInput {
-                    id: event.aggregator_id.to_owned(),
-                    role: Some(Role::Admin),
-                    state: None,
-                    subscription_expire_at: None,
-                },
-            )
-            .await?;
-        }
-    };
+async fn handle_made_admin(_event: Event<MadeAdmin>, data: &mut AdminView) -> anyhow::Result<()> {
+    data.role.0 = Role::Admin;
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_actived<E: Executor>(
-    event: Event<Activated>,
-    action: Action<'_, AdminView, E>,
-) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.state.0 = State::Active;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<SqlitePool>();
-            update(
-                &pool,
-                UpdateInput {
-                    id: event.aggregator_id.to_owned(),
-                    state: Some(State::Active),
-                    role: None,
-                    subscription_expire_at: None,
-                },
-            )
-            .await?;
-        }
-    };
+async fn handle_actived(_event: Event<Activated>, data: &mut AdminView) -> anyhow::Result<()> {
+    data.state.0 = State::Active;
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_susended<E: Executor>(
-    event: Event<Suspended>,
-    action: Action<'_, AdminView, E>,
-) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.state.0 = State::Suspended;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<SqlitePool>();
-            update(
-                &pool,
-                UpdateInput {
-                    id: event.aggregator_id.to_owned(),
-                    state: Some(State::Suspended),
-                    role: None,
-                    subscription_expire_at: None,
-                },
-            )
-            .await?;
-        }
-    };
+async fn handle_susended(_event: Event<Suspended>, data: &mut AdminView) -> anyhow::Result<()> {
+    data.state.0 = State::Suspended;
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_life_premium_toggled<E: Executor>(
+async fn handle_life_premium_toggled(
     event: Event<LifePremiumToggled>,
-    action: Action<'_, AdminView, E>,
+    data: &mut AdminView,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.subscription_expire_at = event.data.expire_at;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<SqlitePool>();
-            update(
-                &pool,
-                UpdateInput {
-                    id: event.aggregator_id.to_owned(),
-                    state: None,
-                    role: None,
-                    subscription_expire_at: Some(event.data.expire_at),
-                },
-            )
-            .await?;
-        }
-    };
+    data.subscription_expire_at = event.data.expire_at;
 
     Ok(())
 }
-
-struct UpdateInput {
-    id: String,
-    state: Option<State>,
-    role: Option<Role>,
-    subscription_expire_at: Option<u64>,
-}
-
-async fn update(pool: &SqlitePool, input: UpdateInput) -> anyhow::Result<()> {
-    let mut statement = Query::update()
-        .table(UserAdmin::Table)
-        .and_where(Expr::col(UserAdmin::Id).eq(input.id))
-        .to_owned();
-
-    if let Some(role) = input.role {
-        statement.value(UserAdmin::Role, role.to_string());
-    }
-
-    if let Some(state) = input.state {
-        statement.value(UserAdmin::State, state.to_string());
-    }
-
-    if let Some(subscription_expire_at) = input.subscription_expire_at {
-        statement.value(UserAdmin::SubscriptionExpireAt, subscription_expire_at);
-    }
-
-    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    sqlx::query_with(&sql, values).execute(pool).await?;
-
-    Ok(())
-}
-
-evento::define_sort_for!(AdminView, UserAdmin, UserAdmin::Id => {
-    UserSortByRecentlyJoined: int, UserAdmin::CreatedAt, |s| s.created_at as i64;
-    UserSortByMostActive: int, UserAdmin::TotalActiveCount, |s| s.total_active_count;
-    UserSortByMostRecipes: int, UserAdmin::TotalRecipesCount, |s| s.total_recipes_count;
-    UserSortByName: string, UserAdmin::Email, |s| s.email.to_owned();
-});

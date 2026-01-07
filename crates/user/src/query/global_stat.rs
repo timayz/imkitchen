@@ -1,8 +1,9 @@
 use evento::{
-    Action, Executor, Projection, Snapshot, SubscriptionBuilder,
-    cursor::{Args, CursorInt, ReadResult},
+    Cursor, Executor, Projection, Snapshot,
+    cursor::{Args, ReadResult},
     metadata::Event,
     sql::Reader,
+    subscription::{Context, SubscriptionBuilder},
 };
 use imkitchen_db::table::UserGlobalStat;
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
@@ -14,12 +15,14 @@ use crate::{Activated, Registered, Suspended, subscription::LifePremiumToggled};
 
 static GLOBAL_TIMESTAMP: u64 = 949115824;
 
-#[derive(Default, FromRow, Clone)]
+#[derive(Default, FromRow, Clone, Debug, Cursor)]
 pub struct GlobalStatView {
+    #[cursor(UserGlobalStat::Month, 1)]
     pub month: String,
     pub total: u32,
     pub premium: u32,
     pub suspended: u32,
+    #[cursor(UserGlobalStat::CreatedAt, 2)]
     pub created_at: i64,
 }
 
@@ -46,34 +49,6 @@ impl GlobalStatView {
 }
 
 impl Snapshot for GlobalStatView {}
-
-impl evento::cursor::Cursor for GlobalStatView {
-    type T = CursorInt;
-
-    fn serialize(&self) -> Self::T {
-        Self::T {
-            i: self.month.to_owned(),
-            v: self.created_at,
-        }
-    }
-}
-
-impl evento::sql::Bind for GlobalStatView {
-    type T = UserGlobalStat;
-    type I = [Self::T; 2];
-    type V = [Expr; 2];
-    type Cursor = Self;
-
-    fn columns() -> Self::I {
-        [UserGlobalStat::CreatedAt, UserGlobalStat::Month]
-    }
-
-    fn values(
-        cursor: <<Self as evento::sql::Bind>::Cursor as evento::cursor::Cursor>::T,
-    ) -> Self::V {
-        [cursor.v.into(), cursor.i.into()]
-    }
-}
 
 pub struct FilterQuery {
     pub args: Args,
@@ -199,87 +174,63 @@ async fn update_premium(pool: &SqlitePool, timestamp: u64, add: bool) -> anyhow:
     Ok(())
 }
 
-pub fn create_projection<E: Executor>() -> Projection<GlobalStatView, E> {
-    Projection::new("user-global-stat-view")
+pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
+    SubscriptionBuilder::new("user-global-stat-view")
         .handler(handle_susended())
         .handler(handle_activated())
         .handler(handle_life_premium_toggled())
         .handler(handle_registered())
 }
 
-pub fn subscription<E: Executor>() -> SubscriptionBuilder<GlobalStatView, E> {
-    create_projection().no_safety_check().subscription()
-}
-
-#[evento::handler]
+#[evento::sub_handler]
 async fn handle_registered<E: Executor>(
+    context: &Context<'_, E>,
     event: Event<Registered>,
-    action: Action<'_, GlobalStatView, E>,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(_data) => {}
-        Action::Handle(context) => {
-            let pool = context.extract::<SqlitePool>();
+    let pool = context.extract::<SqlitePool>();
 
-            update_total(&pool, GLOBAL_TIMESTAMP).await?;
-            update_total(&pool, event.timestamp).await?;
-        }
-    };
+    update_total(&pool, GLOBAL_TIMESTAMP).await?;
+    update_total(&pool, event.timestamp).await?;
 
     Ok(())
 }
 
-#[evento::handler]
+#[evento::sub_handler]
 async fn handle_activated<E: Executor>(
+    context: &Context<'_, E>,
     event: Event<Activated>,
-    action: Action<'_, GlobalStatView, E>,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(_data) => {}
-        Action::Handle(context) => {
-            let pool = context.extract::<SqlitePool>();
+    let pool = context.extract::<SqlitePool>();
 
-            update_suspend(&pool, GLOBAL_TIMESTAMP, false).await?;
-            update_suspend(&pool, event.timestamp, false).await?;
-        }
-    };
+    update_suspend(&pool, GLOBAL_TIMESTAMP, false).await?;
+    update_suspend(&pool, event.timestamp, false).await?;
 
     Ok(())
 }
 
-#[evento::handler]
+#[evento::sub_handler]
 async fn handle_susended<E: Executor>(
+    context: &Context<'_, E>,
     event: Event<Suspended>,
-    action: Action<'_, GlobalStatView, E>,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(_data) => {}
-        Action::Handle(context) => {
-            let pool = context.extract::<SqlitePool>();
+    let pool = context.extract::<SqlitePool>();
 
-            update_suspend(&pool, GLOBAL_TIMESTAMP, true).await?;
-            update_suspend(&pool, event.timestamp, true).await?;
-        }
-    };
+    update_suspend(&pool, GLOBAL_TIMESTAMP, true).await?;
+    update_suspend(&pool, event.timestamp, true).await?;
 
     Ok(())
 }
 
-#[evento::handler]
+#[evento::sub_handler]
 async fn handle_life_premium_toggled<E: Executor>(
+    context: &Context<'_, E>,
     event: Event<LifePremiumToggled>,
-    action: Action<'_, GlobalStatView, E>,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(_data) => {}
-        Action::Handle(context) => {
-            let pool = context.extract::<SqlitePool>();
-            let is_premim = event.data.expire_at > event.timestamp;
+    let pool = context.extract::<SqlitePool>();
+    let is_premim = event.data.expire_at > event.timestamp;
 
-            update_premium(&pool, GLOBAL_TIMESTAMP, is_premim).await?;
-            update_premium(&pool, event.timestamp, is_premim).await?;
-        }
-    };
+    update_premium(&pool, GLOBAL_TIMESTAMP, is_premim).await?;
+    update_premium(&pool, event.timestamp, is_premim).await?;
 
     Ok(())
 }

@@ -1,5 +1,5 @@
 use evento::{
-    Action, Executor, Projection,
+    Executor, Projection, Snapshot,
     metadata::{Event, Metadata},
 };
 use time::UtcDateTime;
@@ -41,8 +41,10 @@ impl<'a, E: Executor + Clone> Command<'a, E> {
     }
 }
 
-fn create_projection<E: Executor>() -> Projection<CommandData, E> {
-    Projection::new("user-subscription-command").handler(handle_life_premium_toggled())
+fn create_projection(id: impl Into<String>) -> Projection<CommandData> {
+    Projection::new::<Subscription>(id)
+        .handler(handle_life_premium_toggled())
+        .safety_check()
 }
 
 pub async fn load<'a, E: Executor>(
@@ -51,28 +53,24 @@ pub async fn load<'a, E: Executor>(
 ) -> Result<Command<'a, E>, anyhow::Error> {
     let id = id.into();
 
-    Ok(create_projection()
-        .no_safety_check()
-        .load::<Subscription>(&id)
-        .execute_all(executor)
-        .await?
-        .map(|loaded| Command::new(id.to_owned(), loaded, executor))
-        .unwrap_or_else(|| Command::new(id, Default::default(), executor)))
+    let result = create_projection(&id).execute(executor).await?;
+
+    let cmd = match result {
+        Some(data) => Command::new(id, data.get_cursor_version()?, data, executor),
+        _ => Command::new(id, 0, Default::default(), executor),
+    };
+
+    Ok(cmd)
 }
 
 impl evento::Snapshot for CommandData {}
 
 #[evento::handler]
-async fn handle_life_premium_toggled<E: Executor>(
+async fn handle_life_premium_toggled(
     event: Event<LifePremiumToggled>,
-    action: Action<'_, CommandData, E>,
+    data: &mut CommandData,
 ) -> anyhow::Result<()> {
-    match action {
-        Action::Apply(data) => {
-            data.expire_at = event.data.expire_at;
-        }
-        Action::Handle(_context) => {}
-    };
+    data.expire_at = event.data.expire_at;
 
     Ok(())
 }

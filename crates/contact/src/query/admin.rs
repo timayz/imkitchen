@@ -1,12 +1,12 @@
 use bitcode::{Decode, Encode};
 use evento::{
-    Action, Executor, Projection, SubscriptionBuilder,
-    cursor::{Args, CursorUInt, ReadResult},
+    Cursor, Executor, Projection, Snapshot,
+    cursor::{Args, ReadResult},
     metadata::Event,
     sql::Reader,
 };
 use imkitchen_db::table::ContactAdmin;
-use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
+use sea_query::{Expr, ExprTrait, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use serde::Deserialize;
 use sqlx::SqlitePool;
@@ -15,14 +15,16 @@ use strum::{AsRefStr, Display, EnumString, VariantArray};
 
 use crate::{Contact, FormSubmitted, MarkedReadAndReply, Reopened, Resolved, Status, Subject};
 
-#[derive(Debug, Default, FromRow)]
+#[derive(Debug, Default, FromRow, Cursor)]
 pub struct AdminView {
+    #[cursor(ContactAdmin::Id, 1)]
     pub id: String,
     pub email: String,
     pub name: String,
     pub subject: sqlx::types::Text<Subject>,
     pub message: String,
     pub status: sqlx::types::Text<Status>,
+    #[cursor(ContactAdmin::CreatedAt, 2)]
     pub created_at: u64,
 }
 
@@ -46,34 +48,6 @@ impl AdminView {
             .map(|w| w.chars().next().unwrap_or('a').to_uppercase().to_string())
             .collect::<Vec<_>>()
             .join("")
-    }
-}
-
-impl evento::cursor::Cursor for AdminView {
-    type T = CursorUInt;
-
-    fn serialize(&self) -> Self::T {
-        Self::T {
-            i: self.id.to_owned(),
-            v: self.created_at,
-        }
-    }
-}
-
-impl evento::sql::Bind for AdminView {
-    type T = ContactAdmin;
-    type I = [Self::T; 2];
-    type V = [Expr; 2];
-    type Cursor = Self;
-
-    fn columns() -> Self::I {
-        [ContactAdmin::CreatedAt, ContactAdmin::Id]
-    }
-
-    fn values(
-        cursor: <<Self as evento::sql::Bind>::Cursor as evento::cursor::Cursor>::T,
-    ) -> Self::V {
-        [cursor.v.into(), cursor.i.into()]
     }
 }
 
@@ -144,8 +118,8 @@ pub async fn find(pool: &SqlitePool, id: impl Into<String>) -> anyhow::Result<Op
         .await?)
 }
 
-pub fn create_projection<E: Executor>() -> Projection<AdminView, E> {
-    Projection::new("contact-admin-view")
+pub fn create_projection(id: impl Into<String>) -> Projection<AdminView> {
+    Projection::new::<Contact>(id)
         .handler(handle_form_submmited())
         .handler(handle_reopened())
         .handler(handle_marked_read_and_reply())
@@ -159,151 +133,90 @@ pub async fn load<'a, E: Executor>(
 ) -> Result<Option<AdminView>, anyhow::Error> {
     let id = id.into();
 
-    Ok(create_projection()
-        .no_safety_check()
-        .load::<Contact>(id)
+    create_projection(id)
         .data(pool.clone())
         .execute(executor)
-        .await?
-        .map(|r| r.item))
+        .await
 }
 
-pub fn subscription<E: Executor>() -> SubscriptionBuilder<AdminView, E> {
-    create_projection().no_safety_check().subscription()
-}
+impl Snapshot for AdminView {}
 
-#[evento::snapshot]
-async fn restore(
-    context: &evento::context::RwContext,
-    id: String,
-    _aggregators: &std::collections::HashMap<String, String>,
-) -> anyhow::Result<Option<AdminView>> {
-    let pool = context.extract::<SqlitePool>();
-    find(&pool, id).await
-}
+// #[evento::snapshot]
+// async fn restore(
+//     context: &evento::context::RwContext,
+//     id: String,
+//     _aggregators: &std::collections::HashMap<String, String>,
+// ) -> anyhow::Result<Option<AdminView>> {
+//     let pool = context.extract::<SqlitePool>();
+//     find(&pool, id).await
+// }
 
 #[evento::handler]
-async fn handle_form_submmited<E: Executor>(
+async fn handle_form_submmited(
     event: Event<FormSubmitted>,
-    action: Action<'_, AdminView, E>,
+    data: &mut AdminView,
 ) -> anyhow::Result<()> {
-    let status = Status::Unread;
-    match action {
-        Action::Apply(data) => {
-            data.id = event.aggregator_id.to_owned();
-            data.email = event.data.email.to_owned();
-            data.status.0 = status;
-            data.subject.0 = event.data.subject.to_owned();
-            data.message = event.data.message.to_owned();
-            data.name = event.data.name.to_owned();
-            data.created_at = event.timestamp;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<sqlx::SqlitePool>();
-            let statement = Query::insert()
-                .into_table(ContactAdmin::Table)
-                .columns([
-                    ContactAdmin::Id,
-                    ContactAdmin::Email,
-                    ContactAdmin::Status,
-                    ContactAdmin::Subject,
-                    ContactAdmin::Message,
-                    ContactAdmin::Name,
-                    ContactAdmin::CreatedAt,
-                ])
-                .values_panic([
-                    event.aggregator_id.to_owned().into(),
-                    event.data.email.to_owned().into(),
-                    status.to_string().into(),
-                    event.data.subject.to_string().into(),
-                    event.data.message.to_owned().into(),
-                    event.data.name.to_owned().into(),
-                    event.timestamp.into(),
-                ])
-                .to_owned();
-            let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-            sqlx::query_with(&sql, values).execute(&pool).await?;
-        }
-    };
+    data.id = event.aggregator_id.to_owned();
+    data.email = event.data.email.to_owned();
+    data.status.0 = Status::Unread;
+    data.subject.0 = event.data.subject.to_owned();
+    data.message = event.data.message.to_owned();
+    data.name = event.data.name.to_owned();
+    data.created_at = event.timestamp;
+    // match action {
+    //     Action::Apply(data) => {
+    //     }
+    //     Action::Handle(context) => {
+    //         let pool = context.extract::<sqlx::SqlitePool>();
+    //         let statement = Query::insert()
+    //             .into_table(ContactAdmin::Table)
+    //             .columns([
+    //                 ContactAdmin::Id,
+    //                 ContactAdmin::Email,
+    //                 ContactAdmin::Status,
+    //                 ContactAdmin::Subject,
+    //                 ContactAdmin::Message,
+    //                 ContactAdmin::Name,
+    //                 ContactAdmin::CreatedAt,
+    //             ])
+    //             .values_panic([
+    //                 event.aggregator_id.to_owned().into(),
+    //                 event.data.email.to_owned().into(),
+    //                 status.to_string().into(),
+    //                 event.data.subject.to_string().into(),
+    //                 event.data.message.to_owned().into(),
+    //                 event.data.name.to_owned().into(),
+    //                 event.timestamp.into(),
+    //             ])
+    //             .to_owned();
+    //         let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    //         sqlx::query_with(&sql, values).execute(&pool).await?;
+    //     }
+    // };
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_marked_read_and_reply<E: Executor>(
-    event: Event<MarkedReadAndReply>,
-    action: Action<'_, AdminView, E>,
+async fn handle_marked_read_and_reply(
+    _event: Event<MarkedReadAndReply>,
+    data: &mut AdminView,
 ) -> anyhow::Result<()> {
-    let status = Status::Read;
-    match action {
-        Action::Apply(data) => {
-            data.status.0 = status;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<sqlx::SqlitePool>();
-            update(
-                &pool,
-                UpdateInput {
-                    id: event.aggregator_id.to_owned(),
-                    status: Some(status),
-                },
-            )
-            .await?;
-        }
-    };
+    data.status.0 = Status::Read;
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_resolved<E: Executor>(
-    event: Event<Resolved>,
-    action: Action<'_, AdminView, E>,
-) -> anyhow::Result<()> {
-    let status = Status::Resolved;
-    match action {
-        Action::Apply(data) => {
-            data.status.0 = status;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<sqlx::SqlitePool>();
-            update(
-                &pool,
-                UpdateInput {
-                    id: event.aggregator_id.to_owned(),
-                    status: Some(status),
-                },
-            )
-            .await?;
-        }
-    };
+async fn handle_resolved(_event: Event<Resolved>, data: &mut AdminView) -> anyhow::Result<()> {
+    data.status.0 = Status::Resolved;
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_reopened<E: Executor>(
-    event: Event<Reopened>,
-    action: Action<'_, AdminView, E>,
-) -> anyhow::Result<()> {
-    let status = Status::Read;
-
-    match action {
-        Action::Apply(data) => {
-            data.status.0 = status;
-        }
-        Action::Handle(context) => {
-            let pool = context.extract::<sqlx::SqlitePool>();
-            update(
-                &pool,
-                UpdateInput {
-                    id: event.aggregator_id.to_owned(),
-                    status: Some(status),
-                },
-            )
-            .await?;
-        }
-    };
+async fn handle_reopened(_event: Event<Reopened>, data: &mut AdminView) -> anyhow::Result<()> {
+    data.status.0 = Status::Read;
 
     Ok(())
 }
@@ -325,25 +238,4 @@ pub enum SortBy {
     #[default]
     MostRecent,
     OldestFirst,
-}
-
-struct UpdateInput {
-    id: String,
-    status: Option<Status>,
-}
-
-async fn update(pool: &SqlitePool, input: UpdateInput) -> anyhow::Result<()> {
-    let mut statement = Query::update()
-        .table(ContactAdmin::Table)
-        .and_where(Expr::col(ContactAdmin::Id).eq(input.id))
-        .to_owned();
-
-    if let Some(status) = input.status {
-        statement.value(ContactAdmin::Status, status.to_string());
-    }
-
-    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    sqlx::query_with(&sql, values).execute(pool).await?;
-
-    Ok(())
 }
