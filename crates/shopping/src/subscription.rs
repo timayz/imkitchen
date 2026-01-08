@@ -6,12 +6,10 @@ use evento::{
     subscription::{Context, SubscriptionBuilder},
 };
 use imkitchen_db::table::ShoppingRecipe;
-use imkitchen_recipe::Ingredient;
+use imkitchen_shared::{recipe::Ingredient, shopping::Generated};
 use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::SqlitePool;
-
-use crate::Generated;
 
 pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
     SubscriptionBuilder::new("shopping")
@@ -25,7 +23,7 @@ pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
 #[evento::sub_handler]
 async fn handle_mealplan_week_generated<E: Executor>(
     context: &Context<'_, E>,
-    event: Event<imkitchen_mealplan::WeekGenerated>,
+    event: Event<imkitchen_shared::mealplan::WeekGenerated>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
     let recipe_ids = event
@@ -99,7 +97,7 @@ async fn handle_mealplan_week_generated<E: Executor>(
 #[evento::sub_handler]
 async fn handle_recipe_created<E: Executor>(
     context: &Context<'_, E>,
-    event: Event<imkitchen_recipe::Created>,
+    event: Event<imkitchen_shared::recipe::Created>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
 
@@ -120,7 +118,7 @@ async fn handle_recipe_created<E: Executor>(
 #[evento::sub_handler]
 async fn handle_recipe_imported<E: Executor>(
     context: &Context<'_, E>,
-    event: Event<imkitchen_recipe::Imported>,
+    event: Event<imkitchen_shared::recipe::Imported>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
 
@@ -141,7 +139,7 @@ async fn handle_recipe_imported<E: Executor>(
 #[evento::sub_handler]
 async fn handle_recipe_deleted<E: Executor>(
     context: &Context<'_, E>,
-    event: Event<imkitchen_recipe::Deleted>,
+    event: Event<imkitchen_shared::recipe::Deleted>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
     let statement = Query::delete()
@@ -158,7 +156,7 @@ async fn handle_recipe_deleted<E: Executor>(
 #[evento::sub_handler]
 async fn handle_recipe_basic_information_changed<E: Executor>(
     context: &Context<'_, E>,
-    event: Event<imkitchen_recipe::BasicInformationChanged>,
+    event: Event<imkitchen_shared::recipe::BasicInformationChanged>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
     update_col(

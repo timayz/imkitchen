@@ -1,6 +1,5 @@
 use evento::{Executor, metadata::Metadata};
-
-use crate::{State, Suspended};
+use imkitchen_shared::user::{State, Suspended};
 
 impl<'a, E: Executor + Clone> super::Command<'a, E> {
     pub async fn suspend(&self, request_by: impl Into<String>) -> imkitchen_shared::Result<()> {

@@ -5,7 +5,7 @@ use evento::{
 use time::UtcDateTime;
 use validator::Validate;
 
-use crate::subscription::{LifePremiumToggled, Subscription};
+use imkitchen_shared::user::subscription::{LifePremiumToggled, Subscription};
 
 #[evento::command]
 pub struct Command {

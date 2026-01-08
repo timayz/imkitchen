@@ -4,10 +4,10 @@ use axum::{
 };
 use evento::cursor::{Args, ReadResult, Value};
 use imkitchen_recipe::{
-    CuisineType, RecipeType, SortBy,
-    user::{RecipesQuery, UserViewList},
+    user::{RecipesQuery, SortBy, UserViewList},
     user_stat::UserStatView,
 };
+use imkitchen_shared::recipe::{CuisineType, RecipeType};
 use serde::Deserialize;
 use std::str::FromStr;
 use strum::VariantArray;

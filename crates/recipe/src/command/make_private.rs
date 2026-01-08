@@ -1,6 +1,6 @@
 use evento::{Executor, metadata::Metadata};
 
-use crate::MadePrivate;
+use imkitchen_shared::recipe::MadePrivate;
 
 impl<'a, E: Executor + Clone> super::Command<'a, E> {
     pub async fn make_private(

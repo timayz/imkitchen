@@ -1,6 +1,5 @@
 use evento::{Executor, metadata::Metadata};
-
-use crate::{Resolved, Status};
+use imkitchen_shared::contact::{Resolved, Status};
 
 impl<'a, E: Executor + Clone> super::Command<'a, E> {
     pub async fn resolve(&self, request_by: impl Into<String>) -> imkitchen_shared::Result<()> {

@@ -1,4 +1,5 @@
-use imkitchen_recipe::{CuisineType, ImportInput, RecipeType};
+use imkitchen_recipe::ImportInput;
+use imkitchen_shared::recipe::{CuisineType, RecipeType};
 use temp_dir::TempDir;
 
 use crate::helpers::TestState;

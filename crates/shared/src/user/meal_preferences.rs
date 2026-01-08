@@ -1,4 +1,4 @@
-use imkitchen_recipe::DietaryRestriction;
+use crate::recipe::DietaryRestriction;
 
 #[evento::aggregator]
 pub enum MealPreferences {

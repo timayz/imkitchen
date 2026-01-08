@@ -1,6 +1,6 @@
-use imkitchen_recipe::{
+use imkitchen_recipe::UpdateInput;
+use imkitchen_shared::recipe::{
     CuisineType, DietaryRestriction, Ingredient, IngredientUnit, Instruction, RecipeType,
-    UpdateInput,
 };
 use temp_dir::TempDir;
 

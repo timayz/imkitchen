@@ -11,7 +11,7 @@ use sqlx::{SqlitePool, prelude::FromRow};
 use std::time::{SystemTime, UNIX_EPOCH};
 use strum::{AsRefStr, Display, EnumString, VariantArray};
 
-use crate::{
+use imkitchen_shared::user::{
     Activated, MadeAdmin, Registered, Role, State, Suspended, User,
     subscription::{LifePremiumToggled, Subscription},
 };

@@ -16,7 +16,7 @@ use axum_extra::{
     },
     headers::UserAgent,
 };
-use imkitchen_user::State;
+use imkitchen_shared::user::State;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;

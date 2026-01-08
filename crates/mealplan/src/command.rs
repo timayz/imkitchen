@@ -4,14 +4,13 @@ use evento::{
     subscription::{Context, SubscriptionBuilder},
 };
 use imkitchen_db::table::MealPlanRecipe;
-use imkitchen_recipe::{DietaryRestriction, RecipeType};
+use imkitchen_shared::mealplan::{Slot, SlotRecipe, WeekGenerated};
+use imkitchen_shared::recipe::{DietaryRestriction, RecipeType};
 use rand::seq::SliceRandom;
 use sea_query::{Expr, ExprTrait, Func, IntoColumnRef, Query, SimpleExpr, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::{SqlitePool, prelude::FromRow};
 use time::{Duration, OffsetDateTime};
-
-use crate::{Slot, SlotRecipe, WeekGenerated};
 
 #[evento::command]
 pub struct Command {}
@@ -34,7 +33,7 @@ impl From<&Recipe> for SlotRecipe {
 
 pub struct Randomize {
     pub cuisine_variety_weight: f32,
-    pub dietary_restrictions: Vec<imkitchen_recipe::DietaryRestriction>,
+    pub dietary_restrictions: Vec<imkitchen_shared::recipe::DietaryRestriction>,
 }
 
 pub struct Generate {
@@ -295,7 +294,7 @@ pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
 #[evento::sub_handler]
 async fn handle_recipe_created<E: Executor>(
     context: &Context<'_, E>,
-    event: Event<imkitchen_recipe::Created>,
+    event: Event<imkitchen_shared::recipe::Created>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
 
@@ -325,7 +324,7 @@ async fn handle_recipe_created<E: Executor>(
 #[evento::sub_handler]
 async fn handle_recipe_imported<E: Executor>(
     context: &Context<'_, E>,
-    event: Event<imkitchen_recipe::Imported>,
+    event: Event<imkitchen_shared::recipe::Imported>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
 
@@ -361,7 +360,7 @@ async fn handle_recipe_imported<E: Executor>(
 #[evento::sub_handler]
 async fn handle_recipe_type_changed<E: Executor>(
     context: &Context<'_, E>,
-    event: Event<imkitchen_recipe::RecipeTypeChanged>,
+    event: Event<imkitchen_shared::recipe::RecipeTypeChanged>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
     update_col(
@@ -378,7 +377,7 @@ async fn handle_recipe_type_changed<E: Executor>(
 #[evento::sub_handler]
 async fn handle_recipe_deleted<E: Executor>(
     context: &Context<'_, E>,
-    event: Event<imkitchen_recipe::Deleted>,
+    event: Event<imkitchen_shared::recipe::Deleted>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
     let statement = Query::delete()
@@ -395,7 +394,7 @@ async fn handle_recipe_deleted<E: Executor>(
 #[evento::sub_handler]
 async fn handle_recipe_basic_information_changed<E: Executor>(
     context: &Context<'_, E>,
-    event: Event<imkitchen_recipe::BasicInformationChanged>,
+    event: Event<imkitchen_shared::recipe::BasicInformationChanged>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
     let statement = Query::update()
@@ -415,7 +414,7 @@ async fn handle_recipe_basic_information_changed<E: Executor>(
 #[evento::sub_handler]
 async fn handle_recipe_dietary_restrictions_changed<E: Executor>(
     context: &Context<'_, E>,
-    event: Event<imkitchen_recipe::DietaryRestrictionsChanged>,
+    event: Event<imkitchen_shared::recipe::DietaryRestrictionsChanged>,
 ) -> anyhow::Result<()> {
     let dietary_restrictions = event
         .data
@@ -439,7 +438,7 @@ async fn handle_recipe_dietary_restrictions_changed<E: Executor>(
 #[evento::sub_handler]
 async fn handle_recipe_main_course_changed<E: Executor>(
     context: &Context<'_, E>,
-    event: Event<imkitchen_recipe::MainCourseOptionsChanged>,
+    event: Event<imkitchen_shared::recipe::MainCourseOptionsChanged>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
     update_col(
@@ -456,7 +455,7 @@ async fn handle_recipe_main_course_changed<E: Executor>(
 #[evento::sub_handler]
 async fn handle_recipe_advance_prep_changed<E: Executor>(
     context: &Context<'_, E>,
-    event: Event<imkitchen_recipe::AdvancePrepChanged>,
+    event: Event<imkitchen_shared::recipe::AdvancePrepChanged>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
     update_col(

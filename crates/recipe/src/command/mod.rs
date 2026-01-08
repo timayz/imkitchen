@@ -2,7 +2,7 @@ use evento::{Executor, Projection, Snapshot, metadata::Event};
 use sha3::{Digest, Sha3_224};
 use sqlx::{SqlitePool, prelude::FromRow};
 
-use crate::{
+use imkitchen_shared::recipe::{
     AdvancePrepChanged, BasicInformationChanged, Created, CuisineType, CuisineTypeChanged, Deleted,
     DietaryRestrictionsChanged, Imported, IngredientsChanged, InstructionsChanged, MadePrivate,
     MainCourseOptionsChanged, Recipe, RecipeType, RecipeTypeChanged, SharedToCommunity,

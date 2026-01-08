@@ -3,10 +3,11 @@ use argon2::{
     password_hash::{SaltString, rand_core::OsRng},
 };
 use evento::{Executor, metadata::Metadata};
+use imkitchen_shared::user::Registered;
 use sqlx::SqlitePool;
 use validator::Validate;
 
-use crate::{Registered, repository};
+use crate::repository;
 
 #[derive(Validate)]
 pub struct RegisterInput {

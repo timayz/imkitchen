@@ -5,7 +5,7 @@ use axum::{
     response::IntoResponse,
 };
 use imkitchen_mealplan::week::{WeekListRow, WeekRow};
-use imkitchen_recipe::{Ingredient, IngredientUnitFormat};
+use imkitchen_shared::recipe::{Ingredient, IngredientUnitFormat};
 use imkitchen_shopping::{ToggleInput, list::ListWeekRow};
 use serde::Deserialize;
 

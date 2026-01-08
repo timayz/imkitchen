@@ -5,10 +5,11 @@ use axum::{
 
 use evento::cursor::{Args, ReadResult};
 use imkitchen_recipe::{
-    IngredientUnitFormat, RecipeType, rating,
+    rating,
     user::{RecipesQuery, UserView, UserViewList},
     user_stat::UserStatView,
 };
+use imkitchen_shared::recipe::{IngredientUnitFormat, RecipeType};
 
 use crate::{
     auth::AuthUser,
@@ -80,7 +81,7 @@ pub async fn page(
                 is_shared: Some(true),
                 dietary_restrictions: vec![],
                 dietary_where_any: false,
-                sort_by: imkitchen_recipe::SortBy::RecentlyAdded,
+                sort_by: imkitchen_recipe::user::SortBy::RecentlyAdded,
                 args: Args::forward(2, None),
             }
         ),
@@ -106,7 +107,7 @@ pub async fn page(
                 is_shared: Some(true),
                 dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
                 dietary_where_any: false,
-                sort_by: imkitchen_recipe::SortBy::RecentlyAdded,
+                sort_by: imkitchen_recipe::user::SortBy::RecentlyAdded,
                 args: Args::forward(6, None),
             }
         ),
@@ -132,7 +133,7 @@ pub async fn page(
                     is_shared: Some(true),
                     dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
                     dietary_where_any: true,
-                    sort_by: imkitchen_recipe::SortBy::RecentlyAdded,
+                    sort_by: imkitchen_recipe::user::SortBy::RecentlyAdded,
                     args: Args::forward(6, None),
                 }
             ),
@@ -161,7 +162,7 @@ pub async fn page(
                     is_shared: Some(true),
                     dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
                     dietary_where_any: false,
-                    sort_by: imkitchen_recipe::SortBy::RecentlyAdded,
+                    sort_by: imkitchen_recipe::user::SortBy::RecentlyAdded,
                     args: Args::forward(6, None),
                 }
             ),
@@ -190,7 +191,7 @@ pub async fn page(
                     is_shared: Some(true),
                     dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
                     dietary_where_any: true,
-                    sort_by: imkitchen_recipe::SortBy::RecentlyAdded,
+                    sort_by: imkitchen_recipe::user::SortBy::RecentlyAdded,
                     args: Args::forward(6, None),
                 }
             ),
@@ -219,7 +220,7 @@ pub async fn page(
                     is_shared: Some(true),
                     dietary_restrictions: vec![],
                     dietary_where_any: false,
-                    sort_by: imkitchen_recipe::SortBy::RecentlyAdded,
+                    sort_by: imkitchen_recipe::user::SortBy::RecentlyAdded,
                     args: Args::forward(6, None),
                 }
             ),

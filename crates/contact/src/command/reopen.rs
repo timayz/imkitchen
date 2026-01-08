@@ -1,6 +1,5 @@
 use evento::{Executor, metadata::Metadata};
-
-use crate::{Reopened, Status};
+use imkitchen_shared::contact::{Reopened, Status};
 
 impl<'a, E: Executor + Clone> super::Command<'a, E> {
     pub async fn reopen(&self, request_by: impl Into<String>) -> imkitchen_shared::Result<()> {

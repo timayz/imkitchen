@@ -1,6 +1,5 @@
 use evento::{Executor, metadata::Metadata};
-
-use crate::{Activated, State};
+use imkitchen_shared::user::{Activated, State};
 
 impl<'a, E: Executor + Clone> super::Command<'a, E> {
     pub async fn activate(&self, request_by: impl Into<String>) -> imkitchen_shared::Result<()> {

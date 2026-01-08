@@ -88,7 +88,7 @@ pub async fn page(
             imkitchen_mealplan::first_week_recipes(
                 &app.read_db,
                 &user.id,
-                imkitchen_recipe::RecipeType::MainCourse
+                imkitchen_shared::recipe::RecipeType::MainCourse
             ),
             template
         )

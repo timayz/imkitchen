@@ -1,10 +1,8 @@
 use evento::{Executor, Projection, Snapshot, metadata::Event};
+use imkitchen_shared::user::{Activated, MadeAdmin, Registered, Role, State, Suspended, User};
 use sqlx::SqlitePool;
 
-use crate::{
-    Activated, MadeAdmin, Registered, Role, State, Suspended, User,
-    repository::{self},
-};
+use crate::repository::{self};
 
 mod activate;
 mod login;

@@ -2,9 +2,8 @@ use evento::{
     Executor, Projection, Snapshot,
     metadata::{Event, Metadata},
 };
+use imkitchen_shared::shopping::{Checked, Generated, Resetted, Shopping, Unchecked};
 use std::collections::{HashMap, HashSet};
-
-use crate::{Checked, Generated, Resetted, Shopping, Unchecked};
 
 #[evento::command]
 pub struct Command {

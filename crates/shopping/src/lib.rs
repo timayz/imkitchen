@@ -1,15 +1,8 @@
-mod aggregator;
 
-pub use aggregator::*;
+mod command;
+mod query;
+mod subscription;
 
-cfg_if::cfg_if! {
-    if #[cfg(feature = "full")] {
-        mod command;
-        mod query;
-        mod subscription;
-
-        pub use command::*;
-        pub use query::*;
-        pub use subscription::*;
-    }
-}
+pub use command::*;
+pub use query::*;
+pub use subscription::*;

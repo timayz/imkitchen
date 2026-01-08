@@ -1,4 +1,5 @@
-use imkitchen_user::{Role, State, load};
+use imkitchen_shared::user::{Role, State};
+use imkitchen_user::load;
 use temp_dir::TempDir;
 
 mod helpers;

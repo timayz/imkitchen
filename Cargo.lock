@@ -1194,7 +1194,7 @@ dependencies = [
 [[package]]
 name = "evento"
 version = "2.0.0-alpha.9"
-source = "git+https://github.com/timayz/evento.git?rev=7ce424c#7ce424ccbb65b1a3c0625190c93c0a90c148e66c"
+source = "git+https://github.com/timayz/evento.git?rev=fde0873#fde087326d0a70036f7176305ff46e819d008824"
 dependencies = [
  "evento-core",
  "evento-sql",
@@ -1205,7 +1205,7 @@ dependencies = [
 [[package]]
 name = "evento-core"
 version = "2.0.0-alpha.9"
-source = "git+https://github.com/timayz/evento.git?rev=7ce424c#7ce424ccbb65b1a3c0625190c93c0a90c148e66c"
+source = "git+https://github.com/timayz/evento.git?rev=fde0873#fde087326d0a70036f7176305ff46e819d008824"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1224,7 +1224,7 @@ dependencies = [
 [[package]]
 name = "evento-macro"
 version = "2.0.0-alpha.9"
-source = "git+https://github.com/timayz/evento.git?rev=7ce424c#7ce424ccbb65b1a3c0625190c93c0a90c148e66c"
+source = "git+https://github.com/timayz/evento.git?rev=fde0873#fde087326d0a70036f7176305ff46e819d008824"
 dependencies = [
  "convert_case 0.10.0",
  "quote",
@@ -1234,7 +1234,7 @@ dependencies = [
 [[package]]
 name = "evento-sql"
 version = "2.0.0-alpha.9"
-source = "git+https://github.com/timayz/evento.git?rev=7ce424c#7ce424ccbb65b1a3c0625190c93c0a90c148e66c"
+source = "git+https://github.com/timayz/evento.git?rev=fde0873#fde087326d0a70036f7176305ff46e819d008824"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1249,7 +1249,7 @@ dependencies = [
 [[package]]
 name = "evento-sql-migrator"
 version = "2.0.0-alpha.9"
-source = "git+https://github.com/timayz/evento.git?rev=7ce424c#7ce424ccbb65b1a3c0625190c93c0a90c148e66c"
+source = "git+https://github.com/timayz/evento.git?rev=fde0873#fde087326d0a70036f7176305ff46e819d008824"
 dependencies = [
  "async-trait",
  "evento-sql",
@@ -1946,7 +1946,6 @@ dependencies = [
  "imkitchen-db",
  "imkitchen-recipe",
  "imkitchen-shared",
- "imkitchen-user",
  "rand 0.9.2",
  "sea-query",
  "sea-query-sqlx",
@@ -1967,9 +1966,7 @@ dependencies = [
  "anyhow",
  "askama",
  "evento",
- "imkitchen-contact",
  "imkitchen-shared",
- "imkitchen-user",
  "lettre",
  "rust-i18n",
  "serde",
@@ -2008,7 +2005,9 @@ dependencies = [
  "argon2",
  "bitcode",
  "evento",
+ "serde",
  "sqlx",
+ "strum",
  "thiserror",
  "time",
  "ulid",
@@ -2025,10 +2024,7 @@ dependencies = [
  "evento",
  "futures",
  "imkitchen-db",
- "imkitchen-mealplan",
- "imkitchen-recipe",
  "imkitchen-shared",
- "imkitchen-user",
  "sea-query",
  "sea-query-sqlx",
  "sqlx",
@@ -2048,7 +2044,6 @@ dependencies = [
  "evento",
  "futures",
  "imkitchen-db",
- "imkitchen-recipe",
  "imkitchen-shared",
  "regex",
  "sea-query",

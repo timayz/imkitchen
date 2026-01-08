@@ -1,6 +1,5 @@
 use evento::{Executor, metadata::Metadata};
-
-use crate::{MadeAdmin, Role};
+use imkitchen_shared::user::{MadeAdmin, Role};
 
 impl<'a, E: Executor + Clone> super::Command<'a, E> {
     pub async fn made_admin(&self) -> imkitchen_shared::Result<()> {

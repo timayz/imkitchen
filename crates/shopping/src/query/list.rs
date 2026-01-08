@@ -1,11 +1,10 @@
-use crate::Generated;
 use evento::{
     Executor,
     metadata::Event,
     subscription::{Context, SubscriptionBuilder},
 };
 use imkitchen_db::table::ShoppingList;
-use imkitchen_recipe::Ingredient;
+use imkitchen_shared::{recipe::Ingredient, shopping::Generated};
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::{SqlitePool, prelude::FromRow};

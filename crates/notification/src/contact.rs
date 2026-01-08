@@ -3,7 +3,7 @@ use evento::{
     metadata::Event,
     subscription::{Context, SubscriptionBuilder},
 };
-use imkitchen_contact::FormSubmitted;
+use imkitchen_shared::contact::FormSubmitted;
 
 use crate::EmailService;
 

@@ -2,11 +2,7 @@ use evento::{
     Executor, Projection, Snapshot,
     metadata::{Event, Metadata},
 };
-use sqlx::{SqlitePool, prelude::FromRow};
-use ulid::Ulid;
-use validator::Validate;
-
-use crate::{
+use imkitchen_shared::recipe::{
     Deleted,
     rating::{
         CommentAdded, CommentLikeCheked, CommentLikeUnchecked, CommentUnlikeChecked,
@@ -14,6 +10,9 @@ use crate::{
         Viewed,
     },
 };
+use sqlx::{SqlitePool, prelude::FromRow};
+use ulid::Ulid;
+use validator::Validate;
 
 #[evento::command]
 #[derive(FromRow)]

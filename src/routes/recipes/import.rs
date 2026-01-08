@@ -4,7 +4,7 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
-use imkitchen_recipe::{CuisineType, Ingredient, Instruction, RecipeType};
+use imkitchen_shared::recipe::{CuisineType, Ingredient, Instruction, RecipeType};
 use serde::Deserialize;
 
 use crate::{

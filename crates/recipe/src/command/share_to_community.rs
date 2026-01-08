@@ -1,6 +1,6 @@
 use evento::{Executor, metadata::Metadata};
 
-use crate::SharedToCommunity;
+use imkitchen_shared::recipe::SharedToCommunity;
 
 impl<'a, E: Executor + Clone> super::Command<'a, E> {
     pub async fn share_to_community(

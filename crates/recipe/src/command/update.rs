@@ -2,7 +2,7 @@ use evento::{Executor, metadata::Metadata};
 use sha3::{Digest, Sha3_224};
 use validator::Validate;
 
-use crate::{
+use imkitchen_shared::recipe::{
     AdvancePrepChanged, BasicInformationChanged, CuisineType, CuisineTypeChanged,
     DietaryRestriction, DietaryRestrictionsChanged, Ingredient, IngredientsChanged, Instruction,
     InstructionsChanged, MainCourseOptionsChanged, RecipeType, RecipeTypeChanged,

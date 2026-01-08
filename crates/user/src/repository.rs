@@ -4,7 +4,7 @@ use sea_query_sqlx::SqlxBinder;
 use sqlx::{SqlitePool, prelude::FromRow};
 use time::OffsetDateTime;
 
-use crate::{Role, State};
+use imkitchen_shared::user::{Role, State};
 
 #[derive(FromRow)]
 pub struct UserRow {

@@ -1,7 +1,7 @@
 use evento::{Executor, Projection, Snapshot, metadata::Event};
 use sqlx::{SqlitePool, prelude::FromRow};
 
-use crate::{
+use imkitchen_shared::user::{
     Activated, LoggedIn, Logout, MadeAdmin, Role, State, Suspended, User, UsernameChanged,
     password::ResetCompleted,
     subscription::{LifePremiumToggled, Subscription},

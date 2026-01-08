@@ -4,7 +4,8 @@ use axum::{
     extract::{Form, State},
     response::IntoResponse,
 };
-use imkitchen_contact::{Subject, SubmitFormInput};
+use imkitchen_contact::SubmitFormInput;
+use imkitchen_shared::contact::Subject;
 use serde::Deserialize;
 use strum::VariantArray;
 

@@ -1,7 +1,7 @@
 use evento::{Executor, metadata::Metadata};
 use validator::Validate;
 
-use crate::{CuisineType, Imported, Ingredient, Instruction, RecipeType};
+use imkitchen_shared::recipe::{CuisineType, Imported, Ingredient, Instruction, RecipeType};
 
 #[derive(Validate, Clone)]
 pub struct ImportInput {

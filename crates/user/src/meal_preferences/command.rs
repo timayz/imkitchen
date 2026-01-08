@@ -2,10 +2,11 @@ use evento::{
     Executor, Projection, Snapshot,
     metadata::{Event, Metadata},
 };
-use imkitchen_recipe::DietaryRestriction;
+use imkitchen_shared::{
+    recipe::DietaryRestriction,
+    user::meal_preferences::{Changed, MealPreferences},
+};
 use validator::Validate;
-
-use super::{Changed, MealPreferences};
 
 #[evento::command]
 pub struct Command {

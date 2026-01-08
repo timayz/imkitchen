@@ -1,10 +1,11 @@
 use evento::{Executor, metadata::Metadata};
+use imkitchen_shared::user::UsernameChanged;
 use regex::Regex;
 use sqlx::SqlitePool;
 use std::sync::LazyLock;
 use validator::Validate;
 
-use crate::{UsernameChanged, command::repository};
+use crate::command::repository;
 
 static RE_ALPHA_NUM: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^[A-Za-z0-9_]+$").unwrap());
 

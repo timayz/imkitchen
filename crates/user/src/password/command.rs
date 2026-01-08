@@ -6,14 +6,12 @@ use evento::{
     Executor, Projection, Snapshot,
     metadata::{Event, Metadata},
 };
+use imkitchen_shared::user::password::{Password, ResetCompleted, ResetRequested};
 use sqlx::SqlitePool;
 use time::OffsetDateTime;
 use validator::Validate;
 
-use crate::{
-    password::{Password, ResetCompleted, ResetRequested},
-    repository::{self, FindType},
-};
+use crate::repository::{self, FindType};
 
 #[evento::command]
 pub struct Command {

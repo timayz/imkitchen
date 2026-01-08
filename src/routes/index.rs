@@ -1,9 +1,9 @@
 use axum::extract::State;
 use axum::response::IntoResponse;
 use axum_extra::extract::CookieJar;
-use imkitchen_mealplan::DaySlotRecipe;
 use imkitchen_mealplan::slot::SlotRow;
 use imkitchen_mealplan::week::WeekRow;
+use imkitchen_shared::mealplan::DaySlotRecipe;
 
 use crate::auth::{AuthToken, AuthUser};
 use crate::routes::AppState;

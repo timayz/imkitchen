@@ -2,10 +2,10 @@ use axum::{extract::State, response::IntoResponse};
 use axum_extra::extract::Query;
 use evento::cursor::{Args, ReadResult, Value};
 use imkitchen_recipe::{
-    CuisineType, DietaryRestriction, RecipeType, SortBy,
-    user::{RecipesQuery, UserViewList},
+    user::{RecipesQuery, SortBy, UserViewList},
     user_stat::UserStatView,
 };
+use imkitchen_shared::recipe::{CuisineType, DietaryRestriction, RecipeType};
 use serde::Deserialize;
 use std::str::FromStr;
 use strum::VariantArray;

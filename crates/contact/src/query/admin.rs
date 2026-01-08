@@ -13,7 +13,9 @@ use sqlx::SqlitePool;
 use sqlx::prelude::FromRow;
 use strum::{AsRefStr, Display, EnumString, VariantArray};
 
-use crate::{Contact, FormSubmitted, MarkedReadAndReply, Reopened, Resolved, Status, Subject};
+use imkitchen_shared::contact::{
+    Contact, FormSubmitted, MarkedReadAndReply, Reopened, Resolved, Status, Subject,
+};
 
 #[derive(Debug, Default, FromRow, Cursor)]
 pub struct AdminView {

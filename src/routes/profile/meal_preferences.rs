@@ -1,7 +1,7 @@
 use axum::extract::State;
 use axum::response::IntoResponse;
 use axum_extra::extract::Form;
-use imkitchen_recipe::DietaryRestriction;
+use imkitchen_shared::recipe::DietaryRestriction;
 use imkitchen_user::meal_preferences::UpdateInput;
 use serde::Deserialize;
 use strum::VariantArray;

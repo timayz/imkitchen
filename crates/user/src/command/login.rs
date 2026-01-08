@@ -1,10 +1,11 @@
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use evento::{Executor, metadata::Metadata};
+use imkitchen_shared::user::{LoggedIn, Logout, State};
 use sqlx::SqlitePool;
 use ulid::Ulid;
 use validator::Validate;
 
-use crate::{LoggedIn, Logout, State, command::repository};
+use crate::command::repository;
 
 #[derive(Validate)]
 pub struct LoginInput {

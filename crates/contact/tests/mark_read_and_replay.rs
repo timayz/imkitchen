@@ -1,4 +1,4 @@
-use imkitchen_contact::Status;
+use imkitchen_shared::contact::Status;
 use temp_dir::TempDir;
 
 mod helpers;

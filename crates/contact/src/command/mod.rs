@@ -1,7 +1,9 @@
 use evento::{Executor, Projection, Snapshot, metadata::Event};
 use sqlx::SqlitePool;
 
-use crate::{Contact, FormSubmitted, MarkedReadAndReply, Reopened, Resolved, Status};
+use imkitchen_shared::contact::{
+    Contact, FormSubmitted, MarkedReadAndReply, Reopened, Resolved, Status,
+};
 
 mod mark_read_and_replay;
 mod reopen;

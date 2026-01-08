@@ -1,6 +1,5 @@
 use evento::{Executor, metadata::Metadata};
-
-use crate::Deleted;
+use imkitchen_shared::recipe::Deleted;
 
 impl<'a, E: Executor + Clone> super::Command<'a, E> {
     pub async fn delete(&self, request_by: impl Into<String>) -> imkitchen_shared::Result<()> {

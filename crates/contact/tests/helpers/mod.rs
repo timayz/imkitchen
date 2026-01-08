@@ -4,7 +4,8 @@ use evento::{
     Sqlite,
     migrator::{Migrate, Plan},
 };
-use imkitchen_contact::{Subject, SubmitFormInput};
+use imkitchen_contact::SubmitFormInput;
+use imkitchen_shared::contact::Subject;
 use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
 
 pub struct TestState {

@@ -1,7 +1,6 @@
 use evento::{Executor, metadata::Metadata};
+use imkitchen_shared::contact::{FormSubmitted, Subject};
 use validator::Validate;
-
-use crate::{FormSubmitted, Subject};
 
 #[derive(Validate)]
 pub struct SubmitFormInput {

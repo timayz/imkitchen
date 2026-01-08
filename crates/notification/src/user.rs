@@ -3,7 +3,7 @@ use evento::{
     metadata::Event,
     subscription::{Context, SubscriptionBuilder},
 };
-use imkitchen_user::password::ResetRequested;
+use imkitchen_shared::user::password::ResetRequested;
 use time::OffsetDateTime;
 
 use crate::{

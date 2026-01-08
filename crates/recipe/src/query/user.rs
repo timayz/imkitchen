@@ -1,10 +1,3 @@
-use crate::{
-    AdvancePrepChanged, BasicInformationChanged, Created, CuisineType, CuisineTypeChanged, Deleted,
-    DietaryRestriction, DietaryRestrictionsChanged, Imported, Ingredient, IngredientsChanged,
-    Instruction, InstructionsChanged, MadePrivate, MainCourseOptionsChanged, Recipe, RecipeType,
-    RecipeTypeChanged, SharedToCommunity, SortBy,
-    rating::{LikeChecked, LikeUnchecked, UnlikeChecked, UnlikeUnchecked, Viewed},
-};
 use evento::{
     Cursor, Executor, Projection, Snapshot,
     cursor::{Args, ReadResult},
@@ -12,9 +5,24 @@ use evento::{
     sql::Reader,
 };
 use imkitchen_db::table::RecipeUser;
+use imkitchen_shared::recipe::{
+    AdvancePrepChanged, BasicInformationChanged, Created, CuisineType, CuisineTypeChanged, Deleted,
+    DietaryRestriction, DietaryRestrictionsChanged, Imported, Ingredient, IngredientsChanged,
+    Instruction, InstructionsChanged, MadePrivate, MainCourseOptionsChanged, Recipe, RecipeType,
+    RecipeTypeChanged, SharedToCommunity,
+    rating::{LikeChecked, LikeUnchecked, UnlikeChecked, UnlikeUnchecked, Viewed},
+};
 use sea_query::{Expr, ExprTrait, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
+use serde::Deserialize;
 use sqlx::{SqlitePool, prelude::FromRow};
+use strum::{Display, EnumString};
+
+#[derive(Default, Debug, Deserialize, EnumString, Display, Clone)]
+pub enum SortBy {
+    #[default]
+    RecentlyAdded,
+}
 
 #[derive(Default, FromRow)]
 pub struct UserView {

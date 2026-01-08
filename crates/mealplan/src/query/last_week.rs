@@ -1,6 +1,6 @@
 use evento::{Executor, Projection, Snapshot, metadata::Event};
 
-use crate::{MealPlan, WeekGenerated};
+use imkitchen_shared::mealplan::{MealPlan, WeekGenerated};
 
 // pub async fn find_last_week(
 //     &self,

@@ -4,12 +4,11 @@ use evento::{
     subscription::{Context, SubscriptionBuilder},
 };
 use imkitchen_db::table::ContactGlobalStat;
+use imkitchen_shared::contact::{FormSubmitted, MarkedReadAndReply, Resolved};
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::{SqlitePool, prelude::FromRow};
 use time::UtcDateTime;
-
-use crate::{FormSubmitted, MarkedReadAndReply, Resolved};
 
 static GLOBAL_TIMESTAMP: u64 = 949115824;
 

@@ -1,4 +1,4 @@
-use imkitchen_recipe::Ingredient;
+use crate::recipe::Ingredient;
 
 #[evento::aggregator]
 pub enum Shopping {

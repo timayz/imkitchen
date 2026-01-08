@@ -1,6 +1,6 @@
 use evento::{Executor, metadata::Metadata};
 
-use crate::{MarkedReadAndReply, Status};
+use imkitchen_shared::contact::{MarkedReadAndReply, Status};
 
 impl<'a, E: Executor + Clone> super::Command<'a, E> {
     pub async fn mark_read_and_reply(

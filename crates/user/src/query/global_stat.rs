@@ -11,7 +11,7 @@ use sea_query_sqlx::SqlxBinder;
 use sqlx::{SqlitePool, prelude::FromRow};
 use time::UtcDateTime;
 
-use crate::{Activated, Registered, Suspended, subscription::LifePremiumToggled};
+use imkitchen_shared::user::{Activated, Registered, Suspended, subscription::LifePremiumToggled};
 
 static GLOBAL_TIMESTAMP: u64 = 949115824;
 

@@ -3,7 +3,8 @@ use axum::{
     response::{IntoResponse, Redirect},
 };
 
-use imkitchen_recipe::{IngredientUnitFormat, RecipeType, user::UserView};
+use imkitchen_recipe::user::UserView;
+use imkitchen_shared::recipe::{IngredientUnitFormat, RecipeType};
 
 use crate::{
     auth::AuthUser,

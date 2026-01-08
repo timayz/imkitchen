@@ -1,4 +1,4 @@
-use imkitchen_recipe::DietaryRestriction;
+use imkitchen_shared::recipe::DietaryRestriction;
 use imkitchen_user::meal_preferences::{UpdateInput, load};
 use temp_dir::TempDir;
 

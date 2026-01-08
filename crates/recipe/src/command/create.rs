@@ -1,6 +1,6 @@
 use evento::{Executor, metadata::Metadata};
 
-use crate::Created;
+use imkitchen_shared::recipe::Created;
 
 impl<'a, E: Executor + Clone> super::Command<'a, E> {
     pub async fn create(
