@@ -3,7 +3,7 @@ use sqlx::SqlitePool;
 
 use crate::{
     Activated, MadeAdmin, Registered, Role, State, Suspended, User,
-    repository::{self, FindType},
+    repository::{self},
 };
 
 mod activate;

@@ -1,5 +1,5 @@
 use evento::{
-    Executor, Projection,
+    Executor,
     metadata::{Event, Metadata},
     subscription::{Context, SubscriptionBuilder},
 };
@@ -41,6 +41,7 @@ pub struct Generate {
     pub user_id: String,
     pub weeks: Vec<(u64, u64)>,
     pub randomize: Option<Randomize>,
+    pub household_size: u16,
 }
 
 impl<'a, E: Executor> Command<'a, E> {
@@ -151,7 +152,12 @@ impl<'a, E: Executor> Command<'a, E> {
                 break;
             }
 
-            builder.event(&WeekGenerated { slots, start, end });
+            builder.event(&WeekGenerated {
+                slots,
+                start,
+                end,
+                household_size: input.household_size,
+            });
         }
 
         builder.commit(executor).await?;
@@ -236,7 +242,7 @@ async fn random(
     Ok(recipes)
 }
 
-async fn first_week_recipes(
+pub async fn first_week_recipes(
     pool: &sqlx::SqlitePool,
     id: impl Into<String>,
     recipe_type: RecipeType,
@@ -283,6 +289,7 @@ pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
         .handler(handle_recipe_basic_information_changed())
         .handler(handle_recipe_dietary_restrictions_changed())
         .handler(handle_recipe_main_course_changed())
+        .handler(handle_recipe_advance_prep_changed())
 }
 
 #[evento::sub_handler]
@@ -330,6 +337,9 @@ async fn handle_recipe_imported<E: Executor>(
             MealPlanRecipe::RecipeType,
             MealPlanRecipe::Name,
             MealPlanRecipe::DietaryRestrictions,
+            MealPlanRecipe::AdvancePrep,
+            MealPlanRecipe::CookTime,
+            MealPlanRecipe::PrepTime,
         ])
         .values_panic([
             event.aggregator_id.to_owned().into(),
@@ -337,6 +347,9 @@ async fn handle_recipe_imported<E: Executor>(
             event.data.recipe_type.to_string().into(),
             event.data.name.into(),
             serde_json::Value::Array(vec![]).into(),
+            event.data.advance_prep.into(),
+            event.data.cook_time.into(),
+            event.data.prep_time.into(),
         ])
         .to_owned();
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
@@ -385,13 +398,16 @@ async fn handle_recipe_basic_information_changed<E: Executor>(
     event: Event<imkitchen_recipe::BasicInformationChanged>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    update_col(
-        &pool,
-        &event.aggregator_id,
-        MealPlanRecipe::Name,
-        &event.data.name,
-    )
-    .await?;
+    let statement = Query::update()
+        .table(MealPlanRecipe::Table)
+        .value(MealPlanRecipe::Name, &event.data.name)
+        .value(MealPlanRecipe::PrepTime, event.data.prep_time)
+        .value(MealPlanRecipe::CookTime, event.data.cook_time)
+        .and_where(Expr::col(MealPlanRecipe::Id).eq(&event.aggregator_id))
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
 }
@@ -431,6 +447,23 @@ async fn handle_recipe_main_course_changed<E: Executor>(
         &event.aggregator_id,
         MealPlanRecipe::AcceptsAccompaniment,
         event.data.accepts_accompaniment,
+    )
+    .await?;
+
+    Ok(())
+}
+
+#[evento::sub_handler]
+async fn handle_recipe_advance_prep_changed<E: Executor>(
+    context: &Context<'_, E>,
+    event: Event<imkitchen_recipe::AdvancePrepChanged>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    update_col(
+        &pool,
+        &event.aggregator_id,
+        MealPlanRecipe::AdvancePrep,
+        &event.data.advance_prep,
     )
     .await?;
 

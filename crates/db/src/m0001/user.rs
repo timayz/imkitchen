@@ -49,8 +49,6 @@ fn create_table() -> TableCreateStatement {
                 .string_len(15),
         )
         .col(ColumnDef::new(User::CreatedAt).big_integer().not_null())
-        .col(ColumnDef::new(User::Version).integer().not_null())
-        .col(ColumnDef::new(User::RoutingKey).string().string_len(50))
         .to_owned()
 }
 

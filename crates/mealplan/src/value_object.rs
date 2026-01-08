@@ -1,5 +1,4 @@
 use bitcode::{Decode, Encode};
-use imkitchen_recipe::{Ingredient, Instruction};
 use serde::Deserialize;
 use strum::{AsRefStr, Display, EnumString, VariantArray};
 
@@ -24,8 +23,6 @@ pub struct DaySlotRecipe {
     pub name: String,
     pub prep_time: u16,
     pub cook_time: u16,
-    pub ingredients: Vec<Ingredient>,
-    pub instructions: Vec<Instruction>,
     pub advance_prep: String,
 }
 

@@ -6,5 +6,6 @@ pub enum MealPlan {
         start: u64,
         end: u64,
         slots: Vec<Slot>,
+        household_size: u16,
     },
 }

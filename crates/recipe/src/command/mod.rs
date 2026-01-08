@@ -1,7 +1,4 @@
 use evento::{Executor, Projection, Snapshot, metadata::Event};
-use imkitchen_db::table::RecipeCommand;
-use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
-use sea_query_sqlx::SqlxBinder;
 use sha3::{Digest, Sha3_224};
 use sqlx::{SqlitePool, prelude::FromRow};
 
@@ -183,7 +180,6 @@ async fn handle_basic_information_changed(
     event: Event<BasicInformationChanged>,
     data: &mut CommandData,
 ) -> anyhow::Result<()> {
-    let id = event.aggregator_id.to_owned();
     let mut hasher = Sha3_224::default();
     hasher.update(event.data.name);
     hasher.update(event.data.description);
@@ -201,7 +197,6 @@ async fn handle_instructions_changed(
     event: Event<InstructionsChanged>,
     data: &mut CommandData,
 ) -> anyhow::Result<()> {
-    let id = event.aggregator_id.to_owned();
     let mut hasher = Sha3_224::default();
 
     for instruction in event.data.instructions {
@@ -309,27 +304,27 @@ async fn handle_made_private(
 }
 
 #[evento::handler]
-async fn handle_deleted(event: Event<Deleted>, data: &mut CommandData) -> anyhow::Result<()> {
+async fn handle_deleted(_event: Event<Deleted>, data: &mut CommandData) -> anyhow::Result<()> {
     data.is_deleted = true;
 
     Ok(())
 }
 
-async fn update(
-    pool: &SqlitePool,
-    id: impl Into<Expr>,
-    col: RecipeCommand,
-    value: impl Into<Expr>,
-) -> anyhow::Result<()> {
-    let statement = Query::update()
-        .table(RecipeCommand::Table)
-        .value(col, value)
-        .and_where(Expr::col(RecipeCommand::Id).eq(id))
-        .to_owned();
-
-    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-
-    sqlx::query_with(&sql, values).execute(pool).await?;
-
-    Ok(())
-}
+// async fn update(
+//     pool: &SqlitePool,
+//     id: impl Into<Expr>,
+//     col: RecipeCommand,
+//     value: impl Into<Expr>,
+// ) -> anyhow::Result<()> {
+//     let statement = Query::update()
+//         .table(RecipeCommand::Table)
+//         .value(col, value)
+//         .and_where(Expr::col(RecipeCommand::Id).eq(id))
+//         .to_owned();
+//
+//     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+//
+//     sqlx::query_with(&sql, values).execute(pool).await?;
+//
+//     Ok(())
+// }

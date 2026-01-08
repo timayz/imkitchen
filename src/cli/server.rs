@@ -100,20 +100,25 @@ pub async fn serve(
     //     .start(&executor)
     //     .await?;
     //
-    // let sub_mealplan_week = imkitchen_mealplan::subscribe_week()
-    //     .data(write_pool.clone())
-    //     .run(&evento_executor)
-    //     .await?;
-    //
-    // let sub_mealplan_slot = imkitchen_mealplan::subscribe_slot()
-    //     .data(write_pool.clone())
-    //     .run(&evento_executor)
-    //     .await?;
-    //
-    // let sub_shopping_list = imkitchen_shopping::subscribe_list()
-    //     .data(write_pool.clone())
-    //     .run(&evento_executor)
-    //     .await?;
+    let sub_mealplan_week = imkitchen_mealplan::week::subscription()
+        .data(write_pool.clone())
+        .start(&executor)
+        .await?;
+
+    let sub_mealplan_slot = imkitchen_mealplan::slot::subscription()
+        .data(write_pool.clone())
+        .start(&executor)
+        .await?;
+
+    let sub_shopping = imkitchen_shopping::subscription()
+        .data(write_pool.clone())
+        .start(&executor)
+        .await?;
+
+    let sub_shopping_list = imkitchen_shopping::list::subscription()
+        .data(write_pool.clone())
+        .start(&executor)
+        .await?;
     //
     // let sub_shopping_command = imkitchen_shopping::subscribe_command()
     //     .data(write_pool.clone())
@@ -203,9 +208,10 @@ pub async fn serve(
         sub_recipe_user_stat.shutdown(),
         // sub_rating_command.shutdown(),
         // sub_mealplan_command.shutdown(),
-        //     sub_mealplan_week.shutdown_and_wait(),
-        //     sub_mealplan_slot.shutdown_and_wait(),
-        //     sub_shopping_list.shutdown_and_wait(),
+        sub_mealplan_week.shutdown(),
+        sub_mealplan_slot.shutdown(),
+        sub_shopping.shutdown(),
+        sub_shopping_list.shutdown(),
         //     sub_shopping_command.shutdown_and_wait(),
     ])
     .await;

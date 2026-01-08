@@ -36,6 +36,25 @@ fn create_table() -> TableCreateStatement {
                 .string_len(30),
         )
         .col(
+            ColumnDef::new(MealPlanRecipe::PrepTime)
+                .integer()
+                .not_null()
+                .default(0),
+        )
+        .col(
+            ColumnDef::new(MealPlanRecipe::CookTime)
+                .integer()
+                .not_null()
+                .default(0),
+        )
+        .col(
+            ColumnDef::new(MealPlanRecipe::AdvancePrep)
+                .string()
+                .not_null()
+                .string_len(2000)
+                .default(""),
+        )
+        .col(
             ColumnDef::new(MealPlanRecipe::AcceptsAccompaniment)
                 .boolean()
                 .not_null()

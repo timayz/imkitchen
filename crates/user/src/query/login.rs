@@ -1,7 +1,4 @@
 use evento::{Executor, Projection, Snapshot, metadata::Event};
-use imkitchen_db::table::UserLogin;
-use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
-use sea_query_sqlx::SqlxBinder;
 use sqlx::{SqlitePool, prelude::FromRow};
 
 use crate::{
@@ -187,40 +184,40 @@ async fn handle_life_premium_toggled(
     Ok(())
 }
 
-async fn update(
-    pool: &SqlitePool,
-    id: impl Into<String>,
-    col: UserLogin,
-    value: impl Into<Expr>,
-) -> anyhow::Result<()> {
-    let statement = Query::update()
-        .table(UserLogin::Table)
-        .and_where(Expr::col(UserLogin::UserId).eq(id.into()))
-        .value(col, value)
-        .to_owned();
-
-    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    sqlx::query_with(&sql, values).execute(pool).await?;
-
-    Ok(())
-}
-
-async fn delete(
-    pool: &SqlitePool,
-    user_id: impl Into<String>,
-    id: impl Into<Option<String>>,
-) -> anyhow::Result<()> {
-    let mut statement = Query::delete()
-        .from_table(UserLogin::Table)
-        .and_where(Expr::col(UserLogin::UserId).eq(user_id.into()))
-        .to_owned();
-
-    if let Some(id) = id.into() {
-        statement.and_where(Expr::col(UserLogin::Id).eq(id));
-    }
-
-    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    sqlx::query_with(&sql, values).execute(pool).await?;
-
-    Ok(())
-}
+// async fn update(
+//     pool: &SqlitePool,
+//     id: impl Into<String>,
+//     col: UserLogin,
+//     value: impl Into<Expr>,
+// ) -> anyhow::Result<()> {
+//     let statement = Query::update()
+//         .table(UserLogin::Table)
+//         .and_where(Expr::col(UserLogin::UserId).eq(id.into()))
+//         .value(col, value)
+//         .to_owned();
+//
+//     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+//     sqlx::query_with(&sql, values).execute(pool).await?;
+//
+//     Ok(())
+// }
+//
+// async fn delete(
+//     pool: &SqlitePool,
+//     user_id: impl Into<String>,
+//     id: impl Into<Option<String>>,
+// ) -> anyhow::Result<()> {
+//     let mut statement = Query::delete()
+//         .from_table(UserLogin::Table)
+//         .and_where(Expr::col(UserLogin::UserId).eq(user_id.into()))
+//         .to_owned();
+//
+//     if let Some(id) = id.into() {
+//         statement.and_where(Expr::col(UserLogin::Id).eq(id));
+//     }
+//
+//     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+//     sqlx::query_with(&sql, values).execute(pool).await?;
+//
+//     Ok(())
+// }

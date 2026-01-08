@@ -2,8 +2,10 @@ use axum::{
     extract::{Path, State},
     response::{IntoResponse, Redirect},
 };
-use imkitchen_mealplan::{Status, WeekListRow, WeekRow};
-use imkitchen_shared::Metadata;
+use imkitchen_mealplan::{
+    Generate, Randomize,
+    week::{WeekListRow, WeekRow},
+};
 
 use crate::{
     auth::AuthUser,
@@ -58,8 +60,7 @@ pub async fn page(
 ) -> impl IntoResponse {
     let week_from_now = imkitchen_mealplan::current_and_next_four_weeks_from_now()[0];
     let weeks = crate::try_page_response!(
-        app.mealplan_query
-            .filter_last_from(week_from_now.start, &user.id),
+        imkitchen_mealplan::week::filter_last_from(&app.read_db, week_from_now.start, &user.id),
         template
     );
 
@@ -69,8 +70,7 @@ pub async fn page(
 
     let current = match weeks.get((index - 1) as usize) {
         Some(week) => crate::try_page_response!(
-            app.mealplan_query
-                .find_from_unix_timestamp(week.start, &user.id),
+            imkitchen_mealplan::week::find_from_unix_timestamp(&app.read_db, week.start, &user.id),
             template
         ),
         _ => None,
@@ -84,11 +84,15 @@ pub async fn page(
         .unwrap_or(weeks.is_empty());
 
     let generation_needed = if is_empty_state {
-        crate::try_page_response!(
-            app.mealplan_command
-                .has(&user.id, imkitchen_recipe::RecipeType::MainCourse),
+        !crate::try_page_response!(
+            imkitchen_mealplan::first_week_recipes(
+                &app.read_db,
+                &user.id,
+                imkitchen_recipe::RecipeType::MainCourse
+            ),
             template
         )
+        .is_empty()
     } else {
         false
     };
@@ -113,23 +117,40 @@ pub async fn regenerate_action(
     State(app): State<AppState>,
     user: AuthUser,
 ) -> impl IntoResponse {
-    let status =
-        crate::try_response!(anyhow: app.mealplan_command.load_optional(&user.id), template)
-            .map(|r| r.item.status)
-            .unwrap_or(Status::Idle);
+    let preferences = crate::try_response!(anyhow:
+        imkitchen_user::meal_preferences::load(&app.executor, &user.id),
+        template
+    );
+    let weeks = imkitchen_mealplan::next_four_mondays_from_now()
+        .iter()
+        .map(|w| {
+            (
+                w.start.unix_timestamp() as u64,
+                w.end.unix_timestamp() as u64,
+            )
+        })
+        .collect::<Vec<_>>();
 
-    if status == Status::Processing {
-        crate::try_response!(sync:
-            Err(imkitchen_shared::Error::User(
-                "Mealplan already generating".to_owned()
-            )),
-            template
-        );
-    }
+    let randomize = if user.is_premium() {
+        Some(Randomize {
+            cuisine_variety_weight: preferences.cuisine_variety_weight,
+            dietary_restrictions: preferences.dietary_restrictions.to_vec(),
+        })
+    } else {
+        None
+    };
 
     crate::try_response!(
-        app.mealplan_command
-            .generate(user.is_premium(), &Metadata::by(user.id.to_owned())),
+        imkitchen_mealplan::Command::generate(
+            &app.executor,
+            &app.read_db,
+            Generate {
+                weeks,
+                user_id: user.id.to_owned(),
+                randomize,
+                household_size: preferences.household_size,
+            }
+        ),
         template
     );
 
@@ -146,32 +167,10 @@ pub async fn regenerate_status(
     State(app): State<AppState>,
     user: AuthUser,
 ) -> impl IntoResponse {
-    let meal_plan = match crate::try_response!(anyhow: app.mealplan_command.load_optional(&user.id), template)
-    {
-        Some(loaded) => loaded,
-        _ => {
-            return template
-                .render(RegenerateButtonTemplate {
-                    status: TemplateStatus::Checking,
-                })
-                .into_response();
-        }
-    };
-
-    if meal_plan.item.status == Status::Failed {
-        crate::try_response!(sync:
-            Err(imkitchen_shared::Error::User(
-                meal_plan.item.reason.unwrap_or_default()
-            )),
-            template,
-            Some(RegenerateButtonTemplate {status: TemplateStatus::Idle})
-        );
-    }
-
     let week_from_now = imkitchen_mealplan::next_four_mondays_from_now()[0];
 
-    let week = match crate::try_response!(anyhow:
-        app.mealplan_query.find(week_from_now.start, &user.id),
+    match crate::try_response!(anyhow:
+        imkitchen_mealplan::week::find(&app.read_db,week_from_now.start, &user.id),
         template,
         Some(RegenerateButtonTemplate {
             status: TemplateStatus::Idle
@@ -186,14 +185,6 @@ pub async fn regenerate_status(
                 .into_response();
         }
     };
-
-    if week.status.0 == Status::Processing {
-        return template
-            .render(RegenerateButtonTemplate {
-                status: TemplateStatus::Checking,
-            })
-            .into_response();
-    }
 
     Redirect::to("/calendar/week-1").into_response()
 }

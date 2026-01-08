@@ -10,8 +10,6 @@ pub enum User {
     Role,
     State,
     CreatedAt,
-    Version,
-    RoutingKey,
 }
 
 #[derive(Iden, Clone)]
@@ -148,6 +146,9 @@ pub enum MealPlanRecipe {
     UserId,
     RecipeType,
     Name,
+    AdvancePrep,
+    PrepTime,
+    CookTime,
     AcceptsAccompaniment,
     DietaryRestrictions,
 }
@@ -158,7 +159,6 @@ pub enum MealPlanWeek {
     UserId,
     Start,
     End,
-    Status,
     Slots,
 }
 
@@ -178,6 +178,15 @@ pub enum MealPlanSlot {
     MainCourse,
     Accompaniment,
     Dessert,
+}
+
+#[derive(Iden, Clone)]
+pub enum ShoppingRecipe {
+    Table,
+    Id,
+    UserId,
+    HouseholdSize,
+    Ingredients,
 }
 
 #[derive(Iden, Clone)]

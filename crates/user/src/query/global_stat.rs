@@ -1,5 +1,5 @@
 use evento::{
-    Cursor, Executor, Projection, Snapshot,
+    Cursor, Executor, Snapshot,
     cursor::{Args, ReadResult},
     metadata::Event,
     sql::Reader,

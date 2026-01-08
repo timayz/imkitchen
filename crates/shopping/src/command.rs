@@ -1,26 +1,16 @@
-use evento::{AggregatorName, Executor, LoadResult, SubscribeBuilder};
-use imkitchen_db::table::MealPlanRecipe;
-use imkitchen_mealplan::{GenerateRequested, GenerationFailed, MealPlan, WeekGenerated};
-use imkitchen_recipe::Ingredient;
-use imkitchen_shared::{Event, Metadata};
-use imkitchen_user::meal_preferences::UserMealPreferences;
-use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
-use sea_query_sqlx::SqlxBinder;
-use sqlx::SqlitePool;
-use std::collections::HashMap;
+use evento::{
+    Executor, Projection, Snapshot,
+    metadata::{Event, Metadata},
+};
+use std::collections::{HashMap, HashSet};
 
 use crate::{Checked, Generated, Resetted, Shopping, Unchecked};
 
-#[derive(Clone)]
-pub struct Command<E: Executor + Clone>(pub E, pub SqlitePool);
-
-impl<E: Executor + Clone> Command<E> {
-    pub async fn load(
-        &self,
-        id: impl Into<String>,
-    ) -> Result<Option<LoadResult<Shopping>>, evento::ReadError> {
-        evento::load_optional(&self.0, id).await
-    }
+#[evento::command]
+pub struct Command {
+    pub user_id: String,
+    pub checked: HashMap<u64, HashSet<String>>,
+    pub ingredients: HashMap<u64, HashSet<String>>,
 }
 
 pub struct ToggleInput {
@@ -28,18 +18,18 @@ pub struct ToggleInput {
     pub name: String,
 }
 
-impl<E: Executor + Clone> Command<E> {
+impl<'a, E: Executor> Command<'a, E> {
     pub async fn toggle(
         &self,
         input: ToggleInput,
-        metadata: &Metadata,
+        request_by: impl Into<String>,
     ) -> imkitchen_shared::Result<()> {
-        let user_id = metadata.trigger_by()?;
-        let Some(loaded) = self.load(&user_id).await? else {
-            imkitchen_shared::user!("ingredient not found");
-        };
+        let request_by = request_by.into();
+        if request_by != self.user_id {
+            imkitchen_shared::forbidden!("not owner");
+        }
 
-        let Some(ingredients) = loaded.item.ingredients.get(&input.week) else {
+        let Some(ingredients) = self.ingredients.get(&input.week) else {
             imkitchen_shared::user!("ingredient not found");
         };
 
@@ -47,30 +37,29 @@ impl<E: Executor + Clone> Command<E> {
             imkitchen_shared::user!("ingredient not found");
         }
 
-        let checked = loaded
-            .item
+        let checked = self
             .checked
             .get(&input.week)
             .and_then(|v| v.get(&input.name))
             .is_some();
 
         if checked {
-            evento::save_with(loaded)
-                .data(&Unchecked {
+            self.aggregator()
+                .event(&Unchecked {
                     week: input.week,
                     ingredient: input.name,
-                })?
-                .metadata(metadata)?
-                .commit(&self.0)
+                })
+                .metadata(&Metadata::new(request_by))
+                .commit(self.executor)
                 .await?;
         } else {
-            evento::save_with(loaded)
-                .data(&Checked {
+            self.aggregator()
+                .event(&Checked {
                     week: input.week,
                     ingredient: input.name,
-                })?
-                .metadata(metadata)?
-                .commit(&self.0)
+                })
+                .metadata(&Metadata::new(request_by))
+                .commit(self.executor)
                 .await?;
         }
 
@@ -78,101 +67,101 @@ impl<E: Executor + Clone> Command<E> {
     }
 }
 
-impl<E: Executor + Clone> Command<E> {
-    pub async fn reset(&self, week: u64, metadata: &Metadata) -> imkitchen_shared::Result<()> {
-        let user_id = metadata.trigger_by()?;
+impl<'a, E: Executor> Command<'a, E> {
+    pub async fn reset(
+        &self,
+        week: u64,
+        request_by: impl Into<String>,
+    ) -> imkitchen_shared::Result<()> {
+        let request_by = request_by.into();
+        if request_by != self.user_id {
+            imkitchen_shared::forbidden!("not owner");
+        }
 
-        evento::save::<Shopping>(&user_id)
-            .data(&Resetted { week })?
-            .metadata(metadata)?
-            .commit(&self.0)
+        self.aggregator()
+            .event(&Resetted { week })
+            .metadata(&Metadata::new(request_by))
+            .commit(self.executor)
             .await?;
 
         Ok(())
     }
 }
 
-pub fn subscribe_command<E: Executor + Clone>() -> SubscribeBuilder<E> {
-    evento::subscribe("shopping-command")
-        .handler(handle_week_generated())
-        .skip::<MealPlan, GenerateRequested>()
-        .skip::<MealPlan, GenerationFailed>()
+impl Snapshot for CommandData {}
+
+pub fn create_projection(id: impl Into<String>) -> Projection<CommandData> {
+    Projection::new::<Shopping>(id)
+        .handler(handle_checked())
+        .handler(handle_resetted())
+        .handler(handle_generated())
+        .handler(handle_unchecked())
+        .safety_check()
 }
 
-#[evento::handler(MealPlan)]
-async fn handle_week_generated<E: Executor>(
-    context: &evento::Context<'_, E>,
-    event: Event<WeekGenerated>,
-) -> anyhow::Result<()> {
-    let pool = context.extract::<sqlx::SqlitePool>();
+pub async fn load<'a, E: Executor>(
+    executor: &'a E,
+    id: impl Into<String>,
+) -> anyhow::Result<Option<Command<'a, E>>> {
+    let id = id.into();
+    let Some(data) = create_projection(&id).execute(executor).await? else {
+        return Ok(None);
+    };
 
-    let preferences =
-        evento::load_optional::<UserMealPreferences, _>(context.executor, &event.aggregator_id)
-            .await?
-            .unwrap_or_default();
+    Ok(Some(Command::new(
+        id,
+        data.get_cursor_version()?,
+        data,
+        executor,
+    )))
+}
 
-    let recipe_ids = event
-        .data
-        .slots
-        .iter()
-        .flat_map(|slot| {
-            let mut ids = vec![slot.main_course.id.to_owned()];
+#[evento::handler]
+async fn handle_generated(event: Event<Generated>, data: &mut CommandData) -> anyhow::Result<()> {
+    data.user_id = event.metadata.user()?;
 
-            if let Some(ref r) = slot.appetizer {
-                ids.push(r.id.to_owned());
-            }
+    let ingredients = event.data.ingredients.iter().map(|i| i.key()).collect();
 
-            if let Some(ref r) = slot.dessert {
-                ids.push(r.id.to_owned());
-            }
+    data.ingredients.insert(event.data.week, ingredients);
+    data.checked.remove(&event.data.week);
 
-            if let Some(ref r) = slot.accompaniment {
-                ids.push(r.id.to_owned());
-            }
-
-            ids
-        })
-        .collect::<Vec<_>>();
-
-    let statement = Query::select()
-        .columns([MealPlanRecipe::Ingredients, MealPlanRecipe::HouseholdSize])
-        .from(MealPlanRecipe::Table)
-        .and_where(Expr::col(MealPlanRecipe::UserId).eq(&event.aggregator_id))
-        .and_where(Expr::col(MealPlanRecipe::Id).is_in(recipe_ids))
-        .to_owned();
-
-    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    let recipe_ingredients =
-        sqlx::query_as_with::<_, (imkitchen_db::types::Bincode<Vec<Ingredient>>, u16), _>(
-            &sql, values,
-        )
-        .fetch_all(&pool)
-        .await?;
-
-    let mut ingredients = HashMap::new();
-    for (recipe_ingredients, household_size) in recipe_ingredients {
-        for ingredient in recipe_ingredients.0 {
-            let entry = ingredients.entry(ingredient.key()).or_insert(Ingredient {
-                name: ingredient.name,
-                quantity: 0,
-                unit: ingredient.unit,
-                category: ingredient.category,
-            });
-
-            entry.quantity += ((preferences.item.household_size as u32 * ingredient.quantity
-                / household_size as u32) as f64)
-                .ceil() as u32;
-        }
+    if data.ingredients.len() <= 5 {
+        return Ok(());
     }
 
-    evento::save::<Shopping>(&event.aggregator_id)
-        .data(&Generated {
-            week: event.data.start,
-            ingredients: ingredients.values().cloned().collect(),
-        })?
-        .metadata(&event.metadata)?
-        .commit(context.executor)
-        .await?;
+    let mut keys = data.ingredients.keys().cloned().collect::<Vec<_>>();
+    keys.sort();
+
+    if let Some(key) = keys.first() {
+        data.ingredients.remove(key);
+        data.checked.remove(key);
+    }
+
+    Ok(())
+}
+
+#[evento::handler]
+async fn handle_checked(event: Event<Checked>, data: &mut CommandData) -> anyhow::Result<()> {
+    let entry = data.checked.entry(event.data.week).or_default();
+    entry.insert(event.data.ingredient);
+
+    Ok(())
+}
+
+#[evento::handler]
+async fn handle_unchecked(event: Event<Unchecked>, data: &mut CommandData) -> anyhow::Result<()> {
+    let entry = data.checked.entry(event.data.week).or_default();
+    entry.remove(&event.data.ingredient);
+    if entry.is_empty() {
+        data.checked.remove(&event.data.week);
+    }
+
+    Ok(())
+}
+
+#[evento::handler]
+async fn handle_resetted(event: Event<Resetted>, data: &mut CommandData) -> anyhow::Result<()> {
+    data.checked.remove(&event.data.week);
 
     Ok(())
 }

@@ -50,7 +50,7 @@ impl<'a, E: Executor + Clone> super::Command<'a, E> {
             .commit(executor)
             .await?;
 
-        repository::create(write_db, id.to_owned(), input.email, password_hash, 1, None).await?;
+        repository::create(write_db, id.to_owned(), input.email, password_hash).await?;
 
         Ok(id)
     }

@@ -10,12 +10,12 @@ use crate::template::{NotFoundTemplate, Template};
 
 mod about;
 mod admin;
-// mod calendar;
+mod calendar;
 mod contact;
 mod health;
 mod help;
 mod index;
-// mod kitchen;
+mod kitchen;
 mod login;
 mod manifest;
 mod policy;
@@ -24,7 +24,7 @@ mod recipes;
 mod register;
 mod reset_password;
 mod service_worker;
-// mod shopping;
+mod shopping;
 mod terms;
 
 #[derive(Clone)]
@@ -46,7 +46,7 @@ pub fn router(app_state: AppState) -> Router {
         .route("/ready", get(health::ready))
         .with_state(app_state.read_db.clone())
         .route("/", get(index::page))
-        // .route("/kitchen/{day}", get(kitchen::page))
+        .route("/kitchen/{day}", get(kitchen::page))
         .route("/about", get(about::page))
         .route("/help", get(help::page))
         .route("/terms", get(terms::page))
@@ -65,23 +65,23 @@ pub fn router(app_state: AppState) -> Router {
             "/reset-password/new/{id}",
             get(reset_password::new_page).post(reset_password::new_action),
         )
-        // .route(
-        //     "/calendar/regenerate",
-        //     get(calendar::regenerate_modal).post(calendar::regenerate_action),
-        // )
-        // .route(
-        //     "/calendar/regenerate/status",
-        //     get(calendar::regenerate_status),
-        // )
-        // .route("/calendar/week-{index}", get(calendar::page))
-        // .route(
-        //     "/calendar/week-{index}/shopping",
-        //     get(shopping::page).post(shopping::reset_all_action),
-        // )
-        // .route(
-        //     "/calendar/week-{timestamp}/shopping/toggle",
-        //     post(shopping::toggle_action),
-        // )
+        .route(
+            "/calendar/regenerate",
+            get(calendar::regenerate_modal).post(calendar::regenerate_action),
+        )
+        .route(
+            "/calendar/regenerate/status",
+            get(calendar::regenerate_status),
+        )
+        .route("/calendar/week-{index}", get(calendar::page))
+        .route(
+            "/calendar/week-{index}/shopping",
+            get(shopping::page).post(shopping::reset_all_action),
+        )
+        .route(
+            "/calendar/week-{timestamp}/shopping/toggle",
+            post(shopping::toggle_action),
+        )
         .route("/recipes", get(recipes::index::page))
         .route("/recipes/community", get(recipes::community::page))
         .route("/recipes/create", post(recipes::index::create))

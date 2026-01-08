@@ -1,4 +1,4 @@
-use imkitchen_db::table::{User, UserLogin};
+use imkitchen_db::table::User;
 use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::{SqlitePool, prelude::FromRow};
@@ -13,8 +13,6 @@ pub struct UserRow {
     pub username: Option<String>,
     pub role: sqlx::types::Text<Role>,
     pub state: sqlx::types::Text<State>,
-    pub version: u16,
-    pub routing_key: Option<String>,
 }
 
 pub enum FindType {
@@ -33,8 +31,6 @@ pub(crate) async fn find(
             User::Username,
             User::Role,
             User::State,
-            User::Version,
-            User::RoutingKey,
         ])
         .from(User::Table)
         .limit(1)
@@ -57,8 +53,6 @@ pub(super) async fn create(
     id: String,
     email: String,
     password: String,
-    version: u16,
-    routing_key: Option<String>,
 ) -> imkitchen_shared::Result<()> {
     let now = OffsetDateTime::now_utc().unix_timestamp();
     let statement = Query::insert()
@@ -70,8 +64,6 @@ pub(super) async fn create(
             User::Role,
             User::State,
             User::CreatedAt,
-            User::Version,
-            User::RoutingKey,
         ])
         .values_panic([
             id.into(),
@@ -80,8 +72,6 @@ pub(super) async fn create(
             Role::User.to_string().into(),
             State::Active.to_string().into(),
             now.into(),
-            version.into(),
-            routing_key.into(),
         ])
         .to_owned();
 

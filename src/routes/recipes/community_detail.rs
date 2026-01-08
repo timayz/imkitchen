@@ -49,7 +49,7 @@ pub async fn page(
     Path((id,)): Path<(String,)>,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
-    let recipe = crate::try_page_response!(opt: imkitchen_recipe::user::load(&app.executor, &app.read_db, &id), template).item;
+    let recipe = crate::try_page_response!(opt: imkitchen_recipe::user::load(&app.executor, &app.read_db, &id), template);
 
     if recipe.owner_id != user.id && !recipe.is_shared {
         return template.render(NotFoundTemplate).into_response();

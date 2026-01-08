@@ -9,6 +9,7 @@ mod recipe_rating_command;
 mod recipe_user;
 mod recipe_user_stat;
 mod shopping_list;
+mod shopping_recipe;
 mod user;
 mod user_admin;
 mod user_global_stat;
@@ -55,6 +56,8 @@ sqlx_migrator::sqlite_migration!(
         mealplan_week::CreateTable,
         mealplan_last_week::CreateTable,
         mealplan_slot::CreateTable,
-        shopping_list::CreateTable
+        shopping_list::CreateTable,
+        shopping_recipe::CreateTable,
+        shopping_recipe::CreateIdx1
     ]
 );
