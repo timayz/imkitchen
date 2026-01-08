@@ -1974,6 +1974,7 @@ name = "imkitchen-recipe"
 version = "0.12.8"
 dependencies = [
  "anyhow",
+ "bitcode",
  "evento",
  "imkitchen-db",
  "imkitchen-shared",
@@ -2029,6 +2030,7 @@ version = "0.12.8"
 dependencies = [
  "anyhow",
  "argon2",
+ "bitcode",
  "evento",
  "futures",
  "imkitchen-db",
