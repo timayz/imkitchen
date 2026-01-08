@@ -2,13 +2,16 @@ use evento::{
     Executor, Projection, Snapshot,
     metadata::{Event, Metadata},
 };
-use imkitchen_shared::recipe::{
-    Deleted,
-    rating::{
-        CommentAdded, CommentLikeCheked, CommentLikeUnchecked, CommentUnlikeChecked,
-        CommentUnlikeUnchecked, LikeChecked, LikeUnchecked, Rating, UnlikeChecked, UnlikeUnchecked,
-        Viewed,
+use imkitchen_shared::{
+    recipe::{
+        Deleted,
+        rating::{
+            CommentAdded, CommentLikeCheked, CommentLikeUnchecked, CommentUnlikeChecked,
+            CommentUnlikeUnchecked, LikeChecked, LikeUnchecked, Rating, UnlikeChecked,
+            UnlikeUnchecked, Viewed,
+        },
     },
+    user::User,
 };
 use sqlx::{SqlitePool, prelude::FromRow};
 use ulid::Ulid;
@@ -185,7 +188,7 @@ pub fn create_projection(
     user_id: impl Into<String>,
 ) -> Projection<CommandData> {
     Projection::new::<Rating>(id)
-        .aggregator_raw("imkitchen-user/User", user_id)
+        .aggregator::<User>(user_id)
         .handler(handle_viewed())
         .handler(handle_like_checked())
         .handler(handle_like_unchecked())
