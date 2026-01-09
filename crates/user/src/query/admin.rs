@@ -1,6 +1,6 @@
 use evento::{
-    Cursor, Executor, Projection, ProjectionCursor, Snapshot,
-    cursor::{self, Args, ReadResult},
+    Cursor, Executor, Projection, Snapshot,
+    cursor::{Args, ReadResult},
     metadata::Event,
     sql::Reader,
 };
@@ -16,7 +16,7 @@ use imkitchen_shared::user::{
     subscription::{LifePremiumToggled, Subscription},
 };
 
-#[derive(Default, Clone, FromRow, Cursor, Debug)]
+#[evento::projection(FromRow, Cursor, Debug)]
 pub struct AdminView {
     #[cursor(by_recently_joined, UserAdmin::Id, 1)]
     #[cursor(by_most_active, UserAdmin::Id, 1)]
@@ -37,7 +37,6 @@ pub struct AdminView {
     pub subscription_expire_at: u64,
     #[cursor(by_recently_joined, UserAdmin::CreatedAt, 2)]
     pub created_at: u64,
-    pub cursor: String,
 }
 
 impl AdminView {
@@ -190,16 +189,6 @@ pub async fn load<'a, E: Executor>(
         .data(pool.clone())
         .execute(executor)
         .await
-}
-
-impl ProjectionCursor for AdminView {
-    fn set_cursor(&mut self, v: &cursor::Value) {
-        self.cursor = v.to_string();
-    }
-
-    fn get_cursor(&self) -> cursor::Value {
-        self.cursor.to_owned().into()
-    }
 }
 
 impl Snapshot for AdminView {}

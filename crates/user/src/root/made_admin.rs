@@ -1,4 +1,4 @@
-use evento::{Executor, ProjectionCursor, metadata::Metadata};
+use evento::{Executor, ProjectionAggregator, metadata::Metadata};
 use imkitchen_shared::user::{MadeAdmin, Role};
 
 impl<E: Executor> super::Command<E> {

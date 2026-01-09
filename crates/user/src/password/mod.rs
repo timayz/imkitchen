@@ -6,7 +6,7 @@ use std::ops::Deref;
 pub use request::*;
 pub use reset::*;
 
-use evento::{Executor, Projection, Snapshot, cursor, metadata::Event};
+use evento::{Executor, Projection, Snapshot, metadata::Event};
 use imkitchen_shared::user::password::{self, ResetCompleted, ResetRequested};
 use time::OffsetDateTime;
 
@@ -26,14 +26,12 @@ impl<E: Executor> Command<E> {
     }
 }
 
-#[derive(Default)]
-
+#[evento::projection]
 pub struct Password {
     pub id: String,
     pub user_id: String,
     pub completed: bool,
     pub expire_at: u64,
-    pub cursor: cursor::Value,
 }
 
 fn create_projection(id: impl Into<String>) -> Projection<Password> {
@@ -43,17 +41,9 @@ fn create_projection(id: impl Into<String>) -> Projection<Password> {
         .safety_check()
 }
 
-impl evento::ProjectionCursor for Password {
+impl evento::ProjectionAggregator for Password {
     fn aggregator_id(&self) -> String {
         self.id.to_owned()
-    }
-
-    fn set_cursor(&mut self, v: &cursor::Value) {
-        self.cursor = v.to_owned();
-    }
-
-    fn get_cursor(&self) -> cursor::Value {
-        self.cursor.to_owned()
     }
 }
 

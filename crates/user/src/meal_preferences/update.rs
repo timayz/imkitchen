@@ -1,4 +1,4 @@
-use evento::{Executor, ProjectionCursor, metadata::Metadata};
+use evento::{Executor, ProjectionAggregator, metadata::Metadata};
 use imkitchen_shared::{recipe::DietaryRestriction, user::meal_preferences::Changed};
 use validator::Validate;
 

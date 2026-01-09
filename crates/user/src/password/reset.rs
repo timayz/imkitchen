@@ -2,7 +2,7 @@ use argon2::{
     Argon2, PasswordHasher,
     password_hash::{SaltString, rand_core::OsRng},
 };
-use evento::{Executor, ProjectionCursor, metadata::Metadata};
+use evento::{Executor, ProjectionAggregator, metadata::Metadata};
 use imkitchen_shared::user::password::ResetCompleted;
 use time::OffsetDateTime;
 use validator::Validate;

@@ -1,4 +1,4 @@
-use evento::{Executor, ProjectionCursor, metadata::Metadata};
+use evento::{Executor, ProjectionAggregator, metadata::Metadata};
 use time::UtcDateTime;
 
 use imkitchen_shared::user::subscription::LifePremiumToggled;

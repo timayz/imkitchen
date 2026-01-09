@@ -1,5 +1,5 @@
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
-use evento::{Executor, ProjectionCursor, metadata::Metadata};
+use evento::{Executor, ProjectionAggregator, metadata::Metadata};
 use imkitchen_shared::user::{LoggedIn, Logout, State};
 use ulid::Ulid;
 use validator::Validate;

@@ -4,7 +4,7 @@ use std::ops::Deref;
 
 pub use update::*;
 
-use evento::{Executor, Projection, cursor, metadata::Event};
+use evento::{Executor, Projection, metadata::Event};
 use imkitchen_shared::{
     recipe::DietaryRestriction,
     user::meal_preferences::{self, Changed},
@@ -39,13 +39,12 @@ impl<E: Executor> Command<E> {
     }
 }
 
-#[derive(Default)]
+#[evento::projection]
 pub struct MealPreferences {
     pub id: String,
     pub household_size: u16,
     pub dietary_restrictions: Vec<DietaryRestriction>,
     pub cuisine_variety_weight: f32,
-    pub cursor: cursor::Value,
 }
 
 fn create_projection(id: impl Into<String>) -> Projection<MealPreferences> {
@@ -54,15 +53,7 @@ fn create_projection(id: impl Into<String>) -> Projection<MealPreferences> {
         .safety_check()
 }
 
-impl evento::ProjectionCursor for MealPreferences {
-    fn get_cursor(&self) -> evento::cursor::Value {
-        self.cursor.to_owned()
-    }
-
-    fn set_cursor(&mut self, v: &cursor::Value) {
-        self.cursor = v.to_owned();
-    }
-
+impl evento::ProjectionAggregator for MealPreferences {
     fn aggregator_id(&self) -> String {
         self.id.to_owned()
     }

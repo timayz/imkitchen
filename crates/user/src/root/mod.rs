@@ -1,10 +1,9 @@
-use std::ops::Deref;
-
-use evento::{Executor, Projection, ProjectionCursor, Snapshot, cursor, metadata::Event};
+use evento::{Executor, Projection, ProjectionAggregator, Snapshot, metadata::Event};
 use imkitchen_shared::user::{
     self, Activated, LoggedIn, Logout, MadeAdmin, Registered, Role, State, Suspended,
     UsernameChanged,
 };
+use std::ops::Deref;
 
 use crate::repository::{self};
 
@@ -51,12 +50,11 @@ impl<E: Executor> Command<E> {
     }
 }
 
-#[derive(Default)]
+#[evento::projection]
 pub struct User {
     pub id: String,
     pub role: Role,
     pub state: State,
-    pub cursor: cursor::Value,
 }
 
 pub fn create_projection(id: impl Into<String>) -> Projection<User> {
@@ -71,15 +69,7 @@ pub fn create_projection(id: impl Into<String>) -> Projection<User> {
         .safety_check()
 }
 
-impl ProjectionCursor for User {
-    fn set_cursor(&mut self, v: &cursor::Value) {
-        self.cursor = v.to_owned();
-    }
-
-    fn get_cursor(&self) -> cursor::Value {
-        self.cursor.to_owned()
-    }
-
+impl ProjectionAggregator for User {
     fn aggregator_id(&self) -> String {
         self.id.to_owned()
     }

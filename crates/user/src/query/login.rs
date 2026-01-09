@@ -1,4 +1,4 @@
-use evento::{Executor, Projection, ProjectionCursor, Snapshot, cursor, metadata::Event};
+use evento::{Executor, Projection, Snapshot, metadata::Event};
 use sqlx::{SqlitePool, prelude::FromRow};
 
 use imkitchen_shared::user::{
@@ -17,11 +17,10 @@ pub struct Login {
     pub subscription_expire_at: u64,
 }
 
-#[derive(Default, Clone, Debug)]
+#[evento::projection(Debug)]
 pub struct LoginView {
     pub id: String,
     pub logins: Vec<Login>,
-    pub cursor: cursor::Value,
 }
 
 impl Login {
@@ -68,15 +67,6 @@ pub async fn load<'a, E: Executor>(
         .data(pool.clone())
         .execute(executor)
         .await
-}
-
-impl ProjectionCursor for LoginView {
-    fn get_cursor(&self) -> cursor::Value {
-        self.cursor.to_owned()
-    }
-    fn set_cursor(&mut self, v: &cursor::Value) {
-        self.cursor = v.to_owned();
-    }
 }
 
 impl Snapshot for LoginView {}

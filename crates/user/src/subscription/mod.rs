@@ -1,6 +1,6 @@
 mod toogle_life_premium;
 
-use evento::{Executor, Projection, cursor, metadata::Event};
+use evento::{Executor, Projection, metadata::Event};
 use imkitchen_shared::user::subscription;
 use std::ops::Deref;
 
@@ -30,11 +30,10 @@ impl<E: Executor> Command<E> {
     }
 }
 
-#[derive(Default)]
+#[evento::projection]
 pub struct Subscription {
     pub id: String,
     pub expire_at: u64,
-    pub cursor: cursor::Value,
 }
 
 fn create_projection(id: impl Into<String>) -> Projection<Subscription> {
@@ -43,15 +42,7 @@ fn create_projection(id: impl Into<String>) -> Projection<Subscription> {
         .safety_check()
 }
 
-impl evento::ProjectionCursor for Subscription {
-    fn set_cursor(&mut self, v: &cursor::Value) {
-        self.cursor = v.to_owned();
-    }
-
-    fn get_cursor(&self) -> cursor::Value {
-        self.cursor.to_owned()
-    }
-
+impl evento::ProjectionAggregator for Subscription {
     fn aggregator_id(&self) -> String {
         self.id.to_owned()
     }
