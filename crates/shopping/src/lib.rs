@@ -1,7 +1,7 @@
-mod command;
 mod query;
+mod root;
 mod subscription;
 
-pub use command::*;
 pub use query::*;
+pub use root::*;
 pub use subscription::*;
