@@ -213,7 +213,7 @@ pub async fn load<'a, E: Executor>(
         .await?;
 
     let cmd = match result {
-        Some(data) => Command::new(id, data.get_cursor_version()?, data, executor),
+        Some(data) => Command::new(id, data.aggregator_version()?, data, executor),
         _ => Command::new(id, 0, Default::default(), executor),
     };
 

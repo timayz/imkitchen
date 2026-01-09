@@ -4,7 +4,6 @@ use argon2::{
 };
 use evento::{Executor, metadata::Metadata};
 use imkitchen_shared::user::Registered;
-use sqlx::SqlitePool;
 use validator::Validate;
 
 use crate::repository;
@@ -19,13 +18,8 @@ pub struct RegisterInput {
     pub timezone: String,
 }
 
-impl<'a, E: Executor + Clone> super::Command<'a, E> {
-    pub async fn register(
-        executor: &E,
-        read_db: &SqlitePool,
-        write_db: &SqlitePool,
-        input: RegisterInput,
-    ) -> imkitchen_shared::Result<String> {
+impl<E: Executor> super::Command<E> {
+    pub async fn register(&self, input: RegisterInput) -> imkitchen_shared::Result<String> {
         input.validate()?;
 
         let salt = SaltString::generate(&mut OsRng);
@@ -34,9 +28,12 @@ impl<'a, E: Executor + Clone> super::Command<'a, E> {
             .hash_password(input.password.as_bytes(), &salt)?
             .to_string();
 
-        if repository::find(read_db, repository::FindType::Email(input.email.to_owned()))
-            .await?
-            .is_some()
+        if repository::find(
+            &self.read_db,
+            repository::FindType::Email(input.email.to_owned()),
+        )
+        .await?
+        .is_some()
         {
             imkitchen_shared::user!("Email already exists");
         }
@@ -48,10 +45,10 @@ impl<'a, E: Executor + Clone> super::Command<'a, E> {
                 timezone: input.timezone,
             })
             .metadata(&Metadata::default())
-            .commit(executor)
+            .commit(&self.executor)
             .await?;
 
-        repository::create(write_db, id.to_owned(), input.email, password_hash).await?;
+        repository::create(&self.write_db, id.to_owned(), input.email, password_hash).await?;
 
         Ok(id)
     }

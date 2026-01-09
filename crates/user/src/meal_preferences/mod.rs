@@ -1,3 +1,81 @@
-mod command;
+mod update;
 
-pub use command::*;
+use std::ops::Deref;
+
+pub use update::*;
+
+use evento::{Executor, Projection, cursor, metadata::Event};
+use imkitchen_shared::{
+    recipe::DietaryRestriction,
+    user::meal_preferences::{self, Changed},
+};
+
+pub struct Command<E: Executor>(pub(crate) imkitchen_shared::State<E>);
+
+impl<E: Executor> Deref for Command<E> {
+    type Target = imkitchen_shared::State<E>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<E: Executor> Command<E> {
+    pub async fn load(&self, id: impl Into<String>) -> anyhow::Result<MealPreferences> {
+        let id = id.into();
+
+        create_projection(&id)
+            .execute(&self.executor)
+            .await
+            .map(|r| {
+                r.unwrap_or_else(|| MealPreferences {
+                    id,
+                    household_size: 4,
+                    dietary_restrictions: vec![],
+                    cuisine_variety_weight: 1.0,
+                    cursor: Default::default(),
+                })
+            })
+    }
+}
+
+#[derive(Default)]
+pub struct MealPreferences {
+    pub id: String,
+    pub household_size: u16,
+    pub dietary_restrictions: Vec<DietaryRestriction>,
+    pub cuisine_variety_weight: f32,
+    pub cursor: cursor::Value,
+}
+
+fn create_projection(id: impl Into<String>) -> Projection<MealPreferences> {
+    Projection::new::<meal_preferences::MealPreferences>(id)
+        .handler(handle_updated())
+        .safety_check()
+}
+
+impl evento::ProjectionCursor for MealPreferences {
+    fn get_cursor(&self) -> evento::cursor::Value {
+        self.cursor.to_owned()
+    }
+
+    fn set_cursor(&mut self, v: &cursor::Value) {
+        self.cursor = v.to_owned();
+    }
+
+    fn aggregator_id(&self) -> String {
+        self.id.to_owned()
+    }
+}
+
+impl evento::Snapshot for MealPreferences {}
+
+#[evento::handler]
+async fn handle_updated(event: Event<Changed>, data: &mut MealPreferences) -> anyhow::Result<()> {
+    data.id = event.aggregator_id.to_owned();
+    data.household_size = event.data.household_size;
+    data.dietary_restrictions = event.data.dietary_restrictions;
+    data.cuisine_variety_weight = event.data.cuisine_variety_weight;
+
+    Ok(())
+}

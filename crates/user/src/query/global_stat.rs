@@ -1,6 +1,6 @@
 use evento::{
-    Cursor, Executor, Snapshot,
-    cursor::{Args, ReadResult},
+    Cursor, Executor, ProjectionCursor, Snapshot,
+    cursor::{self, Args, ReadResult},
     metadata::Event,
     sql::Reader,
     subscription::{Context, SubscriptionBuilder},
@@ -24,6 +24,7 @@ pub struct GlobalStatView {
     pub suspended: u32,
     #[cursor(UserGlobalStat::CreatedAt, 2)]
     pub created_at: i64,
+    pub cursor: String,
 }
 
 impl GlobalStatView {
@@ -48,6 +49,15 @@ impl GlobalStatView {
     }
 }
 
+impl ProjectionCursor for GlobalStatView {
+    fn set_cursor(&mut self, v: &cursor::Value) {
+        self.cursor = v.to_string();
+    }
+
+    fn get_cursor(&self) -> cursor::Value {
+        self.cursor.to_owned().into()
+    }
+}
 impl Snapshot for GlobalStatView {}
 
 pub struct FilterQuery {

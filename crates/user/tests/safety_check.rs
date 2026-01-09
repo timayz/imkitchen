@@ -7,85 +7,51 @@ async fn test_safety_check() -> anyhow::Result<()> {
     let dir = TempDir::new()?;
     let path = dir.child("db.sqlite3");
     let state = helpers::setup_test_state(path).await?;
+    let cmd = imkitchen_user::Command::new(state.clone());
 
-    imkitchen_user::Command::register(
-        &state.evento,
-        &state.pool,
-        &state.pool,
-        imkitchen_user::RegisterInput {
-            email: "john@imkitchen.test".to_owned(),
-            password: "qwerty12345".to_owned(),
-            lang: "fr".to_owned(),
-            timezone: "Europe/Paris".to_owned(),
-        },
-    )
+    cmd.register(imkitchen_user::RegisterInput {
+        email: "john@imkitchen.test".to_owned(),
+        password: "qwerty12345".to_owned(),
+        lang: "fr".to_owned(),
+        timezone: "Europe/Paris".to_owned(),
+    })
     .await?;
 
-    let (id, access_id) = imkitchen_user::Command::login(
-        &state.evento,
-        &state.pool,
-        imkitchen_user::LoginInput {
+    let (id, access_id) = cmd
+        .login(imkitchen_user::LoginInput {
             email: "john@imkitchen.test".to_owned(),
             password: "qwerty12345".to_owned(),
             lang: "".to_owned(),
             timezone: "".to_owned(),
             user_agent: "".to_owned(),
-        },
-    )
-    .await?;
-
-    let user = imkitchen_user::load(&state.evento, &state.pool, &id)
-        .await?
-        .unwrap();
-
-    user.set_username(&state.pool, &state.pool, "john_smith".to_owned())
+        })
         .await?;
 
-    let user = imkitchen_user::load(&state.evento, &state.pool, &id)
-        .await?
-        .unwrap();
+    cmd.set_username(&id, "john_smith".to_owned()).await?;
+    cmd.made_admin(&id).await?;
+    cmd.suspend(&id, "").await?;
+    cmd.activate(&id, "").await?;
 
-    user.made_admin().await?;
-    let user = imkitchen_user::load(&state.evento, &state.pool, &id)
-        .await?
-        .unwrap();
-    user.suspend("").await?;
-    let user = imkitchen_user::load(&state.evento, &state.pool, &id)
-        .await?
-        .unwrap();
-    user.activate("").await?;
+    cmd.subscription.toggle_life_premium(&id, "").await?;
 
-    let subscription = imkitchen_user::subscription::load(&state.evento, &id).await?;
-    subscription.toggle_life_premium("").await?;
-
-    let password_id = imkitchen_user::password::Command::request(
-        &state.evento,
-        &state.pool,
-        imkitchen_user::password::RequestInput {
+    let password_id = cmd
+        .password
+        .request(imkitchen_user::password::RequestInput {
             email: "john@imkitchen.test".to_owned(),
             lang: "fr".to_owned(),
             host: "https://imkitchen.test".to_owned(),
-        },
-    )
-    .await?
-    .unwrap();
-    let password = imkitchen_user::password::load(&state.evento, &password_id)
+        })
         .await?
         .unwrap();
 
-    password
-        .reset(
-            &state.pool,
-            imkitchen_user::password::ResetInput {
-                password: "my_new_password".to_owned(),
-            },
-        )
+    cmd.password
+        .reset(imkitchen_user::password::ResetInput {
+            id: password_id,
+            password: "my_new_password".to_owned(),
+        })
         .await?;
 
-    let user = imkitchen_user::load(&state.evento, &state.pool, &id)
-        .await?
-        .unwrap();
-    user.logout(access_id).await?;
+    cmd.logout(&id, access_id).await?;
 
     imkitchen_user::global_stat::subscription()
         .safety_check()
@@ -93,8 +59,8 @@ async fn test_safety_check() -> anyhow::Result<()> {
         .skip::<Logout>()
         .skip::<MadeAdmin>()
         .skip::<UsernameChanged>()
-        .data(state.pool.clone())
-        .unretry_execute(&state.evento)
+        .data(state.write_db.clone())
+        .unretry_execute(&state.executor)
         .await?;
 
     Ok(())

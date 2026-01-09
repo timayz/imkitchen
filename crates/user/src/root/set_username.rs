@@ -1,11 +1,10 @@
-use evento::{Executor, metadata::Metadata};
+use evento::{Executor, ProjectionCursor, metadata::Metadata};
 use imkitchen_shared::user::UsernameChanged;
 use regex::Regex;
-use sqlx::SqlitePool;
 use std::sync::LazyLock;
 use validator::Validate;
 
-use crate::command::repository;
+use crate::root::repository;
 
 static RE_ALPHA_NUM: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^[A-Za-z0-9_]+$").unwrap());
 
@@ -15,21 +14,17 @@ pub struct SetUsernameInput {
     pub username: String,
 }
 
-impl<'a, E: Executor + Clone> super::Command<'a, E> {
+impl<E: Executor> super::Command<E> {
     pub async fn set_username(
         &self,
-        read_db: &SqlitePool,
-        write_db: &SqlitePool,
+        id: impl Into<String>,
         username: String,
     ) -> imkitchen_shared::Result<()> {
         let input = SetUsernameInput { username };
         input.validate()?;
 
-        let Some(user) = repository::find(
-            read_db,
-            repository::FindType::Id(self.aggregator_id.to_owned()),
-        )
-        .await?
+        let Some(user) =
+            repository::find(&self.read_db, repository::FindType::Id(id.into())).await?
         else {
             imkitchen_shared::not_found!("user not found");
         };
@@ -38,12 +33,12 @@ impl<'a, E: Executor + Clone> super::Command<'a, E> {
             imkitchen_shared::user!("Username has already been set");
         }
 
-        if repository::is_username_exists(read_db, &input.username).await? {
+        if repository::is_username_exists(&self.read_db, &input.username).await? {
             imkitchen_shared::user!("Username already used");
         }
 
         repository::update(
-            write_db,
+            &self.write_db,
             repository::UpdateInput {
                 id: user.id.to_owned(),
                 username: Some(input.username.to_owned()),
@@ -54,12 +49,16 @@ impl<'a, E: Executor + Clone> super::Command<'a, E> {
         )
         .await?;
 
-        self.aggregator()
+        let Some(user) = self.load(&user.id).await? else {
+            imkitchen_shared::server!("user in set_username");
+        };
+
+        user.aggregator()?
             .event(&UsernameChanged {
                 value: input.username,
             })
             .metadata(&Metadata::new(user.id))
-            .commit(self.executor)
+            .commit(&self.executor)
             .await?;
 
         Ok(())

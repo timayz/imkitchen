@@ -1,11 +1,10 @@
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
-use evento::{Executor, metadata::Metadata};
+use evento::{Executor, ProjectionCursor, metadata::Metadata};
 use imkitchen_shared::user::{LoggedIn, Logout, State};
-use sqlx::SqlitePool;
 use ulid::Ulid;
 use validator::Validate;
 
-use crate::command::repository;
+use crate::root::repository;
 
 #[derive(Validate)]
 pub struct LoginInput {
@@ -18,25 +17,21 @@ pub struct LoginInput {
     pub user_agent: String,
 }
 
-impl<'a, E: Executor + Clone> super::Command<'a, E> {
-    pub async fn login(
-        executor: &E,
-        read_pool: &SqlitePool,
-        input: LoginInput,
-    ) -> imkitchen_shared::Result<(String, String)> {
+impl<E: Executor> super::Command<E> {
+    pub async fn login(&self, input: LoginInput) -> imkitchen_shared::Result<(String, String)> {
         input.validate()?;
 
-        let Some(user) =
-            repository::find(read_pool, repository::FindType::Email(input.email)).await?
+        let Some(user_row) =
+            repository::find(&self.read_db, repository::FindType::Email(input.email)).await?
         else {
             imkitchen_shared::user!("Invalid email or password. Please try again.");
         };
 
-        let Some(command) = super::load(executor, read_pool, &user.id).await? else {
-            imkitchen_shared::server!("User command not found");
+        let Some(user) = self.load(&user_row.id).await? else {
+            imkitchen_shared::server!("User not found in login");
         };
 
-        let parsed_hash = PasswordHash::new(&user.password)?;
+        let parsed_hash = PasswordHash::new(&user_row.password)?;
         let argon2 = Argon2::default();
 
         if argon2
@@ -46,20 +41,18 @@ impl<'a, E: Executor + Clone> super::Command<'a, E> {
             imkitchen_shared::user!("Invalid email or password. Please try again.");
         }
 
-        if command.state == State::Suspended {
+        if user.state == State::Suspended {
             imkitchen_shared::user!("Account suspended");
         }
 
         let access_id = Ulid::new().to_string();
+        let subscription = self.subscription.load(&user_row.id).await?;
 
-        let subscription = crate::subscription::load(executor, &user.id).await?;
-
-        command
-            .aggregator()
+        user.aggregator()?
             .event(&LoggedIn {
-                role: user.role.0.to_owned(),
-                state: user.state.0.to_owned(),
-                username: user.username,
+                role: user_row.role.0.to_owned(),
+                state: user_row.state.0.to_owned(),
+                username: user_row.username,
                 subscription_expire_at: subscription.expire_at,
                 lang: input.lang,
                 timezone: input.timezone,
@@ -67,19 +60,27 @@ impl<'a, E: Executor + Clone> super::Command<'a, E> {
                 access_id: access_id.to_owned(),
             })
             .metadata(&Metadata::default())
-            .commit(executor)
+            .commit(&self.executor)
             .await?;
 
-        Ok((user.id, access_id))
+        Ok((user_row.id, access_id))
     }
 
-    pub async fn logout(&self, access_id: String) -> imkitchen_shared::Result<String> {
-        self.aggregator()
+    pub async fn logout(
+        &self,
+        id: impl Into<String>,
+        access_id: String,
+    ) -> imkitchen_shared::Result<String> {
+        let Some(user) = self.load(id).await? else {
+            imkitchen_shared::not_found!("user in logout");
+        };
+
+        user.aggregator()?
             .event(&Logout {
                 access_id: access_id.to_owned(),
             })
             .metadata(&Metadata::default())
-            .commit(self.executor)
+            .commit(&self.executor)
             .await?;
 
         Ok(access_id)

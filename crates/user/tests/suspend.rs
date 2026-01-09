@@ -1,5 +1,4 @@
 use imkitchen_shared::user::{Role, State};
-use imkitchen_user::load;
 use temp_dir::TempDir;
 
 mod helpers;
@@ -9,19 +8,20 @@ async fn test_suspend() -> anyhow::Result<()> {
     let dir = TempDir::new()?;
     let path = dir.child("db.sqlite3");
     let state = helpers::setup_test_state(path).await?;
-    let user_id = helpers::create_user(&state, "john.doe").await?;
+    let cmd = imkitchen_user::Command::new(state);
+    let user_id = helpers::create_user(&cmd, "john.doe").await?;
 
-    let user = load(&state.evento, &state.pool, &user_id).await?.unwrap();
+    let user = cmd.load(&user_id).await?.unwrap();
     assert_eq!(user.role, Role::User);
 
-    user.suspend("").await?;
+    cmd.suspend(&user_id, "").await?;
 
-    let user = load(&state.evento, &state.pool, &user_id).await?.unwrap();
+    let user = cmd.load(&user_id).await?.unwrap();
     assert_eq!(user.state, State::Suspended);
 
-    user.activate("").await?;
+    cmd.activate(&user_id, "").await?;
 
-    let user = load(&state.evento, &state.pool, &user_id).await?.unwrap();
+    let user = cmd.load(&user_id).await?.unwrap();
     assert_eq!(user.role, Role::User);
 
     Ok(())

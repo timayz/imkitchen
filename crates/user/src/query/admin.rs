@@ -1,6 +1,6 @@
 use evento::{
-    Cursor, Executor, Projection, Snapshot,
-    cursor::{Args, ReadResult},
+    Cursor, Executor, Projection, ProjectionCursor, Snapshot,
+    cursor::{self, Args, ReadResult},
     metadata::Event,
     sql::Reader,
 };
@@ -37,6 +37,7 @@ pub struct AdminView {
     pub subscription_expire_at: u64,
     #[cursor(by_recently_joined, UserAdmin::CreatedAt, 2)]
     pub created_at: u64,
+    pub cursor: String,
 }
 
 impl AdminView {
@@ -189,6 +190,16 @@ pub async fn load<'a, E: Executor>(
         .data(pool.clone())
         .execute(executor)
         .await
+}
+
+impl ProjectionCursor for AdminView {
+    fn set_cursor(&mut self, v: &cursor::Value) {
+        self.cursor = v.to_string();
+    }
+
+    fn get_cursor(&self) -> cursor::Value {
+        self.cursor.to_owned().into()
+    }
 }
 
 impl Snapshot for AdminView {}

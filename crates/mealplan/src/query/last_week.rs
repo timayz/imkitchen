@@ -1,4 +1,4 @@
-use evento::{Executor, Projection, Snapshot, metadata::Event};
+use evento::{Executor, Projection, ProjectionCursor, Snapshot, cursor, metadata::Event};
 
 use imkitchen_shared::mealplan::{MealPlan, WeekGenerated};
 
@@ -52,6 +52,17 @@ use imkitchen_shared::mealplan::{MealPlan, WeekGenerated};
 #[derive(Default)]
 pub struct LastWeekView {
     pub week: u64,
+    pub cursor: String,
+}
+
+impl ProjectionCursor for LastWeekView {
+    fn set_cursor(&mut self, v: &cursor::Value) {
+        self.cursor = v.to_string();
+    }
+
+    fn get_cursor(&self) -> cursor::Value {
+        self.cursor.to_owned().into()
+    }
 }
 
 impl Snapshot for LastWeekView {}

@@ -1,16 +1,11 @@
 use evento::{
-    Executor, Snapshot,
+    Executor,
     metadata::Event,
     subscription::{Context, SubscriptionBuilder},
 };
 use imkitchen_shared::contact::FormSubmitted;
 
 use crate::EmailService;
-
-#[derive(Default, Clone)]
-pub struct ContactView;
-
-impl Snapshot for ContactView {}
 
 pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
     SubscriptionBuilder::new("notification-contact").handler(handle_form_submitted())

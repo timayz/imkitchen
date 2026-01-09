@@ -45,7 +45,7 @@ pub async fn load<'a, E: Executor>(
 
     Ok(Some(Command::new(
         id,
-        row.get_cursor_version()?,
+        row.aggregator_version()?,
         row,
         executor,
     )))
