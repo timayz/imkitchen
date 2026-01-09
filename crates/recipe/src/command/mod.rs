@@ -309,22 +309,3 @@ async fn handle_deleted(_event: Event<Deleted>, data: &mut CommandData) -> anyho
 
     Ok(())
 }
-
-// async fn update(
-//     pool: &SqlitePool,
-//     id: impl Into<Expr>,
-//     col: RecipeCommand,
-//     value: impl Into<Expr>,
-// ) -> anyhow::Result<()> {
-//     let statement = Query::update()
-//         .table(RecipeCommand::Table)
-//         .value(col, value)
-//         .and_where(Expr::col(RecipeCommand::Id).eq(id))
-//         .to_owned();
-//
-//     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-//
-//     sqlx::query_with(&sql, values).execute(pool).await?;
-//
-//     Ok(())
-// }
