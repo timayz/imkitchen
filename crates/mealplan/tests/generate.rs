@@ -11,6 +11,7 @@ async fn test_random() -> anyhow::Result<()> {
     let path = dir.child("db.sqlite3");
     let state = helpers::setup_test_state(path).await?;
     let cmd = imkitchen_mealplan::Command::new(state.clone());
+    let query = imkitchen_mealplan::Query(state.clone());
     let recipe_cmd = imkitchen_recipe::Command::new(state.clone());
 
     for i in 0..200 {
@@ -51,7 +52,7 @@ async fn test_random() -> anyhow::Result<()> {
     })
     .await?;
 
-    let last = imkitchen_mealplan::last_week::load(&state.executor, "john").await?;
+    let last = query.last_week("john").await?;
     assert_eq!(weeks.last().unwrap().0, last.unwrap().week);
 
     Ok(())

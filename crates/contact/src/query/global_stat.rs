@@ -21,28 +21,30 @@ pub struct GlobalStatView {
     pub avg_response_time: u32,
 }
 
-pub async fn find_global(pool: &SqlitePool) -> anyhow::Result<Option<GlobalStatView>> {
-    find(pool, GLOBAL_TIMESTAMP).await
-}
+impl<E: Executor> super::Query<E> {
+    pub async fn find_global_stat_global(&self) -> anyhow::Result<Option<GlobalStatView>> {
+        self.find_global_stat(GLOBAL_TIMESTAMP).await
+    }
 
-pub async fn find(pool: &SqlitePool, day: u64) -> anyhow::Result<Option<GlobalStatView>> {
-    let day = to_day_string(day)?;
-    let statement = sea_query::Query::select()
-        .columns([
-            ContactGlobalStat::Day,
-            ContactGlobalStat::Total,
-            ContactGlobalStat::Today,
-            ContactGlobalStat::Unread,
-            ContactGlobalStat::AvgResponseTime,
-        ])
-        .from(ContactGlobalStat::Table)
-        .and_where(Expr::col(ContactGlobalStat::Day).eq(day))
-        .to_owned();
+    pub async fn find_global_stat(&self, day: u64) -> anyhow::Result<Option<GlobalStatView>> {
+        let day = to_day_string(day)?;
+        let statement = sea_query::Query::select()
+            .columns([
+                ContactGlobalStat::Day,
+                ContactGlobalStat::Total,
+                ContactGlobalStat::Today,
+                ContactGlobalStat::Unread,
+                ContactGlobalStat::AvgResponseTime,
+            ])
+            .from(ContactGlobalStat::Table)
+            .and_where(Expr::col(ContactGlobalStat::Day).eq(day))
+            .to_owned();
 
-    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    Ok(sqlx::query_as_with(&sql, values)
-        .fetch_optional(pool)
-        .await?)
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+        Ok(sqlx::query_as_with(&sql, values)
+            .fetch_optional(&self.read_db)
+            .await?)
+    }
 }
 
 pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {

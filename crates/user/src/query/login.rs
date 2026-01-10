@@ -1,11 +1,22 @@
 use evento::{Executor, Projection, Snapshot, metadata::Event};
-use sqlx::{SqlitePool, prelude::FromRow};
+use sqlx::prelude::FromRow;
 
 use imkitchen_shared::user::{
     Activated, LoggedIn, Logout, MadeAdmin, Role, State, Suspended, User, UsernameChanged,
     password::ResetCompleted,
     subscription::{LifePremiumToggled, Subscription},
 };
+
+impl<E: Executor> super::Query<E> {
+    pub async fn login(&self, id: impl Into<String>) -> Result<Option<LoginView>, anyhow::Error> {
+        let id = id.into();
+
+        create_projection(&id)
+            .data(self.read_db.clone())
+            .execute(&self.executor)
+            .await
+    }
+}
 
 #[derive(Default, Clone, Debug, FromRow)]
 pub struct Login {
@@ -60,46 +71,7 @@ pub fn create_projection(id: impl Into<String>) -> Projection<LoginView> {
         .handler(handle_life_premium_toggled())
 }
 
-pub async fn load<'a, E: Executor>(
-    executor: &'a E,
-    pool: &'a SqlitePool,
-    id: impl Into<String>,
-) -> Result<Option<LoginView>, anyhow::Error> {
-    let id = id.into();
-
-    create_projection(&id)
-        .data(pool.clone())
-        .execute(executor)
-        .await
-}
-
 impl Snapshot for LoginView {}
-
-// #[evento::snapshot]
-// async fn restore(
-//     context: &evento::context::RwContext,
-//     id: String,
-//     _aggregators: &std::collections::HashMap<String, String>,
-// ) -> anyhow::Result<Option<LoginView>> {
-//     let pool = context.extract::<SqlitePool>();
-//     let statement = Query::select()
-//         .columns([
-//             UserLogin::Id,
-//             UserLogin::Role,
-//             UserLogin::State,
-//             UserLogin::UserAgent,
-//             UserLogin::Username,
-//             UserLogin::SubscriptionExpireAt,
-//         ])
-//         .from(UserLogin::Table)
-//         .and_where(Expr::col(UserLogin::UserId).eq(&id))
-//         .to_owned();
-//     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-//
-//     let logins: Vec<Login> = sqlx::query_as_with(&sql, values).fetch_all(&pool).await?;
-//
-//     Ok(Some(LoginView { id, logins }))
-// }
 
 #[evento::handler]
 async fn handle_username_changed(

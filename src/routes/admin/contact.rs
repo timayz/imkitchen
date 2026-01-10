@@ -59,18 +59,12 @@ pub async fn page(
     State(app): State<AppState>,
     user: AuthAdmin,
 ) -> impl IntoResponse {
-    let stat = crate::try_page_response!(
-        imkitchen_contact::global_stat::find_global(&app.read_db),
-        template
-    )
-    .unwrap_or_default();
+    let stat = crate::try_page_response!(app.contact_query.find_global_stat_global(), template)
+        .unwrap_or_default();
 
     let now = time::UtcDateTime::now().unix_timestamp() as u64;
-    let today_stat = crate::try_page_response!(
-        imkitchen_contact::global_stat::find(&app.read_db, now),
-        template
-    )
-    .unwrap_or_default();
+    let today_stat = crate::try_page_response!(app.contact_query.find_global_stat(now), template)
+        .unwrap_or_default();
 
     let r_query = query.clone();
     let subject = Subject::from_str(&query.subject.unwrap_or("".to_owned())).ok();
@@ -86,15 +80,12 @@ pub async fn page(
     };
 
     let contacts = crate::try_page_response!(
-        imkitchen_contact::admin::filter(
-            &app.read_db,
-            FilterQuery {
-                status,
-                subject,
-                sort_by,
-                args: args.limit(20),
-            }
-        ),
+        app.contact_query.filter_admin(FilterQuery {
+            status,
+            subject,
+            sort_by,
+            args: args.limit(20),
+        }),
         template
     );
 
@@ -119,7 +110,7 @@ pub async fn mark_read_and_reply(
     crate::try_response!(app.contact_cmd.mark_read_and_reply(&id, &user.id), template);
 
     let contact = crate::try_response!(anyhow_opt:
-        imkitchen_contact::admin::load(&app.executor, &app.read_db,&id),
+        app.contact_query.admin(&id),
         template
     );
 
@@ -149,7 +140,7 @@ pub async fn resolve(
     crate::try_response!(app.contact_cmd.resolve(&id, &user.id), template);
 
     let contact = crate::try_response!(anyhow_opt:
-        imkitchen_contact::admin::load(&app.executor, &app.read_db,&id),
+       app.contact_query.admin(&id),
         template
     );
 
@@ -179,7 +170,7 @@ pub async fn reopen(
     crate::try_response!(app.contact_cmd.reopen(&id, &user.id), template);
 
     let contact = crate::try_response!(anyhow_opt:
-        imkitchen_contact::admin::load(&app.executor, &app.read_db,&id),
+        app.contact_query.admin(&id),
         template
     );
 

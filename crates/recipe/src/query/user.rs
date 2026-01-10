@@ -15,7 +15,7 @@ use imkitchen_shared::recipe::{
 use sea_query::{Expr, ExprTrait, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use serde::Deserialize;
-use sqlx::{SqlitePool, prelude::FromRow};
+use sqlx::prelude::FromRow;
 use strum::{Display, EnumString};
 
 #[derive(Default, Debug, Deserialize, EnumString, Display, Clone)]
@@ -86,59 +86,60 @@ pub struct RecipesQuery {
     pub args: Args,
 }
 
-pub async fn filter(
-    pool: &SqlitePool,
-    query: RecipesQuery,
-) -> anyhow::Result<ReadResult<UserViewList>> {
-    let mut statement = sea_query::Query::select()
-        .columns([
-            RecipeUser::Id,
-            RecipeUser::OwnerId,
-            RecipeUser::OwnerName,
-            RecipeUser::RecipeType,
-            RecipeUser::CuisineType,
-            RecipeUser::Name,
-            RecipeUser::Description,
-            RecipeUser::PrepTime,
-            RecipeUser::CookTime,
-            RecipeUser::DietaryRestrictions,
-            RecipeUser::AcceptsAccompaniment,
-            RecipeUser::IsShared,
-            RecipeUser::TotalViews,
-            RecipeUser::CreatedAt,
-        ])
-        .from(RecipeUser::Table)
-        .to_owned();
+impl<E: Executor> super::Query<E> {
+    pub async fn filter_user(
+        &self,
+        query: RecipesQuery,
+    ) -> anyhow::Result<ReadResult<UserViewList>> {
+        let mut statement = sea_query::Query::select()
+            .columns([
+                RecipeUser::Id,
+                RecipeUser::OwnerId,
+                RecipeUser::OwnerName,
+                RecipeUser::RecipeType,
+                RecipeUser::CuisineType,
+                RecipeUser::Name,
+                RecipeUser::Description,
+                RecipeUser::PrepTime,
+                RecipeUser::CookTime,
+                RecipeUser::DietaryRestrictions,
+                RecipeUser::AcceptsAccompaniment,
+                RecipeUser::IsShared,
+                RecipeUser::TotalViews,
+                RecipeUser::CreatedAt,
+            ])
+            .from(RecipeUser::Table)
+            .to_owned();
 
-    if let Some(user_id) = query.user_id {
-        statement.and_where(Expr::col(RecipeUser::OwnerId).eq(user_id));
-    }
+        if let Some(user_id) = query.user_id {
+            statement.and_where(Expr::col(RecipeUser::OwnerId).eq(user_id));
+        }
 
-    if let Some(is_shared) = query.is_shared {
-        statement.and_where(Expr::col(RecipeUser::IsShared).eq(is_shared));
-    }
+        if let Some(is_shared) = query.is_shared {
+            statement.and_where(Expr::col(RecipeUser::IsShared).eq(is_shared));
+        }
 
-    if let Some(exclude_ids) = query.exclude_ids {
-        statement.and_where(Expr::col(RecipeUser::Id).is_not_in(exclude_ids));
-    }
+        if let Some(exclude_ids) = query.exclude_ids {
+            statement.and_where(Expr::col(RecipeUser::Id).is_not_in(exclude_ids));
+        }
 
-    if let Some(recipe_type) = query.recipe_type {
-        statement.and_where(Expr::col(RecipeUser::RecipeType).eq(recipe_type.to_string()));
-    }
+        if let Some(recipe_type) = query.recipe_type {
+            statement.and_where(Expr::col(RecipeUser::RecipeType).eq(recipe_type.to_string()));
+        }
 
-    if let Some(cuisine_type) = query.cuisine_type {
-        statement.and_where(Expr::col(RecipeUser::CuisineType).eq(cuisine_type.to_string()));
-    }
+        if let Some(cuisine_type) = query.cuisine_type {
+            statement.and_where(Expr::col(RecipeUser::CuisineType).eq(cuisine_type.to_string()));
+        }
 
-    if !query.dietary_restrictions.is_empty() && !query.dietary_where_any {
-        let in_clause = query
-            .dietary_restrictions
-            .iter()
-            .map(|_| "?")
-            .collect::<Vec<_>>()
-            .join(", ");
+        if !query.dietary_restrictions.is_empty() && !query.dietary_where_any {
+            let in_clause = query
+                .dietary_restrictions
+                .iter()
+                .map(|_| "?")
+                .collect::<Vec<_>>()
+                .join(", ");
 
-        statement.and_where(Expr::cust_with_values(
+            statement.and_where(Expr::cust_with_values(
             format!(
                 "(SELECT COUNT(*) FROM json_each(dietary_restrictions) WHERE value IN ({})) = ?",
                 in_clause
@@ -152,73 +153,74 @@ pub async fn filter(
                 ))))
                 .collect::<Vec<_>>(),
         ));
-    }
+        }
 
-    if !query.dietary_restrictions.is_empty() && query.dietary_where_any {
-        let in_clause = query
-            .dietary_restrictions
-            .iter()
-            .map(|_| "?")
-            .collect::<Vec<_>>()
-            .join(", ");
-
-        statement.and_where(Expr::cust_with_values(
-            format!(
-                "(SELECT COUNT(*) FROM json_each(dietary_restrictions) WHERE value IN ({}))",
-                in_clause
-            ),
-            query
+        if !query.dietary_restrictions.is_empty() && query.dietary_where_any {
+            let in_clause = query
                 .dietary_restrictions
                 .iter()
-                .map(|t| sea_query::Value::String(Some(*Box::new(t.to_string()))))
-                .collect::<Vec<_>>(),
-        ));
+                .map(|_| "?")
+                .collect::<Vec<_>>()
+                .join(", ");
+
+            statement.and_where(Expr::cust_with_values(
+                format!(
+                    "(SELECT COUNT(*) FROM json_each(dietary_restrictions) WHERE value IN ({}))",
+                    in_clause
+                ),
+                query
+                    .dietary_restrictions
+                    .iter()
+                    .map(|t| sea_query::Value::String(Some(*Box::new(t.to_string()))))
+                    .collect::<Vec<_>>(),
+            ));
+        }
+
+        let mut reader = Reader::new(statement);
+
+        if matches!(query.sort_by, SortBy::RecentlyAdded) {
+            reader.desc();
+        }
+
+        reader.args(query.args).execute(&self.read_db).await
     }
 
-    let mut reader = Reader::new(statement);
+    pub async fn find_user(&self, id: impl Into<String>) -> anyhow::Result<Option<UserView>> {
+        let statement = sea_query::Query::select()
+            .columns([
+                RecipeUser::Id,
+                RecipeUser::OwnerId,
+                RecipeUser::OwnerName,
+                RecipeUser::RecipeType,
+                RecipeUser::CuisineType,
+                RecipeUser::Name,
+                RecipeUser::Description,
+                RecipeUser::HouseholdSize,
+                RecipeUser::PrepTime,
+                RecipeUser::CookTime,
+                RecipeUser::Ingredients,
+                RecipeUser::Instructions,
+                RecipeUser::DietaryRestrictions,
+                RecipeUser::AcceptsAccompaniment,
+                RecipeUser::AdvancePrep,
+                RecipeUser::IsShared,
+                RecipeUser::TotalViews,
+                RecipeUser::TotalLikes,
+                RecipeUser::TotalComments,
+                RecipeUser::UpdatedAt,
+                RecipeUser::CreatedAt,
+            ])
+            .from(RecipeUser::Table)
+            .and_where(Expr::col(RecipeUser::Id).eq(id.into()))
+            .limit(1)
+            .to_owned();
 
-    if matches!(query.sort_by, SortBy::RecentlyAdded) {
-        reader.desc();
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+        Ok(sqlx::query_as_with(&sql, values)
+            .fetch_optional(&self.read_db)
+            .await?)
     }
-
-    reader.args(query.args).execute(pool).await
-}
-
-pub async fn find(pool: &SqlitePool, id: impl Into<String>) -> anyhow::Result<Option<UserView>> {
-    let statement = sea_query::Query::select()
-        .columns([
-            RecipeUser::Id,
-            RecipeUser::OwnerId,
-            RecipeUser::OwnerName,
-            RecipeUser::RecipeType,
-            RecipeUser::CuisineType,
-            RecipeUser::Name,
-            RecipeUser::Description,
-            RecipeUser::HouseholdSize,
-            RecipeUser::PrepTime,
-            RecipeUser::CookTime,
-            RecipeUser::Ingredients,
-            RecipeUser::Instructions,
-            RecipeUser::DietaryRestrictions,
-            RecipeUser::AcceptsAccompaniment,
-            RecipeUser::AdvancePrep,
-            RecipeUser::IsShared,
-            RecipeUser::TotalViews,
-            RecipeUser::TotalLikes,
-            RecipeUser::TotalComments,
-            RecipeUser::UpdatedAt,
-            RecipeUser::CreatedAt,
-        ])
-        .from(RecipeUser::Table)
-        .and_where(Expr::col(RecipeUser::Id).eq(id.into()))
-        .limit(1)
-        .to_owned();
-
-    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-
-    Ok(sqlx::query_as_with(&sql, values)
-        .fetch_optional(pool)
-        .await?)
 }
 
 pub fn create_projection(id: impl Into<String>) -> Projection<UserView> {
@@ -243,17 +245,17 @@ pub fn create_projection(id: impl Into<String>) -> Projection<UserView> {
         .handler(handle_unlike_unchecked())
 }
 
-pub async fn load<E: Executor>(
+impl<E: Executor> super::Query<E> {
+    pub async fn user(&self, id: impl Into<String>) -> Result<Option<UserView>, anyhow::Error> {
+        load(&self.executor, id).await
+    }
+}
+
+pub(crate) async fn load<E: Executor>(
     executor: &E,
-    pool: &SqlitePool,
     id: impl Into<String>,
 ) -> Result<Option<UserView>, anyhow::Error> {
-    let id = id.into();
-
-    create_projection(&id)
-        .data(pool.clone())
-        .execute(executor)
-        .await
+    create_projection(id).execute(executor).await
 }
 
 impl Snapshot for UserView {}

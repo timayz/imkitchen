@@ -45,10 +45,10 @@ pub async fn serve(
         .start(&executor)
         .await?;
 
-    // let sub_user_command = imkitchen_user::subscription()
-    //     .data(write_pool.clone())
-    //     .start(&executor)
-    //     .await?;
+    let sub_user_query = imkitchen_user::query_subscription()
+        .data(write_pool.clone())
+        .start(&executor)
+        .await?;
     //
     // let sub_user_login = imkitchen_user::login::subscription()
     //     .data(write_pool.clone())
@@ -65,20 +65,20 @@ pub async fn serve(
     //     .start(&executor)
     //     .await?;
     //
-    // let sub_contact_admin = imkitchen_contact::admin::subscription()
-    //     .data(write_pool.clone())
-    //     .start(&executor)
-    //     .await?;
-    //
+    let sub_contact_query = imkitchen_contact::query_subscription()
+        .data(write_pool.clone())
+        .start(&executor)
+        .await?;
+
     let sub_contact_global_stat = imkitchen_contact::global_stat::subscription()
         .data(write_pool.clone())
         .start(&executor)
         .await?;
     // //
-    // let sub_recipe_command = imkitchen_recipe::subscription()
-    //     .data(write_pool.clone())
-    //     .start(&executor)
-    //     .await?;
+    let sub_recipe_query = imkitchen_recipe::query_subscription()
+        .data(write_pool.clone())
+        .start(&executor)
+        .await?;
     //
     // let sub_recipe_user = imkitchen_recipe::user::subscription()
     //     .data(write_pool.clone())
@@ -95,10 +95,10 @@ pub async fn serve(
     //     .start(&executor)
     //     .await?;
     //
-    // let sub_mealplan_command = imkitchen_mealplan::subscription()
-    //     .data(write_pool.clone())
-    //     .start(&executor)
-    //     .await?;
+    let sub_mealplan_query = imkitchen_mealplan::query_subscription()
+        .data(write_pool.clone())
+        .start(&executor)
+        .await?;
     //
     let sub_mealplan_week = imkitchen_mealplan::week::subscription()
         .data(write_pool.clone())
@@ -137,10 +137,15 @@ pub async fn serve(
     let state = AppState {
         config,
         user_cmd: imkitchen_user::Command::new(state.clone()),
+        user_query: imkitchen_user::Query(state.clone()),
         shopping_cmd: imkitchen_shopping::Command::new(state.clone()),
+        shopping_query: imkitchen_shopping::Query(state.clone()),
         recipe_cmd: imkitchen_recipe::Command::new(state.clone()),
+        recipe_query: imkitchen_recipe::Query(state.clone()),
         mealplan_cmd: imkitchen_mealplan::Command::new(state.clone()),
+        mealplan_query: imkitchen_mealplan::Query(state.clone()),
         contact_cmd: imkitchen_contact::Command::new(state.clone()),
+        contact_query: imkitchen_contact::Query(state.clone()),
         inner: state,
     };
 
@@ -206,17 +211,17 @@ pub async fn serve(
     let results = futures::future::join_all(vec![
         sub_notification_contact.shutdown(),
         sub_notification_user.shutdown(),
-        // sub_user_command.shutdown(),
+        sub_user_query.shutdown(),
         // sub_user_login.shutdown(),
         // sub_user_admin.shutdown(),
         // sub_user_global_stat.shutdown(),
-        // sub_contact_admin.shutdown(),
+        sub_contact_query.shutdown(),
         sub_contact_global_stat.shutdown(),
-        // sub_recipe_command.shutdown(),
+        sub_recipe_query.shutdown(),
         // sub_recipe_user.shutdown(),
         sub_recipe_user_stat.shutdown(),
         // sub_rating_command.shutdown(),
-        // sub_mealplan_command.shutdown(),
+        sub_mealplan_query.shutdown(),
         sub_mealplan_week.shutdown(),
         sub_mealplan_slot.shutdown(),
         sub_shopping.shutdown(),

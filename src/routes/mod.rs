@@ -33,10 +33,15 @@ pub struct AppState {
     pub inner: imkitchen_shared::State<RwSqlite>,
     pub config: crate::config::Config,
     pub user_cmd: imkitchen_user::Command<RwSqlite>,
+    pub user_query: imkitchen_user::Query<RwSqlite>,
     pub shopping_cmd: imkitchen_shopping::Command<RwSqlite>,
+    pub shopping_query: imkitchen_shopping::Query<RwSqlite>,
     pub recipe_cmd: imkitchen_recipe::Command<RwSqlite>,
+    pub recipe_query: imkitchen_recipe::Query<RwSqlite>,
     pub mealplan_cmd: imkitchen_mealplan::Command<RwSqlite>,
+    pub mealplan_query: imkitchen_mealplan::Query<RwSqlite>,
     pub contact_cmd: imkitchen_contact::Command<RwSqlite>,
+    pub contact_query: imkitchen_contact::Query<RwSqlite>,
 }
 
 impl Deref for AppState {

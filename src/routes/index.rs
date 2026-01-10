@@ -56,13 +56,12 @@ pub async fn page(
     tracing::Span::current().record("user", &user.id);
 
     let day = imkitchen_mealplan::weekday_from_now();
-    let slot = crate::try_page_response!(
-        imkitchen_mealplan::slot::next_slot_from(&app.read_db, day, &user.id),
-        template
-    );
+    let slot =
+        crate::try_page_response!(app.mealplan_query.next_slot_from(day, &user.id), template);
     let prep_remiders = if let Some(ref slot) = slot {
         crate::try_page_response!(
-            imkitchen_mealplan::slot::next_prep_remiders_from(&app.read_db, slot.day, &user.id),
+            app.mealplan_query
+                .next_prep_remiders_from(slot.day, &user.id),
             template
         )
     } else {
@@ -71,13 +70,11 @@ pub async fn page(
 
     let week_from_now = imkitchen_mealplan::current_and_next_four_weeks_from_now()[0];
     let week = crate::try_page_response!(
-        imkitchen_mealplan::week::find_last_from(&app.read_db, week_from_now.start, &user.id),
+        app.mealplan_query
+            .find_week_last_from(week_from_now.start, &user.id),
         template
     );
-    let last_week = crate::try_page_response!(
-        imkitchen_mealplan::last_week::load(&app.executor, &user.id),
-        template
-    );
+    let last_week = crate::try_page_response!(app.mealplan_query.last_week(&user.id), template);
 
     let generate_next_weeks_needed = match (week.as_ref(), last_week) {
         (Some(week), Some(last_week)) => week.start == last_week.week,

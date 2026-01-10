@@ -61,7 +61,7 @@ pub async fn page(
     Path((id,)): Path<(String,)>,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
-    let recipe = crate::try_page_response!(opt: imkitchen_recipe::user::load(&app.executor, &app.read_db, &id), template);
+    let recipe = crate::try_response!(anyhow_opt: app.recipe_query.user(&id), template);
 
     if recipe.owner_id != user.id {
         return template.render(ForbiddenTemplate).into_response();
@@ -146,7 +146,7 @@ pub async fn delete_status(
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
     match crate::try_response!(anyhow:
-        imkitchen_recipe::user::find(&app.read_db,&id),
+        app.recipe_query.find_user(&id),
         template,
         Some(DeleteButtonTemplate {
             id: &id,

@@ -7,7 +7,7 @@ use imkitchen_db::table::RecipeUserStat;
 use imkitchen_shared::recipe::{Created, Deleted, Imported, MadePrivate, SharedToCommunity};
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
-use sqlx::{SqlitePool, prelude::FromRow};
+use sqlx::prelude::FromRow;
 
 #[derive(Default, FromRow)]
 pub struct UserStatView {
@@ -17,27 +17,29 @@ pub struct UserStatView {
     pub from_community: u32,
 }
 
-pub async fn find_user_stat(
-    pool: &SqlitePool,
-    user_id: impl Into<String>,
-) -> anyhow::Result<Option<UserStatView>> {
-    let user_id = user_id.into();
-    let statement = sea_query::Query::select()
-        .columns([
-            RecipeUserStat::Total,
-            RecipeUserStat::Shared,
-            RecipeUserStat::Favorite,
-            RecipeUserStat::FromCommunity,
-        ])
-        .from(RecipeUserStat::Table)
-        .and_where(Expr::col(RecipeUserStat::UserId).eq(user_id))
-        .to_owned();
+impl<E: Executor> super::Query<E> {
+    pub async fn find_user_stat(
+        &self,
+        user_id: impl Into<String>,
+    ) -> anyhow::Result<Option<UserStatView>> {
+        let user_id = user_id.into();
+        let statement = sea_query::Query::select()
+            .columns([
+                RecipeUserStat::Total,
+                RecipeUserStat::Shared,
+                RecipeUserStat::Favorite,
+                RecipeUserStat::FromCommunity,
+            ])
+            .from(RecipeUserStat::Table)
+            .and_where(Expr::col(RecipeUserStat::UserId).eq(user_id))
+            .to_owned();
 
-    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-    Ok(sqlx::query_as_with(&sql, values)
-        .fetch_optional(pool)
-        .await?)
+        Ok(sqlx::query_as_with(&sql, values)
+            .fetch_optional(&self.read_db)
+            .await?)
+    }
 }
 
 pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {

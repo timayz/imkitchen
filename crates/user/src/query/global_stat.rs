@@ -50,46 +50,53 @@ impl GlobalStatView {
 
 impl Snapshot for GlobalStatView {}
 
+impl<E: Executor> super::Query<E> {
+    pub async fn find_global(&self) -> anyhow::Result<Option<GlobalStatView>> {
+        let month = to_month_string(GLOBAL_TIMESTAMP)?;
+        let statement = sea_query::Query::select()
+            .columns([
+                UserGlobalStat::Month,
+                UserGlobalStat::Total,
+                UserGlobalStat::Premium,
+                UserGlobalStat::Suspended,
+                UserGlobalStat::CreatedAt,
+            ])
+            .from(UserGlobalStat::Table)
+            .and_where(Expr::col(UserGlobalStat::Month).eq(month))
+            .to_owned();
+
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+        Ok(sqlx::query_as_with(&sql, values)
+            .fetch_optional(&self.read_db)
+            .await?)
+    }
+}
+
 pub struct FilterQuery {
     pub args: Args,
 }
 
-pub async fn find_global(pool: &SqlitePool) -> anyhow::Result<Option<GlobalStatView>> {
-    let month = to_month_string(GLOBAL_TIMESTAMP)?;
-    let statement = sea_query::Query::select()
-        .columns([
-            UserGlobalStat::Month,
-            UserGlobalStat::Total,
-            UserGlobalStat::Premium,
-            UserGlobalStat::Suspended,
-            UserGlobalStat::CreatedAt,
-        ])
-        .from(UserGlobalStat::Table)
-        .and_where(Expr::col(UserGlobalStat::Month).eq(month))
-        .to_owned();
+impl<E: Executor> super::Query<E> {
+    pub async fn filter_global(
+        &self,
+        input: FilterQuery,
+    ) -> anyhow::Result<ReadResult<GlobalStatView>> {
+        let statement = sea_query::Query::select()
+            .columns([
+                UserGlobalStat::Month,
+                UserGlobalStat::Total,
+                UserGlobalStat::Premium,
+                UserGlobalStat::Suspended,
+                UserGlobalStat::CreatedAt,
+            ])
+            .from(UserGlobalStat::Table)
+            .to_owned();
 
-    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    Ok(sqlx::query_as_with(&sql, values)
-        .fetch_optional(pool)
-        .await?)
-}
-
-pub async fn filter(
-    pool: &SqlitePool,
-    input: FilterQuery,
-) -> anyhow::Result<ReadResult<GlobalStatView>> {
-    let statement = sea_query::Query::select()
-        .columns([
-            UserGlobalStat::Month,
-            UserGlobalStat::Total,
-            UserGlobalStat::Premium,
-            UserGlobalStat::Suspended,
-            UserGlobalStat::CreatedAt,
-        ])
-        .from(UserGlobalStat::Table)
-        .to_owned();
-
-    Reader::new(statement).args(input.args).execute(pool).await
+        Reader::new(statement)
+            .args(input.args)
+            .execute(&self.read_db)
+            .await
+    }
 }
 
 async fn update_total(pool: &SqlitePool, timestamp: u64) -> anyhow::Result<()> {

@@ -63,19 +63,13 @@ pub async fn page(
     State(app): State<AppState>,
     admin: AuthAdmin,
 ) -> impl IntoResponse {
-    let stat = crate::try_page_response!(
-        imkitchen_user::global_stat::find_global(&app.read_db,),
-        template
-    )
-    .unwrap_or_default();
+    let stat =
+        crate::try_page_response!(app.user_query.find_global(), template).unwrap_or_default();
 
     let stats = crate::try_page_response!(
-        imkitchen_user::global_stat::filter(
-            &app.read_db,
-            FilterQueryStat {
-                args: Args::backward(1, None)
-            }
-        ),
+        app.user_query.filter_global(FilterQueryStat {
+            args: Args::backward(1, None)
+        }),
         template
     );
 
@@ -103,15 +97,12 @@ pub async fn page(
     };
 
     let users = crate::try_page_response!(
-        imkitchen_user::admin::filter(
-            &app.read_db,
-            FilterQuery {
-                state,
-                sort_by,
-                role,
-                args: args.limit(20),
-            }
-        ),
+        app.user_query.filter_admin(FilterQuery {
+            state,
+            sort_by,
+            role,
+            args: args.limit(20),
+        }),
         template
     );
 
@@ -138,7 +129,7 @@ pub async fn suspend(
     crate::try_response!(app.user_cmd.suspend(&id, &admin.id), template);
 
     let user = crate::try_response!(anyhow_opt:
-        imkitchen_user::admin::load(&app.executor, &app.read_db, &id),
+        app.user_query.admin( &id),
         template
     );
 
@@ -168,7 +159,7 @@ pub async fn activate(
     crate::try_response!(app.user_cmd.activate(&id, &admin.id), template);
 
     let user = crate::try_response!(anyhow_opt:
-        imkitchen_user::admin::load(&app.executor, &app.read_db, &id),
+        app.user_query.admin(&id),
         template
     );
 
@@ -203,7 +194,7 @@ pub async fn toggle_premium(
     );
 
     let user = crate::try_response!(anyhow_opt:
-        imkitchen_user::admin::load(&app.executor, &app.read_db, &id),
+        app.user_query.admin(&id),
         template
     );
 

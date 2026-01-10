@@ -50,17 +50,15 @@ pub async fn page(
     Path((id,)): Path<(String,)>,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
-    let recipe = crate::try_page_response!(opt: imkitchen_recipe::user::load(&app.executor, &app.read_db, &id), template);
+    let recipe = crate::try_page_response!(opt: app.recipe_query.user(&id), template);
 
     if recipe.owner_id != user.id && !recipe.is_shared {
         return template.render(NotFoundTemplate).into_response();
     }
 
-    let stat = crate::try_page_response!(
-        imkitchen_recipe::user_stat::find_user_stat(&app.read_db, &recipe.owner_id),
-        template
-    )
-    .unwrap_or_default();
+    let stat =
+        crate::try_page_response!(app.recipe_query.find_user_stat(&recipe.owner_id), template)
+            .unwrap_or_default();
 
     let rating = crate::try_page_response!(
         app.recipe_cmd.rating.load(&recipe.id, &recipe.owner_id),
@@ -71,20 +69,17 @@ pub async fn page(
     let exclude_ids = vec![recipe.id.to_owned()];
 
     let cook_recipes = crate::try_page_response!(
-        imkitchen_recipe::user::filter(
-            &app.read_db,
-            RecipesQuery {
-                exclude_ids: Some(exclude_ids),
-                user_id: Some(recipe.owner_id.to_owned()),
-                recipe_type: None,
-                cuisine_type: None,
-                is_shared: Some(true),
-                dietary_restrictions: vec![],
-                dietary_where_any: false,
-                sort_by: imkitchen_recipe::user::SortBy::RecentlyAdded,
-                args: Args::forward(2, None),
-            }
-        ),
+        app.recipe_query.filter_user(RecipesQuery {
+            exclude_ids: Some(exclude_ids),
+            user_id: Some(recipe.owner_id.to_owned()),
+            recipe_type: None,
+            cuisine_type: None,
+            is_shared: Some(true),
+            dietary_restrictions: vec![],
+            dietary_where_any: false,
+            sort_by: imkitchen_recipe::user::SortBy::RecentlyAdded,
+            args: Args::forward(2, None),
+        }),
         template
     );
 
@@ -97,20 +92,17 @@ pub async fn page(
     exclude_ids.push(recipe.id.to_owned());
 
     let mut similar_recipes = crate::try_page_response!(
-        imkitchen_recipe::user::filter(
-            &app.read_db,
-            RecipesQuery {
-                exclude_ids: Some(exclude_ids.to_vec()),
-                user_id: None,
-                recipe_type: Some(recipe.recipe_type.0.to_owned()),
-                cuisine_type: Some(recipe.cuisine_type.0.to_owned()),
-                is_shared: Some(true),
-                dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
-                dietary_where_any: false,
-                sort_by: imkitchen_recipe::user::SortBy::RecentlyAdded,
-                args: Args::forward(6, None),
-            }
-        ),
+        app.recipe_query.filter_user(RecipesQuery {
+            exclude_ids: Some(exclude_ids.to_vec()),
+            user_id: None,
+            recipe_type: Some(recipe.recipe_type.0.to_owned()),
+            cuisine_type: Some(recipe.cuisine_type.0.to_owned()),
+            is_shared: Some(true),
+            dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
+            dietary_where_any: false,
+            sort_by: imkitchen_recipe::user::SortBy::RecentlyAdded,
+            args: Args::forward(6, None),
+        }),
         template
     );
 
@@ -123,20 +115,17 @@ pub async fn page(
         similar_ids.extend(exclude_ids.to_vec());
 
         let more_recipes = crate::try_page_response!(
-            imkitchen_recipe::user::filter(
-                &app.read_db,
-                RecipesQuery {
-                    exclude_ids: Some(similar_ids),
-                    user_id: None,
-                    recipe_type: Some(recipe.recipe_type.0.to_owned()),
-                    cuisine_type: Some(recipe.cuisine_type.0.to_owned()),
-                    is_shared: Some(true),
-                    dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
-                    dietary_where_any: true,
-                    sort_by: imkitchen_recipe::user::SortBy::RecentlyAdded,
-                    args: Args::forward(6, None),
-                }
-            ),
+            app.recipe_query.filter_user(RecipesQuery {
+                exclude_ids: Some(similar_ids),
+                user_id: None,
+                recipe_type: Some(recipe.recipe_type.0.to_owned()),
+                cuisine_type: Some(recipe.cuisine_type.0.to_owned()),
+                is_shared: Some(true),
+                dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
+                dietary_where_any: true,
+                sort_by: imkitchen_recipe::user::SortBy::RecentlyAdded,
+                args: Args::forward(6, None),
+            }),
             template
         );
 
@@ -152,20 +141,17 @@ pub async fn page(
         similar_ids.extend(exclude_ids.to_vec());
 
         let more_recipes = crate::try_page_response!(
-            imkitchen_recipe::user::filter(
-                &app.read_db,
-                RecipesQuery {
-                    exclude_ids: Some(similar_ids),
-                    user_id: None,
-                    recipe_type: Some(recipe.recipe_type.0.to_owned()),
-                    cuisine_type: None,
-                    is_shared: Some(true),
-                    dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
-                    dietary_where_any: false,
-                    sort_by: imkitchen_recipe::user::SortBy::RecentlyAdded,
-                    args: Args::forward(6, None),
-                }
-            ),
+            app.recipe_query.filter_user(RecipesQuery {
+                exclude_ids: Some(similar_ids),
+                user_id: None,
+                recipe_type: Some(recipe.recipe_type.0.to_owned()),
+                cuisine_type: None,
+                is_shared: Some(true),
+                dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
+                dietary_where_any: false,
+                sort_by: imkitchen_recipe::user::SortBy::RecentlyAdded,
+                args: Args::forward(6, None),
+            }),
             template
         );
 
@@ -181,20 +167,17 @@ pub async fn page(
         similar_ids.extend(exclude_ids.to_vec());
 
         let more_recipes = crate::try_page_response!(
-            imkitchen_recipe::user::filter(
-                &app.read_db,
-                RecipesQuery {
-                    exclude_ids: Some(similar_ids),
-                    user_id: None,
-                    recipe_type: Some(recipe.recipe_type.0.to_owned()),
-                    cuisine_type: None,
-                    is_shared: Some(true),
-                    dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
-                    dietary_where_any: true,
-                    sort_by: imkitchen_recipe::user::SortBy::RecentlyAdded,
-                    args: Args::forward(6, None),
-                }
-            ),
+            app.recipe_query.filter_user(RecipesQuery {
+                exclude_ids: Some(similar_ids),
+                user_id: None,
+                recipe_type: Some(recipe.recipe_type.0.to_owned()),
+                cuisine_type: None,
+                is_shared: Some(true),
+                dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
+                dietary_where_any: true,
+                sort_by: imkitchen_recipe::user::SortBy::RecentlyAdded,
+                args: Args::forward(6, None),
+            }),
             template
         );
 
@@ -210,20 +193,17 @@ pub async fn page(
         similar_ids.extend(exclude_ids);
 
         let more_recipes = crate::try_page_response!(
-            imkitchen_recipe::user::filter(
-                &app.read_db,
-                RecipesQuery {
-                    exclude_ids: Some(similar_ids),
-                    user_id: None,
-                    recipe_type: Some(recipe.recipe_type.0.to_owned()),
-                    cuisine_type: None,
-                    is_shared: Some(true),
-                    dietary_restrictions: vec![],
-                    dietary_where_any: false,
-                    sort_by: imkitchen_recipe::user::SortBy::RecentlyAdded,
-                    args: Args::forward(6, None),
-                }
-            ),
+            app.recipe_query.filter_user(RecipesQuery {
+                exclude_ids: Some(similar_ids),
+                user_id: None,
+                recipe_type: Some(recipe.recipe_type.0.to_owned()),
+                cuisine_type: None,
+                is_shared: Some(true),
+                dietary_restrictions: vec![],
+                dietary_where_any: false,
+                sort_by: imkitchen_recipe::user::SortBy::RecentlyAdded,
+                args: Args::forward(6, None),
+            }),
             template
         );
 
@@ -270,7 +250,7 @@ pub async fn check_like(
 ) -> impl IntoResponse {
     crate::try_response!(app.recipe_cmd.rating.check_like(&id, &user.id), template);
 
-    let recipe = crate::try_response!(anyhow_opt: imkitchen_recipe::user::load(&app.executor, &app.read_db, &id), template);
+    let recipe = crate::try_response!(anyhow_opt: app.recipe_query.user(&id), template);
 
     (
         [("ts-swap", "skip")],
@@ -292,7 +272,7 @@ pub async fn uncheck_like(
 ) -> impl IntoResponse {
     crate::try_response!(app.recipe_cmd.rating.uncheck_like(&id, &user.id), template);
 
-    let recipe = crate::try_response!(anyhow_opt: imkitchen_recipe::user::load(&app.executor, &app.read_db, &id), template);
+    let recipe = crate::try_response!(anyhow_opt: app.recipe_query.user(&id), template);
 
     (
         [("ts-swap", "skip")],
@@ -314,7 +294,7 @@ pub async fn check_unlike(
 ) -> impl IntoResponse {
     crate::try_response!(app.recipe_cmd.rating.check_unlike(&id, &user.id), template);
 
-    let recipe = crate::try_response!(anyhow_opt: imkitchen_recipe::user::load(&app.executor, &app.read_db, &id), template);
+    let recipe = crate::try_response!(anyhow_opt: app.recipe_query.user(&id), template);
 
     (
         [("ts-swap", "skip")],
@@ -339,7 +319,7 @@ pub async fn uncheck_unlike(
         template
     );
 
-    let recipe = crate::try_response!(anyhow_opt: imkitchen_recipe::user::load(&app.executor, &app.read_db, &id), template);
+    let recipe = crate::try_response!(anyhow_opt: app.recipe_query.user(&id), template);
 
     (
         [("ts-swap", "skip")],

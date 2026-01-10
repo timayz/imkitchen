@@ -7,7 +7,7 @@ use imkitchen_db::table::MealPlanWeek;
 use imkitchen_shared::mealplan::{Slot, WeekGenerated};
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
-use sqlx::{SqlitePool, prelude::FromRow};
+use sqlx::prelude::FromRow;
 use time::OffsetDateTime;
 
 #[derive(Default, FromRow)]
@@ -25,96 +25,97 @@ pub struct WeekListRow {
     pub end: u64,
 }
 
-pub async fn find_from_unix_timestamp(
-    pool: &SqlitePool,
-    week: u64,
-    user_id: impl Into<String>,
-) -> anyhow::Result<Option<WeekRow>> {
-    find(
-        pool,
-        OffsetDateTime::from_unix_timestamp(week.try_into()?)?,
-        user_id,
-    )
-    .await
-}
+impl<E: Executor> super::Query<E> {
+    pub async fn find_from_unix_timestamp(
+        &self,
+        week: u64,
+        user_id: impl Into<String>,
+    ) -> anyhow::Result<Option<WeekRow>> {
+        self.find_week(
+            OffsetDateTime::from_unix_timestamp(week.try_into()?)?,
+            user_id,
+        )
+        .await
+    }
 
-pub async fn find(
-    pool: &SqlitePool,
-    week: OffsetDateTime,
-    user_id: impl Into<String>,
-) -> anyhow::Result<Option<WeekRow>> {
-    let user_id = user_id.into();
-    let statement = sea_query::Query::select()
-        .columns([
-            MealPlanWeek::UserId,
-            MealPlanWeek::Start,
-            MealPlanWeek::End,
-            MealPlanWeek::Slots,
-        ])
-        .from(MealPlanWeek::Table)
-        .and_where(Expr::col(MealPlanWeek::UserId).eq(&user_id))
-        .and_where(Expr::col(MealPlanWeek::Start).eq(week.unix_timestamp()))
-        .limit(1)
-        .to_owned();
+    pub async fn find_week(
+        &self,
+        week: OffsetDateTime,
+        user_id: impl Into<String>,
+    ) -> anyhow::Result<Option<WeekRow>> {
+        let user_id = user_id.into();
+        let statement = sea_query::Query::select()
+            .columns([
+                MealPlanWeek::UserId,
+                MealPlanWeek::Start,
+                MealPlanWeek::End,
+                MealPlanWeek::Slots,
+            ])
+            .from(MealPlanWeek::Table)
+            .and_where(Expr::col(MealPlanWeek::UserId).eq(&user_id))
+            .and_where(Expr::col(MealPlanWeek::Start).eq(week.unix_timestamp()))
+            .limit(1)
+            .to_owned();
 
-    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-    Ok(sqlx::query_as_with::<_, WeekRow, _>(&sql, values)
-        .fetch_optional(pool)
-        .await?)
-}
+        Ok(sqlx::query_as_with::<_, WeekRow, _>(&sql, values)
+            .fetch_optional(&self.read_db)
+            .await?)
+    }
 
-pub async fn filter_last_from(
-    pool: &SqlitePool,
-    start: OffsetDateTime,
-    user_id: impl Into<String>,
-) -> anyhow::Result<Vec<WeekListRow>> {
-    let user_id = user_id.into();
-    let start: u64 = start
-        .replace_time(time::Time::from_hms(12, 0, 0)?)
-        .unix_timestamp()
-        .try_into()?;
-    let statement = sea_query::Query::select()
-        .columns([MealPlanWeek::UserId, MealPlanWeek::Start, MealPlanWeek::End])
-        .from(MealPlanWeek::Table)
-        .and_where(Expr::col(MealPlanWeek::UserId).eq(&user_id))
-        .and_where(Expr::col(MealPlanWeek::Start).gte(start))
-        .to_owned();
+    pub async fn filter_week_last_from(
+        &self,
+        start: OffsetDateTime,
+        user_id: impl Into<String>,
+    ) -> anyhow::Result<Vec<WeekListRow>> {
+        let user_id = user_id.into();
+        let start: u64 = start
+            .replace_time(time::Time::from_hms(12, 0, 0)?)
+            .unix_timestamp()
+            .try_into()?;
+        let statement = sea_query::Query::select()
+            .columns([MealPlanWeek::UserId, MealPlanWeek::Start, MealPlanWeek::End])
+            .from(MealPlanWeek::Table)
+            .and_where(Expr::col(MealPlanWeek::UserId).eq(&user_id))
+            .and_where(Expr::col(MealPlanWeek::Start).gte(start))
+            .to_owned();
 
-    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-    Ok(sqlx::query_as_with::<_, WeekListRow, _>(&sql, values)
-        .fetch_all(pool)
-        .await?)
-}
+        Ok(sqlx::query_as_with::<_, WeekListRow, _>(&sql, values)
+            .fetch_all(&self.read_db)
+            .await?)
+    }
 
-pub async fn find_last_from(
-    pool: &SqlitePool,
-    start: OffsetDateTime,
-    user_id: impl Into<String>,
-) -> anyhow::Result<Option<WeekRow>> {
-    let user_id = user_id.into();
-    let start: u64 = start
-        .replace_time(time::Time::from_hms(12, 0, 0)?)
-        .unix_timestamp()
-        .try_into()?;
-    let statement = sea_query::Query::select()
-        .columns([
-            MealPlanWeek::UserId,
-            MealPlanWeek::Start,
-            MealPlanWeek::End,
-            MealPlanWeek::Slots,
-        ])
-        .from(MealPlanWeek::Table)
-        .and_where(Expr::col(MealPlanWeek::UserId).eq(&user_id))
-        .and_where(Expr::col(MealPlanWeek::Start).gte(start))
-        .to_owned();
+    pub async fn find_week_last_from(
+        &self,
+        start: OffsetDateTime,
+        user_id: impl Into<String>,
+    ) -> anyhow::Result<Option<WeekRow>> {
+        let user_id = user_id.into();
+        let start: u64 = start
+            .replace_time(time::Time::from_hms(12, 0, 0)?)
+            .unix_timestamp()
+            .try_into()?;
+        let statement = sea_query::Query::select()
+            .columns([
+                MealPlanWeek::UserId,
+                MealPlanWeek::Start,
+                MealPlanWeek::End,
+                MealPlanWeek::Slots,
+            ])
+            .from(MealPlanWeek::Table)
+            .and_where(Expr::col(MealPlanWeek::UserId).eq(&user_id))
+            .and_where(Expr::col(MealPlanWeek::Start).gte(start))
+            .to_owned();
 
-    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-    Ok(sqlx::query_as_with::<_, WeekRow, _>(&sql, values)
-        .fetch_optional(pool)
-        .await?)
+        Ok(sqlx::query_as_with::<_, WeekRow, _>(&sql, values)
+            .fetch_optional(&self.read_db)
+            .await?)
+    }
 }
 
 pub fn subscription<E: Executor + Clone>() -> SubscriptionBuilder<E> {

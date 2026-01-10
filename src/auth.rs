@@ -154,12 +154,10 @@ impl FromRequestParts<crate::routes::AppState> for AuthUser {
 
         let claims = AuthToken::from_request_parts(parts, state).await?;
 
-        let Some(user) = imkitchen_user::login::load(&state.executor, &state.read_db, &claims.sub)
-            .await
-            .map_err(|e| {
-                tracing::error!("{e}");
-                Redirect::to("/login")
-            })?
+        let Some(user) = state.user_query.login(&claims.sub).await.map_err(|e| {
+            tracing::error!("{e}");
+            Redirect::to("/login")
+        })?
         else {
             return Err(Redirect::to("/login"));
         };

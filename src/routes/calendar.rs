@@ -60,7 +60,8 @@ pub async fn page(
 ) -> impl IntoResponse {
     let week_from_now = imkitchen_mealplan::current_and_next_four_weeks_from_now()[0];
     let weeks = crate::try_page_response!(
-        imkitchen_mealplan::week::filter_last_from(&app.read_db, week_from_now.start, &user.id),
+        app.mealplan_query
+            .filter_week_last_from(week_from_now.start, &user.id),
         template
     );
 
@@ -70,7 +71,8 @@ pub async fn page(
 
     let current = match weeks.get((index - 1) as usize) {
         Some(week) => crate::try_page_response!(
-            imkitchen_mealplan::week::find_from_unix_timestamp(&app.read_db, week.start, &user.id),
+            app.mealplan_query
+                .find_from_unix_timestamp(week.start, &user.id),
             template
         ),
         _ => None,
@@ -163,7 +165,7 @@ pub async fn regenerate_status(
     let week_from_now = imkitchen_mealplan::next_four_mondays_from_now()[0];
 
     match crate::try_response!(anyhow:
-        imkitchen_mealplan::week::find(&app.read_db,week_from_now.start, &user.id),
+        app.mealplan_query.find_week(week_from_now.start, &user.id),
         template,
         Some(RegenerateButtonTemplate {
             status: TemplateStatus::Idle

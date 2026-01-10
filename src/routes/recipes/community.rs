@@ -60,11 +60,8 @@ pub async fn page(
     State(app): State<AppState>,
     Query(input): Query<PageQuery>,
 ) -> impl IntoResponse {
-    let stat = crate::try_page_response!(
-        imkitchen_recipe::user_stat::find_user_stat(&app.read_db, &user.id),
-        template
-    )
-    .unwrap_or_default();
+    let stat = crate::try_page_response!(app.recipe_query.find_user_stat(&user.id), template)
+        .unwrap_or_default();
 
     let query = input.clone();
 
@@ -84,20 +81,17 @@ pub async fn page(
         .and_then(|v| CuisineType::from_str(v.as_str()).ok());
 
     let recipes = crate::try_page_response!(
-        imkitchen_recipe::user::filter(
-            &app.read_db,
-            RecipesQuery {
-                exclude_ids: None,
-                user_id: None,
-                recipe_type,
-                cuisine_type,
-                is_shared: Some(true),
-                dietary_restrictions: input.dietary_restrictions,
-                dietary_where_any: false,
-                sort_by: input.sort_by.unwrap_or_default(),
-                args: args.limit(20),
-            }
-        ),
+        app.recipe_query.filter_user(RecipesQuery {
+            exclude_ids: None,
+            user_id: None,
+            recipe_type,
+            cuisine_type,
+            is_shared: Some(true),
+            dietary_restrictions: input.dietary_restrictions,
+            dietary_where_any: false,
+            sort_by: input.sort_by.unwrap_or_default(),
+            args: args.limit(20),
+        }),
         template
     );
 

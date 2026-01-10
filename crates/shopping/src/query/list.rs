@@ -7,7 +7,7 @@ use imkitchen_db::table::ShoppingList;
 use imkitchen_shared::{recipe::Ingredient, shopping::Generated};
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
-use sqlx::{SqlitePool, prelude::FromRow};
+use sqlx::prelude::FromRow;
 use time::OffsetDateTime;
 
 #[derive(Default, FromRow)]
@@ -16,27 +16,29 @@ pub struct ListWeekRow {
     pub ingredients: evento::sql_types::Bitcode<Vec<Ingredient>>,
 }
 
-pub async fn next_from(
-    pool: &SqlitePool,
-    week: u64,
-    user_id: impl Into<String>,
-) -> anyhow::Result<Option<ListWeekRow>> {
-    let user_id = user_id.into();
-    let week = OffsetDateTime::from_unix_timestamp(week.try_into()?)?;
-    let statement = sea_query::Query::select()
-        .columns([ShoppingList::Week, ShoppingList::Ingredients])
-        .from(ShoppingList::Table)
-        .and_where(Expr::col(ShoppingList::UserId).eq(&user_id))
-        .and_where(Expr::col(ShoppingList::Week).gte(week.unix_timestamp()))
-        .order_by_expr(Expr::col(ShoppingList::Week), sea_query::Order::Asc)
-        .limit(1)
-        .to_owned();
+impl<E: Executor> super::Query<E> {
+    pub async fn next_from(
+        &self,
+        week: u64,
+        user_id: impl Into<String>,
+    ) -> anyhow::Result<Option<ListWeekRow>> {
+        let user_id = user_id.into();
+        let week = OffsetDateTime::from_unix_timestamp(week.try_into()?)?;
+        let statement = sea_query::Query::select()
+            .columns([ShoppingList::Week, ShoppingList::Ingredients])
+            .from(ShoppingList::Table)
+            .and_where(Expr::col(ShoppingList::UserId).eq(&user_id))
+            .and_where(Expr::col(ShoppingList::Week).gte(week.unix_timestamp()))
+            .order_by_expr(Expr::col(ShoppingList::Week), sea_query::Order::Asc)
+            .limit(1)
+            .to_owned();
 
-    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-    Ok(sqlx::query_as_with::<_, ListWeekRow, _>(&sql, values)
-        .fetch_optional(pool)
-        .await?)
+        Ok(sqlx::query_as_with::<_, ListWeekRow, _>(&sql, values)
+            .fetch_optional(&self.read_db)
+            .await?)
+    }
 }
 
 pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {

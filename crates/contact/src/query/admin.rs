@@ -60,44 +60,61 @@ pub struct FilterQuery {
     pub args: Args,
 }
 
-pub async fn filter(
-    pool: &SqlitePool,
-    input: FilterQuery,
-) -> anyhow::Result<ReadResult<AdminView>> {
-    let mut statement = sea_query::Query::select()
-        .columns([
-            ContactAdmin::Id,
-            ContactAdmin::Email,
-            ContactAdmin::Status,
-            ContactAdmin::Subject,
-            ContactAdmin::Message,
-            ContactAdmin::Name,
-            ContactAdmin::CreatedAt,
-        ])
-        .from(ContactAdmin::Table)
-        .to_owned();
+impl<E: Executor> super::Query<E> {
+    pub async fn filter_admin(&self, input: FilterQuery) -> anyhow::Result<ReadResult<AdminView>> {
+        let mut statement = sea_query::Query::select()
+            .columns([
+                ContactAdmin::Id,
+                ContactAdmin::Email,
+                ContactAdmin::Status,
+                ContactAdmin::Subject,
+                ContactAdmin::Message,
+                ContactAdmin::Name,
+                ContactAdmin::CreatedAt,
+            ])
+            .from(ContactAdmin::Table)
+            .to_owned();
 
-    if let Some(subject) = input.subject {
-        statement.and_where(Expr::col(ContactAdmin::Subject).eq(subject.to_string()));
+        if let Some(subject) = input.subject {
+            statement.and_where(Expr::col(ContactAdmin::Subject).eq(subject.to_string()));
+        }
+
+        if let Some(status) = input.status {
+            statement.and_where(Expr::col(ContactAdmin::Status).eq(status.to_string()));
+        }
+
+        let mut reader = Reader::new(statement);
+
+        if matches!(input.sort_by, SortBy::MostRecent) {
+            reader.desc();
+        }
+
+        reader
+            .args(input.args)
+            .execute::<_, AdminView, _>(&self.read_db)
+            .await
     }
 
-    if let Some(status) = input.status {
-        statement.and_where(Expr::col(ContactAdmin::Status).eq(status.to_string()));
+    pub async fn find_admin(&self, id: impl Into<String>) -> anyhow::Result<Option<AdminView>> {
+        find(&self.read_db, id).await
     }
 
-    let mut reader = Reader::new(statement);
-
-    if matches!(input.sort_by, SortBy::MostRecent) {
-        reader.desc();
+    pub async fn admin(&self, id: impl Into<String>) -> Result<Option<AdminView>, anyhow::Error> {
+        load(&self.executor, id).await
     }
-
-    reader
-        .args(input.args)
-        .execute::<_, AdminView, _>(pool)
-        .await
 }
 
-pub async fn find(pool: &SqlitePool, id: impl Into<String>) -> anyhow::Result<Option<AdminView>> {
+pub(crate) async fn load<E: Executor>(
+    executor: &E,
+    id: impl Into<String>,
+) -> Result<Option<AdminView>, anyhow::Error> {
+    create_projection(id).execute(executor).await
+}
+
+pub(crate) async fn find(
+    pool: &SqlitePool,
+    id: impl Into<String>,
+) -> anyhow::Result<Option<AdminView>> {
     let statement = sea_query::Query::select()
         .columns([
             ContactAdmin::Id,
@@ -126,19 +143,6 @@ pub fn create_projection(id: impl Into<String>) -> Projection<AdminView> {
         .handler(handle_reopened())
         .handler(handle_marked_read_and_reply())
         .handler(handle_resolved())
-}
-
-pub async fn load<'a, E: Executor>(
-    executor: &'a E,
-    pool: &'a SqlitePool,
-    id: impl Into<String>,
-) -> Result<Option<AdminView>, anyhow::Error> {
-    let id = id.into();
-
-    create_projection(id)
-        .data(pool.clone())
-        .execute(executor)
-        .await
 }
 
 impl Snapshot for AdminView {}

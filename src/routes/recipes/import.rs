@@ -131,7 +131,7 @@ pub async fn status(
     user: AuthUser,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    match imkitchen_recipe::user::find(&app.read_db, &id).await {
+    match app.recipe_query.find_user(&id).await {
         Ok(Some(_)) => template
             .render(ImportingStatusTemplate { id: None })
             .into_response(),

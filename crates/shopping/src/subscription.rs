@@ -18,6 +18,7 @@ pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
         .handler(handle_recipe_deleted())
         .handler(handle_recipe_basic_information_changed())
         .handler(handle_mealplan_week_generated())
+        .handler(handle_recipe_ingredients_changed())
 }
 
 #[evento::sub_handler]
@@ -100,14 +101,20 @@ async fn handle_recipe_created<E: Executor>(
     event: Event<imkitchen_shared::recipe::Created>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
+    let ingredients = bitcode::encode::<Vec<Ingredient>>(&vec![]);
 
     let statement = Query::insert()
         .into_table(ShoppingRecipe::Table)
-        .columns([ShoppingRecipe::Id, ShoppingRecipe::UserId])
-        .values_panic([
+        .columns([
+            ShoppingRecipe::Id,
+            ShoppingRecipe::UserId,
+            ShoppingRecipe::Ingredients,
+        ])
+        .values([
             event.aggregator_id.to_owned().into(),
             event.metadata.user()?.into(),
-        ])
+            ingredients.into(),
+        ])?
         .to_owned();
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
@@ -121,14 +128,20 @@ async fn handle_recipe_imported<E: Executor>(
     event: Event<imkitchen_shared::recipe::Imported>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
+    let ingredients = bitcode::encode(&event.data.ingredients);
 
     let statement = Query::insert()
         .into_table(ShoppingRecipe::Table)
-        .columns([ShoppingRecipe::Id, ShoppingRecipe::UserId])
-        .values_panic([
+        .columns([
+            ShoppingRecipe::Id,
+            ShoppingRecipe::UserId,
+            ShoppingRecipe::Ingredients,
+        ])
+        .values([
             event.aggregator_id.to_owned().into(),
             event.metadata.user()?.into(),
-        ])
+            ingredients.into(),
+        ])?
         .to_owned();
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
@@ -164,6 +177,25 @@ async fn handle_recipe_basic_information_changed<E: Executor>(
         &event.aggregator_id,
         ShoppingRecipe::HouseholdSize,
         event.data.household_size,
+    )
+    .await?;
+
+    Ok(())
+}
+
+#[evento::sub_handler]
+async fn handle_recipe_ingredients_changed<E: Executor>(
+    context: &Context<'_, E>,
+    event: Event<imkitchen_shared::recipe::IngredientsChanged>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let ingredients = bitcode::encode(&event.data.ingredients);
+
+    update_col(
+        &pool,
+        &event.aggregator_id,
+        ShoppingRecipe::HouseholdSize,
+        ingredients,
     )
     .await?;
 

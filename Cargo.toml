@@ -19,7 +19,7 @@ askama = "0.15"
 cfg-if = "1.0"
 sqlx = { version = "0.8", default-features = false, features = ["migrate", "json", "derive", "runtime-tokio", "sqlite"] }
 sqlx_migrator = { version = "0.18", features = ["sqlite"] }
-evento = { git = "https://github.com/timayz/evento.git", rev = "4cfad86", features = ["sqlite", "rw"] }
+evento = { git = "https://github.com/timayz/evento.git", rev = "7a0cde9", features = ["sqlite", "rw"] }
 # evento = { version = "2.0.0-alpha.9", features = ["sqlite", "rw"] }
 argon2 = { version = "0.5", features = ["std"] }
 jsonwebtoken = { version = "10.1", features = ["aws_lc_rs"] }

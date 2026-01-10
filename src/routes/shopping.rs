@@ -52,7 +52,8 @@ pub async fn page(
 ) -> impl IntoResponse {
     let week_from_now = imkitchen_mealplan::current_and_next_four_weeks_from_now()[0];
     let weeks = crate::try_page_response!(
-        imkitchen_mealplan::week::filter_last_from(&app.read_db, week_from_now.start, &user.id),
+        app.mealplan_query
+            .filter_week_last_from(week_from_now.start, &user.id),
         template
     );
 
@@ -62,10 +63,7 @@ pub async fn page(
 
     let current = match weeks.get((index - 1) as usize) {
         Some(week) => {
-            crate::try_page_response!(
-                imkitchen_shopping::list::next_from(&app.read_db, week.start, &user.id),
-                template
-            )
+            crate::try_page_response!(app.shopping_query.next_from(week.start, &user.id), template)
         }
         _ => None,
     };
@@ -80,7 +78,8 @@ pub async fn page(
 
     let recipes = match weeks.get((index - 1) as usize) {
         Some(week) => crate::try_page_response!(
-            imkitchen_mealplan::week::find_from_unix_timestamp(&app.read_db, week.start, &user.id),
+            app.mealplan_query
+                .find_from_unix_timestamp(week.start, &user.id),
             template
         )
         .and_then(|week| Some(to_recipes(week))),
@@ -114,10 +113,7 @@ pub async fn toggle_action(
     Path((week,)): Path<(u64,)>,
     Json(input): Json<ToggleJson>,
 ) -> impl IntoResponse {
-    let current = crate::try_page_response!(
-        imkitchen_shopping::list::next_from(&app.read_db, week, &user.id),
-        template
-    );
+    let current = crate::try_page_response!(app.shopping_query.next_from(week, &user.id), template);
     let ingredients = current.as_ref().map(|r| to_categories(&r.ingredients.0));
 
     let checked = if current.is_some() {
@@ -155,13 +151,10 @@ pub async fn reset_all_action(
     State(app): State<AppState>,
     Path((week,)): Path<(u64,)>,
 ) -> impl IntoResponse {
-    let current = crate::try_page_response!(
-        imkitchen_shopping::list::next_from(&app.read_db, week, &user.id),
-        template
-    );
+    let current = crate::try_page_response!(app.shopping_query.next_from(week, &user.id), template);
     let ingredients = current.as_ref().map(|r| to_categories(&r.ingredients.0));
     let recipes = crate::try_page_response!(
-        imkitchen_mealplan::week::find_from_unix_timestamp(&app.read_db, week, &user.id),
+        app.mealplan_query.find_from_unix_timestamp(week, &user.id),
         template
     )
     .and_then(|week| Some(to_recipes(week)));
