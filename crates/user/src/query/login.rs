@@ -20,6 +20,10 @@ pub struct Login {
 #[evento::projection(Debug)]
 pub struct LoginView {
     pub id: String,
+    pub role: sqlx::types::Text<Role>,
+    pub state: sqlx::types::Text<State>,
+    pub username: Option<String>,
+    pub subscription_expire_at: u64,
     pub logins: Vec<Login>,
 }
 
@@ -102,6 +106,8 @@ async fn handle_username_changed(
     event: Event<UsernameChanged>,
     data: &mut LoginView,
 ) -> anyhow::Result<()> {
+    data.username = Some(event.data.value.to_owned());
+
     for login in data.logins.iter_mut() {
         login.username = Some(event.data.value.to_owned());
     }
@@ -116,10 +122,10 @@ async fn handle_logged_in(event: Event<LoggedIn>, data: &mut LoginView) -> anyho
         .retain(|r| r.user_agent != event.data.user_agent);
     data.logins.push(Login {
         id: event.data.access_id,
-        role: sqlx::types::Text(event.data.role),
-        state: sqlx::types::Text(event.data.state),
-        subscription_expire_at: event.data.subscription_expire_at,
-        username: event.data.username,
+        role: data.role.to_owned(),
+        state: data.state.to_owned(),
+        subscription_expire_at: data.subscription_expire_at,
+        username: data.username.to_owned(),
         user_agent: event.data.user_agent,
     });
 
@@ -147,6 +153,7 @@ async fn handle_reset_completed(
 
 #[evento::handler]
 async fn handle_made_admin(_event: Event<MadeAdmin>, data: &mut LoginView) -> anyhow::Result<()> {
+    data.role.0 = Role::Admin;
     for login in data.logins.iter_mut() {
         login.role.0 = Role::Admin;
     }
@@ -156,6 +163,7 @@ async fn handle_made_admin(_event: Event<MadeAdmin>, data: &mut LoginView) -> an
 
 #[evento::handler]
 async fn handle_actived(_event: Event<Activated>, data: &mut LoginView) -> anyhow::Result<()> {
+    data.state.0 = State::Active;
     for login in data.logins.iter_mut() {
         login.state.0 = State::Active;
     }
@@ -165,6 +173,7 @@ async fn handle_actived(_event: Event<Activated>, data: &mut LoginView) -> anyho
 
 #[evento::handler]
 async fn handle_susended(_event: Event<Suspended>, data: &mut LoginView) -> anyhow::Result<()> {
+    data.state.0 = State::Suspended;
     for login in data.logins.iter_mut() {
         login.state.0 = State::Suspended;
     }
@@ -177,6 +186,7 @@ async fn handle_life_premium_toggled(
     event: Event<LifePremiumToggled>,
     data: &mut LoginView,
 ) -> anyhow::Result<()> {
+    data.subscription_expire_at = event.data.expire_at;
     for login in data.logins.iter_mut() {
         login.subscription_expire_at = event.data.expire_at;
     }

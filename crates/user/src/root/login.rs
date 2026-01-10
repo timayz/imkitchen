@@ -46,14 +46,9 @@ impl<E: Executor> super::Command<E> {
         }
 
         let access_id = Ulid::new().to_string();
-        let subscription = self.subscription.load(&user_row.id).await?;
 
         user.aggregator()?
             .event(&LoggedIn {
-                role: user_row.role.0.to_owned(),
-                state: user_row.state.0.to_owned(),
-                username: user_row.username,
-                subscription_expire_at: subscription.expire_at,
                 lang: input.lang,
                 timezone: input.timezone,
                 user_agent: input.user_agent,

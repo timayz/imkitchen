@@ -11,8 +11,8 @@ pub struct UserRow {
     pub id: String,
     pub password: String,
     pub username: Option<String>,
-    pub role: sqlx::types::Text<Role>,
-    pub state: sqlx::types::Text<State>,
+    // pub role: sqlx::types::Text<Role>,
+    // pub state: sqlx::types::Text<State>,
 }
 
 pub enum FindType {
