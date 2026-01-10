@@ -49,22 +49,7 @@ pub async fn serve(
         .data(write_pool.clone())
         .start(&executor)
         .await?;
-    //
-    // let sub_user_login = imkitchen_user::login::subscription()
-    //     .data(write_pool.clone())
-    //     .start(&executor)
-    //     .await?;
-    //
-    // let sub_user_admin = imkitchen_user::admin::subscription()
-    //     .data(write_pool.clone())
-    //     .start(&executor)
-    //     .await?;
-    //
-    // let sub_user_global_stat = imkitchen_user::global_stat::subscription()
-    //     .data(write_pool.clone())
-    //     .start(&executor)
-    //     .await?;
-    //
+
     let sub_contact_query = imkitchen_contact::query_subscription()
         .data(write_pool.clone())
         .start(&executor)
@@ -74,32 +59,22 @@ pub async fn serve(
         .data(write_pool.clone())
         .start(&executor)
         .await?;
-    // //
+
     let sub_recipe_query = imkitchen_recipe::query_subscription()
         .data(write_pool.clone())
         .start(&executor)
         .await?;
-    //
-    // let sub_recipe_user = imkitchen_recipe::user::subscription()
-    //     .data(write_pool.clone())
-    //     .start(&executor)
-    //     .await?;
-    //
+
     let sub_recipe_user_stat = imkitchen_recipe::user_stat::subscription()
         .data(write_pool.clone())
         .start(&executor)
         .await?;
-    //
-    // let sub_rating_command = imkitchen_recipe::rating::subscription()
-    //     .data(write_pool.clone())
-    //     .start(&executor)
-    //     .await?;
-    //
+
     let sub_mealplan_query = imkitchen_mealplan::query_subscription()
         .data(write_pool.clone())
         .start(&executor)
         .await?;
-    //
+
     let sub_mealplan_week = imkitchen_mealplan::week::subscription()
         .data(write_pool.clone())
         .start(&executor)
@@ -119,11 +94,6 @@ pub async fn serve(
         .data(write_pool.clone())
         .start(&executor)
         .await?;
-    //
-    // let sub_shopping_command = imkitchen_shopping::subscribe_command()
-    //     .data(write_pool.clone())
-    //     .run(&evento_executor)
-    //     .await?;
 
     // let mut sched_mealplan = imkitchen_mealplan::scheduler(&evento_executor, &read_pool).await?;
     // sched_mealplan.start().await?;
@@ -212,21 +182,15 @@ pub async fn serve(
         sub_notification_contact.shutdown(),
         sub_notification_user.shutdown(),
         sub_user_query.shutdown(),
-        // sub_user_login.shutdown(),
-        // sub_user_admin.shutdown(),
-        // sub_user_global_stat.shutdown(),
         sub_contact_query.shutdown(),
         sub_contact_global_stat.shutdown(),
         sub_recipe_query.shutdown(),
-        // sub_recipe_user.shutdown(),
         sub_recipe_user_stat.shutdown(),
-        // sub_rating_command.shutdown(),
         sub_mealplan_query.shutdown(),
         sub_mealplan_week.shutdown(),
         sub_mealplan_slot.shutdown(),
         sub_shopping.shutdown(),
         sub_shopping_list.shutdown(),
-        //     sub_shopping_command.shutdown_and_wait(),
     ])
     .await;
 
