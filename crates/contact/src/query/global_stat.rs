@@ -1,5 +1,5 @@
 use evento::{
-    Executor, Snapshot,
+    Executor,
     metadata::Event,
     subscription::{Context, SubscriptionBuilder},
 };
@@ -20,8 +20,6 @@ pub struct GlobalStatView {
     pub today: u32,
     pub avg_response_time: u32,
 }
-
-impl Snapshot for GlobalStatView {}
 
 pub async fn find_global(pool: &SqlitePool) -> anyhow::Result<Option<GlobalStatView>> {
     find(pool, GLOBAL_TIMESTAMP).await

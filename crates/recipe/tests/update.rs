@@ -11,9 +11,9 @@ async fn test_update_no_fields() -> anyhow::Result<()> {
     let dir = TempDir::new()?;
     let path = dir.child("db.sqlite3");
     let state = helpers::setup_test_state(path).await?;
+    let cmd = imkitchen_recipe::Command::new(state);
 
-    let recipe_id =
-        imkitchen_recipe::Command::create(&state.evento, "john", "john_doe".to_owned()).await?;
+    let recipe_id = cmd.create("john", "john_doe".to_owned()).await?;
 
     let input = UpdateInput {
         name: "My first Recipe".to_owned(),
@@ -42,24 +42,17 @@ async fn test_update_no_fields() -> anyhow::Result<()> {
         id: recipe_id.to_owned(),
     };
 
-    let recipe = imkitchen_recipe::load(&state.evento, &state.pool, &recipe_id)
-        .await?
-        .unwrap();
-    recipe.update(input.clone(), "john").await?;
+    cmd.update(input.clone(), "john").await?;
 
-    let recipe = imkitchen_recipe::load(&state.evento, &state.pool, &recipe_id)
-        .await?
-        .unwrap();
+    let recipe = cmd.load(&recipe_id).await?.unwrap();
 
     assert_eq!(recipe.recipe_type.0, RecipeType::MainCourse);
     assert_eq!(recipe.cuisine_type.0, CuisineType::Caribbean);
 
     // Update with same values should not change anything
-    recipe.update(input.clone(), "john").await?;
+    cmd.update(input.clone(), "john").await?;
 
-    let recipe = imkitchen_recipe::load(&state.evento, &state.pool, &recipe_id)
-        .await?
-        .unwrap();
+    let recipe = cmd.load(&recipe_id).await?.unwrap();
 
     assert_eq!(recipe.recipe_type.0, RecipeType::MainCourse);
     assert_eq!(recipe.cuisine_type.0, CuisineType::Caribbean);
@@ -72,9 +65,9 @@ async fn test_update_only_recipe_type() -> anyhow::Result<()> {
     let dir = TempDir::new()?;
     let path = dir.child("db.sqlite3");
     let state = helpers::setup_test_state(path).await?;
+    let cmd = imkitchen_recipe::Command::new(state);
 
-    let recipe_id =
-        imkitchen_recipe::Command::create(&state.evento, "john", "john_doe".to_owned()).await?;
+    let recipe_id = cmd.create("john", "john_doe".to_owned()).await?;
 
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
@@ -103,21 +96,13 @@ async fn test_update_only_recipe_type() -> anyhow::Result<()> {
         id: recipe_id.to_owned(),
     };
 
-    let recipe = imkitchen_recipe::load(&state.evento, &state.pool, &recipe_id)
-        .await?
-        .unwrap();
-    recipe.update(input.clone(), "john").await?;
+    cmd.update(input.clone(), "john").await?;
 
     input.recipe_type = RecipeType::Dessert;
 
-    let recipe = imkitchen_recipe::load(&state.evento, &state.pool, &recipe_id)
-        .await?
-        .unwrap();
-    recipe.update(input.clone(), "john").await?;
+    cmd.update(input.clone(), "john").await?;
 
-    let recipe = imkitchen_recipe::load(&state.evento, &state.pool, &recipe_id)
-        .await?
-        .unwrap();
+    let recipe = cmd.load(&recipe_id).await?.unwrap();
 
     assert_eq!(recipe.recipe_type.0, RecipeType::Dessert);
 
@@ -129,9 +114,9 @@ async fn test_update_only_cuisine_type() -> anyhow::Result<()> {
     let dir = TempDir::new()?;
     let path = dir.child("db.sqlite3");
     let state = helpers::setup_test_state(path).await?;
+    let cmd = imkitchen_recipe::Command::new(state);
 
-    let recipe_id =
-        imkitchen_recipe::Command::create(&state.evento, "john", "john_doe".to_owned()).await?;
+    let recipe_id = cmd.create("john", "john_doe".to_owned()).await?;
 
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
@@ -160,21 +145,13 @@ async fn test_update_only_cuisine_type() -> anyhow::Result<()> {
         id: recipe_id.to_owned(),
     };
 
-    let recipe = imkitchen_recipe::load(&state.evento, &state.pool, &recipe_id)
-        .await?
-        .unwrap();
-    recipe.update(input.clone(), "john").await?;
+    cmd.update(input.clone(), "john").await?;
 
     input.cuisine_type = CuisineType::Italian;
 
-    let recipe = imkitchen_recipe::load(&state.evento, &state.pool, &recipe_id)
-        .await?
-        .unwrap();
-    recipe.update(input.clone(), "john").await?;
+    cmd.update(input.clone(), "john").await?;
 
-    let recipe = imkitchen_recipe::load(&state.evento, &state.pool, &recipe_id)
-        .await?
-        .unwrap();
+    let recipe = cmd.load(&recipe_id).await?.unwrap();
 
     assert_eq!(recipe.cuisine_type.0, CuisineType::Italian);
 
@@ -186,9 +163,9 @@ async fn test_update_only_accepts_accompaniment() -> anyhow::Result<()> {
     let dir = TempDir::new()?;
     let path = dir.child("db.sqlite3");
     let state = helpers::setup_test_state(path).await?;
+    let cmd = imkitchen_recipe::Command::new(state);
 
-    let recipe_id =
-        imkitchen_recipe::Command::create(&state.evento, "john", "john_doe".to_owned()).await?;
+    let recipe_id = cmd.create("john", "john_doe".to_owned()).await?;
 
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
@@ -217,23 +194,16 @@ async fn test_update_only_accepts_accompaniment() -> anyhow::Result<()> {
         id: recipe_id.to_owned(),
     };
 
-    let recipe = imkitchen_recipe::load(&state.evento, &state.pool, &recipe_id)
-        .await?
-        .unwrap();
-    recipe.update(input.clone(), "john").await?;
+    cmd.update(input.clone(), "john").await?;
 
-    let recipe = imkitchen_recipe::load(&state.evento, &state.pool, &recipe_id)
-        .await?
-        .unwrap();
+    let recipe = cmd.load(&recipe_id).await?.unwrap();
     assert!(!recipe.accepts_accompaniment);
 
     input.accepts_accompaniment = true;
 
-    recipe.update(input.clone(), "john").await?;
+    cmd.update(input.clone(), "john").await?;
 
-    let recipe = imkitchen_recipe::load(&state.evento, &state.pool, &recipe_id)
-        .await?
-        .unwrap();
+    let recipe = cmd.load(&recipe_id).await?.unwrap();
 
     assert!(recipe.accepts_accompaniment);
 

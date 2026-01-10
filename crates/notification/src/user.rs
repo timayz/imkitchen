@@ -1,5 +1,5 @@
 use evento::{
-    Executor, Snapshot,
+    Executor,
     metadata::Event,
     subscription::{Context, SubscriptionBuilder},
 };
@@ -10,11 +10,6 @@ use crate::{
     EmailService,
     template::{Template, filters},
 };
-
-#[derive(Default, Clone)]
-pub struct ContactView;
-
-impl Snapshot for ContactView {}
 
 pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
     SubscriptionBuilder::new("notification-user").handler(handle_reset_requested())

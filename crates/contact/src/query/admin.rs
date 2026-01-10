@@ -17,7 +17,7 @@ use imkitchen_shared::contact::{
     Contact, FormSubmitted, MarkedReadAndReply, Reopened, Resolved, Status, Subject,
 };
 
-#[derive(Debug, Default, FromRow, Cursor)]
+#[evento::projection(Debug, FromRow, Cursor)]
 pub struct AdminView {
     #[cursor(ContactAdmin::Id, 1)]
     pub id: String,
@@ -143,16 +143,6 @@ pub async fn load<'a, E: Executor>(
 
 impl Snapshot for AdminView {}
 
-// #[evento::snapshot]
-// async fn restore(
-//     context: &evento::context::RwContext,
-//     id: String,
-//     _aggregators: &std::collections::HashMap<String, String>,
-// ) -> anyhow::Result<Option<AdminView>> {
-//     let pool = context.extract::<SqlitePool>();
-//     find(&pool, id).await
-// }
-
 #[evento::handler]
 async fn handle_form_submmited(
     event: Event<FormSubmitted>,
@@ -165,36 +155,6 @@ async fn handle_form_submmited(
     data.message = event.data.message.to_owned();
     data.name = event.data.name.to_owned();
     data.created_at = event.timestamp;
-    // match action {
-    //     Action::Apply(data) => {
-    //     }
-    //     Action::Handle(context) => {
-    //         let pool = context.extract::<sqlx::SqlitePool>();
-    //         let statement = Query::insert()
-    //             .into_table(ContactAdmin::Table)
-    //             .columns([
-    //                 ContactAdmin::Id,
-    //                 ContactAdmin::Email,
-    //                 ContactAdmin::Status,
-    //                 ContactAdmin::Subject,
-    //                 ContactAdmin::Message,
-    //                 ContactAdmin::Name,
-    //                 ContactAdmin::CreatedAt,
-    //             ])
-    //             .values_panic([
-    //                 event.aggregator_id.to_owned().into(),
-    //                 event.data.email.to_owned().into(),
-    //                 status.to_string().into(),
-    //                 event.data.subject.to_string().into(),
-    //                 event.data.message.to_owned().into(),
-    //                 event.data.name.to_owned().into(),
-    //                 event.timestamp.into(),
-    //             ])
-    //             .to_owned();
-    //         let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    //         sqlx::query_with(&sql, values).execute(&pool).await?;
-    //     }
-    // };
 
     Ok(())
 }

@@ -1,12 +1,5 @@
 use evento::{Executor, ProjectionAggregator, metadata::Metadata};
 use imkitchen_shared::recipe::rating::CommentUnlikeChecked;
-use validator::Validate;
-
-#[derive(Validate)]
-pub struct AddCommentInput {
-    pub message: String,
-    pub reply_to: Option<String>,
-}
 
 impl<E: Executor> super::Command<E> {
     pub async fn check_comment_unlike(

@@ -119,7 +119,7 @@ pub async fn create(
     State(app): State<AppState>,
 ) -> impl IntoResponse {
     let id = crate::try_response!(
-        imkitchen_recipe::Command::create(&app.executor, &user.id, user.username.to_owned()),
+        imkitchen_recipe::Recipe::create(&app.executor, &user.id, user.username.to_owned()),
         template
     );
 

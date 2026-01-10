@@ -44,7 +44,7 @@ pub async fn action(
     };
 
     crate::try_response!(
-        imkitchen_contact::Command::submit_form(
+        imkitchen_contact::Contact::submit_form(
             &app_state.executor,
             SubmitFormInput {
                 to: app_state.config.email.contact_address,

@@ -1,11 +1,16 @@
-use evento::{Executor, Projection, Snapshot, metadata::Event};
+use std::ops::Deref;
+
+use evento::{
+    Aggregator, AggregatorEvent, Executor, Projection, ProjectionAggregator, ReadAggregator,
+    Snapshot, metadata::Event,
+};
 use sha3::{Digest, Sha3_224};
-use sqlx::{SqlitePool, prelude::FromRow};
+use sqlx::prelude::FromRow;
 
 use imkitchen_shared::recipe::{
-    AdvancePrepChanged, BasicInformationChanged, Created, CuisineType, CuisineTypeChanged, Deleted,
-    DietaryRestrictionsChanged, Imported, IngredientsChanged, InstructionsChanged, MadePrivate,
-    MainCourseOptionsChanged, Recipe, RecipeType, RecipeTypeChanged, SharedToCommunity,
+    self, AdvancePrepChanged, BasicInformationChanged, Created, CuisineType, CuisineTypeChanged,
+    Deleted, DietaryRestrictionsChanged, Imported, IngredientsChanged, InstructionsChanged,
+    MadePrivate, MainCourseOptionsChanged, RecipeType, RecipeTypeChanged, SharedToCommunity,
 };
 
 mod create;
@@ -18,9 +23,53 @@ mod update;
 pub use import::ImportInput;
 pub use update::UpdateInput;
 
-#[evento::command]
-#[derive(FromRow)]
-pub struct Command {
+pub struct Command<E: Executor> {
+    state: imkitchen_shared::State<E>,
+    pub rating: crate::rating::Command<E>,
+}
+
+impl<E: Executor> Deref for Command<E> {
+    type Target = imkitchen_shared::State<E>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.state
+    }
+}
+
+impl<E: Executor> Command<E> {
+    pub fn new(state: imkitchen_shared::State<E>) -> Self
+    where
+        imkitchen_shared::State<E>: Clone,
+    {
+        Self {
+            rating: crate::rating::Command(state.clone()),
+            state,
+        }
+    }
+    pub async fn load(&self, id: impl Into<String>) -> anyhow::Result<Option<Recipe>> {
+        let events = self
+            .executor
+            .read(
+                Some(vec![ReadAggregator::event(
+                    recipe::Recipe::aggregator_type(),
+                    Deleted::event_name(),
+                )]),
+                None,
+                evento::cursor::Args::backward(1, None),
+            )
+            .await?;
+
+        if !events.edges.is_empty() {
+            return Ok(None);
+        }
+
+        create_projection(id).execute(&self.executor).await
+    }
+}
+
+#[evento::projection(FromRow)]
+pub struct Recipe {
+    pub id: String,
     pub owner_id: String,
     pub recipe_type: sqlx::types::Text<RecipeType>,
     pub cuisine_type: sqlx::types::Text<CuisineType>,
@@ -34,8 +83,8 @@ pub struct Command {
     pub is_deleted: bool,
 }
 
-pub fn create_projection(id: impl Into<String>) -> Projection<CommandData> {
-    Projection::new::<Recipe>(id)
+pub fn create_projection(id: impl Into<String>) -> Projection<Recipe> {
+    Projection::new::<recipe::Recipe>(id)
         .handler(handle_created())
         .handler(handle_deleted())
         .handler(handle_imported())
@@ -52,72 +101,24 @@ pub fn create_projection(id: impl Into<String>) -> Projection<CommandData> {
         .safety_check()
 }
 
-pub async fn load<'a, E: Executor>(
-    executor: &'a E,
-    pool: &'a SqlitePool,
-    id: impl Into<String>,
-) -> Result<Option<Command<'a, E>>, anyhow::Error> {
-    let id = id.into();
-
-    let Some(data) = create_projection(&id)
-        .data(pool.clone())
-        .execute(executor)
-        .await?
-    else {
-        return Ok(None);
-    };
-
-    Ok(Some(Command::new(
-        id,
-        data.aggregator_version()?,
-        data,
-        executor,
-    )))
+impl ProjectionAggregator for Recipe {
+    fn aggregator_id(&self) -> String {
+        self.id.to_owned()
+    }
 }
-
-impl Snapshot for CommandData {}
-
-// #[evento::snapshot]
-// async fn restore(
-//     context: &evento::context::RwContext,
-//     id: String,
-//     _aggregators: &std::collections::HashMap<String, String>,
-// ) -> anyhow::Result<Option<CommandData>> {
-//     let pool = context.extract::<SqlitePool>();
-//     let statement = Query::select()
-//         .columns([
-//             RecipeCommand::OwnerId,
-//             RecipeCommand::RecipeType,
-//             RecipeCommand::CuisineType,
-//             RecipeCommand::IsShared,
-//             RecipeCommand::BasicInformationHash,
-//             RecipeCommand::IngredientsHash,
-//             RecipeCommand::InstructionsHash,
-//             RecipeCommand::DietaryRestrictionsHash,
-//             RecipeCommand::AdvancePrepHash,
-//             RecipeCommand::AcceptsAccompaniment,
-//             RecipeCommand::IsDeleted,
-//         ])
-//         .from(RecipeCommand::Table)
-//         .and_where(Expr::col(RecipeCommand::Id).eq(id))
-//         .to_owned();
-//
-//     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-//
-//     Ok(sqlx::query_as_with(&sql, values)
-//         .fetch_optional(&pool)
-//         .await?)
-// }
+impl Snapshot for Recipe {}
 
 #[evento::handler]
-async fn handle_created(event: Event<Created>, data: &mut CommandData) -> anyhow::Result<()> {
+async fn handle_created(event: Event<Created>, data: &mut Recipe) -> anyhow::Result<()> {
+    data.id = event.aggregator_id.to_owned();
     data.owner_id = event.metadata.user()?;
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_imported(event: Event<Imported>, data: &mut CommandData) -> anyhow::Result<()> {
+async fn handle_imported(event: Event<Imported>, data: &mut Recipe) -> anyhow::Result<()> {
+    data.id = event.aggregator_id.to_owned();
     data.owner_id = event.metadata.user()?;
     data.recipe_type.0 = event.data.recipe_type;
     data.cuisine_type.0 = event.data.cuisine_type;
@@ -168,7 +169,7 @@ async fn handle_imported(event: Event<Imported>, data: &mut CommandData) -> anyh
 #[evento::handler]
 async fn handle_recipe_type_changed(
     event: Event<RecipeTypeChanged>,
-    data: &mut CommandData,
+    data: &mut Recipe,
 ) -> anyhow::Result<()> {
     data.recipe_type.0 = event.data.recipe_type;
 
@@ -178,7 +179,7 @@ async fn handle_recipe_type_changed(
 #[evento::handler]
 async fn handle_basic_information_changed(
     event: Event<BasicInformationChanged>,
-    data: &mut CommandData,
+    data: &mut Recipe,
 ) -> anyhow::Result<()> {
     let mut hasher = Sha3_224::default();
     hasher.update(event.data.name);
@@ -195,7 +196,7 @@ async fn handle_basic_information_changed(
 #[evento::handler]
 async fn handle_instructions_changed(
     event: Event<InstructionsChanged>,
-    data: &mut CommandData,
+    data: &mut Recipe,
 ) -> anyhow::Result<()> {
     let mut hasher = Sha3_224::default();
 
@@ -212,7 +213,7 @@ async fn handle_instructions_changed(
 #[evento::handler]
 async fn handle_ingredients_changed(
     event: Event<IngredientsChanged>,
-    data: &mut CommandData,
+    data: &mut Recipe,
 ) -> anyhow::Result<()> {
     let mut hasher = Sha3_224::default();
 
@@ -237,7 +238,7 @@ async fn handle_ingredients_changed(
 #[evento::handler]
 async fn handle_dietary_restrictions_changed(
     event: Event<DietaryRestrictionsChanged>,
-    data: &mut CommandData,
+    data: &mut Recipe,
 ) -> anyhow::Result<()> {
     let mut hasher = Sha3_224::default();
 
@@ -253,7 +254,7 @@ async fn handle_dietary_restrictions_changed(
 #[evento::handler]
 async fn handle_cuinine_type_changed(
     event: Event<CuisineTypeChanged>,
-    data: &mut CommandData,
+    data: &mut Recipe,
 ) -> anyhow::Result<()> {
     data.cuisine_type.0 = event.data.cuisine_type;
 
@@ -263,7 +264,7 @@ async fn handle_cuinine_type_changed(
 #[evento::handler]
 async fn handle_main_course_options_changed(
     event: Event<MainCourseOptionsChanged>,
-    data: &mut CommandData,
+    data: &mut Recipe,
 ) -> anyhow::Result<()> {
     data.accepts_accompaniment = event.data.accepts_accompaniment;
 
@@ -273,7 +274,7 @@ async fn handle_main_course_options_changed(
 #[evento::handler]
 async fn handle_advance_prep_changed(
     event: Event<AdvancePrepChanged>,
-    data: &mut CommandData,
+    data: &mut Recipe,
 ) -> anyhow::Result<()> {
     let mut hasher = Sha3_224::default();
     hasher.update(event.data.advance_prep);
@@ -286,7 +287,7 @@ async fn handle_advance_prep_changed(
 #[evento::handler]
 async fn handle_shared_to_community(
     _event: Event<SharedToCommunity>,
-    data: &mut CommandData,
+    data: &mut Recipe,
 ) -> anyhow::Result<()> {
     data.is_shared = true;
 
@@ -294,17 +295,14 @@ async fn handle_shared_to_community(
 }
 
 #[evento::handler]
-async fn handle_made_private(
-    _event: Event<MadePrivate>,
-    data: &mut CommandData,
-) -> anyhow::Result<()> {
+async fn handle_made_private(_event: Event<MadePrivate>, data: &mut Recipe) -> anyhow::Result<()> {
     data.is_shared = false;
 
     Ok(())
 }
 
 #[evento::handler]
-async fn handle_deleted(_event: Event<Deleted>, data: &mut CommandData) -> anyhow::Result<()> {
+async fn handle_deleted(_event: Event<Deleted>, data: &mut Recipe) -> anyhow::Result<()> {
     data.is_deleted = true;
 
     Ok(())

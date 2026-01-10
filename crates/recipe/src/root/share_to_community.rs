@@ -1,29 +1,31 @@
-use evento::{Executor, metadata::Metadata};
+use evento::{Executor, ProjectionAggregator, metadata::Metadata};
 
 use imkitchen_shared::recipe::SharedToCommunity;
 
-impl<'a, E: Executor + Clone> super::Command<'a, E> {
+impl<E: Executor + Clone> super::Command<E> {
     pub async fn share_to_community(
         &self,
+        id: impl Into<String>,
         request_by: impl Into<String>,
         owner_name: impl Into<String>,
     ) -> imkitchen_shared::Result<()> {
-        if self.is_deleted {
+        let Some(recipe) = self.load(id).await? else {
             imkitchen_shared::not_found!("recipe");
-        }
+        };
 
         let request_by = request_by.into();
-        if self.owner_id != request_by {
+        if recipe.owner_id != request_by {
             imkitchen_shared::forbidden!("not owner of recipe");
         }
 
-        if !self.is_shared {
-            self.aggregator()
+        if !recipe.is_shared {
+            recipe
+                .aggregator()?
                 .event(&SharedToCommunity {
                     owner_name: owner_name.into(),
                 })
                 .metadata(&Metadata::new(request_by))
-                .commit(self.executor)
+                .commit(&self.executor)
                 .await?;
         }
 

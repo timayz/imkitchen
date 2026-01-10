@@ -15,11 +15,8 @@ pub struct SubmitFormInput {
     pub message: String,
 }
 
-impl<'a, E: Executor + Clone> super::Command<'a, E> {
-    pub async fn submit_form(
-        executor: &E,
-        input: SubmitFormInput,
-    ) -> imkitchen_shared::Result<String> {
+impl<E: Executor + Clone> super::Command<E> {
+    pub async fn submit_form(&self, input: SubmitFormInput) -> imkitchen_shared::Result<String> {
         input.validate()?;
 
         Ok(evento::create()
@@ -31,7 +28,7 @@ impl<'a, E: Executor + Clone> super::Command<'a, E> {
                 message: input.message,
             })
             .metadata(&Metadata::default())
-            .commit(executor)
+            .commit(&self.executor)
             .await?)
     }
 }

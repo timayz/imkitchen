@@ -1,10 +1,9 @@
 use evento::{Executor, metadata::Metadata};
-
 use imkitchen_shared::recipe::Created;
 
-impl<'a, E: Executor + Clone> super::Command<'a, E> {
+impl<E: Executor> super::Command<E> {
     pub async fn create(
-        executor: &E,
+        &self,
         request_by: impl Into<String>,
         owner_name: impl Into<Option<String>>,
     ) -> imkitchen_shared::Result<String> {
@@ -14,7 +13,7 @@ impl<'a, E: Executor + Clone> super::Command<'a, E> {
                 owner_name: owner_name.into(),
             })
             .metadata(&Metadata::new(request_by))
-            .commit(executor)
+            .commit(&self.executor)
             .await?)
     }
 }

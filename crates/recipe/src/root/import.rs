@@ -1,7 +1,6 @@
 use evento::{Executor, metadata::Metadata};
-use validator::Validate;
-
 use imkitchen_shared::recipe::{CuisineType, Imported, Ingredient, Instruction, RecipeType};
+use validator::Validate;
 
 #[derive(Validate, Clone)]
 pub struct ImportInput {
@@ -21,9 +20,9 @@ pub struct ImportInput {
     pub advance_prep: String,
 }
 
-impl<'a, E: Executor + Clone> super::Command<'a, E> {
+impl<E: Executor + Clone> super::Command<E> {
     pub async fn import(
-        executor: &E,
+        &self,
         input: ImportInput,
         request_by: impl Into<String>,
         owner_name: impl Into<Option<String>>,
@@ -46,7 +45,7 @@ impl<'a, E: Executor + Clone> super::Command<'a, E> {
                 instructions: input.instructions,
             })
             .metadata(&Metadata::new(request_by))
-            .commit(executor)
+            .commit(&self.executor)
             .await?)
     }
 }

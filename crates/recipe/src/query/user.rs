@@ -24,7 +24,7 @@ pub enum SortBy {
     RecentlyAdded,
 }
 
-#[derive(Default, FromRow)]
+#[evento::projection(FromRow)]
 pub struct UserView {
     pub id: String,
     pub owner_id: String,
@@ -257,18 +257,6 @@ pub async fn load<E: Executor>(
 }
 
 impl Snapshot for UserView {}
-
-//
-// #[evento::snapshot]
-// async fn restore(
-//     context: &evento::context::RwContext,
-//     id: String,
-//     _aggregators: &std::collections::HashMap<String, String>,
-// ) -> anyhow::Result<Option<UserView>> {
-//     let pool = context.extract::<SqlitePool>();
-//
-//     Ok(Some(find(&pool, id).await?.unwrap_or_default()))
-// }
 
 #[evento::handler]
 async fn handle_created(event: Event<Created>, data: &mut UserView) -> anyhow::Result<()> {

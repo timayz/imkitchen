@@ -83,7 +83,7 @@ pub async fn action(
     let mut error_recipes = vec![];
 
     for recipe in recipes {
-        match imkitchen_recipe::Command::import(
+        match imkitchen_recipe::Recipe::import(
             &app.executor,
             imkitchen_recipe::ImportInput {
                 recipe_type: recipe.recipe_type,

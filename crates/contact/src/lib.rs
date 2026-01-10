@@ -1,5 +1,5 @@
-mod command;
 mod query;
+mod root;
 
-pub use command::*;
 pub use query::*;
+pub use root::*;

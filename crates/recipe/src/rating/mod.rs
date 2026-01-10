@@ -23,15 +23,13 @@ use imkitchen_shared::{
 };
 use sqlx::prelude::FromRow;
 
-pub struct Command<E: Executor> {
-    state: imkitchen_shared::State<E>,
-}
+pub struct Command<E: Executor>(pub(crate) imkitchen_shared::State<E>);
 
 impl<E: Executor> Deref for Command<E> {
     type Target = imkitchen_shared::State<E>;
 
     fn deref(&self) -> &Self::Target {
-        &self.state
+        &self.0
     }
 }
 

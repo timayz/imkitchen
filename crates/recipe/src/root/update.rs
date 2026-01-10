@@ -1,4 +1,4 @@
-use evento::{Executor, metadata::Metadata};
+use evento::{Executor, ProjectionAggregator, metadata::Metadata};
 use sha3::{Digest, Sha3_224};
 use validator::Validate;
 
@@ -29,7 +29,7 @@ pub struct UpdateInput {
     pub advance_prep: String,
 }
 
-impl<'a, E: Executor + Clone> super::Command<'a, E> {
+impl<E: Executor + Clone> super::Command<E> {
     pub async fn update(
         &self,
         input: UpdateInput,
@@ -37,30 +37,30 @@ impl<'a, E: Executor + Clone> super::Command<'a, E> {
     ) -> imkitchen_shared::Result<()> {
         input.validate()?;
 
-        if self.is_deleted {
+        let Some(recipe) = self.load(&input.id).await? else {
             imkitchen_shared::not_found!("recipe");
-        }
+        };
 
         let request_by = request_by.into();
-        if self.owner_id != request_by {
+        if recipe.owner_id != request_by {
             imkitchen_shared::forbidden!("not owner of recipe");
         }
 
-        let mut builder = self
-            .aggregator()
+        let mut builder = recipe
+            .aggregator()?
             .metadata(&Metadata::new(request_by))
             .to_owned();
 
         let mut has_data = false;
 
-        if self.recipe_type.0 != input.recipe_type {
+        if recipe.recipe_type.0 != input.recipe_type {
             has_data = true;
             builder.event(&RecipeTypeChanged {
                 recipe_type: input.recipe_type,
             });
         }
 
-        if self.cuisine_type.0 != input.cuisine_type {
+        if recipe.cuisine_type.0 != input.cuisine_type {
             has_data = true;
             builder.event(&CuisineTypeChanged {
                 cuisine_type: input.cuisine_type,
@@ -76,7 +76,7 @@ impl<'a, E: Executor + Clone> super::Command<'a, E> {
 
         let basic_information_hash = hasher.finalize()[..].to_vec();
 
-        if self.basic_information_hash != basic_information_hash {
+        if recipe.basic_information_hash != basic_information_hash {
             has_data = true;
             builder.event(&BasicInformationChanged {
                 name: input.name,
@@ -96,7 +96,7 @@ impl<'a, E: Executor + Clone> super::Command<'a, E> {
 
         let instructions_hash = hasher.finalize()[..].to_vec();
 
-        if self.instructions_hash != instructions_hash {
+        if recipe.instructions_hash != instructions_hash {
             has_data = true;
             builder.event(&InstructionsChanged {
                 instructions: input.instructions.to_vec(),
@@ -120,7 +120,7 @@ impl<'a, E: Executor + Clone> super::Command<'a, E> {
 
         let ingredient_hash = hasher.finalize()[..].to_vec();
 
-        if self.ingredients_hash != ingredient_hash {
+        if recipe.ingredients_hash != ingredient_hash {
             has_data = true;
             builder.event(&IngredientsChanged {
                 ingredients: input.ingredients,
@@ -135,14 +135,14 @@ impl<'a, E: Executor + Clone> super::Command<'a, E> {
 
         let dietary_restrictions_hash = hasher.finalize()[..].to_vec();
 
-        if self.dietary_restrictions_hash != dietary_restrictions_hash {
+        if recipe.dietary_restrictions_hash != dietary_restrictions_hash {
             has_data = true;
             builder.event(&DietaryRestrictionsChanged {
                 dietary_restrictions: input.dietary_restrictions,
             });
         }
 
-        if self.accepts_accompaniment != input.accepts_accompaniment {
+        if recipe.accepts_accompaniment != input.accepts_accompaniment {
             has_data = true;
             builder.event(&MainCourseOptionsChanged {
                 accepts_accompaniment: input.accepts_accompaniment,
@@ -153,7 +153,7 @@ impl<'a, E: Executor + Clone> super::Command<'a, E> {
         hasher.update(&input.advance_prep);
 
         let advance_prep_hash = hasher.finalize()[..].to_vec();
-        if self.advance_prep_hash != advance_prep_hash {
+        if recipe.advance_prep_hash != advance_prep_hash {
             has_data = true;
             builder.event(&AdvancePrepChanged {
                 advance_prep: input.advance_prep,
@@ -163,7 +163,7 @@ impl<'a, E: Executor + Clone> super::Command<'a, E> {
             return Ok(());
         }
 
-        builder.commit(self.executor).await?;
+        builder.commit(&self.executor).await?;
 
         Ok(())
     }
