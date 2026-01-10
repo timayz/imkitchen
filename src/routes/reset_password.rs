@@ -36,15 +36,11 @@ pub async fn action(
     Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {
     crate::try_response!(
-        imkitchen_user::password::Command::request(
-            &app.executor,
-            &app.read_db,
-            RequestInput {
-                email: input.email.to_owned(),
-                lang: template.preferred_language_iso.to_owned(),
-                host: app.config.server.url,
-            },
-        ),
+        app.user_cmd.password.request(RequestInput {
+            email: input.email.to_owned(),
+            lang: template.preferred_language_iso.to_owned(),
+            host: app.config.server.url,
+        },),
         template
     );
 
@@ -89,13 +85,11 @@ pub async fn new_action(
             .into_response();
     }
 
-    let command = crate::try_response!(anyhow_opt:
-        imkitchen_user::password::load(&app.executor, id),
-        template
-    );
-
-    crate::try_response!(opt:
-        command.reset(&app.write_db,ResetInput{password: input.password}),
+    crate::try_response!(
+        app.user_cmd.password.reset(ResetInput {
+            id,
+            password: input.password
+        }),
         template
     );
 

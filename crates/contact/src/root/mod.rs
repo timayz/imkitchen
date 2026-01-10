@@ -11,6 +11,7 @@ mod submit_form;
 
 pub use submit_form::SubmitFormInput;
 
+#[derive(Clone)]
 pub struct Command<E: Executor>(imkitchen_shared::State<E>);
 
 impl<E: Executor> Deref for Command<E> {

@@ -116,12 +116,7 @@ pub async fn mark_read_and_reply(
     State(app): State<AppState>,
     user: AuthAdmin,
 ) -> impl IntoResponse {
-    let contact = crate::try_response!(anyhow_opt:
-        imkitchen_contact::load(&app.executor, &app.read_db, &id),
-        template
-    );
-
-    crate::try_response!(contact.mark_read_and_reply(&user.id), template);
+    crate::try_response!(app.contact_cmd.mark_read_and_reply(&id, &user.id), template);
 
     let contact = crate::try_response!(anyhow_opt:
         imkitchen_contact::admin::load(&app.executor, &app.read_db,&id),
@@ -151,12 +146,7 @@ pub async fn resolve(
     State(app): State<AppState>,
     user: AuthAdmin,
 ) -> impl IntoResponse {
-    let contact = crate::try_response!(anyhow_opt:
-        imkitchen_contact::load(&app.executor, &app.read_db, &id),
-        template
-    );
-
-    crate::try_response!(contact.resolve(&user.id), template);
+    crate::try_response!(app.contact_cmd.resolve(&id, &user.id), template);
 
     let contact = crate::try_response!(anyhow_opt:
         imkitchen_contact::admin::load(&app.executor, &app.read_db,&id),
@@ -186,12 +176,7 @@ pub async fn reopen(
     State(app): State<AppState>,
     user: AuthAdmin,
 ) -> impl IntoResponse {
-    let contact = crate::try_response!(anyhow_opt:
-        imkitchen_contact::load(&app.executor, &app.read_db, &id),
-        template
-    );
-
-    crate::try_response!(contact.reopen(&user.id), template);
+    crate::try_response!(app.contact_cmd.reopen(&id, &user.id), template);
 
     let contact = crate::try_response!(anyhow_opt:
         imkitchen_contact::admin::load(&app.executor, &app.read_db,&id),

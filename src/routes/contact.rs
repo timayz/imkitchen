@@ -32,7 +32,7 @@ pub struct ActionInput {
 
 pub async fn action(
     template: Template,
-    State(app_state): State<AppState>,
+    State(app): State<AppState>,
     Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {
     let Ok(subject) = Subject::from_str(&input.subject) else {
@@ -44,16 +44,13 @@ pub async fn action(
     };
 
     crate::try_response!(
-        imkitchen_contact::Contact::submit_form(
-            &app_state.executor,
-            SubmitFormInput {
-                to: app_state.config.email.contact_address,
-                name: input.name,
-                email: input.email,
-                subject,
-                message: input.message,
-            },
-        ),
+        app.contact_cmd.submit_form(SubmitFormInput {
+            to: app.config.email.contact_address,
+            name: input.name,
+            email: input.email,
+            subject,
+            message: input.message,
+        },),
         template
     );
 

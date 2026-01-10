@@ -10,6 +10,7 @@ use std::{
     ops::Deref,
 };
 
+#[derive(Clone)]
 pub struct Command<E: Executor> {
     state: imkitchen_shared::State<E>,
 }

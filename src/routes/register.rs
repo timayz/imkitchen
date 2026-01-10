@@ -53,17 +53,12 @@ pub async fn action(
     }
 
     let id = crate::try_response!(
-        imkitchen_user::Command::register(
-            &app.executor,
-            &app.read_db,
-            &app.write_db,
-            RegisterInput {
-                email: input.email.to_owned(),
-                password: input.password.to_owned(),
-                lang: template.preferred_language_iso.to_owned(),
-                timezone: template.timezone.to_owned(),
-            },
-        ),
+        app.user_cmd.register(RegisterInput {
+            email: input.email.to_owned(),
+            password: input.password.to_owned(),
+            lang: template.preferred_language_iso.to_owned(),
+            timezone: template.timezone.to_owned(),
+        },),
         template
     );
 
@@ -71,12 +66,7 @@ pub async fn action(
         return Redirect::to("/login").into_response();
     }
 
-    let command = crate::try_response!(anyhow_opt:
-        imkitchen_user::load(&app.executor, &app.read_db,&id),
-        template
-    );
-
-    crate::try_response!(command.made_admin(), template);
+    crate::try_response!(app.user_cmd.made_admin(&id), template);
 
     Redirect::to("/login").into_response()
 }

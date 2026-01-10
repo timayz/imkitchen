@@ -23,6 +23,7 @@ mod update;
 pub use import::ImportInput;
 pub use update::UpdateInput;
 
+#[derive(Clone)]
 pub struct Command<E: Executor> {
     state: imkitchen_shared::State<E>,
     pub rating: crate::rating::Command<E>,

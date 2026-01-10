@@ -73,10 +73,8 @@ pub async fn page(
     let ingredients = current.as_ref().map(|r| to_categories(&r.ingredients.0));
 
     let checked = match weeks.get((index - 1) as usize) {
-        Some(week) => {
-            crate::try_page_response!(imkitchen_shopping::load(&app.executor, &user.id), template)
-                .and_then(|loaded| loaded.checked.get(&week.start).cloned())
-        }
+        Some(week) => crate::try_page_response!(app.shopping_cmd.load(&user.id), template)
+            .and_then(|loaded| loaded.checked.get(&week.start).cloned()),
         _ => None,
     };
 
@@ -123,9 +121,8 @@ pub async fn toggle_action(
     let ingredients = current.as_ref().map(|r| to_categories(&r.ingredients.0));
 
     let checked = if current.is_some() {
-        let shopping = crate::try_response!(anyhow_opt: imkitchen_shopping::load(&app.executor,&user.id), template);
         crate::try_response!(
-            shopping.toggle(
+            app.shopping_cmd.toggle(
                 ToggleInput {
                     week,
                     name: input.name,
@@ -134,7 +131,7 @@ pub async fn toggle_action(
             ),
             template
         );
-        crate::try_response!(anyhow: imkitchen_shopping::load(&app.executor,&user.id), template)
+        crate::try_response!(anyhow: app.shopping_cmd.load(&user.id), template)
             .and_then(|loaded| loaded.checked.get(&week).cloned())
     } else {
         None
@@ -170,8 +167,7 @@ pub async fn reset_all_action(
     .and_then(|week| Some(to_recipes(week)));
 
     if current.is_some() {
-        let shopping = crate::try_response!(anyhow_opt: imkitchen_shopping::load(&app.executor,&user.id), template);
-        crate::try_response!(shopping.reset(week, &user.id), template);
+        crate::try_response!(app.shopping_cmd.reset(week, &user.id), template);
     }
 
     template

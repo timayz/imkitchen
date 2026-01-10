@@ -4,6 +4,7 @@ use evento::{Executor, Projection, metadata::Event};
 use imkitchen_shared::user::subscription;
 use std::ops::Deref;
 
+#[derive(Clone)]
 pub struct Command<E: Executor>(pub(crate) imkitchen_shared::State<E>);
 
 impl<E: Executor> Deref for Command<E> {

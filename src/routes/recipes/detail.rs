@@ -83,8 +83,6 @@ pub async fn share_to_community_action(
     user: AuthUser,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    let recipe = crate::try_response!(anyhow_opt: imkitchen_recipe::load(&app.executor, &app.read_db, &id), template);
-
     let Some(ref username) = user.username else {
         return (
             [("ts-swap", "skip")],
@@ -93,7 +91,10 @@ pub async fn share_to_community_action(
             .into_response();
     };
 
-    crate::try_response!(recipe.share_to_community(&user.id, username), template);
+    crate::try_response!(
+        app.recipe_cmd.share_to_community(&id, &user.id, username),
+        template
+    );
 
     template
         .render(ShareButtonTemplate {
@@ -110,9 +111,7 @@ pub async fn make_private_action(
     user: AuthUser,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    let recipe = crate::try_response!(anyhow_opt: imkitchen_recipe::load(&app.executor, &app.read_db, &id), template);
-
-    crate::try_response!(recipe.make_private(&user.id), template);
+    crate::try_response!(app.recipe_cmd.make_private(&id, &user.id), template);
 
     template
         .render(ShareButtonTemplate {
@@ -129,8 +128,7 @@ pub async fn delete_action(
     user: AuthUser,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    let recipe = crate::try_response!(anyhow_opt: imkitchen_recipe::load(&app.executor, &app.read_db, &id), template);
-    crate::try_response!(recipe.delete(&user.id), template);
+    crate::try_response!(app.recipe_cmd.delete(&id, &user.id), template);
 
     template
         .render(DeleteButtonTemplate {

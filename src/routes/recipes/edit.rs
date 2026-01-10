@@ -134,8 +134,6 @@ pub async fn action(
     Path((id,)): Path<(String,)>,
     Form(input): Form<EditForm>,
 ) -> impl IntoResponse {
-    let recipe = crate::try_response!(anyhow_opt: imkitchen_recipe::load(&app.executor, &app.read_db, &id), template);
-
     if input.ingredients_name.len() != input.ingredients_quantity.len()
         || input.ingredients_name.len() != input.ingredients_unit.len()
         || input.ingredients_name.len() != input.ingredients_category.len()
@@ -178,7 +176,7 @@ pub async fn action(
     }
 
     crate::try_response!(
-        recipe.update(
+        app.recipe_cmd.update(
             UpdateInput {
                 id: id.to_owned(),
                 recipe_type: input.recipe_type,

@@ -40,10 +40,8 @@ pub async fn page(
     State(app): State<AppState>,
     user: AuthUser,
 ) -> impl IntoResponse {
-    let preferences = crate::try_page_response!(
-        imkitchen_user::meal_preferences::load(&app.executor, &user.id),
-        template
-    );
+    let preferences =
+        crate::try_page_response!(app.user_cmd.meal_preferences.load(&user.id), template);
 
     template.render(MealPreferencesTemplate {
         household_size: preferences.household_size,
@@ -69,17 +67,15 @@ pub async fn action(
     user: AuthUser,
     Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {
-    let preferences = crate::try_response!(anyhow:
-        imkitchen_user::meal_preferences::load(&app.executor, &user.id),
-        template
-    );
-
     crate::try_response!(
-        preferences.update(UpdateInput {
-            dietary_restrictions: input.dietary_restrictions.to_vec(),
-            cuisine_variety_weight: input.cuisine_variety_weight,
-            household_size: input.household_size,
-        }),
+        app.user_cmd.meal_preferences.update(
+            &user.id,
+            UpdateInput {
+                dietary_restrictions: input.dietary_restrictions.to_vec(),
+                cuisine_variety_weight: input.cuisine_variety_weight,
+                household_size: input.household_size,
+            }
+        ),
         template
     );
 

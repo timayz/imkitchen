@@ -23,6 +23,7 @@ use imkitchen_shared::{
 };
 use sqlx::prelude::FromRow;
 
+#[derive(Clone)]
 pub struct Command<E: Executor>(pub(crate) imkitchen_shared::State<E>);
 
 impl<E: Executor> Deref for Command<E> {

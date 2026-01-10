@@ -83,24 +83,25 @@ pub async fn action(
     let mut error_recipes = vec![];
 
     for recipe in recipes {
-        match imkitchen_recipe::Recipe::import(
-            &app.executor,
-            imkitchen_recipe::ImportInput {
-                recipe_type: recipe.recipe_type,
-                name: recipe.name.to_owned(),
-                description: recipe.description,
-                household_size: recipe.household_size,
-                prep_time: recipe.prep_time,
-                cook_time: recipe.cook_time,
-                ingredients: recipe.ingredients,
-                instructions: recipe.instructions,
-                cuisine_type: recipe.cuisine_type,
-                advance_prep: recipe.advance_prep.unwrap_or_default(),
-            },
-            &user.id,
-            user.username.to_owned(),
-        )
-        .await
+        match app
+            .recipe_cmd
+            .import(
+                imkitchen_recipe::ImportInput {
+                    recipe_type: recipe.recipe_type,
+                    name: recipe.name.to_owned(),
+                    description: recipe.description,
+                    household_size: recipe.household_size,
+                    prep_time: recipe.prep_time,
+                    cook_time: recipe.cook_time,
+                    ingredients: recipe.ingredients,
+                    instructions: recipe.instructions,
+                    cuisine_type: recipe.cuisine_type,
+                    advance_prep: recipe.advance_prep.unwrap_or_default(),
+                },
+                &user.id,
+                user.username.to_owned(),
+            )
+            .await
         {
             Ok(recipe_id) => {
                 id = Some(recipe_id);

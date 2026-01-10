@@ -24,7 +24,7 @@ pub struct DetailTemplate {
     pub user: AuthUser,
     pub recipe: UserView,
     pub stat: UserStatView,
-    pub rating: rating::CommandData,
+    pub rating: rating::Rating,
     pub cook_recipes: ReadResult<UserViewList>,
     pub similar_recipes: ReadResult<UserViewList>,
 }
@@ -63,7 +63,7 @@ pub async fn page(
     .unwrap_or_default();
 
     let rating = crate::try_page_response!(
-        imkitchen_recipe::rating::load(&app.executor, &app.read_db, &recipe.id, &recipe.owner_id),
+        app.recipe_cmd.rating.load(&recipe.id, &recipe.owner_id),
         template
     )
     .to_owned();
@@ -249,11 +249,7 @@ pub async fn check_in(
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    let rating = crate::try_response!(anyhow:
-        imkitchen_recipe::rating::load(&app.executor, &app.read_db, &id, &user.id),
-        template
-    );
-    crate::try_response!(rating.view(), template);
+    crate::try_response!(app.recipe_cmd.rating.view(&id, &user.id), template);
     "<div></div>".into_response()
 }
 
@@ -272,11 +268,7 @@ pub async fn check_like(
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    let rating = crate::try_response!(anyhow:
-        imkitchen_recipe::rating::load(&app.executor, &app.read_db, &id, &user.id),
-        template
-    );
-    crate::try_response!(rating.check_like(), template);
+    crate::try_response!(app.recipe_cmd.rating.check_like(&id, &user.id), template);
 
     let recipe = crate::try_response!(anyhow_opt: imkitchen_recipe::user::load(&app.executor, &app.read_db, &id), template);
 
@@ -298,11 +290,7 @@ pub async fn uncheck_like(
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    let rating = crate::try_response!(anyhow:
-        imkitchen_recipe::rating::load(&app.executor, &app.read_db, &id, &user.id),
-        template
-    );
-    crate::try_response!(rating.uncheck_like(), template);
+    crate::try_response!(app.recipe_cmd.rating.uncheck_like(&id, &user.id), template);
 
     let recipe = crate::try_response!(anyhow_opt: imkitchen_recipe::user::load(&app.executor, &app.read_db, &id), template);
 
@@ -324,11 +312,7 @@ pub async fn check_unlike(
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    let rating = crate::try_response!(anyhow:
-        imkitchen_recipe::rating::load(&app.executor, &app.read_db, &id, &user.id),
-        template
-    );
-    crate::try_response!(rating.check_unlike(), template);
+    crate::try_response!(app.recipe_cmd.rating.check_unlike(&id, &user.id), template);
 
     let recipe = crate::try_response!(anyhow_opt: imkitchen_recipe::user::load(&app.executor, &app.read_db, &id), template);
 
@@ -350,11 +334,10 @@ pub async fn uncheck_unlike(
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    let rating = crate::try_response!(anyhow:
-        imkitchen_recipe::rating::load(&app.executor, &app.read_db, &id, &user.id),
+    crate::try_response!(
+        app.recipe_cmd.rating.uncheck_unlike(&id, &user.id),
         template
     );
-    crate::try_response!(rating.uncheck_unlike(), template);
 
     let recipe = crate::try_response!(anyhow_opt: imkitchen_recipe::user::load(&app.executor, &app.read_db, &id), template);
 

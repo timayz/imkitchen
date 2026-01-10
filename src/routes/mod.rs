@@ -1,10 +1,11 @@
+use std::ops::Deref;
+
 use axum::{
     Router,
     response::IntoResponse,
     routing::{get, post},
 };
 use evento::sql::RwSqlite;
-use sqlx::SqlitePool;
 
 use crate::template::{NotFoundTemplate, Template};
 
@@ -29,10 +30,21 @@ mod terms;
 
 #[derive(Clone)]
 pub struct AppState {
+    pub inner: imkitchen_shared::State<RwSqlite>,
     pub config: crate::config::Config,
-    pub executor: RwSqlite,
-    pub read_db: SqlitePool,
-    pub write_db: SqlitePool,
+    pub user_cmd: imkitchen_user::Command<RwSqlite>,
+    pub shopping_cmd: imkitchen_shopping::Command<RwSqlite>,
+    pub recipe_cmd: imkitchen_recipe::Command<RwSqlite>,
+    pub mealplan_cmd: imkitchen_mealplan::Command<RwSqlite>,
+    pub contact_cmd: imkitchen_contact::Command<RwSqlite>,
+}
+
+impl Deref for AppState {
+    type Target = imkitchen_shared::State<RwSqlite>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
 }
 
 pub async fn fallback(template: Template) -> impl IntoResponse {

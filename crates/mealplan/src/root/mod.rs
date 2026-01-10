@@ -14,6 +14,7 @@ use std::ops::Deref;
 
 pub use generate::*;
 
+#[derive(Clone)]
 pub struct Command<E: Executor> {
     state: imkitchen_shared::State<E>,
 }

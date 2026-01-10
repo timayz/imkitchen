@@ -10,6 +10,7 @@ use evento::{Executor, Projection, Snapshot, metadata::Event};
 use imkitchen_shared::user::password::{self, ResetCompleted, ResetRequested};
 use time::OffsetDateTime;
 
+#[derive(Clone)]
 pub struct Command<E: Executor>(pub(crate) imkitchen_shared::State<E>);
 
 impl<E: Executor> Deref for Command<E> {

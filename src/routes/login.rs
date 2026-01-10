@@ -40,17 +40,13 @@ pub async fn action(
     Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {
     let (user_id, access_id) = crate::try_response!(
-        imkitchen_user::Command::login(
-            &app.executor,
-            &app.read_db,
-            LoginInput {
-                email: input.email,
-                password: input.password,
-                lang: template.preferred_language_iso.to_owned(),
-                timezone: template.timezone.to_owned(),
-                user_agent: user_agent.to_string(),
-            },
-        ),
+        app.user_cmd.login(LoginInput {
+            email: input.email,
+            password: input.password,
+            lang: template.preferred_language_iso.to_owned(),
+            timezone: template.timezone.to_owned(),
+            user_agent: user_agent.to_string(),
+        },),
         template
     );
 
@@ -81,8 +77,10 @@ pub async fn logout(
     template: Template,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
-    let command = crate::try_response!(anyhow_opt: imkitchen_user::load(&app.executor, &app.read_db, &user.id), template);
-    crate::try_response!(command.logout(token.sub.to_owned()), template);
+    crate::try_response!(
+        app.user_cmd.logout(&user.id, token.sub.to_owned()),
+        template
+    );
 
     let jar = jar.remove(auth::auth_cookie());
 

@@ -63,13 +63,8 @@ pub async fn set_username_action(
             .into_response();
     }
 
-    let user = crate::try_response!(anyhow_opt:
-        imkitchen_user::load(&app.executor, &app.read_db, &user.id),
-        template
-    );
-
     crate::try_response!(
-        user.set_username(&app.read_db, &app.write_db, input.username),
+        app.user_cmd.set_username(&user.id, input.username),
         template
     );
 

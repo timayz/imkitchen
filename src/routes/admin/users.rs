@@ -135,11 +135,7 @@ pub async fn suspend(
     State(app): State<AppState>,
     admin: AuthAdmin,
 ) -> impl IntoResponse {
-    let user = crate::try_response!(anyhow_opt:
-        imkitchen_user::load(&app.executor, &app.read_db, &id),
-        template
-    );
-    crate::try_response!(user.suspend(&admin.id), template);
+    crate::try_response!(app.user_cmd.suspend(&id, &admin.id), template);
 
     let user = crate::try_response!(anyhow_opt:
         imkitchen_user::admin::load(&app.executor, &app.read_db, &id),
@@ -169,11 +165,7 @@ pub async fn activate(
     State(app): State<AppState>,
     admin: AuthAdmin,
 ) -> impl IntoResponse {
-    let user = crate::try_response!(anyhow_opt:
-        imkitchen_user::load(&app.executor, &app.read_db, &id),
-        template
-    );
-    crate::try_response!(user.activate(&admin.id), template);
+    crate::try_response!(app.user_cmd.activate(&id, &admin.id), template);
 
     let user = crate::try_response!(anyhow_opt:
         imkitchen_user::admin::load(&app.executor, &app.read_db, &id),
@@ -203,11 +195,12 @@ pub async fn toggle_premium(
     State(app): State<AppState>,
     admin: AuthAdmin,
 ) -> impl IntoResponse {
-    let subscription = crate::try_response!(anyhow:
-        imkitchen_user::subscription::load(&app.executor, &id),
+    crate::try_response!(
+        app.user_cmd
+            .subscription
+            .toggle_life_premium(&id, &admin.id),
         template
     );
-    crate::try_response!(subscription.toggle_life_premium(&admin.id), template);
 
     let user = crate::try_response!(anyhow_opt:
         imkitchen_user::admin::load(&app.executor, &app.read_db, &id),

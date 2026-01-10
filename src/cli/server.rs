@@ -128,11 +128,20 @@ pub async fn serve(
     // let mut sched_mealplan = imkitchen_mealplan::scheduler(&evento_executor, &read_pool).await?;
     // sched_mealplan.start().await?;
 
-    let state = AppState {
-        config,
+    let state = imkitchen_shared::State {
         executor: executor.clone(),
         read_db: read_pool.clone(),
         write_db: write_pool.clone(),
+    };
+
+    let state = AppState {
+        config,
+        user_cmd: imkitchen_user::Command::new(state.clone()),
+        shopping_cmd: imkitchen_shopping::Command::new(state.clone()),
+        recipe_cmd: imkitchen_recipe::Command::new(state.clone()),
+        mealplan_cmd: imkitchen_mealplan::Command::new(state.clone()),
+        contact_cmd: imkitchen_contact::Command::new(state.clone()),
+        inner: state,
     };
 
     // Build router with health checks using read pool state

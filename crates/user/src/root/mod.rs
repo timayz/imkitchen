@@ -18,6 +18,7 @@ pub use login::LoginInput;
 pub use register::RegisterInput;
 pub use set_username::SetUsernameInput;
 
+#[derive(Clone)]
 pub struct Command<E: Executor> {
     state: imkitchen_shared::State<E>,
     pub subscription: crate::subscription::Command<E>,

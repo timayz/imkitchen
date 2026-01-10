@@ -85,11 +85,8 @@ pub async fn page(
 
     let generation_needed = if is_empty_state {
         !crate::try_page_response!(
-            imkitchen_mealplan::first_week_recipes(
-                &app.read_db,
-                &user.id,
-                imkitchen_shared::recipe::RecipeType::MainCourse
-            ),
+            app.mealplan_cmd
+                .first_week_recipes(&user.id, imkitchen_shared::recipe::RecipeType::MainCourse),
             template
         )
         .is_empty()
@@ -118,7 +115,7 @@ pub async fn regenerate_action(
     user: AuthUser,
 ) -> impl IntoResponse {
     let preferences = crate::try_response!(anyhow:
-        imkitchen_user::meal_preferences::load(&app.executor, &user.id),
+        app.user_cmd.meal_preferences.load(&user.id),
         template
     );
     let weeks = imkitchen_mealplan::next_four_mondays_from_now()
@@ -141,16 +138,12 @@ pub async fn regenerate_action(
     };
 
     crate::try_response!(
-        imkitchen_mealplan::Command::generate(
-            &app.executor,
-            &app.read_db,
-            Generate {
-                weeks,
-                user_id: user.id.to_owned(),
-                randomize,
-                household_size: preferences.household_size,
-            }
-        ),
+        app.mealplan_cmd.generate(Generate {
+            weeks,
+            user_id: user.id.to_owned(),
+            randomize,
+            household_size: preferences.household_size,
+        }),
         template
     );
 
