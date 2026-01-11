@@ -3,10 +3,11 @@ mod reset;
 
 use std::ops::Deref;
 
+use bitcode::{Decode, Encode};
 pub use request::*;
 pub use reset::*;
 
-use evento::{Executor, Projection, Snapshot, metadata::Event};
+use evento::{Executor, Projection, metadata::Event};
 use imkitchen_shared::user::password::{self, ResetCompleted, ResetRequested};
 use time::OffsetDateTime;
 
@@ -27,7 +28,7 @@ impl<E: Executor> Command<E> {
     }
 }
 
-#[evento::projection]
+#[evento::projection(Encode, Decode)]
 pub struct Password {
     pub id: String,
     pub user_id: String,
@@ -47,8 +48,6 @@ impl evento::ProjectionAggregator for Password {
         self.id.to_owned()
     }
 }
-
-impl<E: Executor> Snapshot<E> for Password {}
 
 #[evento::handler]
 async fn handle_reset_requested(

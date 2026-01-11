@@ -1,5 +1,6 @@
 mod toogle_life_premium;
 
+use bitcode::{Decode, Encode};
 use evento::{Executor, Projection, metadata::Event};
 use imkitchen_shared::user::subscription;
 use std::ops::Deref;
@@ -31,7 +32,7 @@ impl<E: Executor> Command<E> {
     }
 }
 
-#[evento::projection]
+#[evento::projection(Encode, Decode)]
 pub struct Subscription {
     pub id: String,
     pub expire_at: u64,
@@ -48,8 +49,6 @@ impl evento::ProjectionAggregator for Subscription {
         self.id.to_owned()
     }
 }
-
-impl<E: Executor> evento::Snapshot<E> for Subscription {}
 
 #[evento::handler]
 async fn handle_life_premium_toggled(

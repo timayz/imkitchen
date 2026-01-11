@@ -1,7 +1,7 @@
 mod update;
 
+use bitcode::{Decode, Encode};
 use std::ops::Deref;
-
 pub use update::*;
 
 use evento::{Executor, Projection, metadata::Event};
@@ -40,7 +40,7 @@ impl<E: Executor> Command<E> {
     }
 }
 
-#[evento::projection]
+#[evento::projection(Encode, Decode)]
 pub struct MealPreferences {
     pub id: String,
     pub household_size: u16,
@@ -59,8 +59,6 @@ impl evento::ProjectionAggregator for MealPreferences {
         self.id.to_owned()
     }
 }
-
-impl<E: Executor> evento::Snapshot<E> for MealPreferences {}
 
 #[evento::handler]
 async fn handle_updated(event: Event<Changed>, data: &mut MealPreferences) -> anyhow::Result<()> {
