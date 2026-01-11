@@ -1,9 +1,10 @@
 mod reset;
 mod toogle;
 
+use bitcode::{Decode, Encode};
 pub use toogle::*;
 
-use evento::{Executor, Projection, ProjectionAggregator, Snapshot, metadata::Event};
+use evento::{Executor, Projection, ProjectionAggregator, metadata::Event};
 use imkitchen_shared::shopping::{self, Checked, Generated, Resetted, Unchecked};
 use std::{
     collections::{HashMap, HashSet},
@@ -36,7 +37,7 @@ impl<E: Executor> Command<E> {
     }
 }
 
-#[evento::projection]
+#[evento::projection(Encode, Decode)]
 pub struct Shopping {
     pub user_id: String,
     pub checked: HashMap<u64, HashSet<String>>,
@@ -48,8 +49,6 @@ impl ProjectionAggregator for Shopping {
         self.user_id.to_owned()
     }
 }
-
-impl<E: Executor> Snapshot<E> for Shopping {}
 
 pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Shopping> {
     Projection::new::<shopping::Shopping>(id)
