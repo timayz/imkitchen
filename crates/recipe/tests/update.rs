@@ -46,16 +46,16 @@ async fn test_update_no_fields() -> anyhow::Result<()> {
 
     let recipe = cmd.load(&recipe_id).await?.unwrap();
 
-    assert_eq!(recipe.recipe_type.0, RecipeType::MainCourse);
-    assert_eq!(recipe.cuisine_type.0, CuisineType::Caribbean);
+    assert_eq!(recipe.recipe_type, RecipeType::MainCourse);
+    assert_eq!(recipe.cuisine_type, CuisineType::Caribbean);
 
     // Update with same values should not change anything
     cmd.update(input.clone(), "john").await?;
 
     let recipe = cmd.load(&recipe_id).await?.unwrap();
 
-    assert_eq!(recipe.recipe_type.0, RecipeType::MainCourse);
-    assert_eq!(recipe.cuisine_type.0, CuisineType::Caribbean);
+    assert_eq!(recipe.recipe_type, RecipeType::MainCourse);
+    assert_eq!(recipe.cuisine_type, CuisineType::Caribbean);
 
     Ok(())
 }
@@ -104,7 +104,7 @@ async fn test_update_only_recipe_type() -> anyhow::Result<()> {
 
     let recipe = cmd.load(&recipe_id).await?.unwrap();
 
-    assert_eq!(recipe.recipe_type.0, RecipeType::Dessert);
+    assert_eq!(recipe.recipe_type, RecipeType::Dessert);
 
     Ok(())
 }
@@ -153,7 +153,7 @@ async fn test_update_only_cuisine_type() -> anyhow::Result<()> {
 
     let recipe = cmd.load(&recipe_id).await?.unwrap();
 
-    assert_eq!(recipe.cuisine_type.0, CuisineType::Italian);
+    assert_eq!(recipe.cuisine_type, CuisineType::Italian);
 
     Ok(())
 }

@@ -12,10 +12,10 @@ use imkitchen_shared::recipe::{
     RecipeTypeChanged, SharedToCommunity,
     rating::{LikeChecked, LikeUnchecked, UnlikeChecked, UnlikeUnchecked, Viewed},
 };
-use sea_query::{Expr, ExprTrait, SqliteQueryBuilder};
+use sea_query::{Expr, ExprTrait, OnConflict, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use serde::Deserialize;
-use sqlx::prelude::FromRow;
+use sqlx::{SqlitePool, prelude::FromRow};
 use strum::{Display, EnumString};
 
 #[derive(Default, Debug, Deserialize, EnumString, Display, Clone)]
@@ -186,41 +186,45 @@ impl<E: Executor> super::Query<E> {
     }
 
     pub async fn find_user(&self, id: impl Into<String>) -> anyhow::Result<Option<UserView>> {
-        let statement = sea_query::Query::select()
-            .columns([
-                RecipeUser::Id,
-                RecipeUser::OwnerId,
-                RecipeUser::OwnerName,
-                RecipeUser::RecipeType,
-                RecipeUser::CuisineType,
-                RecipeUser::Name,
-                RecipeUser::Description,
-                RecipeUser::HouseholdSize,
-                RecipeUser::PrepTime,
-                RecipeUser::CookTime,
-                RecipeUser::Ingredients,
-                RecipeUser::Instructions,
-                RecipeUser::DietaryRestrictions,
-                RecipeUser::AcceptsAccompaniment,
-                RecipeUser::AdvancePrep,
-                RecipeUser::IsShared,
-                RecipeUser::TotalViews,
-                RecipeUser::TotalLikes,
-                RecipeUser::TotalComments,
-                RecipeUser::UpdatedAt,
-                RecipeUser::CreatedAt,
-            ])
-            .from(RecipeUser::Table)
-            .and_where(Expr::col(RecipeUser::Id).eq(id.into()))
-            .limit(1)
-            .to_owned();
-
-        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-
-        Ok(sqlx::query_as_with(&sql, values)
-            .fetch_optional(&self.read_db)
-            .await?)
+        find_user(&self.read_db, id).await
     }
+}
+
+async fn find_user(pool: &SqlitePool, id: impl Into<String>) -> anyhow::Result<Option<UserView>> {
+    let statement = sea_query::Query::select()
+        .columns([
+            RecipeUser::Id,
+            RecipeUser::Cursor,
+            RecipeUser::OwnerId,
+            RecipeUser::OwnerName,
+            RecipeUser::RecipeType,
+            RecipeUser::CuisineType,
+            RecipeUser::Name,
+            RecipeUser::Description,
+            RecipeUser::HouseholdSize,
+            RecipeUser::PrepTime,
+            RecipeUser::CookTime,
+            RecipeUser::Ingredients,
+            RecipeUser::Instructions,
+            RecipeUser::DietaryRestrictions,
+            RecipeUser::AcceptsAccompaniment,
+            RecipeUser::AdvancePrep,
+            RecipeUser::IsShared,
+            RecipeUser::TotalViews,
+            RecipeUser::TotalLikes,
+            RecipeUser::TotalComments,
+            RecipeUser::CreatedAt,
+        ])
+        .from(RecipeUser::Table)
+        .and_where(Expr::col(RecipeUser::Id).eq(id.into()))
+        .limit(1)
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+    Ok(sqlx::query_as_with(&sql, values)
+        .fetch_optional(pool)
+        .await?)
 }
 
 pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, UserView> {
@@ -247,18 +251,125 @@ pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Us
 
 impl<E: Executor> super::Query<E> {
     pub async fn user(&self, id: impl Into<String>) -> Result<Option<UserView>, anyhow::Error> {
-        load(&self.executor, id).await
+        load(&self.executor, &self.read_db, &self.write_db, id).await
     }
 }
 
 pub(crate) async fn load<E: Executor>(
     executor: &E,
+    read_db: &SqlitePool,
+    write_db: &SqlitePool,
     id: impl Into<String>,
 ) -> Result<Option<UserView>, anyhow::Error> {
-    create_projection(id).execute(executor).await
+    create_projection(id)
+        .data((read_db.clone(), write_db.clone()))
+        .execute(executor)
+        .await
 }
 
-impl<E: Executor> Snapshot<E> for UserView {}
+impl<E: Executor> Snapshot<E> for UserView {
+    async fn restore(context: &evento::projection::Context<'_, E>) -> anyhow::Result<Option<Self>> {
+        let (read_db, _) = context.extract::<(SqlitePool, SqlitePool)>();
+        find_user(&read_db, &context.id).await
+    }
+
+    async fn take_snapshot(
+        &self,
+        context: &evento::projection::Context<'_, E>,
+    ) -> anyhow::Result<()> {
+        let ingredients = bitcode::encode(&self.ingredients.0);
+        let instructions = bitcode::encode(&self.instructions.0);
+        let dietary_restrictions = self
+            .dietary_restrictions
+            .iter()
+            .map(|d| serde_json::Value::String(d.to_string()))
+            .collect::<Vec<_>>();
+
+        let (_, write_db) = context.extract::<(SqlitePool, SqlitePool)>();
+
+        let statement = sea_query::Query::insert()
+            .into_table(RecipeUser::Table)
+            .columns([
+                RecipeUser::Id,
+                RecipeUser::Cursor,
+                RecipeUser::OwnerId,
+                RecipeUser::OwnerName,
+                RecipeUser::RecipeType,
+                RecipeUser::CuisineType,
+                RecipeUser::Name,
+                RecipeUser::Description,
+                RecipeUser::HouseholdSize,
+                RecipeUser::PrepTime,
+                RecipeUser::CookTime,
+                RecipeUser::Ingredients,
+                RecipeUser::Instructions,
+                RecipeUser::DietaryRestrictions,
+                RecipeUser::AcceptsAccompaniment,
+                RecipeUser::AdvancePrep,
+                RecipeUser::IsShared,
+                RecipeUser::TotalViews,
+                RecipeUser::TotalLikes,
+                RecipeUser::TotalComments,
+                RecipeUser::CreatedAt,
+            ])
+            .values([
+                self.id.to_owned().into(),
+                self.cursor.to_owned().into(),
+                self.owner_id.to_owned().into(),
+                self.owner_name.to_owned().into(),
+                self.recipe_type.to_string().into(),
+                self.cuisine_type.to_string().into(),
+                self.name.to_owned().into(),
+                self.description.to_owned().into(),
+                self.household_size.into(),
+                self.prep_time.into(),
+                self.cook_time.into(),
+                ingredients.into(),
+                instructions.into(),
+                serde_json::Value::Array(dietary_restrictions).into(),
+                self.accepts_accompaniment.into(),
+                self.advance_prep.to_owned().into(),
+                self.is_shared.into(),
+                self.total_views.into(),
+                self.total_likes.into(),
+                self.total_comments.into(),
+                self.created_at.into(),
+            ])?
+            .on_conflict(
+                OnConflict::column(RecipeUser::Id)
+                    .update_columns([
+                        RecipeUser::Cursor,
+                        RecipeUser::OwnerId,
+                        RecipeUser::OwnerName,
+                        RecipeUser::RecipeType,
+                        RecipeUser::CuisineType,
+                        RecipeUser::Name,
+                        RecipeUser::Description,
+                        RecipeUser::HouseholdSize,
+                        RecipeUser::PrepTime,
+                        RecipeUser::CookTime,
+                        RecipeUser::Ingredients,
+                        RecipeUser::Instructions,
+                        RecipeUser::DietaryRestrictions,
+                        RecipeUser::AcceptsAccompaniment,
+                        RecipeUser::AdvancePrep,
+                        RecipeUser::IsShared,
+                        RecipeUser::TotalViews,
+                        RecipeUser::TotalLikes,
+                        RecipeUser::TotalComments,
+                        RecipeUser::CreatedAt,
+                    ])
+                    .to_owned(),
+            )
+            .to_owned();
+
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+        sqlx::query_with(&sql, values).execute(&write_db).await?;
+
+        Ok(())
+    }
+}
 
 #[evento::handler]
 async fn handle_created(event: Event<Created>, data: &mut UserView) -> anyhow::Result<()> {

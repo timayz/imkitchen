@@ -61,7 +61,7 @@ pub async fn serve(
         .await?;
 
     let sub_recipe_query = imkitchen_recipe::query_subscription()
-        .data(write_pool.clone())
+        .data((read_pool.clone(), write_pool.clone()))
         .start(&executor)
         .await?;
 

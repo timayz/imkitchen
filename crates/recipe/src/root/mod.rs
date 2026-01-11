@@ -1,11 +1,11 @@
 use std::ops::Deref;
 
+use bitcode::{Decode, Encode};
 use evento::{
     Aggregator, AggregatorEvent, Executor, Projection, ProjectionAggregator, ReadAggregator,
-    Snapshot, metadata::Event,
+    metadata::Event,
 };
 use sha3::{Digest, Sha3_224};
-use sqlx::prelude::FromRow;
 
 use imkitchen_shared::recipe::{
     self, AdvancePrepChanged, BasicInformationChanged, Created, CuisineType, CuisineTypeChanged,
@@ -68,12 +68,12 @@ impl<E: Executor> Command<E> {
     }
 }
 
-#[evento::projection(FromRow)]
+#[evento::projection(Encode, Decode)]
 pub struct Recipe {
     pub id: String,
     pub owner_id: String,
-    pub recipe_type: sqlx::types::Text<RecipeType>,
-    pub cuisine_type: sqlx::types::Text<CuisineType>,
+    pub recipe_type: RecipeType,
+    pub cuisine_type: CuisineType,
     pub basic_information_hash: Vec<u8>,
     pub ingredients_hash: Vec<u8>,
     pub instructions_hash: Vec<u8>,
@@ -108,8 +108,6 @@ impl ProjectionAggregator for Recipe {
     }
 }
 
-impl<E: Executor> Snapshot<E> for Recipe {}
-
 #[evento::handler]
 async fn handle_created(event: Event<Created>, data: &mut Recipe) -> anyhow::Result<()> {
     data.id = event.aggregator_id.to_owned();
@@ -122,8 +120,8 @@ async fn handle_created(event: Event<Created>, data: &mut Recipe) -> anyhow::Res
 async fn handle_imported(event: Event<Imported>, data: &mut Recipe) -> anyhow::Result<()> {
     data.id = event.aggregator_id.to_owned();
     data.owner_id = event.metadata.user()?;
-    data.recipe_type.0 = event.data.recipe_type;
-    data.cuisine_type.0 = event.data.cuisine_type;
+    data.recipe_type = event.data.recipe_type;
+    data.cuisine_type = event.data.cuisine_type;
 
     let mut hasher = Sha3_224::default();
     hasher.update(event.data.name);
@@ -173,7 +171,7 @@ async fn handle_recipe_type_changed(
     event: Event<RecipeTypeChanged>,
     data: &mut Recipe,
 ) -> anyhow::Result<()> {
-    data.recipe_type.0 = event.data.recipe_type;
+    data.recipe_type = event.data.recipe_type;
 
     Ok(())
 }
@@ -258,7 +256,7 @@ async fn handle_cuinine_type_changed(
     event: Event<CuisineTypeChanged>,
     data: &mut Recipe,
 ) -> anyhow::Result<()> {
-    data.cuisine_type.0 = event.data.cuisine_type;
+    data.cuisine_type = event.data.cuisine_type;
 
     Ok(())
 }

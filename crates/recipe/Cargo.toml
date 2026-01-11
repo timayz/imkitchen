@@ -16,6 +16,7 @@ validator = { workspace = true }
 sqlx = { workspace = true }
 strum.workspace = true
 serde.workspace = true
+serde_json.workspace = true
 sha3.workspace = true
 sea-query.workspace = true
 sea-query-sqlx.workspace = true

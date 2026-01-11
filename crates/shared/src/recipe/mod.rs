@@ -16,6 +16,7 @@ use strum::{AsRefStr, Display, EnumString, VariantArray};
     PartialEq,
     Deserialize,
     AsRefStr,
+    sqlx::Type,
 )]
 pub enum RecipeType {
     Appetizer,
@@ -147,6 +148,7 @@ pub struct Instruction {
     PartialEq,
     Deserialize,
     AsRefStr,
+    sqlx::Type,
 )]
 pub enum CuisineType {
     American,

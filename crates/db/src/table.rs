@@ -97,6 +97,7 @@ pub enum RecipeCommand {
 pub enum RecipeUser {
     Table,
     Id,
+    Cursor,
     OwnerId,
     OwnerName,
     RecipeType,

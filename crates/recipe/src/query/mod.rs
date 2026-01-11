@@ -8,6 +8,7 @@ use evento::{
     subscription::{Context, SubscriptionBuilder},
 };
 use imkitchen_shared::recipe::Created;
+use sqlx::SqlitePool;
 
 #[derive(Clone)]
 pub struct Query<E: Executor>(pub imkitchen_shared::State<E>);
@@ -31,6 +32,7 @@ async fn handle_recipe_all<E: Executor>(
     context: &Context<'_, E>,
     event: SkipEventData<Created>,
 ) -> anyhow::Result<()> {
-    user::load(context.executor, &event.aggregator_id).await?;
+    let (r, w) = context.extract::<(SqlitePool, SqlitePool)>();
+    user::load(context.executor, &r, &w, &event.aggregator_id).await?;
     Ok(())
 }

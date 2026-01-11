@@ -53,14 +53,14 @@ impl<E: Executor + Clone> super::Command<E> {
 
         let mut has_data = false;
 
-        if recipe.recipe_type.0 != input.recipe_type {
+        if recipe.recipe_type != input.recipe_type {
             has_data = true;
             builder.event(&RecipeTypeChanged {
                 recipe_type: input.recipe_type,
             });
         }
 
-        if recipe.cuisine_type.0 != input.cuisine_type {
+        if recipe.cuisine_type != input.cuisine_type {
             has_data = true;
             builder.event(&CuisineTypeChanged {
                 cuisine_type: input.cuisine_type,

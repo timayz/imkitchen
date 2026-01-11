@@ -13,7 +13,8 @@ use std::ops::Deref;
 
 pub use add_comment::*;
 
-use evento::{Executor, Projection, ProjectionAggregator, Snapshot, metadata::Event};
+use bitcode::{Decode, Encode};
+use evento::{Executor, Projection, ProjectionAggregator, metadata::Event};
 use imkitchen_shared::{
     recipe::{
         Deleted,
@@ -59,7 +60,7 @@ impl<E: Executor> Command<E> {
     }
 }
 
-#[evento::projection(FromRow)]
+#[evento::projection(FromRow, Encode, Decode)]
 pub struct Rating {
     pub id: String,
     pub user_id: String,
@@ -88,7 +89,6 @@ impl ProjectionAggregator for Rating {
         self.id.to_owned()
     }
 }
-impl<E: Executor> Snapshot<E> for Rating {}
 
 #[evento::handler]
 async fn handle_viewed(event: Event<Viewed>, data: &mut Rating) -> anyhow::Result<()> {
