@@ -137,7 +137,7 @@ pub(crate) async fn find(
         .await?)
 }
 
-pub fn create_projection(id: impl Into<String>) -> Projection<AdminView> {
+pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, AdminView> {
     Projection::new::<Contact>(id)
         .handler(handle_form_submmited())
         .handler(handle_reopened())
@@ -145,7 +145,7 @@ pub fn create_projection(id: impl Into<String>) -> Projection<AdminView> {
         .handler(handle_resolved())
 }
 
-impl Snapshot for AdminView {}
+impl<E: Executor> Snapshot<E> for AdminView {}
 
 #[evento::handler]
 async fn handle_form_submmited(

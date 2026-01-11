@@ -35,7 +35,7 @@ pub struct Password {
     pub expire_at: u64,
 }
 
-fn create_projection(id: impl Into<String>) -> Projection<Password> {
+fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Password> {
     Projection::new::<password::Password>(id)
         .handler(handle_reset_requested())
         .handler(handle_reset_completed())
@@ -48,7 +48,7 @@ impl evento::ProjectionAggregator for Password {
     }
 }
 
-impl Snapshot for Password {}
+impl<E: Executor> Snapshot<E> for Password {}
 
 #[evento::handler]
 async fn handle_reset_requested(

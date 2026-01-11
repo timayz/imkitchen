@@ -46,7 +46,7 @@ pub async fn serve(
         .await?;
 
     let sub_user_query = imkitchen_user::query_subscription()
-        .data(write_pool.clone())
+        .data((read_pool.clone(), write_pool.clone()))
         .start(&executor)
         .await?;
 

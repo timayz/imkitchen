@@ -43,9 +43,9 @@ impl ProjectionAggregator for Contact {
         self.id.to_owned()
     }
 }
-impl Snapshot for Contact {}
+impl<E: Executor> Snapshot<E> for Contact {}
 
-pub fn create_projection(id: impl Into<String>) -> Projection<Contact> {
+pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Contact> {
     Projection::new::<contact::Contact>(id)
         .handler(handle_form_submitted())
         .handler(handle_reopened())

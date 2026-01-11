@@ -18,7 +18,7 @@ impl<E: Executor> Deref for Command<E> {
 impl<E: Executor> Command<E> {
     pub async fn load(&self, id: impl Into<String>) -> anyhow::Result<Subscription> {
         let id = id.into();
-        create_projection(&id)
+        create_projection::<E>(&id)
             .execute(&self.executor)
             .await
             .map(|r| {
@@ -37,7 +37,7 @@ pub struct Subscription {
     pub expire_at: u64,
 }
 
-fn create_projection(id: impl Into<String>) -> Projection<Subscription> {
+fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Subscription> {
     Projection::new::<subscription::Subscription>(id)
         .handler(handle_life_premium_toggled())
         .safety_check()
@@ -49,7 +49,7 @@ impl evento::ProjectionAggregator for Subscription {
     }
 }
 
-impl evento::Snapshot for Subscription {}
+impl<E: Executor> evento::Snapshot<E> for Subscription {}
 
 #[evento::handler]
 async fn handle_life_premium_toggled(

@@ -17,6 +17,7 @@ fn create_table() -> TableCreateStatement {
                 .string_len(26)
                 .primary_key(),
         )
+        .col(ColumnDef::new(UserAdmin::Cursor).string().not_null())
         .col(
             ColumnDef::new(UserAdmin::Email)
                 .string()

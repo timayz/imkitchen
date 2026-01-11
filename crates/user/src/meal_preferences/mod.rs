@@ -25,7 +25,7 @@ impl<E: Executor> Command<E> {
     pub async fn load(&self, id: impl Into<String>) -> anyhow::Result<MealPreferences> {
         let id = id.into();
 
-        create_projection(&id)
+        create_projection::<E>(&id)
             .execute(&self.executor)
             .await
             .map(|r| {
@@ -48,7 +48,7 @@ pub struct MealPreferences {
     pub cuisine_variety_weight: f32,
 }
 
-fn create_projection(id: impl Into<String>) -> Projection<MealPreferences> {
+fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, MealPreferences> {
     Projection::new::<meal_preferences::MealPreferences>(id)
         .handler(handle_updated())
         .safety_check()
@@ -60,7 +60,7 @@ impl evento::ProjectionAggregator for MealPreferences {
     }
 }
 
-impl evento::Snapshot for MealPreferences {}
+impl<E: Executor> evento::Snapshot<E> for MealPreferences {}
 
 #[evento::handler]
 async fn handle_updated(event: Event<Changed>, data: &mut MealPreferences) -> anyhow::Result<()> {

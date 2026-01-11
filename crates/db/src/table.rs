@@ -16,12 +16,12 @@ pub enum User {
 pub enum UserLogin {
     Table,
     Id,
-    UserId,
+    Cursor,
     Username,
     Role,
     State,
-    UserAgent,
     SubscriptionExpireAt,
+    Logins,
 }
 
 #[derive(Iden, Clone)]
@@ -38,6 +38,7 @@ pub enum UserGlobalStat {
 pub enum UserAdmin {
     Table,
     Id,
+    Cursor,
     Email,
     FullName,
     Username,

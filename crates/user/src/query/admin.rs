@@ -5,9 +5,10 @@ use evento::{
     sql::Reader,
 };
 use imkitchen_db::table::UserAdmin;
-use sea_query::{Expr, ExprTrait};
+use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
+use sea_query_sqlx::SqlxBinder;
 use serde::Deserialize;
-use sqlx::prelude::FromRow;
+use sqlx::{SqlitePool, prelude::FromRow};
 use std::time::{SystemTime, UNIX_EPOCH};
 use strum::{AsRefStr, Display, EnumString, VariantArray};
 
@@ -18,18 +19,21 @@ use imkitchen_shared::user::{
 
 impl<E: Executor> super::Query<E> {
     pub async fn admin(&self, id: impl Into<String>) -> Result<Option<AdminView>, anyhow::Error> {
-        load(&self.executor, id).await
+        load(&self.executor, &self.read_db, &self.write_db, id).await
     }
 }
 
 pub(crate) async fn load<E: Executor>(
     executor: &E,
+    read_db: &SqlitePool,
+    write_db: &SqlitePool,
     id: impl Into<String>,
 ) -> Result<Option<AdminView>, anyhow::Error> {
     let id = id.into();
 
     create_projection(&id)
         .aggregator::<Subscription>(id)
+        .data((read_db.clone(), write_db.clone()))
         .execute(executor)
         .await
 }
@@ -123,6 +127,7 @@ impl<E: Executor> super::Query<E> {
         let mut statement = sea_query::Query::select()
             .columns([
                 UserAdmin::Id,
+                UserAdmin::Cursor,
                 UserAdmin::Email,
                 UserAdmin::FullName,
                 UserAdmin::Username,
@@ -185,7 +190,7 @@ impl<E: Executor> super::Query<E> {
     }
 }
 
-pub fn create_projection(id: impl Into<String>) -> Projection<AdminView> {
+pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, AdminView> {
     Projection::new::<User>(id)
         .handler(handle_actived())
         .handler(handle_susended())
@@ -194,7 +199,96 @@ pub fn create_projection(id: impl Into<String>) -> Projection<AdminView> {
         .handler(handle_life_premium_toggled())
 }
 
-impl Snapshot for AdminView {}
+impl<E: Executor> Snapshot<E> for AdminView {
+    async fn restore(context: &evento::projection::Context<'_, E>) -> anyhow::Result<Option<Self>> {
+        let (read_db, _) = context.extract::<(SqlitePool, SqlitePool)>();
+        let statement = sea_query::Query::select()
+            .columns([
+                UserAdmin::Id,
+                UserAdmin::Cursor,
+                UserAdmin::Email,
+                UserAdmin::FullName,
+                UserAdmin::Username,
+                UserAdmin::State,
+                UserAdmin::Role,
+                UserAdmin::SubscriptionExpireAt,
+                UserAdmin::TotalRecipesCount,
+                UserAdmin::SharedRecipesCount,
+                UserAdmin::TotalActiveCount,
+                UserAdmin::CreatedAt,
+            ])
+            .from(UserAdmin::Table)
+            .and_where(Expr::col(UserAdmin::Id).eq(&context.id))
+            .limit(1)
+            .to_owned();
+
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+        Ok(sqlx::query_as_with(&sql, values)
+            .fetch_optional(&read_db)
+            .await?)
+    }
+
+    async fn take_snapshot(
+        &self,
+        context: &evento::projection::Context<'_, E>,
+    ) -> anyhow::Result<()> {
+        let (_, write_db) = context.extract::<(SqlitePool, SqlitePool)>();
+
+        let statement = Query::insert()
+            .into_table(UserAdmin::Table)
+            .columns([
+                UserAdmin::Id,
+                UserAdmin::Cursor,
+                UserAdmin::Email,
+                UserAdmin::FullName,
+                UserAdmin::Username,
+                UserAdmin::State,
+                UserAdmin::Role,
+                UserAdmin::SubscriptionExpireAt,
+                UserAdmin::TotalRecipesCount,
+                UserAdmin::SharedRecipesCount,
+                UserAdmin::TotalActiveCount,
+                UserAdmin::CreatedAt,
+            ])
+            .values([
+                self.id.to_owned().into(),
+                self.cursor.to_owned().into(),
+                self.email.to_owned().into(),
+                self.full_name.to_owned().into(),
+                self.username.to_owned().into(),
+                self.state.to_string().into(),
+                self.role.to_string().into(),
+                self.subscription_expire_at.into(),
+                self.total_recipes_count.into(),
+                self.shared_recipes_count.into(),
+                self.total_active_count.into(),
+                self.created_at.into(),
+            ])?
+            .on_conflict(
+                OnConflict::column(UserAdmin::Id)
+                    .update_columns([
+                        UserAdmin::Cursor,
+                        UserAdmin::Email,
+                        UserAdmin::FullName,
+                        UserAdmin::Username,
+                        UserAdmin::State,
+                        UserAdmin::Role,
+                        UserAdmin::SubscriptionExpireAt,
+                        UserAdmin::TotalRecipesCount,
+                        UserAdmin::SharedRecipesCount,
+                        UserAdmin::TotalActiveCount,
+                    ])
+                    .to_owned(),
+            )
+            .to_owned();
+
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+        sqlx::query_with(&sql, values).execute(&write_db).await?;
+
+        Ok(())
+    }
+}
 
 #[evento::handler]
 async fn handle_registered(event: Event<Registered>, data: &mut AdminView) -> anyhow::Result<()> {

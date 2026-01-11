@@ -223,7 +223,7 @@ impl<E: Executor> super::Query<E> {
     }
 }
 
-pub fn create_projection(id: impl Into<String>) -> Projection<UserView> {
+pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, UserView> {
     Projection::new::<Recipe>(id)
         .handler(handle_created())
         .handler(handle_imported())
@@ -258,7 +258,7 @@ pub(crate) async fn load<E: Executor>(
     create_projection(id).execute(executor).await
 }
 
-impl Snapshot for UserView {}
+impl<E: Executor> Snapshot<E> for UserView {}
 
 #[evento::handler]
 async fn handle_created(event: Event<Created>, data: &mut UserView) -> anyhow::Result<()> {

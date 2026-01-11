@@ -48,7 +48,7 @@ impl GlobalStatView {
     }
 }
 
-impl Snapshot for GlobalStatView {}
+impl<E: Executor> Snapshot<E> for GlobalStatView {}
 
 impl<E: Executor> super::Query<E> {
     pub async fn find_global(&self) -> anyhow::Result<Option<GlobalStatView>> {

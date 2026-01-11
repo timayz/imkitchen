@@ -84,7 +84,7 @@ pub struct Recipe {
     pub is_deleted: bool,
 }
 
-pub fn create_projection(id: impl Into<String>) -> Projection<Recipe> {
+pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Recipe> {
     Projection::new::<recipe::Recipe>(id)
         .handler(handle_created())
         .handler(handle_deleted())
@@ -107,7 +107,8 @@ impl ProjectionAggregator for Recipe {
         self.id.to_owned()
     }
 }
-impl Snapshot for Recipe {}
+
+impl<E: Executor> Snapshot<E> for Recipe {}
 
 #[evento::handler]
 async fn handle_created(event: Event<Created>, data: &mut Recipe) -> anyhow::Result<()> {

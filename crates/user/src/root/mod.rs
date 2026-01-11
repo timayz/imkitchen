@@ -1,4 +1,5 @@
-use evento::{Executor, Projection, ProjectionAggregator, Snapshot, metadata::Event};
+use bitcode::{Decode, Encode};
+use evento::{Executor, Projection, ProjectionAggregator, metadata::Event};
 use imkitchen_shared::user::{
     self, Activated, LoggedIn, Logout, MadeAdmin, Registered, Role, State, Suspended,
     UsernameChanged,
@@ -51,14 +52,14 @@ impl<E: Executor> Command<E> {
     }
 }
 
-#[evento::projection]
+#[evento::projection(Encode, Decode)]
 pub struct User {
     pub id: String,
     pub role: Role,
     pub state: State,
 }
 
-pub fn create_projection(id: impl Into<String>) -> Projection<User> {
+pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, User> {
     Projection::new::<user::User>(id)
         .handler(handle_registered())
         .handler(handle_actived())
@@ -75,8 +76,6 @@ impl ProjectionAggregator for User {
         self.id.to_owned()
     }
 }
-
-impl Snapshot for User {}
 
 #[evento::handler]
 async fn handle_registered(event: Event<Registered>, data: &mut User) -> anyhow::Result<()> {

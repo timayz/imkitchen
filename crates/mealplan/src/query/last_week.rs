@@ -17,9 +17,9 @@ impl ProjectionCursor for LastWeekView {
     }
 }
 
-impl Snapshot for LastWeekView {}
+impl<E: Executor> Snapshot<E> for LastWeekView {}
 
-pub fn create_projection(id: impl Into<String>) -> Projection<LastWeekView> {
+pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, LastWeekView> {
     Projection::new::<MealPlan>(id).handler(handle_week_generated())
 }
 

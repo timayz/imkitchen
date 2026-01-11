@@ -43,7 +43,7 @@ impl<E: Executor> Command<E> {
         let id = id.into();
         let user_id = user_id.into();
 
-        create_projection(&id, &user_id)
+        create_projection::<E>(&id, &user_id)
             .execute(&self.executor)
             .await
             .map(|r| {
@@ -68,7 +68,10 @@ pub struct Rating {
     pub unliked: bool,
 }
 
-pub fn create_projection(id: impl Into<String>, user_id: impl Into<String>) -> Projection<Rating> {
+pub fn create_projection<E: Executor>(
+    id: impl Into<String>,
+    user_id: impl Into<String>,
+) -> Projection<E, Rating> {
     Projection::new::<rating::Rating>(id)
         .aggregator::<User>(user_id)
         .handler(handle_viewed())
@@ -85,7 +88,7 @@ impl ProjectionAggregator for Rating {
         self.id.to_owned()
     }
 }
-impl Snapshot for Rating {}
+impl<E: Executor> Snapshot<E> for Rating {}
 
 #[evento::handler]
 async fn handle_viewed(event: Event<Viewed>, data: &mut Rating) -> anyhow::Result<()> {

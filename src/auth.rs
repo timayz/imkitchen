@@ -174,7 +174,7 @@ impl FromRequestParts<crate::routes::AppState> for AuthUser {
 
         login.id = user.id;
 
-        if login.state.0 == State::Suspended {
+        if login.state == State::Suspended {
             return Err(Redirect::to("/login"));
         }
 

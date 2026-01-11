@@ -1,5 +1,9 @@
+use bitcode::{Decode, Encode};
 use evento::{Executor, Projection, Snapshot, metadata::Event};
-use sqlx::prelude::FromRow;
+use imkitchen_db::table::UserLogin;
+use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
+use sea_query_sqlx::SqlxBinder;
+use sqlx::{SqlitePool, prelude::FromRow};
 
 use imkitchen_shared::user::{
     Activated, LoggedIn, Logout, MadeAdmin, Role, State, Suspended, User, UsernameChanged,
@@ -12,35 +16,35 @@ impl<E: Executor> super::Query<E> {
         let id = id.into();
 
         create_projection(&id)
-            .data(self.read_db.clone())
+            .data((self.read_db.clone(), self.write_db.clone()))
             .execute(&self.executor)
             .await
     }
 }
 
-#[derive(Default, Clone, Debug, FromRow)]
+#[derive(Default, Clone, Debug, Encode, Decode)]
 pub struct Login {
     pub id: String,
     pub user_agent: String,
-    pub role: sqlx::types::Text<Role>,
-    pub state: sqlx::types::Text<State>,
+    pub role: Role,
+    pub state: State,
     pub username: Option<String>,
     pub subscription_expire_at: u64,
 }
 
-#[evento::projection(Debug)]
+#[evento::projection(Debug, FromRow)]
 pub struct LoginView {
     pub id: String,
     pub role: sqlx::types::Text<Role>,
     pub state: sqlx::types::Text<State>,
     pub username: Option<String>,
     pub subscription_expire_at: u64,
-    pub logins: Vec<Login>,
+    pub logins: evento::sql_types::Bitcode<Vec<Login>>,
 }
 
 impl Login {
     pub fn is_admin(&self) -> bool {
-        self.role.0 == Role::Admin
+        self.role == Role::Admin
     }
 
     pub fn is_premium(&self) -> bool {
@@ -56,7 +60,7 @@ impl Login {
     }
 }
 
-pub fn create_projection(id: impl Into<String>) -> Projection<LoginView> {
+pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, LoginView> {
     let id = id.into();
 
     Projection::new::<User>(&id)
@@ -71,7 +75,78 @@ pub fn create_projection(id: impl Into<String>) -> Projection<LoginView> {
         .handler(handle_life_premium_toggled())
 }
 
-impl Snapshot for LoginView {}
+impl<E: Executor> Snapshot<E> for LoginView {
+    async fn restore(context: &evento::projection::Context<'_, E>) -> anyhow::Result<Option<Self>> {
+        let (read_db, _) = context.extract::<(SqlitePool, SqlitePool)>();
+        let statement = sea_query::Query::select()
+            .columns([
+                UserLogin::Id,
+                UserLogin::Cursor,
+                UserLogin::Username,
+                UserLogin::State,
+                UserLogin::Role,
+                UserLogin::SubscriptionExpireAt,
+                UserLogin::Logins,
+            ])
+            .from(UserLogin::Table)
+            .and_where(Expr::col(UserLogin::Id).eq(&context.id))
+            .limit(1)
+            .to_owned();
+
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+        Ok(sqlx::query_as_with(&sql, values)
+            .fetch_optional(&read_db)
+            .await?)
+    }
+
+    async fn take_snapshot(
+        &self,
+        context: &evento::projection::Context<'_, E>,
+    ) -> anyhow::Result<()> {
+        let (_, write_db) = context.extract::<(SqlitePool, SqlitePool)>();
+        let logins = bitcode::encode(&self.logins.0);
+
+        let statement = Query::insert()
+            .into_table(UserLogin::Table)
+            .columns([
+                UserLogin::Id,
+                UserLogin::Cursor,
+                UserLogin::Username,
+                UserLogin::State,
+                UserLogin::Role,
+                UserLogin::SubscriptionExpireAt,
+                UserLogin::Logins,
+            ])
+            .values([
+                self.id.to_owned().into(),
+                self.cursor.to_owned().into(),
+                self.username.to_owned().into(),
+                self.state.to_string().into(),
+                self.role.to_string().into(),
+                self.subscription_expire_at.into(),
+                logins.into(),
+            ])?
+            .on_conflict(
+                OnConflict::column(UserLogin::Id)
+                    .update_columns([
+                        UserLogin::Cursor,
+                        UserLogin::Username,
+                        UserLogin::State,
+                        UserLogin::Role,
+                        UserLogin::SubscriptionExpireAt,
+                        UserLogin::Logins,
+                    ])
+                    .to_owned(),
+            )
+            .to_owned();
+
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+        sqlx::query_with(&sql, values).execute(&write_db).await?;
+
+        Ok(())
+    }
+}
 
 #[evento::handler]
 async fn handle_username_changed(
@@ -94,8 +169,8 @@ async fn handle_logged_in(event: Event<LoggedIn>, data: &mut LoginView) -> anyho
         .retain(|r| r.user_agent != event.data.user_agent);
     data.logins.push(Login {
         id: event.data.access_id,
-        role: data.role.to_owned(),
-        state: data.state.to_owned(),
+        role: data.role.0.to_owned(),
+        state: data.state.0.to_owned(),
         subscription_expire_at: data.subscription_expire_at,
         username: data.username.to_owned(),
         user_agent: event.data.user_agent,
@@ -117,7 +192,7 @@ async fn handle_reset_completed(
     data: &mut LoginView,
 ) -> anyhow::Result<()> {
     if data.id == event.metadata.user()? {
-        data.logins = vec![];
+        data.logins = vec![].into();
     }
 
     Ok(())
@@ -127,7 +202,7 @@ async fn handle_reset_completed(
 async fn handle_made_admin(_event: Event<MadeAdmin>, data: &mut LoginView) -> anyhow::Result<()> {
     data.role.0 = Role::Admin;
     for login in data.logins.iter_mut() {
-        login.role.0 = Role::Admin;
+        login.role = Role::Admin;
     }
 
     Ok(())
@@ -137,7 +212,7 @@ async fn handle_made_admin(_event: Event<MadeAdmin>, data: &mut LoginView) -> an
 async fn handle_actived(_event: Event<Activated>, data: &mut LoginView) -> anyhow::Result<()> {
     data.state.0 = State::Active;
     for login in data.logins.iter_mut() {
-        login.state.0 = State::Active;
+        login.state = State::Active;
     }
 
     Ok(())
@@ -147,7 +222,7 @@ async fn handle_actived(_event: Event<Activated>, data: &mut LoginView) -> anyho
 async fn handle_susended(_event: Event<Suspended>, data: &mut LoginView) -> anyhow::Result<()> {
     data.state.0 = State::Suspended;
     for login in data.logins.iter_mut() {
-        login.state.0 = State::Suspended;
+        login.state = State::Suspended;
     }
 
     Ok(())
@@ -165,41 +240,3 @@ async fn handle_life_premium_toggled(
 
     Ok(())
 }
-
-// async fn update(
-//     pool: &SqlitePool,
-//     id: impl Into<String>,
-//     col: UserLogin,
-//     value: impl Into<Expr>,
-// ) -> anyhow::Result<()> {
-//     let statement = Query::update()
-//         .table(UserLogin::Table)
-//         .and_where(Expr::col(UserLogin::UserId).eq(id.into()))
-//         .value(col, value)
-//         .to_owned();
-//
-//     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-//     sqlx::query_with(&sql, values).execute(pool).await?;
-//
-//     Ok(())
-// }
-//
-// async fn delete(
-//     pool: &SqlitePool,
-//     user_id: impl Into<String>,
-//     id: impl Into<Option<String>>,
-// ) -> anyhow::Result<()> {
-//     let mut statement = Query::delete()
-//         .from_table(UserLogin::Table)
-//         .and_where(Expr::col(UserLogin::UserId).eq(user_id.into()))
-//         .to_owned();
-//
-//     if let Some(id) = id.into() {
-//         statement.and_where(Expr::col(UserLogin::Id).eq(id));
-//     }
-//
-//     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-//     sqlx::query_with(&sql, values).execute(pool).await?;
-//
-//     Ok(())
-// }

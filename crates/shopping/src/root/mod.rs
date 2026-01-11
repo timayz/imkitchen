@@ -49,9 +49,9 @@ impl ProjectionAggregator for Shopping {
     }
 }
 
-impl Snapshot for Shopping {}
+impl<E: Executor> Snapshot<E> for Shopping {}
 
-pub fn create_projection(id: impl Into<String>) -> Projection<Shopping> {
+pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Shopping> {
     Projection::new::<shopping::Shopping>(id)
         .handler(handle_checked())
         .handler(handle_resetted())

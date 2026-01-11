@@ -29,8 +29,6 @@ sqlx_migrator::sqlite_migration!(
         user::CreateUk1,
         user::CreateUk2,
         user_login::CreateTable,
-        user_login::CreateIdx1,
-        user_login::CreateUk1,
         user_global_stat::CreateTable,
         user_admin::CreateTable,
         user_admin::CreateIdx1,
