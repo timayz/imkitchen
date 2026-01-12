@@ -72,11 +72,7 @@ async fn handle_contact_marked_read_and_reply<E: Executor>(
     event: Event<MarkedReadAndReply>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    let Some(contact) = super::admin::find(&pool, &event.aggregator_id).await? else {
-        return Ok(());
-    };
-
-    if !contact.is_unread() {
+    if event.version > 2 {
         return Ok(());
     }
     update(&pool, ContactGlobalStat::Unread, GLOBAL_TIMESTAMP, false).await?;
@@ -91,11 +87,7 @@ async fn handle_contact_resolved<E: Executor>(
     event: Event<Resolved>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    let Some(contact) = super::admin::find(&pool, &event.aggregator_id).await? else {
-        return Ok(());
-    };
-
-    if !contact.is_unread() {
+    if event.version > 2 {
         return Ok(());
     }
 

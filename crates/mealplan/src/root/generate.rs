@@ -1,6 +1,8 @@
+use evento::cursor::Args;
+use evento::{Aggregator, ReadAggregator};
 use evento::{Executor, metadata::Metadata};
 use imkitchen_db::table::MealPlanRecipe;
-use imkitchen_shared::mealplan::{Slot, SlotRecipe, WeekGenerated};
+use imkitchen_shared::mealplan::{MealPlan, Slot, SlotRecipe, WeekGenerated};
 use imkitchen_shared::recipe::{DietaryRestriction, RecipeType};
 use rand::seq::SliceRandom;
 use sea_query::{Expr, ExprTrait, Func, IntoColumnRef, Query, SimpleExpr, SqliteQueryBuilder};
@@ -58,8 +60,27 @@ impl<E: Executor> super::Command<E> {
             imkitchen_shared::user!("No main course found");
         }
 
+        let last_event = self
+            .executor
+            .read(
+                Some(vec![ReadAggregator::id(
+                    MealPlan::aggregator_type(),
+                    &input.user_id,
+                )]),
+                None,
+                Args::backward(1, None),
+            )
+            .await?;
+
+        let version = last_event
+            .edges
+            .first()
+            .map(|e| e.node.version)
+            .unwrap_or_default();
+
         let mut main_course_recipes = main_course_recipes.iter().cycle().take(7 * 4);
         let mut builder = evento::aggregator(&input.user_id)
+            .original_version(version)
             .metadata(&Metadata::new(&input.user_id))
             .to_owned();
 

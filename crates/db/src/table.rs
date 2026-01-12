@@ -55,6 +55,7 @@ pub enum UserAdmin {
 pub enum ContactAdmin {
     Table,
     Id,
+    Cursor,
     Email,
     Name,
     Status,

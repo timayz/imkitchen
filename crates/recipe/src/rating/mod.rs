@@ -16,13 +16,9 @@ pub use add_comment::*;
 use bitcode::{Decode, Encode};
 use evento::{Executor, Projection, ProjectionAggregator, metadata::Event};
 use imkitchen_shared::{
-    recipe::{
-        Deleted,
-        rating::{self, LikeChecked, LikeUnchecked, UnlikeChecked, UnlikeUnchecked, Viewed},
-    },
+    recipe::rating::{self, LikeChecked, LikeUnchecked, UnlikeChecked, UnlikeUnchecked, Viewed},
     user::User,
 };
-use sqlx::prelude::FromRow;
 
 #[derive(Clone)]
 pub struct Command<E: Executor>(pub(crate) imkitchen_shared::State<E>);
@@ -60,7 +56,7 @@ impl<E: Executor> Command<E> {
     }
 }
 
-#[evento::projection(FromRow, Encode, Decode)]
+#[evento::projection(Encode, Decode)]
 pub struct Rating {
     pub id: String,
     pub user_id: String,
@@ -80,7 +76,6 @@ pub fn create_projection<E: Executor>(
         .handler(handle_like_unchecked())
         .handler(handle_unlike_checked())
         .handler(handle_unlike_unchecked())
-        .handler(handle_recipe_deleted())
         .safety_check()
 }
 
@@ -138,15 +133,6 @@ async fn handle_unlike_unchecked(
     data: &mut Rating,
 ) -> anyhow::Result<()> {
     data.unliked = false;
-
-    Ok(())
-}
-
-#[evento::handler]
-async fn handle_recipe_deleted(_event: Event<Deleted>, data: &mut Rating) -> anyhow::Result<()> {
-    data.unliked = false;
-    data.liked = false;
-    data.viewed = false;
 
     Ok(())
 }

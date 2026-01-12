@@ -51,7 +51,7 @@ pub async fn serve(
         .await?;
 
     let sub_contact_query = imkitchen_contact::query_subscription()
-        .data(write_pool.clone())
+        .data((read_pool.clone(), write_pool.clone()))
         .start(&executor)
         .await?;
 
@@ -71,6 +71,11 @@ pub async fn serve(
         .await?;
 
     let sub_mealplan_query = imkitchen_mealplan::query_subscription()
+        .data(write_pool.clone())
+        .start(&executor)
+        .await?;
+
+    let sub_mealplan_cmd = imkitchen_mealplan::subscription()
         .data(write_pool.clone())
         .start(&executor)
         .await?;
@@ -186,6 +191,7 @@ pub async fn serve(
         sub_contact_global_stat.shutdown(),
         sub_recipe_query.shutdown(),
         sub_recipe_user_stat.shutdown(),
+        sub_mealplan_cmd.shutdown(),
         sub_mealplan_query.shutdown(),
         sub_mealplan_week.shutdown(),
         sub_mealplan_slot.shutdown(),

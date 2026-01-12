@@ -1,4 +1,5 @@
-use evento::{Executor, Projection, ProjectionAggregator, Snapshot, metadata::Event};
+use bitcode::{Decode, Encode};
+use evento::{Executor, Projection, ProjectionAggregator, metadata::Event};
 use imkitchen_shared::contact::{
     self, FormSubmitted, MarkedReadAndReply, Reopened, Resolved, Status,
 };
@@ -32,7 +33,7 @@ impl<E: Executor> Command<E> {
     }
 }
 
-#[evento::projection]
+#[evento::projection(Encode, Decode)]
 pub struct Contact {
     pub id: String,
     pub status: Status,
@@ -43,7 +44,6 @@ impl ProjectionAggregator for Contact {
         self.id.to_owned()
     }
 }
-impl<E: Executor> Snapshot<E> for Contact {}
 
 pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Contact> {
     Projection::new::<contact::Contact>(id)

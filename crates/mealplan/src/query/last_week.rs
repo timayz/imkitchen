@@ -1,23 +1,11 @@
-use evento::{Executor, Projection, ProjectionCursor, Snapshot, cursor, metadata::Event};
+use bitcode::{Decode, Encode};
+use evento::{Executor, Projection, metadata::Event};
 use imkitchen_shared::mealplan::{MealPlan, WeekGenerated};
 
-#[derive(Default)]
+#[evento::projection(Encode, Decode)]
 pub struct LastWeekView {
     pub week: u64,
-    pub cursor: String,
 }
-
-impl ProjectionCursor for LastWeekView {
-    fn set_cursor(&mut self, v: &cursor::Value) {
-        self.cursor = v.to_string();
-    }
-
-    fn get_cursor(&self) -> cursor::Value {
-        self.cursor.to_owned().into()
-    }
-}
-
-impl<E: Executor> Snapshot<E> for LastWeekView {}
 
 pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, LastWeekView> {
     Projection::new::<MealPlan>(id).handler(handle_week_generated())

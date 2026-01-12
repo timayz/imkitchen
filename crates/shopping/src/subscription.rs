@@ -1,12 +1,16 @@
 use std::collections::HashMap;
 
 use evento::{
-    Executor,
+    Aggregator, Executor, ReadAggregator,
+    cursor::Args,
     metadata::Event,
     subscription::{Context, SubscriptionBuilder},
 };
 use imkitchen_db::table::ShoppingRecipe;
-use imkitchen_shared::{recipe::Ingredient, shopping::Generated};
+use imkitchen_shared::{
+    recipe::Ingredient,
+    shopping::{Generated, Shopping},
+};
 use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::SqlitePool;
@@ -81,8 +85,26 @@ async fn handle_mealplan_week_generated<E: Executor>(
         }
     }
 
+    let last_event = context
+        .executor
+        .read(
+            Some(vec![ReadAggregator::id(
+                Shopping::aggregator_type(),
+                &event.aggregator_id,
+            )]),
+            None,
+            Args::backward(1, None),
+        )
+        .await?;
+
+    let version = last_event
+        .edges
+        .first()
+        .map(|e| e.node.version)
+        .unwrap_or_default();
+
     evento::aggregator(&event.aggregator_id)
-        .original_version(event.version)
+        .original_version(version)
         .routing_key_opt(event.routing_key.to_owned())
         .event(&Generated {
             week: event.data.start,

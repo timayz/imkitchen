@@ -5,6 +5,7 @@ use evento::{
     subscription::{Context, SubscriptionBuilder},
 };
 use imkitchen_shared::contact::FormSubmitted;
+use sqlx::SqlitePool;
 
 pub mod admin;
 pub mod global_stat;
@@ -31,6 +32,7 @@ async fn handle_contact_all<E: Executor>(
     context: &Context<'_, E>,
     event: SkipEventData<FormSubmitted>,
 ) -> anyhow::Result<()> {
-    admin::load(context.executor, &event.aggregator_id).await?;
+    let (r, w) = context.extract::<(SqlitePool, SqlitePool)>();
+    admin::load(context.executor, &r, &w, &event.aggregator_id).await?;
     Ok(())
 }

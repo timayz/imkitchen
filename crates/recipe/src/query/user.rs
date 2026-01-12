@@ -364,7 +364,6 @@ impl<E: Executor> Snapshot<E> for UserView {
             .to_owned();
 
         let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-
         sqlx::query_with(&sql, values).execute(&write_db).await?;
 
         Ok(())

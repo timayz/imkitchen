@@ -6,7 +6,7 @@ use evento::{
     sql::Reader,
 };
 use imkitchen_db::table::ContactAdmin;
-use sea_query::{Expr, ExprTrait, SqliteQueryBuilder};
+use sea_query::{Expr, ExprTrait, OnConflict, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use serde::Deserialize;
 use sqlx::SqlitePool;
@@ -65,6 +65,7 @@ impl<E: Executor> super::Query<E> {
         let mut statement = sea_query::Query::select()
             .columns([
                 ContactAdmin::Id,
+                ContactAdmin::Cursor,
                 ContactAdmin::Email,
                 ContactAdmin::Status,
                 ContactAdmin::Subject,
@@ -100,15 +101,20 @@ impl<E: Executor> super::Query<E> {
     }
 
     pub async fn admin(&self, id: impl Into<String>) -> Result<Option<AdminView>, anyhow::Error> {
-        load(&self.executor, id).await
+        load(&self.executor, &self.read_db, &self.write_db, id).await
     }
 }
 
 pub(crate) async fn load<E: Executor>(
     executor: &E,
+    read_db: &SqlitePool,
+    write_db: &SqlitePool,
     id: impl Into<String>,
 ) -> Result<Option<AdminView>, anyhow::Error> {
-    create_projection(id).execute(executor).await
+    create_projection(id)
+        .data((read_db.clone(), write_db.clone()))
+        .execute(executor)
+        .await
 }
 
 pub(crate) async fn find(
@@ -118,6 +124,7 @@ pub(crate) async fn find(
     let statement = sea_query::Query::select()
         .columns([
             ContactAdmin::Id,
+            ContactAdmin::Cursor,
             ContactAdmin::Email,
             ContactAdmin::Status,
             ContactAdmin::Subject,
@@ -145,7 +152,60 @@ pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Ad
         .handler(handle_resolved())
 }
 
-impl<E: Executor> Snapshot<E> for AdminView {}
+impl<E: Executor> Snapshot<E> for AdminView {
+    async fn restore(context: &evento::projection::Context<'_, E>) -> anyhow::Result<Option<Self>> {
+        let (read_db, _) = context.extract::<(SqlitePool, SqlitePool)>();
+        find(&read_db, &context.id).await
+    }
+
+    async fn take_snapshot(
+        &self,
+        context: &evento::projection::Context<'_, E>,
+    ) -> anyhow::Result<()> {
+        let (_, write_db) = context.extract::<(SqlitePool, SqlitePool)>();
+        let statement = sea_query::Query::insert()
+            .into_table(ContactAdmin::Table)
+            .columns([
+                ContactAdmin::Id,
+                ContactAdmin::Cursor,
+                ContactAdmin::Email,
+                ContactAdmin::Status,
+                ContactAdmin::Subject,
+                ContactAdmin::Message,
+                ContactAdmin::Name,
+                ContactAdmin::CreatedAt,
+            ])
+            .values([
+                self.id.to_owned().into(),
+                self.cursor.to_owned().into(),
+                self.email.to_owned().into(),
+                self.status.to_string().into(),
+                self.subject.to_string().into(),
+                self.message.to_owned().into(),
+                self.name.to_owned().into(),
+                self.created_at.into(),
+            ])?
+            .on_conflict(
+                OnConflict::column(ContactAdmin::Id)
+                    .update_columns([
+                        ContactAdmin::Cursor,
+                        ContactAdmin::Email,
+                        ContactAdmin::Status,
+                        ContactAdmin::Subject,
+                        ContactAdmin::Message,
+                        ContactAdmin::Name,
+                        ContactAdmin::CreatedAt,
+                    ])
+                    .to_owned(),
+            )
+            .to_owned();
+
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+        sqlx::query_with(&sql, values).execute(&write_db).await?;
+
+        Ok(())
+    }
+}
 
 #[evento::handler]
 async fn handle_form_submmited(
