@@ -384,6 +384,7 @@ async fn handle_created(event: Event<Created>, data: &mut UserView) -> anyhow::R
 
 #[evento::handler]
 async fn handle_imported(event: Event<Imported>, data: &mut UserView) -> anyhow::Result<()> {
+    data.created_at = event.timestamp;
     data.owner_id = event.metadata.user()?;
     data.owner_name = event.data.owner_name.to_owned();
     data.id = event.aggregator_id.to_owned();
