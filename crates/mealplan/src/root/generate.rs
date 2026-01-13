@@ -196,7 +196,7 @@ impl<E: Executor> super::Command<E> {
             .from(MealPlanRecipe::Table)
             .and_where(Expr::col(MealPlanRecipe::UserId).eq(id))
             .and_where(Expr::col(MealPlanRecipe::RecipeType).eq(recipe_type.to_string()))
-            .and_where(Expr::col(MealPlanRecipe::Name).is_not(""))
+            .and_where(Expr::col(MealPlanRecipe::Name).not_equals(""))
             .limit(7)
             .to_owned();
 
@@ -235,7 +235,7 @@ impl<E: Executor> super::Command<E> {
             .from(MealPlanRecipe::Table)
             .and_where(Expr::col(MealPlanRecipe::UserId).eq(id))
             .and_where(Expr::col(MealPlanRecipe::RecipeType).eq(recipe_type.to_string()))
-            .and_where(Expr::col(MealPlanRecipe::Name).is_not(""))
+            .and_where(Expr::col(MealPlanRecipe::Name).not_equals(""))
             .to_owned();
 
         if !dietary_restrictions.is_empty() {

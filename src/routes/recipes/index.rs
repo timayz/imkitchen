@@ -112,10 +112,14 @@ pub async fn create(
     user: AuthUser,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
-    let id = crate::try_response!(
-        app.recipe_cmd.create(&user.id, user.username.to_owned()),
-        template
-    );
+    let id = match crate::try_response!(anyhow: app.recipe_query.find_user_draft(&user.id), template)
+    {
+        Some(id) => id,
+        _ => crate::try_response!(
+            app.recipe_cmd.create(&user.id, user.username.to_owned()),
+            template
+        ),
+    };
 
     Redirect::to(&format!("/recipes/{id}/edit")).into_response()
 }
