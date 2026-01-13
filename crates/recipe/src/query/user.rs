@@ -1,5 +1,5 @@
 use evento::{
-    Cursor, Executor, Projection, Snapshot,
+    AggregatorExecutor, Cursor, Executor, Projection, Snapshot,
     cursor::{Args, ReadResult},
     metadata::Event,
     sql::Reader,
@@ -244,7 +244,6 @@ pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Us
         .handler(handle_advance_prep_changed())
         .handler(handle_shared_to_community())
         .handler(handle_made_private())
-        .handler(handle_deleted())
         .handler(handle_viewed())
         .handler(handle_like_checked())
         .handler(handle_like_unchecked())
@@ -264,6 +263,12 @@ pub(crate) async fn load<E: Executor>(
     write_db: &SqlitePool,
     id: impl Into<String>,
 ) -> Result<Option<UserView>, anyhow::Error> {
+    let id = id.into();
+
+    if executor.has_event::<Deleted>(&id).await? {
+        return Ok(None);
+    }
+
     create_projection(id)
         .data((read_db.clone(), write_db.clone()))
         .execute(executor)
@@ -280,6 +285,8 @@ impl<E: Executor> Snapshot<E> for UserView {
         &self,
         context: &evento::projection::Context<'_, E>,
     ) -> anyhow::Result<()> {
+        let (_, write_db) = context.extract::<(SqlitePool, SqlitePool)>();
+
         let ingredients = bitcode::encode(&self.ingredients.0);
         let instructions = bitcode::encode(&self.instructions.0);
         let dietary_restrictions = self
@@ -287,8 +294,6 @@ impl<E: Executor> Snapshot<E> for UserView {
             .iter()
             .map(|d| serde_json::Value::String(d.to_string()))
             .collect::<Vec<_>>();
-
-        let (_, write_db) = context.extract::<(SqlitePool, SqlitePool)>();
 
         let statement = sea_query::Query::insert()
             .into_table(RecipeUser::Table)
@@ -506,13 +511,6 @@ async fn handle_made_private(
     data: &mut UserView,
 ) -> anyhow::Result<()> {
     data.is_shared = false;
-
-    Ok(())
-}
-
-#[evento::handler]
-async fn handle_deleted(_event: Event<Deleted>, data: &mut UserView) -> anyhow::Result<()> {
-    data.created_at = 0;
 
     Ok(())
 }

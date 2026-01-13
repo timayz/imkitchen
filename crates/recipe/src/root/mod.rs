@@ -1,11 +1,7 @@
-use std::ops::Deref;
-
 use bitcode::{Decode, Encode};
-use evento::{
-    Aggregator, AggregatorEvent, Executor, Projection, ProjectionAggregator, ReadAggregator,
-    metadata::Event,
-};
+use evento::{Executor, Projection, ProjectionAggregator, metadata::Event};
 use sha3::{Digest, Sha3_224};
+use std::ops::Deref;
 
 use imkitchen_shared::recipe::{
     self, AdvancePrepChanged, BasicInformationChanged, Created, CuisineType, CuisineTypeChanged,
@@ -48,23 +44,15 @@ impl<E: Executor> Command<E> {
         }
     }
     pub async fn load(&self, id: impl Into<String>) -> anyhow::Result<Option<Recipe>> {
-        let events = self
-            .executor
-            .read(
-                Some(vec![ReadAggregator::event(
-                    recipe::Recipe::aggregator_type(),
-                    Deleted::event_name(),
-                )]),
-                None,
-                evento::cursor::Args::backward(1, None),
-            )
-            .await?;
+        let Some(recipe) = create_projection(id).execute(&self.executor).await? else {
+            return Ok(None);
+        };
 
-        if !events.edges.is_empty() {
+        if recipe.is_deleted {
             return Ok(None);
         }
 
-        create_projection(id).execute(&self.executor).await
+        Ok(Some(recipe))
     }
 }
 

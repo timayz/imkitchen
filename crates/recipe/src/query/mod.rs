@@ -4,10 +4,13 @@ pub mod user_stat;
 use std::ops::Deref;
 
 use evento::{
-    Executor, SkipEventData,
+    AggregatorEvent, Executor, SkipEventData,
     subscription::{Context, SubscriptionBuilder},
 };
-use imkitchen_shared::recipe::Created;
+use imkitchen_db::table::RecipeUser;
+use imkitchen_shared::recipe::{Created, Deleted};
+use sea_query::{Expr, ExprTrait, SqliteQueryBuilder};
+use sea_query_sqlx::SqlxBinder;
 use sqlx::SqlitePool;
 
 #[derive(Clone)]
@@ -33,6 +36,15 @@ async fn handle_recipe_all<E: Executor>(
     event: SkipEventData<Created>,
 ) -> anyhow::Result<()> {
     let (r, w) = context.extract::<(SqlitePool, SqlitePool)>();
-    user::load(context.executor, &r, &w, &event.aggregator_id).await?;
+    if event.name != Deleted::event_name() {
+        user::load(context.executor, &r, &w, &event.aggregator_id).await?;
+        return Ok(());
+    }
+    let (sql, values) = sea_query::Query::delete()
+        .from_table(RecipeUser::Table)
+        .and_where(Expr::col(RecipeUser::Id).eq(&event.aggregator_id))
+        .build_sqlx(SqliteQueryBuilder);
+
+    sqlx::query_with(&sql, values).execute(&w).await?;
     Ok(())
 }

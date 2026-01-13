@@ -61,7 +61,7 @@ pub async fn page(
     Path((id,)): Path<(String,)>,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
-    let recipe = crate::try_response!(anyhow_opt: app.recipe_query.user(&id), template);
+    let recipe = crate::try_page_response!(opt: app.recipe_query.user(&id), template);
 
     if recipe.owner_id != user.id {
         return template.render(ForbiddenTemplate).into_response();
