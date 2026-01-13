@@ -58,7 +58,8 @@ pub async fn page(
     State(app): State<AppState>,
     Path((mut index,)): Path<(u8,)>,
 ) -> impl IntoResponse {
-    let week_from_now = imkitchen_mealplan::current_and_next_four_weeks_from_now()[0];
+    let week_from_now = imkitchen_mealplan::current_and_next_four_weeks_from_now(&user.tz)[0];
+
     let weeks = crate::try_page_response!(
         app.mealplan_query
             .filter_week_last_from(week_from_now.start, &user.id),
@@ -78,7 +79,7 @@ pub async fn page(
         _ => None,
     };
 
-    let weekday = imkitchen_mealplan::weekday_from_now().unix_timestamp() as u64;
+    let weekday = imkitchen_mealplan::now(&user.tz).unix_timestamp() as u64;
 
     let is_empty_state = current
         .as_ref()
@@ -120,8 +121,16 @@ pub async fn regenerate_action(
         app.user_cmd.meal_preferences.load(&user.id),
         template
     );
-    let weeks = imkitchen_mealplan::next_four_mondays_from_now()
+    let weeks = imkitchen_mealplan::current_and_next_four_weeks_from_now(&user.tz);
+    let last_week = crate::try_page_response!(
+        app.mealplan_query
+            .find_week_last_from(weeks[0].start, &user.id),
+        template
+    );
+    let skip_n = if last_week.is_some() { 1 } else { 0 };
+    let weeks = weeks
         .iter()
+        .skip(skip_n)
         .map(|w| {
             (
                 w.start.unix_timestamp() as u64,
@@ -162,7 +171,7 @@ pub async fn regenerate_status(
     State(app): State<AppState>,
     user: AuthUser,
 ) -> impl IntoResponse {
-    let week_from_now = imkitchen_mealplan::next_four_mondays_from_now()[0];
+    let week_from_now = imkitchen_mealplan::next_four_mondays_from_now(&user.tz)[0];
 
     match crate::try_response!(anyhow:
         app.mealplan_query.find_week(week_from_now.start, &user.id),

@@ -36,6 +36,10 @@ async fn handle_mealplan_week_generated<E: Executor>(
         .slots
         .iter()
         .flat_map(|slot| {
+            if event.timestamp > slot.day {
+                return vec![];
+            }
+
             let mut ids = vec![slot.main_course.id.to_owned()];
 
             if let Some(ref r) = slot.appetizer {

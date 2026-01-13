@@ -31,7 +31,7 @@ async fn test_random() -> anyhow::Result<()> {
         .unretry_execute(&state.executor)
         .await?;
 
-    let weeks = imkitchen_mealplan::next_four_mondays_from_now()
+    let weeks = imkitchen_mealplan::next_four_mondays_from_now("Europe/Paris")
         .iter()
         .map(|w| {
             (

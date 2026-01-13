@@ -30,6 +30,7 @@ pub struct Login {
     pub state: State,
     pub username: Option<String>,
     pub subscription_expire_at: u64,
+    pub tz: String,
 }
 
 #[evento::projection(Debug, FromRow)]
@@ -174,6 +175,7 @@ async fn handle_logged_in(event: Event<LoggedIn>, data: &mut LoginView) -> anyho
         subscription_expire_at: data.subscription_expire_at,
         username: data.username.to_owned(),
         user_agent: event.data.user_agent,
+        tz: event.data.timezone,
     });
 
     Ok(())

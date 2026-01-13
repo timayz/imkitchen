@@ -50,7 +50,7 @@ pub async fn page(
     State(app): State<AppState>,
     Path((mut index,)): Path<(u8,)>,
 ) -> impl IntoResponse {
-    let week_from_now = imkitchen_mealplan::current_and_next_four_weeks_from_now()[0];
+    let week_from_now = imkitchen_mealplan::current_and_next_four_weeks_from_now(&user.tz)[0];
     let weeks = crate::try_page_response!(
         app.mealplan_query
             .filter_week_last_from(week_from_now.start, &user.id),
