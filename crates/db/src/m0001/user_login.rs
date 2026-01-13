@@ -1,7 +1,4 @@
-use sea_query::{
-    ColumnDef, Index, IndexCreateStatement, IndexDropStatement, Table, TableCreateStatement,
-    TableDropStatement,
-};
+use sea_query::{ColumnDef, Table, TableCreateStatement, TableDropStatement};
 
 use crate::table::UserLogin;
 
@@ -17,23 +14,26 @@ fn create_table() -> TableCreateStatement {
                 .string_len(26)
                 .primary_key(),
         )
+        .col(ColumnDef::new(UserLogin::Cursor).string().not_null())
+        .col(ColumnDef::new(UserLogin::Username).string().string_len(15))
+        .col(ColumnDef::new(UserLogin::Logins).blob().not_null())
         .col(
-            ColumnDef::new(UserLogin::UserId)
+            ColumnDef::new(UserLogin::Role)
                 .string()
                 .not_null()
-                .string_len(26),
+                .string_len(15),
         )
         .col(
-            ColumnDef::new(UserLogin::Revision)
+            ColumnDef::new(UserLogin::State)
                 .string()
                 .not_null()
-                .string_len(26),
+                .string_len(15),
         )
-        .col(ColumnDef::new(UserLogin::UserAgent).string().not_null())
         .col(
-            ColumnDef::new(UserLogin::CreatedAt)
+            ColumnDef::new(UserLogin::SubscriptionExpireAt)
                 .big_integer()
-                .not_null(),
+                .not_null()
+                .default(0),
         )
         .to_owned()
 }
@@ -60,94 +60,6 @@ impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateTable {
     ) -> Result<(), sqlx_migrator::Error> {
         let statement = drop_table().to_string(sea_query::SqliteQueryBuilder);
         sqlx::query(&statement).execute(connection).await?;
-
-        Ok(())
-    }
-}
-
-pub struct CreateIdx1;
-
-fn create_idx_1() -> IndexCreateStatement {
-    Index::create()
-        .name("idx_login_fN5xcl")
-        .table(UserLogin::Table)
-        .col(UserLogin::UserId)
-        .to_owned()
-}
-
-fn drop_idx_1() -> IndexDropStatement {
-    Index::drop()
-        .name("idx_login_fN5xcl")
-        .table(UserLogin::Table)
-        .to_owned()
-}
-
-#[async_trait::async_trait]
-impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateIdx1 {
-    async fn up(
-        &self,
-        connection: &mut sqlx::SqliteConnection,
-    ) -> Result<(), sqlx_migrator::Error> {
-        let statement = create_idx_1().to_string(sea_query::SqliteQueryBuilder);
-        sqlx::query(&statement).execute(connection).await?;
-
-        Ok(())
-    }
-
-    async fn down(
-        &self,
-        connection: &mut sqlx::SqliteConnection,
-    ) -> Result<(), sqlx_migrator::Error> {
-        let statement = drop_idx_1().to_string(sea_query::SqliteQueryBuilder);
-        sqlx::query(&statement).execute(connection).await?;
-
-        Ok(())
-    }
-}
-
-pub struct CreateUk1;
-
-// fn create_uk_1() -> IndexCreateStatement {
-//     Index::create()
-//         .name("uk_login_fN5xcl")
-//         .table(UserLogin::Table)
-//         .unique()
-//         .col(UserLogin::UserId)
-//         .col(UserLogin::UserAgent)
-//         .to_owned()
-// }
-//
-// fn drop_uk_1() -> IndexDropStatement {
-//     Index::drop()
-//         .name("uk_login_fN5xcl")
-//         .table(UserLogin::Table)
-//         .to_owned()
-// }
-
-#[async_trait::async_trait]
-impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateUk1 {
-    async fn up(
-        &self,
-        connection: &mut sqlx::SqliteConnection,
-    ) -> Result<(), sqlx_migrator::Error> {
-        // let statement = create_uk_1().to_string(sea_query::SqliteQueryBuilder);
-        // sqlx::query(&statement).execute(connection).await?;
-        sqlx::query(r#"CREATE UNIQUE INDEX "uk_login_fN5xcl" on "user_login" ("user_id", "user_agent" COLLATE NOCASE)"#)
-            .execute(connection)
-            .await?;
-
-        Ok(())
-    }
-
-    async fn down(
-        &self,
-        connection: &mut sqlx::SqliteConnection,
-    ) -> Result<(), sqlx_migrator::Error> {
-        // let statement = drop_uk_1().to_string(sea_query::SqliteQueryBuilder);
-        // sqlx::query(&statement).execute(connection).await?;
-        sqlx::query(r#"DROP INDEX "uk_login_fN5xcl""#)
-            .execute(connection)
-            .await?;
 
         Ok(())
     }

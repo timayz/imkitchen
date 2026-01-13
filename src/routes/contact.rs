@@ -4,8 +4,8 @@ use axum::{
     extract::{Form, State},
     response::IntoResponse,
 };
-use imkitchen_contact::{Subject, SubmitContactFormInput};
-use imkitchen_shared::Metadata;
+use imkitchen_contact::SubmitFormInput;
+use imkitchen_shared::contact::Subject;
 use serde::Deserialize;
 use strum::VariantArray;
 
@@ -32,7 +32,7 @@ pub struct ActionInput {
 
 pub async fn action(
     template: Template,
-    State(app_state): State<AppState>,
+    State(app): State<AppState>,
     Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {
     let Ok(subject) = Subject::from_str(&input.subject) else {
@@ -44,16 +44,13 @@ pub async fn action(
     };
 
     crate::try_response!(
-        app_state.contact_command.submit_contact_form(
-            SubmitContactFormInput {
-                to: app_state.config.email.contact_address,
-                name: input.name,
-                email: input.email,
-                subject,
-                message: input.message,
-            },
-            &Metadata::default(),
-        ),
+        app.contact_cmd.submit_form(SubmitFormInput {
+            to: app.config.email.contact_address,
+            name: input.name,
+            email: input.email,
+            subject,
+            message: input.message,
+        },),
         template
     );
 

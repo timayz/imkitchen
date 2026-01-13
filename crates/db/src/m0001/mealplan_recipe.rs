@@ -12,6 +12,7 @@ fn create_table() -> TableCreateStatement {
         .table(MealPlanRecipe::Table)
         .col(
             ColumnDef::new(MealPlanRecipe::Id)
+                .primary_key()
                 .string()
                 .not_null()
                 .string_len(26),
@@ -29,22 +30,10 @@ fn create_table() -> TableCreateStatement {
                 .string_len(25),
         )
         .col(
-            ColumnDef::new(MealPlanRecipe::CuisineType)
-                .string()
-                .not_null()
-                .string_len(25),
-        )
-        .col(
             ColumnDef::new(MealPlanRecipe::Name)
                 .string()
                 .not_null()
                 .string_len(30),
-        )
-        .col(
-            ColumnDef::new(MealPlanRecipe::HouseholdSize)
-                .integer()
-                .not_null()
-                .default(4),
         )
         .col(
             ColumnDef::new(MealPlanRecipe::PrepTime)
@@ -59,19 +48,11 @@ fn create_table() -> TableCreateStatement {
                 .default(0),
         )
         .col(
-            ColumnDef::new(MealPlanRecipe::Ingredients)
-                .blob()
-                .not_null(),
-        )
-        .col(
-            ColumnDef::new(MealPlanRecipe::Instructions)
-                .blob()
-                .not_null(),
-        )
-        .col(
-            ColumnDef::new(MealPlanRecipe::DietaryRestrictions)
-                .json_binary()
-                .not_null(),
+            ColumnDef::new(MealPlanRecipe::AdvancePrep)
+                .string()
+                .not_null()
+                .string_len(2000)
+                .default(""),
         )
         .col(
             ColumnDef::new(MealPlanRecipe::AcceptsAccompaniment)
@@ -80,16 +61,9 @@ fn create_table() -> TableCreateStatement {
                 .default(false),
         )
         .col(
-            ColumnDef::new(MealPlanRecipe::AdvancePrep)
-                .string()
-                .not_null()
-                .string_len(2000)
-                .default(""),
-        )
-        .primary_key(
-            Index::create()
-                .col(MealPlanRecipe::Id)
-                .col(MealPlanRecipe::UserId),
+            ColumnDef::new(MealPlanRecipe::DietaryRestrictions)
+                .json_binary()
+                .not_null(),
         )
         .to_owned()
 }
@@ -125,15 +99,15 @@ pub struct CreateIdx1;
 
 fn create_idx_1() -> IndexCreateStatement {
     Index::create()
-        .name("idk_mealplan_recipe_wrA7kG")
+        .name("idk_mealplan_recipe_lxvLay")
         .table(MealPlanRecipe::Table)
-        .col(MealPlanRecipe::Id)
+        .col(MealPlanRecipe::UserId)
         .to_owned()
 }
 
 fn drop_idx_1() -> IndexDropStatement {
     Index::drop()
-        .name("idk_mealplan_recipe_wrA7kG")
+        .name("idk_mealplan_recipe_lxvLay")
         .table(MealPlanRecipe::Table)
         .to_owned()
 }
@@ -165,15 +139,16 @@ pub struct CreateIdx2;
 
 fn create_idx_2() -> IndexCreateStatement {
     Index::create()
-        .name("idk_mealplan_recipe_lxvLay")
+        .name("idk_mealplan_recipe_GffMLT")
         .table(MealPlanRecipe::Table)
         .col(MealPlanRecipe::UserId)
+        .col(MealPlanRecipe::RecipeType)
         .to_owned()
 }
 
 fn drop_idx_2() -> IndexDropStatement {
     Index::drop()
-        .name("idk_mealplan_recipe_lxvLay")
+        .name("idk_mealplan_recipe_GffMLT")
         .table(MealPlanRecipe::Table)
         .to_owned()
 }
@@ -195,47 +170,6 @@ impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateIdx2 {
         connection: &mut sqlx::SqliteConnection,
     ) -> Result<(), sqlx_migrator::Error> {
         let statement = drop_idx_2().to_string(sea_query::SqliteQueryBuilder);
-        sqlx::query(&statement).execute(connection).await?;
-
-        Ok(())
-    }
-}
-
-pub struct CreateIdx3;
-
-fn create_idx_3() -> IndexCreateStatement {
-    Index::create()
-        .name("idk_mealplan_recipe_GffMLT")
-        .table(MealPlanRecipe::Table)
-        .col(MealPlanRecipe::UserId)
-        .col(MealPlanRecipe::RecipeType)
-        .to_owned()
-}
-
-fn drop_idx_3() -> IndexDropStatement {
-    Index::drop()
-        .name("idk_mealplan_recipe_GffMLT")
-        .table(MealPlanRecipe::Table)
-        .to_owned()
-}
-
-#[async_trait::async_trait]
-impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateIdx3 {
-    async fn up(
-        &self,
-        connection: &mut sqlx::SqliteConnection,
-    ) -> Result<(), sqlx_migrator::Error> {
-        let statement = create_idx_3().to_string(sea_query::SqliteQueryBuilder);
-        sqlx::query(&statement).execute(connection).await?;
-
-        Ok(())
-    }
-
-    async fn down(
-        &self,
-        connection: &mut sqlx::SqliteConnection,
-    ) -> Result<(), sqlx_migrator::Error> {
-        let statement = drop_idx_3().to_string(sea_query::SqliteQueryBuilder);
         sqlx::query(&statement).execute(connection).await?;
 
         Ok(())

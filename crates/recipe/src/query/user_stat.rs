@@ -1,25 +1,27 @@
-use evento::{AggregatorName, Executor, SubscribeBuilder};
+use evento::{
+    Executor,
+    metadata::Event,
+    subscription::{Context, SubscriptionBuilder},
+};
 use imkitchen_db::table::RecipeUserStat;
-use imkitchen_shared::Event;
+use imkitchen_shared::recipe::{Created, Deleted, Imported, MadePrivate, SharedToCommunity};
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
-
-use crate::{Created, Deleted, Imported, MadePrivate, Recipe, SharedToCommunity};
 use sqlx::prelude::FromRow;
 
 #[derive(Default, FromRow)]
-pub struct UserStat {
+pub struct UserStatView {
     pub total: u32,
     pub favorite: u32,
     pub shared: u32,
     pub from_community: u32,
 }
 
-impl super::Query {
+impl<E: Executor> super::Query<E> {
     pub async fn find_user_stat(
         &self,
         user_id: impl Into<String>,
-    ) -> anyhow::Result<Option<UserStat>> {
+    ) -> anyhow::Result<Option<UserStatView>> {
         let user_id = user_id.into();
         let statement = sea_query::Query::select()
             .columns([
@@ -34,29 +36,28 @@ impl super::Query {
 
         let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-        Ok(sqlx::query_as_with::<_, UserStat, _>(&sql, values)
-            .fetch_optional(&self.0)
+        Ok(sqlx::query_as_with(&sql, values)
+            .fetch_optional(&self.read_db)
             .await?)
     }
 }
 
-pub fn subscribe_user_stat<E: Executor + Clone>() -> SubscribeBuilder<E> {
-    evento::subscribe("recipe-user-stat")
+pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
+    SubscriptionBuilder::new("recipe-user-stat-view")
         .handler(handle_created())
         .handler(handle_imported())
         .handler(handle_deleted())
         .handler(handle_shared_to_community())
         .handler(handle_made_private())
-        .handler_check_off()
 }
 
-#[evento::handler(Recipe)]
+#[evento::sub_handler]
 async fn handle_created<E: Executor>(
-    context: &evento::Context<'_, E>,
+    context: &Context<'_, E>,
     event: Event<Created>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    let user_id = event.metadata.trigger_by()?;
+    let user_id = event.metadata.user()?;
 
     let statement = Query::insert()
         .into_table(RecipeUserStat::Table)
@@ -79,13 +80,13 @@ async fn handle_created<E: Executor>(
     Ok(())
 }
 
-#[evento::handler(Recipe)]
+#[evento::sub_handler]
 async fn handle_imported<E: Executor>(
-    context: &evento::Context<'_, E>,
+    context: &Context<'_, E>,
     event: Event<Imported>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    let user_id = event.metadata.trigger_by()?;
+    let user_id = event.metadata.user()?;
 
     let statement = Query::insert()
         .into_table(RecipeUserStat::Table)
@@ -108,13 +109,13 @@ async fn handle_imported<E: Executor>(
     Ok(())
 }
 
-#[evento::handler(Recipe)]
+#[evento::sub_handler]
 async fn handle_deleted<E: Executor>(
-    context: &evento::Context<'_, E>,
+    context: &Context<'_, E>,
     event: Event<Deleted>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    let user_id = event.metadata.trigger_by()?;
+    let user_id = event.metadata.user()?;
 
     let statement = Query::insert()
         .into_table(RecipeUserStat::Table)
@@ -137,13 +138,13 @@ async fn handle_deleted<E: Executor>(
     Ok(())
 }
 
-#[evento::handler(Recipe)]
+#[evento::sub_handler]
 async fn handle_shared_to_community<E: Executor>(
-    context: &evento::Context<'_, E>,
+    context: &Context<'_, E>,
     event: Event<SharedToCommunity>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    let user_id = event.metadata.trigger_by()?;
+    let user_id = event.metadata.user()?;
 
     let statement = Query::insert()
         .into_table(RecipeUserStat::Table)
@@ -166,13 +167,13 @@ async fn handle_shared_to_community<E: Executor>(
     Ok(())
 }
 
-#[evento::handler(Recipe)]
+#[evento::sub_handler]
 async fn handle_made_private<E: Executor>(
-    context: &evento::Context<'_, E>,
+    context: &Context<'_, E>,
     event: Event<MadePrivate>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    let user_id = event.metadata.trigger_by()?;
+    let user_id = event.metadata.user()?;
 
     let statement = Query::insert()
         .into_table(RecipeUserStat::Table)

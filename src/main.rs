@@ -42,14 +42,6 @@ enum Commands {
     Migrate,
     /// Drop database if exists and recreate with migrations
     Reset,
-    /// Set user role
-    UserRole {
-        #[arg(long)]
-        email: String,
-
-        #[arg(long)]
-        role: cli::Role,
-    },
 }
 
 #[derive(Subcommand)]
@@ -90,6 +82,5 @@ async fn main() -> Result<()> {
         Commands::Serve { host, port } => crate::cli::serve(config, host, port).await,
         Commands::Migrate => crate::cli::migrate(config).await,
         Commands::Reset => crate::cli::reset(config).await,
-        Commands::UserRole { email, role } => crate::cli::set_role(config, email, role).await,
     }
 }

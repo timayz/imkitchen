@@ -1,8 +1,7 @@
 use axum::extract::State;
 use axum::response::IntoResponse;
 use axum_extra::extract::Form;
-use imkitchen_recipe::DietaryRestriction;
-use imkitchen_shared::Metadata;
+use imkitchen_shared::recipe::DietaryRestriction;
 use imkitchen_user::meal_preferences::UpdateInput;
 use serde::Deserialize;
 use strum::VariantArray;
@@ -38,24 +37,19 @@ impl Default for MealPreferencesTemplate {
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn page(
     template: Template,
-    State(state): State<AppState>,
+    State(app): State<AppState>,
     user: AuthUser,
 ) -> impl IntoResponse {
-    let preferences = crate::try_page_response!(
-        state.user_meal_preference_command.load_optional(&user.id),
-        template
-    );
-    let preferences = preferences.unwrap_or_default();
+    let preferences =
+        crate::try_page_response!(app.user_cmd.meal_preferences.load(&user.id), template);
 
-    template
-        .render(MealPreferencesTemplate {
-            household_size: preferences.item.household_size,
-            dietary_restrictions: preferences.item.dietary_restrictions,
-            cuisine_variety_weight: preferences.item.cuisine_variety_weight,
-            user,
-            ..Default::default()
-        })
-        .into_response()
+    template.render(MealPreferencesTemplate {
+        household_size: preferences.household_size,
+        dietary_restrictions: preferences.dietary_restrictions.to_vec(),
+        cuisine_variety_weight: preferences.cuisine_variety_weight,
+        user,
+        ..Default::default()
+    })
 }
 
 #[derive(Deserialize, Debug)]
@@ -69,18 +63,18 @@ pub struct ActionInput {
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn action(
     template: Template,
-    State(state): State<AppState>,
+    State(app): State<AppState>,
     user: AuthUser,
     Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {
     crate::try_response!(
-        state.user_meal_preference_command.update(
+        app.user_cmd.meal_preferences.update(
+            &user.id,
             UpdateInput {
                 dietary_restrictions: input.dietary_restrictions.to_vec(),
                 cuisine_variety_weight: input.cuisine_variety_weight,
                 household_size: input.household_size,
-            },
-            &Metadata::by(user.id.to_owned()),
+            }
         ),
         template
     );

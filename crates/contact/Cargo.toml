@@ -6,23 +6,20 @@ authors.workspace = true
 
 [dependencies]
 evento.workspace = true
-bincode.workspace = true
+time.workspace = true
+bitcode.workspace = true
 anyhow.workspace = true
-validator = { workspace = true, optional = true }
-sqlx = { workspace = true, optional = true }
+validator = { workspace = true }
+sqlx = { workspace = true }
 serde.workspace = true
-cfg-if.workspace = true
 strum.workspace = true
 sea-query.workspace = true
 sea-query-sqlx.workspace = true
 imkitchen-shared = { path = "../shared", version = "0.12.8" }
-imkitchen-db = { path = "../db", version = "0.12.8", optional = true }
+imkitchen-db = { path = "../db", version = "0.12.8" }
 
 [dev-dependencies]
 tokio.workspace = true
 temp-dir.workspace = true
 futures.workspace = true
 
-[features]
-default = ["full"]
-full = ["sqlx", "validator", "imkitchen-db"]

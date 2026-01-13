@@ -1,8 +1,10 @@
-use crate::{Generated, Shopping};
-use evento::{AggregatorName, Executor, SubscribeBuilder};
+use evento::{
+    Executor,
+    metadata::Event,
+    subscription::{Context, SubscriptionBuilder},
+};
 use imkitchen_db::table::ShoppingList;
-use imkitchen_recipe::Ingredient;
-use imkitchen_shared::Event;
+use imkitchen_shared::{recipe::Ingredient, shopping::Generated};
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::prelude::FromRow;
@@ -11,10 +13,10 @@ use time::OffsetDateTime;
 #[derive(Default, FromRow)]
 pub struct ListWeekRow {
     pub week: u64,
-    pub ingredients: imkitchen_db::types::Bincode<Vec<Ingredient>>,
+    pub ingredients: evento::sql_types::Bitcode<Vec<Ingredient>>,
 }
 
-impl super::Query {
+impl<E: Executor> super::Query<E> {
     pub async fn next_from(
         &self,
         week: u64,
@@ -34,25 +36,22 @@ impl super::Query {
         let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
         Ok(sqlx::query_as_with::<_, ListWeekRow, _>(&sql, values)
-            .fetch_optional(&self.0)
+            .fetch_optional(&self.read_db)
             .await?)
     }
 }
 
-pub fn subscribe_list<E: Executor + Clone>() -> SubscribeBuilder<E> {
-    evento::subscribe("shopping-list")
-        .handler(handle_generated())
-        .handler_check_off()
+pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
+    SubscriptionBuilder::new("shopping-list").handler(handle_generated())
 }
 
-#[evento::handler(Shopping)]
+#[evento::sub_handler]
 async fn handle_generated<E: Executor>(
-    context: &evento::Context<'_, E>,
+    context: &Context<'_, E>,
     event: Event<Generated>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    let config = bincode::config::standard();
-    let ingredients = bincode::encode_to_vec(&event.data.ingredients, config)?;
+    let ingredients = bitcode::encode(&event.data.ingredients);
 
     let statement = Query::insert()
         .into_table(ShoppingList::Table)

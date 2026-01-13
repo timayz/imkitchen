@@ -3,8 +3,8 @@ use axum::{
     response::{IntoResponse, Redirect},
 };
 
-use imkitchen_recipe::{IngredientUnitFormat, RecipeRow, RecipeType};
-use imkitchen_shared::Metadata;
+use imkitchen_recipe::user::UserView;
+use imkitchen_shared::recipe::{IngredientUnitFormat, RecipeType};
 
 use crate::{
     auth::AuthUser,
@@ -41,7 +41,7 @@ pub struct DeleteButtonTemplate<'a> {
 pub struct DetailTemplate {
     pub current_path: String,
     pub user: AuthUser,
-    pub recipe: RecipeRow,
+    pub recipe: UserView,
 }
 
 impl Default for DetailTemplate {
@@ -49,7 +49,7 @@ impl Default for DetailTemplate {
         Self {
             current_path: "recipes".to_owned(),
             user: AuthUser::default(),
-            recipe: RecipeRow::default(),
+            recipe: Default::default(),
         }
     }
 }
@@ -61,9 +61,9 @@ pub async fn page(
     Path((id,)): Path<(String,)>,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
-    let recipe = crate::try_page_response!(opt: app.recipe_query.find(&id), template);
+    let recipe = crate::try_page_response!(opt: app.recipe_query.user(&id), template);
 
-    if recipe.user_id != user.id {
+    if recipe.owner_id != user.id {
         return template.render(ForbiddenTemplate).into_response();
     }
 
@@ -83,30 +83,16 @@ pub async fn share_to_community_action(
     user: AuthUser,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    let recipe = crate::try_response!(anyhow_opt:
-        app.recipe_command.load_optional(&id),
-        template
-    );
-
-    if recipe.item.deleted {
-        crate::try_response!(sync: Ok(None::<()>), template);
-    }
-
-    if recipe.item.user_id != user.id {
-        crate::try_response!(sync: Err(imkitchen_shared::Error::Forbidden), template);
-    }
-
-    if user.username.is_none() {
+    let Some(ref username) = user.username else {
         return (
             [("ts-swap", "skip")],
             template.render(SetUsernameModalTemplate),
         )
             .into_response();
-    }
+    };
 
     crate::try_response!(
-        app.recipe_command
-            .share_to_community_with(recipe, &Metadata::by(user.id.to_owned())),
+        app.recipe_cmd.share_to_community(&id, &user.id, username),
         template
     );
 
@@ -125,24 +111,7 @@ pub async fn make_private_action(
     user: AuthUser,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    let recipe = crate::try_response!(anyhow_opt:
-        app.recipe_command.load_optional(&id),
-        template
-    );
-
-    if recipe.item.deleted {
-        crate::try_response!(sync: Ok(None::<()>), template);
-    }
-
-    if recipe.item.user_id != user.id {
-        crate::try_response!(sync: Err(imkitchen_shared::Error::Forbidden), template);
-    }
-
-    crate::try_response!(
-        app.recipe_command
-            .make_private_with(recipe, &Metadata::by(user.id.to_owned())),
-        template
-    );
+    crate::try_response!(app.recipe_cmd.make_private(&id, &user.id), template);
 
     template
         .render(ShareButtonTemplate {
@@ -159,24 +128,7 @@ pub async fn delete_action(
     user: AuthUser,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    let recipe = crate::try_response!(anyhow_opt:
-        app.recipe_command.load_optional(&id),
-        template
-    );
-
-    if recipe.item.deleted {
-        crate::try_response!(sync: Ok(None::<()>), template);
-    }
-
-    if recipe.item.user_id != user.id {
-        crate::try_response!(sync: Err(imkitchen_shared::Error::Forbidden), template);
-    }
-
-    crate::try_response!(
-        app.recipe_command
-            .delete_with(recipe, &Metadata::by(user.id.to_owned())),
-        template
-    );
+    crate::try_response!(app.recipe_cmd.delete(&id, &user.id), template);
 
     template
         .render(DeleteButtonTemplate {
@@ -194,7 +146,7 @@ pub async fn delete_status(
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
     match crate::try_response!(anyhow:
-        app.recipe_query.find(&id),
+        app.recipe_query.find_user(&id),
         template,
         Some(DeleteButtonTemplate {
             id: &id,

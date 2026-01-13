@@ -4,8 +4,7 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
-use imkitchen_recipe::{CuisineType, Ingredient, Instruction, RecipeType};
-use imkitchen_shared::Metadata;
+use imkitchen_shared::recipe::{CuisineType, Ingredient, Instruction, RecipeType};
 use serde::Deserialize;
 
 use crate::{
@@ -85,7 +84,7 @@ pub async fn action(
 
     for recipe in recipes {
         match app
-            .recipe_command
+            .recipe_cmd
             .import(
                 imkitchen_recipe::ImportInput {
                     recipe_type: recipe.recipe_type,
@@ -99,14 +98,15 @@ pub async fn action(
                     cuisine_type: recipe.cuisine_type,
                     advance_prep: recipe.advance_prep.unwrap_or_default(),
                 },
-                &Metadata::by(user.id.to_owned()),
+                &user.id,
+                user.username.to_owned(),
             )
             .await
         {
             Ok(recipe_id) => {
                 id = Some(recipe_id);
             }
-            Err(imkitchen_shared::Error::Unknown(err)) => {
+            Err(imkitchen_shared::Error::Server(err)) => {
                 tracing::error!(user = user.id, err = %err,"failed to import recipes");
 
                 error_recipes.push(ErrorRecipe {
@@ -131,7 +131,7 @@ pub async fn status(
     user: AuthUser,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    match app.recipe_query.find(&id).await {
+    match app.recipe_query.find_user(&id).await {
         Ok(Some(_)) => template
             .render(ImportingStatusTemplate { id: None })
             .into_response(),

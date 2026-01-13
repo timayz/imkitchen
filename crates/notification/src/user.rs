@@ -1,6 +1,9 @@
-use evento::{AggregatorName, Executor, SubscribeBuilder};
-use imkitchen_shared::Event;
-use imkitchen_user::reset_password::{ResetRequested, UserResetPassword};
+use evento::{
+    Executor,
+    metadata::Event,
+    subscription::{Context, SubscriptionBuilder},
+};
+use imkitchen_shared::user::password::ResetRequested;
 use time::OffsetDateTime;
 
 use crate::{
@@ -8,10 +11,8 @@ use crate::{
     template::{Template, filters},
 };
 
-pub fn subscribe_user<E: Executor + Clone>() -> SubscribeBuilder<E> {
-    evento::subscribe("notification-user")
-        .handler(handle_reset_requested())
-        .handler_check_off()
+pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
+    SubscriptionBuilder::new("notification-user").handler(handle_reset_requested())
 }
 
 #[derive(askama::Template)]
@@ -32,9 +33,9 @@ pub struct ResetPasswordPlainTemplate {
     pub lang: String,
 }
 
-#[evento::handler(UserResetPassword)]
+#[evento::sub_handler]
 async fn handle_reset_requested<E: Executor>(
-    context: &evento::Context<'_, E>,
+    context: &Context<'_, E>,
     event: Event<ResetRequested>,
 ) -> anyhow::Result<()> {
     let service = context.extract::<EmailService>();

@@ -16,7 +16,7 @@ use axum_extra::{
     },
     headers::UserAgent,
 };
-use imkitchen_user::State;
+use imkitchen_shared::user::State;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
@@ -35,10 +35,10 @@ pub struct Claims {
     iat: u64, // Optional. Issued at (as UTC timestamp)
     iss: String, // Optional. Issuer
     pub(crate) sub: String, // Optional. Subject (whom token refers to)
-    pub(crate) rev: String, // Optional. Subject (whom token refers to)
+    pub(crate) acc: String, // Optional. Subject (whom token refers to)
 }
 
-pub fn build_cookie<'a>(config: JwtConfig, sub: String, rev: String) -> anyhow::Result<Cookie<'a>> {
+pub fn build_cookie<'a>(config: JwtConfig, sub: String, acc: String) -> anyhow::Result<Cookie<'a>> {
     let now = OffsetDateTime::now_utc();
     let expire_days = time::Duration::days(config.expiration_days.into());
     let auth_expires = Expiration::from(now + expire_days);
@@ -48,7 +48,7 @@ pub fn build_cookie<'a>(config: JwtConfig, sub: String, rev: String) -> anyhow::
         iat: now.unix_timestamp().try_into()?,
         iss: config.issuer.to_owned(),
         sub,
-        rev,
+        acc,
     };
 
     let auth_token = encode(
@@ -131,10 +131,10 @@ impl FromRequestParts<crate::routes::AppState> for Option<AuthToken> {
 }
 
 #[derive(Clone, Default)]
-pub struct AuthUser(imkitchen_user::AuthUser);
+pub struct AuthUser(imkitchen_user::login::Login);
 
 impl Deref for AuthUser {
-    type Target = imkitchen_user::AuthUser;
+    type Target = imkitchen_user::login::Login;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -154,27 +154,7 @@ impl FromRequestParts<crate::routes::AppState> for AuthUser {
 
         let claims = AuthToken::from_request_parts(parts, state).await?;
 
-        let Some(login) = state
-            .user_command
-            .find_login(&claims.sub)
-            .await
-            .map_err(|e| {
-                tracing::error!("{e}");
-                Redirect::to("/login")
-            })?
-        else {
-            return Err(Redirect::to("/login"));
-        };
-
-        if login.revision != claims.rev {
-            return Err(Redirect::to("/login"));
-        }
-
-        if login.user_agent != user_agent.to_string() {
-            return Err(Redirect::to("/login"));
-        }
-
-        let Some(mut user) = state.user_command.find(&login.user_id).await.map_err(|e| {
+        let Some(user) = state.user_query.login(&claims.sub).await.map_err(|e| {
             tracing::error!("{e}");
             Redirect::to("/login")
         })?
@@ -182,19 +162,31 @@ impl FromRequestParts<crate::routes::AppState> for AuthUser {
             return Err(Redirect::to("/login"));
         };
 
-        if user.state.0 == State::Suspended {
+        let Some(login) = user
+            .logins
+            .iter()
+            .find(|l| l.id == claims.acc && l.user_agent == user_agent.to_string())
+        else {
+            return Err(Redirect::to("/login"));
+        };
+
+        let mut login = login.clone();
+
+        login.id = user.id;
+
+        if login.state == State::Suspended {
             return Err(Redirect::to("/login"));
         }
 
-        if !state.config.features.premium || user.is_admin() {
-            user.subscription_expire_at = (SystemTime::now() + time::Duration::weeks(10 * 52))
+        if !state.config.features.premium || login.is_admin() {
+            login.subscription_expire_at = (SystemTime::now() + time::Duration::weeks(10 * 52))
                 .duration_since(UNIX_EPOCH)
                 .map_or(0, |d| d.as_secs());
         }
 
-        parts.extensions.insert(user.clone());
+        parts.extensions.insert(login.clone());
 
-        Ok(AuthUser(user))
+        Ok(AuthUser(login))
     }
 }
 
@@ -209,10 +201,10 @@ impl FromRequestParts<crate::routes::AppState> for Option<AuthUser> {
     }
 }
 
-pub struct AuthAdmin(imkitchen_user::AuthUser);
+pub struct AuthAdmin(imkitchen_user::login::Login);
 
 impl Deref for AuthAdmin {
-    type Target = imkitchen_user::AuthUser;
+    type Target = imkitchen_user::login::Login;
 
     fn deref(&self) -> &Self::Target {
         &self.0

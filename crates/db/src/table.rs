@@ -5,10 +5,10 @@ pub enum User {
     Table,
     Id,
     Email,
+    Password,
     Username,
     Role,
     State,
-    SubscriptionExpireAt,
     CreatedAt,
 }
 
@@ -16,25 +16,29 @@ pub enum User {
 pub enum UserLogin {
     Table,
     Id,
-    UserId,
-    Revision,
-    UserAgent,
+    Cursor,
+    Username,
+    Role,
+    State,
+    SubscriptionExpireAt,
+    Logins,
+}
+
+#[derive(Iden, Clone)]
+pub enum UserGlobalStat {
+    Table,
+    Month,
+    Total,
+    Premium,
+    Suspended,
     CreatedAt,
 }
 
 #[derive(Iden, Clone)]
-pub enum UserStat {
-    Table,
-    Day,
-    Total,
-    Premium,
-    Suspended,
-}
-
-#[derive(Iden, Clone)]
-pub enum UserList {
+pub enum UserAdmin {
     Table,
     Id,
+    Cursor,
     Email,
     FullName,
     Username,
@@ -48,9 +52,10 @@ pub enum UserList {
 }
 
 #[derive(Iden, Clone)]
-pub enum ContactList {
+pub enum ContactAdmin {
     Table,
     Id,
+    Cursor,
     Email,
     Name,
     Status,
@@ -60,20 +65,42 @@ pub enum ContactList {
 }
 
 #[derive(Iden, Clone)]
-pub enum ContactStat {
+pub enum ContactGlobalStat {
     Table,
     Day,
     Total,
+    Today,
     Unread,
     AvgResponseTime,
     CreatedAt,
 }
 
 #[derive(Iden, Clone)]
-pub enum RecipeList {
+pub enum RecipeCommand {
     Table,
     Id,
-    UserId,
+    OwnerId,
+    RecipeType,
+    CuisineType,
+    IsShared,
+    BasicInformationHash,
+    IngredientsHash,
+    InstructionsHash,
+    DietaryRestrictionsHash,
+    AdvancePrepHash,
+    AcceptsAccompaniment,
+    IsDeleted,
+    Version,
+    RoutingKey,
+}
+
+#[derive(Iden, Clone)]
+pub enum RecipeUser {
+    Table,
+    Id,
+    Cursor,
+    OwnerId,
+    OwnerName,
     RecipeType,
     CuisineType,
     Name,
@@ -106,7 +133,7 @@ pub enum RecipeUserStat {
 }
 
 #[derive(Iden, Clone)]
-pub enum RecipeRating {
+pub enum RecipeRatingCommand {
     Table,
     RecipeId,
     UserId,
@@ -121,16 +148,12 @@ pub enum MealPlanRecipe {
     Id,
     UserId,
     RecipeType,
-    CuisineType,
     Name,
-    HouseholdSize,
+    AdvancePrep,
     PrepTime,
     CookTime,
-    Ingredients,
-    Instructions,
-    DietaryRestrictions,
     AcceptsAccompaniment,
-    AdvancePrep,
+    DietaryRestrictions,
 }
 
 #[derive(Iden, Clone)]
@@ -139,7 +162,6 @@ pub enum MealPlanWeek {
     UserId,
     Start,
     End,
-    Status,
     Slots,
 }
 
@@ -159,6 +181,15 @@ pub enum MealPlanSlot {
     MainCourse,
     Accompaniment,
     Dessert,
+}
+
+#[derive(Iden, Clone)]
+pub enum ShoppingRecipe {
+    Table,
+    Id,
+    UserId,
+    HouseholdSize,
+    Ingredients,
 }
 
 #[derive(Iden, Clone)]

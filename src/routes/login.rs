@@ -4,11 +4,10 @@ use axum::response::{IntoResponse, Redirect};
 use axum_extra::TypedHeader;
 use axum_extra::extract::CookieJar;
 use axum_extra::headers::UserAgent;
-use imkitchen_shared::Metadata;
 use imkitchen_user::LoginInput;
 use serde::Deserialize;
 
-use crate::auth::{self, AuthToken, build_cookie};
+use crate::auth::{self, AuthToken, AuthUser, build_cookie};
 use crate::routes::AppState;
 use crate::template::{SERVER_ERROR_MESSAGE, Template};
 use crate::template::{ToastErrorTemplate, filters};
@@ -35,26 +34,23 @@ pub struct ActionInput {
 
 pub async fn action(
     template: Template,
-    State(state): State<AppState>,
+    State(app): State<AppState>,
     jar: CookieJar,
     TypedHeader(user_agent): TypedHeader<UserAgent>,
     Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {
-    let login = crate::try_response!(
-        state.user_command.login(
-            LoginInput {
-                email: input.email,
-                password: input.password,
-                lang: template.preferred_language_iso.to_owned(),
-                timezone: template.timezone.to_owned(),
-                user_agent: user_agent.to_string(),
-            },
-            &Metadata::default(),
-        ),
+    let (user_id, access_id) = crate::try_response!(
+        app.user_cmd.login(LoginInput {
+            email: input.email,
+            password: input.password,
+            lang: template.preferred_language_iso.to_owned(),
+            timezone: template.timezone.to_owned(),
+            user_agent: user_agent.to_string(),
+        },),
         template
     );
 
-    let auth_cookie = match build_cookie(state.config.jwt, login.id, login.revision) {
+    let auth_cookie = match build_cookie(app.config.jwt, user_id, access_id) {
         Ok(cookie) => cookie,
         Err(e) => {
             tracing::error!("{e}");
@@ -77,16 +73,12 @@ pub async fn action(
 pub async fn logout(
     jar: CookieJar,
     token: AuthToken,
+    user: AuthUser,
     template: Template,
     State(app): State<AppState>,
-    TypedHeader(user_agent): TypedHeader<UserAgent>,
 ) -> impl IntoResponse {
     crate::try_response!(
-        app.user_command.delete_login(
-            token.sub.to_owned(),
-            token.rev.to_owned(),
-            user_agent.to_string(),
-        ),
+        app.user_cmd.logout(&user.id, token.sub.to_owned()),
         template
     );
 

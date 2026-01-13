@@ -80,7 +80,7 @@
                         <div class="space-y-2">
                             {% for ingredient in ingredients.iter() %}
                             <label class="flex items-start gap-3 p-3 hover:bg-gray-50 rounded cursor-pointer">
-                              <input{% if let Some(checked) = checked.as_ref() %}{% if checked.contains(ingredient.key().as_str()) %} checked{% endif %}{%endif%} type="checkbox" class="mt-1 rounded border-gray-300 text-green-600" autocomplete="off"
+                              <input{% if let Some(checked) = checked %}{% if checked.contains::<String>(&ingredient.key()) %} checked{% endif %}{%endif%} type="checkbox" class="mt-1 rounded border-gray-300 text-green-600" autocomplete="off"
                                   ts-trigger="change" ts-req="/calendar/week-{{ current.week }}/shopping/toggle" ts-json="{{ "{ \"name\": \"" ~ ingredient.key() ~ "\"}" }}"
                                   ts-req-method="post" ts-req-selector="#shopping-summary" ts-target="#shopping-summary"
                                 />

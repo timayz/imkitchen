@@ -1,5 +1,7 @@
 .PHONY: css css-watch dev lint fmt fmt-fix test check machete 
 
+start: up dev
+
 # Build CSS once
 css:
 	tailwindcss -i tailwind.css -o static/css/main.css --minify

@@ -1,13 +1,62 @@
-mod aggregator;
-mod event;
+mod toogle_life_premium;
 
-pub use aggregator::*;
-pub use event::*;
+use bitcode::{Decode, Encode};
+use evento::{Executor, Projection, metadata::Event};
+use imkitchen_shared::user::subscription;
+use std::ops::Deref;
 
-cfg_if::cfg_if! {
-    if #[cfg(feature = "full")] {
-        mod command;
+#[derive(Clone)]
+pub struct Command<E: Executor>(pub(crate) imkitchen_shared::State<E>);
 
-        pub use command::*;
+impl<E: Executor> Deref for Command<E> {
+    type Target = imkitchen_shared::State<E>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
+}
+
+impl<E: Executor> Command<E> {
+    pub async fn load(&self, id: impl Into<String>) -> anyhow::Result<Subscription> {
+        let id = id.into();
+        create_projection::<E>(&id)
+            .execute(&self.executor)
+            .await
+            .map(|r| {
+                r.unwrap_or_else(|| Subscription {
+                    id,
+                    expire_at: 0,
+                    cursor: Default::default(),
+                })
+            })
+    }
+}
+
+#[evento::projection(Encode, Decode)]
+pub struct Subscription {
+    pub id: String,
+    pub expire_at: u64,
+}
+
+fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Subscription> {
+    Projection::new::<subscription::Subscription>(id)
+        .handler(handle_life_premium_toggled())
+        .safety_check()
+}
+
+impl evento::ProjectionAggregator for Subscription {
+    fn aggregator_id(&self) -> String {
+        self.id.to_owned()
+    }
+}
+
+#[evento::handler]
+async fn handle_life_premium_toggled(
+    event: Event<subscription::LifePremiumToggled>,
+    data: &mut Subscription,
+) -> anyhow::Result<()> {
+    data.id = event.aggregator_id.to_owned();
+    data.expire_at = event.data.expire_at;
+
+    Ok(())
 }

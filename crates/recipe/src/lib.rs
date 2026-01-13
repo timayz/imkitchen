@@ -1,19 +1,7 @@
 pub mod rating;
 
-mod aggregator;
-mod event;
-mod types;
+mod query;
+mod root;
 
-pub use aggregator::*;
-pub use event::*;
-pub use types::*;
-
-cfg_if::cfg_if! {
-    if #[cfg(feature = "full")] {
-        mod command;
-        mod query;
-
-        pub use command::*;
-        pub use query::*;
-    }
-}
+pub use query::*;
+pub use root::*;

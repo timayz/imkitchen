@@ -4,30 +4,28 @@ version = "0.12.8"
 edition.workspace = true
 authors.workspace = true
 
+[package.metadata.cargo-machete]
+ignored = ["bitcode"]
+
 [dependencies]
 evento.workspace = true
-bincode.workspace = true
 anyhow.workspace = true
-validator = { workspace = true, optional = true }
-regex = { workspace = true, optional = true }
+bitcode.workspace = true
+validator = { workspace = true }
+regex = { workspace = true }
 argon2.workspace = true
-sqlx = { workspace = true, optional = true }
+sqlx = { workspace = true }
 strum.workspace = true
-time = { workspace = true, optional = true }
-ulid = { workspace = true, optional = true }
+time = { workspace = true }
+ulid = { workspace = true }
 sea-query.workspace = true
 sea-query-sqlx.workspace = true
-cfg-if.workspace = true
 serde.workspace = true
 imkitchen-shared = { path = "../shared", version = "0.12.8" }
-imkitchen-db = { path = "../db", version = "0.12.8", optional = true }
-imkitchen-recipe = { path = "../recipe", version = "0.12.8", default-features = false, optional = true }
+imkitchen-db = { path = "../db", version = "0.12.8" }
 
 [dev-dependencies]
 tokio.workspace = true
 temp-dir.workspace = true
 futures.workspace = true
 
-[features]
-default = ["full", "imkitchen-recipe"]
-full = ["sqlx", "validator", "imkitchen-db", "time", "ulid", "regex"]

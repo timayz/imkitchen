@@ -4,16 +4,11 @@ use evento::{
     Sqlite,
     migrator::{Migrate, Plan},
 };
-use imkitchen_shared::Metadata;
-use imkitchen_user::{RegisterInput, subscribe_command};
+use imkitchen_shared::State;
+use imkitchen_user::RegisterInput;
 use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
 
-pub struct TestState {
-    pub evento: Sqlite,
-    pub pool: SqlitePool,
-}
-
-pub async fn setup_test_state(path: PathBuf) -> anyhow::Result<TestState> {
+pub async fn setup_test_state(path: PathBuf) -> anyhow::Result<State<Sqlite>> {
     let opts = SqliteConnectOptions::from_str(&format!("sqlite:{}", path.to_str().unwrap()))?
         .create_if_missing(true);
     let pool = SqlitePool::connect_with(opts).await?;
@@ -22,52 +17,41 @@ pub async fn setup_test_state(path: PathBuf) -> anyhow::Result<TestState> {
         .run(&mut conn, &Plan::apply_all())
         .await?;
 
-    Ok(TestState {
-        evento: pool.clone().into(),
-        pool,
+    Ok(State {
+        executor: pool.clone().into(),
+        read_db: pool.clone(),
+        write_db: pool,
     })
 }
 
 #[allow(dead_code)]
-pub async fn create_user(state: &TestState, name: impl Into<String>) -> anyhow::Result<String> {
-    let ids = create_users(state, vec![name]).await?;
+pub async fn create_user(
+    cmd: &imkitchen_user::Command<Sqlite>,
+    name: impl Into<String>,
+) -> anyhow::Result<String> {
+    let ids = create_users(cmd, vec![name]).await?;
 
     Ok(ids.first().unwrap().to_owned())
 }
 
 #[allow(dead_code)]
 pub async fn create_users(
-    state: &TestState,
+    cmd: &imkitchen_user::Command<Sqlite>,
     names: impl IntoIterator<Item = impl Into<String>>,
 ) -> anyhow::Result<Vec<String>> {
-    let command = imkitchen_user::Command {
-        evento: state.evento.clone(),
-        read_db: state.pool.clone(),
-        write_db: state.pool.clone(),
-    };
-
     let mut ids = vec![];
     for name in names.into_iter() {
         let name = name.into();
-        let login = command
-            .register(
-                RegisterInput {
-                    email: format!("{name}@imkitchen.localhost"),
-                    password: "my_password".to_owned(),
-                    lang: "en".to_owned(),
-                    timezone: "UTC".to_owned(),
-                    user_agent: "".to_owned(),
-                },
-                &Metadata::default(),
-            )
+        let id = cmd
+            .register(RegisterInput {
+                email: format!("{name}@imkitchen.localhost"),
+                password: "my_password".to_owned(),
+                lang: "en".to_owned(),
+                timezone: "UTC".to_owned(),
+            })
             .await?;
-        ids.push(login.user_id);
+        ids.push(id);
     }
-
-    subscribe_command()
-        .data(state.pool.clone())
-        .unretry_oneshot(&state.evento)
-        .await?;
 
     Ok(ids)
 }

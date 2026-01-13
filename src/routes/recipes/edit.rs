@@ -1,16 +1,15 @@
-use std::str::FromStr;
-
 use axum::{
     extract::{Path, State},
     response::IntoResponse,
 };
 use axum_extra::extract::Form;
-use imkitchen_recipe::{
+use imkitchen_recipe::UpdateInput;
+use imkitchen_shared::recipe::{
     CuisineType, DietaryRestriction, Ingredient, IngredientCategory, IngredientUnit, Instruction,
-    RecipeType, UpdateInput,
+    RecipeType,
 };
-use imkitchen_shared::Metadata;
 use serde::Deserialize;
+use std::str::FromStr;
 use strum::VariantArray;
 
 use crate::{
@@ -86,9 +85,9 @@ pub async fn page(
     Path((id,)): Path<(String,)>,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
-    let recipe = crate::try_page_response!(opt: app.recipe_query.find(&id), template);
+    let recipe = crate::try_page_response!(opt: app.recipe_query.user(&id), template);
 
-    if recipe.user_id != user.id {
+    if recipe.owner_id != user.id {
         return template.render(ForbiddenTemplate).into_response();
     }
 
@@ -135,21 +134,12 @@ pub async fn action(
     Path((id,)): Path<(String,)>,
     Form(input): Form<EditForm>,
 ) -> impl IntoResponse {
-    let recipe = crate::try_response!(anyhow_opt:
-        app.recipe_command.load_optional(&id),
-        template
-    );
-
-    if recipe.item.deleted {
-        crate::try_response!(sync: Ok(None::<()>), template);
-    }
-
     if input.ingredients_name.len() != input.ingredients_quantity.len()
         || input.ingredients_name.len() != input.ingredients_unit.len()
         || input.ingredients_name.len() != input.ingredients_category.len()
     {
         crate::try_response!(sync:
-            Err(imkitchen_shared::Error::Server(
+            Err(imkitchen_shared::Error::User(
                 "ingredients_name, ingredients_quantity, ingredients_unit and ingredients_category size not matched"
                     .to_owned()
             )),
@@ -159,16 +149,12 @@ pub async fn action(
 
     if input.instructions_description.len() != input.instructions_time_next.len() {
         crate::try_response!(sync:
-            Err(imkitchen_shared::Error::Server(
+            Err(imkitchen_shared::Error::User(
                 "instructions_description and instructions_time_next size not matched"
                     .to_owned()
             )),
             template
         );
-    }
-
-    if recipe.item.user_id != user.id {
-        crate::try_response!(sync: Err(imkitchen_shared::Error::Forbidden), template);
     }
 
     let mut ingredients = vec![];
@@ -190,7 +176,7 @@ pub async fn action(
     }
 
     crate::try_response!(
-        app.recipe_command.update(
+        app.recipe_cmd.update(
             UpdateInput {
                 id: id.to_owned(),
                 recipe_type: input.recipe_type,
@@ -206,7 +192,7 @@ pub async fn action(
                 accepts_accompaniment: input.accepts_accompaniment == "on",
                 advance_prep: input.advance_prep,
             },
-            &Metadata::by(user.id.to_owned()),
+            &user.id
         ),
         template
     );

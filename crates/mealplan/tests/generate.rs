@@ -1,6 +1,6 @@
-use imkitchen_mealplan::Status;
-use imkitchen_recipe::{CuisineType, ImportInput, RecipeType};
-use imkitchen_shared::Metadata;
+use evento::Sqlite;
+use imkitchen_recipe::ImportInput;
+use imkitchen_shared::recipe::{CuisineType, RecipeType};
 use temp_dir::TempDir;
 
 mod helpers;
@@ -10,114 +10,59 @@ async fn test_random() -> anyhow::Result<()> {
     let dir = TempDir::new()?;
     let path = dir.child("db.sqlite3");
     let state = helpers::setup_test_state(path).await?;
-    let command = imkitchen_mealplan::Command(state.evento.clone(), state.pool.clone());
-    let query = imkitchen_mealplan::Query(state.pool.clone());
-    let recipe_command = imkitchen_recipe::Command(state.evento.clone(), state.pool.clone());
-    let john = Metadata::by("john".to_owned());
-    let albert = Metadata::by("albert".to_owned());
+    let cmd = imkitchen_mealplan::Command::new(state.clone());
+    let query = imkitchen_mealplan::Query(state.clone());
+    let recipe_cmd = imkitchen_recipe::Command::new(state.clone());
 
     for i in 0..200 {
-        import_recipe(
-            &recipe_command,
-            i.to_string(),
-            RecipeType::MainCourse,
-            &john,
-        )
-        .await?;
+        import_recipe(&recipe_cmd, i.to_string(), RecipeType::MainCourse, "john").await?;
     }
 
     for i in 0..4 {
-        import_recipe(&recipe_command, i.to_string(), RecipeType::Appetizer, &john).await?;
+        import_recipe(&recipe_cmd, i.to_string(), RecipeType::Appetizer, "john").await?;
     }
 
     for i in 0..5 {
-        import_recipe(
-            &recipe_command,
-            i.to_string(),
-            RecipeType::Appetizer,
-            &albert,
-        )
-        .await?;
+        import_recipe(&recipe_cmd, i.to_string(), RecipeType::Appetizer, "albert").await?;
     }
 
-    command.generate(true, &john).await?;
-    let result = command.generate(true, &john).await;
-    assert_eq!(
-        &result.unwrap_err().to_string(),
-        "Meal plan status is processing"
-    );
-
-    imkitchen_mealplan::subscribe_command()
-        .data(state.pool.clone())
-        .unretry_oneshot(&state.evento)
+    imkitchen_mealplan::subscription()
+        .data(state.write_db.clone())
+        .unretry_execute(&state.executor)
         .await?;
 
-    let ids1 = imkitchen_mealplan::random(
-        &state.pool,
-        "john",
-        imkitchen_recipe::RecipeType::MainCourse,
-    )
-    .await?
-    .iter()
-    .map(|r| r.id.to_owned())
-    .collect::<Vec<_>>();
+    let weeks = imkitchen_mealplan::next_four_mondays_from_now()
+        .iter()
+        .map(|w| {
+            (
+                w.start.unix_timestamp() as u64,
+                w.end.unix_timestamp() as u64,
+            )
+        })
+        .collect::<Vec<_>>();
 
-    let ids2 = imkitchen_mealplan::random(
-        &state.pool,
-        "john",
-        imkitchen_recipe::RecipeType::MainCourse,
-    )
-    .await?
-    .iter()
-    .map(|r| r.id.to_owned())
-    .collect::<Vec<_>>();
+    cmd.generate(imkitchen_mealplan::Generate {
+        user_id: "john".to_owned(),
+        weeks: weeks.to_vec(),
+        randomize: Some(imkitchen_mealplan::Randomize {
+            cuisine_variety_weight: 1.0,
+            dietary_restrictions: vec![],
+        }),
+        household_size: 2,
+    })
+    .await?;
 
-    assert_ne!(ids1, ids2);
-    assert_eq!(ids1.len(), 28);
-
-    imkitchen_mealplan::subscribe_week()
-        .data(state.pool.clone())
-        .unretry_oneshot(&state.evento)
-        .await?;
-
-    command.generate(true, &john).await?;
-
-    imkitchen_mealplan::subscribe_week()
-        .data(state.pool.clone())
-        .unretry_oneshot(&state.evento)
-        .await?;
-
-    let weeks = imkitchen_mealplan::next_four_mondays_from_now();
-    for week in weeks {
-        let row = query.find(week.start, "john").await?.unwrap();
-        assert!(row.slots.is_empty());
-        assert_eq!(row.status.0, Status::Processing);
-    }
-
-    imkitchen_mealplan::subscribe_command()
-        .data(state.pool.clone())
-        .unretry_oneshot(&state.evento)
-        .await?;
-
-    imkitchen_mealplan::subscribe_week()
-        .data(state.pool)
-        .unretry_oneshot(&state.evento)
-        .await?;
-
-    for week in weeks {
-        let row = query.find(week.start, "john").await?.unwrap();
-        assert!(!row.slots.is_empty());
-        assert_eq!(row.status.0, Status::Idle);
-    }
+    let last = query.last_week("john").await?;
+    assert_eq!(weeks.last().unwrap().0, last.unwrap().week);
 
     Ok(())
 }
 
 async fn import_recipe(
-    cmd: &imkitchen_recipe::Command<evento::Sqlite>,
+    cmd: &imkitchen_recipe::Command<Sqlite>,
     id: impl Into<String>,
     recipe_type: RecipeType,
-    metadata: &Metadata,
+    user_id: impl Into<String>,
 ) -> anyhow::Result<()> {
     let id = id.into();
     let input = ImportInput {
@@ -133,7 +78,7 @@ async fn import_recipe(
         recipe_type,
     };
 
-    cmd.import(input.clone(), metadata).await?;
+    cmd.import(input, user_id, None).await?;
 
     Ok(())
 }

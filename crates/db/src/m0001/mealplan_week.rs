@@ -15,12 +15,6 @@ fn create_table() -> TableCreateStatement {
         )
         .col(ColumnDef::new(MealPlanWeek::Start).big_integer().not_null())
         .col(ColumnDef::new(MealPlanWeek::End).big_integer().not_null())
-        .col(
-            ColumnDef::new(MealPlanWeek::Status)
-                .string()
-                .not_null()
-                .string_len(25),
-        )
         .col(ColumnDef::new(MealPlanWeek::Slots).blob().not_null())
         .primary_key(
             Index::create()

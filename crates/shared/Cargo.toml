@@ -6,11 +6,12 @@ authors.workspace = true
 
 [dependencies]
 evento.workspace = true
-bincode.workspace = true
+bitcode.workspace = true
+serde.workspace = true
+strum.workspace = true
 anyhow.workspace = true
 validator.workspace = true
 argon2.workspace = true
 sqlx.workspace = true
-ulid.workspace = true
 time.workspace = true
 thiserror.workspace = true

@@ -1,7 +1,6 @@
 use axum::Form;
 use axum::extract::State;
 use axum::response::IntoResponse;
-use imkitchen_user::SetUsernameInput;
 use serde::Deserialize;
 
 use crate::auth::AuthUser;
@@ -19,27 +18,27 @@ pub struct AccountTemplate {
     pub user: AuthUser,
 }
 
-pub async fn page(template: Template, user: AuthUser) -> impl IntoResponse {
-    template.render(AccountTemplate {
-        // error_message: None,
-        current_path: "profile".to_owned(),
-        profile_path: "account".to_owned(),
-        user,
-    })
-}
+// pub async fn page(template: Template, user: AuthUser) -> impl IntoResponse {
+//     template.render(AccountTemplate {
+//         // error_message: None,
+//         current_path: "profile".to_owned(),
+//         profile_path: "account".to_owned(),
+//         user,
+//     })
+// }
 //
 // #[derive(Deserialize)]
 // pub struct ActionInput {
 //     pub email: String,
 // }
 
-pub async fn action(
-    _template: Template,
-    State(_state): State<AppState>,
-    // Form(input): Form<ActionInput>,
-) -> impl IntoResponse {
-    ""
-}
+// pub async fn action(
+//     _template: Template,
+//     State(_state): State<AppState>,
+//     // Form(input): Form<ActionInput>,
+// ) -> impl IntoResponse {
+//     ""
+// }
 
 #[derive(Deserialize)]
 pub struct SetUsernameActionInput {
@@ -65,10 +64,7 @@ pub async fn set_username_action(
     }
 
     crate::try_response!(
-        app.user_command.set_username(SetUsernameInput {
-            user_id: user.id.to_owned(),
-            username: input.username
-        }),
+        app.user_cmd.set_username(&user.id, input.username),
         template
     );
 

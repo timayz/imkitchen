@@ -4,10 +4,9 @@ use axum::{
     extract::{Json, Path, State},
     response::IntoResponse,
 };
-use imkitchen_mealplan::{WeekListRow, WeekRow};
-use imkitchen_recipe::{Ingredient, IngredientUnitFormat};
-use imkitchen_shared::Metadata;
-use imkitchen_shopping::{ListWeekRow, ToggleInput};
+use imkitchen_mealplan::week::{WeekListRow, WeekRow};
+use imkitchen_shared::recipe::{Ingredient, IngredientUnitFormat};
+use imkitchen_shopping::{ToggleInput, list::ListWeekRow};
 use serde::Deserialize;
 
 use crate::{
@@ -54,7 +53,7 @@ pub async fn page(
     let week_from_now = imkitchen_mealplan::current_and_next_four_weeks_from_now()[0];
     let weeks = crate::try_page_response!(
         app.mealplan_query
-            .filter_last_from(week_from_now.start, &user.id),
+            .filter_week_last_from(week_from_now.start, &user.id),
         template
     );
 
@@ -72,8 +71,8 @@ pub async fn page(
     let ingredients = current.as_ref().map(|r| to_categories(&r.ingredients.0));
 
     let checked = match weeks.get((index - 1) as usize) {
-        Some(week) => crate::try_page_response!(app.shopping_command.load(&user.id), template)
-            .and_then(|loaded| loaded.item.checked.get(&week.start).cloned()),
+        Some(week) => crate::try_page_response!(app.shopping_cmd.load(&user.id), template)
+            .and_then(|loaded| loaded.checked.get(&week.start).cloned()),
         _ => None,
     };
 
@@ -119,17 +118,17 @@ pub async fn toggle_action(
 
     let checked = if current.is_some() {
         crate::try_response!(
-            app.shopping_command.toggle(
+            app.shopping_cmd.toggle(
                 ToggleInput {
                     week,
                     name: input.name,
                 },
-                &Metadata::by(user.id.to_owned()),
+                &user.id,
             ),
             template
         );
-        crate::try_page_response!(app.shopping_command.load(&user.id), template)
-            .and_then(|loaded| loaded.item.checked.get(&week).cloned())
+        crate::try_response!(anyhow: app.shopping_cmd.load(&user.id), template)
+            .and_then(|loaded| loaded.checked.get(&week).cloned())
     } else {
         None
     };
@@ -161,11 +160,7 @@ pub async fn reset_all_action(
     .and_then(|week| Some(to_recipes(week)));
 
     if current.is_some() {
-        crate::try_response!(
-            app.shopping_command
-                .reset(week, &Metadata::by(user.id.to_owned())),
-            template
-        );
+        crate::try_response!(app.shopping_cmd.reset(week, &user.id), template);
     }
 
     template

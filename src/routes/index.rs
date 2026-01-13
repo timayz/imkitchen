@@ -1,7 +1,9 @@
 use axum::extract::State;
 use axum::response::IntoResponse;
 use axum_extra::extract::CookieJar;
-use imkitchen_mealplan::{DaySlotRecipe, SlotRow, WeekRow};
+use imkitchen_mealplan::slot::SlotRow;
+use imkitchen_mealplan::week::WeekRow;
+use imkitchen_shared::mealplan::DaySlotRecipe;
 
 use crate::auth::{AuthToken, AuthUser};
 use crate::routes::AppState;
@@ -69,19 +71,18 @@ pub async fn page(
     let week_from_now = imkitchen_mealplan::current_and_next_four_weeks_from_now()[0];
     let week = crate::try_page_response!(
         app.mealplan_query
-            .find_last_from(week_from_now.start, &user.id),
+            .find_week_last_from(week_from_now.start, &user.id),
         template
     );
-    let last_week =
-        crate::try_page_response!(app.mealplan_command.find_last_week(&user.id), template);
+    let last_week = crate::try_page_response!(app.mealplan_query.last_week(&user.id), template);
 
     let generate_next_weeks_needed = match (week.as_ref(), last_week) {
-        (Some(week), Some(last_week)) => week.start == last_week,
+        (Some(week), Some(last_week)) => week.start == last_week.week,
         _ => false,
     };
 
     let auth_cookie = crate::try_page_response!(sync:
-        crate::auth::build_cookie(app.config.jwt, token.sub.to_owned(), token.rev.to_owned()),
+        crate::auth::build_cookie(app.config.jwt, token.sub.to_owned(), token.acc.to_owned()),
         template
     );
 

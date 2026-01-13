@@ -2,8 +2,10 @@ use axum::{extract::State, response::IntoResponse};
 use axum_extra::extract::Query;
 use evento::cursor::{Args, ReadResult, Value};
 use imkitchen_recipe::{
-    CuisineType, DietaryRestriction, RecipeListRow, RecipeType, RecipesQuery, SortBy, UserStat,
+    user::{RecipesQuery, SortBy, UserViewList},
+    user_stat::UserStatView,
 };
+use imkitchen_shared::recipe::{CuisineType, DietaryRestriction, RecipeType};
 use serde::Deserialize;
 use std::str::FromStr;
 use strum::VariantArray;
@@ -20,8 +22,8 @@ pub struct CommunityTemplate {
     pub current_path: String,
     pub recipes_path: String,
     pub user: AuthUser,
-    pub stat: UserStat,
-    pub recipes: ReadResult<RecipeListRow>,
+    pub stat: UserStatView,
+    pub recipes: ReadResult<UserViewList>,
     pub query: PageQuery,
 }
 
@@ -31,7 +33,7 @@ impl Default for CommunityTemplate {
             current_path: "recipes".to_owned(),
             recipes_path: "community".to_owned(),
             user: AuthUser::default(),
-            stat: UserStat::default(),
+            stat: UserStatView::default(),
             recipes: ReadResult::default(),
             query: Default::default(),
         }
@@ -79,7 +81,7 @@ pub async fn page(
         .and_then(|v| CuisineType::from_str(v.as_str()).ok());
 
     let recipes = crate::try_page_response!(
-        app.recipe_query.filter(RecipesQuery {
+        app.recipe_query.filter_user(RecipesQuery {
             exclude_ids: None,
             user_id: None,
             recipe_type,

@@ -1,18 +1,19 @@
-use evento::{AggregatorName, Executor, SubscribeBuilder};
-use imkitchen_contact::{Contact, FormSubmitted};
-use imkitchen_shared::Event;
+use evento::{
+    Executor,
+    metadata::Event,
+    subscription::{Context, SubscriptionBuilder},
+};
+use imkitchen_shared::contact::FormSubmitted;
 
 use crate::EmailService;
 
-pub fn subscribe_contact<E: Executor + Clone>() -> SubscribeBuilder<E> {
-    evento::subscribe("notification-contact")
-        .handler(handle_form_submitted())
-        .handler_check_off()
+pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
+    SubscriptionBuilder::new("notification-contact").handler(handle_form_submitted())
 }
 
-#[evento::handler(Contact)]
+#[evento::sub_handler]
 async fn handle_form_submitted<E: Executor>(
-    context: &evento::Context<'_, E>,
+    context: &Context<'_, E>,
     event: Event<FormSubmitted>,
 ) -> anyhow::Result<()> {
     let service = context.extract::<EmailService>();

@@ -1,17 +1,19 @@
-mod contact_list;
-mod contact_stat;
+mod contact_admin;
+mod contact_global_stat;
 mod mealplan_last_week;
 mod mealplan_recipe;
 mod mealplan_slot;
 mod mealplan_week;
-mod recipe_list;
-mod recipe_rating;
+mod recipe_command;
+mod recipe_rating_command;
+mod recipe_user;
 mod recipe_user_stat;
 mod shopping_list;
+mod shopping_recipe;
 mod user;
-mod user_list;
+mod user_admin;
+mod user_global_stat;
 mod user_login;
-mod user_stat;
 
 use sqlx_migrator::vec_box;
 
@@ -27,33 +29,33 @@ sqlx_migrator::sqlite_migration!(
         user::CreateUk1,
         user::CreateUk2,
         user_login::CreateTable,
-        user_login::CreateIdx1,
-        user_login::CreateUk1,
-        user_stat::CreateTable,
-        user_list::CreateTable,
-        user_list::CreateIdx1,
-        user_list::CreateIdx2,
-        contact_list::CreateTable,
-        contact_list::CreateIdx1,
-        contact_list::CreateIdx2,
-        contact_stat::CreateTable,
-        recipe_list::CreateTable,
-        recipe_list::CreateIdx1,
-        recipe_list::CreateIdx2,
-        recipe_list::CreateIdx3,
-        recipe_list::CreateIdx4,
-        recipe_list::CreateIdx5,
-        recipe_list::CreateIdx6,
+        user_global_stat::CreateTable,
+        user_admin::CreateTable,
+        user_admin::CreateIdx1,
+        user_admin::CreateIdx2,
+        contact_admin::CreateTable,
+        contact_admin::CreateIdx1,
+        contact_admin::CreateIdx2,
+        contact_global_stat::CreateTable,
+        recipe_command::CreateTable,
+        recipe_user::CreateTable,
+        recipe_user::CreateIdx1,
+        recipe_user::CreateIdx2,
+        recipe_user::CreateIdx3,
+        recipe_user::CreateIdx4,
+        recipe_user::CreateIdx5,
+        recipe_user::CreateIdx6,
         recipe_user_stat::CreateTable,
-        recipe_rating::CreateTable,
-        recipe_rating::CreateIdx1,
+        recipe_rating_command::CreateTable,
+        recipe_rating_command::CreateIdx1,
         mealplan_recipe::CreateTable,
         mealplan_recipe::CreateIdx1,
         mealplan_recipe::CreateIdx2,
-        mealplan_recipe::CreateIdx3,
         mealplan_week::CreateTable,
         mealplan_last_week::CreateTable,
         mealplan_slot::CreateTable,
-        shopping_list::CreateTable
+        shopping_list::CreateTable,
+        shopping_recipe::CreateTable,
+        shopping_recipe::CreateIdx1
     ]
 );

@@ -26,129 +26,102 @@ pub async fn serve(
     let read_pool_size = config.database.max_connections;
     let read_pool = imkitchen::create_read_pool(&config.database.url, read_pool_size).await?;
 
-    let evento_executor: evento::sql::RwSqlite = (read_pool.clone(), write_pool.clone()).into();
-    let user_command = imkitchen_user::Command {
-        evento: evento_executor.clone(),
-        read_db: read_pool.clone(),
-        write_db: write_pool.clone(),
-    };
-    let user_subscription_command =
-        imkitchen_user::subscription::Command(evento_executor.clone(), read_pool.clone());
-    let user_meal_preference_command =
-        imkitchen_user::meal_preferences::Command(evento_executor.clone(), read_pool.clone());
-    let user_reset_password_command =
-        imkitchen_user::reset_password::Command(evento_executor.clone(), read_pool.clone());
-    let user_query = imkitchen_user::Query(read_pool.clone());
-    let contact_command = imkitchen_contact::Command(evento_executor.clone(), read_pool.clone());
-    let contact_query = imkitchen_contact::Query(read_pool.clone());
-    let recipe_command = imkitchen_recipe::Command(evento_executor.clone(), read_pool.clone());
-    let recipe_query = imkitchen_recipe::Query(read_pool.clone());
-    let rating_command =
-        imkitchen_recipe::rating::Command(evento_executor.clone(), read_pool.clone());
-    let mealplan_command = imkitchen_mealplan::Command(evento_executor.clone(), read_pool.clone());
-    let mealplan_query = imkitchen_mealplan::Query(read_pool.clone());
-    let shopping_command = imkitchen_shopping::Command(evento_executor.clone(), read_pool.clone());
-    let shopping_query = imkitchen_shopping::Query(read_pool.clone());
+    let executor: evento::sql::RwSqlite = (
+        evento::Sqlite::from(read_pool.clone()),
+        evento::Sqlite::from(write_pool.clone()),
+    )
+        .into();
 
     // Start background notification worker
     tracing::info!("Starting evento subscriptions...");
 
-    let sub_notification_contact = imkitchen_notification::subscribe_contact()
+    let sub_notification_contact = imkitchen_notification::contact::subscription()
         .data(email_service.clone())
-        .unretry_run(&evento_executor)
+        .start(&executor)
         .await?;
 
-    let sub_notification_user = imkitchen_notification::subscribe_user()
+    let sub_notification_user = imkitchen_notification::user::subscription()
         .data(email_service)
-        .unretry_run(&evento_executor)
+        .start(&executor)
         .await?;
 
-    let sub_user_command = imkitchen_user::subscribe_command()
-        .data(write_pool.clone())
-        .run(&evento_executor)
+    let sub_user_query = imkitchen_user::query_subscription()
+        .data((read_pool.clone(), write_pool.clone()))
+        .start(&executor)
         .await?;
 
-    let sub_user_list = imkitchen_user::subscribe_list()
-        .data(write_pool.clone())
-        .run(&evento_executor)
+    let sub_contact_query = imkitchen_contact::query_subscription()
+        .data((read_pool.clone(), write_pool.clone()))
+        .start(&executor)
         .await?;
 
-    let sub_user_stat = imkitchen_user::subscribe_stat()
+    let sub_contact_global_stat = imkitchen_contact::global_stat::subscription()
         .data(write_pool.clone())
-        .run(&evento_executor)
+        .start(&executor)
         .await?;
 
-    let sub_contact_list = imkitchen_contact::subscribe_list()
-        .data(write_pool.clone())
-        .run(&evento_executor)
+    let sub_recipe_query = imkitchen_recipe::query_subscription()
+        .data((read_pool.clone(), write_pool.clone()))
+        .start(&executor)
         .await?;
 
-    let sub_contact_stat = imkitchen_contact::subscribe_stat()
+    let sub_recipe_user_stat = imkitchen_recipe::user_stat::subscription()
         .data(write_pool.clone())
-        .data(contact_query.clone())
-        .run(&evento_executor)
+        .start(&executor)
         .await?;
 
-    let sub_recipe_list = imkitchen_recipe::subscribe_list()
+    let sub_mealplan_query = imkitchen_mealplan::query_subscription()
         .data(write_pool.clone())
-        .run(&evento_executor)
+        .start(&executor)
         .await?;
 
-    let sub_recipe_user_stat = imkitchen_recipe::subscribe_user_stat()
+    let sub_mealplan_cmd = imkitchen_mealplan::subscription()
         .data(write_pool.clone())
-        .run(&evento_executor)
+        .start(&executor)
         .await?;
 
-    let sub_rating_command = imkitchen_recipe::rating::subscribe_command()
+    let sub_mealplan_week = imkitchen_mealplan::week::subscription()
         .data(write_pool.clone())
-        .run(&evento_executor)
+        .start(&executor)
         .await?;
 
-    let sub_mealplan_command = imkitchen_mealplan::subscribe_command()
+    let sub_mealplan_slot = imkitchen_mealplan::slot::subscription()
         .data(write_pool.clone())
-        .run(&evento_executor)
+        .start(&executor)
         .await?;
 
-    let sub_mealplan_week = imkitchen_mealplan::subscribe_week()
+    let sub_shopping = imkitchen_shopping::subscription()
         .data(write_pool.clone())
-        .run(&evento_executor)
+        .start(&executor)
         .await?;
 
-    let sub_mealplan_slot = imkitchen_mealplan::subscribe_slot()
+    let sub_shopping_list = imkitchen_shopping::list::subscription()
         .data(write_pool.clone())
-        .run(&evento_executor)
-        .await?;
-
-    let sub_shopping_list = imkitchen_shopping::subscribe_list()
-        .data(write_pool.clone())
-        .run(&evento_executor)
-        .await?;
-
-    let sub_shopping_command = imkitchen_shopping::subscribe_command()
-        .data(write_pool.clone())
-        .run(&evento_executor)
+        .start(&executor)
         .await?;
 
     // let mut sched_mealplan = imkitchen_mealplan::scheduler(&evento_executor, &read_pool).await?;
     // sched_mealplan.start().await?;
 
+    let state = imkitchen_shared::State {
+        executor: executor.clone(),
+        read_db: read_pool.clone(),
+        write_db: write_pool.clone(),
+    };
+
     let state = AppState {
         config,
-        user_command,
-        user_subscription_command,
-        user_meal_preference_command,
-        user_reset_password_command,
-        user_query,
-        contact_command,
-        contact_query,
-        recipe_command,
-        recipe_query,
-        rating_command,
-        mealplan_command,
-        mealplan_query,
-        shopping_command,
-        shopping_query,
-        pool: read_pool.clone(),
+        user_cmd: imkitchen_user::Command::new(state.clone()),
+        user_query: imkitchen_user::Query(state.clone()),
+        shopping_cmd: imkitchen_shopping::Command::new(state.clone()),
+        shopping_query: imkitchen_shopping::Query(state.clone()),
+        recipe_cmd: imkitchen_recipe::Command::new(state.clone()),
+        recipe_query: imkitchen_recipe::Query(state.clone()),
+        mealplan_cmd: imkitchen_mealplan::Command::new(state.clone()),
+        mealplan_query: imkitchen_mealplan::Query(state.clone()),
+        contact_cmd: imkitchen_contact::Command::new(state.clone()),
+        contact_query: imkitchen_contact::Query(state.clone()),
+        inner: state,
     };
 
     // Build router with health checks using read pool state
@@ -211,21 +184,19 @@ pub async fn serve(
 
     // Shutdown all projection subscriptions
     let results = futures::future::join_all(vec![
-        sub_notification_contact.shutdown_and_wait(),
-        sub_notification_user.shutdown_and_wait(),
-        sub_user_command.shutdown_and_wait(),
-        sub_user_stat.shutdown_and_wait(),
-        sub_user_list.shutdown_and_wait(),
-        sub_contact_list.shutdown_and_wait(),
-        sub_contact_stat.shutdown_and_wait(),
-        sub_recipe_list.shutdown_and_wait(),
-        sub_recipe_user_stat.shutdown_and_wait(),
-        sub_rating_command.shutdown_and_wait(),
-        sub_mealplan_command.shutdown_and_wait(),
-        sub_mealplan_week.shutdown_and_wait(),
-        sub_mealplan_slot.shutdown_and_wait(),
-        sub_shopping_list.shutdown_and_wait(),
-        sub_shopping_command.shutdown_and_wait(),
+        sub_notification_contact.shutdown(),
+        sub_notification_user.shutdown(),
+        sub_user_query.shutdown(),
+        sub_contact_query.shutdown(),
+        sub_contact_global_stat.shutdown(),
+        sub_recipe_query.shutdown(),
+        sub_recipe_user_stat.shutdown(),
+        sub_mealplan_cmd.shutdown(),
+        sub_mealplan_query.shutdown(),
+        sub_mealplan_week.shutdown(),
+        sub_mealplan_slot.shutdown(),
+        sub_shopping.shutdown(),
+        sub_shopping_list.shutdown(),
     ])
     .await;
 
