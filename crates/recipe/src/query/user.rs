@@ -10,7 +10,7 @@ use imkitchen_shared::recipe::{
     DietaryRestriction, DietaryRestrictionsChanged, Imported, Ingredient, IngredientsChanged,
     Instruction, InstructionsChanged, MadePrivate, MainCourseOptionsChanged, Recipe, RecipeType,
     RecipeTypeChanged, SharedToCommunity,
-    rating::{LikeChecked, LikeUnchecked, UnlikeChecked, UnlikeUnchecked, Viewed},
+    rating::{LikeChecked, LikeUnchecked, Rating, UnlikeChecked, UnlikeUnchecked, Viewed},
 };
 use sea_query::{Expr, ExprTrait, OnConflict, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
@@ -228,7 +228,10 @@ async fn find_user(pool: &SqlitePool, id: impl Into<String>) -> anyhow::Result<O
 }
 
 pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, UserView> {
-    Projection::new::<Recipe>(id)
+    let id = id.into();
+
+    Projection::new::<Recipe>(&id)
+        .aggregator::<Rating>(id)
         .handler(handle_created())
         .handler(handle_imported())
         .handler(handle_recipe_type_changed())
