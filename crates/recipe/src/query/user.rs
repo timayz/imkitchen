@@ -176,6 +176,8 @@ impl<E: Executor> super::Query<E> {
             ));
         }
 
+        statement.and_where(Expr::col(RecipeUser::Name).not_equals(""));
+
         let mut reader = Reader::new(statement);
 
         if matches!(query.sort_by, SortBy::RecentlyAdded) {
@@ -187,6 +189,26 @@ impl<E: Executor> super::Query<E> {
 
     pub async fn find_user(&self, id: impl Into<String>) -> anyhow::Result<Option<UserView>> {
         find_user(&self.read_db, id).await
+    }
+
+    pub async fn find_user_draft(
+        &self,
+        user_id: impl Into<String>,
+    ) -> anyhow::Result<Option<String>> {
+        let statement = sea_query::Query::select()
+            .columns([RecipeUser::Id])
+            .from(RecipeUser::Table)
+            .and_where(Expr::col(RecipeUser::OwnerId).eq(user_id.into()))
+            .and_where(Expr::col(RecipeUser::Name).eq(""))
+            .limit(1)
+            .to_owned();
+
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+        Ok(sqlx::query_as_with::<_, (String,), _>(&sql, values)
+            .fetch_optional(&self.read_db)
+            .await?
+            .map(|(id,)| id))
     }
 }
 
