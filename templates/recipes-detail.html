@@ -1,106 +1,259 @@
 {% extends "_user.html" %}
 {% block title %}{{ recipe.name }} - imkitchen{% endblock %}
 {% block content %}
+<div ts-trigger="load" ts-req="/recipes/{{ recipe.id }}/check-in" ts-req-method="post" ts-swap="skip"></div>
 <!-- Main Content -->
-<div class="container mx-auto px-4 py-8 max-w-6xl">
+<div class="container mx-auto px-4 py-6 max-w-7xl">
   <!-- Back Button -->
-  <div class="mb-6">
-    <a href="/recipes" class="text-green-600 hover:text-green-700 font-semibold">
-      ← {{ "Back to My Recipes"|t }}
+  <div class="mb-4">
+    <a href="/recipes{% if recipe.owner_id != user.id %}/community{% endif %}"
+      class="text-green-600 hover:text-green-700 font-semibold inline-flex items-center gap-2">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+      </svg>
+      {% if recipe.owner_id == user.id %}
+        {{ "Back to My Recipes"|t }}
+      {% else %}
+        {{ "Back to Community"|t }}
+      {% endif %}
     </a>
   </div>
 
-  <div class="grid lg:grid-cols-3 gap-8">
-    <!-- Main Content -->
-    <div class="lg:col-span-2">
-      <!-- Hero -->
-      <div class="bg-white rounded-lg shadow-lg overflow-hidden mb-6">
+  <div class="flex flex-col xl:flex-row gap-6">
+    <!-- Main Content Area -->
+    <div class="flex-1 min-w-0">
+      <!-- Recipe Hero/Image -->
+      <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-4">
         {% match recipe.recipe_type.0 %}
         {% when RecipeType::Appetizer %}
-        <div class="h-64 bg-linear-to-br from-blue-400 to-blue-500 flex items-center justify-center relative">
-          <span class="text-9xl">🥗</span>
+        <div
+          class="h-64 md:h-80 lg:h-96 bg-linear-to-br from-blue-400 to-blue-500 flex items-center justify-center relative">
+          <span class="text-8xl md:text-9xl">🍛</span>
           <span class="absolute top-4 left-4 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-full">
             {{ RecipeType::Appetizer.as_ref()|t }}
           </span>
         </div>
         {% when RecipeType::MainCourse %}
-        <div class="h-64 bg-linear-to-br from-orange-400 to-red-500 flex items-center justify-center relative">
-          <span class="text-9xl">🍛</span>
+        <div
+          class="h-64 md:h-80 lg:h-96 bg-linear-to-br from-orange-400 to-red-500 flex items-center justify-center relative">
+          <span class="text-8xl md:text-9xl">🍛</span>
           <span class="absolute top-4 left-4 px-4 py-2 bg-orange-600 text-white text-sm font-semibold rounded-full">
             {{ RecipeType::MainCourse.as_ref()|t }}
           </span>
         </div>
         {% when RecipeType::Dessert %}
-        <div class="h-64 bg-linear-to-br from-pink-400 to-pink-500 flex items-center justify-center relative">
-          <span class="text-9xl">🍰</span>
+        <div
+          class="h-64 md:h-80 lg:h-96 bg-linear-to-br from-pink-400 to-pink-500 flex items-center justify-center relative">
+          <span class="text-8xl md:text-9xl">🍛</span>
           <span class="absolute top-4 left-4 px-4 py-2 bg-pink-600 text-white text-sm font-semibold rounded-full">
             {{ RecipeType::Dessert.as_ref()|t }}
           </span>
         </div>
         {% when RecipeType::Accompaniment %}
-        <div class="h-64 bg-linear-to-br from-purple-400 to-purple-500 flex items-center justify-center relative">
-          <span class="text-9xl">🍚</span>
+        <div
+          class="h-64 md:h-80 lg:h-96 bg-linear-to-br from-purple-400 to-purple-500 flex items-center justify-center relative">
+          <span class="text-8xl md:text-9xl">🍛</span>
           <span class="absolute top-4 left-4 px-4 py-2 bg-purple-600 text-white text-sm font-semibold rounded-full">
             {{ RecipeType::Accompaniment.as_ref()|t }}
           </span>
         </div>
         {% endmatch %}
-        <div class="p-6">
-          <div class="flex items-start justify-between mb-4">
+      </div>
+
+      <!-- Title & Action Bar (YouTube Style) -->
+      <div class="bg-white rounded-xl shadow-lg p-4 md:p-6 mb-4">
+        <h1 class="text-xl md:text-2xl font-bold mb-3">{{ recipe.name }}</h1>
+
+        <!-- Stats Row -->
+        <div class="flex flex-wrap items-center gap-3 text-sm text-gray-600 mb-4 pb-4 border-b">
+          <span class="flex items-center gap-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
+              </path>
+            </svg>
+            {{ recipe.total_views|views }} {{ "views"|t }}
+          </span>
+          <span class="text-gray-400">•</span>
+          <span>{{ recipe.created_at|relative_time }}</span>
+        </div>
+
+        <!-- Action Buttons (YouTube Style) -->
+        <div class="flex flex-wrap items-center gap-2 md:gap-3">
+          <!-- Like Button -->
+          <button id="like-btn" ts-req="/recipes/{{ recipe.id }}/{% if rating.liked %}un{% endif %}check-like"
+            ts-req-method="post"
+            class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition">
+            {% if rating.liked %}
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path
+                d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3v11zm2-11v11h6.263a2 2 0 001.789-1.106l3.5-7A2 2 0 0018.763 11H14V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11z">
+              </path>
+            </svg>
+            {% else %}
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
+              </path>
+            </svg>
+            {% endif %}
+            <span class="font-semibold">{{ &recipe.total_ulikes()|views }}</span>
+          </button>
+
+          <!-- Dislike Button -->
+          <button id="unlike-btn" ts-req="/recipes/{{ recipe.id }}/{% if rating.unliked %}un{% endif %}check-unlike"
+            ts-req-method="post"
+            class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition">
+            {% if rating.unliked %}
+            <svg class="w-5 h-5 transform rotate-180" fill="currentColor" viewBox="0 0 24 24">
+              <path
+                d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3v11zm2-11v11h6.263a2 2 0 001.789-1.106l3.5-7A2 2 0 0018.763 11H14V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11z">
+              </path>
+            </svg>
+            {% else %}
+            <svg class="w-5 h-5 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
+              </path>
+            </svg>
+            {% endif %}
+          </button>
+
+          {% if recipe.owner_id == user.id %}
+          <!-- Owner Actions (YouTube Style - right aligned) -->
+          <div class="flex items-center gap-2 ml-auto">
+            <!-- Edit Button -->
+            <a href="/recipes/{{ recipe.id }}/edit"
+              class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+                </path>
+              </svg>
+              <span class="hidden sm:inline font-semibold">{{ "Edit"|t }}</span>
+            </a>
+
+            <!-- Make Private/Public Button -->
+            <div id="share-button">
+              {% if recipe.is_shared %}
+              <button ts-req="/recipes/{{ recipe.id }}/make-private"
+                class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
+                  </path>
+                </svg>
+                <span class="hidden sm:inline font-semibold">{{ "Make Private"|t }}</span>
+              </button>
+              {% else %}
+              <button ts-req="/recipes/{{ recipe.id }}/share-to-community"
+                class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
+                  </path>
+                </svg>
+                <span class="hidden sm:inline font-semibold">{{ "Make Public"|t }}</span>
+              </button>
+              {% endif %}
+            </div>
+
+            <!-- Delete Button -->
+            <button ts-req="/recipes/{{ recipe.id }}/delete" ts-swap="append" ts-target="body"
+              class="flex items-center gap-2 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-full transition">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                </path>
+              </svg>
+              <span class="hidden sm:inline font-semibold">{{ "Delete"|t }}</span>
+            </button>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Author & Description Card (YouTube Style) -->
+      <div class="bg-white rounded-xl shadow-lg p-4 md:p-6 mb-4">
+        <!-- Author Info -->
+        <div class="flex items-center justify-between mb-4 pb-4 border-b">
+          <div class="flex items-center gap-3">
+            <div
+              class="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+              CK
+            </div>
             <div>
-              <h1 class="text-3xl font-bold mb-2">{{ recipe.name }}</h1>
-              <p class="text-gray-600">{{ recipe.description }}</p>
+              {% if let Some(username)= recipe.owner_name %}
+              <div class="font-semibold">@{{ username }}</div>
+              {% endif %}
+              <div class="text-sm text-gray-600">{{ stat.shared }} {{ "recipes shared"|t }}</div>
             </div>
           </div>
+          <!-- <button class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-full transition"> -->
+          <!--   Follow -->
+          <!-- </button> -->
+        </div>
 
-          <div class="flex gap-3 mb-4">
+        <!-- Description (Expandable) -->
+        <div class="bg-gray-50 rounded-lg p-4">
+          <div class="flex flex-wrap gap-3 mb-3">
             {% for restriction in recipe.dietary_restrictions.iter() %}
-            <span class="px-3 py-1 bg-green-100 text-green-800 text-sm font-semibold rounded-full">{{ restriction.as_ref()|t
-              }}</span>
+            <span class="px-3 py-1 bg-green-100 text-green-800 text-sm font-semibold rounded-full">{{
+              restriction.as_ref()|t }}</span>
             {% endfor %}
-            <span class="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-semibold rounded-full">{{ recipe.cuisine_type.as_ref()|t }}</span>
+            <span class="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-semibold rounded-full">{{
+              recipe.cuisine_type.as_ref()|t }}</span>
             {% if recipe.accepts_accompaniment %}
-            <span class="px-3 py-1 bg-orange-100 text-orange-800 text-sm font-semibold rounded-full">
-              {{ "Accepts Accompaniments"|t }}</span>
+            <span class="px-3 py-1 bg-orange-100 text-orange-800 text-sm font-semibold rounded-full">{{ "Accepts
+              Accompaniments"|t }}</span>
             {% endif %}
           </div>
 
-          <div class="flex items-center gap-6 text-sm text-gray-600">
-            <div class="flex items-center gap-2">
-              <span class="text-2xl">⏱️</span>
-              <div>
-                <div class="font-semibold">{{ "Total Time"|t }}</div>
-                <div>{{ (recipe.cook_time + recipe.prep_time)|minutes }}</div>
-              </div>
-            </div>
+          <div class="flex flex-wrap gap-4 text-sm text-gray-600 mb-3">
+            <span class="flex items-center gap-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              {{ (recipe.cook_time + recipe.prep_time)|minutes }}
+            </span>
+            <span>{{ "Prep:"|t }} {{ recipe.prep_time|minutes }}</span>
+            <span>{{ "Cook:"|t }} {{ recipe.cook_time|minutes }}</span>
+            <span class="flex items-center gap-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                </path>
+              </svg>
+              {{ recipe.household_size }}
+            </span>
           </div>
+
+          <p class="text-gray-700 mb-3">{{ recipe.description }}</p>
         </div>
       </div>
 
-      <!-- Ingredients -->
-      <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-        <h2 class="text-2xl font-bold mb-4">{{ "Ingredients"|t }}</h2>
-        <div class="grid md:grid-cols-2 gap-2 md:gap-4">
-          <div class="space-y-2">
-            {% for ingredient in recipe.ingredients.iter().take(recipe.ingredients.len().div_ceil(2)) %}
-            <div class="flex items-start gap-2">
-              <span>{{ ingredient.unit.format(ingredient.quantity.to_owned()) }} {{ ingredient.name }}</span>
-            </div>
-            {% endfor %}
+      <!-- Ingredients Section -->
+      <div class="bg-white rounded-xl shadow-lg p-4 md:p-6 mb-4">
+        <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+          <span>{{ "Ingredients"|t }}</span>
+          <span class="text-sm font-normal text-gray-500">({{ recipe.ingredients.len() }} {{ "items"|t }})</span>
+        </h2>
+        <div class="grid md:grid-cols-2 gap-3">
+          {% for ingredient in recipe.ingredients.iter() %}
+          <div class="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-lg">
+            <div class="w-5 h-5 rounded-full border-2 border-gray-300 shrink-0 mt-0.5"></div>
+            <span>{{ ingredient.unit.format(ingredient.quantity.to_owned()) }} {{ ingredient.name }}</span>
           </div>
-          <div class="space-y-2">
-            {% for ingredient in recipe.ingredients.iter().skip(recipe.ingredients.len().div_ceil(2)) %}
-            <div class="flex items-start gap-2">
-              <span>{{ ingredient.unit.format(ingredient.quantity.to_owned()) }} {{ ingredient.name }}</span>
-            </div>
-            {% endfor %}
-          </div>
+          {% endfor %}
         </div>
       </div>
 
-      <!-- Instructions -->
-      <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-        <h2 class="text-2xl font-bold mb-4">{{ "Instructions"|t }}</h2>
+      <!-- Instructions Section -->
+      <div class="bg-white rounded-xl shadow-lg p-4 md:p-6 mb-4">
+        <h2 class="text-xl font-bold mb-4">{{ "Instructions"|t }}</h2>
         <div class="space-y-4">
           {% for instruction in recipe.instructions.iter() %}
           <div class="flex gap-4">
@@ -115,74 +268,90 @@
       </div>
     </div>
 
-    <!-- Sidebar -->
-    <div class="space-y-6">
-      <!-- Actions -->
-      <div class="bg-white rounded-lg shadow-lg p-6">
-        <h3 class="font-bold text-lg mb-4">{{ "Actions"|t }}</h3>
-        <div class="space-y-3">
-          <a href="/recipes/{{ recipe.id }}/edit" class="w-full block text-center px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">
-            📝 {{ "Edit Recipe"|t }}
-          </a>
-          {% if recipe.is_shared %}
-          <button ts-trigger="click" ts-req="/recipes/{{ recipe.id }}/detail/make-private"
-            class="w-full px-4 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">
-            👥 {{ "Make private"|t }}
-          </button>
-          {% else %}
-          <button ts-trigger="click" ts-req="/recipes/{{ recipe.id }}/detail/share-to-community"
-            class="w-full px-4 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">
-            👥 {{ "Share to Community"|t }}
-          </button>
-          {% endif %}
-          <button ts-trigger="click" ts-req="/recipes/{{ recipe.id }}/detail/delete" ts-target="body" ts-swap="append"
-            class="w-full px-4 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300">
-            🗑️ {{ "Delete"|t }}
-          </button>
-        </div>
-      </div>
+    <!-- Right Sidebar - Suggestions (YouTube Style) -->
+    <div class="xl:w-96 shrink-0">
+      <div class="sticky top-4 space-y-4">
+        {% if !cook_recipes.edges.is_empty() %}
+        <h3 class="font-bold text-gray-800 mb-3">{{ "More from this cook"|t }}</h3>
 
-      <!-- Nutrition Info (Optional) -->
-      <div class="bg-white rounded-lg shadow-lg p-6">
-        <h3 class="font-bold text-lg mb-4">{{ "Quick Info"|t }}</h3>
-        <div class="space-y-3 text-sm">
-          <div class="flex justify-between">
-            <span class="text-gray-600">{{ "Prep Time"|t }}</span>
-            <span class="font-semibold">{{ recipe.prep_time|minutes }}</span>
+        {% for cook_recipe in cook_recipes.edges.iter() %}
+        <a href="/recipes/{{ cook_recipe.node.id }}" class="flex gap-3 group">
+          {% match cook_recipe.node.recipe_type.0 %}
+          {% when RecipeType::Appetizer %}
+          <div
+            class="w-40 h-24 bg-linear-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center shrink-0">
+            <span class="text-4xl">🥗</span>
           </div>
-          <div class="flex justify-between">
-            <span class="text-gray-600">{{ "Cook Time"|t }}</span>
-            <span class="font-semibold">{{ recipe.cook_time|minutes }}</span>
+          {% when RecipeType::MainCourse %}
+          <div
+            class="w-40 h-24 bg-linear-to-br from-orange-400 to-red-600 rounded-lg flex items-center justify-center shrink-0">
+            <span class="text-4xl">🍛</span>
           </div>
-          <div class="flex justify-between">
-            <span class="text-gray-600">{{ "Total Time"|t }}</span>
-            <span class="font-semibold">{{ (recipe.cook_time + recipe.prep_time)|minutes }}</span>
+          {% when RecipeType::Dessert %}
+          <div
+            class="w-40 h-24 bg-linear-to-br from-pink-400 to-pink-600 rounded-lg flex items-center justify-center shrink-0">
+            <span class="text-4xl">🍰</span>
           </div>
-          <div class="flex justify-between">
-            <span class="text-gray-600">{{ "Servings"|t }}</span>
-            <span class="font-semibold">{{ recipe.household_size }} {{ "people"|t }}</span>
+          {% when RecipeType::Accompaniment %}
+          <div
+            class="w-40 h-24 bg-linear-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center shrink-0">
+            <span class="text-4xl">🍚</span>
           </div>
-        </div>
-      </div>
+          {% endmatch %}
+          <div class="flex-1 min-w-0">
+            <h4 class="font-semibold text-sm group-hover:text-green-600 line-clamp-2 mb-1">{{ cook_recipe.node.name }}
+            </h4>
+            {% if let Some(username)= cook_recipe.node.owner_name %}
+            <p class="text-xs text-gray-600 mb-1">@{{ username }}</p>
+            {% endif %}
+            <p class="text-xs text-gray-500">{{ cook_recipe.node.total_views|views }} {{ "views"|t }} • {{
+              cook_recipe.node.created_at|relative_time }}</p>
+          </div>
+        </a>
+        {% endfor %}
 
-      <!-- Share Stats -->
-      <!-- <div class="bg-white rounded-lg shadow-lg p-6"> -->
-      <!--   <h3 class="font-bold text-lg mb-4">{{ "Recipe Stats"|t }}</h3> -->
-      <!--   <div class="space-y-3 text-sm"> -->
-      <!--     <div class="flex justify-between"> -->
-      <!--       <span class="text-gray-600">{{ "Times Favorited"|t }}</span> -->
-      <!--       <span class="font-semibold">0</span> -->
-      <!--     </div> -->
-      <!--     <div class="flex justify-between"> -->
-      <!--       <span class="text-gray-600">{{ "Views"|t }}</span> -->
-      <!--       <span class="font-semibold">0</span> -->
-      <!--     </div> -->
-      <!--     <div class="flex justify-between"> -->
-      <!--       <span class="text-gray-600">{{ "Reviews"|t }}</span> -->
-      <!--       <span class="font-semibold">0</span> -->
-      <!--     </div> -->
-      <!--   </div> -->
-      <!-- </div> -->
+        <h3 class="font-bold text-gray-800 mb-3 mt-6 pt-4 border-t">{{ "Similar recipes"|t }}</h3>
+        {% else %}
+        <h3 class="font-bold text-gray-800 mb-3">{{ "Similar recipes"|t }}</h3>
+        {% endif %}
+
+        {% for similar_recipe in similar_recipes.edges.iter() %}
+        <a href="/recipes/{{ similar_recipe.node.id }}" class="flex gap-3 group">
+          {% match similar_recipe.node.recipe_type.0 %}
+          {% when RecipeType::Appetizer %}
+          <div
+            class="w-40 h-24 bg-linear-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center shrink-0">
+            <span class="text-4xl">🥗</span>
+          </div>
+          {% when RecipeType::MainCourse %}
+          <div
+            class="w-40 h-24 bg-linear-to-br from-orange-400 to-red-600 rounded-lg flex items-center justify-center shrink-0">
+            <span class="text-4xl">🍛</span>
+          </div>
+          {% when RecipeType::Dessert %}
+          <div
+            class="w-40 h-24 bg-linear-to-br from-pink-400 to-pink-600 rounded-lg flex items-center justify-center shrink-0">
+            <span class="text-4xl">🍰</span>
+          </div>
+          {% when RecipeType::Accompaniment %}
+          <div
+            class="w-40 h-24 bg-linear-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center shrink-0">
+            <span class="text-4xl">🍚</span>
+          </div>
+          {% endmatch %}
+          <div class="flex-1 min-w-0">
+            <h4 class="font-semibold text-sm group-hover:text-green-600 line-clamp-2 mb-1">{{ similar_recipe.node.name
+              }}
+            </h4>
+            {% if let Some(username)= similar_recipe.node.owner_name %}
+            <p class="text-xs text-gray-600 mb-1">@{{ username }}</p>
+            {% endif %}
+            <p class="text-xs text-gray-500">{{ similar_recipe.node.total_views|views }} {{ "views"|t }} • {{
+              similar_recipe.node.created_at|relative_time }}</p>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
     </div>
   </div>
 </div>

@@ -102,68 +102,49 @@ pub fn router(app_state: AppState) -> Router {
         .route("/recipes", get(recipes::index::page))
         .route("/recipes/community", get(recipes::community::page))
         .route("/recipes/create", post(recipes::index::create))
-        // .route(
-        //     "/recipes/create/{id}/status",
-        //     get(recipes::index::create_status),
-        // )
-        // .route(
-        //     "/recipes/create-mobile",
-        //     post(recipes::index::create_mobile),
-        // )
-        // .route(
-        //     "/recipes/create-mobile/{id}/status",
-        //     get(recipes::index::create_mobile_status),
-        // )
         .route(
             "/recipes/import",
             get(recipes::import::page).post(recipes::import::action),
         )
         .route("/recipes/import/{id}/status", get(recipes::import::status))
-        .route("/recipes/{id}/detail", get(recipes::detail::page))
         .route(
-            "/recipes/{id}/detail/make-private",
+            "/recipes/{id}/make-private",
             get(recipes::detail::make_private_action),
         )
         .route(
-            "/recipes/{id}/detail/share-to-community",
+            "/recipes/{id}/share-to-community",
             get(recipes::detail::share_to_community_action),
         )
         .route(
-            "/recipes/{id}/detail/delete/status",
+            "/recipes/{id}/delete/status",
             get(recipes::detail::delete_status),
         )
         .route(
-            "/recipes/{id}/detail/delete",
+            "/recipes/{id}/delete",
             get(recipes::detail::delete_modal).post(recipes::detail::delete_action),
         )
-        .route(
-            "/recipes/{id}/community",
-            get(recipes::community_detail::page),
-        )
-        .route(
-            "/recipes/{id}/check-in",
-            post(recipes::community_detail::check_in),
-        )
+        .route("/recipes/{id}/check-in", post(recipes::detail::check_in))
         .route(
             "/recipes/{id}/check-like",
-            post(recipes::community_detail::check_like),
+            post(recipes::detail::check_like),
         )
         .route(
             "/recipes/{id}/uncheck-like",
-            post(recipes::community_detail::uncheck_like),
+            post(recipes::detail::uncheck_like),
         )
         .route(
             "/recipes/{id}/check-unlike",
-            post(recipes::community_detail::check_unlike),
+            post(recipes::detail::check_unlike),
         )
         .route(
             "/recipes/{id}/uncheck-unlike",
-            post(recipes::community_detail::uncheck_unlike),
+            post(recipes::detail::uncheck_unlike),
         )
         .route(
             "/recipes/{id}/edit",
             get(recipes::edit::page).post(recipes::edit::action),
         )
+        .route("/recipes/{id}", get(recipes::detail::page))
         .route(
             "/recipes/_edit/ingredient-row",
             get(recipes::edit::ingredient_row),

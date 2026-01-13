@@ -195,12 +195,12 @@
       </div>
       <div class="space-y-3">
         {% if let Some(appetizer) = slot.appetizer %}
-        <a href="/recipes/{{ appetizer.id }}/community" class="block p-2 bg-blue-50 rounded text-sm">
+        <a href="/recipes/{{ appetizer.id }}" class="block p-2 bg-blue-50 rounded text-sm">
           <div class="text-xs text-blue-600 font-semibold">{{ "APPETIZER"|t }}</div>
           <div class="font-semibold">🥗 {{ appetizer.name }}</div>
         </a>
         {% endif %}
-        <a href="/recipes/{{ slot.main_course.id }}/community" class="block p-2 bg-orange-50 rounded text-sm">
+        <a href="/recipes/{{ slot.main_course.id }}" class="block p-2 bg-orange-50 rounded text-sm">
           <div class="text-xs text-orange-600 font-semibold">{{ "MAIN"|t }}</div>
           <div class="font-semibold">🍛 {{ slot.main_course.name }}</div>
           {% if let Some(accompaniment) = slot.accompaniment %}
@@ -208,7 +208,7 @@
           {% endif %}
         </a>
         {% if let Some(dessert) = slot.dessert %}
-        <a href="/recipes/{{ dessert.id }}/community" class="block p-2 bg-pink-50 rounded text-sm">
+        <a href="/recipes/{{ dessert.id }}" class="block p-2 bg-pink-50 rounded text-sm">
           <div class="text-xs text-pink-600 font-semibold">{{ "DESSERT"|t }}</div>
           <div class="font-semibold">🍰 {{ dessert.name }}</div>
         </a>
