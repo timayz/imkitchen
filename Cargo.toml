@@ -15,6 +15,7 @@ axum-extra = { version = "0.12", features = ["cookie", "form", "query", "typed-h
 tower = "0.5"
 tower-http = { version = "0.6", features = ["fs", "trace", "compression-br", "compression-gzip"] }
 rust-i18n = "3.1"
+time-tz = "3.0.0-rc.5.0.0"
 askama = "0.15"
 cfg-if = "1.0"
 sqlx = { version = "0.8", default-features = false, features = ["migrate", "json", "derive", "runtime-tokio", "sqlite"] }
