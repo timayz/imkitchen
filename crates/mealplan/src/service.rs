@@ -9,8 +9,7 @@ pub struct Week {
 
 pub fn now(tz: impl Into<String>) -> OffsetDateTime {
     let tz = tz.into();
-    // let mut now = OffsetDateTime::now_utc();
-    let mut now = time::macros::datetime!(2026-02-03 00:00:00 UTC);
+    let mut now = OffsetDateTime::now_utc();
 
     if let Some(tz) = timezones::get_by_name(&tz) {
         now = now.to_timezone(tz);
