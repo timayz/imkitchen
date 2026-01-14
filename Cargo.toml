@@ -58,7 +58,7 @@ tokio-cron-scheduler = "0.15"
 
 [package]
 name = "imkitchen"
-version = "0.12.8"
+version = "0.13.0"
 edition.workspace = true
 
 [package.metadata.cargo-machete]
@@ -92,14 +92,14 @@ futures = { workspace = true }
 time = { workspace = true }
 strum = { workspace = true }
 cfg-if = { workspace = true }
-imkitchen-shared = { path = "crates/shared", version = "0.12.8" }
-imkitchen-contact = { path = "crates/contact", version = "0.12.8" }
-imkitchen-recipe = { path = "crates/recipe", version = "0.12.8" }
-imkitchen-mealplan = { path = "crates/mealplan", version = "0.12.8" }
-imkitchen-shopping = { path = "crates/shopping", version = "0.12.8" }
-imkitchen-user = { path = "crates/user", version = "0.12.8" }
-imkitchen-db = { path = "crates/db", version = "0.12.8" }
-imkitchen-notification = { path = "crates/notification", version = "0.12.8" }
+imkitchen-shared = { path = "crates/shared", version = "0.13.0" }
+imkitchen-contact = { path = "crates/contact", version = "0.13.0" }
+imkitchen-recipe = { path = "crates/recipe", version = "0.13.0" }
+imkitchen-mealplan = { path = "crates/mealplan", version = "0.13.0" }
+imkitchen-shopping = { path = "crates/shopping", version = "0.13.0" }
+imkitchen-user = { path = "crates/user", version = "0.13.0" }
+imkitchen-db = { path = "crates/db", version = "0.13.0" }
+imkitchen-notification = { path = "crates/notification", version = "0.13.0" }
 
 [dev-dependencies]
 http-body-util = "0.1"
