@@ -51,13 +51,13 @@ pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
         .handler(handle_made_private())
 }
 
-#[evento::sub_handler]
+#[evento::subscription]
 async fn handle_created<E: Executor>(
     context: &Context<'_, E>,
     event: Event<Created>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    let user_id = event.metadata.user()?;
+    let user_id = event.metadata.requested_by()?;
 
     let statement = Query::insert()
         .into_table(RecipeUserStat::Table)
@@ -80,13 +80,13 @@ async fn handle_created<E: Executor>(
     Ok(())
 }
 
-#[evento::sub_handler]
+#[evento::subscription]
 async fn handle_imported<E: Executor>(
     context: &Context<'_, E>,
     event: Event<Imported>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    let user_id = event.metadata.user()?;
+    let user_id = event.metadata.requested_by()?;
 
     let statement = Query::insert()
         .into_table(RecipeUserStat::Table)
@@ -109,13 +109,13 @@ async fn handle_imported<E: Executor>(
     Ok(())
 }
 
-#[evento::sub_handler]
+#[evento::subscription]
 async fn handle_deleted<E: Executor>(
     context: &Context<'_, E>,
     event: Event<Deleted>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    let user_id = event.metadata.user()?;
+    let user_id = event.metadata.requested_by()?;
 
     let statement = Query::insert()
         .into_table(RecipeUserStat::Table)
@@ -138,13 +138,13 @@ async fn handle_deleted<E: Executor>(
     Ok(())
 }
 
-#[evento::sub_handler]
+#[evento::subscription]
 async fn handle_shared_to_community<E: Executor>(
     context: &Context<'_, E>,
     event: Event<SharedToCommunity>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    let user_id = event.metadata.user()?;
+    let user_id = event.metadata.requested_by()?;
 
     let statement = Query::insert()
         .into_table(RecipeUserStat::Table)
@@ -167,13 +167,13 @@ async fn handle_shared_to_community<E: Executor>(
     Ok(())
 }
 
-#[evento::sub_handler]
+#[evento::subscription]
 async fn handle_made_private<E: Executor>(
     context: &Context<'_, E>,
     event: Event<MadePrivate>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    let user_id = event.metadata.user()?;
+    let user_id = event.metadata.requested_by()?;
 
     let statement = Query::insert()
         .into_table(RecipeUserStat::Table)

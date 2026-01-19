@@ -1,4 +1,4 @@
-use evento::{Executor, metadata::Metadata};
+use evento::Executor;
 use imkitchen_shared::user::password::ResetRequested;
 use validator::Validate;
 
@@ -29,7 +29,6 @@ impl<E: Executor> super::Command<E> {
                 lang: input.lang,
                 host: input.host,
             })
-            .metadata(&Metadata::default())
             .commit(&self.executor)
             .await?;
 

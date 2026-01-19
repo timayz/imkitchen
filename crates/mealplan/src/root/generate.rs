@@ -1,6 +1,6 @@
+use evento::Executor;
 use evento::cursor::Args;
 use evento::{Aggregator, ReadAggregator};
-use evento::{Executor, metadata::Metadata};
 use imkitchen_db::table::MealPlanRecipe;
 use imkitchen_shared::mealplan::{MealPlan, Slot, SlotRecipe, WeekGenerated};
 use imkitchen_shared::recipe::{DietaryRestriction, RecipeType};
@@ -81,7 +81,7 @@ impl<E: Executor> super::Command<E> {
         let mut main_course_recipes = main_course_recipes.iter().cycle().take(7 * 4);
         let mut builder = evento::aggregator(&input.user_id)
             .original_version(version)
-            .metadata(&Metadata::new(&input.user_id))
+            .requested_by(&input.user_id)
             .to_owned();
 
         for (start, end) in input.weeks {

@@ -1,4 +1,4 @@
-use evento::{Executor, ProjectionAggregator, metadata::Metadata};
+use evento::{Executor, ProjectionAggregator};
 use time::UtcDateTime;
 
 use imkitchen_shared::user::subscription::LifePremiumToggled;
@@ -22,7 +22,7 @@ impl<E: Executor> super::Command<E> {
             .event(&LifePremiumToggled {
                 expire_at: expire_at.try_into()?,
             })
-            .metadata(&Metadata::new(request_by))
+            .requested_by(request_by)
             .commit(&self.executor)
             .await?;
 

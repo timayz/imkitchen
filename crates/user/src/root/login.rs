@@ -1,5 +1,5 @@
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
-use evento::{Executor, ProjectionAggregator, metadata::Metadata};
+use evento::{Executor, ProjectionAggregator};
 use imkitchen_shared::user::{LoggedIn, Logout, State};
 use ulid::Ulid;
 use validator::Validate;
@@ -54,7 +54,6 @@ impl<E: Executor> super::Command<E> {
                 user_agent: input.user_agent,
                 access_id: access_id.to_owned(),
             })
-            .metadata(&Metadata::default())
             .commit(&self.executor)
             .await?;
 
@@ -74,7 +73,6 @@ impl<E: Executor> super::Command<E> {
             .event(&Logout {
                 access_id: access_id.to_owned(),
             })
-            .metadata(&Metadata::default())
             .commit(&self.executor)
             .await?;
 

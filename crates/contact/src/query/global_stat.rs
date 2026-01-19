@@ -54,7 +54,7 @@ pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
         .handler(handle_contact_resolved())
 }
 
-#[evento::sub_handler]
+#[evento::subscription]
 async fn handle_contact_form_submitted<E: Executor>(
     context: &Context<'_, E>,
     event: Event<FormSubmitted>,
@@ -66,7 +66,7 @@ async fn handle_contact_form_submitted<E: Executor>(
     Ok(())
 }
 
-#[evento::sub_handler]
+#[evento::subscription]
 async fn handle_contact_marked_read_and_reply<E: Executor>(
     context: &Context<'_, E>,
     event: Event<MarkedReadAndReply>,
@@ -81,7 +81,7 @@ async fn handle_contact_marked_read_and_reply<E: Executor>(
     Ok(())
 }
 
-#[evento::sub_handler]
+#[evento::subscription]
 async fn handle_contact_resolved<E: Executor>(
     context: &Context<'_, E>,
     event: Event<Resolved>,

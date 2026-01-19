@@ -1196,9 +1196,9 @@ dependencies = [
 
 [[package]]
 name = "evento"
-version = "2.0.0-alpha.10"
+version = "2.0.0-alpha.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e17c36758706f160812acfedd74711d568b19bb56e13df6a29665403fd615d41"
+checksum = "d3c8784769165b1b3bb032f627ad54a50191081f2296c1a326fae460612a4128"
 dependencies = [
  "evento-core",
  "evento-sql",
@@ -1208,9 +1208,9 @@ dependencies = [
 
 [[package]]
 name = "evento-core"
-version = "2.0.0-alpha.10"
+version = "2.0.0-alpha.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd2172c88336c828782505d8683d6cb169534126c0a5239e1873cff4649ba07a"
+checksum = "0ce5fdc50435a898aa80a4b9a5fb72b0262e580afd112186620333a6a1a3f5c3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1219,7 +1219,6 @@ dependencies = [
  "bitcode",
  "evento-macro",
  "serde",
- "sqlx",
  "thiserror 2.0.17",
  "tokio",
  "tracing",
@@ -1228,9 +1227,9 @@ dependencies = [
 
 [[package]]
 name = "evento-macro"
-version = "2.0.0-alpha.10"
+version = "2.0.0-alpha.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b9dda06dc6258237ee264c7e1c5af368cac455186c3d2be10f83991b21038983"
+checksum = "4d162e0a34003e27736e59de24a28df3627effcab33667316a542d0aa1168ef9"
 dependencies = [
  "convert_case 0.10.0",
  "quote",
@@ -1239,9 +1238,9 @@ dependencies = [
 
 [[package]]
 name = "evento-sql"
-version = "2.0.0-alpha.10"
+version = "2.0.0-alpha.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5dce866f71a71dfb1c7470f13bb9e5770953dc2bbae668ebc66bfebe4f74c3b8"
+checksum = "2a7b8b388ff8648ee41706e3b984007b8e70c48718da1148e0a514bb4fb358da"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1255,9 +1254,9 @@ dependencies = [
 
 [[package]]
 name = "evento-sql-migrator"
-version = "2.0.0-alpha.10"
+version = "2.0.0-alpha.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec6c0201d6036d18d4204ba5a57050e3cf691621f3b4e88f0d49ed067467d931"
+checksum = "a7bf9daf85c2bbf1c3b501ba8a6c23aba9f8430bb629feae1a5db8579fee29c6"
 dependencies = [
  "async-trait",
  "evento-sql",

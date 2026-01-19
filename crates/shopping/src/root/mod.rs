@@ -61,7 +61,7 @@ pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Sh
 
 #[evento::handler]
 async fn handle_generated(event: Event<Generated>, data: &mut Shopping) -> anyhow::Result<()> {
-    data.user_id = event.metadata.user()?;
+    data.user_id = event.metadata.requested_by()?;
 
     let ingredients = event.data.ingredients.iter().map(|i| i.key()).collect();
 

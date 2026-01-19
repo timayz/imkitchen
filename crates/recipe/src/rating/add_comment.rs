@@ -1,4 +1,4 @@
-use evento::{Executor, ProjectionAggregator, metadata::Metadata};
+use evento::{Executor, ProjectionAggregator};
 use imkitchen_shared::recipe::rating::CommentAdded;
 use ulid::Ulid;
 use validator::Validate;
@@ -25,7 +25,7 @@ impl<E: Executor> super::Command<E> {
                 message: input.message,
                 reply_to: input.reply_to,
             })
-            .metadata(&Metadata::new(&rating.user_id))
+            .requested_by(&rating.user_id)
             .commit(&self.executor)
             .await?;
 

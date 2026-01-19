@@ -2,7 +2,7 @@ use argon2::{
     Argon2, PasswordHasher,
     password_hash::{SaltString, rand_core::OsRng},
 };
-use evento::{Executor, metadata::Metadata};
+use evento::Executor;
 use imkitchen_shared::user::Registered;
 use validator::Validate;
 
@@ -44,7 +44,6 @@ impl<E: Executor> super::Command<E> {
                 lang: input.lang,
                 timezone: input.timezone,
             })
-            .metadata(&Metadata::default())
             .commit(&self.executor)
             .await?;
 

@@ -1,4 +1,4 @@
-use evento::{Executor, metadata::Metadata};
+use evento::Executor;
 use imkitchen_shared::recipe::{CuisineType, Imported, Ingredient, Instruction, RecipeType};
 use validator::Validate;
 
@@ -44,7 +44,7 @@ impl<E: Executor + Clone> super::Command<E> {
                 ingredients: input.ingredients,
                 instructions: input.instructions,
             })
-            .metadata(&Metadata::new(request_by))
+            .requested_by(request_by)
             .commit(&self.executor)
             .await?)
     }

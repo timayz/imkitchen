@@ -99,7 +99,7 @@ impl ProjectionAggregator for Recipe {
 #[evento::handler]
 async fn handle_created(event: Event<Created>, data: &mut Recipe) -> anyhow::Result<()> {
     data.id = event.aggregator_id.to_owned();
-    data.owner_id = event.metadata.user()?;
+    data.owner_id = event.metadata.requested_by()?;
 
     Ok(())
 }
@@ -107,7 +107,7 @@ async fn handle_created(event: Event<Created>, data: &mut Recipe) -> anyhow::Res
 #[evento::handler]
 async fn handle_imported(event: Event<Imported>, data: &mut Recipe) -> anyhow::Result<()> {
     data.id = event.aggregator_id.to_owned();
-    data.owner_id = event.metadata.user()?;
+    data.owner_id = event.metadata.requested_by()?;
     data.recipe_type = event.data.recipe_type;
     data.cuisine_type = event.data.cuisine_type;
 

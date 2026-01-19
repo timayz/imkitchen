@@ -1,4 +1,4 @@
-use evento::{Executor, ProjectionAggregator, metadata::Metadata};
+use evento::{Executor, ProjectionAggregator};
 use imkitchen_shared::recipe::Deleted;
 
 impl<E: Executor> super::Command<E> {
@@ -19,7 +19,7 @@ impl<E: Executor> super::Command<E> {
         recipe
             .aggregator()?
             .event(&Deleted)
-            .metadata(&Metadata::new(request_by))
+            .requested_by(request_by)
             .commit(&self.executor)
             .await?;
 

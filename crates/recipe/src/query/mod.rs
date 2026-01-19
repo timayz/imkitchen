@@ -4,7 +4,8 @@ pub mod user_stat;
 use std::ops::Deref;
 
 use evento::{
-    AggregatorEvent, Executor, SkipEventData,
+    AggregatorEvent, Executor,
+    metadata::RawEvent,
     subscription::{Context, SubscriptionBuilder},
 };
 use imkitchen_db::table::RecipeUser;
@@ -30,10 +31,10 @@ pub fn query_subscription<E: Executor>() -> SubscriptionBuilder<E> {
         .safety_check()
 }
 
-#[evento::sub_all_handler]
+#[evento::subscription_all]
 async fn handle_recipe_all<E: Executor>(
     context: &Context<'_, E>,
-    event: SkipEventData<Created>,
+    event: RawEvent<Created>,
 ) -> anyhow::Result<()> {
     let (r, w) = context.extract::<(SqlitePool, SqlitePool)>();
     if event.name != Deleted::event_name() {

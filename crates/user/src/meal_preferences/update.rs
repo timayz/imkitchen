@@ -1,4 +1,4 @@
-use evento::{Executor, ProjectionAggregator, metadata::Metadata};
+use evento::{Executor, ProjectionAggregator};
 use imkitchen_shared::{recipe::DietaryRestriction, user::meal_preferences::Changed};
 use validator::Validate;
 
@@ -29,7 +29,7 @@ impl<E: Executor> super::Command<E> {
                 household_size: input.household_size,
                 cuisine_variety_weight: input.cuisine_variety_weight,
             })
-            .metadata(&Metadata::new(id))
+            .requested_by(id)
             .commit(&self.executor)
             .await?;
 

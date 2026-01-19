@@ -33,7 +33,7 @@ pub struct ResetPasswordPlainTemplate {
     pub lang: String,
 }
 
-#[evento::sub_handler]
+#[evento::subscription]
 async fn handle_reset_requested<E: Executor>(
     context: &Context<'_, E>,
     event: Event<ResetRequested>,
