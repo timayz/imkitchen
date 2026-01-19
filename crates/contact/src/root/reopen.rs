@@ -1,4 +1,4 @@
-use evento::{Executor, ProjectionAggregator, metadata::Metadata};
+use evento::{Executor, ProjectionAggregator};
 use imkitchen_shared::contact::{Reopened, Status};
 
 impl<E: Executor + Clone> super::Command<E> {
@@ -18,7 +18,7 @@ impl<E: Executor + Clone> super::Command<E> {
         contact
             .aggregator()?
             .event(&Reopened)
-            .metadata(&Metadata::new(request_by))
+            .requested_by(request_by)
             .commit(&self.executor)
             .await?;
 

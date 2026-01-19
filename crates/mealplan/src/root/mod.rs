@@ -45,7 +45,7 @@ pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
         .handler(handle_recipe_advance_prep_changed())
 }
 
-#[evento::sub_handler]
+#[evento::subscription]
 async fn handle_recipe_created<E: Executor>(
     context: &Context<'_, E>,
     event: Event<imkitchen_shared::recipe::Created>,
@@ -63,7 +63,7 @@ async fn handle_recipe_created<E: Executor>(
         ])
         .values_panic([
             event.aggregator_id.to_owned().into(),
-            event.metadata.user()?.into(),
+            event.metadata.requested_by()?.into(),
             RecipeType::default().to_string().into(),
             event.data.name.into(),
             serde_json::Value::Array(vec![]).into(),
@@ -75,7 +75,7 @@ async fn handle_recipe_created<E: Executor>(
     Ok(())
 }
 
-#[evento::sub_handler]
+#[evento::subscription]
 async fn handle_recipe_imported<E: Executor>(
     context: &Context<'_, E>,
     event: Event<imkitchen_shared::recipe::Imported>,
@@ -96,7 +96,7 @@ async fn handle_recipe_imported<E: Executor>(
         ])
         .values_panic([
             event.aggregator_id.to_owned().into(),
-            event.metadata.user()?.into(),
+            event.metadata.requested_by()?.into(),
             event.data.recipe_type.to_string().into(),
             event.data.name.into(),
             serde_json::Value::Array(vec![]).into(),
@@ -111,7 +111,7 @@ async fn handle_recipe_imported<E: Executor>(
     Ok(())
 }
 
-#[evento::sub_handler]
+#[evento::subscription]
 async fn handle_recipe_type_changed<E: Executor>(
     context: &Context<'_, E>,
     event: Event<imkitchen_shared::recipe::RecipeTypeChanged>,
@@ -128,7 +128,7 @@ async fn handle_recipe_type_changed<E: Executor>(
     Ok(())
 }
 
-#[evento::sub_handler]
+#[evento::subscription]
 async fn handle_recipe_deleted<E: Executor>(
     context: &Context<'_, E>,
     event: Event<imkitchen_shared::recipe::Deleted>,
@@ -145,7 +145,7 @@ async fn handle_recipe_deleted<E: Executor>(
     Ok(())
 }
 
-#[evento::sub_handler]
+#[evento::subscription]
 async fn handle_recipe_basic_information_changed<E: Executor>(
     context: &Context<'_, E>,
     event: Event<imkitchen_shared::recipe::BasicInformationChanged>,
@@ -165,7 +165,7 @@ async fn handle_recipe_basic_information_changed<E: Executor>(
     Ok(())
 }
 
-#[evento::sub_handler]
+#[evento::subscription]
 async fn handle_recipe_dietary_restrictions_changed<E: Executor>(
     context: &Context<'_, E>,
     event: Event<imkitchen_shared::recipe::DietaryRestrictionsChanged>,
@@ -189,7 +189,7 @@ async fn handle_recipe_dietary_restrictions_changed<E: Executor>(
     Ok(())
 }
 
-#[evento::sub_handler]
+#[evento::subscription]
 async fn handle_recipe_main_course_changed<E: Executor>(
     context: &Context<'_, E>,
     event: Event<imkitchen_shared::recipe::MainCourseOptionsChanged>,
@@ -206,7 +206,7 @@ async fn handle_recipe_main_course_changed<E: Executor>(
     Ok(())
 }
 
-#[evento::sub_handler]
+#[evento::subscription]
 async fn handle_recipe_advance_prep_changed<E: Executor>(
     context: &Context<'_, E>,
     event: Event<imkitchen_shared::recipe::AdvancePrepChanged>,

@@ -1,4 +1,4 @@
-use evento::{Executor, ProjectionAggregator, metadata::Metadata};
+use evento::{Executor, ProjectionAggregator};
 use imkitchen_shared::user::{MadeAdmin, Role};
 
 impl<E: Executor> super::Command<E> {
@@ -13,7 +13,6 @@ impl<E: Executor> super::Command<E> {
 
         user.aggregator()?
             .event(&MadeAdmin)
-            .metadata(&Metadata::default())
             .commit(&self.executor)
             .await?;
 

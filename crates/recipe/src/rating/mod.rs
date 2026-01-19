@@ -88,7 +88,7 @@ impl ProjectionAggregator for Rating {
 #[evento::handler]
 async fn handle_viewed(event: Event<Viewed>, data: &mut Rating) -> anyhow::Result<()> {
     data.id = event.aggregator_id.to_owned();
-    data.user_id = event.metadata.user()?;
+    data.user_id = event.metadata.requested_by()?;
     data.viewed = true;
 
     Ok(())
@@ -97,7 +97,7 @@ async fn handle_viewed(event: Event<Viewed>, data: &mut Rating) -> anyhow::Resul
 #[evento::handler]
 async fn handle_like_checked(event: Event<LikeChecked>, data: &mut Rating) -> anyhow::Result<()> {
     data.id = event.aggregator_id.to_owned();
-    data.user_id = event.metadata.user()?;
+    data.user_id = event.metadata.requested_by()?;
     data.liked = true;
     data.unliked = false;
 
@@ -120,7 +120,7 @@ async fn handle_unlike_checked(
     data: &mut Rating,
 ) -> anyhow::Result<()> {
     data.id = event.aggregator_id.to_owned();
-    data.user_id = event.metadata.user()?;
+    data.user_id = event.metadata.requested_by()?;
     data.unliked = true;
     data.liked = false;
 

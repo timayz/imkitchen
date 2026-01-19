@@ -193,7 +193,7 @@ async fn handle_reset_completed(
     event: Event<ResetCompleted>,
     data: &mut LoginView,
 ) -> anyhow::Result<()> {
-    if data.id == event.metadata.user()? {
+    if data.id == event.metadata.requested_by()? {
         data.logins = vec![].into();
     }
 

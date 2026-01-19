@@ -1,4 +1,4 @@
-use evento::{Executor, ProjectionAggregator, metadata::Metadata};
+use evento::{Executor, ProjectionAggregator};
 use imkitchen_shared::user::UsernameChanged;
 use regex::Regex;
 use std::sync::LazyLock;
@@ -57,7 +57,7 @@ impl<E: Executor> super::Command<E> {
             .event(&UsernameChanged {
                 value: input.username,
             })
-            .metadata(&Metadata::new(user.id))
+            .requested_by(user.id)
             .commit(&self.executor)
             .await?;
 

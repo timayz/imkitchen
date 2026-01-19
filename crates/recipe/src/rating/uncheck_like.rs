@@ -1,4 +1,4 @@
-use evento::{Executor, ProjectionAggregator, metadata::Metadata};
+use evento::{Executor, ProjectionAggregator};
 use imkitchen_shared::recipe::rating::LikeUnchecked;
 
 impl<E: Executor + Clone> super::Command<E> {
@@ -13,7 +13,7 @@ impl<E: Executor + Clone> super::Command<E> {
             rating
                 .aggregator()?
                 .event(&LikeUnchecked)
-                .metadata(&Metadata::new(&rating.user_id))
+                .requested_by(&rating.user_id)
                 .commit(&self.executor)
                 .await?;
         }

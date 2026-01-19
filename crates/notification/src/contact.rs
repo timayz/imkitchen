@@ -11,7 +11,7 @@ pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
     SubscriptionBuilder::new("notification-contact").handler(handle_form_submitted())
 }
 
-#[evento::sub_handler]
+#[evento::subscription]
 async fn handle_form_submitted<E: Executor>(
     context: &Context<'_, E>,
     event: Event<FormSubmitted>,

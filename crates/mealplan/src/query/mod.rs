@@ -5,7 +5,8 @@ pub mod week;
 use std::ops::Deref;
 
 use evento::{
-    Executor, SkipEventData,
+    Executor,
+    metadata::RawEvent,
     subscription::{Context, SubscriptionBuilder},
 };
 use imkitchen_shared::mealplan::WeekGenerated;
@@ -27,10 +28,10 @@ pub fn query_subscription<E: Executor>() -> SubscriptionBuilder<E> {
         .safety_check()
 }
 
-#[evento::sub_all_handler]
+#[evento::subscription_all]
 async fn handle_mealplan_all<E: Executor>(
     context: &Context<'_, E>,
-    event: SkipEventData<WeekGenerated>,
+    event: RawEvent<WeekGenerated>,
 ) -> anyhow::Result<()> {
     last_week::load(context.executor, &event.aggregator_id).await?;
     Ok(())

@@ -45,7 +45,7 @@ pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
     SubscriptionBuilder::new("shopping-list").handler(handle_generated())
 }
 
-#[evento::sub_handler]
+#[evento::subscription]
 async fn handle_generated<E: Executor>(
     context: &Context<'_, E>,
     event: Event<Generated>,

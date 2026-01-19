@@ -25,7 +25,7 @@ pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
         .handler(handle_recipe_ingredients_changed())
 }
 
-#[evento::sub_handler]
+#[evento::subscription]
 async fn handle_mealplan_week_generated<E: Executor>(
     context: &Context<'_, E>,
     event: Event<imkitchen_shared::mealplan::WeekGenerated>,
@@ -114,14 +114,14 @@ async fn handle_mealplan_week_generated<E: Executor>(
             week: event.data.start,
             ingredients: ingredients.values().cloned().collect(),
         })
-        .metadata(&event.metadata)
+        .metadata_from(&event.metadata)
         .commit(context.executor)
         .await?;
 
     Ok(())
 }
 
-#[evento::sub_handler]
+#[evento::subscription]
 async fn handle_recipe_created<E: Executor>(
     context: &Context<'_, E>,
     event: Event<imkitchen_shared::recipe::Created>,
@@ -138,7 +138,7 @@ async fn handle_recipe_created<E: Executor>(
         ])
         .values([
             event.aggregator_id.to_owned().into(),
-            event.metadata.user()?.into(),
+            event.metadata.requested_by()?.into(),
             ingredients.into(),
         ])?
         .to_owned();
@@ -148,7 +148,7 @@ async fn handle_recipe_created<E: Executor>(
     Ok(())
 }
 
-#[evento::sub_handler]
+#[evento::subscription]
 async fn handle_recipe_imported<E: Executor>(
     context: &Context<'_, E>,
     event: Event<imkitchen_shared::recipe::Imported>,
@@ -165,7 +165,7 @@ async fn handle_recipe_imported<E: Executor>(
         ])
         .values([
             event.aggregator_id.to_owned().into(),
-            event.metadata.user()?.into(),
+            event.metadata.requested_by()?.into(),
             ingredients.into(),
         ])?
         .to_owned();
@@ -175,7 +175,7 @@ async fn handle_recipe_imported<E: Executor>(
     Ok(())
 }
 
-#[evento::sub_handler]
+#[evento::subscription]
 async fn handle_recipe_deleted<E: Executor>(
     context: &Context<'_, E>,
     event: Event<imkitchen_shared::recipe::Deleted>,
@@ -192,7 +192,7 @@ async fn handle_recipe_deleted<E: Executor>(
     Ok(())
 }
 
-#[evento::sub_handler]
+#[evento::subscription]
 async fn handle_recipe_basic_information_changed<E: Executor>(
     context: &Context<'_, E>,
     event: Event<imkitchen_shared::recipe::BasicInformationChanged>,
@@ -209,7 +209,7 @@ async fn handle_recipe_basic_information_changed<E: Executor>(
     Ok(())
 }
 
-#[evento::sub_handler]
+#[evento::subscription]
 async fn handle_recipe_ingredients_changed<E: Executor>(
     context: &Context<'_, E>,
     event: Event<imkitchen_shared::recipe::IngredientsChanged>,

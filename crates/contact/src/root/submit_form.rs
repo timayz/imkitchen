@@ -1,4 +1,4 @@
-use evento::{Executor, metadata::Metadata};
+use evento::Executor;
 use imkitchen_shared::contact::{FormSubmitted, Subject};
 use validator::Validate;
 
@@ -27,7 +27,6 @@ impl<E: Executor + Clone> super::Command<E> {
                 subject: input.subject,
                 message: input.message,
             })
-            .metadata(&Metadata::default())
             .commit(&self.executor)
             .await?)
     }

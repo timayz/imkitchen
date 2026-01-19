@@ -189,7 +189,7 @@ pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
         .handler(handle_registered())
 }
 
-#[evento::sub_handler]
+#[evento::subscription]
 async fn handle_registered<E: Executor>(
     context: &Context<'_, E>,
     event: Event<Registered>,
@@ -202,7 +202,7 @@ async fn handle_registered<E: Executor>(
     Ok(())
 }
 
-#[evento::sub_handler]
+#[evento::subscription]
 async fn handle_activated<E: Executor>(
     context: &Context<'_, E>,
     event: Event<Activated>,
@@ -215,7 +215,7 @@ async fn handle_activated<E: Executor>(
     Ok(())
 }
 
-#[evento::sub_handler]
+#[evento::subscription]
 async fn handle_susended<E: Executor>(
     context: &Context<'_, E>,
     event: Event<Suspended>,
@@ -228,7 +228,7 @@ async fn handle_susended<E: Executor>(
     Ok(())
 }
 
-#[evento::sub_handler]
+#[evento::subscription]
 async fn handle_life_premium_toggled<E: Executor>(
     context: &Context<'_, E>,
     event: Event<LifePremiumToggled>,

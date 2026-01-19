@@ -122,7 +122,7 @@ pub fn subscription<E: Executor + Clone>() -> SubscriptionBuilder<E> {
     SubscriptionBuilder::new("mealplan-week").handler(handle_week_generated())
 }
 
-#[evento::sub_handler]
+#[evento::subscription]
 async fn handle_week_generated<E: Executor>(
     context: &Context<'_, E>,
     event: Event<WeekGenerated>,

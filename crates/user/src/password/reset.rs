@@ -2,7 +2,7 @@ use argon2::{
     Argon2, PasswordHasher,
     password_hash::{SaltString, rand_core::OsRng},
 };
-use evento::{Executor, ProjectionAggregator, metadata::Metadata};
+use evento::{Executor, ProjectionAggregator};
 use imkitchen_shared::user::password::ResetCompleted;
 use time::OffsetDateTime;
 use validator::Validate;
@@ -54,7 +54,7 @@ impl<E: Executor> super::Command<E> {
         password
             .aggregator()?
             .event(&ResetCompleted)
-            .metadata(&Metadata::new(&password.user_id))
+            .requested_by(&password.user_id)
             .commit(&self.executor)
             .await?;
 

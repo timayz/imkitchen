@@ -1,4 +1,4 @@
-use evento::{Executor, ProjectionAggregator, metadata::Metadata};
+use evento::{Executor, ProjectionAggregator};
 use imkitchen_shared::shopping::{Checked, Unchecked};
 
 pub struct ToggleInput {
@@ -38,7 +38,7 @@ impl<E: Executor> super::Command<E> {
                     week: input.week,
                     ingredient: input.name,
                 })
-                .metadata(&Metadata::new(request_by))
+                .requested_by(request_by)
                 .commit(&self.executor)
                 .await?;
         } else {
@@ -48,7 +48,7 @@ impl<E: Executor> super::Command<E> {
                     week: input.week,
                     ingredient: input.name,
                 })
-                .metadata(&Metadata::new(request_by))
+                .requested_by(request_by)
                 .commit(&self.executor)
                 .await?;
         }

@@ -1,4 +1,4 @@
-use evento::{Executor, ProjectionAggregator, metadata::Metadata};
+use evento::{Executor, ProjectionAggregator};
 use imkitchen_shared::shopping::Resetted;
 
 impl<E: Executor> super::Command<E> {
@@ -15,7 +15,7 @@ impl<E: Executor> super::Command<E> {
         shopping
             .aggregator()?
             .event(&Resetted { week })
-            .metadata(&Metadata::new(request_by))
+            .requested_by(request_by)
             .commit(&self.executor)
             .await?;
 

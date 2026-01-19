@@ -1,7 +1,8 @@
 use std::ops::Deref;
 
 use evento::{
-    Executor, SkipEventData,
+    Executor,
+    metadata::RawEvent,
     subscription::{Context, SubscriptionBuilder},
 };
 use imkitchen_shared::contact::FormSubmitted;
@@ -27,10 +28,10 @@ pub fn query_subscription<E: Executor>() -> SubscriptionBuilder<E> {
         .safety_check()
 }
 
-#[evento::sub_all_handler]
+#[evento::subscription_all]
 async fn handle_contact_all<E: Executor>(
     context: &Context<'_, E>,
-    event: SkipEventData<FormSubmitted>,
+    event: RawEvent<FormSubmitted>,
 ) -> anyhow::Result<()> {
     let (r, w) = context.extract::<(SqlitePool, SqlitePool)>();
     admin::load(context.executor, &r, &w, &event.aggregator_id).await?;
