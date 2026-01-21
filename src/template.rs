@@ -153,29 +153,44 @@ pub(crate) mod filters {
                 if minutes == 1 {
                     rust_i18n::t!("1 minute ago", locale = preferred_language).to_string()
                 } else {
-                    rust_i18n::t!("minutes ago", locale = preferred_language, count = minutes)
-                        .to_string()
+                    rust_i18n::t!(
+                        "[count] minutes ago",
+                        locale = preferred_language,
+                        count = minutes
+                    )
+                    .to_string()
                 }
             }
             s if s < 86400 => {
                 if hours == 1 {
                     rust_i18n::t!("1 hour ago", locale = preferred_language).to_string()
                 } else {
-                    rust_i18n::t!("hours ago", locale = preferred_language, count = hours)
-                        .to_string()
+                    rust_i18n::t!(
+                        "[count] hours ago",
+                        locale = preferred_language,
+                        count = hours
+                    )
+                    .to_string()
                 }
             }
             s if s < 172800 => rust_i18n::t!("yesterday", locale = preferred_language).to_string(),
-            s if s < 604800 => {
-                rust_i18n::t!("days ago", locale = preferred_language, count = days).to_string()
-            }
+            s if s < 604800 => rust_i18n::t!(
+                "[count] days ago",
+                locale = preferred_language,
+                count = days
+            )
+            .to_string(),
             s if s < 2592000 => {
                 let weeks = days / 7;
                 if weeks == 1 {
                     rust_i18n::t!("1 week ago", locale = preferred_language).to_string()
                 } else {
-                    rust_i18n::t!("weeks ago", locale = preferred_language, count = weeks)
-                        .to_string()
+                    rust_i18n::t!(
+                        "[count] weeks ago",
+                        locale = preferred_language,
+                        count = weeks
+                    )
+                    .to_string()
                 }
             }
             s if s < 31536000 => {
@@ -183,8 +198,12 @@ pub(crate) mod filters {
                 if months == 1 {
                     rust_i18n::t!("1 month ago", locale = preferred_language).to_string()
                 } else {
-                    rust_i18n::t!("months ago", locale = preferred_language, count = months)
-                        .to_string()
+                    rust_i18n::t!(
+                        "[count] months ago",
+                        locale = preferred_language,
+                        count = months
+                    )
+                    .to_string()
                 }
             }
             _ => {
@@ -192,8 +211,12 @@ pub(crate) mod filters {
                 if years == 1 {
                     rust_i18n::t!("1 year ago", locale = preferred_language).to_string()
                 } else {
-                    rust_i18n::t!("years ago", locale = preferred_language, count = years)
-                        .to_string()
+                    rust_i18n::t!(
+                        "[count] years ago",
+                        locale = preferred_language,
+                        count = years
+                    )
+                    .to_string()
                 }
             }
         };

@@ -1,3 +1,4 @@
+pub mod favorite;
 pub mod rating;
 
 use bitcode::{Decode, Encode};

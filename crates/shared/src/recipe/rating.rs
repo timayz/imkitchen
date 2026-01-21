@@ -1,10 +1,20 @@
 #[evento::aggregator]
 pub enum Rating {
-    LikeChecked,
-    LikeUnchecked,
-    UnlikeChecked,
-    UnlikeUnchecked,
-    Viewed,
+    LikeChecked {
+        recipe_id: String,
+    },
+    LikeUnchecked {
+        recipe_id: String,
+    },
+    UnlikeChecked {
+        recipe_id: String,
+    },
+    UnlikeUnchecked {
+        recipe_id: String,
+    },
+    Viewed {
+        recipe_id: String,
+    },
 
     CommentAdded {
         id: String,

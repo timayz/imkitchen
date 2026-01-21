@@ -13,17 +13,19 @@ impl<E: Executor + Clone> super::Command<E> {
         if !rating.unliked {
             rating
                 .aggregator()?
-                .event(&UnlikeChecked)
-                .requested_by(&rating.user_id)
+                .event(&UnlikeChecked {
+                    recipe_id: id.to_owned(),
+                })
+                .requested_by(&user_id)
                 .commit(&self.executor)
                 .await?;
         }
         if rating.liked {
-            let rating = self.load(id, user_id).await?;
+            let rating = self.load(&id, &user_id).await?;
             rating
                 .aggregator()?
-                .event(&LikeUnchecked)
-                .requested_by(&rating.user_id)
+                .event(&LikeUnchecked { recipe_id: id })
+                .requested_by(user_id)
                 .commit(&self.executor)
                 .await?;
         }

@@ -5,7 +5,7 @@ use axum::{
 
 use evento::cursor::{Args, ReadResult};
 use imkitchen_recipe::{
-    rating,
+    favorite, rating,
     user::{RecipesQuery, UserView, UserViewList},
     user_stat::UserStatView,
 };
@@ -49,6 +49,7 @@ pub struct DetailTemplate {
     pub recipe: UserView,
     pub stat: UserStatView,
     pub rating: rating::Rating,
+    pub favorite: favorite::Favorite,
     pub cook_recipes: ReadResult<UserViewList>,
     pub similar_recipes: ReadResult<UserViewList>,
 }
@@ -63,6 +64,7 @@ impl Default for DetailTemplate {
             cook_recipes: Default::default(),
             similar_recipes: Default::default(),
             rating: Default::default(),
+            favorite: Default::default(),
         }
     }
 }
@@ -84,11 +86,13 @@ pub async fn page(
         crate::try_page_response!(app.recipe_query.find_user_stat(&recipe.owner_id), template)
             .unwrap_or_default();
 
-    let rating = crate::try_page_response!(
-        app.recipe_cmd.rating.load(&recipe.id, &recipe.owner_id),
-        template
-    )
-    .to_owned();
+    let rating =
+        crate::try_page_response!(app.recipe_cmd.rating.load(&recipe.id, &user.id), template)
+            .to_owned();
+
+    let favorite =
+        crate::try_page_response!(app.recipe_cmd.favorite.load(&recipe.id, &user.id), template)
+            .to_owned();
 
     let exclude_ids = vec![recipe.id.to_owned()];
 
@@ -242,6 +246,7 @@ pub async fn page(
             cook_recipes,
             similar_recipes,
             rating,
+            favorite,
             ..Default::default()
         })
         .into_response()
@@ -344,7 +349,19 @@ pub async fn check_in(
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
+    let recipe = crate::try_response!(anyhow_opt: app.recipe_query.user(&id), template);
+    if recipe.owner_id == user.id {
+        return "<div></div>".into_response();
+    }
+
+    if !recipe.is_shared {
+        crate::try_response!(sync:
+            Err(imkitchen_shared::Error::NotFound("recipe".to_owned())
+        ), template);
+    }
+
     crate::try_response!(app.recipe_cmd.rating.view(&id, &user.id), template);
+
     "<div></div>".into_response()
 }
 
@@ -363,9 +380,15 @@ pub async fn check_like(
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    crate::try_response!(app.recipe_cmd.rating.check_like(&id, &user.id), template);
-
     let recipe = crate::try_response!(anyhow_opt: app.recipe_query.user(&id), template);
+
+    if !recipe.is_shared {
+        crate::try_response!(sync:
+            Err(imkitchen_shared::Error::NotFound("recipe".to_owned())
+        ), template);
+    }
+
+    crate::try_response!(app.recipe_cmd.rating.check_like(&id, &user.id), template);
 
     (
         [("ts-swap", "skip")],
@@ -385,9 +408,15 @@ pub async fn uncheck_like(
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    crate::try_response!(app.recipe_cmd.rating.uncheck_like(&id, &user.id), template);
-
     let recipe = crate::try_response!(anyhow_opt: app.recipe_query.user(&id), template);
+
+    if !recipe.is_shared {
+        crate::try_response!(sync:
+            Err(imkitchen_shared::Error::NotFound("recipe".to_owned())
+        ), template);
+    }
+
+    crate::try_response!(app.recipe_cmd.rating.uncheck_like(&id, &user.id), template);
 
     (
         [("ts-swap", "skip")],
@@ -407,9 +436,15 @@ pub async fn check_unlike(
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    crate::try_response!(app.recipe_cmd.rating.check_unlike(&id, &user.id), template);
-
     let recipe = crate::try_response!(anyhow_opt: app.recipe_query.user(&id), template);
+
+    if !recipe.is_shared {
+        crate::try_response!(sync:
+            Err(imkitchen_shared::Error::NotFound("recipe".to_owned())
+        ), template);
+    }
+
+    crate::try_response!(app.recipe_cmd.rating.check_unlike(&id, &user.id), template);
 
     (
         [("ts-swap", "skip")],
@@ -429,12 +464,18 @@ pub async fn uncheck_unlike(
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
+    let recipe = crate::try_response!(anyhow_opt: app.recipe_query.user(&id), template);
+
+    if !recipe.is_shared {
+        crate::try_response!(sync:
+            Err(imkitchen_shared::Error::NotFound("recipe".to_owned())
+        ), template);
+    }
+
     crate::try_response!(
         app.recipe_cmd.rating.uncheck_unlike(&id, &user.id),
         template
     );
-
-    let recipe = crate::try_response!(anyhow_opt: app.recipe_query.user(&id), template);
 
     (
         [("ts-swap", "skip")],
@@ -444,6 +485,54 @@ pub async fn uncheck_unlike(
             liked: false,
             unliked: false,
         }),
+    )
+        .into_response()
+}
+
+#[derive(askama::Template)]
+#[template(path = "partials/recipes-detail-save-button.html")]
+pub struct SaveButtonTemplate {
+    pub id: String,
+    pub saved: bool,
+}
+
+pub async fn save(
+    template: Template,
+    user: AuthUser,
+    State(app): State<AppState>,
+    Path((id,)): Path<(String,)>,
+) -> impl IntoResponse {
+    let recipe = crate::try_response!(anyhow_opt: app.recipe_query.user(&id),template);
+
+    if !recipe.is_shared {
+        crate::try_response!(sync:
+            Err(imkitchen_shared::Error::NotFound("recipe".to_owned())
+        ), template);
+    }
+
+    crate::try_response!(
+        app.recipe_cmd.favorite.save(&id, recipe.owner_id, &user.id),
+        template
+    );
+
+    (
+        [("ts-swap", "skip")],
+        template.render(SaveButtonTemplate { id, saved: true }),
+    )
+        .into_response()
+}
+
+pub async fn unsave(
+    template: Template,
+    user: AuthUser,
+    State(app): State<AppState>,
+    Path((id,)): Path<(String,)>,
+) -> impl IntoResponse {
+    crate::try_response!(app.recipe_cmd.favorite.unsave(&id, &user.id), template);
+
+    (
+        [("ts-swap", "skip")],
+        template.render(SaveButtonTemplate { id, saved: false }),
     )
         .into_response()
 }
