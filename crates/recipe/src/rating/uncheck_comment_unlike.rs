@@ -8,7 +8,8 @@ impl<E: Executor> super::Command<E> {
         user_id: impl Into<String>,
         comment_id: impl Into<String>,
     ) -> imkitchen_shared::Result<()> {
-        let rating = self.load(id, user_id).await?;
+        let user_id = user_id.into();
+        let rating = self.load(id, &user_id).await?;
         let comment_id = comment_id.into();
 
         // @TODO: check comment exist
@@ -17,7 +18,7 @@ impl<E: Executor> super::Command<E> {
         rating
             .aggregator()?
             .event(&CommentUnlikeUnchecked { comment_id })
-            .requested_by(&rating.user_id)
+            .requested_by(user_id)
             .commit(&self.executor)
             .await?;
 

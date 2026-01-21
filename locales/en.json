@@ -40,5 +40,11 @@
   "shopping_Unknown": "❓ Unknown",
   "FruitsAndVegetables": "Fruits & Vegetables",
   "DairyAndEggs": "Dairy & Eggs",
-  "SnacksAndConfectionery": "Snacks & Confectionery"
+  "SnacksAndConfectionery": "Snacks & Confectionery",
+  "[count] days ago": "%{count} days ago",
+  "[count] minutes ago": "%{count} minutes ago",
+  "[count] hours ago": "%{count} hours ago",
+  "[count] weeks ago": "%{count} weeks ago",
+  "[count] months ago": "%{count} months ago",
+  "[count] years ago": "%{count} years ago"
 }

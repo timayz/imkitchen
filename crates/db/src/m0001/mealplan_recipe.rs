@@ -12,7 +12,6 @@ fn create_table() -> TableCreateStatement {
         .table(MealPlanRecipe::Table)
         .col(
             ColumnDef::new(MealPlanRecipe::Id)
-                .primary_key()
                 .string()
                 .not_null()
                 .string_len(26),
@@ -64,6 +63,11 @@ fn create_table() -> TableCreateStatement {
             ColumnDef::new(MealPlanRecipe::DietaryRestrictions)
                 .json_binary()
                 .not_null(),
+        )
+        .primary_key(
+            Index::create()
+                .col(MealPlanRecipe::Id)
+                .col(MealPlanRecipe::UserId),
         )
         .to_owned()
 }
@@ -170,6 +174,46 @@ impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateIdx2 {
         connection: &mut sqlx::SqliteConnection,
     ) -> Result<(), sqlx_migrator::Error> {
         let statement = drop_idx_2().to_string(sea_query::SqliteQueryBuilder);
+        sqlx::query(&statement).execute(connection).await?;
+
+        Ok(())
+    }
+}
+
+pub struct CreateIdx3;
+
+fn create_idx_3() -> IndexCreateStatement {
+    Index::create()
+        .name("idk_mealplan_recipe_cfXMLT")
+        .table(MealPlanRecipe::Table)
+        .col(MealPlanRecipe::Id)
+        .to_owned()
+}
+
+fn drop_idx_3() -> IndexDropStatement {
+    Index::drop()
+        .name("idk_mealplan_recipe_cfXMLT")
+        .table(MealPlanRecipe::Table)
+        .to_owned()
+}
+
+#[async_trait::async_trait]
+impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateIdx3 {
+    async fn up(
+        &self,
+        connection: &mut sqlx::SqliteConnection,
+    ) -> Result<(), sqlx_migrator::Error> {
+        let statement = create_idx_3().to_string(sea_query::SqliteQueryBuilder);
+        sqlx::query(&statement).execute(connection).await?;
+
+        Ok(())
+    }
+
+    async fn down(
+        &self,
+        connection: &mut sqlx::SqliteConnection,
+    ) -> Result<(), sqlx_migrator::Error> {
+        let statement = drop_idx_3().to_string(sea_query::SqliteQueryBuilder);
         sqlx::query(&statement).execute(connection).await?;
 
         Ok(())

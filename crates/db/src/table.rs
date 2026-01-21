@@ -76,25 +76,6 @@ pub enum ContactGlobalStat {
 }
 
 #[derive(Iden, Clone)]
-pub enum RecipeCommand {
-    Table,
-    Id,
-    OwnerId,
-    RecipeType,
-    CuisineType,
-    IsShared,
-    BasicInformationHash,
-    IngredientsHash,
-    InstructionsHash,
-    DietaryRestrictionsHash,
-    AdvancePrepHash,
-    AcceptsAccompaniment,
-    IsDeleted,
-    Version,
-    RoutingKey,
-}
-
-#[derive(Iden, Clone)]
 pub enum RecipeUser {
     Table,
     Id,
@@ -133,16 +114,6 @@ pub enum RecipeUserStat {
 }
 
 #[derive(Iden, Clone)]
-pub enum RecipeRatingCommand {
-    Table,
-    RecipeId,
-    UserId,
-    Viewed,
-    Liked,
-    Unliked,
-}
-
-#[derive(Iden, Clone)]
 pub enum MealPlanRecipe {
     Table,
     Id,
@@ -163,13 +134,6 @@ pub enum MealPlanWeek {
     Start,
     End,
     Slots,
-}
-
-#[derive(Iden, Clone)]
-pub enum MealPlanLastWeek {
-    Table,
-    UserId,
-    Start,
 }
 
 #[derive(Iden, Clone)]

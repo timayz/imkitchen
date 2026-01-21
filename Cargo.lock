@@ -1197,8 +1197,7 @@ dependencies = [
 [[package]]
 name = "evento"
 version = "2.0.0-alpha.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d3c8784769165b1b3bb032f627ad54a50191081f2296c1a326fae460612a4128"
+source = "git+https://github.com/timayz/evento?rev=36b56dd#36b56dd427f205154ae4a92f1760522bc034e2f3"
 dependencies = [
  "evento-core",
  "evento-sql",
@@ -1209,8 +1208,7 @@ dependencies = [
 [[package]]
 name = "evento-core"
 version = "2.0.0-alpha.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ce5fdc50435a898aa80a4b9a5fb72b0262e580afd112186620333a6a1a3f5c3"
+source = "git+https://github.com/timayz/evento?rev=36b56dd#36b56dd427f205154ae4a92f1760522bc034e2f3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1218,7 +1216,9 @@ dependencies = [
  "base64",
  "bitcode",
  "evento-macro",
+ "hex",
  "serde",
+ "sha3",
  "thiserror 2.0.17",
  "tokio",
  "tracing",
@@ -1228,8 +1228,7 @@ dependencies = [
 [[package]]
 name = "evento-macro"
 version = "2.0.0-alpha.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d162e0a34003e27736e59de24a28df3627effcab33667316a542d0aa1168ef9"
+source = "git+https://github.com/timayz/evento?rev=36b56dd#36b56dd427f205154ae4a92f1760522bc034e2f3"
 dependencies = [
  "convert_case 0.10.0",
  "quote",
@@ -1239,8 +1238,7 @@ dependencies = [
 [[package]]
 name = "evento-sql"
 version = "2.0.0-alpha.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a7b8b388ff8648ee41706e3b984007b8e70c48718da1148e0a514bb4fb358da"
+source = "git+https://github.com/timayz/evento?rev=36b56dd#36b56dd427f205154ae4a92f1760522bc034e2f3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1255,8 +1253,7 @@ dependencies = [
 [[package]]
 name = "evento-sql-migrator"
 version = "2.0.0-alpha.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7bf9daf85c2bbf1c3b501ba8a6c23aba9f8430bb629feae1a5db8579fee29c6"
+source = "git+https://github.com/timayz/evento?rev=36b56dd#36b56dd427f205154ae4a92f1760522bc034e2f3"
 dependencies = [
  "async-trait",
  "evento-sql",

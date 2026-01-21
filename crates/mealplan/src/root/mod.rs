@@ -43,6 +43,8 @@ pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
         .handler(handle_recipe_dietary_restrictions_changed())
         .handler(handle_recipe_main_course_changed())
         .handler(handle_recipe_advance_prep_changed())
+        .handler(handle_favorite_saved())
+        .handler(handle_favorite_unsaved())
 }
 
 #[evento::subscription]
@@ -219,6 +221,69 @@ async fn handle_recipe_advance_prep_changed<E: Executor>(
         &event.data.advance_prep,
     )
     .await?;
+
+    Ok(())
+}
+
+#[evento::subscription]
+async fn handle_favorite_saved<E: Executor>(
+    context: &Context<'_, E>,
+    event: Event<imkitchen_shared::recipe::favorite::Saved>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let select = Query::select()
+        .from(MealPlanRecipe::Table)
+        .columns([
+            MealPlanRecipe::Id,
+            MealPlanRecipe::RecipeType,
+            MealPlanRecipe::Name,
+            MealPlanRecipe::DietaryRestrictions,
+            MealPlanRecipe::AdvancePrep,
+            MealPlanRecipe::CookTime,
+            MealPlanRecipe::PrepTime,
+            MealPlanRecipe::AcceptsAccompaniment,
+        ])
+        .expr(Expr::value(event.metadata.requested_by()?))
+        .and_where(Expr::col(MealPlanRecipe::Id).eq(&event.data.recipe_id))
+        .and_where(Expr::col(MealPlanRecipe::UserId).eq(&event.data.recipe_owner))
+        .to_owned();
+
+    let statement = Query::insert()
+        .into_table(MealPlanRecipe::Table)
+        .columns([
+            MealPlanRecipe::Id,
+            MealPlanRecipe::RecipeType,
+            MealPlanRecipe::Name,
+            MealPlanRecipe::DietaryRestrictions,
+            MealPlanRecipe::AdvancePrep,
+            MealPlanRecipe::CookTime,
+            MealPlanRecipe::PrepTime,
+            MealPlanRecipe::AcceptsAccompaniment,
+            MealPlanRecipe::UserId,
+        ])
+        .select_from(select)?
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
+}
+
+#[evento::subscription]
+async fn handle_favorite_unsaved<E: Executor>(
+    context: &Context<'_, E>,
+    event: Event<imkitchen_shared::recipe::favorite::Unsaved>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let statement = Query::delete()
+        .from_table(MealPlanRecipe::Table)
+        .and_where(Expr::col(MealPlanRecipe::Id).eq(&event.data.recipe_id))
+        .and_where(Expr::col(MealPlanRecipe::UserId).eq(&event.metadata.requested_by()?))
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
 }

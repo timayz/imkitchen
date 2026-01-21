@@ -17,7 +17,8 @@ impl<E: Executor> super::Command<E> {
         input: AddCommentInput,
     ) -> imkitchen_shared::Result<()> {
         //@TODO: check spam
-        let rating = self.load(id, user_id).await?;
+        let user_id = user_id.into();
+        let rating = self.load(id, &user_id).await?;
         rating
             .aggregator()?
             .event(&CommentAdded {
@@ -25,7 +26,7 @@ impl<E: Executor> super::Command<E> {
                 message: input.message,
                 reply_to: input.reply_to,
             })
-            .requested_by(&rating.user_id)
+            .requested_by(user_id)
             .commit(&self.executor)
             .await?;
 

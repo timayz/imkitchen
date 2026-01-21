@@ -7,12 +7,14 @@ impl<E: Executor + Clone> super::Command<E> {
         id: impl Into<String>,
         user_id: impl Into<String>,
     ) -> imkitchen_shared::Result<()> {
-        let rating = self.load(id, user_id).await?;
+        let id = id.into();
+        let user_id = user_id.into();
+        let rating = self.load(&id, &user_id).await?;
         if rating.unliked {
             rating
                 .aggregator()?
-                .event(&UnlikeUnchecked)
-                .requested_by(&rating.user_id)
+                .event(&UnlikeUnchecked { recipe_id: id })
+                .requested_by(user_id)
                 .commit(&self.executor)
                 .await?;
         }

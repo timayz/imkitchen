@@ -1,11 +1,8 @@
 mod contact_admin;
 mod contact_global_stat;
-mod mealplan_last_week;
 mod mealplan_recipe;
 mod mealplan_slot;
 mod mealplan_week;
-mod recipe_command;
-mod recipe_rating_command;
 mod recipe_user;
 mod recipe_user_stat;
 mod shopping_list;
@@ -37,7 +34,6 @@ sqlx_migrator::sqlite_migration!(
         contact_admin::CreateIdx1,
         contact_admin::CreateIdx2,
         contact_global_stat::CreateTable,
-        recipe_command::CreateTable,
         recipe_user::CreateTable,
         recipe_user::CreateIdx1,
         recipe_user::CreateIdx2,
@@ -46,13 +42,11 @@ sqlx_migrator::sqlite_migration!(
         recipe_user::CreateIdx5,
         recipe_user::CreateIdx6,
         recipe_user_stat::CreateTable,
-        recipe_rating_command::CreateTable,
-        recipe_rating_command::CreateIdx1,
         mealplan_recipe::CreateTable,
         mealplan_recipe::CreateIdx1,
         mealplan_recipe::CreateIdx2,
+        mealplan_recipe::CreateIdx3,
         mealplan_week::CreateTable,
-        mealplan_last_week::CreateTable,
         mealplan_slot::CreateTable,
         shopping_list::CreateTable,
         shopping_recipe::CreateTable,

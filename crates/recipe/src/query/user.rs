@@ -3,6 +3,7 @@ use evento::{
     cursor::{Args, ReadResult},
     metadata::Event,
     sql::Reader,
+    subscription::{Context, SubscriptionBuilder},
 };
 use imkitchen_db::table::RecipeUser;
 use imkitchen_shared::recipe::{
@@ -10,7 +11,7 @@ use imkitchen_shared::recipe::{
     DietaryRestriction, DietaryRestrictionsChanged, Imported, Ingredient, IngredientsChanged,
     Instruction, InstructionsChanged, MadePrivate, MainCourseOptionsChanged, Recipe, RecipeType,
     RecipeTypeChanged, SharedToCommunity,
-    rating::{LikeChecked, LikeUnchecked, Rating, UnlikeChecked, UnlikeUnchecked, Viewed},
+    rating::{LikeChecked, LikeUnchecked, UnlikeChecked, UnlikeUnchecked, Viewed},
 };
 use sea_query::{Expr, ExprTrait, OnConflict, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
@@ -250,10 +251,7 @@ async fn find_user(pool: &SqlitePool, id: impl Into<String>) -> anyhow::Result<O
 }
 
 pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, UserView> {
-    let id = id.into();
-
-    Projection::new::<Recipe>(&id)
-        .aggregator::<Rating>(id)
+    Projection::new::<Recipe>(id)
         .handler(handle_created())
         .handler(handle_imported())
         .handler(handle_recipe_type_changed())
@@ -266,11 +264,6 @@ pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Us
         .handler(handle_advance_prep_changed())
         .handler(handle_shared_to_community())
         .handler(handle_made_private())
-        .handler(handle_viewed())
-        .handler(handle_like_checked())
-        .handler(handle_like_unchecked())
-        .handler(handle_unlike_checked())
-        .handler(handle_unlike_unchecked())
 }
 
 impl<E: Executor> super::Query<E> {
@@ -537,49 +530,84 @@ async fn handle_made_private(
     Ok(())
 }
 
-#[evento::handler]
-async fn handle_viewed(_event: Event<Viewed>, data: &mut UserView) -> anyhow::Result<()> {
-    data.total_views += 1;
+pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
+    SubscriptionBuilder::new("recipe-user-query")
+        .handler(handle_viewed())
+        .handler(handle_like_checked())
+        .handler(handle_like_unchecked())
+        .handler(handle_unlike_checked())
+        .handler(handle_unlike_unchecked())
+}
+
+#[evento::subscription]
+async fn handle_viewed<E: Executor>(
+    context: &Context<'_, E>,
+    event: Event<Viewed>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    update(&pool, RecipeUser::TotalViews, true, event.data.recipe_id).await?;
 
     Ok(())
 }
 
-#[evento::handler]
-async fn handle_like_checked(
-    _event: Event<LikeChecked>,
-    data: &mut UserView,
+#[evento::subscription]
+async fn handle_like_checked<E: Executor>(
+    context: &Context<'_, E>,
+    event: Event<LikeChecked>,
 ) -> anyhow::Result<()> {
-    data.total_likes += 1;
+    let pool = context.extract::<sqlx::SqlitePool>();
+    update(&pool, RecipeUser::TotalLikes, true, event.data.recipe_id).await?;
 
     Ok(())
 }
 
-#[evento::handler]
-async fn handle_like_unchecked(
-    _event: Event<LikeUnchecked>,
-    data: &mut UserView,
+#[evento::subscription]
+async fn handle_like_unchecked<E: Executor>(
+    context: &Context<'_, E>,
+    event: Event<LikeUnchecked>,
 ) -> anyhow::Result<()> {
-    data.total_likes -= 1;
+    let pool = context.extract::<sqlx::SqlitePool>();
+    update(&pool, RecipeUser::TotalLikes, false, event.data.recipe_id).await?;
 
     Ok(())
 }
 
-#[evento::handler]
-async fn handle_unlike_checked(
-    _event: Event<UnlikeChecked>,
-    data: &mut UserView,
+#[evento::subscription]
+async fn handle_unlike_checked<E: Executor>(
+    context: &Context<'_, E>,
+    event: Event<UnlikeChecked>,
 ) -> anyhow::Result<()> {
-    data.total_likes -= 1;
+    let pool = context.extract::<sqlx::SqlitePool>();
+    update(&pool, RecipeUser::TotalLikes, false, event.data.recipe_id).await?;
 
     Ok(())
 }
 
-#[evento::handler]
-async fn handle_unlike_unchecked(
-    _event: Event<UnlikeUnchecked>,
-    data: &mut UserView,
+#[evento::subscription]
+async fn handle_unlike_unchecked<E: Executor>(
+    context: &Context<'_, E>,
+    event: Event<UnlikeUnchecked>,
 ) -> anyhow::Result<()> {
-    data.total_likes += 1;
+    let pool = context.extract::<sqlx::SqlitePool>();
+    update(&pool, RecipeUser::TotalLikes, true, event.data.recipe_id).await?;
+
+    Ok(())
+}
+
+async fn update(pool: &SqlitePool, col: RecipeUser, add: bool, id: String) -> anyhow::Result<()> {
+    let expr = if add {
+        Expr::col(col.clone()).add(1)
+    } else {
+        Expr::col(col.clone()).sub(1)
+    };
+    let statement = sea_query::Query::update()
+        .table(RecipeUser::Table)
+        .value(col, expr)
+        .and_where(Expr::col(RecipeUser::Id).eq(id))
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    sqlx::query_with(&sql, values).execute(pool).await?;
 
     Ok(())
 }

@@ -23,6 +23,7 @@ pub use update::UpdateInput;
 pub struct Command<E: Executor> {
     state: imkitchen_shared::State<E>,
     pub rating: crate::rating::Command<E>,
+    pub favorite: crate::favorite::Command<E>,
 }
 
 impl<E: Executor> Deref for Command<E> {
@@ -40,6 +41,7 @@ impl<E: Executor> Command<E> {
     {
         Self {
             rating: crate::rating::Command(state.clone()),
+            favorite: crate::favorite::Command(state.clone()),
             state,
         }
     }

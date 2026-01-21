@@ -15,9 +15,8 @@ pub use add_comment::*;
 
 use bitcode::{Decode, Encode};
 use evento::{Executor, Projection, ProjectionAggregator, metadata::Event};
-use imkitchen_shared::{
-    recipe::rating::{self, LikeChecked, LikeUnchecked, UnlikeChecked, UnlikeUnchecked, Viewed},
-    user::User,
+use imkitchen_shared::recipe::rating::{
+    self, LikeChecked, LikeUnchecked, UnlikeChecked, UnlikeUnchecked, Viewed,
 };
 
 #[derive(Clone)]
@@ -45,8 +44,7 @@ impl<E: Executor> Command<E> {
             .await
             .map(|r| {
                 r.unwrap_or_else(|| Rating {
-                    id,
-                    user_id,
+                    id: evento::hash_ids(vec![id, user_id]),
                     viewed: false,
                     liked: false,
                     unliked: false,
@@ -59,7 +57,6 @@ impl<E: Executor> Command<E> {
 #[evento::projection(Encode, Decode)]
 pub struct Rating {
     pub id: String,
-    pub user_id: String,
     pub viewed: bool,
     pub liked: bool,
     pub unliked: bool,
@@ -69,8 +66,7 @@ pub fn create_projection<E: Executor>(
     id: impl Into<String>,
     user_id: impl Into<String>,
 ) -> Projection<E, Rating> {
-    Projection::new::<rating::Rating>(id)
-        .aggregator::<User>(user_id)
+    Projection::ids::<rating::Rating>(vec![id.into(), user_id.into()])
         .handler(handle_viewed())
         .handler(handle_like_checked())
         .handler(handle_like_unchecked())
@@ -88,7 +84,6 @@ impl ProjectionAggregator for Rating {
 #[evento::handler]
 async fn handle_viewed(event: Event<Viewed>, data: &mut Rating) -> anyhow::Result<()> {
     data.id = event.aggregator_id.to_owned();
-    data.user_id = event.metadata.requested_by()?;
     data.viewed = true;
 
     Ok(())
@@ -97,7 +92,6 @@ async fn handle_viewed(event: Event<Viewed>, data: &mut Rating) -> anyhow::Resul
 #[evento::handler]
 async fn handle_like_checked(event: Event<LikeChecked>, data: &mut Rating) -> anyhow::Result<()> {
     data.id = event.aggregator_id.to_owned();
-    data.user_id = event.metadata.requested_by()?;
     data.liked = true;
     data.unliked = false;
 
@@ -120,7 +114,6 @@ async fn handle_unlike_checked(
     data: &mut Rating,
 ) -> anyhow::Result<()> {
     data.id = event.aggregator_id.to_owned();
-    data.user_id = event.metadata.requested_by()?;
     data.unliked = true;
     data.liked = false;
 

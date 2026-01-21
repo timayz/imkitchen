@@ -140,6 +140,8 @@ pub fn router(app_state: AppState) -> Router {
             "/recipes/{id}/uncheck-unlike",
             post(recipes::detail::uncheck_unlike),
         )
+        .route("/recipes/{id}/save", post(recipes::detail::save))
+        .route("/recipes/{id}/unsave", post(recipes::detail::unsave))
         .route(
             "/recipes/{id}/edit",
             get(recipes::edit::page).post(recipes::edit::action),

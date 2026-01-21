@@ -1,0 +1,17 @@
+<!-- Save Button -->
+<button id="save-btn" ts-swap-push="#save-btn" ts-req="/recipes/{{ id }}/{% if saved %}un{% endif %}save"
+  ts-req-method="post"
+  class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition ml-auto">
+  {% if saved %}
+  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+    <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
+  </svg>
+  <span class="hidden sm:inline font-semibold">{{ "Saved"|t }}</span>
+  {% else %}
+  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+      d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
+  </svg>
+  <span class="hidden sm:inline font-semibold">{{ "Save"|t }}</span>
+  {% endif %}
+</button>
