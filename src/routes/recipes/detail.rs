@@ -5,9 +5,13 @@ use axum::{
 
 use evento::cursor::{Args, ReadResult};
 use imkitchen_recipe::{
-    favorite, rating,
-    user::{RecipesQuery, UserView, UserViewList},
-    user_stat::UserStatView,
+    favorite,
+    query::{
+        self,
+        user::{RecipesQuery, SortBy, UserView, UserViewList},
+        user_stat::UserStatView,
+    },
+    rating,
 };
 use imkitchen_shared::recipe::{IngredientUnitFormat, RecipeType};
 
@@ -50,6 +54,7 @@ pub struct DetailTemplate {
     pub stat: UserStatView,
     pub rating: rating::Rating,
     pub favorite: favorite::Favorite,
+    pub user_comment: Option<query::comment::CommentView>,
     pub cook_recipes: ReadResult<UserViewList>,
     pub similar_recipes: ReadResult<UserViewList>,
 }
@@ -65,6 +70,7 @@ impl Default for DetailTemplate {
             similar_recipes: Default::default(),
             rating: Default::default(),
             favorite: Default::default(),
+            user_comment: Default::default(),
         }
     }
 }
@@ -94,6 +100,12 @@ pub async fn page(
         crate::try_page_response!(app.recipe_cmd.favorite.load(&recipe.id, &user.id), template)
             .to_owned();
 
+    let user_comment = crate::try_page_response!(
+        app.recipe_query
+            .comment(&recipe.id, &user.id, None::<String>),
+        template
+    );
+
     let exclude_ids = vec![recipe.id.to_owned()];
 
     let cook_recipes = crate::try_page_response!(
@@ -105,7 +117,7 @@ pub async fn page(
             is_shared: Some(true),
             dietary_restrictions: vec![],
             dietary_where_any: false,
-            sort_by: imkitchen_recipe::user::SortBy::RecentlyAdded,
+            sort_by: SortBy::RecentlyAdded,
             args: Args::forward(2, None),
         }),
         template
@@ -128,7 +140,7 @@ pub async fn page(
             is_shared: Some(true),
             dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
             dietary_where_any: false,
-            sort_by: imkitchen_recipe::user::SortBy::RecentlyAdded,
+            sort_by: SortBy::RecentlyAdded,
             args: Args::forward(6, None),
         }),
         template
@@ -151,7 +163,7 @@ pub async fn page(
                 is_shared: Some(true),
                 dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
                 dietary_where_any: true,
-                sort_by: imkitchen_recipe::user::SortBy::RecentlyAdded,
+                sort_by: SortBy::RecentlyAdded,
                 args: Args::forward(6, None),
             }),
             template
@@ -177,7 +189,7 @@ pub async fn page(
                 is_shared: Some(true),
                 dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
                 dietary_where_any: false,
-                sort_by: imkitchen_recipe::user::SortBy::RecentlyAdded,
+                sort_by: SortBy::RecentlyAdded,
                 args: Args::forward(6, None),
             }),
             template
@@ -203,7 +215,33 @@ pub async fn page(
                 is_shared: Some(true),
                 dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
                 dietary_where_any: true,
-                sort_by: imkitchen_recipe::user::SortBy::RecentlyAdded,
+                sort_by: SortBy::RecentlyAdded,
+                args: Args::forward(6, None),
+            }),
+            template
+        );
+
+        similar_recipes.edges.extend(more_recipes.edges);
+    }
+
+    if similar_recipes.edges.len() < 6 {
+        let mut similar_ids = similar_recipes
+            .edges
+            .iter()
+            .map(|n| n.node.id.to_owned())
+            .collect::<Vec<_>>();
+        similar_ids.extend(exclude_ids.to_vec());
+
+        let more_recipes = crate::try_page_response!(
+            app.recipe_query.filter_user(RecipesQuery {
+                exclude_ids: Some(similar_ids),
+                user_id: None,
+                recipe_type: Some(recipe.recipe_type.0.to_owned()),
+                cuisine_type: None,
+                is_shared: Some(true),
+                dietary_restrictions: vec![],
+                dietary_where_any: false,
+                sort_by: SortBy::RecentlyAdded,
                 args: Args::forward(6, None),
             }),
             template
@@ -224,12 +262,12 @@ pub async fn page(
             app.recipe_query.filter_user(RecipesQuery {
                 exclude_ids: Some(similar_ids),
                 user_id: None,
-                recipe_type: Some(recipe.recipe_type.0.to_owned()),
-                cuisine_type: None,
+                cuisine_type: Some(recipe.cuisine_type.0.to_owned()),
+                recipe_type: None,
                 is_shared: Some(true),
                 dietary_restrictions: vec![],
                 dietary_where_any: false,
-                sort_by: imkitchen_recipe::user::SortBy::RecentlyAdded,
+                sort_by: SortBy::RecentlyAdded,
                 args: Args::forward(6, None),
             }),
             template
@@ -247,6 +285,7 @@ pub async fn page(
             similar_recipes,
             rating,
             favorite,
+            user_comment,
             ..Default::default()
         })
         .into_response()

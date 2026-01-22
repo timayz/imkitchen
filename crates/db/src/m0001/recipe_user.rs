@@ -156,7 +156,7 @@ pub struct CreateIdx1;
 
 fn create_idx_1() -> IndexCreateStatement {
     Index::create()
-        .name("idx_recipe_list_6jagKS")
+        .name("idx_recipe_user_6jagKS")
         .table(RecipeUser::Table)
         .col(RecipeUser::OwnerId)
         .col(RecipeUser::CuisineType)
@@ -165,7 +165,7 @@ fn create_idx_1() -> IndexCreateStatement {
 
 fn drop_idx_1() -> IndexDropStatement {
     Index::drop()
-        .name("idx_recipe_list_6jagKS")
+        .name("idx_recipe_user_6jagKS")
         .table(RecipeUser::Table)
         .to_owned()
 }
@@ -197,7 +197,7 @@ pub struct CreateIdx2;
 
 fn create_idx_2() -> IndexCreateStatement {
     Index::create()
-        .name("idx_recipe_list_FctFNN")
+        .name("idx_recipe_user_FctFNN")
         .table(RecipeUser::Table)
         .col(RecipeUser::OwnerId)
         .col(RecipeUser::RecipeType)
@@ -206,7 +206,7 @@ fn create_idx_2() -> IndexCreateStatement {
 
 fn drop_idx_2() -> IndexDropStatement {
     Index::drop()
-        .name("idx_recipe_list_FctFNN")
+        .name("idx_recipe_user_FctFNN")
         .table(RecipeUser::Table)
         .to_owned()
 }
@@ -237,7 +237,7 @@ pub struct CreateIdx3;
 
 fn create_idx_3() -> IndexCreateStatement {
     Index::create()
-        .name("idx_recipe_list_KSDt5k")
+        .name("idx_recipe_user_KSDt5k")
         .table(RecipeUser::Table)
         .col(RecipeUser::OwnerId)
         .to_owned()
@@ -245,7 +245,7 @@ fn create_idx_3() -> IndexCreateStatement {
 
 fn drop_idx_3() -> IndexDropStatement {
     Index::drop()
-        .name("idx_recipe_list_KSDt5k")
+        .name("idx_recipe_user_KSDt5k")
         .table(RecipeUser::Table)
         .to_owned()
 }
@@ -277,7 +277,7 @@ pub struct CreateIdx4;
 
 fn create_idx_4() -> IndexCreateStatement {
     Index::create()
-        .name("idx_recipe_list_QJBhvl")
+        .name("idx_recipe_user_QJBhvl")
         .table(RecipeUser::Table)
         .col(RecipeUser::IsShared)
         .col(RecipeUser::CuisineType)
@@ -286,7 +286,7 @@ fn create_idx_4() -> IndexCreateStatement {
 
 fn drop_idx_4() -> IndexDropStatement {
     Index::drop()
-        .name("idx_recipe_list_QJBhvl")
+        .name("idx_recipe_user_QJBhvl")
         .table(RecipeUser::Table)
         .to_owned()
 }
@@ -318,7 +318,7 @@ pub struct CreateIdx5;
 
 fn create_idx_5() -> IndexCreateStatement {
     Index::create()
-        .name("idx_recipe_list_kXJfAR")
+        .name("idx_recipe_user_kXJfAR")
         .table(RecipeUser::Table)
         .col(RecipeUser::IsShared)
         .col(RecipeUser::RecipeType)
@@ -327,7 +327,7 @@ fn create_idx_5() -> IndexCreateStatement {
 
 fn drop_idx_5() -> IndexDropStatement {
     Index::drop()
-        .name("idx_recipe_list_kXJfAR")
+        .name("idx_recipe_user_kXJfAR")
         .table(RecipeUser::Table)
         .to_owned()
 }
@@ -359,7 +359,7 @@ pub struct CreateIdx6;
 
 fn create_idx_6() -> IndexCreateStatement {
     Index::create()
-        .name("idx_recipe_list_P4CTqO")
+        .name("idx_recipe_user_P4CTqO")
         .table(RecipeUser::Table)
         .col(RecipeUser::IsShared)
         .to_owned()
@@ -367,7 +367,7 @@ fn create_idx_6() -> IndexCreateStatement {
 
 fn drop_idx_6() -> IndexDropStatement {
     Index::drop()
-        .name("idx_recipe_list_P4CTqO")
+        .name("idx_recipe_user_P4CTqO")
         .table(RecipeUser::Table)
         .to_owned()
 }
