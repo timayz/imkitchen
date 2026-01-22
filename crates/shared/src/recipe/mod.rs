@@ -1,3 +1,5 @@
+pub mod comment;
+pub mod comment_rating;
 pub mod favorite;
 pub mod rating;
 

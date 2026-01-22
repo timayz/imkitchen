@@ -1,6 +1,5 @@
-use evento::{Executor, ProjectionAggregator};
-use imkitchen_shared::recipe::rating::CommentAdded;
-use ulid::Ulid;
+use evento::Executor;
+use imkitchen_shared::recipe::comment::Added;
 use validator::Validate;
 
 #[derive(Validate)]
@@ -18,11 +17,9 @@ impl<E: Executor> super::Command<E> {
     ) -> imkitchen_shared::Result<()> {
         //@TODO: check spam
         let user_id = user_id.into();
-        let rating = self.load(id, &user_id).await?;
-        rating
-            .aggregator()?
-            .event(&CommentAdded {
-                id: Ulid::new().to_string(),
+        evento::create()
+            .event(&Added {
+                recipe_id: id.into(),
                 message: input.message,
                 reply_to: input.reply_to,
             })
