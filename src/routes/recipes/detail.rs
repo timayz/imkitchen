@@ -1,15 +1,23 @@
 use axum::{
-    extract::{Path, State},
+    Form,
+    extract::{Path, Query, State},
     response::{IntoResponse, Redirect},
 };
 
-use evento::cursor::{Args, ReadResult};
+use evento::cursor::{self, Args, ReadResult};
 use imkitchen_recipe::{
-    favorite, rating,
-    user::{RecipesQuery, UserView, UserViewList},
-    user_stat::UserStatView,
+    comment::AddCommentInput,
+    favorite,
+    query::{
+        self,
+        comment::{CommentView, CommentsQuery},
+        user::{RecipesQuery, SortBy, UserView, UserViewList},
+        user_stat::UserStatView,
+    },
+    rating,
 };
 use imkitchen_shared::recipe::{IngredientUnitFormat, RecipeType};
+use serde::Deserialize;
 
 use crate::{
     auth::AuthUser,
@@ -43,18 +51,20 @@ pub struct DeleteButtonTemplate<'a> {
 
 #[derive(askama::Template)]
 #[template(path = "recipes-detail.html")]
-pub struct DetailTemplate {
+pub struct DetailTemplate<'a> {
     pub current_path: String,
     pub user: AuthUser,
+    pub username: &'a str,
     pub recipe: UserView,
     pub stat: UserStatView,
     pub rating: rating::Rating,
     pub favorite: favorite::Favorite,
+    pub user_comment: Option<query::comment::CommentView>,
     pub cook_recipes: ReadResult<UserViewList>,
     pub similar_recipes: ReadResult<UserViewList>,
 }
 
-impl Default for DetailTemplate {
+impl<'a> Default for DetailTemplate<'a> {
     fn default() -> Self {
         Self {
             current_path: "recipes".to_owned(),
@@ -65,6 +75,8 @@ impl Default for DetailTemplate {
             similar_recipes: Default::default(),
             rating: Default::default(),
             favorite: Default::default(),
+            user_comment: Default::default(),
+            username: "john_doe",
         }
     }
 }
@@ -94,6 +106,9 @@ pub async fn page(
         crate::try_page_response!(app.recipe_cmd.favorite.load(&recipe.id, &user.id), template)
             .to_owned();
 
+    let user_comment =
+        crate::try_page_response!(app.recipe_query.comment(&recipe.id, &user.id), template);
+
     let exclude_ids = vec![recipe.id.to_owned()];
 
     let cook_recipes = crate::try_page_response!(
@@ -105,7 +120,7 @@ pub async fn page(
             is_shared: Some(true),
             dietary_restrictions: vec![],
             dietary_where_any: false,
-            sort_by: imkitchen_recipe::user::SortBy::RecentlyAdded,
+            sort_by: SortBy::RecentlyAdded,
             args: Args::forward(2, None),
         }),
         template
@@ -128,7 +143,7 @@ pub async fn page(
             is_shared: Some(true),
             dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
             dietary_where_any: false,
-            sort_by: imkitchen_recipe::user::SortBy::RecentlyAdded,
+            sort_by: SortBy::RecentlyAdded,
             args: Args::forward(6, None),
         }),
         template
@@ -151,7 +166,7 @@ pub async fn page(
                 is_shared: Some(true),
                 dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
                 dietary_where_any: true,
-                sort_by: imkitchen_recipe::user::SortBy::RecentlyAdded,
+                sort_by: SortBy::RecentlyAdded,
                 args: Args::forward(6, None),
             }),
             template
@@ -177,7 +192,7 @@ pub async fn page(
                 is_shared: Some(true),
                 dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
                 dietary_where_any: false,
-                sort_by: imkitchen_recipe::user::SortBy::RecentlyAdded,
+                sort_by: SortBy::RecentlyAdded,
                 args: Args::forward(6, None),
             }),
             template
@@ -203,7 +218,33 @@ pub async fn page(
                 is_shared: Some(true),
                 dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
                 dietary_where_any: true,
-                sort_by: imkitchen_recipe::user::SortBy::RecentlyAdded,
+                sort_by: SortBy::RecentlyAdded,
+                args: Args::forward(6, None),
+            }),
+            template
+        );
+
+        similar_recipes.edges.extend(more_recipes.edges);
+    }
+
+    if similar_recipes.edges.len() < 6 {
+        let mut similar_ids = similar_recipes
+            .edges
+            .iter()
+            .map(|n| n.node.id.to_owned())
+            .collect::<Vec<_>>();
+        similar_ids.extend(exclude_ids.to_vec());
+
+        let more_recipes = crate::try_page_response!(
+            app.recipe_query.filter_user(RecipesQuery {
+                exclude_ids: Some(similar_ids),
+                user_id: None,
+                recipe_type: Some(recipe.recipe_type.0.to_owned()),
+                cuisine_type: None,
+                is_shared: Some(true),
+                dietary_restrictions: vec![],
+                dietary_where_any: false,
+                sort_by: SortBy::RecentlyAdded,
                 args: Args::forward(6, None),
             }),
             template
@@ -224,12 +265,12 @@ pub async fn page(
             app.recipe_query.filter_user(RecipesQuery {
                 exclude_ids: Some(similar_ids),
                 user_id: None,
-                recipe_type: Some(recipe.recipe_type.0.to_owned()),
-                cuisine_type: None,
+                cuisine_type: Some(recipe.cuisine_type.0.to_owned()),
+                recipe_type: None,
                 is_shared: Some(true),
                 dietary_restrictions: vec![],
                 dietary_where_any: false,
-                sort_by: imkitchen_recipe::user::SortBy::RecentlyAdded,
+                sort_by: SortBy::RecentlyAdded,
                 args: Args::forward(6, None),
             }),
             template
@@ -237,6 +278,8 @@ pub async fn page(
 
         similar_recipes.edges.extend(more_recipes.edges);
     }
+
+    let username = user.username();
 
     template
         .render(DetailTemplate {
@@ -247,6 +290,8 @@ pub async fn page(
             similar_recipes,
             rating,
             favorite,
+            user_comment,
+            username: username.as_str(),
             ..Default::default()
         })
         .into_response()
@@ -534,5 +579,135 @@ pub async fn unsave(
         [("ts-swap", "skip")],
         template.render(SaveButtonTemplate { id, saved: false }),
     )
+        .into_response()
+}
+
+#[derive(askama::Template)]
+#[template(path = "partials/recipes-add-comment-btn.html")]
+pub struct AddCommentBtnTemplate<'a> {
+    pub id: &'a str,
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn add_comment_btn(
+    template: Template,
+    user: AuthUser,
+    Path((id,)): Path<(String,)>,
+) -> impl IntoResponse {
+    template
+        .render(AddCommentBtnTemplate { id: &id })
+        .into_response()
+}
+
+#[derive(askama::Template)]
+#[template(path = "partials/recipes-add-comment-form.html")]
+pub struct AddCommentFormTemplate<'a> {
+    pub id: &'a str,
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn add_comment_form(
+    template: Template,
+    user: AuthUser,
+    Path((id,)): Path<(String,)>,
+) -> impl IntoResponse {
+    template
+        .render(AddCommentFormTemplate { id: &id })
+        .into_response()
+}
+
+#[derive(askama::Template)]
+#[template(path = "partials/recipes-add-comment.html")]
+pub struct AddCommentTemplate<'a> {
+    pub username: &'a str,
+    pub body: &'a str,
+    pub created_at: &'a u64,
+}
+
+#[derive(Deserialize, Default, Clone)]
+pub struct AddCommentForm {
+    pub body: String,
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn add_comment_action(
+    template: Template,
+    State(app): State<AppState>,
+    user: AuthUser,
+    Path((id,)): Path<(String,)>,
+    Form(input): Form<AddCommentForm>,
+) -> impl IntoResponse {
+    let Some(ref username) = user.username else {
+        return (
+            [("ts-swap", "skip")],
+            template.render(SetUsernameModalTemplate),
+        )
+            .into_response();
+    };
+
+    crate::try_response!(
+        app.recipe_cmd.comment.add(
+            &id,
+            &user.id,
+            AddCommentInput {
+                body: input.body.to_owned(),
+                owner_name: username.to_owned(),
+            }
+        ),
+        template
+    );
+
+    let created_at = time::UtcDateTime::now().unix_timestamp() as u64;
+
+    template
+        .render(AddCommentTemplate {
+            username,
+            body: input.body.as_str(),
+            created_at: &created_at,
+        })
+        .into_response()
+}
+
+#[derive(Deserialize, Default, Clone)]
+pub struct PageQuery {
+    pub first: Option<u16>,
+    pub after: Option<cursor::Value>,
+    pub last: Option<u16>,
+    pub before: Option<cursor::Value>,
+}
+
+#[derive(askama::Template)]
+#[template(path = "partials/recipes-comments.html")]
+pub struct CommentsTemplate {
+    pub comments: ReadResult<CommentView>,
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn comments(
+    template: Template,
+    user: AuthUser,
+    Query(query): Query<PageQuery>,
+    State(app): State<AppState>,
+    Path((id,)): Path<(String,)>,
+) -> impl IntoResponse {
+    let args = Args {
+        first: query.first,
+        after: query.after,
+        last: query.last,
+        before: query.before,
+    };
+
+    let comments = crate::try_page_response!(
+        app.recipe_query.filter_comment(CommentsQuery {
+            recipe_id: id,
+            reply_to: None,
+            exclude_owner: Some(user.id.to_owned()),
+            args: args.limit(20),
+        }),
+        template
+    );
+
+    template
+        .render(CommentsTemplate { comments })
         .into_response()
 }

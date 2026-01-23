@@ -30,6 +30,51 @@ pub(crate) mod filters {
     }
 
     #[askama::filter_fn]
+    pub fn initials(value: &str, _values: &dyn askama::Values) -> askama::Result<String> {
+        let parts: Vec<&str> = value.split(['_', ' ']).collect();
+
+        let first = parts.first().and_then(|s| s.chars().next());
+        let last = if parts.len() > 1 {
+            parts.last().and_then(|s| s.chars().next())
+        } else {
+            None
+        };
+
+        Ok([first, last]
+            .into_iter()
+            .flatten()
+            .map(|c| c.to_ascii_uppercase())
+            .collect())
+    }
+
+    #[askama::filter_fn]
+    pub fn bg_color(value: &str, _values: &dyn askama::Values) -> askama::Result<&'static str> {
+        let hash: u32 = value.chars().fold(0, |acc, c| acc.wrapping_add(c as u32));
+
+        const COLORS: &[&str] = &[
+            "bg-red-500 text-white",
+            "bg-orange-500 text-white",
+            "bg-amber-500 text-black",
+            "bg-yellow-500 text-black",
+            "bg-lime-500 text-black",
+            "bg-green-500 text-white",
+            "bg-emerald-500 text-white",
+            "bg-teal-500 text-white",
+            "bg-cyan-500 text-black",
+            "bg-sky-500 text-white",
+            "bg-blue-500 text-white",
+            "bg-indigo-500 text-white",
+            "bg-violet-500 text-white",
+            "bg-purple-500 text-white",
+            "bg-fuchsia-500 text-white",
+            "bg-pink-500 text-white",
+            "bg-rose-500 text-white",
+        ];
+
+        Ok(COLORS[hash as usize % COLORS.len()])
+    }
+
+    #[askama::filter_fn]
     pub fn date(value: &u64, values: &dyn askama::Values) -> askama::Result<String> {
         let preferred_language = askama::get_value::<String>(values, "preferred_language")
             .expect("Unable to get preferred_language from askama::get_value");

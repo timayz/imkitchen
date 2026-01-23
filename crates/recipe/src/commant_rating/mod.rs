@@ -2,12 +2,11 @@ mod check_like;
 mod check_unlike;
 mod uncheck_like;
 mod uncheck_unlike;
-mod view;
 
 use bitcode::{Decode, Encode};
 use evento::{Executor, Projection, ProjectionAggregator, metadata::Event};
-use imkitchen_shared::recipe::rating::{
-    self, LikeChecked, LikeUnchecked, UnlikeChecked, UnlikeUnchecked, Viewed,
+use imkitchen_shared::recipe::comment_rating::{
+    self, LikeChecked, LikeUnchecked, UnlikeChecked, UnlikeUnchecked,
 };
 use std::ops::Deref;
 
@@ -27,7 +26,7 @@ impl<E: Executor> Command<E> {
         &self,
         id: impl Into<String>,
         user_id: impl Into<String>,
-    ) -> anyhow::Result<Rating> {
+    ) -> anyhow::Result<CommentRating> {
         let id = id.into();
         let user_id = user_id.into();
 
@@ -35,9 +34,8 @@ impl<E: Executor> Command<E> {
             .execute(&self.executor)
             .await
             .map(|r| {
-                r.unwrap_or_else(|| Rating {
+                r.unwrap_or_else(|| CommentRating {
                     id: evento::hash_ids(vec![id, user_id]),
-                    viewed: false,
                     liked: false,
                     unliked: false,
                     cursor: Default::default(),
@@ -47,9 +45,8 @@ impl<E: Executor> Command<E> {
 }
 
 #[evento::projection(Encode, Decode)]
-pub struct Rating {
+pub struct CommentRating {
     pub id: String,
-    pub viewed: bool,
     pub liked: bool,
     pub unliked: bool,
 }
@@ -57,9 +54,8 @@ pub struct Rating {
 pub fn create_projection<E: Executor>(
     id: impl Into<String>,
     user_id: impl Into<String>,
-) -> Projection<E, Rating> {
-    Projection::ids::<rating::Rating>(vec![id.into(), user_id.into()])
-        .handler(handle_viewed())
+) -> Projection<E, CommentRating> {
+    Projection::ids::<comment_rating::CommentRating>(vec![id.into(), user_id.into()])
         .handler(handle_like_checked())
         .handler(handle_like_unchecked())
         .handler(handle_unlike_checked())
@@ -67,22 +63,17 @@ pub fn create_projection<E: Executor>(
         .safety_check()
 }
 
-impl ProjectionAggregator for Rating {
+impl ProjectionAggregator for CommentRating {
     fn aggregator_id(&self) -> String {
         self.id.to_owned()
     }
 }
 
 #[evento::handler]
-async fn handle_viewed(event: Event<Viewed>, data: &mut Rating) -> anyhow::Result<()> {
-    data.id = event.aggregator_id.to_owned();
-    data.viewed = true;
-
-    Ok(())
-}
-
-#[evento::handler]
-async fn handle_like_checked(event: Event<LikeChecked>, data: &mut Rating) -> anyhow::Result<()> {
+async fn handle_like_checked(
+    event: Event<LikeChecked>,
+    data: &mut CommentRating,
+) -> anyhow::Result<()> {
     data.id = event.aggregator_id.to_owned();
     data.liked = true;
     data.unliked = false;
@@ -93,7 +84,7 @@ async fn handle_like_checked(event: Event<LikeChecked>, data: &mut Rating) -> an
 #[evento::handler]
 async fn handle_like_unchecked(
     _event: Event<LikeUnchecked>,
-    data: &mut Rating,
+    data: &mut CommentRating,
 ) -> anyhow::Result<()> {
     data.liked = false;
 
@@ -103,7 +94,7 @@ async fn handle_like_unchecked(
 #[evento::handler]
 async fn handle_unlike_checked(
     event: Event<UnlikeChecked>,
-    data: &mut Rating,
+    data: &mut CommentRating,
 ) -> anyhow::Result<()> {
     data.id = event.aggregator_id.to_owned();
     data.unliked = true;
@@ -115,7 +106,7 @@ async fn handle_unlike_checked(
 #[evento::handler]
 async fn handle_unlike_unchecked(
     _event: Event<UnlikeUnchecked>,
-    data: &mut Rating,
+    data: &mut CommentRating,
 ) -> anyhow::Result<()> {
     data.unliked = false;
 

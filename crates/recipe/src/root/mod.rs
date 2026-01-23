@@ -24,6 +24,8 @@ pub struct Command<E: Executor> {
     state: imkitchen_shared::State<E>,
     pub rating: crate::rating::Command<E>,
     pub favorite: crate::favorite::Command<E>,
+    pub comment: crate::comment::Command<E>,
+    pub comment_rating: crate::commant_rating::Command<E>,
 }
 
 impl<E: Executor> Deref for Command<E> {
@@ -42,6 +44,8 @@ impl<E: Executor> Command<E> {
         Self {
             rating: crate::rating::Command(state.clone()),
             favorite: crate::favorite::Command(state.clone()),
+            comment_rating: crate::commant_rating::Command(state.clone()),
+            comment: crate::comment::Command(state.clone()),
             state,
         }
     }
