@@ -63,7 +63,6 @@ async fn handle_comment_added<E: Executor>(
         &w,
         &event.data.recipe_id,
         event.metadata.requested_by()?,
-        event.data.reply_to,
     )
     .await?;
     Ok(())

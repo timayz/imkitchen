@@ -28,8 +28,8 @@ pub struct CommentView {
     pub id: String,
     pub recipe_id: String,
     pub owner_id: String,
-    pub owner_name: Option<String>,
-    pub replay_to: Option<String>,
+    pub owner_name: String,
+    pub reply_to: Option<String>,
     pub body: String,
     pub total_likes: i64,
     #[cursor(RecipeComment::CreatedAt, 2)]
@@ -45,7 +45,7 @@ impl CommentView {
 
 pub struct CommentsQuery {
     pub recipe_id: String,
-    pub replay_to: Option<String>,
+    pub reply_to: Option<String>,
     pub exclude_owner: Option<String>,
     pub args: Args,
 }
@@ -64,14 +64,15 @@ impl<E: Executor> super::Query<E> {
                 RecipeComment::ReplyTo,
                 RecipeComment::OwnerName,
                 RecipeComment::Body,
+                RecipeComment::TotalLikes,
                 RecipeComment::CreatedAt,
                 RecipeComment::UpdatedAt,
             ])
             .from(RecipeComment::Table)
             .to_owned();
 
-        if let Some(replay_to) = query.replay_to {
-            statement.and_where(Expr::col(RecipeComment::ReplyTo).eq(replay_to));
+        if let Some(reply_to) = query.reply_to {
+            statement.and_where(Expr::col(RecipeComment::ReplyTo).eq(reply_to));
         } else {
             statement.and_where(Expr::col(RecipeComment::RecipeId).eq(query.recipe_id));
         }
@@ -101,6 +102,7 @@ async fn find_comment(
             RecipeComment::OwnerId,
             RecipeComment::OwnerName,
             RecipeComment::Body,
+            RecipeComment::TotalLikes,
             RecipeComment::CreatedAt,
             RecipeComment::UpdatedAt,
         ])
@@ -125,7 +127,6 @@ impl<E: Executor> super::Query<E> {
         &self,
         recipe_id: impl Into<String>,
         user_id: impl Into<String>,
-        reply_to: Option<impl Into<String>>,
     ) -> Result<Option<CommentView>, anyhow::Error> {
         load(
             &self.executor,
@@ -133,7 +134,6 @@ impl<E: Executor> super::Query<E> {
             &self.write_db,
             recipe_id,
             user_id,
-            reply_to,
         )
         .await
     }
@@ -145,7 +145,6 @@ pub(crate) async fn load<E: Executor>(
     write_db: &SqlitePool,
     recipe_id: impl Into<String>,
     user_id: impl Into<String>,
-    reply_to: Option<impl Into<String>>,
 ) -> Result<Option<CommentView>, anyhow::Error> {
     // let id = id.into();
     //
@@ -153,16 +152,10 @@ pub(crate) async fn load<E: Executor>(
     //     return Ok(None);
     // }
 
-    let reply_to = reply_to.map(|r| r.into());
-
-    create_projection(vec![
-        recipe_id.into(),
-        user_id.into(),
-        reply_to.unwrap_or_default(),
-    ])
-    .data((read_db.clone(), write_db.clone()))
-    .execute(executor)
-    .await
+    create_projection(vec![recipe_id.into(), user_id.into()])
+        .data((read_db.clone(), write_db.clone()))
+        .execute(executor)
+        .await
 }
 
 impl<E: Executor> Snapshot<E> for CommentView {
@@ -181,6 +174,7 @@ impl<E: Executor> Snapshot<E> for CommentView {
             .into_table(RecipeComment::Table)
             .columns([
                 RecipeComment::Id,
+                RecipeComment::RecipeId,
                 RecipeComment::ReplyTo,
                 RecipeComment::Cursor,
                 RecipeComment::OwnerId,
@@ -192,7 +186,8 @@ impl<E: Executor> Snapshot<E> for CommentView {
             ])
             .values([
                 self.id.to_owned().into(),
-                self.replay_to.to_owned().into(),
+                self.recipe_id.to_owned().into(),
+                self.reply_to.to_owned().into(),
                 self.cursor.to_owned().into(),
                 self.owner_id.to_owned().into(),
                 self.owner_name.to_owned().into(),
@@ -204,6 +199,7 @@ impl<E: Executor> Snapshot<E> for CommentView {
             .on_conflict(
                 OnConflict::column(RecipeComment::Id)
                     .update_columns([
+                        RecipeComment::RecipeId,
                         RecipeComment::ReplyTo,
                         RecipeComment::Cursor,
                         RecipeComment::OwnerId,
@@ -231,7 +227,6 @@ async fn handle_added(event: Event<Added>, data: &mut CommentView) -> anyhow::Re
     data.recipe_id = event.data.recipe_id.to_owned();
     data.created_at = event.timestamp;
     data.id = event.aggregator_id.to_owned();
-    data.replay_to = event.data.reply_to.to_owned();
     data.body = event.data.body;
 
     Ok(())

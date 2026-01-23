@@ -39,6 +39,7 @@ fn create_table() -> TableCreateStatement {
         .col(
             ColumnDef::new(RecipeComment::OwnerName)
                 .string()
+                .not_null()
                 .string_len(15),
         )
         .col(

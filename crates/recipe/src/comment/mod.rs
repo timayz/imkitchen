@@ -1,11 +1,11 @@
 mod add;
 
-pub use add::*;
-
 use bitcode::{Decode, Encode};
 use evento::{Executor, Projection, ProjectionAggregator, metadata::Event};
 use imkitchen_shared::recipe::comment::{self, Added};
 use std::ops::Deref;
+
+pub use add::AddCommentInput;
 
 #[derive(Clone)]
 pub struct Command<E: Executor>(pub(crate) imkitchen_shared::State<E>);

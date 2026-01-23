@@ -1,10 +1,12 @@
 use axum::{
+    Form,
     extract::{Path, State},
     response::{IntoResponse, Redirect},
 };
 
 use evento::cursor::{Args, ReadResult};
 use imkitchen_recipe::{
+    comment::AddCommentInput,
     favorite,
     query::{
         self,
@@ -14,6 +16,7 @@ use imkitchen_recipe::{
     rating,
 };
 use imkitchen_shared::recipe::{IngredientUnitFormat, RecipeType};
+use serde::Deserialize;
 
 use crate::{
     auth::AuthUser,
@@ -47,9 +50,10 @@ pub struct DeleteButtonTemplate<'a> {
 
 #[derive(askama::Template)]
 #[template(path = "recipes-detail.html")]
-pub struct DetailTemplate {
+pub struct DetailTemplate<'a> {
     pub current_path: String,
     pub user: AuthUser,
+    pub username: &'a str,
     pub recipe: UserView,
     pub stat: UserStatView,
     pub rating: rating::Rating,
@@ -59,7 +63,7 @@ pub struct DetailTemplate {
     pub similar_recipes: ReadResult<UserViewList>,
 }
 
-impl Default for DetailTemplate {
+impl<'a> Default for DetailTemplate<'a> {
     fn default() -> Self {
         Self {
             current_path: "recipes".to_owned(),
@@ -71,6 +75,7 @@ impl Default for DetailTemplate {
             rating: Default::default(),
             favorite: Default::default(),
             user_comment: Default::default(),
+            username: "john_doe",
         }
     }
 }
@@ -100,11 +105,8 @@ pub async fn page(
         crate::try_page_response!(app.recipe_cmd.favorite.load(&recipe.id, &user.id), template)
             .to_owned();
 
-    let user_comment = crate::try_page_response!(
-        app.recipe_query
-            .comment(&recipe.id, &user.id, None::<String>),
-        template
-    );
+    let user_comment =
+        crate::try_page_response!(app.recipe_query.comment(&recipe.id, &user.id), template);
 
     let exclude_ids = vec![recipe.id.to_owned()];
 
@@ -276,6 +278,8 @@ pub async fn page(
         similar_recipes.edges.extend(more_recipes.edges);
     }
 
+    let username = user.username();
+
     template
         .render(DetailTemplate {
             user,
@@ -286,6 +290,7 @@ pub async fn page(
             rating,
             favorite,
             user_comment,
+            username: username.as_str(),
             ..Default::default()
         })
         .into_response()
@@ -573,5 +578,91 @@ pub async fn unsave(
         [("ts-swap", "skip")],
         template.render(SaveButtonTemplate { id, saved: false }),
     )
+        .into_response()
+}
+
+#[derive(askama::Template)]
+#[template(path = "partials/recipes-add-comment-btn.html")]
+pub struct AddCommentBtnTemplate<'a> {
+    pub id: &'a str,
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn add_comment_btn(
+    template: Template,
+    user: AuthUser,
+    Path((id,)): Path<(String,)>,
+) -> impl IntoResponse {
+    template
+        .render(AddCommentBtnTemplate { id: &id })
+        .into_response()
+}
+
+#[derive(askama::Template)]
+#[template(path = "partials/recipes-add-comment-form.html")]
+pub struct AddCommentFormTemplate<'a> {
+    pub id: &'a str,
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn add_comment_form(
+    template: Template,
+    user: AuthUser,
+    Path((id,)): Path<(String,)>,
+) -> impl IntoResponse {
+    template
+        .render(AddCommentFormTemplate { id: &id })
+        .into_response()
+}
+
+#[derive(askama::Template)]
+#[template(path = "partials/recipes-add-comment.html")]
+pub struct AddCommentTemplate<'a> {
+    pub username: &'a str,
+    pub body: &'a str,
+    pub created_at: &'a u64,
+}
+
+#[derive(Deserialize, Default, Clone)]
+pub struct AddCommentForm {
+    pub body: String,
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn add_comment_action(
+    template: Template,
+    State(app): State<AppState>,
+    user: AuthUser,
+    Path((id,)): Path<(String,)>,
+    Form(input): Form<AddCommentForm>,
+) -> impl IntoResponse {
+    let Some(ref username) = user.username else {
+        return (
+            [("ts-swap", "skip")],
+            template.render(SetUsernameModalTemplate),
+        )
+            .into_response();
+    };
+
+    crate::try_response!(
+        app.recipe_cmd.comment.add(
+            &id,
+            &user.id,
+            AddCommentInput {
+                body: input.body.to_owned(),
+                owner_name: username.to_owned(),
+            }
+        ),
+        template
+    );
+
+    let created_at = time::UtcDateTime::now().unix_timestamp() as u64;
+
+    template
+        .render(AddCommentTemplate {
+            username,
+            body: input.body.as_str(),
+            created_at: &created_at,
+        })
         .into_response()
 }

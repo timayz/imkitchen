@@ -146,6 +146,14 @@ pub fn router(app_state: AppState) -> Router {
             "/recipes/{id}/edit",
             get(recipes::edit::page).post(recipes::edit::action),
         )
+        .route(
+            "/recipes/{id}/add-comment",
+            get(recipes::detail::add_comment_form).post(recipes::detail::add_comment_action),
+        )
+        .route(
+            "/recipes/{id}/add-comment-btn",
+            get(recipes::detail::add_comment_btn),
+        )
         .route("/recipes/{id}", get(recipes::detail::page))
         .route(
             "/recipes/_edit/ingredient-row",
