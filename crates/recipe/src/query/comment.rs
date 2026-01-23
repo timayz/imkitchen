@@ -78,7 +78,7 @@ impl<E: Executor> super::Query<E> {
         }
 
         if let Some(owner_id) = query.exclude_owner {
-            statement.and_where(Expr::col(RecipeComment::OwnerName).not_equals(owner_id));
+            statement.and_where(Expr::col(RecipeComment::OwnerId).not_equals(owner_id));
         }
 
         Reader::new(statement)

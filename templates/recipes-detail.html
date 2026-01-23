@@ -306,7 +306,9 @@
         </div>
       </div>
       <!-- Comments Section (YouTube Style) -->
-      <div class="bg-white rounded-xl shadow-lg p-4 md:p-6">
+      <div ts-trigger="visible once" ts-req="/recipes/{{ recipe.id }}/comments"
+        ts-req-selector="children #comments-list" ts-swap="append" ts-target="#comments-list"
+        class="bg-white rounded-xl shadow-lg p-4 md:p-6">
         <div class="flex items-center justify-between mb-6">
           <h2 class="text-xl font-bold">{{ recipe.total_comments }} Comments</h2>
         </div>
@@ -362,192 +364,43 @@
               </div>
 
               <!-- Reply (nested) -->
-              <div class="flex gap-3 mt-4 ml-2">
-                <div
-                  class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0">
-                  CK
-                </div>
-                <div class="flex-1">
-                  <div class="flex items-center gap-2 mb-1">
-                    <span class="font-semibold text-sm">@curry_king</span>
-                    <span class="bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded">Author</span>
-                    <span class="text-xs text-gray-500">1 day ago</span>
-                  </div>
-                  <p class="text-gray-800 mb-2">
-                    Thank you so much! So happy your family enjoyed it!
-                  </p>
-                  <div class="flex items-center gap-4">
-                    <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
-                        </path>
-                      </svg>
-                      <span class="text-xs">5</span>
-                    </button>
-                    <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-                      <svg class="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
-                        </path>
-                      </svg>
-                    </button>
-                    <button class="text-xs font-semibold text-gray-600 hover:text-gray-900">Reply</button>
-                  </div>
-                </div>
-              </div>
+              <!-- <div class="flex gap-3 mt-4 ml-2"> -->
+              <!--   <div -->
+              <!--     class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0"> -->
+              <!--     CK -->
+              <!--   </div> -->
+              <!--   <div class="flex-1"> -->
+              <!--     <div class="flex items-center gap-2 mb-1"> -->
+              <!--       <span class="font-semibold text-sm">@curry_king</span> -->
+              <!--       <span class="bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded">Author</span> -->
+              <!--       <span class="text-xs text-gray-500">1 day ago</span> -->
+              <!--     </div> -->
+              <!--     <p class="text-gray-800 mb-2"> -->
+              <!--       Thank you so much! So happy your family enjoyed it! -->
+              <!--     </p> -->
+              <!--     <div class="flex items-center gap-4"> -->
+              <!--       <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900"> -->
+              <!--         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"> -->
+              <!--           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" -->
+              <!--             d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"> -->
+              <!--           </path> -->
+              <!--         </svg> -->
+              <!--         <span class="text-xs">5</span> -->
+              <!--       </button> -->
+              <!--       <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900"> -->
+              <!--         <svg class="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"> -->
+              <!--           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" -->
+              <!--             d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"> -->
+              <!--           </path> -->
+              <!--         </svg> -->
+              <!--       </button> -->
+              <!--       <button class="text-xs font-semibold text-gray-600 hover:text-gray-900">Reply</button> -->
+              <!--     </div> -->
+              <!--   </div> -->
+              <!-- </div> -->
             </div>
           </div>
           {% endif %}
-          <!-- Comment 1 -->
-          <div class="flex gap-3">
-            <div
-              class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold shrink-0">
-              JD
-            </div>
-            <div class="flex-1">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="font-semibold text-sm">@jane_doe</span>
-                <span class="text-xs text-gray-500">2 days ago</span>
-              </div>
-              <p class="text-gray-800 mb-2">
-                Absolutely delicious! The curry paste makes it so flavorful. I served it with jasmine rice and my
-                family loved it. Will definitely make this again.
-              </p>
-              <div class="flex items-center gap-4">
-                <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
-                    </path>
-                  </svg>
-                  <span class="text-xs">24</span>
-                </button>
-                <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-                  <svg class="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
-                    </path>
-                  </svg>
-                </button>
-                <button class="text-xs font-semibold text-gray-600 hover:text-gray-900">Reply</button>
-              </div>
-
-              <!-- Reply (nested) -->
-              <div class="flex gap-3 mt-4 ml-2">
-                <div
-                  class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0">
-                  CK
-                </div>
-                <div class="flex-1">
-                  <div class="flex items-center gap-2 mb-1">
-                    <span class="font-semibold text-sm">@curry_king</span>
-                    <span class="bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded">Author</span>
-                    <span class="text-xs text-gray-500">1 day ago</span>
-                  </div>
-                  <p class="text-gray-800 mb-2">
-                    Thank you so much! So happy your family enjoyed it!
-                  </p>
-                  <div class="flex items-center gap-4">
-                    <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
-                        </path>
-                      </svg>
-                      <span class="text-xs">5</span>
-                    </button>
-                    <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-                      <svg class="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
-                        </path>
-                      </svg>
-                    </button>
-                    <button class="text-xs font-semibold text-gray-600 hover:text-gray-900">Reply</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Comment 2 -->
-          <div class="flex gap-3">
-            <div
-              class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold shrink-0">
-              MT
-            </div>
-            <div class="flex-1">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="font-semibold text-sm">@mike_thompson</span>
-                <span class="text-xs text-gray-500">1 week ago</span>
-              </div>
-              <p class="text-gray-800 mb-2">
-                Great recipe! I added some extra vegetables (carrots and snap peas) and it turned out perfect. The
-                instructions were clear and easy to follow.
-              </p>
-              <div class="flex items-center gap-4">
-                <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
-                    </path>
-                  </svg>
-                  <span class="text-xs">18</span>
-                </button>
-                <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-                  <svg class="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
-                    </path>
-                  </svg>
-                </button>
-                <button class="text-xs font-semibold text-gray-600 hover:text-gray-900">Reply</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Comment 3 -->
-          <div class="flex gap-3">
-            <div
-              class="w-10 h-10 bg-pink-500 rounded-full flex items-center justify-center text-white font-bold shrink-0">
-              SE
-            </div>
-            <div class="flex-1">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="font-semibold text-sm">@sarah_evans</span>
-                <span class="text-xs text-gray-500">2 weeks ago</span>
-              </div>
-              <p class="text-gray-800 mb-2">
-                Very good curry! A bit spicy for my taste, so I used less curry paste. Otherwise perfect comfort food.
-                Any suggestions for making it milder?
-              </p>
-              <div class="flex items-center gap-4">
-                <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
-                    </path>
-                  </svg>
-                  <span class="text-xs">12</span>
-                </button>
-                <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
-                  <svg class="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
-                    </path>
-                  </svg>
-                </button>
-                <button class="text-xs font-semibold text-gray-600 hover:text-gray-900">Reply</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Load More Comments -->
-          <button
-            class="w-full py-3 text-center text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg">
-            Show more comments
-          </button>
         </div>
       </div>
     </div>

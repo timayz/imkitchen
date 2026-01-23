@@ -1,15 +1,16 @@
 use axum::{
     Form,
-    extract::{Path, State},
+    extract::{Path, Query, State},
     response::{IntoResponse, Redirect},
 };
 
-use evento::cursor::{Args, ReadResult};
+use evento::cursor::{self, Args, ReadResult};
 use imkitchen_recipe::{
     comment::AddCommentInput,
     favorite,
     query::{
         self,
+        comment::{CommentView, CommentsQuery},
         user::{RecipesQuery, SortBy, UserView, UserViewList},
         user_stat::UserStatView,
     },
@@ -664,5 +665,49 @@ pub async fn add_comment_action(
             body: input.body.as_str(),
             created_at: &created_at,
         })
+        .into_response()
+}
+
+#[derive(Deserialize, Default, Clone)]
+pub struct PageQuery {
+    pub first: Option<u16>,
+    pub after: Option<cursor::Value>,
+    pub last: Option<u16>,
+    pub before: Option<cursor::Value>,
+}
+
+#[derive(askama::Template)]
+#[template(path = "partials/recipes-comments.html")]
+pub struct CommentsTemplate {
+    pub comments: ReadResult<CommentView>,
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn comments(
+    template: Template,
+    user: AuthUser,
+    Query(query): Query<PageQuery>,
+    State(app): State<AppState>,
+    Path((id,)): Path<(String,)>,
+) -> impl IntoResponse {
+    let args = Args {
+        first: query.first,
+        after: query.after,
+        last: query.last,
+        before: query.before,
+    };
+
+    let comments = crate::try_page_response!(
+        app.recipe_query.filter_comment(CommentsQuery {
+            recipe_id: id,
+            reply_to: None,
+            exclude_owner: Some(user.id.to_owned()),
+            args: args.limit(20),
+        }),
+        template
+    );
+
+    template
+        .render(CommentsTemplate { comments })
         .into_response()
 }
