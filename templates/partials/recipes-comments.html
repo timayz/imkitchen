@@ -72,4 +72,16 @@
     </div>
   </div>
   {% endfor %}
+
+  {% if let (true, Some(cursor)) = (comments.page_info.has_next_page, comments.page_info.end_cursor.to_owned()) %}
+  <button
+    ts-req="/recipes/{{ recipe_id }}/comments?after={{ cursor.to_string() }}{% if let Some(sort_by) = sort_by %}&sort_by={{ sort_by }}{% endif %}&include_current_user={{ include_current_user }}{% if let Some(reply_to) = reply_to %}&reply_to={{ reply_to }}{% endif %}"
+    ts-req-selector="children #comments-list"
+    class="flex items-center gap-2 mt-3 text-blue-600 hover:text-blue-700 font-semibold text-sm">
+    <svg class="w-4 h-4 reply-icon transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+    </svg>
+    <span class="reply-text">{{ "show more"|t }}</span>
+  </button>
+  {% endif %}
 </div>

@@ -806,6 +806,8 @@ pub struct CommentsTemplate {
     pub comments: ReadResult<CommentView>,
     pub ratings: Vec<comment_rating::CommentRating>,
     pub reply_to: Option<String>,
+    pub include_current_user: bool,
+    pub sort_by: Option<String>,
 }
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
@@ -829,7 +831,7 @@ pub async fn comments(
         None
     };
 
-    let sort_by = comment::SortBy::from_str(&query.sort_by.unwrap_or("".to_owned()))
+    let sort_by = comment::SortBy::from_str(&query.sort_by.to_owned().unwrap_or("".to_owned()))
         .unwrap_or(comment::SortBy::RecentlyAdded);
 
     let comments = crate::try_page_response!(
@@ -858,6 +860,8 @@ pub async fn comments(
             comments,
             ratings,
             reply_to: query.reply_to,
+            include_current_user: query.include_current_user,
+            sort_by: query.sort_by,
         })
         .into_response()
 }
