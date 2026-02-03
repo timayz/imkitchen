@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use axum::{
     Form,
     extract::{Path, Query, State},
@@ -10,7 +12,7 @@ use imkitchen_recipe::{
     favorite,
     query::{
         self,
-        comment::{CommentView, CommentsQuery},
+        comment::{self, CommentView, CommentsQuery},
         user::{RecipesQuery, SortBy, UserView, UserViewList},
         user_stat::UserStatView,
     },
@@ -692,18 +694,26 @@ pub async fn cancel_reply(
 pub struct ReplyFormTemplate<'a> {
     pub recipe_id: &'a str,
     pub comment_id: &'a str,
+    pub owner_name: Option<&'a str>,
+}
+
+#[derive(Deserialize, Default, Clone)]
+pub struct ReplyFormQuery {
+    pub owner_name: Option<String>,
 }
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn reply_form(
     template: Template,
     user: AuthUser,
+    Query(query): Query<ReplyFormQuery>,
     Path((recipe_id, comment_id)): Path<(String, String)>,
 ) -> impl IntoResponse {
     template
         .render(ReplyFormTemplate {
             recipe_id: &recipe_id,
             comment_id: &comment_id,
+            owner_name: query.owner_name.as_deref(),
         })
         .into_response()
 }
@@ -772,6 +782,7 @@ pub struct PageQuery {
     pub reply_to: Option<String>,
     #[serde(default)]
     pub include_current_user: bool,
+    pub sort_by: Option<String>,
 }
 
 #[derive(askama::Template)]
@@ -803,11 +814,15 @@ pub async fn comments(
         None
     };
 
+    let sort_by = comment::SortBy::from_str(&query.sort_by.unwrap_or("".to_owned()))
+        .unwrap_or(comment::SortBy::RecentlyAdded);
+
     let comments = crate::try_page_response!(
         app.recipe_query.filter_comment(CommentsQuery {
             recipe_id: id.to_owned(),
             reply_to: query.reply_to.to_owned(),
             exclude_owner,
+            sort_by,
             args: args.limit(20),
         }),
         template

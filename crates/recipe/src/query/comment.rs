@@ -20,6 +20,7 @@ use strum::{Display, EnumString};
 pub enum SortBy {
     #[default]
     RecentlyAdded,
+    OldestAdded,
 }
 
 #[evento::projection(FromRow, Cursor)]
@@ -49,6 +50,7 @@ pub struct CommentsQuery {
     pub reply_to: Option<String>,
     pub exclude_owner: Option<String>,
     pub args: Args,
+    pub sort_by: SortBy,
 }
 
 impl<E: Executor> super::Query<E> {
@@ -76,17 +78,29 @@ impl<E: Executor> super::Query<E> {
 
         if let Some(reply_to) = query.reply_to {
             statement.and_where(Expr::col(RecipeComment::ReplyTo).eq(reply_to));
+        } else {
+            statement.and_where(Expr::col(RecipeComment::ReplyTo).is_null());
         }
 
         if let Some(owner_id) = query.exclude_owner {
             statement.and_where(Expr::col(RecipeComment::OwnerId).not_equals(owner_id));
         }
 
-        Reader::new(statement)
-            .args(query.args)
-            .desc()
-            .execute(&self.read_db)
-            .await
+        match query.sort_by {
+            SortBy::RecentlyAdded => {
+                Reader::new(statement)
+                    .args(query.args)
+                    .desc()
+                    .execute(&self.read_db)
+                    .await
+            }
+            SortBy::OldestAdded => {
+                Reader::new(statement)
+                    .args(query.args)
+                    .execute(&self.read_db)
+                    .await
+            }
+        }
     }
 }
 

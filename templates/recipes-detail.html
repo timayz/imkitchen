@@ -369,7 +369,7 @@
 
               {% if user_comment.total_replies > 0 %}
               <button
-                ts-req="/recipes/{{ recipe.id }}/comments?include_current_user=true&reply_to={{ user_comment.id }}"
+                ts-req="/recipes/{{ recipe.id }}/comments?sort_by=OldestAdded&include_current_user=true&reply_to={{ user_comment.id }}"
                 ts-req-selector="children #comments-list"
                 class="flex items-center gap-2 mt-3 text-blue-600 hover:text-blue-700 font-semibold text-sm">
                 <svg class="w-4 h-4 reply-icon transition-transform" fill="none" stroke="currentColor"

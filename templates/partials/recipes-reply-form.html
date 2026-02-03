@@ -1,6 +1,8 @@
 <form id="reply-form-{{ comment_id }}" ts-req="/recipes/{{ recipe_id }}/reply/{{ comment_id }}" ts-req-method="post"
   class="flex-1">
-  <input name="body" type="text" placeholder="Add a comment..." autofocus minlength="3" maxlength="2000" required
+  <input name="body" type="text" placeholder="Add a comment..." {% if let Some(owner_name)=owner_name %}
+    value="@{{ owner_name }} " onfocus="var temp_value=this.value; this.value=''; this.value=temp_value" {% endif %}
+    autofocus minlength="3" maxlength="2000" required
     class="w-full px-0 py-2 border-b border-gray-300 focus:border-gray-900 focus:outline-none bg-transparent" />
   <div class="flex justify-end gap-2 mt-2">
     <button type="button" ts-req="/recipes/{{ recipe_id }}/cancel-reply/{{ comment_id }}" ts-target="parent form"
