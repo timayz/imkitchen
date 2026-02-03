@@ -314,7 +314,7 @@
         </div>
 
         <!-- Add Comment -->
-        {% if user_comment.is_none() %}
+        {% if comment.is_none() %}
         <div class="flex gap-3 mb-8">
           <div
             class="w-10 h-10 {{ username|bg_color }} rounded-full flex items-center justify-center text-white font-bold shrink-0">
@@ -330,53 +330,73 @@
 
         <!-- Comments List -->
         <div id="comments-list" class="space-y-6">
-          {% if let Some(user_comment) = user_comment %}
+          {% if let (Some(comment), Some(comment_rating)) = (comment.as_ref(), comment_rating.as_ref()) %}
           <div class="flex gap-3">
             <div
-              class="w-10 h-10 {{ user_comment.owner_name|bg_color }} rounded-full flex items-center justify-center text-white font-bold shrink-0">
-              {{ user_comment.owner_name|initials }}
+              class="w-10 h-10 {{ comment.owner_name|bg_color }} rounded-full flex items-center justify-center text-white font-bold shrink-0">
+              {{ comment.owner_name|initials }}
             </div>
             <div class="flex-1">
               <div class="flex items-center gap-2 mb-1">
-                <span class="font-semibold text-sm">@{{ user_comment.owner_name }}</span>
-                <span class="text-xs text-gray-500">{{ user_comment.created_at|relative_time }}</span>
+                <span class="font-semibold text-sm">@{{ comment.owner_name }}</span>
+                <span class="text-xs text-gray-500">{{ comment.created_at|relative_time }}</span>
               </div>
               <p class="text-gray-800 mb-2">
-                {{ user_comment.body }}
+                {{ comment.body }}
               </p>
               <div class="flex items-center gap-4">
-                <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+                <button id="like-btn-{{ comment.id }}"
+                  ts-req="/recipes/{{ recipe.id }}/comments/{{ comment.id }}/{% if comment_rating.liked %}un{% endif %}check-like"
+                  ts-req-method="post" class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+                  {% if comment_rating.liked %}
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path
+                      d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3v11zm2-11v11h6.263a2 2 0 001.789-1.106l3.5-7A2 2 0 0018.763 11H14V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11z">
+                    </path>
+                  </svg>
+                  {% else %}
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
                     </path>
                   </svg>
-                  <span class="text-xs">{{ &user_comment.total_ulikes()|views }}</span>
+                  {% endif %}
+                  <span class="text-xs">{{ &comment.total_ulikes()|views }}</span>
                 </button>
-                <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+                <button id="unlike-btn-{{ comment.id }}"
+                  ts-req="/recipes/{{ recipe.id }}/comments/{{ comment.id }}/{% if comment_rating.unliked %}un{% endif %}check-unlike"
+                  ts-req-method="post" class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+                  {% if comment_rating.unliked %}
+                  <svg class="w-4 h-4 transform rotate-180" fill="currentColor" viewBox="0 0 24 24">
+                    <path
+                      d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3v11zm2-11v11h6.263a2 2 0 001.789-1.106l3.5-7A2 2 0 0018.763 11H14V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11z">
+                    </path>
+                  </svg>
+                  {% else %}
                   <svg class="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
                     </path>
                   </svg>
+                  {% endif %}
                 </button>
-                <button ts-req="/recipes/{{ recipe.id }}/reply/{{ user_comment.id }}"
-                  ts-target="#reply-form-{{ user_comment.id }}"
+                <button ts-req="/recipes/{{ recipe.id }}/reply/{{ comment.id }}"
+                  ts-target="#reply-form-{{ comment.id }}"
                   class="text-xs font-semibold text-gray-600 hover:text-gray-900">Reply</button>
               </div>
 
-              <div id="reply-form-{{ user_comment.id }}"></div>
+              <div id="reply-form-{{ comment.id }}"></div>
 
-              {% if user_comment.total_replies > 0 %}
+              {% if comment.total_replies > 0 %}
               <button
-                ts-req="/recipes/{{ recipe.id }}/comments?sort_by=OldestAdded&include_current_user=true&reply_to={{ user_comment.id }}"
+                ts-req="/recipes/{{ recipe.id }}/comments?sort_by=OldestAdded&include_current_user=true&reply_to={{ comment.id }}"
                 ts-req-selector="children #comments-list"
                 class="flex items-center gap-2 mt-3 text-blue-600 hover:text-blue-700 font-semibold text-sm">
                 <svg class="w-4 h-4 reply-icon transition-transform" fill="none" stroke="currentColor"
                   viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                 </svg>
-                <span class="reply-text">{{ user_comment.total_replies }} {% if user_comment.total_replies > 1
+                <span class="reply-text">{{ comment.total_replies }} {% if comment.total_replies > 1
                   %}replies{% else %}reply{% endif %}</span>
               </button>
               {% endif %}

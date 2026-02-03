@@ -10,7 +10,7 @@ use imkitchen_shared::recipe::{
     AdvancePrepChanged, BasicInformationChanged, Created, CuisineType, CuisineTypeChanged, Deleted,
     DietaryRestriction, DietaryRestrictionsChanged, Imported, Ingredient, IngredientsChanged,
     Instruction, InstructionsChanged, MadePrivate, MainCourseOptionsChanged, Recipe, RecipeType,
-    RecipeTypeChanged, SharedToCommunity,
+    RecipeTypeChanged, SharedToCommunity, comment,
     rating::{LikeChecked, LikeUnchecked, UnlikeChecked, UnlikeUnchecked, Viewed},
 };
 use sea_query::{Expr, ExprTrait, OnConflict, SqliteQueryBuilder};
@@ -537,6 +537,7 @@ pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
         .handler(handle_like_unchecked())
         .handler(handle_unlike_checked())
         .handler(handle_unlike_unchecked())
+        .handler(handle_comment_added())
 }
 
 #[evento::subscription]
@@ -590,6 +591,17 @@ async fn handle_unlike_unchecked<E: Executor>(
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
     update(&pool, RecipeUser::TotalLikes, true, event.data.recipe_id).await?;
+
+    Ok(())
+}
+
+#[evento::subscription]
+async fn handle_comment_added<E: Executor>(
+    context: &Context<'_, E>,
+    event: Event<comment::Added>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    update(&pool, RecipeUser::TotalComments, true, event.data.recipe_id).await?;
 
     Ok(())
 }

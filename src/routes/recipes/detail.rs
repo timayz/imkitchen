@@ -9,7 +9,7 @@ use axum::{
 use evento::cursor::{self, Args, ReadResult};
 use imkitchen_recipe::{
     comment::{AddCommentInput, ReplyCommentInput},
-    favorite,
+    comment_rating, favorite,
     query::{
         self,
         comment::{self, CommentView, CommentsQuery},
@@ -61,7 +61,8 @@ pub struct DetailTemplate<'a> {
     pub stat: UserStatView,
     pub rating: rating::Rating,
     pub favorite: favorite::Favorite,
-    pub user_comment: Option<query::comment::CommentView>,
+    pub comment: Option<query::comment::CommentView>,
+    pub comment_rating: Option<comment_rating::CommentRating>,
     pub cook_recipes: ReadResult<UserViewList>,
     pub similar_recipes: ReadResult<UserViewList>,
 }
@@ -77,7 +78,8 @@ impl<'a> Default for DetailTemplate<'a> {
             similar_recipes: Default::default(),
             rating: Default::default(),
             favorite: Default::default(),
-            user_comment: Default::default(),
+            comment: Default::default(),
+            comment_rating: Default::default(),
             username: "john_doe",
         }
     }
@@ -108,8 +110,19 @@ pub async fn page(
         crate::try_page_response!(app.recipe_cmd.favorite.load(&recipe.id, &user.id), template)
             .to_owned();
 
-    let user_comment =
+    let comment =
         crate::try_page_response!(app.recipe_query.comment(&recipe.id, &user.id), template);
+
+    let comment_rating = match comment {
+        Some(ref comment) => Some(
+            crate::try_page_response!(
+                app.recipe_cmd.comment_rating.load(&comment.id, &user.id),
+                template
+            )
+            .to_owned(),
+        ),
+        _ => None,
+    };
 
     let exclude_ids = vec![recipe.id.to_owned()];
 
@@ -292,7 +305,8 @@ pub async fn page(
             similar_recipes,
             rating,
             favorite,
-            user_comment,
+            comment,
+            comment_rating,
             username: username.as_str(),
             ..Default::default()
         })
@@ -790,6 +804,7 @@ pub struct PageQuery {
 pub struct CommentsTemplate {
     pub recipe_id: String,
     pub comments: ReadResult<CommentView>,
+    pub ratings: Vec<comment_rating::CommentRating>,
     pub reply_to: Option<String>,
 }
 
@@ -823,16 +838,172 @@ pub async fn comments(
             reply_to: query.reply_to.to_owned(),
             exclude_owner,
             sort_by,
-            args: args.limit(20),
+            args: args.limit(5),
         }),
         template
     );
+
+    let mut ratings = vec![];
+    for comment in comments.edges.iter() {
+        let rating = crate::try_response!(anyhow:
+            app.recipe_cmd.comment_rating.load(&comment.node.id, &user.id),
+            template
+        );
+        ratings.push(rating);
+    }
 
     template
         .render(CommentsTemplate {
             recipe_id: id,
             comments,
+            ratings,
             reply_to: query.reply_to,
         })
+        .into_response()
+}
+
+#[derive(askama::Template)]
+#[template(path = "partials/recipes-detail-comment-like-button.html")]
+pub struct CommentLikeButtonTemplate {
+    pub recipe_id: String,
+    pub comment_id: String,
+    pub total: u64,
+    pub liked: bool,
+    pub unliked: bool,
+}
+
+pub async fn comment_check_like(
+    template: Template,
+    user: AuthUser,
+    State(app): State<AppState>,
+    Path((recipe_id, comment_id)): Path<(String, String)>,
+) -> impl IntoResponse {
+    let recipe = crate::try_response!(anyhow_opt: app.recipe_query.user(&recipe_id), template);
+
+    if !recipe.is_shared {
+        crate::try_response!(sync:
+            Err(imkitchen_shared::Error::NotFound("recipe".to_owned())
+        ), template);
+    }
+
+    crate::try_response!(
+        app.recipe_cmd
+            .comment_rating
+            .check_like(&comment_id, &user.id),
+        template
+    );
+
+    (
+        [("ts-swap", "skip")],
+        template.render(CommentLikeButtonTemplate {
+            recipe_id,
+            comment_id,
+            total: recipe.total_ulikes(),
+            liked: true,
+            unliked: false,
+        }),
+    )
+        .into_response()
+}
+
+pub async fn comment_uncheck_like(
+    template: Template,
+    user: AuthUser,
+    State(app): State<AppState>,
+    Path((recipe_id, comment_id)): Path<(String, String)>,
+) -> impl IntoResponse {
+    let recipe = crate::try_response!(anyhow_opt: app.recipe_query.user(&recipe_id), template);
+
+    if !recipe.is_shared {
+        crate::try_response!(sync:
+            Err(imkitchen_shared::Error::NotFound("recipe".to_owned())
+        ), template);
+    }
+
+    crate::try_response!(
+        app.recipe_cmd
+            .comment_rating
+            .uncheck_like(&comment_id, &user.id),
+        template
+    );
+
+    (
+        [("ts-swap", "skip")],
+        template.render(CommentLikeButtonTemplate {
+            recipe_id,
+            comment_id,
+            total: recipe.total_ulikes(),
+            liked: false,
+            unliked: false,
+        }),
+    )
+        .into_response()
+}
+
+pub async fn comment_check_unlike(
+    template: Template,
+    user: AuthUser,
+    State(app): State<AppState>,
+    Path((recipe_id, comment_id)): Path<(String, String)>,
+) -> impl IntoResponse {
+    let recipe = crate::try_response!(anyhow_opt: app.recipe_query.user(&recipe_id), template);
+
+    if !recipe.is_shared {
+        crate::try_response!(sync:
+            Err(imkitchen_shared::Error::NotFound("recipe".to_owned())
+        ), template);
+    }
+
+    crate::try_response!(
+        app.recipe_cmd
+            .comment_rating
+            .check_unlike(&comment_id, &user.id),
+        template
+    );
+
+    (
+        [("ts-swap", "skip")],
+        template.render(CommentLikeButtonTemplate {
+            recipe_id,
+            comment_id,
+            total: recipe.total_ulikes(),
+            liked: false,
+            unliked: true,
+        }),
+    )
+        .into_response()
+}
+
+pub async fn comment_uncheck_unlike(
+    template: Template,
+    user: AuthUser,
+    State(app): State<AppState>,
+    Path((recipe_id, comment_id)): Path<(String, String)>,
+) -> impl IntoResponse {
+    let recipe = crate::try_response!(anyhow_opt: app.recipe_query.user(&recipe_id), template);
+
+    if !recipe.is_shared {
+        crate::try_response!(sync:
+            Err(imkitchen_shared::Error::NotFound("recipe".to_owned())
+        ), template);
+    }
+
+    crate::try_response!(
+        app.recipe_cmd
+            .comment_rating
+            .uncheck_unlike(&comment_id, &user.id),
+        template
+    );
+
+    (
+        [("ts-swap", "skip")],
+        template.render(CommentLikeButtonTemplate {
+            recipe_id,
+            comment_id,
+            total: recipe.total_ulikes(),
+            liked: false,
+            unliked: false,
+        }),
+    )
         .into_response()
 }

@@ -163,6 +163,22 @@ pub fn router(app_state: AppState) -> Router {
             get(recipes::detail::cancel_reply),
         )
         .route("/recipes/{id}/comments", get(recipes::detail::comments))
+        .route(
+            "/recipes/{recipe_id}/comments/{comment_id}/check-like",
+            post(recipes::detail::comment_check_like),
+        )
+        .route(
+            "/recipes/{recipe_id}/comments/{comment_id}/uncheck-like",
+            post(recipes::detail::comment_uncheck_like),
+        )
+        .route(
+            "/recipes/{recipe_id}/comments/{comment_id}/check-unlike",
+            post(recipes::detail::comment_check_unlike),
+        )
+        .route(
+            "/recipes/{recipe_id}/comments/{comment_id}/uncheck-unlike",
+            post(recipes::detail::comment_uncheck_unlike),
+        )
         .route("/recipes/{id}", get(recipes::detail::page))
         .route(
             "/recipes/_edit/ingredient-row",
