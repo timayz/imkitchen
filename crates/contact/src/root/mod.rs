@@ -5,7 +5,7 @@ use imkitchen_shared::contact::{
 };
 use std::ops::Deref;
 
-mod mark_read_and_replay;
+mod mark_read_and_reply;
 mod reopen;
 mod resolve;
 mod submit_form;

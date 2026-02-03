@@ -1,7 +1,7 @@
 use axum::{extract::State, response::IntoResponse};
 use axum_extra::extract::Query;
 use evento::cursor::{Args, ReadResult, Value};
-use imkitchen_recipe::{
+use imkitchen_recipe::query::{
     user::{RecipesQuery, SortBy, UserViewList},
     user_stat::UserStatView,
 };

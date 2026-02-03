@@ -1,0 +1,9 @@
+<form ts-req="/recipes/{{ id }}/add-comment" ts-req-method="post" class="flex-1" ts-target="parent div">
+  <input name="body" type="text" placeholder="{{ "Add a comment..."|t }}" autofocus minlength="3" maxlength="2000" required
+    class="w-full px-0 py-2 border-b border-gray-300 focus:border-gray-900 focus:outline-none bg-transparent" />
+  <div class="flex justify-end gap-2 mt-2">
+    <button type="button" ts-req="/recipes/{{ id }}/add-comment-btn" ts-target="parent form"
+      class="px-4 py-2 text-gray-600 font-semibold rounded-full hover:bg-gray-100">{{ "Cancel"|t }}</button>
+    <button type="submit" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 font-semibold rounded-full">{{ "Comment"|t }}</button>
+  </div>
+</form>

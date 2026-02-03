@@ -425,8 +425,19 @@
                   <button class="text-xs font-semibold text-gray-600 hover:text-gray-900">Reply</button>
                 </div>
 
-                <!-- Reply (nested) -->
-                <div class="flex gap-3 mt-4 ml-2">
+                <!-- View Replies CTA (YouTube Style) -->
+                <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('.reply-icon').classList.toggle('rotate-180'); this.querySelector('.reply-text').textContent = this.nextElementSibling.classList.contains('hidden') ? '1 reply' : 'Hide reply'"
+                  class="flex items-center gap-2 mt-3 text-blue-600 hover:text-blue-700 font-semibold text-sm">
+                  <svg class="w-4 h-4 reply-icon transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                  <span class="reply-text">1 reply</span>
+                </button>
+
+                <!-- Replies Container (hidden by default) -->
+                <div class="hidden">
+                  <!-- Reply (nested) -->
+                  <div class="flex gap-3 mt-4 ml-2">
                   <div
                     class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
                     CK
@@ -459,6 +470,7 @@
                       <button class="text-xs font-semibold text-gray-600 hover:text-gray-900">Reply</button>
                     </div>
                   </div>
+                </div>
                 </div>
               </div>
             </div>
@@ -531,6 +543,124 @@
                     </svg>
                   </button>
                   <button class="text-xs font-semibold text-gray-600 hover:text-gray-900">Reply</button>
+                </div>
+
+                <!-- View Replies CTA (YouTube Style) - Multiple replies -->
+                <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('.reply-icon').classList.toggle('rotate-180'); this.querySelector('.reply-text').textContent = this.nextElementSibling.classList.contains('hidden') ? '3 replies' : 'Hide replies'"
+                  class="flex items-center gap-2 mt-3 text-blue-600 hover:text-blue-700 font-semibold text-sm">
+                  <svg class="w-4 h-4 reply-icon transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                  <span class="reply-text">3 replies</span>
+                </button>
+
+                <!-- Replies Container (hidden by default) -->
+                <div class="hidden space-y-4">
+                  <!-- Reply 1 -->
+                  <div class="flex gap-3 mt-4 ml-2">
+                    <div
+                      class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                      CK
+                    </div>
+                    <div class="flex-1">
+                      <div class="flex items-center gap-2 mb-1">
+                        <span class="font-semibold text-sm">@curry_king</span>
+                        <span class="bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded">Author</span>
+                        <span class="text-xs text-gray-500">2 weeks ago</span>
+                      </div>
+                      <p class="text-gray-800 mb-2">
+                        Great question! You can add more coconut milk to balance the heat, or try using a mild curry paste instead. Some people also add a bit of sugar or honey.
+                      </p>
+                      <div class="flex items-center gap-4">
+                        <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
+                            </path>
+                          </svg>
+                          <span class="text-xs">8</span>
+                        </button>
+                        <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+                          <svg class="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
+                            </path>
+                          </svg>
+                        </button>
+                        <button class="text-xs font-semibold text-gray-600 hover:text-gray-900">Reply</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Reply 2 -->
+                  <div class="flex gap-3 ml-2">
+                    <div
+                      class="w-8 h-8 bg-pink-500 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                      SE
+                    </div>
+                    <div class="flex-1">
+                      <div class="flex items-center gap-2 mb-1">
+                        <span class="font-semibold text-sm">@sarah_evans</span>
+                        <span class="text-xs text-gray-500">2 weeks ago</span>
+                      </div>
+                      <p class="text-gray-800 mb-2">
+                        @curry_king Thanks so much! I'll try adding more coconut milk next time.
+                      </p>
+                      <div class="flex items-center gap-4">
+                        <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
+                            </path>
+                          </svg>
+                          <span class="text-xs">3</span>
+                        </button>
+                        <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+                          <svg class="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
+                            </path>
+                          </svg>
+                        </button>
+                        <button class="text-xs font-semibold text-gray-600 hover:text-gray-900">Reply</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Reply 3 -->
+                  <div class="flex gap-3 ml-2">
+                    <div
+                      class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                      TF
+                    </div>
+                    <div class="flex-1">
+                      <div class="flex items-center gap-2 mb-1">
+                        <span class="font-semibold text-sm">@thai_foodie</span>
+                        <span class="text-xs text-gray-500">1 week ago</span>
+                      </div>
+                      <p class="text-gray-800 mb-2">
+                        Another tip: serve it with plain yogurt on the side. It helps cool down the spiciness!
+                      </p>
+                      <div class="flex items-center gap-4">
+                        <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
+                            </path>
+                          </svg>
+                          <span class="text-xs">6</span>
+                        </button>
+                        <button class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+                          <svg class="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
+                            </path>
+                          </svg>
+                        </button>
+                        <button class="text-xs font-semibold text-gray-600 hover:text-gray-900">Reply</button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

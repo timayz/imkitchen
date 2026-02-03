@@ -1,6 +1,26 @@
 {% extends "_user.html" %}
 {% block title %}{{ recipe.name }} - imkitchen{% endblock %}
 {% block content %}
+<div class="hidden">
+  <div class="bg-red-500 text-white"></div>
+  <div class="bg-orange-500 text-white"></div>
+  <div class="bg-amber-500 text-black"></div>
+  <div class="bg-yellow-500 text-black"></div>
+  <div class="bg-lime-500 text-black"></div>
+  <div class="bg-green-500 text-white"></div>
+  <div class="bg-emerald-500 text-white"></div>
+  <div class="bg-teal-500 text-white"></div>
+  <div class="bg-cyan-500 text-black"></div>
+  <div class="bg-sky-500 text-white"></div>
+  <div class="bg-blue-500 text-white"></div>
+  <div class="bg-indigo-500 text-white"></div>
+  <div class="bg-violet-500 text-white"></div>
+  <div class="bg-purple-500 text-white"></div>
+  <div class="bg-fuchsia-500 text-white"></div>
+  <div class="bg-pink-500 text-white"></div>
+  <div class="bg-rose-500 text-white"></div>
+</div>
+
 <div ts-trigger="load" ts-req="/recipes/{{ recipe.id }}/check-in" ts-req-method="post" ts-swap="skip"></div>
 <!-- Main Content -->
 <div class="container mx-auto px-4 py-6 max-w-7xl">
@@ -12,9 +32,9 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
       </svg>
       {% if recipe.owner_id == user.id %}
-        {{ "Back to My Recipes"|t }}
+      {{ "Back to My Recipes"|t }}
       {% else %}
-        {{ "Back to Community"|t }}
+      {{ "Back to Community"|t }}
       {% endif %}
     </a>
   </div>
@@ -197,16 +217,15 @@
       <!-- Author & Description Card (YouTube Style) -->
       <div class="bg-white rounded-xl shadow-lg p-4 md:p-6 mb-4">
         <!-- Author Info -->
+        {% if let Some(owner_name)= recipe.owner_name %}
         <div class="flex items-center justify-between mb-4 pb-4 border-b">
           <div class="flex items-center gap-3">
             <div
-              class="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
-              CK
+              class="w-12 h-12 {{ owner_name|bg_color }} rounded-full flex items-center justify-center text-white font-bold text-lg">
+              {{ owner_name|initials }}
             </div>
             <div>
-              {% if let Some(username)= recipe.owner_name %}
-              <div class="font-semibold">@{{ username }}</div>
-              {% endif %}
+              <div class="font-semibold">@{{ owner_name }}</div>
               <div class="text-sm text-gray-600">{{ stat.shared }} {{ "recipes shared"|t }}</div>
             </div>
           </div>
@@ -214,6 +233,7 @@
           <!--   Follow -->
           <!-- </button> -->
         </div>
+        {% endif %}
 
         <!-- Description (Expandable) -->
         <div class="bg-gray-50 rounded-lg p-4">
@@ -283,6 +303,106 @@
             <p class="pt-1">{{ instruction.description }}</p>
           </div>
           {% endfor %}
+        </div>
+      </div>
+      <!-- Comments Section (YouTube Style) -->
+      <div ts-trigger="visible once" ts-req="/recipes/{{ recipe.id }}/comments"
+        ts-req-selector="children #comments-list" ts-swap="append" ts-target="#comments-list"
+        class="bg-white rounded-xl shadow-lg p-4 md:p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-xl font-bold">{{ recipe.total_comments }} {{ "Comments"|t }}</h2>
+        </div>
+
+        <!-- Add Comment -->
+        {% if comment.is_none() %}
+        <div class="flex gap-3 mb-8">
+          <div
+            class="w-10 h-10 {{ username|bg_color }} rounded-full flex items-center justify-center text-white font-bold shrink-0">
+            {{ username|initials }}
+          </div>
+          <div class="flex-1">
+            <input ts-trigger="click" ts-req="/recipes/{{recipe.id}}/add-comment" ts-target="parent div" type="text"
+              placeholder="{{ "Add a comment..."|t }}" readonly
+              class="w-full px-0 py-2 border-b border-gray-300 focus:border-gray-900 focus:outline-none bg-transparent" />
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Comments List -->
+        <div id="comments-list" class="space-y-6">
+          {% if let (Some(comment), Some(comment_rating)) = (comment.as_ref(), comment_rating.as_ref()) %}
+          <div class="flex gap-3">
+            <div
+              class="w-10 h-10 {{ comment.owner_name|bg_color }} rounded-full flex items-center justify-center text-white font-bold shrink-0">
+              {{ comment.owner_name|initials }}
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="font-semibold text-sm">@{{ comment.owner_name }}</span>
+                <span class="text-xs text-gray-500">{{ comment.created_at|relative_time }}</span>
+              </div>
+              <p class="text-gray-800 mb-2">
+                {{ comment.body }}
+              </p>
+              <div class="flex items-center gap-4">
+                <button id="like-btn-{{ comment.id }}"
+                  ts-req="/recipes/{{ recipe.id }}/comments/{{ comment.id }}/{% if comment_rating.liked %}un{% endif %}check-like"
+                  ts-req-method="post" class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+                  {% if comment_rating.liked %}
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path
+                      d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3v11zm2-11v11h6.263a2 2 0 001.789-1.106l3.5-7A2 2 0 0018.763 11H14V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11z">
+                    </path>
+                  </svg>
+                  {% else %}
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
+                    </path>
+                  </svg>
+                  {% endif %}
+                  <span class="text-xs">{{ &comment.total_ulikes()|views }}</span>
+                </button>
+                <button id="unlike-btn-{{ comment.id }}"
+                  ts-req="/recipes/{{ recipe.id }}/comments/{{ comment.id }}/{% if comment_rating.unliked %}un{% endif %}check-unlike"
+                  ts-req-method="post" class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+                  {% if comment_rating.unliked %}
+                  <svg class="w-4 h-4 transform rotate-180" fill="currentColor" viewBox="0 0 24 24">
+                    <path
+                      d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3v11zm2-11v11h6.263a2 2 0 001.789-1.106l3.5-7A2 2 0 0018.763 11H14V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11z">
+                    </path>
+                  </svg>
+                  {% else %}
+                  <svg class="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
+                    </path>
+                  </svg>
+                  {% endif %}
+                </button>
+                <button ts-req="/recipes/{{ recipe.id }}/reply/{{ comment.id }}"
+                  ts-target="#reply-form-{{ comment.id }}"
+                  class="text-xs font-semibold text-gray-600 hover:text-gray-900">{{ "Reply"|t }}</button>
+              </div>
+
+              <div id="reply-form-{{ comment.id }}"></div>
+
+              {% if comment.total_replies > 0 %}
+              <button
+                ts-req="/recipes/{{ recipe.id }}/comments?sort_by=OldestAdded&include_current_user=true&reply_to={{ comment.id }}"
+                ts-req-selector="children #comments-list"
+                class="flex items-center gap-2 mt-3 text-blue-600 hover:text-blue-700 font-semibold text-sm">
+                <svg class="w-4 h-4 reply-icon transition-transform" fill="none" stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+                <span class="reply-text">{{ comment.total_replies }} {% if comment.total_replies > 1
+                  %}{{ "replies"|t }}{% else %}{{ "reply"|t }}{% endif %}</span>
+              </button>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
         </div>
       </div>
     </div>

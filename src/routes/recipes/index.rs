@@ -3,7 +3,7 @@ use axum::{
     response::{IntoResponse, Redirect},
 };
 use evento::cursor::{Args, ReadResult, Value};
-use imkitchen_recipe::{
+use imkitchen_recipe::query::{
     user::{RecipesQuery, SortBy, UserViewList},
     user_stat::UserStatView,
 };

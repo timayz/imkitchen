@@ -1,0 +1,87 @@
+<div id="comments-list">
+  {% for (comment, rating) in comments.edges.iter().zip(ratings.iter()) %}
+  <div class="flex gap-3{% if reply_to.is_some() %} mt-4 ml-2{% endif %}">
+    <div
+      class="{% if reply_to.is_none() %}w-10 h-10{% else %}w-8 h-8{% endif %} {{ comment.node.owner_name|bg_color }} rounded-full flex items-center justify-center text-white font-bold shrink-0">
+      {{ comment.node.owner_name|initials }}
+    </div>
+    <div class="flex-1">
+      <div class="flex items-center gap-2 mb-1">
+        <span class="font-semibold text-sm">@{{ comment.node.owner_name }}</span>
+        <span class="text-xs text-gray-500">{{ comment.node.created_at|relative_time }}</span>
+      </div>
+      <p class="text-gray-800 mb-2">
+        {{ comment.node.body }}
+      </p>
+      <div class="flex items-center gap-4">
+        <button id="like-btn-{{ comment.node.id }}"
+          ts-req="/recipes/{{ recipe_id }}/comments/{{ comment.node.id }}/{% if rating.liked %}un{% endif %}check-like"
+          ts-req-method="post" class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+          {% if rating.liked %}
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <path
+              d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3v11zm2-11v11h6.263a2 2 0 001.789-1.106l3.5-7A2 2 0 0018.763 11H14V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11z">
+            </path>
+          </svg>
+          {% else %}
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
+            </path>
+          </svg>
+          {% endif %}
+          <span class="text-xs">{{ &comment.node.total_ulikes()|views }}</span>
+        </button>
+        <button id="unlike-btn-{{ comment.node.id }}"
+          ts-req="/recipes/{{ recipe_id }}/comments/{{ comment.node.id }}/{% if rating.unliked %}un{% endif %}check-unlike"
+          ts-req-method="post" class="flex items-center gap-1 text-gray-600 hover:text-gray-900">
+          {% if rating.unliked %}
+          <svg class="w-4 h-4 transform rotate-180" fill="currentColor" viewBox="0 0 24 24">
+            <path
+              d="M7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3v11zm2-11v11h6.263a2 2 0 001.789-1.106l3.5-7A2 2 0 0018.763 11H14V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11z">
+            </path>
+          </svg>
+          {% else %}
+          <svg class="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5">
+            </path>
+          </svg>
+          {% endif %}
+        </button>
+        <button
+          ts-req="/recipes/{{ recipe_id }}/reply/{% if let Some(reply_to) = reply_to %}{{ reply_to }}?owner_name={{ comment.node.owner_name }}{% else %}{{ comment.node.id }}{% endif %}"
+          ts-target="#reply-form-{{ comment.node.id }}"
+          class="text-xs font-semibold text-gray-600 hover:text-gray-900">{{ "Reply"|t }}</button>
+      </div>
+
+      <div id="reply-form-{{ comment.node.id }}"></div>
+
+      {% if comment.node.total_replies > 0 %}
+      <button
+        ts-req="/recipes/{{ recipe_id }}/comments?sort_by=OldestAdded&include_current_user=true&reply_to={{ comment.node.id }}"
+        ts-req-selector="children #comments-list"
+        class="flex items-center gap-2 mt-3 text-blue-600 hover:text-blue-700 font-semibold text-sm">
+        <svg class="w-4 h-4 reply-icon transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+        <span class="reply-text">{{ comment.node.total_replies }} {% if comment.node.total_replies > 1
+          %}{{ "replies"|t }}{% else %}{{ "reply"|t }}{% endif %}</span>
+      </button>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+
+  {% if let (true, Some(cursor)) = (comments.page_info.has_next_page, comments.page_info.end_cursor.to_owned()) %}
+  <button
+    ts-req="/recipes/{{ recipe_id }}/comments?after={{ cursor.to_string() }}{% if let Some(sort_by) = sort_by %}&sort_by={{ sort_by }}{% endif %}&include_current_user={{ include_current_user }}{% if let Some(reply_to) = reply_to %}&reply_to={{ reply_to }}{% endif %}"
+    ts-req-selector="children #comments-list"
+    class="flex items-center gap-2 mt-3 text-blue-600 hover:text-blue-700 font-semibold text-sm">
+    <svg class="w-4 h-4 reply-icon transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+    </svg>
+    <span class="reply-text">{{ "show more"|t }}</span>
+  </button>
+  {% endif %}
+</div>

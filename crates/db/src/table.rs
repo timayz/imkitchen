@@ -103,6 +103,22 @@ pub enum RecipeUser {
 }
 
 #[derive(Iden, Clone)]
+pub enum RecipeComment {
+    Table,
+    Id,
+    RecipeId,
+    Cursor,
+    OwnerId,
+    ReplyTo,
+    OwnerName,
+    Body,
+    TotalLikes,
+    TotalReplies,
+    CreatedAt,
+    UpdatedAt,
+}
+
+#[derive(Iden, Clone)]
 pub enum RecipeUserStat {
     Table,
     UserId,

@@ -10,7 +10,6 @@ ignored = ["bitcode"]
 [dependencies]
 evento.workspace = true
 bitcode.workspace = true
-ulid.workspace = true
 anyhow.workspace = true
 validator = { workspace = true }
 sqlx = { workspace = true }

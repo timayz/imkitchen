@@ -1,8 +1,10 @@
+pub mod comment;
+pub mod comment_rating;
 pub mod favorite;
+pub mod query;
 pub mod rating;
 
-mod query;
 mod root;
 
-pub use query::*;
+pub use query::Query;
 pub use root::*;
