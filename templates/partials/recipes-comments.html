@@ -2,7 +2,7 @@
   {% for comment in comments.edges.iter() %}
   <div class="flex gap-3{% if reply_to.is_some() %} mt-4 ml-2{% endif %}">
     <div
-      class="w-10 h-10 {{ comment.node.owner_name|bg_color }} rounded-full flex items-center justify-center text-white font-bold shrink-0">
+      class="{% if reply_to.is_none() %}w-10 h-10{% else %}w-8 h-8{% endif %} {{ comment.node.owner_name|bg_color }} rounded-full flex items-center justify-center text-white font-bold shrink-0">
       {{ comment.node.owner_name|initials }}
     </div>
     <div class="flex-1">
