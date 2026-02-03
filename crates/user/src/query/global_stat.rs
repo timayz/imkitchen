@@ -1,5 +1,5 @@
 use evento::{
-    Cursor, Executor, Snapshot,
+    Cursor, Executor,
     cursor::{Args, ReadResult},
     metadata::Event,
     sql::Reader,
@@ -15,7 +15,7 @@ use imkitchen_shared::user::{Activated, Registered, Suspended, subscription::Lif
 
 static GLOBAL_TIMESTAMP: u64 = 949115824;
 
-#[evento::projection(FromRow, Debug, Cursor)]
+#[derive(FromRow, Debug, Cursor, Default, Clone)]
 pub struct GlobalStatView {
     #[cursor(UserGlobalStat::Month, 1)]
     pub month: String,
@@ -47,8 +47,6 @@ impl GlobalStatView {
         }
     }
 }
-
-impl<E: Executor> Snapshot<E> for GlobalStatView {}
 
 impl<E: Executor> super::Query<E> {
     pub async fn find_global(&self) -> anyhow::Result<Option<GlobalStatView>> {
