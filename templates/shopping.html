@@ -1,153 +1,164 @@
 {% extends "_user.html" %}
 {% block title %}{{ "Shopping Lists"|t }} - imkitchen{% endblock %}
 {% block content %}
-    <!-- Main Content -->
-    <div class="container mx-auto px-4 py-8">
-        <!-- Header -->
-        <div class="mb-8">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                    <h1 class="text-3xl font-bold mb-2">{{ "Shopping Lists"|t }}</h1>
-                    <p class="text-gray-600">{{ "Weekly shopping lists for your meal plans"|t }}</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Week Selector -->
-        <div class="bg-white rounded-lg shadow-lg p-4 md:p-6 mb-6">
-            <!-- Mobile: Stack vertically -->
-            <div class="flex flex-col gap-3 md:hidden">
-                <div class="flex items-center justify-between gap-2">
-                  <a href="/calendar/week-{{ index }}" class="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm">
-                       📅
-                  </a>
-                  <a href="/calendar/week-{{ index }}/shopping" class="px-3 py-2 bg-green-600 text-white rounded-lg font-semibold text-sm flex-1">
-                      {{ "Week"|t }} {{ index }}
-                  </a>
-                  {% if let Some(current) = current %}
-                  <button ts-req="/calendar/week-{{ current.week }}/shopping" ts-req-method="post" ts-req-selector="#shopping-content" ts-swap="morph" ts-target="#shopping-content"
-                    class="px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm">
-                        {{ "🔄 Reset"|t }}
-                  </button>
-                  {% endif %}
-                </div>
-                <div class="overflow-x-auto">
-                    <div class="flex gap-2 min-w-max">
-                      {% for week in weeks %}
-                        {% if loop.index != index as usize %}
-                          <a href="/calendar/week-{{ loop.index }}/shopping" class="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm whitespace-nowrap">
-                            {{ "Week"|t }} {{ loop.index }}
-                          </a>
-                        {% endif %}
-                      {% endfor %}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Desktop: Original layout -->
-            <div class="hidden md:flex items-center justify-between">
-                <a href="/calendar/week-{{ index }}" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
-                    📅 {{ "Calendar"|t }}
-                </a>
-
-                <div class="flex gap-2">
-                    {% for week in weeks %}
-                    <a href="/calendar/week-{{ loop.index }}/shopping"
-                      class="px-4 py-2 rounded-lg {% if loop.index == index as usize %}text-white bg-green-600 font-semibold{% else %}bg-gray-200 text-gray-700 hover:bg-gray-300{% endif %}">
-                      {{ "Week"|t }} {{ loop.index }}
-                    </a>
-                    {% endfor %}
-                </div>
-
-                {% if let Some(current) = current %}
-                <button ts-req="/calendar/week-{{ current.week }}/shopping" ts-req-method="post" ts-req-selector="#shopping-content" ts-swap="morph" ts-target="#shopping-content"
-                  class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 cursor-pointer">
-                    {{ "🔄 Reset all"|t }}
-                </button>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- Shopping List Content -->
-        {% if let (Some(current), Some(categories)) = (current.as_ref(), ingredients.as_ref()) %}
-        <div id="shopping-content" class="grid lg:grid-cols-3 gap-6">
-            <!-- Main Shopping List -->
-            <div id="ingredients-list" class="lg:col-span-2">
-                <div class="bg-white rounded-lg shadow-lg p-4 md:p-6 mb-6">
-                    {% for (name, ingredients) in categories %}
-                    <div class="mb-6">
-                      <h3 class="font-bold text-lg mb-3 pb-2 border-b-2 border-green-500">{{ name|t }}</h3>
-                        <div class="space-y-2">
-                            {% for ingredient in ingredients.iter() %}
-                            <label class="flex items-start gap-3 p-3 hover:bg-gray-50 rounded cursor-pointer">
-                              <input{% if let Some(checked) = checked %}{% if checked.contains::<String>(&ingredient.key()) %} checked{% endif %}{%endif%} type="checkbox" class="mt-1 rounded border-gray-300 text-green-600" autocomplete="off"
-                                  ts-trigger="change" ts-req="/calendar/week-{{ current.week }}/shopping/toggle" ts-json="{{ "{ \"name\": \"" ~ ingredient.key() ~ "\"}" }}"
-                                  ts-req-method="post" ts-req-selector="#shopping-summary" ts-target="#shopping-summary"
-                                />
-                                <div class="flex-1">
-                                  <div class="font-semibold">{{ ingredient.name }}</div>
-                                  <div class="text-sm text-gray-600">{{ ingredient.unit.format(ingredient.quantity.to_owned()) }}</div>
-                                </div>
-                            </label>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-
-                <!-- Shopping Tips -->
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                    <h3 class="font-bold text-lg mb-3 text-blue-900">{{ "💡 Shopping Tips"|t }}</h3>
-                    <ul class="space-y-2 text-sm text-blue-800">
-                        <li>{{ "• Shop for fresh vegetables and proteins early in the week"|t }}</li>
-                        <li>{{ "• Pantry items can be bought in bulk to save money"|t }}</li>
-                        <li>{{ "• Check your pantry before shopping - you may already have some items"|t }}</li>
-                        <li>{{ "• Consider buying extra of frequently used items (olive oil, garlic, onions)"|t }}</li>
-                    </ul>
-                </div>
-            </div>
-
-            <!-- Sidebar -->
-            <div class="space-y-6">
-                <!-- Summary -->
-                <div id="shopping-summary" class="bg-white rounded-lg shadow-lg p-6">
-                    <h3 class="font-bold text-lg mb-4">{{ "List Summary"|t }}</h3>
-                    <div class="space-y-3 text-sm">
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">{{ "Total Items"|t }}</span>
-                            <span class="font-bold">{{ current.ingredients.len() }}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">{{ "Checked Off"|t }}</span>
-                            <span class="font-bold text-green-600">{% if let Some(checked) = checked %}{{ checked.len() }}{% else %}0{% endif %}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">{{ "Remaining"|t }}</span>
-                            <span class="font-bold">{% if let Some(checked) = checked %}{{ current.ingredients.len() - checked.len() }}{% else %}{{ current.ingredients.len() }}{% endif %}</span>
-                        </div>
-                    </div>
-                    <div class="mt-4 pt-4 border-t">
-                        <div class="text-sm text-gray-600 mb-2">{{ "Progress"|t }}</div>
-                        <div class="w-full bg-gray-200 rounded-full h-2">
-                            <div class="bg-green-600 h-2 rounded-full" style="width: {% if let Some(checked) = checked %}{{  ((100 * checked.len() / current.ingredients.len()) as f64).round() }}{% else %}0{% endif %}%"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Recipes Included -->
-                {% if let Some(recipes) = recipes %}
-                <div class="bg-white rounded-lg shadow-lg p-6">
-                    <h3 class="font-bold text-lg mb-4">{{ "Recipes Included"|t }}</h3>
-                    <div class="space-y-2 text-sm">
-                        {% for name in recipes.iter() %}
-                        <div class="p-2 bg-gray-50 rounded">{{ name }}</div>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-        {% endif %}
-
+<!-- Main Content -->
+<div class="container mx-auto px-4 py-8">
+  <!-- Header -->
+  <div class="mb-8">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div>
+        <h1 class="text-3xl font-bold mb-2">{{ "Shopping Lists"|t }}</h1>
+        <p class="text-gray-600">{{ "Weekly shopping lists for your meal plans"|t }}</p>
+      </div>
     </div>
+  </div>
+
+  <!-- Week Selector -->
+  <div class="bg-white rounded-lg shadow-lg p-4 md:p-6 mb-6">
+    <!-- Mobile: Stack vertically -->
+    <div class="flex flex-col gap-3 md:hidden">
+      <div class="flex items-center justify-between gap-2">
+        <a href="/calendar/week-{{ index }}"
+          class="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm">
+          📅
+        </a>
+        <a href="/calendar/week-{{ index }}/shopping"
+          class="px-3 py-2 bg-green-600 text-white rounded-lg font-semibold text-sm flex-1">
+          {{ "Week"|t }} {{ index }}
+        </a>
+        {% if let Some(current) = current %}
+        <button ts-req="/calendar/week-{{ current.week }}/shopping" ts-req-method="post"
+          ts-req-selector="#shopping-content" ts-swap="morph" ts-target="#shopping-content"
+          class="px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm">
+          {{ "🔄 Reset"|t }}
+        </button>
+        {% endif %}
+      </div>
+      <div class="overflow-x-auto">
+        <div class="flex gap-2 min-w-max">
+          {% for week in weeks %}
+          {% if loop.index != index as usize %}
+          <a href="/calendar/week-{{ loop.index }}/shopping"
+            class="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm whitespace-nowrap">
+            {{ "Week"|t }} {{ loop.index }}
+          </a>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Desktop: Original layout -->
+    <div class="hidden md:flex items-center justify-between">
+      <a href="/calendar/week-{{ index }}" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+        📅 {{ "Calendar"|t }}
+      </a>
+
+      <div class="flex gap-2">
+        {% for week in weeks %}
+        <a href="/calendar/week-{{ loop.index }}/shopping"
+          class="px-4 py-2 rounded-lg {% if loop.index == index as usize %}text-white bg-green-600 font-semibold{% else %}bg-gray-200 text-gray-700 hover:bg-gray-300{% endif %}">
+          {{ "Week"|t }} {{ loop.index }}
+        </a>
+        {% endfor %}
+      </div>
+
+      {% if let Some(current) = current %}
+      <button ts-req="/calendar/week-{{ current.week }}/shopping" ts-req-method="post"
+        ts-req-selector="#shopping-content" ts-swap="morph" ts-target="#shopping-content"
+        class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 cursor-pointer">
+        {{ "🔄 Reset all"|t }}
+      </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Shopping List Content -->
+  {% if let (Some(current), Some(categories)) = (current.as_ref(), ingredients.as_ref()) %}
+  <div id="shopping-content" class="grid lg:grid-cols-3 gap-6">
+    <!-- Main Shopping List -->
+    <div id="ingredients-list" class="lg:col-span-2">
+      <div class="bg-white rounded-lg shadow-lg p-4 md:p-6 mb-6">
+        {% for (name, ingredients) in categories %}
+        <div class="mb-6">
+          <h3 class="font-bold text-lg mb-3 pb-2 border-b-2 border-green-500">{{ name|t }}</h3>
+          <div class="space-y-2">
+            {% for ingredient in ingredients.iter() %}
+            <label class="flex items-start gap-3 p-3 hover:bg-gray-50 rounded cursor-pointer">
+              <input{% if let Some(checked)=checked %}{% if checked.contains::<String>(&ingredient.key()) %} checked{%
+                endif %}{%endif%} type="checkbox" class="mt-1 rounded border-gray-300 text-green-600" autocomplete="off"
+                ts-trigger="change" ts-req="/calendar/week-{{ current.week }}/shopping/toggle" ts-json="{{
+                ingredient.json_key() }}"
+                ts-req-method="post" ts-req-selector="#shopping-summary" ts-target="#shopping-summary"
+                />
+                <div class="flex-1">
+                  <div class="font-semibold">{{ ingredient.name }}</div>
+                  <div class="text-sm text-gray-600">{{ ingredient.unit.format(ingredient.quantity.to_owned()) }}</div>
+                </div>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Shopping Tips -->
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <h3 class="font-bold text-lg mb-3 text-blue-900">{{ "💡 Shopping Tips"|t }}</h3>
+        <ul class="space-y-2 text-sm text-blue-800">
+          <li>{{ "• Shop for fresh vegetables and proteins early in the week"|t }}</li>
+          <li>{{ "• Pantry items can be bought in bulk to save money"|t }}</li>
+          <li>{{ "• Check your pantry before shopping - you may already have some items"|t }}</li>
+          <li>{{ "• Consider buying extra of frequently used items (olive oil, garlic, onions)"|t }}</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="space-y-6">
+      <!-- Summary -->
+      <div id="shopping-summary" class="bg-white rounded-lg shadow-lg p-6">
+        <h3 class="font-bold text-lg mb-4">{{ "List Summary"|t }}</h3>
+        <div class="space-y-3 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-600">{{ "Total Items"|t }}</span>
+            <span class="font-bold">{{ current.ingredients.len() }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600">{{ "Checked Off"|t }}</span>
+            <span class="font-bold text-green-600">{% if let Some(checked) = checked %}{{ checked.len() }}{% else %}0{%
+              endif %}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600">{{ "Remaining"|t }}</span>
+            <span class="font-bold">{% if let Some(checked) = checked %}{{ current.ingredients.len() - checked.len()
+              }}{% else %}{{ current.ingredients.len() }}{% endif %}</span>
+          </div>
+        </div>
+        <div class="mt-4 pt-4 border-t">
+          <div class="text-sm text-gray-600 mb-2">{{ "Progress"|t }}</div>
+          <div class="w-full bg-gray-200 rounded-full h-2">
+            <div class="bg-green-600 h-2 rounded-full"
+              style="width: {% if let Some(checked) = checked %}{{  ((100 * checked.len() / current.ingredients.len()) as f64).round() }}{% else %}0{% endif %}%">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recipes Included -->
+      {% if let Some(recipes) = recipes %}
+      <div class="bg-white rounded-lg shadow-lg p-6">
+        <h3 class="font-bold text-lg mb-4">{{ "Recipes Included"|t }}</h3>
+        <div class="space-y-2 text-sm">
+          {% for name in recipes.iter() %}
+          <div class="p-2 bg-gray-50 rounded">{{ name }}</div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
 {% endblock %}
