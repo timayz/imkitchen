@@ -50,6 +50,11 @@ pub async fn serve(
         .start(&executor)
         .await?;
 
+    let sub_user_global_stat = imkitchen_user::global_stat::subscription()
+        .data(write_pool.clone())
+        .start(&executor)
+        .await?;
+
     let sub_contact_query = imkitchen_contact::query_subscription()
         .data((read_pool.clone(), write_pool.clone()))
         .start(&executor)
@@ -197,6 +202,7 @@ pub async fn serve(
         sub_notification_contact.shutdown(),
         sub_notification_user.shutdown(),
         sub_user_query.shutdown(),
+        sub_user_global_stat.shutdown(),
         sub_contact_query.shutdown(),
         sub_contact_global_stat.shutdown(),
         sub_recipe_query.shutdown(),
