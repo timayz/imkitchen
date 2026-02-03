@@ -131,6 +131,13 @@ impl Ingredient {
     pub fn key(&self) -> String {
         format!("{}-{}", self.name, self.unit.format(0))
     }
+
+    pub fn json_key(&self) -> String {
+        serde_json::json!({
+            "name": self.key()
+        })
+        .to_string()
+    }
 }
 
 #[derive(Encode, Decode, Clone, Deserialize, Debug, PartialEq)]
