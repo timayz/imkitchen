@@ -55,6 +55,12 @@ fn create_table() -> TableCreateStatement {
                 .default(0),
         )
         .col(
+            ColumnDef::new(RecipeComment::TotalReplies)
+                .integer()
+                .not_null()
+                .default(0),
+        )
+        .col(
             ColumnDef::new(RecipeComment::CreatedAt)
                 .big_integer()
                 .not_null(),

@@ -7,7 +7,7 @@ use evento::{
 };
 use imkitchen_db::table::RecipeComment;
 use imkitchen_shared::recipe::{
-    comment::{self, Added},
+    comment::{self, Added, Replied},
     comment_rating::{LikeChecked, LikeUnchecked, UnlikeChecked, UnlikeUnchecked},
 };
 use sea_query::{Expr, ExprTrait, OnConflict, SqliteQueryBuilder};
@@ -32,6 +32,7 @@ pub struct CommentView {
     pub reply_to: Option<String>,
     pub body: String,
     pub total_likes: i64,
+    pub total_replies: u64,
     #[cursor(RecipeComment::CreatedAt, 2)]
     pub created_at: u64,
     pub updated_at: Option<u64>,
@@ -65,16 +66,16 @@ impl<E: Executor> super::Query<E> {
                 RecipeComment::OwnerName,
                 RecipeComment::Body,
                 RecipeComment::TotalLikes,
+                RecipeComment::TotalReplies,
                 RecipeComment::CreatedAt,
                 RecipeComment::UpdatedAt,
             ])
             .from(RecipeComment::Table)
+            .and_where(Expr::col(RecipeComment::RecipeId).eq(query.recipe_id))
             .to_owned();
 
         if let Some(reply_to) = query.reply_to {
             statement.and_where(Expr::col(RecipeComment::ReplyTo).eq(reply_to));
-        } else {
-            statement.and_where(Expr::col(RecipeComment::RecipeId).eq(query.recipe_id));
         }
 
         if let Some(owner_id) = query.exclude_owner {
@@ -103,6 +104,7 @@ async fn find_comment(
             RecipeComment::OwnerName,
             RecipeComment::Body,
             RecipeComment::TotalLikes,
+            RecipeComment::TotalReplies,
             RecipeComment::CreatedAt,
             RecipeComment::UpdatedAt,
         ])
@@ -181,6 +183,7 @@ impl<E: Executor> Snapshot<E> for CommentView {
                 RecipeComment::OwnerName,
                 RecipeComment::Body,
                 RecipeComment::TotalLikes,
+                RecipeComment::TotalReplies,
                 RecipeComment::CreatedAt,
                 RecipeComment::UpdatedAt,
             ])
@@ -193,6 +196,7 @@ impl<E: Executor> Snapshot<E> for CommentView {
                 self.owner_name.to_owned().into(),
                 self.body.to_owned().into(),
                 self.total_likes.into(),
+                self.total_replies.into(),
                 self.created_at.into(),
                 self.updated_at.into(),
             ])?
@@ -206,6 +210,7 @@ impl<E: Executor> Snapshot<E> for CommentView {
                         RecipeComment::OwnerName,
                         RecipeComment::Body,
                         RecipeComment::TotalLikes,
+                        RecipeComment::TotalReplies,
                         RecipeComment::CreatedAt,
                         RecipeComment::UpdatedAt,
                     ])
@@ -234,10 +239,55 @@ async fn handle_added(event: Event<Added>, data: &mut CommentView) -> anyhow::Re
 
 pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
     SubscriptionBuilder::new("recipe-comment-query")
+        .handler(handle_replied())
         .handler(handle_like_checked())
         .handler(handle_like_unchecked())
         .handler(handle_unlike_checked())
         .handler(handle_unlike_unchecked())
+}
+
+#[evento::subscription]
+async fn handle_replied<E: Executor>(
+    context: &Context<'_, E>,
+    event: Event<Replied>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let statement = sea_query::Query::insert()
+        .into_table(RecipeComment::Table)
+        .columns([
+            RecipeComment::Id,
+            RecipeComment::RecipeId,
+            RecipeComment::ReplyTo,
+            RecipeComment::Cursor,
+            RecipeComment::OwnerId,
+            RecipeComment::OwnerName,
+            RecipeComment::Body,
+            RecipeComment::CreatedAt,
+        ])
+        .values([
+            event.id.to_string().into(),
+            event.data.recipe_id.to_owned().into(),
+            event.aggregator_id.to_owned().into(),
+            "".into(),
+            event.metadata.requested_by()?.into(),
+            event.data.owner_name.to_owned().into(),
+            event.data.body.to_owned().into(),
+            event.timestamp.into(),
+        ])?
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    update(
+        &pool,
+        RecipeComment::TotalReplies,
+        true,
+        event.aggregator_id.to_owned(),
+    )
+    .await?;
+
+    Ok(())
 }
 
 #[evento::subscription]

@@ -8,7 +8,7 @@ use evento::{
     subscription::{Context, SubscriptionBuilder},
 };
 use imkitchen_db::table::RecipeUser;
-use imkitchen_shared::recipe;
+use imkitchen_shared::recipe::{self, comment::Replied};
 use sea_query::{Expr, ExprTrait, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::SqlitePool;
@@ -29,6 +29,7 @@ pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
     SubscriptionBuilder::new("recipe-query")
         .handler(handle_recipe_all())
         .handler(handle_comment_added())
+        .skip::<Replied>()
         .safety_check()
 }
 

@@ -6,7 +6,7 @@ use axum::{
 
 use evento::cursor::{self, Args, ReadResult};
 use imkitchen_recipe::{
-    comment::AddCommentInput,
+    comment::{AddCommentInput, ReplyCommentInput},
     favorite,
     query::{
         self,
@@ -668,18 +668,118 @@ pub async fn add_comment_action(
         .into_response()
 }
 
+#[derive(askama::Template)]
+#[template(path = "partials/recipes-reply-btn.html")]
+pub struct ReplyBtnTemplate<'a> {
+    pub comment_id: &'a str,
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn cancel_reply(
+    template: Template,
+    user: AuthUser,
+    Path((_, comment_id)): Path<(String, String)>,
+) -> impl IntoResponse {
+    template
+        .render(ReplyBtnTemplate {
+            comment_id: &comment_id,
+        })
+        .into_response()
+}
+
+#[derive(askama::Template)]
+#[template(path = "partials/recipes-reply-form.html")]
+pub struct ReplyFormTemplate<'a> {
+    pub recipe_id: &'a str,
+    pub comment_id: &'a str,
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn reply_form(
+    template: Template,
+    user: AuthUser,
+    Path((recipe_id, comment_id)): Path<(String, String)>,
+) -> impl IntoResponse {
+    template
+        .render(ReplyFormTemplate {
+            recipe_id: &recipe_id,
+            comment_id: &comment_id,
+        })
+        .into_response()
+}
+
+#[derive(askama::Template)]
+#[template(path = "partials/recipes-reply.html")]
+pub struct ReplyTemplate<'a> {
+    pub username: &'a str,
+    pub body: &'a str,
+    pub created_at: &'a u64,
+    pub comment_id: &'a str,
+}
+
+#[derive(Deserialize, Default, Clone)]
+pub struct ReplyForm {
+    pub body: String,
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn reply_action(
+    template: Template,
+    State(app): State<AppState>,
+    user: AuthUser,
+    Path((recipe_id, comment_id)): Path<(String, String)>,
+    Form(input): Form<ReplyForm>,
+) -> impl IntoResponse {
+    let Some(ref username) = user.username else {
+        return (
+            [("ts-swap", "skip")],
+            template.render(SetUsernameModalTemplate),
+        )
+            .into_response();
+    };
+
+    crate::try_response!(
+        app.recipe_cmd.comment.reply(
+            &recipe_id,
+            &user.id,
+            ReplyCommentInput {
+                body: input.body.to_owned(),
+                owner_name: username.to_owned(),
+                comment_id: comment_id.to_owned(),
+            }
+        ),
+        template
+    );
+
+    let created_at = time::UtcDateTime::now().unix_timestamp() as u64;
+
+    template
+        .render(ReplyTemplate {
+            username,
+            body: input.body.as_str(),
+            created_at: &created_at,
+            comment_id: &comment_id,
+        })
+        .into_response()
+}
+
 #[derive(Deserialize, Default, Clone)]
 pub struct PageQuery {
     pub first: Option<u16>,
     pub after: Option<cursor::Value>,
     pub last: Option<u16>,
     pub before: Option<cursor::Value>,
+    pub reply_to: Option<String>,
+    #[serde(default)]
+    pub include_current_user: bool,
 }
 
 #[derive(askama::Template)]
 #[template(path = "partials/recipes-comments.html")]
 pub struct CommentsTemplate {
+    pub recipe_id: String,
     pub comments: ReadResult<CommentView>,
+    pub reply_to: Option<String>,
 }
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
@@ -697,17 +797,27 @@ pub async fn comments(
         before: query.before,
     };
 
+    let exclude_owner = if !query.include_current_user {
+        Some(user.id.to_owned())
+    } else {
+        None
+    };
+
     let comments = crate::try_page_response!(
         app.recipe_query.filter_comment(CommentsQuery {
-            recipe_id: id,
-            reply_to: None,
-            exclude_owner: Some(user.id.to_owned()),
+            recipe_id: id.to_owned(),
+            reply_to: query.reply_to.to_owned(),
+            exclude_owner,
             args: args.limit(20),
         }),
         template
     );
 
     template
-        .render(CommentsTemplate { comments })
+        .render(CommentsTemplate {
+            recipe_id: id,
+            comments,
+            reply_to: query.reply_to,
+        })
         .into_response()
 }

@@ -1,11 +1,13 @@
 mod add;
+mod reply;
 
 use bitcode::{Decode, Encode};
 use evento::{Executor, Projection, ProjectionAggregator, metadata::Event};
-use imkitchen_shared::recipe::comment::{self, Added};
+use imkitchen_shared::recipe::comment::{self, Added, Replied};
 use std::ops::Deref;
 
 pub use add::AddCommentInput;
+pub use reply::ReplyCommentInput;
 
 #[derive(Clone)]
 pub struct Command<E: Executor>(pub(crate) imkitchen_shared::State<E>);
@@ -19,10 +21,23 @@ impl<E: Executor> Deref for Command<E> {
 }
 
 impl<E: Executor> Command<E> {
-    pub async fn load(&self, id: impl Into<String>) -> anyhow::Result<Option<Comment>> {
-        let id = id.into();
+    pub async fn load(
+        &self,
+        recipe_id: impl Into<String>,
+        user_id: impl Into<String>,
+    ) -> anyhow::Result<Option<Comment>> {
+        create_projection::<E>(recipe_id, user_id)
+            .execute(&self.executor)
+            .await
+    }
 
-        create_projection::<E>(&id).execute(&self.executor).await
+    pub async fn load_from(&self, id: impl Into<String>) -> anyhow::Result<Option<Comment>> {
+        Projection::new::<comment::Comment>(id)
+            .handler(handle_added())
+            .skip::<Replied>()
+            .safety_check()
+            .execute(&self.executor)
+            .await
     }
 }
 
@@ -31,9 +46,13 @@ pub struct Comment {
     pub id: String,
 }
 
-pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Comment> {
-    Projection::new::<comment::Comment>(id)
+fn create_projection<E: Executor>(
+    recipe_id: impl Into<String>,
+    user_id: impl Into<String>,
+) -> Projection<E, Comment> {
+    Projection::ids::<comment::Comment>(vec![recipe_id.into(), user_id.into()])
         .handler(handle_added())
+        .skip::<Replied>()
         .safety_check()
 }
 

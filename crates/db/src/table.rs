@@ -113,6 +113,7 @@ pub enum RecipeComment {
     OwnerName,
     Body,
     TotalLikes,
+    TotalReplies,
     CreatedAt,
     UpdatedAt,
 }

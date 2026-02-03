@@ -154,6 +154,14 @@ pub fn router(app_state: AppState) -> Router {
             "/recipes/{id}/add-comment-btn",
             get(recipes::detail::add_comment_btn),
         )
+        .route(
+            "/recipes/{recipe_id}/reply/{comment_id}",
+            get(recipes::detail::reply_form).post(recipes::detail::reply_action),
+        )
+        .route(
+            "/recipes/{recipe_id}/cancel-reply/{comment_id}",
+            get(recipes::detail::cancel_reply),
+        )
         .route("/recipes/{id}/comments", get(recipes::detail::comments))
         .route("/recipes/{id}", get(recipes::detail::page))
         .route(
