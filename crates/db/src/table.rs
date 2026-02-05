@@ -52,6 +52,15 @@ pub enum UserAdmin {
 }
 
 #[derive(Iden, Clone)]
+pub enum UserAdminFts {
+    Table,
+    Id,
+    Email,
+    Username,
+    Rank,
+}
+
+#[derive(Iden, Clone)]
 pub enum ContactAdmin {
     Table,
     Id,

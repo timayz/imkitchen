@@ -31,6 +31,7 @@ sqlx_migrator::sqlite_migration!(
         user_admin::CreateTable,
         user_admin::CreateIdx1,
         user_admin::CreateIdx2,
+        user_admin::CreateFTSTable,
         contact_admin::CreateTable,
         contact_admin::CreateIdx1,
         contact_admin::CreateIdx2,

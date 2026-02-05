@@ -175,3 +175,55 @@ impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateIdx2 {
         Ok(())
     }
 }
+
+pub struct CreateFTSTable;
+
+#[async_trait::async_trait]
+impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateFTSTable {
+    async fn up(
+        &self,
+        connection: &mut sqlx::SqliteConnection,
+    ) -> Result<(), sqlx_migrator::Error> {
+        sqlx::query(
+            r#"
+CREATE VIRTUAL TABLE user_admin_fts USING fts5(id, email, username);            
+
+CREATE TRIGGER user_admin_insert AFTER
+INSERT ON user_admin BEGIN
+INSERT INTO user_admin_fts (id, email, username)
+VALUES (new.id, new.email, COALESCE(new.username, '')); END;
+
+CREATE TRIGGER user_admin_update AFTER
+UPDATE on user_admin BEGIN
+UPDATE user_admin_fts SET username = COALESCE(new.username, '')
+WHERE user_admin_fts = new.id; END;
+
+CREATE TRIGGER user_admin_delete AFTER
+DELETE ON user_admin BEGIN
+DELETE FROM user_admin_fts WHERE id = old.id; END;
+            "#,
+        )
+        .execute(connection)
+        .await?;
+
+        Ok(())
+    }
+
+    async fn down(
+        &self,
+        connection: &mut sqlx::SqliteConnection,
+    ) -> Result<(), sqlx_migrator::Error> {
+        sqlx::query(
+            r#"
+DROP TRIGGER user_admin_insert;
+DROP TRIGGER user_admin_update;
+DROP TRIGGER user_admin_delete;
+DROP TABLE user_admin_fts;
+            "#,
+        )
+        .execute(connection)
+        .await?;
+
+        Ok(())
+    }
+}

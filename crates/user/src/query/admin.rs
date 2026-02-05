@@ -4,7 +4,7 @@ use evento::{
     metadata::Event,
     sql::Reader,
 };
-use imkitchen_db::table::UserAdmin;
+use imkitchen_db::table::{UserAdmin, UserAdminFts};
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use serde::Deserialize;
@@ -13,7 +13,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use strum::{AsRefStr, Display, EnumString, VariantArray};
 
 use imkitchen_shared::user::{
-    Activated, MadeAdmin, Registered, Role, State, Suspended, User,
+    Activated, MadeAdmin, Registered, Role, State, Suspended, User, UsernameChanged,
     subscription::{LifePremiumToggled, Subscription},
 };
 
@@ -118,6 +118,7 @@ pub enum UserSortBy {
 pub struct FilterQuery {
     pub state: Option<State>,
     pub role: Option<Role>,
+    pub search: Option<String>,
     pub sort_by: UserSortBy,
     pub args: Args,
 }
@@ -148,6 +149,20 @@ impl<E: Executor> super::Query<E> {
 
         if let Some(status) = input.state {
             statement.and_where(Expr::col(UserAdmin::State).eq(status.to_string()));
+        }
+
+        if let Some(search) = input.search {
+            statement.and_where(
+                Expr::col(UserAdmin::Id).in_subquery(
+                    Query::select()
+                        .column(UserAdminFts::Id)
+                        .from(UserAdminFts::Table)
+                        .and_where(Expr::cust(format!("user_admin_fts MATCH '{search}*'")))
+                        .order_by(UserAdminFts::Rank, sea_query::Order::Asc)
+                        .limit(20)
+                        .take(),
+                ),
+            );
         }
 
         match input.sort_by {
@@ -197,6 +212,7 @@ pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Ad
         .handler(handle_made_admin())
         .handler(handle_registered())
         .handler(handle_life_premium_toggled())
+        .handler(handle_username_changed())
 }
 
 impl<E: Executor> Snapshot<E> for AdminView {
@@ -318,6 +334,16 @@ async fn handle_actived(_event: Event<Activated>, data: &mut AdminView) -> anyho
 #[evento::handler]
 async fn handle_susended(_event: Event<Suspended>, data: &mut AdminView) -> anyhow::Result<()> {
     data.state.0 = State::Suspended;
+
+    Ok(())
+}
+
+#[evento::handler]
+async fn handle_username_changed(
+    event: Event<UsernameChanged>,
+    data: &mut AdminView,
+) -> anyhow::Result<()> {
+    data.username = Some(event.data.value);
 
     Ok(())
 }
