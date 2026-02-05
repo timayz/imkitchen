@@ -394,3 +394,38 @@ impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateIdx6 {
         Ok(())
     }
 }
+
+pub struct CreateFTSTable;
+
+#[async_trait::async_trait]
+impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateFTSTable {
+    async fn up(
+        &self,
+        connection: &mut sqlx::SqliteConnection,
+    ) -> Result<(), sqlx_migrator::Error> {
+        sqlx::query(
+            r#"
+CREATE VIRTUAL TABLE recipe_user_fts USING fts5(id, name, description, ingredients);            
+            "#,
+        )
+        .execute(connection)
+        .await?;
+
+        Ok(())
+    }
+
+    async fn down(
+        &self,
+        connection: &mut sqlx::SqliteConnection,
+    ) -> Result<(), sqlx_migrator::Error> {
+        sqlx::query(
+            r#"
+DROP TABLE recipe_user_fts;
+            "#,
+        )
+        .execute(connection)
+        .await?;
+
+        Ok(())
+    }
+}

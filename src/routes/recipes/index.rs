@@ -50,6 +50,7 @@ pub struct PageQuery {
     pub before: Option<Value>,
     pub recipe_type: Option<String>,
     pub cuisine_type: Option<String>,
+    pub search: Option<String>,
     pub sort_by: Option<SortBy>,
 }
 
@@ -91,6 +92,7 @@ pub async fn page(
             dietary_where_any: false,
             sort_by: input.sort_by.unwrap_or_default(),
             args: args.limit(20),
+            search: input.search,
         }),
         template
     );

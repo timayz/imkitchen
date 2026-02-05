@@ -137,6 +137,7 @@ pub async fn page(
             dietary_where_any: false,
             sort_by: SortBy::RecentlyAdded,
             args: Args::forward(2, None),
+            search: None,
         }),
         template
     );
@@ -160,6 +161,7 @@ pub async fn page(
             dietary_where_any: false,
             sort_by: SortBy::RecentlyAdded,
             args: Args::forward(6, None),
+            search: None,
         }),
         template
     );
@@ -183,6 +185,7 @@ pub async fn page(
                 dietary_where_any: true,
                 sort_by: SortBy::RecentlyAdded,
                 args: Args::forward(6, None),
+                search: None,
             }),
             template
         );
@@ -209,6 +212,7 @@ pub async fn page(
                 dietary_where_any: false,
                 sort_by: SortBy::RecentlyAdded,
                 args: Args::forward(6, None),
+                search: None,
             }),
             template
         );
@@ -235,6 +239,7 @@ pub async fn page(
                 dietary_where_any: true,
                 sort_by: SortBy::RecentlyAdded,
                 args: Args::forward(6, None),
+                search: None,
             }),
             template
         );
@@ -261,6 +266,7 @@ pub async fn page(
                 dietary_where_any: false,
                 sort_by: SortBy::RecentlyAdded,
                 args: Args::forward(6, None),
+                search: None,
             }),
             template
         );
@@ -287,6 +293,7 @@ pub async fn page(
                 dietary_where_any: false,
                 sort_by: SortBy::RecentlyAdded,
                 args: Args::forward(6, None),
+                search: None,
             }),
             template
         );

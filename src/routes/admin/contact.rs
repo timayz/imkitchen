@@ -49,6 +49,7 @@ pub struct PageQuery {
     pub before: Option<Value>,
     pub status: Option<String>,
     pub subject: Option<String>,
+    pub search: Option<String>,
     pub sort_by: Option<String>,
 }
 
@@ -71,6 +72,11 @@ pub async fn page(
     let status = Status::from_str(&query.status.unwrap_or("".to_owned())).ok();
     let sort_by =
         SortBy::from_str(&query.sort_by.unwrap_or("".to_owned())).unwrap_or(SortBy::MostRecent);
+    let search = if let Some("") = query.search.as_deref() {
+        None
+    } else {
+        query.search
+    };
 
     let args = Args {
         first: query.first,
@@ -84,6 +90,7 @@ pub async fn page(
             status,
             subject,
             sort_by,
+            search,
             args: args.limit(20),
         }),
         template

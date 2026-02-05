@@ -162,3 +162,49 @@ impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateIdx2 {
         Ok(())
     }
 }
+
+pub struct CreateFTSTable;
+
+#[async_trait::async_trait]
+impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateFTSTable {
+    async fn up(
+        &self,
+        connection: &mut sqlx::SqliteConnection,
+    ) -> Result<(), sqlx_migrator::Error> {
+        sqlx::query(
+            r#"
+CREATE VIRTUAL TABLE contact_admin_fts USING fts5(id, email, name, message);            
+
+CREATE TRIGGER contact_admin_insert AFTER
+INSERT ON contact_admin BEGIN
+INSERT INTO contact_admin_fts (id, email, name, message)
+VALUES (new.id, new.email, new.name, new.message); END;
+
+CREATE TRIGGER contact_admin_delete AFTER
+DELETE ON contact_admin BEGIN
+DELETE FROM contact_admin_fts WHERE id = old.id; END;
+            "#,
+        )
+        .execute(connection)
+        .await?;
+
+        Ok(())
+    }
+
+    async fn down(
+        &self,
+        connection: &mut sqlx::SqliteConnection,
+    ) -> Result<(), sqlx_migrator::Error> {
+        sqlx::query(
+            r#"
+DROP TRIGGER contact_admin_insert;
+DROP TRIGGER contact_admin_delete;
+DROP TABLE contact_admin_fts;
+            "#,
+        )
+        .execute(connection)
+        .await?;
+
+        Ok(())
+    }
+}

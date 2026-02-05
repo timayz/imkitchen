@@ -52,6 +52,15 @@ pub enum UserAdmin {
 }
 
 #[derive(Iden, Clone)]
+pub enum UserAdminFts {
+    Table,
+    Id,
+    Email,
+    Username,
+    Rank,
+}
+
+#[derive(Iden, Clone)]
 pub enum ContactAdmin {
     Table,
     Id,
@@ -62,6 +71,16 @@ pub enum ContactAdmin {
     Subject,
     Message,
     CreatedAt,
+}
+
+#[derive(Iden, Clone)]
+pub enum ContactAdminFts {
+    Table,
+    Id,
+    Email,
+    Name,
+    Message,
+    Rank,
 }
 
 #[derive(Iden, Clone)]
@@ -100,6 +119,16 @@ pub enum RecipeUser {
     TotalComments,
     CreatedAt,
     UpdatedAt,
+}
+
+#[derive(Iden, Clone)]
+pub enum RecipeUserFts {
+    Table,
+    Id,
+    Name,
+    Description,
+    Ingredients,
+    Rank,
 }
 
 #[derive(Iden, Clone)]
