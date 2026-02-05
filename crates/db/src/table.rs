@@ -74,6 +74,16 @@ pub enum ContactAdmin {
 }
 
 #[derive(Iden, Clone)]
+pub enum ContactAdminFts {
+    Table,
+    Id,
+    Email,
+    Name,
+    Message,
+    Rank,
+}
+
+#[derive(Iden, Clone)]
 pub enum ContactGlobalStat {
     Table,
     Day,
@@ -109,6 +119,16 @@ pub enum RecipeUser {
     TotalComments,
     CreatedAt,
     UpdatedAt,
+}
+
+#[derive(Iden, Clone)]
+pub enum RecipeUserFts {
+    Table,
+    Id,
+    Name,
+    Description,
+    Ingredients,
+    Rank,
 }
 
 #[derive(Iden, Clone)]

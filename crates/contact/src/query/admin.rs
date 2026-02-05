@@ -5,8 +5,8 @@ use evento::{
     metadata::Event,
     sql::Reader,
 };
-use imkitchen_db::table::ContactAdmin;
-use sea_query::{Expr, ExprTrait, OnConflict, SqliteQueryBuilder};
+use imkitchen_db::table::{ContactAdmin, ContactAdminFts};
+use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use serde::Deserialize;
 use sqlx::SqlitePool;
@@ -56,6 +56,7 @@ impl AdminView {
 pub struct FilterQuery {
     pub status: Option<Status>,
     pub subject: Option<Subject>,
+    pub search: Option<String>,
     pub sort_by: SortBy,
     pub args: Args,
 }
@@ -82,6 +83,20 @@ impl<E: Executor> super::Query<E> {
 
         if let Some(status) = input.status {
             statement.and_where(Expr::col(ContactAdmin::Status).eq(status.to_string()));
+        }
+
+        if let Some(search) = input.search {
+            statement.and_where(
+                Expr::col(ContactAdmin::Id).in_subquery(
+                    Query::select()
+                        .column(ContactAdminFts::Id)
+                        .from(ContactAdminFts::Table)
+                        .and_where(Expr::cust(format!("contact_admin_fts MATCH '{search}*'")))
+                        .order_by(ContactAdminFts::Rank, sea_query::Order::Asc)
+                        .limit(20)
+                        .take(),
+                ),
+            );
         }
 
         let mut reader = Reader::new(statement);

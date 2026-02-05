@@ -5,7 +5,7 @@ use evento::{
     sql::Reader,
     subscription::{Context, SubscriptionBuilder},
 };
-use imkitchen_db::table::RecipeUser;
+use imkitchen_db::table::{RecipeUser, RecipeUserFts};
 use imkitchen_shared::recipe::{
     AdvancePrepChanged, BasicInformationChanged, Created, CuisineType, CuisineTypeChanged, Deleted,
     DietaryRestriction, DietaryRestrictionsChanged, Imported, Ingredient, IngredientsChanged,
@@ -13,7 +13,7 @@ use imkitchen_shared::recipe::{
     RecipeTypeChanged, SharedToCommunity, comment,
     rating::{LikeChecked, LikeUnchecked, UnlikeChecked, UnlikeUnchecked, Viewed},
 };
-use sea_query::{Expr, ExprTrait, OnConflict, SqliteQueryBuilder};
+use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use serde::Deserialize;
 use sqlx::{SqlitePool, prelude::FromRow};
@@ -84,6 +84,7 @@ pub struct RecipesQuery {
     pub dietary_restrictions: Vec<DietaryRestriction>,
     pub dietary_where_any: bool,
     pub sort_by: SortBy,
+    pub search: Option<String>,
     pub args: Args,
 }
 
@@ -118,6 +119,26 @@ impl<E: Executor> super::Query<E> {
 
         if let Some(is_shared) = query.is_shared {
             statement.and_where(Expr::col(RecipeUser::IsShared).eq(is_shared));
+        }
+
+        let search = if let Some("") = query.search.as_deref() {
+            None
+        } else {
+            query.search
+        };
+
+        if let Some(search) = search {
+            statement.and_where(
+                Expr::col(RecipeUser::Id).in_subquery(
+                    Query::select()
+                        .column(RecipeUserFts::Id)
+                        .from(RecipeUserFts::Table)
+                        .and_where(Expr::cust(format!("recipe_user_fts MATCH '{search}*'")))
+                        .order_by(RecipeUserFts::Rank, sea_query::Order::Asc)
+                        .limit(20)
+                        .take(),
+                ),
+            );
         }
 
         if let Some(exclude_ids) = query.exclude_ids {
