@@ -89,7 +89,7 @@ async fn handle_basic_information_changed<E: Executor>(
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
     let (sql, values) = Query::update()
-        .from(RecipeUserFts::Table)
+        .table(RecipeUserFts::Table)
         .and_where(Expr::cust_with_values(
             "recipe_user_fts = ?",
             [event.aggregator_id.to_owned()],
@@ -99,6 +99,8 @@ async fn handle_basic_information_changed<E: Executor>(
             (RecipeUserFts::Description, event.data.description.into()),
         ])
         .build_sqlx(SqliteQueryBuilder);
+
+    println!("{sql}");
 
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
@@ -121,7 +123,7 @@ async fn handle_ingredients_changed<E: Executor>(
         .join(" ");
 
     let (sql, values) = Query::update()
-        .from(RecipeUserFts::Table)
+        .table(RecipeUserFts::Table)
         .and_where(Expr::cust_with_values(
             "recipe_user_fts = ?",
             [event.aggregator_id.to_owned()],
