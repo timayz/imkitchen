@@ -147,6 +147,11 @@ pub fn router(app_state: AppState) -> Router {
             get(recipes::edit::page).post(recipes::edit::action),
         )
         .route(
+            "/recipes/{id}/thumbnail/{device}/image.webp",
+            get(recipes::thumbnail::get),
+        )
+        .route("/recipes/{id}/thumbnail", post(recipes::thumbnail::upload))
+        .route(
             "/recipes/{id}/add-comment",
             get(recipes::detail::add_comment_form).post(recipes::detail::add_comment_action),
         )

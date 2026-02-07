@@ -1,13 +1,19 @@
 use bitcode::{Decode, Encode};
-use evento::{Executor, Projection, ProjectionAggregator, metadata::Event};
-use sha3::{Digest, Sha3_224};
-use std::ops::Deref;
-
+use evento::{
+    AggregatorExecutor, Executor, Projection, ProjectionAggregator,
+    metadata::Event,
+    subscription::{Context, SubscriptionBuilder},
+};
+use image::imageops::FilterType;
 use imkitchen_shared::recipe::{
     self, AdvancePrepChanged, BasicInformationChanged, Created, CuisineType, CuisineTypeChanged,
     Deleted, DietaryRestrictionsChanged, Imported, IngredientsChanged, InstructionsChanged,
     MadePrivate, MainCourseOptionsChanged, RecipeType, RecipeTypeChanged, SharedToCommunity,
+    ThumbnailResized, ThumbnailUploaded,
 };
+use sha3::{Digest, Sha3_224};
+use std::ops::Deref;
+use webp::Encoder;
 
 mod create;
 mod delete;
@@ -15,6 +21,7 @@ mod import;
 mod make_private;
 mod share_to_community;
 mod update;
+mod upload_thumbnail;
 
 pub use import::ImportInput;
 pub use update::UpdateInput;
@@ -93,6 +100,8 @@ pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Re
         .handler(handle_basic_information_changed())
         .handler(handle_main_course_options_changed())
         .handler(handle_dietary_restrictions_changed())
+        .skip::<ThumbnailUploaded>()
+        .skip::<ThumbnailResized>()
         .safety_check()
 }
 
@@ -299,5 +308,48 @@ async fn handle_made_private(_event: Event<MadePrivate>, data: &mut Recipe) -> a
 async fn handle_deleted(_event: Event<Deleted>, data: &mut Recipe) -> anyhow::Result<()> {
     data.is_deleted = true;
 
+    Ok(())
+}
+
+pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
+    SubscriptionBuilder::new("recipe-command").handler(handle_thumbnail_uploaded())
+}
+
+const IMAGE_VARIANTS: &[(&str, u32, f32)] = &[
+    //  name      width  quality
+    ("mobile", 480, 60.0), // lower quality for mobile
+    ("tablet", 768, 75.0),
+    ("desktop", 1280, 85.0),
+];
+
+#[evento::subscription]
+async fn handle_thumbnail_uploaded<E: Executor>(
+    context: &Context<'_, E>,
+    event: Event<ThumbnailUploaded>,
+) -> anyhow::Result<()> {
+    let original_version = context
+        .executor
+        .original_version::<ThumbnailResized>(&event.aggregator_id)
+        .await?
+        .expect("aggregator exist");
+    let img = image::load_from_memory(&event.data.data)?;
+    let mut builder = evento::aggregator(&event.aggregator_id)
+        .original_version(original_version)
+        .metadata_from(&event.metadata)
+        .to_owned();
+
+    for (name, width, quality) in IMAGE_VARIANTS {
+        let resized = img.resize(*width, u32::MAX, FilterType::Lanczos3);
+        let rgba = resized.to_rgba8();
+
+        let encoder = Encoder::from_rgba(rgba.as_raw(), rgba.width(), rgba.height());
+
+        let webp = encoder.encode(*quality); // 0.0 - 100.0
+        builder.event(&ThumbnailResized {
+            device: name.to_string(),
+            data: webp.to_vec(),
+        });
+    }
+    builder.commit(context.executor).await?;
     Ok(())
 }

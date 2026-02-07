@@ -65,6 +65,11 @@ pub async fn serve(
         .start(&executor)
         .await?;
 
+    let sub_recipe_command = imkitchen_recipe::subscription()
+        .data((read_pool.clone(), write_pool.clone()))
+        .start(&executor)
+        .await?;
+
     let sub_recipe_query = imkitchen_recipe::query::subscription()
         .data((read_pool.clone(), write_pool.clone()))
         .start(&executor)
@@ -81,6 +86,11 @@ pub async fn serve(
         .await?;
 
     let sub_recipe_user_fts = imkitchen_recipe::query::user_fts::subscription()
+        .data(write_pool.clone())
+        .start(&executor)
+        .await?;
+
+    let sub_recipe_thumbnail = imkitchen_recipe::query::thumbnail::subscription()
         .data(write_pool.clone())
         .start(&executor)
         .await?;
@@ -210,11 +220,13 @@ pub async fn serve(
         sub_user_global_stat.shutdown(),
         sub_contact_query.shutdown(),
         sub_contact_global_stat.shutdown(),
+        sub_recipe_command.shutdown(),
         sub_recipe_query.shutdown(),
         sub_recipe_comment.shutdown(),
         sub_recipe_user.shutdown(),
         sub_recipe_user_fts.shutdown(),
         sub_recipe_user_stat.shutdown(),
+        sub_recipe_thumbnail.shutdown(),
         sub_mealplan_cmd.shutdown(),
         sub_mealplan_query.shutdown(),
         sub_mealplan_week.shutdown(),

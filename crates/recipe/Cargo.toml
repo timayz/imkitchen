@@ -13,6 +13,8 @@ bitcode.workspace = true
 anyhow.workspace = true
 validator = { workspace = true }
 sqlx = { workspace = true }
+image = { workspace = true }
+webp = { workspace = true }
 strum.workspace = true
 serde.workspace = true
 serde_json.workspace = true

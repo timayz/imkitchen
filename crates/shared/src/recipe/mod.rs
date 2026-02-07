@@ -264,6 +264,16 @@ pub enum Recipe {
     SharedToCommunity {
         owner_name: String,
     },
+
+    ThumbnailUploaded {
+        data: Vec<u8>,
+    },
+
+    ThumbnailResized {
+        device: String,
+        data: Vec<u8>,
+    },
+
     MadePrivate,
     Deleted,
 }
