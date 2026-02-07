@@ -10,7 +10,7 @@ use imkitchen_shared::recipe::{
     AdvancePrepChanged, BasicInformationChanged, Created, CuisineType, CuisineTypeChanged, Deleted,
     DietaryRestriction, DietaryRestrictionsChanged, Imported, Ingredient, IngredientsChanged,
     Instruction, InstructionsChanged, MadePrivate, MainCourseOptionsChanged, Recipe, RecipeType,
-    RecipeTypeChanged, SharedToCommunity, comment,
+    RecipeTypeChanged, SharedToCommunity, ThumbnailResized, comment,
     rating::{LikeChecked, LikeUnchecked, UnlikeChecked, UnlikeUnchecked, Viewed},
 };
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
@@ -47,6 +47,7 @@ pub struct UserView {
     pub total_likes: i64,
     pub total_comments: u64,
     pub created_at: u64,
+    pub thumbnail_version: Option<String>,
 }
 
 impl UserView {
@@ -73,6 +74,7 @@ pub struct UserViewList {
     pub total_views: u64,
     #[cursor(RecipeUser::CreatedAt, 2)]
     pub created_at: u64,
+    pub thumbnail_version: Option<String>,
 }
 
 pub struct RecipesQuery {
@@ -109,6 +111,7 @@ impl<E: Executor> super::Query<E> {
                 RecipeUser::IsShared,
                 RecipeUser::TotalViews,
                 RecipeUser::CreatedAt,
+                RecipeUser::ThumbnailVersion,
             ])
             .from(RecipeUser::Table)
             .to_owned();
@@ -258,6 +261,7 @@ async fn find_user(pool: &SqlitePool, id: impl Into<String>) -> anyhow::Result<O
             RecipeUser::TotalLikes,
             RecipeUser::TotalComments,
             RecipeUser::CreatedAt,
+            RecipeUser::ThumbnailVersion,
         ])
         .from(RecipeUser::Table)
         .and_where(Expr::col(RecipeUser::Id).eq(id.into()))
@@ -285,6 +289,7 @@ pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Us
         .handler(handle_advance_prep_changed())
         .handler(handle_shared_to_community())
         .handler(handle_made_private())
+        .handler(handle_thumbnail_resized())
 }
 
 impl<E: Executor> super::Query<E> {
@@ -355,6 +360,7 @@ impl<E: Executor> Snapshot<E> for UserView {
                 RecipeUser::TotalLikes,
                 RecipeUser::TotalComments,
                 RecipeUser::CreatedAt,
+                RecipeUser::ThumbnailVersion,
             ])
             .values([
                 self.id.to_owned().into(),
@@ -378,6 +384,7 @@ impl<E: Executor> Snapshot<E> for UserView {
                 self.total_likes.into(),
                 self.total_comments.into(),
                 self.created_at.into(),
+                self.thumbnail_version.to_owned().into(),
             ])?
             .on_conflict(
                 OnConflict::column(RecipeUser::Id)
@@ -402,6 +409,7 @@ impl<E: Executor> Snapshot<E> for UserView {
                         RecipeUser::TotalLikes,
                         RecipeUser::TotalComments,
                         RecipeUser::CreatedAt,
+                        RecipeUser::ThumbnailVersion,
                     ])
                     .to_owned(),
             )
@@ -547,6 +555,16 @@ async fn handle_made_private(
     data: &mut UserView,
 ) -> anyhow::Result<()> {
     data.is_shared = false;
+
+    Ok(())
+}
+
+#[evento::handler]
+async fn handle_thumbnail_resized(
+    event: Event<ThumbnailResized>,
+    data: &mut UserView,
+) -> anyhow::Result<()> {
+    data.thumbnail_version = Some(event.id.to_string());
 
     Ok(())
 }

@@ -1,5 +1,29 @@
 {% extends "_user.html" %}
 {% block title %}{{ recipe.name }} - imkitchen{% endblock %}
+{% macro lazy_thumbnail(recipe, version, gradient) %}
+<div class="relative w-full h-full overflow-hidden">
+  <div class="absolute inset-0 bg-linear-to-r {{ gradient }} animate-pulse"></div>
+  <picture>
+    <source data-media="(max-width: 480px)"
+      data-srcset="/recipes/{{ recipe.id }}/thumbnail/mobile/image.webp?v={{ version }}" />
+    <source data-media="(max-width: 768px)"
+      data-srcset="/recipes/{{ recipe.id }}/thumbnail/tablet/image.webp?v={{ version }}" />
+    <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+      data-src="/recipes/{{ recipe.id }}/thumbnail/desktop/image.webp?v={{ version }}" alt="{{ recipe.name }}"
+      class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 [&.loaded]:opacity-100"
+      ts-trigger="closeby once" ts-action="lazy" />
+  </picture>
+</div>
+{% endmacro %}
+{% macro lazy_mobile_thumbnail(recipe, version, gradient) %}
+<div class="relative w-full h-full overflow-hidden">
+  <div class="absolute inset-0 bg-linear-to-r {{ gradient }} animate-pulse"></div>
+  <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+    data-src="/recipes/{{ recipe.id }}/thumbnail/mobile/image.webp?v={{ version }}" alt="{{ recipe.name }}"
+    class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 [&.loaded]:opacity-100"
+    ts-trigger="closeby once" ts-action="lazy" />
+</div>
+{% endmacro %}
 {% block content %}
 <div class="hidden">
   <div class="bg-red-500 text-white"></div>
@@ -44,40 +68,67 @@
     <div class="flex-1 min-w-0">
       <!-- Recipe Hero/Image -->
       <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-4">
-        {% match recipe.recipe_type.0 %}
-        {% when RecipeType::Appetizer %}
-        <div
-          class="h-64 md:h-80 lg:h-96 bg-linear-to-br from-blue-400 to-blue-500 flex items-center justify-center relative">
-          <span class="text-8xl md:text-9xl">🍛</span>
-          <span class="absolute top-4 left-4 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-full">
-            {{ RecipeType::Appetizer.as_ref()|t }}
-          </span>
-        </div>
-        {% when RecipeType::MainCourse %}
-        <div
-          class="h-64 md:h-80 lg:h-96 bg-linear-to-br from-orange-400 to-red-500 flex items-center justify-center relative">
-          <span class="text-8xl md:text-9xl">🍛</span>
-          <span class="absolute top-4 left-4 px-4 py-2 bg-orange-600 text-white text-sm font-semibold rounded-full">
-            {{ RecipeType::MainCourse.as_ref()|t }}
-          </span>
-        </div>
-        {% when RecipeType::Dessert %}
-        <div
-          class="h-64 md:h-80 lg:h-96 bg-linear-to-br from-pink-400 to-pink-500 flex items-center justify-center relative">
-          <span class="text-8xl md:text-9xl">🍛</span>
-          <span class="absolute top-4 left-4 px-4 py-2 bg-pink-600 text-white text-sm font-semibold rounded-full">
-            {{ RecipeType::Dessert.as_ref()|t }}
-          </span>
-        </div>
-        {% when RecipeType::Accompaniment %}
-        <div
-          class="h-64 md:h-80 lg:h-96 bg-linear-to-br from-purple-400 to-purple-500 flex items-center justify-center relative">
-          <span class="text-8xl md:text-9xl">🍛</span>
-          <span class="absolute top-4 left-4 px-4 py-2 bg-purple-600 text-white text-sm font-semibold rounded-full">
-            {{ RecipeType::Accompaniment.as_ref()|t }}
-          </span>
-        </div>
-        {% endmatch %}
+        {% if recipe.owner_id == user.id %}
+        <form ts-trigger="change" ts-req="/recipes/{{ recipe.id }}/thumbnail" method="post"
+          enctype="multipart/form-data" ts-target="[data-drop-target]">
+          <label for="thumbnail-upload">
+            {% endif %}
+            {% match recipe.recipe_type.0 %}
+            {% when RecipeType::Appetizer %}
+            <div data-drop-target="thumbnail-upload"
+              class="h-64 md:h-80 lg:h-96 bg-linear-to-br from-blue-400 to-blue-500 flex items-center justify-center relative{% if recipe.owner_id == user.id %} cursor-pointer{% endif %}">
+              {% if let Some(version) = recipe.thumbnail_version %}
+              {{ lazy_thumbnail(recipe, version, "from-blue-400 via-blue-200 to-blue-400") }}
+              {% else %}
+              <span class="text-8xl md:text-9xl">🥗</span>
+              {% endif %}
+              <span class="absolute top-4 left-4 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-full">
+                {{ RecipeType::Appetizer.as_ref()|t }}
+              </span>
+            </div>
+            {% when RecipeType::MainCourse %}
+            <div data-drop-target="thumbnail-upload"
+              class="h-64 md:h-80 lg:h-96 bg-linear-to-br from-orange-400 to-red-500 flex items-center justify-center relative{% if recipe.owner_id == user.id %} cursor-pointer{% endif %}">
+              {% if let Some(version) = recipe.thumbnail_version %}
+              {{ lazy_thumbnail(recipe, version, "from-orange-400 via-orange-200 to-red-400") }}
+              {% else %}
+              <span class="text-8xl md:text-9xl">🍛</span>
+              {% endif %}
+              <span class="absolute top-4 left-4 px-4 py-2 bg-orange-600 text-white text-sm font-semibold rounded-full">
+                {{ RecipeType::MainCourse.as_ref()|t }}
+              </span>
+            </div>
+            {% when RecipeType::Dessert %}
+            <div data-drop-target="thumbnail-upload"
+              class="h-64 md:h-80 lg:h-96 bg-linear-to-br from-pink-400 to-pink-500 flex items-center justify-center relative{% if recipe.owner_id == user.id %} cursor-pointer{% endif %}">
+              {% if let Some(version) = recipe.thumbnail_version %}
+              {{ lazy_thumbnail(recipe, version, "from-pink-400 via-pink-200 to-pink-400") }}
+              {% else %}
+              <span class="text-8xl md:text-9xl">🍰</span>
+              {% endif %}
+              <span class="absolute top-4 left-4 px-4 py-2 bg-pink-600 text-white text-sm font-semibold rounded-full">
+                {{ RecipeType::Dessert.as_ref()|t }}
+              </span>
+            </div>
+            {% when RecipeType::Accompaniment %}
+            <div data-drop-target="thumbnail-upload"
+              class="h-64 md:h-80 lg:h-96 bg-linear-to-br from-purple-400 to-purple-500 flex items-center justify-center relative{% if recipe.owner_id == user.id %} cursor-pointer{% endif %}">
+              {% if let Some(version) = recipe.thumbnail_version %}
+              {{ lazy_thumbnail(recipe, version, "from-purple-400 via-purple-200 to-purple-400") }}
+              {% else %}
+              <span class="text-8xl md:text-9xl">🍚</span>
+              {% endif %}
+              <span class="absolute top-4 left-4 px-4 py-2 bg-purple-600 text-white text-sm font-semibold rounded-full">
+                {{ RecipeType::Accompaniment.as_ref()|t }}
+              </span>
+            </div>
+            {% endmatch %}
+            {% if recipe.owner_id == user.id %}
+            <input type="file" id="thumbnail-upload" name="file" class="hidden"
+              accept="image/jpeg, image/png, image/webp" />
+          </label>
+        </form>
+        {% endif %}
       </div>
 
       <!-- Title & Action Bar (YouTube Style) -->
@@ -322,7 +373,7 @@
           </div>
           <div class="flex-1">
             <input ts-trigger="click" ts-req="/recipes/{{recipe.id}}/add-comment" ts-target="parent div" type="text"
-              placeholder="{{ "Add a comment..."|t }}" readonly
+              placeholder="{{ " Add a comment..."|t }}" readonly
               class="w-full px-0 py-2 border-b border-gray-300 focus:border-gray-900 focus:outline-none bg-transparent" />
           </div>
         </div>
@@ -419,22 +470,38 @@
           {% when RecipeType::Appetizer %}
           <div
             class="w-40 h-24 bg-linear-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center shrink-0">
+            {% if let Some(version) = cook_recipe.node.thumbnail_version %}
+            {{ lazy_mobile_thumbnail(cook_recipe.node, version, "from-blue-400 via-blue-200 to-blue-400") }}
+            {% else %}
             <span class="text-4xl">🥗</span>
+            {% endif %}
           </div>
           {% when RecipeType::MainCourse %}
           <div
             class="w-40 h-24 bg-linear-to-br from-orange-400 to-red-600 rounded-lg flex items-center justify-center shrink-0">
+            {% if let Some(version) = cook_recipe.node.thumbnail_version %}
+            {{ lazy_mobile_thumbnail(cook_recipe.node, version, "from-orange-400 via-orange-200 to-red-400") }}
+            {% else %}
             <span class="text-4xl">🍛</span>
+            {% endif %}
           </div>
           {% when RecipeType::Dessert %}
           <div
             class="w-40 h-24 bg-linear-to-br from-pink-400 to-pink-600 rounded-lg flex items-center justify-center shrink-0">
+            {% if let Some(version) = cook_recipe.node.thumbnail_version %}
+            {{ lazy_mobile_thumbnail(cook_recipe.node, version, "from-pink-400 via-pink-200 to-pink-400") }}
+            {% else %}
             <span class="text-4xl">🍰</span>
+            {% endif %}
           </div>
           {% when RecipeType::Accompaniment %}
           <div
             class="w-40 h-24 bg-linear-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center shrink-0">
+            {% if let Some(version) = cook_recipe.node.thumbnail_version %}
+            {{ lazy_mobile_thumbnail(cook_recipe.node, version, "from-purple-400 via-purple-200 to-purple-400") }}
+            {% else %}
             <span class="text-4xl">🍚</span>
+            {% endif %}
           </div>
           {% endmatch %}
           <div class="flex-1 min-w-0">
@@ -460,22 +527,38 @@
           {% when RecipeType::Appetizer %}
           <div
             class="w-40 h-24 bg-linear-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center shrink-0">
+            {% if let Some(version) = similar_recipe.node.thumbnail_version %}
+            {{ lazy_mobile_thumbnail(similar_recipe.node, version, "from-orange-400 via-orange-200 to-red-400") }}
+            {% else %}
             <span class="text-4xl">🥗</span>
+            {% endif %}
           </div>
           {% when RecipeType::MainCourse %}
           <div
             class="w-40 h-24 bg-linear-to-br from-orange-400 to-red-600 rounded-lg flex items-center justify-center shrink-0">
+            {% if let Some(version) = similar_recipe.node.thumbnail_version %}
+            {{ lazy_mobile_thumbnail(similar_recipe.node, version, "from-orange-400 via-orange-200 to-red-400") }}
+            {% else %}
             <span class="text-4xl">🍛</span>
+            {% endif %}
           </div>
           {% when RecipeType::Dessert %}
           <div
             class="w-40 h-24 bg-linear-to-br from-pink-400 to-pink-600 rounded-lg flex items-center justify-center shrink-0">
+            {% if let Some(version) = similar_recipe.node.thumbnail_version %}
+            {{ lazy_mobile_thumbnail(similar_recipe.node, version, "from-orange-400 via-orange-200 to-red-400") }}
+            {% else %}
             <span class="text-4xl">🍰</span>
+            {% endif %}
           </div>
           {% when RecipeType::Accompaniment %}
           <div
             class="w-40 h-24 bg-linear-to-br from-purple-400 to-purple-600 rounded-lg flex items-center justify-center shrink-0">
+            {% if let Some(version) = similar_recipe.node.thumbnail_version %}
+            {{ lazy_mobile_thumbnail(similar_recipe.node, version, "from-orange-400 via-orange-200 to-red-400") }}
+            {% else %}
             <span class="text-4xl">🍚</span>
+            {% endif %}
           </div>
           {% endmatch %}
           <div class="flex-1 min-w-0">
@@ -494,4 +577,32 @@
     </div>
   </div>
 </div>
+<script>
+  (() => {
+    document.addEventListener("dragover", (e) => {
+      if (e.target.closest("[data-drop-target]")) {
+        e.preventDefault();
+      }
+    });
+
+    document.addEventListener("drop", (e) => {
+      const zone = e.target.closest("[data-drop-target]");
+      if (!zone) return;
+      e.preventDefault();
+
+      const input = document.getElementById(zone.dataset.dropTarget);
+      if (!input) return;
+
+      const file = e.dataTransfer.files[0];
+      const accept = input.accept;
+
+      if (!file || (accept && !accept.split(",").some(t => file.type === t.trim()))) return;
+
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      input.files = dt.files;
+      input.dispatchEvent(new Event("change", {bubbles: true}));
+    });
+  })();
+</script>
 {% endblock %}

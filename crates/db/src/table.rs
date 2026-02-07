@@ -119,6 +119,7 @@ pub enum RecipeUser {
     TotalComments,
     CreatedAt,
     UpdatedAt,
+    ThumbnailVersion,
 }
 
 #[derive(Iden, Clone)]
@@ -129,6 +130,14 @@ pub enum RecipeUserFts {
     Description,
     Ingredients,
     Rank,
+}
+
+#[derive(Iden, Clone)]
+pub enum RecipeThumbnail {
+    Table,
+    Id,
+    Device,
+    Data,
 }
 
 #[derive(Iden, Clone)]

@@ -100,8 +100,6 @@ async fn handle_basic_information_changed<E: Executor>(
         ])
         .build_sqlx(SqliteQueryBuilder);
 
-    println!("{sql}");
-
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())

@@ -12,6 +12,7 @@ authors = ["imkitchen team"]
 tokio = { version = "1.40", features = ["full"] }
 axum = { version = "0.8", features = ["macros", "multipart"] }
 axum-extra = { version = "0.12", features = ["cookie", "form", "query", "typed-header"] }
+webp = "0.3"
 tower = "0.5"
 tower-http = { version = "0.6", features = ["fs", "trace", "compression-br", "compression-gzip"] }
 rust-i18n = "3.1"
@@ -20,7 +21,7 @@ askama = "0.15"
 cfg-if = "1.0"
 sqlx = { version = "0.8", default-features = false, features = ["migrate", "json", "derive", "runtime-tokio", "sqlite"] }
 sqlx_migrator = { version = "0.18", features = ["sqlite"] }
-evento = { version = "2.0.0-alpha.12", features = ["sqlite", "rw"] }
+evento = { version = "2.0.0-alpha.13", features = ["sqlite", "rw"] }
 argon2 = { version = "0.5", features = ["std"] }
 jsonwebtoken = { version = "10.1", features = ["aws_lc_rs"] }
 lettre = { version = "0.11", features = ["rustls-tls", "builder"] }
@@ -34,6 +35,7 @@ chrono = { version = "0.4", features = ["serde"] }
 thiserror = "2.0"
 anyhow = "1.0"
 tracing = "0.1"
+image = "0.25"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 clap = { version = "4.5", features = ["derive"] }
 config = { version = "0.15", features = ["toml"] }
@@ -81,6 +83,7 @@ serde = { workspace = true }
 async-trait = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }
+base64 = { workspace = true }
 tracing-subscriber = { workspace = true }
 clap = { workspace = true }
 config = { workspace = true }

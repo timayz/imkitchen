@@ -117,6 +117,11 @@ fn create_table() -> TableCreateStatement {
                 .default(0),
         )
         .col(
+            ColumnDef::new(RecipeUser::ThumbnailVersion)
+                .string()
+                .string_len(26),
+        )
+        .col(
             ColumnDef::new(RecipeUser::CreatedAt)
                 .big_integer()
                 .not_null(),
