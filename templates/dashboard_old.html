@@ -1,0 +1,273 @@
+{% extends "_user.html" %}
+{% block title %}Dashboard - imkitchen{% endblock %}
+{% block content %}
+    {% if generate_next_weeks_needed %}
+      <div ts-trigger="load" ts-req="/calendar/regenerate" ts-req-method="POST" ts-swap="none"></div>
+    {% endif %}
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-8">
+
+        <!-- Empty State -->
+        {% if slot.is_none() && week.is_none() %}
+        <div class="max-w-2xl mx-auto">
+            <div class="bg-white rounded-lg shadow-lg p-12 text-center">
+                <div class="text-6xl mb-6">👨‍🍳</div>
+                <h2 class="text-2xl font-bold mb-4">{{ "Welcome to imkitchen!"|t }}</h2>
+                <p class="text-gray-600 mb-8">
+                    {{ "Your kitchen is empty. Let's start by importing some delicious recipes and planning your meals for the week."|t }}
+                </p>
+
+                <!-- Getting Started Steps -->
+                <div class="space-y-4 mb-8 text-left">
+                    <div class="flex items-start gap-4 p-4 bg-blue-50 rounded-lg">
+                        <div class="shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">1</div>
+                        <div>
+                            <h3 class="font-semibold mb-1">{{ "Create Your First Recipe"|t }}</h3>
+                            <p class="text-sm text-gray-600">{{ "Add recipes from the web or create your own custom recipes"|t }}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-4 p-4 bg-green-50 rounded-lg">
+                        <div class="shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">2</div>
+                        <div>
+                            <h3 class="font-semibold mb-1">{{ "Plan Your Week"|t }}</h3>
+                            <p class="text-sm text-gray-600">{{ "Organize your meals on the calendar and let us generate your shopping list"|t }}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-4 p-4 bg-purple-50 rounded-lg">
+                        <div class="shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold">3</div>
+                        <div>
+                            <h3 class="font-semibold mb-1">{{ "Cook & Enjoy"|t }}</h3>
+                            <p class="text-sm text-gray-600">{{ "Follow your meal plan and enjoy home-cooked meals every day"|t }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Call to Action -->
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a href="/recipes" class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition">
+                        ➕ {{ "Create Recipe"|t }}
+                    </a>
+                    <a href="/calendar/week-1" class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition">
+                        📅 {{ "View Calendar"|t }}
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+
+        <!-- Welcome -->
+        <div class="mb-8">
+          <h1 class="text-3xl font-bold mb-2">{{ "Welcome Back"|t }}{% if let Some(username) = user.username %}, @{{ username }}{% endif %}</h1>
+            <p class="text-gray-600">{{ "Here's what's cooking today"|t }}</p>
+        </div>
+
+        <!-- Today's Meals -->
+        <div class="grid lg:grid-cols-3 gap-6 mb-8">
+            {% if let Some(slot) = slot %}
+            <!-- Nearest Day Card -->
+            <div class="lg:col-span-2 bg-white rounded-lg shadow-lg p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                      <h2 class="text-2xl font-bold">{{ slot.day|date_year }}</h2>
+                        <p class="text-gray-600">{{ "Today's Meal Plan"|t }}</p>
+                    </div>
+                </div>
+
+                <!-- Appetizer -->
+                {% if let Some(appetizer) = slot.appetizer %}
+                <div class="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-lg">
+                    <div class="flex items-start gap-4">
+                        <span class="text-4xl">🥗</span>
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between mb-2">
+                                <div>
+                                    <div class="text-xs text-blue-600 font-semibold uppercase mb-1">{{ "Appetizer"|t }}</div>
+                                    <a href="/recipes/{{ appetizer.id }}"><h3 class="font-bold text-lg">{{ appetizer.name }}</h3></a>
+                                </div>
+                                <div class="text-sm text-gray-600">⏱️ {{ &appetizer.total_prep_time()|minutes }}</div>
+                            </div>
+                            {% if appetizer.advance_prep != "" %}
+                            <div class="mt-3 p-2 bg-yellow-100 border border-yellow-300 rounded text-sm text-yellow-800">
+                              ⏰ <strong>{{ "Prep Reminder:"|t }}</strong> {{ appetizer.advance_prep }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Main Course + Accompaniment -->
+                <div class="mb-6 p-4 bg-orange-50 border-l-4 border-orange-500 rounded-lg">
+                    <div class="flex items-start gap-4">
+                        <span class="text-4xl">🍛</span>
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between mb-2">
+                                <div>
+                                    <div class="text-xs text-orange-600 font-semibold uppercase mb-1">{{ "Main Course"|t }}</div>
+                                    <a href="/recipes/{{ slot.main_course.id }}"><h3 class="font-bold text-lg">{{ slot.main_course.name }}</h3></a>
+                                </div>
+                                <div class="text-sm text-gray-600">⏱️ {{ &slot.main_course.total_prep_time()|minutes }}</div>
+                            </div>
+
+                            {% if slot.main_course.advance_prep != "" %}
+                            <div class="mt-3 p-2 bg-yellow-100 border border-yellow-300 rounded text-sm text-yellow-800">
+                              ⏰ <strong>{{ "Prep Reminder:"|t }}</strong> {{ slot.main_course.advance_prep }}
+                            </div>
+                            {% endif %}
+
+                            {% if let Some(accompaniment) = slot.accompaniment %}
+                            <!-- Accompaniment -->
+                            <div class="mb-3 p-3 bg-white rounded border border-orange-200">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-2xl">🍚</span>
+                                    <div>
+                                        <div class="text-xs text-purple-600 font-semibold uppercase">{{ "Accompaniment"|t }}</div>
+                                        <a href="/recipes/{{ accompaniment.id }}" class="font-semibold">{{ accompaniment.name }}</a>
+                                        <div class="text-xs text-gray-600">⏱️ {{ &accompaniment.total_prep_time()|minutes }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {% if accompaniment.advance_prep != "" %}
+                            <div class="mt-3 p-2 bg-yellow-100 border border-yellow-300 rounded text-sm text-yellow-800">
+                              ⏰ <strong>{{ "Prep Reminder:"|t }}</strong> {{ accompaniment.advance_prep }}
+                            </div>
+                            {% endif %}
+                            {% endif %}
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dessert -->
+                {% if let Some(dessert) = slot.dessert %}
+                <div class="p-4 bg-pink-50 border-l-4 border-pink-500 rounded-lg">
+                    <div class="flex items-start gap-4">
+                        <span class="text-4xl">🍰</span>
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between mb-2">
+                                <div>
+                                    <div class="text-xs text-pink-600 font-semibold uppercase mb-1">{{ "Dessert"|t }}</div>
+                                    <a href="/recipes/{{ dessert.id }}"><h3 class="font-bold text-lg">{{ dessert.name }}</h3></a>
+                                </div>
+                                <div class="text-sm text-gray-600">⏱️ {{ &dessert.total_prep_time()|minutes }}</div>
+                            </div>
+                            {% if dessert.advance_prep != "" %}
+                            <div class="mt-3 p-2 bg-yellow-100 border border-yellow-300 rounded text-sm text-yellow-800">
+                              ⏰ <strong>{{ "Prep Reminder:"|t }}</strong> {{ dessert.advance_prep }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Quick Actions -->
+            <div class="space-y-6">
+                <!-- Actions -->
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h3 class="font-bold text-lg mb-4">{{ "Quick Actions"|t }}</h3>
+                    <div class="space-y-3">
+                        <!-- <a href="/kitchen" class="block w-full px-4 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition text-center"> -->
+                        <!--     🍛 My kitchen -->
+                        <!-- </a> -->
+                        <a href="/calendar/week-1/shopping" class="block w-full px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition text-center">
+                            🛒 {{ "Shopping List"|t }}
+                        </a>
+                        <a href="/recipes/import" class="block w-full px-4 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition text-center">
+                            ➕ {{ "Import Recipes"|t }}
+                        </a>
+                    </div>
+                </div>
+
+                {% if !user.is_premium() %}
+                <!-- Premium Upgrade Banner -->
+                <div class="bg-linear-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4">
+                    <div class="flex flex-col gap-4">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="text-2xl">✨</span>
+                                <h3 class="font-bold text-lg text-amber-900">{{ "Unlock the Full Experience"|t }}</h3>
+                            </div>
+                            <p class="text-amber-800 text-sm mb-3">{{ "You're on the free plan. Upgrade to Premium to get:"|t }}</p>
+                            <div class="grid grid-cols-1 gap-2 text-sm">
+                                <div class="flex items-center gap-2 text-amber-700">
+                                    <span class="text-green-600">✓</span>
+                                    <span>{{ "Unlimited recipes in plan"|t }}</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-amber-700">
+                                    <span class="text-green-600">✓</span>
+                                    <span>{{ "Appetizers, desserts & sides"|t }}</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-amber-700">
+                                    <span class="text-green-600">✓</span>
+                                    <span>{{ "Meal preferences applied"|t }}</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-amber-700">
+                                    <span class="text-green-600">✓</span>
+                                    <span>{{ "Batch recipe import"|t }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <a href="/upgrade" class="block w-full px-6 py-3 bg-linear-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-lg hover:from-amber-600 hover:to-orange-600 transition shadow-md text-center">
+                                {{ "Upgrade to Premium"|t }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Advance preps -->
+                {% if let Some(remiders) = prep_remiders %}
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                  <h3 class="font-bold text-lg mb-4">{{ "Tomorrow's Prep Reminder"|t }}</h3>
+                  {% for recipe in remiders %}
+                  <a href="/recipes/{{ recipe.id }}">
+                    <div class="mt-3 p-2 bg-yellow-100 border border-yellow-300 rounded text-sm text-yellow-800">
+                      ⏰ <strong>{{ recipe.name }}:</strong> {{ recipe.advance_prep }}
+                    </div>
+                  </a>
+                  {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Upcoming Week Preview -->
+        {% if let (Some(slot), Some(week)) = (slot.as_ref(), week.as_ref()) %}
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-bold mb-4">{{ "This Week at a Glance"|t }}</h2>
+            <div class="grid md:grid-cols-7 gap-4">
+                {% for week_slot in week.slots.iter() %}
+                <a href="/kitchen/{{ week_slot.day }}" class="p-4 {% if week_slot.day != slot.day %}bg-gray-50 border border-gray-200{% else %}bg-green-50 border-2 border-green-500{% endif %} rounded-lg hover:border-green-500">
+                  <div class="font-bold text-sm mb-2">{{ week_slot.day|weekday }}</div>
+                    <div class="text-xs text-gray-600 space-y-1">
+                        {% if let Some(appetizer) = week_slot.appetizer %}
+                        <div>🥗 {{ appetizer.name }}</div>
+                        {% endif %}
+                        <div>🍛 {{ week_slot.main_course.name }}</div>
+                        {% if let Some(accompaniment) = week_slot.accompaniment %}
+                        <div>🍚 {{ accompaniment.name }}</div>
+                        {% endif %}
+                        {% if let Some(dessert) = week_slot.dessert %}
+                        <div>🍰 {{ dessert.name }}</div>
+                        {% endif %}
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            <div class="mt-4 text-center">
+                <a href="/calendar/week-1" class="text-green-600 font-semibold hover:text-green-700">
+                    {{ "View Full Calendar →"|t }}
+                </a>
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+    </div>
+{% endblock %}
