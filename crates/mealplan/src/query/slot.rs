@@ -27,6 +27,7 @@ impl From<&MealPlanRecipeRow> for DaySlotRecipe {
             prep_time: value.prep_time.to_owned(),
             cook_time: value.cook_time.to_owned(),
             advance_prep: value.advance_prep.to_owned(),
+            status: Default::default(),
         }
     }
 }

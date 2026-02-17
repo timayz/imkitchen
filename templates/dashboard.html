@@ -78,26 +78,40 @@
   </div>
   {% else %}
   <!-- Today's Date & Progress -->
+  {% if let Some(slot) = slot %}
   <div class="mb-6">
     <div class="flex items-center justify-between mb-2">
       <div>
-        <h1 class="text-2xl font-bold">Monday, November 4, 2025</h1>
-        <p class="text-gray-600">Today's Meal Plan</p>
+        <h1 class="text-2xl font-bold">{{ slot.day|date_year }}</h1>
+        <p class="text-gray-600">{{ "Today's Meal Plan"|t }}</p>
       </div>
       <div class="text-right">
         <div class="text-sm text-gray-500">Session Progress</div>
-        <div class="text-lg font-bold text-green-600">1 of 4 dishes</div>
+        <div class="text-lg font-bold text-green-600">{{ slot_completed_count }} of {{ slot_total_count }} dishes</div>
       </div>
     </div>
     <!-- Progress Bar -->
     <div class="flex gap-1">
-      <div class="flex-1 h-2 bg-green-500 rounded-full"></div>
-      <div class="flex-1 h-2 bg-gray-200 rounded-full"></div>
-      <div class="flex-1 h-2 bg-gray-200 rounded-full"></div>
-      <div class="flex-1 h-2 bg-gray-200 rounded-full"></div>
+      {% if let Some(appetizer) = slot.appetizer %}
+      <div
+        class="flex-1 h-2 {% if appetizer.is_completed() %}bg-green-500{% else %}bg-gray-200{% endif %} rounded-full">
+      </div>
+      {% endif %}
+      <div
+        class="flex-1 h-2 {% if slot.main_course.is_completed() %}bg-green-500{% else %}bg-gray-200{% endif %} rounded-full">
+      </div>
+      {% if let Some(accompaniment) = slot.accompaniment %}
+      <div
+        class="flex-1 h-2 {% if accompaniment.is_completed() %}bg-green-500{% else %}bg-gray-200{% endif %} rounded-full">
+      </div>
+      {% endif %}
+      {% if let Some(dessert) = slot.dessert %}
+      <div class="flex-1 h-2 {% if dessert.is_completed() %}bg-green-500{% else %}bg-gray-200{% endif %} rounded-full">
+      </div>
+      {% endif %}
     </div>
   </div>
-
+  {% endif %}
   <div class="grid lg:grid-cols-3 gap-6 mb-8">
     <!-- Main Content Area -->
     <div class="lg:col-span-2 space-y-6">
@@ -175,16 +189,16 @@
           </div>
 
           <!-- Pro Tip -->
-          <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-            <div class="flex items-start gap-3">
-              <span class="text-xl">💡</span>
-              <div>
-                <div class="font-semibold text-yellow-800 text-sm mb-1">Pro Tip</div>
-                <p class="text-sm text-yellow-700">Don't let the coconut milk boil vigorously - a gentle simmer
-                  prevents it from separating and keeps the curry creamy.</p>
-              </div>
-            </div>
-          </div>
+          <!-- <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6"> -->
+          <!--   <div class="flex items-start gap-3"> -->
+          <!--     <span class="text-xl">💡</span> -->
+          <!--     <div> -->
+          <!--       <div class="font-semibold text-yellow-800 text-sm mb-1">Pro Tip</div> -->
+          <!--       <p class="text-sm text-yellow-700">Don't let the coconut milk boil vigorously - a gentle simmer -->
+          <!--         prevents it from separating and keeps the curry creamy.</p> -->
+          <!--     </div> -->
+          <!--   </div> -->
+          <!-- </div> -->
 
           <!-- Step Navigation -->
           <div class="flex gap-3">
@@ -459,16 +473,19 @@
       <div class="hidden md:block bg-white rounded-xl shadow-lg p-6">
         <h3 class="font-bold text-lg mb-4">Today's Dishes</h3>
         <div class="space-y-3">
+          {% if let Some(slot) = slot %}
           <!-- Appetizer (Completed) -->
-          <button onclick="selectRecipe('appetizer')"
+          {% if let Some(appetizer) = slot.appetizer %}
+          <button
             class="w-full p-3 bg-blue-50 border border-blue-200 rounded-lg text-left hover:border-blue-400 transition">
             <div class="flex items-center gap-3">
               <span class="text-2xl">🥗</span>
               <div class="flex-1 min-w-0">
-                <div class="text-xs text-blue-600 font-semibold uppercase">Appetizer</div>
-                <div class="font-semibold truncate">Caesar Salad</div>
-                <div class="text-xs text-gray-500">⏱️ 15 min</div>
+                <div class="text-xs text-blue-600 font-semibold uppercase">{{ "Appetizer"|t }}</div>
+                <div class="font-semibold truncate">{{ appetizer.name }}</div>
+                <div class="text-xs text-gray-500">⏱️ {{ &appetizer.total_prep_time()|minutes }}</div>
               </div>
+              {% if appetizer.is_completed() %}
               <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shrink-0">
                 <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd"
@@ -476,52 +493,104 @@
                     clip-rule="evenodd"></path>
                 </svg>
               </div>
+              {% else if appetizer.is_cooking() %}
+              <div class="px-2 py-1 bg-blue-500 text-white text-xs font-semibold rounded">
+                Cooking
+              </div>
+              {% else %}
+              <div class="w-6 h-6 border-2 border-gray-300 rounded-full shrink-0"></div>
+              {% endif %}
             </div>
           </button>
+          {% endif %}
 
           <!-- Main Course (Active) -->
-          <button onclick="selectRecipe('main')"
-            class="w-full p-3 bg-orange-50 border-2 border-orange-500 rounded-lg text-left">
+          <button class="w-full p-3 bg-orange-50 border-2 border-orange-500 rounded-lg text-left">
             <div class="flex items-center gap-3">
               <span class="text-2xl">🍛</span>
               <div class="flex-1 min-w-0">
-                <div class="text-xs text-orange-600 font-semibold uppercase">Main Course</div>
-                <div class="font-semibold truncate">Thai Red Curry</div>
-                <div class="text-xs text-gray-500">⏱️ 45 min</div>
+                <div class="text-xs text-orange-600 font-semibold uppercase">{{ "Main Course"|t }}</div>
+                <div class="font-semibold truncate">{{ slot.main_course.name }}</div>
+                <div class="text-xs text-gray-500">⏱️ {{ &slot.main_course.total_prep_time()|minutes }}</div>
               </div>
+              {% if slot.main_course.is_completed() %}
+              <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clip-rule="evenodd"></path>
+                </svg>
+              </div>
+              {% else if slot.main_course.is_cooking() %}
               <div class="px-2 py-1 bg-orange-500 text-white text-xs font-semibold rounded">
                 Cooking
               </div>
+              {% else %}
+              <div class="w-6 h-6 border-2 border-gray-300 rounded-full shrink-0"></div>
+              {% endif %}
             </div>
           </button>
 
           <!-- Accompaniment -->
-          <button onclick="selectRecipe('accompaniment')"
+          {% if let Some(accompaniment) = slot.accompaniment %}
+          <button
             class="w-full p-3 bg-purple-50 border border-purple-200 rounded-lg text-left hover:border-purple-400 transition ml-4">
             <div class="flex items-center gap-3">
               <span class="text-xl">🍚</span>
               <div class="flex-1 min-w-0">
-                <div class="text-xs text-purple-600 font-semibold uppercase">Side</div>
-                <div class="font-semibold truncate">Jasmine Rice</div>
-                <div class="text-xs text-gray-500">⏱️ 20 min</div>
+                <div class="text-xs text-purple-600 font-semibold uppercase">{{ "Accompaniment"|t }}</div>
+                <div class="font-semibold truncate">{{ accompaniment.name }}</div>
+                <div class="text-xs text-gray-500">⏱️ {{ &accompaniment.total_prep_time()|minutes }}</div>
               </div>
+              {% if accompaniment.is_completed() %}
+              <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clip-rule="evenodd"></path>
+                </svg>
+              </div>
+              {% else if accompaniment.is_cooking() %}
+              <div class="px-2 py-1 bg-purple-500 text-white text-xs font-semibold rounded">
+                Cooking
+              </div>
+              {% else %}
               <div class="w-6 h-6 border-2 border-gray-300 rounded-full shrink-0"></div>
+              {% endif %}
             </div>
           </button>
+          {% endif %}
 
           <!-- Dessert -->
-          <button onclick="selectRecipe('dessert')"
+          {% if let Some(dessert) = slot.dessert %}
+          <button
             class="w-full p-3 bg-pink-50 border border-pink-200 rounded-lg text-left hover:border-pink-400 transition">
             <div class="flex items-center gap-3">
               <span class="text-2xl">🍰</span>
               <div class="flex-1 min-w-0">
-                <div class="text-xs text-pink-600 font-semibold uppercase">Dessert</div>
-                <div class="font-semibold truncate">Chocolate Mousse</div>
-                <div class="text-xs text-gray-500">⏱️ 30 min + 2h chill</div>
+                <div class="text-xs text-pink-600 font-semibold uppercase">{{ "Dessert"|t }}</div>
+                <div class="font-semibold truncate">{{ dessert.name }}</div>
+                <div class="text-xs text-gray-500">⏱️ {{ &dessert.total_prep_time()|minutes }}</div>
               </div>
+              {% if dessert.is_completed() %}
+              <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clip-rule="evenodd"></path>
+                </svg>
+              </div>
+              {% else if dessert.is_cooking() %}
+              <div class="px-2 py-1 bg-pink-500 text-white text-xs font-semibold rounded">
+                Cooking
+              </div>
+              {% else %}
               <div class="w-6 h-6 border-2 border-gray-300 rounded-full shrink-0"></div>
+              {% endif %}
             </div>
           </button>
+          {% endif %}
+          {% endif %}
         </div>
       </div>
 
@@ -600,15 +669,17 @@
     <div class="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4"></div>
     <h3 class="font-bold text-lg mb-4">Today's Dishes</h3>
     <div class="space-y-3 max-h-[60vh] overflow-y-auto pb-4">
+      {% if let Some(slot) = slot %}
       <!-- Same dish cards as sidebar -->
-      <button onclick="selectRecipe('appetizer'); toggleMealsPanel();"
-        class="w-full p-3 bg-blue-50 border border-blue-200 rounded-lg text-left">
+      {% if let Some(appetizer) = slot.appetizer %}
+      <button onclick="toggleMealsPanel();" class="w-full p-3 bg-blue-50 border border-blue-200 rounded-lg text-left">
         <div class="flex items-center gap-3">
           <span class="text-2xl">🥗</span>
           <div class="flex-1">
-            <div class="text-xs text-blue-600 font-semibold uppercase">Appetizer</div>
-            <div class="font-semibold">Caesar Salad</div>
+            <div class="text-xs text-blue-600 font-semibold uppercase">{{ "Appetizer"|t }}</div>
+            <div class="font-semibold">{{ appetizer.name }}</div>
           </div>
+          {% if appetizer.is_completed() %}
           <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
             <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd"
@@ -616,41 +687,87 @@
                 clip-rule="evenodd"></path>
             </svg>
           </div>
+          {% else if appetizer.is_cooking() %}
+          <span class="px-2 py-1 bg-blue-500 text-white text-xs font-semibold rounded">Cooking</span>
+          {% else %}
+          <div class="w-6 h-6 border-2 border-gray-300 rounded-full"></div>
+          {% endif %}
         </div>
       </button>
-      <button onclick="selectRecipe('main'); toggleMealsPanel();"
+      {% endif %}
+      <button onclick="toggleMealsPanel();"
         class="w-full p-3 bg-orange-50 border-2 border-orange-500 rounded-lg text-left">
         <div class="flex items-center gap-3">
           <span class="text-2xl">🍛</span>
           <div class="flex-1">
-            <div class="text-xs text-orange-600 font-semibold uppercase">Main Course</div>
-            <div class="font-semibold">Thai Red Curry with Chicken</div>
+            <div class="text-xs text-orange-600 font-semibold uppercase">{{ "Main Course"|t }}</div>
+            <div class="font-semibold">{{ slot.main_course.name }}</div>
           </div>
+          {% if slot.main_course.is_completed() %}
+          <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+            <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clip-rule="evenodd"></path>
+            </svg>
+          </div>
+          {% else if slot.main_course.is_cooking() %}
           <span class="px-2 py-1 bg-orange-500 text-white text-xs font-semibold rounded">Cooking</span>
+          {% else %}
+          <div class="w-6 h-6 border-2 border-gray-300 rounded-full"></div>
+          {% endif %}
         </div>
       </button>
-      <button onclick="selectRecipe('accompaniment'); toggleMealsPanel();"
+      {% if let Some(accompaniment) = slot.accompaniment %}
+      <button onclick="toggleMealsPanel();"
         class="w-full p-3 bg-purple-50 border border-purple-200 rounded-lg text-left">
         <div class="flex items-center gap-3">
           <span class="text-2xl">🍚</span>
           <div class="flex-1">
-            <div class="text-xs text-purple-600 font-semibold uppercase">Side</div>
-            <div class="font-semibold">Jasmine Rice</div>
+            <div class="text-xs text-purple-600 font-semibold uppercase">{{ "Accompaniment"|t }}</div>
+            <div class="font-semibold">{{ accompaniment.name }}</div>
           </div>
+          {% if accompaniment.is_completed() %}
+          <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+            <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clip-rule="evenodd"></path>
+            </svg>
+          </div>
+          {% else if accompaniment.is_cooking() %}
+          <span class="px-2 py-1 bg-purple-500 text-white text-xs font-semibold rounded">Cooking</span>
+          {% else %}
           <div class="w-6 h-6 border-2 border-gray-300 rounded-full"></div>
+          {% endif %}
         </div>
       </button>
-      <button onclick="selectRecipe('dessert'); toggleMealsPanel();"
-        class="w-full p-3 bg-pink-50 border border-pink-200 rounded-lg text-left">
+      {% endif %}
+      {% if let Some(dessert) = slot.dessert %}
+      <button onclick="toggleMealsPanel();" class="w-full p-3 bg-pink-50 border border-pink-200 rounded-lg text-left">
         <div class="flex items-center gap-3">
           <span class="text-2xl">🍰</span>
           <div class="flex-1">
-            <div class="text-xs text-pink-600 font-semibold uppercase">Dessert</div>
-            <div class="font-semibold">Chocolate Mousse</div>
+            <div class="text-xs text-pink-600 font-semibold uppercase">{{ "Dessert"|t }}</div>
+            <div class="font-semibold">{{ dessert.name }}</div>
           </div>
+          {% if dessert.is_completed() %}
+          <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+            <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clip-rule="evenodd"></path>
+            </svg>
+          </div>
+          {% else if dessert.is_cooking() %}
+          <span class="px-2 py-1 bg-pink-500 text-white text-xs font-semibold rounded">Cooking</span>
+          {% else %}
           <div class="w-6 h-6 border-2 border-gray-300 rounded-full"></div>
+          {% endif %}
         </div>
       </button>
+      {% endif %}
+      {% endif %}
     </div>
   </div>
   {% endif %}
@@ -691,11 +808,6 @@
     const overlay = document.getElementById('meals-overlay');
     panel.classList.toggle('translate-y-full');
     overlay.classList.toggle('hidden');
-  }
-
-  // Recipe selection
-  function selectRecipe(type) {
-    alert(`Switching to ${type} recipe...`);
   }
 
   // Timer functions

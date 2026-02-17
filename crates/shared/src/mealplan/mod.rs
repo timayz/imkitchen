@@ -17,6 +17,16 @@ pub struct Slot {
     pub dessert: Option<SlotRecipe>,
 }
 
+#[derive(
+    Encode, Decode, EnumString, Display, AsRefStr, Clone, Debug, Default, PartialEq, Deserialize,
+)]
+pub enum DaySlotStatus {
+    #[default]
+    Idle,
+    Cooking(u8),
+    Completed,
+}
+
 #[derive(Encode, Decode, Default, Clone, PartialEq, Debug)]
 pub struct DaySlotRecipe {
     pub id: String,
@@ -24,11 +34,24 @@ pub struct DaySlotRecipe {
     pub prep_time: u16,
     pub cook_time: u16,
     pub advance_prep: String,
+    pub status: DaySlotStatus,
 }
 
 impl DaySlotRecipe {
     pub fn total_prep_time(&self) -> u16 {
         self.prep_time + self.cook_time
+    }
+
+    pub fn is_idle(&self) -> bool {
+        matches!(self.status, DaySlotStatus::Idle)
+    }
+
+    pub fn is_cooking(&self) -> bool {
+        matches!(self.status, DaySlotStatus::Cooking(_))
+    }
+
+    pub fn is_completed(&self) -> bool {
+        matches!(self.status, DaySlotStatus::Completed)
     }
 }
 

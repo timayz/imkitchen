@@ -21,6 +21,8 @@ pub struct DashboardTemplate {
     pub current_path: String,
     pub user: AuthUser,
     pub slot: Option<SlotRow>,
+    pub slot_completed_count: u8,
+    pub slot_total_count: u8,
     pub week: Option<WeekRow>,
     pub prep_remiders: Option<Vec<DaySlotRecipe>>,
     pub generate_next_weeks_needed: bool,
@@ -35,6 +37,8 @@ impl Default for DashboardTemplate {
             week: None,
             prep_remiders: None,
             generate_next_weeks_needed: false,
+            slot_completed_count: 0,
+            slot_total_count: 1,
         }
     }
 }
@@ -58,6 +62,39 @@ pub async fn page(
     let day = imkitchen_mealplan::now(&user.tz);
     let slot =
         crate::try_page_response!(app.mealplan_query.next_slot_from(day, &user.id), template);
+
+    let mut slot_completed_count = 0;
+    let mut slot_total_count = 1;
+
+    if let Some(ref slot) = slot {
+        if let Some(ref appetizer) = slot.appetizer {
+            slot_total_count += 1;
+
+            if appetizer.is_completed() {
+                slot_completed_count += 1;
+            }
+        }
+
+        if slot.main_course.is_completed() {
+            slot_completed_count += 1;
+        }
+
+        if let Some(ref accompaniment) = slot.accompaniment {
+            slot_total_count += 1;
+
+            if accompaniment.is_completed() {
+                slot_completed_count += 1;
+            }
+        }
+        if let Some(ref dessert) = slot.dessert {
+            slot_total_count += 1;
+
+            if dessert.is_completed() {
+                slot_completed_count += 1;
+            }
+        }
+    };
+
     let prep_remiders = if let Some(ref slot) = slot {
         crate::try_page_response!(
             app.mealplan_query
@@ -97,6 +134,8 @@ pub async fn page(
             week,
             prep_remiders,
             generate_next_weeks_needed,
+            slot_total_count,
+            slot_completed_count,
             ..Default::default()
         }),
     )
