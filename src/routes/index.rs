@@ -3,7 +3,7 @@ use axum::response::IntoResponse;
 use axum_extra::extract::CookieJar;
 use imkitchen_mealplan::slot::SlotRow;
 use imkitchen_mealplan::week::WeekRow;
-use imkitchen_shared::mealplan::DaySlotRecipe;
+use imkitchen_shared::{mealplan::DaySlotRecipe, recipe::RecipeType};
 
 use crate::auth::{AuthToken, AuthUser};
 use crate::routes::AppState;
@@ -21,6 +21,7 @@ pub struct DashboardTemplate {
     pub current_path: String,
     pub user: AuthUser,
     pub slot: Option<SlotRow>,
+    pub slot_recipe: Option<imkitchen_recipe::query::user::UserView>,
     pub slot_completed_count: u8,
     pub slot_total_count: u8,
     pub week: Option<WeekRow>,
@@ -34,6 +35,7 @@ impl Default for DashboardTemplate {
             current_path: "dashboard".to_owned(),
             user: AuthUser::default(),
             slot: None,
+            slot_recipe: None,
             week: None,
             prep_remiders: None,
             generate_next_weeks_needed: false,
@@ -65,18 +67,25 @@ pub async fn page(
 
     let mut slot_completed_count = 0;
     let mut slot_total_count = 1;
+    let mut slot_recipe = None;
 
     if let Some(ref slot) = slot {
+        let mut slot_recipe_id = None;
+
         if let Some(ref appetizer) = slot.appetizer {
             slot_total_count += 1;
 
             if appetizer.is_completed() {
                 slot_completed_count += 1;
+            } else if slot_recipe_id.is_none() {
+                slot_recipe_id = Some(&appetizer.id);
             }
         }
 
         if slot.main_course.is_completed() {
             slot_completed_count += 1;
+        } else if slot_recipe_id.is_none() {
+            slot_recipe_id = Some(&slot.main_course.id);
         }
 
         if let Some(ref accompaniment) = slot.accompaniment {
@@ -84,15 +93,26 @@ pub async fn page(
 
             if accompaniment.is_completed() {
                 slot_completed_count += 1;
+            } else if slot_recipe_id.is_none() {
+                slot_recipe_id = Some(&accompaniment.id);
             }
         }
+
         if let Some(ref dessert) = slot.dessert {
             slot_total_count += 1;
 
             if dessert.is_completed() {
                 slot_completed_count += 1;
+            } else if slot_recipe_id.is_none() {
+                slot_recipe_id = Some(&dessert.id);
             }
         }
+
+        slot_recipe = crate::try_page_response!(
+            app.recipe_query
+                .find_user(slot_recipe_id.unwrap_or(&slot.main_course.id)),
+            template
+        );
     };
 
     let prep_remiders = if let Some(ref slot) = slot {
@@ -131,6 +151,7 @@ pub async fn page(
         template.render(DashboardTemplate {
             user,
             slot,
+            slot_recipe,
             week,
             prep_remiders,
             generate_next_weeks_needed,
