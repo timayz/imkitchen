@@ -1,273 +1,841 @@
 {% extends "_user.html" %}
+
 {% block title %}Dashboard - imkitchen{% endblock %}
+
+{% block before_mobile_nav_items %}
+<!-- Mobile Bottom Navigation (Kitchen Mode Specific) -->
+<button onclick="toggleMealsPanel()" class="flex flex-col items-center py-2 px-3 text-gray-600">
+  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+  </svg>
+  <span class="text-xs mt-1">Dishes</span>
+</button>
+{% endblock %}
+
 {% block content %}
-    {% if generate_next_weeks_needed %}
-      <div ts-trigger="load" ts-req="/calendar/regenerate" ts-req-method="POST" ts-swap="none"></div>
-    {% endif %}
-    <!-- Main Content -->
-    <div class="container mx-auto px-4 py-8">
+{% if generate_next_weeks_needed %}
+<div ts-trigger="load" ts-req="/calendar/regenerate" ts-req-method="POST" ts-swap="none"></div>
+{% endif %}
 
-        <!-- Empty State -->
-        {% if slot.is_none() && week.is_none() %}
-        <div class="max-w-2xl mx-auto">
-            <div class="bg-white rounded-lg shadow-lg p-12 text-center">
-                <div class="text-6xl mb-6">👨‍🍳</div>
-                <h2 class="text-2xl font-bold mb-4">{{ "Welcome to imkitchen!"|t }}</h2>
-                <p class="text-gray-600 mb-8">
-                    {{ "Your kitchen is empty. Let's start by importing some delicious recipes and planning your meals for the week."|t }}
-                </p>
+<!-- Main Content -->
+<div class="container mx-auto px-4 py-6">
+  <!-- Empty State -->
+  {% if slot.is_none() && week.is_none() %}
+  <div class="max-w-2xl mx-auto">
+    <div class="bg-white rounded-lg shadow-lg p-12 text-center">
+      <div class="text-6xl mb-6">👨‍🍳</div>
+      <h2 class="text-2xl font-bold mb-4">{{ "Welcome to imkitchen!"|t }}</h2>
+      <p class="text-gray-600 mb-8">
+        {{ "Your kitchen is empty. Let's start by importing some delicious recipes and planning your meals for the
+        week."|t }}
+      </p>
 
-                <!-- Getting Started Steps -->
-                <div class="space-y-4 mb-8 text-left">
-                    <div class="flex items-start gap-4 p-4 bg-blue-50 rounded-lg">
-                        <div class="shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">1</div>
-                        <div>
-                            <h3 class="font-semibold mb-1">{{ "Create Your First Recipe"|t }}</h3>
-                            <p class="text-sm text-gray-600">{{ "Add recipes from the web or create your own custom recipes"|t }}</p>
-                        </div>
-                    </div>
-
-                    <div class="flex items-start gap-4 p-4 bg-green-50 rounded-lg">
-                        <div class="shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">2</div>
-                        <div>
-                            <h3 class="font-semibold mb-1">{{ "Plan Your Week"|t }}</h3>
-                            <p class="text-sm text-gray-600">{{ "Organize your meals on the calendar and let us generate your shopping list"|t }}</p>
-                        </div>
-                    </div>
-
-                    <div class="flex items-start gap-4 p-4 bg-purple-50 rounded-lg">
-                        <div class="shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold">3</div>
-                        <div>
-                            <h3 class="font-semibold mb-1">{{ "Cook & Enjoy"|t }}</h3>
-                            <p class="text-sm text-gray-600">{{ "Follow your meal plan and enjoy home-cooked meals every day"|t }}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Call to Action -->
-                <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <a href="/recipes" class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition">
-                        ➕ {{ "Create Recipe"|t }}
-                    </a>
-                    <a href="/calendar/week-1" class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition">
-                        📅 {{ "View Calendar"|t }}
-                    </a>
-                </div>
-            </div>
-        </div>
-        {% else %}
-
-        <!-- Welcome -->
-        <div class="mb-8">
-          <h1 class="text-3xl font-bold mb-2">{{ "Welcome Back"|t }}{% if let Some(username) = user.username %}, @{{ username }}{% endif %}</h1>
-            <p class="text-gray-600">{{ "Here's what's cooking today"|t }}</p>
+      <!-- Getting Started Steps -->
+      <div class="space-y-4 mb-8 text-left">
+        <div class="flex items-start gap-4 p-4 bg-blue-50 rounded-lg">
+          <div class="shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">1
+          </div>
+          <div>
+            <h3 class="font-semibold mb-1">{{ "Create Your First Recipe"|t }}</h3>
+            <p class="text-sm text-gray-600">{{ "Add recipes from the web or create your own custom recipes"|t }}</p>
+          </div>
         </div>
 
-        <!-- Today's Meals -->
-        <div class="grid lg:grid-cols-3 gap-6 mb-8">
-            {% if let Some(slot) = slot %}
-            <!-- Nearest Day Card -->
-            <div class="lg:col-span-2 bg-white rounded-lg shadow-lg p-6">
-                <div class="flex items-center justify-between mb-6">
-                    <div>
-                      <h2 class="text-2xl font-bold">{{ slot.day|date_year }}</h2>
-                        <p class="text-gray-600">{{ "Today's Meal Plan"|t }}</p>
-                    </div>
-                </div>
-
-                <!-- Appetizer -->
-                {% if let Some(appetizer) = slot.appetizer %}
-                <div class="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-lg">
-                    <div class="flex items-start gap-4">
-                        <span class="text-4xl">🥗</span>
-                        <div class="flex-1">
-                            <div class="flex items-center justify-between mb-2">
-                                <div>
-                                    <div class="text-xs text-blue-600 font-semibold uppercase mb-1">{{ "Appetizer"|t }}</div>
-                                    <a href="/recipes/{{ appetizer.id }}"><h3 class="font-bold text-lg">{{ appetizer.name }}</h3></a>
-                                </div>
-                                <div class="text-sm text-gray-600">⏱️ {{ &appetizer.total_prep_time()|minutes }}</div>
-                            </div>
-                            {% if appetizer.advance_prep != "" %}
-                            <div class="mt-3 p-2 bg-yellow-100 border border-yellow-300 rounded text-sm text-yellow-800">
-                              ⏰ <strong>{{ "Prep Reminder:"|t }}</strong> {{ appetizer.advance_prep }}
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-
-                <!-- Main Course + Accompaniment -->
-                <div class="mb-6 p-4 bg-orange-50 border-l-4 border-orange-500 rounded-lg">
-                    <div class="flex items-start gap-4">
-                        <span class="text-4xl">🍛</span>
-                        <div class="flex-1">
-                            <div class="flex items-center justify-between mb-2">
-                                <div>
-                                    <div class="text-xs text-orange-600 font-semibold uppercase mb-1">{{ "Main Course"|t }}</div>
-                                    <a href="/recipes/{{ slot.main_course.id }}"><h3 class="font-bold text-lg">{{ slot.main_course.name }}</h3></a>
-                                </div>
-                                <div class="text-sm text-gray-600">⏱️ {{ &slot.main_course.total_prep_time()|minutes }}</div>
-                            </div>
-
-                            {% if slot.main_course.advance_prep != "" %}
-                            <div class="mt-3 p-2 bg-yellow-100 border border-yellow-300 rounded text-sm text-yellow-800">
-                              ⏰ <strong>{{ "Prep Reminder:"|t }}</strong> {{ slot.main_course.advance_prep }}
-                            </div>
-                            {% endif %}
-
-                            {% if let Some(accompaniment) = slot.accompaniment %}
-                            <!-- Accompaniment -->
-                            <div class="mb-3 p-3 bg-white rounded border border-orange-200">
-                                <div class="flex items-center gap-3">
-                                    <span class="text-2xl">🍚</span>
-                                    <div>
-                                        <div class="text-xs text-purple-600 font-semibold uppercase">{{ "Accompaniment"|t }}</div>
-                                        <a href="/recipes/{{ accompaniment.id }}" class="font-semibold">{{ accompaniment.name }}</a>
-                                        <div class="text-xs text-gray-600">⏱️ {{ &accompaniment.total_prep_time()|minutes }}</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {% if accompaniment.advance_prep != "" %}
-                            <div class="mt-3 p-2 bg-yellow-100 border border-yellow-300 rounded text-sm text-yellow-800">
-                              ⏰ <strong>{{ "Prep Reminder:"|t }}</strong> {{ accompaniment.advance_prep }}
-                            </div>
-                            {% endif %}
-                            {% endif %}
-
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Dessert -->
-                {% if let Some(dessert) = slot.dessert %}
-                <div class="p-4 bg-pink-50 border-l-4 border-pink-500 rounded-lg">
-                    <div class="flex items-start gap-4">
-                        <span class="text-4xl">🍰</span>
-                        <div class="flex-1">
-                            <div class="flex items-center justify-between mb-2">
-                                <div>
-                                    <div class="text-xs text-pink-600 font-semibold uppercase mb-1">{{ "Dessert"|t }}</div>
-                                    <a href="/recipes/{{ dessert.id }}"><h3 class="font-bold text-lg">{{ dessert.name }}</h3></a>
-                                </div>
-                                <div class="text-sm text-gray-600">⏱️ {{ &dessert.total_prep_time()|minutes }}</div>
-                            </div>
-                            {% if dessert.advance_prep != "" %}
-                            <div class="mt-3 p-2 bg-yellow-100 border border-yellow-300 rounded text-sm text-yellow-800">
-                              ⏰ <strong>{{ "Prep Reminder:"|t }}</strong> {{ dessert.advance_prep }}
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-            {% endif %}
-
-            <!-- Quick Actions -->
-            <div class="space-y-6">
-                <!-- Actions -->
-                <div class="bg-white rounded-lg shadow-lg p-6">
-                    <h3 class="font-bold text-lg mb-4">{{ "Quick Actions"|t }}</h3>
-                    <div class="space-y-3">
-                        <!-- <a href="/kitchen" class="block w-full px-4 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition text-center"> -->
-                        <!--     🍛 My kitchen -->
-                        <!-- </a> -->
-                        <a href="/calendar/week-1/shopping" class="block w-full px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition text-center">
-                            🛒 {{ "Shopping List"|t }}
-                        </a>
-                        <a href="/recipes/import" class="block w-full px-4 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition text-center">
-                            ➕ {{ "Import Recipes"|t }}
-                        </a>
-                    </div>
-                </div>
-
-                {% if !user.is_premium() %}
-                <!-- Premium Upgrade Banner -->
-                <div class="bg-linear-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4">
-                    <div class="flex flex-col gap-4">
-                        <div class="flex-1">
-                            <div class="flex items-center gap-2 mb-2">
-                                <span class="text-2xl">✨</span>
-                                <h3 class="font-bold text-lg text-amber-900">{{ "Unlock the Full Experience"|t }}</h3>
-                            </div>
-                            <p class="text-amber-800 text-sm mb-3">{{ "You're on the free plan. Upgrade to Premium to get:"|t }}</p>
-                            <div class="grid grid-cols-1 gap-2 text-sm">
-                                <div class="flex items-center gap-2 text-amber-700">
-                                    <span class="text-green-600">✓</span>
-                                    <span>{{ "Unlimited recipes in plan"|t }}</span>
-                                </div>
-                                <div class="flex items-center gap-2 text-amber-700">
-                                    <span class="text-green-600">✓</span>
-                                    <span>{{ "Appetizers, desserts & sides"|t }}</span>
-                                </div>
-                                <div class="flex items-center gap-2 text-amber-700">
-                                    <span class="text-green-600">✓</span>
-                                    <span>{{ "Meal preferences applied"|t }}</span>
-                                </div>
-                                <div class="flex items-center gap-2 text-amber-700">
-                                    <span class="text-green-600">✓</span>
-                                    <span>{{ "Batch recipe import"|t }}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div>
-                            <a href="/upgrade" class="block w-full px-6 py-3 bg-linear-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-lg hover:from-amber-600 hover:to-orange-600 transition shadow-md text-center">
-                                {{ "Upgrade to Premium"|t }}
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-
-                <!-- Advance preps -->
-                {% if let Some(remiders) = prep_remiders %}
-                <div class="bg-white rounded-lg shadow-lg p-6">
-                  <h3 class="font-bold text-lg mb-4">{{ "Tomorrow's Prep Reminder"|t }}</h3>
-                  {% for recipe in remiders %}
-                  <a href="/recipes/{{ recipe.id }}">
-                    <div class="mt-3 p-2 bg-yellow-100 border border-yellow-300 rounded text-sm text-yellow-800">
-                      ⏰ <strong>{{ recipe.name }}:</strong> {{ recipe.advance_prep }}
-                    </div>
-                  </a>
-                  {% endfor %}
-                </div>
-                {% endif %}
-            </div>
+        <div class="flex items-start gap-4 p-4 bg-green-50 rounded-lg">
+          <div class="shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">
+            2
+          </div>
+          <div>
+            <h3 class="font-semibold mb-1">{{ "Plan Your Week"|t }}</h3>
+            <p class="text-sm text-gray-600">{{ "Organize your meals on the calendar and let us generate your shopping
+              list"|t }}</p>
+          </div>
         </div>
 
-        <!-- Upcoming Week Preview -->
-        {% if let (Some(slot), Some(week)) = (slot.as_ref(), week.as_ref()) %}
-        <div class="bg-white rounded-lg shadow-lg p-6">
-            <h2 class="text-xl font-bold mb-4">{{ "This Week at a Glance"|t }}</h2>
-            <div class="grid md:grid-cols-7 gap-4">
-                {% for week_slot in week.slots.iter() %}
-                <a href="/kitchen/{{ week_slot.day }}" class="p-4 {% if week_slot.day != slot.day %}bg-gray-50 border border-gray-200{% else %}bg-green-50 border-2 border-green-500{% endif %} rounded-lg hover:border-green-500">
-                  <div class="font-bold text-sm mb-2">{{ week_slot.day|weekday }}</div>
-                    <div class="text-xs text-gray-600 space-y-1">
-                        {% if let Some(appetizer) = week_slot.appetizer %}
-                        <div>🥗 {{ appetizer.name }}</div>
-                        {% endif %}
-                        <div>🍛 {{ week_slot.main_course.name }}</div>
-                        {% if let Some(accompaniment) = week_slot.accompaniment %}
-                        <div>🍚 {{ accompaniment.name }}</div>
-                        {% endif %}
-                        {% if let Some(dessert) = week_slot.dessert %}
-                        <div>🍰 {{ dessert.name }}</div>
-                        {% endif %}
-                    </div>
-                </a>
-                {% endfor %}
-            </div>
-            <div class="mt-4 text-center">
-                <a href="/calendar/week-1" class="text-green-600 font-semibold hover:text-green-700">
-                    {{ "View Full Calendar →"|t }}
-                </a>
-            </div>
+        <div class="flex items-start gap-4 p-4 bg-purple-50 rounded-lg">
+          <div
+            class="shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold">
+            3</div>
+          <div>
+            <h3 class="font-semibold mb-1">{{ "Cook & Enjoy"|t }}</h3>
+            <p class="text-sm text-gray-600">{{ "Follow your meal plan and enjoy home-cooked meals every day"|t }}</p>
+          </div>
         </div>
-        {% endif %}
-        {% endif %}
+      </div>
+
+      <!-- Call to Action -->
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="/recipes"
+          class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition">
+          ➕ {{ "Create Recipe"|t }}
+        </a>
+        <a href="/calendar/week-1"
+          class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition">
+          📅 {{ "View Calendar"|t }}
+        </a>
+      </div>
     </div>
+  </div>
+  {% else %}
+  <!-- Today's Date & Progress -->
+  {% if let Some(slot) = slot %}
+  <div class="mb-6">
+    <div class="flex items-center justify-between mb-2">
+      <div>
+        <h1 class="text-2xl font-bold">{{ slot.day|date_year }}</h1>
+        <p class="text-gray-600">{{ "Today's Meal Plan"|t }}</p>
+      </div>
+      <div class="text-right">
+        <div class="text-sm text-gray-500">Session Progress</div>
+        <div class="text-lg font-bold text-green-600">{{ slot_completed_count }} of {{ slot_total_count }} dishes</div>
+      </div>
+    </div>
+    <!-- Progress Bar -->
+    <div class="flex gap-1">
+      {% if let Some(appetizer) = slot.appetizer %}
+      <div
+        class="flex-1 h-2 {% if appetizer.is_completed() %}bg-green-500{% else %}bg-gray-200{% endif %} rounded-full">
+      </div>
+      {% endif %}
+      <div
+        class="flex-1 h-2 {% if slot.main_course.is_completed() %}bg-green-500{% else %}bg-gray-200{% endif %} rounded-full">
+      </div>
+      {% if let Some(accompaniment) = slot.accompaniment %}
+      <div
+        class="flex-1 h-2 {% if accompaniment.is_completed() %}bg-green-500{% else %}bg-gray-200{% endif %} rounded-full">
+      </div>
+      {% endif %}
+      {% if let Some(dessert) = slot.dessert %}
+      <div class="flex-1 h-2 {% if dessert.is_completed() %}bg-green-500{% else %}bg-gray-200{% endif %} rounded-full">
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+  <div class="grid lg:grid-cols-3 gap-6 mb-8">
+    <!-- Main Content Area -->
+    <div class="lg:col-span-2 space-y-6">
+      <!-- Current Recipe Card -->
+      <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <!-- Recipe Header with Color Banner -->
+        {% if let Some(slot_recipe) = slot_recipe %}
+        {% decl slot_recipe_bg -%}
+        {% decl slot_recipe_icon -%}
+        {% match slot_recipe.recipe_type.0 %}
+        {% when RecipeType::Appetizer %}
+        {% let slot_recipe_bg = "from-blue-400 to-blue-500" -%}
+        {% let slot_recipe_icon = "🥗" -%}
+        {% when RecipeType::MainCourse %}
+        {% let slot_recipe_bg = "from-orange-400 to-red-500" -%}
+        {% let slot_recipe_icon = "🍛" -%}
+        {% when RecipeType::Dessert %}
+        {% let slot_recipe_bg = "from-pink-400 to-pink-500" -%}
+        {% let slot_recipe_icon = "🍰" -%}
+        {% when RecipeType::Accompaniment %}
+        {% let slot_recipe_bg = "from-purple-400 to-purple-500" -%}
+        {% let slot_recipe_icon = "🍚" -%}
+        {% endmatch %}
+        <div class="bg-linear-to-r {{ slot_recipe_bg }} p-4 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="text-4xl">{{ slot_recipe_icon }}</span>
+            <div class="text-white">
+              <div class="text-xs font-semibold uppercase opacity-90">Now Cooking</div>
+              <h2 class="text-xl font-bold">{{ slot_recipe.name }}</h2>
+            </div>
+          </div>
+          <span class="px-3 py-1 bg-white/20 text-white text-sm font-semibold rounded-full">
+            {{ slot_recipe.recipe_type.as_ref()|t }}
+          </span>
+        </div>
+
+        <!-- View Tabs -->
+        <div class="border-b border-gray-200">
+          <div class="flex">
+            <button id="tab-steps" onclick="switchView('steps')"
+              class="flex-1 px-4 py-3 text-center font-semibold text-green-600 border-b-2 border-green-600">
+              Steps
+            </button>
+            <button id="tab-ingredients" onclick="switchView('ingredients')"
+              class="flex-1 px-4 py-3 text-center font-semibold text-gray-500 hover:text-gray-700 border-b-2 border-transparent">
+              Ingredients
+            </button>
+            <button id="tab-overview" onclick="switchView('overview')"
+              class="flex-1 px-4 py-3 text-center font-semibold text-gray-500 hover:text-gray-700 border-b-2 border-transparent">
+              Overview
+            </button>
+          </div>
+        </div>
+
+        <!-- Steps View -->
+        <div id="view-steps" class="p-6">
+          <!-- Step Progress -->
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-sm text-gray-500">Step 4 of 6</span>
+            <div class="flex gap-1">
+              <div class="w-8 h-1 bg-green-500 rounded-full"></div>
+              <div class="w-8 h-1 bg-green-500 rounded-full"></div>
+              <div class="w-8 h-1 bg-green-500 rounded-full"></div>
+              <div class="w-8 h-1 bg-orange-500 rounded-full"></div>
+              <div class="w-8 h-1 bg-gray-200 rounded-full"></div>
+              <div class="w-8 h-1 bg-gray-200 rounded-full"></div>
+            </div>
+          </div>
+
+          <!-- Current Step -->
+          <div class="bg-orange-50 border-l-4 border-orange-500 rounded-r-lg p-6 mb-6">
+            <div class="flex items-start gap-4">
+              <div
+                class="w-10 h-10 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold text-lg shrink-0">
+                4
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs text-orange-600 font-semibold uppercase">Current Step</span>
+                  <button onclick="startTimer(15)"
+                    class="flex items-center gap-1 px-3 py-1 bg-orange-500 text-white text-sm font-semibold rounded-lg hover:bg-orange-600 transition">
+                    ⏱️ 15 min
+                  </button>
+                </div>
+                <p class="text-lg leading-relaxed">
+                  Pour in <strong class="text-orange-700">coconut milk</strong> and bring to a <strong
+                    class="text-orange-700">gentle simmer</strong>. Stir occasionally to combine the curry paste
+                  evenly.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pro Tip -->
+          <!-- <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6"> -->
+          <!--   <div class="flex items-start gap-3"> -->
+          <!--     <span class="text-xl">💡</span> -->
+          <!--     <div> -->
+          <!--       <div class="font-semibold text-yellow-800 text-sm mb-1">Pro Tip</div> -->
+          <!--       <p class="text-sm text-yellow-700">Don't let the coconut milk boil vigorously - a gentle simmer -->
+          <!--         prevents it from separating and keeps the curry creamy.</p> -->
+          <!--     </div> -->
+          <!--   </div> -->
+          <!-- </div> -->
+
+          <!-- Step Navigation -->
+          <div class="flex gap-3">
+            <button onclick="prevStep()"
+              class="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-lg font-semibold flex items-center justify-center gap-2 transition">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+              </svg>
+              Previous
+            </button>
+            <button onclick="nextStep()"
+              class="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold flex items-center justify-center gap-2 transition">
+              Done, Next
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Previous & Upcoming Steps -->
+          <div class="mt-6 pt-6 border-t border-gray-200">
+            <!-- Completed Steps (Collapsed) -->
+            <button onclick="togglePreviousSteps()"
+              class="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-4">
+              <svg id="chevron-previous" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+              Show completed steps (3)
+            </button>
+
+            <div id="previous-steps" class="hidden space-y-2 mb-4">
+              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg opacity-60">
+                <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                  <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clip-rule="evenodd"></path>
+                  </svg>
+                </div>
+                <span class="text-sm line-through text-gray-500">Heat vegetable oil in a large wok over medium-high
+                  heat</span>
+              </div>
+              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg opacity-60">
+                <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                  <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clip-rule="evenodd"></path>
+                  </svg>
+                </div>
+                <span class="text-sm line-through text-gray-500">Add red curry paste and fry for 1-2 minutes</span>
+              </div>
+              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg opacity-60">
+                <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                  <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clip-rule="evenodd"></path>
+                  </svg>
+                </div>
+                <span class="text-sm line-through text-gray-500">Add chicken pieces and stir-fry until white</span>
+              </div>
+            </div>
+
+            <!-- Upcoming Steps -->
+            <div class="text-sm text-gray-500 mb-2">Coming up next</div>
+            <div class="space-y-2">
+              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <div
+                  class="w-6 h-6 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-sm font-semibold">
+                  5</div>
+                <span class="text-sm text-gray-700">Add vegetables and seasonings, simmer 15-20 min</span>
+              </div>
+              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <div
+                  class="w-6 h-6 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-sm font-semibold">
+                  6</div>
+                <span class="text-sm text-gray-700">Final seasoning and garnish with basil</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ingredients View (Hidden by default) -->
+        <div id="view-ingredients" class="p-6 hidden">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold">Ingredients Checklist</h3>
+            <span class="text-sm text-gray-500">5 of 10 ready</span>
+          </div>
+
+          <div class="space-y-2">
+            <label
+              class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition">
+              <input type="checkbox" checked
+                class="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500">
+              <span class="flex-1 line-through text-gray-500">500g Chicken breast, diced</span>
+              <span class="text-xs text-green-600 font-semibold">Ready</span>
+            </label>
+            <label
+              class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition">
+              <input type="checkbox" checked
+                class="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500">
+              <span class="flex-1 line-through text-gray-500">400ml Coconut milk</span>
+              <span class="text-xs text-green-600 font-semibold">Ready</span>
+            </label>
+            <label
+              class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition">
+              <input type="checkbox" checked
+                class="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500">
+              <span class="flex-1 line-through text-gray-500">3 tbsp Red curry paste</span>
+              <span class="text-xs text-green-600 font-semibold">Ready</span>
+            </label>
+            <label
+              class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition">
+              <input type="checkbox" checked
+                class="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500">
+              <span class="flex-1 line-through text-gray-500">1 Red bell pepper, sliced</span>
+              <span class="text-xs text-green-600 font-semibold">Ready</span>
+            </label>
+            <label
+              class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition">
+              <input type="checkbox" checked
+                class="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500">
+              <span class="flex-1 line-through text-gray-500">1 cup Bamboo shoots</span>
+              <span class="text-xs text-green-600 font-semibold">Ready</span>
+            </label>
+            <label
+              class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition">
+              <input type="checkbox" class="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500">
+              <span class="flex-1">2 Kaffir lime leaves</span>
+            </label>
+            <label
+              class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition">
+              <input type="checkbox" class="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500">
+              <span class="flex-1">2 tbsp Fish sauce</span>
+            </label>
+            <label
+              class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition">
+              <input type="checkbox" class="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500">
+              <span class="flex-1">1 tbsp Palm sugar</span>
+            </label>
+            <label
+              class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition">
+              <input type="checkbox" class="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500">
+              <span class="flex-1">Fresh basil leaves</span>
+            </label>
+            <label
+              class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition">
+              <input type="checkbox" class="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500">
+              <span class="flex-1">2 tbsp Vegetable oil</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Overview View (Hidden by default) -->
+        <div id="view-overview" class="p-6 hidden">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-gray-50 rounded-lg p-4 text-center">
+              <div class="text-2xl mb-1">⏱️</div>
+              <div class="text-xs text-gray-500">Prep Time</div>
+              <div class="font-bold">15 min</div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4 text-center">
+              <div class="text-2xl mb-1">🍳</div>
+              <div class="text-xs text-gray-500">Cook Time</div>
+              <div class="font-bold">30 min</div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4 text-center">
+              <div class="text-2xl mb-1">👥</div>
+              <div class="text-xs text-gray-500">Servings</div>
+              <div class="font-bold">4 people</div>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-4 text-center">
+              <div class="text-2xl mb-1">📊</div>
+              <div class="text-xs text-gray-500">Difficulty</div>
+              <div class="font-bold">Medium</div>
+            </div>
+          </div>
+
+          <div class="flex gap-2 flex-wrap mb-6">
+            <span class="px-3 py-1 bg-green-100 text-green-800 text-sm font-semibold rounded-full">Gluten-Free</span>
+            <span class="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-semibold rounded-full">Thai</span>
+          </div>
+
+          <h3 class="font-bold mb-4">All Steps</h3>
+          <div class="space-y-3">
+            <div class="flex items-start gap-3 p-3 bg-green-50 border-l-4 border-green-500 rounded-r-lg">
+              <div
+                class="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0">
+                1</div>
+              <p class="text-sm">Heat vegetable oil in a large wok or pan over medium-high heat.</p>
+            </div>
+            <div class="flex items-start gap-3 p-3 bg-green-50 border-l-4 border-green-500 rounded-r-lg">
+              <div
+                class="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0">
+                2</div>
+              <p class="text-sm">Add red curry paste and fry for 1-2 minutes until fragrant.</p>
+            </div>
+            <div class="flex items-start gap-3 p-3 bg-green-50 border-l-4 border-green-500 rounded-r-lg">
+              <div
+                class="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0">
+                3</div>
+              <p class="text-sm">Add chicken pieces and stir-fry until they turn white on the outside.</p>
+            </div>
+            <div class="flex items-start gap-3 p-3 bg-orange-50 border-l-4 border-orange-500 rounded-r-lg">
+              <div
+                class="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0">
+                4</div>
+              <p class="text-sm">Pour in coconut milk and bring to a gentle simmer.</p>
+            </div>
+            <div class="flex items-start gap-3 p-3 bg-gray-50 border-l-4 border-gray-300 rounded-r-lg">
+              <div
+                class="w-6 h-6 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-sm font-bold shrink-0">
+                5</div>
+              <p class="text-sm">Add bell peppers, bamboo shoots, kaffir lime leaves, fish sauce, and palm sugar.
+                Simmer for 15-20 minutes.</p>
+            </div>
+            <div class="flex items-start gap-3 p-3 bg-gray-50 border-l-4 border-gray-300 rounded-r-lg">
+              <div
+                class="w-6 h-6 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-sm font-bold shrink-0">
+                6</div>
+              <p class="text-sm">Taste and adjust seasoning. Garnish with fresh basil leaves before serving.</p>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Sidebar - Today's Meal Plan -->
+    <div class="space-y-6">
+      {% if !user.is_premium() %}
+      <!-- Premium Upgrade Banner -->
+      <div class="bg-linear-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4">
+        <div class="flex flex-col gap-4">
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-2xl">✨</span>
+              <h3 class="font-bold text-lg text-amber-900">{{ "Unlock the Full Experience"|t }}</h3>
+            </div>
+            <p class="text-amber-800 text-sm mb-3">{{ "You're on the free plan. Upgrade to Premium to get:"|t }}</p>
+            <div class="grid grid-cols-1 gap-2 text-sm">
+              <div class="flex items-center gap-2 text-amber-700">
+                <span class="text-green-600">✓</span>
+                <span>{{ "Unlimited recipes in plan"|t }}</span>
+              </div>
+              <div class="flex items-center gap-2 text-amber-700">
+                <span class="text-green-600">✓</span>
+                <span>{{ "Appetizers, desserts & sides"|t }}</span>
+              </div>
+              <div class="flex items-center gap-2 text-amber-700">
+                <span class="text-green-600">✓</span>
+                <span>{{ "Meal preferences applied"|t }}</span>
+              </div>
+              <div class="flex items-center gap-2 text-amber-700">
+                <span class="text-green-600">✓</span>
+                <span>{{ "Batch recipe import"|t }}</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <a href="/upgrade"
+              class="block w-full px-6 py-3 bg-linear-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-lg hover:from-amber-600 hover:to-orange-600 transition shadow-md text-center">
+              {{ "Upgrade to Premium"|t }}
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Today's Dishes -->
+      <div class="hidden md:block bg-white rounded-xl shadow-lg p-6">
+        <h3 class="font-bold text-lg mb-4">Today's Dishes</h3>
+        <div class="space-y-3">
+          {% if let Some(slot) = slot %}
+          <!-- Appetizer (Completed) -->
+          {% if let Some(appetizer) = slot.appetizer %}
+          <button
+            class="w-full p-3 bg-blue-50 border border-blue-200 rounded-lg text-left hover:border-blue-400 transition">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">🥗</span>
+              <div class="flex-1 min-w-0">
+                <div class="text-xs text-blue-600 font-semibold uppercase">{{ "Appetizer"|t }}</div>
+                <div class="font-semibold truncate">{{ appetizer.name }}</div>
+                <div class="text-xs text-gray-500">⏱️ {{ &appetizer.total_prep_time()|minutes }}</div>
+              </div>
+              {% if appetizer.is_completed() %}
+              <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clip-rule="evenodd"></path>
+                </svg>
+              </div>
+              {% else if appetizer.is_cooking() %}
+              <div class="px-2 py-1 bg-blue-500 text-white text-xs font-semibold rounded">
+                Cooking
+              </div>
+              {% else %}
+              <div class="w-6 h-6 border-2 border-gray-300 rounded-full shrink-0"></div>
+              {% endif %}
+            </div>
+          </button>
+          {% endif %}
+
+          <!-- Main Course (Active) -->
+          <button class="w-full p-3 bg-orange-50 border border-orange-200 rounded-lg text-left hover:border-orange-400">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">🍛</span>
+              <div class="flex-1 min-w-0">
+                <div class="text-xs text-orange-600 font-semibold uppercase">{{ "Main Course"|t }}</div>
+                <div class="font-semibold truncate">{{ slot.main_course.name }}</div>
+                <div class="text-xs text-gray-500">⏱️ {{ &slot.main_course.total_prep_time()|minutes }}</div>
+              </div>
+              {% if slot.main_course.is_completed() %}
+              <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clip-rule="evenodd"></path>
+                </svg>
+              </div>
+              {% else if slot.main_course.is_cooking() %}
+              <div class="px-2 py-1 bg-orange-500 text-white text-xs font-semibold rounded">
+                Cooking
+              </div>
+              {% else %}
+              <div class="w-6 h-6 border-2 border-gray-300 rounded-full shrink-0"></div>
+              {% endif %}
+            </div>
+          </button>
+
+          <!-- Accompaniment -->
+          {% if let Some(accompaniment) = slot.accompaniment %}
+          <button
+            class="w-full p-3 bg-purple-50 border border-purple-200 rounded-lg text-left hover:border-purple-400 transition ml-4">
+            <div class="flex items-center gap-3">
+              <span class="text-xl">🍚</span>
+              <div class="flex-1 min-w-0">
+                <div class="text-xs text-purple-600 font-semibold uppercase">{{ "Accompaniment"|t }}</div>
+                <div class="font-semibold truncate">{{ accompaniment.name }}</div>
+                <div class="text-xs text-gray-500">⏱️ {{ &accompaniment.total_prep_time()|minutes }}</div>
+              </div>
+              {% if accompaniment.is_completed() %}
+              <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clip-rule="evenodd"></path>
+                </svg>
+              </div>
+              {% else if accompaniment.is_cooking() %}
+              <div class="px-2 py-1 bg-purple-500 text-white text-xs font-semibold rounded">
+                Cooking
+              </div>
+              {% else %}
+              <div class="w-6 h-6 border-2 border-gray-300 rounded-full shrink-0"></div>
+              {% endif %}
+            </div>
+          </button>
+          {% endif %}
+
+          <!-- Dessert -->
+          {% if let Some(dessert) = slot.dessert %}
+          <button
+            class="w-full p-3 bg-pink-50 border border-pink-200 rounded-lg text-left hover:border-pink-400 transition">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">🍰</span>
+              <div class="flex-1 min-w-0">
+                <div class="text-xs text-pink-600 font-semibold uppercase">{{ "Dessert"|t }}</div>
+                <div class="font-semibold truncate">{{ dessert.name }}</div>
+                <div class="text-xs text-gray-500">⏱️ {{ &dessert.total_prep_time()|minutes }}</div>
+              </div>
+              {% if dessert.is_completed() %}
+              <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clip-rule="evenodd"></path>
+                </svg>
+              </div>
+              {% else if dessert.is_cooking() %}
+              <div class="px-2 py-1 bg-pink-500 text-white text-xs font-semibold rounded">
+                Cooking
+              </div>
+              {% else %}
+              <div class="w-6 h-6 border-2 border-gray-300 rounded-full shrink-0"></div>
+              {% endif %}
+            </div>
+          </button>
+          {% endif %}
+          {% endif %}
+        </div>
+      </div>
+
+
+      {% if let (Some(remiders), true) = (prep_remiders.as_ref(), user.is_premium()) %}
+      <div class="bg-white rounded-lg shadow-lg p-6">
+        <h3 class="font-bold text-lg mb-4">{{ "Tomorrow's Prep Reminder"|t }}</h3>
+        {% for recipe in remiders %}
+        <a href="/recipes/{{ recipe.id }}">
+          <div class="mt-3 p-2 bg-yellow-100 border border-yellow-300 rounded text-sm text-yellow-800">
+            ⏰ <strong>{{ recipe.name }}:</strong> {{ recipe.advance_prep }}
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <!-- Recipe Suggestions -->
+  <div class="bg-white rounded-lg shadow-lg p-6">
+    <h2 class="text-xl font-bold mb-4">Add More Variety</h2>
+    <div class="grid md:grid-cols-3 gap-4">
+      <a href="/recipes/community"
+        class="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition text-center">
+        <div class="text-3xl mb-2">🔍</div>
+        <div class="font-semibold">Browse Community</div>
+        <div class="text-sm text-gray-600">Discover shared recipes</div>
+      </a>
+      <button ts-req="/recipes/create" ts-req-method="post"
+        class="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition text-center">
+        <div class="text-3xl mb-2">✏️</div>
+        <div class="font-semibold">Create Recipe</div>
+        <div class="text-sm text-gray-600">Add your own recipe</div>
+      </button>
+      <a href="/recipes/import"
+        class="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition text-center">
+        <div class="text-3xl mb-2">📥</div>
+        <div class="font-semibold">Import Recipes</div>
+        <div class="text-sm text-gray-600">Bulk JSON import</div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Recipe Complete Modal -->
+<div id="complete-modal" class="fixed inset-0 bg-black/50 z-60 hidden items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-md w-full p-8 text-center">
+    <div class="text-6xl mb-4">🎉</div>
+    <h2 class="text-2xl font-bold mb-2">Recipe Complete!</h2>
+    <p class="text-gray-600 mb-6">Thai Red Curry with Chicken is ready to serve</p>
+
+    <div class="bg-gray-50 rounded-lg p-4 mb-6">
+      <div class="text-sm text-gray-500 mb-1">Total cooking time</div>
+      <div class="text-3xl font-mono font-bold text-green-600">42:18</div>
+    </div>
+
+    <div class="space-y-3">
+      <button onclick="startNextRecipe()"
+        class="w-full px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition">
+        🍚 Start Next: Jasmine Rice
+      </button>
+      <a href="dashboard-free.html"
+        class="block w-full px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition">
+        Exit Kitchen Mode
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Mobile Meals Panel (Slide-up) -->
+<div id="meals-panel"
+  class="fixed inset-x-0 bottom-0 bg-white rounded-t-2xl shadow-2xl z-55 transform translate-y-full transition-transform duration-300 md:hidden">
+  <div class="p-4">
+    <div class="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4"></div>
+    <h3 class="font-bold text-lg mb-4">Today's Dishes</h3>
+    <div class="space-y-3 max-h-[60vh] overflow-y-auto pb-4">
+      {% if let Some(slot) = slot %}
+      <!-- Same dish cards as sidebar -->
+      {% if let Some(appetizer) = slot.appetizer %}
+      <button onclick="toggleMealsPanel();" class="w-full p-3 bg-blue-50 border border-blue-200 rounded-lg text-left">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">🥗</span>
+          <div class="flex-1">
+            <div class="text-xs text-blue-600 font-semibold uppercase">{{ "Appetizer"|t }}</div>
+            <div class="font-semibold">{{ appetizer.name }}</div>
+          </div>
+          {% if appetizer.is_completed() %}
+          <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+            <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clip-rule="evenodd"></path>
+            </svg>
+          </div>
+          {% else if appetizer.is_cooking() %}
+          <span class="px-2 py-1 bg-blue-500 text-white text-xs font-semibold rounded">Cooking</span>
+          {% else %}
+          <div class="w-6 h-6 border-2 border-gray-300 rounded-full"></div>
+          {% endif %}
+        </div>
+      </button>
+      {% endif %}
+      <button onclick="toggleMealsPanel();"
+        class="w-full p-3 bg-orange-50 border border-orange-200 rounded-lg text-left">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">🍛</span>
+          <div class="flex-1">
+            <div class="text-xs text-orange-600 font-semibold uppercase">{{ "Main Course"|t }}</div>
+            <div class="font-semibold">{{ slot.main_course.name }}</div>
+          </div>
+          {% if slot.main_course.is_completed() %}
+          <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+            <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clip-rule="evenodd"></path>
+            </svg>
+          </div>
+          {% else if slot.main_course.is_cooking() %}
+          <span class="px-2 py-1 bg-orange-500 text-white text-xs font-semibold rounded">Cooking</span>
+          {% else %}
+          <div class="w-6 h-6 border-2 border-gray-300 rounded-full"></div>
+          {% endif %}
+        </div>
+      </button>
+      {% if let Some(accompaniment) = slot.accompaniment %}
+      <button onclick="toggleMealsPanel();"
+        class="w-full p-3 bg-purple-50 border border-purple-200 rounded-lg text-left">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">🍚</span>
+          <div class="flex-1">
+            <div class="text-xs text-purple-600 font-semibold uppercase">{{ "Accompaniment"|t }}</div>
+            <div class="font-semibold">{{ accompaniment.name }}</div>
+          </div>
+          {% if accompaniment.is_completed() %}
+          <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+            <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clip-rule="evenodd"></path>
+            </svg>
+          </div>
+          {% else if accompaniment.is_cooking() %}
+          <span class="px-2 py-1 bg-purple-500 text-white text-xs font-semibold rounded">Cooking</span>
+          {% else %}
+          <div class="w-6 h-6 border-2 border-gray-300 rounded-full"></div>
+          {% endif %}
+        </div>
+      </button>
+      {% endif %}
+      {% if let Some(dessert) = slot.dessert %}
+      <button onclick="toggleMealsPanel();" class="w-full p-3 bg-pink-50 border border-pink-200 rounded-lg text-left">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">🍰</span>
+          <div class="flex-1">
+            <div class="text-xs text-pink-600 font-semibold uppercase">{{ "Dessert"|t }}</div>
+            <div class="font-semibold">{{ dessert.name }}</div>
+          </div>
+          {% if dessert.is_completed() %}
+          <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+            <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clip-rule="evenodd"></path>
+            </svg>
+          </div>
+          {% else if dessert.is_cooking() %}
+          <span class="px-2 py-1 bg-pink-500 text-white text-xs font-semibold rounded">Cooking</span>
+          {% else %}
+          <div class="w-6 h-6 border-2 border-gray-300 rounded-full"></div>
+          {% endif %}
+        </div>
+      </button>
+      {% endif %}
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<div id="meals-overlay" onclick="toggleMealsPanel()" class="fixed inset-0 bg-black/50 z-54 hidden md:hidden"></div>
+
+<script>
+  // View switching
+  function switchView(view) {
+    const views = ['steps', 'ingredients', 'overview'];
+    views.forEach(v => {
+      const viewEl = document.getElementById(`view-${v}`);
+      const tabEl = document.getElementById(`tab-${v}`);
+      if (v === view) {
+        viewEl.classList.remove('hidden');
+        tabEl.classList.add('text-green-600', 'border-green-600');
+        tabEl.classList.remove('text-gray-500', 'border-transparent');
+      } else {
+        viewEl.classList.add('hidden');
+        tabEl.classList.remove('text-green-600', 'border-green-600');
+        tabEl.classList.add('text-gray-500', 'border-transparent');
+      }
+    });
+  }
+
+  // Toggle previous steps
+  function togglePreviousSteps() {
+    const el = document.getElementById('previous-steps');
+    const chevron = document.getElementById('chevron-previous');
+    el.classList.toggle('hidden');
+    chevron.classList.toggle('rotate-180');
+  }
+
+  // Mobile meals panel
+  function toggleMealsPanel() {
+    const panel = document.getElementById('meals-panel');
+    const overlay = document.getElementById('meals-overlay');
+    panel.classList.toggle('translate-y-full');
+    overlay.classList.toggle('hidden');
+  }
+
+  // Timer functions
+  function startTimer(minutes) {
+    alert(`Starting ${minutes} minute timer...`);
+  }
+
+  function startNextRecipe() {
+    document.getElementById('complete-modal').classList.add('hidden');
+    alert('Starting Jasmine Rice recipe...');
+  }
+</script>
 {% endblock %}
