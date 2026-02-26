@@ -83,4 +83,10 @@ pub enum MealPlan {
         slots: Vec<Slot>,
         household_size: u16,
     },
+
+    SlotRecipeStatusChanged {
+        day: u64,
+        recipe_id: String,
+        status: DaySlotStatus,
+    },
 }

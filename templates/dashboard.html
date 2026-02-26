@@ -168,16 +168,18 @@
 
         <!-- Steps View -->
         <div id="view-steps" class="p-6">
+          {% if let Some((pos,instruction)) = current_instruction %}
           <!-- Step Progress -->
           <div class="flex items-center justify-between mb-4">
-            <span class="text-sm text-gray-500">Step 4 of 6</span>
+            <span class="text-sm text-gray-500">Step {{ pos + 1 }} of {{ slot_recipe.instructions.len() }}</span>
             <div class="flex gap-1">
+              {% for _ in completed_instructions %}
               <div class="w-8 h-1 bg-green-500 rounded-full"></div>
-              <div class="w-8 h-1 bg-green-500 rounded-full"></div>
-              <div class="w-8 h-1 bg-green-500 rounded-full"></div>
+              {% endfor %}
               <div class="w-8 h-1 bg-orange-500 rounded-full"></div>
+              {% for _ in coming_instructions %}
               <div class="w-8 h-1 bg-gray-200 rounded-full"></div>
-              <div class="w-8 h-1 bg-gray-200 rounded-full"></div>
+              {% endfor %}
             </div>
           </div>
 
@@ -186,21 +188,11 @@
             <div class="flex items-start gap-4">
               <div
                 class="w-10 h-10 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold text-lg shrink-0">
-                4
+                {{ pos + 1 }}
               </div>
               <div class="flex-1">
-                <div class="flex items-center justify-between mb-2">
-                  <span class="text-xs text-orange-600 font-semibold uppercase">Current Step</span>
-                  <button onclick="startTimer(15)"
-                    class="flex items-center gap-1 px-3 py-1 bg-orange-500 text-white text-sm font-semibold rounded-lg hover:bg-orange-600 transition">
-                    ⏱️ 15 min
-                  </button>
-                </div>
-                <p class="text-lg leading-relaxed">
-                  Pour in <strong class="text-orange-700">coconut milk</strong> and bring to a <strong
-                    class="text-orange-700">gentle simmer</strong>. Stir occasionally to combine the curry paste
-                  evenly.
-                </p>
+                <span class="text-xs text-orange-600 font-semibold uppercase">Current Step</span>
+                <p class="text-lg leading-relaxed mt-1">{{ instruction.description }}</p>
               </div>
             </div>
           </div>
@@ -218,36 +210,48 @@
           <!-- </div> -->
 
           <!-- Step Navigation -->
-          <div class="flex gap-3">
-            <button onclick="prevStep()"
+          <div class="flex flex-col-reverse md:flex-row gap-3">
+            {% if !completed_instructions.is_empty() %}
+            <button ts-req="/kitchen/{{slot_recipe.id}}/step/prev" ts-req-method="post" ts-target="#view-steps"
+              ts-swap="inner" ts-req-selector="children #view-steps"
               class="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-lg font-semibold flex items-center justify-center gap-2 transition">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
               </svg>
               Previous
             </button>
-            <button onclick="nextStep()"
+            {% endif %}
+            {% if !coming_instructions.is_empty() %}
+            <button ts-req="/kitchen/{{ slot_recipe.id }}/step/next" ts-req-method="post" ts-target="#view-steps"
+              ts-swap="inner" ts-req-selector="children #view-steps"
               class="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold flex items-center justify-center gap-2 transition">
-              Done, Next
+              {% if instruction.time_next > 0 %}
+              <span id="next-step-label">⏱️ Wait {{ instruction.time_next|minutes }}, then Next</span>
+              {% else %}
+              <span id="next-step-label">Done, Next</span>
+              {% endif %}
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
               </svg>
             </button>
+            {% endif %}
           </div>
 
           <!-- Previous & Upcoming Steps -->
           <div class="mt-6 pt-6 border-t border-gray-200">
             <!-- Completed Steps (Collapsed) -->
+            {% if !completed_instructions.is_empty() %}
             <button onclick="togglePreviousSteps()"
               class="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-4">
               <svg id="chevron-previous" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor"
                 viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
               </svg>
-              Show completed steps (3)
+              Show completed steps ({{ completed_instructions.len() }})
             </button>
 
             <div id="previous-steps" class="hidden space-y-2 mb-4">
+              {% for instruction in completed_instructions %}
               <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg opacity-60">
                 <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                   <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -256,47 +260,27 @@
                       clip-rule="evenodd"></path>
                   </svg>
                 </div>
-                <span class="text-sm line-through text-gray-500">Heat vegetable oil in a large wok over medium-high
-                  heat</span>
+                <span class="text-sm line-through text-gray-500">{{ instruction }}</span>
               </div>
-              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg opacity-60">
-                <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                  <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clip-rule="evenodd"></path>
-                  </svg>
-                </div>
-                <span class="text-sm line-through text-gray-500">Add red curry paste and fry for 1-2 minutes</span>
-              </div>
-              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg opacity-60">
-                <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                  <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clip-rule="evenodd"></path>
-                  </svg>
-                </div>
-                <span class="text-sm line-through text-gray-500">Add chicken pieces and stir-fry until white</span>
-              </div>
+              {% endfor %}
             </div>
+            {% endif %}
+            {% endif %}
 
             <!-- Upcoming Steps -->
+            {% if !coming_instructions.is_empty() %}
             <div class="text-sm text-gray-500 mb-2">Coming up next</div>
             <div class="space-y-2">
+              {% for (pos,instruction) in coming_instructions %}
               <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                 <div
                   class="w-6 h-6 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-sm font-semibold">
-                  5</div>
-                <span class="text-sm text-gray-700">Add vegetables and seasonings, simmer 15-20 min</span>
+                  {{ pos + 1 }}</div>
+                <span class="text-sm text-gray-700">{{ instruction }}</span>
               </div>
-              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                <div
-                  class="w-6 h-6 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-sm font-semibold">
-                  6</div>
-                <span class="text-sm text-gray-700">Final seasoning and garnish with basil</span>
-              </div>
+              {% endfor %}
             </div>
+            {% endif %}
           </div>
         </div>
 
@@ -826,11 +810,6 @@
     const overlay = document.getElementById('meals-overlay');
     panel.classList.toggle('translate-y-full');
     overlay.classList.toggle('hidden');
-  }
-
-  // Timer functions
-  function startTimer(minutes) {
-    alert(`Starting ${minutes} minute timer...`);
   }
 
   function startNextRecipe() {

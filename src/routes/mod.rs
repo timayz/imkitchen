@@ -63,6 +63,10 @@ pub fn router(app_state: AppState) -> Router {
         .route("/ready", get(health::ready))
         .with_state(app_state.read_db.clone())
         .route("/", get(index::page))
+        .route(
+            "/kitchen/{recipe_id}/step/{direction}",
+            post(index::update_slot_step_action),
+        )
         .route("/kitchen/{day}", get(kitchen::page))
         .route("/about", get(about::page))
         .route("/help", get(help::page))
