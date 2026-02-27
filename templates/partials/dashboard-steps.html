@@ -143,6 +143,7 @@
       {% endif %}
     </div>
   </button>
+  {% endif %}
 
   <!-- Main Course (Active) -->
   <button class="w-full p-3 bg-orange-50 border border-orange-200 rounded-lg text-left hover:border-orange-400">
@@ -229,7 +230,6 @@
     </div>
   </button>
   {% endif %}
-  {% endif %}
 </div>
 <div id="today-dishes-mobile" ts-swap-push="#today-dishes-mobile" class="space-y-3 max-h-[60vh] overflow-y-auto pb-4">
   <!-- Same dish cards as sidebar -->
@@ -256,6 +256,7 @@
       {% endif %}
     </div>
   </button>
+  {% endif %}
   <button onclick="toggleMealsPanel();" class="w-full p-3 bg-orange-50 border border-orange-200 rounded-lg text-left">
     <div class="flex items-center gap-3">
       <span class="text-2xl">🍛</span>
@@ -325,7 +326,6 @@
       {% endif %}
     </div>
   </button>
-  {% endif %}
   {% endif %}
 </div>
 <div id="session-progress-info" ts-swap-push="#session-progress-info" class="text-lg font-bold text-green-600">{{
