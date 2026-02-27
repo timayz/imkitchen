@@ -5,7 +5,7 @@ use imkitchen_mealplan::ChangeSlotRecipeStatus;
 use imkitchen_mealplan::slot::SlotRow;
 use imkitchen_mealplan::week::WeekRow;
 use imkitchen_shared::mealplan::DaySlotStatus;
-use imkitchen_shared::recipe::Instruction;
+use imkitchen_shared::recipe::{IngredientUnitFormat, Instruction};
 use imkitchen_shared::{mealplan::DaySlotRecipe, recipe::RecipeType};
 
 use crate::auth::{AuthToken, AuthUser};
@@ -207,6 +207,10 @@ pub async fn page(
         (_, Some(_)) => true,
         _ => false,
     };
+
+    if let Some(recipe) = slot_recipe.as_mut() {
+        recipe.ingredients.sort_by_key(|i| i.name.to_owned());
+    }
 
     let auth_cookie = crate::try_page_response!(sync:
         crate::auth::build_cookie(app.config.jwt, token.sub.to_owned(), token.acc.to_owned()),

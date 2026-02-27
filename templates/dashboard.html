@@ -289,70 +289,27 @@
         <div id="view-ingredients" class="p-6 hidden">
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-bold">Ingredients Checklist</h3>
-            <span class="text-sm text-gray-500">5 of 10 ready</span>
+            <!-- <span class="text-sm text-gray-500">5 of 10 ready</span> -->
           </div>
 
           <div class="space-y-2">
-            <label
-              class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition">
-              <input type="checkbox" checked
-                class="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500">
-              <span class="flex-1 line-through text-gray-500">500g Chicken breast, diced</span>
-              <span class="text-xs text-green-600 font-semibold">Ready</span>
-            </label>
-            <label
-              class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition">
-              <input type="checkbox" checked
-                class="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500">
-              <span class="flex-1 line-through text-gray-500">400ml Coconut milk</span>
-              <span class="text-xs text-green-600 font-semibold">Ready</span>
-            </label>
-            <label
-              class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition">
-              <input type="checkbox" checked
-                class="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500">
-              <span class="flex-1 line-through text-gray-500">3 tbsp Red curry paste</span>
-              <span class="text-xs text-green-600 font-semibold">Ready</span>
-            </label>
-            <label
-              class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition">
-              <input type="checkbox" checked
-                class="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500">
-              <span class="flex-1 line-through text-gray-500">1 Red bell pepper, sliced</span>
-              <span class="text-xs text-green-600 font-semibold">Ready</span>
-            </label>
-            <label
-              class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition">
-              <input type="checkbox" checked
-                class="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500">
-              <span class="flex-1 line-through text-gray-500">1 cup Bamboo shoots</span>
-              <span class="text-xs text-green-600 font-semibold">Ready</span>
-            </label>
+            <!-- <label -->
+            <!--   class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition"> -->
+            <!--   <input type="checkbox" checked -->
+            <!--     class="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500"> -->
+            <!--   <span class="flex-1 line-through text-gray-500">500g Chicken breast, diced</span> -->
+            <!--   <span class="text-xs text-green-600 font-semibold">Ready</span> -->
+            <!-- </label> -->
+            {% for ingredient in slot_recipe.ingredients.iter() %}
             <label
               class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition">
               <input type="checkbox" class="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500">
-              <span class="flex-1">2 Kaffir lime leaves</span>
+              <span class="flex-1">
+                {{ ingredient.unit.format(ingredient.quantity.to_owned()) }}
+                {{ ingredient.name }}
+              </span>
             </label>
-            <label
-              class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition">
-              <input type="checkbox" class="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500">
-              <span class="flex-1">2 tbsp Fish sauce</span>
-            </label>
-            <label
-              class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition">
-              <input type="checkbox" class="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500">
-              <span class="flex-1">1 tbsp Palm sugar</span>
-            </label>
-            <label
-              class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition">
-              <input type="checkbox" class="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500">
-              <span class="flex-1">Fresh basil leaves</span>
-            </label>
-            <label
-              class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition">
-              <input type="checkbox" class="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500">
-              <span class="flex-1">2 tbsp Vegetable oil</span>
-            </label>
+            {% endfor %}
           </div>
         </div>
 
