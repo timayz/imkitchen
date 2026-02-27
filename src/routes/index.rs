@@ -30,7 +30,7 @@ pub struct DashboardTemplate {
     pub week: Option<WeekRow>,
     pub prep_remiders: Option<Vec<DaySlotRecipe>>,
     pub generate_next_weeks_needed: bool,
-    pub completed_instructions: Vec<String>,
+    pub completed_instructions: Vec<(usize, String)>,
     pub coming_instructions: Vec<(usize, String)>,
     pub current_instruction: Option<(usize, Instruction)>,
 }
@@ -146,8 +146,9 @@ pub async fn page(
                 completed_instructions = recipe
                     .instructions
                     .iter()
+                    .enumerate()
                     .take(*pos as usize)
-                    .map(|i| i.description.to_owned())
+                    .map(|(p, i)| (p, i.description.to_owned()))
                     .collect();
 
                 coming_instructions = recipe
@@ -170,8 +171,9 @@ pub async fn page(
                 completed_instructions = recipe
                     .instructions
                     .iter()
+                    .enumerate()
                     .take(recipe.instructions.len() - 1)
-                    .map(|i| i.description.to_owned())
+                    .map(|(p, i)| (p, i.description.to_owned()))
                     .collect();
                 current_instruction = recipe
                     .instructions
@@ -236,11 +238,13 @@ pub async fn page(
 #[derive(askama::Template)]
 #[template(path = "partials/dashboard-steps.html")]
 pub struct DashboardStepsTemplate {
-    pub user: AuthUser,
     pub slot_recipe: imkitchen_recipe::query::user::UserView,
-    pub completed_instructions: Vec<String>,
+    pub completed_instructions: Vec<(usize, String)>,
     pub coming_instructions: Vec<(usize, String)>,
     pub current_instruction: Option<(usize, Instruction)>,
+    pub slot: SlotRow,
+    pub slot_completed_count: u8,
+    pub slot_total_count: u8,
 }
 
 #[tracing::instrument(skip_all, fields(user = tracing::field::Empty))]
@@ -253,12 +257,13 @@ pub async fn update_slot_step_action(
     tracing::Span::current().record("user", &user.id);
 
     let day = imkitchen_mealplan::now(&user.tz);
-    let slot =
+    let mut slot =
         crate::try_page_response!(opt: app.mealplan_query.next_slot_from(day, &user.id), template);
 
     let mut completed_instructions = vec![];
     let mut coming_instructions = vec![];
-
+    let mut slot_completed_count = 0;
+    let mut slot_total_count = 1;
     let mut slot_recipe_status = None;
 
     if slot.main_course.id == recipe_id {
@@ -318,6 +323,44 @@ pub async fn update_slot_step_action(
         _ => slot_recipe_status.clone(),
     };
 
+    if slot.main_course.id == recipe_id {
+        slot.main_course.status = slot_recipe_status.clone();
+    }
+
+    if slot.main_course.is_completed() {
+        slot_completed_count += 1;
+    }
+
+    if let Some(appetizer) = slot.appetizer.as_mut() {
+        slot_total_count += 1;
+        if appetizer.id == recipe_id {
+            appetizer.status = slot_recipe_status.clone();
+        }
+        if appetizer.is_completed() {
+            slot_completed_count += 1;
+        }
+    }
+
+    if let Some(accompaniment) = slot.accompaniment.as_mut() {
+        slot_total_count += 1;
+        if accompaniment.id == recipe_id {
+            accompaniment.status = slot_recipe_status.clone();
+        }
+        if accompaniment.is_completed() {
+            slot_completed_count += 1;
+        }
+    }
+
+    if let Some(dessert) = slot.dessert.as_mut() {
+        slot_total_count += 1;
+        if dessert.id == recipe_id {
+            dessert.status = slot_recipe_status.clone();
+        }
+        if dessert.is_completed() {
+            slot_completed_count += 1;
+        }
+    }
+
     crate::try_response!(
         app.mealplan_cmd
             .change_slot_recipe_status(ChangeSlotRecipeStatus {
@@ -345,8 +388,9 @@ pub async fn update_slot_step_action(
             completed_instructions = recipe
                 .instructions
                 .iter()
+                .enumerate()
                 .take(*pos as usize)
-                .map(|i| i.description.to_owned())
+                .map(|(p, i)| (p, i.description.to_owned()))
                 .collect();
 
             coming_instructions = recipe
@@ -369,8 +413,9 @@ pub async fn update_slot_step_action(
             completed_instructions = recipe
                 .instructions
                 .iter()
+                .enumerate()
                 .take(recipe.instructions.len() - 1)
-                .map(|i| i.description.to_owned())
+                .map(|(p, i)| (p, i.description.to_owned()))
                 .collect();
             recipe
                 .instructions
@@ -381,8 +426,10 @@ pub async fn update_slot_step_action(
 
     template
         .render(DashboardStepsTemplate {
-            user,
+            slot,
             slot_recipe,
+            slot_total_count,
+            slot_completed_count,
             completed_instructions,
             coming_instructions,
             current_instruction,

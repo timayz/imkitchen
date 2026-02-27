@@ -83,7 +83,7 @@
     </button>
 
     <div id="previous-steps" class="hidden space-y-2 mb-4">
-      {% for instruction in completed_instructions %}
+      {% for (_, instruction) in completed_instructions %}
       <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg opacity-60">
         <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
           <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -114,4 +114,264 @@
     </div>
     {% endif %}
   </div>
+</div>
+<div id="today-dishes-desktop" ts-swap-push="#today-dishes-desktop" class="space-y-3">
+  <!-- Appetizer (Completed) -->
+  {% if let Some(appetizer) = slot.appetizer %}
+  <button class="w-full p-3 bg-blue-50 border border-blue-200 rounded-lg text-left hover:border-blue-400 transition">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl">🥗</span>
+      <div class="flex-1 min-w-0">
+        <div class="text-xs text-blue-600 font-semibold uppercase">{{ "Appetizer"|t }}</div>
+        <div class="font-semibold truncate">{{ appetizer.name }}</div>
+        <div class="text-xs text-gray-500">⏱️ {{ &appetizer.total_prep_time()|minutes }}</div>
+      </div>
+      {% if appetizer.is_completed() %}
+      <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shrink-0">
+        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd"
+            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+            clip-rule="evenodd"></path>
+        </svg>
+      </div>
+      {% else if appetizer.is_cooking() %}
+      <div class="px-2 py-1 bg-blue-500 text-white text-xs font-semibold rounded">
+        Cooking
+      </div>
+      {% else %}
+      <div class="w-6 h-6 border-2 border-gray-300 rounded-full shrink-0"></div>
+      {% endif %}
+    </div>
+  </button>
+
+  <!-- Main Course (Active) -->
+  <button class="w-full p-3 bg-orange-50 border border-orange-200 rounded-lg text-left hover:border-orange-400">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl">🍛</span>
+      <div class="flex-1 min-w-0">
+        <div class="text-xs text-orange-600 font-semibold uppercase">{{ "Main Course"|t }}</div>
+        <div class="font-semibold truncate">{{ slot.main_course.name }}</div>
+        <div class="text-xs text-gray-500">⏱️ {{ &slot.main_course.total_prep_time()|minutes }}</div>
+      </div>
+      {% if slot.main_course.is_completed() %}
+      <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shrink-0">
+        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd"
+            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+            clip-rule="evenodd"></path>
+        </svg>
+      </div>
+      {% else if slot.main_course.is_cooking() %}
+      <div class="px-2 py-1 bg-orange-500 text-white text-xs font-semibold rounded">
+        Cooking
+      </div>
+      {% else %}
+      <div class="w-6 h-6 border-2 border-gray-300 rounded-full shrink-0"></div>
+      {% endif %}
+    </div>
+  </button>
+
+  <!-- Accompaniment -->
+  {% if let Some(accompaniment) = slot.accompaniment %}
+  <button
+    class="w-full p-3 bg-purple-50 border border-purple-200 rounded-lg text-left hover:border-purple-400 transition ml-4">
+    <div class="flex items-center gap-3">
+      <span class="text-xl">🍚</span>
+      <div class="flex-1 min-w-0">
+        <div class="text-xs text-purple-600 font-semibold uppercase">{{ "Accompaniment"|t }}</div>
+        <div class="font-semibold truncate">{{ accompaniment.name }}</div>
+        <div class="text-xs text-gray-500">⏱️ {{ &accompaniment.total_prep_time()|minutes }}</div>
+      </div>
+      {% if accompaniment.is_completed() %}
+      <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shrink-0">
+        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd"
+            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+            clip-rule="evenodd"></path>
+        </svg>
+      </div>
+      {% else if accompaniment.is_cooking() %}
+      <div class="px-2 py-1 bg-purple-500 text-white text-xs font-semibold rounded">
+        Cooking
+      </div>
+      {% else %}
+      <div class="w-6 h-6 border-2 border-gray-300 rounded-full shrink-0"></div>
+      {% endif %}
+    </div>
+  </button>
+  {% endif %}
+
+  <!-- Dessert -->
+  {% if let Some(dessert) = slot.dessert %}
+  <button class="w-full p-3 bg-pink-50 border border-pink-200 rounded-lg text-left hover:border-pink-400 transition">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl">🍰</span>
+      <div class="flex-1 min-w-0">
+        <div class="text-xs text-pink-600 font-semibold uppercase">{{ "Dessert"|t }}</div>
+        <div class="font-semibold truncate">{{ dessert.name }}</div>
+        <div class="text-xs text-gray-500">⏱️ {{ &dessert.total_prep_time()|minutes }}</div>
+      </div>
+      {% if dessert.is_completed() %}
+      <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shrink-0">
+        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd"
+            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+            clip-rule="evenodd"></path>
+        </svg>
+      </div>
+      {% else if dessert.is_cooking() %}
+      <div class="px-2 py-1 bg-pink-500 text-white text-xs font-semibold rounded">
+        Cooking
+      </div>
+      {% else %}
+      <div class="w-6 h-6 border-2 border-gray-300 rounded-full shrink-0"></div>
+      {% endif %}
+    </div>
+  </button>
+  {% endif %}
+  {% endif %}
+</div>
+<div id="today-dishes-mobile" ts-swap-push="#today-dishes-mobile" class="space-y-3 max-h-[60vh] overflow-y-auto pb-4">
+  <!-- Same dish cards as sidebar -->
+  {% if let Some(appetizer) = slot.appetizer %}
+  <button onclick="toggleMealsPanel();" class="w-full p-3 bg-blue-50 border border-blue-200 rounded-lg text-left">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl">🥗</span>
+      <div class="flex-1">
+        <div class="text-xs text-blue-600 font-semibold uppercase">{{ "Appetizer"|t }}</div>
+        <div class="font-semibold">{{ appetizer.name }}</div>
+      </div>
+      {% if appetizer.is_completed() %}
+      <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd"
+            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+            clip-rule="evenodd"></path>
+        </svg>
+      </div>
+      {% else if appetizer.is_cooking() %}
+      <span class="px-2 py-1 bg-blue-500 text-white text-xs font-semibold rounded">Cooking</span>
+      {% else %}
+      <div class="w-6 h-6 border-2 border-gray-300 rounded-full"></div>
+      {% endif %}
+    </div>
+  </button>
+  <button onclick="toggleMealsPanel();" class="w-full p-3 bg-orange-50 border border-orange-200 rounded-lg text-left">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl">🍛</span>
+      <div class="flex-1">
+        <div class="text-xs text-orange-600 font-semibold uppercase">{{ "Main Course"|t }}</div>
+        <div class="font-semibold">{{ slot.main_course.name }}</div>
+      </div>
+      {% if slot.main_course.is_completed() %}
+      <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd"
+            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+            clip-rule="evenodd"></path>
+        </svg>
+      </div>
+      {% else if slot.main_course.is_cooking() %}
+      <span class="px-2 py-1 bg-orange-500 text-white text-xs font-semibold rounded">Cooking</span>
+      {% else %}
+      <div class="w-6 h-6 border-2 border-gray-300 rounded-full"></div>
+      {% endif %}
+    </div>
+  </button>
+  {% if let Some(accompaniment) = slot.accompaniment %}
+  <button onclick="toggleMealsPanel();" class="w-full p-3 bg-purple-50 border border-purple-200 rounded-lg text-left">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl">🍚</span>
+      <div class="flex-1">
+        <div class="text-xs text-purple-600 font-semibold uppercase">{{ "Accompaniment"|t }}</div>
+        <div class="font-semibold">{{ accompaniment.name }}</div>
+      </div>
+      {% if accompaniment.is_completed() %}
+      <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd"
+            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+            clip-rule="evenodd"></path>
+        </svg>
+      </div>
+      {% else if accompaniment.is_cooking() %}
+      <span class="px-2 py-1 bg-purple-500 text-white text-xs font-semibold rounded">Cooking</span>
+      {% else %}
+      <div class="w-6 h-6 border-2 border-gray-300 rounded-full"></div>
+      {% endif %}
+    </div>
+  </button>
+  {% endif %}
+  {% if let Some(dessert) = slot.dessert %}
+  <button onclick="toggleMealsPanel();" class="w-full p-3 bg-pink-50 border border-pink-200 rounded-lg text-left">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl">🍰</span>
+      <div class="flex-1">
+        <div class="text-xs text-pink-600 font-semibold uppercase">{{ "Dessert"|t }}</div>
+        <div class="font-semibold">{{ dessert.name }}</div>
+      </div>
+      {% if dessert.is_completed() %}
+      <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd"
+            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+            clip-rule="evenodd"></path>
+        </svg>
+      </div>
+      {% else if dessert.is_cooking() %}
+      <span class="px-2 py-1 bg-pink-500 text-white text-xs font-semibold rounded">Cooking</span>
+      {% else %}
+      <div class="w-6 h-6 border-2 border-gray-300 rounded-full"></div>
+      {% endif %}
+    </div>
+  </button>
+  {% endif %}
+  {% endif %}
+</div>
+<div id="session-progress-info" ts-swap-push="#session-progress-info" class="text-lg font-bold text-green-600">{{
+  slot_completed_count }} of {{
+  slot_total_count }} dishes</div>
+<div id="session-progress-bar" ts-swap-push="#session-progress-bar" class="flex gap-1">
+  {% if let Some(appetizer) = slot.appetizer %}
+  <div class="flex-1 h-2 {% if appetizer.is_completed() %}bg-green-500{% else %}bg-gray-200{% endif %} rounded-full">
+  </div>
+  {% endif %}
+  <div
+    class="flex-1 h-2 {% if slot.main_course.is_completed() %}bg-green-500{% else %}bg-gray-200{% endif %} rounded-full">
+  </div>
+  {% if let Some(accompaniment) = slot.accompaniment %}
+  <div
+    class="flex-1 h-2 {% if accompaniment.is_completed() %}bg-green-500{% else %}bg-gray-200{% endif %} rounded-full">
+  </div>
+  {% endif %}
+  {% if let Some(dessert) = slot.dessert %}
+  <div class="flex-1 h-2 {% if dessert.is_completed() %}bg-green-500{% else %}bg-gray-200{% endif %} rounded-full">
+  </div>
+  {% endif %}
+</div>
+<div id="overview-all-steps" ts-swap-push="#overview-all-steps" class="space-y-3">
+  {% for (p, instruction) in completed_instructions %}
+  <div class="flex items-start gap-3 p-3 bg-green-50 border-l-4 border-green-500 rounded-r-lg">
+    <div
+      class="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0">
+      {{ p + 1 }}</div>
+    <p class="text-sm">{{ instruction }}</p>
+  </div>
+  {% endfor %}
+  {% if let Some((p, current_instruction)) = current_instruction %}
+  <div class="flex items-start gap-3 p-3 bg-orange-50 border-l-4 border-orange-500 rounded-r-lg">
+    <div
+      class="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0">
+      {{ p + 1 }}</div>
+    <p class="text-sm">{{ current_instruction.description }}</p>
+  </div>
+  {% endif %}
+  {% for (p, instruction) in coming_instructions %}
+  <div class="flex items-start gap-3 p-3 bg-gray-50 border-l-4 border-gray-300 rounded-r-lg">
+    <div
+      class="w-6 h-6 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-sm font-bold shrink-0">
+      {{ p + 1 }}</div>
+    <p class="text-sm">{{ instruction }}</p>
+  </div>
+  {% endfor %}
 </div>
