@@ -14,8 +14,7 @@ fn create_table() -> TableCreateStatement {
             ColumnDef::new(ShoppingRecipe::Id)
                 .string()
                 .not_null()
-                .string_len(26)
-                .primary_key(),
+                .string_len(26),
         )
         .col(
             ColumnDef::new(ShoppingRecipe::UserId)
@@ -33,6 +32,11 @@ fn create_table() -> TableCreateStatement {
             ColumnDef::new(ShoppingRecipe::Ingredients)
                 .blob()
                 .not_null(),
+        )
+        .primary_key(
+            Index::create()
+                .col(ShoppingRecipe::Id)
+                .col(ShoppingRecipe::UserId),
         )
         .to_owned()
 }

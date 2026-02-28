@@ -208,7 +208,12 @@ pub async fn page(
         _ => false,
     };
 
-    if let Some(recipe) = slot_recipe.as_mut() {
+    if let (Some(recipe), Some(slot)) = (slot_recipe.as_mut(), &slot) {
+        for ingredient in recipe.ingredients.iter_mut() {
+            ingredient.quantity += ((recipe.household_size as u32 * ingredient.quantity
+                / slot.household_size as u32) as f64)
+                .ceil() as u32;
+        }
         recipe.ingredients.sort_by_key(|i| i.name.to_owned());
     }
 
@@ -496,7 +501,7 @@ pub async fn select_dish(
         return template.render(NotFoundTemplate);
     };
 
-    let slot_recipe =
+    let mut slot_recipe =
         crate::try_page_response!(opt: app.recipe_query.find_user(&recipe_id), template);
 
     crate::try_response!(
@@ -509,6 +514,14 @@ pub async fn select_dish(
             }),
         template
     );
+
+    for ingredient in slot_recipe.ingredients.iter_mut() {
+        ingredient.quantity += ((slot_recipe.household_size as u32 * ingredient.quantity
+            / slot.household_size as u32) as f64)
+            .ceil() as u32;
+    }
+
+    slot_recipe.ingredients.sort_by_key(|i| i.name.to_owned());
 
     let current_instruction = match (&slot_recipe_status, &slot_recipe) {
         (DaySlotStatus::Idle, recipe) => {

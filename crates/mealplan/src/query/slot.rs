@@ -35,6 +35,7 @@ impl From<&MealPlanRecipeRow> for DaySlotRecipe {
 #[derive(Default, FromRow)]
 pub struct SlotRow {
     pub day: u64,
+    pub household_size: u16,
     pub main_course: evento::sql_types::Bitcode<DaySlotRecipe>,
     pub appetizer: Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
     pub accompaniment: Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
@@ -51,6 +52,7 @@ impl<E: Executor> super::Query<E> {
         let statement = sea_query::Query::select()
             .columns([
                 MealPlanSlot::Day,
+                MealPlanSlot::HouseholdSize,
                 MealPlanSlot::MainCourse,
                 MealPlanSlot::Appetizer,
                 MealPlanSlot::Accompaniment,
@@ -189,6 +191,7 @@ async fn handle_week_generated<E: Executor>(
         .columns([
             MealPlanSlot::UserId,
             MealPlanSlot::Day,
+            MealPlanSlot::HouseholdSize,
             MealPlanSlot::MainCourse,
             MealPlanSlot::Appetizer,
             MealPlanSlot::Accompaniment,
@@ -232,6 +235,7 @@ async fn handle_week_generated<E: Executor>(
         statement.values_panic([
             user_id.to_owned().into(),
             slot.day.into(),
+            slot.household_size.into(),
             main_course.into(),
             appetizer.into(),
             accompaniment.into(),
@@ -248,6 +252,7 @@ async fn handle_week_generated<E: Executor>(
     statement.on_conflict(
         OnConflict::columns([MealPlanSlot::UserId, MealPlanSlot::Day])
             .update_columns([
+                MealPlanSlot::HouseholdSize,
                 MealPlanSlot::Appetizer,
                 MealPlanSlot::MainCourse,
                 MealPlanSlot::Accompaniment,
