@@ -1,0 +1,257 @@
+<div id="current-recipe-card" class="bg-white rounded-xl shadow-lg overflow-hidden">
+  <!-- Recipe Header with Color Banner -->
+  {% decl slot_recipe_bg -%}
+  {% decl slot_recipe_icon -%}
+  {% match slot_recipe.recipe_type.0 %}
+  {% when RecipeType::Appetizer %}
+  {% let slot_recipe_bg = "from-blue-400 to-blue-500" -%}
+  {% let slot_recipe_icon = "🥗" -%}
+  {% when RecipeType::MainCourse %}
+  {% let slot_recipe_bg = "from-orange-400 to-red-500" -%}
+  {% let slot_recipe_icon = "🍛" -%}
+  {% when RecipeType::Dessert %}
+  {% let slot_recipe_bg = "from-pink-400 to-pink-500" -%}
+  {% let slot_recipe_icon = "🍰" -%}
+  {% when RecipeType::Accompaniment %}
+  {% let slot_recipe_bg = "from-purple-400 to-purple-500" -%}
+  {% let slot_recipe_icon = "🍚" -%}
+  {% endmatch %}
+  <div class="bg-linear-to-r {{ slot_recipe_bg }} p-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <span class="text-4xl">{{ slot_recipe_icon }}</span>
+      <div class="text-white">
+        <div class="text-xs font-semibold uppercase opacity-90">Now Cooking</div>
+        <h2 class="text-xl font-bold">{{ slot_recipe.name }}</h2>
+      </div>
+    </div>
+    <span class="px-3 py-1 bg-white/20 text-white text-sm font-semibold rounded-full">
+      {{ slot_recipe.recipe_type.as_ref()|t }}
+    </span>
+  </div>
+
+  <!-- View Tabs -->
+  <div class="border-b border-gray-200">
+    <div class="flex">
+      <button id="tab-steps" onclick="switchView('steps')"
+        class="flex-1 px-4 py-3 text-center font-semibold text-green-600 border-b-2 border-green-600">
+        Steps
+      </button>
+      <button id="tab-ingredients" onclick="switchView('ingredients')"
+        class="flex-1 px-4 py-3 text-center font-semibold text-gray-500 hover:text-gray-700 border-b-2 border-transparent">
+        Ingredients
+      </button>
+      <button id="tab-overview" onclick="switchView('overview')"
+        class="flex-1 px-4 py-3 text-center font-semibold text-gray-500 hover:text-gray-700 border-b-2 border-transparent">
+        Overview
+      </button>
+    </div>
+  </div>
+
+  <!-- Steps View -->
+  <div id="view-steps" class="p-6">
+    {% if let Some((pos,instruction)) = current_instruction %}
+    <!-- Step Progress -->
+    <div class="flex items-center justify-between mb-4">
+      <span class="text-sm text-gray-500">Step {{ pos + 1 }} of {{ slot_recipe.instructions.len() }}</span>
+      <div class="flex gap-1">
+        {% for _ in completed_instructions %}
+        <div class="w-8 h-1 bg-green-500 rounded-full"></div>
+        {% endfor %}
+        <div class="w-8 h-1 bg-orange-500 rounded-full"></div>
+        {% for _ in coming_instructions %}
+        <div class="w-8 h-1 bg-gray-200 rounded-full"></div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Current Step -->
+    <div class="bg-orange-50 border-l-4 border-orange-500 rounded-r-lg p-6 mb-6">
+      <div class="flex items-start gap-4">
+        <div
+          class="w-10 h-10 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold text-lg shrink-0">
+          {{ pos + 1 }}
+        </div>
+        <div class="flex-1">
+          <span class="text-xs text-orange-600 font-semibold uppercase">Current Step</span>
+          <p class="text-lg leading-relaxed mt-1">{{ instruction.description }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pro Tip -->
+    <!-- <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6"> -->
+    <!--   <div class="flex items-start gap-3"> -->
+    <!--     <span class="text-xl">💡</span> -->
+    <!--     <div> -->
+    <!--       <div class="font-semibold text-yellow-800 text-sm mb-1">Pro Tip</div> -->
+    <!--       <p class="text-sm text-yellow-700">Don't let the coconut milk boil vigorously - a gentle simmer -->
+    <!--         prevents it from separating and keeps the curry creamy.</p> -->
+    <!--     </div> -->
+    <!--   </div> -->
+    <!-- </div> -->
+
+    <!-- Step Navigation -->
+    <div class="flex flex-col-reverse md:flex-row gap-3">
+      {% if !completed_instructions.is_empty() %}
+      <button ts-req="/kitchen/{{slot_recipe.id}}/step/prev" ts-req-method="post" ts-target="#view-steps"
+        ts-swap="inner" ts-req-selector="children #view-steps"
+        class="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-lg font-semibold flex items-center justify-center gap-2 transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+        Previous
+      </button>
+      {% endif %}
+      {% if !coming_instructions.is_empty() %}
+      <button ts-req="/kitchen/{{ slot_recipe.id }}/step/next" ts-req-method="post" ts-target="#view-steps"
+        ts-swap="inner" ts-req-selector="children #view-steps"
+        class="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold flex items-center justify-center gap-2 transition">
+        {% if instruction.time_next > 0 %}
+        <span id="next-step-label">⏱️ Wait {{ instruction.time_next|minutes }}, then Next</span>
+        {% else %}
+        <span id="next-step-label">Done, Next</span>
+        {% endif %}
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+      </button>
+      {% endif %}
+    </div>
+
+    <!-- Previous & Upcoming Steps -->
+    <div class="mt-6 pt-6 border-t border-gray-200">
+      <!-- Completed Steps (Collapsed) -->
+      {% if !completed_instructions.is_empty() %}
+      <button onclick="togglePreviousSteps()"
+        class="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-4">
+        <svg id="chevron-previous" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor"
+          viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+        Show completed steps ({{ completed_instructions.len() }})
+      </button>
+
+      <div id="previous-steps" class="hidden space-y-2 mb-4">
+        {% for (_, instruction) in completed_instructions %}
+        <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg opacity-60">
+          <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+            <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                clip-rule="evenodd"></path>
+            </svg>
+          </div>
+          <span class="text-sm line-through text-gray-500">{{ instruction }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% endif %}
+
+      <!-- Upcoming Steps -->
+      {% if !coming_instructions.is_empty() %}
+      <div class="text-sm text-gray-500 mb-2">Coming up next</div>
+      <div class="space-y-2">
+        {% for (pos,instruction) in coming_instructions %}
+        <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+          <div
+            class="w-6 h-6 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-sm font-semibold">
+            {{ pos + 1 }}</div>
+          <span class="text-sm text-gray-700">{{ instruction }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Ingredients View (Hidden by default) -->
+  <div id="view-ingredients" class="p-6 hidden">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-bold">Ingredients Checklist</h3>
+      <!-- <span class="text-sm text-gray-500">5 of 10 ready</span> -->
+    </div>
+
+    <div class="space-y-2">
+      <!-- <label -->
+      <!--   class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition"> -->
+      <!--   <input type="checkbox" checked -->
+      <!--     class="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500"> -->
+      <!--   <span class="flex-1 line-through text-gray-500">500g Chicken breast, diced</span> -->
+      <!--   <span class="text-xs text-green-600 font-semibold">Ready</span> -->
+      <!-- </label> -->
+      {% for ingredient in slot_recipe.ingredients.iter() %}
+      <label class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition">
+        <input type="checkbox" class="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500">
+        <span class="flex-1">
+          {{ ingredient.unit.format(ingredient.quantity.to_owned()) }}
+          {{ ingredient.name }}
+        </span>
+      </label>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Overview View (Hidden by default) -->
+  <div id="view-overview" class="p-6 hidden">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="bg-gray-50 rounded-lg p-4 text-center">
+        <div class="text-2xl mb-1">⏱️</div>
+        <div class="text-xs text-gray-500">Prep Time</div>
+        <div class="font-bold">{{ slot_recipe.prep_time|minutes }}</div>
+      </div>
+      <div class="bg-gray-50 rounded-lg p-4 text-center">
+        <div class="text-2xl mb-1">🍳</div>
+        <div class="text-xs text-gray-500">Cook Time</div>
+        <div class="font-bold">{{ slot_recipe.cook_time|minutes }}</div>
+      </div>
+      <div class="bg-gray-50 rounded-lg p-4 text-center">
+        <div class="text-2xl mb-1">👥</div>
+        <div class="text-xs text-gray-500">Servings</div>
+        <div class="font-bold">{{ slot_recipe.household_size }} people</div>
+      </div>
+      <div class="bg-gray-50 rounded-lg p-4 text-center">
+        <div class="text-2xl mb-1">📊</div>
+        <div class="text-xs text-gray-500">Difficulty</div>
+        <div class="font-bold">Medium</div>
+      </div>
+    </div>
+
+    <div class="flex gap-2 flex-wrap mb-6">
+      {% for dietary_restriction in slot_recipe.dietary_restrictions.iter() %}
+      <span class="px-3 py-1 bg-green-100 text-green-800 text-sm font-semibold rounded-full">{{
+        dietary_restriction.as_ref()|t }}</span>
+      {% endfor %}
+      <span class="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-semibold rounded-full">{{
+        slot_recipe.cuisine_type.as_ref()|t }}</span>
+    </div>
+
+    <h3 class="font-bold mb-4">All Steps</h3>
+    <div id="overview-all-steps" class="space-y-3">
+      {% for (p, instruction) in completed_instructions %}
+      <div class="flex items-start gap-3 p-3 bg-green-50 border-l-4 border-green-500 rounded-r-lg">
+        <div
+          class="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0">
+          {{ p + 1 }}</div>
+        <p class="text-sm">{{ instruction }}</p>
+      </div>
+      {% endfor %}
+      {% if let Some((p, current_instruction)) = current_instruction %}
+      <div class="flex items-start gap-3 p-3 bg-orange-50 border-l-4 border-orange-500 rounded-r-lg">
+        <div
+          class="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0">
+          {{ p + 1 }}</div>
+        <p class="text-sm">{{ current_instruction.description }}</p>
+      </div>
+      {% endif %}
+      {% for (p, instruction) in coming_instructions %}
+      <div class="flex items-start gap-3 p-3 bg-gray-50 border-l-4 border-gray-300 rounded-r-lg">
+        <div
+          class="w-6 h-6 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-sm font-bold shrink-0">
+          {{ p + 1 }}</div>
+        <p class="text-sm">{{ instruction }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>

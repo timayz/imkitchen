@@ -440,3 +440,134 @@ pub async fn update_slot_step_action(
         })
         .into_response()
 }
+
+#[derive(askama::Template)]
+#[template(path = "partials/dashboard-dish.html")]
+pub struct DashboardDishTemplate {
+    pub slot_recipe: imkitchen_recipe::query::user::UserView,
+    pub completed_instructions: Vec<(usize, String)>,
+    pub coming_instructions: Vec<(usize, String)>,
+    pub current_instruction: Option<(usize, Instruction)>,
+}
+
+#[tracing::instrument(skip_all, fields(user = tracing::field::Empty))]
+pub async fn select_dish(
+    template: Template,
+    user: AuthUser,
+    State(app): State<AppState>,
+    Path((recipe_id,)): Path<(String,)>,
+) -> impl IntoResponse {
+    tracing::Span::current().record("user", &user.id);
+
+    let day = imkitchen_mealplan::now(&user.tz);
+    let slot =
+        crate::try_page_response!(opt: app.mealplan_query.next_slot_from(day, &user.id), template);
+
+    let mut completed_instructions = vec![];
+    let mut coming_instructions = vec![];
+    let mut slot_recipe_status = None;
+
+    if slot.main_course.id == recipe_id {
+        slot_recipe_status = Some(&slot.main_course.status);
+    }
+
+    if let Some(ref appetizer) = slot.appetizer
+        && slot_recipe_status.is_none()
+        && appetizer.id == recipe_id
+    {
+        slot_recipe_status = Some(&appetizer.status);
+    }
+
+    if let Some(ref accompaniment) = slot.accompaniment
+        && slot_recipe_status.is_none()
+        && accompaniment.id == recipe_id
+    {
+        slot_recipe_status = Some(&accompaniment.status);
+    }
+
+    if let Some(ref dessert) = slot.dessert
+        && slot_recipe_status.is_none()
+        && dessert.id == recipe_id
+    {
+        slot_recipe_status = Some(&dessert.status);
+    }
+
+    let Some(slot_recipe_status) = slot_recipe_status else {
+        return template.render(NotFoundTemplate);
+    };
+
+    let slot_recipe =
+        crate::try_page_response!(opt: app.recipe_query.find_user(&recipe_id), template);
+
+    crate::try_response!(
+        app.mealplan_cmd
+            .change_slot_recipe_status(ChangeSlotRecipeStatus {
+                user_id: user.id.to_owned(),
+                day: day.unix_timestamp() as u64,
+                recipe_id,
+                status: slot_recipe_status.clone()
+            }),
+        template
+    );
+
+    let current_instruction = match (&slot_recipe_status, &slot_recipe) {
+        (DaySlotStatus::Idle, recipe) => {
+            coming_instructions = recipe
+                .instructions
+                .iter()
+                .enumerate()
+                .skip(1)
+                .map(|(p, i)| (p, i.description.to_owned()))
+                .collect();
+
+            recipe.instructions.first().map(|i| (0, i.clone()))
+        }
+        (DaySlotStatus::Cooking(pos), recipe) => {
+            completed_instructions = recipe
+                .instructions
+                .iter()
+                .enumerate()
+                .take(*pos as usize)
+                .map(|(p, i)| (p, i.description.to_owned()))
+                .collect();
+
+            coming_instructions = recipe
+                .instructions
+                .iter()
+                .enumerate()
+                .skip((*pos + 1) as usize)
+                .map(|(p, i)| (p, i.description.to_owned()))
+                .collect();
+
+            recipe.instructions.iter().enumerate().find_map(|(p, i)| {
+                if p == *pos as usize {
+                    Some((p, i.clone()))
+                } else {
+                    None
+                }
+            })
+        }
+        (DaySlotStatus::Completed, recipe) => {
+            completed_instructions = recipe
+                .instructions
+                .iter()
+                .enumerate()
+                .take(recipe.instructions.len() - 1)
+                .map(|(p, i)| (p, i.description.to_owned()))
+                .collect();
+            recipe
+                .instructions
+                .last()
+                .map(|i| (recipe.instructions.len() - 1, i.clone()))
+        }
+    };
+
+    template
+        .render(DashboardDishTemplate {
+            slot_recipe,
+            completed_instructions,
+            coming_instructions,
+            current_instruction,
+        })
+        .into_response()
+}

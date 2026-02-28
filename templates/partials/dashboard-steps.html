@@ -118,7 +118,8 @@
 <div id="today-dishes-desktop" ts-swap-push="#today-dishes-desktop" class="space-y-3">
   <!-- Appetizer (Completed) -->
   {% if let Some(appetizer) = slot.appetizer %}
-  <button class="w-full p-3 bg-blue-50 border border-blue-200 rounded-lg text-left hover:border-blue-400 transition">
+  <button ts-req="/kitchen/{{ appetizer.id }}/select-dish" ts-target="#current-recipe-card"
+    class="w-full p-3 bg-blue-50 border border-blue-200 rounded-lg text-left hover:border-blue-400 transition">
     <div class="flex items-center gap-3">
       <span class="text-2xl">🥗</span>
       <div class="flex-1 min-w-0">
@@ -146,7 +147,8 @@
   {% endif %}
 
   <!-- Main Course (Active) -->
-  <button class="w-full p-3 bg-orange-50 border border-orange-200 rounded-lg text-left hover:border-orange-400">
+  <button ts-req="/kitchen/{{ slot.main_course.id }}/select-dish" ts-target="#current-recipe-card"
+    class="w-full p-3 bg-orange-50 border border-orange-200 rounded-lg text-left hover:border-orange-400">
     <div class="flex items-center gap-3">
       <span class="text-2xl">🍛</span>
       <div class="flex-1 min-w-0">
@@ -174,7 +176,7 @@
 
   <!-- Accompaniment -->
   {% if let Some(accompaniment) = slot.accompaniment %}
-  <button
+  <button ts-req="/kitchen/{{ accompaniment.id }}/select-dish" ts-target="#current-recipe-card"
     class="w-full p-3 bg-purple-50 border border-purple-200 rounded-lg text-left hover:border-purple-400 transition ml-4">
     <div class="flex items-center gap-3">
       <span class="text-xl">🍚</span>
@@ -204,7 +206,8 @@
 
   <!-- Dessert -->
   {% if let Some(dessert) = slot.dessert %}
-  <button class="w-full p-3 bg-pink-50 border border-pink-200 rounded-lg text-left hover:border-pink-400 transition">
+  <button ts-req="/kitchen/{{ dessert.id }}/select-dish" ts-target="#current-recipe-card"
+    class="w-full p-3 bg-pink-50 border border-pink-200 rounded-lg text-left hover:border-pink-400 transition">
     <div class="flex items-center gap-3">
       <span class="text-2xl">🍰</span>
       <div class="flex-1 min-w-0">
@@ -234,7 +237,8 @@
 <div id="today-dishes-mobile" ts-swap-push="#today-dishes-mobile" class="space-y-3 max-h-[60vh] overflow-y-auto pb-4">
   <!-- Same dish cards as sidebar -->
   {% if let Some(appetizer) = slot.appetizer %}
-  <button onclick="toggleMealsPanel();" class="w-full p-3 bg-blue-50 border border-blue-200 rounded-lg text-left">
+  <button ts-req="/kitchen/{{ appetizer.id }}/select-dish" ts-target="#current-recipe-card"
+    ts-req-after="toggle-meals-panel" class="w-full p-3 bg-blue-50 border border-blue-200 rounded-lg text-left">
     <div class="flex items-center gap-3">
       <span class="text-2xl">🥗</span>
       <div class="flex-1">
@@ -257,7 +261,8 @@
     </div>
   </button>
   {% endif %}
-  <button onclick="toggleMealsPanel();" class="w-full p-3 bg-orange-50 border border-orange-200 rounded-lg text-left">
+  <button ts-req="/kitchen/{{ slot.main_course.id }}/select-dish" ts-target="#current-recipe-card"
+    ts-req-after="toggle-meals-panel" class="w-full p-3 bg-orange-50 border border-orange-200 rounded-lg text-left">
     <div class="flex items-center gap-3">
       <span class="text-2xl">🍛</span>
       <div class="flex-1">
@@ -280,7 +285,8 @@
     </div>
   </button>
   {% if let Some(accompaniment) = slot.accompaniment %}
-  <button onclick="toggleMealsPanel();" class="w-full p-3 bg-purple-50 border border-purple-200 rounded-lg text-left">
+  <button ts-req="/kitchen/{{ accompaniment.id }}/select-dish" ts-target="#current-recipe-card"
+    ts-req-after="toggle-meals-panel" class="w-full p-3 bg-purple-50 border border-purple-200 rounded-lg text-left">
     <div class="flex items-center gap-3">
       <span class="text-2xl">🍚</span>
       <div class="flex-1">
@@ -304,7 +310,8 @@
   </button>
   {% endif %}
   {% if let Some(dessert) = slot.dessert %}
-  <button onclick="toggleMealsPanel();" class="w-full p-3 bg-pink-50 border border-pink-200 rounded-lg text-left">
+  <button ts-req="/kitchen/{{ dessert.id }}/select-dish" ts-target="#current-recipe-card"
+    ts-req-after="toggle-meals-panel" class="w-full p-3 bg-pink-50 border border-pink-200 rounded-lg text-left">
     <div class="flex items-center gap-3">
       <span class="text-2xl">🍰</span>
       <div class="flex-1">

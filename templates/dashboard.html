@@ -4,9 +4,12 @@
 
 {% block before_mobile_nav_items %}
 <!-- Mobile Bottom Navigation (Kitchen Mode Specific) -->
-<button onclick="toggleMealsPanel()" class="flex flex-col items-center py-2 px-3 text-gray-600">
+<button ts-action="toggle-meals-panel" class="flex flex-col items-center py-2 px-3 text-gray-600">
   <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 6h12M8 12h12M8 18h12"></path>
+    <circle cx="4" cy="6" r="1" fill="currentColor"></circle>
+    <circle cx="4" cy="12" r="1" fill="currentColor"></circle>
+    <circle cx="4" cy="18" r="1" fill="currentColor"></circle>
   </svg>
   <span class="text-xs mt-1">Dishes</span>
 </button>
@@ -117,7 +120,7 @@
     <!-- Main Content Area -->
     <div class="lg:col-span-2 space-y-6">
       <!-- Current Recipe Card -->
-      <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+      <div id="current-recipe-card" class="bg-white rounded-xl shadow-lg overflow-hidden">
         <!-- Recipe Header with Color Banner -->
         {% if let Some(slot_recipe) = slot_recipe %}
         {% decl slot_recipe_bg -%}
@@ -427,7 +430,7 @@
           {% if let Some(slot) = slot %}
           <!-- Appetizer (Completed) -->
           {% if let Some(appetizer) = slot.appetizer %}
-          <button
+          <button ts-req="/kitchen/{{ appetizer.id }}/select-dish" ts-target="#current-recipe-card"
             class="w-full p-3 bg-blue-50 border border-blue-200 rounded-lg text-left hover:border-blue-400 transition">
             <div class="flex items-center gap-3">
               <span class="text-2xl">🥗</span>
@@ -456,7 +459,8 @@
           {% endif %}
 
           <!-- Main Course (Active) -->
-          <button class="w-full p-3 bg-orange-50 border border-orange-200 rounded-lg text-left hover:border-orange-400">
+          <button ts-req="/kitchen/{{ slot.main_course.id }}/select-dish" ts-target="#current-recipe-card"
+            class="w-full p-3 bg-orange-50 border border-orange-200 rounded-lg text-left hover:border-orange-400">
             <div class="flex items-center gap-3">
               <span class="text-2xl">🍛</span>
               <div class="flex-1 min-w-0">
@@ -484,7 +488,7 @@
 
           <!-- Accompaniment -->
           {% if let Some(accompaniment) = slot.accompaniment %}
-          <button
+          <button ts-req="/kitchen/{{ accompaniment.id }}/select-dish" ts-target="#current-recipe-card"
             class="w-full p-3 bg-purple-50 border border-purple-200 rounded-lg text-left hover:border-purple-400 transition ml-4">
             <div class="flex items-center gap-3">
               <span class="text-xl">🍚</span>
@@ -514,7 +518,7 @@
 
           <!-- Dessert -->
           {% if let Some(dessert) = slot.dessert %}
-          <button
+          <button ts-req="/kitchen/{{ dessert.id }}/select-dish" ts-target="#current-recipe-card"
             class="w-full p-3 bg-pink-50 border border-pink-200 rounded-lg text-left hover:border-pink-400 transition">
             <div class="flex items-center gap-3">
               <span class="text-2xl">🍰</span>
@@ -588,31 +592,6 @@
   </div>
 </div>
 
-<!-- Recipe Complete Modal -->
-<div id="complete-modal" class="fixed inset-0 bg-black/50 z-60 hidden items-center justify-center p-4">
-  <div class="bg-white rounded-2xl max-w-md w-full p-8 text-center">
-    <div class="text-6xl mb-4">🎉</div>
-    <h2 class="text-2xl font-bold mb-2">Recipe Complete!</h2>
-    <p class="text-gray-600 mb-6">Thai Red Curry with Chicken is ready to serve</p>
-
-    <div class="bg-gray-50 rounded-lg p-4 mb-6">
-      <div class="text-sm text-gray-500 mb-1">Total cooking time</div>
-      <div class="text-3xl font-mono font-bold text-green-600">42:18</div>
-    </div>
-
-    <div class="space-y-3">
-      <button onclick="startNextRecipe()"
-        class="w-full px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition">
-        🍚 Start Next: Jasmine Rice
-      </button>
-      <a href="dashboard-free.html"
-        class="block w-full px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition">
-        Exit Kitchen Mode
-      </a>
-    </div>
-  </div>
-</div>
-
 <!-- Mobile Meals Panel (Slide-up) -->
 <div id="meals-panel"
   class="fixed inset-x-0 bottom-0 bg-white rounded-t-2xl shadow-2xl z-55 transform translate-y-full transition-transform duration-300 md:hidden">
@@ -623,7 +602,8 @@
       {% if let Some(slot) = slot %}
       <!-- Same dish cards as sidebar -->
       {% if let Some(appetizer) = slot.appetizer %}
-      <button onclick="toggleMealsPanel();" class="w-full p-3 bg-blue-50 border border-blue-200 rounded-lg text-left">
+      <button ts-req="/kitchen/{{ appetizer.id }}/select-dish" ts-target="#current-recipe-card"
+        ts-req-after="toggle-meals-panel" class="w-full p-3 bg-blue-50 border border-blue-200 rounded-lg text-left">
         <div class="flex items-center gap-3">
           <span class="text-2xl">🥗</span>
           <div class="flex-1">
@@ -646,8 +626,8 @@
         </div>
       </button>
       {% endif %}
-      <button onclick="toggleMealsPanel();"
-        class="w-full p-3 bg-orange-50 border border-orange-200 rounded-lg text-left">
+      <button ts-req="/kitchen/{{ slot.main_course.id }}/select-dish" ts-target="#current-recipe-card"
+        ts-req-after="toggle-meals-panel" class="w-full p-3 bg-orange-50 border border-orange-200 rounded-lg text-left">
         <div class="flex items-center gap-3">
           <span class="text-2xl">🍛</span>
           <div class="flex-1">
@@ -670,8 +650,8 @@
         </div>
       </button>
       {% if let Some(accompaniment) = slot.accompaniment %}
-      <button onclick="toggleMealsPanel();"
-        class="w-full p-3 bg-purple-50 border border-purple-200 rounded-lg text-left">
+      <button ts-req="/kitchen/{{ accompaniment.id }}/select-dish" ts-target="#current-recipe-card"
+        ts-req-after="toggle-meals-panel" class="w-full p-3 bg-purple-50 border border-purple-200 rounded-lg text-left">
         <div class="flex items-center gap-3">
           <span class="text-2xl">🍚</span>
           <div class="flex-1">
@@ -695,7 +675,8 @@
       </button>
       {% endif %}
       {% if let Some(dessert) = slot.dessert %}
-      <button onclick="toggleMealsPanel();" class="w-full p-3 bg-pink-50 border border-pink-200 rounded-lg text-left">
+      <button ts-req="/kitchen/{{ dessert.id }}/select-dish" ts-target="#current-recipe-card"
+        ts-req-after="toggle-meals-panel" class="w-full p-3 bg-pink-50 border border-pink-200 rounded-lg text-left">
         <div class="flex items-center gap-3">
           <span class="text-2xl">🍰</span>
           <div class="flex-1">
@@ -724,9 +705,21 @@
   {% endif %}
 </div>
 
-<div id="meals-overlay" onclick="toggleMealsPanel()" class="fixed inset-0 bg-black/50 z-54 hidden md:hidden"></div>
+<div id="meals-overlay" ts-trigger="click" ts-action="toggle-meals-panel"
+  class="fixed inset-0 bg-black/50 z-54 hidden md:hidden"></div>
 
 <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    twinspark.func({
+      "toggle-meals-panel": () => {
+        const panel = document.getElementById('meals-panel');
+        const overlay = document.getElementById('meals-overlay');
+        panel.classList.toggle('translate-y-full');
+        overlay.classList.toggle('hidden');
+      }
+    });
+  });
+
   // View switching
   function switchView(view) {
     const views = ['steps', 'ingredients', 'overview'];
@@ -751,19 +744,6 @@
     const chevron = document.getElementById('chevron-previous');
     el.classList.toggle('hidden');
     chevron.classList.toggle('rotate-180');
-  }
-
-  // Mobile meals panel
-  function toggleMealsPanel() {
-    const panel = document.getElementById('meals-panel');
-    const overlay = document.getElementById('meals-overlay');
-    panel.classList.toggle('translate-y-full');
-    overlay.classList.toggle('hidden');
-  }
-
-  function startNextRecipe() {
-    document.getElementById('complete-modal').classList.add('hidden');
-    alert('Starting Jasmine Rice recipe...');
   }
 </script>
 {% endblock %}
