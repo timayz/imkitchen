@@ -3,7 +3,7 @@
   {% if let Some((pos,instruction)) = current_instruction %}
   <!-- Step Progress -->
   <div class="flex items-center justify-between mb-4">
-    <span class="text-sm text-gray-500">Step {{ pos + 1 }} of {{ slot_recipe.instructions.len() }}</span>
+    <span class="text-sm text-gray-500">{{ "Step"|t }} {{ pos + 1 }} {{ "of"|t }} {{ slot_recipe.instructions.len() }}</span>
     <div class="flex gap-1">
       {% for _ in completed_instructions %}
       <div class="w-8 h-1 bg-green-500 rounded-full"></div>
@@ -23,7 +23,7 @@
         {{ pos + 1 }}
       </div>
       <div class="flex-1">
-        <span class="text-xs text-orange-600 font-semibold uppercase">Current Step</span>
+        <span class="text-xs text-orange-600 font-semibold uppercase">{{ "Current Step"|t }}</span>
         <p class="text-lg leading-relaxed mt-1">{{ instruction.description }}</p>
       </div>
     </div>
@@ -50,7 +50,7 @@
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
       </svg>
-      Previous
+      {{ "Previous"|t }}
     </button>
     {% endif %}
     {% if !coming_instructions.is_empty() %}
@@ -58,9 +58,9 @@
       ts-swap="inner" ts-req-selector="children #view-steps"
       class="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold flex items-center justify-center gap-2 transition">
       {% if instruction.time_next > 0 %}
-      <span id="next-step-label">⏱️ Wait {{ instruction.time_next|minutes }}, then Next</span>
+      <span id="next-step-label">⏱️ {{ "Wait"|t }} {{ instruction.time_next|minutes }}, {{ "then Next"|t }}</span>
       {% else %}
-      <span id="next-step-label">Done, Next</span>
+      <span id="next-step-label">{{ "Done, Next"|t }}</span>
       {% endif %}
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
@@ -79,7 +79,7 @@
         viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
       </svg>
-      Show completed steps ({{ completed_instructions.len() }})
+      {{ "Show completed steps"|t }} ({{ completed_instructions.len() }})
     </button>
 
     <div id="previous-steps" class="hidden space-y-2 mb-4">
@@ -101,7 +101,7 @@
 
     <!-- Upcoming Steps -->
     {% if !coming_instructions.is_empty() %}
-    <div class="text-sm text-gray-500 mb-2">Coming up next</div>
+    <div class="text-sm text-gray-500 mb-2">{{ "Coming up next"|t }}</div>
     <div class="space-y-2">
       {% for (pos,instruction) in coming_instructions %}
       <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
@@ -137,7 +137,7 @@
       </div>
       {% else if appetizer.is_cooking() %}
       <div class="px-2 py-1 bg-blue-500 text-white text-xs font-semibold rounded">
-        Cooking
+        {{ "Cooking"|t }}
       </div>
       {% else %}
       <div class="w-6 h-6 border-2 border-gray-300 rounded-full shrink-0"></div>
@@ -166,7 +166,7 @@
       </div>
       {% else if slot.main_course.is_cooking() %}
       <div class="px-2 py-1 bg-orange-500 text-white text-xs font-semibold rounded">
-        Cooking
+        {{ "Cooking"|t }}
       </div>
       {% else %}
       <div class="w-6 h-6 border-2 border-gray-300 rounded-full shrink-0"></div>
@@ -195,7 +195,7 @@
       </div>
       {% else if accompaniment.is_cooking() %}
       <div class="px-2 py-1 bg-purple-500 text-white text-xs font-semibold rounded">
-        Cooking
+        {{ "Cooking"|t }}
       </div>
       {% else %}
       <div class="w-6 h-6 border-2 border-gray-300 rounded-full shrink-0"></div>
@@ -225,7 +225,7 @@
       </div>
       {% else if dessert.is_cooking() %}
       <div class="px-2 py-1 bg-pink-500 text-white text-xs font-semibold rounded">
-        Cooking
+        {{ "Cooking"|t }}
       </div>
       {% else %}
       <div class="w-6 h-6 border-2 border-gray-300 rounded-full shrink-0"></div>
@@ -254,7 +254,7 @@
         </svg>
       </div>
       {% else if appetizer.is_cooking() %}
-      <span class="px-2 py-1 bg-blue-500 text-white text-xs font-semibold rounded">Cooking</span>
+      <span class="px-2 py-1 bg-blue-500 text-white text-xs font-semibold rounded">{{ "Cooking"|t }}</span>
       {% else %}
       <div class="w-6 h-6 border-2 border-gray-300 rounded-full"></div>
       {% endif %}
@@ -278,7 +278,7 @@
         </svg>
       </div>
       {% else if slot.main_course.is_cooking() %}
-      <span class="px-2 py-1 bg-orange-500 text-white text-xs font-semibold rounded">Cooking</span>
+      <span class="px-2 py-1 bg-orange-500 text-white text-xs font-semibold rounded">{{ "Cooking"|t }}</span>
       {% else %}
       <div class="w-6 h-6 border-2 border-gray-300 rounded-full"></div>
       {% endif %}
@@ -302,7 +302,7 @@
         </svg>
       </div>
       {% else if accompaniment.is_cooking() %}
-      <span class="px-2 py-1 bg-purple-500 text-white text-xs font-semibold rounded">Cooking</span>
+      <span class="px-2 py-1 bg-purple-500 text-white text-xs font-semibold rounded">{{ "Cooking"|t }}</span>
       {% else %}
       <div class="w-6 h-6 border-2 border-gray-300 rounded-full"></div>
       {% endif %}
@@ -327,7 +327,7 @@
         </svg>
       </div>
       {% else if dessert.is_cooking() %}
-      <span class="px-2 py-1 bg-pink-500 text-white text-xs font-semibold rounded">Cooking</span>
+      <span class="px-2 py-1 bg-pink-500 text-white text-xs font-semibold rounded">{{ "Cooking"|t }}</span>
       {% else %}
       <div class="w-6 h-6 border-2 border-gray-300 rounded-full"></div>
       {% endif %}
@@ -336,8 +336,8 @@
   {% endif %}
 </div>
 <div id="session-progress-info" ts-swap-push="#session-progress-info" class="text-lg font-bold text-green-600">{{
-  slot_completed_count }} of {{
-  slot_total_count }} dishes</div>
+  slot_completed_count }} {{ "of"|t }} {{
+  slot_total_count }} {{ "dishes"|t }}</div>
 <div id="session-progress-bar" ts-swap-push="#session-progress-bar" class="flex gap-1">
   {% if let Some(appetizer) = slot.appetizer %}
   <div class="flex-1 h-2 {% if appetizer.is_completed() %}bg-green-500{% else %}bg-gray-200{% endif %} rounded-full">
