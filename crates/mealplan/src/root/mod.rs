@@ -1,3 +1,4 @@
+mod change_slot_recipe_status;
 mod generate;
 
 use evento::{
@@ -12,6 +13,7 @@ use sea_query_sqlx::SqlxBinder;
 use sqlx::SqlitePool;
 use std::ops::Deref;
 
+pub use change_slot_recipe_status::ChangeSlotRecipeStatus;
 pub use generate::*;
 
 #[derive(Clone)]

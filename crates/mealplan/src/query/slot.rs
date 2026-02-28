@@ -4,7 +4,7 @@ use evento::{
     subscription::{Context, SubscriptionBuilder},
 };
 use imkitchen_db::table::{MealPlanRecipe, MealPlanSlot};
-use imkitchen_shared::mealplan::{DaySlotRecipe, WeekGenerated};
+use imkitchen_shared::mealplan::{DaySlotRecipe, SlotRecipeStatusChanged, WeekGenerated};
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::prelude::FromRow;
@@ -27,6 +27,7 @@ impl From<&MealPlanRecipeRow> for DaySlotRecipe {
             prep_time: value.prep_time.to_owned(),
             cook_time: value.cook_time.to_owned(),
             advance_prep: value.advance_prep.to_owned(),
+            status: Default::default(),
         }
     }
 }
@@ -131,7 +132,9 @@ impl<E: Executor> super::Query<E> {
 }
 
 pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
-    SubscriptionBuilder::new("mealplan-slot").handler(handle_week_generated())
+    SubscriptionBuilder::new("mealplan-slot")
+        .handler(handle_week_generated())
+        .handler(handle_slot_recipe_status_changed())
 }
 
 #[evento::subscription]
@@ -252,6 +255,73 @@ async fn handle_week_generated<E: Executor>(
             ])
             .to_owned(),
     );
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
+}
+
+#[evento::subscription]
+async fn handle_slot_recipe_status_changed<E: Executor>(
+    context: &Context<'_, E>,
+    event: Event<SlotRecipeStatusChanged>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let user_id = event.aggregator_id.to_owned();
+
+    let (sql, values) = Query::select()
+        .columns([
+            MealPlanSlot::MainCourse,
+            MealPlanSlot::Appetizer,
+            MealPlanSlot::Accompaniment,
+            MealPlanSlot::Dessert,
+        ])
+        .from(MealPlanSlot::Table)
+        .and_where(Expr::col(MealPlanSlot::UserId).eq(&user_id))
+        .and_where(Expr::col(MealPlanSlot::Day).eq(event.data.day))
+        .limit(1)
+        .build_sqlx(SqliteQueryBuilder);
+
+    let (mut main, appetizer, accompaniment, dessert) = sqlx::query_as_with::<
+        _,
+        (
+            evento::sql_types::Bitcode<DaySlotRecipe>,
+            Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
+            Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
+            Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
+        ),
+        _,
+    >(&sql, values)
+    .fetch_one(&pool)
+    .await?;
+
+    let mut statement = Query::update()
+        .table(MealPlanSlot::Table)
+        .and_where(Expr::col(MealPlanSlot::UserId).eq(&user_id))
+        .and_where(Expr::col(MealPlanSlot::Day).eq(event.data.day))
+        .to_owned();
+
+    if main.id == event.data.recipe_id {
+        main.status = event.data.status;
+        statement.value(MealPlanSlot::MainCourse, bitcode::encode(&main.0));
+    } else if let Some(mut r) = appetizer
+        && r.id == event.data.recipe_id
+    {
+        r.status = event.data.status;
+
+        statement.value(MealPlanSlot::Appetizer, bitcode::encode(&r.0));
+    } else if let Some(mut r) = accompaniment
+        && r.id == event.data.recipe_id
+    {
+        r.status = event.data.status;
+        statement.value(MealPlanSlot::Accompaniment, bitcode::encode(&r.0));
+    } else if let Some(mut r) = dessert
+        && r.id == event.data.recipe_id
+    {
+        r.status = event.data.status;
+        statement.value(MealPlanSlot::Dessert, bitcode::encode(&r.0));
+    }
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
