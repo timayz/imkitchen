@@ -152,6 +152,7 @@ impl<E: Executor> super::Command<E> {
 
                 slots.push(Slot {
                     day: day.unix_timestamp() as u64,
+                    household_size: input.household_size,
                     appetizer: appetizer_recipes.next().map(|r| r.into()),
                     main_course: recipe.into(),
                     dessert: dessert_recipes.next().map(|r| r.into()),

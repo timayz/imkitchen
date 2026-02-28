@@ -14,6 +14,12 @@ fn create_table() -> TableCreateStatement {
                 .string_len(26),
         )
         .col(ColumnDef::new(MealPlanSlot::Day).big_integer().not_null())
+        .col(
+            ColumnDef::new(MealPlanSlot::HouseholdSize)
+                .integer()
+                .not_null()
+                .default(4),
+        )
         .col(ColumnDef::new(MealPlanSlot::MainCourse).blob().not_null())
         .col(ColumnDef::new(MealPlanSlot::Appetizer).blob().null())
         .col(ColumnDef::new(MealPlanSlot::Accompaniment).blob().null())
