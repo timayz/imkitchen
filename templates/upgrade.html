@@ -1,0 +1,222 @@
+{% extends "_user.html" %}
+
+{% block title %}Upgrade - imkitchen{% endblock %}
+
+{% block page_scripts %}
+<script src="https://js.stripe.com/clover/stripe.js"></script>
+{% endblock %}
+{% block content %}
+
+<!-- Main Content -->
+<div class="container mx-auto px-4 py-8 max-w-6xl">
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold mb-2">Upgrade</h1>
+    <p class="text-gray-600">Upgrade to Premium and unlock the full imkitchen experience</p>
+  </div>
+
+  <div class="lg:grid lg:grid-cols-3 gap-8">
+    <!-- Form Section -->
+    <div class="lg:col-span-2 space-y-6">
+      <!-- Plan Selection -->
+      <div class="bg-white rounded-lg shadow-lg p-6">
+        <h2 class="text-xl font-bold mb-4">Select Your Plan</h2>
+        <div class="grid md:grid-cols-2 gap-4">
+          <label class="relative cursor-pointer">
+            <input type="radio" name="plan" value="monthly" class="sr-only peer" />
+            <div
+              class="p-4 border-2 border-gray-300 rounded-lg peer-checked:border-green-600 peer-checked:bg-green-50 transition-colors">
+              <div class="font-bold text-lg">Monthly</div>
+              <div class="text-2xl font-bold text-green-600 mt-1">$4.99<span
+                  class="text-sm text-gray-500 font-normal">/mo</span></div>
+              <div class="text-sm text-gray-500 mt-1">Billed monthly</div>
+            </div>
+          </label>
+          <label class="relative cursor-pointer">
+            <input type="radio" name="plan" value="annual" class="sr-only peer" checked />
+            <div
+              class="p-4 border-2 border-gray-300 rounded-lg peer-checked:border-green-600 peer-checked:bg-green-50 transition-colors relative">
+              <span
+                class="absolute -top-3 right-3 px-3 py-1 bg-yellow-400 text-gray-900 text-xs font-bold rounded-full">Save
+                20%</span>
+              <div class="font-bold text-lg">Annual</div>
+              <div class="text-2xl font-bold text-green-600 mt-1">$47.90<span
+                  class="text-sm text-gray-500 font-normal">/yr</span></div>
+              <div class="text-sm text-gray-500 mt-1">$3.99/mo billed annually</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Payment Details -->
+      <div class="bg-white rounded-lg shadow-lg p-6">
+        <h2 class="text-xl font-bold mb-4">Payment Details</h2>
+        <div id="payment-element"></div>
+      </div>
+
+      <!-- Billing Address -->
+      <div class="bg-white rounded-lg shadow-lg p-6">
+        <h2 class="text-xl font-bold mb-4">Billing Address</h2>
+        <form class="space-y-4">
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Full Name</label>
+            <input type="text" placeholder="Sarah Mitchell"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" />
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Address</label>
+            <input type="text" placeholder="123 Main Street"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" />
+          </div>
+          <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">City</label>
+              <input type="text" placeholder="San Francisco"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" />
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">ZIP / Postal Code</label>
+              <input type="text" placeholder="94102"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">Country</label>
+            <select
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white">
+              <option>United States</option>
+              <option>Canada</option>
+              <option>United Kingdom</option>
+              <option>France</option>
+              <option>Germany</option>
+              <option>Australia</option>
+            </select>
+          </div>
+        </form>
+      </div>
+
+      <!-- Pay Button (Mobile) -->
+      <div class="lg:hidden">
+        <a href="payment-processing.html"
+          class="block w-full px-6 py-4 bg-green-600 text-white font-bold text-center rounded-lg hover:bg-green-700 text-lg">
+          Pay Now - $47.90
+        </a>
+        <div class="flex items-center justify-center gap-2 mt-3 text-sm text-gray-500">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
+            </path>
+          </svg>
+          Your payment is secured with 256-bit encryption
+        </div>
+      </div>
+    </div>
+
+    <!-- Order Summary Sidebar -->
+    <div class="hidden lg:block">
+      <div class="bg-white rounded-lg shadow-lg p-6 sticky top-8">
+        <h2 class="text-xl font-bold mb-4">Order Summary</h2>
+
+        <div class="space-y-3 mb-6">
+          <div class="flex justify-between">
+            <span class="text-gray-600">Premium Annual Plan</span>
+            <span class="font-semibold">$47.90</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-500">12 months x $4.99/mo</span>
+          </div>
+        </div>
+
+        <div class="border-t pt-4 space-y-2">
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-600">Subtotal</span>
+            <span>$47.90</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-600">Tax</span>
+            <span>$0.00</span>
+          </div>
+          <div class="flex justify-between font-bold text-lg border-t pt-2 mt-2">
+            <span>Total</span>
+            <span class="text-green-600">$47.90</span>
+          </div>
+        </div>
+
+        <a href="payment-processing.html"
+          class="block w-full mt-6 px-6 py-4 bg-green-600 text-white font-bold text-center rounded-lg hover:bg-green-700 text-lg">
+          Pay Now
+        </a>
+
+        <div class="flex items-center justify-center gap-2 mt-4 text-sm text-gray-500">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
+            </path>
+          </svg>
+          <span>Secured with 256-bit encryption</span>
+        </div>
+
+        <!-- Plan Benefits -->
+        <div class="mt-6 pt-4 border-t">
+          <h3 class="font-semibold text-sm text-gray-700 mb-3">Premium includes:</h3>
+          <ul class="space-y-2 text-sm text-gray-600">
+            <li class="flex items-start gap-2">
+              <svg class="w-4 h-4 text-green-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+              Unlimited recipes in meal plan
+            </li>
+            <li class="flex items-start gap-2">
+              <svg class="w-4 h-4 text-green-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+              All recipe types (appetizers, accompaniments, desserts)
+            </li>
+            <li class="flex items-start gap-2">
+              <svg class="w-4 h-4 text-green-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+              Meal preferences applied
+            </li>
+            <li class="flex items-start gap-2">
+              <svg class="w-4 h-4 text-green-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+              Batch recipe import
+            </li>
+            <li class="flex items-start gap-2">
+              <svg class="w-4 h-4 text-green-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+              Priority support
+            </li>
+            <li class="flex items-start gap-2">
+              <svg class="w-4 h-4 text-green-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+              Early access to new features
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var stripe = Stripe('pk_test_TYooMQauvdEDq54NiTphI7jx');
+    var elements = stripe.elements({
+      mode: 'subscription',
+      amount: 4790,
+      currency: 'usd'
+    });
+    var paymentElement = elements.create('payment', {
+      layout: 'tabs',
+      fields: {
+        billingDetails: {
+          address: 'never'
+        }
+      }
+    });
+    paymentElement.mount('#payment-element');
+  </script>
+  {% endblock %}

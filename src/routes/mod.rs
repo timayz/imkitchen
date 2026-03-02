@@ -16,7 +16,6 @@ mod contact;
 mod health;
 mod help;
 mod index;
-mod kitchen;
 mod login;
 mod manifest;
 mod policy;
@@ -27,6 +26,7 @@ mod reset_password;
 mod service_worker;
 mod shopping;
 mod terms;
+mod upgrade;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -68,7 +68,7 @@ pub fn router(app_state: AppState) -> Router {
             post(index::update_slot_step_action),
         )
         .route("/kitchen/{recipe_id}/select-dish", get(index::select_dish))
-        .route("/kitchen/{day}", get(kitchen::page))
+        .route("/upgrade", get(upgrade::page))
         .route("/about", get(about::page))
         .route("/help", get(help::page))
         .route("/terms", get(terms::page))

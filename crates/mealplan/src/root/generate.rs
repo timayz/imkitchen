@@ -102,8 +102,9 @@ impl<E: Executor> super::Command<E> {
                         .await?
                     }
                     _ => {
-                        self.first_week_recipes(&input.user_id, RecipeType::Appetizer)
-                            .await?
+                        // self.first_week_recipes(&input.user_id, RecipeType::Appetizer)
+                        //     .await?
+                        vec![]
                     }
                 };
 
@@ -120,8 +121,9 @@ impl<E: Executor> super::Command<E> {
                         .await?
                     }
                     _ => {
-                        self.first_week_recipes(&input.user_id, RecipeType::Accompaniment)
-                            .await?
+                        // self.first_week_recipes(&input.user_id, RecipeType::Accompaniment)
+                        //     .await?
+                        vec![]
                     }
                 };
 
@@ -138,13 +140,14 @@ impl<E: Executor> super::Command<E> {
                         .await?
                     }
                     _ => {
-                        self.first_week_recipes(&input.user_id, RecipeType::Dessert)
-                            .await?
+                        // self.first_week_recipes(&input.user_id, RecipeType::Dessert)
+                        //     .await?
+                        vec![]
                     }
                 };
                 let mut dessert_recipes = dessert_recipes.iter();
 
-                let accompaniment = if recipe.accepts_accompaniment {
+                let accompaniment = if recipe.accepts_accompaniment && input.randomize.is_some() {
                     accompaniment_recipes.next().map(|r| r.into())
                 } else {
                     None

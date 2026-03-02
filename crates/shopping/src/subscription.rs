@@ -219,7 +219,7 @@ async fn handle_recipe_ingredients_changed<E: Executor>(
     update_col(
         &pool,
         &event.aggregator_id,
-        ShoppingRecipe::HouseholdSize,
+        ShoppingRecipe::Ingredients,
         ingredients,
     )
     .await?;
