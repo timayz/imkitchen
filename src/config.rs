@@ -9,7 +9,7 @@ pub struct Config {
     pub jwt: JwtConfig,
     pub root: RootConfig,
     pub email: EmailConfig,
-    // pub stripe: StripeConfig,
+    pub stripe: StripeConfig,
     pub features: FeaturesConfig,
     pub monitoring: MonitoringConfig,
 }
@@ -54,12 +54,11 @@ pub struct JwtConfig {
     pub expiration_days: u16,
 }
 
-// #[derive(Debug, Deserialize, Clone)]
-// pub struct StripeConfig {
-//     pub secret_key: String,
-//     pub webhook_secret: String,
-//     pub price_id: String, // Stripe Price ID for $4.99/month subscription
-// }
+#[derive(Debug, Deserialize, Clone)]
+pub struct StripeConfig {
+    pub secret_key: String,
+    pub publishable_key: String,
+}
 
 impl Config {
     /// Load configuration from file and environment variables
@@ -88,8 +87,7 @@ impl Config {
             .set_default("monitoring.log_target", true)?
             .set_default("monitoring.log_line_number", true)?
             .set_default("stripe.secret_key", "")?
-            .set_default("stripe.webhook_secret", "")?
-            .set_default("stripe.price_id", "")?
+            .set_default("stripe.publishable_key", "")?
             .set_default("email.smtp_host", "localhost")?
             .set_default("email.smtp_port", "1025")?
             .set_default("email.smtp_username", "")?

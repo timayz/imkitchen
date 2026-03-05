@@ -1,3 +1,4 @@
+mod create_stripe_customer;
 mod toogle_life_premium;
 
 use bitcode::{Decode, Encode};
@@ -27,6 +28,7 @@ impl<E: Executor> Command<E> {
                     id,
                     expire_at: 0,
                     cursor: Default::default(),
+                    customer_id: None,
                 })
             })
     }
@@ -35,12 +37,14 @@ impl<E: Executor> Command<E> {
 #[evento::projection(Encode, Decode)]
 pub struct Subscription {
     pub id: String,
+    pub customer_id: Option<String>,
     pub expire_at: u64,
 }
 
 fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Subscription> {
     Projection::new::<subscription::Subscription>(id)
         .handler(handle_life_premium_toggled())
+        .handler(handle_stripe_customer_created())
         .safety_check()
 }
 
@@ -57,6 +61,17 @@ async fn handle_life_premium_toggled(
 ) -> anyhow::Result<()> {
     data.id = event.aggregator_id.to_owned();
     data.expire_at = event.data.expire_at;
+
+    Ok(())
+}
+
+#[evento::handler]
+async fn handle_stripe_customer_created(
+    event: Event<subscription::StripeCustomerCreated>,
+    data: &mut Subscription,
+) -> anyhow::Result<()> {
+    data.id = event.aggregator_id.to_owned();
+    data.customer_id = Some(event.data.id);
 
     Ok(())
 }

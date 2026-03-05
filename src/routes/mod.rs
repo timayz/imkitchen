@@ -32,6 +32,7 @@ mod upgrade;
 pub struct AppState {
     pub inner: imkitchen_shared::State<RwSqlite>,
     pub config: crate::config::Config,
+    pub stripe: stripe::Client,
     pub user_cmd: imkitchen_user::Command<RwSqlite>,
     pub user_query: imkitchen_user::Query<RwSqlite>,
     pub shopping_cmd: imkitchen_shopping::Command<RwSqlite>,
@@ -68,7 +69,7 @@ pub fn router(app_state: AppState) -> Router {
             post(index::update_slot_step_action),
         )
         .route("/kitchen/{recipe_id}/select-dish", get(index::select_dish))
-        .route("/upgrade", get(upgrade::page))
+        .route("/upgrade", get(upgrade::page).post(upgrade::action))
         .route("/about", get(about::page))
         .route("/help", get(help::page))
         .route("/terms", get(terms::page))

@@ -8,8 +8,8 @@ email = "root@imkitchen.localhost"
 password = "imkitchen"
 
 [database]
-url = "sqlite:/var/lib/imkitchen/db.sqlite3"
-max_connections = 10
+url = "sqlite:imkitchen.db"
+max_connections = 5
 
 [jwt]
 audience = "https://imkitchen.localhost"
@@ -21,18 +21,19 @@ expiration_days = 14
 premium = true
 
 [monitoring]
-log_level = "info"
+log_level = "debug,sqlx=info,tower_http=info"
 log_json = false
 log_target = true
 log_line_number = true
 
+[stripe]
+secret_key = ""
+publishable_key = ""
+
 [email]
-smtp_host = "maildev"
-smtp_port ="1080"
+smtp_host = "localhost"
+smtp_port = "1025"
 smtp_username = ""
 smtp_password = ""
 from_address = "no-reply@imkitchen.localhost"
 contact_address = "contact@imkitchen.localhost"
-
-
-
