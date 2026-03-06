@@ -6,9 +6,15 @@
       <span class="text-gray-600">Premium {{ plan }} Plan</span>
       <span class="font-semibold">${{ price|price }}</span>
     </div>
-    <!-- <div class="flex justify-between text-sm"> -->
-    <!--   <span class="text-gray-500">12 months x $4.99/mo</span> -->
-    <!-- </div> -->
+    {% if plan == "Annual" %}
+    <div class="flex justify-between text-sm">
+      {% if let Ok(config) = "config"|value::<crate::config::Config> %}
+        {% if let Some(premium) = config.premium %}
+        <span class="text-gray-500">12 months x ${{ *premium.monthly_price|amount }}/mo</span>
+        {% endif %}
+        {% endif %}
+    </div>
+    {% endif %}
   </div>
 
   <div class="border-t pt-4 space-y-2">
@@ -88,3 +94,5 @@
   class="block w-full px-6 py-4 bg-green-600 text-white font-bold text-center cursor-pointer rounded-lg hover:bg-green-700 text-lg">
   Pay Now - ${{ (price + tax)|price }}
 </button>
+<input ts-swap-push="#subscription-form-amount" type="hidden" id="subscription-form-amount" name="amount"
+  value="{{ amount }}" />

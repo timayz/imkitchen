@@ -307,6 +307,12 @@ pub(crate) mod filters {
         Ok(format!("{:.2}", value))
     }
 
+    #[askama::filter_fn]
+    pub fn amount(value: impl Into<u32>, _values: &dyn askama::Values) -> askama::Result<String> {
+        let value = value.into();
+        Ok(format!("{:.2}", value as f64 / 100.0))
+    }
+
     // #[askama::filter_fn]
     // pub fn assets(value: &str, values: &dyn askama::Values) -> askama::Result<String> {
     //     let config = askama::get_value::<crate::axum_extra::TemplateConfig>(values, "config")

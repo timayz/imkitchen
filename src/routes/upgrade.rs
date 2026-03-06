@@ -1,20 +1,22 @@
 use axum::{
     extract::State,
-    http::StatusCode,
     response::{IntoResponse, Redirect},
 };
 use axum_extra::extract::Form;
 use serde::Deserialize;
-use stripe_billing::subscription::{
-    CreateSubscription, CreateSubscriptionItems, CreateSubscriptionPaymentBehavior,
+use stripe_core::{
+    PaymentIntentSetupFutureUsage,
+    customer::CreateCustomer,
+    payment_intent::{CreatePaymentIntent, CreatePaymentIntentAutomaticPaymentMethods},
 };
-use stripe_core::customer::CreateCustomer;
+use stripe_types::Currency;
 use world_tax::{Region, TaxDatabase, TaxScenario, TaxType};
 
 use crate::{
     auth::AuthUser,
+    config::PremiumConfig,
     routes::AppState,
-    template::{Template, filters},
+    template::{self, Template, filters},
 };
 
 #[derive(askama::Template)]
@@ -39,24 +41,6 @@ pub async fn page(template: Template, user: AuthUser) -> impl IntoResponse {
         return Redirect::to("/profile/subscription").into_response();
     }
 
-    // let region = if let Some((_, region)) = template.preferred_language.split_once("-") {
-    //     region.to_uppercase()
-    // } else {
-    //     "US".to_owned()
-    // };
-    //
-    // let tax = try_page_response!(sync: TaxDatabase::new(), template);
-    // let mut scenario = TaxScenario::new(
-    //     crate::try_page_response!(sync: Region::new("FR".to_owned(), None), template),
-    //     crate::try_page_response!(sync: Region::new(region, None), template),
-    //     world_tax::TransactionType::B2C,
-    // );
-    //
-    // scenario.is_digital_product_or_service = true;
-    //
-    // let tax = crate::try_page_response!(sync: scenario.calculate_tax(47.90, &tax), template);
-    // println!("{tax}");
-
     template
         .render(UpgradeTemplate {
             user,
@@ -68,6 +52,9 @@ pub async fn page(template: Template, user: AuthUser) -> impl IntoResponse {
 #[derive(Deserialize, Debug)]
 pub struct ActionInput {
     pub plan: String,
+    pub amount: u32,
+    pub country: String,
+    pub state: String,
 }
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
@@ -81,11 +68,23 @@ pub async fn action(
         return Redirect::to("/profile/subscription").into_response();
     }
 
-    let price_id = match input.plan.as_str() {
-        "monthly" => app.config.stripe.monthly_price_id.to_owned(),
-        "annual" => app.config.stripe.annual_price_id.to_owned(),
-        _ => return (StatusCode::BAD_REQUEST, "").into_response(),
+    let Some(ref premium) = app.config.premium else {
+        tracing::error!("premium not configured");
+
+        return template.render(template::ServerTemplate).into_response();
     };
+
+    let tax_db = crate::try_response!(sync anyhow: TaxDatabase::new(), template);
+    let price_tax = crate::try_response!(sync anyhow:
+        get_price_with_tax(&tax_db, premium.clone(), input.plan.to_owned(), input.country, input.state),
+        template
+    );
+
+    let amount = price_tax.price + price_tax.tax;
+
+    if amount != input.amount {
+        return template.render(template::ServerTemplate).into_response();
+    }
 
     let user_info = crate::try_response!(anyhow_opt: app.user_query.admin(&user.id), template);
 
@@ -112,29 +111,20 @@ pub async fn action(
         customer.id.to_string()
     };
 
-    let subscription = crate::try_response!(anyhow: CreateSubscription::new()
-        .customer(&customer_id)
-        .items(vec![CreateSubscriptionItems {
-            price: Some(price_id),
-            ..Default::default()
-        }])
-        .payment_behavior(CreateSubscriptionPaymentBehavior::DefaultIncomplete)
-        .expand(["latest_invoice.confirmation_secret".to_owned()]).send(&app.stripe), template);
+    let payment_intent = crate::try_response!(anyhow: CreatePaymentIntent::new(amount, Currency::USD)
+        .customer(customer_id)
+        .automatic_payment_methods(CreatePaymentIntentAutomaticPaymentMethods::new(true))
+        .setup_future_usage(PaymentIntentSetupFutureUsage::OffSession)
+        .send(&app.stripe), template);
 
     crate::try_response!(
         app.user_cmd
             .subscription
-            .create_stripe_subscription(&subscription.id, &user.id),
+            .create_stripe_payment_intent(&payment_intent.id, &user.id),
         template
     );
 
-    let client_secret = subscription
-        .latest_invoice
-        .as_ref()
-        .and_then(|inv| inv.as_object())
-        .and_then(|inv| inv.confirmation_secret.clone())
-        .unwrap()
-        .client_secret;
+    let client_secret = payment_intent.client_secret.unwrap_or_default();
 
     format!("<div ts-trigger=\"load\" ts-action=\"stripe-confirm-payment\" data-client-secret=\"{client_secret}\"></div>").into_response()
 }
@@ -143,6 +133,7 @@ pub async fn action(
 #[template(path = "partials/upgrade-order-summary.html")]
 pub struct UpgradeOrderSummaryTemplate {
     pub plan: String,
+    pub amount: u32,
     pub price: f64,
     pub tax: f64,
     pub tax_label: String,
@@ -159,54 +150,30 @@ pub struct OrderSummary {
 pub async fn order_summary(
     template: Template,
     user: AuthUser,
+    State(app): State<AppState>,
     Form(input): Form<OrderSummary>,
 ) -> impl IntoResponse {
     if user.is_premium() {
         return Redirect::to("/profile/subscription").into_response();
     }
 
-    let tax = crate::try_response!(sync anyhow: TaxDatabase::new(), template);
+    let Some(premium) = app.config.premium else {
+        tracing::error!("premium not configured");
 
-    let country = match input.country.as_str() {
-        "MQ" => "FR".to_owned(),
-        "GP" => "FR".to_owned(),
-        "RE" => "FR".to_owned(),
-        _ => input.country,
+        return template.render(template::ServerTemplate).into_response();
     };
 
-    let region = if !input.state.is_empty() {
-        if tax.get_country(&input.state).is_ok() {
-            Some(format!("{}-{}", country, input.state))
-        } else {
-            None
-        }
-    } else {
-        None
-    };
-
-    let mut scenario = TaxScenario::new(
-        crate::try_response!(sync anyhow: Region::new("FR".to_owned(), None), template),
-        crate::try_response!(sync anyhow: Region::new(country, region), template),
-        world_tax::TransactionType::B2C,
+    let tax_db = crate::try_response!(sync anyhow: TaxDatabase::new(), template);
+    let price_tax = crate::try_response!(sync anyhow:
+        get_price_with_tax(&tax_db, premium, input.plan.to_owned(), input.country, input.state),
+        template
     );
 
-    scenario.is_digital_product_or_service = true;
-
-    let price = match input.plan.as_str() {
-        "monthly" => 4.99,
-        "annual" => 47.90,
-        _ => return (StatusCode::BAD_REQUEST, "").into_response(),
-    };
-
-    let rates = scenario.get_rates(price, &tax).unwrap_or_default();
-    let tax_label = if let Some((rate, TaxType::VAT(_))) =
-        rates.first().map(|r| (r.rate, r.tax_type.clone()))
-    {
+    let tax_label = if let Some((rate, TaxType::VAT(_))) = price_tax.tax_type {
         format!("VAT ({}%)", rate * 100.0)
     } else {
         "Tax".to_owned()
     };
-    let tax = scenario.calculate_tax(price, &tax).unwrap_or(0.0);
     let mut chars = input.plan.chars();
     let plan = match chars.next() {
         None => String::new(),
@@ -216,9 +183,58 @@ pub async fn order_summary(
     template
         .render(UpgradeOrderSummaryTemplate {
             plan,
-            price,
-            tax,
+            price: price_tax.price as f64 / 100.0,
+            amount: price_tax.price + price_tax.tax,
+            tax: price_tax.tax as f64 / 100.0,
             tax_label,
         })
         .into_response()
+}
+
+struct PriceTax {
+    price: u32,
+    tax: u32,
+    tax_type: Option<(f64, TaxType)>,
+}
+
+fn get_price_with_tax(
+    db: &TaxDatabase,
+    config: PremiumConfig,
+    plan: String,
+    country: String,
+    state: String,
+) -> anyhow::Result<PriceTax> {
+    let region = if !state.is_empty() {
+        if db.get_country(&state).is_ok() {
+            Some(format!("{}-{}", country, state))
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+    let mut scenario = TaxScenario::new(
+        Region::new("FR".to_owned(), None)?,
+        Region::new(country, region)?,
+        world_tax::TransactionType::B2C,
+    );
+
+    scenario.is_digital_product_or_service = true;
+
+    let price = match (plan.as_str(), &config) {
+        ("monthly", premium) => premium.monthly_price as u32,
+        ("annual", premium) if premium.annual_rate < 100 => premium.annual_price(),
+        _ => anyhow::bail!("bad request"),
+    };
+
+    let rates = scenario.get_rates(price.into(), db).unwrap_or_default();
+
+    Ok(PriceTax {
+        price,
+        tax: (scenario
+            .calculate_tax(price as f64 / 100.0, db)
+            .unwrap_or(0.0)
+            * 100.0) as u32,
+        tax_type: rates.first().map(|r| (r.rate, r.tax_type.clone())),
+    })
 }

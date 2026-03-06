@@ -1,8 +1,8 @@
 use evento::{Executor, ProjectionAggregator};
-use imkitchen_shared::user::subscription::StripePaymentMethodCreated;
+use imkitchen_shared::user::subscription::StripePaymentIntentCreated;
 
 impl<E: Executor> super::Command<E> {
-    pub async fn create_stripe_payment_method(
+    pub async fn create_stripe_payment_intent(
         &self,
         id: impl Into<String>,
         request_by: impl Into<String>,
@@ -12,7 +12,7 @@ impl<E: Executor> super::Command<E> {
 
         subscription
             .aggregator()?
-            .event(&StripePaymentMethodCreated { id: id.into() })
+            .event(&StripePaymentIntentCreated { id: id.into() })
             .requested_by(request_by)
             .commit(&self.executor)
             .await?;

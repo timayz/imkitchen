@@ -1,4 +1,5 @@
 mod create_stripe_customer;
+mod create_stripe_payment_intent;
 mod create_stripe_subscription;
 mod toogle_life_premium;
 
@@ -30,7 +31,8 @@ impl<E: Executor> Command<E> {
                     expire_at: 0,
                     cursor: Default::default(),
                     customer_id: None,
-                    subscription_id: None,
+                    payment_method_id: None,
+                    payment_intent_id: None,
                 })
             })
     }
@@ -40,7 +42,8 @@ impl<E: Executor> Command<E> {
 pub struct Subscription {
     pub id: String,
     pub customer_id: Option<String>,
-    pub subscription_id: Option<String>,
+    pub payment_method_id: Option<String>,
+    pub payment_intent_id: Option<String>,
     pub expire_at: u64,
 }
 
@@ -48,7 +51,8 @@ fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Subscr
     Projection::new::<subscription::Subscription>(id)
         .handler(handle_life_premium_toggled())
         .handler(handle_stripe_customer_created())
-        .handler(handle_stripe_subscription_created())
+        .handler(handle_stripe_payment_method_created())
+        .handler(handle_stripe_payment_intent_created())
         .safety_check()
 }
 
@@ -81,12 +85,23 @@ async fn handle_stripe_customer_created(
 }
 
 #[evento::handler]
-async fn handle_stripe_subscription_created(
-    event: Event<subscription::StripeSubscriptionCreated>,
+async fn handle_stripe_payment_method_created(
+    event: Event<subscription::StripePaymentMethodCreated>,
     data: &mut Subscription,
 ) -> anyhow::Result<()> {
     data.id = event.aggregator_id.to_owned();
-    data.subscription_id = Some(event.data.id);
+    data.payment_method_id = Some(event.data.id);
+
+    Ok(())
+}
+
+#[evento::handler]
+async fn handle_stripe_payment_intent_created(
+    event: Event<subscription::StripePaymentIntentCreated>,
+    data: &mut Subscription,
+) -> anyhow::Result<()> {
+    data.id = event.aggregator_id.to_owned();
+    data.payment_intent_id = Some(event.data.id);
 
     Ok(())
 }

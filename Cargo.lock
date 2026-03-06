@@ -298,21 +298,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "async-stripe-billing"
-version = "1.0.0-rc.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec34437336ddf70c92d7afd5e0c9b0efc3388e18c4c390c46b47cfd72953940c"
-dependencies = [
- "async-stripe-client-core",
- "async-stripe-shared",
- "async-stripe-types",
- "miniserde",
- "serde",
- "smol_str",
- "tracing",
-]
-
-[[package]]
 name = "async-stripe-client-core"
 version = "1.0.0-rc.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -336,6 +321,21 @@ name = "async-stripe-core"
 version = "1.0.0-rc.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "101e4c18c9eabd0c0e2cac5a1011fbc46947ca95d59a305826275216f1583aeb"
+dependencies = [
+ "async-stripe-client-core",
+ "async-stripe-shared",
+ "async-stripe-types",
+ "miniserde",
+ "serde",
+ "smol_str",
+ "tracing",
+]
+
+[[package]]
+name = "async-stripe-payment"
+version = "1.0.0-rc.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2dc9e4c199d07f072ec6c11bf3354c83ee828a59f23eab33a9e73b5305f4596"
 dependencies = [
  "async-stripe-client-core",
  "async-stripe-shared",
@@ -2490,8 +2490,9 @@ dependencies = [
  "anyhow",
  "askama",
  "async-stripe",
- "async-stripe-billing",
  "async-stripe-core",
+ "async-stripe-payment",
+ "async-stripe-types",
  "async-stripe-webhook",
  "async-trait",
  "axum",

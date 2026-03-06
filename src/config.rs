@@ -10,7 +10,7 @@ pub struct Config {
     pub root: RootConfig,
     pub email: EmailConfig,
     pub stripe: StripeConfig,
-    pub features: FeaturesConfig,
+    pub premium: Option<PremiumConfig>,
     pub monitoring: MonitoringConfig,
 }
 
@@ -23,8 +23,19 @@ pub struct MonitoringConfig {
 }
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct FeaturesConfig {
-    pub premium: bool,
+pub struct PremiumConfig {
+    pub monthly_price: u16,
+    pub annual_rate: u8,
+}
+
+impl PremiumConfig {
+    pub fn annual_price(&self) -> u32 {
+        self.monthly_price as u32 * 12 * (100 - self.annual_rate as u32) / 100
+    }
+
+    pub fn annual_monthly_price(&self) -> u32 {
+        self.monthly_price as u32 * (100 - self.annual_rate as u32) / 100
+    }
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -58,8 +69,6 @@ pub struct JwtConfig {
 pub struct StripeConfig {
     pub secret_key: String,
     pub publishable_key: String,
-    pub monthly_price_id: String,
-    pub annual_price_id: String,
 }
 
 impl Config {
@@ -83,15 +92,14 @@ impl Config {
             .set_default("jwt.issuer", "imkitchen.localhost")?
             .set_default("jwt.secret", "TOKEN-NOT-SECURE-MUST-BE-CHANGE")?
             .set_default("jwt.expiration_days", 14)?
-            .set_default("features.premium", true)?
+            .set_default("premium.monthly_price", 499)?
+            .set_default("premium.annual_rate", 20)?
             .set_default("monitoring.log_level", "debug,sqlx=info,tower_http=info")?
             .set_default("monitoring.log_json", false)?
             .set_default("monitoring.log_target", true)?
             .set_default("monitoring.log_line_number", true)?
             .set_default("stripe.secret_key", "")?
             .set_default("stripe.publishable_key", "")?
-            .set_default("stripe.monthly_price_id", "")?
-            .set_default("stripe.annual_price_id", "")?
             .set_default("email.smtp_host", "localhost")?
             .set_default("email.smtp_port", "1025")?
             .set_default("email.smtp_username", "")?

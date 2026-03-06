@@ -17,8 +17,9 @@ issuer = "imkitchen.localhost"
 secret = "TOKEN-NOT-SECURE-MUST-BE-CHANGE"
 expiration_days = 14
 
-[features]
-premium = true
+[premium]
+monthly_price = 499
+annual_rate = 20
 
 [monitoring]
 log_level = "debug,sqlx=info,tower_http=info"
@@ -29,8 +30,6 @@ log_line_number = true
 [stripe]
 secret_key = ""
 publishable_key = ""
-monthly_price_id = ""
-annual_price_id = ""
 
 [email]
 smtp_host = "localhost"
