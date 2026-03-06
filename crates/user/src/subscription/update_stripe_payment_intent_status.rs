@@ -26,6 +26,7 @@ impl<E: Executor> super::Command<E> {
                     .aggregator()?
                     .event(&StripePaymentIntentSucceeded {
                         id: intent.id.to_string(),
+                        plan: plan.to_owned(),
                         expire_at: expire_at.try_into()?,
                     })
                     .requested_by(request_by)
