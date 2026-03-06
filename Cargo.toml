@@ -19,6 +19,7 @@ rust-i18n = "3.1"
 time-tz = "3.0.0-rc.5.0.0"
 askama = "0.15"
 cfg-if = "1.0"
+world-tax = "0.5"
 sqlx = { version = "0.8", default-features = false, features = ["migrate", "json", "derive", "runtime-tokio", "sqlite"] }
 sqlx_migrator = { version = "0.18", features = ["sqlite"] }
 evento = { version = "2.0.0-alpha.13", features = ["sqlite", "rw"] }
@@ -105,6 +106,7 @@ async-stripe = { workspace = true }
 async-stripe-core = { workspace = true }
 async-stripe-billing = { workspace = true }
 async-stripe-webhook = { workspace = true }
+world-tax = { workspace = true }
 imkitchen-shared = { path = "crates/shared", version = "0.14.0" }
 imkitchen-contact = { path = "crates/contact", version = "0.14.0" }
 imkitchen-recipe = { path = "crates/recipe", version = "0.14.0" }

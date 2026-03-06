@@ -29,6 +29,8 @@ log_line_number = true
 [stripe]
 secret_key = ""
 publishable_key = ""
+monthly_price_id = ""
+annual_price_id = ""
 
 [email]
 smtp_host = "localhost"

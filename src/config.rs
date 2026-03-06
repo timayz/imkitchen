@@ -58,6 +58,8 @@ pub struct JwtConfig {
 pub struct StripeConfig {
     pub secret_key: String,
     pub publishable_key: String,
+    pub monthly_price_id: String,
+    pub annual_price_id: String,
 }
 
 impl Config {
@@ -88,6 +90,8 @@ impl Config {
             .set_default("monitoring.log_line_number", true)?
             .set_default("stripe.secret_key", "")?
             .set_default("stripe.publishable_key", "")?
+            .set_default("stripe.monthly_price_id", "")?
+            .set_default("stripe.annual_price_id", "")?
             .set_default("email.smtp_host", "localhost")?
             .set_default("email.smtp_port", "1025")?
             .set_default("email.smtp_username", "")?

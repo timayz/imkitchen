@@ -70,6 +70,7 @@ pub fn router(app_state: AppState) -> Router {
         )
         .route("/kitchen/{recipe_id}/select-dish", get(index::select_dish))
         .route("/upgrade", get(upgrade::page).post(upgrade::action))
+        .route("/upgrade/order-summary", get(upgrade::order_summary))
         .route("/about", get(about::page))
         .route("/help", get(help::page))
         .route("/terms", get(terms::page))

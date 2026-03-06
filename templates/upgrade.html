@@ -19,7 +19,8 @@
     <!-- Form Section -->
     <div class="lg:col-span-2 space-y-6">
       <!-- Plan Selection -->
-      <div class="bg-white rounded-lg shadow-lg p-6">
+      <form id="subscription-form" ts-req="/upgrade" ts-req-method="post" ts-req-before="stripe-confirm-form"
+        ts-swap="append" ts-target="body" class="bg-white rounded-lg shadow-lg p-6">
         <h2 class="text-xl font-bold mb-4">Select Your Plan</h2>
         <div class="grid md:grid-cols-2 gap-4">
           <label class="relative cursor-pointer">
@@ -46,7 +47,8 @@
             </div>
           </label>
         </div>
-      </div>
+      </form>
+
 
       <!-- Payment Details -->
       <div class="bg-white rounded-lg shadow-lg p-6">
@@ -62,9 +64,9 @@
 
       <!-- Pay Button (Mobile) -->
       <div class="lg:hidden">
-        <button ts-req="/upgrade" ts-req-method="post" ts-req-before="stripe-confirm-form" ts-swap="afterend"
-          class="block w-full px-6 py-4 bg-green-600 text-white font-bold text-center rounded-lg hover:bg-green-700 text-lg">
-          Pay Now - $47.90
+        <button id="mobile-subscription-form-btn" type="submit" form="subscription-form" disabled
+          class="block w-full px-6 py-4 bg-green-600 text-white font-bold text-center rounded-lg text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none">
+          Pay Now
         </button>
         <div class="flex items-center justify-center gap-2 mt-3 text-sm text-gray-500">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -79,7 +81,7 @@
 
     <!-- Order Summary Sidebar -->
     <div class="hidden lg:block">
-      <div class="bg-white rounded-lg shadow-lg p-6 sticky top-8">
+      <div id="order-summary" class="bg-white rounded-lg shadow-lg p-6 sticky top-8">
         <h2 class="text-xl font-bold mb-4">Order Summary</h2>
 
         <div class="space-y-3 mb-6">
@@ -87,9 +89,9 @@
             <span class="text-gray-600">Premium Annual Plan</span>
             <span class="font-semibold">$47.90</span>
           </div>
-          <div class="flex justify-between text-sm">
-            <span class="text-gray-500">12 months x $4.99/mo</span>
-          </div>
+          <!-- <div class="flex justify-between text-sm"> -->
+          <!--   <span class="text-gray-500">12 months x $4.99/mo</span> -->
+          <!-- </div> -->
         </div>
 
         <div class="border-t pt-4 space-y-2">
@@ -98,17 +100,17 @@
             <span>$47.90</span>
           </div>
           <div class="flex justify-between text-sm">
-            <span class="text-gray-600">Tax</span>
-            <span>$0.00</span>
+            <span class="text-gray-600">-</span>
+            <span>-</span>
           </div>
           <div class="flex justify-between font-bold text-lg border-t pt-2 mt-2">
             <span>Total</span>
-            <span class="text-green-600">$47.90</span>
+            <span class="text-green-600">-</span>
           </div>
         </div>
 
-        <button ts-req="/upgrade" ts-req-method="post" ts-req-before="stripe-confirm-form" ts-swap="afterend"
-          class="block w-full mt-6 px-6 py-4 bg-green-600 text-white font-bold text-center rounded-lg hover:bg-green-700 text-lg">
+        <button type="submit" form="subscription-form" disabled
+          class="block w-full mt-6 px-6 py-4 bg-green-600 text-white font-bold text-center rounded-lg text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none">
           Pay Now
         </button>
 
@@ -166,6 +168,11 @@
       </div>
     </div>
   </div>
+  <form id="order-summary-form" ts-req="/upgrade/order-summary" ts-req-method="get" ts-target="#order-summary">
+    <input type="hidden" id="order-summary-form-plan" name="plan" />
+    <input type="hidden" id="order-summary-form-country" name="country" />
+    <input type="hidden" id="order-summary-form-state" name="state" />
+  </form>
 
   {% if let Ok(config) = "config"|value::<crate::config::Config> %}
     <script>
@@ -177,15 +184,45 @@
       });
 
       var paymentElement = stripeElements.create('payment', {
-        layout: 'tabs'
+        layout: 'tabs',
+        buisness: {
+          name: 'imkitchen'
+        }
       });
       paymentElement.mount('#payment-element');
 
       var addressElement = stripeElements.create('address', {
         mode: 'billing',
-        autocomplete: {mode: 'disabled'}
+        autocomplete: {mode: 'disabled'},
       });
       addressElement.mount('#address-element');
+
+      var planForm = document.getElementById('order-summary-form');
+      var planEl = document.getElementById('order-summary-form-plan');
+      var countryEl = document.getElementById('order-summary-form-country');
+      var stateEl = document.getElementById('order-summary-form-state');
+
+      addressElement.on('change', (event) => {
+        if (!event.value || !event.value.address) {
+          return;
+        }
+
+        countryEl.value = event.value.address.country;
+        stateEl.value = event.value.address.state;
+
+        var selectedPlan = document.querySelector('input[name="plan"]:checked');
+        if (selectedPlan) {
+          planEl.value = selectedPlan.value;
+        }
+
+        planForm.requestSubmit();
+      });
+
+      var subscriptionForm = document.getElementById('subscription-form');
+      subscriptionForm.addEventListener('change', (e) => {
+        planEl.value = e.target.value;
+        planForm.requestSubmit();
+      });
 
       document.addEventListener('DOMContentLoaded', () => {
         twinspark.func({
@@ -195,9 +232,13 @@
               return false;
             }
 
+            let btns = document.querySelectorAll('button[form="subscription-form"]');
+            btns.forEach((btn) => {btn.disabled = true;});
+
             return stripeElements.submit().then(({error}) => {
               if (error) {
                 o.event.preventDefault();
+                btns.forEach((btn) => {btn.disabled = false;});
                 return false;
               }
             })
@@ -212,9 +253,12 @@
               elements: stripeElements,
               clientSecret: o.el.dataset.clientSecret,
               confirmParams: {
-                return_url: 'https://imkitchen.localhost/profile/subscription'
+                return_url: '{{ config.server.url }}/profile/subscription'
               }
             }).then(({error}) => {
+              let btns = document.querySelectorAll('button[form="subscription-form"]');
+              btns.forEach((btn) => {btn.disabled = false;});
+
               if (error) {
                 o.event.preventDefault();
                 return false;
@@ -224,8 +268,6 @@
 
         });
       });
-
-
     </script>
     {% endif %}
     {% endblock %}

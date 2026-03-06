@@ -302,6 +302,11 @@ pub(crate) mod filters {
         Ok(value)
     }
 
+    #[askama::filter_fn]
+    pub fn price(value: &f64, _values: &dyn askama::Values) -> askama::Result<String> {
+        Ok(format!("{:.2}", value))
+    }
+
     // #[askama::filter_fn]
     // pub fn assets(value: &str, values: &dyn askama::Values) -> askama::Result<String> {
     //     let config = askama::get_value::<crate::axum_extra::TemplateConfig>(values, "config")
@@ -312,7 +317,7 @@ pub(crate) mod filters {
 }
 
 pub struct Template {
-    preferred_language: String,
+    pub preferred_language: String,
     pub preferred_language_iso: String,
     pub timezone: String,
     config: crate::config::Config,
