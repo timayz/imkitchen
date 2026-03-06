@@ -113,6 +113,7 @@ pub async fn action(
 
     let payment_intent = crate::try_response!(anyhow: CreatePaymentIntent::new(amount, Currency::USD)
         .customer(customer_id)
+        .metadata([("plan".to_owned(), input.plan.to_owned())])
         .automatic_payment_methods(CreatePaymentIntentAutomaticPaymentMethods::new(true))
         .setup_future_usage(PaymentIntentSetupFutureUsage::OffSession)
         .send(&app.stripe), template);

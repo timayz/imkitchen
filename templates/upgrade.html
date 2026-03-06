@@ -280,7 +280,7 @@
               elements: stripeElements,
               clientSecret: o.el.dataset.clientSecret,
               confirmParams: {
-                return_url: '{{ config.server.url }}/profile/subscription'
+                return_url: '{{ config.server.url }}'
               }
             }).then(({error}) => {
               setActionDisabled(false);

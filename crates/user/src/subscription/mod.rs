@@ -2,11 +2,13 @@ mod create_stripe_customer;
 mod create_stripe_payment_intent;
 mod create_stripe_subscription;
 mod toogle_life_premium;
+mod update_stripe_payment_intent_status;
 
 use bitcode::{Decode, Encode};
 use evento::{Executor, Projection, metadata::Event};
 use imkitchen_shared::user::subscription;
 use std::ops::Deref;
+use time::{Month, OffsetDateTime};
 
 #[derive(Clone)]
 pub struct Command<E: Executor>(pub(crate) imkitchen_shared::State<E>);
@@ -53,6 +55,7 @@ fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Subscr
         .handler(handle_stripe_customer_created())
         .handler(handle_stripe_payment_method_created())
         .handler(handle_stripe_payment_intent_created())
+        .handler(handle_stripe_payment_intent_succeeded())
         .safety_check()
 }
 
@@ -104,4 +107,38 @@ async fn handle_stripe_payment_intent_created(
     data.payment_intent_id = Some(event.data.id);
 
     Ok(())
+}
+
+#[evento::handler]
+async fn handle_stripe_payment_intent_succeeded(
+    event: Event<subscription::StripePaymentIntentSucceeded>,
+    data: &mut Subscription,
+) -> anyhow::Result<()> {
+    data.id = event.aggregator_id.to_owned();
+    data.payment_intent_id = Some(event.data.id);
+    data.expire_at = event.data.expire_at;
+
+    Ok(())
+}
+
+pub(super) fn add_months(timestamp: i64, months: u8) -> i64 {
+    let dt = OffsetDateTime::from_unix_timestamp(timestamp).unwrap();
+
+    let total_months = dt.month() as u8 + months;
+    let year_offset = (total_months - 1) / 12;
+    let new_month = Month::try_from((total_months - 1) % 12 + 1).unwrap();
+
+    let new_year = dt.year() + year_offset as i32;
+
+    // Clamp day to last valid day of the new month
+    let days_in_month = new_month.length(new_year);
+    let clamped_day = dt.day().min(days_in_month);
+
+    dt.replace_year(new_year)
+        .unwrap()
+        .replace_month(new_month)
+        .unwrap()
+        .replace_day(clamped_day)
+        .unwrap()
+        .unix_timestamp()
 }

@@ -31,6 +31,7 @@ async-stripe-core = { version = "1.0.0-rc.2", features = ["customer", "payment_i
 async-stripe-payment  = { version = "=1.0.0-rc.2" }
 async-stripe-webhook  = { version = "=1.0.0-rc.2" }
 async-stripe-types  = { version = "=1.0.0-rc.2" }
+async-stripe-shared  = { version = "=1.0.0-rc.2" }
 validator = { version = "0.20", features = ["derive"] }
 regex = "1.12"
 serde = { version = "1.0", features = ["derive"] }
@@ -77,6 +78,7 @@ async-stripe-core = "stripe-core"
 async-stripe-payment = "stripe-payment"
 async-stripe-webhook = "stripe-webhook"
 async-stripe-types = "stripe-types"
+async-stripe-shared = "stripe-shared"
 
 [dependencies]
 tokio = { workspace = true }

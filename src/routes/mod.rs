@@ -213,9 +213,10 @@ pub fn router(app_state: AppState) -> Router {
             "/profile/meal-preferences",
             get(profile::meal_preferences::page).post(profile::meal_preferences::action),
         )
+        .route("/profile/subscription", get(profile::subscription::page))
         .route(
-            "/profile/subscription",
-            get(profile::subscription::page).post(profile::subscription::action),
+            "/profile/subscription/check",
+            post(profile::subscription::check),
         )
         // .route(
         //     "/profile/notifications",
