@@ -76,7 +76,7 @@ pub async fn action(
 
     let tax_db = crate::try_response!(sync anyhow: TaxDatabase::new(), template);
     let price_tax = crate::try_response!(sync anyhow:
-        get_price_with_tax(&tax_db, premium.clone(), input.plan.to_owned(), input.country, input.state),
+        get_price_with_tax(&tax_db, premium.clone(), input.plan.to_owned(), input.country.to_owned(), input.state.to_owned()),
         template
     );
 
@@ -113,7 +113,7 @@ pub async fn action(
 
     let payment_intent = crate::try_response!(anyhow: CreatePaymentIntent::new(amount, Currency::USD)
         .customer(customer_id)
-        .metadata([("plan".to_owned(), input.plan.to_owned())])
+        .metadata([("plan".to_owned(), input.plan.to_owned()), ("country".to_owned(), input.country), ("state".to_owned(), input.state)])
         .automatic_payment_methods(CreatePaymentIntentAutomaticPaymentMethods::new(true))
         .setup_future_usage(PaymentIntentSetupFutureUsage::OffSession)
         .send(&app.stripe), template);

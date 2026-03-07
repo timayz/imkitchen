@@ -15,6 +15,8 @@ pub enum Subscription {
     StripePaymentIntentSucceeded {
         id: String,
         plan: String,
+        country: String,
+        state: String,
         expire_at: u64,
     },
 }

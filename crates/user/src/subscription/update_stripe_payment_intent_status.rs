@@ -12,8 +12,13 @@ impl<E: Executor> super::Command<E> {
         let subscription = self.load(&request_by).await?;
         let intent = intent.into();
 
-        match (intent.status, intent.metadata.get("plan")) {
-            (PaymentIntentStatus::Succeeded, Some(plan)) => {
+        match (
+            intent.status,
+            intent.metadata.get("plan"),
+            intent.metadata.get("country"),
+            intent.metadata.get("state"),
+        ) {
+            (PaymentIntentStatus::Succeeded, Some(plan), Some(country), Some(state)) => {
                 let months = match plan.as_str() {
                     "monthly" => 1,
                     "annual" => 12,
@@ -27,6 +32,8 @@ impl<E: Executor> super::Command<E> {
                     .event(&StripePaymentIntentSucceeded {
                         id: intent.id.to_string(),
                         plan: plan.to_owned(),
+                        country: country.to_owned(),
+                        state: state.to_owned(),
                         expire_at: expire_at.try_into()?,
                     })
                     .requested_by(request_by)

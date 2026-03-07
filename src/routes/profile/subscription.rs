@@ -14,13 +14,22 @@ use crate::template::filters;
 pub struct SubscriptionTemplate {
     pub current_path: String,
     pub profile_path: String,
+    pub subscription: imkitchen_user::subscription::Subscription,
     pub user: AuthUser,
 }
 
-pub async fn page(template: Template, user: AuthUser) -> impl IntoResponse {
+pub async fn page(
+    template: Template,
+    user: AuthUser,
+    State(app): State<AppState>,
+) -> impl IntoResponse {
+    let subscription =
+        crate::try_response!(anyhow: app.user_cmd.subscription.load(&user.id), template);
+
     template.render(SubscriptionTemplate {
         current_path: "profile".to_owned(),
         profile_path: "subscription".to_owned(),
+        subscription,
         user,
     })
 }
