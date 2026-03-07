@@ -3,46 +3,482 @@
 
 {% block profile_content %}
 
-
-
 <!-- Subscription Management -->
+<!-- <div class="bg-white rounded-lg shadow-lg p-6"> -->
+<!-- <h2 class="text-xl font-bold mb-6">{{ "Subscription"|t }}</h2> -->
+
+<!--   <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4"> -->
+<!--     {% if user.is_premium() %} -->
+<!--     <div> -->
+<!--       <div class="text-lg font-bold">Premium Monthly Plan</div> -->
+<!--       <div class="text-sm text-gray-600">expire at</div> -->
+<!--     </div> -->
+<!--     <span class="px-4 py-2 bg-red-200 text-red-700 font-semibold rounded-lg text-center"> -->
+<!--       {{ "Cancel"|t }} -->
+<!--     </span> -->
+<!--     {% else %} -->
+<!--     <div> -->
+<!--       <div class="text-lg font-bold">Free Plan</div> -->
+<!--       <div class="text-sm text-gray-600">{{ "Limited to 7 recipes, main courses only"|t }}</div> -->
+<!--     </div> -->
+<!--     <a href="/upgrade" class="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg text-center"> -->
+<!--       {{ "Upgrade"|t }} -->
+<!--     </a> -->
+<!--     {% endif %} -->
+<!--   </div> -->
+<!-- </div> -->
+
+{% if user.is_premium() %}
+<!-- Current Plan -->
 <div class="bg-white rounded-lg shadow-lg p-6">
-  <h2 class="text-xl font-bold mb-6">{{ "Subscription"|t }} <span class="px-3 py-1 bg-orange-500 text-white text-sm rounded-full font-semibold">🚀 Coming soon</span></h2>
-
-  <div class="mb-6">
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-      <div>
-        <div class="text-lg font-bold">{{ "Current Plan: Free"|t }}</div>
-        <div class="text-sm text-gray-600">{{ "Limited to 7 recipes, main courses only"|t }}</div>
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        {% if let Some(plan) = subscription.plan %}
+        <span class="text-lg font-bold capitalize">{{ plan }} Plan</span>
+        {% else %}
+        <span class="text-lg font-bold">Life Plan</span>
+        {% endif %}
+        {% if subscription.is_active %}
+        <span class="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-semibold rounded-full">Active</span>
+        {% endif %}
       </div>
-      <span class="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg text-center">
-        {{ "FREE"|t }}
-      </span>
+      {% if subscription.is_active %}
+      <div class="text-sm text-gray-600">Next billing date: {{ subscription.expire_at|date_year }}</div>
+      {% endif %}
     </div>
+    {% if let Ok(config) = "config"|value::<crate::config::Config> %}
+      {% if let (Some(premium), Some(plan)) = (&config.premium, &subscription.plan) %}
+      <div class="text-right">
+        <div class="text-2xl font-bold text-gray-600">
+          {% match plan.as_str() %}
+          {% when "monthly" %}
+          ${{ *premium.monthly_price|amount }}<span class="text-sm text-gray-500 font-normal">/month</span>
+          {% when "annual" %}
+          ${{ premium.annual_price()|amount }}<span class="text-sm text-gray-500 font-normal">/yr</span>
+          {% when _ %}
+          $0<span class="text-sm text-gray-500 font-normal">/month</span>
+          {% endmatch %}
+        </div>
+      </div>
+      {% endif %}
+      {% endif %}
+  </div>
+  <!-- Cancelled Banner (hidden by default) -->
+  {% if !subscription.is_active %}
+  <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+    <div class="flex items-center gap-2 text-sm text-yellow-800">
+      <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
+      Your subscription has been cancelled. You'll retain Premium access until <strong class="ml-1">{{
+        subscription.expire_at|date_year }}</strong>.
+    </div>
+  </div>
+  {% else %}
+  <div class="mt-4 pt-4 border-t border-gray-200">
+    <button onclick="document.getElementById('cancel-modal').classList.remove('hidden')"
+      class="text-sm text-red-600 hover:text-red-700 font-semibold">
+      Cancel Subscription
+    </button>
+  </div>
+  {% endif %}
+</div>
 
-    <!-- Upgrade CTA -->
-    <div class="p-6 bg-linear-to-br from-purple-500 to-pink-500 text-white rounded-lg">
-      <h3 class="font-bold text-xl mb-3">{{ "Upgrade to Premium"|t }}</h3>
-      <ul class="space-y-2 mb-4 text-sm">
-        <li>✓ {{ "Unlimited recipes in meal plan"|t }}</li>
-        <li>✓ {{ "All recipe types (appetizers, sides, desserts)"|t }}</li>
-        <li>✓ {{ "Meal preferences applied"|t }}</li>
-        <li>✓ {{ "Batch recipe import"|t }}</li>
-        <li>✓ {{ "Priority support"|t }}</li>
-        <li>✓ {{ "Early access to new features"|t }}</li>
-      </ul>
-      <div class="flex flex-col md:flex-row gap-4">
-        <a href="dashboard-premium.html"
-          class="flex-1 px-4 py-3 bg-white text-purple-600 font-bold text-center rounded-lg hover:bg-gray-100">
-          {{ "$4.99/month"|t }}
-        </a>
-        <a href="dashboard-premium.html"
-          class="flex-1 px-4 py-3 bg-yellow-400 text-gray-900 font-bold text-center rounded-lg hover:bg-yellow-300">
-          {{ "$47.90/year (Save 20%)"|t }}
-        </a>
+<div class="bg-white rounded-lg shadow-lg p-6">
+  <h3 class="font-bold mb-4">Payment</h3>
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <svg xmlns="http://www.w3.org/2000/svg" width="58" height="38" viewBox="0 0 58 38">
+        <defs>
+          <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#1a1a2e" />
+            <stop offset="50%" stop-color="#16213e" />
+            <stop offset="100%" stop-color="#0f3460" />
+          </linearGradient>
+          <linearGradient id="chipGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#f5d06e" />
+            <stop offset="50%" stop-color="#c9a227" />
+            <stop offset="100%" stop-color="#f5d06e" />
+          </linearGradient>
+          <linearGradient id="sheen" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#c9a227" stop-opacity="0" />
+            <stop offset="50%" stop-color="#f5d06e" stop-opacity="0.08" />
+            <stop offset="100%" stop-color="#c9a227" stop-opacity="0" />
+          </linearGradient>
+        </defs>
+        <rect width="56" height="36" x="1" y="1" rx="4" fill="url(#cardGrad)" />
+        <rect width="56" height="36" x="1" y="1" rx="4" fill="url(#sheen)" />
+        <rect width="56" height="1" x="1" y="1" rx="1" fill="white" opacity="0.08" />
+        <rect width="56" height="6" x="1" y="7" fill="#0a0a0a" opacity="0.55" />
+        <rect x="6" y="17" width="11" height="8" rx="1.5" fill="url(#chipGrad)" />
+        <line x1="11.5" y1="17" x2="11.5" y2="25" stroke="#a07810" stroke-width="0.5" />
+        <line x1="6" y1="21" x2="17" y2="21" stroke="#a07810" stroke-width="0.5" />
+        <rect x="8" y="19" width="3" height="2" rx="0.5" fill="#a07810" opacity="0.4" />
+        <rect x="12" y="19" width="3" height="2" rx="0.5" fill="#a07810" opacity="0.4" />
+        <path d="M20 19 Q22.5 21 20 23" stroke="#c9a227" stroke-width="1" fill="none" opacity="0.7"
+          stroke-linecap="round" />
+        <path d="M22 17.5 Q26 21 22 24.5" stroke="#c9a227" stroke-width="0.9" fill="none" opacity="0.5"
+          stroke-linecap="round" />
+        <circle cx="21" cy="28" r="1.2" fill="#c9a227" opacity="0.6" />
+        <circle cx="24.5" cy="28" r="1.2" fill="#c9a227" opacity="0.6" />
+        <circle cx="28" cy="28" r="1.2" fill="#c9a227" opacity="0.6" />
+        <circle cx="31.5" cy="28" r="1.2" fill="#c9a227" opacity="0.6" />
+        <circle cx="46" cy="27" r="5" fill="#c9a227" opacity="0.9" />
+        <circle cx="51" cy="27" r="5" fill="#f5d06e" opacity="0.7" />
+      </svg>
+      <div>
+        <div class="font-semibold">Visa ending in 4242</div>
+        <div class="text-sm text-gray-500">Expires 12/2028</div>
+      </div>
+    </div>
+    <a href="#" class="text-green-600 hover:text-green-700 font-semibold text-sm">Update</a>
+  </div>
+</div>
+{% else %}
+<!-- Current Plan -->
+<div class="bg-white rounded-lg shadow-lg p-6">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <span class="text-lg font-bold">Free Plan</span>
+        <span class="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-semibold rounded-full">Active</span>
+      </div>
+      <div class="text-sm text-gray-600">No billing cycle</div>
+    </div>
+    <div class="text-right">
+      <div class="text-2xl font-bold text-gray-600">$0<span class="text-sm text-gray-500 font-normal">/month</span>
       </div>
     </div>
   </div>
 </div>
 
+<!-- AIDA: ATTENTION - Eye-catching upgrade banner -->
+<div class="relative bg-linear-to-br from-green-500 to-green-700 text-white rounded-lg shadow-xl p-6 overflow-hidden">
+  <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+  <div class="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2"></div>
+  <div class="relative">
+    <div class="flex items-center gap-2 mb-2">
+      <span class="bg-yellow-400 text-gray-900 px-3 py-0.5 rounded-full text-xs font-bold">UPGRADE</span>
+      <span class="text-green-100 text-sm">You're missing out on the full experience</span>
+    </div>
+    <h3 class="text-2xl font-bold mb-3">Unlock the Full Power of imkitchen</h3>
+
+    <!-- AIDA: INTEREST - Show what they're missing with concrete examples -->
+    <p class="text-green-50 mb-4">
+      You have <strong>7 recipes</strong> in your plan right now. Premium users plan with <strong>all their
+        recipes</strong> and get complete meals with appetizers, sides, and desserts automatically paired.
+    </p>
+
+    <!-- AIDA: DESIRE - Tangible benefits grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+      <div class="flex items-start gap-2">
+        <svg class="w-5 h-5 text-green-200 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        <span class="text-sm"><strong>Unlimited recipes</strong> in your meal plan</span>
+      </div>
+      <div class="flex items-start gap-2">
+        <svg class="w-5 h-5 text-green-200 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        <span class="text-sm"><strong>All recipe types</strong> (appetizers, sides, desserts)</span>
+      </div>
+      <div class="flex items-start gap-2">
+        <svg class="w-5 h-5 text-green-200 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        <span class="text-sm"><strong>Meal preferences</strong> applied automatically</span>
+      </div>
+      <div class="flex items-start gap-2">
+        <svg class="w-5 h-5 text-green-200 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        <span class="text-sm"><strong>Batch import</strong> recipes in bulk</span>
+      </div>
+      <div class="flex items-start gap-2">
+        <svg class="w-5 h-5 text-green-200 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        <span class="text-sm"><strong>Priority support</strong> when you need help</span>
+      </div>
+      <div class="flex items-start gap-2">
+        <svg class="w-5 h-5 text-green-200 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        <span class="text-sm"><strong>Early access</strong> to new features</span>
+      </div>
+    </div>
+
+    {% if let Ok(config) = "config"|value::<crate::config::Config> %}
+      {% if let Some(premium) = config.premium %}
+      <!-- AIDA: ACTION - Clear CTA with pricing -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <a href="/upgrade"
+          class="px-6 py-3 bg-white text-green-600 font-bold rounded-lg hover:bg-gray-100 transition text-center">
+          Upgrade to Premium - ${{ *premium.monthly_price|amount }}/mo
+        </a>
+        <span class="text-green-100 text-sm">or ${{ premium.annual_price()|amount }}/year (save {{ premium.annual_rate
+          }}%)</span>
+      </div>
+      {% endif %}
+      {% endif %}
+  </div>
+</div>
+
+<!-- What you're currently limited to -->
+<div class="bg-white rounded-lg shadow-lg p-6">
+  <h3 class="font-bold mb-4">Your Free Plan Includes</h3>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <div class="flex items-center gap-2 text-sm text-gray-600">
+      <span class="text-green-500">✓</span>
+      <span>Generate all future weeks</span>
+    </div>
+    <div class="flex items-center gap-2 text-sm text-gray-600">
+      <span class="text-green-500">✓</span>
+      <span>Up to 7 recipes in plan</span>
+    </div>
+    <div class="flex items-center gap-2 text-sm text-gray-600">
+      <span class="text-green-500">✓</span>
+      <span>Main courses only</span>
+    </div>
+    <div class="flex items-center gap-2 text-sm text-gray-600">
+      <span class="text-green-500">✓</span>
+      <span>Unlimited regenerations</span>
+    </div>
+    <div class="flex items-center gap-2 text-sm text-gray-600">
+      <span class="text-green-500">✓</span>
+      <span>Recipe management & sharing</span>
+    </div>
+    <div class="flex items-center gap-2 text-sm text-gray-600">
+      <span class="text-green-500">✓</span>
+      <span>Community access</span>
+    </div>
+  </div>
+
+  <!-- Subtle limitations reminder -->
+  <div class="mt-4 pt-4 border-t border-gray-100">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div class="flex items-center gap-2 text-sm text-gray-400">
+        <svg class="w-4 h-4 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
+          </path>
+        </svg>
+        <span>No appetizers, sides, or desserts</span>
+      </div>
+      <div class="flex items-center gap-2 text-sm text-gray-400">
+        <svg class="w-4 h-4 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
+          </path>
+        </svg>
+        <span>No meal preference filtering</span>
+      </div>
+      <div class="flex items-center gap-2 text-sm text-gray-400">
+        <svg class="w-4 h-4 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
+          </path>
+        </svg>
+        <span>No batch recipe import</span>
+      </div>
+      <div class="flex items-center gap-2 text-sm text-gray-400">
+        <svg class="w-4 h-4 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
+          </path>
+        </svg>
+        <span>No priority support</span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="bg-white rounded-lg shadow-lg p-6">
+  <h3 class="font-bold mb-4">Invoices</h3>
+  <div class="text-center py-12">
+    <div class="text-5xl mb-4">🧾</div>
+    <h4 class="text-lg font-semibold text-gray-700 mb-2">No invoices yet</h4>
+    <p class="text-gray-500 text-sm mb-6 max-w-sm mx-auto">
+      You're on the free plan. When you upgrade to Premium, your invoices will appear here.
+    </p>
+    <!-- Secondary CTA -->
+    <a href="/upgrade"
+      class="inline-block px-6 py-2.5 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition text-sm">
+      Upgrade to Premium
+    </a>
+  </div>
+</div>
+
+<!-- Invoice List -->
+<div class="bg-white rounded-lg shadow-lg p-6">
+  <h3 class="font-bold mb-4">Invoices</h3>
+
+  <div class="space-y-4">
+    <!-- Invoice 1 -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-gray-50 gap-3">
+      <div class="flex-1">
+        <div class="font-semibold">Premium Annual - Feb 2026</div>
+        <div class="text-sm text-gray-500">Feb 28, 2026</div>
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="font-semibold">$59.94</span>
+        <span class="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-semibold rounded-full">Paid</span>
+        <a href="invoice-detail.html" class="text-green-600 hover:text-green-700 font-semibold text-sm">View</a>
+      </div>
+    </div>
+
+    <!-- Invoice 2 -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-gray-50 gap-3">
+      <div class="flex-1">
+        <div class="font-semibold">Premium Monthly - Jan 2026</div>
+        <div class="text-sm text-gray-500">Jan 15, 2026</div>
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="font-semibold">$9.99</span>
+        <span class="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-semibold rounded-full">Paid</span>
+        <a href="invoice-detail.html" class="text-green-600 hover:text-green-700 font-semibold text-sm">View</a>
+      </div>
+    </div>
+
+    <!-- Invoice 3 -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-gray-50 gap-3">
+      <div class="flex-1">
+        <div class="font-semibold">Premium Monthly - Dec 2025</div>
+        <div class="text-sm text-gray-500">Dec 15, 2025</div>
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="font-semibold">$9.99</span>
+        <span class="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-semibold rounded-full">Paid</span>
+        <a href="invoice-detail.html" class="text-green-600 hover:text-green-700 font-semibold text-sm">View</a>
+      </div>
+    </div>
+
+    <!-- Invoice 4 - Pending -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-gray-50 gap-3">
+      <div class="flex-1">
+        <div class="font-semibold">Premium Monthly - Nov 2025</div>
+        <div class="text-sm text-gray-500">Nov 15, 2025</div>
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="font-semibold">$9.99</span>
+        <span class="px-2 py-0.5 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full">Pending</span>
+        <a href="invoice-detail.html" class="text-green-600 hover:text-green-700 font-semibold text-sm">View</a>
+      </div>
+    </div>
+
+    <!-- Invoice 5 - Failed -->
+    <div
+      class="flex flex-col sm:flex-row sm:items-center justify-between p-4 border border-red-200 rounded-lg hover:bg-gray-50 gap-3">
+      <div class="flex-1">
+        <div class="font-semibold">Premium Monthly - Oct 2025</div>
+        <div class="text-sm text-gray-500">Oct 15, 2025</div>
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="font-semibold">$9.99</span>
+        <span class="px-2 py-0.5 bg-red-100 text-red-800 text-xs font-semibold rounded-full">Failed</span>
+        <a href="invoice-detail.html" class="text-green-600 hover:text-green-700 font-semibold text-sm">View</a>
+      </div>
+    </div>
+
+    <!-- Invoice 6 -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-gray-50 gap-3">
+      <div class="flex-1">
+        <div class="font-semibold">Premium Monthly - Sep 2025</div>
+        <div class="text-sm text-gray-500">Sep 15, 2025</div>
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="font-semibold">$9.99</span>
+        <span class="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-semibold rounded-full">Paid</span>
+        <a href="invoice-detail.html" class="text-green-600 hover:text-green-700 font-semibold text-sm">View</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div class="flex items-center justify-between mt-6 pt-4 border-t">
+    <span class="text-sm text-gray-500">Showing 1-6 of 12 invoices</span>
+    <div class="flex gap-2">
+      <button class="px-3 py-1 bg-gray-200 text-gray-500 rounded-lg text-sm cursor-not-allowed"
+        disabled>Previous</button>
+      <button class="px-3 py-1 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">Next</button>
+    </div>
+  </div>
+</div>
+<!-- Cancel Subscription Modal -->
+<div id="cancel-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-black/50" onclick="document.getElementById('cancel-modal').classList.add('hidden')">
+  </div>
+
+  <!-- Modal Content -->
+  <div class="relative bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 p-6">
+    <div class="text-center mb-6">
+      <div class="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg class="w-7 h-7 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z">
+          </path>
+        </svg>
+      </div>
+      <h3 class="text-lg font-bold text-gray-900 mb-2">Cancel Subscription?</h3>
+      <p class="text-sm text-gray-600">Your Premium Annual plan will remain active until <strong>Feb 28, 2027</strong>.
+        After that, you'll lose access to:</p>
+    </div>
+
+    <ul class="text-sm text-gray-600 space-y-2 mb-6">
+      <li class="flex items-center gap-2">
+        <svg class="w-4 h-4 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+        Unlimited recipes in meal plan
+      </li>
+      <li class="flex items-center gap-2">
+        <svg class="w-4 h-4 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+        All recipe types (appetizers, accompaniments, desserts)
+      </li>
+      <li class="flex items-center gap-2">
+        <svg class="w-4 h-4 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+        Meal preferences applied
+      </li>
+      <li class="flex items-center gap-2">
+        <svg class="w-4 h-4 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+        Batch recipe import
+      </li>
+      <li class="flex items-center gap-2">
+        <svg class="w-4 h-4 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+        Priority support
+      </li>
+      <li class="flex items-center gap-2">
+        <svg class="w-4 h-4 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+        Early access to new features
+      </li>
+    </ul>
+
+    <div class="flex flex-col gap-3">
+      <button
+        onclick="document.getElementById('cancel-modal').classList.add('hidden'); document.getElementById('cancelled-banner').classList.remove('hidden'); document.getElementById('cancel-btn').classList.add('hidden');"
+        class="w-full px-4 py-2.5 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 text-sm">
+        Yes, Cancel Subscription
+      </button>
+      <button onclick="document.getElementById('cancel-modal').classList.add('hidden')"
+        class="w-full px-4 py-2.5 bg-white border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 text-sm">
+        Keep My Subscription
+      </button>
+    </div>
+  </div>
+</div>
 {% endblock %}

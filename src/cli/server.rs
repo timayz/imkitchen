@@ -133,6 +133,8 @@ pub async fn serve(
     // let mut sched_mealplan = imkitchen_mealplan::scheduler(&evento_executor, &read_pool).await?;
     // sched_mealplan.start().await?;
 
+    let stripe = stripe::Client::new(&config.stripe.secret_key);
+
     let state = imkitchen_shared::State {
         executor: executor.clone(),
         read_db: read_pool.clone(),
@@ -141,6 +143,7 @@ pub async fn serve(
 
     let state = AppState {
         config,
+        stripe,
         user_cmd: imkitchen_user::Command::new(state.clone()),
         user_query: imkitchen_user::Query(state.clone()),
         shopping_cmd: imkitchen_shopping::Command::new(state.clone()),

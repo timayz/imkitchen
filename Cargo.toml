@@ -19,13 +19,19 @@ rust-i18n = "3.1"
 time-tz = "3.0.0-rc.5.0.0"
 askama = "0.15"
 cfg-if = "1.0"
+world-tax = "0.5"
 sqlx = { version = "0.8", default-features = false, features = ["migrate", "json", "derive", "runtime-tokio", "sqlite"] }
 sqlx_migrator = { version = "0.18", features = ["sqlite"] }
 evento = { version = "2.0.0-alpha.13", features = ["sqlite", "rw"] }
 argon2 = { version = "0.5", features = ["std"] }
 jsonwebtoken = { version = "10.1", features = ["aws_lc_rs"] }
 lettre = { version = "0.11", features = ["rustls-tls", "builder"] }
-async-stripe = { version = "0.41", features = ["runtime-tokio-hyper", "webhook-events"] }
+async-stripe = { version = "1.0.0-rc.2", features = ["rustls-aws-lc-rs", "uuid"] }
+async-stripe-core = { version = "1.0.0-rc.2", features = ["customer", "payment_intent"] }
+async-stripe-payment  = { version = "=1.0.0-rc.2" }
+async-stripe-webhook  = { version = "=1.0.0-rc.2" }
+async-stripe-types  = { version = "=1.0.0-rc.2" }
+async-stripe-shared  = { version = "=1.0.0-rc.2" }
 validator = { version = "0.20", features = ["derive"] }
 regex = "1.12"
 serde = { version = "1.0", features = ["derive"] }
@@ -68,6 +74,11 @@ ignored = []
 
 [package.metadata.cargo-machete.renamed]
 async-stripe = "stripe"
+async-stripe-core = "stripe-core"
+async-stripe-payment = "stripe-payment"
+async-stripe-webhook = "stripe-webhook"
+async-stripe-types = "stripe-types"
+async-stripe-shared = "stripe-shared"
 
 [dependencies]
 tokio = { workspace = true }
@@ -95,6 +106,12 @@ futures = { workspace = true }
 time = { workspace = true }
 strum = { workspace = true }
 cfg-if = { workspace = true }
+async-stripe = { workspace = true }
+async-stripe-core = { workspace = true }
+async-stripe-payment = { workspace = true }
+async-stripe-types = { workspace = true }
+async-stripe-webhook = { workspace = true }
+world-tax = { workspace = true }
 imkitchen-shared = { path = "crates/shared", version = "0.14.0" }
 imkitchen-contact = { path = "crates/contact", version = "0.14.0" }
 imkitchen-recipe = { path = "crates/recipe", version = "0.14.0" }

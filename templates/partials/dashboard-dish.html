@@ -52,7 +52,8 @@
     {% if let Some((pos,instruction)) = current_instruction %}
     <!-- Step Progress -->
     <div class="flex items-center justify-between mb-4">
-      <span class="text-sm text-gray-500">{{ "Step"|t }} {{ pos + 1 }} {{ "of"|t }} {{ slot_recipe.instructions.len() }}</span>
+      <span class="text-sm text-gray-500">{{ "Step"|t }} {{ pos + 1 }} {{ "of"|t }} {{ slot_recipe.instructions.len()
+        }}</span>
       <div class="flex gap-1">
         {% for _ in completed_instructions %}
         <div class="w-8 h-1 bg-green-500 rounded-full"></div>
@@ -155,7 +156,7 @@
         {% for (pos,instruction) in coming_instructions %}
         <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
           <div
-            class="w-6 h-6 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-sm font-semibold">
+            class="w-6 h-6 p-2 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-sm font-semibold">
             {{ pos + 1 }}</div>
           <span class="text-sm text-gray-700">{{ instruction }}</span>
         </div>

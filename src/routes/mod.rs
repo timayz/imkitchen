@@ -16,7 +16,6 @@ mod contact;
 mod health;
 mod help;
 mod index;
-mod kitchen;
 mod login;
 mod manifest;
 mod policy;
@@ -27,11 +26,13 @@ mod reset_password;
 mod service_worker;
 mod shopping;
 mod terms;
+mod upgrade;
 
 #[derive(Clone)]
 pub struct AppState {
     pub inner: imkitchen_shared::State<RwSqlite>,
     pub config: crate::config::Config,
+    pub stripe: stripe::Client,
     pub user_cmd: imkitchen_user::Command<RwSqlite>,
     pub user_query: imkitchen_user::Query<RwSqlite>,
     pub shopping_cmd: imkitchen_shopping::Command<RwSqlite>,
@@ -68,7 +69,8 @@ pub fn router(app_state: AppState) -> Router {
             post(index::update_slot_step_action),
         )
         .route("/kitchen/{recipe_id}/select-dish", get(index::select_dish))
-        .route("/kitchen/{day}", get(kitchen::page))
+        .route("/upgrade", get(upgrade::page).post(upgrade::action))
+        .route("/upgrade/order-summary", get(upgrade::order_summary))
         .route("/about", get(about::page))
         .route("/help", get(help::page))
         .route("/terms", get(terms::page))
@@ -211,9 +213,10 @@ pub fn router(app_state: AppState) -> Router {
             "/profile/meal-preferences",
             get(profile::meal_preferences::page).post(profile::meal_preferences::action),
         )
+        .route("/profile/subscription", get(profile::subscription::page))
         .route(
-            "/profile/subscription",
-            get(profile::subscription::page).post(profile::subscription::action),
+            "/profile/subscription/check",
+            post(profile::subscription::check),
         )
         // .route(
         //     "/profile/notifications",
