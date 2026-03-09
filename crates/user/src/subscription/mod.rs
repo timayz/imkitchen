@@ -1,3 +1,4 @@
+mod cancel;
 mod create_stripe_customer;
 mod create_stripe_payment_intent;
 mod create_stripe_subscription;
@@ -63,6 +64,7 @@ fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Subscr
         .handler(handle_stripe_payment_method_created())
         .handler(handle_stripe_payment_intent_created())
         .handler(handle_stripe_payment_intent_succeeded())
+        .handler(handle_cancelled())
         .safety_check()
 }
 
@@ -126,6 +128,16 @@ async fn handle_stripe_payment_intent_succeeded(
     data.expire_at = event.data.expire_at;
     data.plan = Some(event.data.plan);
     data.is_active = true;
+
+    Ok(())
+}
+
+#[evento::handler]
+async fn handle_cancelled(
+    _event: Event<subscription::Cancelled>,
+    data: &mut Subscription,
+) -> anyhow::Result<()> {
+    data.is_active = false;
 
     Ok(())
 }

@@ -415,6 +415,17 @@ impl FromRequestParts<crate::routes::AppState> for Template {
         })
     }
 }
+//
+// #[derive(askama::Template)]
+// #[template(
+//     source = r#"
+// <div ts-trigger="load" ts-action="remove" ts-target="{{ target }}" ts-swap-push="body" ts-swap="append"></div>
+// "#,
+//     ext = "html"
+// )]
+// pub struct RemoveTemplate<'a> {
+//     pub target: &'a str,
+// }
 
 #[derive(askama::Template)]
 #[template(path = "partials/upgrade-modal.html")]

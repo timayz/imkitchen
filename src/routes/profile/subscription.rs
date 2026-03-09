@@ -64,3 +64,41 @@ pub async fn check(
 
     "<div></div>".into_response()
 }
+
+#[derive(askama::Template)]
+#[template(path = "partials/subscription-cancel-modal.html")]
+struct CancelModalTemplate {
+    pub subscription: imkitchen_user::subscription::Subscription,
+}
+
+pub async fn cancel_modal(
+    template: Template,
+    State(app): State<AppState>,
+    user: AuthUser,
+) -> impl IntoResponse {
+    let subscription =
+        crate::try_response!(anyhow: app.user_cmd.subscription.load(&user.id), template);
+
+    template.render(CancelModalTemplate { subscription })
+}
+
+#[derive(askama::Template)]
+#[template(path = "partials/subscription-cancel.html")]
+struct CancelTemplate {
+    pub subscription: imkitchen_user::subscription::Subscription,
+}
+
+pub async fn cancel(
+    template: Template,
+    State(app): State<AppState>,
+    user: AuthUser,
+) -> impl IntoResponse {
+    let mut subscription =
+        crate::try_response!(anyhow: app.user_cmd.subscription.load(&user.id), template);
+
+    crate::try_response!(app.user_cmd.subscription.cancel(&user.id), template);
+
+    subscription.is_active = false;
+
+    template.render(CancelTemplate { subscription })
+}

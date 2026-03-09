@@ -19,4 +19,5 @@ pub enum Subscription {
         state: String,
         expire_at: u64,
     },
+    Cancelled,
 }

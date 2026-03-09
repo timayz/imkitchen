@@ -218,6 +218,10 @@ pub fn router(app_state: AppState) -> Router {
             "/profile/subscription/check",
             post(profile::subscription::check),
         )
+        .route(
+            "/profile/subscription/cancel",
+            get(profile::subscription::cancel_modal).post(profile::subscription::cancel),
+        )
         // .route(
         //     "/profile/notifications",
         //     get(profile::notifications::page).post(profile::notifications::action),
