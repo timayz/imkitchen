@@ -1,5 +1,28 @@
 {% extends "_profile.html" %}
 {% block title %}{{ "Profile & Settings"|t }} - imkitchen{% endblock %}
+{% block page_scripts %}
+<script src="https://js.stripe.com/clover/stripe.js" defer></script>
+{% endblock %}
+{% block extra_head %}
+
+<style>
+  @keyframes shimmer {
+    0% {
+      background-position: -800px 0;
+    }
+
+    100% {
+      background-position: 800px 0;
+    }
+  }
+
+  .shimmer {
+    background: linear-gradient(90deg, #e5e7eb 25%, #f9fafb 50%, #e5e7eb 75%);
+    background-size: 800px 100%;
+    animation: shimmer 1.4s infinite linear;
+  }
+</style>
+{% endblock %}
 
 {% block profile_content %}
 
@@ -64,52 +87,16 @@
 
 <div class="bg-white rounded-lg shadow-lg p-6">
   <h3 class="font-bold mb-4">Payment</h3>
-  <div class="flex items-center justify-between">
-    <div class="flex items-center gap-4">
-      <svg xmlns="http://www.w3.org/2000/svg" width="58" height="38" viewBox="0 0 58 38">
-        <defs>
-          <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#1a1a2e" />
-            <stop offset="50%" stop-color="#16213e" />
-            <stop offset="100%" stop-color="#0f3460" />
-          </linearGradient>
-          <linearGradient id="chipGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#f5d06e" />
-            <stop offset="50%" stop-color="#c9a227" />
-            <stop offset="100%" stop-color="#f5d06e" />
-          </linearGradient>
-          <linearGradient id="sheen" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#c9a227" stop-opacity="0" />
-            <stop offset="50%" stop-color="#f5d06e" stop-opacity="0.08" />
-            <stop offset="100%" stop-color="#c9a227" stop-opacity="0" />
-          </linearGradient>
-        </defs>
-        <rect width="56" height="36" x="1" y="1" rx="4" fill="url(#cardGrad)" />
-        <rect width="56" height="36" x="1" y="1" rx="4" fill="url(#sheen)" />
-        <rect width="56" height="1" x="1" y="1" rx="1" fill="white" opacity="0.08" />
-        <rect width="56" height="6" x="1" y="7" fill="#0a0a0a" opacity="0.55" />
-        <rect x="6" y="17" width="11" height="8" rx="1.5" fill="url(#chipGrad)" />
-        <line x1="11.5" y1="17" x2="11.5" y2="25" stroke="#a07810" stroke-width="0.5" />
-        <line x1="6" y1="21" x2="17" y2="21" stroke="#a07810" stroke-width="0.5" />
-        <rect x="8" y="19" width="3" height="2" rx="0.5" fill="#a07810" opacity="0.4" />
-        <rect x="12" y="19" width="3" height="2" rx="0.5" fill="#a07810" opacity="0.4" />
-        <path d="M20 19 Q22.5 21 20 23" stroke="#c9a227" stroke-width="1" fill="none" opacity="0.7"
-          stroke-linecap="round" />
-        <path d="M22 17.5 Q26 21 22 24.5" stroke="#c9a227" stroke-width="0.9" fill="none" opacity="0.5"
-          stroke-linecap="round" />
-        <circle cx="21" cy="28" r="1.2" fill="#c9a227" opacity="0.6" />
-        <circle cx="24.5" cy="28" r="1.2" fill="#c9a227" opacity="0.6" />
-        <circle cx="28" cy="28" r="1.2" fill="#c9a227" opacity="0.6" />
-        <circle cx="31.5" cy="28" r="1.2" fill="#c9a227" opacity="0.6" />
-        <circle cx="46" cy="27" r="5" fill="#c9a227" opacity="0.9" />
-        <circle cx="51" cy="27" r="5" fill="#f5d06e" opacity="0.7" />
-      </svg>
-      <div>
-        <div class="font-semibold">Visa ending in 4242</div>
-        <div class="text-sm text-gray-500">Expires 12/2028</div>
+  <div ts-trigger="load" ts-req="/profile/subscription/payment-method"
+    class="flex items-center justify-between px-4 py-3">
+    <div class="flex items-center gap-3">
+      <div class="w-12 h-8 rounded-md shimmer"></div>
+      <div class="flex flex-col gap-2">
+        <div class="h-3.5 w-36 rounded shimmer"></div>
+        <div class="h-3 w-24 rounded shimmer"></div>
       </div>
     </div>
-    <a href="#" class="text-green-600 hover:text-green-700 font-semibold text-sm">Update</a>
+    <div class="h-3.5 w-12 rounded shimmer"></div>
   </div>
 </div>
 {% else %}

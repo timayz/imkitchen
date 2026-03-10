@@ -1,8 +1,8 @@
 // use axum::Form;
 use axum::extract::State;
 use axum::response::IntoResponse;
+use stripe_core::customer::RetrievePaymentMethodCustomer;
 use stripe_core::payment_intent::RetrievePaymentIntent;
-// use serde::Deserialize;
 
 use crate::auth::AuthUser;
 use crate::routes::AppState;
@@ -32,6 +32,37 @@ pub async fn page(
         subscription,
         user,
     })
+}
+
+#[derive(askama::Template)]
+#[template(path = "partials/subscription-payment.html")]
+pub struct PaymentMethodTemplate {
+    pub payment_method: stripe_shared::PaymentMethod,
+}
+
+pub async fn payment_method(
+    template: Template,
+    State(app): State<AppState>,
+    user: AuthUser,
+) -> impl IntoResponse {
+    let subscription =
+        crate::try_response!(anyhow: app.user_cmd.subscription.load(&user.id), template);
+
+    let (Some(payment_method_id), Some(customer_id)) =
+        (subscription.payment_method_id, subscription.customer_id)
+    else {
+        return "<div></div>".into_response();
+    };
+
+    let payment_mehod = crate::try_response!(anyhow:
+        RetrievePaymentMethodCustomer::new(customer_id, payment_method_id).send(&app.stripe), 
+        template);
+
+    template
+        .render(PaymentMethodTemplate {
+            payment_method: payment_mehod,
+        })
+        .into_response()
 }
 
 pub async fn check(

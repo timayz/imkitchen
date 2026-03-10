@@ -219,6 +219,10 @@ pub fn router(app_state: AppState) -> Router {
             post(profile::subscription::check),
         )
         .route(
+            "/profile/subscription/payment-method",
+            get(profile::subscription::payment_method),
+        )
+        .route(
             "/profile/subscription/cancel",
             get(profile::subscription::cancel_modal).post(profile::subscription::cancel),
         )

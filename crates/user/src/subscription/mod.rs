@@ -1,7 +1,6 @@
 mod cancel;
 mod create_stripe_customer;
 mod create_stripe_payment_intent;
-mod create_stripe_subscription;
 mod toogle_life_premium;
 mod update_stripe_payment_intent_status;
 
@@ -61,7 +60,6 @@ fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Subscr
         .revision(12)
         .handler(handle_life_premium_toggled())
         .handler(handle_stripe_customer_created())
-        .handler(handle_stripe_payment_method_created())
         .handler(handle_stripe_payment_intent_created())
         .handler(handle_stripe_payment_intent_succeeded())
         .handler(handle_cancelled())
@@ -97,17 +95,6 @@ async fn handle_stripe_customer_created(
 }
 
 #[evento::handler]
-async fn handle_stripe_payment_method_created(
-    event: Event<subscription::StripePaymentMethodCreated>,
-    data: &mut Subscription,
-) -> anyhow::Result<()> {
-    data.id = event.aggregator_id.to_owned();
-    data.payment_method_id = Some(event.data.id);
-
-    Ok(())
-}
-
-#[evento::handler]
 async fn handle_stripe_payment_intent_created(
     event: Event<subscription::StripePaymentIntentCreated>,
     data: &mut Subscription,
@@ -124,7 +111,8 @@ async fn handle_stripe_payment_intent_succeeded(
     data: &mut Subscription,
 ) -> anyhow::Result<()> {
     data.id = event.aggregator_id.to_owned();
-    data.payment_intent_id = Some(event.data.id);
+    data.payment_intent_id = None;
+    data.payment_method_id = Some(event.data.payment_method_id);
     data.expire_at = event.data.expire_at;
     data.plan = Some(event.data.plan);
     data.is_active = true;

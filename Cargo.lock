@@ -2492,6 +2492,7 @@ dependencies = [
  "async-stripe",
  "async-stripe-core",
  "async-stripe-payment",
+ "async-stripe-shared",
  "async-stripe-types",
  "async-stripe-webhook",
  "async-trait",

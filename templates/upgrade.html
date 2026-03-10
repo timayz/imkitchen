@@ -5,8 +5,8 @@
 {% block page_scripts %}
 <script src="https://js.stripe.com/clover/stripe.js"></script>
 {% endblock %}
-{% block content %}
 
+{% block content %}
 {% if let Ok(config) = "config"|value::<crate::config::Config> %}
   {% if let Some(premium) = config.premium %}
   <!-- Main Content -->

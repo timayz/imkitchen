@@ -111,6 +111,7 @@ async-stripe-core = { workspace = true }
 async-stripe-payment = { workspace = true }
 async-stripe-types = { workspace = true }
 async-stripe-webhook = { workspace = true }
+async-stripe-shared = { workspace = true }
 world-tax = { workspace = true }
 imkitchen-shared = { path = "crates/shared", version = "0.14.0" }
 imkitchen-contact = { path = "crates/contact", version = "0.14.0" }

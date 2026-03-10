@@ -14,11 +14,18 @@ impl<E: Executor> super::Command<E> {
 
         match (
             intent.status,
+            intent.payment_method,
             intent.metadata.get("plan"),
             intent.metadata.get("country"),
             intent.metadata.get("state"),
         ) {
-            (PaymentIntentStatus::Succeeded, Some(plan), Some(country), Some(state)) => {
+            (
+                PaymentIntentStatus::Succeeded,
+                Some(method),
+                Some(plan),
+                Some(country),
+                Some(state),
+            ) => {
                 let months = match plan.as_str() {
                     "monthly" => 1,
                     "annual" => 12,
@@ -31,6 +38,7 @@ impl<E: Executor> super::Command<E> {
                     .aggregator()?
                     .event(&StripePaymentIntentSucceeded {
                         id: intent.id.to_string(),
+                        payment_method_id: method.id().to_string(),
                         plan: plan.to_owned(),
                         country: country.to_owned(),
                         state: state.to_owned(),

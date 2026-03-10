@@ -6,14 +6,12 @@ pub enum Subscription {
     StripeCustomerCreated {
         id: String,
     },
-    StripePaymentMethodCreated {
-        id: String,
-    },
     StripePaymentIntentCreated {
         id: String,
     },
     StripePaymentIntentSucceeded {
         id: String,
+        payment_method_id: String,
         plan: String,
         country: String,
         state: String,
