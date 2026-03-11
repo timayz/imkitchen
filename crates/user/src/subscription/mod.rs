@@ -1,8 +1,10 @@
 mod cancel;
 mod create_stripe_customer;
 mod create_stripe_payment_intent;
+mod create_stripe_setup_intent;
 mod toogle_life_premium;
 mod update_stripe_payment_intent_status;
+mod update_stripe_setup_intent_status;
 
 use bitcode::{Decode, Encode};
 use evento::{Executor, Projection, metadata::Event};
@@ -38,6 +40,9 @@ impl<E: Executor> Command<E> {
                     payment_intent_id: None,
                     is_active: true,
                     plan: None,
+                    country: None,
+                    state: None,
+                    setup_intent_id: None,
                 })
             })
     }
@@ -50,19 +55,23 @@ pub struct Subscription {
     pub customer_id: Option<String>,
     pub payment_method_id: Option<String>,
     pub payment_intent_id: Option<String>,
+    pub setup_intent_id: Option<String>,
     pub plan: Option<String>,
+    pub country: Option<String>,
+    pub state: Option<String>,
     pub expire_at: u64,
     pub is_active: bool,
 }
 
 fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Subscription> {
     Projection::new::<subscription::Subscription>(id)
-        .revision(12)
         .handler(handle_life_premium_toggled())
         .handler(handle_stripe_customer_created())
         .handler(handle_stripe_payment_intent_created())
         .handler(handle_stripe_payment_intent_succeeded())
         .handler(handle_cancelled())
+        .handler(handle_stripe_setup_intent_created())
+        .handler(handle_stripe_setup_intent_succeeded())
         .safety_check()
 }
 
@@ -106,6 +115,17 @@ async fn handle_stripe_payment_intent_created(
 }
 
 #[evento::handler]
+async fn handle_stripe_setup_intent_created(
+    event: Event<subscription::StripeSetupIntentCreated>,
+    data: &mut Subscription,
+) -> anyhow::Result<()> {
+    data.id = event.aggregator_id.to_owned();
+    data.setup_intent_id = Some(event.data.id);
+
+    Ok(())
+}
+
+#[evento::handler]
 async fn handle_stripe_payment_intent_succeeded(
     event: Event<subscription::StripePaymentIntentSucceeded>,
     data: &mut Subscription,
@@ -115,7 +135,23 @@ async fn handle_stripe_payment_intent_succeeded(
     data.payment_method_id = Some(event.data.payment_method_id);
     data.expire_at = event.data.expire_at;
     data.plan = Some(event.data.plan);
+    data.country = Some(event.data.country);
+    data.state = Some(event.data.state);
     data.is_active = true;
+
+    Ok(())
+}
+
+#[evento::handler]
+async fn handle_stripe_setup_intent_succeeded(
+    event: Event<subscription::StripeSetupIntentSucceeded>,
+    data: &mut Subscription,
+) -> anyhow::Result<()> {
+    data.id = event.aggregator_id.to_owned();
+    data.setup_intent_id = None;
+    data.payment_method_id = Some(event.data.payment_method_id);
+    data.country = Some(event.data.country);
+    data.state = Some(event.data.state);
 
     Ok(())
 }

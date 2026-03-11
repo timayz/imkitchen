@@ -220,7 +220,7 @@ pub fn router(app_state: AppState) -> Router {
         )
         .route(
             "/profile/subscription/payment-method",
-            get(profile::subscription::payment_method),
+            post(profile::subscription::payment_method),
         )
         .route(
             "/profile/subscription/cancel",

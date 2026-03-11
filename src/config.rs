@@ -94,7 +94,10 @@ impl Config {
             .set_default("jwt.expiration_days", 14)?
             .set_default("premium.monthly_price", 499)?
             .set_default("premium.annual_rate", 20)?
-            .set_default("monitoring.log_level", "debug,sqlx=info,tower_http=info")?
+            .set_default(
+                "monitoring.log_level",
+                "debug,sqlx=info,tower_http=info,stripe=info,hyper_util=info",
+            )?
             .set_default("monitoring.log_json", false)?
             .set_default("monitoring.log_target", true)?
             .set_default("monitoring.log_line_number", true)?

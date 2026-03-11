@@ -3,13 +3,12 @@ use axum::extract::State;
 use axum::response::IntoResponse;
 use axum_extra::extract::Form;
 use serde::Deserialize;
-use stripe_core::PaymentIntentSetupFutureUsage;
 use stripe_core::customer::RetrievePaymentMethodCustomer;
-use stripe_core::payment_intent::CreatePaymentIntentAutomaticPaymentMethods;
 use stripe_core::payment_intent::RetrievePaymentIntent;
 use stripe_core::setup_intent::CreateSetupIntent;
 use stripe_core::setup_intent::CreateSetupIntentAutomaticPaymentMethods;
 use stripe_core::setup_intent::CreateSetupIntentUsage;
+use stripe_core::setup_intent::RetrieveSetupIntent;
 
 use crate::auth::AuthUser;
 use crate::routes::AppState;
@@ -55,8 +54,28 @@ pub async fn payment_method(
     State(app): State<AppState>,
     user: AuthUser,
 ) -> impl IntoResponse {
-    let subscription =
+    let mut subscription =
         crate::try_response!(anyhow: app.user_cmd.subscription.load(&user.id), template);
+
+    if let Some(setup_intent_id) = subscription.setup_intent_id
+        && let Ok(intent) = RetrieveSetupIntent::new(setup_intent_id)
+            .send(&app.stripe)
+            .await
+    {
+
+        if let Err(e) = app
+            .user_cmd
+            .subscription
+            .update_stripe_setup_intent_status(intent, &user.id)
+            .await
+        {
+            tracing::error!("{e}");
+        } else {
+            subscription =
+                crate::try_response!(anyhow: app.user_cmd.subscription.load(&user.id), template);
+        };
+    };
+
 
     let (Some(payment_method_id), Some(customer_id)) =
         (subscription.payment_method_id, subscription.customer_id)
@@ -110,15 +129,19 @@ pub async fn update_payment(
 
     let setup_intent = crate::try_response!(anyhow: CreateSetupIntent::new()
         .customer(customer_id)
+        .metadata([("country".to_owned(), input.country), ("state".to_owned(), input.state)])
         .automatic_payment_methods(CreateSetupIntentAutomaticPaymentMethods::new(true))
         .usage(CreateSetupIntentUsage::OffSession)
         .send(&app.stripe), template);
 
-    // @TODO: save new country / state for taxes
-    // make same logic as upgrade to validate new card or submit form to validte after confirm
     // set new default payment + delete old payment if exist
-    // close modal on sucess
-    // setup/ payment ?
+    // delete payment method after cancel
+    crate::try_response!(
+        app.user_cmd
+            .subscription
+            .create_stripe_setup_intent(&setup_intent.id, &user.id),
+        template
+    );
 
     let client_secret = setup_intent.client_secret.unwrap_or_default();
 

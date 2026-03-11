@@ -85,9 +85,10 @@
   {% endif %}
 </div>
 
-<div class="bg-white rounded-lg shadow-lg p-6">
+{% if subscription.is_active %}
+<div id="payment-method-panel" class="bg-white rounded-lg shadow-lg p-6">
   <h3 class="font-bold mb-4">Payment</h3>
-  <div ts-trigger="load" ts-req="/profile/subscription/payment-method"
+  <div ts-trigger="load" ts-req="/profile/subscription/payment-method" ts-req-method="post"
     class="flex items-center justify-between px-4 py-3">
     <div class="flex items-center gap-3">
       <div class="w-12 h-8 rounded-md shimmer"></div>
@@ -99,6 +100,7 @@
     <div class="h-3.5 w-12 rounded shimmer"></div>
   </div>
 </div>
+{% endif %}
 {% else %}
 <!-- Current Plan -->
 <div class="bg-white rounded-lg shadow-lg p-6">
@@ -524,7 +526,6 @@
             confirmParams: {
               return_url: '{{ config.server.url }}/profile/subscription'
             },
-            redirect: 'if_required',
           }).then(({error}) => {
             setActionDisabled(false);
 
