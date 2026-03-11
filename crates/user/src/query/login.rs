@@ -8,7 +8,7 @@ use sqlx::{SqlitePool, prelude::FromRow};
 use imkitchen_shared::user::{
     Activated, LoggedIn, Logout, MadeAdmin, Role, State, Suspended, User, UsernameChanged,
     password::ResetCompleted,
-    subscription::{LifePremiumToggled, Subscription},
+    subscription::{LifePremiumToggled, StripePaymentIntentSucceeded, Subscription},
 };
 
 impl<E: Executor> super::Query<E> {
@@ -74,6 +74,7 @@ pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Lo
         .handler(handle_reset_completed())
         .handler(handle_username_changed())
         .handler(handle_life_premium_toggled())
+        .handler(handle_payment_intent_succeeded())
 }
 
 impl<E: Executor> Snapshot<E> for LoginView {
@@ -233,6 +234,19 @@ async fn handle_susended(_event: Event<Suspended>, data: &mut LoginView) -> anyh
 #[evento::handler]
 async fn handle_life_premium_toggled(
     event: Event<LifePremiumToggled>,
+    data: &mut LoginView,
+) -> anyhow::Result<()> {
+    data.subscription_expire_at = event.data.expire_at;
+    for login in data.logins.iter_mut() {
+        login.subscription_expire_at = event.data.expire_at;
+    }
+
+    Ok(())
+}
+
+#[evento::handler]
+async fn handle_payment_intent_succeeded(
+    event: Event<StripePaymentIntentSucceeded>,
     data: &mut LoginView,
 ) -> anyhow::Result<()> {
     data.subscription_expire_at = event.data.expire_at;

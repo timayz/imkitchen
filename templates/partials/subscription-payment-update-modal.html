@@ -1,0 +1,41 @@
+<!-- Cancel Subscription Modal -->
+<div id="update-payment-modal" ts-trigger="load" ts-action="stripe-init"
+  class="fixed inset-0 z-40 flex items-center justify-center">
+  <!-- Backdrop -->
+  <div ts-trigger="click" ts-action="remove" ts-target="parent #update-payment-modal"
+    class="absolute inset-0 bg-black/50">
+  </div>
+
+  <!-- Modal Content -->
+  <div
+    class="relative bg-white rounded-xl shadow-2xl max-w-lg w-full mx-4 p-6 max-h-[90vh] overflow-y-auto overscroll-contain">
+    <div class="text-center">
+
+      <!-- Payment Details -->
+      <div class="mb-6">
+        <h2 class="text-xl font-bold mb-4">Payment Details</h2>
+        <div id="payment-element"></div>
+      </div>
+
+      <!-- Billing Address -->
+      <div class="mb-6">
+        <h2 class="text-xl font-bold mb-4">Billing Address</h2>
+        <div id="address-element"></div>
+      </div>
+      <div class="flex flex-col gap-3">
+        <form ts-req="/profile/subscription/update-payment" ts-req-method="post" ts-req-before="stripe-confirm-form"
+          ts-swap="skip">
+          <input type="hidden" id="payment-update-form-country" name="country" />
+          <input type="hidden" id="payment-update-form-state" name="state" />
+          <button type="submit" id="payment-update-btn" ts-req-before="stripe-confirm-form" ts-swap="skip"
+            class="w-full px-4 py-2.5 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 text-sm">
+            Update
+          </button>
+        </form>
+        <button ts-trigger="click" ts-target="parent #update-payment-modal" ts-action="remove"
+          class="w-full px-4 py-2.5 bg-white border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 text-sm">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>

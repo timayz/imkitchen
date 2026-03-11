@@ -14,7 +14,7 @@ impl<E: Executor> super::Command<E> {
         let expire_at = if subscription.expire_at > now.unix_timestamp().try_into()? {
             0
         } else {
-            (now + time::Duration::weeks(10 * 53)).unix_timestamp()
+            super::add_months(now.unix_timestamp(), 12 * 10)
         };
 
         subscription
