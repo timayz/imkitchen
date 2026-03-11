@@ -1,11 +1,19 @@
 // use axum::Form;
 use axum::extract::State;
 use axum::response::IntoResponse;
+use axum_extra::extract::Form;
+use serde::Deserialize;
+use stripe_core::PaymentIntentSetupFutureUsage;
 use stripe_core::customer::RetrievePaymentMethodCustomer;
+use stripe_core::payment_intent::CreatePaymentIntentAutomaticPaymentMethods;
 use stripe_core::payment_intent::RetrievePaymentIntent;
+use stripe_core::setup_intent::CreateSetupIntent;
+use stripe_core::setup_intent::CreateSetupIntentAutomaticPaymentMethods;
+use stripe_core::setup_intent::CreateSetupIntentUsage;
 
 use crate::auth::AuthUser;
 use crate::routes::AppState;
+use crate::template;
 use crate::template::Template;
 use crate::template::filters;
 
@@ -18,6 +26,7 @@ pub struct SubscriptionTemplate {
     pub user: AuthUser,
 }
 
+#[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn page(
     template: Template,
     user: AuthUser,
@@ -40,6 +49,7 @@ pub struct PaymentMethodTemplate {
     pub payment_method: stripe_shared::PaymentMethod,
 }
 
+#[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn payment_method(
     template: Template,
     State(app): State<AppState>,
@@ -65,6 +75,57 @@ pub async fn payment_method(
         .into_response()
 }
 
+#[derive(askama::Template)]
+#[template(path = "partials/subscription-payment-update-modal.html")]
+pub struct PaymentMethodModalTemplate {}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn update_payment_modal(template: Template, user: AuthUser) -> impl IntoResponse {
+    template
+        .render(PaymentMethodModalTemplate {})
+        .into_response()
+}
+
+#[derive(Deserialize, Debug)]
+pub struct UpdatePaymentInput {
+    pub country: String,
+    pub state: String,
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn update_payment(
+    template: Template,
+    State(app): State<AppState>,
+    user: AuthUser,
+    Form(input): Form<UpdatePaymentInput>,
+) -> impl IntoResponse {
+    let subscription =
+        crate::try_response!(anyhow: app.user_cmd.subscription.load(&user.id), template);
+
+    let Some(customer_id) = subscription.customer_id else {
+        tracing::error!("customer not found");
+
+        return template.render(template::ServerTemplate).into_response();
+    };
+
+    let setup_intent = crate::try_response!(anyhow: CreateSetupIntent::new()
+        .customer(customer_id)
+        .automatic_payment_methods(CreateSetupIntentAutomaticPaymentMethods::new(true))
+        .usage(CreateSetupIntentUsage::OffSession)
+        .send(&app.stripe), template);
+
+    // @TODO: save new country / state for taxes
+    // make same logic as upgrade to validate new card or submit form to validte after confirm
+    // set new default payment + delete old payment if exist
+    // close modal on sucess
+    // setup/ payment ?
+
+    let client_secret = setup_intent.client_secret.unwrap_or_default();
+
+    format!("<div ts-trigger=\"load\" ts-action=\"stripe-confirm-setup\" data-client-secret=\"{client_secret}\"></div>").into_response()
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn check(
     template: Template,
     State(app): State<AppState>,
@@ -102,6 +163,7 @@ struct CancelModalTemplate {
     pub subscription: imkitchen_user::subscription::Subscription,
 }
 
+#[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn cancel_modal(
     template: Template,
     State(app): State<AppState>,
@@ -119,6 +181,7 @@ struct CancelTemplate {
     pub subscription: imkitchen_user::subscription::Subscription,
 }
 
+#[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn cancel(
     template: Template,
     State(app): State<AppState>,

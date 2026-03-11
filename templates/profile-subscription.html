@@ -371,4 +371,173 @@
     </div>
   </div>
 </div>
-{% endblock %}
+{% if let Ok(config) = "config"|value::<crate::config::Config> %}
+  {% if let Some(premium) = config.premium %}
+  <script>
+    // var stripeElements = stripe.elements({
+    //   mode: 'subscription',
+    //   amount: 4790,
+    //   currency: 'usd'
+    // });
+    //
+    //   var paymentElement = stripeElements.create('payment', {
+    //     layout: 'tabs',
+    //     buisness: {
+    //       name: 'imkitchen'
+    //     }
+    //   });
+    //   paymentElement.mount('#payment-element');
+    //
+    //   var addressElement = stripeElements.create('address', {
+    //     mode: 'billing',
+    //     autocomplete: {mode: 'disabled'},
+    //   });
+    //   addressElement.mount('#address-element');
+    //
+    //   var planForm = document.getElementById('order-summary-form');
+    //   var planEl = document.getElementById('order-summary-form-plan');
+    //   var countryEl = document.getElementById('order-summary-form-country');
+    //   var stateEl = document.getElementById('order-summary-form-state');
+    //   var subCountryEl = document.getElementById('subscription-form-country');
+    //   var subStateEl = document.getElementById('subscription-form-state');
+    //
+    //   addressElement.on('change', (event) => {
+    //     if (!event.value || !event.value.address) {
+    //       return;
+    //     }
+    //
+    //     countryEl.value = event.value.address.country;
+    //     stateEl.value = event.value.address.state;
+    //     subCountryEl.value = event.value.address.country;
+    //     subStateEl.value = event.value.address.state;
+    //
+    //     var selectedPlan = document.querySelector('input[name="plan"]:checked');
+    //     if (selectedPlan) {
+    //       planEl.value = selectedPlan.value;
+    //     }
+    //
+    //     planForm.requestSubmit();
+    //   });
+    //
+    //   var subscriptionForm = document.getElementById('subscription-form');
+    //   subscriptionForm.addEventListener('change', (e) => {
+    //     planEl.value = e.target.value;
+    //     planForm.requestSubmit();
+    //   });
+    //
+    //   function setActionDisabled(value) {
+    //     let btns = document.querySelectorAll('button[form="subscription-form"]');
+    //     btns.forEach((btn) => {
+    //       btn.disabled = value;
+    //
+    //       btn.classList.toggle('disabled:opacity-50');
+    //       btn.classList.toggle('disabled:cursor-not-allowed');
+    //       btn.classList.toggle('disabled:pointer-events-none');
+    //     });
+    //   }
+    function setActionDisabled(value) {
+      let btns = document.querySelectorAll('#payment-update-btn');
+      btns.forEach((btn) => {
+        btn.disabled = value;
+
+        btn.classList.toggle('disabled:opacity-50');
+        btn.classList.toggle('disabled:cursor-not-allowed');
+        btn.classList.toggle('disabled:pointer-events-none');
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      var stripe = Stripe('{{ config.stripe.publishable_key }}', {locale: '{{ "html_lang"|t }}'});
+      var stripeElements = null;
+      var paymentElement = null;
+      var addressElement = null;
+
+      twinspark.func({
+        "stripe-init": (o) => {
+          stripeElements = stripe.elements({
+            mode: 'subscription',
+            amount: 4790,
+            currency: 'usd'
+          });
+
+          paymentElement = stripeElements.create('payment', {
+            layout: 'tabs',
+            business: {
+              name: 'imkitchen'
+            },
+            terms: {
+              card: "never",         // hides mandate for card
+              sepaDebit: "never",
+              auBecsDebit: "never",
+              bancontact: "never",
+              ideal: "never",
+              sofort: "never",
+              usBankAccount: "never"
+            }
+          });
+          paymentElement.mount('#payment-element');
+
+          addressElement = stripeElements.create('address', {
+            mode: 'billing',
+            autocomplete: {mode: 'disabled'},
+          });
+          addressElement.mount('#address-element');
+
+          var countryEl = document.getElementById('payment-update-form-country');
+          var stateEl = document.getElementById('payment-update-form-state');
+
+          addressElement.on('change', (event) => {
+            if (!event.value || !event.value.address) {
+              return;
+            }
+
+            countryEl.value = event.value.address.country;
+            stateEl.value = event.value.address.state;
+
+          });
+        },
+        "stripe-confirm-form": (o) => {
+          if (!stripeElements) {
+            o.event.preventDefault();
+            return false;
+          }
+
+          setActionDisabled(true);
+
+          return stripeElements.submit().then(({error}) => {
+            if (error) {
+              o.event.preventDefault();
+              setActionDisabled(false);
+              return false;
+            }
+          })
+        },
+        "stripe-confirm-setup": (o) => {
+          if (!stripeElements) {
+            o.event.preventDefault();
+            return false;
+          }
+
+          return stripe.confirmSetup({
+            elements: stripeElements,
+            clientSecret: o.el.dataset.clientSecret,
+            confirmParams: {
+              return_url: '{{ config.server.url }}/profile/subscription'
+            },
+            redirect: 'if_required',
+          }).then(({error}) => {
+            setActionDisabled(false);
+
+            if (error) {
+              console.log(error);
+              return false;
+            }
+          })
+        }
+
+      });
+    });
+  </script>
+  {% endif %}
+  {% endif %}
+  {% endblock %}
