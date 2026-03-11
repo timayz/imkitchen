@@ -9,6 +9,7 @@ use stripe_core::setup_intent::CreateSetupIntent;
 use stripe_core::setup_intent::CreateSetupIntentAutomaticPaymentMethods;
 use stripe_core::setup_intent::CreateSetupIntentUsage;
 use stripe_core::setup_intent::RetrieveSetupIntent;
+use stripe_payment::payment_method::DetachPaymentMethod;
 
 use crate::auth::AuthUser;
 use crate::routes::AppState;
@@ -57,12 +58,15 @@ pub async fn payment_method(
     let mut subscription =
         crate::try_response!(anyhow: app.user_cmd.subscription.load(&user.id), template);
 
+    let Some(payment_method_id) = subscription.payment_method_id.to_owned() else {
+        return "<div></div>".into_response();
+    };
+
     if let Some(setup_intent_id) = subscription.setup_intent_id
         && let Ok(intent) = RetrieveSetupIntent::new(setup_intent_id)
             .send(&app.stripe)
             .await
     {
-
         if let Err(e) = app
             .user_cmd
             .subscription
@@ -71,11 +75,15 @@ pub async fn payment_method(
         {
             tracing::error!("{e}");
         } else {
+            crate::try_response!(anyhow:
+                DetachPaymentMethod::new(payment_method_id).send(&app.stripe),
+                template
+            );
+
             subscription =
                 crate::try_response!(anyhow: app.user_cmd.subscription.load(&user.id), template);
         };
     };
-
 
     let (Some(payment_method_id), Some(customer_id)) =
         (subscription.payment_method_id, subscription.customer_id)
@@ -134,8 +142,6 @@ pub async fn update_payment(
         .usage(CreateSetupIntentUsage::OffSession)
         .send(&app.stripe), template);
 
-    // set new default payment + delete old payment if exist
-    // delete payment method after cancel
     crate::try_response!(
         app.user_cmd
             .subscription
@@ -214,6 +220,13 @@ pub async fn cancel(
         crate::try_response!(anyhow: app.user_cmd.subscription.load(&user.id), template);
 
     crate::try_response!(app.user_cmd.subscription.cancel(&user.id), template);
+
+    if let Some(id) = subscription.payment_method_id.to_owned() {
+        crate::try_response!(anyhow:
+            DetachPaymentMethod::new(id).send(&app.stripe),
+            template
+        );
+    }
 
     subscription.is_active = false;
 

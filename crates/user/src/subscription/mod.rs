@@ -162,6 +162,7 @@ async fn handle_cancelled(
     data: &mut Subscription,
 ) -> anyhow::Result<()> {
     data.is_active = false;
+    data.payment_method_id = None;
 
     Ok(())
 }
