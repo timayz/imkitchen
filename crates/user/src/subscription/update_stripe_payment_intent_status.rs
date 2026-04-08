@@ -1,6 +1,7 @@
 use evento::{Executor, ProjectionAggregator};
 use imkitchen_shared::user::subscription::StripePaymentIntentSucceeded;
 use stripe_shared::{PaymentIntent, PaymentIntentStatus};
+use stripe_types::Expandable;
 
 impl<E: Executor> super::Command<E> {
     pub async fn update_stripe_payment_intent_status(
@@ -12,43 +13,32 @@ impl<E: Executor> super::Command<E> {
         let subscription = self.load(&request_by).await?;
         let intent = intent.into();
 
-        match (
+        if let (PaymentIntentStatus::Succeeded, Some(Expandable::Object(method)), Some(plan)) = (
             intent.status,
             intent.payment_method,
             intent.metadata.get("plan"),
-            intent.metadata.get("country"),
-            intent.metadata.get("state"),
         ) {
-            (
-                PaymentIntentStatus::Succeeded,
-                Some(method),
-                Some(plan),
-                Some(country),
-                Some(state),
-            ) => {
-                let months = match plan.as_str() {
-                    "monthly" => 1,
-                    "annual" => 12,
-                    plan => imkitchen_shared::server!("unrecognized subscription plan {plan}"),
-                };
+            let months = match plan.as_str() {
+                "monthly" => 1,
+                "annual" => 12,
+                plan => imkitchen_shared::server!("unrecognized subscription plan {plan}"),
+            };
 
-                let expire_at = super::add_months(intent.created, months);
+            let expire_at = super::add_months(intent.created, months);
 
-                subscription
-                    .aggregator()?
-                    .event(&StripePaymentIntentSucceeded {
-                        id: intent.id.to_string(),
-                        payment_method_id: method.id().to_string(),
-                        plan: plan.to_owned(),
-                        country: country.to_owned(),
-                        state: state.to_owned(),
-                        expire_at: expire_at.try_into()?,
-                    })
-                    .requested_by(request_by)
-                    .commit(&self.executor)
-                    .await?;
-            }
-            _ => todo!(),
+            subscription
+                .aggregator()?
+                .event(&StripePaymentIntentSucceeded {
+                    id: intent.id.to_string(),
+                    payment_method_id: method.id.to_string(),
+                    name: method.billing_details.name.to_owned(),
+                    address: method.billing_details.address.map(|a| a.into()),
+                    plan: plan.to_owned(),
+                    expire_at: expire_at.try_into()?,
+                })
+                .requested_by(request_by)
+                .commit(&self.executor)
+                .await?;
         }
 
         Ok(())

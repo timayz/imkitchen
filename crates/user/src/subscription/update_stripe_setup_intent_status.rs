@@ -1,6 +1,7 @@
 use evento::{Executor, ProjectionAggregator};
 use imkitchen_shared::user::subscription::StripeSetupIntentSucceeded;
 use stripe_shared::{SetupIntent, SetupIntentStatus};
+use stripe_types::Expandable;
 
 impl<E: Executor> super::Command<E> {
     pub async fn update_stripe_setup_intent_status(
@@ -12,30 +13,20 @@ impl<E: Executor> super::Command<E> {
         let subscription = self.load(&request_by).await?;
         let intent = intent.into();
 
-        let Some(metadata) = intent.metadata else {
-            imkitchen_shared::server!("setup intent metadata not defined");
-        };
-
-        match (
-            intent.status,
-            intent.payment_method,
-            metadata.get("country"),
-            metadata.get("state"),
-        ) {
-            (SetupIntentStatus::Succeeded, Some(method), Some(country), Some(state)) => {
-                subscription
-                    .aggregator()?
-                    .event(&StripeSetupIntentSucceeded {
-                        id: intent.id.to_string(),
-                        payment_method_id: method.id().to_string(),
-                        country: country.to_owned(),
-                        state: state.to_owned(),
-                    })
-                    .requested_by(request_by)
-                    .commit(&self.executor)
-                    .await?;
-            }
-            _ => todo!(),
+        if let (SetupIntentStatus::Succeeded, Some(Expandable::Object(method))) =
+            (intent.status, intent.payment_method)
+        {
+            subscription
+                .aggregator()?
+                .event(&StripeSetupIntentSucceeded {
+                    id: intent.id.to_string(),
+                    name: method.billing_details.name.to_owned(),
+                    address: method.billing_details.address.map(|a| a.into()),
+                    payment_method_id: method.id.to_string(),
+                })
+                .requested_by(request_by)
+                .commit(&self.executor)
+                .await?;
         }
 
         Ok(())

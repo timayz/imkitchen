@@ -2630,6 +2630,7 @@ version = "0.14.0"
 dependencies = [
  "anyhow",
  "argon2",
+ "async-stripe-shared",
  "bitcode",
  "evento",
  "serde",
@@ -2666,6 +2667,7 @@ dependencies = [
  "anyhow",
  "argon2",
  "async-stripe-shared",
+ "async-stripe-types",
  "bitcode",
  "evento",
  "futures",

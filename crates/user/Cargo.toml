@@ -21,6 +21,7 @@ ulid = { workspace = true }
 sea-query.workspace = true
 sea-query-sqlx.workspace = true
 async-stripe-shared.workspace = true
+async-stripe-types.workspace = true
 serde.workspace = true
 imkitchen-shared = { path = "../shared", version = "0.14.0" }
 imkitchen-db = { path = "../db", version = "0.14.0" }

@@ -64,6 +64,7 @@ pub async fn payment_method(
 
     if let Some(setup_intent_id) = subscription.setup_intent_id
         && let Ok(intent) = RetrieveSetupIntent::new(setup_intent_id)
+            .expand(&["payment_method".to_owned()])
             .send(&app.stripe)
             .await
     {
@@ -168,6 +169,7 @@ pub async fn check(
     };
 
     let Ok(intent) = RetrievePaymentIntent::new(payment_intent_id)
+        .expand(&["payment_method".to_owned()])
         .send(&app.stripe)
         .await
     else {
