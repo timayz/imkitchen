@@ -13,12 +13,12 @@ impl<E: Executor> super::Command<E> {
         let subscription = self.load(&request_by).await?;
         let intent = intent.into();
 
-        if let (PaymentIntentStatus::Succeeded, Some(Expandable::Object(method)), Some(plan)) = (
+        if let (PaymentIntentStatus::Succeeded, Some(Expandable::Object(method)), Some(details)) = (
             intent.status,
             intent.payment_method,
-            intent.metadata.get("plan"),
+            subscription.payment_details.clone(),
         ) {
-            let months = match plan.as_str() {
+            let months = match details.plan.as_str() {
                 "monthly" => 1,
                 "annual" => 12,
                 plan => imkitchen_shared::server!("unrecognized subscription plan {plan}"),
@@ -33,7 +33,7 @@ impl<E: Executor> super::Command<E> {
                     payment_method_id: method.id.to_string(),
                     name: method.billing_details.name.to_owned(),
                     address: method.billing_details.address.map(|a| a.into()),
-                    plan: plan.to_owned(),
+                    details,
                     expire_at: expire_at.try_into()?,
                 })
                 .requested_by(request_by)

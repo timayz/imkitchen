@@ -32,8 +32,8 @@
   <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
     <div>
       <div class="flex items-center gap-2 mb-1">
-        {% if let Some(plan) = subscription.plan %}
-        <span class="text-lg font-bold capitalize">{{ plan }} Plan</span>
+        {% if let Some(payment_details) = subscription.payment_details %}
+        <span class="text-lg font-bold capitalize">{{ payment_details.plan }} Plan</span>
         {% else %}
         <span class="text-lg font-bold">Life Plan</span>
         {% endif %}
@@ -46,10 +46,10 @@
       {% endif %}
     </div>
     {% if let Ok(config) = "config"|value::<crate::config::Config> %}
-      {% if let (Some(premium), Some(plan)) = (&config.premium, &subscription.plan) %}
+      {% if let (Some(premium), Some(payment_details)) = (&config.premium, &subscription.payment_details) %}
       <div class="text-right">
         <div class="text-2xl font-bold text-gray-600">
-          {% match plan.as_str() %}
+          {% match payment_details.plan.as_str() %}
           {% when "monthly" %}
           ${{ *premium.monthly_price|amount }}<span class="text-sm text-gray-500 font-normal">/month</span>
           {% when "annual" %}
@@ -262,6 +262,7 @@
 </div>
 {% endif %}
 
+<!--
 <div class="bg-white rounded-lg shadow-lg p-6">
   <h3 class="font-bold mb-4">Invoices</h3>
   <div class="text-center py-12">
@@ -270,7 +271,7 @@
     <p class="text-gray-500 text-sm mb-6 max-w-sm mx-auto">
       You're on the free plan. When you upgrade to Premium, your invoices will appear here.
     </p>
-    <!-- Secondary CTA -->
+    <!- - Secondary CTA - ->
     <a href="/upgrade"
       class="inline-block px-6 py-2.5 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition text-sm">
       Upgrade to Premium
@@ -278,12 +279,12 @@
   </div>
 </div>
 
-<!-- Invoice List -->
+<!- - Invoice List - ->
 <div class="bg-white rounded-lg shadow-lg p-6">
   <h3 class="font-bold mb-4">Invoices</h3>
 
   <div class="space-y-4">
-    <!-- Invoice 1 -->
+    <!- - Invoice 1 - ->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-gray-50 gap-3">
       <div class="flex-1">
         <div class="font-semibold">Premium Annual - Feb 2026</div>
@@ -296,7 +297,7 @@
       </div>
     </div>
 
-    <!-- Invoice 2 -->
+    <!- - Invoice 2 - ->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-gray-50 gap-3">
       <div class="flex-1">
         <div class="font-semibold">Premium Monthly - Jan 2026</div>
@@ -309,7 +310,7 @@
       </div>
     </div>
 
-    <!-- Invoice 3 -->
+    <!- - Invoice 3 - ->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-gray-50 gap-3">
       <div class="flex-1">
         <div class="font-semibold">Premium Monthly - Dec 2025</div>
@@ -322,7 +323,7 @@
       </div>
     </div>
 
-    <!-- Invoice 4 - Pending -->
+    <!- - Invoice 4 - Pending - ->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-gray-50 gap-3">
       <div class="flex-1">
         <div class="font-semibold">Premium Monthly - Nov 2025</div>
@@ -335,7 +336,7 @@
       </div>
     </div>
 
-    <!-- Invoice 5 - Failed -->
+    <!- - Invoice 5 - Failed - ->
     <div
       class="flex flex-col sm:flex-row sm:items-center justify-between p-4 border border-red-200 rounded-lg hover:bg-gray-50 gap-3">
       <div class="flex-1">
@@ -349,7 +350,7 @@
       </div>
     </div>
 
-    <!-- Invoice 6 -->
+    <!- - Invoice 6 - ->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-gray-50 gap-3">
       <div class="flex-1">
         <div class="font-semibold">Premium Monthly - Sep 2025</div>
@@ -363,7 +364,7 @@
     </div>
   </div>
 
-  <!-- Pagination -->
+  <!- - Pagination - ->
   <div class="flex items-center justify-between mt-6 pt-4 border-t">
     <span class="text-sm text-gray-500">Showing 1-6 of 12 invoices</span>
     <div class="flex gap-2">
@@ -373,70 +374,10 @@
     </div>
   </div>
 </div>
+-->
 {% if let Ok(config) = "config"|value::<crate::config::Config> %}
   {% if let Some(premium) = config.premium %}
   <script>
-    // var stripeElements = stripe.elements({
-    //   mode: 'subscription',
-    //   amount: 4790,
-    //   currency: 'usd'
-    // });
-    //
-    //   var paymentElement = stripeElements.create('payment', {
-    //     layout: 'tabs',
-    //     buisness: {
-    //       name: 'imkitchen'
-    //     }
-    //   });
-    //   paymentElement.mount('#payment-element');
-    //
-    //   var addressElement = stripeElements.create('address', {
-    //     mode: 'billing',
-    //     autocomplete: {mode: 'disabled'},
-    //   });
-    //   addressElement.mount('#address-element');
-    //
-    //   var planForm = document.getElementById('order-summary-form');
-    //   var planEl = document.getElementById('order-summary-form-plan');
-    //   var countryEl = document.getElementById('order-summary-form-country');
-    //   var stateEl = document.getElementById('order-summary-form-state');
-    //   var subCountryEl = document.getElementById('subscription-form-country');
-    //   var subStateEl = document.getElementById('subscription-form-state');
-    //
-    //   addressElement.on('change', (event) => {
-    //     if (!event.value || !event.value.address) {
-    //       return;
-    //     }
-    //
-    //     countryEl.value = event.value.address.country;
-    //     stateEl.value = event.value.address.state;
-    //     subCountryEl.value = event.value.address.country;
-    //     subStateEl.value = event.value.address.state;
-    //
-    //     var selectedPlan = document.querySelector('input[name="plan"]:checked');
-    //     if (selectedPlan) {
-    //       planEl.value = selectedPlan.value;
-    //     }
-    //
-    //     planForm.requestSubmit();
-    //   });
-    //
-    //   var subscriptionForm = document.getElementById('subscription-form');
-    //   subscriptionForm.addEventListener('change', (e) => {
-    //     planEl.value = e.target.value;
-    //     planForm.requestSubmit();
-    //   });
-    //
-    //   function setActionDisabled(value) {
-    //     let btns = document.querySelectorAll('button[form="subscription-form"]');
-    //     btns.forEach((btn) => {
-    //       btn.disabled = value;
-    //
-    //       btn.classList.toggle('disabled:opacity-50');
-    //       btn.classList.toggle('disabled:cursor-not-allowed');
-    //       btn.classList.toggle('disabled:pointer-events-none');
-    //     });
-    //   }
     function setActionDisabled(value) {
       let btns = document.querySelectorAll('#payment-update-btn');
       btns.forEach((btn) => {

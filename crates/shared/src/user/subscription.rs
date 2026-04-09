@@ -1,6 +1,14 @@
 use bitcode::{Decode, Encode};
 use serde::Deserialize;
 
+#[derive(Default, Encode, Decode, Clone, Deserialize, Debug, PartialEq)]
+pub struct PaymentDetails {
+    pub plan: String,
+    pub price: u32,
+    pub tax: u32,
+    pub tax_rate: Option<f64>,
+}
+
 #[derive(Encode, Decode, Clone, Deserialize, Debug, PartialEq)]
 pub struct Address {
     /// City, district, suburb, town, or village.
@@ -40,6 +48,7 @@ pub enum Subscription {
     },
     StripePaymentIntentCreated {
         id: String,
+        details: PaymentDetails,
     },
     StripeSetupIntentCreated {
         id: String,
@@ -49,8 +58,8 @@ pub enum Subscription {
         payment_method_id: String,
         name: Option<String>,
         address: Option<Address>,
-        plan: String,
         expire_at: u64,
+        details: PaymentDetails,
     },
     StripeSetupIntentSucceeded {
         id: String,

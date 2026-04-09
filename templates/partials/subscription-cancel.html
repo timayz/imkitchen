@@ -4,18 +4,18 @@
   <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
     <div>
       <div class="flex items-center gap-2 mb-1">
-        {% if let Some(plan) = subscription.plan %}
-        <span class="text-lg font-bold capitalize">{{ plan }} Plan</span>
+        {% if let Some(payment_details) = subscription.payment_details %}
+        <span class="text-lg font-bold capitalize">{{ payment_details.plan }} Plan</span>
         {% else %}
         <span class="text-lg font-bold">Life Plan</span>
         {% endif %}
       </div>
     </div>
     {% if let Ok(config) = "config"|value::<crate::config::Config> %}
-      {% if let (Some(premium), Some(plan)) = (&config.premium, &subscription.plan) %}
+      {% if let (Some(premium), Some(payment_details)) = (&config.premium, &subscription.payment_details) %}
       <div class="text-right">
         <div class="text-2xl font-bold text-gray-600">
-          {% match plan.as_str() %}
+          {% match payment_details.plan.as_str() %}
           {% when "monthly" %}
           ${{ *premium.monthly_price|amount }}<span class="text-sm text-gray-500 font-normal">/month</span>
           {% when "annual" %}

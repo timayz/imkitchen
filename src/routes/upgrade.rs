@@ -3,6 +3,7 @@ use axum::{
     response::{IntoResponse, Redirect},
 };
 use axum_extra::extract::Form;
+use imkitchen_shared::user::subscription::PaymentDetails;
 use serde::Deserialize;
 use stripe_core::{
     PaymentIntentSetupFutureUsage,
@@ -111,17 +112,25 @@ pub async fn action(
         customer.id.to_string()
     };
 
+    let payment_details = PaymentDetails {
+        plan: input.plan.to_owned(),
+        price: price_tax.price,
+        tax: price_tax.tax,
+        tax_rate: price_tax.tax_type.map(|(rate, _)| rate),
+    };
+
     let payment_intent = crate::try_response!(anyhow: CreatePaymentIntent::new(amount, Currency::USD)
         .customer(customer_id)
-        .metadata([("plan".to_owned(), input.plan.to_owned()), ("country".to_owned(), input.country), ("state".to_owned(), input.state)])
         .automatic_payment_methods(CreatePaymentIntentAutomaticPaymentMethods::new(true))
         .setup_future_usage(PaymentIntentSetupFutureUsage::OffSession)
         .send(&app.stripe), template);
 
     crate::try_response!(
-        app.user_cmd
-            .subscription
-            .create_stripe_payment_intent(&payment_intent.id, &user.id),
+        app.user_cmd.subscription.create_stripe_payment_intent(
+            &payment_intent.id,
+            &user.id,
+            payment_details
+        ),
         template
     );
 

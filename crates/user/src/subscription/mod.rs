@@ -8,7 +8,7 @@ mod update_stripe_setup_intent_status;
 
 use bitcode::{Decode, Encode};
 use evento::{Executor, Projection, metadata::Event};
-use imkitchen_shared::user::subscription::{self, Address};
+use imkitchen_shared::user::subscription::{self, Address, PaymentDetails};
 use std::ops::Deref;
 use time::{Month, OffsetDateTime};
 
@@ -40,7 +40,7 @@ impl<E: Executor> Command<E> {
                     payment_method_id: None,
                     payment_intent_id: None,
                     is_active: true,
-                    plan: None,
+                    payment_details: None,
                     setup_intent_id: None,
                 })
             })
@@ -55,7 +55,7 @@ pub struct Subscription {
     pub payment_method_id: Option<String>,
     pub payment_intent_id: Option<String>,
     pub setup_intent_id: Option<String>,
-    pub plan: Option<String>,
+    pub payment_details: Option<PaymentDetails>,
     pub address: Option<Address>,
     pub expire_at: u64,
     pub is_active: bool,
@@ -108,6 +108,7 @@ async fn handle_stripe_payment_intent_created(
 ) -> anyhow::Result<()> {
     data.id = event.aggregator_id.to_owned();
     data.payment_intent_id = Some(event.data.id);
+    data.payment_details = Some(event.data.details);
 
     Ok(())
 }
@@ -134,7 +135,6 @@ async fn handle_stripe_payment_intent_succeeded(
     data.name = event.data.name;
     data.address = event.data.address;
     data.expire_at = event.data.expire_at;
-    data.plan = Some(event.data.plan);
     data.is_active = true;
 
     Ok(())

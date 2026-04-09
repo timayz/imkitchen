@@ -1,8 +1,6 @@
 // use axum::Form;
 use axum::extract::State;
 use axum::response::IntoResponse;
-use axum_extra::extract::Form;
-use serde::Deserialize;
 use stripe_core::customer::RetrievePaymentMethodCustomer;
 use stripe_core::payment_intent::RetrievePaymentIntent;
 use stripe_core::setup_intent::CreateSetupIntent;
@@ -114,18 +112,11 @@ pub async fn update_payment_modal(template: Template, user: AuthUser) -> impl In
         .into_response()
 }
 
-#[derive(Deserialize, Debug)]
-pub struct UpdatePaymentInput {
-    pub country: String,
-    pub state: String,
-}
-
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn update_payment(
     template: Template,
     State(app): State<AppState>,
     user: AuthUser,
-    Form(input): Form<UpdatePaymentInput>,
 ) -> impl IntoResponse {
     let subscription =
         crate::try_response!(anyhow: app.user_cmd.subscription.load(&user.id), template);
@@ -138,7 +129,6 @@ pub async fn update_payment(
 
     let setup_intent = crate::try_response!(anyhow: CreateSetupIntent::new()
         .customer(customer_id)
-        .metadata([("country".to_owned(), input.country), ("state".to_owned(), input.state)])
         .automatic_payment_methods(CreateSetupIntentAutomaticPaymentMethods::new(true))
         .usage(CreateSetupIntentUsage::OffSession)
         .send(&app.stripe), template);
