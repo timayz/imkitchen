@@ -371,24 +371,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "async-stripe-webhook"
-version = "1.0.0-rc.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e3957ee33d67de2628a9745792679170bb0362a87f01731f21b8a421d226411"
-dependencies = [
- "async-stripe-shared",
- "async-stripe-types",
- "chrono",
- "hex",
- "hmac",
- "miniserde",
- "serde",
- "sha2",
- "thiserror 2.0.18",
- "tracing",
-]
-
-[[package]]
 name = "async-trait"
 version = "0.1.89"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2546,7 +2528,6 @@ dependencies = [
  "async-stripe-payment",
  "async-stripe-shared",
  "async-stripe-types",
- "async-stripe-webhook",
  "async-trait",
  "axum",
  "axum-extra",
@@ -2556,7 +2537,6 @@ dependencies = [
  "config",
  "evento",
  "futures",
- "http-body-util",
  "imkitchen-contact",
  "imkitchen-db",
  "imkitchen-mealplan",
@@ -2571,7 +2551,6 @@ dependencies = [
  "rust-embed",
  "rust-i18n",
  "serde",
- "serde_urlencoded",
  "sqlx",
  "strum 0.28.0",
  "time",
@@ -2590,7 +2569,6 @@ dependencies = [
  "anyhow",
  "bitcode",
  "evento",
- "futures",
  "imkitchen-db",
  "imkitchen-shared",
  "sea-query",
@@ -2622,7 +2600,6 @@ dependencies = [
  "anyhow",
  "bitcode",
  "evento",
- "futures",
  "imkitchen-db",
  "imkitchen-recipe",
  "imkitchen-shared",
@@ -2701,15 +2678,12 @@ dependencies = [
  "anyhow",
  "bitcode",
  "evento",
- "futures",
  "imkitchen-db",
  "imkitchen-shared",
  "sea-query",
  "sea-query-sqlx",
  "sqlx",
- "temp-dir",
  "time",
- "tokio",
 ]
 
 [[package]]
@@ -2724,7 +2698,6 @@ dependencies = [
  "async-stripe-types",
  "bitcode",
  "evento",
- "futures",
  "imkitchen-db",
  "imkitchen-shared",
  "regex",

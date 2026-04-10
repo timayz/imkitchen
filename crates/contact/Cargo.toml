@@ -21,4 +21,3 @@ imkitchen-db = { path = "../db", version = "0.14.0" }
 [dev-dependencies]
 tokio.workspace = true
 temp-dir.workspace = true
-futures.workspace = true
