@@ -178,7 +178,7 @@ impl FromRequestParts<crate::routes::AppState> for AuthUser {
             return Err(Redirect::to("/login"));
         }
 
-        if !state.config.features.premium || login.is_admin() {
+        if state.config.premium.is_none() || login.is_admin() {
             login.subscription_expire_at = (SystemTime::now() + time::Duration::weeks(10 * 52))
                 .duration_since(UNIX_EPOCH)
                 .map_or(0, |d| d.as_secs());

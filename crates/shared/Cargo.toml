@@ -16,3 +16,4 @@ argon2.workspace = true
 sqlx.workspace = true
 time.workspace = true
 thiserror.workspace = true
+async-stripe-shared.workspace = true

@@ -50,6 +50,11 @@ pub async fn serve(
         .start(&executor)
         .await?;
 
+    let sub_user_shed = imkitchen_user::shed_subscription()
+        .data(write_pool.clone())
+        .start(&executor)
+        .await?;
+
     let sub_user_global_stat = imkitchen_user::global_stat::subscription()
         .data(write_pool.clone())
         .start(&executor)
@@ -130,8 +135,11 @@ pub async fn serve(
         .start(&executor)
         .await?;
 
-    // let mut sched_mealplan = imkitchen_mealplan::scheduler(&evento_executor, &read_pool).await?;
-    // sched_mealplan.start().await?;
+    let stripe = stripe::Client::new(&config.stripe.secret_key);
+
+    let mut sched_user =
+        imkitchen_user::scheduler(&executor, &read_pool, &write_pool, &stripe).await?;
+    sched_user.start().await?;
 
     let state = imkitchen_shared::State {
         executor: executor.clone(),
@@ -141,6 +149,7 @@ pub async fn serve(
 
     let state = AppState {
         config,
+        stripe,
         user_cmd: imkitchen_user::Command::new(state.clone()),
         user_query: imkitchen_user::Query(state.clone()),
         shopping_cmd: imkitchen_shopping::Command::new(state.clone()),
@@ -217,6 +226,7 @@ pub async fn serve(
         sub_notification_contact.shutdown(),
         sub_notification_user.shutdown(),
         sub_user_query.shutdown(),
+        sub_user_shed.shutdown(),
         sub_user_global_stat.shutdown(),
         sub_contact_query.shutdown(),
         sub_contact_global_stat.shutdown(),
@@ -242,7 +252,7 @@ pub async fn serve(
         }
     }
 
-    // sched_mealplan.shutdown().await?;
+    sched_user.shutdown().await?;
 
     tracing::info!("All projections shut down successfully");
 

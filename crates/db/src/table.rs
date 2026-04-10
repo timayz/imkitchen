@@ -35,6 +35,13 @@ pub enum UserGlobalStat {
 }
 
 #[derive(Iden, Clone)]
+pub enum UserSubscription {
+    Table,
+    Id,
+    ExpireAt,
+}
+
+#[derive(Iden, Clone)]
 pub enum UserAdmin {
     Table,
     Id,

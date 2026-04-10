@@ -13,6 +13,7 @@ mod user;
 mod user_admin;
 mod user_global_stat;
 mod user_login;
+mod user_subscription;
 
 use sqlx_migrator::vec_box;
 
@@ -33,6 +34,7 @@ sqlx_migrator::sqlite_migration!(
         user_admin::CreateIdx1,
         user_admin::CreateIdx2,
         user_admin::CreateFTSTable,
+        user_subscription::CreateTable,
         contact_admin::CreateTable,
         contact_admin::CreateIdx1,
         contact_admin::CreateIdx2,

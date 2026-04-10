@@ -11,7 +11,10 @@ use sea_query_sqlx::SqlxBinder;
 use sqlx::{SqlitePool, prelude::FromRow};
 use time::UtcDateTime;
 
-use imkitchen_shared::user::{Activated, Registered, Suspended, subscription::LifePremiumToggled};
+use imkitchen_shared::user::{
+    Activated, Registered, Suspended,
+    subscription::{LifePremiumToggled, StripePaymentIntentSucceeded},
+};
 
 static GLOBAL_TIMESTAMP: u64 = 949115824;
 
@@ -185,6 +188,7 @@ pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
         .handler(handle_activated())
         .handler(handle_life_premium_toggled())
         .handler(handle_registered())
+        .handler(handle_stripe_payment_intent_succeeded())
 }
 
 #[evento::subscription]
@@ -232,10 +236,24 @@ async fn handle_life_premium_toggled<E: Executor>(
     event: Event<LifePremiumToggled>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<SqlitePool>();
-    let is_premim = event.data.expire_at > event.timestamp;
+    let is_premium = event.data.expire_at > event.timestamp;
 
-    update_premium(&pool, GLOBAL_TIMESTAMP, is_premim).await?;
-    update_premium(&pool, event.timestamp, is_premim).await?;
+    update_premium(&pool, GLOBAL_TIMESTAMP, is_premium).await?;
+    update_premium(&pool, event.timestamp, is_premium).await?;
+
+    Ok(())
+}
+
+#[evento::subscription]
+async fn handle_stripe_payment_intent_succeeded<E: Executor>(
+    context: &Context<'_, E>,
+    event: Event<StripePaymentIntentSucceeded>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<SqlitePool>();
+    let is_premium = event.data.expire_at > event.timestamp;
+
+    update_premium(&pool, GLOBAL_TIMESTAMP, is_premium).await?;
+    update_premium(&pool, event.timestamp, is_premium).await?;
 
     Ok(())
 }

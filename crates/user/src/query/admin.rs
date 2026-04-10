@@ -14,7 +14,7 @@ use strum::{AsRefStr, Display, EnumString, VariantArray};
 
 use imkitchen_shared::user::{
     Activated, MadeAdmin, Registered, Role, State, Suspended, User, UsernameChanged,
-    subscription::{LifePremiumToggled, Subscription},
+    subscription::{LifePremiumToggled, StripePaymentIntentSucceeded, Subscription},
 };
 
 impl<E: Executor> super::Query<E> {
@@ -212,6 +212,7 @@ pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Ad
         .handler(handle_made_admin())
         .handler(handle_registered())
         .handler(handle_life_premium_toggled())
+        .handler(handle_payment_intent_succeeded())
         .handler(handle_username_changed())
 }
 
@@ -344,6 +345,16 @@ async fn handle_username_changed(
     data: &mut AdminView,
 ) -> anyhow::Result<()> {
     data.username = Some(event.data.value);
+
+    Ok(())
+}
+
+#[evento::handler]
+async fn handle_payment_intent_succeeded(
+    event: Event<StripePaymentIntentSucceeded>,
+    data: &mut AdminView,
+) -> anyhow::Result<()> {
+    data.subscription_expire_at = event.data.expire_at;
 
     Ok(())
 }

@@ -28,7 +28,7 @@ down:
 
 # Watch and run server on code changes
 dev:
-	cargo watch -x "run serve"
+	cargo watch -x "run -- --config config/dev.local.toml serve"
 
 reset:
 	cargo run reset
@@ -67,7 +67,7 @@ test:
 # Check for unused dependencies (optional: install with 'cargo install cargo-machete')
 machete:
 	@if command -v cargo-machete >/dev/null 2>&1; then \
-		cargo machete; \
+		cargo machete --with-metadata; \
 	else \
 		echo "⚠ cargo-machete not installed. Skipping unused dependency check."; \
 		echo "  Install with: cargo install cargo-machete"; \
