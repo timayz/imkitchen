@@ -19,11 +19,11 @@ mod index;
 mod login;
 mod manifest;
 mod policy;
-mod profile;
 mod recipes;
 mod register;
 mod reset_password;
 mod service_worker;
+mod settings;
 mod shopping;
 mod terms;
 mod upgrade;
@@ -202,42 +202,42 @@ pub fn router(app_state: AppState) -> Router {
         )
         .route("/logout", get(login::logout))
         // .route(
-        //     "/profile/account",
-        //     get(profile::account::page).post(profile::account::action),
+        //     "/settings/account",
+        //     get(settings::account::page).post(settings::account::action),
         // )
         .route(
-            "/profile/account/set-username",
-            post(profile::account::set_username_action),
+            "/settings/account/set-username",
+            post(settings::account::set_username_action),
         )
         .route(
-            "/profile/meal-preferences",
-            get(profile::meal_preferences::page).post(profile::meal_preferences::action),
+            "/settings/meal-preferences",
+            get(settings::meal_preferences::page).post(settings::meal_preferences::action),
         )
-        .route("/profile/subscription", get(profile::subscription::page))
+        .route("/settings/subscription", get(settings::subscription::page))
         .route(
-            "/profile/subscription/check",
-            post(profile::subscription::check),
-        )
-        .route(
-            "/profile/subscription/payment-method",
-            post(profile::subscription::payment_method),
+            "/settings/subscription/check",
+            post(settings::subscription::check),
         )
         .route(
-            "/profile/subscription/cancel",
-            get(profile::subscription::cancel_modal).post(profile::subscription::cancel),
+            "/settings/subscription/payment-method",
+            post(settings::subscription::payment_method),
         )
         .route(
-            "/profile/subscription/update-payment",
-            get(profile::subscription::update_payment_modal)
-                .post(profile::subscription::update_payment),
+            "/settings/subscription/cancel",
+            get(settings::subscription::cancel_modal).post(settings::subscription::cancel),
+        )
+        .route(
+            "/settings/subscription/update-payment",
+            get(settings::subscription::update_payment_modal)
+                .post(settings::subscription::update_payment),
         )
         // .route(
-        //     "/profile/notifications",
-        //     get(profile::notifications::page).post(profile::notifications::action),
+        //     "/settings/notifications",
+        //     get(settings::notifications::page).post(settings::notifications::action),
         // )
         .route(
-            "/profile/security",
-            get(profile::security::page).post(profile::security::action),
+            "/settings/security",
+            get(settings::security::page).post(settings::security::action),
         )
         .route("/admin/users", get(admin::users::page))
         .route("/admin/users/{id}/suspend", post(admin::users::suspend))

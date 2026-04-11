@@ -9,19 +9,19 @@ use crate::template::Template;
 use crate::template::filters;
 
 #[derive(askama::Template)]
-#[template(path = "profile-notifications.html")]
-pub struct NotificationsTemplate {
+#[template(path = "settings-security.html")]
+pub struct SecurityTemplate {
     // pub error_message: Option<String>,
     pub current_path: String,
-    pub profile_path: String,
+    pub settings_path: String,
     pub user: AuthUser,
 }
 
 pub async fn page(template: Template, user: AuthUser) -> impl IntoResponse {
-    template.render(NotificationsTemplate {
+    template.render(SecurityTemplate {
         // error_message: None,
-        current_path: "profile".to_owned(),
-        profile_path: "notifications".to_owned(),
+        current_path: "settings".to_owned(),
+        settings_path: "security".to_owned(),
         user,
     })
 }

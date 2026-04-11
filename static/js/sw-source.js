@@ -79,7 +79,7 @@ if (workbox) {
     ({ url }) => url.pathname === '/' ||
       url.pathname.startsWith('/recipes') ||
       url.pathname.startsWith('/calendar') ||
-      url.pathname.startsWith('/profile'),
+      url.pathname.startsWith('/settings'),
     new workbox.strategies.NetworkFirst({
       cacheName: CACHE.api,
       plugins: [

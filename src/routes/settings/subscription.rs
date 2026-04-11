@@ -16,10 +16,10 @@ use crate::template::Template;
 use crate::template::filters;
 
 #[derive(askama::Template)]
-#[template(path = "profile-subscription.html")]
+#[template(path = "settings-subscription.html")]
 pub struct SubscriptionTemplate {
     pub current_path: String,
-    pub profile_path: String,
+    pub settings_path: String,
     pub subscription: imkitchen_user::subscription::Subscription,
     pub user: AuthUser,
 }
@@ -34,8 +34,8 @@ pub async fn page(
         crate::try_response!(anyhow: app.user_cmd.subscription.load(&user.id), template);
 
     template.render(SubscriptionTemplate {
-        current_path: "profile".to_owned(),
-        profile_path: "subscription".to_owned(),
+        current_path: "settings".to_owned(),
+        settings_path: "subscription".to_owned(),
         subscription,
         user,
     })
