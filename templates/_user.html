@@ -15,17 +15,17 @@
         {% endif %}
         <!-- Desktop Navigation -->
         <div class="hidden md:flex gap-6 items-center">
-          <a href="/" class="text-gray-600{% if current_path == " dashboard"%} font-semibold{% else %}
+          <a href="/" class="text-gray-600{% if current_path == "kitchen"%} font-semibold{% else %}
             hover:text-gray-900{% endif %}">{{ "Kitchen"|t }}</a>
-          <a href="/calendar/week-1" class="text-gray-600{% if current_path == " calendar"%} font-semibold{% else %}
+          <a href="/calendar/week-1" class="text-gray-600{% if current_path == "calendar"%} font-semibold{% else %}
             hover:text-gray-900{% endif %}">{{ "Calendar"|t }}</a>
-          <a href="/recipes" class="text-gray-600{% if current_path == " recipes"%} font-semibold{% else %}
+          <a href="/recipes" class="text-gray-600{% if current_path == "recipes"%} font-semibold{% else %}
             hover:text-gray-900{% endif %}">{{ "Recipes"|t }}</a>
           <!-- <a href="/community" class="text-gray-600{% if current_path == "community"%} font-semibold{% else %} hover:text-gray-900{% endif %}">{{ "Community"|t }}</a> -->
         </div>
 
         <div class="hidden md:flex items-center gap-4">
-          <a href="/settings/meal-preferences"
+          <a href="/settings/general"
             class="flex items-center justify-center w-10 h-10 rounded-full bg-green-600 text-white font-semibold hover:bg-green-700">
             <span class="text-sm">ME</span>
           </a>
@@ -38,7 +38,7 @@
   <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
     <div class="flex items-center justify-around">
       {% block before_mobile_nav_items %}
-      <a href="/" class="flex flex-col items-center py-2 px-3{% if current_path == " dashboard"%} text-green-600{% else
+      <a href="/" class="flex flex-col items-center py-2 px-3{% if current_path == "kitchen"%} text-green-600{% else
         %} text-gray-600{% endif %}">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -51,7 +51,7 @@
         <span class="text-xs mt-1">{{ "Kitchen"|t }}</span>
       </a>
       {% endblock %}
-      <a href="/calendar/week-1" class="flex flex-col items-center py-2 px-3{% if current_path == " calendar"%}
+      <a href="/calendar/week-1" class="flex flex-col items-center py-2 px-3{% if current_path == "calendar"%}
         text-green-600{% else %} text-gray-600{% endif %}">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -59,7 +59,7 @@
         </svg>
         <span class="text-xs mt-1">{{ "Calendar"|t }}</span>
       </a>
-      <a href="/recipes" class="flex flex-col items-center py-2 px-3{% if current_path == " recipes"%} text-green-600{%
+      <a href="/recipes" class="flex flex-col items-center py-2 px-3{% if current_path == "recipes"%} text-green-600{%
         else %} text-gray-600{% endif %}">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -74,8 +74,7 @@
       <!--     </svg> -->
       <!--     <span class="text-xs mt-1">{{ "Community"|t }}</span> -->
       <!-- </a> -->
-      <a href="/settings/meal-preferences" class="flex flex-col items-center py-2 px-3{% if current_path == "
-        settings"%} text-green-600{% else %} text-gray-600{% endif %}">
+      <a href="/settings/general" class="flex flex-col items-center py-2 px-3{% if current_path == "settings" %} text-green-600{% else %} text-gray-600{% endif %}">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">

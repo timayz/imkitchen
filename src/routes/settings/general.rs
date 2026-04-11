@@ -8,10 +8,10 @@ use strum::VariantArray;
 
 use crate::auth::AuthUser;
 use crate::routes::AppState;
-use crate::template::{Template, ToastSuccessTemplate, filters};
+use crate::template::{Template, ToastErrorTemplate, ToastSuccessTemplate, filters};
 
 #[derive(askama::Template)]
-#[template(path = "settings-meal-preferences.html")]
+#[template(path = "settings-general.html")]
 pub struct MealPreferencesTemplate {
     pub current_path: String,
     pub settings_path: String,
@@ -25,7 +25,7 @@ impl Default for MealPreferencesTemplate {
     fn default() -> Self {
         Self {
             current_path: "settings".to_owned(),
-            settings_path: "meal-preferences".to_owned(),
+            settings_path: "general".to_owned(),
             household_size: 4,
             dietary_restrictions: Vec::default(),
             cuisine_variety_weight: 1.0,
@@ -86,4 +86,35 @@ pub async fn action(
             description: None,
         })
         .into_response()
+}
+
+#[derive(Deserialize)]
+pub struct SetUsernameActionInput {
+    pub username: String,
+}
+
+pub async fn set_username_action(
+    template: Template,
+    user: AuthUser,
+    State(app): State<AppState>,
+    Form(input): Form<SetUsernameActionInput>,
+) -> impl IntoResponse {
+    if user.username.is_some() {
+        return (
+            [("ts-swap", "skip")],
+            template.render(ToastErrorTemplate {
+                original: None,
+                message: "Username has already been set.",
+                description: None,
+            }),
+        )
+            .into_response();
+    }
+
+    crate::try_response!(
+        app.user_cmd.set_username(&user.id, input.username),
+        template
+    );
+
+    "<div ts-trigger=\"load\" ts-action=\"remove\"></div>".into_response()
 }

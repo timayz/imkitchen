@@ -1,72 +1,40 @@
-use axum::Form;
+// use axum::Form;
 use axum::extract::State;
 use axum::response::IntoResponse;
-use serde::Deserialize;
+// use serde::Deserialize;
 
 use crate::auth::AuthUser;
 use crate::routes::AppState;
 use crate::template::Template;
-use crate::template::ToastErrorTemplate;
 use crate::template::filters;
 
 #[derive(askama::Template)]
 #[template(path = "settings-account.html")]
-pub struct AccountTemplate {
+pub struct SecurityTemplate {
     // pub error_message: Option<String>,
     pub current_path: String,
     pub settings_path: String,
     pub user: AuthUser,
 }
 
-// pub async fn page(template: Template, user: AuthUser) -> impl IntoResponse {
-//     template.render(AccountTemplate {
-//         // error_message: None,
-//         current_path: "settings".to_owned(),
-//         settings_path: "account".to_owned(),
-//         user,
-//     })
-// }
+pub async fn page(template: Template, user: AuthUser) -> impl IntoResponse {
+    template.render(SecurityTemplate {
+        // error_message: None,
+        current_path: "settings".to_owned(),
+        settings_path: "account".to_owned(),
+        user,
+    })
+}
 //
 // #[derive(Deserialize)]
 // pub struct ActionInput {
 //     pub email: String,
 // }
 
-// pub async fn action(
-//     _template: Template,
-//     State(_state): State<AppState>,
-//     // Form(input): Form<ActionInput>,
-// ) -> impl IntoResponse {
-//     ""
-// }
-
-#[derive(Deserialize)]
-pub struct SetUsernameActionInput {
-    pub username: String,
-}
-
-pub async fn set_username_action(
-    template: Template,
-    user: AuthUser,
-    State(app): State<AppState>,
-    Form(input): Form<SetUsernameActionInput>,
+pub async fn action(
+    _template: Template,
+    State(_app): State<AppState>,
+    // Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {
-    if user.username.is_some() {
-        return (
-            [("ts-swap", "skip")],
-            template.render(ToastErrorTemplate {
-                original: None,
-                message: "Username has already been set.",
-                description: None,
-            }),
-        )
-            .into_response();
-    }
-
-    crate::try_response!(
-        app.user_cmd.set_username(&user.id, input.username),
-        template
-    );
-
-    "<div ts-trigger=\"load\" ts-action=\"remove\"></div>".into_response()
+    ""
 }

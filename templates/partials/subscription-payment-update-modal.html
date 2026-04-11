@@ -23,7 +23,7 @@
         <div id="address-element"></div>
       </div>
       <div class="flex flex-col gap-3">
-        <form ts-req="/settings/subscription/update-payment" ts-req-method="post" ts-req-before="stripe-confirm-form"
+        <form ts-req="/settings/billing/update-payment" ts-req-method="post" ts-req-before="stripe-confirm-form"
           ts-swap="skip">
           <input type="hidden" id="payment-update-form-country" name="country" />
           <input type="hidden" id="payment-update-form-state" name="state" />

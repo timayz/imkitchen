@@ -39,7 +39,7 @@ impl Default for UpgradeTemplate {
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn page(template: Template, user: AuthUser) -> impl IntoResponse {
     if user.is_premium() {
-        return Redirect::to("/settings/subscription").into_response();
+        return Redirect::to("/settings/billing").into_response();
     }
 
     template
@@ -66,7 +66,7 @@ pub async fn action(
     Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {
     if user.is_premium() {
-        return Redirect::to("/settings/subscription").into_response();
+        return Redirect::to("/settings/billing").into_response();
     }
 
     let Some(ref premium) = app.config.premium else {
@@ -164,7 +164,7 @@ pub async fn order_summary(
     Form(input): Form<OrderSummary>,
 ) -> impl IntoResponse {
     if user.is_premium() {
-        return Redirect::to("/settings/subscription").into_response();
+        return Redirect::to("/settings/billing").into_response();
     }
 
     let Some(premium) = app.config.premium else {
