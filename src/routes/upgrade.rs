@@ -30,7 +30,7 @@ pub struct UpgradeTemplate {
 impl Default for UpgradeTemplate {
     fn default() -> Self {
         Self {
-            current_path: "profile".to_owned(),
+            current_path: "settings".to_owned(),
             user: Default::default(),
         }
     }
@@ -39,7 +39,7 @@ impl Default for UpgradeTemplate {
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn page(template: Template, user: AuthUser) -> impl IntoResponse {
     if user.is_premium() {
-        return Redirect::to("/profile/subscription").into_response();
+        return Redirect::to("/settings/subscription").into_response();
     }
 
     template
@@ -66,7 +66,7 @@ pub async fn action(
     Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {
     if user.is_premium() {
-        return Redirect::to("/profile/subscription").into_response();
+        return Redirect::to("/settings/subscription").into_response();
     }
 
     let Some(ref premium) = app.config.premium else {
@@ -164,7 +164,7 @@ pub async fn order_summary(
     Form(input): Form<OrderSummary>,
 ) -> impl IntoResponse {
     if user.is_premium() {
-        return Redirect::to("/profile/subscription").into_response();
+        return Redirect::to("/settings/subscription").into_response();
     }
 
     let Some(premium) = app.config.premium else {

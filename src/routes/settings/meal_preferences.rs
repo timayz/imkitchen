@@ -11,10 +11,10 @@ use crate::routes::AppState;
 use crate::template::{Template, ToastSuccessTemplate, filters};
 
 #[derive(askama::Template)]
-#[template(path = "profile-meal-preferences.html")]
+#[template(path = "settings-meal-preferences.html")]
 pub struct MealPreferencesTemplate {
     pub current_path: String,
-    pub profile_path: String,
+    pub settings_path: String,
     pub household_size: u16,
     pub dietary_restrictions: Vec<DietaryRestriction>,
     pub cuisine_variety_weight: f32,
@@ -24,8 +24,8 @@ pub struct MealPreferencesTemplate {
 impl Default for MealPreferencesTemplate {
     fn default() -> Self {
         Self {
-            current_path: "profile".to_owned(),
-            profile_path: "meal-preferences".to_owned(),
+            current_path: "settings".to_owned(),
+            settings_path: "meal-preferences".to_owned(),
             household_size: 4,
             dietary_restrictions: Vec::default(),
             cuisine_variety_weight: 1.0,

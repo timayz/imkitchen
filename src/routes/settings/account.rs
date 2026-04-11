@@ -10,19 +10,19 @@ use crate::template::ToastErrorTemplate;
 use crate::template::filters;
 
 #[derive(askama::Template)]
-#[template(path = "profile-account.html")]
+#[template(path = "settings-account.html")]
 pub struct AccountTemplate {
     // pub error_message: Option<String>,
     pub current_path: String,
-    pub profile_path: String,
+    pub settings_path: String,
     pub user: AuthUser,
 }
 
 // pub async fn page(template: Template, user: AuthUser) -> impl IntoResponse {
 //     template.render(AccountTemplate {
 //         // error_message: None,
-//         current_path: "profile".to_owned(),
-//         profile_path: "account".to_owned(),
+//         current_path: "settings".to_owned(),
+//         settings_path: "account".to_owned(),
 //         user,
 //     })
 // }

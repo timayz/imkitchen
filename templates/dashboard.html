@@ -20,7 +20,7 @@
 <div ts-trigger="load" ts-req="/calendar/regenerate" ts-req-method="POST" ts-swap="skip"></div>
 {% endif %}
 {% if !user.is_premium() %}
-<div ts-trigger="load" ts-req="/profile/subscription/check" ts-req-method="POST" ts-swap="skip"></div>
+<div ts-trigger="load" ts-req="/settings/subscription/check" ts-req-method="POST" ts-swap="skip"></div>
 {% endif %}
 
 <!-- Main Content -->

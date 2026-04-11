@@ -1,13 +1,13 @@
-{% extends "_profile.html" %}
+{% extends "_settings.html" %}
 {% block title %}{{ "Profile & Settings"|t }} - imkitchen{% endblock %}
 
-{% block profile_content %}
+{% block settings_content %}
 
 <!-- Meal Preferences -->
 <div class="bg-white rounded-lg shadow-lg p-6">
   <h2 class="text-xl font-bold mb-6">{{ "Meal Preferences"|t }}</h2>
 
-  <form method="post" action="/profile/meal-preferences" ts-req="" ts-swap="skip" class="space-y-6" autocomplete="off">
+  <form method="post" action="/settings/meal-preferences" ts-req="" ts-swap="skip" class="space-y-6" autocomplete="off">
     <div>
       <label class="block text-sm font-semibold text-gray-700 mb-3">{{ "Dietary Restrictions"|t }}</label>
       <div class="grid md:grid-cols-2 gap-3">
