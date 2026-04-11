@@ -19,7 +19,7 @@ pub struct IndexTemplate {
 }
 
 #[derive(askama::Template)]
-#[template(path = "dashboard.html")]
+#[template(path = "kitchen.html")]
 pub struct DashboardTemplate {
     pub current_path: String,
     pub user: AuthUser,
@@ -38,7 +38,7 @@ pub struct DashboardTemplate {
 impl Default for DashboardTemplate {
     fn default() -> Self {
         Self {
-            current_path: "dashboard".to_owned(),
+            current_path: "kitchen".to_owned(),
             user: AuthUser::default(),
             slot: None,
             slot_recipe: None,

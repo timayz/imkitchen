@@ -201,43 +201,31 @@ pub fn router(app_state: AppState) -> Router {
             get(recipes::edit::instruction_row),
         )
         .route("/logout", get(login::logout))
-        // .route(
-        //     "/settings/account",
-        //     get(settings::account::page).post(settings::account::action),
-        // )
         .route(
-            "/settings/account/set-username",
-            post(settings::account::set_username_action),
+            "/settings/general/set-username",
+            post(settings::general::set_username_action),
         )
         .route(
-            "/settings/meal-preferences",
-            get(settings::meal_preferences::page).post(settings::meal_preferences::action),
+            "/settings/general",
+            get(settings::general::page).post(settings::general::action),
         )
-        .route("/settings/subscription", get(settings::subscription::page))
+        .route("/settings/billing", get(settings::billing::page))
+        .route("/settings/billing/check", post(settings::billing::check))
         .route(
-            "/settings/subscription/check",
-            post(settings::subscription::check),
-        )
-        .route(
-            "/settings/subscription/payment-method",
-            post(settings::subscription::payment_method),
+            "/settings/billing/payment-method",
+            post(settings::billing::payment_method),
         )
         .route(
-            "/settings/subscription/cancel",
-            get(settings::subscription::cancel_modal).post(settings::subscription::cancel),
+            "/settings/billing/cancel",
+            get(settings::billing::cancel_modal).post(settings::billing::cancel),
         )
         .route(
-            "/settings/subscription/update-payment",
-            get(settings::subscription::update_payment_modal)
-                .post(settings::subscription::update_payment),
+            "/settings/billing/update-payment",
+            get(settings::billing::update_payment_modal).post(settings::billing::update_payment),
         )
-        // .route(
-        //     "/settings/notifications",
-        //     get(settings::notifications::page).post(settings::notifications::action),
-        // )
         .route(
-            "/settings/security",
-            get(settings::security::page).post(settings::security::action),
+            "/settings/account",
+            get(settings::account::page).post(settings::account::action),
         )
         .route("/admin/users", get(admin::users::page))
         .route("/admin/users/{id}/suspend", post(admin::users::suspend))

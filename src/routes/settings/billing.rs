@@ -16,7 +16,7 @@ use crate::template::Template;
 use crate::template::filters;
 
 #[derive(askama::Template)]
-#[template(path = "settings-subscription.html")]
+#[template(path = "settings-billing.html")]
 pub struct SubscriptionTemplate {
     pub current_path: String,
     pub settings_path: String,
@@ -35,7 +35,7 @@ pub async fn page(
 
     template.render(SubscriptionTemplate {
         current_path: "settings".to_owned(),
-        settings_path: "subscription".to_owned(),
+        settings_path: "billing".to_owned(),
         subscription,
         user,
     })

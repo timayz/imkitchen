@@ -2,13 +2,13 @@
 
 {% macro nav_item(current, key, content) %}
 <a href="/settings/{{ key }}" class="block w-full text-left px-4 py-3 bg-white{% if current != key %} text-gray-700 hover:bg-gray-50{% else %} text-green-600{% endif %} rounded-lg">
-  {{ content }}
+  {{ content|t }}
 </a>
 {% endmacro %}
 
 {% macro mobile_nav_item(current, key, content) %}
 <a href="/settings/{{ key }}" class="px-4 py-2 bg-white rounded-lg whitespace-nowrap text-sm{% if current != key %} text-gray-600{% else %} text-green-600{% endif %}">
-  {{ content }}
+  {{ content|t }}
 </a>
 {% endmacro %}
 
@@ -18,31 +18,24 @@
 <div class="container mx-auto px-4 py-8 max-w-6xl">
   <!-- Header -->
   <div class="mb-8">
-    <h1 class="text-3xl font-bold mb-2">{{ "Profile & Settings"|t }}</h1>
+    <h1 class="text-3xl font-bold mb-2">{{ "Settings"|t }}</h1>
     <p class="text-gray-600">{{ "Manage your account and preferences"|t }}</p>
   </div>
 
   <div class="lg:grid lg:grid-cols-3 gap-8">
     <!-- Sidebar Navigation - Desktop -->
     <div class="hidden lg:block space-y-2">
-    <!-- {% call nav_item(settings_path, "account", "👤 " ~ ("Account Info"|t)) %}{% endcall %} -->
-      {% call nav_item(settings_path, "meal-preferences", "🍽️ " ~ ("Meal Preferences"|t)) %}{% endcall %}
-      {% call nav_item(settings_path, "subscription", "💳 " ~ ("Subscription"|t)) %}{% endcall %}
-      <!-- {% call nav_item(settings_path, "notifications", "🔔 " ~ ("Notifications"|t)) %}{% endcall %} -->
-      {% call nav_item(settings_path, "security", "🔒 " ~ ("Privacy & Security"|t)) %}{% endcall %}
-      <a href="/logout" class="block w-full text-left px-4 py-3 bg-white text-gray-700 hover:bg-gray-50 rounded-lg">
-        ➜] {{ "Logout"|t }}
-      </a>
+      {% call nav_item(settings_path, "general", "General") %}{% endcall %}
+      {% call nav_item(settings_path, "account", "Account") %}{% endcall %}
+      {% call nav_item(settings_path, "billing", "Billing") %}{% endcall %}
     </div>
 
     <!-- Mobile Navigation Tabs -->
     <div class="lg:hidden mb-6 overflow-x-auto">
       <div class="flex gap-2 min-w-max">
-      <!-- {% call mobile_nav_item(settings_path, "account", "👤 " ~ ("Account"|t)) %}{% endcall %} -->
-      {% call mobile_nav_item(settings_path, "meal-preferences", "🍽️ " ~ ("Meals"|t)) %}{% endcall %}
-      {% call mobile_nav_item(settings_path, "subscription", "💳 " ~ ("Plan"|t)) %}{% endcall %}
-      <!-- {% call mobile_nav_item(settings_path, "notifications", "🔔 " ~ ("Alerts"|t)) %}{% endcall %} -->
-      {% call mobile_nav_item(settings_path, "security", "🔒 " ~ ("Security"|t)) %}{% endcall %}
+      {% call mobile_nav_item(settings_path, "general", "General") %}{% endcall %}
+      {% call mobile_nav_item(settings_path, "account", "Account") %}{% endcall %}
+      {% call mobile_nav_item(settings_path, "billing", "Billing") %}{% endcall %}
       </div>
     </div>
 
