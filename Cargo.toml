@@ -15,7 +15,7 @@ axum-extra = { version = "0.12", features = ["cookie", "form", "query", "typed-h
 webp = "0.3"
 tower = "0.5"
 tower-http = { version = "0.6", features = ["fs", "trace", "compression-br", "compression-gzip"] }
-rust-i18n = "3.1"
+rust-i18n = "4.0"
 time-tz = "3.0.0-rc.5.0.0"
 askama = "0.15"
 cfg-if = "1.0"
