@@ -61,7 +61,7 @@
   </div>
 
   <!-- Recipe Grid -->
-  <div id="recipes-list" class="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+  <div id="recipes-list" class="grid md:grid-cols-2 gap-6">
     {% if recipes.edges.is_empty() %}
     <div class="col-span-full">
       <div class="bg-white rounded-lg shadow-lg p-12 flex flex-col items-center justify-center text-center">
@@ -72,7 +72,7 @@
     </div>
     {% else %}
     {% for recipe in recipes.edges %}
-    <a id="recipe-{{ recipe.node.id }}" href="/settings/recipes/{{ recipe.node.id }}" {% if let (true, true,
+    <a id="recipe-{{ recipe.node.id }}" href="/recipes/{{ recipe.node.id }}" {% if let (true, true,
       Some(cursor))=(loop.last, recipes.page_info.has_next_page, recipes.page_info.end_cursor.to_owned()) %}
       ts-req="/settings/recipes?after={{ cursor.to_string() }}{% if let Some(recipe_type) = query.recipe_type %}&recipe_type={{ recipe_type }}{% endif %}{% if let Some(cuisine_type) = query.cuisine_type %}&cuisine_type={{ cuisine_type }}{% endif %}"
       ts-req-method="GET" ts-req-selector="children #recipes-list" ts-swap="afterend" ts-trigger="visible once" {% endif
