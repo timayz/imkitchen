@@ -72,6 +72,7 @@ async fn test_update_only_recipe_type() -> anyhow::Result<()> {
 
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
+        origin: None,
         description: "My first description".to_owned(),
         advance_prep: "My first advance prep".to_owned(),
         dietary_restrictions: vec![
