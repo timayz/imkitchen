@@ -17,7 +17,7 @@ use crate::template::filters;
 
 #[derive(askama::Template)]
 #[template(path = "settings-billing.html")]
-pub struct SubscriptionTemplate {
+pub struct BillingTemplate {
     pub current_path: String,
     pub settings_path: String,
     pub subscription: imkitchen_user::subscription::Subscription,
@@ -33,7 +33,7 @@ pub async fn page(
     let subscription =
         crate::try_response!(anyhow: app.user_cmd.subscription.load(&user.id), template);
 
-    template.render(SubscriptionTemplate {
+    template.render(BillingTemplate {
         current_path: "settings".to_owned(),
         settings_path: "billing".to_owned(),
         subscription,

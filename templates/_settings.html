@@ -26,6 +26,7 @@
     <!-- Sidebar Navigation - Desktop -->
     <div class="hidden lg:block space-y-2">
       {% call nav_item(settings_path, "general", "General") %}{% endcall %}
+      {% call nav_item(settings_path, "recipes", "Recipes") %}{% endcall %}
       {% call nav_item(settings_path, "account", "Account") %}{% endcall %}
       {% call nav_item(settings_path, "billing", "Billing") %}{% endcall %}
     </div>
@@ -34,6 +35,7 @@
     <div class="lg:hidden mb-6 overflow-x-auto">
       <div class="flex gap-2 min-w-max">
       {% call mobile_nav_item(settings_path, "general", "General") %}{% endcall %}
+      {% call mobile_nav_item(settings_path, "recipes", "Recipes") %}{% endcall %}
       {% call mobile_nav_item(settings_path, "account", "Account") %}{% endcall %}
       {% call mobile_nav_item(settings_path, "billing", "Billing") %}{% endcall %}
       </div>

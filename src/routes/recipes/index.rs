@@ -1,13 +1,11 @@
-use axum::{
-    extract::{Query, State},
-    response::{IntoResponse, Redirect},
-};
+use axum::{extract::State, response::IntoResponse};
+use axum_extra::extract::Query;
 use evento::cursor::{Args, ReadResult, Value};
 use imkitchen_recipe::query::{
     user::{RecipesQuery, SortBy, UserViewList},
     user_stat::UserStatView,
 };
-use imkitchen_shared::recipe::{CuisineType, RecipeType};
+use imkitchen_shared::recipe::{CuisineType, DietaryRestriction, RecipeType};
 use serde::Deserialize;
 use std::str::FromStr;
 use strum::VariantArray;
@@ -22,7 +20,6 @@ use crate::{
 #[template(path = "recipes-index.html")]
 pub struct IndexTemplate {
     pub current_path: String,
-    pub recipes_path: String,
     pub user: AuthUser,
     pub stat: UserStatView,
     pub recipes: ReadResult<UserViewList>,
@@ -33,7 +30,6 @@ impl Default for IndexTemplate {
     fn default() -> Self {
         Self {
             current_path: "recipes".to_owned(),
-            recipes_path: "user".to_owned(),
             user: AuthUser::default(),
             stat: UserStatView::default(),
             recipes: ReadResult::default(),
@@ -52,6 +48,8 @@ pub struct PageQuery {
     pub cuisine_type: Option<String>,
     pub search: Option<String>,
     pub sort_by: Option<SortBy>,
+    #[serde(default)]
+    pub dietary_restrictions: Vec<DietaryRestriction>,
 }
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
@@ -84,11 +82,11 @@ pub async fn page(
     let recipes = crate::try_page_response!(
         app.recipe_query.filter_user(RecipesQuery {
             exclude_ids: None,
-            user_id: Some(user.id.to_owned()),
+            user_id: None,
             recipe_type,
             cuisine_type,
-            is_shared: None,
-            dietary_restrictions: vec![],
+            is_shared: Some(true),
+            dietary_restrictions: input.dietary_restrictions,
             dietary_where_any: false,
             sort_by: input.sort_by.unwrap_or_default(),
             args: args.limit(20),
@@ -106,22 +104,4 @@ pub async fn page(
             ..Default::default()
         })
         .into_response()
-}
-
-#[tracing::instrument(skip_all, fields(user = user.id))]
-pub async fn create(
-    template: Template,
-    user: AuthUser,
-    State(app): State<AppState>,
-) -> impl IntoResponse {
-    let id = match crate::try_response!(anyhow: app.recipe_query.find_user_draft(&user.id), template)
-    {
-        Some(id) => id,
-        _ => crate::try_response!(
-            app.recipe_cmd.create(&user.id, user.username.to_owned()),
-            template
-        ),
-    };
-
-    Redirect::to(&format!("/recipes/{id}/edit")).into_response()
 }
