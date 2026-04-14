@@ -14,6 +14,8 @@ pub struct UpdateInput {
     pub recipe_type: RecipeType,
     #[validate(length(min = 3, max = 50))]
     pub name: String,
+    #[validate(url, length(min = 10, max = 255))]
+    pub origin: Option<String>,
     #[validate(length(min = 3, max = 2000))]
     pub description: String,
     #[validate(range(min = 1))]
@@ -65,6 +67,7 @@ impl<E: Executor + Clone> super::Command<E> {
 
         let mut hasher = Sha3_224::default();
         hasher.update(&input.name);
+        hasher.update(input.origin.to_owned().unwrap_or_default());
         hasher.update(&input.description);
         hasher.update(input.household_size.to_string());
         hasher.update(input.prep_time.to_string());
@@ -76,6 +79,7 @@ impl<E: Executor + Clone> super::Command<E> {
             has_data = true;
             builder.event(&BasicInformationChanged {
                 name: input.name,
+                origin: input.origin,
                 description: input.description,
                 household_size: input.household_size,
                 prep_time: input.prep_time,

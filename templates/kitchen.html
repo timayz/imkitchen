@@ -1,6 +1,6 @@
 {% extends "_user.html" %}
 
-{% block title %}Dashboard - imkitchen{% endblock %}
+{% block title %}{{ "Kitchen"|t }} - imkitchen{% endblock %}
 
 {% block before_mobile_nav_items %}
 <!-- Mobile Bottom Navigation (Kitchen Mode Specific) -->
@@ -277,7 +277,6 @@
               {% endfor %}
             </div>
             {% endif %}
-            {% endif %}
 
             <!-- Upcoming Steps -->
             {% if !coming_instructions.is_empty() %}
@@ -294,6 +293,9 @@
             </div>
             {% endif %}
           </div>
+          {% else if let Some(origin) = slot_recipe.origin %}
+            <iframe class="w-full h-[80vh]" src="{{ origin }}"></iframe>
+          {% endif %}
         </div>
 
         <!-- Ingredients View (Hidden by default) -->

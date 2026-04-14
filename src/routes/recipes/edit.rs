@@ -22,6 +22,7 @@ use crate::{
 pub struct EditForm {
     pub recipe_type: RecipeType,
     pub name: String,
+    pub origin: String,
     pub description: String,
     pub household_size: u16,
     pub prep_time: u16,
@@ -103,6 +104,7 @@ pub async fn page(
             form: EditForm {
                 recipe_type: recipe.recipe_type.0,
                 name: recipe.name,
+                origin: recipe.origin.unwrap_or_default(),
                 description: recipe.description,
                 household_size: recipe.household_size,
                 prep_time: recipe.prep_time,
@@ -175,12 +177,19 @@ pub async fn action(
         });
     }
 
+    let origin = if !input.origin.is_empty() {
+        Some(input.origin)
+    } else {
+        None
+    };
+
     crate::try_response!(
         app.recipe_cmd.update(
             UpdateInput {
                 id: id.to_owned(),
                 recipe_type: input.recipe_type,
                 name: input.name,
+                origin,
                 description: input.description,
                 household_size: input.household_size,
                 prep_time: input.prep_time,

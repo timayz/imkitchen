@@ -111,6 +111,7 @@ pub enum RecipeUser {
     RecipeType,
     CuisineType,
     Name,
+    Origin,
     Description,
     HouseholdSize,
     PrepTime,

@@ -47,6 +47,7 @@ fn create_table() -> TableCreateStatement {
                 .not_null()
                 .string_len(30),
         )
+        .col(ColumnDef::new(RecipeUser::Origin).string().string_len(255))
         .col(
             ColumnDef::new(RecipeUser::Description)
                 .string()

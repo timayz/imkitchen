@@ -20,7 +20,7 @@ pub struct IndexTemplate {
 
 #[derive(askama::Template)]
 #[template(path = "kitchen.html")]
-pub struct DashboardTemplate {
+pub struct KitchenTemplate {
     pub current_path: String,
     pub user: AuthUser,
     pub slot: Option<SlotRow>,
@@ -35,7 +35,7 @@ pub struct DashboardTemplate {
     pub current_instruction: Option<(usize, Instruction)>,
 }
 
-impl Default for DashboardTemplate {
+impl Default for KitchenTemplate {
     fn default() -> Self {
         Self {
             current_path: "kitchen".to_owned(),
@@ -226,7 +226,7 @@ pub async fn page(
 
     (
         jar,
-        template.render(DashboardTemplate {
+        template.render(KitchenTemplate {
             user,
             slot,
             slot_recipe,
