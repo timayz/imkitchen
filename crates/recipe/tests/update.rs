@@ -17,6 +17,7 @@ async fn test_update_no_fields() -> anyhow::Result<()> {
 
     let input = UpdateInput {
         name: "My first Recipe".to_owned(),
+        origin: None,
         description: "My first description".to_owned(),
         advance_prep: "My first advance prep".to_owned(),
         dietary_restrictions: vec![
@@ -120,6 +121,7 @@ async fn test_update_only_cuisine_type() -> anyhow::Result<()> {
 
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
+        origin: None,
         description: "My first description".to_owned(),
         advance_prep: "My first advance prep".to_owned(),
         dietary_restrictions: vec![
@@ -169,6 +171,7 @@ async fn test_update_only_accepts_accompaniment() -> anyhow::Result<()> {
 
     let mut input = UpdateInput {
         name: "My first Recipe".to_owned(),
+        origin: None,
         description: "My first description".to_owned(),
         advance_prep: "My first advance prep".to_owned(),
         dietary_restrictions: vec![
