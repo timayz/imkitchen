@@ -33,6 +33,7 @@ pub struct UserView {
     pub recipe_type: sqlx::types::Text<RecipeType>,
     pub cuisine_type: sqlx::types::Text<CuisineType>,
     pub name: String,
+    pub origin: Option<String>,
     pub description: String,
     pub household_size: u16,
     pub prep_time: u16,
@@ -103,6 +104,7 @@ impl<E: Executor> super::Query<E> {
                 RecipeUser::RecipeType,
                 RecipeUser::CuisineType,
                 RecipeUser::Name,
+                RecipeUser::Origin,
                 RecipeUser::Description,
                 RecipeUser::PrepTime,
                 RecipeUser::CookTime,
@@ -247,6 +249,7 @@ async fn find_user(pool: &SqlitePool, id: impl Into<String>) -> anyhow::Result<O
             RecipeUser::RecipeType,
             RecipeUser::CuisineType,
             RecipeUser::Name,
+            RecipeUser::Origin,
             RecipeUser::Description,
             RecipeUser::HouseholdSize,
             RecipeUser::PrepTime,
@@ -346,6 +349,7 @@ impl<E: Executor> Snapshot<E> for UserView {
                 RecipeUser::RecipeType,
                 RecipeUser::CuisineType,
                 RecipeUser::Name,
+                RecipeUser::Origin,
                 RecipeUser::Description,
                 RecipeUser::HouseholdSize,
                 RecipeUser::PrepTime,
@@ -370,6 +374,7 @@ impl<E: Executor> Snapshot<E> for UserView {
                 self.recipe_type.to_string().into(),
                 self.cuisine_type.to_string().into(),
                 self.name.to_owned().into(),
+                self.origin.to_owned().into(),
                 self.description.to_owned().into(),
                 self.household_size.into(),
                 self.prep_time.into(),
@@ -395,6 +400,7 @@ impl<E: Executor> Snapshot<E> for UserView {
                         RecipeUser::RecipeType,
                         RecipeUser::CuisineType,
                         RecipeUser::Name,
+                        RecipeUser::Origin,
                         RecipeUser::Description,
                         RecipeUser::HouseholdSize,
                         RecipeUser::PrepTime,
@@ -470,6 +476,7 @@ async fn handle_basic_information_changed(
     data: &mut UserView,
 ) -> anyhow::Result<()> {
     data.name = event.data.name;
+    data.origin = event.data.origin;
     data.description = event.data.description;
     data.household_size = event.data.household_size;
     data.prep_time = event.data.prep_time;

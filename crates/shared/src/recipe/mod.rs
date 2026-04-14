@@ -231,6 +231,7 @@ pub enum Recipe {
 
     BasicInformationChanged {
         name: String,
+        origin: Option<String>,
         description: String,
         household_size: u16,
         prep_time: u16,
