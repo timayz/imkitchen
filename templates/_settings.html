@@ -29,6 +29,8 @@
       {% call nav_item(settings_path, "recipes", "Recipes") %}{% endcall %}
       {% call nav_item(settings_path, "account", "Account") %}{% endcall %}
       {% call nav_item(settings_path, "billing", "Billing") %}{% endcall %}
+
+      {% block sidebar_bottom %}{% endblock %}
     </div>
 
     <!-- Mobile Navigation Tabs -->
@@ -40,6 +42,7 @@
       {% call mobile_nav_item(settings_path, "billing", "Billing") %}{% endcall %}
       </div>
     </div>
+
 
     <!-- Main Content Area -->
     <div class="lg:col-span-2 space-y-6">

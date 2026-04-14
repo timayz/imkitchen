@@ -14,6 +14,21 @@
 </div>
 {% endmacro %}
 
+{% block sidebar_bottom %}
+
+<div class="hidden lg:block bg-white rounded-lg shadow-lg p-4">
+  <div class="space-y-2">
+    <button ts-req="/settings/recipes/create" ts-req-method="post" class="block w-full px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 text-center text-sm">
+      {{ "Create Recipe"|t }}
+    </button>
+    <a href="/recipes/import" class="block w-full px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 text-center text-sm">
+      {{ "Import"|t }}
+    </a>
+  </div>
+</div>
+
+{% endblock %}
+
 {% block settings_content %}
 <div>
   <!-- Mobile Quick Actions -->
