@@ -12,6 +12,7 @@ pub struct Config {
     pub stripe: StripeConfig,
     pub premium: Option<PremiumConfig>,
     pub monitoring: MonitoringConfig,
+    pub feature: FeatureConfig,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -20,6 +21,11 @@ pub struct MonitoringConfig {
     pub log_json: bool,
     pub log_target: bool,
     pub log_line_number: bool,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct FeatureConfig {
+    pub community: bool,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -109,6 +115,7 @@ impl Config {
             .set_default("email.smtp_password", "")?
             .set_default("email.from_address", "no-reply@imkitchen.localhost")?
             .set_default("email.contact_address", "contact@imkitchen.localhost")?
+            .set_default("feature.community", "true")?
             .add_source(File::with_name(&config_path).required(false))
             .add_source(Environment::with_prefix("imkitchen").separator("__"))
             .build()?

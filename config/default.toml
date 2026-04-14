@@ -38,3 +38,6 @@ smtp_username = ""
 smtp_password = ""
 from_address = "no-reply@imkitchen.localhost"
 contact_address = "contact@imkitchen.localhost"
+
+[feature]
+community = false

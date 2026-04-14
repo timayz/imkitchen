@@ -25,6 +25,7 @@
 </div>
 {% endmacro %}
 {% block content %}
+{% if let Ok(config) = "config"|value::<crate::config::Config> %}
 <div class="hidden">
   <div class="bg-red-500 text-white"></div>
   <div class="bg-orange-500 text-white"></div>
@@ -169,6 +170,7 @@
             </a>
 
             <!-- Make Private/Public Button -->
+            {% if config.feature.community %}
             <div id="share-button">
               {% if recipe.is_shared %}
               <button ts-req="/recipes/{{ recipe.id }}/make-private"
@@ -192,6 +194,7 @@
               </button>
               {% endif %}
             </div>
+            {% endif %}
 
             <!-- Delete Button -->
             <button ts-req="/recipes/{{ recipe.id }}/delete" ts-swap="append" ts-target="body"
@@ -359,6 +362,7 @@
       </div>
       {% endif %}
       <!-- Comments Section (YouTube Style) -->
+      {% if config.feature.community %}
       <div ts-trigger="visible once" ts-req="/recipes/{{ recipe.id }}/comments"
         ts-req-selector="children #comments-list" ts-swap="append" ts-target="#comments-list"
         class="bg-white rounded-xl shadow-lg p-4 md:p-6">
@@ -458,6 +462,7 @@
           {% endif %}
         </div>
       </div>
+      {% endif %}
     </div>
 
     <!-- Right Sidebar - Suggestions (YouTube Style) -->
@@ -607,4 +612,5 @@
     });
   })();
 </script>
+{% endif %}
 {% endblock %}

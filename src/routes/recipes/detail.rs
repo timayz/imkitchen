@@ -1,6 +1,7 @@
 use axum::{
     Form,
     extract::{Path, Query, State},
+    http::StatusCode,
     response::{IntoResponse, Redirect},
 };
 use evento::cursor::{self, Args, ReadResult};
@@ -325,6 +326,10 @@ pub async fn share_to_community_action(
     user: AuthUser,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
+    if !app.config.feature.community {
+        return StatusCode::METHOD_NOT_ALLOWED.into_response();
+    }
+
     let Some(ref username) = user.username else {
         return (
             [("ts-swap", "skip")],
@@ -658,6 +663,10 @@ pub async fn add_comment_action(
     Path((id,)): Path<(String,)>,
     Form(input): Form<AddCommentForm>,
 ) -> impl IntoResponse {
+    if !app.config.feature.community {
+        return StatusCode::METHOD_NOT_ALLOWED.into_response();
+    }
+
     let Some(ref username) = user.username else {
         return (
             [("ts-swap", "skip")],
@@ -759,6 +768,10 @@ pub async fn reply_action(
     Path((recipe_id, comment_id)): Path<(String, String)>,
     Form(input): Form<ReplyForm>,
 ) -> impl IntoResponse {
+    if !app.config.feature.community {
+        return StatusCode::METHOD_NOT_ALLOWED.into_response();
+    }
+
     let Some(ref username) = user.username else {
         return (
             [("ts-swap", "skip")],
@@ -823,6 +836,10 @@ pub async fn comments(
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
+    if !app.config.feature.community {
+        return StatusCode::METHOD_NOT_ALLOWED.into_response();
+    }
+
     let args = Args {
         first: query.first,
         after: query.after,
@@ -887,6 +904,10 @@ pub async fn comment_check_like(
     State(app): State<AppState>,
     Path((recipe_id, comment_id)): Path<(String, String)>,
 ) -> impl IntoResponse {
+    if !app.config.feature.community {
+        return StatusCode::METHOD_NOT_ALLOWED.into_response();
+    }
+
     let recipe = crate::try_response!(anyhow_opt: app.recipe_query.user(&recipe_id), template);
 
     if !recipe.is_shared {
@@ -921,6 +942,10 @@ pub async fn comment_uncheck_like(
     State(app): State<AppState>,
     Path((recipe_id, comment_id)): Path<(String, String)>,
 ) -> impl IntoResponse {
+    if !app.config.feature.community {
+        return StatusCode::METHOD_NOT_ALLOWED.into_response();
+    }
+
     let recipe = crate::try_response!(anyhow_opt: app.recipe_query.user(&recipe_id), template);
 
     if !recipe.is_shared {
@@ -955,6 +980,10 @@ pub async fn comment_check_unlike(
     State(app): State<AppState>,
     Path((recipe_id, comment_id)): Path<(String, String)>,
 ) -> impl IntoResponse {
+    if !app.config.feature.community {
+        return StatusCode::METHOD_NOT_ALLOWED.into_response();
+    }
+
     let recipe = crate::try_response!(anyhow_opt: app.recipe_query.user(&recipe_id), template);
 
     if !recipe.is_shared {
@@ -989,6 +1018,10 @@ pub async fn comment_uncheck_unlike(
     State(app): State<AppState>,
     Path((recipe_id, comment_id)): Path<(String, String)>,
 ) -> impl IntoResponse {
+    if !app.config.feature.community {
+        return StatusCode::METHOD_NOT_ALLOWED.into_response();
+    }
+
     let recipe = crate::try_response!(anyhow_opt: app.recipe_query.user(&recipe_id), template);
 
     if !recipe.is_shared {
