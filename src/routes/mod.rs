@@ -107,8 +107,6 @@ pub fn router(app_state: AppState) -> Router {
             post(shopping::toggle_action),
         )
         .route("/recipes", get(recipes::index::page))
-        .route("/recipes/community", get(recipes::community::page))
-        .route("/recipes/create", post(recipes::index::create))
         .route(
             "/recipes/import",
             get(recipes::import::page).post(recipes::import::action),
@@ -227,6 +225,8 @@ pub fn router(app_state: AppState) -> Router {
             "/settings/account",
             get(settings::account::page).post(settings::account::action),
         )
+        .route("/settings/recipes", get(settings::recipes::page))
+        .route("/settings/recipes/create", post(settings::recipes::create))
         .route("/admin/users", get(admin::users::page))
         .route("/admin/users/{id}/suspend", post(admin::users::suspend))
         .route("/admin/users/{id}/activate", post(admin::users::activate))

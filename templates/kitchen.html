@@ -580,13 +580,13 @@
   <div class="bg-white rounded-lg shadow-lg p-6">
     <h2 class="text-xl font-bold mb-4">{{ "Add More Variety"|t }}</h2>
     <div class="grid md:grid-cols-3 gap-4">
-      <a href="/recipes/community"
+      <a href="/recipes"
         class="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition text-center">
         <div class="text-3xl mb-2">🔍</div>
         <div class="font-semibold">{{ "Browse Community"|t }}</div>
         <div class="text-sm text-gray-600">{{ "Discover shared recipes"|t }}</div>
       </a>
-      <button ts-req="/recipes/create" ts-req-method="post"
+      <button ts-req="/settings/recipes/create" ts-req-method="post"
         class="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition text-center">
         <div class="text-3xl mb-2">✏️</div>
         <div class="font-semibold">{{ "Create Recipe"|t }}</div>
