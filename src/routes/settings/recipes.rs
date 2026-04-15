@@ -3,10 +3,7 @@ use axum::{
     response::{IntoResponse, Redirect},
 };
 use evento::cursor::{Args, ReadResult, Value};
-use imkitchen_recipe::query::{
-    user::{RecipesQuery, SortBy, UserViewList},
-    user_stat::UserStatView,
-};
+use imkitchen_recipe::query::user::{RecipesQuery, SortBy, UserViewList};
 use imkitchen_shared::recipe::{CuisineType, RecipeType};
 use serde::Deserialize;
 use std::str::FromStr;
@@ -24,7 +21,6 @@ pub struct RecipesTemplate {
     pub current_path: String,
     pub settings_path: String,
     pub user: AuthUser,
-    pub stat: UserStatView,
     pub recipes: ReadResult<UserViewList>,
     pub query: PageQuery,
 }
@@ -35,7 +31,6 @@ impl Default for RecipesTemplate {
             current_path: "settings".to_owned(),
             settings_path: "recipes".to_owned(),
             user: AuthUser::default(),
-            stat: UserStatView::default(),
             recipes: ReadResult::default(),
             query: Default::default(),
         }
@@ -61,9 +56,6 @@ pub async fn page(
     State(app): State<AppState>,
     Query(input): Query<PageQuery>,
 ) -> impl IntoResponse {
-    let stat = crate::try_page_response!(app.recipe_query.find_user_stat(&user.id), template)
-        .unwrap_or_default();
-
     let query = input.clone();
 
     let args = Args {
@@ -101,7 +93,6 @@ pub async fn page(
         .render(RecipesTemplate {
             user,
             recipes,
-            stat,
             query,
             ..Default::default()
         })

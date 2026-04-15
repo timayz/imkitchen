@@ -1,7 +1,21 @@
 {% extends "_user.html" %}
 {% block title %}{{ "Recipes"|t }} - imkitchen{% endblock %}
+{% macro lazy_thumbnail(recipe, version, gradient) %}
+<div class="relative w-full h-full overflow-hidden">
+  <div class="absolute inset-0 bg-linear-to-r {{ gradient }} animate-pulse"></div>
+  <picture>
+    <source data-media="(max-width: 480px)"
+      data-srcset="/recipes/{{ recipe.id }}/thumbnail/mobile/image.webp?v={{ version }}" />
+    <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+      data-src="/recipes/{{ recipe.id }}/thumbnail/tablet/image.webp?v={{ version }}" alt="{{ recipe.name }}"
+      class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 [&.loaded]:opacity-100"
+      ts-trigger="closeby once" ts-action="lazy" />
+  </picture>
+</div>
+{% endmacro %}
 
 {% block content %}
+<div class="container mx-auto px-4 py-8">
 <!-- View: Community -->
 <div>
   <!-- Header -->
@@ -90,7 +104,11 @@
         {% match recipe.node.recipe_type.0 %}
         {% when RecipeType::MainCourse %}
         <div class="h-40 bg-linear-to-br from-orange-400 to-red-500 flex items-center justify-center">
+          {% if let Some(version) = recipe.node.thumbnail_version %}
+          {{ lazy_thumbnail(recipe.node, version, "from-orange-400 via-orange-200 to-red-400") }}
+          {% else %}
           <span class="text-5xl">🍛</span>
+          {% endif %}
         </div>
         <!-- <button class="absolute top-3 right-3 p-2 bg-white rounded-full shadow-lg"> -->
         <!--   <span class="text-xl">❤️</span> -->
@@ -101,7 +119,11 @@
         </span>
         {% when RecipeType::Appetizer %}
         <div class="h-40 bg-linear-to-br from-blue-400 to-blue-500 flex items-center justify-center">
+          {% if let Some(version) = recipe.node.thumbnail_version %}
+          {{ lazy_thumbnail(recipe.node, version, "from-orange-400 via-orange-200 to-red-400") }}
+          {% else %}
           <span class="text-5xl">🥗</span>
+          {% endif %}
         </div>
         <!-- <button class="absolute top-3 right-3 p-2 bg-white rounded-full shadow-lg"> -->
         <!--   <span class="text-xl">❤️</span> -->
@@ -112,7 +134,11 @@
         </span>
         {% when RecipeType::Dessert %}
         <div class="h-40 bg-linear-to-br from-pink-400 to-pink-500 flex items-center justify-center">
+          {% if let Some(version) = recipe.node.thumbnail_version %}
+          {{ lazy_thumbnail(recipe.node, version, "from-orange-400 via-orange-200 to-red-400") }}
+          {% else %}
           <span class="text-5xl">🍰</span>
+          {% endif %}
         </div>
         <!-- <button class="absolute top-3 right-3 p-2 bg-white rounded-full shadow-lg"> -->
         <!--   <span class="text-xl">❤️</span> -->
@@ -123,7 +149,11 @@
         </span>
         {% when RecipeType::Accompaniment %}
         <div class="h-40 bg-linear-to-br from-purple-400 to-purple-500 flex items-center justify-center">
+          {% if let Some(version) = recipe.node.thumbnail_version %}
+          {{ lazy_thumbnail(recipe.node, version, "from-orange-400 via-orange-200 to-red-400") }}
+          {% else %}
           <span class="text-5xl">🍚</span>
+          {% endif %}
         </div>
         <!-- <button class="absolute top-3 right-3 p-2 bg-white rounded-full shadow-lg"> -->
         <!--   <span class="text-xl">❤️</span> -->
@@ -158,5 +188,6 @@
     {% endfor %}
     {% endif %}
   </div>
+</div>
 </div>
 {% endblock %}
