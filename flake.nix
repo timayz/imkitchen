@@ -6,16 +6,16 @@
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     rust-overlay.url = "github:oxalica/rust-overlay";
     flake-utils.url  = "github:numtide/flake-utils";
-    playwright.url = "github:pietdevries94/playwright-web-flake";
+    # playwright.url = "github:pietdevries94/playwright-web-flake";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, rust-overlay, flake-utils, playwright, ... }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, rust-overlay, flake-utils, /*playwright,*/ ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        playwright-overlay = final: prev: {
-          inherit (playwright.packages.${system}) playwright-test playwright-driver;
-        };
-        overlays = [ (import rust-overlay) playwright-overlay ];
+        # playwright-overlay = final: prev: {
+        #   inherit (playwright.packages.${system}) playwright-test playwright-driver;
+        # };
+        overlays = [ (import rust-overlay) /*playwright-overlay*/ ];
         pkgs = import nixpkgs {
           inherit system overlays;
         };
@@ -25,12 +25,12 @@
       in
       {
         devShells.default = with pkgs; mkShell {
-          packages = [
-            (writeShellScriptBin "mcp-server-playwright" ''
-              export PWMCP_PROFILES_DIR_FOR_TEST="$PWD/.pwmcp-profiles"
-              exec ${pkgs-unstable.playwright-mcp}/bin/mcp-server-playwright "$@"
-            '')
-          ];
+          # packages = [
+          #   (writeShellScriptBin "mcp-server-playwright" ''
+          #     export PWMCP_PROFILES_DIR_FOR_TEST="$PWD/.pwmcp-profiles"
+          #     exec ${pkgs-unstable.playwright-mcp}/bin/mcp-server-playwright "$@"
+          #   '')
+          # ];
           buildInputs = [
             gcc
             lsof
@@ -41,17 +41,17 @@
             cargo-machete
             cargo-tarpaulin
             tailwindcss_4
-            playwright-test
+            # playwright-test
             mkcert
             sqlite
             (rust-bin.stable.latest.default.override {
               extensions = [ "rust-src" "rust-analyzer" ];
             })
           ];
-          shellHook = ''
-            export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
-            export PLAYWRIGHT_BROWSERS_PATH="${pkgs.playwright-driver.browsers}"
-          '';
+          # shellHook = ''
+          #   export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+          #   export PLAYWRIGHT_BROWSERS_PATH="${pkgs.playwright-driver.browsers}"
+          # '';
         };
       }
     );
