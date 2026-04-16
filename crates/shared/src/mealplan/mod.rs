@@ -78,6 +78,12 @@ pub enum Status {
 
 #[evento::aggregator]
 pub enum MealPlan {
+    DaysGenerated {
+        start: u64,
+        slots: Vec<Slot>,
+        household_size: u16,
+    },
+
     WeekGenerated {
         start: u64,
         end: u64,

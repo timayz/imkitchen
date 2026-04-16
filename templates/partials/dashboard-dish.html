@@ -147,7 +147,6 @@
         {% endfor %}
       </div>
       {% endif %}
-      {% endif %}
 
       <!-- Upcoming Steps -->
       {% if !coming_instructions.is_empty() %}
@@ -164,6 +163,9 @@
       </div>
       {% endif %}
     </div>
+    {% else if let Some(origin) = slot_recipe.origin %}
+    <iframe class="w-full h-[80vh]" src="{{ origin }}"></iframe>
+    {% endif %}
   </div>
 
   <!-- Ingredients View (Hidden by default) -->

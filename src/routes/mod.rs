@@ -18,6 +18,7 @@ mod help;
 mod index;
 mod login;
 mod manifest;
+mod menu;
 mod policy;
 mod recipes;
 mod register;
@@ -89,6 +90,8 @@ pub fn router(app_state: AppState) -> Router {
             "/reset-password/new/{id}",
             get(reset_password::new_page).post(reset_password::new_action),
         )
+        .route("/menu", get(menu::page))
+        .route("/menu/{year}/{month}", get(menu::page))
         .route(
             "/calendar/regenerate",
             get(calendar::regenerate_modal).post(calendar::regenerate_action),
