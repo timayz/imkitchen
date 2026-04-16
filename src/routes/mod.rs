@@ -91,7 +91,7 @@ pub fn router(app_state: AppState) -> Router {
             get(reset_password::new_page).post(reset_password::new_action),
         )
         .route("/menu", get(menu::page))
-        .route("/menu/{year}/{month}", get(menu::page))
+        .route("/menu/{date}", get(menu::page))
         .route(
             "/calendar/regenerate",
             get(calendar::regenerate_modal).post(calendar::regenerate_action),

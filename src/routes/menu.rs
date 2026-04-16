@@ -44,7 +44,7 @@ pub async fn page(
     template: Template,
     user: AuthUser,
     State(app): State<AppState>,
-    params: Option<Path<(u16, u8)>>,
+    params: Option<Path<(String,)>>,
 ) -> impl IntoResponse {
     template
         .render(CalendarTemplate {
