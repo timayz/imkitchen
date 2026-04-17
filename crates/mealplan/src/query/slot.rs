@@ -72,6 +72,8 @@ impl<E: Executor> super::Query<E> {
         end: OffsetDateTime,
     ) -> anyhow::Result<Vec<SlotRow>> {
         let user_id = user_id.into();
+        let start_date = crate::date_to_u64(start);
+        let end_date = crate::date_to_u64(end);
         let statement = sea_query::Query::select()
             .columns([
                 MealPlanSlot::Day,
@@ -83,9 +85,9 @@ impl<E: Executor> super::Query<E> {
             ])
             .from(MealPlanSlot::Table)
             .and_where(Expr::col(MealPlanSlot::UserId).eq(&user_id))
-            .and_where(Expr::col(MealPlanSlot::Day).gte(start.unix_timestamp()))
-            .and_where(Expr::col(MealPlanSlot::Day).lte(end.unix_timestamp()))
-            .order_by_expr(Expr::col(MealPlanSlot::Day), sea_query::Order::Asc)
+            .and_where(Expr::col(MealPlanSlot::Date).gte(start_date))
+            .and_where(Expr::col(MealPlanSlot::Date).lte(end_date))
+            .order_by_expr(Expr::col(MealPlanSlot::Date), sea_query::Order::Asc)
             .to_owned();
 
         let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
@@ -101,6 +103,7 @@ impl<E: Executor> super::Query<E> {
         user_id: impl Into<String>,
     ) -> anyhow::Result<Option<SlotRow>> {
         let user_id = user_id.into();
+        let date = crate::date_to_u64(day);
         let statement = sea_query::Query::select()
             .columns([
                 MealPlanSlot::Day,
@@ -112,8 +115,8 @@ impl<E: Executor> super::Query<E> {
             ])
             .from(MealPlanSlot::Table)
             .and_where(Expr::col(MealPlanSlot::UserId).eq(&user_id))
-            .and_where(Expr::col(MealPlanSlot::Day).gte(day.unix_timestamp()))
-            .order_by_expr(Expr::col(MealPlanSlot::Day), sea_query::Order::Asc)
+            .and_where(Expr::col(MealPlanSlot::Date).gte(date))
+            .order_by_expr(Expr::col(MealPlanSlot::Date), sea_query::Order::Asc)
             .limit(1)
             .to_owned();
 
@@ -244,6 +247,7 @@ async fn handle_days_generated<E: Executor>(
         .columns([
             MealPlanSlot::UserId,
             MealPlanSlot::Day,
+            MealPlanSlot::Date,
             MealPlanSlot::HouseholdSize,
             MealPlanSlot::MainCourse,
             MealPlanSlot::Appetizer,
@@ -288,6 +292,7 @@ async fn handle_days_generated<E: Executor>(
         statement.values_panic([
             user_id.to_owned().into(),
             slot.day.into(),
+            slot.date.into(),
             slot.household_size.into(),
             main_course.into(),
             appetizer.into(),
@@ -303,7 +308,7 @@ async fn handle_days_generated<E: Executor>(
     }
 
     statement.on_conflict(
-        OnConflict::columns([MealPlanSlot::UserId, MealPlanSlot::Day])
+        OnConflict::columns([MealPlanSlot::UserId, MealPlanSlot::Date])
             .update_columns([
                 MealPlanSlot::HouseholdSize,
                 MealPlanSlot::Appetizer,
@@ -465,7 +470,7 @@ async fn handle_slot_recipe_status_changed<E: Executor>(
         ])
         .from(MealPlanSlot::Table)
         .and_where(Expr::col(MealPlanSlot::UserId).eq(&user_id))
-        .and_where(Expr::col(MealPlanSlot::Day).eq(event.data.day))
+        .and_where(Expr::col(MealPlanSlot::Date).eq(event.data.date))
         .limit(1)
         .build_sqlx(SqliteQueryBuilder);
 
@@ -485,7 +490,7 @@ async fn handle_slot_recipe_status_changed<E: Executor>(
     let mut statement = Query::update()
         .table(MealPlanSlot::Table)
         .and_where(Expr::col(MealPlanSlot::UserId).eq(&user_id))
-        .and_where(Expr::col(MealPlanSlot::Day).eq(event.data.day))
+        .and_where(Expr::col(MealPlanSlot::Date).eq(event.data.date))
         .to_owned();
 
     if main.id == event.data.recipe_id {

@@ -205,6 +205,15 @@ pub fn current_and_next_four_weeks(from_date: OffsetDateTime) -> [Week; 5] {
     weeks
 }
 
+/// Returns the date as a u64 in YYYYMMDD format.
+pub fn date_to_u64(date: OffsetDateTime) -> u64 {
+    let year = date.year() as u64;
+    let month = date.month() as u64;
+    let day = date.day() as u64;
+
+    year * 10000 + month * 100 + day
+}
+
 /// Returns the timestamps of the next 4 Mondays from now
 /// All timestamps are set to 12:00:00
 pub fn next_four_mondays_from_now(tz: impl Into<String>) -> [Week; 4] {
@@ -343,6 +352,7 @@ mod tests {
             MonthBounds {
                 first: datetime!(2025-01-01 00:00:00 UTC),
                 last: datetime!(2025-01-31 23:59:59 UTC),
+                date: datetime!(2025-01-15 10:30:00 UTC),
             }
         );
     }
@@ -357,6 +367,7 @@ mod tests {
             MonthBounds {
                 first: datetime!(2025-02-01 00:00:00 UTC),
                 last: datetime!(2025-02-28 23:59:59 UTC),
+                date: datetime!(2025-02-20 14:00:00 UTC),
             }
         );
     }
@@ -371,6 +382,7 @@ mod tests {
             MonthBounds {
                 first: datetime!(2024-02-01 00:00:00 UTC),
                 last: datetime!(2024-02-29 23:59:59 UTC),
+                date: datetime!(2024-02-10 08:00:00 UTC),
             }
         );
     }
@@ -385,6 +397,7 @@ mod tests {
             MonthBounds {
                 first: datetime!(2025-12-01 00:00:00 UTC),
                 last: datetime!(2025-12-31 23:59:59 UTC),
+                date: datetime!(2025-12-25 18:00:00 UTC),
             }
         );
     }
@@ -398,6 +411,7 @@ mod tests {
             MonthBounds {
                 first: datetime!(2025-03-01 00:00:00 UTC),
                 last: datetime!(2025-03-31 23:59:59 UTC),
+                date: datetime!(2025-03-15 00:00:00 UTC),
             }
         );
     }
@@ -508,5 +522,17 @@ mod tests {
         ];
 
         assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_date_to_u64() {
+        let date = datetime!(2025-06-15 10:30:00 UTC);
+        assert_eq!(date_to_u64(date), 20250615);
+    }
+
+    #[test]
+    fn test_date_to_u64_single_digit_month_and_day() {
+        let date = datetime!(2025-01-05 00:00:00 UTC);
+        assert_eq!(date_to_u64(date), 20250105);
     }
 }

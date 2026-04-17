@@ -98,6 +98,8 @@ impl<E: Executor> super::Command<E> {
             let day = OffsetDateTime::from_unix_timestamp(input.start as i64)?
                 + Duration::days((slots.len()) as i64);
 
+            let date = crate::date_to_u64(day);
+
             let appetizer_recipes = match input.randomize.as_ref() {
                 Some(opts) => {
                     self.random(
@@ -162,6 +164,7 @@ impl<E: Executor> super::Command<E> {
 
             slots.push(Slot {
                 day: day.unix_timestamp() as u64,
+                date,
                 household_size: input.household_size,
                 appetizer: appetizer_recipes.next().map(|r| r.into()),
                 main_course: recipe.into(),
@@ -237,6 +240,8 @@ impl<E: Executor> super::Command<E> {
                 let day = OffsetDateTime::from_unix_timestamp(start as i64)?
                     + Duration::days((slots.len()) as i64);
 
+                let date = crate::date_to_u64(day);
+
                 let appetizer_recipes = match input.randomize.as_ref() {
                     Some(opts) => {
                         self.random(
@@ -301,6 +306,7 @@ impl<E: Executor> super::Command<E> {
 
                 slots.push(Slot {
                     day: day.unix_timestamp() as u64,
+                    date,
                     household_size: input.household_size,
                     appetizer: appetizer_recipes.next().map(|r| r.into()),
                     main_course: recipe.into(),

@@ -203,6 +203,7 @@ pub enum MealPlanSlot {
     Table,
     UserId,
     Day,
+    Date,
     HouseholdSize,
     Appetizer,
     MainCourse,

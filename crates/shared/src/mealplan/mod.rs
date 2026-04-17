@@ -11,6 +11,7 @@ pub struct SlotRecipe {
 #[derive(Encode, Decode, Clone, PartialEq, Debug)]
 pub struct Slot {
     pub day: u64,
+    pub date: u64,
     pub household_size: u16,
     pub appetizer: Option<SlotRecipe>,
     pub main_course: SlotRecipe,
@@ -92,7 +93,7 @@ pub enum MealPlan {
     },
 
     SlotRecipeStatusChanged {
-        day: u64,
+        date: u64,
         recipe_id: String,
         status: DaySlotStatus,
     },

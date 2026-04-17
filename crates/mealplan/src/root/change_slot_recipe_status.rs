@@ -5,7 +5,7 @@ use imkitchen_shared::mealplan::{DaySlotStatus, MealPlan, SlotRecipeStatusChange
 
 pub struct ChangeSlotRecipeStatus {
     pub user_id: String,
-    pub day: u64,
+    pub date: u64,
     pub recipe_id: String,
     pub status: DaySlotStatus,
 }
@@ -33,7 +33,7 @@ impl<E: Executor> super::Command<E> {
 
         evento::aggregator(&input.user_id)
             .event(&SlotRecipeStatusChanged {
-                day: input.day,
+                date: input.date,
                 recipe_id: input.recipe_id,
                 status: input.status,
             })

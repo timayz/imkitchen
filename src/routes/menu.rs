@@ -156,11 +156,22 @@ pub async fn generate_action(
     };
 
     let bounds = crate::try_response!(sync anyhow: imkitchen_mealplan::month_bounds_from_date(&date, &user.tz), template);
-    let days = bounds.last.day() - bounds.date.day();
+    let now_bounds = crate::try_response!(sync anyhow: imkitchen_mealplan::month_bounds_from_now(&user.tz), template);
+    let (start, days) = if now_bounds.date > bounds.date {
+        (
+            now_bounds.date.unix_timestamp(),
+            now_bounds.last.day() - now_bounds.date.day(),
+        )
+    } else {
+        (
+            bounds.date.unix_timestamp(),
+            bounds.last.day() - bounds.date.day(),
+        )
+    };
 
     crate::try_response!(
         app.mealplan_cmd.generate_slots(GenerateSlots {
-            start: bounds.date.unix_timestamp() as u64,
+            start: start as u64,
             days,
             user_id: user.id.to_owned(),
             randomize,

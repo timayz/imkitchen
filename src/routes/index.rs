@@ -384,11 +384,13 @@ pub async fn update_slot_step_action(
         }
     }
 
+    let bounds_date = imkitchen_mealplan::date_to_u64(bounds.date);
+
     crate::try_response!(
         app.mealplan_cmd
             .change_slot_recipe_status(ChangeSlotRecipeStatus {
                 user_id: user.id.to_owned(),
-                day: bounds.date.unix_timestamp() as u64,
+                date: bounds_date,
                 recipe_id,
                 status: slot_recipe_status.clone()
             }),
@@ -518,17 +520,6 @@ pub async fn select_dish(
 
     let mut slot_recipe =
         crate::try_page_response!(opt: app.recipe_query.find_user(&recipe_id), template);
-
-    crate::try_response!(
-        app.mealplan_cmd
-            .change_slot_recipe_status(ChangeSlotRecipeStatus {
-                user_id: user.id.to_owned(),
-                day: bounds.date.unix_timestamp() as u64,
-                recipe_id,
-                status: slot_recipe_status.clone()
-            }),
-        template
-    );
 
     for ingredient in slot_recipe.ingredients.iter_mut() {
         ingredient.quantity += ((slot_recipe.household_size as u32 * ingredient.quantity
