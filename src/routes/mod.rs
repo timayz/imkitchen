@@ -93,6 +93,11 @@ pub fn router(app_state: AppState) -> Router {
         .route("/menu", get(menu::page))
         .route("/menu/{date}", get(menu::page))
         .route(
+            "/menu/{date}/generate",
+            get(menu::generate_modal).post(menu::generate_action),
+        )
+        .route("/menu/{date}/generate/status", get(menu::generate_status))
+        .route(
             "/calendar/regenerate",
             get(calendar::regenerate_modal).post(calendar::regenerate_action),
         )

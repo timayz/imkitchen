@@ -75,6 +75,35 @@ pub(crate) mod filters {
     }
 
     #[askama::filter_fn]
+    pub fn yyyymmdd(value: &u64, _values: &dyn askama::Values) -> askama::Result<String> {
+        let date = OffsetDateTime::from_unix_timestamp(*value as i64)
+            .map_err(|e| askama::Error::Custom(Box::new(e)))?;
+
+        let fmt = time::macros::format_description!("[year]-[month]-[day]");
+        date.format(&fmt)
+            .map_err(|e| askama::Error::Custom(Box::new(e)))
+    }
+
+    #[askama::filter_fn]
+    pub fn day(value: &u64, values: &dyn askama::Values) -> askama::Result<String> {
+        let preferred_language = askama::get_value::<String>(values, "preferred_language")
+            .expect("Unable to get preferred_language from askama::get_value");
+
+        let date = OffsetDateTime::from_unix_timestamp(*value as i64)
+            .map_err(|e| askama::Error::Custom(Box::new(e)))?;
+
+        let weekday = rust_i18n::t!(date.weekday().to_string(), locale = preferred_language);
+
+        Ok(rust_i18n::t!(
+            "day_format",
+            locale = preferred_language,
+            weekday = weekday,
+            day = date.day()
+        )
+        .to_string())
+    }
+
+    #[askama::filter_fn]
     pub fn date(value: &u64, values: &dyn askama::Values) -> askama::Result<String> {
         let preferred_language = askama::get_value::<String>(values, "preferred_language")
             .expect("Unable to get preferred_language from askama::get_value");

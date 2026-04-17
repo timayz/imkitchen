@@ -6,6 +6,7 @@ use time_tz::{PrimitiveDateTimeExt, ToTimezone, timezones};
 pub struct MonthBounds {
     pub first: OffsetDateTime,
     pub last: OffsetDateTime,
+    pub date: OffsetDateTime,
 }
 
 /// Returns the first day (00:00:00) and last day (23:59:59) of the month
@@ -38,7 +39,7 @@ pub fn month_bounds(date: OffsetDateTime, tz: impl Into<String>) -> anyhow::Resu
 
     let last = last_day.with_hms(23, 59, 59)?.assume_offset(date.offset());
 
-    Ok(MonthBounds { first, last })
+    Ok(MonthBounds { first, last, date })
 }
 
 /// Returns the first day (00:00:00) and last day (23:59:59) of the month
@@ -82,11 +83,9 @@ pub fn prev_next_month(date: OffsetDateTime) -> anyhow::Result<(String, String)>
 
     let format = format_description!("[year]-[month]-[day]");
 
-    let prev = Date::from_calendar_date(prev_year, prev_month, 1)?
-        .format(&format)?;
+    let prev = Date::from_calendar_date(prev_year, prev_month, 1)?.format(&format)?;
 
-    let next = Date::from_calendar_date(next_year, next_month, 1)?
-        .format(&format)?;
+    let next = Date::from_calendar_date(next_year, next_month, 1)?.format(&format)?;
 
     Ok((prev, next))
 }

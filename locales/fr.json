@@ -1,5 +1,6 @@
 {
   "html_lang": "fr",
+  "day_format": "%{weekday} %{day}",
   "date_format": "%{weekday} %{day} %{month}",
   "date_year_format": "%{weekday} %{day} %{month} %{year}",
   "Monday": "Lundi",

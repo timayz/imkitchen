@@ -44,6 +44,26 @@ pub struct SlotRow {
     pub dessert: Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
 }
 
+impl SlotRow {
+    pub fn prep_time(&self) -> u16 {
+        let mut t = self.main_course.total_prep_time();
+
+        if let Some(ref recipe) = self.appetizer {
+            t += recipe.total_prep_time();
+        }
+
+        if let Some(ref recipe) = self.accompaniment {
+            t += recipe.total_prep_time();
+        }
+
+        if let Some(ref recipe) = self.dessert {
+            t += recipe.total_prep_time();
+        }
+
+        t
+    }
+}
+
 impl<E: Executor> super::Query<E> {
     pub async fn range(
         &self,

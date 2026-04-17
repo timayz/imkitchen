@@ -1,5 +1,6 @@
 {
   "html_lang": "en",
+  "day_format": "%{weekday}, %{day}",
   "date_format": "%{weekday}, %{month} %{day}",
   "date_year_format": "%{weekday}, %{month} %{day}, %{year}",
   "January_sm": "Jan",
