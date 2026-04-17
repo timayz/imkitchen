@@ -57,7 +57,7 @@ sea-query = { version = "1.0.0-rc.27", default-features = false, features = ["de
 sea-query-sqlx = { version = "0.8.0-rc.10", features = ["runtime-tokio", "sqlx-sqlite", "with-json"] }
 async-trait = "0.1"
 futures = "0.3"
-time = { version = "0.3", features = ["formatting"] }
+time = { version = "0.3", features = ["formatting", "parsing"] }
 strum = { version = "0.28", features = ["derive"] }
 sha3 = "0.11"
 temp-dir = "0.2"
