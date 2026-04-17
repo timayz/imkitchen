@@ -44,7 +44,7 @@
   <!-- Step Navigation -->
   <div class="flex flex-col-reverse md:flex-row gap-3">
     {% if !completed_instructions.is_empty() %}
-    <button ts-req="/kitchen/{{ slot_recipe.id }}/step/prev" ts-req-method="post" ts-target="#view-steps"
+    <button ts-req="/kitchen/{{ date }}/{{ slot_recipe.id }}/step/prev" ts-req-method="post" ts-target="#view-steps"
       ts-swap="inner" ts-req-selector="children #view-steps"
       class="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-lg font-semibold flex items-center justify-center gap-2 transition">
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -54,7 +54,7 @@
     </button>
     {% endif %}
     {% if !coming_instructions.is_empty() %}
-    <button ts-req="/kitchen/{{ slot_recipe.id }}/step/next" ts-req-method="post" ts-target="#view-steps"
+    <button ts-req="/kitchen/{{ date }}/{{ slot_recipe.id }}/step/next" ts-req-method="post" ts-target="#view-steps"
       ts-swap="inner" ts-req-selector="children #view-steps"
       class="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold flex items-center justify-center gap-2 transition">
       {% if instruction.time_next > 0 %}
@@ -118,7 +118,7 @@
 <div id="today-dishes-desktop" ts-swap-push="#today-dishes-desktop" class="space-y-3">
   <!-- Appetizer (Completed) -->
   {% if let Some(appetizer) = slot.appetizer %}
-  <button ts-req="/kitchen/{{ appetizer.id }}/select-dish" ts-target="#current-recipe-card"
+  <button ts-req="/kitchen/{{ date }}/{{ appetizer.id }}/select-dish" ts-target="#current-recipe-card"
     class="w-full p-3 bg-blue-50 border border-blue-200 rounded-lg text-left hover:border-blue-400 transition">
     <div class="flex items-center gap-3">
       <span class="text-2xl">🥗</span>
@@ -147,7 +147,7 @@
   {% endif %}
 
   <!-- Main Course (Active) -->
-  <button ts-req="/kitchen/{{ slot.main_course.id }}/select-dish" ts-target="#current-recipe-card"
+  <button ts-req="/kitchen/{{ date }}/{{ slot.main_course.id }}/select-dish" ts-target="#current-recipe-card"
     class="w-full p-3 bg-orange-50 border border-orange-200 rounded-lg text-left hover:border-orange-400">
     <div class="flex items-center gap-3">
       <span class="text-2xl">🍛</span>
@@ -176,7 +176,7 @@
 
   <!-- Accompaniment -->
   {% if let Some(accompaniment) = slot.accompaniment %}
-  <button ts-req="/kitchen/{{ accompaniment.id }}/select-dish" ts-target="#current-recipe-card"
+  <button ts-req="/kitchen/{{ date }}/{{ accompaniment.id }}/select-dish" ts-target="#current-recipe-card"
     class="w-full p-3 bg-purple-50 border border-purple-200 rounded-lg text-left hover:border-purple-400 transition ml-4">
     <div class="flex items-center gap-3">
       <span class="text-xl">🍚</span>
@@ -206,7 +206,7 @@
 
   <!-- Dessert -->
   {% if let Some(dessert) = slot.dessert %}
-  <button ts-req="/kitchen/{{ dessert.id }}/select-dish" ts-target="#current-recipe-card"
+  <button ts-req="/kitchen/{{ date }}/{{ dessert.id }}/select-dish" ts-target="#current-recipe-card"
     class="w-full p-3 bg-pink-50 border border-pink-200 rounded-lg text-left hover:border-pink-400 transition">
     <div class="flex items-center gap-3">
       <span class="text-2xl">🍰</span>
@@ -237,7 +237,7 @@
 <div id="today-dishes-mobile" ts-swap-push="#today-dishes-mobile" class="space-y-3 max-h-[60vh] overflow-y-auto pb-4">
   <!-- Same dish cards as sidebar -->
   {% if let Some(appetizer) = slot.appetizer %}
-  <button ts-req="/kitchen/{{ appetizer.id }}/select-dish" ts-target="#current-recipe-card"
+  <button ts-req="/kitchen/{{ date }}/{{ appetizer.id }}/select-dish" ts-target="#current-recipe-card"
     ts-req-after="toggle-meals-panel" class="w-full p-3 bg-blue-50 border border-blue-200 rounded-lg text-left">
     <div class="flex items-center gap-3">
       <span class="text-2xl">🥗</span>
@@ -261,7 +261,7 @@
     </div>
   </button>
   {% endif %}
-  <button ts-req="/kitchen/{{ slot.main_course.id }}/select-dish" ts-target="#current-recipe-card"
+  <button ts-req="/kitchen/{{ date }}/{{ slot.main_course.id }}/select-dish" ts-target="#current-recipe-card"
     ts-req-after="toggle-meals-panel" class="w-full p-3 bg-orange-50 border border-orange-200 rounded-lg text-left">
     <div class="flex items-center gap-3">
       <span class="text-2xl">🍛</span>
@@ -285,7 +285,7 @@
     </div>
   </button>
   {% if let Some(accompaniment) = slot.accompaniment %}
-  <button ts-req="/kitchen/{{ accompaniment.id }}/select-dish" ts-target="#current-recipe-card"
+  <button ts-req="/kitchen/{{ date }}/{{ accompaniment.id }}/select-dish" ts-target="#current-recipe-card"
     ts-req-after="toggle-meals-panel" class="w-full p-3 bg-purple-50 border border-purple-200 rounded-lg text-left">
     <div class="flex items-center gap-3">
       <span class="text-2xl">🍚</span>
@@ -310,7 +310,7 @@
   </button>
   {% endif %}
   {% if let Some(dessert) = slot.dessert %}
-  <button ts-req="/kitchen/{{ dessert.id }}/select-dish" ts-target="#current-recipe-card"
+  <button ts-req="/kitchen/{{ date }}/{{ dessert.id }}/select-dish" ts-target="#current-recipe-card"
     ts-req-after="toggle-meals-panel" class="w-full p-3 bg-pink-50 border border-pink-200 rounded-lg text-left">
     <div class="flex items-center gap-3">
       <span class="text-2xl">🍰</span>

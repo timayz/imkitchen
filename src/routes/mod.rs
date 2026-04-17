@@ -66,10 +66,14 @@ pub fn router(app_state: AppState) -> Router {
         .with_state(app_state.read_db.clone())
         .route("/", get(index::page))
         .route(
-            "/kitchen/{recipe_id}/step/{direction}",
+            "/kitchen/{date}/{recipe_id}/step/{direction}",
             post(index::update_slot_step_action),
         )
-        .route("/kitchen/{recipe_id}/select-dish", get(index::select_dish))
+        .route(
+            "/kitchen/{date}/{recipe_id}/select-dish",
+            get(index::select_dish),
+        )
+        .route("/kitchen/{date}", get(index::page))
         .route("/upgrade", get(upgrade::page).post(upgrade::action))
         .route("/upgrade/order-summary", get(upgrade::order_summary))
         .route("/about", get(about::page))
