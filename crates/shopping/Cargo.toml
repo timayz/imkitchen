@@ -10,11 +10,7 @@ bitcode.workspace = true
 anyhow.workspace = true
 validator.workspace = true
 sqlx = { workspace = true }
-time = { workspace = true }
 sea-query.workspace = true
 sea-query-sqlx.workspace = true
 imkitchen-shared = { path = "../shared", version = "0.14.0" }
 imkitchen-db = { path = "../db", version = "0.14.0" }
-
-[dev-dependencies]
-time = { workspace = true, features = ["formatting", "macros"] }
