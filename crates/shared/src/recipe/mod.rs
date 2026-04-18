@@ -192,7 +192,6 @@ pub enum DietaryRestriction {
     GlutenFree,
     DairyFree,
     NutFree,
-    LowCarb,
 }
 
 impl DietaryRestriction {

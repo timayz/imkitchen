@@ -13,6 +13,7 @@ mod about;
 mod admin;
 mod calendar;
 mod contact;
+mod groceries;
 mod health;
 mod help;
 mod index;
@@ -25,7 +26,6 @@ mod register;
 mod reset_password;
 mod service_worker;
 mod settings;
-mod shopping;
 mod terms;
 mod upgrade;
 
@@ -111,13 +111,10 @@ pub fn router(app_state: AppState) -> Router {
         )
         .route("/calendar/week-{index}", get(calendar::page))
         .route(
-            "/calendar/week-{index}/shopping",
-            get(shopping::page).post(shopping::reset_all_action),
+            "/groceries",
+            get(groceries::page).post(groceries::reset_all_action),
         )
-        .route(
-            "/calendar/week-{timestamp}/shopping/toggle",
-            post(shopping::toggle_action),
-        )
+        .route("/groceries/toggle", post(groceries::toggle_action))
         .route("/recipes", get(recipes::index::page))
         .route(
             "/recipes/import",

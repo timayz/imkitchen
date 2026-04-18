@@ -16,8 +16,8 @@ use crate::{
 };
 
 #[derive(askama::Template)]
-#[template(path = "shopping.html")]
-pub struct ShoppingTemplate {
+#[template(path = "groceries.html")]
+pub struct GroceriesTemplate {
     pub current_path: String,
     pub user: AuthUser,
     pub weeks: Vec<WeekListRow>,
@@ -28,10 +28,10 @@ pub struct ShoppingTemplate {
     pub index: u8,
 }
 
-impl Default for ShoppingTemplate {
+impl Default for GroceriesTemplate {
     fn default() -> Self {
         Self {
-            current_path: "calendar".to_owned(),
+            current_path: "groceries".to_owned(),
             user: AuthUser::default(),
             weeks: Default::default(),
             current: None,
@@ -48,7 +48,6 @@ pub async fn page(
     template: Template,
     user: AuthUser,
     State(app): State<AppState>,
-    Path((mut index,)): Path<(u8,)>,
 ) -> impl IntoResponse {
     let week_from_now = imkitchen_mealplan::current_and_next_four_weeks_from_now(&user.tz)[0];
     let weeks = crate::try_page_response!(
@@ -56,6 +55,8 @@ pub async fn page(
             .filter_week_last_from(week_from_now.start, &user.id),
         template
     );
+
+    let mut index = 1;
 
     if index == 0 {
         index += 1;
@@ -87,7 +88,7 @@ pub async fn page(
     };
 
     template
-        .render(ShoppingTemplate {
+        .render(GroceriesTemplate {
             user,
             weeks,
             recipes,
@@ -134,7 +135,7 @@ pub async fn toggle_action(
     };
 
     template
-        .render(ShoppingTemplate {
+        .render(GroceriesTemplate {
             user,
             current,
             ingredients,
@@ -164,7 +165,7 @@ pub async fn reset_all_action(
     }
 
     template
-        .render(ShoppingTemplate {
+        .render(GroceriesTemplate {
             user,
             current,
             ingredients,
