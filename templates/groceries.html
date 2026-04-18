@@ -6,10 +6,10 @@
 <div class="px-4 py-6 max-w-lg mx-auto">
   <!-- Header -->
   <div class="flex items-center justify-between mb-5">
-    <h1 class="text-xl font-bold">Shopping List</h1>
+    <h1 class="text-xl font-bold">{{ "Shopping List"|t }}</h1>
     <button ts-trigger="click" ts-req="/groceries/generate" ts-target="body" ts-swap="append"
       class="px-3 py-1.5 text-sm rounded-md bg-gray-900 hover:bg-gray-800 text-white font-medium">
-      Generate
+      {{ "Generate"|t }}
     </button>
   </div>
 
@@ -22,8 +22,8 @@
           d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
         </path>
       </svg>
-      <p class="text-gray-500 text-sm mb-1">No shopping list yet</p>
-      <p class="text-gray-400 text-xs">Generate one from your meal plan</p>
+      <p class="text-gray-500 text-sm mb-1">{{ "No shopping list yet"|t }}</p>
+      <p class="text-gray-400 text-xs">{{ "Generate one from your meal plan"|t }}</p>
     </div>
   </div>
 

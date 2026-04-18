@@ -39,13 +39,13 @@
     <div class="lg:col-span-2 bg-white rounded-lg shadow overflow-hidden">
       <!-- Day-of-week headers -->
       <div class="grid grid-cols-7 border-b border-gray-200 bg-gray-50">
-        <div class="text-center text-xs md:text-sm font-medium text-gray-600 py-2">Mon</div>
-        <div class="text-center text-xs md:text-sm font-medium text-gray-600 py-2">Tue</div>
-        <div class="text-center text-xs md:text-sm font-medium text-gray-600 py-2">Wed</div>
-        <div class="text-center text-xs md:text-sm font-medium text-gray-600 py-2">Thu</div>
-        <div class="text-center text-xs md:text-sm font-medium text-gray-600 py-2">Fri</div>
-        <div class="text-center text-xs md:text-sm font-medium text-gray-600 py-2">Sat</div>
-        <div class="text-center text-xs md:text-sm font-medium text-gray-600 py-2">Sun</div>
+        <div class="text-center text-xs md:text-sm font-medium text-gray-600 py-2">{{ "Mon"|t }}</div>
+        <div class="text-center text-xs md:text-sm font-medium text-gray-600 py-2">{{ "Tue"|t }}</div>
+        <div class="text-center text-xs md:text-sm font-medium text-gray-600 py-2">{{ "Wed"|t }}</div>
+        <div class="text-center text-xs md:text-sm font-medium text-gray-600 py-2">{{ "Thu"|t }}</div>
+        <div class="text-center text-xs md:text-sm font-medium text-gray-600 py-2">{{ "Fri"|t }}</div>
+        <div class="text-center text-xs md:text-sm font-medium text-gray-600 py-2">{{ "Sat"|t }}</div>
+        <div class="text-center text-xs md:text-sm font-medium text-gray-600 py-2">{{ "Sun"|t }}</div>
       </div>
 
       <!-- Calendar grid: 6 rows × 7 cols. Cells use min-h with aspect-square fallback on mobile. -->
@@ -151,7 +151,7 @@
           <a href="/recipes/{{ dessert.id }}"
             class="block p-3 rounded-lg border border-pink-100 bg-pink-50 hover:bg-pink-100 transition">
             <div class="flex items-center justify-between mb-1">
-              <span class="text-xs font-semibold text-pink-700 uppercase tracking-wide">Dessert</span>
+              <span class="text-xs font-semibold text-pink-700 uppercase tracking-wide">{{ "Dessert"|t }}</span>
               {% if dessert.advance_prep.is_empty() %}
               <span class="text-xs text-gray-500">{{ &dessert.total_prep_time()|minutes }}</span>
               {% else %}
@@ -165,11 +165,11 @@
 
         <!-- Legend -->
         <div class="p-4 border-t border-gray-200">
-          <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Legend</div>
+          <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{{ "Legend"|t }}</div>
           <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-600">
-            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-500"></span>Appetizer</span>
-            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-orange-400"></span>Main</span>
-            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-pink-400"></span>Dessert</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-500"></span>{{ "Appetizer"|t }}</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-orange-400"></span>{{ "Main"|t }}</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-pink-400"></span>{{ "Dessert"|t }}</span>
           </div>
         </div>
       </div>

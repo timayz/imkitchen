@@ -5,9 +5,9 @@
     <div>
       <div class="flex items-center gap-2 mb-1">
         {% if let Some(payment_details) = subscription.payment_details %}
-        <span class="text-lg font-bold capitalize">{{ payment_details.plan }} Plan</span>
+        <span class="text-lg font-bold capitalize">{{ payment_details.plan }} {{ "Plan"|t }}</span>
         {% else %}
-        <span class="text-lg font-bold">Life Plan</span>
+        <span class="text-lg font-bold">{{ "Life Plan"|t }}</span>
         {% endif %}
       </div>
     </div>
@@ -17,11 +17,11 @@
         <div class="text-2xl font-bold text-gray-600">
           {% match payment_details.plan.as_str() %}
           {% when "monthly" %}
-          ${{ *premium.monthly_price|amount }}<span class="text-sm text-gray-500 font-normal">/month</span>
+          ${{ *premium.monthly_price|amount }}<span class="text-sm text-gray-500 font-normal">{{ "/month"|t }}</span>
           {% when "annual" %}
-          ${{ premium.annual_price()|amount }}<span class="text-sm text-gray-500 font-normal">/yr</span>
+          ${{ premium.annual_price()|amount }}<span class="text-sm text-gray-500 font-normal">{{ "/yr"|t }}</span>
           {% when _ %}
-          $0<span class="text-sm text-gray-500 font-normal">/month</span>
+          $0<span class="text-sm text-gray-500 font-normal">{{ "/month"|t }}</span>
           {% endmatch %}
         </div>
       </div>
@@ -36,7 +36,7 @@
           d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
       </svg>
       <div>
-        Your subscription has been cancelled. You'll retain Premium access until <strong>{{
+        {{ "Your subscription has been cancelled. You'll retain Premium access until"|t }} <strong>{{
           subscription.expire_at|date_year }}</strong>.
       </div>
     </div>

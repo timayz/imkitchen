@@ -1,16 +1,16 @@
 <div id="order-summary" class="bg-white rounded-lg shadow-lg p-6 sticky top-8">
-  <h2 class="text-xl font-bold mb-4">Order Summary</h2>
+  <h2 class="text-xl font-bold mb-4">{{ "Order Summary"|t }}</h2>
 
   <div class="space-y-3 mb-6">
     <div class="flex justify-between">
-      <span class="text-gray-600">Premium {{ plan }} Plan</span>
+      <span class="text-gray-600">{{ "Premium"|t }} {{ plan }} {{ "Plan"|t }}</span>
       <span class="font-semibold">${{ price|price }}</span>
     </div>
     {% if plan == "Annual" %}
     <div class="flex justify-between text-sm">
       {% if let Ok(config) = "config"|value::<crate::config::Config> %}
         {% if let Some(premium) = config.premium %}
-        <span class="text-gray-500">12 months x ${{ *premium.monthly_price|amount }}/mo</span>
+        <span class="text-gray-500">{{ "12 months x"|t }} ${{ *premium.monthly_price|amount }}{{ "/mo"|t }}</span>
         {% endif %}
         {% endif %}
     </div>
@@ -19,7 +19,7 @@
 
   <div class="border-t pt-4 space-y-2">
     <div class="flex justify-between text-sm">
-      <span class="text-gray-600">Subtotal</span>
+      <span class="text-gray-600">{{ "Subtotal"|t }}</span>
       <span>${{ price|price }}</span>
     </div>
     <div class="flex justify-between text-sm">
@@ -27,14 +27,14 @@
       <span>${{ tax|price }}</span>
     </div>
     <div class="flex justify-between font-bold text-lg border-t pt-2 mt-2">
-      <span>Total</span>
+      <span>{{ "Total"|t }}</span>
       <span class="text-green-600">${{ (price + tax)|price }}</span>
     </div>
   </div>
 
   <button type="submit" form="subscription-form"
     class="block w-full mt-6 px-6 py-4 bg-green-600 text-white font-bold text-center cursor-pointer rounded-lg hover:bg-green-700 text-lg">
-    Pay Now
+    {{ "Pay Now"|t }}
   </button>
 
   <div class="flex items-center justify-center gap-2 mt-4 text-sm text-gray-500">
@@ -43,48 +43,48 @@
         d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
       </path>
     </svg>
-    <span>Secured with 256-bit encryption</span>
+    <span>{{ "Secured with 256-bit encryption"|t }}</span>
   </div>
 
   <!-- Plan Benefits -->
   <div class="mt-6 pt-4 border-t">
-    <h3 class="font-semibold text-sm text-gray-700 mb-3">Premium includes:</h3>
+    <h3 class="font-semibold text-sm text-gray-700 mb-3">{{ "Premium includes:"|t }}</h3>
     <ul class="space-y-2 text-sm text-gray-600">
       <li class="flex items-start gap-2">
         <svg class="w-4 h-4 text-green-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
         </svg>
-        Unlimited recipes in meal plan
+        {{ "Unlimited recipes in meal plan"|t }}
       </li>
       <li class="flex items-start gap-2">
         <svg class="w-4 h-4 text-green-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
         </svg>
-        All recipe types (appetizers, accompaniments, desserts)
+        {{ "All recipe types (appetizers, accompaniments, desserts)"|t }}
       </li>
       <li class="flex items-start gap-2">
         <svg class="w-4 h-4 text-green-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
         </svg>
-        Meal preferences applied
+        {{ "Meal preferences applied"|t }}
       </li>
       <li class="flex items-start gap-2">
         <svg class="w-4 h-4 text-green-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
         </svg>
-        Batch recipe import
+        {{ "Batch recipe import"|t }}
       </li>
       <li class="flex items-start gap-2">
         <svg class="w-4 h-4 text-green-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
         </svg>
-        Priority support
+        {{ "Priority support"|t }}
       </li>
       <li class="flex items-start gap-2">
         <svg class="w-4 h-4 text-green-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
         </svg>
-        Early access to new features
+        {{ "Early access to new features"|t }}
       </li>
     </ul>
   </div>
@@ -92,7 +92,7 @@
 <button ts-swap-push="#mobile-subscription-form-btn" id="mobile-subscription-form-btn" type="submit"
   form="subscription-form"
   class="block w-full px-6 py-4 bg-green-600 text-white font-bold text-center cursor-pointer rounded-lg hover:bg-green-700 text-lg">
-  Pay Now - ${{ (price + tax)|price }}
+  {{ "Pay Now"|t }} - ${{ (price + tax)|price }}
 </button>
 <input ts-swap-push="#subscription-form-amount" type="hidden" id="subscription-form-amount" name="amount"
   value="{{ amount }}" />

@@ -3,7 +3,7 @@
     ts-target="#modal-generate [type='submit']">
     <!-- Header -->
     <div class="flex items-center justify-between p-6 border-b">
-      <h3 class="text-xl font-bold">Generate Shopping List</h3>
+      <h3 class="text-xl font-bold">{{ "Generate Shopping List"|t }}</h3>
       <button ts-trigger="click" ts-action="remove #modal-generate" class="text-gray-400 hover:text-gray-600">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -12,24 +12,23 @@
     </div>
     <!-- Body -->
     <div class="p-6">
-      <p class="text-gray-600 text-sm mb-4">Generate a shopping list from your meal plan. Choose how many days ahead to
-        include.</p>
+      <p class="text-gray-600 text-sm mb-4">{{ "Generate a shopping list from your meal plan. Choose how many days ahead to include."|t }}</p>
       <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-2">Days from now</label>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">{{ "Days from now"|t }}</label>
         <input type="number" id="generate-days" name="days" value="7" min="1" max="30"
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" />
-        <p class="text-xs text-gray-400 mt-1">Include meals planned for the next 1-30 days</p>
+        <p class="text-xs text-gray-400 mt-1">{{ "Include meals planned for the next 1-30 days"|t }}</p>
       </div>
     </div>
     <!-- Footer -->
     <div class="flex flex-col-reverse md:flex-row gap-3 p-6 border-t bg-gray-50">
       <button ts-trigger="click" ts-action="remove #modal-generate"
         class="flex-1 px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300">
-        Cancel
+        {{ "Cancel"|t }}
       </button>
       <button type="submit"
         class="flex-1 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">
-        Generate
+        {{ "Generate"|t }}
       </button>
     </div>
   </form>
