@@ -17,11 +17,11 @@
         <div class="hidden md:flex gap-6 items-center">
           <a href="/" class="text-gray-600{% if current_path == "kitchen"%} font-semibold{% else %}
             hover:text-gray-900{% endif %}">{{ "Kitchen"|t }}</a>
-          <a href="/calendar/week-1" class="text-gray-600{% if current_path == "calendar"%} font-semibold{% else %}
-            hover:text-gray-900{% endif %}">{{ "Calendar"|t }}</a>
+          <a href="/menu" class="text-gray-600{% if current_path == "menu"%} font-semibold{% else %}
+            hover:text-gray-900{% endif %}">{{ "Menu"|t }}</a>
           <a href="/recipes" class="text-gray-600{% if current_path == "recipes"%} font-semibold{% else %}
             hover:text-gray-900{% endif %}">{{ "Recipes"|t }}</a>
-          <!-- <a href="/community" class="text-gray-600{% if current_path == "community"%} font-semibold{% else %} hover:text-gray-900{% endif %}">{{ "Community"|t }}</a> -->
+          <a href="/groceries" class="text-gray-600{% if current_path == "groceries"%} font-semibold{% else %} hover:text-gray-900{% endif %}">{{ "Groceries"|t }}</a>
         </div>
 
         <div class="hidden md:flex items-center gap-4">
@@ -51,13 +51,13 @@
         <span class="text-xs mt-1">{{ "Kitchen"|t }}</span>
       </a>
       {% endblock %}
-      <a href="/calendar/week-1" class="flex flex-col items-center py-2 px-3{% if current_path == "calendar"%}
+      <a href="/menu" class="flex flex-col items-center py-2 px-3{% if current_path == "menu"%}
         text-green-600{% else %} text-gray-600{% endif %}">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
         </svg>
-        <span class="text-xs mt-1">{{ "Calendar"|t }}</span>
+        <span class="text-xs mt-1">{{ "Menu"|t }}</span>
       </a>
       <a href="/recipes" class="flex flex-col items-center py-2 px-3{% if current_path == "recipes"%} text-green-600{%
         else %} text-gray-600{% endif %}">
@@ -68,12 +68,15 @@
         </svg>
         <span class="text-xs mt-1">{{ "Recipes"|t }}</span>
       </a>
-      <!-- <a href="/community" class="flex flex-col items-center py-2 px-3{% if current_path == "community"%} text-green-600{% else %} text-gray-600{% endif %}"> -->
-      <!--     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"> -->
-      <!--         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path> -->
-      <!--     </svg> -->
-      <!--     <span class="text-xs mt-1">{{ "Community"|t }}</span> -->
-      <!-- </a> -->
+      <a href="/groceries" class="flex flex-col items-center py-2 px-3{% if current_path == "groceries"%} text-green-600{%
+        else %} text-gray-600{% endif %}">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z">
+          </path>
+        </svg>
+        <span class="text-xs mt-1">{{ "Groceries"|t }}</span>
+      </a>
       <a href="/settings/general" class="flex flex-col items-center py-2 px-3{% if current_path == "settings" %} text-green-600{% else %} text-gray-600{% endif %}">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

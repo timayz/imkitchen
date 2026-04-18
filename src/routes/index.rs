@@ -3,7 +3,6 @@ use axum::response::IntoResponse;
 use axum_extra::extract::CookieJar;
 use imkitchen_mealplan::ChangeSlotRecipeStatus;
 use imkitchen_mealplan::slot::SlotRow;
-use imkitchen_mealplan::week::WeekRow;
 use imkitchen_shared::mealplan::DaySlotStatus;
 use imkitchen_shared::recipe::{IngredientUnitFormat, Instruction};
 use imkitchen_shared::{mealplan::DaySlotRecipe, recipe::RecipeType};
@@ -27,12 +26,11 @@ pub struct KitchenTemplate {
     pub slot_recipe: Option<imkitchen_recipe::query::user::UserView>,
     pub slot_completed_count: u8,
     pub slot_total_count: u8,
-    pub week: Option<WeekRow>,
     pub prep_remiders: Option<Vec<DaySlotRecipe>>,
-    pub generate_next_weeks_needed: bool,
     pub completed_instructions: Vec<(usize, String)>,
     pub coming_instructions: Vec<(usize, String)>,
     pub current_instruction: Option<(usize, Instruction)>,
+    pub date: String,
 }
 
 impl Default for KitchenTemplate {
@@ -42,14 +40,13 @@ impl Default for KitchenTemplate {
             user: AuthUser::default(),
             slot: None,
             slot_recipe: None,
-            week: None,
             prep_remiders: None,
-            generate_next_weeks_needed: false,
             slot_completed_count: 0,
             slot_total_count: 1,
             coming_instructions: vec![],
             completed_instructions: vec![],
             current_instruction: None,
+            date: "".to_owned(),
         }
     }
 }
@@ -60,6 +57,7 @@ pub async fn page(
     user: Option<AuthUser>,
     token: Option<AuthToken>,
     State(app): State<AppState>,
+    params: Option<Path<(String,)>>,
     jar: CookieJar,
 ) -> impl IntoResponse {
     let (Some(user), Some(token)) = (user, token) else {
@@ -70,9 +68,16 @@ pub async fn page(
 
     tracing::Span::current().record("user", &user.id);
 
-    let day = imkitchen_mealplan::now(&user.tz);
-    let slot =
-        crate::try_page_response!(app.mealplan_query.next_slot_from(day, &user.id), template);
+    let bounds = if let Some(Path((date,))) = params {
+        imkitchen_mealplan::month_bounds_from_date(&date, &user.tz)
+    } else {
+        imkitchen_mealplan::month_bounds_from_now(&user.tz)
+    };
+    let bounds = crate::try_page_response!(sync: bounds, template);
+    let slot = crate::try_page_response!(
+        app.mealplan_query.next_slot_from(bounds.date, &user.id),
+        template
+    );
 
     let mut slot_completed_count = 0;
     let mut slot_total_count = 1;
@@ -194,20 +199,6 @@ pub async fn page(
         None
     };
 
-    let week_from_now = imkitchen_mealplan::current_and_next_four_weeks_from_now(&user.tz)[0];
-    let week = crate::try_page_response!(
-        app.mealplan_query
-            .find_week_last_from(week_from_now.start, &user.id),
-        template
-    );
-    let last_week = crate::try_page_response!(app.mealplan_query.last_week(&user.id), template);
-
-    let generate_next_weeks_needed = match (week.as_ref(), last_week) {
-        (Some(week), Some(last_week)) => week.start == last_week.week,
-        (_, Some(_)) => true,
-        _ => false,
-    };
-
     if let (Some(recipe), Some(slot)) = (slot_recipe.as_mut(), &slot) {
         for ingredient in recipe.ingredients.iter_mut() {
             ingredient.quantity += ((recipe.household_size as u32 * ingredient.quantity
@@ -216,6 +207,9 @@ pub async fn page(
         }
         recipe.ingredients.sort_by_key(|i| i.name.to_owned());
     }
+
+    let fmt = time::macros::format_description!("[year]-[month]-[day]");
+    let date = crate::try_page_response!(sync: bounds.date.format(&fmt), template);
 
     let auth_cookie = crate::try_page_response!(sync:
         crate::auth::build_cookie(app.config.jwt, token.sub.to_owned(), token.acc.to_owned()),
@@ -230,14 +224,13 @@ pub async fn page(
             user,
             slot,
             slot_recipe,
-            week,
             prep_remiders,
-            generate_next_weeks_needed,
             slot_total_count,
             slot_completed_count,
             completed_instructions,
             coming_instructions,
             current_instruction,
+            date,
             ..Default::default()
         }),
     )
@@ -245,8 +238,8 @@ pub async fn page(
 }
 
 #[derive(askama::Template)]
-#[template(path = "partials/dashboard-steps.html")]
-pub struct DashboardStepsTemplate {
+#[template(path = "partials/kitchen-steps.html")]
+pub struct KitchenStepsTemplate {
     pub slot_recipe: imkitchen_recipe::query::user::UserView,
     pub completed_instructions: Vec<(usize, String)>,
     pub coming_instructions: Vec<(usize, String)>,
@@ -254,6 +247,7 @@ pub struct DashboardStepsTemplate {
     pub slot: SlotRow,
     pub slot_completed_count: u8,
     pub slot_total_count: u8,
+    pub date: String,
 }
 
 #[tracing::instrument(skip_all, fields(user = tracing::field::Empty))]
@@ -261,13 +255,12 @@ pub async fn update_slot_step_action(
     template: Template,
     user: AuthUser,
     State(app): State<AppState>,
-    Path((recipe_id, direction)): Path<(String, String)>,
+    Path((date, recipe_id, direction)): Path<(String, String, String)>,
 ) -> impl IntoResponse {
     tracing::Span::current().record("user", &user.id);
 
-    let day = imkitchen_mealplan::now(&user.tz);
-    let mut slot =
-        crate::try_page_response!(opt: app.mealplan_query.next_slot_from(day, &user.id), template);
+    let bounds = crate::try_page_response!(sync: imkitchen_mealplan::month_bounds_from_date(&date, &user.tz), template);
+    let mut slot = crate::try_page_response!(opt: app.mealplan_query.next_slot_from(bounds.date, &user.id), template);
 
     let mut completed_instructions = vec![];
     let mut coming_instructions = vec![];
@@ -370,11 +363,13 @@ pub async fn update_slot_step_action(
         }
     }
 
+    let bounds_date = imkitchen_mealplan::date_to_u64(bounds.date);
+
     crate::try_response!(
         app.mealplan_cmd
             .change_slot_recipe_status(ChangeSlotRecipeStatus {
                 user_id: user.id.to_owned(),
-                day: day.unix_timestamp() as u64,
+                date: bounds_date,
                 recipe_id,
                 status: slot_recipe_status.clone()
             }),
@@ -434,7 +429,7 @@ pub async fn update_slot_step_action(
     };
 
     template
-        .render(DashboardStepsTemplate {
+        .render(KitchenStepsTemplate {
             slot,
             slot_recipe,
             slot_total_count,
@@ -442,13 +437,15 @@ pub async fn update_slot_step_action(
             completed_instructions,
             coming_instructions,
             current_instruction,
+            date,
         })
         .into_response()
 }
 
 #[derive(askama::Template)]
-#[template(path = "partials/dashboard-dish.html")]
-pub struct DashboardDishTemplate {
+#[template(path = "partials/kitchen-dish.html")]
+pub struct KitchenDishTemplate {
+    pub date: String,
     pub slot_recipe: imkitchen_recipe::query::user::UserView,
     pub completed_instructions: Vec<(usize, String)>,
     pub coming_instructions: Vec<(usize, String)>,
@@ -460,13 +457,12 @@ pub async fn select_dish(
     template: Template,
     user: AuthUser,
     State(app): State<AppState>,
-    Path((recipe_id,)): Path<(String,)>,
+    Path((date, recipe_id)): Path<(String, String)>,
 ) -> impl IntoResponse {
     tracing::Span::current().record("user", &user.id);
 
-    let day = imkitchen_mealplan::now(&user.tz);
-    let slot =
-        crate::try_page_response!(opt: app.mealplan_query.next_slot_from(day, &user.id), template);
+    let bounds = crate::try_page_response!(sync: imkitchen_mealplan::month_bounds_from_date(&date, &user.tz), template);
+    let slot = crate::try_page_response!(opt: app.mealplan_query.next_slot_from(bounds.date, &user.id), template);
 
     let mut completed_instructions = vec![];
     let mut coming_instructions = vec![];
@@ -503,17 +499,6 @@ pub async fn select_dish(
 
     let mut slot_recipe =
         crate::try_page_response!(opt: app.recipe_query.find_user(&recipe_id), template);
-
-    crate::try_response!(
-        app.mealplan_cmd
-            .change_slot_recipe_status(ChangeSlotRecipeStatus {
-                user_id: user.id.to_owned(),
-                day: day.unix_timestamp() as u64,
-                recipe_id,
-                status: slot_recipe_status.clone()
-            }),
-        template
-    );
 
     for ingredient in slot_recipe.ingredients.iter_mut() {
         ingredient.quantity += ((slot_recipe.household_size as u32 * ingredient.quantity
@@ -576,11 +561,12 @@ pub async fn select_dish(
     };
 
     template
-        .render(DashboardDishTemplate {
+        .render(KitchenDishTemplate {
             slot_recipe,
             completed_instructions,
             coming_instructions,
             current_instruction,
+            date,
         })
         .into_response()
 }

@@ -1,13 +1,14 @@
 mod change_slot_recipe_status;
 mod generate;
 
+use bitcode::{Decode, Encode};
 use evento::{
-    Executor,
+    Executor, Projection, ProjectionAggregator,
     metadata::Event,
     subscription::{Context, SubscriptionBuilder},
 };
 use imkitchen_db::table::MealPlanRecipe;
-use imkitchen_shared::recipe::RecipeType;
+use imkitchen_shared::{mealplan, recipe::RecipeType};
 use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::SqlitePool;
@@ -33,6 +34,39 @@ impl<E: Executor> Command<E> {
     pub fn new(state: imkitchen_shared::State<E>) -> Self {
         Self { state }
     }
+
+    pub async fn load(&self, id: impl Into<String>) -> anyhow::Result<Option<MealPlan>> {
+        create_projection(id).execute(&self.executor).await
+    }
+}
+
+#[evento::projection(Encode, Decode)]
+pub struct MealPlan {
+    pub user_id: String,
+    pub generated_at: u64,
+}
+
+impl ProjectionAggregator for MealPlan {
+    fn aggregator_id(&self) -> String {
+        self.user_id.to_owned()
+    }
+}
+
+pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, MealPlan> {
+    Projection::new::<mealplan::MealPlan>(id)
+        .handler(handle_generated())
+        .safety_check()
+}
+
+#[evento::handler]
+async fn handle_generated(
+    event: Event<mealplan::DaysGenerated>,
+    data: &mut MealPlan,
+) -> anyhow::Result<()> {
+    data.user_id = event.metadata.requested_by()?;
+    data.generated_at = event.timestamp;
+
+    Ok(())
 }
 
 pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {

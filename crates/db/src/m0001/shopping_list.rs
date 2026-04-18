@@ -1,4 +1,4 @@
-use sea_query::{ColumnDef, Index, Table, TableCreateStatement, TableDropStatement};
+use sea_query::{ColumnDef, Table, TableCreateStatement, TableDropStatement};
 
 use crate::table::ShoppingList;
 
@@ -9,16 +9,16 @@ fn create_table() -> TableCreateStatement {
         .table(ShoppingList::Table)
         .col(
             ColumnDef::new(ShoppingList::UserId)
+                .primary_key()
                 .string()
                 .not_null()
                 .string_len(26),
         )
-        .col(ColumnDef::new(ShoppingList::Week).big_integer().not_null())
         .col(ColumnDef::new(ShoppingList::Ingredients).blob().not_null())
-        .primary_key(
-            Index::create()
-                .col(ShoppingList::UserId)
-                .col(ShoppingList::Week),
+        .col(
+            ColumnDef::new(ShoppingList::GeneratedAt)
+                .big_integer()
+                .not_null(),
         )
         .to_owned()
 }

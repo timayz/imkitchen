@@ -24,12 +24,6 @@ fn create_table() -> TableCreateStatement {
                 .string_len(26),
         )
         .col(
-            ColumnDef::new(ShoppingRecipe::HouseholdSize)
-                .integer()
-                .not_null()
-                .default(4),
-        )
-        .col(
             ColumnDef::new(ShoppingRecipe::Ingredients)
                 .blob()
                 .not_null(),

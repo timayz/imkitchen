@@ -14,6 +14,7 @@ fn create_table() -> TableCreateStatement {
                 .string_len(26),
         )
         .col(ColumnDef::new(MealPlanSlot::Day).big_integer().not_null())
+        .col(ColumnDef::new(MealPlanSlot::Date).big_integer().not_null())
         .col(
             ColumnDef::new(MealPlanSlot::HouseholdSize)
                 .integer()
@@ -24,10 +25,15 @@ fn create_table() -> TableCreateStatement {
         .col(ColumnDef::new(MealPlanSlot::Appetizer).blob().null())
         .col(ColumnDef::new(MealPlanSlot::Accompaniment).blob().null())
         .col(ColumnDef::new(MealPlanSlot::Dessert).blob().null())
+        .col(
+            ColumnDef::new(MealPlanSlot::GeneratedAt)
+                .big_integer()
+                .not_null(),
+        )
         .primary_key(
             Index::create()
                 .col(MealPlanSlot::UserId)
-                .col(MealPlanSlot::Day),
+                .col(MealPlanSlot::Date),
         )
         .to_owned()
 }

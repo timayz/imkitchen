@@ -2,7 +2,7 @@ use evento::Executor;
 use evento::cursor::Args;
 use evento::{Aggregator, ReadAggregator};
 use imkitchen_db::table::MealPlanRecipe;
-use imkitchen_shared::mealplan::{MealPlan, Slot, SlotRecipe, WeekGenerated};
+use imkitchen_shared::mealplan::{DaysGenerated, MealPlan, Slot, SlotRecipe};
 use imkitchen_shared::recipe::{DietaryRestriction, RecipeType};
 use rand::seq::SliceRandom;
 use sea_query::{Expr, ExprTrait, Func, IntoColumnRef, Query, SimpleExpr, SqliteQueryBuilder};
@@ -33,7 +33,8 @@ pub struct Randomize {
 
 pub struct Generate {
     pub user_id: String,
-    pub weeks: Vec<(u64, u64)>,
+    pub start: u64,
+    pub days: u8,
     pub randomize: Option<Randomize>,
     pub household_size: u16,
 }
@@ -78,106 +79,102 @@ impl<E: Executor> super::Command<E> {
             .map(|e| e.node.version)
             .unwrap_or_default();
 
-        let mut main_course_recipes = main_course_recipes.iter().cycle().take(7 * 4);
+        let mut main_course_recipes = main_course_recipes.iter().cycle().take(input.days as usize);
         let mut builder = evento::aggregator(&input.user_id)
             .original_version(version)
             .requested_by(&input.user_id)
             .to_owned();
 
-        for (start, end) in input.weeks {
-            let mut slots = vec![];
+        let mut slots = vec![];
 
-            while let Some(recipe) = main_course_recipes.by_ref().next() {
-                let day = OffsetDateTime::from_unix_timestamp(start as i64)?
-                    + Duration::days((slots.len()) as i64);
+        while let Some(recipe) = main_course_recipes.by_ref().next() {
+            let day = OffsetDateTime::from_unix_timestamp(input.start as i64)?
+                + Duration::days((slots.len()) as i64);
 
-                let appetizer_recipes = match input.randomize.as_ref() {
-                    Some(opts) => {
-                        self.random(
-                            &input.user_id,
-                            RecipeType::Appetizer,
-                            1.0,
-                            opts.dietary_restrictions.to_vec(),
-                        )
-                        .await?
-                    }
-                    _ => {
-                        // self.first_week_recipes(&input.user_id, RecipeType::Appetizer)
-                        //     .await?
-                        vec![]
-                    }
-                };
+            let date = crate::date_to_u64(day);
 
-                let mut appetizer_recipes = appetizer_recipes.iter();
-
-                let accompaniment_recipes = match input.randomize.as_ref() {
-                    Some(opts) => {
-                        self.random(
-                            &input.user_id,
-                            RecipeType::Accompaniment,
-                            1.0,
-                            opts.dietary_restrictions.to_vec(),
-                        )
-                        .await?
-                    }
-                    _ => {
-                        // self.first_week_recipes(&input.user_id, RecipeType::Accompaniment)
-                        //     .await?
-                        vec![]
-                    }
-                };
-
-                let mut accompaniment_recipes = accompaniment_recipes.iter();
-
-                let dessert_recipes = match input.randomize.as_ref() {
-                    Some(opts) => {
-                        self.random(
-                            &input.user_id,
-                            RecipeType::Dessert,
-                            1.0,
-                            opts.dietary_restrictions.to_vec(),
-                        )
-                        .await?
-                    }
-                    _ => {
-                        // self.first_week_recipes(&input.user_id, RecipeType::Dessert)
-                        //     .await?
-                        vec![]
-                    }
-                };
-                let mut dessert_recipes = dessert_recipes.iter();
-
-                let accompaniment = if recipe.accepts_accompaniment && input.randomize.is_some() {
-                    accompaniment_recipes.next().map(|r| r.into())
-                } else {
-                    None
-                };
-
-                slots.push(Slot {
-                    day: day.unix_timestamp() as u64,
-                    household_size: input.household_size,
-                    appetizer: appetizer_recipes.next().map(|r| r.into()),
-                    main_course: recipe.into(),
-                    dessert: dessert_recipes.next().map(|r| r.into()),
-                    accompaniment,
-                });
-
-                if slots.len() == 7 {
-                    break;
+            let appetizer_recipes = match input.randomize.as_ref() {
+                Some(opts) => {
+                    self.random(
+                        &input.user_id,
+                        RecipeType::Appetizer,
+                        1.0,
+                        opts.dietary_restrictions.to_vec(),
+                    )
+                    .await?
                 }
-            }
+                _ => {
+                    // self.first_week_recipes(&input.user_id, RecipeType::Appetizer)
+                    //     .await?
+                    vec![]
+                }
+            };
 
-            if slots.is_empty() {
-                break;
-            }
+            let mut appetizer_recipes = appetizer_recipes.iter();
 
-            builder.event(&WeekGenerated {
-                slots,
-                start,
-                end,
+            let accompaniment_recipes = match input.randomize.as_ref() {
+                Some(opts) => {
+                    self.random(
+                        &input.user_id,
+                        RecipeType::Accompaniment,
+                        1.0,
+                        opts.dietary_restrictions.to_vec(),
+                    )
+                    .await?
+                }
+                _ => {
+                    // self.first_week_recipes(&input.user_id, RecipeType::Accompaniment)
+                    //     .await?
+                    vec![]
+                }
+            };
+
+            let mut accompaniment_recipes = accompaniment_recipes.iter();
+
+            let dessert_recipes = match input.randomize.as_ref() {
+                Some(opts) => {
+                    self.random(
+                        &input.user_id,
+                        RecipeType::Dessert,
+                        1.0,
+                        opts.dietary_restrictions.to_vec(),
+                    )
+                    .await?
+                }
+                _ => {
+                    // self.first_week_recipes(&input.user_id, RecipeType::Dessert)
+                    //     .await?
+                    vec![]
+                }
+            };
+            let mut dessert_recipes = dessert_recipes.iter();
+
+            let accompaniment = if recipe.accepts_accompaniment && input.randomize.is_some() {
+                accompaniment_recipes.next().map(|r| r.into())
+            } else {
+                None
+            };
+
+            slots.push(Slot {
+                day: day.unix_timestamp() as u64,
+                date,
                 household_size: input.household_size,
+                appetizer: appetizer_recipes.next().map(|r| r.into()),
+                main_course: recipe.into(),
+                dessert: dessert_recipes.next().map(|r| r.into()),
+                accompaniment,
             });
         }
+
+        if slots.is_empty() {
+            imkitchen_shared::user!("No slots generated");
+        }
+
+        builder.event(&DaysGenerated {
+            slots,
+            start: input.start,
+            household_size: input.household_size,
+        });
 
         builder.commit(&self.executor).await?;
 

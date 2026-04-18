@@ -1,0 +1,91 @@
+{% extends "_user.html" %}
+{% block title %}{{ "Groceries"|t }} - imkitchen{% endblock %}
+{% block content %}
+
+<!-- Main Content -->
+<div class="px-4 py-6 max-w-lg mx-auto">
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-5">
+    <h1 class="text-xl font-bold">{{ "Shopping List"|t }}</h1>
+    <button ts-trigger="click" ts-req="/groceries/generate" ts-target="body" ts-swap="append"
+      class="px-3 py-1.5 text-sm rounded-md bg-gray-900 hover:bg-gray-800 text-white font-medium">
+      {{ "Generate"|t }}
+    </button>
+  </div>
+
+  {% if ingredients.is_empty() %}
+  <!-- Empty State: No shopping list generated yet -->
+  <div id="empty-state">
+    <div class="flex flex-col items-center justify-center py-16 text-center">
+      <svg class="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
+        </path>
+      </svg>
+      <p class="text-gray-500 text-sm mb-1">{{ "No shopping list yet"|t }}</p>
+      <p class="text-gray-400 text-xs">{{ "Generate one from your meal plan"|t }}</p>
+    </div>
+  </div>
+
+  {% else %}
+  <!-- Shopping List Content (shown when list exists) -->
+  <div id="list-content">
+    <!-- Category Navigation -->
+    <div class="flex flex-wrap gap-2 mb-4">
+      {% for (name, ingredients) in ingredients %}
+      <button onclick="toggleCategory('{{ name }}')"
+        class="category-btn px-3 py-1.5 rounded-full text-xs font-medium {% if loop.index > 1 %}bg-white text-gray-700 border border-gray-300{% else %}bg-green-600 text-white{% endif %}">
+        {{ name|t }} ({{ ingredients.len() }})
+      </button>
+      {% endfor %}
+    </div>
+
+    <!-- Category Sections -->
+    {% for (name, ingredients) in ingredients %}
+    <div id="category-{{ name }}"
+      class="category-section bg-white rounded-lg shadow-sm mb-4{% if loop.index > 1 %} hidden{% endif %}">
+      <div class="divide-y divide-gray-100">
+        {% for ingredient in ingredients %}
+        <label class="group flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer">
+          <input{% if checked.contains(&ingredient.key()) %} checked{% endif %} type="checkbox" ts-trigger="change"
+            ts-req="/groceries/toggle" ts-json="{{ ingredient.json_key() }}" ts-req-method="post" ts-swap="none"
+            class="rounded border-gray-300 text-green-600" autocomplete="off" />
+          <div class="flex-1 min-w-0">
+            <span class="font-medium group-has-checked:line-through group-has-checked:text-gray-400">{{ ingredient.name
+              }}</span>
+            <span class="text-sm text-gray-500 ml-2 group-has-checked:line-through group-has-checked:text-gray-300">{{
+              ingredient.unit.format(ingredient.quantity.to_owned()) }}</span>
+          </div>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<script>
+  function toggleCategory(name) {
+    // Hide all sections
+    document.querySelectorAll('.category-section').forEach(el => el.classList.add('hidden'));
+    // Show selected
+    document.getElementById('category-' + name).classList.remove('hidden');
+
+    // Update nav buttons
+    document.querySelectorAll('.category-btn').forEach(btn => {
+      btn.classList.remove('bg-green-600', 'text-white');
+      btn.classList.add('bg-white', 'text-gray-700', 'border', 'border-gray-300');
+    });
+
+    // Find clicked button by matching category name in onclick
+    const buttons = document.querySelectorAll('.category-btn');
+    buttons.forEach(btn => {
+      if (btn.getAttribute('onclick').includes(name)) {
+        btn.classList.remove('bg-white', 'text-gray-700', 'border', 'border-gray-300');
+        btn.classList.add('bg-green-600', 'text-white');
+      }
+    });
+  }
+</script>
+{% endblock %}

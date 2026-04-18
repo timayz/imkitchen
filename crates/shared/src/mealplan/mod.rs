@@ -11,6 +11,7 @@ pub struct SlotRecipe {
 #[derive(Encode, Decode, Clone, PartialEq, Debug)]
 pub struct Slot {
     pub day: u64,
+    pub date: u64,
     pub household_size: u16,
     pub appetizer: Option<SlotRecipe>,
     pub main_course: SlotRecipe,
@@ -78,15 +79,14 @@ pub enum Status {
 
 #[evento::aggregator]
 pub enum MealPlan {
-    WeekGenerated {
+    DaysGenerated {
         start: u64,
-        end: u64,
         slots: Vec<Slot>,
         household_size: u16,
     },
 
     SlotRecipeStatusChanged {
-        day: u64,
+        date: u64,
         recipe_id: String,
         status: DaySlotStatus,
     },
