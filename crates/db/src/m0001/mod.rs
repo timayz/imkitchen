@@ -2,13 +2,13 @@ mod contact_admin;
 mod contact_global_stat;
 mod mealplan_recipe;
 mod mealplan_slot;
-mod mealplan_week;
 mod recipe_comment;
 mod recipe_thumbnail;
 mod recipe_user;
 mod recipe_user_stat;
 mod shopping_list;
 mod shopping_recipe;
+mod shopping_slot;
 mod user;
 mod user_admin;
 mod user_global_stat;
@@ -59,10 +59,10 @@ sqlx_migrator::sqlite_migration!(
         mealplan_recipe::CreateIdx1,
         mealplan_recipe::CreateIdx2,
         mealplan_recipe::CreateIdx3,
-        mealplan_week::CreateTable,
         mealplan_slot::CreateTable,
         shopping_list::CreateTable,
         shopping_recipe::CreateTable,
-        shopping_recipe::CreateIdx1
+        shopping_recipe::CreateIdx1,
+        shopping_slot::CreateTable
     ]
 );

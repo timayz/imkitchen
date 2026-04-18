@@ -7,6 +7,12 @@
   <div class="flex items-center justify-between gap-2 mb-4 md:mb-6">
     <div class="flex items-center gap-2 md:gap-4 min-w-0">
       <h1 class="text-xl md:text-3xl font-bold truncate">{{ first_month_day|month_year(first_month_day) }}</h1>
+      {% if selected_slot.is_none() %}
+      <button ts-trigger="click" ts-req="/menu/{{ first_month_day|yyyymmdd }}/generate" ts-target="body" ts-swap="append"
+        class="sm:inline-flex px-3 py-1.5 text-sm rounded-md bg-gray-900 hover:bg-gray-800 text-white font-medium">
+            {{ "Generate"|t }}
+      </button>
+      {% endif %}
     </div>
     <div class="flex items-center gap-1 md:gap-2 shrink-0">
       <a href="/menu/{{ prev_month }}" aria-label="Previous month"
@@ -24,7 +30,11 @@
   </div>
 
   <!-- Layout: Calendar + Sidebar -->
+  {% if selected_slot.is_some() || !user.is_premium() %}
   <div class="lg:grid lg:grid-cols-3 lg:gap-6">
+  {% else %}
+  <div>
+  {% endif %}
     <!-- Calendar Month Grid -->
     <div class="lg:col-span-2 bg-white rounded-lg shadow overflow-hidden">
       <!-- Day-of-week headers -->
@@ -161,16 +171,6 @@
             <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-orange-400"></span>Main</span>
             <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-pink-400"></span>Dessert</span>
           </div>
-        </div>
-      </div>
-      {% else %}
-      <div class="bg-white rounded-lg shadow lg:sticky lg:top-4">
-        <div class="p-4 border-t border-gray-200 text-center">
-          <button ts-trigger="click" ts-req="/menu/{{ first_month_day|yyyymmdd }}/generate" ts-target="body"
-            ts-swap="append"
-            class="text-center px-3 py-2 bg-gray-900 text-white text-sm rounded-md hover:bg-gray-800 font-medium">
-            {{ "Generate"|t }}
-          </button>
         </div>
       </div>
       {% endif %}

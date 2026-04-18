@@ -11,7 +11,6 @@ use crate::template::{NotFoundTemplate, Template};
 
 mod about;
 mod admin;
-mod calendar;
 mod contact;
 mod groceries;
 mod health;
@@ -101,20 +100,16 @@ pub fn router(app_state: AppState) -> Router {
             get(menu::generate_modal).post(menu::generate_action),
         )
         .route("/menu/{date}/generate/status", get(menu::generate_status))
-        .route(
-            "/calendar/regenerate",
-            get(calendar::regenerate_modal).post(calendar::regenerate_action),
-        )
-        .route(
-            "/calendar/regenerate/status",
-            get(calendar::regenerate_status),
-        )
-        .route("/calendar/week-{index}", get(calendar::page))
-        .route(
-            "/groceries",
-            get(groceries::page).post(groceries::reset_all_action),
-        )
+        .route("/groceries", get(groceries::page))
         .route("/groceries/toggle", post(groceries::toggle_action))
+        .route(
+            "/groceries/generate",
+            get(groceries::generate_modal).post(groceries::generate_action),
+        )
+        .route(
+            "/groceries/generate/status",
+            get(groceries::generate_status),
+        )
         .route("/recipes", get(recipes::index::page))
         .route(
             "/recipes/import",

@@ -4,9 +4,7 @@ use evento::{
     subscription::{Context, SubscriptionBuilder},
 };
 use imkitchen_db::table::{MealPlanRecipe, MealPlanSlot};
-use imkitchen_shared::mealplan::{
-    DaySlotRecipe, DaysGenerated, SlotRecipeStatusChanged, WeekGenerated,
-};
+use imkitchen_shared::mealplan::{DaySlotRecipe, DaysGenerated, SlotRecipeStatusChanged};
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::prelude::FromRow;
@@ -42,6 +40,7 @@ pub struct SlotRow {
     pub appetizer: Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
     pub accompaniment: Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
     pub dessert: Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
+    pub generated_at: u64,
 }
 
 impl SlotRow {
@@ -82,6 +81,7 @@ impl<E: Executor> super::Query<E> {
                 MealPlanSlot::Appetizer,
                 MealPlanSlot::Accompaniment,
                 MealPlanSlot::Dessert,
+                MealPlanSlot::GeneratedAt,
             ])
             .from(MealPlanSlot::Table)
             .and_where(Expr::col(MealPlanSlot::UserId).eq(&user_id))
@@ -112,6 +112,7 @@ impl<E: Executor> super::Query<E> {
                 MealPlanSlot::Appetizer,
                 MealPlanSlot::Accompaniment,
                 MealPlanSlot::Dessert,
+                MealPlanSlot::GeneratedAt,
             ])
             .from(MealPlanSlot::Table)
             .and_where(Expr::col(MealPlanSlot::UserId).eq(&user_id))
@@ -191,7 +192,6 @@ impl<E: Executor> super::Query<E> {
 pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
     SubscriptionBuilder::new("mealplan-slot")
         .handler(handle_days_generated())
-        .handler(handle_week_generated())
         .handler(handle_slot_recipe_status_changed())
 }
 
@@ -253,10 +253,12 @@ async fn handle_days_generated<E: Executor>(
             MealPlanSlot::Appetizer,
             MealPlanSlot::Accompaniment,
             MealPlanSlot::Dessert,
+            MealPlanSlot::GeneratedAt,
         ])
         .to_owned();
     let mut has_values = false;
     let user_id = event.aggregator_id.to_owned();
+    let timestamp = event.timestamp;
     for slot in event.data.slots {
         let Some(main_course): Option<DaySlotRecipe> = recipes
             .iter()
@@ -298,6 +300,7 @@ async fn handle_days_generated<E: Executor>(
             appetizer.into(),
             accompaniment.into(),
             dessert.into(),
+            timestamp.into(),
         ]);
 
         has_values = true;
@@ -315,134 +318,7 @@ async fn handle_days_generated<E: Executor>(
                 MealPlanSlot::MainCourse,
                 MealPlanSlot::Accompaniment,
                 MealPlanSlot::Dessert,
-            ])
-            .to_owned(),
-    );
-
-    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    sqlx::query_with(&sql, values).execute(&pool).await?;
-
-    Ok(())
-}
-
-#[evento::subscription]
-async fn handle_week_generated<E: Executor>(
-    context: &Context<'_, E>,
-    event: Event<WeekGenerated>,
-) -> anyhow::Result<()> {
-    let pool = context.extract::<sqlx::SqlitePool>();
-    let recipe_ids = event
-        .data
-        .slots
-        .iter()
-        .flat_map(|slot| {
-            let mut ids = vec![slot.main_course.id.to_owned()];
-
-            if let Some(ref r) = slot.appetizer {
-                ids.push(r.id.to_owned());
-            }
-
-            if let Some(ref r) = slot.dessert {
-                ids.push(r.id.to_owned());
-            }
-
-            if let Some(ref r) = slot.accompaniment {
-                ids.push(r.id.to_owned());
-            }
-
-            ids
-        })
-        .collect::<Vec<_>>();
-
-    let statement = Query::select()
-        .columns([
-            MealPlanRecipe::Id,
-            MealPlanRecipe::Name,
-            MealPlanRecipe::PrepTime,
-            MealPlanRecipe::CookTime,
-            MealPlanRecipe::AdvancePrep,
-        ])
-        .from(MealPlanRecipe::Table)
-        .and_where(Expr::col(MealPlanRecipe::UserId).eq(&event.aggregator_id))
-        .and_where(Expr::col(MealPlanRecipe::Id).is_in(recipe_ids))
-        .to_owned();
-
-    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    let recipes = sqlx::query_as_with::<_, MealPlanRecipeRow, _>(&sql, values)
-        .fetch_all(&pool)
-        .await?;
-
-    let mut statement = Query::insert()
-        .into_table(MealPlanSlot::Table)
-        .columns([
-            MealPlanSlot::UserId,
-            MealPlanSlot::Day,
-            MealPlanSlot::HouseholdSize,
-            MealPlanSlot::MainCourse,
-            MealPlanSlot::Appetizer,
-            MealPlanSlot::Accompaniment,
-            MealPlanSlot::Dessert,
-        ])
-        .to_owned();
-    let mut has_values = false;
-    let user_id = event.aggregator_id.to_owned();
-    for slot in event.data.slots {
-        let Some(main_course): Option<DaySlotRecipe> = recipes
-            .iter()
-            .find(|r| r.id == slot.main_course.id)
-            .map(|r| r.into())
-        else {
-            continue;
-        };
-
-        let main_course = bitcode::encode(&main_course);
-
-        let appetizer: Option<DaySlotRecipe> = slot
-            .appetizer
-            .and_then(|a| recipes.iter().find(|r| r.id == a.id))
-            .map(|r| r.into());
-
-        let appetizer = appetizer.map(|r| bitcode::encode(&r));
-
-        let accompaniment: Option<DaySlotRecipe> = slot
-            .accompaniment
-            .and_then(|a| recipes.iter().find(|r| r.id == a.id))
-            .map(|r| r.into());
-
-        let accompaniment = accompaniment.map(|r| bitcode::encode(&r));
-
-        let dessert: Option<DaySlotRecipe> = slot
-            .dessert
-            .and_then(|a| recipes.iter().find(|r| r.id == a.id))
-            .map(|r| r.into());
-
-        let dessert = dessert.map(|r| bitcode::encode(&r));
-
-        statement.values_panic([
-            user_id.to_owned().into(),
-            slot.day.into(),
-            slot.household_size.into(),
-            main_course.into(),
-            appetizer.into(),
-            accompaniment.into(),
-            dessert.into(),
-        ]);
-
-        has_values = true;
-    }
-
-    if !has_values {
-        return Ok(());
-    }
-
-    statement.on_conflict(
-        OnConflict::columns([MealPlanSlot::UserId, MealPlanSlot::Day])
-            .update_columns([
-                MealPlanSlot::HouseholdSize,
-                MealPlanSlot::Appetizer,
-                MealPlanSlot::MainCourse,
-                MealPlanSlot::Accompaniment,
-                MealPlanSlot::Dessert,
+                MealPlanSlot::GeneratedAt,
             ])
             .to_owned(),
     );

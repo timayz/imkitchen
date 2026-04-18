@@ -190,15 +190,6 @@ pub enum MealPlanRecipe {
 }
 
 #[derive(Iden, Clone)]
-pub enum MealPlanWeek {
-    Table,
-    UserId,
-    Start,
-    End,
-    Slots,
-}
-
-#[derive(Iden, Clone)]
 pub enum MealPlanSlot {
     Table,
     UserId,
@@ -209,6 +200,7 @@ pub enum MealPlanSlot {
     MainCourse,
     Accompaniment,
     Dessert,
+    GeneratedAt,
 }
 
 #[derive(Iden, Clone)]
@@ -216,14 +208,21 @@ pub enum ShoppingRecipe {
     Table,
     Id,
     UserId,
-    HouseholdSize,
     Ingredients,
+}
+
+#[derive(Iden, Clone)]
+pub enum ShoppingSlot {
+    Table,
+    UserId,
+    Date,
+    RecipeIds,
 }
 
 #[derive(Iden, Clone)]
 pub enum ShoppingList {
     Table,
     UserId,
-    Week,
     Ingredients,
+    GeneratedAt,
 }

@@ -25,6 +25,11 @@ fn create_table() -> TableCreateStatement {
         .col(ColumnDef::new(MealPlanSlot::Appetizer).blob().null())
         .col(ColumnDef::new(MealPlanSlot::Accompaniment).blob().null())
         .col(ColumnDef::new(MealPlanSlot::Dessert).blob().null())
+        .col(
+            ColumnDef::new(MealPlanSlot::GeneratedAt)
+                .big_integer()
+                .not_null(),
+        )
         .primary_key(
             Index::create()
                 .col(MealPlanSlot::UserId)

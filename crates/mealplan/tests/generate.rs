@@ -2,6 +2,7 @@ use evento::Sqlite;
 use imkitchen_recipe::ImportInput;
 use imkitchen_shared::recipe::{CuisineType, RecipeType};
 use temp_dir::TempDir;
+use time::OffsetDateTime;
 
 mod helpers;
 
@@ -11,7 +12,6 @@ async fn test_random() -> anyhow::Result<()> {
     let path = dir.child("db.sqlite3");
     let state = helpers::setup_test_state(path).await?;
     let cmd = imkitchen_mealplan::Command::new(state.clone());
-    let query = imkitchen_mealplan::Query(state.clone());
     let recipe_cmd = imkitchen_recipe::Command::new(state.clone());
 
     for i in 0..200 {
@@ -31,19 +31,10 @@ async fn test_random() -> anyhow::Result<()> {
         .unretry_execute(&state.executor)
         .await?;
 
-    let weeks = imkitchen_mealplan::next_four_mondays_from_now("Europe/Paris")
-        .iter()
-        .map(|w| {
-            (
-                w.start.unix_timestamp() as u64,
-                w.end.unix_timestamp() as u64,
-            )
-        })
-        .collect::<Vec<_>>();
-
     cmd.generate(imkitchen_mealplan::Generate {
         user_id: "john".to_owned(),
-        weeks: weeks.to_vec(),
+        days: 7,
+        start: imkitchen_mealplan::date_to_u64(OffsetDateTime::now_utc()),
         randomize: Some(imkitchen_mealplan::Randomize {
             cuisine_variety_weight: 1.0,
             dietary_restrictions: vec![],
@@ -51,9 +42,6 @@ async fn test_random() -> anyhow::Result<()> {
         household_size: 2,
     })
     .await?;
-
-    let last = query.last_week("john").await?;
-    assert_eq!(weeks.last().unwrap().0, last.unwrap().week);
 
     Ok(())
 }

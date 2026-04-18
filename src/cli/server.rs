@@ -105,17 +105,7 @@ pub async fn serve(
         .start(&executor)
         .await?;
 
-    let sub_mealplan_query = imkitchen_mealplan::query_subscription()
-        .data(write_pool.clone())
-        .start(&executor)
-        .await?;
-
     let sub_mealplan_cmd = imkitchen_mealplan::subscription()
-        .data(write_pool.clone())
-        .start(&executor)
-        .await?;
-
-    let sub_mealplan_week = imkitchen_mealplan::week::subscription()
         .data(write_pool.clone())
         .start(&executor)
         .await?;
@@ -238,8 +228,6 @@ pub async fn serve(
         sub_recipe_user_stat.shutdown(),
         sub_recipe_thumbnail.shutdown(),
         sub_mealplan_cmd.shutdown(),
-        sub_mealplan_query.shutdown(),
-        sub_mealplan_week.shutdown(),
         sub_mealplan_slot.shutdown(),
         sub_shopping.shutdown(),
         sub_shopping_list.shutdown(),

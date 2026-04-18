@@ -85,13 +85,6 @@ pub enum MealPlan {
         household_size: u16,
     },
 
-    WeekGenerated {
-        start: u64,
-        end: u64,
-        slots: Vec<Slot>,
-        household_size: u16,
-    },
-
     SlotRecipeStatusChanged {
         date: u64,
         recipe_id: String,

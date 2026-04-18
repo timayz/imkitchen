@@ -2,7 +2,7 @@ use axum::{
     extract::{Path, State},
     response::{IntoResponse, Redirect},
 };
-use imkitchen_mealplan::{GenerateSlots, Randomize, slot::SlotRow};
+use imkitchen_mealplan::{Generate, Randomize, slot::SlotRow};
 use time::OffsetDateTime;
 
 use crate::{
@@ -170,7 +170,7 @@ pub async fn generate_action(
     };
 
     crate::try_response!(
-        app.mealplan_cmd.generate_slots(GenerateSlots {
+        app.mealplan_cmd.generate(Generate {
             start: start as u64,
             days,
             user_id: user.id.to_owned(),
@@ -197,26 +197,32 @@ pub async fn generate_status(
 ) -> impl IntoResponse {
     let bounds = crate::try_response!(sync anyhow: imkitchen_mealplan::month_bounds_from_date(&date, &user.tz), template);
 
-    match crate::try_response!(anyhow:
+    let s_generated_at = crate::try_response!(anyhow:
         app.mealplan_query.next_slot_from(bounds.date, &user.id),
         template,
         Some(GenerateButtonTemplate {
             date,
             status: TemplateStatus::Idle
         })
-    ) {
-        Some(week) => week,
-        _ => {
-            return template
-                .render(GenerateButtonTemplate {
-                    date,
-                    status: TemplateStatus::Checking,
-                })
-                .into_response();
-        }
-    };
+    )
+    .map(|m| m.generated_at);
 
-    Redirect::to(&format!("/menu/{date}")).into_response()
+    let c_generated_at = crate::try_response!(anyhow: app.mealplan_cmd.load(&user.id),
+        template,
+        Some(GenerateButtonTemplate{date, status: TemplateStatus::Idle})
+    )
+    .map(|m| m.generated_at);
+
+    if s_generated_at == c_generated_at {
+        return Redirect::to(&format!("/menu/{date}")).into_response();
+    }
+
+    template
+        .render(GenerateButtonTemplate {
+            date,
+            status: TemplateStatus::Checking,
+        })
+        .into_response()
 }
 
 pub async fn generate_modal(

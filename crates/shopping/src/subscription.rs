@@ -1,17 +1,11 @@
-use std::collections::HashMap;
-
 use evento::{
-    Aggregator, Executor, ReadAggregator,
-    cursor::Args,
+    Executor,
     metadata::Event,
     subscription::{Context, SubscriptionBuilder},
 };
-use imkitchen_db::table::ShoppingRecipe;
-use imkitchen_shared::{
-    recipe::Ingredient,
-    shopping::{Generated, Shopping},
-};
-use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
+use imkitchen_db::table::{ShoppingRecipe, ShoppingSlot};
+use imkitchen_shared::recipe::Ingredient;
+use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::SqlitePool;
 
@@ -20,102 +14,58 @@ pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
         .handler(handle_recipe_created())
         .handler(handle_recipe_imported())
         .handler(handle_recipe_deleted())
-        .handler(handle_recipe_basic_information_changed())
-        .handler(handle_mealplan_week_generated())
+        .handler(handle_mealplan_days_generated())
         .handler(handle_recipe_ingredients_changed())
 }
 
 #[evento::subscription]
-async fn handle_mealplan_week_generated<E: Executor>(
+async fn handle_mealplan_days_generated<E: Executor>(
     context: &Context<'_, E>,
-    event: Event<imkitchen_shared::mealplan::WeekGenerated>,
+    event: Event<imkitchen_shared::mealplan::DaysGenerated>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    let recipe_ids = event
-        .data
-        .slots
-        .iter()
-        .flat_map(|slot| {
-            if event.timestamp > slot.day {
-                return vec![];
-            }
 
-            let mut ids = vec![slot.main_course.id.to_owned()];
-
-            if let Some(ref r) = slot.appetizer {
-                ids.push(r.id.to_owned());
-            }
-
-            if let Some(ref r) = slot.dessert {
-                ids.push(r.id.to_owned());
-            }
-
-            if let Some(ref r) = slot.accompaniment {
-                ids.push(r.id.to_owned());
-            }
-
-            ids
-        })
-        .collect::<Vec<_>>();
-
-    let statement = Query::select()
-        .columns([ShoppingRecipe::Ingredients, ShoppingRecipe::HouseholdSize])
-        .from(ShoppingRecipe::Table)
-        .and_where(Expr::col(ShoppingRecipe::Id).is_in(recipe_ids))
+    let mut statement = Query::insert()
+        .into_table(ShoppingSlot::Table)
+        .columns([
+            ShoppingSlot::UserId,
+            ShoppingSlot::Date,
+            ShoppingSlot::RecipeIds,
+        ])
         .to_owned();
 
-    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    let recipe_ingredients =
-        sqlx::query_as_with::<_, (evento::sql_types::Bitcode<Vec<Ingredient>>, u16), _>(
-            &sql, values,
-        )
-        .fetch_all(&pool)
-        .await?;
+    for slot in event.data.slots.iter() {
+        let mut ids = vec![slot.main_course.id.to_owned()];
 
-    let mut ingredients = HashMap::new();
-    for (recipe_ingredients, household_size) in recipe_ingredients {
-        for ingredient in recipe_ingredients.0 {
-            let entry = ingredients.entry(ingredient.key()).or_insert(Ingredient {
-                name: ingredient.name,
-                quantity: 0,
-                unit: ingredient.unit,
-                category: ingredient.category,
-            });
-
-            entry.quantity += ((event.data.household_size as u32 * ingredient.quantity
-                / household_size as u32) as f64)
-                .ceil() as u32;
+        if let Some(ref r) = slot.appetizer {
+            ids.push(r.id.to_owned());
         }
+
+        if let Some(ref r) = slot.dessert {
+            ids.push(r.id.to_owned());
+        }
+
+        if let Some(ref r) = slot.accompaniment {
+            ids.push(r.id.to_owned());
+        }
+
+        let ids = bitcode::encode(&ids);
+
+        statement.values_panic([
+            event.metadata.requested_by()?.into(),
+            slot.date.into(),
+            ids.into(),
+        ]);
     }
 
-    let last_event = context
-        .executor
-        .read(
-            Some(vec![ReadAggregator::id(
-                Shopping::aggregator_type(),
-                &event.aggregator_id,
-            )]),
-            None,
-            Args::backward(1, None),
-        )
-        .await?;
+    statement.on_conflict(
+        OnConflict::columns([ShoppingSlot::UserId, ShoppingSlot::Date])
+            .update_column(ShoppingSlot::RecipeIds)
+            .to_owned(),
+    );
 
-    let version = last_event
-        .edges
-        .first()
-        .map(|e| e.node.version)
-        .unwrap_or_default();
-
-    evento::aggregator(&event.aggregator_id)
-        .original_version(version)
-        .routing_key_opt(event.routing_key.to_owned())
-        .event(&Generated {
-            week: event.data.start,
-            ingredients: ingredients.values().cloned().collect(),
-        })
-        .metadata_from(&event.metadata)
-        .commit(context.executor)
-        .await?;
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    sqlx::query_with(&sql, values).execute(&pool).await?;
 
     Ok(())
 }
@@ -187,23 +137,6 @@ async fn handle_recipe_deleted<E: Executor>(
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
     sqlx::query_with(&sql, values).execute(&pool).await?;
-
-    Ok(())
-}
-
-#[evento::subscription]
-async fn handle_recipe_basic_information_changed<E: Executor>(
-    context: &Context<'_, E>,
-    event: Event<imkitchen_shared::recipe::BasicInformationChanged>,
-) -> anyhow::Result<()> {
-    let pool = context.extract::<sqlx::SqlitePool>();
-    update_col(
-        &pool,
-        &event.aggregator_id,
-        ShoppingRecipe::HouseholdSize,
-        event.data.household_size,
-    )
-    .await?;
 
     Ok(())
 }

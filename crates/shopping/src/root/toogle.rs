@@ -2,7 +2,6 @@ use evento::{Executor, ProjectionAggregator};
 use imkitchen_shared::shopping::{Checked, Unchecked};
 
 pub struct ToggleInput {
-    pub week: u64,
     pub name: String,
 }
 
@@ -17,25 +16,16 @@ impl<E: Executor> super::Command<E> {
             imkitchen_shared::not_found!("shopping in toogle");
         };
 
-        let Some(ingredients) = shopping.ingredients.get(&input.week) else {
-            imkitchen_shared::user!("ingredient not found");
-        };
-
-        if !ingredients.contains(&input.name) {
+        if !shopping.ingredients.contains(&input.name) {
             imkitchen_shared::user!("ingredient not found");
         }
 
-        let checked = shopping
-            .checked
-            .get(&input.week)
-            .and_then(|v| v.get(&input.name))
-            .is_some();
+        let checked = shopping.checked.contains(&input.name);
 
         if checked {
             shopping
                 .aggregator()?
                 .event(&Unchecked {
-                    week: input.week,
                     ingredient: input.name,
                 })
                 .requested_by(request_by)
@@ -45,7 +35,6 @@ impl<E: Executor> super::Command<E> {
             shopping
                 .aggregator()?
                 .event(&Checked {
-                    week: input.week,
                     ingredient: input.name,
                 })
                 .requested_by(request_by)

@@ -1,18 +1,17 @@
-use std::collections::{HashMap, HashSet};
-
 use axum::{
-    extract::{Json, Path, State},
-    response::IntoResponse,
+    extract::{Json, State},
+    response::{IntoResponse, Redirect},
 };
-use imkitchen_mealplan::week::{WeekListRow, WeekRow};
+use axum_extra::extract::Form;
 use imkitchen_shared::recipe::{Ingredient, IngredientUnitFormat};
-use imkitchen_shopping::{ToggleInput, list::ListWeekRow};
+use imkitchen_shopping::{Generate, ToggleInput};
 use serde::Deserialize;
+use std::collections::{HashMap, HashSet};
 
 use crate::{
     auth::AuthUser,
     routes::AppState,
-    template::{Template, filters},
+    template::{Status as TemplateStatus, Template, filters},
 };
 
 #[derive(askama::Template)]
@@ -20,12 +19,8 @@ use crate::{
 pub struct GroceriesTemplate {
     pub current_path: String,
     pub user: AuthUser,
-    pub weeks: Vec<WeekListRow>,
-    pub current: Option<ListWeekRow>,
-    pub recipes: Option<Vec<String>>,
-    pub checked: Option<HashSet<String>>,
-    pub ingredients: Option<Vec<(String, Vec<Ingredient>)>>,
-    pub index: u8,
+    pub checked: HashSet<String>,
+    pub ingredients: Vec<(String, Vec<Ingredient>)>,
 }
 
 impl Default for GroceriesTemplate {
@@ -33,12 +28,8 @@ impl Default for GroceriesTemplate {
         Self {
             current_path: "groceries".to_owned(),
             user: AuthUser::default(),
-            weeks: Default::default(),
-            current: None,
-            recipes: None,
-            checked: None,
-            ingredients: None,
-            index: 0,
+            checked: HashSet::default(),
+            ingredients: vec![],
         }
     }
 }
@@ -49,51 +40,19 @@ pub async fn page(
     user: AuthUser,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
-    let week_from_now = imkitchen_mealplan::current_and_next_four_weeks_from_now(&user.tz)[0];
-    let weeks = crate::try_page_response!(
-        app.mealplan_query
-            .filter_week_last_from(week_from_now.start, &user.id),
-        template
-    );
+    let list = crate::try_page_response!(app.shopping_query.find(&user.id), template);
+    let ingredients = list
+        .as_ref()
+        .map(|r| to_categories(&r.ingredients.0))
+        .unwrap_or_default();
 
-    let mut index = 1;
-
-    if index == 0 {
-        index += 1;
-    }
-
-    let current = match weeks.get((index - 1) as usize) {
-        Some(week) => {
-            crate::try_page_response!(app.shopping_query.next_from(week.start, &user.id), template)
-        }
-        _ => None,
-    };
-
-    let ingredients = current.as_ref().map(|r| to_categories(&r.ingredients.0));
-
-    let checked = match weeks.get((index - 1) as usize) {
-        Some(week) => crate::try_page_response!(app.shopping_cmd.load(&user.id), template)
-            .and_then(|loaded| loaded.checked.get(&week.start).cloned()),
-        _ => None,
-    };
-
-    let recipes = match weeks.get((index - 1) as usize) {
-        Some(week) => crate::try_page_response!(
-            app.mealplan_query
-                .find_from_unix_timestamp(week.start, &user.id),
-            template
-        )
-        .and_then(|week| Some(to_recipes(week))),
-        _ => None,
-    };
+    let checked = crate::try_page_response!(app.shopping_cmd.load(&user.id), template)
+        .map(|loaded| loaded.checked)
+        .unwrap_or_default();
 
     template
         .render(GroceriesTemplate {
             user,
-            weeks,
-            recipes,
-            current,
-            index,
             checked,
             ingredients,
             ..Default::default()
@@ -111,68 +70,15 @@ pub async fn toggle_action(
     template: Template,
     user: AuthUser,
     State(app): State<AppState>,
-    Path((week,)): Path<(u64,)>,
     Json(input): Json<ToggleJson>,
 ) -> impl IntoResponse {
-    let current = crate::try_page_response!(app.shopping_query.next_from(week, &user.id), template);
-    let ingredients = current.as_ref().map(|r| to_categories(&r.ingredients.0));
-
-    let checked = if current.is_some() {
-        crate::try_response!(
-            app.shopping_cmd.toggle(
-                ToggleInput {
-                    week,
-                    name: input.name,
-                },
-                &user.id,
-            ),
-            template
-        );
-        crate::try_response!(anyhow: app.shopping_cmd.load(&user.id), template)
-            .and_then(|loaded| loaded.checked.get(&week).cloned())
-    } else {
-        None
-    };
-
-    template
-        .render(GroceriesTemplate {
-            user,
-            current,
-            ingredients,
-            checked,
-            ..Default::default()
-        })
-        .into_response()
-}
-
-#[tracing::instrument(skip_all, fields(user = user.id))]
-pub async fn reset_all_action(
-    template: Template,
-    user: AuthUser,
-    State(app): State<AppState>,
-    Path((week,)): Path<(u64,)>,
-) -> impl IntoResponse {
-    let current = crate::try_page_response!(app.shopping_query.next_from(week, &user.id), template);
-    let ingredients = current.as_ref().map(|r| to_categories(&r.ingredients.0));
-    let recipes = crate::try_page_response!(
-        app.mealplan_query.find_from_unix_timestamp(week, &user.id),
+    crate::try_response!(
+        app.shopping_cmd
+            .toggle(ToggleInput { name: input.name }, &user.id),
         template
-    )
-    .and_then(|week| Some(to_recipes(week)));
+    );
 
-    if current.is_some() {
-        crate::try_response!(app.shopping_cmd.reset(week, &user.id), template);
-    }
-
-    template
-        .render(GroceriesTemplate {
-            user,
-            current,
-            ingredients,
-            recipes,
-            ..Default::default()
-        })
-        .into_response()
+    "<div></div>".into_response()
 }
 
 fn to_categories(ingredients: &[Ingredient]) -> Vec<(String, Vec<Ingredient>)> {
@@ -204,26 +110,81 @@ fn to_categories(ingredients: &[Ingredient]) -> Vec<(String, Vec<Ingredient>)> {
     categories
 }
 
-fn to_recipes(week: WeekRow) -> Vec<String> {
-    let mut recipes = HashSet::new();
-    for slot in week.slots.iter() {
-        recipes.insert(format!("🍛 {}", slot.main_course.name));
+#[derive(askama::Template)]
+#[template(path = "partials/groceries-generate-modal.html")]
+pub struct GenerateModalTemplate;
 
-        if let Some(ref r) = slot.appetizer {
-            recipes.insert(format!("🥗 {}", r.name));
-        }
+pub async fn generate_modal(template: Template) -> impl IntoResponse {
+    template.render(GenerateModalTemplate)
+}
 
-        if let Some(ref r) = slot.accompaniment {
-            recipes.insert(format!("🍚 {}", r.name));
-        }
+#[derive(askama::Template)]
+#[template(path = "partials/groceries-generate-button.html")]
+pub struct GenerateButtonTemplate {
+    pub status: TemplateStatus,
+}
 
-        if let Some(ref r) = slot.dessert {
-            recipes.insert(format!("🍰 {}", r.name));
-        }
+#[derive(Deserialize, Debug)]
+pub struct GenerateAction {
+    pub days: u8,
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn generate_action(
+    template: Template,
+    State(app): State<AppState>,
+    user: AuthUser,
+    Form(input): Form<GenerateAction>,
+) -> impl IntoResponse {
+    let preferences = crate::try_response!(anyhow:
+        app.user_cmd.meal_preferences.load(&user.id),
+        template
+    );
+    let date = imkitchen_mealplan::date_to_u64(imkitchen_mealplan::now(&user.tz));
+    crate::try_response!(
+        app.shopping_cmd.generate(
+            Generate {
+                household_size: preferences.household_size,
+                date,
+                days: input.days
+            },
+            &user.id
+        ),
+        template
+    );
+
+    template
+        .render(GenerateButtonTemplate {
+            status: TemplateStatus::Pending,
+        })
+        .into_response()
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn generate_status(
+    template: Template,
+    State(app): State<AppState>,
+    user: AuthUser,
+) -> impl IntoResponse {
+    let q_generated_at = crate::try_response!(anyhow: app.shopping_query.find(&user.id),
+        template,
+        Some(GenerateButtonTemplate{status: TemplateStatus::Idle})
+    )
+    .map(|s| s.generated_at);
+
+    let c_generated_at = crate::try_response!(anyhow: app.shopping_cmd.load(&user.id),
+        template,
+        Some(GenerateButtonTemplate{status: TemplateStatus::Idle})
+    )
+    .map(|s| s.generated_at);
+
+    if q_generated_at == c_generated_at {
+        return Redirect::to("/groceries").into_response();
     }
 
-    let mut recipes = recipes.into_iter().collect::<Vec<_>>();
-    recipes.sort();
-
-    recipes
+    template
+        .render(GenerateButtonTemplate {
+            status: TemplateStatus::Checking,
+        })
+        .into_response()
 }
