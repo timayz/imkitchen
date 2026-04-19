@@ -10,6 +10,7 @@ use sqlx::SqlitePool;
 
 pub mod admin;
 pub mod global_stat;
+pub mod invoice_user;
 pub mod login;
 
 #[derive(Clone)]

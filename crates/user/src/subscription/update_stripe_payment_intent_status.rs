@@ -34,6 +34,7 @@ impl<E: Executor> super::Command<E> {
                     name: method.billing_details.name.to_owned(),
                     address: method.billing_details.address.map(|a| a.into()),
                     details,
+                    paid_at: intent.created.try_into()?,
                     expire_at: expire_at.try_into()?,
                 })
                 .requested_by(request_by)
