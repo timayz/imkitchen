@@ -79,10 +79,10 @@
         <span class="text-5xl float-anim-delay">🥘</span>
         <span class="text-6xl float-anim-delay-2">🍲</span>
       </div>
-      <h1 class="text-3xl font-bold mb-3">Welcome to Kitchen Mode!</h1>
+      <h1 class="text-3xl font-bold mb-3">{{ "Welcome to Kitchen Mode!"|t }}</h1>
       <p class="text-gray-600 text-lg max-w-md mx-auto">
-        Kitchen Mode guides you step-by-step through your daily meal plan. But first, you need at least one <strong
-          class="text-orange-600">main course recipe</strong> to get started.
+        {{ "Kitchen Mode guides you step-by-step through your daily meal plan. But first, you need at least one"|t }}
+        <strong class="text-orange-600">{{ "main course recipe"|t }}</strong> {{ "to get started."|t }}
       </p>
     </div>
 
@@ -94,9 +94,10 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
           </svg>
         </div>
-        <h2 class="text-xl font-bold mb-2">No Main Course Recipes Yet</h2>
-        <p class="text-gray-500 mb-6">You don't have any main course recipes in your collection. Add your first one to
-          start using Kitchen Mode!</p>
+        <h2 class="text-xl font-bold mb-2">{{ "No Main Course Recipes Yet"|t }}</h2>
+        <p class="text-gray-500 mb-6">
+          {{ "You don't have any main course recipes in your collection. Add your first one to start using Kitchen Mode!"|t }}
+        </p>
 
         <!-- Progress indicator -->
         <div class="flex items-center justify-center gap-3 mb-6">
@@ -104,21 +105,21 @@
             <div
               class="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold">1
             </div>
-            <span class="text-sm font-semibold text-orange-600">Add a recipe</span>
+            <span class="text-sm font-semibold text-orange-600">{{ "Add a recipe"|t }}</span>
           </div>
           <div class="w-8 h-0.5 bg-gray-300"></div>
           <div class="flex items-center gap-2">
             <div
               class="w-8 h-8 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center text-sm font-bold">
               2</div>
-            <span class="text-sm text-gray-400">Plan your menu</span>
+            <span class="text-sm text-gray-400">{{ "Plan your menu"|t }}</span>
           </div>
           <div class="w-8 h-0.5 bg-gray-300"></div>
           <div class="flex items-center gap-2">
             <div
               class="w-8 h-8 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center text-sm font-bold">
               3</div>
-            <span class="text-sm text-gray-400">Start cooking!</span>
+            <span class="text-sm text-gray-400">{{ "Start cooking!"|t }}</span>
           </div>
         </div>
       </div>
@@ -128,17 +129,17 @@
     <div class="text-center fade-in-up-delay-2">
       <button onclick="showStep(2)"
         class="px-8 py-4 bg-green-600 text-white font-bold text-lg rounded-xl hover:bg-green-700 transition shadow-lg shadow-green-200">
-        Let's Add Your First Recipe
+        {{ "Let's Add Your First Recipe"|t }}
       </button>
-      <p class="text-sm text-gray-400 mt-3">It only takes a minute</p>
+      <p class="text-sm text-gray-400 mt-3">{{ "It only takes a minute"|t }}</p>
     </div>
   </div>
 
   <!-- Step 2: Choose how to add a recipe (hidden by default) -->
   <div id="step-2" class="onboarding-step hidden">
     <div class="text-center mb-8">
-      <h1 class="text-3xl font-bold mb-3">How would you like to add a recipe?</h1>
-      <p class="text-gray-600 text-lg">Choose the option that works best for you</p>
+      <h1 class="text-3xl font-bold mb-3">{{ "How would you like to add a recipe?"|t }}</h1>
+      <p class="text-gray-600 text-lg">{{ "Choose the option that works best for you"|t }}</p>
     </div>
 
     <div class="grid md:grid-cols-3 gap-6 mb-8">
@@ -153,11 +154,12 @@
             </path>
           </svg>
         </div>
-        <h3 class="font-bold text-lg mb-2">Create Your Own</h3>
-        <p class="text-gray-500 text-sm mb-4">Write your recipe from scratch with ingredients, steps, and timings</p>
+        <h3 class="font-bold text-lg mb-2">{{ "Create Your Own"|t }}</h3>
+        <p class="text-gray-500 text-sm mb-4">{{ "Write your recipe from scratch with ingredients, steps, and timings"|t
+          }}</p>
         <span
           class="inline-block px-4 py-2 bg-green-100 text-green-700 text-sm font-semibold rounded-lg group-hover:bg-green-600 group-hover:text-white transition">
-          Start Writing
+          {{ "Start Writing"|t }}
         </span>
       </button>
 
@@ -171,11 +173,11 @@
               d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
           </svg>
         </div>
-        <h3 class="font-bold text-lg mb-2">Import Recipes</h3>
-        <p class="text-gray-500 text-sm mb-4">Import your existing recipes from a JSON file in bulk</p>
+        <h3 class="font-bold text-lg mb-2">{{ "Import Recipes"|t }}</h3>
+        <p class="text-gray-500 text-sm mb-4">{{ "Import your existing recipes from a JSON file in bulk"|t }}</p>
         <span
           class="inline-block px-4 py-2 bg-blue-100 text-blue-700 text-sm font-semibold rounded-lg group-hover:bg-blue-600 group-hover:text-white transition">
-          Import File
+          {{ "Import File"|t }}
         </span>
       </a>
 
@@ -190,11 +192,12 @@
             </path>
           </svg>
         </div>
-        <h3 class="font-bold text-lg mb-2">Browse Community</h3>
-        <p class="text-gray-500 text-sm mb-4">Discover main course recipes shared by other cooks and save them</p>
+        <h3 class="font-bold text-lg mb-2">{{ "Browse Community"|t }}</h3>
+        <p class="text-gray-500 text-sm mb-4">{{ "Discover main course recipes shared by other cooks and save them"|t }}
+        </p>
         <span
           class="inline-block px-4 py-2 bg-orange-100 text-orange-700 text-sm font-semibold rounded-lg group-hover:bg-orange-600 group-hover:text-white transition">
-          Explore Recipes
+          {{ "Explore Recipes"|t }}
         </span>
       </button>
     </div>
@@ -205,7 +208,7 @@
         <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
         </svg>
-        Back
+        {{ "Back"|t }}
       </button>
     </div>
   </div>
@@ -213,16 +216,16 @@
   <!-- Step 3: Community recipes preview with Save explanation -->
   <div id="step-3" class="onboarding-step hidden">
     <div class="text-center mb-8">
-      <h1 class="text-3xl font-bold mb-3">Save a Recipe from the Community</h1>
+      <h1 class="text-3xl font-bold mb-3">{{ "Save a Recipe from the Community"|t }}</h1>
       <p class="text-gray-600 text-lg max-w-lg mx-auto">
-        Browse community recipes, open one you like, and click the <strong class="text-green-600">Save</strong> button
-        to add it to your collection.
+        {{ "Browse community recipes, open one you like, and click the"|t }} <strong class="text-green-600">{{ "Save"|t
+          }}</strong> {{ "button to add it to your collection."|t }}
       </p>
     </div>
 
     <!-- How it works explanation -->
     <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
-      <h3 class="font-bold text-lg mb-4">How it works</h3>
+      <h3 class="font-bold text-lg mb-4">{{ "How it works"|t }}</h3>
       <div class="space-y-4">
         <!-- Step A -->
         <div class="flex items-start gap-4">
@@ -230,9 +233,8 @@
             class="w-10 h-10 bg-green-500 text-white rounded-full flex items-center justify-center font-bold shrink-0">1
           </div>
           <div class="flex-1">
-            <h4 class="font-semibold mb-1">Browse community recipes</h4>
-            <p class="text-sm text-gray-500">Search or filter by cuisine, dietary preference, or cooking time to find
-              main course recipes you like.</p>
+            <h4 class="font-semibold mb-1">{{ "Browse community recipes"|t }}</h4>
+            <p class="text-sm text-gray-500">{{ "Search or filter by cuisine, dietary preference, or cooking time to find main course recipes you like."|t }}</p>
           </div>
         </div>
         <!-- Step B -->
@@ -241,9 +243,8 @@
             class="w-10 h-10 bg-green-500 text-white rounded-full flex items-center justify-center font-bold shrink-0">2
           </div>
           <div class="flex-1">
-            <h4 class="font-semibold mb-1">Open the recipe detail page</h4>
-            <p class="text-sm text-gray-500">Click on any recipe to see full ingredients, steps, and cooking
-              instructions.</p>
+            <h4 class="font-semibold mb-1">{{ "Open the recipe detail page"|t }}</h4>
+            <p class="text-sm text-gray-500">{{ "Click on any recipe to see full ingredients, steps, and cooking instructions."|t }}</p>
           </div>
         </div>
         <!-- Step C -->
@@ -252,9 +253,8 @@
             class="w-10 h-10 bg-green-500 text-white rounded-full flex items-center justify-center font-bold shrink-0">3
           </div>
           <div class="flex-1">
-            <h4 class="font-semibold mb-1">Click the "Save" button</h4>
-            <p class="text-sm text-gray-500">The recipe will be added to your personal collection and become available
-              for your meal plans and Kitchen Mode.</p>
+            <h4 class="font-semibold mb-1">{{ "Click the \"Save\" button"|t }}</h4>
+            <p class="text-sm text-gray-500">{{ "The recipe will be added to your personal collection and become available for your meal plans and Kitchen Mode."|t }}</p>
           </div>
         </div>
       </div>
@@ -264,11 +264,11 @@
     <div class="flex flex-col sm:flex-row gap-4 justify-center" id="step-3-cta">
       <a href="/recipes"
         class="px-8 py-4 bg-green-600 text-white font-bold text-lg rounded-xl hover:bg-green-700 transition shadow-lg shadow-green-200 text-center">
-        Browse Community Recipes
+        {{ "Browse Community Recipes"|t }}
       </a>
       <button onclick="showStep(2)"
         class="px-8 py-4 bg-gray-200 text-gray-700 font-bold text-lg rounded-xl hover:bg-gray-300 transition text-center">
-        Back to Options
+        {{ "Back to Options"|t }}
       </button>
     </div>
   </div>

@@ -82,10 +82,9 @@
       <span class="text-6xl float-anim-delay">🍽️</span>
       <span class="text-5xl float-anim-delay-2">👨‍🍳</span>
     </div>
-    <h1 class="text-3xl font-bold mb-3">Almost Ready to Cook!</h1>
+    <h1 class="text-3xl font-bold mb-3">{{ "Almost Ready to Cook!"|t }}</h1>
     <p class="text-gray-600 text-lg max-w-md mx-auto">
-      You have recipes in your collection - great! Now generate a <strong class="text-green-600">meal plan</strong> so
-      Kitchen Mode knows what to cook each day.
+      {{ "You have recipes in your collection - great! Now generate a"|t }} <strong class="text-green-600">{{ "meal plan"|t }}</strong> {{ "so Kitchen Mode knows what to cook each day."|t }}
     </p>
   </div>
 
@@ -100,19 +99,19 @@
               clip-rule="evenodd"></path>
           </svg>
         </div>
-        <span class="text-sm font-semibold text-green-600">Add a recipe</span>
+        <span class="text-sm font-semibold text-green-600">{{ "Add a recipe"|t }}</span>
       </div>
       <div class="w-8 h-0.5 bg-green-500"></div>
       <div class="flex items-center gap-2">
         <div class="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold">2
         </div>
-        <span class="text-sm font-semibold text-orange-600">Generate meal plan</span>
+        <span class="text-sm font-semibold text-orange-600">{{ "Generate meal plan"|t }}</span>
       </div>
       <div class="w-8 h-0.5 bg-gray-300"></div>
       <div class="flex items-center gap-2">
         <div class="w-8 h-8 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center text-sm font-bold">3
         </div>
-        <span class="text-sm text-gray-400">Start cooking!</span>
+        <span class="text-sm text-gray-400">{{ "Start cooking!"|t }}</span>
       </div>
     </div>
 
@@ -127,9 +126,9 @@
           </svg>
         </div>
         <div class="flex-1">
-          <h3 class="font-semibold text-green-800">Your Recipe Collection</h3>
-          <p class="text-sm text-green-700">You have <strong>{{ recipes.len() }} main course recipes</strong> ready to
-            use</p>
+          <h3 class="font-semibold text-green-800">{{ "Your Recipe Collection"|t }}</h3>
+          <p class="text-sm text-green-700">{{ "You have"|t }} <strong>{{ recipes.len() }} {{ "main course recipes"|t
+              }}</strong> {{ "ready to use"|t }}</p>
         </div>
       </div>
     </div>
@@ -147,7 +146,7 @@
 
   <!-- How it works -->
   <div class="bg-white rounded-xl shadow-lg p-6 mb-8 fade-in-up-delay">
-    <h3 class="font-bold text-lg mb-4">What happens when you generate a meal plan?</h3>
+    <h3 class="font-bold text-lg mb-4">{{ "What happens when you generate a meal plan?"|t }}</h3>
     <div class="space-y-4">
       <div class="flex items-start gap-4">
         <div class="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center shrink-0">
@@ -157,9 +156,8 @@
           </svg>
         </div>
         <div>
-          <h4 class="font-semibold mb-1">Meals are assigned to each day</h4>
-          <p class="text-sm text-gray-500">Your recipes are distributed across the week to create a varied, balanced
-            meal plan with a main course each day.</p>
+          <h4 class="font-semibold mb-1">{{ "Meals are assigned to each day"|t }}</h4>
+          <p class="text-sm text-gray-500">{{ "Your recipes are distributed across the week to create a varied, balanced meal plan with a main course each day."|t }}</p>
         </div>
       </div>
       <div class="flex items-start gap-4">
@@ -171,9 +169,8 @@
           </svg>
         </div>
         <div>
-          <h4 class="font-semibold mb-1">You can regenerate anytime</h4>
-          <p class="text-sm text-gray-500">Don't like the plan? Regenerate individual days or the entire week from the
-            Calendar page.</p>
+          <h4 class="font-semibold mb-1">{{ "You can regenerate anytime"|t }}</h4>
+          <p class="text-sm text-gray-500">{{ "Don't like the plan? Regenerate individual days or the entire week from the Calendar page."|t }}</p>
         </div>
       </div>
       <div class="flex items-start gap-4">
@@ -183,9 +180,8 @@
           </svg>
         </div>
         <div>
-          <h4 class="font-semibold mb-1">Kitchen Mode activates</h4>
-          <p class="text-sm text-gray-500">Once a plan exists, Kitchen Mode guides you step-by-step through each day's
-            recipes with timers and checklists.</p>
+          <h4 class="font-semibold mb-1">{{ "Kitchen Mode activates"|t }}</h4>
+          <p class="text-sm text-gray-500">{{ "Once a plan exists, Kitchen Mode guides you step-by-step through each day's recipes with timers and checklists."|t }}</p>
         </div>
       </div>
     </div>
@@ -196,8 +192,8 @@
     <div class="bg-linear-to-r from-green-500 to-emerald-600 p-4 text-white">
       <div class="flex items-center justify-between">
         <div>
-          <div class="text-xs font-semibold uppercase opacity-90">Calendar Preview</div>
-          <h2 class="text-xl font-bold">Your week after generating</h2>
+          <div class="text-xs font-semibold uppercase opacity-90">{{ "Calendar Preview"|t }}</div>
+          <h2 class="text-xl font-bold">{{ "Your week after generating"|t }}</h2>
         </div>
         <span class="text-3xl">📅</span>
       </div>
@@ -206,52 +202,52 @@
       <!-- Mini calendar week preview -->
       <div class="grid grid-cols-7 gap-1 sm:gap-2 mb-4">
         <div class="text-center">
-          <div class="text-xs text-gray-500 mb-1">Mon</div>
+          <div class="text-xs text-gray-500 mb-1">{{ "Mon"|t }}</div>
           <div class="bg-orange-50 border border-orange-200 rounded-lg p-1.5 sm:p-2">
             <span class="text-lg sm:text-xl block">🍛</span>
-            <span class="text-[10px] sm:text-xs text-gray-600 hidden sm:block">Thai Curry</span>
+            <span class="text-[10px] sm:text-xs text-gray-600 hidden sm:block">{{ "Thai Curry"|t }}</span>
           </div>
         </div>
         <div class="text-center">
-          <div class="text-xs text-gray-500 mb-1">Tue</div>
+          <div class="text-xs text-gray-500 mb-1">{{ "Tue"|t }}</div>
           <div class="bg-orange-50 border border-orange-200 rounded-lg p-1.5 sm:p-2">
             <span class="text-lg sm:text-xl block">🍝</span>
-            <span class="text-[10px] sm:text-xs text-gray-600 hidden sm:block">Carbonara</span>
+            <span class="text-[10px] sm:text-xs text-gray-600 hidden sm:block">{{ "Carbonara"|t }}</span>
           </div>
         </div>
         <div class="text-center">
-          <div class="text-xs text-gray-500 mb-1">Wed</div>
+          <div class="text-xs text-gray-500 mb-1">{{ "Wed"|t }}</div>
           <div class="bg-orange-50 border border-orange-200 rounded-lg p-1.5 sm:p-2">
             <span class="text-lg sm:text-xl block">🌮</span>
-            <span class="text-[10px] sm:text-xs text-gray-600 hidden sm:block">Beef Tacos</span>
+            <span class="text-[10px] sm:text-xs text-gray-600 hidden sm:block">{{ "Beef Tacos"|t }}</span>
           </div>
         </div>
         <div class="text-center">
-          <div class="text-xs text-gray-500 mb-1">Thu</div>
+          <div class="text-xs text-gray-500 mb-1">{{ "Thu"|t }}</div>
           <div class="bg-orange-50 border border-orange-200 rounded-lg p-1.5 sm:p-2">
             <span class="text-lg sm:text-xl block">🍕</span>
-            <span class="text-[10px] sm:text-xs text-gray-600 hidden sm:block">Pizza</span>
+            <span class="text-[10px] sm:text-xs text-gray-600 hidden sm:block">{{ "Pizza"|t }}</span>
           </div>
         </div>
         <div class="text-center">
-          <div class="text-xs text-gray-500 mb-1">Fri</div>
+          <div class="text-xs text-gray-500 mb-1">{{ "Fri"|t }}</div>
           <div class="bg-orange-50 border border-orange-200 rounded-lg p-1.5 sm:p-2">
             <span class="text-lg sm:text-xl block">🍜</span>
-            <span class="text-[10px] sm:text-xs text-gray-600 hidden sm:block">Ramen</span>
+            <span class="text-[10px] sm:text-xs text-gray-600 hidden sm:block">{{ "Ramen"|t }}</span>
           </div>
         </div>
         <div class="text-center">
-          <div class="text-xs text-gray-500 mb-1">Sat</div>
+          <div class="text-xs text-gray-500 mb-1">{{ "Sat"|t }}</div>
           <div class="bg-orange-50 border border-orange-200 rounded-lg p-1.5 sm:p-2">
             <span class="text-lg sm:text-xl block">🍛</span>
-            <span class="text-[10px] sm:text-xs text-gray-600 hidden sm:block">Thai Curry</span>
+            <span class="text-[10px] sm:text-xs text-gray-600 hidden sm:block">{{ "Thai Curry"|t }}</span>
           </div>
         </div>
         <div class="text-center">
-          <div class="text-xs text-gray-500 mb-1">Sun</div>
+          <div class="text-xs text-gray-500 mb-1">{{ "Sun"|t }}</div>
           <div class="bg-orange-50 border border-orange-200 rounded-lg p-1.5 sm:p-2">
             <span class="text-lg sm:text-xl block">🍝</span>
-            <span class="text-[10px] sm:text-xs text-gray-600 hidden sm:block">Carbonara</span>
+            <span class="text-[10px] sm:text-xs text-gray-600 hidden sm:block">{{ "Carbonara"|t }}</span>
           </div>
         </div>
       </div>
@@ -259,32 +255,32 @@
       <!-- Example day detail -->
       <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
         <div class="flex items-center gap-2 mb-3">
-          <span class="text-xs font-semibold uppercase tracking-wide text-green-600">Example - Monday</span>
+          <span class="text-xs font-semibold uppercase tracking-wide text-green-600">{{ "Example - Monday"|t }}</span>
         </div>
         <div class="space-y-2">
           <div class="flex items-center gap-3 p-2 bg-blue-50 rounded border border-blue-100">
             <span>🥗</span>
             <div class="flex-1">
-              <span class="text-xs text-blue-600 font-semibold">APPETIZER</span>
-              <div class="text-sm font-semibold">Caesar Salad</div>
+              <span class="text-xs text-blue-600 font-semibold">{{ "APPETIZER"|t }}</span>
+              <div class="text-sm font-semibold">{{ "Caesar Salad"|t }}</div>
             </div>
-            <span class="text-xs text-gray-500">15 min</span>
+            <span class="text-xs text-gray-500">{{ "15 min"|t }}</span>
           </div>
           <div class="flex items-center gap-3 p-2 bg-orange-50 rounded border border-orange-100">
             <span>🍛</span>
             <div class="flex-1">
-              <span class="text-xs text-orange-600 font-semibold">MAIN COURSE</span>
-              <div class="text-sm font-semibold">Thai Red Curry + Jasmine Rice</div>
+              <span class="text-xs text-orange-600 font-semibold">{{ "MAIN COURSE"|t }}</span>
+              <div class="text-sm font-semibold">{{ "Thai Red Curry + Jasmine Rice"|t }}</div>
             </div>
-            <span class="text-xs text-gray-500">45 min</span>
+            <span class="text-xs text-gray-500">{{ "45 min"|t }}</span>
           </div>
           <div class="flex items-center gap-3 p-2 bg-pink-50 rounded border border-pink-100">
             <span>🍰</span>
             <div class="flex-1">
-              <span class="text-xs text-pink-600 font-semibold">DESSERT</span>
-              <div class="text-sm font-semibold">Chocolate Mousse</div>
+              <span class="text-xs text-pink-600 font-semibold">{{ "DESSERT"|t }}</span>
+              <div class="text-sm font-semibold">{{ "Chocolate Mousse"|t }}</div>
             </div>
-            <span class="text-xs text-gray-500">30 min</span>
+            <span class="text-xs text-gray-500">{{ "30 min"|t }}</span>
           </div>
         </div>
       </div>
@@ -299,9 +295,9 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
           d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
       </svg>
-      Go to Calendar & Generate Meal Plan
+      {{ "Go to Calendar & Generate Meal Plan"|t }}
     </a>
-    <p class="text-sm text-gray-400 mt-3">You'll be redirected to the Calendar page to generate your first meal plan</p>
+    <p class="text-sm text-gray-400 mt-3">{{ "You'll be redirected to the Calendar page to generate your first meal plan"|t }}</p>
   </div>
 
   <!-- Tip -->
@@ -309,11 +305,11 @@
     <div class="flex items-start gap-3">
       <span class="text-2xl shrink-0">💡</span>
       <div>
-        <h4 class="font-semibold text-yellow-800 mb-1">Tip: Add more recipes for better variety</h4>
-        <p class="text-sm text-yellow-700">The more recipes in your collection, the more diverse your meal plans will
-          be. You can always <a href="/settings/recipes" class="underline font-semibold hover:text-yellow-900">add more
-            recipes</a> or <a href="/recipes" class="underline font-semibold hover:text-yellow-900">browse the
-            community</a> later.</p>
+        <h4 class="font-semibold text-yellow-800 mb-1">{{ "Tip: Add more recipes for better variety"|t }}</h4>
+        <p class="text-sm text-yellow-700">{{ "The more recipes in your collection, the more diverse your meal plans will be. You can always"|t }} <a href="/settings/recipes"
+            class="underline font-semibold hover:text-yellow-900">{{ "add more recipes"|t }}</a> {{ "or"|t }} <a
+            href="/recipes" class="underline font-semibold hover:text-yellow-900">{{ "browse the community"|t }}</a> {{
+          "later."|t }}</p>
       </div>
     </div>
   </div>
