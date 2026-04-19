@@ -1,0 +1,318 @@
+{% extends "_user.html" %}
+
+{% block title %}{{ "Kitchen"|t }} - imkitchen{% endblock %}
+{% block extra_head %}
+<style>
+  @keyframes float {
+
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  .float-anim {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .float-anim-delay {
+    animation: float 3s ease-in-out 0.5s infinite;
+  }
+
+  .float-anim-delay-2 {
+    animation: float 3s ease-in-out 1s infinite;
+  }
+
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .fade-in-up {
+    animation: fade-in-up 0.6s ease-out forwards;
+  }
+
+  .fade-in-up-delay {
+    animation: fade-in-up 0.6s ease-out 0.2s forwards;
+    opacity: 0;
+  }
+
+  .fade-in-up-delay-2 {
+    animation: fade-in-up 0.6s ease-out 0.4s forwards;
+    opacity: 0;
+  }
+
+  @keyframes pulse-glow {
+
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+    }
+
+    50% {
+      box-shadow: 0 0 0 12px rgba(34, 197, 94, 0);
+    }
+  }
+
+  .pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Onboarding Content -->
+<div class="container mx-auto px-4 py-8 max-w-3xl">
+
+  <!-- Hero -->
+  <div class="text-center mb-8 fade-in-up">
+    <div class="flex items-center justify-center gap-4 mb-6">
+      <span class="text-5xl float-anim">📅</span>
+      <span class="text-6xl float-anim-delay">🍽️</span>
+      <span class="text-5xl float-anim-delay-2">👨‍🍳</span>
+    </div>
+    <h1 class="text-3xl font-bold mb-3">{{ "Almost Ready to Cook!"|t }}</h1>
+    <p class="text-gray-600 text-lg max-w-md mx-auto">
+      {{ "You have recipes in your collection - great! Now generate a"|t }} <strong class="text-green-600">{{ "meal plan"|t }}</strong> {{ "so Kitchen Mode knows what to cook each day."|t }}
+    </p>
+  </div>
+
+  <!-- Progress indicator -->
+  <div class="bg-white rounded-xl shadow-lg p-6 mb-8 fade-in-up-delay">
+    <div class="flex items-center justify-center gap-3 mb-6">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd"
+              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+              clip-rule="evenodd"></path>
+          </svg>
+        </div>
+        <span class="text-sm font-semibold text-green-600">{{ "Add a recipe"|t }}</span>
+      </div>
+      <div class="w-8 h-0.5 bg-green-500"></div>
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold">2
+        </div>
+        <span class="text-sm font-semibold text-orange-600">{{ "Generate meal plan"|t }}</span>
+      </div>
+      <div class="w-8 h-0.5 bg-gray-300"></div>
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center text-sm font-bold">3
+        </div>
+        <span class="text-sm text-gray-400">{{ "Start cooking!"|t }}</span>
+      </div>
+    </div>
+
+    <!-- Recipe collection summary -->
+    <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-green-500 text-white rounded-full flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd"
+              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+              clip-rule="evenodd"></path>
+          </svg>
+        </div>
+        <div class="flex-1">
+          <h3 class="font-semibold text-green-800">{{ "Your Recipe Collection"|t }}</h3>
+          <p class="text-sm text-green-700">{{ "You have"|t }} <strong>{{ recipes.len() }} {{ "main course recipes"|t
+              }}</strong> {{ "ready to use"|t }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mini recipe preview -->
+    <div class="grid grid-cols-5 gap-2 mb-4">
+      {% for recipe in recipes %}
+      <div class="bg-orange-50 border border-orange-200 rounded-lg p-2 text-center">
+        <span class="text-2xl block mb-1">🍛</span>
+        <span class="text-xs text-gray-600 truncate block">{{ recipe.name }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- How it works -->
+  <div class="bg-white rounded-xl shadow-lg p-6 mb-8 fade-in-up-delay">
+    <h3 class="font-bold text-lg mb-4">{{ "What happens when you generate a meal plan?"|t }}</h3>
+    <div class="space-y-4">
+      <div class="flex items-start gap-4">
+        <div class="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+        </div>
+        <div>
+          <h4 class="font-semibold mb-1">{{ "Meals are assigned to each day"|t }}</h4>
+          <p class="text-sm text-gray-500">{{ "Your recipes are distributed across the week to create a varied, balanced meal plan with a main course each day."|t }}</p>
+        </div>
+      </div>
+      <div class="flex items-start gap-4">
+        <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+            </path>
+          </svg>
+        </div>
+        <div>
+          <h4 class="font-semibold mb-1">{{ "You can regenerate anytime"|t }}</h4>
+          <p class="text-sm text-gray-500">{{ "Don't like the plan? Regenerate individual days or the entire week from the Calendar page."|t }}</p>
+        </div>
+      </div>
+      <div class="flex items-start gap-4">
+        <div class="w-10 h-10 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          </svg>
+        </div>
+        <div>
+          <h4 class="font-semibold mb-1">{{ "Kitchen Mode activates"|t }}</h4>
+          <p class="text-sm text-gray-500">{{ "Once a plan exists, Kitchen Mode guides you step-by-step through each day's recipes with timers and checklists."|t }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Calendar preview mock -->
+  <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8 fade-in-up-delay-2">
+    <div class="bg-linear-to-r from-green-500 to-emerald-600 p-4 text-white">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-xs font-semibold uppercase opacity-90">{{ "Calendar Preview"|t }}</div>
+          <h2 class="text-xl font-bold">{{ "Your week after generating"|t }}</h2>
+        </div>
+        <span class="text-3xl">📅</span>
+      </div>
+    </div>
+    <div class="p-4">
+      <!-- Mini calendar week preview -->
+      <div class="grid grid-cols-7 gap-1 sm:gap-2 mb-4">
+        <div class="text-center">
+          <div class="text-xs text-gray-500 mb-1">{{ "Mon"|t }}</div>
+          <div class="bg-orange-50 border border-orange-200 rounded-lg p-1.5 sm:p-2">
+            <span class="text-lg sm:text-xl block">🍛</span>
+            <span class="text-[10px] sm:text-xs text-gray-600 hidden sm:block">{{ "Thai Curry"|t }}</span>
+          </div>
+        </div>
+        <div class="text-center">
+          <div class="text-xs text-gray-500 mb-1">{{ "Tue"|t }}</div>
+          <div class="bg-orange-50 border border-orange-200 rounded-lg p-1.5 sm:p-2">
+            <span class="text-lg sm:text-xl block">🍝</span>
+            <span class="text-[10px] sm:text-xs text-gray-600 hidden sm:block">{{ "Carbonara"|t }}</span>
+          </div>
+        </div>
+        <div class="text-center">
+          <div class="text-xs text-gray-500 mb-1">{{ "Wed"|t }}</div>
+          <div class="bg-orange-50 border border-orange-200 rounded-lg p-1.5 sm:p-2">
+            <span class="text-lg sm:text-xl block">🌮</span>
+            <span class="text-[10px] sm:text-xs text-gray-600 hidden sm:block">{{ "Beef Tacos"|t }}</span>
+          </div>
+        </div>
+        <div class="text-center">
+          <div class="text-xs text-gray-500 mb-1">{{ "Thu"|t }}</div>
+          <div class="bg-orange-50 border border-orange-200 rounded-lg p-1.5 sm:p-2">
+            <span class="text-lg sm:text-xl block">🍕</span>
+            <span class="text-[10px] sm:text-xs text-gray-600 hidden sm:block">{{ "Pizza"|t }}</span>
+          </div>
+        </div>
+        <div class="text-center">
+          <div class="text-xs text-gray-500 mb-1">{{ "Fri"|t }}</div>
+          <div class="bg-orange-50 border border-orange-200 rounded-lg p-1.5 sm:p-2">
+            <span class="text-lg sm:text-xl block">🍜</span>
+            <span class="text-[10px] sm:text-xs text-gray-600 hidden sm:block">{{ "Ramen"|t }}</span>
+          </div>
+        </div>
+        <div class="text-center">
+          <div class="text-xs text-gray-500 mb-1">{{ "Sat"|t }}</div>
+          <div class="bg-orange-50 border border-orange-200 rounded-lg p-1.5 sm:p-2">
+            <span class="text-lg sm:text-xl block">🍛</span>
+            <span class="text-[10px] sm:text-xs text-gray-600 hidden sm:block">{{ "Thai Curry"|t }}</span>
+          </div>
+        </div>
+        <div class="text-center">
+          <div class="text-xs text-gray-500 mb-1">{{ "Sun"|t }}</div>
+          <div class="bg-orange-50 border border-orange-200 rounded-lg p-1.5 sm:p-2">
+            <span class="text-lg sm:text-xl block">🍝</span>
+            <span class="text-[10px] sm:text-xs text-gray-600 hidden sm:block">{{ "Carbonara"|t }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Example day detail -->
+      <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-xs font-semibold uppercase tracking-wide text-green-600">{{ "Example - Monday"|t }}</span>
+        </div>
+        <div class="space-y-2">
+          <div class="flex items-center gap-3 p-2 bg-blue-50 rounded border border-blue-100">
+            <span>🥗</span>
+            <div class="flex-1">
+              <span class="text-xs text-blue-600 font-semibold">{{ "APPETIZER"|t }}</span>
+              <div class="text-sm font-semibold">{{ "Caesar Salad"|t }}</div>
+            </div>
+            <span class="text-xs text-gray-500">{{ "15 min"|t }}</span>
+          </div>
+          <div class="flex items-center gap-3 p-2 bg-orange-50 rounded border border-orange-100">
+            <span>🍛</span>
+            <div class="flex-1">
+              <span class="text-xs text-orange-600 font-semibold">{{ "MAIN COURSE"|t }}</span>
+              <div class="text-sm font-semibold">{{ "Thai Red Curry + Jasmine Rice"|t }}</div>
+            </div>
+            <span class="text-xs text-gray-500">{{ "45 min"|t }}</span>
+          </div>
+          <div class="flex items-center gap-3 p-2 bg-pink-50 rounded border border-pink-100">
+            <span>🍰</span>
+            <div class="flex-1">
+              <span class="text-xs text-pink-600 font-semibold">{{ "DESSERT"|t }}</span>
+              <div class="text-sm font-semibold">{{ "Chocolate Mousse"|t }}</div>
+            </div>
+            <span class="text-xs text-gray-500">{{ "30 min"|t }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="text-center fade-in-up-delay-2">
+    <a href="/menu"
+      class="inline-block px-8 py-4 bg-green-600 text-white font-bold text-lg rounded-xl hover:bg-green-700 transition shadow-lg shadow-green-200 pulse-glow">
+      <svg class="w-6 h-6 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+      </svg>
+      {{ "Go to Calendar & Generate Meal Plan"|t }}
+    </a>
+    <p class="text-sm text-gray-400 mt-3">{{ "You'll be redirected to the Calendar page to generate your first meal plan"|t }}</p>
+  </div>
+
+  <!-- Tip -->
+  <div class="mt-8 bg-yellow-50 border border-yellow-200 rounded-xl p-5 fade-in-up-delay-2">
+    <div class="flex items-start gap-3">
+      <span class="text-2xl shrink-0">💡</span>
+      <div>
+        <h4 class="font-semibold text-yellow-800 mb-1">{{ "Tip: Add more recipes for better variety"|t }}</h4>
+        <p class="text-sm text-yellow-700">{{ "The more recipes in your collection, the more diverse your meal plans will be. You can always"|t }} <a href="/settings/recipes"
+            class="underline font-semibold hover:text-yellow-900">{{ "add more recipes"|t }}</a> {{ "or"|t }} <a
+            href="/recipes" class="underline font-semibold hover:text-yellow-900">{{ "browse the community"|t }}</a> {{
+          "later."|t }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
