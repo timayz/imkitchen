@@ -203,18 +203,12 @@ impl<E: Executor> super::Command<E> {
 
         let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-        let row = sqlx::query_as_with::<_, Recipe, _>(&sql, values)
+        let mut recipes = sqlx::query_as_with::<_, Recipe, _>(&sql, values)
             .fetch_all(&self.read_db)
             .await?;
 
-        let mut recipes = vec![];
-
-        for _ in 0..3 {
-            let mut rng = rand::rng();
-            let mut r = row.to_vec();
-            r.shuffle(&mut rng);
-            recipes.extend(r);
-        }
+        let mut rng = rand::rng();
+        recipes.shuffle(&mut rng);
 
         Ok(recipes)
     }
@@ -266,7 +260,7 @@ impl<E: Executor> super::Command<E> {
                 SimpleExpr::FunctionCall(Func::random()),
                 sea_query::Order::Asc,
             )
-            .limit(7 * 4);
+            .limit(7 * 5);
 
         let statement = Query::select()
             .columns([

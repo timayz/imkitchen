@@ -1,8 +1,8 @@
 use axum::extract::{Path, State};
 use axum::response::IntoResponse;
 use axum_extra::extract::CookieJar;
-use imkitchen_mealplan::ChangeSlotRecipeStatus;
 use imkitchen_mealplan::slot::SlotRow;
+use imkitchen_mealplan::{ChangeSlotRecipeStatus, Recipe};
 use imkitchen_shared::mealplan::DaySlotStatus;
 use imkitchen_shared::recipe::{IngredientUnitFormat, Instruction};
 use imkitchen_shared::{mealplan::DaySlotRecipe, recipe::RecipeType};
@@ -15,6 +15,21 @@ use crate::template::{NotFoundTemplate, Template, filters};
 #[template(path = "index.html")]
 pub struct IndexTemplate {
     pub show_nav: bool,
+}
+
+#[derive(askama::Template)]
+#[template(path = "onboarding-recipe.html")]
+pub struct OnboardingRecipeTemplate {
+    pub current_path: String,
+    pub user: AuthUser,
+}
+
+#[derive(askama::Template)]
+#[template(path = "onboarding-menu.html")]
+pub struct OnboardingMenuTemplate {
+    pub current_path: String,
+    pub user: AuthUser,
+    pub recipes: Vec<Recipe>,
 }
 
 #[derive(askama::Template)]
@@ -78,6 +93,31 @@ pub async fn page(
         app.mealplan_query.next_slot_from(bounds.date, &user.id),
         template
     );
+
+    if slot.is_none() {
+        let main_courses = crate::try_page_response!(
+            app.mealplan_cmd
+                .first_week_recipes(&user.id, RecipeType::MainCourse),
+            template
+        );
+
+        if main_courses.is_empty() {
+            return template
+                .render(OnboardingRecipeTemplate {
+                    current_path: "kitchen".to_owned(),
+                    user,
+                })
+                .into_response();
+        }
+
+        return template
+            .render(OnboardingMenuTemplate {
+                current_path: "kitchen".to_owned(),
+                user,
+                recipes: main_courses,
+            })
+            .into_response();
+    }
 
     let mut slot_completed_count = 0;
     let mut slot_total_count = 1;

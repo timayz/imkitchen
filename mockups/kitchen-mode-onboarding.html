@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kitchen Mode - Get Started - imkitchen</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .float-anim { animation: float 3s ease-in-out infinite; }
+        .float-anim-delay { animation: float 3s ease-in-out 0.5s infinite; }
+        .float-anim-delay-2 { animation: float 3s ease-in-out 1s infinite; }
+
+        @keyframes fade-in-up {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in-up { animation: fade-in-up 0.6s ease-out forwards; }
+        .fade-in-up-delay { animation: fade-in-up 0.6s ease-out 0.2s forwards; opacity: 0; }
+        .fade-in-up-delay-2 { animation: fade-in-up 0.6s ease-out 0.4s forwards; opacity: 0; }
+
+        /* Step indicator */
+        .step-dot {
+            transition: all 0.3s ease;
+        }
+        .step-dot.active {
+            width: 2rem;
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 pb-20 md:pb-0">
+    <!-- Simplified Kitchen Mode Header -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex items-center justify-between">
+                <!-- Exit Button -->
+                <a href="dashboard-free.html" class="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    <span class="hidden sm:inline font-semibold">Exit Kitchen Mode</span>
+                </a>
+
+                <!-- Logo -->
+                <div class="text-center">
+                    <a href="dashboard-free.html" class="text-xl font-bold text-green-600">imkitchen</a>
+                    <div class="text-xs text-gray-500 mt-0.5">Kitchen Mode</div>
+                </div>
+
+                <!-- Placeholder for alignment -->
+                <div class="w-20"></div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Onboarding Content -->
+    <div class="container mx-auto px-4 py-8 max-w-3xl">
+
+        <!-- Step 1: Welcome / Empty State (visible by default) -->
+        <div id="step-1" class="onboarding-step">
+            <!-- Hero illustration -->
+            <div class="text-center mb-8 fade-in-up">
+                <div class="flex items-center justify-center gap-4 mb-6">
+                    <span class="text-6xl float-anim">🍳</span>
+                    <span class="text-5xl float-anim-delay">🥘</span>
+                    <span class="text-6xl float-anim-delay-2">🍲</span>
+                </div>
+                <h1 class="text-3xl font-bold mb-3">Welcome to Kitchen Mode!</h1>
+                <p class="text-gray-600 text-lg max-w-md mx-auto">
+                    Kitchen Mode guides you step-by-step through your daily meal plan. But first, you need at least one <strong class="text-orange-600">main course recipe</strong> to get started.
+                </p>
+            </div>
+
+            <!-- Empty state card -->
+            <div class="bg-white rounded-xl shadow-lg p-8 mb-8 fade-in-up-delay">
+                <div class="text-center">
+                    <div class="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-10 h-10 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                    </div>
+                    <h2 class="text-xl font-bold mb-2">No Main Course Recipes Yet</h2>
+                    <p class="text-gray-500 mb-6">You don't have any main course recipes in your collection. Add your first one to start using Kitchen Mode!</p>
+
+                    <!-- Progress indicator -->
+                    <div class="flex items-center justify-center gap-3 mb-6">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold">1</div>
+                            <span class="text-sm font-semibold text-orange-600">Add a recipe</span>
+                        </div>
+                        <div class="w-8 h-0.5 bg-gray-300"></div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center text-sm font-bold">2</div>
+                            <span class="text-sm text-gray-400">Plan your menu</span>
+                        </div>
+                        <div class="w-8 h-0.5 bg-gray-300"></div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center text-sm font-bold">3</div>
+                            <span class="text-sm text-gray-400">Start cooking!</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action: Get Started -->
+            <div class="text-center fade-in-up-delay-2">
+                <button onclick="showStep(2)" class="px-8 py-4 bg-green-600 text-white font-bold text-lg rounded-xl hover:bg-green-700 transition shadow-lg shadow-green-200">
+                    Let's Add Your First Recipe
+                </button>
+                <p class="text-sm text-gray-400 mt-3">It only takes a minute</p>
+            </div>
+        </div>
+
+        <!-- Step 2: Choose how to add a recipe (hidden by default) -->
+        <div id="step-2" class="onboarding-step hidden">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold mb-3">How would you like to add a recipe?</h1>
+                <p class="text-gray-600 text-lg">Choose the option that works best for you</p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-6 mb-8">
+                <!-- Option 1: Create your own -->
+                <a href="recipe-create.html" class="group bg-white rounded-xl shadow-lg p-6 hover:shadow-xl hover:border-green-500 border-2 border-transparent transition text-center">
+                    <div class="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-green-200 transition">
+                        <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-bold text-lg mb-2">Create Your Own</h3>
+                    <p class="text-gray-500 text-sm mb-4">Write your recipe from scratch with ingredients, steps, and timings</p>
+                    <span class="inline-block px-4 py-2 bg-green-100 text-green-700 text-sm font-semibold rounded-lg group-hover:bg-green-600 group-hover:text-white transition">
+                        Start Writing
+                    </span>
+                </a>
+
+                <!-- Option 2: Import -->
+                <a href="import.html" class="group bg-white rounded-xl shadow-lg p-6 hover:shadow-xl hover:border-blue-500 border-2 border-transparent transition text-center">
+                    <div class="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-200 transition">
+                        <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-bold text-lg mb-2">Import Recipes</h3>
+                    <p class="text-gray-500 text-sm mb-4">Import your existing recipes from a JSON file in bulk</p>
+                    <span class="inline-block px-4 py-2 bg-blue-100 text-blue-700 text-sm font-semibold rounded-lg group-hover:bg-blue-600 group-hover:text-white transition">
+                        Import File
+                    </span>
+                </a>
+
+                <!-- Option 3: Browse Community -->
+                <button onclick="showStep(3)" class="group bg-white rounded-xl shadow-lg p-6 hover:shadow-xl hover:border-orange-500 border-2 border-transparent transition text-center w-full">
+                    <div class="w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-orange-200 transition">
+                        <svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-bold text-lg mb-2">Browse Community</h3>
+                    <p class="text-gray-500 text-sm mb-4">Discover main course recipes shared by other cooks and save them</p>
+                    <span class="inline-block px-4 py-2 bg-orange-100 text-orange-700 text-sm font-semibold rounded-lg group-hover:bg-orange-600 group-hover:text-white transition">
+                        Explore Recipes
+                    </span>
+                </button>
+            </div>
+
+            <!-- Back button -->
+            <div class="text-center">
+                <button onclick="showStep(1)" class="text-gray-500 hover:text-gray-700 font-semibold">
+                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Back
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 3: Community recipes preview with Save explanation -->
+        <div id="step-3" class="onboarding-step hidden">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold mb-3">Save a Recipe from the Community</h1>
+                <p class="text-gray-600 text-lg max-w-lg mx-auto">
+                    Browse community recipes, open one you like, and click the <strong class="text-green-600">Save</strong> button to add it to your collection.
+                </p>
+            </div>
+
+            <!-- How it works explanation -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <h3 class="font-bold text-lg mb-4">How it works</h3>
+                <div class="space-y-4">
+                    <!-- Step A -->
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 bg-green-500 text-white rounded-full flex items-center justify-center font-bold shrink-0">1</div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold mb-1">Browse community recipes</h4>
+                            <p class="text-sm text-gray-500">Search or filter by cuisine, dietary preference, or cooking time to find main course recipes you like.</p>
+                        </div>
+                    </div>
+                    <!-- Step B -->
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 bg-green-500 text-white rounded-full flex items-center justify-center font-bold shrink-0">2</div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold mb-1">Open the recipe detail page</h4>
+                            <p class="text-sm text-gray-500">Click on any recipe to see full ingredients, steps, and cooking instructions.</p>
+                        </div>
+                    </div>
+                    <!-- Step C -->
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 bg-green-500 text-white rounded-full flex items-center justify-center font-bold shrink-0">3</div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold mb-1">Click the "Save" button</h4>
+                            <p class="text-sm text-gray-500">The recipe will be added to your personal collection and become available for your meal plans and Kitchen Mode.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mock recipe detail preview showing where Save button is -->
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
+                <div class="bg-gradient-to-r from-orange-400 to-red-500 p-4 text-white">
+                    <div class="text-xs font-semibold uppercase opacity-90">Recipe Detail Preview</div>
+                    <h2 class="text-xl font-bold">Thai Red Curry with Chicken</h2>
+                    <div class="flex items-center gap-2 mt-1 text-sm opacity-90">
+                        <span>by @thai_chef</span>
+                        <span>-</span>
+                        <span>Main Course</span>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="flex gap-2 text-sm">
+                            <span class="px-2 py-1 bg-orange-100 text-orange-700 rounded">Main Course</span>
+                            <span class="px-2 py-1 bg-green-100 text-green-700 rounded">Gluten-Free</span>
+                            <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded">Thai</span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4 mb-6">
+                        <div class="bg-gray-50 rounded-lg p-3 text-center">
+                            <div class="text-xs text-gray-500">Prep Time</div>
+                            <div class="font-bold">15 min</div>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-3 text-center">
+                            <div class="text-xs text-gray-500">Cook Time</div>
+                            <div class="font-bold">30 min</div>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-3 text-center">
+                            <div class="text-xs text-gray-500">Servings</div>
+                            <div class="font-bold">4</div>
+                        </div>
+                    </div>
+
+                    <!-- Highlighted Save button -->
+                    <div class="relative">
+                        <div class="absolute -top-3 -right-2 z-10">
+                            <div class="bg-yellow-400 text-yellow-900 text-xs font-bold px-3 py-1 rounded-full shadow-lg animate-bounce">
+                                Click here!
+                            </div>
+                        </div>
+                        <div class="flex gap-3">
+                            <button onclick="showSavedConfirmation()" class="flex-1 px-6 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition shadow-lg ring-4 ring-green-300 ring-opacity-50">
+                                <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
+                                </svg>
+                                Save to My Recipes
+                            </button>
+                            <button class="px-4 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Saved confirmation (hidden) -->
+            <div id="saved-confirmation" class="hidden mb-8">
+                <div class="bg-green-50 border-2 border-green-500 rounded-xl p-6 text-center">
+                    <div class="text-5xl mb-3">🎉</div>
+                    <h3 class="text-xl font-bold text-green-800 mb-2">Recipe Saved!</h3>
+                    <p class="text-green-700 mb-4">The recipe has been added to your collection. You can now use it in your meal plans and Kitchen Mode.</p>
+                    <a href="kitchen-mode.html" class="inline-block px-8 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition shadow-lg">
+                        Start Kitchen Mode
+                    </a>
+                </div>
+            </div>
+
+            <!-- CTA: Go to Community -->
+            <div class="flex flex-col sm:flex-row gap-4 justify-center" id="step-3-cta">
+                <a href="community.html" class="px-8 py-4 bg-green-600 text-white font-bold text-lg rounded-xl hover:bg-green-700 transition shadow-lg shadow-green-200 text-center">
+                    Browse Community Recipes
+                </a>
+                <button onclick="showStep(2)" class="px-8 py-4 bg-gray-200 text-gray-700 font-bold text-lg rounded-xl hover:bg-gray-300 transition text-center">
+                    Back to Options
+                </button>
+            </div>
+        </div>
+
+        <!-- Step dots indicator -->
+        <div class="flex items-center justify-center gap-2 mt-8">
+            <button onclick="showStep(1)" id="dot-1" class="step-dot w-8 h-2 bg-green-500 rounded-full"></button>
+            <button onclick="showStep(2)" id="dot-2" class="step-dot w-2 h-2 bg-gray-300 rounded-full"></button>
+            <button onclick="showStep(3)" id="dot-3" class="step-dot w-2 h-2 bg-gray-300 rounded-full"></button>
+        </div>
+    </div>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+        <div class="flex items-center justify-around py-2">
+            <a href="dashboard-free.html" class="flex flex-col items-center py-2 px-3 text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                </svg>
+                <span class="text-xs mt-1">Dashboard</span>
+            </a>
+            <a href="calendar-free.html" class="flex flex-col items-center py-2 px-3 text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                <span class="text-xs mt-1">Calendar</span>
+            </a>
+            <a href="recipes-list.html" class="flex flex-col items-center py-2 px-3 text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                </svg>
+                <span class="text-xs mt-1">Recipes</span>
+            </a>
+            <a href="community.html" class="flex flex-col items-center py-2 px-3 text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+                <span class="text-xs mt-1">Community</span>
+            </a>
+            <a href="dashboard-free.html" class="flex flex-col items-center py-2 px-3 text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+                <span class="text-xs mt-1">Exit</span>
+            </a>
+        </div>
+    </nav>
+
+    <script>
+        let currentStep = 1;
+
+        function showStep(step) {
+            // Hide all steps
+            document.querySelectorAll('.onboarding-step').forEach(el => el.classList.add('hidden'));
+            // Show target step
+            document.getElementById(`step-${step}`).classList.remove('hidden');
+
+            // Update dots
+            for (let i = 1; i <= 3; i++) {
+                const dot = document.getElementById(`dot-${i}`);
+                if (i === step) {
+                    dot.classList.add('active', 'bg-green-500');
+                    dot.classList.remove('bg-gray-300');
+                    dot.style.width = '2rem';
+                } else {
+                    dot.classList.remove('active', 'bg-green-500');
+                    dot.classList.add('bg-gray-300');
+                    dot.style.width = '0.5rem';
+                }
+            }
+
+            currentStep = step;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function showSavedConfirmation() {
+            document.getElementById('saved-confirmation').classList.remove('hidden');
+            document.getElementById('step-3-cta').classList.add('hidden');
+            document.getElementById('saved-confirmation').scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
