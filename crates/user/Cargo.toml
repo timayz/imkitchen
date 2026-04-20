@@ -1,6 +1,6 @@
 [package]
 name = "imkitchen-user"
-version = "0.15.2"
+version = "0.15.3"
 edition.workspace = true
 authors.workspace = true
 
@@ -27,8 +27,8 @@ async-stripe-types.workspace = true
 serde.workspace = true
 tracing.workspace = true
 tokio-cron-scheduler.workspace = true
-imkitchen-shared = { path = "../shared", version = "0.15.2" }
-imkitchen-db = { path = "../db", version = "0.15.2" }
+imkitchen-shared = { path = "../shared", version = "0.15.3" }
+imkitchen-db = { path = "../db", version = "0.15.3" }
 
 [dev-dependencies]
 tokio.workspace = true

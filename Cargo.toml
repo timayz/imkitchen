@@ -67,7 +67,7 @@ tokio-cron-scheduler = "0.15"
 
 [package]
 name = "imkitchen"
-version = "0.15.2"
+version = "0.15.3"
 edition.workspace = true
 
 [package.metadata.cargo-machete]
@@ -108,14 +108,14 @@ async-stripe-payment = { workspace = true }
 async-stripe-types = { workspace = true }
 async-stripe-shared = { workspace = true }
 world-tax = { workspace = true }
-imkitchen-shared = { path = "crates/shared", version = "0.15.2" }
-imkitchen-contact = { path = "crates/contact", version = "0.15.2" }
-imkitchen-recipe = { path = "crates/recipe", version = "0.15.2" }
-imkitchen-mealplan = { path = "crates/mealplan", version = "0.15.2" }
-imkitchen-shopping = { path = "crates/shopping", version = "0.15.2" }
-imkitchen-user = { path = "crates/user", version = "0.15.2" }
-imkitchen-db = { path = "crates/db", version = "0.15.2" }
-imkitchen-notification = { path = "crates/notification", version = "0.15.2" }
+imkitchen-shared = { path = "crates/shared", version = "0.15.3" }
+imkitchen-contact = { path = "crates/contact", version = "0.15.3" }
+imkitchen-recipe = { path = "crates/recipe", version = "0.15.3" }
+imkitchen-mealplan = { path = "crates/mealplan", version = "0.15.3" }
+imkitchen-shopping = { path = "crates/shopping", version = "0.15.3" }
+imkitchen-user = { path = "crates/user", version = "0.15.3" }
+imkitchen-db = { path = "crates/db", version = "0.15.3" }
+imkitchen-notification = { path = "crates/notification", version = "0.15.3" }
 
 [[bin]]
 name = "imkitchen"
