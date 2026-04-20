@@ -2559,7 +2559,6 @@ dependencies = [
  "axum",
  "axum-extra",
  "base64",
- "cfg-if",
  "clap",
  "config",
  "evento",
