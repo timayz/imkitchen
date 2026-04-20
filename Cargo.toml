@@ -18,7 +18,6 @@ tower-http = { version = "0.6", features = ["fs", "trace", "compression-br", "co
 rust-i18n = "4.0"
 time-tz = "3.0.0-rc.5.0.0"
 askama = "0.15"
-cfg-if = "1.0"
 world-tax = "0.5"
 sqlx = { version = "0.8", default-features = false, features = ["migrate", "json", "derive", "runtime-tokio", "sqlite"] }
 sqlx_migrator = { version = "0.18", features = ["sqlite"] }
@@ -52,6 +51,8 @@ urlencoding = "2.1"
 base64 = "0.22"
 url = "2.5"
 minify-html = "0.18"
+oxc = { version = "0.126.0", features = ["minifier", "codegen"] }
+lightningcss = { version = "1.0.0-alpha.71", default-features = false }
 ulid = "1.2"
 sea-query = { version = "1.0.0-rc.27", default-features = false, features = ["derive", "audit", "backend-sqlite"] }
 sea-query-sqlx = { version = "0.8.0-rc.10", features = ["runtime-tokio", "sqlx-sqlite", "with-json"] }
@@ -95,11 +96,12 @@ config = { workspace = true }
 rust-embed = { workspace = true }
 mime_guess = { workspace = true }
 minify-html = { workspace = true }
+oxc = { workspace = true }
+lightningcss = { workspace = true }
 jsonwebtoken = { workspace = true }
 futures = { workspace = true }
 time = { workspace = true }
 strum = { workspace = true }
-cfg-if = { workspace = true }
 async-stripe = { workspace = true }
 async-stripe-core = { workspace = true }
 async-stripe-payment = { workspace = true }

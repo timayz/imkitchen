@@ -326,7 +326,7 @@ pub async fn share_to_community_action(
     user: AuthUser,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    if !app.config.feature.community {
+    if !app.config.feature.community && !user.is_admin() {
         return StatusCode::METHOD_NOT_ALLOWED.into_response();
     }
 

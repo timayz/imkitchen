@@ -77,8 +77,19 @@ if (workbox) {
   // API/Data endpoints: Network-first with cache fallback
   workbox.routing.registerRoute(
     ({ url }) => url.pathname === '/' ||
+      url.pathname.startsWith('/health') ||
+      url.pathname.startsWith('/ready') ||
+      url.pathname.startsWith('/kitchen') ||
+      url.pathname.startsWith('/upgrade') ||
+      url.pathname.startsWith('/register') ||
+      url.pathname.startsWith('/login') ||
+      url.pathname.startsWith('/reset-password') ||
+      url.pathname.startsWith('/menu') ||
+      url.pathname.startsWith('/groceries') ||
       url.pathname.startsWith('/recipes') ||
-      url.pathname.startsWith('/calendar') ||
+      url.pathname.startsWith('/logout') ||
+      url.pathname.startsWith('/invoices') ||
+      url.pathname.startsWith('/admin') ||
       url.pathname.startsWith('/settings'),
     new workbox.strategies.NetworkFirst({
       cacheName: CACHE.api,
