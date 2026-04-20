@@ -277,6 +277,9 @@
               return false;
             }
 
+            var amountEl = document.getElementById('subscription-form-amount');
+            stripeElements.update({ amount: parseInt(amountEl.value, 10) });
+
             return stripe.confirmPayment({
               elements: stripeElements,
               clientSecret: o.el.dataset.clientSecret,
