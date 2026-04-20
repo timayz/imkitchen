@@ -30,8 +30,8 @@ impl<E: Executor> super::Command<E> {
                 imkitchen_shared::user!("name is missing from payment intent");
             };
 
-            let Some(email) = method.billing_details.email.to_owned() else {
-                imkitchen_shared::user!("email is missing from payment intent");
+            let Some(email) = subscription.email.to_owned() else {
+                imkitchen_shared::user!("email is missing from subscription");
             };
 
             let Some(address) = method.billing_details.address.to_owned() else {

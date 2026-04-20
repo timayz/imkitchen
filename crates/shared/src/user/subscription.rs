@@ -212,6 +212,7 @@ pub enum Subscription {
     },
     StripePaymentIntentCreated {
         id: String,
+        email: String,
         details: PaymentDetails,
     },
     StripeSetupIntentCreated {

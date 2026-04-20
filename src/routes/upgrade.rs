@@ -97,7 +97,7 @@ pub async fn action(
     } else {
         let customer = crate::try_response!(anyhow:
             CreateCustomer::new()
-            .email(user_info.email)
+            .email(&user_info.email)
             .metadata([("imkitchen_user_id".to_owned(), user.id.to_owned())])
             .send(&app.stripe),
             template
@@ -109,6 +109,7 @@ pub async fn action(
                 .create_stripe_customer(&customer.id, &user.id),
             template
         );
+
         customer.id.to_string()
     };
 
@@ -128,6 +129,7 @@ pub async fn action(
     crate::try_response!(
         app.user_cmd.subscription.create_stripe_payment_intent(
             &payment_intent.id,
+            &user_info.email,
             &user.id,
             payment_details
         ),
