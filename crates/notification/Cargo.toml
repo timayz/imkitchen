@@ -1,6 +1,6 @@
 [package]
 name = "imkitchen-notification"
-version = "0.15.3"
+version = "0.15.4"
 edition.workspace = true
 authors.workspace = true
 
@@ -13,4 +13,4 @@ serde = { workspace = true }
 rust-i18n = { workspace = true }
 time = { workspace = true }
 evento.workspace = true
-imkitchen-shared = { path = "../shared", version = "0.15.3" }
+imkitchen-shared = { path = "../shared", version = "0.15.4" }
