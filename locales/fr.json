@@ -1317,5 +1317,15 @@
   "Subtotal (excl. tax)": "Sous-total (HT)",
   "Total (incl. tax)": "Total (TTC)",
   "Download PDF": "Télécharger PDF",
-  "plan": "plan"
+  "plan": "plan",
+  "Upgrade": "Passer au Premium",
+  "Upgrade to Premium and unlock the full imkitchen experience": "Passez à Premium et débloquez l'expérience complète imkitchen",
+  "Select Your Plan": "Choisissez Votre Forfait",
+  "Monthly": "Mensuel",
+  "Billed monthly": "Facturé mensuellement",
+  "Save 20%": "Économisez 20%",
+  "Annual": "Annuel",
+  "billed annually": "facturé annuellement",
+  "Your payment is secured with 256-bit encryption": "Votre paiement est sécurisé avec un chiffrement 256 bits",
+  "Premium Annual Plan": "Forfait Premium Annuel"
 }
