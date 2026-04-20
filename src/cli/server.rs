@@ -1,6 +1,5 @@
 use anyhow::Result;
 use imkitchen_notification::EmailService;
-#[cfg(not(debug_assertions))]
 use tower_http::compression::CompressionLayer;
 use tower_http::trace::TraceLayer;
 
@@ -164,7 +163,6 @@ pub async fn serve(
     };
 
     // Build router with health checks using read pool state
-    #[cfg(not(debug_assertions))]
     let app = crate::routes::router(state)
         // Health check endpoints (no auth required)
         // Add cache control middleware (no-cache for HTML, cache for static files)
@@ -177,15 +175,6 @@ pub async fn serve(
         ))
         // Enable Brotli and Gzip compression for all text assets (Story 5.9)
         .layer(CompressionLayer::new().br(true).gzip(true))
-        .layer(TraceLayer::new_for_http());
-
-    #[cfg(debug_assertions)]
-    let app = crate::routes::router(state)
-        // Health check endpoints (no auth required)
-        // Add cache control middleware (no-cache for HTML, cache for static files)
-        .layer(axum::middleware::from_fn(
-            crate::middleware::cache_control_middleware,
-        ))
         .layer(TraceLayer::new_for_http());
 
     // Start server
