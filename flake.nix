@@ -40,6 +40,7 @@
             cargo-watch
             cargo-machete
             cargo-tarpaulin
+            cargo-edit
             tailwindcss_4
             # playwright-test
             mkcert
