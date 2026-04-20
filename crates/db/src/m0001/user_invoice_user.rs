@@ -11,12 +11,20 @@ fn create_table() -> TableCreateStatement {
     Table::create()
         .table(UserInvoiceUser::Table)
         .col(
+            ColumnDef::new(UserInvoiceUser::Id)
+                .string()
+                .not_null()
+                .string_len(26)
+                .primary_key(),
+        )
+        .col(
             ColumnDef::new(UserInvoiceUser::InvoiceNumber)
                 .string()
                 .not_null()
                 .string_len(100)
-                .primary_key(),
+                .unique_key(),
         )
+        .col(ColumnDef::new(UserInvoiceUser::Cursor).string().not_null())
         .col(
             ColumnDef::new(UserInvoiceUser::UserId)
                 .string()

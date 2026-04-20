@@ -126,6 +126,26 @@ pub(crate) mod filters {
     }
 
     #[askama::filter_fn]
+    pub fn day_month_year(value: &u64, values: &dyn askama::Values) -> askama::Result<String> {
+        let preferred_language = askama::get_value::<String>(values, "preferred_language")
+            .expect("Unable to get preferred_language from askama::get_value");
+
+        let date = OffsetDateTime::from_unix_timestamp(*value as i64)
+            .map_err(|e| askama::Error::Custom(Box::new(e)))?;
+
+        let month = rust_i18n::t!(format!("{}", date.month()), locale = preferred_language);
+
+        Ok(rust_i18n::t!(
+            "day_month_year_format",
+            locale = preferred_language,
+            month = month,
+            day = date.day(),
+            year = date.year()
+        )
+        .to_string())
+    }
+
+    #[askama::filter_fn]
     pub fn month_year(a: &u64, values: &dyn askama::Values, b: &u64) -> askama::Result<String> {
         let preferred_language = askama::get_value::<String>(values, "preferred_language")
             .expect("Unable to get preferred_language from askama::get_value");

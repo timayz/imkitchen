@@ -1,0 +1,193 @@
+{% extends "_settings.html" %}
+{% block title %}{{ "Invoice"|t }} {{ invoice.invoice_number }} - imkitchen{% endblock %}
+
+{% block extra_head %}
+
+<style>
+  @media print {
+    body * {
+      visibility: hidden;
+    }
+
+    #invoice-doc,
+    #invoice-doc * {
+      visibility: visible;
+    }
+
+    #invoice-doc {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100vh;
+    }
+
+    @page {
+      size: A4;
+      margin: 2cm 1.5cm;
+    }
+
+    /* Different margins for first page */
+    @page :first {
+      margin-top: 0;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Main Content -->
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+  <!-- Breadcrumb -->
+  <div class="mb-6 print:hidden">
+    <nav class="flex items-center text-sm text-gray-500">
+      <a href="/settings" class="hover:text-green-600">Profile</a>
+      <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+      </svg>
+      <a href="/settings/billing" class="hover:text-green-600">Billing</a>
+      <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+      </svg>
+      <span class="text-gray-900 font-semibold">Invoice {{ invoice.invoice_number }}</span>
+    </nav>
+  </div>
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 print:hidden">
+    <div>
+    </div>
+    <div class="flex gap-3">
+      <button onclick="window.print()"
+        class="px-4 py-2 bg-white border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 text-sm flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+          </path>
+        </svg>
+        Download PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- Invoice Document -->
+  <div id="invoice-doc" class="bg-white rounded-lg shadow-lg print:rounded-none print:shadow-none p-6 md:p-8">
+    <!-- Document Title -->
+    <div class="mb-8">
+      <h2 class="text-2xl font-bold uppercase tracking-wide">Invoice</h2>
+    </div>
+
+    <!-- Invoice Metadata -->
+    <div class="grid md:grid-cols-2 print:grid-cols-2 gap-6 mb-8 pb-8 border-b">
+      <div>
+        <div class="text-sm text-gray-500 mb-1">Invoice Number</div>
+        <div class="font-semibold">{{ invoice.invoice_number }}</div>
+      </div>
+      <div>
+        <div class="text-sm text-gray-500 mb-1">Status</div>
+        <span class="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-semibold rounded-full">Paid</span>
+      </div>
+      <div>
+        <div class="text-sm text-gray-500 mb-1">Date Issued</div>
+        <div class="font-semibold">{{ invoice.issued_at|day_month_year }}</div>
+      </div>
+      <div>
+        <div class="text-sm text-gray-500 mb-1">Due Date</div>
+        <div class="font-semibold">{{ invoice.due_at|day_month_year }}</div>
+      </div>
+    </div>
+
+    <!-- From / To -->
+    <div class="grid md:grid-cols-2 print:grid-cols-2 gap-6 mb-8 pb-8 border-b">
+      <div>
+        <div class="text-sm text-gray-500 font-semibold mb-2">From</div>
+        <div class="font-bold text-lg text-green-600">{{ invoice.from.name }}</div>
+        <div class="text-sm text-gray-600 mt-1 space-y-0.5">
+          {% for line in invoice.from.address.format_for_invoice() %}
+          <div>{{ line }}</div>
+          {% endfor %}
+          <div class="mt-2">{{ invoice.from.email }}</div>
+        </div>
+      </div>
+      <div>
+        <div class="text-sm text-gray-500 font-semibold mb-2">Bill To</div>
+        <div class="font-bold text-lg">{{ invoice.to.name }}</div>
+        <div class="text-sm text-gray-600 mt-1 space-y-0.5">
+          {% for line in invoice.to.address.format_for_invoice() %}
+          <div>{{ line }}</div>
+          {% endfor %}
+          <div class="mt-2">{{ invoice.to.email }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Line Items -->
+    <div class="mb-8">
+      <h3 class="font-bold mb-4">Items</h3>
+
+      <!-- Desktop Table -->
+      <div class="hidden md:block">
+        <table class="w-full">
+          <thead>
+            <tr class="border-b text-left text-sm text-gray-500">
+              <th class="pb-3 font-semibold">Description</th>
+              <th class="pb-3 font-semibold text-center">Qty</th>
+              <th class="pb-3 font-semibold text-right">Unit Price (excl. tax)</th>
+              <th class="pb-3 font-semibold text-right">Total (excl. tax)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-b">
+              <td class="py-4">
+                <div class="font-semibold capitalize">{{ invoice.plan }} plan</div>
+                <div class="text-sm text-gray-500">{{ invoice.issued_at|day_month_year }} - {{
+                  invoice.expire_at|day_month_year }}</div>
+              </td>
+              <td class="py-4 text-center">1</td>
+              <td class="py-4 text-right">${{ *invoice.price|amount }}</td>
+              <td class="py-4 text-right font-semibold">${{ *invoice.price|amount }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Mobile Card -->
+      <div class="md:hidden border rounded-lg p-4">
+        <div class="font-semibold mb-1 capitalize">{{ invoice.plan }} plan</div>
+        <div class="text-sm text-gray-500 mb-3">{{ invoice.issued_at|day_month_year }} - {{
+          invoice.expire_at|day_month_year }}</div>
+        <div class="flex justify-between text-sm mb-1">
+          <span class="text-gray-500">Qty</span>
+          <span>1</span>
+        </div>
+        <div class="flex justify-between text-sm mb-1">
+          <span class="text-gray-500">Unit Price (excl. tax)</span>
+          <span>${{ *invoice.price|amount }}</span>
+        </div>
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-500">Total (excl. tax)</span>
+          <span>${{ *invoice.price|amount }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="flex justify-end mb-8">
+      <div class="w-full md:w-80 space-y-2">
+        <div class="flex justify-between py-2">
+          <span class="text-gray-600">Subtotal (excl. tax)</span>
+          <span>${{ *invoice.price|amount }}</span>
+        </div>
+        <div class="flex justify-between py-2">
+          <span class="text-gray-600">{{ tax_label }}</span>
+          <span>${{ *invoice.tax|amount }}</span>
+        </div>
+        <div class="flex justify-between py-3 border-t-2 border-gray-900 font-bold text-lg">
+          <span>Total (incl. tax)</span>
+          <span class="text-green-600">${{ *invoice.total_inc_tax|amount }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

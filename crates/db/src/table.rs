@@ -70,7 +70,9 @@ pub enum UserAdminFts {
 #[derive(Iden, Clone)]
 pub enum UserInvoiceUser {
     Table,
+    Id,
     InvoiceNumber,
+    Cursor,
     UserId,
     IssuedAt,
     DueAt,

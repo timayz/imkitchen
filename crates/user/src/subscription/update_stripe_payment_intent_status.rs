@@ -26,13 +26,26 @@ impl<E: Executor> super::Command<E> {
 
             let expire_at = super::add_months(intent.created, months);
 
+            let Some(name) = method.billing_details.name.to_owned() else {
+                imkitchen_shared::user!("name is missing from payment intent");
+            };
+
+            let Some(email) = method.billing_details.email.to_owned() else {
+                imkitchen_shared::user!("email is missing from payment intent");
+            };
+
+            let Some(address) = method.billing_details.address.to_owned() else {
+                imkitchen_shared::user!("address is missing from payment intent");
+            };
+
             subscription
                 .aggregator()?
                 .event(&StripePaymentIntentSucceeded {
                     id: intent.id.to_string(),
                     payment_method_id: method.id.to_string(),
-                    name: method.billing_details.name.to_owned(),
-                    address: method.billing_details.address.map(|a| a.into()),
+                    name,
+                    email,
+                    address: address.into(),
                     details,
                     paid_at: intent.created.try_into()?,
                     expire_at: expire_at.try_into()?,

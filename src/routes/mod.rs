@@ -16,6 +16,7 @@ mod groceries;
 mod health;
 mod help;
 mod index;
+mod invoices;
 mod login;
 mod manifest;
 mod menu;
@@ -231,6 +232,7 @@ pub fn router(app_state: AppState) -> Router {
         )
         .route("/settings/recipes", get(settings::recipes::page))
         .route("/settings/recipes/create", post(settings::recipes::create))
+        .route("/invoices/{id}", get(invoices::detail::page))
         .route("/admin/users", get(admin::users::page))
         .route("/admin/users/{id}/suspend", post(admin::users::suspend))
         .route("/admin/users/{id}/activate", post(admin::users::activate))

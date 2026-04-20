@@ -61,7 +61,8 @@ pub async fn serve(
         .await?;
 
     let sub_user_invoice = imkitchen_user::invoice::subscription()
-        .data(write_pool.clone())
+        .data((read_pool.clone(), write_pool.clone()))
+        .data(config.email.clone())
         .start(&executor)
         .await?;
 

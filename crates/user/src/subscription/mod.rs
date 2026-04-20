@@ -132,8 +132,8 @@ async fn handle_stripe_payment_intent_succeeded(
     data.id = event.aggregator_id.to_owned();
     data.payment_intent_id = None;
     data.payment_method_id = Some(event.data.payment_method_id);
-    data.name = event.data.name;
-    data.address = event.data.address;
+    data.name = Some(event.data.name);
+    data.address = Some(event.data.address);
     data.expire_at = event.data.expire_at;
     data.is_active = true;
 

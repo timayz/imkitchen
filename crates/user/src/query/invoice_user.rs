@@ -4,21 +4,18 @@ use evento::{
     metadata::Event,
     sql::Reader,
 };
-use imkitchen_db::table::{UserAdmin, UserAdminFts};
+use imkitchen_db::table::UserInvoiceUser;
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
-use serde::Deserialize;
 use sqlx::{SqlitePool, prelude::FromRow};
-use std::time::{SystemTime, UNIX_EPOCH};
-use strum::{AsRefStr, Display, EnumString, VariantArray};
 
-use imkitchen_shared::user::{
-    Activated, MadeAdmin, Registered, Role, State, Suspended, User, UsernameChanged,
-    subscription::{LifePremiumToggled, StripePaymentIntentSucceeded, Subscription},
-};
+use imkitchen_shared::user::invoice::{Created, Invoice, InvoiceAddress};
 
 impl<E: Executor> super::Query<E> {
-    pub async fn invoice(&self, id: impl Into<String>) -> Result<Option<AdminView>, anyhow::Error> {
+    pub async fn invoice(
+        &self,
+        id: impl Into<String>,
+    ) -> Result<Option<InvoiceUserView>, anyhow::Error> {
         load(&self.executor, &self.read_db, &self.write_db, id).await
     }
 }
@@ -28,98 +25,37 @@ pub(crate) async fn load<E: Executor>(
     read_db: &SqlitePool,
     write_db: &SqlitePool,
     id: impl Into<String>,
-) -> Result<Option<AdminView>, anyhow::Error> {
+) -> Result<Option<InvoiceUserView>, anyhow::Error> {
     let id = id.into();
 
     create_projection(&id)
-        .aggregator::<Subscription>(id)
+        .aggregator::<Invoice>(id)
         .data((read_db.clone(), write_db.clone()))
         .execute(executor)
         .await
 }
 
 #[evento::projection(FromRow, Cursor, Debug)]
-pub struct AdminView {
-    #[cursor(by_recently_joined, UserAdmin::Id, 1)]
-    #[cursor(by_most_active, UserAdmin::Id, 1)]
-    #[cursor(by_most_recipes, UserAdmin::Id, 1)]
-    #[cursor(by_name, UserAdmin::Id, 1)]
+pub struct InvoiceUserView {
+    #[cursor(UserInvoiceUser::Id, 1)]
     pub id: String,
-    #[cursor(by_name, UserAdmin::Email, 2)]
-    pub email: String,
-    pub full_name: Option<String>,
-    pub username: Option<String>,
-    pub role: sqlx::types::Text<Role>,
-    pub state: sqlx::types::Text<State>,
-    #[cursor(by_most_recipes, UserAdmin::TotalRecipesCount, 2)]
-    pub total_recipes_count: i64,
-    #[cursor(by_most_active, UserAdmin::TotalActiveCount, 2)]
-    pub total_active_count: i64,
-    pub shared_recipes_count: i64,
-    pub subscription_expire_at: u64,
-    #[cursor(by_recently_joined, UserAdmin::CreatedAt, 2)]
-    pub created_at: u64,
-}
-
-impl AdminView {
-    pub fn is_admin(&self) -> bool {
-        self.role.0 == Role::Admin
-    }
-
-    pub fn is_premium(&self) -> bool {
-        let Ok(now) = SystemTime::now().duration_since(UNIX_EPOCH) else {
-            return false;
-        };
-
-        self.role.0 == Role::Admin || self.subscription_expire_at > now.as_secs()
-    }
-
-    pub fn is_active(&self) -> bool {
-        self.state.0 == State::Active
-    }
-
-    pub fn is_suspended(&self) -> bool {
-        self.state.0 == State::Suspended
-    }
-
-    pub fn joined_at(&self) -> String {
-        let Ok(created_at) = time::UtcDateTime::from_unix_timestamp(self.created_at as i64) else {
-            return "".to_owned();
-        };
-
-        let Ok(format) = time::format_description::parse("[month repr:short] [day], [year]") else {
-            return "".to_owned();
-        };
-
-        created_at.format(&format).unwrap_or_else(|_| "".to_owned())
-    }
-
-    pub fn short_name(&self) -> String {
-        self.full_name
-            .to_owned()
-            .unwrap_or(self.email.to_string())
-            .split(' ')
-            .take(2)
-            .map(|w| w.chars().next().unwrap_or('a').to_uppercase().to_string())
-            .collect::<Vec<_>>()
-            .join("")
-    }
-}
-
-#[derive(EnumString, Display, VariantArray, Default, Debug, Deserialize, AsRefStr)]
-pub enum UserSortBy {
-    #[default]
-    RecentlyJoined,
-    Name,
-    MostRecipes,
-    MostActive,
+    pub invoice_number: String,
+    pub user_id: String,
+    pub due_at: u64,
+    #[cursor(UserInvoiceUser::IssuedAt, 2)]
+    pub issued_at: u64,
+    pub from: evento::sql_types::Bitcode<InvoiceAddress>,
+    pub to: evento::sql_types::Bitcode<InvoiceAddress>,
+    pub plan: String,
+    pub expire_at: u64,
+    pub price: u32,
+    pub tax: u32,
+    pub tax_rate: f64,
+    pub total_inc_tax: u32,
 }
 
 pub struct FilterQuery {
-    pub state: Option<State>,
-    pub role: Option<Role>,
-    pub search: Option<String>,
-    pub sort_by: UserSortBy,
+    pub user_id: String,
     pub args: Args,
 }
 
@@ -127,118 +63,62 @@ impl<E: Executor> super::Query<E> {
     pub async fn filter_invoice(
         &self,
         input: FilterQuery,
-    ) -> anyhow::Result<ReadResult<AdminView>> {
-        let mut statement = sea_query::Query::select()
+    ) -> anyhow::Result<ReadResult<InvoiceUserView>> {
+        let statement = sea_query::Query::select()
             .columns([
-                UserAdmin::Id,
-                UserAdmin::Cursor,
-                UserAdmin::Email,
-                UserAdmin::FullName,
-                UserAdmin::Username,
-                UserAdmin::State,
-                UserAdmin::Role,
-                UserAdmin::SubscriptionExpireAt,
-                UserAdmin::TotalRecipesCount,
-                UserAdmin::SharedRecipesCount,
-                UserAdmin::TotalActiveCount,
-                UserAdmin::CreatedAt,
+                UserInvoiceUser::Id,
+                UserInvoiceUser::InvoiceNumber,
+                UserInvoiceUser::Cursor,
+                UserInvoiceUser::UserId,
+                UserInvoiceUser::IssuedAt,
+                UserInvoiceUser::DueAt,
+                UserInvoiceUser::ExpireAt,
+                UserInvoiceUser::From,
+                UserInvoiceUser::To,
+                UserInvoiceUser::Plan,
+                UserInvoiceUser::Price,
+                UserInvoiceUser::Tax,
+                UserInvoiceUser::TaxRate,
+                UserInvoiceUser::TotalIncTax,
             ])
-            .from(UserAdmin::Table)
+            .from(UserInvoiceUser::Table)
+            .and_where(Expr::col(UserInvoiceUser::UserId).eq(&input.user_id))
             .to_owned();
 
-        if let Some(account_type) = input.role {
-            statement.and_where(Expr::col(UserAdmin::Role).eq(account_type.to_string()));
-        }
-
-        if let Some(status) = input.state {
-            statement.and_where(Expr::col(UserAdmin::State).eq(status.to_string()));
-        }
-
-        if let Some(search) = input.search {
-            statement.and_where(
-                Expr::col(UserAdmin::Id).in_subquery(
-                    Query::select()
-                        .column(UserAdminFts::Id)
-                        .from(UserAdminFts::Table)
-                        .and_where(Expr::cust(format!("user_admin_fts MATCH '{search}*'")))
-                        .order_by(UserAdminFts::Rank, sea_query::Order::Asc)
-                        .limit(20)
-                        .take(),
-                ),
-            );
-        }
-
-        match input.sort_by {
-            UserSortBy::RecentlyJoined => {
-                let result = Reader::new(statement)
-                    .desc()
-                    .args(input.args)
-                    .execute::<_, AdminViewByRecentlyJoined, _>(&self.read_db)
-                    .await?;
-
-                Ok(result.map(|user| user.0))
-            }
-            UserSortBy::Name => {
-                let result = Reader::new(statement)
-                    .args(input.args)
-                    .execute::<_, AdminViewByName, _>(&self.read_db)
-                    .await?;
-
-                Ok(result.map(|user| user.0))
-            }
-            UserSortBy::MostActive => {
-                let result = Reader::new(statement)
-                    .desc()
-                    .args(input.args)
-                    .execute::<_, AdminViewByMostActive, _>(&self.read_db)
-                    .await?;
-
-                Ok(result.map(|user| user.0))
-            }
-            UserSortBy::MostRecipes => {
-                let result = Reader::new(statement)
-                    .desc()
-                    .args(input.args)
-                    .execute::<_, AdminViewByMostRecipes, _>(&self.read_db)
-                    .await?;
-
-                Ok(result.map(|user| user.0))
-            }
-        }
+        Reader::new(statement)
+            .desc()
+            .args(input.args)
+            .execute::<_, InvoiceUserView, _>(&self.read_db)
+            .await
     }
 }
 
-pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, AdminView> {
-    Projection::new::<User>(id)
-        .handler(handle_actived())
-        .handler(handle_susended())
-        .handler(handle_made_admin())
-        .handler(handle_registered())
-        .handler(handle_life_premium_toggled())
-        .handler(handle_payment_intent_succeeded())
-        .handler(handle_username_changed())
+pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, InvoiceUserView> {
+    Projection::new::<Invoice>(id).handler(handle_created())
 }
 
-impl<E: Executor> Snapshot<E> for AdminView {
+impl<E: Executor> Snapshot<E> for InvoiceUserView {
     async fn restore(context: &evento::projection::Context<'_, E>) -> anyhow::Result<Option<Self>> {
         let (read_db, _) = context.extract::<(SqlitePool, SqlitePool)>();
         let statement = sea_query::Query::select()
             .columns([
-                UserAdmin::Id,
-                UserAdmin::Cursor,
-                UserAdmin::Email,
-                UserAdmin::FullName,
-                UserAdmin::Username,
-                UserAdmin::State,
-                UserAdmin::Role,
-                UserAdmin::SubscriptionExpireAt,
-                UserAdmin::TotalRecipesCount,
-                UserAdmin::SharedRecipesCount,
-                UserAdmin::TotalActiveCount,
-                UserAdmin::CreatedAt,
+                UserInvoiceUser::Id,
+                UserInvoiceUser::InvoiceNumber,
+                UserInvoiceUser::Cursor,
+                UserInvoiceUser::UserId,
+                UserInvoiceUser::IssuedAt,
+                UserInvoiceUser::DueAt,
+                UserInvoiceUser::ExpireAt,
+                UserInvoiceUser::From,
+                UserInvoiceUser::To,
+                UserInvoiceUser::Plan,
+                UserInvoiceUser::Price,
+                UserInvoiceUser::Tax,
+                UserInvoiceUser::TaxRate,
+                UserInvoiceUser::TotalIncTax,
             ])
-            .from(UserAdmin::Table)
-            .and_where(Expr::col(UserAdmin::Id).eq(&context.id))
+            .from(UserInvoiceUser::Table)
+            .and_where(Expr::col(UserInvoiceUser::InvoiceNumber).eq(&context.id))
             .limit(1)
             .to_owned();
 
@@ -255,49 +135,59 @@ impl<E: Executor> Snapshot<E> for AdminView {
     ) -> anyhow::Result<()> {
         let (_, write_db) = context.extract::<(SqlitePool, SqlitePool)>();
 
+        let from = bitcode::encode(&self.from.0);
+        let to = bitcode::encode(&self.to.0);
+
         let statement = Query::insert()
-            .into_table(UserAdmin::Table)
+            .into_table(UserInvoiceUser::Table)
             .columns([
-                UserAdmin::Id,
-                UserAdmin::Cursor,
-                UserAdmin::Email,
-                UserAdmin::FullName,
-                UserAdmin::Username,
-                UserAdmin::State,
-                UserAdmin::Role,
-                UserAdmin::SubscriptionExpireAt,
-                UserAdmin::TotalRecipesCount,
-                UserAdmin::SharedRecipesCount,
-                UserAdmin::TotalActiveCount,
-                UserAdmin::CreatedAt,
+                UserInvoiceUser::Id,
+                UserInvoiceUser::InvoiceNumber,
+                UserInvoiceUser::Cursor,
+                UserInvoiceUser::UserId,
+                UserInvoiceUser::IssuedAt,
+                UserInvoiceUser::DueAt,
+                UserInvoiceUser::ExpireAt,
+                UserInvoiceUser::From,
+                UserInvoiceUser::To,
+                UserInvoiceUser::Plan,
+                UserInvoiceUser::Price,
+                UserInvoiceUser::Tax,
+                UserInvoiceUser::TaxRate,
+                UserInvoiceUser::TotalIncTax,
             ])
             .values([
                 self.id.to_owned().into(),
+                self.invoice_number.to_owned().into(),
                 self.cursor.to_owned().into(),
-                self.email.to_owned().into(),
-                self.full_name.to_owned().into(),
-                self.username.to_owned().into(),
-                self.state.to_string().into(),
-                self.role.to_string().into(),
-                self.subscription_expire_at.into(),
-                self.total_recipes_count.into(),
-                self.shared_recipes_count.into(),
-                self.total_active_count.into(),
-                self.created_at.into(),
+                self.user_id.to_owned().into(),
+                self.issued_at.into(),
+                self.due_at.into(),
+                self.expire_at.into(),
+                from.into(),
+                to.into(),
+                self.plan.to_owned().into(),
+                self.price.into(),
+                self.tax.into(),
+                self.tax_rate.into(),
+                self.total_inc_tax.into(),
             ])?
             .on_conflict(
-                OnConflict::column(UserAdmin::Id)
+                OnConflict::column(UserInvoiceUser::Id)
                     .update_columns([
-                        UserAdmin::Cursor,
-                        UserAdmin::Email,
-                        UserAdmin::FullName,
-                        UserAdmin::Username,
-                        UserAdmin::State,
-                        UserAdmin::Role,
-                        UserAdmin::SubscriptionExpireAt,
-                        UserAdmin::TotalRecipesCount,
-                        UserAdmin::SharedRecipesCount,
-                        UserAdmin::TotalActiveCount,
+                        UserInvoiceUser::InvoiceNumber,
+                        UserInvoiceUser::Cursor,
+                        UserInvoiceUser::UserId,
+                        UserInvoiceUser::IssuedAt,
+                        UserInvoiceUser::DueAt,
+                        UserInvoiceUser::ExpireAt,
+                        UserInvoiceUser::From,
+                        UserInvoiceUser::To,
+                        UserInvoiceUser::Plan,
+                        UserInvoiceUser::Price,
+                        UserInvoiceUser::Tax,
+                        UserInvoiceUser::TaxRate,
+                        UserInvoiceUser::TotalIncTax,
                     ])
                     .to_owned(),
             )
@@ -311,63 +201,20 @@ impl<E: Executor> Snapshot<E> for AdminView {
 }
 
 #[evento::handler]
-async fn handle_registered(event: Event<Registered>, data: &mut AdminView) -> anyhow::Result<()> {
+async fn handle_created(event: Event<Created>, data: &mut InvoiceUserView) -> anyhow::Result<()> {
     data.id = event.aggregator_id.to_owned();
-    data.email = event.data.email.to_owned();
-    data.role.0 = Role::User;
-    data.state.0 = State::Active;
-    data.created_at = event.timestamp;
-
-    Ok(())
-}
-
-#[evento::handler]
-async fn handle_made_admin(_event: Event<MadeAdmin>, data: &mut AdminView) -> anyhow::Result<()> {
-    data.role.0 = Role::Admin;
-
-    Ok(())
-}
-
-#[evento::handler]
-async fn handle_actived(_event: Event<Activated>, data: &mut AdminView) -> anyhow::Result<()> {
-    data.state.0 = State::Active;
-
-    Ok(())
-}
-
-#[evento::handler]
-async fn handle_susended(_event: Event<Suspended>, data: &mut AdminView) -> anyhow::Result<()> {
-    data.state.0 = State::Suspended;
-
-    Ok(())
-}
-
-#[evento::handler]
-async fn handle_username_changed(
-    event: Event<UsernameChanged>,
-    data: &mut AdminView,
-) -> anyhow::Result<()> {
-    data.username = Some(event.data.value);
-
-    Ok(())
-}
-
-#[evento::handler]
-async fn handle_payment_intent_succeeded(
-    event: Event<StripePaymentIntentSucceeded>,
-    data: &mut AdminView,
-) -> anyhow::Result<()> {
-    data.subscription_expire_at = event.data.expire_at;
-
-    Ok(())
-}
-
-#[evento::handler]
-async fn handle_life_premium_toggled(
-    event: Event<LifePremiumToggled>,
-    data: &mut AdminView,
-) -> anyhow::Result<()> {
-    data.subscription_expire_at = event.data.expire_at;
+    data.invoice_number = format!("{}-{:02}", event.data.key, event.data.number);
+    data.user_id = event.metadata.requested_by()?;
+    data.due_at = event.data.paid_at;
+    data.issued_at = event.data.paid_at;
+    data.from.0 = event.data.from;
+    data.to.0 = event.data.to;
+    data.plan = event.data.details.plan.to_owned();
+    data.expire_at = event.data.expire_at;
+    data.price = event.data.details.price;
+    data.tax = event.data.details.tax;
+    data.tax_rate = event.data.details.tax_rate.unwrap_or_default();
+    data.total_inc_tax = event.data.details.price + event.data.details.tax;
 
     Ok(())
 }
