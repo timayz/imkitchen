@@ -20,7 +20,7 @@
    */
   async function registerServiceWorker() {
     try {
-      const registration = await navigator.serviceWorker.register('/sw.js?v=v0.1', {
+      const registration = await navigator.serviceWorker.register('/sw.js?v=v0.2', {
         scope: '/'
       });
 

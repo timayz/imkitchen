@@ -170,7 +170,7 @@
             </a>
 
             <!-- Make Private/Public Button -->
-            {% if config.feature.community %}
+            {% if config.feature.community || user.is_admin() %}
             <div id="share-button">
               {% if recipe.is_shared %}
               <button ts-req="/recipes/{{ recipe.id }}/make-private"

@@ -52,6 +52,8 @@ urlencoding = "2.1"
 base64 = "0.22"
 url = "2.5"
 minify-html = "0.18"
+oxc = { version = "0.126.0", features = ["minifier", "codegen"] }
+lightningcss = { version = "1.0.0-alpha.71", default-features = false }
 ulid = "1.2"
 sea-query = { version = "1.0.0-rc.27", default-features = false, features = ["derive", "audit", "backend-sqlite"] }
 sea-query-sqlx = { version = "0.8.0-rc.10", features = ["runtime-tokio", "sqlx-sqlite", "with-json"] }
@@ -95,6 +97,8 @@ config = { workspace = true }
 rust-embed = { workspace = true }
 mime_guess = { workspace = true }
 minify-html = { workspace = true }
+oxc = { workspace = true }
+lightningcss = { workspace = true }
 jsonwebtoken = { workspace = true }
 futures = { workspace = true }
 time = { workspace = true }
