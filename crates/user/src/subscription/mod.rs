@@ -132,8 +132,8 @@ async fn handle_stripe_payment_intent_succeeded(
     data.id = event.aggregator_id.to_owned();
     data.payment_intent_id = None;
     data.payment_method_id = Some(event.data.payment_method_id);
-    data.name = event.data.name;
-    data.address = event.data.address;
+    data.name = Some(event.data.name);
+    data.address = Some(event.data.address);
     data.expire_at = event.data.expire_at;
     data.is_active = true;
 
@@ -174,15 +174,29 @@ pub(super) fn add_months(timestamp: i64, months: u8) -> i64 {
 
     let new_year = dt.year() + year_offset as i32;
 
-    // Clamp day to last valid day of the new month
-    let days_in_month = new_month.length(new_year);
-    let clamped_day = dt.day().min(days_in_month);
+    let day = dt.day();
 
-    dt.replace_year(new_year)
-        .unwrap()
-        .replace_month(new_month)
-        .unwrap()
-        .replace_day(clamped_day)
-        .unwrap()
-        .unix_timestamp()
+    if day > 28 {
+        // Roll over to day 1 of the following month
+        let total_months_next = new_month as u8 + 1;
+        let year_offset_next = (total_months_next - 1) / 12;
+        let next_month = Month::try_from((total_months_next - 1) % 12 + 1).unwrap();
+        let next_year = new_year + year_offset_next as i32;
+
+        dt.replace_year(next_year)
+            .unwrap()
+            .replace_month(next_month)
+            .unwrap()
+            .replace_day(1)
+            .unwrap()
+            .unix_timestamp()
+    } else {
+        dt.replace_year(new_year)
+            .unwrap()
+            .replace_month(new_month)
+            .unwrap()
+            .replace_day(day)
+            .unwrap()
+            .unix_timestamp()
+    }
 }

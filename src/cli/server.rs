@@ -60,6 +60,12 @@ pub async fn serve(
         .start(&executor)
         .await?;
 
+    let sub_user_invoice = imkitchen_user::invoice::subscription()
+        .data((read_pool.clone(), write_pool.clone()))
+        .data(config.email.clone())
+        .start(&executor)
+        .await?;
+
     let sub_contact_query = imkitchen_contact::query_subscription()
         .data((read_pool.clone(), write_pool.clone()))
         .start(&executor)
@@ -125,7 +131,9 @@ pub async fn serve(
         .start(&executor)
         .await?;
 
-    let stripe = stripe::Client::new(&config.stripe.secret_key);
+    let stripe = stripe::ClientBuilder::new(&config.stripe.secret_key)
+        .request_strategy(stripe::RequestStrategy::ExponentialBackoff(10))
+        .build()?;
 
     let mut sched_user =
         imkitchen_user::scheduler(&executor, &read_pool, &write_pool, &stripe).await?;
@@ -218,6 +226,7 @@ pub async fn serve(
         sub_user_query.shutdown(),
         sub_user_shed.shutdown(),
         sub_user_global_stat.shutdown(),
+        sub_user_invoice.shutdown(),
         sub_contact_query.shutdown(),
         sub_contact_global_stat.shutdown(),
         sub_recipe_command.shutdown(),

@@ -1,3 +1,4 @@
+pub mod invoice;
 pub mod meal_preferences;
 pub mod password;
 pub mod subscription;

@@ -68,6 +68,25 @@ pub enum UserAdminFts {
 }
 
 #[derive(Iden, Clone)]
+pub enum UserInvoiceUser {
+    Table,
+    Id,
+    InvoiceNumber,
+    Cursor,
+    UserId,
+    IssuedAt,
+    DueAt,
+    From,
+    To,
+    Plan,
+    ExpireAt,
+    Price,
+    Tax,
+    TaxRate,
+    TotalIncTax,
+}
+
+#[derive(Iden, Clone)]
 pub enum ContactAdmin {
     Table,
     Id,

@@ -72,6 +72,10 @@
 {% endblock %}
 
 {% block content %}
+{% if !user.is_premium() %}
+<div ts-trigger="load" ts-req="/settings/billing/check" ts-req-method="POST" ts-swap="skip"></div>
+{% endif %}
+
 <!-- Onboarding Content -->
 <div class="container mx-auto px-4 py-8 max-w-3xl">
 

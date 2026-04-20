@@ -8,10 +8,10 @@
 </head>
 <body class="bg-gray-50 pb-20 md:pb-0">
     <!-- Top Navigation -->
-    <nav class="bg-white shadow-sm">
+    <nav class="bg-white shadow-sm print:hidden">
         <div class="container mx-auto px-4 py-4">
             <div class="flex items-center justify-between">
-                <a href="dashboard-premium.html" class="text-2xl font-bold text-green-600">🍳 imkitchen</a>
+                <a href="dashboard-premium.html" class="text-2xl font-bold text-green-600">imkitchen</a>
 
                 <!-- Desktop Navigation -->
                 <div class="hidden md:flex gap-6 items-center">
@@ -36,7 +36,7 @@
     </nav>
 
     <!-- Mobile Bottom Navigation -->
-    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 print:hidden">
         <div class="flex items-center justify-around">
             <a href="dashboard-premium.html" class="flex flex-col items-center py-2 px-3 text-gray-600">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -74,7 +74,7 @@
     <!-- Main Content -->
     <div class="container mx-auto px-4 py-8 max-w-4xl">
         <!-- Breadcrumb -->
-        <div class="mb-6">
+        <div class="mb-6 print:hidden">
             <nav class="flex items-center text-sm text-gray-500">
                 <a href="profile.html" class="hover:text-green-600">Profile</a>
                 <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -89,7 +89,7 @@
         </div>
 
         <!-- Header -->
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 print:hidden">
             <div>
                 <h1 class="text-3xl font-bold mb-1">Invoice #INV-2026-0012</h1>
                 <div class="flex items-center gap-2">
@@ -115,16 +115,14 @@
 
         <!-- Invoice Document -->
         <div class="bg-white rounded-lg shadow-lg p-6 md:p-8">
+            <!-- Document Title -->
+            <div class="text-center mb-8">
+                <h2 class="text-2xl font-bold uppercase tracking-wide">Invoice</h2>
+                <p class="text-gray-500 text-sm mt-1">#INV-2026-0012</p>
+            </div>
+
             <!-- Invoice Metadata -->
             <div class="grid md:grid-cols-2 gap-6 mb-8 pb-8 border-b">
-                <div>
-                    <div class="text-sm text-gray-500 mb-1">Invoice Number</div>
-                    <div class="font-semibold">INV-2026-0012</div>
-                </div>
-                <div>
-                    <div class="text-sm text-gray-500 mb-1">Status</div>
-                    <span class="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-semibold rounded-full">Paid</span>
-                </div>
                 <div>
                     <div class="text-sm text-gray-500 mb-1">Date Issued</div>
                     <div class="font-semibold">February 28, 2026</div>
@@ -133,6 +131,14 @@
                     <div class="text-sm text-gray-500 mb-1">Due Date</div>
                     <div class="font-semibold">February 28, 2026</div>
                 </div>
+                <div>
+                    <div class="text-sm text-gray-500 mb-1">Service Period</div>
+                    <div class="font-semibold">Feb 28, 2026 - Feb 28, 2027</div>
+                </div>
+                <div>
+                    <div class="text-sm text-gray-500 mb-1">Status</div>
+                    <span class="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-semibold rounded-full">Paid</span>
+                </div>
             </div>
 
             <!-- From / To -->
@@ -140,18 +146,20 @@
                 <div>
                     <div class="text-sm text-gray-500 font-semibold mb-2">From</div>
                     <div class="font-bold text-lg text-green-600">imkitchen</div>
-                    <div class="text-sm text-gray-600 mt-1">
-                        <div>imkitchen Inc.</div>
-                        <div>123 Culinary Avenue</div>
-                        <div>San Francisco, CA 94102</div>
-                        <div>United States</div>
-                        <div class="mt-1">billing@imkitchen.com</div>
+                    <div class="text-sm text-gray-600 mt-1 space-y-0.5">
+                        <div>imkitchen SAS - Share capital: $10,000</div>
+                        <div>12 rue de la Gastronomie</div>
+                        <div>75001 Paris, France</div>
+                        <div class="mt-2">SIRET: 123 456 789 00012</div>
+                        <div>RCS Paris 123 456 789</div>
+                        <div>VAT No.: FR 12 123456789</div>
+                        <div class="mt-2">billing@imkitchen.com</div>
                     </div>
                 </div>
                 <div>
                     <div class="text-sm text-gray-500 font-semibold mb-2">Bill To</div>
                     <div class="font-bold text-lg">Sarah Mitchell</div>
-                    <div class="text-sm text-gray-600 mt-1">
+                    <div class="text-sm text-gray-600 mt-1 space-y-0.5">
                         <div>sarah@example.com</div>
                         <div>456 Home Street</div>
                         <div>San Francisco, CA 94103</div>
@@ -171,8 +179,9 @@
                             <tr class="border-b text-left text-sm text-gray-500">
                                 <th class="pb-3 font-semibold">Description</th>
                                 <th class="pb-3 font-semibold text-center">Qty</th>
-                                <th class="pb-3 font-semibold text-right">Unit Price</th>
-                                <th class="pb-3 font-semibold text-right">Total</th>
+                                <th class="pb-3 font-semibold text-right">Unit Price (excl. tax)</th>
+                                <th class="pb-3 font-semibold text-right">VAT Rate</th>
+                                <th class="pb-3 font-semibold text-right">Total (excl. tax)</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -182,8 +191,9 @@
                                     <div class="text-sm text-gray-500">Feb 28, 2026 - Feb 28, 2027</div>
                                 </td>
                                 <td class="py-4 text-center">1</td>
-                                <td class="py-4 text-right">$59.94</td>
-                                <td class="py-4 text-right font-semibold">$59.94</td>
+                                <td class="py-4 text-right">$49.95</td>
+                                <td class="py-4 text-right">20%</td>
+                                <td class="py-4 text-right font-semibold">$49.95</td>
                             </tr>
                         </tbody>
                     </table>
@@ -193,33 +203,41 @@
                 <div class="md:hidden border rounded-lg p-4">
                     <div class="font-semibold mb-1">Premium Annual Subscription</div>
                     <div class="text-sm text-gray-500 mb-3">Feb 28, 2026 - Feb 28, 2027</div>
-                    <div class="flex justify-between text-sm">
+                    <div class="flex justify-between text-sm mb-1">
                         <span class="text-gray-500">Qty: 1</span>
-                        <span class="font-semibold">$59.94</span>
+                        <span>$49.95</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-500">VAT: 20%</span>
+                        <span>$9.99</span>
                     </div>
                 </div>
             </div>
 
             <!-- Summary -->
             <div class="flex justify-end mb-8">
-                <div class="w-full md:w-72 space-y-2">
-                    <div class="flex justify-between py-2">
-                        <span class="text-gray-600">Subtotal</span>
-                        <span>$59.94</span>
+                <div class="w-full md:w-80 space-y-2">
+                    <div class="flex justify-between py-2 text-sm text-gray-500">
+                        <span>Currency</span>
+                        <span>USD</span>
                     </div>
                     <div class="flex justify-between py-2">
-                        <span class="text-gray-600">Tax</span>
-                        <span>$0.00</span>
+                        <span class="text-gray-600">Subtotal (excl. tax)</span>
+                        <span>$49.95</span>
+                    </div>
+                    <div class="flex justify-between py-2">
+                        <span class="text-gray-600">VAT 20%</span>
+                        <span>$9.99</span>
                     </div>
                     <div class="flex justify-between py-3 border-t-2 border-gray-900 font-bold text-lg">
-                        <span>Total</span>
+                        <span>Total (incl. tax)</span>
                         <span class="text-green-600">$59.94</span>
                     </div>
                 </div>
             </div>
 
             <!-- Payment Info -->
-            <div class="bg-gray-50 rounded-lg p-4">
+            <div class="bg-gray-50 rounded-lg p-4 mb-6">
                 <h3 class="font-bold mb-3">Payment Information</h3>
                 <div class="grid md:grid-cols-2 gap-4 text-sm">
                     <div>
@@ -235,6 +253,24 @@
                         <span class="ml-2 font-semibold">txn_1Abc2DefGhI3jKl</span>
                     </div>
                 </div>
+            </div>
+
+            <!-- Legal Mentions -->
+            <div class="border-t pt-6 text-xs text-gray-500 space-y-2">
+                <h4 class="font-semibold text-gray-700 text-sm mb-2">Payment Terms</h4>
+                <p>Payment due upon receipt. Due date: February 28, 2026.</p>
+                <p>Early payment discount: none.</p>
+                <p>
+                    In the event of late payment, a penalty equal to 3 times the legal interest rate shall apply
+                    (ECB annual rate plus 10 percentage points, in accordance with Article L.441-10 of the French Commercial Code).
+                </p>
+                <p>
+                    Any late payment shall automatically incur a fixed recovery indemnity of EUR 40.00
+                    (Article D.441-5 of the French Commercial Code).
+                </p>
+                <p class="mt-3 text-gray-400">
+                    imkitchen SAS - Share capital: $10,000 — SIRET 123 456 789 00012 — RCS Paris 123 456 789 — Intra-community VAT No.: FR 12 123456789
+                </p>
             </div>
         </div>
     </div>

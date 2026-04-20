@@ -1,6 +1,10 @@
 // use axum::Form;
-use axum::extract::State;
+use axum::extract::{Query, State};
 use axum::response::IntoResponse;
+use evento::cursor::Value;
+use evento::cursor::{Args, ReadResult};
+use imkitchen_user::invoice_user::{self, InvoiceUserView};
+use serde::Deserialize;
 use stripe_core::customer::RetrievePaymentMethodCustomer;
 use stripe_core::payment_intent::RetrievePaymentIntent;
 use stripe_core::setup_intent::CreateSetupIntent;
@@ -15,6 +19,14 @@ use crate::template;
 use crate::template::Template;
 use crate::template::filters;
 
+#[derive(Deserialize, Default, Clone)]
+pub struct PageQuery {
+    pub first: Option<u16>,
+    pub after: Option<Value>,
+    pub last: Option<u16>,
+    pub before: Option<Value>,
+}
+
 #[derive(askama::Template)]
 #[template(path = "settings-billing.html")]
 pub struct BillingTemplate {
@@ -22,22 +34,39 @@ pub struct BillingTemplate {
     pub settings_path: String,
     pub subscription: imkitchen_user::subscription::Subscription,
     pub user: AuthUser,
+    pub invoices: ReadResult<InvoiceUserView>,
 }
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn page(
     template: Template,
     user: AuthUser,
+    Query(query): Query<PageQuery>,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
+    let args = Args {
+        first: query.first,
+        after: query.after,
+        last: query.last,
+        before: query.before,
+    };
     let subscription =
-        crate::try_response!(anyhow: app.user_cmd.subscription.load(&user.id), template);
+        crate::try_page_response!(app.user_cmd.subscription.load(&user.id), template);
+
+    let invoices = crate::try_page_response!(
+        app.user_query.filter_invoice(invoice_user::FilterQuery {
+            user_id: user.id.to_owned(),
+            args: args.limit(5)
+        }),
+        template
+    );
 
     template.render(BillingTemplate {
         current_path: "settings".to_owned(),
         settings_path: "billing".to_owned(),
         subscription,
         user,
+        invoices,
     })
 }
 
@@ -91,8 +120,9 @@ pub async fn payment_method(
     };
 
     let payment_mehod = crate::try_response!(anyhow:
-        RetrievePaymentMethodCustomer::new(customer_id, payment_method_id).send(&app.stripe), 
-        template);
+        RetrievePaymentMethodCustomer::new(customer_id, payment_method_id).send(&app.stripe),
+        template
+    );
 
     template
         .render(PaymentMethodTemplate {
