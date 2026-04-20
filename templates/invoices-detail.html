@@ -41,15 +41,15 @@
   <!-- Breadcrumb -->
   <div class="mb-6 print:hidden">
     <nav class="flex items-center text-sm text-gray-500">
-      <a href="/settings" class="hover:text-green-600">Profile</a>
+      <a href="/settings" class="hover:text-green-600">{{ "Profile"|t }}</a>
       <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
       </svg>
-      <a href="/settings/billing" class="hover:text-green-600">Billing</a>
+      <a href="/settings/billing" class="hover:text-green-600">{{ "Billing"|t }}</a>
       <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
       </svg>
-      <span class="text-gray-900 font-semibold">Invoice {{ invoice.invoice_number }}</span>
+      <span class="text-gray-900 font-semibold">{{ "Invoice"|t }} {{ invoice.invoice_number }}</span>
     </nav>
   </div>
 
@@ -65,7 +65,7 @@
             d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
           </path>
         </svg>
-        Download PDF
+        {{ "Download PDF"|t }}
       </button>
     </div>
   </div>
@@ -74,25 +74,25 @@
   <div id="invoice-doc" class="bg-white rounded-lg shadow-lg print:rounded-none print:shadow-none p-6 md:p-8">
     <!-- Document Title -->
     <div class="mb-8">
-      <h2 class="text-2xl font-bold uppercase tracking-wide">Invoice</h2>
+      <h2 class="text-2xl font-bold uppercase tracking-wide">{{ "Invoice"|t }}</h2>
     </div>
 
     <!-- Invoice Metadata -->
     <div class="grid md:grid-cols-2 print:grid-cols-2 gap-6 mb-8 pb-8 border-b">
       <div>
-        <div class="text-sm text-gray-500 mb-1">Invoice Number</div>
+        <div class="text-sm text-gray-500 mb-1">{{ "Invoice Number"|t }}</div>
         <div class="font-semibold">{{ invoice.invoice_number }}</div>
       </div>
       <div>
-        <div class="text-sm text-gray-500 mb-1">Status</div>
-        <span class="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-semibold rounded-full">Paid</span>
+        <div class="text-sm text-gray-500 mb-1">{{ "Status"|t }}</div>
+        <span class="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-semibold rounded-full">{{ "Paid"|t }}</span>
       </div>
       <div>
-        <div class="text-sm text-gray-500 mb-1">Date Issued</div>
+        <div class="text-sm text-gray-500 mb-1">{{ "Date Issued"|t }}</div>
         <div class="font-semibold">{{ invoice.issued_at|day_month_year }}</div>
       </div>
       <div>
-        <div class="text-sm text-gray-500 mb-1">Due Date</div>
+        <div class="text-sm text-gray-500 mb-1">{{ "Due Date"|t }}</div>
         <div class="font-semibold">{{ invoice.due_at|day_month_year }}</div>
       </div>
     </div>
@@ -100,7 +100,7 @@
     <!-- From / To -->
     <div class="grid md:grid-cols-2 print:grid-cols-2 gap-6 mb-8 pb-8 border-b">
       <div>
-        <div class="text-sm text-gray-500 font-semibold mb-2">From</div>
+        <div class="text-sm text-gray-500 font-semibold mb-2">{{ "From"|t }}</div>
         <div class="font-bold text-lg text-green-600">{{ invoice.from.name }}</div>
         <div class="text-sm text-gray-600 mt-1 space-y-0.5">
           {% for line in invoice.from.address.format_for_invoice() %}
@@ -110,7 +110,7 @@
         </div>
       </div>
       <div>
-        <div class="text-sm text-gray-500 font-semibold mb-2">Bill To</div>
+        <div class="text-sm text-gray-500 font-semibold mb-2">{{ "Bill To"|t }}</div>
         <div class="font-bold text-lg">{{ invoice.to.name }}</div>
         <div class="text-sm text-gray-600 mt-1 space-y-0.5">
           {% for line in invoice.to.address.format_for_invoice() %}
@@ -123,23 +123,23 @@
 
     <!-- Line Items -->
     <div class="mb-8">
-      <h3 class="font-bold mb-4">Items</h3>
+      <h3 class="font-bold mb-4">{{ "Items"|t }}</h3>
 
       <!-- Desktop Table -->
       <div class="hidden md:block">
         <table class="w-full">
           <thead>
             <tr class="border-b text-left text-sm text-gray-500">
-              <th class="pb-3 font-semibold">Description</th>
-              <th class="pb-3 font-semibold text-center">Qty</th>
-              <th class="pb-3 font-semibold text-right">Unit Price (excl. tax)</th>
-              <th class="pb-3 font-semibold text-right">Total (excl. tax)</th>
+              <th class="pb-3 font-semibold">{{ "Description"|t }}</th>
+              <th class="pb-3 font-semibold text-center">{{ "Qty"|t }}</th>
+              <th class="pb-3 font-semibold text-right">{{ "Unit Price (excl. tax)"|t }}</th>
+              <th class="pb-3 font-semibold text-right">{{ "Total (excl. tax)"|t }}</th>
             </tr>
           </thead>
           <tbody>
             <tr class="border-b">
               <td class="py-4">
-                <div class="font-semibold capitalize">{{ invoice.plan }} plan</div>
+                <div class="font-semibold capitalize">{{ invoice.plan }} {{ "plan"|t }}</div>
                 <div class="text-sm text-gray-500">{{ invoice.issued_at|day_month_year }} - {{
                   invoice.expire_at|day_month_year }}</div>
               </td>
@@ -153,19 +153,19 @@
 
       <!-- Mobile Card -->
       <div class="md:hidden border rounded-lg p-4">
-        <div class="font-semibold mb-1 capitalize">{{ invoice.plan }} plan</div>
+        <div class="font-semibold mb-1 capitalize">{{ invoice.plan }} {{ "plan"|t }}</div>
         <div class="text-sm text-gray-500 mb-3">{{ invoice.issued_at|day_month_year }} - {{
           invoice.expire_at|day_month_year }}</div>
         <div class="flex justify-between text-sm mb-1">
-          <span class="text-gray-500">Qty</span>
+          <span class="text-gray-500">{{ "Qty"|t }}</span>
           <span>1</span>
         </div>
         <div class="flex justify-between text-sm mb-1">
-          <span class="text-gray-500">Unit Price (excl. tax)</span>
+          <span class="text-gray-500">{{ "Unit Price (excl. tax)"|t }}</span>
           <span>${{ *invoice.price|amount }}</span>
         </div>
         <div class="flex justify-between text-sm">
-          <span class="text-gray-500">Total (excl. tax)</span>
+          <span class="text-gray-500">{{ "Total (excl. tax)"|t }}</span>
           <span>${{ *invoice.price|amount }}</span>
         </div>
       </div>
@@ -175,7 +175,7 @@
     <div class="flex justify-end mb-8">
       <div class="w-full md:w-80 space-y-2">
         <div class="flex justify-between py-2">
-          <span class="text-gray-600">Subtotal (excl. tax)</span>
+          <span class="text-gray-600">{{ "Subtotal (excl. tax)"|t }}</span>
           <span>${{ *invoice.price|amount }}</span>
         </div>
         <div class="flex justify-between py-2">
@@ -183,7 +183,7 @@
           <span>${{ *invoice.tax|amount }}</span>
         </div>
         <div class="flex justify-between py-3 border-t-2 border-gray-900 font-bold text-lg">
-          <span>Total (incl. tax)</span>
+          <span>{{ "Total (incl. tax)"|t }}</span>
           <span class="text-green-600">${{ *invoice.total_inc_tax|amount }}</span>
         </div>
       </div>

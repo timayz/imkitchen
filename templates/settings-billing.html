@@ -264,7 +264,7 @@
 {% if !invoices.edges.is_empty() %}
 <!-- Invoice List -->
 <div class="bg-white rounded-lg shadow-lg p-6">
-  <h3 class="font-bold mb-4">Invoices</h3>
+  <h3 class="font-bold mb-4">{{ "Invoices"|t }}</h3>
 
   <div id="invoices-items" class="space-y-4">
     <!-- Invoice 1 -->
@@ -282,8 +282,8 @@
       </div>
       <div class="flex items-center gap-4">
         <span class="font-semibold">${{ *invoice.node.total_inc_tax|amount }}</span>
-        <span class="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-semibold rounded-full">Paid</span>
-        <a href="/invoices/{{ invoice.node.id }}" class="text-green-600 hover:text-green-700 font-semibold text-sm">View</a>
+        <span class="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-semibold rounded-full">{{ "Paid"|t }}</span>
+        <a href="/invoices/{{ invoice.node.id }}" class="text-green-600 hover:text-green-700 font-semibold text-sm">{{ "View"|t }}</a>
       </div>
     </div>
     {% endfor %}
