@@ -1,8 +1,8 @@
 // use axum::Form;
-use axum::extract::{State, Query};
+use axum::extract::{Query, State};
 use axum::response::IntoResponse;
-use evento::cursor::{Args, ReadResult};
 use evento::cursor::Value;
+use evento::cursor::{Args, ReadResult};
 use imkitchen_user::invoice_user::{self, InvoiceUserView};
 use serde::Deserialize;
 use stripe_core::customer::RetrievePaymentMethodCustomer;
@@ -53,7 +53,13 @@ pub async fn page(
     let subscription =
         crate::try_page_response!(app.user_cmd.subscription.load(&user.id), template);
 
-    let invoices = crate::try_page_response!(app.user_query.filter_invoice(invoice_user::FilterQuery { user_id: user.id.to_owned(), args: args.limit(5) }), template);
+    let invoices = crate::try_page_response!(
+        app.user_query.filter_invoice(invoice_user::FilterQuery {
+            user_id: user.id.to_owned(),
+            args: args.limit(5)
+        }),
+        template
+    );
 
     template.render(BillingTemplate {
         current_path: "settings".to_owned(),
@@ -114,8 +120,9 @@ pub async fn payment_method(
     };
 
     let payment_mehod = crate::try_response!(anyhow:
-        RetrievePaymentMethodCustomer::new(customer_id, payment_method_id).send(&app.stripe), 
-        template);
+        RetrievePaymentMethodCustomer::new(customer_id, payment_method_id).send(&app.stripe),
+        template
+    );
 
     template
         .render(PaymentMethodTemplate {
