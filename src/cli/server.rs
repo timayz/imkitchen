@@ -133,7 +133,7 @@ pub async fn serve(
         .await?;
 
     let stripe = stripe::ClientBuilder::new(&config.stripe.secret_key)
-        .request_strategy(stripe::RequestStrategy::ExponentialBackoff(10))
+        .request_strategy(stripe::RequestStrategy::ExponentialBackoff(4))
         .build()?;
 
     let mut sched_user =

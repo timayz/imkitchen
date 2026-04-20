@@ -9,7 +9,7 @@
   function cget(name, def) { return script && script.dataset[name] || def; }
   function iget(name, def) { return parseInt(cget(name, def), 10); }
 
-  var xhrTimeout = iget('timeout', '3000');
+  var xhrTimeout = iget('timeout', '15000');
   var historyLimit = iget('history', '20');
   var attrsToSettle = cget('settle', 'class,style,width,height').split(',');
   var insertClass = cget('insert-class', 'ts-insert');

@@ -33,6 +33,7 @@ impl<E: Executor> Command<E> {
                 r.unwrap_or_else(|| Subscription {
                     id,
                     name: None,
+                    email: None,
                     address: None,
                     expire_at: 0,
                     cursor: Default::default(),
@@ -51,6 +52,7 @@ impl<E: Executor> Command<E> {
 pub struct Subscription {
     pub id: String,
     pub name: Option<String>,
+    pub email: Option<String>,
     pub customer_id: Option<String>,
     pub payment_method_id: Option<String>,
     pub payment_intent_id: Option<String>,
@@ -109,6 +111,7 @@ async fn handle_stripe_payment_intent_created(
     data.id = event.aggregator_id.to_owned();
     data.payment_intent_id = Some(event.data.id);
     data.payment_details = Some(event.data.details);
+    data.email = Some(event.data.email.to_owned());
 
     Ok(())
 }

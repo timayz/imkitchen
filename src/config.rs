@@ -102,7 +102,7 @@ impl Config {
             .set_default("premium.annual_rate", 20)?
             .set_default(
                 "monitoring.log_level",
-                "debug,sqlx=info,tower_http=info,stripe=info,hyper_util=info",
+                "debug,sqlx=info,tower_http=info,stripe=debug,reqwest=debug,hyper_util=info",
             )?
             .set_default("monitoring.log_json", false)?
             .set_default("monitoring.log_target", true)?
