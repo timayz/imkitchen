@@ -1,7 +1,6 @@
 {% match status %}
 {% when TemplateStatus::Pending %}
-<button type="submit" disabled
-  class="flex-1 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">
+<button disabled class="flex-1 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">
   <div class="animate-spin rounded-full h-5 w-5 border-2 border-green-200 border-t-green-600 shrink-0 m-auto"></div>
 </button>
 <div ts-swap="append" ts-swap-push="body" ts-trigger="load delay 300ms" ts-req="/groceries/generate/status"></div>
@@ -9,7 +8,7 @@
 <div ts-trigger="load delay 600ms" ts-req="/groceries/generate/status"></div>
 {% when TemplateStatus::Idle %}
 <div ts-trigger="load" ts-action="remove"></div>
-<button type="submit" class="flex-1 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">
+<button class="flex-1 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">
   {{ "Generate"|t }}
 </button>
 {% endmatch %}
