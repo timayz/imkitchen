@@ -14,9 +14,8 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certifi
 COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder /etc/group /etc/group
 COPY --from=builder /app/target/release/imkitchen /usr/bin/imkitchen
-COPY --from=builder --chown=imkitchen /var/lib/imkitchen /var/lib/imkitchen
 
-USER imkitchen:imkitchen
+USER 10001:10001
 
 EXPOSE 3000
 

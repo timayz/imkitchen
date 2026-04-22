@@ -23,6 +23,7 @@ spec:
       securityContext:
         fsGroup: 10001
         fsGroupChangePolicy: OnRootMismatch
+        runAsNonRoot: true
       initContainers:
         - name: imkitchen-migrate
           image: timayz/imkitchen:0.15.4
