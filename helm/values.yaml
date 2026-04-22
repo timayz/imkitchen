@@ -1,7 +1,7 @@
 # Container image.
 image:
-  repository: stalwartlabs/stalwart
-  tag: "v0.16"
+  repository: timayz/imkitchen
+  tag: "0.15.4"
   pullPolicy: IfNotPresent
 
 # Extra environment variables injected into the container, for
