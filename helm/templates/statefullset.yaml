@@ -5,6 +5,7 @@ metadata:
   labels:
     app: imkitchen
 spec:
+  serviceName: imkitchen
   replicas: 1
   selector:
     matchLabels:

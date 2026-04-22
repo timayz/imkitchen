@@ -17,7 +17,7 @@ spec:
             type: PathPrefix
             value: /
       backendRefs:
-        - name: imkitchen-imkitchen
+        - name: imkitchen
           group: ""
           port: 3000
           weight: 1

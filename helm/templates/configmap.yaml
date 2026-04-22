@@ -4,4 +4,4 @@ metadata:
   name: imkitchen-config
 data:
   config.toml: |
-{{ .Values.config | toPrettyToml | indent 4 }}
+{{ .Values.config | toToml | indent 4 }}
