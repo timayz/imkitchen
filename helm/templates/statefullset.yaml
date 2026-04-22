@@ -20,6 +20,9 @@ spec:
         app: imkitchen
     spec:
       hostname: imkitchen.app
+      securityContext:
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
       initContainers:
         - name: imkitchen-migrate
           image: timayz/imkitchen:0.15.4
