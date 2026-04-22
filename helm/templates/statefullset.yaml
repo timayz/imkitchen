@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: imkitchen-deployment
+  labels:
+    app: imkitchen
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: imkitchen
+  updateStrategy:
+    rollingUpdate:
+      partition: 0
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: imkitchen
+    spec:
+      hostname: imkitchen.app
+      initContainers:
+        - name: imkitchen-migrate
+          image: timayz/imkitchen:0.15.4
+          command:
+            ["imkitchen", "migrate", "--config", "/etc/imkitchen/config.toml"]
+          volumeMounts:
+            - name: config
+              readOnly: true
+              mountPath: /etc/imkitchen
+            - name: data
+              mountPath: /var/lib/imkitchen
+          envFrom:
+            - secretRef:
+                name: imkitchen-env
+      containers:
+        - name: imkitchen
+          image: timayz/imkitchen:0.15.4
+          command:
+            ["imkitchen", "serve", "--config", "/etc/imkitchen/config.toml"]
+          volumeMounts:
+            - name: config
+              readOnly: true
+              mountPath: /etc/imkitchen
+            - name: data
+              mountPath: /var/lib/imkitchen
+          envFrom:
+            - secretRef:
+                name: imkitchen-env
+          ports:
+            - containerPort: 3000
+      volumes:
+        - name: config
+          configMap:
+            name: imkitchen-config
+
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: "longhorn"
+        resources:
+          requests:
+            storage: 5Gi

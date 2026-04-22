@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: imkitchen-config
+data:
+  config.toml: |
+{{ .Values.config | toPrettyToml | indent 4 }}

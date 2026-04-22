@@ -1,0 +1,23 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: imkitchen
+  namespace: imkitchen
+spec:
+  parentRefs:
+    - name: envoy
+      namespace: envoy-gateway-system
+  # Hostnames matching HTTP header.
+  hostnames:
+    - "imkitchen.app"
+  # List of rules and filters applied.
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: imkitchen-imkitchen
+          group: ""
+          port: 3000
+          weight: 1

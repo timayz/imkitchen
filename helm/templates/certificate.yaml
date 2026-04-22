@@ -1,0 +1,12 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: imkitchen
+  namespace: imkitchen
+spec:
+  dnsNames:
+    - imkitchen.app
+  secretName: imkitchen-tls
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt

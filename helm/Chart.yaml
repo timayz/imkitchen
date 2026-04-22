@@ -1,0 +1,12 @@
+apiVersion: v2
+name: imkitchen
+description: Helm chart for the imkitchen server
+type: application
+version: 0.1.0
+appVersion: "v0.15.4"
+home: https://imkitchen.app
+sources:
+  - https://github.com/timayz/imkitchen
+maintainers:
+  - name: Timada
+    url: https://imkitchen.app
