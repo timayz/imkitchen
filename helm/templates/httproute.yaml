@@ -9,7 +9,7 @@ spec:
       namespace: envoy-gateway-system
   # Hostnames matching HTTP header.
   hostnames:
-    - "imkitchen.app"
+    - {{ .Values.hostname | quote }}
   # List of rules and filters applied.
   rules:
     - matches:

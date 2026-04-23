@@ -5,7 +5,7 @@ metadata:
   namespace: envoy-gateway-system
 spec:
   dnsNames:
-    - imkitchen.app
+    - {{ .Values.hostname | quote }}
   secretName: imkitchen-tls
   issuerRef:
     kind: ClusterIssuer

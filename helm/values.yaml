@@ -1,8 +1,6 @@
 # Container image.
 image:
-  repository: timayz/imkitchen
   tag: "0.15.4"
-  pullPolicy: IfNotPresent
 
 # Extra environment variables injected into the container, for
 # store credentials that live in plain text.
@@ -11,6 +9,8 @@ extraEnv: {}
 # Extra environment variables injected from the managed Secret.
 # Use this for anything sensitive (database passwords, S3 keys, etc.).
 extraSecretEnv: {}
+
+hostname: "imkitchen.app"
 
 config:
   server:
@@ -52,3 +52,6 @@ config:
   premium:
     monthly_price: 499
     annual_rate: 20
+
+persistence:
+  size: 5Gi

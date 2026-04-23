@@ -19,14 +19,15 @@ spec:
       labels:
         app: imkitchen
     spec:
-      hostname: imkitchen.app
+      hostname: {{ .Values.hostname | quote }}
       securityContext:
         fsGroup: 10001
         fsGroupChangePolicy: OnRootMismatch
         runAsNonRoot: true
       initContainers:
         - name: imkitchen-migrate
-          image: timayz/imkitchen:0.15.4
+          image: timayz/imkitchen:{{ .Values.image.tag }}
+          imagePullPolicy: IfNotPresent
           command:
             ["imkitchen", "migrate", "--config", "/etc/imkitchen/config.toml"]
           volumeMounts:
@@ -40,7 +41,8 @@ spec:
                 name: imkitchen-env
       containers:
         - name: imkitchen
-          image: timayz/imkitchen:0.15.4
+          image: timayz/imkitchen:{{ .Values.image.tag }}
+          imagePullPolicy: IfNotPresent
           command:
             ["imkitchen", "serve", "--config", "/etc/imkitchen/config.toml"]
           volumeMounts:
@@ -68,4 +70,4 @@ spec:
         storageClassName: "longhorn"
         resources:
           requests:
-            storage: 5Gi
+            storage: {{ .Values.persistence.size }}
