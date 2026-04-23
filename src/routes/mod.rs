@@ -62,6 +62,7 @@ pub fn router(app_state: AppState) -> Router {
     Router::new()
         // Health check endpoints (no auth required)
         .route("/health", get(health::health))
+        .route("/_test-error", get(health::test_error))
         .route("/ready", get(health::ready))
         .with_state(app_state.read_db.clone())
         .route("/", get(index::page))

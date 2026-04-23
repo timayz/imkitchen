@@ -62,6 +62,7 @@ async fn main() -> Result<()> {
             .with(
                 tracing_subscriber::fmt::layer()
                     .json()
+                    .flatten_event(true)
                     .with_target(config.monitoring.log_target)
                     .with_line_number(config.monitoring.log_line_number)
                     .with_filter(env_filter),
