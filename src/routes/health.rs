@@ -27,3 +27,11 @@ pub async fn ready(State(pool): State<SqlitePool>) -> impl IntoResponse {
         }
     }
 }
+
+/// GET /health - Liveness probe
+/// Returns 200 OK if the process is alive
+/// Used by Kubernetes liveness probe
+pub async fn test_error() -> impl IntoResponse {
+    tracing::error!("Test that error correctly monitoring/alert");
+    (StatusCode::SERVICE_UNAVAILABLE, "database unavailable").into_response()
+}
