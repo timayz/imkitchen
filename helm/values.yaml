@@ -1,0 +1,57 @@
+# Container image.
+image:
+  tag: "0.15.4"
+
+# Extra environment variables injected into the container, for
+# store credentials that live in plain text.
+extraEnv: {}
+
+# Extra environment variables injected from the managed Secret.
+# Use this for anything sensitive (database passwords, S3 keys, etc.).
+extraSecretEnv: {}
+
+hostname: "imkitchen.app"
+
+config:
+  server:
+    url: "https://imkitchen.app"
+    host: "0.0.0.0"
+    port: 3000
+
+  root:
+    email: "admin@imkitchen.app"
+    password: ""
+
+  database:
+    url: "sqlite:/var/lib/imkitchen/db.sqlite3"
+    max_connections: 10
+
+  jwt:
+    audience: "https://imkitchen.app"
+    issuer: "imkitchen.app"
+    secret: ""
+    expiration_days: 14
+
+  monitoring:
+    log_level: "info"
+    log_json: false
+    log_target: true
+    log_line_number: true
+
+  email:
+    smtp_host: "mail.imkitchen.app"
+    smtp_port: "465"
+    smtp_username: ""
+    smtp_password: ""
+    from_address: "no-reply@imkitchen.app"
+    contact_address: "contact@imkitchen.app"
+
+  feature:
+    community: false
+
+  premium:
+    monthly_price: 499
+    annual_rate: 20
+
+persistence:
+  size: 5Gi

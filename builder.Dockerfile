@@ -6,18 +6,22 @@ RUN apk add --no-cache musl-dev tzdata \
         pkgconf git libpq-dev \
         protoc protobuf-dev
 
-ENV USER=imkitchen
-ENV UID=10001
+ARG USER=imkitchen
+ARG UID=10001
+ARG GID=10001
 
-# See https://stackoverflow.com/a/55757473/12429735
-RUN adduser \
-    --disabled-password \
-    --gecos "" \
-    --home "/nonexistent" \
-    --shell "/sbin/nologin" \
-    --no-create-home \
-    --uid "${UID}" \
-    "${USER}"
+# Create group explicitly with fixed GID, then user with fixed UID/GID.
+# This guarantees GID=10001 (adduser alone may pick a different GID).
+RUN addgroup -g "${GID}" -S "${USER}" && \
+    adduser \
+        --disabled-password \
+        --gecos "" \
+        --home "/nonexistent" \
+        --shell "/sbin/nologin" \
+        --no-create-home \
+        --uid "${UID}" \
+        --ingroup "${USER}" \
+        "${USER}"
 
 # Set `SYSROOT` to a dummy path (default is /usr) because pkg-config-rs *always*
 # links those located in that path dynamically but we want static linking, c.f.
