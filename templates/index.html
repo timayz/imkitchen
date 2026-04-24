@@ -5,6 +5,7 @@
 
 {% block body %}
 <body>
+    <main>
     <!-- Hero Section -->
     <div class="bg-linear-to-br from-green-500 to-green-700 text-white">
         <nav class="container mx-auto px-4 py-6">
@@ -19,15 +20,15 @@
                 </div>
 
                 <!-- Mobile Menu Button -->
-                <label for="mobile-menu-button" class="md:hidden p-2 hover:bg-white/10 rounded-lg transition">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <label for="mobile-menu-button" class="md:hidden p-2 hover:bg-white/10 rounded-lg transition cursor-pointer" role="button" aria-label="{{ "Toggle navigation menu"|t }}">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                     </svg>
                 </label>
                 {% endif %}
             </div>
 
-            <input id="mobile-menu-button" type="checkbox">
+            <input id="mobile-menu-button" type="checkbox" aria-label="{{ "Toggle navigation menu"|t }}">
 
             <!-- Mobile Navigation -->
             <div id="mobile-menu" class="hidden md:hidden mt-4 pb-4">
@@ -64,17 +65,17 @@
             </p>
             <div class="grid md:grid-cols-3 gap-8 text-left">
                 <div class="p-6 bg-red-50 rounded-lg">
-                    <div class="text-4xl mb-3">😰</div>
+                    <div class="text-4xl mb-3" aria-hidden="true">😰</div>
                     <h3 class="font-bold text-lg mb-2">{{ "Decision Fatigue"|t }}</h3>
                     <p class="text-gray-600">{{ "Spending 30 minutes every week deciding what to cook"|t }}</p>
                 </div>
                 <div class="p-6 bg-red-50 rounded-lg">
-                    <div class="text-4xl mb-3">🍝</div>
+                    <div class="text-4xl mb-3" aria-hidden="true">🍝</div>
                     <h3 class="font-bold text-lg mb-2">{{ "Incomplete Meals"|t }}</h3>
                     <p class="text-gray-600">{{ "Forgetting to plan rice with curry or pasta with sauce"|t }}</p>
                 </div>
                 <div class="p-6 bg-red-50 rounded-lg">
-                    <div class="text-4xl mb-3">📅</div>
+                    <div class="text-4xl mb-3" aria-hidden="true">📅</div>
                     <h3 class="font-bold text-lg mb-2">{{ "Short-Term Planning"|t }}</h3>
                     <p class="text-gray-600">{{ "Only planning one week ahead, missing bulk shopping savings"|t }}</p>
                 </div>
@@ -96,15 +97,15 @@
                     </p>
                     <ul class="space-y-2 text-gray-600">
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1">✓</span>
+                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "4 recipe types: appetizer, main, dessert, accompaniment"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1">✓</span>
+                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Bulk JSON import (up to 20 files)"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1">✓</span>
+                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Community recipe sharing"|t }}</span>
                         </li>
                     </ul>
@@ -169,19 +170,19 @@
                     </p>
                     <ul class="space-y-2 text-gray-600">
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1">✓</span>
+                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Generates all remaining weeks of current month"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1">✓</span>
+                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Automatic accompaniment pairing (rice with curry, pasta with sauce)"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1">✓</span>
+                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Respects dietary restrictions and preferences"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1">✓</span>
+                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "No duplicate main courses across weeks"|t }}</span>
                         </li>
                     </ul>
@@ -197,15 +198,15 @@
                     </p>
                     <ul class="space-y-2 text-gray-600">
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1">✓</span>
+                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Separate shopping lists per week"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1">✓</span>
+                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Morning prep reminders (8 AM daily)"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1">✓</span>
+                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Unlimited regenerations to find perfect plan"|t }}</span>
                         </li>
                     </ul>
@@ -248,32 +249,32 @@
             <h2 class="text-3xl md:text-4xl font-bold text-center mb-12">{{ "Everything You Need"|t }}</h2>
             <div class="grid md:grid-cols-3 gap-8">
                 <div class="text-center p-6">
-                    <div class="text-5xl mb-4">🗓️</div>
+                    <div class="text-5xl mb-4" aria-hidden="true">🗓️</div>
                     <h3 class="font-bold text-xl mb-2">{{ "Month-Based Planning"|t }}</h3>
                     <p class="text-gray-600">{{ "Generate all future weeks of current month in seconds. See the whole picture."|t }}</p>
                 </div>
                 <div class="text-center p-6">
-                    <div class="text-5xl mb-4">🍚</div>
+                    <div class="text-5xl mb-4" aria-hidden="true">🍚</div>
                     <h3 class="font-bold text-xl mb-2">{{ "Smart Pairing"|t }}</h3>
                     <p class="text-gray-600">{{ "Automatically pair mains with sides. Curry gets rice, pasta gets bread."|t }}</p>
                 </div>
                 <div class="text-center p-6">
-                    <div class="text-5xl mb-4">🎯</div>
+                    <div class="text-5xl mb-4" aria-hidden="true">🎯</div>
                     <h3 class="font-bold text-xl mb-2">{{ "Preference-Aware"|t }}</h3>
                     <p class="text-gray-600">{{ "Respects dietary restrictions and cuisine variety preferences."|t }}</p>
                 </div>
                 <div class="text-center p-6">
-                    <div class="text-5xl mb-4">🔄</div>
+                    <div class="text-5xl mb-4" aria-hidden="true">🔄</div>
                     <h3 class="font-bold text-xl mb-2">{{ "Smart Rotation"|t }}</h3>
                     <p class="text-gray-600">{{ "No duplicate main courses across weeks. Maximum variety guaranteed."|t }}</p>
                 </div>
                 <div class="text-center p-6">
-                    <div class="text-5xl mb-4">🛒</div>
+                    <div class="text-5xl mb-4" aria-hidden="true">🛒</div>
                     <h3 class="font-bold text-xl mb-2">{{ "Shopping Lists"|t }}</h3>
                     <p class="text-gray-600">{{ "Separate lists per week with ingredient grouping and quantity optimization."|t }}</p>
                 </div>
                 <div class="text-center p-6">
-                    <div class="text-5xl mb-4">👥</div>
+                    <div class="text-5xl mb-4" aria-hidden="true">👥</div>
                     <h3 class="font-bold text-xl mb-2">{{ "Community Sharing"|t }}</h3>
                     <p class="text-gray-600">{{ "Share and discover recipes with ratings and reviews."|t }}</p>
                 </div>
@@ -294,27 +295,27 @@
                     <div class="text-4xl font-bold mb-6">$0<span class="text-lg text-gray-600 font-normal">{{ "/month"|t }}</span></div>
                     <ul class="space-y-3 mb-8">
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1">✓</span>
+                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Generate all future weeks"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1">✓</span>
+                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Up to 7 recipes in plan (by creation date)"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1">✓</span>
+                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Main courses only (no accompaniments/appetizers/desserts)"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1">✓</span>
+                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Unlimited regenerations"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1">✓</span>
+                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Recipe management & sharing"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1">✓</span>
+                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Community access"|t }}</span>
                         </li>
                     </ul>
@@ -333,27 +334,27 @@
                     <div class="text-sm mb-6 text-green-100">{{ "or $47.90/year (save 20%)"|t }}</div>
                     <ul class="space-y-3 mb-8">
                         <li class="flex items-start gap-2">
-                            <span class="text-green-200 mt-1">✓</span>
+                            <span class="text-green-200 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Unlimited recipes in meal plan"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-200 mt-1">✓</span>
+                            <span class="text-green-200 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "All recipe types (appetizers, accompaniments, desserts)"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-200 mt-1">✓</span>
+                            <span class="text-green-200 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Meal preferences applied"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-200 mt-1">✓</span>
+                            <span class="text-green-200 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Batch recipe import"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-200 mt-1">✓</span>
+                            <span class="text-green-200 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Priority support"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-200 mt-1">✓</span>
+                            <span class="text-green-200 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Early access to new features"|t }}</span>
                         </li>
                     </ul>
@@ -371,24 +372,24 @@
             <h2 class="text-3xl font-bold text-center mb-12">{{ "What Home Cooks Say"|t }}</h2>
             <div class="grid md:grid-cols-3 gap-8">
                 <div class="bg-gray-50 p-6 rounded-lg">
-                    <div class="flex gap-1 mb-3">
-                        <span class="text-yellow-400">★★★★★</span>
+                    <div class="flex gap-1 mb-3" role="img" aria-label="{{ "5 out of 5 stars"|t }}">
+                        <span class="text-yellow-400" aria-hidden="true">★★★★★</span>
                     </div>
                     <p class="text-gray-600 mb-4">{{ "\"Finally using recipes I saved years ago! The accompaniment pairing is genius - no more forgetting to make rice.\""|t }}</p>
                     <div class="font-semibold">{{ "Sarah M."|t }}</div>
                     <div class="text-sm text-gray-500">{{ "Busy mom of 3"|t }}</div>
                 </div>
                 <div class="bg-gray-50 p-6 rounded-lg">
-                    <div class="flex gap-1 mb-3">
-                        <span class="text-yellow-400">★★★★★</span>
+                    <div class="flex gap-1 mb-3" role="img" aria-label="{{ "5 out of 5 stars"|t }}">
+                        <span class="text-yellow-400" aria-hidden="true">★★★★★</span>
                     </div>
                     <p class="text-gray-600 mb-4">{{ "\"Planning a whole month at once saves SO much time. I can bulk shop and actually stick to my meal plan.\""|t }}</p>
                     <div class="font-semibold">{{ "Michael T."|t }}</div>
                     <div class="text-sm text-gray-500">{{ "Home cooking enthusiast"|t }}</div>
                 </div>
                 <div class="bg-gray-50 p-6 rounded-lg">
-                    <div class="flex gap-1 mb-3">
-                        <span class="text-yellow-400">★★★★★</span>
+                    <div class="flex gap-1 mb-3" role="img" aria-label="{{ "5 out of 5 stars"|t }}">
+                        <span class="text-yellow-400" aria-hidden="true">★★★★★</span>
                     </div>
                     <p class="text-gray-600 mb-4">{{ "\"The dietary restriction filtering is perfect. Every meal fits my preferences without me having to check manually.\""|t }}</p>
                     <div class="font-semibold">{{ "Jessica L."|t }}</div>
@@ -411,6 +412,8 @@
             <p class="mt-4 text-green-100 text-sm">{{ "No credit card required • Cancel anytime"|t }}</p>
         </div>
     </div>
+
+    </main>
 
     <!-- Footer -->
     {% call scope::footer() %}

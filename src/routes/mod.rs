@@ -11,6 +11,7 @@ use crate::template::{NotFoundTemplate, Template};
 
 mod about;
 mod admin;
+mod assets;
 mod contact;
 mod groceries;
 mod health;
@@ -18,13 +19,11 @@ mod help;
 mod index;
 mod invoices;
 mod login;
-mod manifest;
 mod menu;
 mod policy;
 mod recipes;
 mod register;
 mod reset_password;
-mod service_worker;
 mod settings;
 mod terms;
 mod upgrade;
@@ -249,8 +248,10 @@ pub fn router(app_state: AppState) -> Router {
         .route("/admin/contact/{id}/resolve", post(admin::contact::resolve))
         .route("/admin/contact/{id}/reopen", post(admin::contact::reopen))
         .fallback(fallback)
-        .route("/sw.js", get(service_worker::asset))
-        .route("/manifest.json", get(manifest::asset))
+        .route("/sw.js", get(assets::service_worker))
+        .route("/manifest.json", get(assets::manifest))
+        .route("/robots.txt", get(assets::robots))
+        .route("/sitemap.xml", get(assets::sitemap))
         .nest_service("/static", crate::assets::AssetsService::new())
         .with_state(app_state)
 }
