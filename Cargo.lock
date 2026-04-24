@@ -2546,7 +2546,7 @@ checksum = "e7c5cedc30da3a610cac6b4ba17597bdf7152cf974e8aab3afb3d54455e371c8"
 
 [[package]]
 name = "imkitchen"
-version = "0.15.6"
+version = "0.15.7"
 dependencies = [
  "anyhow",
  "askama",
@@ -2592,7 +2592,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-contact"
-version = "0.15.6"
+version = "0.15.7"
 dependencies = [
  "anyhow",
  "bitcode",
@@ -2612,7 +2612,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-db"
-version = "0.15.6"
+version = "0.15.7"
 dependencies = [
  "async-trait",
  "evento",
@@ -2623,7 +2623,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-mealplan"
-version = "0.15.6"
+version = "0.15.7"
 dependencies = [
  "anyhow",
  "bitcode",
@@ -2645,7 +2645,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-notification"
-version = "0.15.6"
+version = "0.15.7"
 dependencies = [
  "anyhow",
  "askama",
@@ -2660,7 +2660,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-recipe"
-version = "0.15.6"
+version = "0.15.7"
 dependencies = [
  "anyhow",
  "bitcode",
@@ -2683,7 +2683,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-shared"
-version = "0.15.6"
+version = "0.15.7"
 dependencies = [
  "anyhow",
  "argon2",
@@ -2701,7 +2701,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-shopping"
-version = "0.15.6"
+version = "0.15.7"
 dependencies = [
  "anyhow",
  "bitcode",
@@ -2716,7 +2716,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-user"
-version = "0.15.6"
+version = "0.15.7"
 dependencies = [
  "anyhow",
  "argon2",
