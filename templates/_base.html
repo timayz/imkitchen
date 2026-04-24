@@ -9,6 +9,20 @@
 
   <title>{% block title %}imkitchen{% endblock %}</title>
 
+  <!-- Canonical URL -->
+  {% block canonical %}{% endblock %}
+
+  <!-- Open Graph / Social sharing -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="imkitchen">
+  <meta property="og:title" content="{% block og_title %}imkitchen - Intelligent Meal Planning{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}Intelligent meal planning and cooking optimization{% endblock %}">
+  <meta property="og:image" content="{% block og_image %}https://imkitchen.app/static/icons/icon-512.png{% endblock %}">
+  {% block og_url %}{% endblock %}
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary">
+
   <!-- Favicon -->
   <link rel="icon" type="image/png" href={{ "/static/icons/icon-192.png?v=" ~ env!("CARGO_PKG_VERSION") }}>
 
@@ -21,6 +35,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="imkitchen">
   <link rel="apple-touch-icon" href={{ "/static/icons/apple-touch-icon.png?v=" ~ env!("CARGO_PKG_VERSION") }}>
+
+  <!-- DNS prefetch for external origins -->
+  {% block dns_prefetch %}{% endblock %}
 
   <!-- Main CSS - loaded synchronously to prevent visual breaking -->
   <link rel="stylesheet" href={{ "/static/css/main.css?v=" ~ env!("CARGO_PKG_VERSION") }}>

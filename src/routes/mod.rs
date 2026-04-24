@@ -10,8 +10,8 @@ use evento::sql::RwSqlite;
 use crate::template::{NotFoundTemplate, Template};
 
 mod about;
-mod assets;
 mod admin;
+mod assets;
 mod contact;
 mod groceries;
 mod health;
