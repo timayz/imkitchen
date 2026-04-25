@@ -55,3 +55,6 @@ config:
 
 persistence:
   size: 5Gi
+
+certificate:
+  annotations: {}

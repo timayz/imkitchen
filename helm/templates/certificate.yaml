@@ -10,3 +10,8 @@ spec:
   issuerRef:
     kind: ClusterIssuer
     name: letsencrypt
+  {{- with .Values.certificate.annotations }}
+    secretTemplate:
+      annotations:
+        {{- toYaml . | nindent 6 }}
+  {{- end }}
