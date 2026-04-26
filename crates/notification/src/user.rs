@@ -61,7 +61,7 @@ async fn handle_reset_requested<E: Executor>(
         year,
     });
 
-    let subject = rust_i18n::t!("", locales = event.data.lang).to_string();
+    let subject = rust_i18n::t!("Reset Your Pasuword", locales = event.data.lang).to_string();
     service.send(event.data.email, subject, html, plain).await?;
 
     Ok(())
