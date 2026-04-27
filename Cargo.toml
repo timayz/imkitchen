@@ -51,7 +51,7 @@ urlencoding = "2.1"
 base64 = "0.22"
 url = "2.5"
 minify-html = "0.18"
-oxc = { version = "0.126.0", features = ["minifier", "codegen"] }
+oxc = { version = "0.127.0", features = ["minifier", "codegen"] }
 lightningcss = { version = "1.0.0-alpha.71", default-features = false }
 ulid = "1.2"
 sea-query = { version = "1.0.0-rc.33", default-features = false, features = ["derive", "audit", "backend-sqlite"] }
