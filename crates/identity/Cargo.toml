@@ -1,0 +1,20 @@
+[package]
+name = "imkitchen-identity"
+version = "0.1.0"
+edition.workspace = true
+authors.workspace = true
+
+[package.metadata.cargo-machete]
+ignored = ["bitcode"]
+
+[dependencies]
+evento.workspace = true
+anyhow.workspace = true
+bitcode.workspace = true
+validator = { workspace = true }
+regex = { workspace = true }
+argon2.workspace = true
+sqlx = { workspace = true }
+ulid = { workspace = true }
+imkitchen-shared = { path = "../shared", version = "0.15.8" }
+imkitchen-user = { path = "../user", version = "0.15.8" }
