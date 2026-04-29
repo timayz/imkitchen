@@ -2563,14 +2563,12 @@ dependencies = [
  "config",
  "evento",
  "futures",
- "imkitchen-contact",
+ "imkitchen-billing",
+ "imkitchen-core",
  "imkitchen-db",
- "imkitchen-mealplan",
+ "imkitchen-identity",
  "imkitchen-notification",
- "imkitchen-recipe",
  "imkitchen-shared",
- "imkitchen-shopping",
- "imkitchen-user",
  "jsonwebtoken",
  "lightningcss",
  "mime_guess",
@@ -2591,10 +2589,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "imkitchen-contact"
-version = "0.15.8"
+name = "imkitchen-billing"
+version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-stripe",
+ "async-stripe-core",
+ "async-stripe-shared",
+ "async-stripe-types",
  "bitcode",
  "evento",
  "imkitchen-db",
@@ -2603,11 +2605,38 @@ dependencies = [
  "sea-query-sqlx",
  "serde",
  "sqlx",
- "strum 0.28.0",
  "temp-dir",
  "time",
  "tokio",
+ "tokio-cron-scheduler",
+ "tracing",
+]
+
+[[package]]
+name = "imkitchen-core"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bitcode",
+ "evento",
+ "image",
+ "imkitchen-db",
+ "imkitchen-shared",
+ "rand 0.10.1",
+ "sea-query",
+ "sea-query-sqlx",
+ "serde",
+ "serde_json",
+ "sha3",
+ "sqlx",
+ "strum 0.28.0",
+ "temp-dir",
+ "time",
+ "time-tz",
+ "tokio",
+ "tracing",
  "validator",
+ "webp",
 ]
 
 [[package]]
@@ -2622,25 +2651,26 @@ dependencies = [
 ]
 
 [[package]]
-name = "imkitchen-mealplan"
-version = "0.15.8"
+name = "imkitchen-identity"
+version = "0.1.0"
 dependencies = [
  "anyhow",
+ "argon2",
  "bitcode",
  "evento",
  "imkitchen-db",
- "imkitchen-recipe",
  "imkitchen-shared",
- "rand 0.10.1",
+ "regex",
  "sea-query",
  "sea-query-sqlx",
- "serde_json",
+ "serde",
  "sqlx",
+ "strum 0.28.0",
  "temp-dir",
  "time",
- "time-tz",
  "tokio",
- "tracing",
+ "ulid",
+ "validator",
 ]
 
 [[package]]
@@ -2659,29 +2689,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "imkitchen-recipe"
-version = "0.15.8"
-dependencies = [
- "anyhow",
- "bitcode",
- "evento",
- "image",
- "imkitchen-db",
- "imkitchen-shared",
- "sea-query",
- "sea-query-sqlx",
- "serde",
- "serde_json",
- "sha3",
- "sqlx",
- "strum 0.28.0",
- "temp-dir",
- "tokio",
- "validator",
- "webp",
-]
-
-[[package]]
 name = "imkitchen-shared"
 version = "0.15.8"
 dependencies = [
@@ -2696,50 +2703,6 @@ dependencies = [
  "strum 0.28.0",
  "thiserror 2.0.18",
  "time",
- "validator",
-]
-
-[[package]]
-name = "imkitchen-shopping"
-version = "0.15.8"
-dependencies = [
- "anyhow",
- "bitcode",
- "evento",
- "imkitchen-db",
- "imkitchen-shared",
- "sea-query",
- "sea-query-sqlx",
- "sqlx",
- "validator",
-]
-
-[[package]]
-name = "imkitchen-user"
-version = "0.15.8"
-dependencies = [
- "anyhow",
- "argon2",
- "async-stripe",
- "async-stripe-core",
- "async-stripe-shared",
- "async-stripe-types",
- "bitcode",
- "evento",
- "imkitchen-db",
- "imkitchen-shared",
- "regex",
- "sea-query",
- "sea-query-sqlx",
- "serde",
- "sqlx",
- "strum 0.28.0",
- "temp-dir",
- "time",
- "tokio",
- "tokio-cron-scheduler",
- "tracing",
- "ulid",
  "validator",
 ]
 

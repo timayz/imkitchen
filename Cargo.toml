@@ -109,11 +109,9 @@ async-stripe-types = { workspace = true }
 async-stripe-shared = { workspace = true }
 world-tax = { workspace = true }
 imkitchen-shared = { path = "crates/shared", version = "0.15.8" }
-imkitchen-contact = { path = "crates/contact", version = "0.15.8" }
-imkitchen-recipe = { path = "crates/recipe", version = "0.15.8" }
-imkitchen-mealplan = { path = "crates/mealplan", version = "0.15.8" }
-imkitchen-shopping = { path = "crates/shopping", version = "0.15.8" }
-imkitchen-user = { path = "crates/user", version = "0.15.8" }
+imkitchen-identity = { path = "crates/identity", version = "0.1.0" }
+imkitchen-core = { path = "crates/core", version = "0.1.0" }
+imkitchen-billing = { path = "crates/billing", version = "0.1.0" }
 imkitchen-db = { path = "crates/db", version = "0.15.8" }
 imkitchen-notification = { path = "crates/notification", version = "0.15.8" }
 

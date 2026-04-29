@@ -3,7 +3,7 @@ use axum::{
     extract::{Path, State},
     response::IntoResponse,
 };
-use imkitchen_user::password::{RequestInput, ResetInput};
+use imkitchen_identity::password::{RequestInput, ResetInput};
 use serde::Deserialize;
 
 use crate::{
@@ -36,7 +36,7 @@ pub async fn action(
     Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {
     crate::try_response!(
-        app.user_cmd.password.request(RequestInput {
+        app.identity_cmd.password.request(RequestInput {
             email: input.email.to_owned(),
             lang: template.preferred_language_iso.to_owned(),
             host: app.config.server.url,
@@ -86,7 +86,7 @@ pub async fn new_action(
     }
 
     crate::try_response!(
-        app.user_cmd.password.reset(ResetInput {
+        app.identity_cmd.password.reset(ResetInput {
             id,
             password: input.password
         }),

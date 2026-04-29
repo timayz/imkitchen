@@ -1,0 +1,23 @@
+use imkitchen_shared::contact::Status;
+use temp_dir::TempDir;
+
+mod helpers;
+
+#[tokio::test]
+async fn test_resolved() -> anyhow::Result<()> {
+    let dir = TempDir::new()?;
+    let path = dir.child("db.sqlite3");
+    let state = helpers::setup_test_state(path).await?;
+    let cmd = imkitchen_core::contact::Command::new(state);
+    let contact_id = helpers::create_submit(&cmd, "john.doe").await?;
+
+    let contact = cmd.load(&contact_id).await?.unwrap();
+    assert_eq!(contact.status, Status::Unread);
+
+    cmd.resolve(&contact_id, "").await?;
+
+    let contact = cmd.load(&contact_id).await?.unwrap();
+    assert_eq!(contact.status, Status::Resolved);
+
+    Ok(())
+}

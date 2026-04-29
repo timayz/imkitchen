@@ -5,7 +5,7 @@ use axum::{
     response::IntoResponse,
 };
 use evento::cursor::{Args, Edge, ReadResult, Value};
-use imkitchen_contact::{
+use imkitchen_core::contact::{
     admin::{AdminView, FilterQuery, SortBy},
     global_stat::GlobalStatView,
 };

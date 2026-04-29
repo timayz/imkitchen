@@ -3,7 +3,7 @@ use axum::{
     response::IntoResponse,
 };
 use axum_extra::extract::Form;
-use imkitchen_recipe::UpdateInput;
+use imkitchen_core::recipe::UpdateInput;
 use imkitchen_shared::recipe::{
     CuisineType, DietaryRestriction, Ingredient, IngredientCategory, IngredientUnit, Instruction,
     RecipeType,

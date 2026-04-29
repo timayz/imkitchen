@@ -2,7 +2,7 @@ use axum::{
     extract::{Path, State},
     response::{IntoResponse, Redirect},
 };
-use imkitchen_mealplan::{Generate, Randomize, slot::SlotRow};
+use imkitchen_core::mealplan::{Generate, Randomize, slot::SlotRow};
 use time::OffsetDateTime;
 
 use crate::{
@@ -63,19 +63,19 @@ pub async fn page(
     params: Option<Path<(String,)>>,
 ) -> impl IntoResponse {
     let bounds = if let Some(Path((date,))) = params {
-        imkitchen_mealplan::month_bounds_from_date(&date, &user.tz)
+        imkitchen_core::mealplan::month_bounds_from_date(&date, &user.tz)
     } else {
-        imkitchen_mealplan::month_bounds_from_now(&user.tz)
+        imkitchen_core::mealplan::month_bounds_from_now(&user.tz)
     };
     let bounds = crate::try_page_response!(sync: bounds, template);
-    let (prev_month, next_month) = crate::try_page_response!(sync: imkitchen_mealplan::prev_next_month(bounds.first), template);
+    let (prev_month, next_month) = crate::try_page_response!(sync: imkitchen_core::mealplan::prev_next_month(bounds.first), template);
     let slots = crate::try_page_response!(
         app.mealplan_query
             .range(&user.id, bounds.first, bounds.last),
         template
     );
 
-    let mut menu_slots = imkitchen_mealplan::week_days_before(bounds.first)
+    let mut menu_slots = imkitchen_core::mealplan::week_days_before(bounds.first)
         .iter()
         .map(|date| MenuSlot {
             day: date.day(),
@@ -105,7 +105,7 @@ pub async fn page(
         menu_slots.push(slot);
     }
 
-    for date in imkitchen_mealplan::week_days_after(bounds.last) {
+    for date in imkitchen_core::mealplan::week_days_after(bounds.last) {
         menu_slots.push(MenuSlot {
             day: date.day(),
             slot: None,
@@ -142,7 +142,7 @@ pub async fn generate_action(
     Path((date,)): Path<(String,)>,
 ) -> impl IntoResponse {
     let preferences = crate::try_response!(anyhow:
-        app.user_cmd.meal_preferences.load(&user.id),
+        app.identity_cmd.meal_preferences.load(&user.id),
         template
     );
 
@@ -155,8 +155,8 @@ pub async fn generate_action(
         None
     };
 
-    let bounds = crate::try_response!(sync anyhow: imkitchen_mealplan::month_bounds_from_date(&date, &user.tz), template);
-    let now_bounds = crate::try_response!(sync anyhow: imkitchen_mealplan::month_bounds_from_now(&user.tz), template);
+    let bounds = crate::try_response!(sync anyhow: imkitchen_core::mealplan::month_bounds_from_date(&date, &user.tz), template);
+    let now_bounds = crate::try_response!(sync anyhow: imkitchen_core::mealplan::month_bounds_from_now(&user.tz), template);
     let (start, days) = if now_bounds.date > bounds.date {
         (
             now_bounds.date.unix_timestamp(),
@@ -195,7 +195,7 @@ pub async fn generate_status(
     user: AuthUser,
     Path((date,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    let bounds = crate::try_response!(sync anyhow: imkitchen_mealplan::month_bounds_from_date(&date, &user.tz), template);
+    let bounds = crate::try_response!(sync anyhow: imkitchen_core::mealplan::month_bounds_from_date(&date, &user.tz), template);
 
     let s_generated_at = crate::try_response!(anyhow:
         app.mealplan_query.next_slot_from(bounds.date, &user.id),

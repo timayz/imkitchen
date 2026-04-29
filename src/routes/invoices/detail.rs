@@ -2,7 +2,7 @@ use axum::{
     extract::{Path, State},
     response::IntoResponse,
 };
-use imkitchen_user::invoice_user::InvoiceUserView;
+use imkitchen_billing::invoice_user::InvoiceUserView;
 
 use crate::{
     auth::AuthUser,
@@ -27,7 +27,7 @@ pub async fn page(
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
     let invoice = crate::try_page_response!(opt:
-        app.user_query.invoice(id),
+        app.billing_invoice_query.invoice(id),
         template
     );
 

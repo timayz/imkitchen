@@ -131,10 +131,10 @@ impl FromRequestParts<crate::routes::AppState> for Option<AuthToken> {
 }
 
 #[derive(Clone, Default)]
-pub struct AuthUser(imkitchen_user::login::Login);
+pub struct AuthUser(imkitchen_identity::login::Login);
 
 impl Deref for AuthUser {
-    type Target = imkitchen_user::login::Login;
+    type Target = imkitchen_identity::login::Login;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -154,7 +154,7 @@ impl FromRequestParts<crate::routes::AppState> for AuthUser {
 
         let claims = AuthToken::from_request_parts(parts, state).await?;
 
-        let Some(user) = state.user_query.login(&claims.sub).await.map_err(|e| {
+        let Some(user) = state.identity_query.login(&claims.sub).await.map_err(|e| {
             tracing::error!("{e}");
             Redirect::to("/login")
         })?
@@ -201,10 +201,10 @@ impl FromRequestParts<crate::routes::AppState> for Option<AuthUser> {
     }
 }
 
-pub struct AuthAdmin(imkitchen_user::login::Login);
+pub struct AuthAdmin(imkitchen_identity::login::Login);
 
 impl Deref for AuthAdmin {
-    type Target = imkitchen_user::login::Login;
+    type Target = imkitchen_identity::login::Login;
 
     fn deref(&self) -> &Self::Target {
         &self.0

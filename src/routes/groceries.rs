@@ -4,7 +4,7 @@ use axum::{
 };
 use axum_extra::extract::Form;
 use imkitchen_shared::recipe::{Ingredient, IngredientUnitFormat};
-use imkitchen_shopping::{Generate, ToggleInput};
+use imkitchen_core::shopping::{Generate, ToggleInput};
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 
@@ -137,10 +137,10 @@ pub async fn generate_action(
     Form(input): Form<GenerateAction>,
 ) -> impl IntoResponse {
     let preferences = crate::try_response!(anyhow:
-        app.user_cmd.meal_preferences.load(&user.id),
+        app.identity_cmd.meal_preferences.load(&user.id),
         template
     );
-    let date = imkitchen_mealplan::date_to_u64(imkitchen_mealplan::now(&user.tz));
+    let date = imkitchen_core::mealplan::date_to_u64(imkitchen_core::mealplan::now(&user.tz));
     crate::try_response!(
         app.shopping_cmd.generate(
             Generate {

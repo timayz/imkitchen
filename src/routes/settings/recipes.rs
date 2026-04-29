@@ -3,7 +3,7 @@ use axum::{
     response::{IntoResponse, Redirect},
 };
 use evento::cursor::{Args, ReadResult, Value};
-use imkitchen_recipe::query::user::{RecipesQuery, SortBy, UserViewList};
+use imkitchen_core::recipe::query::user::{RecipesQuery, SortBy, UserViewList};
 use imkitchen_shared::recipe::{CuisineType, RecipeType};
 use serde::Deserialize;
 use std::str::FromStr;

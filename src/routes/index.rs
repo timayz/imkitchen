@@ -1,8 +1,8 @@
 use axum::extract::{Path, State};
 use axum::response::IntoResponse;
 use axum_extra::extract::CookieJar;
-use imkitchen_mealplan::slot::SlotRow;
-use imkitchen_mealplan::{ChangeSlotRecipeStatus, Recipe};
+use imkitchen_core::mealplan::slot::SlotRow;
+use imkitchen_core::mealplan::{ChangeSlotRecipeStatus, Recipe};
 use imkitchen_shared::mealplan::DaySlotStatus;
 use imkitchen_shared::recipe::{IngredientUnitFormat, Instruction};
 use imkitchen_shared::{mealplan::DaySlotRecipe, recipe::RecipeType};
@@ -38,7 +38,7 @@ pub struct KitchenTemplate {
     pub current_path: String,
     pub user: AuthUser,
     pub slot: Option<SlotRow>,
-    pub slot_recipe: Option<imkitchen_recipe::query::user::UserView>,
+    pub slot_recipe: Option<imkitchen_core::recipe::query::user::UserView>,
     pub slot_completed_count: u8,
     pub slot_total_count: u8,
     pub prep_remiders: Option<Vec<DaySlotRecipe>>,
@@ -84,9 +84,9 @@ pub async fn page(
     tracing::Span::current().record("user", &user.id);
 
     let bounds = if let Some(Path((date,))) = params {
-        imkitchen_mealplan::month_bounds_from_date(&date, &user.tz)
+        imkitchen_core::mealplan::month_bounds_from_date(&date, &user.tz)
     } else {
-        imkitchen_mealplan::month_bounds_from_now(&user.tz)
+        imkitchen_core::mealplan::month_bounds_from_now(&user.tz)
     };
     let bounds = crate::try_page_response!(sync: bounds, template);
     let slot = crate::try_page_response!(
@@ -280,7 +280,7 @@ pub async fn page(
 #[derive(askama::Template)]
 #[template(path = "partials/kitchen-steps.html")]
 pub struct KitchenStepsTemplate {
-    pub slot_recipe: imkitchen_recipe::query::user::UserView,
+    pub slot_recipe: imkitchen_core::recipe::query::user::UserView,
     pub completed_instructions: Vec<(usize, String)>,
     pub coming_instructions: Vec<(usize, String)>,
     pub current_instruction: Option<(usize, Instruction)>,
@@ -299,7 +299,7 @@ pub async fn update_slot_step_action(
 ) -> impl IntoResponse {
     tracing::Span::current().record("user", &user.id);
 
-    let bounds = crate::try_page_response!(sync: imkitchen_mealplan::month_bounds_from_date(&date, &user.tz), template);
+    let bounds = crate::try_page_response!(sync: imkitchen_core::mealplan::month_bounds_from_date(&date, &user.tz), template);
     let mut slot = crate::try_page_response!(opt: app.mealplan_query.next_slot_from(bounds.date, &user.id), template);
 
     let mut completed_instructions = vec![];
@@ -403,7 +403,7 @@ pub async fn update_slot_step_action(
         }
     }
 
-    let bounds_date = imkitchen_mealplan::date_to_u64(bounds.date);
+    let bounds_date = imkitchen_core::mealplan::date_to_u64(bounds.date);
 
     crate::try_response!(
         app.mealplan_cmd
@@ -486,7 +486,7 @@ pub async fn update_slot_step_action(
 #[template(path = "partials/kitchen-dish.html")]
 pub struct KitchenDishTemplate {
     pub date: String,
-    pub slot_recipe: imkitchen_recipe::query::user::UserView,
+    pub slot_recipe: imkitchen_core::recipe::query::user::UserView,
     pub completed_instructions: Vec<(usize, String)>,
     pub coming_instructions: Vec<(usize, String)>,
     pub current_instruction: Option<(usize, Instruction)>,
@@ -501,7 +501,7 @@ pub async fn select_dish(
 ) -> impl IntoResponse {
     tracing::Span::current().record("user", &user.id);
 
-    let bounds = crate::try_page_response!(sync: imkitchen_mealplan::month_bounds_from_date(&date, &user.tz), template);
+    let bounds = crate::try_page_response!(sync: imkitchen_core::mealplan::month_bounds_from_date(&date, &user.tz), template);
     let slot = crate::try_page_response!(opt: app.mealplan_query.next_slot_from(bounds.date, &user.id), template);
 
     let mut completed_instructions = vec![];

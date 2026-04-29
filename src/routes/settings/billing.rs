@@ -3,7 +3,7 @@ use axum::extract::{Query, State};
 use axum::response::IntoResponse;
 use evento::cursor::Value;
 use evento::cursor::{Args, ReadResult};
-use imkitchen_user::invoice_user::{self, InvoiceUserView};
+use imkitchen_billing::invoice_user::{self, InvoiceUserView};
 use serde::Deserialize;
 use stripe_core::customer::RetrievePaymentMethodCustomer;
 use stripe_core::payment_intent::RetrievePaymentIntent;
@@ -32,7 +32,7 @@ pub struct PageQuery {
 pub struct BillingTemplate {
     pub current_path: String,
     pub settings_path: String,
-    pub subscription: imkitchen_user::subscription::Subscription,
+    pub subscription: imkitchen_billing::subscription::Subscription,
     pub user: AuthUser,
     pub invoices: ReadResult<InvoiceUserView>,
 }
@@ -51,10 +51,10 @@ pub async fn page(
         before: query.before,
     };
     let subscription =
-        crate::try_page_response!(app.user_cmd.subscription.load(&user.id), template);
+        crate::try_page_response!(app.billing_subscription_cmd.load(&user.id), template);
 
     let invoices = crate::try_page_response!(
-        app.user_query.filter_invoice(invoice_user::FilterQuery {
+        app.billing_invoice_query.filter_invoice(invoice_user::FilterQuery {
             user_id: user.id.to_owned(),
             args: args.limit(5)
         }),
@@ -83,7 +83,7 @@ pub async fn payment_method(
     user: AuthUser,
 ) -> impl IntoResponse {
     let mut subscription =
-        crate::try_response!(anyhow: app.user_cmd.subscription.load(&user.id), template);
+        crate::try_response!(anyhow: app.billing_subscription_cmd.load(&user.id), template);
 
     let Some(payment_method_id) = subscription.payment_method_id.to_owned() else {
         return "<div></div>".into_response();
@@ -96,8 +96,7 @@ pub async fn payment_method(
             .await
     {
         if let Err(e) = app
-            .user_cmd
-            .subscription
+            .billing_subscription_cmd
             .update_stripe_setup_intent_status(intent, &user.id)
             .await
         {
@@ -109,7 +108,7 @@ pub async fn payment_method(
             );
 
             subscription =
-                crate::try_response!(anyhow: app.user_cmd.subscription.load(&user.id), template);
+                crate::try_response!(anyhow: app.billing_subscription_cmd.load(&user.id), template);
         };
     };
 
@@ -149,7 +148,7 @@ pub async fn update_payment(
     user: AuthUser,
 ) -> impl IntoResponse {
     let subscription =
-        crate::try_response!(anyhow: app.user_cmd.subscription.load(&user.id), template);
+        crate::try_response!(anyhow: app.billing_subscription_cmd.load(&user.id), template);
 
     let Some(customer_id) = subscription.customer_id else {
         tracing::error!("customer not found");
@@ -164,8 +163,7 @@ pub async fn update_payment(
         .send(&app.stripe), template);
 
     crate::try_response!(
-        app.user_cmd
-            .subscription
+        app.billing_subscription_cmd
             .create_stripe_setup_intent(&setup_intent.id, &user.id),
         template
     );
@@ -182,7 +180,7 @@ pub async fn check(
     user: AuthUser,
 ) -> impl IntoResponse {
     let subscription =
-        crate::try_response!(anyhow: app.user_cmd.subscription.load(&user.id), template);
+        crate::try_response!(anyhow: app.billing_subscription_cmd.load(&user.id), template);
 
     let Some(payment_intent_id) = subscription.payment_intent_id else {
         return "<div></div>".into_response();
@@ -197,8 +195,7 @@ pub async fn check(
     };
 
     if let Err(e) = app
-        .user_cmd
-        .subscription
+        .billing_subscription_cmd
         .update_stripe_payment_intent_status(intent, &user.id)
         .await
     {
@@ -211,7 +208,7 @@ pub async fn check(
 #[derive(askama::Template)]
 #[template(path = "partials/subscription-cancel-modal.html")]
 struct CancelModalTemplate {
-    pub subscription: imkitchen_user::subscription::Subscription,
+    pub subscription: imkitchen_billing::subscription::Subscription,
 }
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
@@ -221,7 +218,7 @@ pub async fn cancel_modal(
     user: AuthUser,
 ) -> impl IntoResponse {
     let subscription =
-        crate::try_response!(anyhow: app.user_cmd.subscription.load(&user.id), template);
+        crate::try_response!(anyhow: app.billing_subscription_cmd.load(&user.id), template);
 
     template.render(CancelModalTemplate { subscription })
 }
@@ -229,7 +226,7 @@ pub async fn cancel_modal(
 #[derive(askama::Template)]
 #[template(path = "partials/subscription-cancel.html")]
 struct CancelTemplate {
-    pub subscription: imkitchen_user::subscription::Subscription,
+    pub subscription: imkitchen_billing::subscription::Subscription,
 }
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
@@ -239,9 +236,9 @@ pub async fn cancel(
     user: AuthUser,
 ) -> impl IntoResponse {
     let mut subscription =
-        crate::try_response!(anyhow: app.user_cmd.subscription.load(&user.id), template);
+        crate::try_response!(anyhow: app.billing_subscription_cmd.load(&user.id), template);
 
-    crate::try_response!(app.user_cmd.subscription.cancel(&user.id), template);
+    crate::try_response!(app.billing_subscription_cmd.cancel(&user.id), template);
 
     if let Some(id) = subscription.payment_method_id.to_owned() {
         crate::try_response!(anyhow:

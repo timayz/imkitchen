@@ -86,7 +86,7 @@ pub async fn action(
         match app
             .recipe_cmd
             .import(
-                imkitchen_recipe::ImportInput {
+                imkitchen_core::recipe::ImportInput {
                     recipe_type: recipe.recipe_type,
                     name: recipe.name.to_owned(),
                     description: recipe.description,

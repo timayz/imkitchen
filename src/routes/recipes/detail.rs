@@ -5,7 +5,7 @@ use axum::{
     response::{IntoResponse, Redirect},
 };
 use evento::cursor::{self, Args, ReadResult};
-use imkitchen_recipe::{
+use imkitchen_core::recipe::{
     comment::{AddCommentInput, ReplyCommentInput},
     comment_rating, favorite,
     query::{

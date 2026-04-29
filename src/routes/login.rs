@@ -4,7 +4,7 @@ use axum::response::{IntoResponse, Redirect};
 use axum_extra::TypedHeader;
 use axum_extra::extract::CookieJar;
 use axum_extra::headers::UserAgent;
-use imkitchen_user::LoginInput;
+use imkitchen_identity::LoginInput;
 use serde::Deserialize;
 
 use crate::auth::{self, AuthToken, AuthUser, build_cookie};
@@ -40,7 +40,7 @@ pub async fn action(
     Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {
     let (user_id, access_id) = crate::try_response!(
-        app.user_cmd.login(LoginInput {
+        app.identity_cmd.login(LoginInput {
             email: input.email,
             password: input.password,
             lang: template.preferred_language_iso.to_owned(),
@@ -78,7 +78,7 @@ pub async fn logout(
     State(app): State<AppState>,
 ) -> impl IntoResponse {
     crate::try_response!(
-        app.user_cmd.logout(&user.id, token.sub.to_owned()),
+        app.identity_cmd.logout(&user.id, token.sub.to_owned()),
         template
     );
 

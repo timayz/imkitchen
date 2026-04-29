@@ -2,7 +2,7 @@ use axum::{
     extract::{Form, State},
     response::{IntoResponse, Redirect},
 };
-use imkitchen_user::RegisterInput;
+use imkitchen_identity::RegisterInput;
 use serde::Deserialize;
 
 use crate::template::{ToastErrorTemplate, filters};
@@ -53,7 +53,7 @@ pub async fn action(
     }
 
     let id = crate::try_response!(
-        app.user_cmd.register(RegisterInput {
+        app.identity_cmd.register(RegisterInput {
             email: input.email.to_owned(),
             password: input.password.to_owned(),
             lang: template.preferred_language_iso.to_owned(),
@@ -66,7 +66,7 @@ pub async fn action(
         return Redirect::to("/login").into_response();
     }
 
-    crate::try_response!(app.user_cmd.made_admin(&id), template);
+    crate::try_response!(app.identity_cmd.made_admin(&id), template);
 
     Redirect::to("/login").into_response()
 }
