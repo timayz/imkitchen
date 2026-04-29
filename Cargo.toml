@@ -1,6 +1,10 @@
 [workspace]
 members = [
 	"crates/*",
+  "web/*"
+]
+exclude = [
+    "web/templates",
 ]
 resolver = "2"
 
