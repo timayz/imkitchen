@@ -159,14 +159,16 @@ pub async fn generate_action(
     let (start, days) = if now_bounds.date > bounds.date {
         (
             now_bounds.date.unix_timestamp(),
-            now_bounds.last.day() - now_bounds.date.day(),
+            now_bounds.last.day() - now_bounds.date.day() + 1,
         )
     } else {
         (
             bounds.date.unix_timestamp(),
-            bounds.last.day() - bounds.date.day(),
+            bounds.last.day() - bounds.date.day() + 1,
         )
     };
+
+    println!("{start} {days}");
 
     imkitchen_web_shared::try_response!(
         app.core.mealplan.generate(Generate {
