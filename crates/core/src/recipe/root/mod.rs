@@ -128,6 +128,7 @@ async fn handle_imported(event: Event<Imported>, data: &mut Recipe) -> anyhow::R
 
     let mut hasher = Sha3_224::default();
     hasher.update(event.data.name);
+    hasher.update(event.data.origin.unwrap_or_default());
     hasher.update(event.data.description);
     hasher.update(event.data.household_size.to_string());
     hasher.update(event.data.prep_time.to_string());

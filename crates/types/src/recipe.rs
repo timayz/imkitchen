@@ -208,6 +208,7 @@ pub enum Recipe {
     Imported {
         name: String,
         owner_name: Option<String>,
+        origin: Option<String>,
         description: String,
         recipe_type: RecipeType,
         cuisine_type: CuisineType,

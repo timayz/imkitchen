@@ -448,6 +448,7 @@ async fn handle_imported(event: Event<Imported>, data: &mut UserView) -> anyhow:
     data.owner_name = event.data.owner_name.to_owned();
     data.id = event.aggregator_id.to_owned();
     data.name = event.data.name;
+    data.origin = event.data.origin;
     data.description = event.data.description;
     data.recipe_type.0 = event.data.recipe_type;
     data.cuisine_type.0 = event.data.cuisine_type;
