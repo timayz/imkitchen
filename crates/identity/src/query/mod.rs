@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use evento::{
     Executor,
     metadata::RawEvent,
@@ -11,17 +9,6 @@ use sqlx::SqlitePool;
 pub mod admin;
 pub mod global_stat;
 pub mod login;
-
-#[derive(Clone)]
-pub struct Query<E: Executor>(pub imkitchen_shared::State<E>);
-
-impl<E: Executor> Deref for Query<E> {
-    type Target = imkitchen_shared::State<E>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
 
 pub fn query_subscription<E: Executor>() -> SubscriptionBuilder<E> {
     SubscriptionBuilder::new("user-query")

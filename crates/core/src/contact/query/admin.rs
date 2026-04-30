@@ -61,7 +61,7 @@ pub struct FilterQuery {
     pub args: Args,
 }
 
-impl<E: Executor> super::Query<E> {
+impl<E: Executor> crate::contact::Module<E> {
     pub async fn filter_admin(&self, input: FilterQuery) -> anyhow::Result<ReadResult<AdminView>> {
         let mut statement = sea_query::Query::select()
             .columns([

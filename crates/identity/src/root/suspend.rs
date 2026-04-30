@@ -1,7 +1,7 @@
 use evento::{Executor, ProjectionAggregator};
 use imkitchen_shared::user::{State, Suspended};
 
-impl<E: Executor> super::Command<E> {
+impl<E: Executor> super::Module<E> {
     pub async fn suspend(
         &self,
         id: impl Into<String>,

@@ -26,7 +26,7 @@ pub async fn setup_test_state(path: PathBuf) -> anyhow::Result<State<Sqlite>> {
 
 #[allow(dead_code)]
 pub async fn create_submit(
-    cmd: &imkitchen_core::contact::Command<Sqlite>,
+    cmd: &imkitchen_core::contact::Module<Sqlite>,
     name: impl Into<String>,
 ) -> anyhow::Result<String> {
     let ids = create_submit_all(cmd, vec![name]).await?;
@@ -36,7 +36,7 @@ pub async fn create_submit(
 
 #[allow(dead_code)]
 pub async fn create_submit_all(
-    cmd: &imkitchen_core::contact::Command<Sqlite>,
+    cmd: &imkitchen_core::contact::Module<Sqlite>,
     names: impl IntoIterator<Item = impl Into<String>>,
 ) -> anyhow::Result<Vec<String>> {
     let mut ids = vec![];

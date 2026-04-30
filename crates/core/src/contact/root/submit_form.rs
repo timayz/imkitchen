@@ -15,7 +15,7 @@ pub struct SubmitFormInput {
     pub message: String,
 }
 
-impl<E: Executor + Clone> super::Command<E> {
+impl<E: Executor + Clone> super::Module<E> {
     pub async fn submit_form(&self, input: SubmitFormInput) -> imkitchen_shared::Result<String> {
         input.validate()?;
 

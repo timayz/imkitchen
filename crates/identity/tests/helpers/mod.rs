@@ -26,7 +26,7 @@ pub async fn setup_test_state(path: PathBuf) -> anyhow::Result<State<Sqlite>> {
 
 #[allow(dead_code)]
 pub async fn create_user(
-    cmd: &imkitchen_identity::Command<Sqlite>,
+    cmd: &imkitchen_identity::Module<Sqlite>,
     name: impl Into<String>,
 ) -> anyhow::Result<String> {
     let ids = create_users(cmd, vec![name]).await?;
@@ -36,7 +36,7 @@ pub async fn create_user(
 
 #[allow(dead_code)]
 pub async fn create_users(
-    cmd: &imkitchen_identity::Command<Sqlite>,
+    cmd: &imkitchen_identity::Module<Sqlite>,
     names: impl IntoIterator<Item = impl Into<String>>,
 ) -> anyhow::Result<Vec<String>> {
     let mut ids = vec![];

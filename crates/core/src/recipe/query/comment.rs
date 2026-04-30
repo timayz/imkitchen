@@ -53,7 +53,7 @@ pub struct CommentsQuery {
     pub sort_by: SortBy,
 }
 
-impl<E: Executor> super::Query<E> {
+impl<E: Executor> crate::recipe::Module<E> {
     pub async fn filter_comment(
         &self,
         query: CommentsQuery,
@@ -138,7 +138,7 @@ pub fn create_projection<E: Executor>(ids: Vec<impl Into<String>>) -> Projection
     Projection::ids::<comment::Comment>(ids).handler(handle_added())
 }
 
-impl<E: Executor> super::Query<E> {
+impl<E: Executor> crate::recipe::Module<E> {
     pub async fn comment(
         &self,
         recipe_id: impl Into<String>,

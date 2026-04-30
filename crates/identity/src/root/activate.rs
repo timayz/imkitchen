@@ -1,7 +1,7 @@
 use evento::{Executor, ProjectionAggregator};
 use imkitchen_shared::user::{Activated, State};
 
-impl<E: Executor> super::Command<E> {
+impl<E: Executor> super::Module<E> {
     pub async fn activate(
         &self,
         id: impl Into<String>,

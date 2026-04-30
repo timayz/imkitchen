@@ -1,7 +1,7 @@
 use evento::{Executor, ProjectionAggregator};
 use imkitchen_shared::user::{MadeAdmin, Role};
 
-impl<E: Executor> super::Command<E> {
+impl<E: Executor> super::Module<E> {
     pub async fn made_admin(&self, id: impl Into<String>) -> imkitchen_shared::Result<()> {
         let Some(user) = self.load(id).await? else {
             imkitchen_shared::not_found!("user");

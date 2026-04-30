@@ -91,7 +91,7 @@ pub struct RecipesQuery {
     pub args: Args,
 }
 
-impl<E: Executor> super::Query<E> {
+impl<E: Executor> crate::recipe::Module<E> {
     pub async fn filter_user(
         &self,
         query: RecipesQuery,
@@ -295,7 +295,7 @@ pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Us
         .handler(handle_thumbnail_resized())
 }
 
-impl<E: Executor> super::Query<E> {
+impl<E: Executor> crate::recipe::Module<E> {
     pub async fn user(&self, id: impl Into<String>) -> Result<Option<UserView>, anyhow::Error> {
         load(&self.executor, &self.read_db, &self.write_db, id).await
     }

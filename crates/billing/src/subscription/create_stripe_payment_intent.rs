@@ -1,7 +1,7 @@
 use evento::{Executor, ProjectionAggregator};
 use imkitchen_shared::user::subscription::{PaymentDetails, StripePaymentIntentCreated};
 
-impl<E: Executor> super::Command<E> {
+impl<E: Executor> super::Module<E> {
     pub async fn create_stripe_payment_intent(
         &self,
         id: impl Into<String>,

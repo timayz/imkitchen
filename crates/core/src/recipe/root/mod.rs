@@ -27,15 +27,15 @@ pub use import::ImportInput;
 pub use update::UpdateInput;
 
 #[derive(Clone)]
-pub struct Command<E: Executor> {
+pub struct Module<E: Executor> {
     state: imkitchen_shared::State<E>,
-    pub rating: crate::recipe::rating::Command<E>,
-    pub favorite: crate::recipe::favorite::Command<E>,
-    pub comment: crate::recipe::comment::Command<E>,
-    pub comment_rating: crate::recipe::comment_rating::Command<E>,
+    pub rating: crate::recipe::rating::Module<E>,
+    pub favorite: crate::recipe::favorite::Module<E>,
+    pub comment: crate::recipe::comment::Module<E>,
+    pub comment_rating: crate::recipe::comment_rating::Module<E>,
 }
 
-impl<E: Executor> Deref for Command<E> {
+impl<E: Executor> Deref for Module<E> {
     type Target = imkitchen_shared::State<E>;
 
     fn deref(&self) -> &Self::Target {
@@ -43,16 +43,16 @@ impl<E: Executor> Deref for Command<E> {
     }
 }
 
-impl<E: Executor> Command<E> {
+impl<E: Executor> Module<E> {
     pub fn new(state: imkitchen_shared::State<E>) -> Self
     where
         imkitchen_shared::State<E>: Clone,
     {
         Self {
-            rating: crate::recipe::rating::Command(state.clone()),
-            favorite: crate::recipe::favorite::Command(state.clone()),
-            comment_rating: crate::recipe::comment_rating::Command(state.clone()),
-            comment: crate::recipe::comment::Command(state.clone()),
+            rating: crate::recipe::rating::Module(state.clone()),
+            favorite: crate::recipe::favorite::Module(state.clone()),
+            comment_rating: crate::recipe::comment_rating::Module(state.clone()),
+            comment: crate::recipe::comment::Module(state.clone()),
             state,
         }
     }

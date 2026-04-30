@@ -11,7 +11,7 @@ async fn test_update_no_fields() -> anyhow::Result<()> {
     let dir = TempDir::new()?;
     let path = dir.child("db.sqlite3");
     let state = helpers::setup_test_state(path).await?;
-    let cmd = imkitchen_core::recipe::Command::new(state);
+    let cmd = imkitchen_core::recipe::Module::new(state);
 
     let recipe_id = cmd.create("john", "john_doe".to_owned()).await?;
 
@@ -66,7 +66,7 @@ async fn test_update_only_recipe_type() -> anyhow::Result<()> {
     let dir = TempDir::new()?;
     let path = dir.child("db.sqlite3");
     let state = helpers::setup_test_state(path).await?;
-    let cmd = imkitchen_core::recipe::Command::new(state);
+    let cmd = imkitchen_core::recipe::Module::new(state);
 
     let recipe_id = cmd.create("john", "john_doe".to_owned()).await?;
 
@@ -116,7 +116,7 @@ async fn test_update_only_cuisine_type() -> anyhow::Result<()> {
     let dir = TempDir::new()?;
     let path = dir.child("db.sqlite3");
     let state = helpers::setup_test_state(path).await?;
-    let cmd = imkitchen_core::recipe::Command::new(state);
+    let cmd = imkitchen_core::recipe::Module::new(state);
 
     let recipe_id = cmd.create("john", "john_doe".to_owned()).await?;
 
@@ -166,7 +166,7 @@ async fn test_update_only_accepts_accompaniment() -> anyhow::Result<()> {
     let dir = TempDir::new()?;
     let path = dir.child("db.sqlite3");
     let state = helpers::setup_test_state(path).await?;
-    let cmd = imkitchen_core::recipe::Command::new(state);
+    let cmd = imkitchen_core::recipe::Module::new(state);
 
     let recipe_id = cmd.create("john", "john_doe".to_owned()).await?;
 

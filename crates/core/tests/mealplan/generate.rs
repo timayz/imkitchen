@@ -11,8 +11,8 @@ async fn test_random() -> anyhow::Result<()> {
     let dir = TempDir::new()?;
     let path = dir.child("db.sqlite3");
     let state = helpers::setup_test_state(path).await?;
-    let cmd = imkitchen_core::mealplan::Command::new(state.clone());
-    let recipe_cmd = imkitchen_core::recipe::Command::new(state.clone());
+    let cmd = imkitchen_core::mealplan::Module::new(state.clone());
+    let recipe_cmd = imkitchen_core::recipe::Module::new(state.clone());
 
     for i in 0..200 {
         import_recipe(&recipe_cmd, i.to_string(), RecipeType::MainCourse, "john").await?;
@@ -47,7 +47,7 @@ async fn test_random() -> anyhow::Result<()> {
 }
 
 async fn import_recipe(
-    cmd: &imkitchen_core::recipe::Command<Sqlite>,
+    cmd: &imkitchen_core::recipe::Module<Sqlite>,
     id: impl Into<String>,
     recipe_type: RecipeType,
     user_id: impl Into<String>,

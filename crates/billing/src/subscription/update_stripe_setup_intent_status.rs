@@ -3,7 +3,7 @@ use imkitchen_shared::user::subscription::StripeSetupIntentSucceeded;
 use stripe_shared::{SetupIntent, SetupIntentStatus};
 use stripe_types::Expandable;
 
-impl<E: Executor> super::Command<E> {
+impl<E: Executor> super::Module<E> {
     pub async fn update_stripe_setup_intent_status(
         &self,
         intent: impl Into<SetupIntent>,

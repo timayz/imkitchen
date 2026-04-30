@@ -44,7 +44,7 @@ pub async fn action(
     };
 
     crate::try_response!(
-        app.contact_cmd.submit_form(SubmitFormInput {
+        app.core.contact.submit_form(SubmitFormInput {
             to: app.config.email.contact_address,
             name: input.name,
             email: input.email,

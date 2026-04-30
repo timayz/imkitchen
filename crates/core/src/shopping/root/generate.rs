@@ -14,7 +14,7 @@ pub struct Generate {
     pub household_size: u16,
 }
 
-impl<E: Executor> super::Command<E> {
+impl<E: Executor> super::Module<E> {
     pub async fn generate(
         &self,
         input: Generate,

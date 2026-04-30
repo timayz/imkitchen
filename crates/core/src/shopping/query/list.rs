@@ -15,7 +15,7 @@ pub struct ShoppingListRow {
     pub generated_at: u64,
 }
 
-impl<E: Executor> super::Query<E> {
+impl<E: Executor> crate::shopping::Module<E> {
     pub async fn find(
         &self,
         user_id: impl Into<String>,

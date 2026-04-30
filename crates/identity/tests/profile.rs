@@ -9,7 +9,7 @@ async fn test_update_meal_preferences() -> anyhow::Result<()> {
     let dir = TempDir::new()?;
     let path = dir.child("db.sqlite3");
     let state = helpers::setup_test_state(path).await?;
-    let cmd = imkitchen_identity::Command::new(state);
+    let cmd = imkitchen_identity::Module::new(state);
     let users = helpers::create_users(&cmd, vec!["john"]).await?;
     let john = users.first().unwrap();
 

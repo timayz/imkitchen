@@ -10,7 +10,7 @@ pub struct ChangeSlotRecipeStatus {
     pub status: DaySlotStatus,
 }
 
-impl<E: Executor> super::Command<E> {
+impl<E: Executor> super::Module<E> {
     pub async fn change_slot_recipe_status(
         &self,
         input: ChangeSlotRecipeStatus,

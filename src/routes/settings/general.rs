@@ -41,7 +41,7 @@ pub async fn page(
     user: AuthUser,
 ) -> impl IntoResponse {
     let preferences =
-        crate::try_page_response!(app.identity_cmd.meal_preferences.load(&user.id), template);
+        crate::try_page_response!(app.identity.meal_preferences.load(&user.id), template);
 
     template.render(MealPreferencesTemplate {
         household_size: preferences.household_size,
@@ -68,7 +68,7 @@ pub async fn action(
     Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {
     crate::try_response!(
-        app.identity_cmd.meal_preferences.update(
+        app.identity.meal_preferences.update(
             &user.id,
             UpdateInput {
                 dietary_restrictions: input.dietary_restrictions.to_vec(),
@@ -112,7 +112,7 @@ pub async fn set_username_action(
     }
 
     crate::try_response!(
-        app.identity_cmd.set_username(&user.id, input.username),
+        app.identity.set_username(&user.id, input.username),
         template
     );
 

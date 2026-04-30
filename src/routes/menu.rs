@@ -70,7 +70,7 @@ pub async fn page(
     let bounds = crate::try_page_response!(sync: bounds, template);
     let (prev_month, next_month) = crate::try_page_response!(sync: imkitchen_core::mealplan::prev_next_month(bounds.first), template);
     let slots = crate::try_page_response!(
-        app.mealplan_query
+        app.core.mealplan
             .range(&user.id, bounds.first, bounds.last),
         template
     );
@@ -142,7 +142,7 @@ pub async fn generate_action(
     Path((date,)): Path<(String,)>,
 ) -> impl IntoResponse {
     let preferences = crate::try_response!(anyhow:
-        app.identity_cmd.meal_preferences.load(&user.id),
+        app.identity.meal_preferences.load(&user.id),
         template
     );
 
@@ -170,7 +170,7 @@ pub async fn generate_action(
     };
 
     crate::try_response!(
-        app.mealplan_cmd.generate(Generate {
+        app.core.mealplan.generate(Generate {
             start: start as u64,
             days,
             user_id: user.id.to_owned(),
@@ -198,7 +198,7 @@ pub async fn generate_status(
     let bounds = crate::try_response!(sync anyhow: imkitchen_core::mealplan::month_bounds_from_date(&date, &user.tz), template);
 
     let s_generated_at = crate::try_response!(anyhow:
-        app.mealplan_query.next_slot_from(bounds.date, &user.id),
+        app.core.mealplan.next_slot_from(bounds.date, &user.id),
         template,
         Some(GenerateButtonTemplate {
             date,
@@ -207,7 +207,7 @@ pub async fn generate_status(
     )
     .map(|m| m.generated_at);
 
-    let c_generated_at = crate::try_response!(anyhow: app.mealplan_cmd.load(&user.id),
+    let c_generated_at = crate::try_response!(anyhow: app.core.mealplan.load(&user.id),
         template,
         Some(GenerateButtonTemplate{date, status: TemplateStatus::Idle})
     )

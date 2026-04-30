@@ -1,7 +1,7 @@
 use evento::{Executor, ProjectionAggregator};
 use imkitchen_shared::recipe::favorite::Unsaved;
 
-impl<E: Executor + Clone> super::Command<E> {
+impl<E: Executor + Clone> super::Module<E> {
     pub async fn unsave(
         &self,
         id: impl Into<String>,

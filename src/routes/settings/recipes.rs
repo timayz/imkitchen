@@ -74,7 +74,7 @@ pub async fn page(
         .and_then(|v| CuisineType::from_str(v.as_str()).ok());
 
     let recipes = crate::try_page_response!(
-        app.recipe_query.filter_user(RecipesQuery {
+        app.core.recipe.filter_user(RecipesQuery {
             exclude_ids: None,
             user_id: Some(user.id.to_owned()),
             recipe_type,
@@ -105,11 +105,11 @@ pub async fn create(
     user: AuthUser,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
-    let id = match crate::try_response!(anyhow: app.recipe_query.find_user_draft(&user.id), template)
+    let id = match crate::try_response!(anyhow: app.core.recipe.find_user_draft(&user.id), template)
     {
         Some(id) => id,
         _ => crate::try_response!(
-            app.recipe_cmd.create(&user.id, user.username.to_owned()),
+            app.core.recipe.create(&user.id, user.username.to_owned()),
             template
         ),
     };

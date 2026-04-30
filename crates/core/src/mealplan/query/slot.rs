@@ -63,7 +63,7 @@ impl SlotRow {
     }
 }
 
-impl<E: Executor> super::Query<E> {
+impl<E: Executor> crate::mealplan::Module<E> {
     pub async fn range(
         &self,
         user_id: impl Into<String>,

@@ -1,9 +1,9 @@
 pub mod meal_preferences;
 pub mod password;
 
-mod query;
+pub(crate) mod query;
 pub(crate) mod repository;
 mod root;
 
-pub use query::*;
+pub use query::{admin, global_stat, login, query_subscription};
 pub use root::*;

@@ -17,7 +17,7 @@ pub struct UserStatView {
     pub from_community: u32,
 }
 
-impl<E: Executor> super::Query<E> {
+impl<E: Executor> crate::recipe::Module<E> {
     pub async fn find_user_stat(
         &self,
         user_id: impl Into<String>,

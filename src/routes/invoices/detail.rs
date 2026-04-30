@@ -27,7 +27,7 @@ pub async fn page(
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
     let invoice = crate::try_page_response!(opt:
-        app.billing_invoice_query.invoice(id),
+        app.billing.invoice.invoice(id),
         template
     );
 

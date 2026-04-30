@@ -16,7 +16,7 @@ pub struct ResetInput {
     pub password: String,
 }
 
-impl<E: Executor> super::Command<E> {
+impl<E: Executor> super::Module<E> {
     pub async fn reset(&self, input: ResetInput) -> imkitchen_shared::Result<()> {
         input.validate()?;
 

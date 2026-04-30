@@ -3,7 +3,7 @@ use imkitchen_shared::user::subscription::StripePaymentIntentSucceeded;
 use stripe_shared::{PaymentIntent, PaymentIntentStatus};
 use stripe_types::Expandable;
 
-impl<E: Executor> super::Command<E> {
+impl<E: Executor> super::Module<E> {
     pub async fn update_stripe_payment_intent_status(
         &self,
         intent: impl Into<PaymentIntent>,

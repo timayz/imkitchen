@@ -20,13 +20,13 @@ pub use register::RegisterInput;
 pub use set_username::SetUsernameInput;
 
 #[derive(Clone)]
-pub struct Command<E: Executor> {
+pub struct Module<E: Executor> {
     state: imkitchen_shared::State<E>,
-    pub meal_preferences: crate::meal_preferences::Command<E>,
-    pub password: crate::password::Command<E>,
+    pub meal_preferences: crate::meal_preferences::Module<E>,
+    pub password: crate::password::Module<E>,
 }
 
-impl<E: Executor> Deref for Command<E> {
+impl<E: Executor> Deref for Module<E> {
     type Target = imkitchen_shared::State<E>;
 
     fn deref(&self) -> &Self::Target {
@@ -34,14 +34,14 @@ impl<E: Executor> Deref for Command<E> {
     }
 }
 
-impl<E: Executor> Command<E> {
+impl<E: Executor> Module<E> {
     pub fn new(state: imkitchen_shared::State<E>) -> Self
     where
         imkitchen_shared::State<E>: Clone,
     {
         Self {
-            meal_preferences: crate::meal_preferences::Command(state.clone()),
-            password: crate::password::Command(state.clone()),
+            meal_preferences: crate::meal_preferences::Module(state.clone()),
+            password: crate::password::Module(state.clone()),
             state,
         }
     }

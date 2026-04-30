@@ -11,7 +11,7 @@ pub async fn get(
     State(app): State<AppState>,
     Path((id, device)): Path<(String, String)>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
-    match app.recipe_query.find_thumbnail(id, device).await {
+    match app.core.recipe.find_thumbnail(id, device).await {
         Ok(thumbnail) => match thumbnail {
             Some(thumbnail) => Ok((
                 StatusCode::OK,
@@ -63,7 +63,7 @@ pub async fn upload(
 
     let data = crate::try_response!(anyhow: field.bytes(), template);
     crate::try_response!(
-        app.recipe_cmd
+        app.core.recipe
             .upload_thunmnail(&id, data.to_vec(), &user.id),
         template
     );

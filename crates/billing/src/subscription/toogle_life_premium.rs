@@ -3,7 +3,7 @@ use time::UtcDateTime;
 
 use imkitchen_shared::user::subscription::LifePremiumToggled;
 
-impl<E: Executor> super::Command<E> {
+impl<E: Executor> super::Module<E> {
     pub async fn toggle_life_premium(
         &self,
         id: impl Into<String>,

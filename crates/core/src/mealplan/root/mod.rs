@@ -18,11 +18,11 @@ pub use change_slot_recipe_status::ChangeSlotRecipeStatus;
 pub use generate::*;
 
 #[derive(Clone)]
-pub struct Command<E: Executor> {
+pub struct Module<E: Executor> {
     state: imkitchen_shared::State<E>,
 }
 
-impl<E: Executor> Deref for Command<E> {
+impl<E: Executor> Deref for Module<E> {
     type Target = imkitchen_shared::State<E>;
 
     fn deref(&self) -> &Self::Target {
@@ -30,7 +30,7 @@ impl<E: Executor> Deref for Command<E> {
     }
 }
 
-impl<E: Executor> Command<E> {
+impl<E: Executor> Module<E> {
     pub fn new(state: imkitchen_shared::State<E>) -> Self {
         Self { state }
     }

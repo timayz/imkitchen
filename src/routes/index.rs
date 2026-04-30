@@ -90,13 +90,13 @@ pub async fn page(
     };
     let bounds = crate::try_page_response!(sync: bounds, template);
     let slot = crate::try_page_response!(
-        app.mealplan_query.next_slot_from(bounds.date, &user.id),
+        app.core.mealplan.next_slot_from(bounds.date, &user.id),
         template
     );
 
     if slot.is_none() {
         let main_courses = crate::try_page_response!(
-            app.mealplan_cmd
+            app.core.mealplan
                 .first_week_recipes(&user.id, RecipeType::MainCourse),
             template
         );
@@ -170,7 +170,7 @@ pub async fn page(
         }
 
         slot_recipe = crate::try_page_response!(
-            app.recipe_query
+            app.core.recipe
                 .find_user(slot_recipe_id.unwrap_or(&slot.main_course.id)),
             template
         );
@@ -231,7 +231,7 @@ pub async fn page(
 
     let prep_remiders = if let Some(ref slot) = slot {
         crate::try_page_response!(
-            app.mealplan_query
+            app.core.mealplan
                 .next_prep_remiders_from(slot.day, &user.id),
             template
         )
@@ -300,7 +300,7 @@ pub async fn update_slot_step_action(
     tracing::Span::current().record("user", &user.id);
 
     let bounds = crate::try_page_response!(sync: imkitchen_core::mealplan::month_bounds_from_date(&date, &user.tz), template);
-    let mut slot = crate::try_page_response!(opt: app.mealplan_query.next_slot_from(bounds.date, &user.id), template);
+    let mut slot = crate::try_page_response!(opt: app.core.mealplan.next_slot_from(bounds.date, &user.id), template);
 
     let mut completed_instructions = vec![];
     let mut coming_instructions = vec![];
@@ -338,7 +338,7 @@ pub async fn update_slot_step_action(
     };
 
     let slot_recipe =
-        crate::try_page_response!(opt: app.recipe_query.find_user(&recipe_id), template);
+        crate::try_page_response!(opt: app.core.recipe.find_user(&recipe_id), template);
 
     let slot_recipe_status = match (direction.as_str(), slot_recipe_status) {
         ("prev", DaySlotStatus::Idle) => DaySlotStatus::Idle,
@@ -406,7 +406,7 @@ pub async fn update_slot_step_action(
     let bounds_date = imkitchen_core::mealplan::date_to_u64(bounds.date);
 
     crate::try_response!(
-        app.mealplan_cmd
+        app.core.mealplan
             .change_slot_recipe_status(ChangeSlotRecipeStatus {
                 user_id: user.id.to_owned(),
                 date: bounds_date,
@@ -502,7 +502,7 @@ pub async fn select_dish(
     tracing::Span::current().record("user", &user.id);
 
     let bounds = crate::try_page_response!(sync: imkitchen_core::mealplan::month_bounds_from_date(&date, &user.tz), template);
-    let slot = crate::try_page_response!(opt: app.mealplan_query.next_slot_from(bounds.date, &user.id), template);
+    let slot = crate::try_page_response!(opt: app.core.mealplan.next_slot_from(bounds.date, &user.id), template);
 
     let mut completed_instructions = vec![];
     let mut coming_instructions = vec![];
@@ -538,7 +538,7 @@ pub async fn select_dish(
     };
 
     let mut slot_recipe =
-        crate::try_page_response!(opt: app.recipe_query.find_user(&recipe_id), template);
+        crate::try_page_response!(opt: app.core.recipe.find_user(&recipe_id), template);
 
     for ingredient in slot_recipe.ingredients.iter_mut() {
         ingredient.quantity += ((slot_recipe.household_size as u32 * ingredient.quantity

@@ -40,13 +40,13 @@ pub async fn page(
     user: AuthUser,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
-    let list = crate::try_page_response!(app.shopping_query.find(&user.id), template);
+    let list = crate::try_page_response!(app.core.shopping.find(&user.id), template);
     let ingredients = list
         .as_ref()
         .map(|r| to_categories(&r.ingredients.0))
         .unwrap_or_default();
 
-    let checked = crate::try_page_response!(app.shopping_cmd.load(&user.id), template)
+    let checked = crate::try_page_response!(app.core.shopping.load(&user.id), template)
         .map(|loaded| loaded.checked)
         .unwrap_or_default();
 
@@ -73,7 +73,7 @@ pub async fn toggle_action(
     Json(input): Json<ToggleJson>,
 ) -> impl IntoResponse {
     crate::try_response!(
-        app.shopping_cmd
+        app.core.shopping
             .toggle(ToggleInput { name: input.name }, &user.id),
         template
     );
@@ -137,12 +137,12 @@ pub async fn generate_action(
     Form(input): Form<GenerateAction>,
 ) -> impl IntoResponse {
     let preferences = crate::try_response!(anyhow:
-        app.identity_cmd.meal_preferences.load(&user.id),
+        app.identity.meal_preferences.load(&user.id),
         template
     );
     let date = imkitchen_core::mealplan::date_to_u64(imkitchen_core::mealplan::now(&user.tz));
     crate::try_response!(
-        app.shopping_cmd.generate(
+        app.core.shopping.generate(
             Generate {
                 household_size: preferences.household_size,
                 date,
@@ -166,13 +166,13 @@ pub async fn generate_status(
     State(app): State<AppState>,
     user: AuthUser,
 ) -> impl IntoResponse {
-    let q_generated_at = crate::try_response!(anyhow: app.shopping_query.find(&user.id),
+    let q_generated_at = crate::try_response!(anyhow: app.core.shopping.find(&user.id),
         template,
         Some(GenerateButtonTemplate{status: TemplateStatus::Idle})
     )
     .map(|s| s.generated_at);
 
-    let c_generated_at = crate::try_response!(anyhow: app.shopping_cmd.load(&user.id),
+    let c_generated_at = crate::try_response!(anyhow: app.core.shopping.load(&user.id),
         template,
         Some(GenerateButtonTemplate{status: TemplateStatus::Idle})
     )

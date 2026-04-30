@@ -60,11 +60,11 @@ pub async fn page(
     State(app): State<AppState>,
     user: AuthAdmin,
 ) -> impl IntoResponse {
-    let stat = crate::try_page_response!(app.contact_query.find_global_stat_global(), template)
+    let stat = crate::try_page_response!(app.core.contact.find_global_stat_global(), template)
         .unwrap_or_default();
 
     let now = time::UtcDateTime::now().unix_timestamp() as u64;
-    let today_stat = crate::try_page_response!(app.contact_query.find_global_stat(now), template)
+    let today_stat = crate::try_page_response!(app.core.contact.find_global_stat(now), template)
         .unwrap_or_default();
 
     let r_query = query.clone();
@@ -86,7 +86,7 @@ pub async fn page(
     };
 
     let contacts = crate::try_page_response!(
-        app.contact_query.filter_admin(FilterQuery {
+        app.core.contact.filter_admin(FilterQuery {
             status,
             subject,
             sort_by,
@@ -114,10 +114,10 @@ pub async fn mark_read_and_reply(
     State(app): State<AppState>,
     user: AuthAdmin,
 ) -> impl IntoResponse {
-    crate::try_response!(app.contact_cmd.mark_read_and_reply(&id, &user.id), template);
+    crate::try_response!(app.core.contact.mark_read_and_reply(&id, &user.id), template);
 
     let contact = crate::try_response!(anyhow_opt:
-        app.contact_query.admin(&id),
+        app.core.contact.admin(&id),
         template
     );
 
@@ -144,10 +144,10 @@ pub async fn resolve(
     State(app): State<AppState>,
     user: AuthAdmin,
 ) -> impl IntoResponse {
-    crate::try_response!(app.contact_cmd.resolve(&id, &user.id), template);
+    crate::try_response!(app.core.contact.resolve(&id, &user.id), template);
 
     let contact = crate::try_response!(anyhow_opt:
-       app.contact_query.admin(&id),
+       app.core.contact.admin(&id),
         template
     );
 
@@ -174,10 +174,10 @@ pub async fn reopen(
     State(app): State<AppState>,
     user: AuthAdmin,
 ) -> impl IntoResponse {
-    crate::try_response!(app.contact_cmd.reopen(&id, &user.id), template);
+    crate::try_response!(app.core.contact.reopen(&id, &user.id), template);
 
     let contact = crate::try_response!(anyhow_opt:
-        app.contact_query.admin(&id),
+        app.core.contact.admin(&id),
         template
     );
 

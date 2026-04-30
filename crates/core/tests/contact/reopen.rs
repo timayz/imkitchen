@@ -8,7 +8,7 @@ async fn test_reopen() -> anyhow::Result<()> {
     let dir = TempDir::new()?;
     let path = dir.child("db.sqlite3");
     let state = helpers::setup_test_state(path).await?;
-    let cmd = imkitchen_core::contact::Command::new(state);
+    let cmd = imkitchen_core::contact::Module::new(state);
     let contact_id = helpers::create_submit(&cmd, "john.doe").await?;
 
     let contact = cmd.load(&contact_id).await?.unwrap();

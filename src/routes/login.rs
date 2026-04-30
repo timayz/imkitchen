@@ -40,7 +40,7 @@ pub async fn action(
     Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {
     let (user_id, access_id) = crate::try_response!(
-        app.identity_cmd.login(LoginInput {
+        app.identity.login(LoginInput {
             email: input.email,
             password: input.password,
             lang: template.preferred_language_iso.to_owned(),
@@ -78,7 +78,7 @@ pub async fn logout(
     State(app): State<AppState>,
 ) -> impl IntoResponse {
     crate::try_response!(
-        app.identity_cmd.logout(&user.id, token.sub.to_owned()),
+        app.identity.logout(&user.id, token.sub.to_owned()),
         template
     );
 

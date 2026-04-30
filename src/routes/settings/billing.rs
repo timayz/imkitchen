@@ -51,10 +51,10 @@ pub async fn page(
         before: query.before,
     };
     let subscription =
-        crate::try_page_response!(app.billing_subscription_cmd.load(&user.id), template);
+        crate::try_page_response!(app.billing.subscription.load(&user.id), template);
 
     let invoices = crate::try_page_response!(
-        app.billing_invoice_query.filter_invoice(invoice_user::FilterQuery {
+        app.billing.invoice.filter_invoice(invoice_user::FilterQuery {
             user_id: user.id.to_owned(),
             args: args.limit(5)
         }),
@@ -83,7 +83,7 @@ pub async fn payment_method(
     user: AuthUser,
 ) -> impl IntoResponse {
     let mut subscription =
-        crate::try_response!(anyhow: app.billing_subscription_cmd.load(&user.id), template);
+        crate::try_response!(anyhow: app.billing.subscription.load(&user.id), template);
 
     let Some(payment_method_id) = subscription.payment_method_id.to_owned() else {
         return "<div></div>".into_response();
@@ -96,7 +96,7 @@ pub async fn payment_method(
             .await
     {
         if let Err(e) = app
-            .billing_subscription_cmd
+            .billing.subscription
             .update_stripe_setup_intent_status(intent, &user.id)
             .await
         {
@@ -108,7 +108,7 @@ pub async fn payment_method(
             );
 
             subscription =
-                crate::try_response!(anyhow: app.billing_subscription_cmd.load(&user.id), template);
+                crate::try_response!(anyhow: app.billing.subscription.load(&user.id), template);
         };
     };
 
@@ -148,7 +148,7 @@ pub async fn update_payment(
     user: AuthUser,
 ) -> impl IntoResponse {
     let subscription =
-        crate::try_response!(anyhow: app.billing_subscription_cmd.load(&user.id), template);
+        crate::try_response!(anyhow: app.billing.subscription.load(&user.id), template);
 
     let Some(customer_id) = subscription.customer_id else {
         tracing::error!("customer not found");
@@ -163,7 +163,7 @@ pub async fn update_payment(
         .send(&app.stripe), template);
 
     crate::try_response!(
-        app.billing_subscription_cmd
+        app.billing.subscription
             .create_stripe_setup_intent(&setup_intent.id, &user.id),
         template
     );
@@ -180,7 +180,7 @@ pub async fn check(
     user: AuthUser,
 ) -> impl IntoResponse {
     let subscription =
-        crate::try_response!(anyhow: app.billing_subscription_cmd.load(&user.id), template);
+        crate::try_response!(anyhow: app.billing.subscription.load(&user.id), template);
 
     let Some(payment_intent_id) = subscription.payment_intent_id else {
         return "<div></div>".into_response();
@@ -195,7 +195,7 @@ pub async fn check(
     };
 
     if let Err(e) = app
-        .billing_subscription_cmd
+        .billing.subscription
         .update_stripe_payment_intent_status(intent, &user.id)
         .await
     {
@@ -218,7 +218,7 @@ pub async fn cancel_modal(
     user: AuthUser,
 ) -> impl IntoResponse {
     let subscription =
-        crate::try_response!(anyhow: app.billing_subscription_cmd.load(&user.id), template);
+        crate::try_response!(anyhow: app.billing.subscription.load(&user.id), template);
 
     template.render(CancelModalTemplate { subscription })
 }
@@ -236,9 +236,9 @@ pub async fn cancel(
     user: AuthUser,
 ) -> impl IntoResponse {
     let mut subscription =
-        crate::try_response!(anyhow: app.billing_subscription_cmd.load(&user.id), template);
+        crate::try_response!(anyhow: app.billing.subscription.load(&user.id), template);
 
-    crate::try_response!(app.billing_subscription_cmd.cancel(&user.id), template);
+    crate::try_response!(app.billing.subscription.cancel(&user.id), template);
 
     if let Some(id) = subscription.payment_method_id.to_owned() {
         crate::try_response!(anyhow:

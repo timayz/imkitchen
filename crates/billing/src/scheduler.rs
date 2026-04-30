@@ -70,7 +70,7 @@ async fn renew_subscriptions<E: Executor + Clone>(
         .fetch_all(&state.read_db)
         .await?;
 
-    let command = crate::subscription::Command(state.clone());
+    let command = crate::subscription::Module(state.clone());
     for user_sub in subscriptions {
         let subscription = command.load(&user_sub.0).await?;
 
@@ -96,7 +96,7 @@ async fn renew_subscriptions<E: Executor + Clone>(
 
 async fn renew_subscription<E: Executor + Clone>(
     stripe: &stripe::Client,
-    command: &crate::subscription::Command<E>,
+    command: &crate::subscription::Module<E>,
     subscription: crate::subscription::Subscription,
 ) -> anyhow::Result<()> {
     let Some(customer_id) = subscription.customer_id else {

@@ -7,7 +7,7 @@ async fn test_safety_check() -> anyhow::Result<()> {
     let dir = TempDir::new()?;
     let path = dir.child("db.sqlite3");
     let state = helpers::setup_test_state(path).await?;
-    let cmd = imkitchen_identity::Command::new(state.clone());
+    let cmd = imkitchen_identity::Module::new(state.clone());
 
     cmd.register(imkitchen_identity::RegisterInput {
         email: "john@imkitchen.test".to_owned(),

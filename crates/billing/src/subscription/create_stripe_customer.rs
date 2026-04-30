@@ -1,7 +1,7 @@
 use evento::{Executor, ProjectionAggregator};
 use imkitchen_shared::user::subscription::StripeCustomerCreated;
 
-impl<E: Executor> super::Command<E> {
+impl<E: Executor> super::Module<E> {
     pub async fn create_stripe_customer(
         &self,
         id: impl Into<String>,

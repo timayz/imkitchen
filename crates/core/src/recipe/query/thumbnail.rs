@@ -16,7 +16,7 @@ pub struct ThumbnailView {
     pub data: Vec<u8>,
 }
 
-impl<E: Executor> super::Query<E> {
+impl<E: Executor> crate::recipe::Module<E> {
     pub async fn find_thumbnail(
         &self,
         id: impl Into<String>,

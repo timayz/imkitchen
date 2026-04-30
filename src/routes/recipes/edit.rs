@@ -86,7 +86,7 @@ pub async fn page(
     Path((id,)): Path<(String,)>,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
-    let recipe = crate::try_page_response!(opt: app.recipe_query.user(&id), template);
+    let recipe = crate::try_page_response!(opt: app.core.recipe.user(&id), template);
 
     if recipe.owner_id != user.id {
         return template.render(ForbiddenTemplate).into_response();
@@ -184,7 +184,7 @@ pub async fn action(
     };
 
     crate::try_response!(
-        app.recipe_cmd.update(
+        app.core.recipe.update(
             UpdateInput {
                 id: id.to_owned(),
                 recipe_type: input.recipe_type,

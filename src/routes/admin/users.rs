@@ -65,10 +65,10 @@ pub async fn page(
     admin: AuthAdmin,
 ) -> impl IntoResponse {
     let stat =
-        crate::try_page_response!(app.identity_query.find_global(), template).unwrap_or_default();
+        crate::try_page_response!(app.identity.find_global(), template).unwrap_or_default();
 
     let stats = crate::try_page_response!(
-        app.identity_query.filter_global(FilterQueryStat {
+        app.identity.filter_global(FilterQueryStat {
             args: Args::backward(1, None)
         }),
         template
@@ -104,7 +104,7 @@ pub async fn page(
     };
 
     let users = crate::try_page_response!(
-        app.identity_query.filter_admin(FilterQuery {
+        app.identity.filter_admin(FilterQuery {
             state,
             sort_by,
             role,
@@ -134,10 +134,10 @@ pub async fn suspend(
     State(app): State<AppState>,
     admin: AuthAdmin,
 ) -> impl IntoResponse {
-    crate::try_response!(app.identity_cmd.suspend(&id, &admin.id), template);
+    crate::try_response!(app.identity.suspend(&id, &admin.id), template);
 
     let user = crate::try_response!(anyhow_opt:
-        app.identity_query.admin( &id),
+        app.identity.admin( &id),
         template
     );
 
@@ -164,10 +164,10 @@ pub async fn activate(
     State(app): State<AppState>,
     admin: AuthAdmin,
 ) -> impl IntoResponse {
-    crate::try_response!(app.identity_cmd.activate(&id, &admin.id), template);
+    crate::try_response!(app.identity.activate(&id, &admin.id), template);
 
     let user = crate::try_response!(anyhow_opt:
-        app.identity_query.admin(&id),
+        app.identity.admin(&id),
         template
     );
 
@@ -195,13 +195,13 @@ pub async fn toggle_premium(
     admin: AuthAdmin,
 ) -> impl IntoResponse {
     crate::try_response!(
-        app.billing_subscription_cmd
+        app.billing.subscription
             .toggle_life_premium(&id, &admin.id),
         template
     );
 
     let user = crate::try_response!(anyhow_opt:
-        app.identity_query.admin(&id),
+        app.identity.admin(&id),
         template
     );
 

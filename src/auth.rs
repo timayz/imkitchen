@@ -154,7 +154,7 @@ impl FromRequestParts<crate::routes::AppState> for AuthUser {
 
         let claims = AuthToken::from_request_parts(parts, state).await?;
 
-        let Some(user) = state.identity_query.login(&claims.sub).await.map_err(|e| {
+        let Some(user) = state.identity.find_login(&claims.sub).await.map_err(|e| {
             tracing::error!("{e}");
             Redirect::to("/login")
         })?

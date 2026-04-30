@@ -91,31 +91,31 @@ pub async fn page(
     Path((id,)): Path<(String,)>,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
-    let recipe = crate::try_page_response!(opt: app.recipe_query.user(&id), template);
+    let recipe = crate::try_page_response!(opt: app.core.recipe.user(&id), template);
 
     if recipe.owner_id != user.id && !recipe.is_shared {
         return template.render(NotFoundTemplate).into_response();
     }
 
     let stat =
-        crate::try_page_response!(app.recipe_query.find_user_stat(&recipe.owner_id), template)
+        crate::try_page_response!(app.core.recipe.find_user_stat(&recipe.owner_id), template)
             .unwrap_or_default();
 
     let rating =
-        crate::try_page_response!(app.recipe_cmd.rating.load(&recipe.id, &user.id), template)
+        crate::try_page_response!(app.core.recipe.rating.load(&recipe.id, &user.id), template)
             .to_owned();
 
     let favorite =
-        crate::try_page_response!(app.recipe_cmd.favorite.load(&recipe.id, &user.id), template)
+        crate::try_page_response!(app.core.recipe.favorite.load(&recipe.id, &user.id), template)
             .to_owned();
 
     let comment =
-        crate::try_page_response!(app.recipe_query.comment(&recipe.id, &user.id), template);
+        crate::try_page_response!(app.core.recipe.comment(&recipe.id, &user.id), template);
 
     let comment_rating = match comment {
         Some(ref comment) => Some(
             crate::try_page_response!(
-                app.recipe_cmd.comment_rating.load(&comment.id, &user.id),
+                app.core.recipe.comment_rating.load(&comment.id, &user.id),
                 template
             )
             .to_owned(),
@@ -126,7 +126,7 @@ pub async fn page(
     let exclude_ids = vec![recipe.id.to_owned()];
 
     let cook_recipes = crate::try_page_response!(
-        app.recipe_query.filter_user(RecipesQuery {
+        app.core.recipe.filter_user(RecipesQuery {
             exclude_ids: Some(exclude_ids),
             user_id: Some(recipe.owner_id.to_owned()),
             recipe_type: None,
@@ -150,7 +150,7 @@ pub async fn page(
     exclude_ids.push(recipe.id.to_owned());
 
     let mut similar_recipes = crate::try_page_response!(
-        app.recipe_query.filter_user(RecipesQuery {
+        app.core.recipe.filter_user(RecipesQuery {
             exclude_ids: Some(exclude_ids.to_vec()),
             user_id: None,
             recipe_type: Some(recipe.recipe_type.0.to_owned()),
@@ -174,7 +174,7 @@ pub async fn page(
         similar_ids.extend(exclude_ids.to_vec());
 
         let more_recipes = crate::try_page_response!(
-            app.recipe_query.filter_user(RecipesQuery {
+            app.core.recipe.filter_user(RecipesQuery {
                 exclude_ids: Some(similar_ids),
                 user_id: None,
                 recipe_type: Some(recipe.recipe_type.0.to_owned()),
@@ -201,7 +201,7 @@ pub async fn page(
         similar_ids.extend(exclude_ids.to_vec());
 
         let more_recipes = crate::try_page_response!(
-            app.recipe_query.filter_user(RecipesQuery {
+            app.core.recipe.filter_user(RecipesQuery {
                 exclude_ids: Some(similar_ids),
                 user_id: None,
                 recipe_type: Some(recipe.recipe_type.0.to_owned()),
@@ -228,7 +228,7 @@ pub async fn page(
         similar_ids.extend(exclude_ids.to_vec());
 
         let more_recipes = crate::try_page_response!(
-            app.recipe_query.filter_user(RecipesQuery {
+            app.core.recipe.filter_user(RecipesQuery {
                 exclude_ids: Some(similar_ids),
                 user_id: None,
                 recipe_type: Some(recipe.recipe_type.0.to_owned()),
@@ -255,7 +255,7 @@ pub async fn page(
         similar_ids.extend(exclude_ids.to_vec());
 
         let more_recipes = crate::try_page_response!(
-            app.recipe_query.filter_user(RecipesQuery {
+            app.core.recipe.filter_user(RecipesQuery {
                 exclude_ids: Some(similar_ids),
                 user_id: None,
                 recipe_type: Some(recipe.recipe_type.0.to_owned()),
@@ -282,7 +282,7 @@ pub async fn page(
         similar_ids.extend(exclude_ids);
 
         let more_recipes = crate::try_page_response!(
-            app.recipe_query.filter_user(RecipesQuery {
+            app.core.recipe.filter_user(RecipesQuery {
                 exclude_ids: Some(similar_ids),
                 user_id: None,
                 cuisine_type: Some(recipe.cuisine_type.0.to_owned()),
@@ -339,7 +339,7 @@ pub async fn share_to_community_action(
     };
 
     crate::try_response!(
-        app.recipe_cmd.share_to_community(&id, &user.id, username),
+        app.core.recipe.share_to_community(&id, &user.id, username),
         template
     );
 
@@ -358,7 +358,7 @@ pub async fn make_private_action(
     user: AuthUser,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    crate::try_response!(app.recipe_cmd.make_private(&id, &user.id), template);
+    crate::try_response!(app.core.recipe.make_private(&id, &user.id), template);
 
     template
         .render(CommunityDetailShareButtonTemplate {
@@ -375,7 +375,7 @@ pub async fn delete_action(
     user: AuthUser,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    crate::try_response!(app.recipe_cmd.delete(&id, &user.id), template);
+    crate::try_response!(app.core.recipe.delete(&id, &user.id), template);
 
     template
         .render(DeleteButtonTemplate {
@@ -393,7 +393,7 @@ pub async fn delete_status(
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
     match crate::try_response!(anyhow:
-        app.recipe_query.find_user(&id),
+        app.core.recipe.find_user(&id),
         template,
         Some(DeleteButtonTemplate {
             id: &id,
@@ -420,7 +420,7 @@ pub async fn check_in(
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    let recipe = crate::try_response!(anyhow_opt: app.recipe_query.user(&id), template);
+    let recipe = crate::try_response!(anyhow_opt: app.core.recipe.user(&id), template);
     if recipe.owner_id == user.id {
         return "<div></div>".into_response();
     }
@@ -431,7 +431,7 @@ pub async fn check_in(
         ), template);
     }
 
-    crate::try_response!(app.recipe_cmd.rating.view(&id, &user.id), template);
+    crate::try_response!(app.core.recipe.rating.view(&id, &user.id), template);
 
     "<div></div>".into_response()
 }
@@ -451,7 +451,7 @@ pub async fn check_like(
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    let recipe = crate::try_response!(anyhow_opt: app.recipe_query.user(&id), template);
+    let recipe = crate::try_response!(anyhow_opt: app.core.recipe.user(&id), template);
 
     if !recipe.is_shared {
         crate::try_response!(sync:
@@ -459,7 +459,7 @@ pub async fn check_like(
         ), template);
     }
 
-    crate::try_response!(app.recipe_cmd.rating.check_like(&id, &user.id), template);
+    crate::try_response!(app.core.recipe.rating.check_like(&id, &user.id), template);
 
     (
         [("ts-swap", "skip")],
@@ -479,7 +479,7 @@ pub async fn uncheck_like(
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    let recipe = crate::try_response!(anyhow_opt: app.recipe_query.user(&id), template);
+    let recipe = crate::try_response!(anyhow_opt: app.core.recipe.user(&id), template);
 
     if !recipe.is_shared {
         crate::try_response!(sync:
@@ -487,7 +487,7 @@ pub async fn uncheck_like(
         ), template);
     }
 
-    crate::try_response!(app.recipe_cmd.rating.uncheck_like(&id, &user.id), template);
+    crate::try_response!(app.core.recipe.rating.uncheck_like(&id, &user.id), template);
 
     (
         [("ts-swap", "skip")],
@@ -507,7 +507,7 @@ pub async fn check_unlike(
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    let recipe = crate::try_response!(anyhow_opt: app.recipe_query.user(&id), template);
+    let recipe = crate::try_response!(anyhow_opt: app.core.recipe.user(&id), template);
 
     if !recipe.is_shared {
         crate::try_response!(sync:
@@ -515,7 +515,7 @@ pub async fn check_unlike(
         ), template);
     }
 
-    crate::try_response!(app.recipe_cmd.rating.check_unlike(&id, &user.id), template);
+    crate::try_response!(app.core.recipe.rating.check_unlike(&id, &user.id), template);
 
     (
         [("ts-swap", "skip")],
@@ -535,7 +535,7 @@ pub async fn uncheck_unlike(
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    let recipe = crate::try_response!(anyhow_opt: app.recipe_query.user(&id), template);
+    let recipe = crate::try_response!(anyhow_opt: app.core.recipe.user(&id), template);
 
     if !recipe.is_shared {
         crate::try_response!(sync:
@@ -544,7 +544,7 @@ pub async fn uncheck_unlike(
     }
 
     crate::try_response!(
-        app.recipe_cmd.rating.uncheck_unlike(&id, &user.id),
+        app.core.recipe.rating.uncheck_unlike(&id, &user.id),
         template
     );
 
@@ -573,7 +573,7 @@ pub async fn save(
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    let recipe = crate::try_response!(anyhow_opt: app.recipe_query.user(&id),template);
+    let recipe = crate::try_response!(anyhow_opt: app.core.recipe.user(&id),template);
 
     if !recipe.is_shared {
         crate::try_response!(sync:
@@ -582,7 +582,7 @@ pub async fn save(
     }
 
     crate::try_response!(
-        app.recipe_cmd.favorite.save(&id, recipe.owner_id, &user.id),
+        app.core.recipe.favorite.save(&id, recipe.owner_id, &user.id),
         template
     );
 
@@ -599,7 +599,7 @@ pub async fn unsave(
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    crate::try_response!(app.recipe_cmd.favorite.unsave(&id, &user.id), template);
+    crate::try_response!(app.core.recipe.favorite.unsave(&id, &user.id), template);
 
     (
         [("ts-swap", "skip")],
@@ -676,7 +676,7 @@ pub async fn add_comment_action(
     };
 
     crate::try_response!(
-        app.recipe_cmd.comment.add(
+        app.core.recipe.comment.add(
             &id,
             &user.id,
             AddCommentInput {
@@ -781,7 +781,7 @@ pub async fn reply_action(
     };
 
     crate::try_response!(
-        app.recipe_cmd.comment.reply(
+        app.core.recipe.comment.reply(
             &recipe_id,
             &user.id,
             ReplyCommentInput {
@@ -857,7 +857,7 @@ pub async fn comments(
         .unwrap_or(comment::SortBy::RecentlyAdded);
 
     let comments = crate::try_page_response!(
-        app.recipe_query.filter_comment(CommentsQuery {
+        app.core.recipe.filter_comment(CommentsQuery {
             recipe_id: id.to_owned(),
             reply_to: query.reply_to.to_owned(),
             exclude_owner,
@@ -870,7 +870,7 @@ pub async fn comments(
     let mut ratings = vec![];
     for comment in comments.edges.iter() {
         let rating = crate::try_response!(anyhow:
-            app.recipe_cmd.comment_rating.load(&comment.node.id, &user.id),
+            app.core.recipe.comment_rating.load(&comment.node.id, &user.id),
             template
         );
         ratings.push(rating);
@@ -908,7 +908,7 @@ pub async fn comment_check_like(
         return StatusCode::METHOD_NOT_ALLOWED.into_response();
     }
 
-    let recipe = crate::try_response!(anyhow_opt: app.recipe_query.user(&recipe_id), template);
+    let recipe = crate::try_response!(anyhow_opt: app.core.recipe.user(&recipe_id), template);
 
     if !recipe.is_shared {
         crate::try_response!(sync:
@@ -917,7 +917,7 @@ pub async fn comment_check_like(
     }
 
     crate::try_response!(
-        app.recipe_cmd
+        app.core.recipe
             .comment_rating
             .check_like(&comment_id, &user.id),
         template
@@ -946,7 +946,7 @@ pub async fn comment_uncheck_like(
         return StatusCode::METHOD_NOT_ALLOWED.into_response();
     }
 
-    let recipe = crate::try_response!(anyhow_opt: app.recipe_query.user(&recipe_id), template);
+    let recipe = crate::try_response!(anyhow_opt: app.core.recipe.user(&recipe_id), template);
 
     if !recipe.is_shared {
         crate::try_response!(sync:
@@ -955,7 +955,7 @@ pub async fn comment_uncheck_like(
     }
 
     crate::try_response!(
-        app.recipe_cmd
+        app.core.recipe
             .comment_rating
             .uncheck_like(&comment_id, &user.id),
         template
@@ -984,7 +984,7 @@ pub async fn comment_check_unlike(
         return StatusCode::METHOD_NOT_ALLOWED.into_response();
     }
 
-    let recipe = crate::try_response!(anyhow_opt: app.recipe_query.user(&recipe_id), template);
+    let recipe = crate::try_response!(anyhow_opt: app.core.recipe.user(&recipe_id), template);
 
     if !recipe.is_shared {
         crate::try_response!(sync:
@@ -993,7 +993,7 @@ pub async fn comment_check_unlike(
     }
 
     crate::try_response!(
-        app.recipe_cmd
+        app.core.recipe
             .comment_rating
             .check_unlike(&comment_id, &user.id),
         template
@@ -1022,7 +1022,7 @@ pub async fn comment_uncheck_unlike(
         return StatusCode::METHOD_NOT_ALLOWED.into_response();
     }
 
-    let recipe = crate::try_response!(anyhow_opt: app.recipe_query.user(&recipe_id), template);
+    let recipe = crate::try_response!(anyhow_opt: app.core.recipe.user(&recipe_id), template);
 
     if !recipe.is_shared {
         crate::try_response!(sync:
@@ -1031,7 +1031,7 @@ pub async fn comment_uncheck_unlike(
     }
 
     crate::try_response!(
-        app.recipe_cmd
+        app.core.recipe
             .comment_rating
             .uncheck_unlike(&comment_id, &user.id),
         template

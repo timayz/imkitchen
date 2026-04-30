@@ -51,7 +51,7 @@ impl GlobalStatView {
     }
 }
 
-impl<E: Executor> super::Query<E> {
+impl<E: Executor> crate::Module<E> {
     pub async fn find_global(&self) -> anyhow::Result<Option<GlobalStatView>> {
         let month = to_month_string(GLOBAL_TIMESTAMP)?;
         let statement = sea_query::Query::select()
@@ -77,7 +77,7 @@ pub struct FilterQuery {
     pub args: Args,
 }
 
-impl<E: Executor> super::Query<E> {
+impl<E: Executor> crate::Module<E> {
     pub async fn filter_global(
         &self,
         input: FilterQuery,

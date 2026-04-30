@@ -17,7 +17,7 @@ use imkitchen_shared::user::{
     subscription::{LifePremiumToggled, StripePaymentIntentSucceeded, Subscription},
 };
 
-impl<E: Executor> super::Query<E> {
+impl<E: Executor> crate::Module<E> {
     pub async fn admin(&self, id: impl Into<String>) -> Result<Option<AdminView>, anyhow::Error> {
         load(&self.executor, &self.read_db, &self.write_db, id).await
     }
@@ -123,7 +123,7 @@ pub struct FilterQuery {
     pub args: Args,
 }
 
-impl<E: Executor> super::Query<E> {
+impl<E: Executor> crate::Module<E> {
     pub async fn filter_admin(&self, input: FilterQuery) -> anyhow::Result<ReadResult<AdminView>> {
         let mut statement = sea_query::Query::select()
             .columns([

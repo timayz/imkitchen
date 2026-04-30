@@ -10,11 +10,11 @@ use imkitchen_shared::shopping::{self, Checked, Generated, Unchecked};
 use std::{collections::HashSet, ops::Deref};
 
 #[derive(Clone)]
-pub struct Command<E: Executor> {
+pub struct Module<E: Executor> {
     state: imkitchen_shared::State<E>,
 }
 
-impl<E: Executor> Deref for Command<E> {
+impl<E: Executor> Deref for Module<E> {
     type Target = imkitchen_shared::State<E>;
 
     fn deref(&self) -> &Self::Target {
@@ -22,7 +22,7 @@ impl<E: Executor> Deref for Command<E> {
     }
 }
 
-impl<E: Executor> Command<E> {
+impl<E: Executor> Module<E> {
     pub fn new(state: imkitchen_shared::State<E>) -> Self
     where
         imkitchen_shared::State<E>: Clone,

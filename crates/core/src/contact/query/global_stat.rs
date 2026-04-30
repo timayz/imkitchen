@@ -21,7 +21,7 @@ pub struct GlobalStatView {
     pub avg_response_time: u32,
 }
 
-impl<E: Executor> super::Query<E> {
+impl<E: Executor> crate::contact::Module<E> {
     pub async fn find_global_stat_global(&self) -> anyhow::Result<Option<GlobalStatView>> {
         self.find_global_stat(GLOBAL_TIMESTAMP).await
     }

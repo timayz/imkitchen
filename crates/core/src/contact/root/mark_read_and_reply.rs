@@ -1,7 +1,7 @@
 use evento::{Executor, ProjectionAggregator};
 use imkitchen_shared::contact::{MarkedReadAndReply, Status};
 
-impl<E: Executor + Clone> super::Command<E> {
+impl<E: Executor + Clone> super::Module<E> {
     pub async fn mark_read_and_reply(
         &self,
         id: impl Into<String>,

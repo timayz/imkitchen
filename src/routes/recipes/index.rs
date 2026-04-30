@@ -72,7 +72,7 @@ pub async fn page(
         .and_then(|v| CuisineType::from_str(v.as_str()).ok());
 
     let recipes = crate::try_page_response!(
-        app.recipe_query.filter_user(RecipesQuery {
+        app.core.recipe.filter_user(RecipesQuery {
             exclude_ids: None,
             user_id: None,
             recipe_type,

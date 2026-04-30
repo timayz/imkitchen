@@ -11,7 +11,7 @@ pub struct UpdateInput {
     pub cuisine_variety_weight: f32,
 }
 
-impl<E: Executor> super::Command<E> {
+impl<E: Executor> super::Module<E> {
     pub async fn update(
         &self,
         id: impl Into<String>,

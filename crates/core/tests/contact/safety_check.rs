@@ -7,7 +7,7 @@ async fn test_mark_read_and_reply() -> anyhow::Result<()> {
     let dir = TempDir::new()?;
     let path = dir.child("db.sqlite3");
     let state = helpers::setup_test_state(path).await?;
-    let cmd = imkitchen_core::contact::Command::new(state.clone());
+    let cmd = imkitchen_core::contact::Module::new(state.clone());
     let contact_id = helpers::create_submit(&cmd, "john.doe").await?;
 
     cmd.mark_read_and_reply(&contact_id, "").await?;

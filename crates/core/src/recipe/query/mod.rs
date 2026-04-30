@@ -14,18 +14,6 @@ use imkitchen_shared::recipe::{self, comment::Replied};
 use sea_query::{Expr, ExprTrait, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::SqlitePool;
-use std::ops::Deref;
-
-#[derive(Clone)]
-pub struct Query<E: Executor>(pub imkitchen_shared::State<E>);
-
-impl<E: Executor> Deref for Query<E> {
-    type Target = imkitchen_shared::State<E>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
 
 pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
     SubscriptionBuilder::new("recipe-query")

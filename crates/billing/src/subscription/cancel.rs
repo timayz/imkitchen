@@ -1,7 +1,7 @@
 use evento::{Executor, ProjectionAggregator};
 use imkitchen_shared::user::subscription::Cancelled;
 
-impl<E: Executor> super::Command<E> {
+impl<E: Executor> super::Module<E> {
     pub async fn cancel(&self, request_by: impl Into<String>) -> imkitchen_shared::Result<()> {
         let request_by = request_by.into();
         let subscription = self.load(&request_by).await?;

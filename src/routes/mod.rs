@@ -33,18 +33,9 @@ pub struct AppState {
     pub inner: imkitchen_shared::State<RwSqlite>,
     pub config: crate::config::Config,
     pub stripe: stripe::Client,
-    pub identity_cmd: imkitchen_identity::Command<RwSqlite>,
-    pub identity_query: imkitchen_identity::Query<RwSqlite>,
-    pub billing_subscription_cmd: imkitchen_billing::subscription::Command<RwSqlite>,
-    pub billing_invoice_query: imkitchen_billing::invoice_user::Query<RwSqlite>,
-    pub shopping_cmd: imkitchen_core::shopping::Command<RwSqlite>,
-    pub shopping_query: imkitchen_core::shopping::Query<RwSqlite>,
-    pub recipe_cmd: imkitchen_core::recipe::Command<RwSqlite>,
-    pub recipe_query: imkitchen_core::recipe::Query<RwSqlite>,
-    pub mealplan_cmd: imkitchen_core::mealplan::Command<RwSqlite>,
-    pub mealplan_query: imkitchen_core::mealplan::Query<RwSqlite>,
-    pub contact_cmd: imkitchen_core::contact::Command<RwSqlite>,
-    pub contact_query: imkitchen_core::contact::Query<RwSqlite>,
+    pub identity: imkitchen_identity::Module<RwSqlite>,
+    pub billing: imkitchen_billing::Billing<RwSqlite>,
+    pub core: imkitchen_core::Core<RwSqlite>,
 }
 
 impl Deref for AppState {

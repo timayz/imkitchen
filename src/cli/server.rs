@@ -149,18 +149,9 @@ pub async fn serve(
     let state = AppState {
         config,
         stripe,
-        identity_cmd: imkitchen_identity::Command::new(state.clone()),
-        identity_query: imkitchen_identity::Query(state.clone()),
-        billing_subscription_cmd: imkitchen_billing::subscription::Command(state.clone()),
-        billing_invoice_query: imkitchen_billing::invoice_user::Query(state.clone()),
-        shopping_cmd: imkitchen_core::shopping::Command::new(state.clone()),
-        shopping_query: imkitchen_core::shopping::Query(state.clone()),
-        recipe_cmd: imkitchen_core::recipe::Command::new(state.clone()),
-        recipe_query: imkitchen_core::recipe::Query(state.clone()),
-        mealplan_cmd: imkitchen_core::mealplan::Command::new(state.clone()),
-        mealplan_query: imkitchen_core::mealplan::Query(state.clone()),
-        contact_cmd: imkitchen_core::contact::Command::new(state.clone()),
-        contact_query: imkitchen_core::contact::Query(state.clone()),
+        identity: imkitchen_identity::Module::new(state.clone()),
+        billing: imkitchen_billing::Billing::new(state.clone()),
+        core: imkitchen_core::Core::new(state.clone()),
         inner: state,
     };
 

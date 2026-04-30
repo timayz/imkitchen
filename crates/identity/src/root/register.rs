@@ -18,7 +18,7 @@ pub struct RegisterInput {
     pub timezone: String,
 }
 
-impl<E: Executor> super::Command<E> {
+impl<E: Executor> super::Module<E> {
     pub async fn register(&self, input: RegisterInput) -> imkitchen_shared::Result<String> {
         input.validate()?;
 

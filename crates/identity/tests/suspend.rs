@@ -8,7 +8,7 @@ async fn test_suspend() -> anyhow::Result<()> {
     let dir = TempDir::new()?;
     let path = dir.child("db.sqlite3");
     let state = helpers::setup_test_state(path).await?;
-    let cmd = imkitchen_identity::Command::new(state);
+    let cmd = imkitchen_identity::Module::new(state);
     let user_id = helpers::create_user(&cmd, "john.doe").await?;
 
     let user = cmd.load(&user_id).await?.unwrap();

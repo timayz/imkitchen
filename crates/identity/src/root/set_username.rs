@@ -14,7 +14,7 @@ pub struct SetUsernameInput {
     pub username: String,
 }
 
-impl<E: Executor> super::Command<E> {
+impl<E: Executor> super::Module<E> {
     pub async fn set_username(
         &self,
         id: impl Into<String>,

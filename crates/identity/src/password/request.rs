@@ -12,7 +12,7 @@ pub struct RequestInput {
     pub host: String,
 }
 
-impl<E: Executor> super::Command<E> {
+impl<E: Executor> super::Module<E> {
     pub async fn request(&self, input: RequestInput) -> imkitchen_shared::Result<Option<String>> {
         input.validate()?;
 

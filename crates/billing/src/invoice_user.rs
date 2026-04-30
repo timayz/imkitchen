@@ -10,12 +10,12 @@ use sea_query_sqlx::SqlxBinder;
 use sqlx::{SqlitePool, prelude::FromRow};
 use std::ops::Deref;
 
-use imkitchen_shared::user::invoice::{Created, Invoice, InvoiceAddress};
+use imkitchen_shared::user::invoice::{self, Created, InvoiceAddress};
 
 #[derive(Clone)]
-pub struct Query<E: Executor>(pub imkitchen_shared::State<E>);
+pub struct Module<E: Executor>(pub imkitchen_shared::State<E>);
 
-impl<E: Executor> Deref for Query<E> {
+impl<E: Executor> Deref for Module<E> {
     type Target = imkitchen_shared::State<E>;
 
     fn deref(&self) -> &Self::Target {
@@ -23,7 +23,7 @@ impl<E: Executor> Deref for Query<E> {
     }
 }
 
-impl<E: Executor> Query<E> {
+impl<E: Executor> Module<E> {
     pub async fn invoice(
         &self,
         id: impl Into<String>,
@@ -41,7 +41,7 @@ pub(crate) async fn load<E: Executor>(
     let id = id.into();
 
     create_projection(&id)
-        .aggregator::<Invoice>(id)
+        .aggregator::<invoice::Invoice>(id)
         .data((read_db.clone(), write_db.clone()))
         .execute(executor)
         .await
@@ -71,7 +71,7 @@ pub struct FilterQuery {
     pub args: Args,
 }
 
-impl<E: Executor> Query<E> {
+impl<E: Executor> Module<E> {
     pub async fn filter_invoice(
         &self,
         input: FilterQuery,
@@ -106,7 +106,7 @@ impl<E: Executor> Query<E> {
 }
 
 pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, InvoiceUserView> {
-    Projection::new::<Invoice>(id).handler(handle_created())
+    Projection::new::<invoice::Invoice>(id).handler(handle_created())
 }
 
 impl<E: Executor> Snapshot<E> for InvoiceUserView {

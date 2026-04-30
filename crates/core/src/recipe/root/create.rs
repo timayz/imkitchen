@@ -1,7 +1,7 @@
 use evento::Executor;
 use imkitchen_shared::recipe::Created;
 
-impl<E: Executor> super::Command<E> {
+impl<E: Executor> super::Module<E> {
     pub async fn create(
         &self,
         request_by: impl Into<String>,

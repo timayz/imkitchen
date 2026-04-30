@@ -7,7 +7,7 @@ async fn test_delete() -> anyhow::Result<()> {
     let dir = TempDir::new()?;
     let path = dir.child("db.sqlite3");
     let state = helpers::setup_test_state(path).await?;
-    let cmd = imkitchen_core::recipe::Command::new(state);
+    let cmd = imkitchen_core::recipe::Module::new(state);
 
     let recipe_id = cmd.create("john", "john_doe".to_owned()).await?;
     let recipe = cmd.load(&recipe_id).await?.unwrap();

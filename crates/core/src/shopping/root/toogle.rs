@@ -5,7 +5,7 @@ pub struct ToggleInput {
     pub name: String,
 }
 
-impl<E: Executor> super::Command<E> {
+impl<E: Executor> super::Module<E> {
     pub async fn toggle(
         &self,
         input: ToggleInput,

@@ -10,7 +10,7 @@ pub struct ReplyCommentInput {
     pub owner_name: String,
 }
 
-impl<E: Executor> super::Command<E> {
+impl<E: Executor> super::Module<E> {
     pub async fn reply(
         &self,
         recipe_id: impl Into<String>,

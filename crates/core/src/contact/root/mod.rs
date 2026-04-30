@@ -13,9 +13,9 @@ mod submit_form;
 pub use submit_form::SubmitFormInput;
 
 #[derive(Clone)]
-pub struct Command<E: Executor>(imkitchen_shared::State<E>);
+pub struct Module<E: Executor>(imkitchen_shared::State<E>);
 
-impl<E: Executor> Deref for Command<E> {
+impl<E: Executor> Deref for Module<E> {
     type Target = imkitchen_shared::State<E>;
 
     fn deref(&self) -> &Self::Target {
@@ -23,7 +23,7 @@ impl<E: Executor> Deref for Command<E> {
     }
 }
 
-impl<E: Executor> Command<E> {
+impl<E: Executor> Module<E> {
     pub fn new(state: imkitchen_shared::State<E>) -> Self {
         Self(state)
     }

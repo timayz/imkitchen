@@ -17,7 +17,7 @@ pub struct LoginInput {
     pub user_agent: String,
 }
 
-impl<E: Executor> super::Command<E> {
+impl<E: Executor> super::Module<E> {
     pub async fn login(&self, input: LoginInput) -> imkitchen_shared::Result<(String, String)> {
         input.validate()?;
 

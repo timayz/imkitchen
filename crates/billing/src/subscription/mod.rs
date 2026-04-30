@@ -13,9 +13,9 @@ use std::ops::Deref;
 use time::{Month, OffsetDateTime};
 
 #[derive(Clone)]
-pub struct Command<E: Executor>(pub imkitchen_shared::State<E>);
+pub struct Module<E: Executor>(pub imkitchen_shared::State<E>);
 
-impl<E: Executor> Deref for Command<E> {
+impl<E: Executor> Deref for Module<E> {
     type Target = imkitchen_shared::State<E>;
 
     fn deref(&self) -> &Self::Target {
@@ -23,7 +23,7 @@ impl<E: Executor> Deref for Command<E> {
     }
 }
 
-impl<E: Executor> Command<E> {
+impl<E: Executor> Module<E> {
     pub async fn load(&self, id: impl Into<String>) -> anyhow::Result<Subscription> {
         let id = id.into();
         create_projection::<E>(&id)

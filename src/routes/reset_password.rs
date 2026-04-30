@@ -36,7 +36,7 @@ pub async fn action(
     Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {
     crate::try_response!(
-        app.identity_cmd.password.request(RequestInput {
+        app.identity.password.request(RequestInput {
             email: input.email.to_owned(),
             lang: template.preferred_language_iso.to_owned(),
             host: app.config.server.url,
@@ -86,7 +86,7 @@ pub async fn new_action(
     }
 
     crate::try_response!(
-        app.identity_cmd.password.reset(ResetInput {
+        app.identity.password.reset(ResetInput {
             id,
             password: input.password
         }),

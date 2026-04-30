@@ -84,7 +84,7 @@ pub async fn action(
 
     for recipe in recipes {
         match app
-            .recipe_cmd
+            .core.recipe
             .import(
                 imkitchen_core::recipe::ImportInput {
                     recipe_type: recipe.recipe_type,
@@ -131,7 +131,7 @@ pub async fn status(
     user: AuthUser,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    match app.recipe_query.find_user(&id).await {
+    match app.core.recipe.find_user(&id).await {
         Ok(Some(_)) => template
             .render(ImportingStatusTemplate { id: None })
             .into_response(),

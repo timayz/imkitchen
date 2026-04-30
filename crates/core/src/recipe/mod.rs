@@ -6,5 +6,4 @@ pub mod rating;
 
 mod root;
 
-pub use query::Query;
 pub use root::*;

@@ -31,7 +31,7 @@ pub struct UpdateInput {
     pub advance_prep: String,
 }
 
-impl<E: Executor + Clone> super::Command<E> {
+impl<E: Executor + Clone> super::Module<E> {
     pub async fn update(
         &self,
         input: UpdateInput,

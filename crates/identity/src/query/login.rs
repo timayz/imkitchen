@@ -11,8 +11,8 @@ use imkitchen_shared::user::{
     subscription::{LifePremiumToggled, StripePaymentIntentSucceeded, Subscription},
 };
 
-impl<E: Executor> super::Query<E> {
-    pub async fn login(&self, id: impl Into<String>) -> Result<Option<LoginView>, anyhow::Error> {
+impl<E: Executor> crate::Module<E> {
+    pub async fn find_login(&self, id: impl Into<String>) -> Result<Option<LoginView>, anyhow::Error> {
         let id = id.into();
 
         create_projection(&id)
