@@ -82,15 +82,15 @@
         <span class="text-5xl float-anim-delay">🥘</span>
         <span class="text-6xl float-anim-delay-2">🍲</span>
       </div>
-      <h1 class="text-3xl font-bold mb-3">{{ "Welcome to Kitchen Mode!"|t }}</h1>
-      <p class="text-gray-600 text-lg max-w-md mx-auto">
+      <h1 class="text-2xl sm:text-3xl font-bold mb-3">{{ "Welcome to Kitchen Mode!"|t }}</h1>
+      <p class="text-gray-600 text-base sm:text-lg max-w-md mx-auto">
         {{ "Kitchen Mode guides you step-by-step through your daily meal plan. But first, you need at least one"|t }}
         <strong class="text-orange-600">{{ "main course recipe"|t }}</strong> {{ "to get started."|t }}
       </p>
     </div>
 
     <!-- Empty state card -->
-    <div class="bg-white rounded-xl shadow-lg p-8 mb-8 fade-in-up-delay">
+    <div class="bg-white rounded-xl shadow-lg p-4 sm:p-8 mb-8 fade-in-up-delay">
       <div class="text-center">
         <div class="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <svg class="w-10 h-10 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -103,24 +103,24 @@
         </p>
 
         <!-- Progress indicator -->
-        <div class="flex items-center justify-center gap-3 mb-6">
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6">
           <div class="flex items-center gap-2">
             <div
-              class="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold">1
+              class="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0">1
             </div>
             <span class="text-sm font-semibold text-orange-600">{{ "Add a recipe"|t }}</span>
           </div>
-          <div class="w-8 h-0.5 bg-gray-300"></div>
+          <div class="hidden sm:block w-8 h-0.5 bg-gray-300"></div>
           <div class="flex items-center gap-2">
             <div
-              class="w-8 h-8 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center text-sm font-bold">
+              class="w-8 h-8 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center text-sm font-bold shrink-0">
               2</div>
             <span class="text-sm text-gray-400">{{ "Plan your menu"|t }}</span>
           </div>
-          <div class="w-8 h-0.5 bg-gray-300"></div>
+          <div class="hidden sm:block w-8 h-0.5 bg-gray-300"></div>
           <div class="flex items-center gap-2">
             <div
-              class="w-8 h-8 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center text-sm font-bold">
+              class="w-8 h-8 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center text-sm font-bold shrink-0">
               3</div>
             <span class="text-sm text-gray-400">{{ "Start cooking!"|t }}</span>
           </div>
@@ -131,7 +131,7 @@
     <!-- Action: Get Started -->
     <div class="text-center fade-in-up-delay-2">
       <button onclick="showStep(2)"
-        class="px-8 py-4 bg-green-600 text-white font-bold text-lg rounded-xl hover:bg-green-700 transition shadow-lg shadow-green-200">
+        class="w-full sm:w-auto px-8 py-4 bg-green-600 text-white font-bold text-lg rounded-xl hover:bg-green-700 transition shadow-lg shadow-green-200">
         {{ "Let's Add Your First Recipe"|t }}
       </button>
       <p class="text-sm text-gray-400 mt-3">{{ "It only takes a minute"|t }}</p>
@@ -141,14 +141,14 @@
   <!-- Step 2: Choose how to add a recipe (hidden by default) -->
   <div id="step-2" class="onboarding-step hidden">
     <div class="text-center mb-8">
-      <h1 class="text-3xl font-bold mb-3">{{ "How would you like to add a recipe?"|t }}</h1>
-      <p class="text-gray-600 text-lg">{{ "Choose the option that works best for you"|t }}</p>
+      <h1 class="text-2xl sm:text-3xl font-bold mb-3">{{ "How would you like to add a recipe?"|t }}</h1>
+      <p class="text-gray-600 text-base sm:text-lg">{{ "Choose the option that works best for you"|t }}</p>
     </div>
 
     <div class="grid md:grid-cols-3 gap-6 mb-8">
       <!-- Option 1: Create your own -->
       <button ts-req="/settings/recipes/create" ts-req-method="post"
-        class="group bg-white rounded-xl shadow-lg p-6 hover:shadow-xl hover:border-green-500 border-2 border-transparent transition text-center">
+        class="group bg-white rounded-xl shadow-lg p-4 sm:p-6 hover:shadow-xl hover:border-green-500 border-2 border-transparent transition text-center">
         <div
           class="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-green-200 transition">
           <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -168,7 +168,7 @@
 
       <!-- Option 2: Import -->
       <a href="/recipes/import"
-        class="group bg-white rounded-xl shadow-lg p-6 hover:shadow-xl hover:border-blue-500 border-2 border-transparent transition text-center">
+        class="group bg-white rounded-xl shadow-lg p-4 sm:p-6 hover:shadow-xl hover:border-blue-500 border-2 border-transparent transition text-center">
         <div
           class="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-200 transition">
           <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -186,7 +186,7 @@
 
       <!-- Option 3: Browse Community -->
       <button onclick="showStep(3)"
-        class="group bg-white rounded-xl shadow-lg p-6 hover:shadow-xl hover:border-orange-500 border-2 border-transparent transition text-center w-full">
+        class="group bg-white rounded-xl shadow-lg p-4 sm:p-6 hover:shadow-xl hover:border-orange-500 border-2 border-transparent transition text-center w-full">
         <div
           class="w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-orange-200 transition">
           <svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -219,15 +219,15 @@
   <!-- Step 3: Community recipes preview with Save explanation -->
   <div id="step-3" class="onboarding-step hidden">
     <div class="text-center mb-8">
-      <h1 class="text-3xl font-bold mb-3">{{ "Save a Recipe from the Community"|t }}</h1>
-      <p class="text-gray-600 text-lg max-w-lg mx-auto">
+      <h1 class="text-2xl sm:text-3xl font-bold mb-3">{{ "Save a Recipe from the Community"|t }}</h1>
+      <p class="text-gray-600 text-base sm:text-lg max-w-lg mx-auto">
         {{ "Browse community recipes, open one you like, and click the"|t }} <strong class="text-green-600">{{ "Save"|t
           }}</strong> {{ "button to add it to your collection."|t }}
       </p>
     </div>
 
     <!-- How it works explanation -->
-    <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+    <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-8">
       <h3 class="font-bold text-lg mb-4">{{ "How it works"|t }}</h3>
       <div class="space-y-4">
         <!-- Step A -->
