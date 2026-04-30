@@ -1,17 +1,8 @@
-mod assets;
-mod auth;
 mod cli;
-mod config;
-mod language;
-mod middleware;
-mod routes;
-mod template;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use tracing_subscriber::{EnvFilter, Layer, layer::SubscriberExt, util::SubscriberInitExt};
-
-rust_i18n::i18n!("locales", fallback = "en");
 
 /// imkitchen - Intelligent Meal Planning
 #[derive(Parser)]
@@ -44,17 +35,12 @@ enum Commands {
     Reset,
 }
 
-#[derive(Subcommand)]
-enum User {
-    MadeAdmin,
-}
-
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     // Load configuration
-    let config = crate::config::Config::load(cli.config.clone())?;
+    let config = imkitchen_web_shared::config::Config::load(cli.config.clone())?;
 
     let env_filter = EnvFilter::new(&config.monitoring.log_level);
     if config.monitoring.log_json {

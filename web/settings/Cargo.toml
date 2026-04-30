@@ -1,0 +1,21 @@
+[package]
+name = "imkitchen-web-settings"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+axum = { workspace = true }
+axum-extra = { workspace = true }
+askama = { workspace = true }
+serde = { workspace = true }
+tracing = { workspace = true }
+strum = { workspace = true }
+evento = { workspace = true }
+async-stripe-core = { workspace = true }
+async-stripe-payment = { workspace = true }
+async-stripe-shared = { workspace = true }
+imkitchen-core = { path = "../../crates/core", version = "0.1.0" }
+imkitchen-types = { path = "../../crates/types", version = "0.15.8" }
+imkitchen-identity = { path = "../../crates/identity", version = "0.1.0" }
+imkitchen-billing = { path = "../../crates/billing", version = "0.1.0" }
+imkitchen-web-shared = { path = "../shared", version = "0.1.0" }

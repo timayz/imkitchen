@@ -13,4 +13,5 @@ serde = { workspace = true }
 rust-i18n = { workspace = true }
 time = { workspace = true }
 evento.workspace = true
-imkitchen-shared = { path = "../shared", version = "0.15.8" }
+imkitchen-types = { path = "../types", version = "0.15.8" }
+imkitchen-identity = { path = "../identity", version = "0.1.0" }

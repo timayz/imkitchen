@@ -1,0 +1,63 @@
+use crate::types::password::ResetCompleted;
+use argon2::{
+    Argon2, PasswordHasher,
+    password_hash::{SaltString, rand_core::OsRng},
+};
+use evento::{Executor, ProjectionAggregator};
+use time::OffsetDateTime;
+use validator::Validate;
+
+use crate::repository::{self};
+
+#[derive(Validate)]
+pub struct ResetInput {
+    pub id: String,
+    #[validate(length(min = 8, max = 20))]
+    pub password: String,
+}
+
+impl<E: Executor> super::Module<E> {
+    pub async fn reset(&self, input: ResetInput) -> imkitchen_core::Result<()> {
+        input.validate()?;
+
+        let Some(password) = self.load(&input.id).await? else {
+            imkitchen_core::not_found!("password");
+        };
+        let now: u64 = OffsetDateTime::now_utc().unix_timestamp().try_into()?;
+
+        if now > password.expire_at {
+            imkitchen_core::user!("token expired");
+        }
+
+        if password.completed {
+            imkitchen_core::user!("has already been reset");
+        }
+
+        let salt = SaltString::generate(&mut OsRng);
+        let argon2 = Argon2::default();
+        let password_hash = argon2
+            .hash_password(input.password.as_bytes(), &salt)?
+            .to_string();
+
+        repository::update(
+            &self.write_db,
+            repository::UpdateInput {
+                id: password.user_id.to_owned(),
+                username: None,
+                password: Some(password_hash),
+                role: None,
+                state: None,
+            },
+        )
+        .await?;
+
+        password
+            .aggregator()?
+            .event(&ResetCompleted)
+            .requested_by(&password.user_id)
+            .commit(&self.executor)
+            .await?;
+
+        Ok(())
+    }
+}

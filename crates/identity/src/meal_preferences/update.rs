@@ -1,0 +1,39 @@
+use evento::{Executor, ProjectionAggregator};
+use imkitchen_types::meal_preferences::Changed;
+use imkitchen_types::recipe::DietaryRestriction;
+use validator::Validate;
+
+#[derive(Validate)]
+pub struct UpdateInput {
+    #[validate(range(min = 1))]
+    pub household_size: u16,
+    pub dietary_restrictions: Vec<DietaryRestriction>,
+    #[validate(range(min = 0.1, max = 1.0))]
+    pub cuisine_variety_weight: f32,
+}
+
+impl<E: Executor> super::Module<E> {
+    pub async fn update(
+        &self,
+        id: impl Into<String>,
+        input: UpdateInput,
+    ) -> imkitchen_core::Result<()> {
+        input.validate()?;
+
+        let id = id.into();
+        let preferences = self.load(&id).await?;
+
+        preferences
+            .aggregator()?
+            .event(&Changed {
+                dietary_restrictions: input.dietary_restrictions,
+                household_size: input.household_size,
+                cuisine_variety_weight: input.cuisine_variety_weight,
+            })
+            .requested_by(id)
+            .commit(&self.executor)
+            .await?;
+
+        Ok(())
+    }
+}

@@ -1,0 +1,259 @@
+use sea_query::Iden;
+
+#[derive(Iden, Clone)]
+pub enum UserAdmin {
+    Table,
+    Id,
+    Cursor,
+    Email,
+    FullName,
+    Username,
+    State,
+    Role,
+    SubscriptionExpireAt,
+    TotalRecipesCount,
+    SharedRecipesCount,
+    TotalActiveCount,
+    CreatedAt,
+}
+
+#[derive(Iden, Clone)]
+pub enum UserAdminFts {
+    Table,
+    Id,
+    Email,
+    Username,
+    Rank,
+}
+
+pub(crate) mod m0001 {
+    use sea_query::{
+        ColumnDef, Index, IndexCreateStatement, IndexDropStatement, Table, TableCreateStatement,
+        TableDropStatement,
+    };
+
+    use super::UserAdmin;
+
+    pub struct CreateTable;
+
+    fn create_table() -> TableCreateStatement {
+        Table::create()
+            .table(UserAdmin::Table)
+            .col(
+                ColumnDef::new(UserAdmin::Id)
+                    .string()
+                    .not_null()
+                    .string_len(26)
+                    .primary_key(),
+            )
+            .col(ColumnDef::new(UserAdmin::Cursor).string().not_null())
+            .col(
+                ColumnDef::new(UserAdmin::Email)
+                    .string()
+                    .not_null()
+                    .string_len(320),
+            )
+            .col(ColumnDef::new(UserAdmin::FullName).string().string_len(25))
+            .col(ColumnDef::new(UserAdmin::Username).string().string_len(15))
+            .col(
+                ColumnDef::new(UserAdmin::State)
+                    .string()
+                    .not_null()
+                    .string_len(15),
+            )
+            .col(
+                ColumnDef::new(UserAdmin::Role)
+                    .string()
+                    .not_null()
+                    .string_len(15),
+            )
+            .col(
+                ColumnDef::new(UserAdmin::TotalRecipesCount)
+                    .integer()
+                    .not_null()
+                    .default(0),
+            )
+            .col(
+                ColumnDef::new(UserAdmin::SharedRecipesCount)
+                    .integer()
+                    .not_null()
+                    .default(0),
+            )
+            .col(
+                ColumnDef::new(UserAdmin::TotalActiveCount)
+                    .integer()
+                    .not_null()
+                    .default(0),
+            )
+            .col(
+                ColumnDef::new(UserAdmin::SubscriptionExpireAt)
+                    .big_integer()
+                    .default(0),
+            )
+            .col(
+                ColumnDef::new(UserAdmin::CreatedAt)
+                    .big_integer()
+                    .not_null(),
+            )
+            .to_owned()
+    }
+
+    fn drop_table() -> TableDropStatement {
+        Table::drop().table(UserAdmin::Table).to_owned()
+    }
+
+    #[async_trait::async_trait]
+    impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateTable {
+        async fn up(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            let statement = create_table().to_string(sea_query::SqliteQueryBuilder);
+            sqlx::query(&statement).execute(connection).await?;
+
+            Ok(())
+        }
+
+        async fn down(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            let statement = drop_table().to_string(sea_query::SqliteQueryBuilder);
+            sqlx::query(&statement).execute(connection).await?;
+
+            Ok(())
+        }
+    }
+
+    pub struct CreateIdx1;
+
+    fn create_idx_1() -> IndexCreateStatement {
+        Index::create()
+            .name("idx_user_list_D0nmGG")
+            .table(UserAdmin::Table)
+            .col(UserAdmin::State)
+            .to_owned()
+    }
+
+    fn drop_idx_1() -> IndexDropStatement {
+        Index::drop()
+            .name("idx_user_list_D0nmGG")
+            .table(UserAdmin::Table)
+            .to_owned()
+    }
+
+    #[async_trait::async_trait]
+    impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateIdx1 {
+        async fn up(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            let statement = create_idx_1().to_string(sea_query::SqliteQueryBuilder);
+            sqlx::query(&statement).execute(connection).await?;
+
+            Ok(())
+        }
+
+        async fn down(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            let statement = drop_idx_1().to_string(sea_query::SqliteQueryBuilder);
+            sqlx::query(&statement).execute(connection).await?;
+
+            Ok(())
+        }
+    }
+
+    pub struct CreateIdx2;
+
+    fn create_idx_2() -> IndexCreateStatement {
+        Index::create()
+            .name("idx_user_list_rmnGYD")
+            .table(UserAdmin::Table)
+            .col(UserAdmin::Role)
+            .to_owned()
+    }
+
+    fn drop_idx_2() -> IndexDropStatement {
+        Index::drop()
+            .name("idx_user_list_rmnGYD")
+            .table(UserAdmin::Table)
+            .to_owned()
+    }
+
+    #[async_trait::async_trait]
+    impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateIdx2 {
+        async fn up(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            let statement = create_idx_2().to_string(sea_query::SqliteQueryBuilder);
+            sqlx::query(&statement).execute(connection).await?;
+
+            Ok(())
+        }
+
+        async fn down(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            let statement = drop_idx_2().to_string(sea_query::SqliteQueryBuilder);
+            sqlx::query(&statement).execute(connection).await?;
+
+            Ok(())
+        }
+    }
+
+    pub struct CreateFTSTable;
+
+    #[async_trait::async_trait]
+    impl sqlx_migrator::Operation<sqlx::Sqlite> for CreateFTSTable {
+        async fn up(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            sqlx::query(
+                r#"
+CREATE VIRTUAL TABLE user_admin_fts USING fts5(id, email, username);
+
+CREATE TRIGGER user_admin_insert AFTER
+INSERT ON user_admin BEGIN
+INSERT INTO user_admin_fts (id, email, username)
+VALUES (new.id, new.email, COALESCE(new.username, '')); END;
+
+CREATE TRIGGER user_admin_update AFTER
+UPDATE on user_admin BEGIN
+UPDATE user_admin_fts SET username = COALESCE(new.username, '')
+WHERE user_admin_fts = new.id; END;
+
+CREATE TRIGGER user_admin_delete AFTER
+DELETE ON user_admin BEGIN
+DELETE FROM user_admin_fts WHERE id = old.id; END;
+            "#,
+            )
+            .execute(connection)
+            .await?;
+
+            Ok(())
+        }
+
+        async fn down(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            sqlx::query(
+                r#"
+DROP TRIGGER user_admin_insert;
+DROP TRIGGER user_admin_update;
+DROP TRIGGER user_admin_delete;
+DROP TABLE user_admin_fts;
+            "#,
+            )
+            .execute(connection)
+            .await?;
+
+            Ok(())
+        }
+    }
+}

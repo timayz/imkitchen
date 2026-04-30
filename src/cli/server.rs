@@ -1,29 +1,29 @@
 use anyhow::Result;
+use axum::response::IntoResponse;
+use axum::routing::get;
 use imkitchen_notification::EmailService;
+use imkitchen_web_shared::AppState;
+use imkitchen_web_shared::template::{NotFoundTemplate, Template};
 use tower_http::compression::CompressionLayer;
 use tower_http::trace::TraceLayer;
 
-use crate::routes::AppState;
+async fn fallback(template: Template) -> impl IntoResponse {
+    template.render(NotFoundTemplate)
+}
 
 pub async fn serve(
-    config: crate::config::Config,
+    config: imkitchen_web_shared::config::Config,
     host_override: Option<String>,
     port_override: Option<u16>,
 ) -> Result<()> {
     tracing::info!("Starting imkitchen server...");
 
-    // Use CLI overrides if provided, otherwise use config
     let host = host_override.unwrap_or(config.server.host.to_owned());
     let port = port_override.unwrap_or(config.server.port);
 
     let email_service = EmailService::new(&config.email)?;
 
-    // Set up database connection pools with optimized PRAGMAs
-    // Write pool: 1 connection for evento and all write operations
     let write_pool = imkitchen::create_write_pool(&config.database.url).await?;
-
-    // Read pool: Multiple connections for read-only queries
-    // Use CPU cores as a reasonable default for max connections
     let read_pool_size = config.database.max_connections;
     let read_pool = imkitchen::create_read_pool(&config.database.url, read_pool_size).await?;
 
@@ -33,7 +33,6 @@ pub async fn serve(
     )
         .into();
 
-    // Start background notification worker
     tracing::info!("Starting evento subscriptions...");
 
     let sub_notification_contact = imkitchen_notification::contact::subscription()
@@ -46,88 +45,88 @@ pub async fn serve(
         .start(&executor)
         .await?;
 
-    let sub_user_query = imkitchen_user::query_subscription()
+    let sub_user_query = imkitchen_identity::query_subscription()
         .data((read_pool.clone(), write_pool.clone()))
         .start(&executor)
         .await?;
 
-    let sub_user_shed = imkitchen_user::shed_subscription()
+    let sub_user_shed = imkitchen_billing::shed_subscription()
         .data(write_pool.clone())
         .start(&executor)
         .await?;
 
-    let sub_user_global_stat = imkitchen_user::global_stat::subscription()
+    let sub_user_global_stat = imkitchen_identity::global_stat::subscription()
         .data(write_pool.clone())
         .start(&executor)
         .await?;
 
-    let sub_user_invoice = imkitchen_user::invoice::subscription()
+    let sub_user_invoice = imkitchen_billing::invoice::subscription()
         .data((read_pool.clone(), write_pool.clone()))
         .data(config.email.clone())
         .start(&executor)
         .await?;
 
-    let sub_contact_query = imkitchen_contact::query_subscription()
+    let sub_contact_query = imkitchen_core::contact::query_subscription()
         .data((read_pool.clone(), write_pool.clone()))
         .start(&executor)
         .await?;
 
-    let sub_contact_global_stat = imkitchen_contact::global_stat::subscription()
+    let sub_contact_global_stat = imkitchen_core::contact::global_stat::subscription()
         .data(write_pool.clone())
         .start(&executor)
         .await?;
 
-    let sub_recipe_command = imkitchen_recipe::subscription()
+    let sub_recipe_command = imkitchen_core::recipe::subscription()
         .data((read_pool.clone(), write_pool.clone()))
         .start(&executor)
         .await?;
 
-    let sub_recipe_query = imkitchen_recipe::query::subscription()
+    let sub_recipe_query = imkitchen_core::recipe::query::subscription()
         .data((read_pool.clone(), write_pool.clone()))
         .start(&executor)
         .await?;
 
-    let sub_recipe_comment = imkitchen_recipe::query::comment::subscription()
+    let sub_recipe_comment = imkitchen_core::recipe::query::comment::subscription()
         .data(write_pool.clone())
         .start(&executor)
         .await?;
 
-    let sub_recipe_user = imkitchen_recipe::query::user::subscription()
+    let sub_recipe_user = imkitchen_core::recipe::query::user::subscription()
         .data(write_pool.clone())
         .start(&executor)
         .await?;
 
-    let sub_recipe_user_fts = imkitchen_recipe::query::user_fts::subscription()
+    let sub_recipe_user_fts = imkitchen_core::recipe::query::user_fts::subscription()
         .data(write_pool.clone())
         .start(&executor)
         .await?;
 
-    let sub_recipe_thumbnail = imkitchen_recipe::query::thumbnail::subscription()
+    let sub_recipe_thumbnail = imkitchen_core::recipe::query::thumbnail::subscription()
         .data(write_pool.clone())
         .start(&executor)
         .await?;
 
-    let sub_recipe_user_stat = imkitchen_recipe::query::user_stat::subscription()
+    let sub_recipe_user_stat = imkitchen_core::recipe::query::user_stat::subscription()
         .data(write_pool.clone())
         .start(&executor)
         .await?;
 
-    let sub_mealplan_cmd = imkitchen_mealplan::subscription()
+    let sub_mealplan_cmd = imkitchen_core::mealplan::subscription()
         .data(write_pool.clone())
         .start(&executor)
         .await?;
 
-    let sub_mealplan_slot = imkitchen_mealplan::slot::subscription()
+    let sub_mealplan_slot = imkitchen_core::mealplan::slot::subscription()
         .data(write_pool.clone())
         .start(&executor)
         .await?;
 
-    let sub_shopping = imkitchen_shopping::subscription()
+    let sub_shopping = imkitchen_core::shopping::subscription()
         .data(write_pool.clone())
         .start(&executor)
         .await?;
 
-    let sub_shopping_list = imkitchen_shopping::list::subscription()
+    let sub_shopping_list = imkitchen_core::shopping::list::subscription()
         .data(write_pool.clone())
         .start(&executor)
         .await?;
@@ -136,53 +135,59 @@ pub async fn serve(
         .request_strategy(stripe::RequestStrategy::ExponentialBackoff(4))
         .build()?;
 
-    let mut sched_user =
-        imkitchen_user::scheduler(&executor, &read_pool, &write_pool, &stripe).await?;
-    sched_user.start().await?;
+    let mut sched_billing =
+        imkitchen_billing::scheduler(&executor, &read_pool, &write_pool, &stripe).await?;
+    sched_billing.start().await?;
 
-    let state = imkitchen_shared::State {
+    let state = imkitchen_core::State {
         executor: executor.clone(),
         read_db: read_pool.clone(),
         write_db: write_pool.clone(),
     };
 
-    let state = AppState {
+    let app_state = AppState {
         config,
         stripe,
-        user_cmd: imkitchen_user::Command::new(state.clone()),
-        user_query: imkitchen_user::Query(state.clone()),
-        shopping_cmd: imkitchen_shopping::Command::new(state.clone()),
-        shopping_query: imkitchen_shopping::Query(state.clone()),
-        recipe_cmd: imkitchen_recipe::Command::new(state.clone()),
-        recipe_query: imkitchen_recipe::Query(state.clone()),
-        mealplan_cmd: imkitchen_mealplan::Command::new(state.clone()),
-        mealplan_query: imkitchen_mealplan::Query(state.clone()),
-        contact_cmd: imkitchen_contact::Command::new(state.clone()),
-        contact_query: imkitchen_contact::Query(state.clone()),
+        identity: imkitchen_identity::Module::new(state.clone()),
+        billing: imkitchen_billing::Billing::new(state.clone()),
+        core: imkitchen_core::Core::new(state.clone()),
         inner: state,
     };
 
-    // Build router with health checks using read pool state
-    let app = crate::routes::router(state)
-        // Health check endpoints (no auth required)
-        // Add cache control middleware (no-cache for HTML, cache for static files)
+    let app = axum::Router::new()
+        .route("/health", get(imkitchen_web_public::routes::health::health))
+        .route(
+            "/_test-error",
+            get(imkitchen_web_public::routes::health::test_error),
+        )
+        .route("/ready", get(imkitchen_web_public::routes::health::ready))
+        .with_state(app_state.read_db.clone())
+        .merge(imkitchen_web_kitchen::routes())
+        .merge(imkitchen_web_menu::routes())
+        .merge(imkitchen_web_recipe::routes())
+        .merge(imkitchen_web_grocery::routes())
+        .merge(imkitchen_web_settings::routes())
+        .merge(imkitchen_web_public::routes())
+        .merge(imkitchen_web_admin::routes())
+        .fallback(fallback)
+        .nest_service(
+            "/static",
+            imkitchen_web_shared::assets::AssetsService::new(),
+        )
+        .with_state(app_state)
         .layer(axum::middleware::from_fn(
-            crate::middleware::cache_control_middleware,
+            imkitchen_web_shared::middleware::cache_control_middleware,
         ))
-        // Minify HTML responses before compression
         .layer(axum::middleware::map_response(
-            crate::middleware::minify_html_middleware,
+            imkitchen_web_shared::middleware::minify_html_middleware,
         ))
-        // Enable Brotli and Gzip compression for all text assets (Story 5.9)
         .layer(CompressionLayer::new().br(true).gzip(true))
         .layer(TraceLayer::new_for_http());
 
-    // Start server
     let addr = format!("{}:{}", host, port);
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     tracing::info!("Server listening on {}", listener.local_addr()?);
 
-    // Set up graceful shutdown signal handler
     let shutdown_signal = async {
         let ctrl_c = async {
             tokio::signal::ctrl_c()
@@ -213,14 +218,12 @@ pub async fn serve(
         tracing::info!("Starting graceful shutdown...");
     };
 
-    // Serve with graceful shutdown
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal)
         .await?;
 
     tracing::info!("Shutting down evento projections...");
 
-    // Shutdown all projection subscriptions
     let results = futures::future::join_all(vec![
         sub_notification_contact.shutdown(),
         sub_notification_user.shutdown(),
@@ -250,11 +253,10 @@ pub async fn serve(
         }
     }
 
-    sched_user.shutdown().await?;
+    sched_billing.shutdown().await?;
 
     tracing::info!("All projections shut down successfully");
 
-    // Close database pools
     tracing::info!("Closing database pools...");
     read_pool.close().await;
     write_pool.close().await;
