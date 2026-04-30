@@ -29,7 +29,7 @@ spec:
           image: timayz/imkitchen:{{ .Values.image.tag }}
           imagePullPolicy: IfNotPresent
           command:
-            ["imkitchen", "migrate", "--config", "/etc/imkitchen/config.toml"]
+            ["imkitchen", {{ if .Values.database.reset }}"reset"{{ else }}"migrate"{{ end }}, "--config", "/etc/imkitchen/config.toml"]
           volumeMounts:
             - name: config
               readOnly: true

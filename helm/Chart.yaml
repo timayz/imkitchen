@@ -2,8 +2,8 @@ apiVersion: v2
 name: imkitchen
 description: Helm chart for the imkitchen server
 type: application
-version: 0.1.8
-appVersion: "v0.15.4"
+version: 0.1.9
+appVersion: "0.15.9"
 home: https://imkitchen.app
 sources:
   - https://github.com/timayz/imkitchen

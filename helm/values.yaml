@@ -1,6 +1,6 @@
 # Container image.
 image:
-  tag: "0.15.5"
+  tag: "0.15.9"
 
 # Extra environment variables injected into the container, for
 # store credentials that live in plain text.
@@ -9,6 +9,9 @@ extraEnv: {}
 # Extra environment variables injected from the managed Secret.
 # Use this for anything sensitive (database passwords, S3 keys, etc.).
 extraSecretEnv: {}
+
+database:
+  reset: false
 
 hostname: "imkitchen.app"
 
