@@ -2533,7 +2533,7 @@ checksum = "40fac9d56ed6437b198fddba683305e8e2d651aa42647f00f5ae542e7f5c94a2"
 
 [[package]]
 name = "imkitchen"
-version = "0.15.9"
+version = "0.15.10"
 dependencies = [
  "anyhow",
  "async-stripe",
@@ -2563,7 +2563,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-billing"
-version = "0.15.9"
+version = "0.15.10"
 dependencies = [
  "anyhow",
  "async-stripe",
@@ -2585,7 +2585,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-core"
-version = "0.15.9"
+version = "0.15.10"
 dependencies = [
  "anyhow",
  "argon2",
@@ -2612,7 +2612,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-db"
-version = "0.15.9"
+version = "0.15.10"
 dependencies = [
  "async-trait",
  "evento",
@@ -2623,7 +2623,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-identity"
-version = "0.15.9"
+version = "0.15.10"
 dependencies = [
  "anyhow",
  "argon2",
@@ -2648,7 +2648,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-notification"
-version = "0.15.9"
+version = "0.15.10"
 dependencies = [
  "anyhow",
  "askama",
@@ -2664,7 +2664,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-types"
-version = "0.15.9"
+version = "0.15.10"
 dependencies = [
  "bitcode",
  "evento",
@@ -2676,7 +2676,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-admin"
-version = "0.15.9"
+version = "0.15.10"
 dependencies = [
  "askama",
  "axum",
@@ -2693,7 +2693,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-grocery"
-version = "0.15.9"
+version = "0.15.10"
 dependencies = [
  "askama",
  "axum",
@@ -2707,7 +2707,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-kitchen"
-version = "0.15.9"
+version = "0.15.10"
 dependencies = [
  "askama",
  "axum",
@@ -2721,7 +2721,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-menu"
-version = "0.15.9"
+version = "0.15.10"
 dependencies = [
  "askama",
  "axum",
@@ -2733,7 +2733,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-public"
-version = "0.15.9"
+version = "0.15.10"
 dependencies = [
  "anyhow",
  "askama",
@@ -2755,7 +2755,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-recipe"
-version = "0.15.9"
+version = "0.15.10"
 dependencies = [
  "askama",
  "axum",
@@ -2773,7 +2773,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-settings"
-version = "0.15.9"
+version = "0.15.10"
 dependencies = [
  "askama",
  "async-stripe-core",
@@ -2794,7 +2794,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-shared"
-version = "0.15.9"
+version = "0.15.10"
 dependencies = [
  "anyhow",
  "askama",
