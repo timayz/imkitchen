@@ -14,5 +14,4 @@ evento = { workspace = true }
 imkitchen-core = { path = "../../crates/core", version = "0.1.0" }
 imkitchen-types = { path = "../../crates/types", version = "0.15.8" }
 imkitchen-identity = { path = "../../crates/identity", version = "0.1.0" }
-imkitchen-billing = { path = "../../crates/billing", version = "0.1.0" }
 imkitchen-web-shared = { path = "../shared", version = "0.1.0" }

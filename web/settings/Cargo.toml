@@ -11,10 +11,8 @@ serde = { workspace = true }
 tracing = { workspace = true }
 strum = { workspace = true }
 evento = { workspace = true }
-async-stripe = { workspace = true }
 async-stripe-core = { workspace = true }
 async-stripe-payment = { workspace = true }
-async-stripe-types = { workspace = true }
 async-stripe-shared = { workspace = true }
 imkitchen-core = { path = "../../crates/core", version = "0.1.0" }
 imkitchen-types = { path = "../../crates/types", version = "0.15.8" }

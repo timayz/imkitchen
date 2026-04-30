@@ -87,7 +87,6 @@ tracing-subscriber = { workspace = true }
 clap = { workspace = true }
 futures = { workspace = true }
 tower-http = { workspace = true }
-tokio-cron-scheduler = { workspace = true }
 async-stripe = { workspace = true }
 imkitchen-core = { path = "crates/core", version = "0.1.0" }
 imkitchen-identity = { path = "crates/identity", version = "0.1.0" }

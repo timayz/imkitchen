@@ -22,10 +22,7 @@ async-stripe-types.workspace = true
 serde.workspace = true
 tracing.workspace = true
 tokio-cron-scheduler.workspace = true
-imkitchen-types = { path = "../types", version = "0.15.8" }
 imkitchen-core = { path = "../core", version = "0.1.0" }
 imkitchen-db = { path = "../db", version = "0.15.8" }
 
 [dev-dependencies]
-tokio.workspace = true
-temp-dir.workspace = true
