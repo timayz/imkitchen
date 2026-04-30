@@ -3,7 +3,7 @@ use evento::{
     metadata::Event,
     subscription::{Context, SubscriptionBuilder},
 };
-use imkitchen_db::table::RecipeUserFts;
+use imkitchen_db::recipe_user::RecipeUserFts;
 use imkitchen_types::recipe::{
     BasicInformationChanged, Created, Deleted, Imported, IngredientsChanged,
 };

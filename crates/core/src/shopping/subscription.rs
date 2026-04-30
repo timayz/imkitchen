@@ -3,7 +3,8 @@ use evento::{
     metadata::Event,
     subscription::{Context, SubscriptionBuilder},
 };
-use imkitchen_db::table::{ShoppingRecipe, ShoppingSlot};
+use imkitchen_db::shopping_recipe::ShoppingRecipe;
+use imkitchen_db::shopping_slot::ShoppingSlot;
 use imkitchen_types::recipe::Ingredient;
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;

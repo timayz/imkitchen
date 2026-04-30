@@ -7,7 +7,7 @@ use evento::{
     metadata::Event,
     subscription::{Context, SubscriptionBuilder},
 };
-use imkitchen_db::table::MealPlanRecipe;
+use imkitchen_db::mealplan_recipe::MealPlanRecipe;
 use imkitchen_types::{mealplan, recipe::RecipeType};
 use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;

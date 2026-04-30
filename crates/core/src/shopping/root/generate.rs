@@ -1,5 +1,6 @@
 use evento::{Executor, ProjectionAggregator};
-use imkitchen_db::table::{ShoppingRecipe, ShoppingSlot};
+use imkitchen_db::shopping_recipe::ShoppingRecipe;
+use imkitchen_db::shopping_slot::ShoppingSlot;
 use imkitchen_types::{recipe::Ingredient, shopping::Generated};
 use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;

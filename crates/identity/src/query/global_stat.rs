@@ -5,7 +5,7 @@ use evento::{
     sql::Reader,
     subscription::{Context, SubscriptionBuilder},
 };
-use imkitchen_db::table::UserGlobalStat;
+use imkitchen_db::user_global_stat::UserGlobalStat;
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::{SqlitePool, prelude::FromRow};

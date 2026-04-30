@@ -3,7 +3,7 @@ use evento::{
     metadata::Event,
     subscription::{Context, SubscriptionBuilder},
 };
-use imkitchen_db::table::UserSubscription;
+use imkitchen_db::user_subscription::UserSubscription;
 use crate::types::subscription::{Cancelled, StripePaymentIntentSucceeded};
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;

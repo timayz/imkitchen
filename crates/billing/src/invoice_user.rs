@@ -4,7 +4,7 @@ use evento::{
     metadata::Event,
     sql::Reader,
 };
-use imkitchen_db::table::UserInvoiceUser;
+use imkitchen_db::user_invoice_user::UserInvoiceUser;
 use sea_query::{Expr, ExprTrait, OnConflict, Query as SeaQuery, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::{SqlitePool, prelude::FromRow};

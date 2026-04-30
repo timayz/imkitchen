@@ -1,7 +1,7 @@
 use evento::Executor;
 use evento::cursor::Args;
 use evento::{Aggregator, ReadAggregator};
-use imkitchen_db::table::MealPlanRecipe;
+use imkitchen_db::mealplan_recipe::MealPlanRecipe;
 use imkitchen_types::mealplan::{DaysGenerated, MealPlan, Slot, SlotRecipe};
 use imkitchen_types::recipe::{DietaryRestriction, RecipeType};
 use rand::seq::SliceRandom;

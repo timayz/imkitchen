@@ -1,4 +1,4 @@
-use imkitchen_db::table::User;
+use imkitchen_db::user::User;
 use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::{SqlitePool, prelude::FromRow};

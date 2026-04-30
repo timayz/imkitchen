@@ -3,7 +3,7 @@ use evento::{
     metadata::Event,
     subscription::{Context, SubscriptionBuilder},
 };
-use imkitchen_db::table::RecipeUserStat;
+use imkitchen_db::recipe_user_stat::RecipeUserStat;
 use imkitchen_types::recipe::{Created, Deleted, Imported, MadePrivate, SharedToCommunity};
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;

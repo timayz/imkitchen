@@ -3,7 +3,7 @@ use evento::{
     metadata::Event,
     subscription::{Context, SubscriptionBuilder},
 };
-use imkitchen_db::table::RecipeThumbnail;
+use imkitchen_db::recipe_thumbnail::RecipeThumbnail;
 use imkitchen_types::recipe::{Deleted, ThumbnailResized};
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;

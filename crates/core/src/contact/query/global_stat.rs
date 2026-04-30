@@ -3,7 +3,7 @@ use evento::{
     metadata::Event,
     subscription::{Context, SubscriptionBuilder},
 };
-use imkitchen_db::table::ContactGlobalStat;
+use imkitchen_db::contact_global_stat::ContactGlobalStat;
 use imkitchen_types::contact::{FormSubmitted, MarkedReadAndReply, Resolved};
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;

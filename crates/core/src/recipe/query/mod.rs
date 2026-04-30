@@ -9,7 +9,7 @@ use evento::{
     metadata::{Event, RawEvent},
     subscription::{Context, SubscriptionBuilder},
 };
-use imkitchen_db::table::RecipeUser;
+use imkitchen_db::recipe_user::RecipeUser;
 use imkitchen_types::comment::Replied;
 use imkitchen_types::recipe;
 use sea_query::{Expr, ExprTrait, SqliteQueryBuilder};

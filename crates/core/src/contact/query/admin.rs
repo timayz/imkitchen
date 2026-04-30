@@ -5,7 +5,7 @@ use evento::{
     metadata::Event,
     sql::Reader,
 };
-use imkitchen_db::table::{ContactAdmin, ContactAdminFts};
+use imkitchen_db::contact_admin::{ContactAdmin, ContactAdminFts};
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use serde::Deserialize;

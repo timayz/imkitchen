@@ -1,6 +1,6 @@
 use bitcode::{Decode, Encode};
 use evento::{Executor, Projection, Snapshot, metadata::Event};
-use imkitchen_db::table::UserLogin;
+use imkitchen_db::user_login::UserLogin;
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::{SqlitePool, prelude::FromRow};

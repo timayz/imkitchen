@@ -5,7 +5,7 @@ use evento::{
     sql::Reader,
     subscription::{Context, SubscriptionBuilder},
 };
-use imkitchen_db::table::{RecipeUser, RecipeUserFts};
+use imkitchen_db::recipe_user::{RecipeUser, RecipeUserFts};
 use imkitchen_types::comment;
 use imkitchen_types::rating::{LikeChecked, LikeUnchecked, UnlikeChecked, UnlikeUnchecked, Viewed};
 use imkitchen_types::recipe::{

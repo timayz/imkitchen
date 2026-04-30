@@ -5,7 +5,7 @@ use evento::{
     sql::Reader,
     subscription::{Context, SubscriptionBuilder},
 };
-use imkitchen_db::table::RecipeComment;
+use imkitchen_db::recipe_comment::RecipeComment;
 use imkitchen_types::comment::{self, Added, Replied};
 use imkitchen_types::comment_rating::{LikeChecked, LikeUnchecked, UnlikeChecked, UnlikeUnchecked};
 use sea_query::{Expr, ExprTrait, OnConflict, SqliteQueryBuilder};
