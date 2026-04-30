@@ -1,0 +1,11 @@
+pub mod about;
+pub mod assets;
+pub mod contact;
+pub mod health;
+pub mod help;
+pub mod login;
+pub mod policy;
+pub mod register;
+pub mod reset_password;
+pub mod terms;
+pub mod upgrade;

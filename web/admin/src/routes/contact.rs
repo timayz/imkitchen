@@ -1,0 +1,198 @@
+use std::str::FromStr;
+
+use axum::{
+    extract::{Path, Query, State},
+    response::IntoResponse,
+};
+use evento::cursor::{Args, Edge, ReadResult, Value};
+use imkitchen_core::contact::{
+    admin::{AdminView, FilterQuery, SortBy},
+    global_stat::GlobalStatView,
+};
+use imkitchen_types::contact::{Status, Subject};
+use serde::Deserialize;
+use strum::VariantArray;
+
+use imkitchen_web_shared::{
+    auth::AuthAdmin,
+    AppState,
+    template::{Template, filters},
+};
+
+#[derive(askama::Template)]
+#[template(path = "admin-contact.html")]
+pub struct ContactTemplate {
+    pub current_path: String,
+    pub stat: GlobalStatView,
+    pub today: u32,
+    pub contacts: ReadResult<AdminView>,
+    pub query: PageQuery,
+}
+
+impl Default for ContactTemplate {
+    fn default() -> Self {
+        Self {
+            current_path: "contact".to_owned(),
+            stat: GlobalStatView::default(),
+            contacts: ReadResult::default(),
+            today: 0,
+            query: Default::default(),
+        }
+    }
+}
+
+#[derive(Deserialize, Debug, Default, Clone)]
+pub struct PageQuery {
+    pub first: Option<u16>,
+    pub after: Option<Value>,
+    pub last: Option<u16>,
+    pub before: Option<Value>,
+    pub status: Option<String>,
+    pub subject: Option<String>,
+    pub search: Option<String>,
+    pub sort_by: Option<String>,
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn page(
+    template: Template,
+    Query(query): Query<PageQuery>,
+    State(app): State<AppState>,
+    user: AuthAdmin,
+) -> impl IntoResponse {
+    let stat = imkitchen_web_shared::try_page_response!(app.core.contact.find_global_stat_global(), template)
+        .unwrap_or_default();
+
+    let now = time::UtcDateTime::now().unix_timestamp() as u64;
+    let today_stat = imkitchen_web_shared::try_page_response!(app.core.contact.find_global_stat(now), template)
+        .unwrap_or_default();
+
+    let r_query = query.clone();
+    let subject = Subject::from_str(&query.subject.unwrap_or("".to_owned())).ok();
+    let status = Status::from_str(&query.status.unwrap_or("".to_owned())).ok();
+    let sort_by =
+        SortBy::from_str(&query.sort_by.unwrap_or("".to_owned())).unwrap_or(SortBy::MostRecent);
+    let search = if let Some("") = query.search.as_deref() {
+        None
+    } else {
+        query.search
+    };
+
+    let args = Args {
+        first: query.first,
+        after: query.after,
+        last: query.last,
+        before: query.before,
+    };
+
+    let contacts = imkitchen_web_shared::try_page_response!(
+        app.core.contact.filter_admin(FilterQuery {
+            status,
+            subject,
+            sort_by,
+            search,
+            args: args.limit(20),
+        }),
+        template
+    );
+
+    template
+        .render(ContactTemplate {
+            stat,
+            contacts,
+            query: r_query,
+            today: today_stat.today,
+            ..Default::default()
+        })
+        .into_response()
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn mark_read_and_reply(
+    template: Template,
+    Path((id,)): Path<(String,)>,
+    State(app): State<AppState>,
+    user: AuthAdmin,
+) -> impl IntoResponse {
+    imkitchen_web_shared::try_response!(app.core.contact.mark_read_and_reply(&id, &user.id), template);
+
+    let contact = imkitchen_web_shared::try_response!(anyhow_opt:
+        app.core.contact.admin(&id),
+        template
+    );
+
+    let contacts = ReadResult {
+        page_info: Default::default(),
+        edges: vec![Edge {
+            cursor: "".to_owned().into(),
+            node: contact,
+        }],
+    };
+
+    template
+        .render(ContactTemplate {
+            contacts,
+            ..Default::default()
+        })
+        .into_response()
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn resolve(
+    template: Template,
+    Path((id,)): Path<(String,)>,
+    State(app): State<AppState>,
+    user: AuthAdmin,
+) -> impl IntoResponse {
+    imkitchen_web_shared::try_response!(app.core.contact.resolve(&id, &user.id), template);
+
+    let contact = imkitchen_web_shared::try_response!(anyhow_opt:
+       app.core.contact.admin(&id),
+        template
+    );
+
+    let contacts = ReadResult {
+        page_info: Default::default(),
+        edges: vec![Edge {
+            cursor: "".to_owned().into(),
+            node: contact,
+        }],
+    };
+
+    template
+        .render(ContactTemplate {
+            contacts,
+            ..Default::default()
+        })
+        .into_response()
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn reopen(
+    template: Template,
+    Path((id,)): Path<(String,)>,
+    State(app): State<AppState>,
+    user: AuthAdmin,
+) -> impl IntoResponse {
+    imkitchen_web_shared::try_response!(app.core.contact.reopen(&id, &user.id), template);
+
+    let contact = imkitchen_web_shared::try_response!(anyhow_opt:
+        app.core.contact.admin(&id),
+        template
+    );
+
+    let contacts = ReadResult {
+        page_info: Default::default(),
+        edges: vec![Edge {
+            cursor: "".to_owned().into(),
+            node: contact,
+        }],
+    };
+
+    template
+        .render(ContactTemplate {
+            contacts,
+            ..Default::default()
+        })
+        .into_response()
+}

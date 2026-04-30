@@ -2549,18 +2549,9 @@ name = "imkitchen"
 version = "0.15.8"
 dependencies = [
  "anyhow",
- "askama",
  "async-stripe",
- "async-stripe-core",
- "async-stripe-payment",
- "async-stripe-shared",
- "async-stripe-types",
- "async-trait",
  "axum",
- "axum-extra",
- "base64",
  "clap",
- "config",
  "evento",
  "futures",
  "imkitchen-billing",
@@ -2568,24 +2559,20 @@ dependencies = [
  "imkitchen-db",
  "imkitchen-identity",
  "imkitchen-notification",
- "imkitchen-types",
- "jsonwebtoken",
- "lightningcss",
- "mime_guess",
- "minify-html",
- "oxc",
- "rust-embed",
- "rust-i18n",
- "serde",
+ "imkitchen-web-admin",
+ "imkitchen-web-grocery",
+ "imkitchen-web-kitchen",
+ "imkitchen-web-menu",
+ "imkitchen-web-public",
+ "imkitchen-web-recipe",
+ "imkitchen-web-settings",
+ "imkitchen-web-shared",
  "sqlx",
- "strum 0.28.0",
- "time",
  "tokio",
- "tower",
+ "tokio-cron-scheduler",
  "tower-http",
  "tracing",
  "tracing-subscriber",
- "world-tax",
 ]
 
 [[package]]
@@ -2704,6 +2691,164 @@ dependencies = [
  "serde_json",
  "sqlx",
  "strum 0.28.0",
+]
+
+[[package]]
+name = "imkitchen-web-admin"
+version = "0.1.0"
+dependencies = [
+ "askama",
+ "axum",
+ "evento",
+ "imkitchen-billing",
+ "imkitchen-core",
+ "imkitchen-identity",
+ "imkitchen-types",
+ "imkitchen-web-shared",
+ "serde",
+ "strum 0.28.0",
+ "time",
+ "tracing",
+]
+
+[[package]]
+name = "imkitchen-web-grocery"
+version = "0.1.0"
+dependencies = [
+ "askama",
+ "axum",
+ "axum-extra",
+ "imkitchen-core",
+ "imkitchen-types",
+ "imkitchen-web-shared",
+ "serde",
+ "tracing",
+]
+
+[[package]]
+name = "imkitchen-web-kitchen"
+version = "0.1.0"
+dependencies = [
+ "askama",
+ "axum",
+ "axum-extra",
+ "imkitchen-core",
+ "imkitchen-types",
+ "imkitchen-web-shared",
+ "time",
+ "tracing",
+]
+
+[[package]]
+name = "imkitchen-web-menu"
+version = "0.1.0"
+dependencies = [
+ "askama",
+ "axum",
+ "imkitchen-core",
+ "imkitchen-web-shared",
+ "time",
+ "tracing",
+]
+
+[[package]]
+name = "imkitchen-web-public"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "askama",
+ "async-stripe",
+ "async-stripe-core",
+ "async-stripe-payment",
+ "async-stripe-shared",
+ "async-stripe-types",
+ "axum",
+ "axum-extra",
+ "evento",
+ "imkitchen-billing",
+ "imkitchen-core",
+ "imkitchen-identity",
+ "imkitchen-types",
+ "imkitchen-web-shared",
+ "serde",
+ "sqlx",
+ "strum 0.28.0",
+ "time",
+ "tracing",
+ "world-tax",
+]
+
+[[package]]
+name = "imkitchen-web-recipe"
+version = "0.1.0"
+dependencies = [
+ "askama",
+ "axum",
+ "axum-extra",
+ "base64",
+ "evento",
+ "imkitchen-core",
+ "imkitchen-types",
+ "imkitchen-web-shared",
+ "serde",
+ "strum 0.28.0",
+ "time",
+ "tracing",
+]
+
+[[package]]
+name = "imkitchen-web-settings"
+version = "0.1.0"
+dependencies = [
+ "askama",
+ "async-stripe",
+ "async-stripe-core",
+ "async-stripe-payment",
+ "async-stripe-shared",
+ "async-stripe-types",
+ "axum",
+ "axum-extra",
+ "evento",
+ "imkitchen-billing",
+ "imkitchen-core",
+ "imkitchen-identity",
+ "imkitchen-types",
+ "imkitchen-web-shared",
+ "serde",
+ "strum 0.28.0",
+ "tracing",
+]
+
+[[package]]
+name = "imkitchen-web-shared"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "askama",
+ "async-stripe",
+ "async-trait",
+ "axum",
+ "axum-extra",
+ "base64",
+ "config",
+ "evento",
+ "imkitchen-billing",
+ "imkitchen-core",
+ "imkitchen-identity",
+ "imkitchen-notification",
+ "jsonwebtoken",
+ "lightningcss",
+ "mime_guess",
+ "minify-html",
+ "oxc",
+ "rust-embed",
+ "rust-i18n",
+ "serde",
+ "time",
+ "tokio",
+ "tower",
+ "tower-http",
+ "tracing",
 ]
 
 [[package]]
