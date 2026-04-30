@@ -1,0 +1,28 @@
+[package]
+name = "imkitchen-billing"
+version = "0.1.0"
+edition.workspace = true
+authors.workspace = true
+
+[package.metadata.cargo-machete]
+ignored = []
+
+[dependencies]
+evento.workspace = true
+anyhow.workspace = true
+bitcode.workspace = true
+sqlx = { workspace = true }
+time = { workspace = true }
+sea-query.workspace = true
+sea-query-sqlx.workspace = true
+async-stripe.workspace = true
+async-stripe-core.workspace = true
+async-stripe-shared.workspace = true
+async-stripe-types.workspace = true
+serde.workspace = true
+tracing.workspace = true
+tokio-cron-scheduler.workspace = true
+imkitchen-core = { path = "../core", version = "0.1.0" }
+imkitchen-db = { path = "../db", version = "0.15.8" }
+
+[dev-dependencies]

@@ -1,6 +1,7 @@
 [workspace]
 members = [
 	"crates/*",
+	"web/*",
 ]
 resolver = "2"
 
@@ -51,7 +52,7 @@ urlencoding = "2.1"
 base64 = "0.22"
 url = "2.5"
 minify-html = "0.18"
-oxc = { version = "0.126.0", features = ["minifier", "codegen"] }
+oxc = { version = "0.127.0", features = ["minifier", "codegen"] }
 lightningcss = { version = "1.0.0-alpha.71", default-features = false }
 ulid = "1.2"
 sea-query = { version = "1.0.0-rc.33", default-features = false, features = ["derive", "audit", "backend-sqlite"] }
@@ -78,44 +79,28 @@ ignored = []
 [dependencies]
 tokio = { workspace = true }
 axum = { workspace = true }
-rust-i18n = { workspace = true }
-axum-extra = { workspace = true }
-tower = { workspace = true }
-tower-http = { workspace = true }
-askama = { workspace = true }
 sqlx = { workspace = true }
 evento = { workspace = true }
-serde = { workspace = true }
-async-trait = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }
-base64 = { workspace = true }
 tracing-subscriber = { workspace = true }
 clap = { workspace = true }
-config = { workspace = true }
-rust-embed = { workspace = true }
-mime_guess = { workspace = true }
-minify-html = { workspace = true }
-oxc = { workspace = true }
-lightningcss = { workspace = true }
-jsonwebtoken = { workspace = true }
 futures = { workspace = true }
-time = { workspace = true }
-strum = { workspace = true }
+tower-http = { workspace = true }
 async-stripe = { workspace = true }
-async-stripe-core = { workspace = true }
-async-stripe-payment = { workspace = true }
-async-stripe-types = { workspace = true }
-async-stripe-shared = { workspace = true }
-world-tax = { workspace = true }
-imkitchen-shared = { path = "crates/shared", version = "0.15.8" }
-imkitchen-contact = { path = "crates/contact", version = "0.15.8" }
-imkitchen-recipe = { path = "crates/recipe", version = "0.15.8" }
-imkitchen-mealplan = { path = "crates/mealplan", version = "0.15.8" }
-imkitchen-shopping = { path = "crates/shopping", version = "0.15.8" }
-imkitchen-user = { path = "crates/user", version = "0.15.8" }
+imkitchen-core = { path = "crates/core", version = "0.1.0" }
+imkitchen-identity = { path = "crates/identity", version = "0.1.0" }
+imkitchen-billing = { path = "crates/billing", version = "0.1.0" }
 imkitchen-db = { path = "crates/db", version = "0.15.8" }
 imkitchen-notification = { path = "crates/notification", version = "0.15.8" }
+imkitchen-web-shared = { path = "web/shared", version = "0.1.0" }
+imkitchen-web-kitchen = { path = "web/kitchen", version = "0.1.0" }
+imkitchen-web-menu = { path = "web/menu", version = "0.1.0" }
+imkitchen-web-recipe = { path = "web/recipe", version = "0.1.0" }
+imkitchen-web-grocery = { path = "web/grocery", version = "0.1.0" }
+imkitchen-web-settings = { path = "web/settings", version = "0.1.0" }
+imkitchen-web-public = { path = "web/public", version = "0.1.0" }
+imkitchen-web-admin = { path = "web/admin", version = "0.1.0" }
 
 [[bin]]
 name = "imkitchen"
