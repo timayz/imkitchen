@@ -1,7 +1,3 @@
-pub mod comment;
-pub mod comment_rating;
-pub mod favorite;
-pub mod rating;
 
 use bitcode::{Decode, Encode};
 use serde::Deserialize;

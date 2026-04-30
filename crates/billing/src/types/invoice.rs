@@ -1,7 +1,7 @@
 use bitcode::{Decode, Encode};
 use serde::Deserialize;
 
-use crate::user::subscription::{Address, PaymentDetails};
+use crate::types::subscription::{Address, PaymentDetails};
 
 #[derive(Default, Encode, Decode, Clone, Deserialize, Debug, PartialEq)]
 pub struct InvoiceAddress {

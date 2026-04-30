@@ -1,4 +1,4 @@
-use imkitchen_shared::user::{LoggedIn, Logout, MadeAdmin, UsernameChanged};
+use imkitchen_identity::types::user::{LoggedIn, Logout, MadeAdmin, UsernameChanged};
 use temp_dir::TempDir;
 mod helpers;
 

@@ -5,7 +5,7 @@ use axum::{
     response::IntoResponse,
 };
 use imkitchen_core::contact::SubmitFormInput;
-use imkitchen_shared::contact::Subject;
+use imkitchen_types::contact::Subject;
 use serde::Deserialize;
 use strum::VariantArray;
 

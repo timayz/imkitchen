@@ -47,7 +47,7 @@ pub async fn upload(
 ) -> impl IntoResponse {
     let Some(field) = crate::try_response!(anyhow: multipart.next_field(), template) else {
         crate::try_response!(sync:
-            Err(imkitchen_shared::Error::User("No file provided".into()))
+            Err(imkitchen_core::Error::User("No file provided".into()))
         , template)
     };
     let content_type = field.content_type().unwrap_or("").to_string();
@@ -56,7 +56,7 @@ pub async fn upload(
     let allowed_types = ["image/png", "image/jpeg", "image/webp"];
     if !allowed_types.contains(&content_type.as_str()) {
         return crate::try_response!(sync:
-            Err(imkitchen_shared::Error::User(format!("Invalid file type: {content_type}"))),
+            Err(imkitchen_core::Error::User(format!("Invalid file type: {content_type}"))),
             template
         );
     }

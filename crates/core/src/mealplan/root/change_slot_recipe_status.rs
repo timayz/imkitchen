@@ -1,7 +1,7 @@
 use evento::Executor;
 use evento::cursor::Args;
 use evento::{Aggregator, ReadAggregator};
-use imkitchen_shared::mealplan::{DaySlotStatus, MealPlan, SlotRecipeStatusChanged};
+use imkitchen_types::mealplan::{DaySlotStatus, MealPlan, SlotRecipeStatusChanged};
 
 pub struct ChangeSlotRecipeStatus {
     pub user_id: String,
@@ -14,7 +14,7 @@ impl<E: Executor> super::Module<E> {
     pub async fn change_slot_recipe_status(
         &self,
         input: ChangeSlotRecipeStatus,
-    ) -> imkitchen_shared::Result<()> {
+    ) -> crate::Result<()> {
         let last_event = self
             .executor
             .read(
@@ -28,7 +28,7 @@ impl<E: Executor> super::Module<E> {
             .await?;
 
         let Some(version) = last_event.edges.first().map(|e| e.node.version) else {
-            imkitchen_shared::not_found!("mealplan not found");
+            crate::not_found!("mealplan not found");
         };
 
         evento::aggregator(&input.user_id)

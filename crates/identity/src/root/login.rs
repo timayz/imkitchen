@@ -1,6 +1,6 @@
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use evento::{Executor, ProjectionAggregator};
-use imkitchen_shared::user::{LoggedIn, Logout, State};
+use crate::types::user::{LoggedIn, Logout, State};
 use ulid::Ulid;
 use validator::Validate;
 
@@ -18,17 +18,17 @@ pub struct LoginInput {
 }
 
 impl<E: Executor> super::Module<E> {
-    pub async fn login(&self, input: LoginInput) -> imkitchen_shared::Result<(String, String)> {
+    pub async fn login(&self, input: LoginInput) -> imkitchen_core::Result<(String, String)> {
         input.validate()?;
 
         let Some(user_row) =
             repository::find(&self.read_db, repository::FindType::Email(input.email)).await?
         else {
-            imkitchen_shared::user!("Invalid email or password. Please try again.");
+            imkitchen_core::user!("Invalid email or password. Please try again.");
         };
 
         let Some(user) = self.load(&user_row.id).await? else {
-            imkitchen_shared::server!("User not found in login");
+            imkitchen_core::server!("User not found in login");
         };
 
         let parsed_hash = PasswordHash::new(&user_row.password)?;
@@ -38,11 +38,11 @@ impl<E: Executor> super::Module<E> {
             .verify_password(input.password.as_bytes(), &parsed_hash)
             .is_err()
         {
-            imkitchen_shared::user!("Invalid email or password. Please try again.");
+            imkitchen_core::user!("Invalid email or password. Please try again.");
         }
 
         if user.state == State::Suspended {
-            imkitchen_shared::user!("Account suspended");
+            imkitchen_core::user!("Account suspended");
         }
 
         let access_id = Ulid::new().to_string();
@@ -64,9 +64,9 @@ impl<E: Executor> super::Module<E> {
         &self,
         id: impl Into<String>,
         access_id: String,
-    ) -> imkitchen_shared::Result<String> {
+    ) -> imkitchen_core::Result<String> {
         let Some(user) = self.load(id).await? else {
-            imkitchen_shared::not_found!("user in logout");
+            imkitchen_core::not_found!("user in logout");
         };
 
         user.aggregator()?

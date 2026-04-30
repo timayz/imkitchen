@@ -1,5 +1,6 @@
 pub mod meal_preferences;
 pub mod password;
+pub mod types;
 
 pub(crate) mod query;
 pub(crate) mod repository;

@@ -1,5 +1,5 @@
 use evento::Executor;
-use imkitchen_shared::contact::{FormSubmitted, Subject};
+use imkitchen_types::contact::{FormSubmitted, Subject};
 use validator::Validate;
 
 #[derive(Validate)]
@@ -16,7 +16,7 @@ pub struct SubmitFormInput {
 }
 
 impl<E: Executor + Clone> super::Module<E> {
-    pub async fn submit_form(&self, input: SubmitFormInput) -> imkitchen_shared::Result<String> {
+    pub async fn submit_form(&self, input: SubmitFormInput) -> crate::Result<String> {
         input.validate()?;
 
         Ok(evento::create()

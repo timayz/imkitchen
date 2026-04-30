@@ -1,14 +1,14 @@
 use evento::{Executor, ProjectionAggregator};
-use imkitchen_shared::user::{State, Suspended};
+use crate::types::user::{State, Suspended};
 
 impl<E: Executor> super::Module<E> {
     pub async fn suspend(
         &self,
         id: impl Into<String>,
         request_by: impl Into<String>,
-    ) -> imkitchen_shared::Result<()> {
+    ) -> imkitchen_core::Result<()> {
         let Some(user) = self.load(id).await? else {
-            imkitchen_shared::not_found!("user");
+            imkitchen_core::not_found!("user");
         };
 
         if user.state == State::Suspended {

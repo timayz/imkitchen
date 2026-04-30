@@ -8,14 +8,14 @@ pub use request::*;
 pub use reset::*;
 
 use evento::{Executor, Projection, metadata::Event};
-use imkitchen_shared::user::password::{self, ResetCompleted, ResetRequested};
+use crate::types::password::{self, ResetCompleted, ResetRequested};
 use time::OffsetDateTime;
 
 #[derive(Clone)]
-pub struct Module<E: Executor>(pub(crate) imkitchen_shared::State<E>);
+pub struct Module<E: Executor>(pub(crate) imkitchen_core::State<E>);
 
 impl<E: Executor> Deref for Module<E> {
-    type Target = imkitchen_shared::State<E>;
+    type Target = imkitchen_core::State<E>;
 
     fn deref(&self) -> &Self::Target {
         &self.0

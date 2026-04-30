@@ -4,7 +4,7 @@ use sea_query_sqlx::SqlxBinder;
 use sqlx::{SqlitePool, prelude::FromRow};
 use time::OffsetDateTime;
 
-use imkitchen_shared::user::{Role, State};
+use crate::types::user::{Role, State};
 
 #[derive(FromRow)]
 pub struct UserRow {
@@ -23,7 +23,7 @@ pub enum FindType {
 pub(crate) async fn find(
     pool: &SqlitePool,
     arg_type: FindType,
-) -> imkitchen_shared::Result<Option<UserRow>> {
+) -> imkitchen_core::Result<Option<UserRow>> {
     let mut statement = Query::select()
         .columns([
             User::Id,
@@ -53,7 +53,7 @@ pub(super) async fn create(
     id: String,
     email: String,
     password: String,
-) -> imkitchen_shared::Result<()> {
+) -> imkitchen_core::Result<()> {
     let now = OffsetDateTime::now_utc().unix_timestamp();
     let statement = Query::insert()
         .into_table(User::Table)
@@ -90,7 +90,7 @@ pub struct UpdateInput {
     pub state: Option<State>,
 }
 
-pub async fn update(pool: &SqlitePool, input: UpdateInput) -> imkitchen_shared::Result<()> {
+pub async fn update(pool: &SqlitePool, input: UpdateInput) -> imkitchen_core::Result<()> {
     let mut statement = Query::update()
         .table(User::Table)
         .and_where(Expr::col(User::Id).eq(input.id))
@@ -121,7 +121,7 @@ pub async fn update(pool: &SqlitePool, input: UpdateInput) -> imkitchen_shared::
 pub async fn is_username_exists(
     pool: &SqlitePool,
     username: impl Into<String>,
-) -> imkitchen_shared::Result<bool> {
+) -> imkitchen_core::Result<bool> {
     let statement = Query::select()
         .column(User::Id)
         .from(User::Table)

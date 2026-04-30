@@ -1,5 +1,5 @@
 use evento::Executor;
-use imkitchen_shared::recipe::comment::Added;
+use imkitchen_types::comment::Added;
 use validator::Validate;
 
 #[derive(Validate)]
@@ -15,7 +15,7 @@ impl<E: Executor> super::Module<E> {
         id: impl Into<String>,
         user_id: impl Into<String>,
         input: AddCommentInput,
-    ) -> imkitchen_shared::Result<()> {
+    ) -> crate::Result<()> {
         input.validate()?;
 
         let recipe_id = id.into();

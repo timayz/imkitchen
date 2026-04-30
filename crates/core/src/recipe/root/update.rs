@@ -2,7 +2,7 @@ use evento::{Executor, ProjectionAggregator};
 use sha3::{Digest, Sha3_224};
 use validator::Validate;
 
-use imkitchen_shared::recipe::{
+use imkitchen_types::recipe::{
     AdvancePrepChanged, BasicInformationChanged, CuisineType, CuisineTypeChanged,
     DietaryRestriction, DietaryRestrictionsChanged, Ingredient, IngredientsChanged, Instruction,
     InstructionsChanged, MainCourseOptionsChanged, RecipeType, RecipeTypeChanged,
@@ -36,16 +36,16 @@ impl<E: Executor + Clone> super::Module<E> {
         &self,
         input: UpdateInput,
         request_by: impl Into<String>,
-    ) -> imkitchen_shared::Result<()> {
+    ) -> crate::Result<()> {
         input.validate()?;
 
         let Some(recipe) = self.load(&input.id).await? else {
-            imkitchen_shared::not_found!("recipe");
+            crate::not_found!("recipe");
         };
 
         let request_by = request_by.into();
         if recipe.owner_id != request_by {
-            imkitchen_shared::forbidden!("not owner of recipe");
+            crate::forbidden!("not owner of recipe");
         }
 
         let mut builder = recipe.aggregator()?.requested_by(request_by).to_owned();

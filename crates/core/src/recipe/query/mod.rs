@@ -10,7 +10,8 @@ use evento::{
     subscription::{Context, SubscriptionBuilder},
 };
 use imkitchen_db::table::RecipeUser;
-use imkitchen_shared::recipe::{self, comment::Replied};
+use imkitchen_types::comment::Replied;
+use imkitchen_types::recipe;
 use sea_query::{Expr, ExprTrait, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::SqlitePool;
@@ -45,7 +46,7 @@ async fn handle_recipe_all<E: Executor>(
 #[evento::subscription]
 async fn handle_comment_added<E: Executor>(
     context: &Context<'_, E>,
-    event: Event<recipe::comment::Added>,
+    event: Event<imkitchen_types::comment::Added>,
 ) -> anyhow::Result<()> {
     let (r, w) = context.extract::<(SqlitePool, SqlitePool)>();
     comment::load(

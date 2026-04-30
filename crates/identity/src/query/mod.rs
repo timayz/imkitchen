@@ -3,7 +3,7 @@ use evento::{
     metadata::RawEvent,
     subscription::{Context, SubscriptionBuilder},
 };
-use imkitchen_shared::user::Registered;
+use crate::types::user::Registered;
 use sqlx::SqlitePool;
 
 pub mod admin;

@@ -6,16 +6,16 @@ pub use generate::Generate;
 pub use toogle::*;
 
 use evento::{Executor, Projection, ProjectionAggregator, metadata::Event};
-use imkitchen_shared::shopping::{self, Checked, Generated, Unchecked};
+use imkitchen_types::shopping::{self, Checked, Generated, Unchecked};
 use std::{collections::HashSet, ops::Deref};
 
 #[derive(Clone)]
 pub struct Module<E: Executor> {
-    state: imkitchen_shared::State<E>,
+    state: crate::State<E>,
 }
 
 impl<E: Executor> Deref for Module<E> {
-    type Target = imkitchen_shared::State<E>;
+    type Target = crate::State<E>;
 
     fn deref(&self) -> &Self::Target {
         &self.state
@@ -23,9 +23,9 @@ impl<E: Executor> Deref for Module<E> {
 }
 
 impl<E: Executor> Module<E> {
-    pub fn new(state: imkitchen_shared::State<E>) -> Self
+    pub fn new(state: crate::State<E>) -> Self
     where
-        imkitchen_shared::State<E>: Clone,
+        crate::State<E>: Clone,
     {
         Self { state }
     }

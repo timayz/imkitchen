@@ -4,7 +4,7 @@ use evento::{
     subscription::{Context, SubscriptionBuilder},
 };
 use imkitchen_db::table::{MealPlanRecipe, MealPlanSlot};
-use imkitchen_shared::mealplan::{DaySlotRecipe, DaysGenerated, SlotRecipeStatusChanged};
+use imkitchen_types::mealplan::{DaySlotRecipe, DaysGenerated, SlotRecipeStatusChanged};
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::prelude::FromRow;

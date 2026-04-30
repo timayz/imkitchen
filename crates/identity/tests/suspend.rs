@@ -1,4 +1,4 @@
-use imkitchen_shared::user::{Role, State};
+use imkitchen_identity::types::user::{Role, State};
 use temp_dir::TempDir;
 
 mod helpers;

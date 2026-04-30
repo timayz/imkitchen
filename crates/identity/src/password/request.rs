@@ -1,5 +1,5 @@
 use evento::Executor;
-use imkitchen_shared::user::password::ResetRequested;
+use crate::types::password::ResetRequested;
 use validator::Validate;
 
 use crate::repository::FindType;
@@ -13,7 +13,7 @@ pub struct RequestInput {
 }
 
 impl<E: Executor> super::Module<E> {
-    pub async fn request(&self, input: RequestInput) -> imkitchen_shared::Result<Option<String>> {
+    pub async fn request(&self, input: RequestInput) -> imkitchen_core::Result<Option<String>> {
         input.validate()?;
 
         let Some(user) =

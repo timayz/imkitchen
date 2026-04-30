@@ -3,7 +3,7 @@ use argon2::{
     password_hash::{SaltString, rand_core::OsRng},
 };
 use evento::{Executor, ProjectionAggregator};
-use imkitchen_shared::user::password::ResetCompleted;
+use crate::types::password::ResetCompleted;
 use time::OffsetDateTime;
 use validator::Validate;
 
@@ -17,20 +17,20 @@ pub struct ResetInput {
 }
 
 impl<E: Executor> super::Module<E> {
-    pub async fn reset(&self, input: ResetInput) -> imkitchen_shared::Result<()> {
+    pub async fn reset(&self, input: ResetInput) -> imkitchen_core::Result<()> {
         input.validate()?;
 
         let Some(password) = self.load(&input.id).await? else {
-            imkitchen_shared::not_found!("password");
+            imkitchen_core::not_found!("password");
         };
         let now: u64 = OffsetDateTime::now_utc().unix_timestamp().try_into()?;
 
         if now > password.expire_at {
-            imkitchen_shared::user!("token expired");
+            imkitchen_core::user!("token expired");
         }
 
         if password.completed {
-            imkitchen_shared::user!("has already been reset");
+            imkitchen_core::user!("has already been reset");
         }
 
         let salt = SaltString::generate(&mut OsRng);

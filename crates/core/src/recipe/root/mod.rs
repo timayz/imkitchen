@@ -5,7 +5,7 @@ use evento::{
     subscription::{Context, SubscriptionBuilder},
 };
 use image::imageops::FilterType;
-use imkitchen_shared::recipe::{
+use imkitchen_types::recipe::{
     self, AdvancePrepChanged, BasicInformationChanged, Created, CuisineType, CuisineTypeChanged,
     Deleted, DietaryRestrictionsChanged, Imported, IngredientsChanged, InstructionsChanged,
     MadePrivate, MainCourseOptionsChanged, RecipeType, RecipeTypeChanged, SharedToCommunity,
@@ -28,7 +28,7 @@ pub use update::UpdateInput;
 
 #[derive(Clone)]
 pub struct Module<E: Executor> {
-    state: imkitchen_shared::State<E>,
+    state: crate::State<E>,
     pub rating: crate::recipe::rating::Module<E>,
     pub favorite: crate::recipe::favorite::Module<E>,
     pub comment: crate::recipe::comment::Module<E>,
@@ -36,7 +36,7 @@ pub struct Module<E: Executor> {
 }
 
 impl<E: Executor> Deref for Module<E> {
-    type Target = imkitchen_shared::State<E>;
+    type Target = crate::State<E>;
 
     fn deref(&self) -> &Self::Target {
         &self.state
@@ -44,9 +44,9 @@ impl<E: Executor> Deref for Module<E> {
 }
 
 impl<E: Executor> Module<E> {
-    pub fn new(state: imkitchen_shared::State<E>) -> Self
+    pub fn new(state: crate::State<E>) -> Self
     where
-        imkitchen_shared::State<E>: Clone,
+        crate::State<E>: Clone,
     {
         Self {
             rating: crate::recipe::rating::Module(state.clone()),

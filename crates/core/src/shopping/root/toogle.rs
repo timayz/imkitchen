@@ -1,5 +1,5 @@
 use evento::{Executor, ProjectionAggregator};
-use imkitchen_shared::shopping::{Checked, Unchecked};
+use imkitchen_types::shopping::{Checked, Unchecked};
 
 pub struct ToggleInput {
     pub name: String,
@@ -10,14 +10,14 @@ impl<E: Executor> super::Module<E> {
         &self,
         input: ToggleInput,
         request_by: impl Into<String>,
-    ) -> imkitchen_shared::Result<()> {
+    ) -> crate::Result<()> {
         let request_by = request_by.into();
         let Some(shopping) = self.load(&request_by).await? else {
-            imkitchen_shared::not_found!("shopping in toogle");
+            crate::not_found!("shopping in toogle");
         };
 
         if !shopping.ingredients.contains(&input.name) {
-            imkitchen_shared::user!("ingredient not found");
+            crate::user!("ingredient not found");
         }
 
         let checked = shopping.checked.contains(&input.name);

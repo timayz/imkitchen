@@ -3,17 +3,17 @@ mod reply;
 
 use bitcode::{Decode, Encode};
 use evento::{Executor, Projection, ProjectionAggregator, metadata::Event};
-use imkitchen_shared::recipe::comment::{self, Added, Replied};
+use imkitchen_types::comment::{self, Added, Replied};
 use std::ops::Deref;
 
 pub use add::AddCommentInput;
 pub use reply::ReplyCommentInput;
 
 #[derive(Clone)]
-pub struct Module<E: Executor>(pub(crate) imkitchen_shared::State<E>);
+pub struct Module<E: Executor>(pub(crate) crate::State<E>);
 
 impl<E: Executor> Deref for Module<E> {
-    type Target = imkitchen_shared::State<E>;
+    type Target = crate::State<E>;
 
     fn deref(&self) -> &Self::Target {
         &self.0

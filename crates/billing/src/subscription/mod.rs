@@ -8,15 +8,15 @@ mod update_stripe_setup_intent_status;
 
 use bitcode::{Decode, Encode};
 use evento::{Executor, Projection, metadata::Event};
-use imkitchen_shared::user::subscription::{self, Address, PaymentDetails};
+use crate::types::subscription::{self, Address, PaymentDetails};
 use std::ops::Deref;
 use time::{Month, OffsetDateTime};
 
 #[derive(Clone)]
-pub struct Module<E: Executor>(pub imkitchen_shared::State<E>);
+pub struct Module<E: Executor>(pub imkitchen_core::State<E>);
 
 impl<E: Executor> Deref for Module<E> {
-    type Target = imkitchen_shared::State<E>;
+    type Target = imkitchen_core::State<E>;
 
     fn deref(&self) -> &Self::Target {
         &self.0

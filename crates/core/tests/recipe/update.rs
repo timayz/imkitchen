@@ -1,5 +1,5 @@
 use imkitchen_core::recipe::UpdateInput;
-use imkitchen_shared::recipe::{
+use imkitchen_types::recipe::{
     CuisineType, DietaryRestriction, Ingredient, IngredientUnit, Instruction, RecipeType,
 };
 use temp_dir::TempDir;

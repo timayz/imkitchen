@@ -4,7 +4,7 @@ use evento::{
     subscription::{Context, SubscriptionBuilder},
 };
 use imkitchen_db::table::RecipeUserFts;
-use imkitchen_shared::recipe::{
+use imkitchen_types::recipe::{
     BasicInformationChanged, Created, Deleted, Imported, IngredientsChanged,
 };
 use sea_query::{Expr, Query, SqliteQueryBuilder};

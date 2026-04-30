@@ -1,5 +1,5 @@
 use evento::{Executor, ProjectionAggregator};
-use imkitchen_shared::user::subscription::StripePaymentIntentSucceeded;
+use crate::types::subscription::StripePaymentIntentSucceeded;
 use stripe_shared::{PaymentIntent, PaymentIntentStatus};
 use stripe_types::Expandable;
 
@@ -8,7 +8,7 @@ impl<E: Executor> super::Module<E> {
         &self,
         intent: impl Into<PaymentIntent>,
         request_by: impl Into<String>,
-    ) -> imkitchen_shared::Result<()> {
+    ) -> imkitchen_core::Result<()> {
         let request_by = request_by.into();
         let subscription = self.load(&request_by).await?;
         let intent = intent.into();
@@ -21,21 +21,21 @@ impl<E: Executor> super::Module<E> {
             let months = match details.plan.as_str() {
                 "monthly" => 1,
                 "annual" => 12,
-                plan => imkitchen_shared::server!("unrecognized subscription plan {plan}"),
+                plan => imkitchen_core::server!("unrecognized subscription plan {plan}"),
             };
 
             let expire_at = super::add_months(intent.created, months);
 
             let Some(name) = method.billing_details.name.to_owned() else {
-                imkitchen_shared::user!("name is missing from payment intent");
+                imkitchen_core::user!("name is missing from payment intent");
             };
 
             let Some(email) = subscription.email.to_owned() else {
-                imkitchen_shared::user!("email is missing from subscription");
+                imkitchen_core::user!("email is missing from subscription");
             };
 
             let Some(address) = method.billing_details.address.to_owned() else {
-                imkitchen_shared::user!("address is missing from payment intent");
+                imkitchen_core::user!("address is missing from payment intent");
             };
 
             subscription

@@ -1,5 +1,5 @@
 use evento::{Executor, ProjectionAggregator};
-use imkitchen_shared::user::UsernameChanged;
+use crate::types::user::UsernameChanged;
 use regex::Regex;
 use std::sync::LazyLock;
 use validator::Validate;
@@ -19,22 +19,22 @@ impl<E: Executor> super::Module<E> {
         &self,
         id: impl Into<String>,
         username: String,
-    ) -> imkitchen_shared::Result<()> {
+    ) -> imkitchen_core::Result<()> {
         let input = SetUsernameInput { username };
         input.validate()?;
 
         let Some(user) =
             repository::find(&self.read_db, repository::FindType::Id(id.into())).await?
         else {
-            imkitchen_shared::not_found!("user not found");
+            imkitchen_core::not_found!("user not found");
         };
 
         if user.username.is_some() {
-            imkitchen_shared::user!("Username has already been set");
+            imkitchen_core::user!("Username has already been set");
         }
 
         if repository::is_username_exists(&self.read_db, &input.username).await? {
-            imkitchen_shared::user!("Username already used");
+            imkitchen_core::user!("Username already used");
         }
 
         repository::update(
@@ -50,7 +50,7 @@ impl<E: Executor> super::Module<E> {
         .await?;
 
         let Some(user) = self.load(&user.id).await? else {
-            imkitchen_shared::server!("user in set_username");
+            imkitchen_core::server!("user in set_username");
         };
 
         user.aggregator()?

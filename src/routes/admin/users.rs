@@ -5,7 +5,7 @@ use axum::{
     response::IntoResponse,
 };
 use evento::cursor::{Args, Edge, ReadResult, Value};
-use imkitchen_shared::user::{Role, State as UserState};
+use imkitchen_identity::types::user::{Role, State as UserState};
 use imkitchen_identity::{
     admin::{AdminView, FilterQuery, UserSortBy},
     global_stat::{FilterQuery as FilterQueryStat, GlobalStatView},

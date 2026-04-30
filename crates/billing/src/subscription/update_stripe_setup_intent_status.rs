@@ -1,5 +1,5 @@
 use evento::{Executor, ProjectionAggregator};
-use imkitchen_shared::user::subscription::StripeSetupIntentSucceeded;
+use crate::types::subscription::StripeSetupIntentSucceeded;
 use stripe_shared::{SetupIntent, SetupIntentStatus};
 use stripe_types::Expandable;
 
@@ -8,7 +8,7 @@ impl<E: Executor> super::Module<E> {
         &self,
         intent: impl Into<SetupIntent>,
         request_by: impl Into<String>,
-    ) -> imkitchen_shared::Result<()> {
+    ) -> imkitchen_core::Result<()> {
         let request_by = request_by.into();
         let subscription = self.load(&request_by).await?;
         let intent = intent.into();

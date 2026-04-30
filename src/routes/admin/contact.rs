@@ -9,7 +9,7 @@ use imkitchen_core::contact::{
     admin::{AdminView, FilterQuery, SortBy},
     global_stat::GlobalStatView,
 };
-use imkitchen_shared::contact::{Status, Subject};
+use imkitchen_types::contact::{Status, Subject};
 use serde::Deserialize;
 use strum::VariantArray;
 

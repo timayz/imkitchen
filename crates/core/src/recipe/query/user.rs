@@ -6,12 +6,13 @@ use evento::{
     subscription::{Context, SubscriptionBuilder},
 };
 use imkitchen_db::table::{RecipeUser, RecipeUserFts};
-use imkitchen_shared::recipe::{
+use imkitchen_types::comment;
+use imkitchen_types::rating::{LikeChecked, LikeUnchecked, UnlikeChecked, UnlikeUnchecked, Viewed};
+use imkitchen_types::recipe::{
     AdvancePrepChanged, BasicInformationChanged, Created, CuisineType, CuisineTypeChanged, Deleted,
     DietaryRestriction, DietaryRestrictionsChanged, Imported, Ingredient, IngredientsChanged,
     Instruction, InstructionsChanged, MadePrivate, MainCourseOptionsChanged, Recipe, RecipeType,
-    RecipeTypeChanged, SharedToCommunity, ThumbnailResized, comment,
-    rating::{LikeChecked, LikeUnchecked, UnlikeChecked, UnlikeUnchecked, Viewed},
+    RecipeTypeChanged, SharedToCommunity, ThumbnailResized,
 };
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;

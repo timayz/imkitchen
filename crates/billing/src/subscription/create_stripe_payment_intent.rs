@@ -1,5 +1,5 @@
 use evento::{Executor, ProjectionAggregator};
-use imkitchen_shared::user::subscription::{PaymentDetails, StripePaymentIntentCreated};
+use crate::types::subscription::{PaymentDetails, StripePaymentIntentCreated};
 
 impl<E: Executor> super::Module<E> {
     pub async fn create_stripe_payment_intent(
@@ -8,7 +8,7 @@ impl<E: Executor> super::Module<E> {
         email: impl Into<String>,
         request_by: impl Into<String>,
         details: PaymentDetails,
-    ) -> imkitchen_shared::Result<()> {
+    ) -> imkitchen_core::Result<()> {
         let request_by = request_by.into();
         let email = email.into();
         let subscription = self.load(&request_by).await?;

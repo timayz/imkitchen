@@ -140,7 +140,7 @@ pub async fn serve(
         imkitchen_billing::scheduler(&executor, &read_pool, &write_pool, &stripe).await?;
     sched_billing.start().await?;
 
-    let state = imkitchen_shared::State {
+    let state = imkitchen_core::State {
         executor: executor.clone(),
         read_db: read_pool.clone(),
         write_db: write_pool.clone(),

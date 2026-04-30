@@ -10,13 +10,13 @@ use sea_query_sqlx::SqlxBinder;
 use sqlx::{SqlitePool, prelude::FromRow};
 use std::ops::Deref;
 
-use imkitchen_shared::user::invoice::{self, Created, InvoiceAddress};
+use crate::types::invoice::{self, Created, InvoiceAddress};
 
 #[derive(Clone)]
-pub struct Module<E: Executor>(pub imkitchen_shared::State<E>);
+pub struct Module<E: Executor>(pub imkitchen_core::State<E>);
 
 impl<E: Executor> Deref for Module<E> {
-    type Target = imkitchen_shared::State<E>;
+    type Target = imkitchen_core::State<E>;
 
     fn deref(&self) -> &Self::Target {
         &self.0

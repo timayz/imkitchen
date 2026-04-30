@@ -16,7 +16,7 @@ use imkitchen_core::recipe::{
     },
     rating,
 };
-use imkitchen_shared::recipe::{IngredientUnitFormat, RecipeType};
+use imkitchen_types::recipe::{IngredientUnitFormat, RecipeType};
 use serde::Deserialize;
 use std::str::FromStr;
 
@@ -427,7 +427,7 @@ pub async fn check_in(
 
     if !recipe.is_shared {
         crate::try_response!(sync:
-            Err(imkitchen_shared::Error::NotFound("recipe".to_owned())
+            Err(imkitchen_core::Error::NotFound("recipe".to_owned())
         ), template);
     }
 
@@ -455,7 +455,7 @@ pub async fn check_like(
 
     if !recipe.is_shared {
         crate::try_response!(sync:
-            Err(imkitchen_shared::Error::NotFound("recipe".to_owned())
+            Err(imkitchen_core::Error::NotFound("recipe".to_owned())
         ), template);
     }
 
@@ -483,7 +483,7 @@ pub async fn uncheck_like(
 
     if !recipe.is_shared {
         crate::try_response!(sync:
-            Err(imkitchen_shared::Error::NotFound("recipe".to_owned())
+            Err(imkitchen_core::Error::NotFound("recipe".to_owned())
         ), template);
     }
 
@@ -511,7 +511,7 @@ pub async fn check_unlike(
 
     if !recipe.is_shared {
         crate::try_response!(sync:
-            Err(imkitchen_shared::Error::NotFound("recipe".to_owned())
+            Err(imkitchen_core::Error::NotFound("recipe".to_owned())
         ), template);
     }
 
@@ -539,7 +539,7 @@ pub async fn uncheck_unlike(
 
     if !recipe.is_shared {
         crate::try_response!(sync:
-            Err(imkitchen_shared::Error::NotFound("recipe".to_owned())
+            Err(imkitchen_core::Error::NotFound("recipe".to_owned())
         ), template);
     }
 
@@ -577,7 +577,7 @@ pub async fn save(
 
     if !recipe.is_shared {
         crate::try_response!(sync:
-            Err(imkitchen_shared::Error::NotFound("recipe".to_owned())
+            Err(imkitchen_core::Error::NotFound("recipe".to_owned())
         ), template);
     }
 
@@ -912,7 +912,7 @@ pub async fn comment_check_like(
 
     if !recipe.is_shared {
         crate::try_response!(sync:
-            Err(imkitchen_shared::Error::NotFound("recipe".to_owned())
+            Err(imkitchen_core::Error::NotFound("recipe".to_owned())
         ), template);
     }
 
@@ -950,7 +950,7 @@ pub async fn comment_uncheck_like(
 
     if !recipe.is_shared {
         crate::try_response!(sync:
-            Err(imkitchen_shared::Error::NotFound("recipe".to_owned())
+            Err(imkitchen_core::Error::NotFound("recipe".to_owned())
         ), template);
     }
 
@@ -988,7 +988,7 @@ pub async fn comment_check_unlike(
 
     if !recipe.is_shared {
         crate::try_response!(sync:
-            Err(imkitchen_shared::Error::NotFound("recipe".to_owned())
+            Err(imkitchen_core::Error::NotFound("recipe".to_owned())
         ), template);
     }
 
@@ -1026,7 +1026,7 @@ pub async fn comment_uncheck_unlike(
 
     if !recipe.is_shared {
         crate::try_response!(sync:
-            Err(imkitchen_shared::Error::NotFound("recipe".to_owned())
+            Err(imkitchen_core::Error::NotFound("recipe".to_owned())
         ), template);
     }
 

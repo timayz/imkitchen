@@ -5,10 +5,10 @@ use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::{SqlitePool, prelude::FromRow};
 
-use imkitchen_shared::user::{
+use imkitchen_billing::types::subscription::{LifePremiumToggled, StripePaymentIntentSucceeded, Subscription};
+use crate::types::password::ResetCompleted;
+use crate::types::user::{
     Activated, LoggedIn, Logout, MadeAdmin, Role, State, Suspended, User, UsernameChanged,
-    password::ResetCompleted,
-    subscription::{LifePremiumToggled, StripePaymentIntentSucceeded, Subscription},
 };
 
 impl<E: Executor> crate::Module<E> {

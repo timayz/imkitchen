@@ -2,6 +2,7 @@ pub mod invoice;
 pub mod invoice_user;
 mod scheduler;
 pub mod subscription;
+pub mod types;
 
 pub use scheduler::{scheduler, shed_subscription};
 
@@ -14,9 +15,9 @@ pub struct Billing<E: Executor> {
 }
 
 impl<E: Executor> Billing<E> {
-    pub fn new(state: imkitchen_shared::State<E>) -> Self
+    pub fn new(state: imkitchen_core::State<E>) -> Self
     where
-        imkitchen_shared::State<E>: Clone,
+        imkitchen_core::State<E>: Clone,
     {
         Self {
             subscription: subscription::Module(state.clone()),

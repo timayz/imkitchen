@@ -1,12 +1,12 @@
 use evento::{Executor, ProjectionAggregator};
-use imkitchen_shared::recipe::rating::{LikeUnchecked, UnlikeChecked};
+use imkitchen_types::rating::{LikeUnchecked, UnlikeChecked};
 
 impl<E: Executor + Clone> super::Module<E> {
     pub async fn check_unlike(
         &self,
         id: impl Into<String>,
         user_id: impl Into<String>,
-    ) -> imkitchen_shared::Result<()> {
+    ) -> crate::Result<()> {
         let id = id.into();
         let user_id = user_id.into();
         let rating = self.load(&id, &user_id).await?;

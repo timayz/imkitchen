@@ -30,7 +30,7 @@ mod upgrade;
 
 #[derive(Clone)]
 pub struct AppState {
-    pub inner: imkitchen_shared::State<RwSqlite>,
+    pub inner: imkitchen_core::State<RwSqlite>,
     pub config: crate::config::Config,
     pub stripe: stripe::Client,
     pub identity: imkitchen_identity::Module<RwSqlite>,
@@ -39,7 +39,7 @@ pub struct AppState {
 }
 
 impl Deref for AppState {
-    type Target = imkitchen_shared::State<RwSqlite>;
+    type Target = imkitchen_core::State<RwSqlite>;
 
     fn deref(&self) -> &Self::Target {
         &self.inner

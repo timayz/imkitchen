@@ -1,5 +1,5 @@
 use evento::{Executor, ProjectionAggregator};
-use imkitchen_shared::recipe::favorite::Saved;
+use imkitchen_types::favorite::Saved;
 
 impl<E: Executor + Clone> super::Module<E> {
     pub async fn save(
@@ -7,7 +7,7 @@ impl<E: Executor + Clone> super::Module<E> {
         id: impl Into<String>,
         owner_id: impl Into<String>,
         user_id: impl Into<String>,
-    ) -> imkitchen_shared::Result<()> {
+    ) -> crate::Result<()> {
         let id = id.into();
         let user_id = user_id.into();
         let favorite = self.load(&id, &user_id).await?;

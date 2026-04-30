@@ -2,8 +2,8 @@ use evento::Executor;
 use evento::cursor::Args;
 use evento::{Aggregator, ReadAggregator};
 use imkitchen_db::table::MealPlanRecipe;
-use imkitchen_shared::mealplan::{DaysGenerated, MealPlan, Slot, SlotRecipe};
-use imkitchen_shared::recipe::{DietaryRestriction, RecipeType};
+use imkitchen_types::mealplan::{DaysGenerated, MealPlan, Slot, SlotRecipe};
+use imkitchen_types::recipe::{DietaryRestriction, RecipeType};
 use rand::seq::SliceRandom;
 use sea_query::{Expr, ExprTrait, Func, IntoColumnRef, Query, SimpleExpr, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
@@ -28,7 +28,7 @@ impl From<&Recipe> for SlotRecipe {
 
 pub struct Randomize {
     pub cuisine_variety_weight: f32,
-    pub dietary_restrictions: Vec<imkitchen_shared::recipe::DietaryRestriction>,
+    pub dietary_restrictions: Vec<imkitchen_types::recipe::DietaryRestriction>,
 }
 
 pub struct Generate {
@@ -40,7 +40,7 @@ pub struct Generate {
 }
 
 impl<E: Executor> super::Module<E> {
-    pub async fn generate(&self, input: Generate) -> imkitchen_shared::Result<()> {
+    pub async fn generate(&self, input: Generate) -> crate::Result<()> {
         let main_course_recipes = match input.randomize.as_ref() {
             Some(opts) => {
                 self.random(
@@ -58,7 +58,7 @@ impl<E: Executor> super::Module<E> {
         };
 
         if main_course_recipes.is_empty() {
-            imkitchen_shared::user!("No main course found");
+            crate::user!("No main course found");
         }
 
         let last_event = self
@@ -167,7 +167,7 @@ impl<E: Executor> super::Module<E> {
         }
 
         if slots.is_empty() {
-            imkitchen_shared::user!("No slots generated");
+            crate::user!("No slots generated");
         }
 
         builder.event(&DaysGenerated {
@@ -185,7 +185,7 @@ impl<E: Executor> super::Module<E> {
         &self,
         id: impl Into<String>,
         recipe_type: RecipeType,
-    ) -> imkitchen_shared::Result<Vec<Recipe>> {
+    ) -> crate::Result<Vec<Recipe>> {
         let id = id.into();
 
         let statement = Query::select()
@@ -219,9 +219,9 @@ impl<E: Executor> super::Module<E> {
         recipe_type: RecipeType,
         weight: f32,
         dietary_restrictions: Vec<DietaryRestriction>,
-    ) -> imkitchen_shared::Result<Vec<Recipe>> {
+    ) -> crate::Result<Vec<Recipe>> {
         if weight < 0.1 {
-            imkitchen_shared::user!("weight must be greater than or equal to 0.1");
+            crate::user!("weight must be greater than or equal to 0.1");
         }
 
         let id = id.into();

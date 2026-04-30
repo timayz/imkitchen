@@ -5,16 +5,16 @@ mod uncheck_unlike;
 
 use bitcode::{Decode, Encode};
 use evento::{Executor, Projection, ProjectionAggregator, metadata::Event};
-use imkitchen_shared::recipe::comment_rating::{
+use imkitchen_types::comment_rating::{
     self, LikeChecked, LikeUnchecked, UnlikeChecked, UnlikeUnchecked,
 };
 use std::ops::Deref;
 
 #[derive(Clone)]
-pub struct Module<E: Executor>(pub(crate) imkitchen_shared::State<E>);
+pub struct Module<E: Executor>(pub(crate) crate::State<E>);
 
 impl<E: Executor> Deref for Module<E> {
-    type Target = imkitchen_shared::State<E>;
+    type Target = crate::State<E>;
 
     fn deref(&self) -> &Self::Target {
         &self.0

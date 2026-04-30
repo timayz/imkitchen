@@ -4,7 +4,7 @@ use evento::{
     subscription::{Context, SubscriptionBuilder},
 };
 use imkitchen_db::table::ShoppingList;
-use imkitchen_shared::{recipe::Ingredient, shopping::Generated};
+use imkitchen_types::{recipe::Ingredient, shopping::Generated};
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::prelude::FromRow;

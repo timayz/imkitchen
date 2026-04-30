@@ -3,7 +3,7 @@ use axum::{
     response::{IntoResponse, Redirect},
 };
 use axum_extra::extract::Form;
-use imkitchen_shared::user::subscription::PaymentDetails;
+use imkitchen_billing::types::subscription::PaymentDetails;
 use serde::Deserialize;
 use stripe_core::{
     PaymentIntentSetupFutureUsage,

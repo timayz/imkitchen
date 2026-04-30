@@ -1,8 +1,3 @@
-pub mod invoice;
-pub mod meal_preferences;
-pub mod password;
-pub mod subscription;
-
 use bitcode::{Decode, Encode};
 use serde::Deserialize;
 use strum::{AsRefStr, Display, EnumString, VariantArray};

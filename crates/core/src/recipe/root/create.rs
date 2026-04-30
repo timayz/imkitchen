@@ -1,12 +1,12 @@
 use evento::Executor;
-use imkitchen_shared::recipe::Created;
+use imkitchen_types::recipe::Created;
 
 impl<E: Executor> super::Module<E> {
     pub async fn create(
         &self,
         request_by: impl Into<String>,
         owner_name: impl Into<Option<String>>,
-    ) -> imkitchen_shared::Result<String> {
+    ) -> crate::Result<String> {
         Ok(evento::create()
             .event(&Created {
                 name: "".to_owned(),

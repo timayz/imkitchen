@@ -1,12 +1,12 @@
 use evento::{Executor, ProjectionAggregator};
-use imkitchen_shared::user::subscription::StripeCustomerCreated;
+use crate::types::subscription::StripeCustomerCreated;
 
 impl<E: Executor> super::Module<E> {
     pub async fn create_stripe_customer(
         &self,
         id: impl Into<String>,
         request_by: impl Into<String>,
-    ) -> imkitchen_shared::Result<()> {
+    ) -> imkitchen_core::Result<()> {
         let request_by = request_by.into();
         let subscription = self.load(&request_by).await?;
 

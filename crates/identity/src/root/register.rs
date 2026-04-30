@@ -3,7 +3,7 @@ use argon2::{
     password_hash::{SaltString, rand_core::OsRng},
 };
 use evento::Executor;
-use imkitchen_shared::user::Registered;
+use crate::types::user::Registered;
 use validator::Validate;
 
 use crate::repository;
@@ -19,7 +19,7 @@ pub struct RegisterInput {
 }
 
 impl<E: Executor> super::Module<E> {
-    pub async fn register(&self, input: RegisterInput) -> imkitchen_shared::Result<String> {
+    pub async fn register(&self, input: RegisterInput) -> imkitchen_core::Result<String> {
         input.validate()?;
 
         let salt = SaltString::generate(&mut OsRng);
@@ -35,7 +35,7 @@ impl<E: Executor> super::Module<E> {
         .await?
         .is_some()
         {
-            imkitchen_shared::user!("Email already exists");
+            imkitchen_core::user!("Email already exists");
         }
 
         let id = evento::create()

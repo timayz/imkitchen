@@ -1,5 +1,6 @@
 use evento::{Executor, ProjectionAggregator};
-use imkitchen_shared::{recipe::DietaryRestriction, user::meal_preferences::Changed};
+use imkitchen_types::meal_preferences::Changed;
+use imkitchen_types::recipe::DietaryRestriction;
 use validator::Validate;
 
 #[derive(Validate)]
@@ -16,7 +17,7 @@ impl<E: Executor> super::Module<E> {
         &self,
         id: impl Into<String>,
         input: UpdateInput,
-    ) -> imkitchen_shared::Result<()> {
+    ) -> imkitchen_core::Result<()> {
         input.validate()?;
 
         let id = id.into();

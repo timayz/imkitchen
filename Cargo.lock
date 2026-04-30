@@ -2568,7 +2568,7 @@ dependencies = [
  "imkitchen-db",
  "imkitchen-identity",
  "imkitchen-notification",
- "imkitchen-shared",
+ "imkitchen-types",
  "jsonwebtoken",
  "lightningcss",
  "mime_guess",
@@ -2599,8 +2599,9 @@ dependencies = [
  "async-stripe-types",
  "bitcode",
  "evento",
+ "imkitchen-core",
  "imkitchen-db",
- "imkitchen-shared",
+ "imkitchen-types",
  "sea-query",
  "sea-query-sqlx",
  "serde",
@@ -2617,11 +2618,12 @@ name = "imkitchen-core"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "argon2",
  "bitcode",
  "evento",
  "image",
  "imkitchen-db",
- "imkitchen-shared",
+ "imkitchen-types",
  "rand 0.10.1",
  "sea-query",
  "sea-query-sqlx",
@@ -2631,6 +2633,7 @@ dependencies = [
  "sqlx",
  "strum 0.28.0",
  "temp-dir",
+ "thiserror 2.0.18",
  "time",
  "time-tz",
  "tokio",
@@ -2658,8 +2661,10 @@ dependencies = [
  "argon2",
  "bitcode",
  "evento",
+ "imkitchen-billing",
+ "imkitchen-core",
  "imkitchen-db",
- "imkitchen-shared",
+ "imkitchen-types",
  "regex",
  "sea-query",
  "sea-query-sqlx",
@@ -2680,7 +2685,8 @@ dependencies = [
  "anyhow",
  "askama",
  "evento",
- "imkitchen-shared",
+ "imkitchen-identity",
+ "imkitchen-types",
  "lettre",
  "rust-i18n",
  "serde",
@@ -2689,21 +2695,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "imkitchen-shared"
+name = "imkitchen-types"
 version = "0.15.8"
 dependencies = [
- "anyhow",
- "argon2",
- "async-stripe-shared",
  "bitcode",
  "evento",
  "serde",
  "serde_json",
  "sqlx",
  "strum 0.28.0",
- "thiserror 2.0.18",
- "time",
- "validator",
 ]
 
 [[package]]

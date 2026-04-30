@@ -1,6 +1,6 @@
 use bitcode::{Decode, Encode};
 use evento::{Executor, Projection, ProjectionAggregator, metadata::Event};
-use imkitchen_shared::contact::{
+use imkitchen_types::contact::{
     self, FormSubmitted, MarkedReadAndReply, Reopened, Resolved, Status,
 };
 use std::ops::Deref;
@@ -13,10 +13,10 @@ mod submit_form;
 pub use submit_form::SubmitFormInput;
 
 #[derive(Clone)]
-pub struct Module<E: Executor>(imkitchen_shared::State<E>);
+pub struct Module<E: Executor>(crate::State<E>);
 
 impl<E: Executor> Deref for Module<E> {
-    type Target = imkitchen_shared::State<E>;
+    type Target = crate::State<E>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -24,7 +24,7 @@ impl<E: Executor> Deref for Module<E> {
 }
 
 impl<E: Executor> Module<E> {
-    pub fn new(state: imkitchen_shared::State<E>) -> Self {
+    pub fn new(state: crate::State<E>) -> Self {
         Self(state)
     }
 

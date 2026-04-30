@@ -4,7 +4,7 @@ use evento::{
     metadata::Event,
     subscription::{Context, SubscriptionBuilder},
 };
-use imkitchen_shared::user::{
+use crate::types::{
     invoice::{Created, InvoiceAddress},
     subscription::{Address, StripePaymentIntentSucceeded},
 };

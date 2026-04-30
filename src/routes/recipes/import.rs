@@ -4,7 +4,7 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
-use imkitchen_shared::recipe::{CuisineType, Ingredient, Instruction, RecipeType};
+use imkitchen_types::recipe::{CuisineType, Ingredient, Instruction, RecipeType};
 use serde::Deserialize;
 
 use crate::{
@@ -106,7 +106,7 @@ pub async fn action(
             Ok(recipe_id) => {
                 id = Some(recipe_id);
             }
-            Err(imkitchen_shared::Error::Server(err)) => {
+            Err(imkitchen_core::Error::Server(err)) => {
                 tracing::error!(user = user.id, err = %err,"failed to import recipes");
 
                 error_recipes.push(ErrorRecipe {

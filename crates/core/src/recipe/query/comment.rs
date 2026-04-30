@@ -6,10 +6,8 @@ use evento::{
     subscription::{Context, SubscriptionBuilder},
 };
 use imkitchen_db::table::RecipeComment;
-use imkitchen_shared::recipe::{
-    comment::{self, Added, Replied},
-    comment_rating::{LikeChecked, LikeUnchecked, UnlikeChecked, UnlikeUnchecked},
-};
+use imkitchen_types::comment::{self, Added, Replied};
+use imkitchen_types::comment_rating::{LikeChecked, LikeUnchecked, UnlikeChecked, UnlikeUnchecked};
 use sea_query::{Expr, ExprTrait, OnConflict, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use serde::Deserialize;

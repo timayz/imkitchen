@@ -3,9 +3,9 @@ use axum::response::IntoResponse;
 use axum_extra::extract::CookieJar;
 use imkitchen_core::mealplan::slot::SlotRow;
 use imkitchen_core::mealplan::{ChangeSlotRecipeStatus, Recipe};
-use imkitchen_shared::mealplan::DaySlotStatus;
-use imkitchen_shared::recipe::{IngredientUnitFormat, Instruction};
-use imkitchen_shared::{mealplan::DaySlotRecipe, recipe::RecipeType};
+use imkitchen_types::mealplan::DaySlotStatus;
+use imkitchen_types::recipe::{IngredientUnitFormat, Instruction};
+use imkitchen_types::{mealplan::DaySlotRecipe, recipe::RecipeType};
 
 use crate::auth::{AuthToken, AuthUser};
 use crate::routes::AppState;

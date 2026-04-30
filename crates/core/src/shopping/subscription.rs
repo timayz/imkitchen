@@ -4,7 +4,7 @@ use evento::{
     subscription::{Context, SubscriptionBuilder},
 };
 use imkitchen_db::table::{ShoppingRecipe, ShoppingSlot};
-use imkitchen_shared::recipe::Ingredient;
+use imkitchen_types::recipe::Ingredient;
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::SqlitePool;
@@ -21,7 +21,7 @@ pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
 #[evento::subscription]
 async fn handle_mealplan_days_generated<E: Executor>(
     context: &Context<'_, E>,
-    event: Event<imkitchen_shared::mealplan::DaysGenerated>,
+    event: Event<imkitchen_types::mealplan::DaysGenerated>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
 
@@ -73,7 +73,7 @@ async fn handle_mealplan_days_generated<E: Executor>(
 #[evento::subscription]
 async fn handle_recipe_created<E: Executor>(
     context: &Context<'_, E>,
-    event: Event<imkitchen_shared::recipe::Created>,
+    event: Event<imkitchen_types::recipe::Created>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
     let ingredients = bitcode::encode::<Vec<Ingredient>>(&vec![]);
@@ -100,7 +100,7 @@ async fn handle_recipe_created<E: Executor>(
 #[evento::subscription]
 async fn handle_recipe_imported<E: Executor>(
     context: &Context<'_, E>,
-    event: Event<imkitchen_shared::recipe::Imported>,
+    event: Event<imkitchen_types::recipe::Imported>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
     let ingredients = bitcode::encode(&event.data.ingredients);
@@ -127,7 +127,7 @@ async fn handle_recipe_imported<E: Executor>(
 #[evento::subscription]
 async fn handle_recipe_deleted<E: Executor>(
     context: &Context<'_, E>,
-    event: Event<imkitchen_shared::recipe::Deleted>,
+    event: Event<imkitchen_types::recipe::Deleted>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
     let statement = Query::delete()
@@ -144,7 +144,7 @@ async fn handle_recipe_deleted<E: Executor>(
 #[evento::subscription]
 async fn handle_recipe_ingredients_changed<E: Executor>(
     context: &Context<'_, E>,
-    event: Event<imkitchen_shared::recipe::IngredientsChanged>,
+    event: Event<imkitchen_types::recipe::IngredientsChanged>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
     let ingredients = bitcode::encode(&event.data.ingredients);

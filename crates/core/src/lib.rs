@@ -1,9 +1,21 @@
+mod command;
 pub mod contact;
+mod date;
 pub mod mealplan;
 pub mod recipe;
 pub mod shopping;
 
+pub use command::*;
+pub use date::*;
+
 use evento::Executor;
+
+#[derive(Clone)]
+pub struct State<E: Executor> {
+    pub executor: E,
+    pub read_db: sqlx::SqlitePool,
+    pub write_db: sqlx::SqlitePool,
+}
 
 #[derive(Clone)]
 pub struct Core<E: Executor> {
@@ -14,9 +26,9 @@ pub struct Core<E: Executor> {
 }
 
 impl<E: Executor> Core<E> {
-    pub fn new(state: imkitchen_shared::State<E>) -> Self
+    pub fn new(state: State<E>) -> Self
     where
-        imkitchen_shared::State<E>: Clone,
+        State<E>: Clone,
     {
         Self {
             recipe: recipe::Module::new(state.clone()),

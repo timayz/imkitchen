@@ -1,6 +1,6 @@
 use evento::{Executor, ProjectionAggregator};
 use imkitchen_db::table::{ShoppingRecipe, ShoppingSlot};
-use imkitchen_shared::{recipe::Ingredient, shopping::Generated};
+use imkitchen_types::{recipe::Ingredient, shopping::Generated};
 use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use std::collections::{HashMap, HashSet};
@@ -19,7 +19,7 @@ impl<E: Executor> super::Module<E> {
         &self,
         input: Generate,
         request_by: impl Into<String>,
-    ) -> imkitchen_shared::Result<()> {
+    ) -> crate::Result<()> {
         input.validate()?;
         let request_by = request_by.into();
         let shopping = self

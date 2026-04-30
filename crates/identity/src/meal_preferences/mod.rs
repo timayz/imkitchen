@@ -5,16 +5,14 @@ use std::ops::Deref;
 pub use update::*;
 
 use evento::{Executor, Projection, metadata::Event};
-use imkitchen_shared::{
-    recipe::DietaryRestriction,
-    user::meal_preferences::{self, Changed},
-};
+use imkitchen_types::meal_preferences::{self, Changed};
+use imkitchen_types::recipe::DietaryRestriction;
 
 #[derive(Clone)]
-pub struct Module<E: Executor>(pub(crate) imkitchen_shared::State<E>);
+pub struct Module<E: Executor>(pub(crate) imkitchen_core::State<E>);
 
 impl<E: Executor> Deref for Module<E> {
-    type Target = imkitchen_shared::State<E>;
+    type Target = imkitchen_core::State<E>;
 
     fn deref(&self) -> &Self::Target {
         &self.0

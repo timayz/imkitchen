@@ -11,10 +11,8 @@ use sea_query_sqlx::SqlxBinder;
 use sqlx::{SqlitePool, prelude::FromRow};
 use time::UtcDateTime;
 
-use imkitchen_shared::user::{
-    Activated, Registered, Suspended,
-    subscription::{LifePremiumToggled, StripePaymentIntentSucceeded},
-};
+use imkitchen_billing::types::subscription::{LifePremiumToggled, StripePaymentIntentSucceeded};
+use crate::types::user::{Activated, Registered, Suspended};
 
 static GLOBAL_TIMESTAMP: u64 = 949115824;
 

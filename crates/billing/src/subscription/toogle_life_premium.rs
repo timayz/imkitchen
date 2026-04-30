@@ -1,14 +1,14 @@
 use evento::{Executor, ProjectionAggregator};
 use time::UtcDateTime;
 
-use imkitchen_shared::user::subscription::LifePremiumToggled;
+use crate::types::subscription::LifePremiumToggled;
 
 impl<E: Executor> super::Module<E> {
     pub async fn toggle_life_premium(
         &self,
         id: impl Into<String>,
         request_by: impl Into<String>,
-    ) -> imkitchen_shared::Result<()> {
+    ) -> imkitchen_core::Result<()> {
         let subscription = self.load(id).await?;
         let now = UtcDateTime::now();
         let expire_at = if subscription.expire_at > now.unix_timestamp().try_into()? {

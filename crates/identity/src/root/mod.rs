@@ -1,6 +1,6 @@
 use bitcode::{Decode, Encode};
 use evento::{Executor, Projection, ProjectionAggregator, metadata::Event};
-use imkitchen_shared::user::{
+use crate::types::user::{
     self, Activated, LoggedIn, Logout, MadeAdmin, Registered, Role, State, Suspended,
     UsernameChanged,
 };
@@ -21,13 +21,13 @@ pub use set_username::SetUsernameInput;
 
 #[derive(Clone)]
 pub struct Module<E: Executor> {
-    state: imkitchen_shared::State<E>,
+    state: imkitchen_core::State<E>,
     pub meal_preferences: crate::meal_preferences::Module<E>,
     pub password: crate::password::Module<E>,
 }
 
 impl<E: Executor> Deref for Module<E> {
-    type Target = imkitchen_shared::State<E>;
+    type Target = imkitchen_core::State<E>;
 
     fn deref(&self) -> &Self::Target {
         &self.state
@@ -35,9 +35,9 @@ impl<E: Executor> Deref for Module<E> {
 }
 
 impl<E: Executor> Module<E> {
-    pub fn new(state: imkitchen_shared::State<E>) -> Self
+    pub fn new(state: imkitchen_core::State<E>) -> Self
     where
-        imkitchen_shared::State<E>: Clone,
+        imkitchen_core::State<E>: Clone,
     {
         Self {
             meal_preferences: crate::meal_preferences::Module(state.clone()),

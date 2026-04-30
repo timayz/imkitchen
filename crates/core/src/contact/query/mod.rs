@@ -3,7 +3,7 @@ use evento::{
     metadata::RawEvent,
     subscription::{Context, SubscriptionBuilder},
 };
-use imkitchen_shared::contact::FormSubmitted;
+use imkitchen_types::contact::FormSubmitted;
 use sqlx::SqlitePool;
 
 pub mod admin;

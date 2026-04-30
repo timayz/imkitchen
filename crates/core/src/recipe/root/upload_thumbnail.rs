@@ -1,5 +1,5 @@
 use evento::{Executor, ProjectionAggregator};
-use imkitchen_shared::recipe::ThumbnailUploaded;
+use imkitchen_types::recipe::ThumbnailUploaded;
 
 impl<E: Executor + Clone> super::Module<E> {
     pub async fn upload_thunmnail(
@@ -7,14 +7,14 @@ impl<E: Executor + Clone> super::Module<E> {
         id: impl Into<String>,
         data: Vec<u8>,
         request_by: impl Into<String>,
-    ) -> imkitchen_shared::Result<()> {
+    ) -> crate::Result<()> {
         let Some(recipe) = self.load(id).await? else {
-            imkitchen_shared::not_found!("recipe");
+            crate::not_found!("recipe");
         };
 
         let request_by = request_by.into();
         if recipe.owner_id != request_by {
-            imkitchen_shared::forbidden!("not owner of recipe");
+            crate::forbidden!("not owner of recipe");
         }
 
         recipe

@@ -3,7 +3,7 @@ use axum::{
     response::{IntoResponse, Redirect},
 };
 use axum_extra::extract::Form;
-use imkitchen_shared::recipe::{Ingredient, IngredientUnitFormat};
+use imkitchen_types::recipe::{Ingredient, IngredientUnitFormat};
 use imkitchen_core::shopping::{Generate, ToggleInput};
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};

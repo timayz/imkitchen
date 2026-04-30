@@ -13,7 +13,7 @@ use sqlx::SqlitePool;
 use sqlx::prelude::FromRow;
 use strum::{AsRefStr, Display, EnumString, VariantArray};
 
-use imkitchen_shared::contact::{
+use imkitchen_types::contact::{
     Contact, FormSubmitted, MarkedReadAndReply, Reopened, Resolved, Status, Subject,
 };
 

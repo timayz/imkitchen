@@ -1,5 +1,5 @@
 use evento::{Executor, ProjectionAggregator};
-use imkitchen_shared::recipe::comment::Replied;
+use imkitchen_types::comment::Replied;
 use validator::Validate;
 
 #[derive(Validate)]
@@ -16,13 +16,13 @@ impl<E: Executor> super::Module<E> {
         recipe_id: impl Into<String>,
         user_id: impl Into<String>,
         input: ReplyCommentInput,
-    ) -> imkitchen_shared::Result<()> {
+    ) -> crate::Result<()> {
         input.validate()?;
 
         let recipe_id = recipe_id.into();
 
         let Some(comment) = self.load_from(&input.comment_id).await? else {
-            imkitchen_shared::not_found!("comment");
+            crate::not_found!("comment");
         };
 
         comment

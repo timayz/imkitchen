@@ -1,5 +1,5 @@
 use evento::Executor;
-use imkitchen_shared::recipe::{CuisineType, Imported, Ingredient, Instruction, RecipeType};
+use imkitchen_types::recipe::{CuisineType, Imported, Ingredient, Instruction, RecipeType};
 use validator::Validate;
 
 #[derive(Validate, Clone)]
@@ -26,7 +26,7 @@ impl<E: Executor + Clone> super::Module<E> {
         input: ImportInput,
         request_by: impl Into<String>,
         owner_name: impl Into<Option<String>>,
-    ) -> imkitchen_shared::Result<String> {
+    ) -> crate::Result<String> {
         input.validate()?;
         let request_by = request_by.into();
 

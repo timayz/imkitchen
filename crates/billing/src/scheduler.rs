@@ -4,7 +4,7 @@ use evento::{
     subscription::{Context, SubscriptionBuilder},
 };
 use imkitchen_db::table::UserSubscription;
-use imkitchen_shared::user::subscription::{Cancelled, StripePaymentIntentSucceeded};
+use crate::types::subscription::{Cancelled, StripePaymentIntentSucceeded};
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::SqlitePool;
@@ -21,7 +21,7 @@ pub async fn scheduler<E: Executor + Clone>(
     let sched = JobScheduler::new().await?;
     let stripe = stripe.clone();
 
-    let state = imkitchen_shared::State {
+    let state = imkitchen_core::State {
         executor: evento.clone(),
         read_db: r_pool.clone(),
         write_db: w_pool.clone(),
@@ -49,7 +49,7 @@ pub async fn scheduler<E: Executor + Clone>(
 }
 
 async fn renew_subscriptions<E: Executor + Clone>(
-    state: imkitchen_shared::State<E>,
+    state: imkitchen_core::State<E>,
     stripe: stripe::Client,
 ) -> anyhow::Result<()> {
     let Ok(now): Result<u64, _> = time::UtcDateTime::now().unix_timestamp().try_into() else {

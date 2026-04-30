@@ -6,16 +6,16 @@ mod view;
 
 use bitcode::{Decode, Encode};
 use evento::{Executor, Projection, ProjectionAggregator, metadata::Event};
-use imkitchen_shared::recipe::rating::{
+use imkitchen_types::rating::{
     self, LikeChecked, LikeUnchecked, UnlikeChecked, UnlikeUnchecked, Viewed,
 };
 use std::ops::Deref;
 
 #[derive(Clone)]
-pub struct Module<E: Executor>(pub(crate) imkitchen_shared::State<E>);
+pub struct Module<E: Executor>(pub(crate) crate::State<E>);
 
 impl<E: Executor> Deref for Module<E> {
-    type Target = imkitchen_shared::State<E>;
+    type Target = crate::State<E>;
 
     fn deref(&self) -> &Self::Target {
         &self.0

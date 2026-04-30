@@ -604,11 +604,11 @@ macro_rules! try_response {
     (sync: $result:expr, $template:expr, $fallback:expr) => {
         match $result {
             Ok(r) => r,
-            Err(imkitchen_shared::Error::Server(err)) => {
+            Err(imkitchen_core::Error::Server(err)) => {
                 tracing::error!("{err}");
                 $crate::try_response!(@render $template, $fallback, $crate::template::SERVER_ERROR_MESSAGE)
             }
-            Err(imkitchen_shared::Error::Forbidden(_)) => {
+            Err(imkitchen_core::Error::Forbidden(_)) => {
                 $crate::try_response!(@render $template, $fallback, $crate::template::FORBIDDEN)
             }
             Err(err) => {
@@ -624,11 +624,11 @@ macro_rules! try_response {
             Ok(_) => {
                 $crate::try_response!(@render $template, $fallback, $crate::template::NOT_FOUND)
             }
-            Err(imkitchen_shared::Error::Server(err)) => {
+            Err(imkitchen_core::Error::Server(err)) => {
                 tracing::error!("{err}");
                 $crate::try_response!(@render $template, $fallback, $crate::template::SERVER_ERROR_MESSAGE)
             }
-            Err(imkitchen_shared::Error::Forbidden(_)) => {
+            Err(imkitchen_core::Error::Forbidden(_)) => {
                 $crate::try_response!(@render $template, $fallback, $crate::template::FORBIDDEN)
             }
             Err(err) => {

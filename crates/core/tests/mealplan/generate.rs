@@ -1,6 +1,6 @@
 use evento::Sqlite;
 use imkitchen_core::recipe::ImportInput;
-use imkitchen_shared::recipe::{CuisineType, RecipeType};
+use imkitchen_types::recipe::{CuisineType, RecipeType};
 use temp_dir::TempDir;
 use time::OffsetDateTime;
 
