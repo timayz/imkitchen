@@ -7,6 +7,8 @@ pub struct ImportInput {
     pub recipe_type: RecipeType,
     #[validate(length(min = 3, max = 50))]
     pub name: String,
+    #[validate(url, length(min = 10, max = 255))]
+    pub origin: Option<String>,
     #[validate(length(min = 3, max = 2000))]
     pub description: String,
     #[validate(range(min = 1))]
@@ -34,6 +36,7 @@ impl<E: Executor + Clone> super::Module<E> {
             .event(&Imported {
                 owner_name: owner_name.into(),
                 name: input.name,
+                origin: input.origin,
                 description: input.description,
                 recipe_type: input.recipe_type,
                 cuisine_type: input.cuisine_type,

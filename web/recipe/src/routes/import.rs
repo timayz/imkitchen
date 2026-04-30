@@ -23,6 +23,7 @@ pub struct ErrorRecipe {
 pub struct ImportJson {
     pub recipe_type: RecipeType,
     pub name: String,
+    pub origin: Option<String>,
     pub description: String,
     pub household_size: u16,
     pub prep_time: u16,
@@ -90,6 +91,7 @@ pub async fn action(
                 imkitchen_core::recipe::ImportInput {
                     recipe_type: recipe.recipe_type,
                     name: recipe.name.to_owned(),
+                    origin: recipe.origin.to_owned(),
                     description: recipe.description,
                     household_size: recipe.household_size,
                     prep_time: recipe.prep_time,
