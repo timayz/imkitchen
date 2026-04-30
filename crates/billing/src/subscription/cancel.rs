@@ -1,5 +1,5 @@
-use evento::{Executor, ProjectionAggregator};
 use crate::types::subscription::Cancelled;
+use evento::{Executor, ProjectionAggregator};
 
 impl<E: Executor> super::Module<E> {
     pub async fn cancel(&self, request_by: impl Into<String>) -> imkitchen_core::Result<()> {

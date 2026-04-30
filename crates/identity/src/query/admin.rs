@@ -12,9 +12,11 @@ use sqlx::{SqlitePool, prelude::FromRow};
 use std::time::{SystemTime, UNIX_EPOCH};
 use strum::{AsRefStr, Display, EnumString, VariantArray};
 
-use imkitchen_billing::types::subscription::{LifePremiumToggled, StripePaymentIntentSucceeded, Subscription};
 use crate::types::user::{
     Activated, MadeAdmin, Registered, Role, State, Suspended, User, UsernameChanged,
+};
+use imkitchen_billing::types::subscription::{
+    LifePremiumToggled, StripePaymentIntentSucceeded, Subscription,
 };
 
 impl<E: Executor> crate::Module<E> {

@@ -5,8 +5,8 @@ use axum::{
 use imkitchen_billing::invoice_user::InvoiceUserView;
 
 use imkitchen_web_shared::{
-    auth::AuthUser,
     AppState,
+    auth::AuthUser,
     template::{NotFoundTemplate, Template, filters},
 };
 

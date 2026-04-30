@@ -14,8 +14,8 @@ use serde::Deserialize;
 use strum::VariantArray;
 
 use imkitchen_web_shared::{
-    auth::AuthAdmin,
     AppState,
+    auth::AuthAdmin,
     template::{Template, filters},
 };
 
@@ -64,8 +64,8 @@ pub async fn page(
     State(app): State<AppState>,
     admin: AuthAdmin,
 ) -> impl IntoResponse {
-    let stat =
-        imkitchen_web_shared::try_page_response!(app.identity.find_global(), template).unwrap_or_default();
+    let stat = imkitchen_web_shared::try_page_response!(app.identity.find_global(), template)
+        .unwrap_or_default();
 
     let stats = imkitchen_web_shared::try_page_response!(
         app.identity.filter_global(FilterQueryStat {
@@ -195,8 +195,7 @@ pub async fn toggle_premium(
     admin: AuthAdmin,
 ) -> impl IntoResponse {
     imkitchen_web_shared::try_response!(
-        app.billing.subscription
-            .toggle_life_premium(&id, &admin.id),
+        app.billing.subscription.toggle_life_premium(&id, &admin.id),
         template
     );
 

@@ -1,9 +1,9 @@
+use crate::types::password::ResetCompleted;
 use argon2::{
     Argon2, PasswordHasher,
     password_hash::{SaltString, rand_core::OsRng},
 };
 use evento::{Executor, ProjectionAggregator};
-use crate::types::password::ResetCompleted;
 use time::OffsetDateTime;
 use validator::Validate;
 

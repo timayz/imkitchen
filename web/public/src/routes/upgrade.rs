@@ -14,9 +14,9 @@ use stripe_types::Currency;
 use world_tax::{Region, TaxDatabase, TaxScenario, TaxType};
 
 use imkitchen_web_shared::{
+    AppState,
     auth::AuthUser,
     config::PremiumConfig,
-    AppState,
     template::{self, Template, filters},
 };
 
@@ -87,10 +87,10 @@ pub async fn action(
         return template.render(template::ServerTemplate).into_response();
     }
 
-    let user_info = imkitchen_web_shared::try_response!(anyhow_opt: app.identity.admin(&user.id), template);
+    let user_info =
+        imkitchen_web_shared::try_response!(anyhow_opt: app.identity.admin(&user.id), template);
 
-    let subscription =
-        imkitchen_web_shared::try_response!(anyhow: app.billing.subscription.load(&user.id), template);
+    let subscription = imkitchen_web_shared::try_response!(anyhow: app.billing.subscription.load(&user.id), template);
 
     let customer_id = if let Some(id) = subscription.customer_id {
         id
@@ -104,7 +104,8 @@ pub async fn action(
         );
 
         imkitchen_web_shared::try_response!(
-            app.billing.subscription
+            app.billing
+                .subscription
                 .create_stripe_customer(&customer.id, &user.id),
             template
         );

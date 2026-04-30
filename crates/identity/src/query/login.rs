@@ -5,14 +5,19 @@ use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::{SqlitePool, prelude::FromRow};
 
-use imkitchen_billing::types::subscription::{LifePremiumToggled, StripePaymentIntentSucceeded, Subscription};
 use crate::types::password::ResetCompleted;
 use crate::types::user::{
     Activated, LoggedIn, Logout, MadeAdmin, Role, State, Suspended, User, UsernameChanged,
 };
+use imkitchen_billing::types::subscription::{
+    LifePremiumToggled, StripePaymentIntentSucceeded, Subscription,
+};
 
 impl<E: Executor> crate::Module<E> {
-    pub async fn find_login(&self, id: impl Into<String>) -> Result<Option<LoginView>, anyhow::Error> {
+    pub async fn find_login(
+        &self,
+        id: impl Into<String>,
+    ) -> Result<Option<LoginView>, anyhow::Error> {
         let id = id.into();
 
         create_projection(&id)

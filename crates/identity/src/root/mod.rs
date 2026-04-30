@@ -1,9 +1,9 @@
-use bitcode::{Decode, Encode};
-use evento::{Executor, Projection, ProjectionAggregator, metadata::Event};
 use crate::types::user::{
     self, Activated, LoggedIn, Logout, MadeAdmin, Registered, Role, State, Suspended,
     UsernameChanged,
 };
+use bitcode::{Decode, Encode};
+use evento::{Executor, Projection, ProjectionAggregator, metadata::Event};
 use std::ops::Deref;
 
 use crate::repository::{self};

@@ -13,8 +13,8 @@ use stripe_core::setup_intent::CreateSetupIntentUsage;
 use stripe_core::setup_intent::RetrieveSetupIntent;
 use stripe_payment::payment_method::DetachPaymentMethod;
 
-use imkitchen_web_shared::auth::AuthUser;
 use imkitchen_web_shared::AppState;
+use imkitchen_web_shared::auth::AuthUser;
 use imkitchen_web_shared::template::Template;
 use imkitchen_web_shared::template::filters;
 
@@ -53,10 +53,12 @@ pub async fn page(
         imkitchen_web_shared::try_page_response!(app.billing.subscription.load(&user.id), template);
 
     let invoices = imkitchen_web_shared::try_page_response!(
-        app.billing.invoice.filter_invoice(invoice_user::FilterQuery {
-            user_id: user.id.to_owned(),
-            args: args.limit(5)
-        }),
+        app.billing
+            .invoice
+            .filter_invoice(invoice_user::FilterQuery {
+                user_id: user.id.to_owned(),
+                args: args.limit(5)
+            }),
         template
     );
 
@@ -81,8 +83,7 @@ pub async fn payment_method(
     State(app): State<AppState>,
     user: AuthUser,
 ) -> impl IntoResponse {
-    let mut subscription =
-        imkitchen_web_shared::try_response!(anyhow: app.billing.subscription.load(&user.id), template);
+    let mut subscription = imkitchen_web_shared::try_response!(anyhow: app.billing.subscription.load(&user.id), template);
 
     let Some(payment_method_id) = subscription.payment_method_id.to_owned() else {
         return "<div></div>".into_response();
@@ -95,7 +96,8 @@ pub async fn payment_method(
             .await
     {
         if let Err(e) = app
-            .billing.subscription
+            .billing
+            .subscription
             .update_stripe_setup_intent_status(intent, &user.id)
             .await
         {
@@ -106,8 +108,7 @@ pub async fn payment_method(
                 template
             );
 
-            subscription =
-                imkitchen_web_shared::try_response!(anyhow: app.billing.subscription.load(&user.id), template);
+            subscription = imkitchen_web_shared::try_response!(anyhow: app.billing.subscription.load(&user.id), template);
         };
     };
 
@@ -146,13 +147,14 @@ pub async fn update_payment(
     State(app): State<AppState>,
     user: AuthUser,
 ) -> impl IntoResponse {
-    let subscription =
-        imkitchen_web_shared::try_response!(anyhow: app.billing.subscription.load(&user.id), template);
+    let subscription = imkitchen_web_shared::try_response!(anyhow: app.billing.subscription.load(&user.id), template);
 
     let Some(customer_id) = subscription.customer_id else {
         tracing::error!("customer not found");
 
-        return template.render(imkitchen_web_shared::template::ServerTemplate).into_response();
+        return template
+            .render(imkitchen_web_shared::template::ServerTemplate)
+            .into_response();
     };
 
     let setup_intent = imkitchen_web_shared::try_response!(anyhow: CreateSetupIntent::new()
@@ -162,7 +164,8 @@ pub async fn update_payment(
         .send(&app.stripe), template);
 
     imkitchen_web_shared::try_response!(
-        app.billing.subscription
+        app.billing
+            .subscription
             .create_stripe_setup_intent(&setup_intent.id, &user.id),
         template
     );
@@ -178,8 +181,7 @@ pub async fn check(
     State(app): State<AppState>,
     user: AuthUser,
 ) -> impl IntoResponse {
-    let subscription =
-        imkitchen_web_shared::try_response!(anyhow: app.billing.subscription.load(&user.id), template);
+    let subscription = imkitchen_web_shared::try_response!(anyhow: app.billing.subscription.load(&user.id), template);
 
     let Some(payment_intent_id) = subscription.payment_intent_id else {
         return "<div></div>".into_response();
@@ -194,7 +196,8 @@ pub async fn check(
     };
 
     if let Err(e) = app
-        .billing.subscription
+        .billing
+        .subscription
         .update_stripe_payment_intent_status(intent, &user.id)
         .await
     {
@@ -216,8 +219,7 @@ pub async fn cancel_modal(
     State(app): State<AppState>,
     user: AuthUser,
 ) -> impl IntoResponse {
-    let subscription =
-        imkitchen_web_shared::try_response!(anyhow: app.billing.subscription.load(&user.id), template);
+    let subscription = imkitchen_web_shared::try_response!(anyhow: app.billing.subscription.load(&user.id), template);
 
     template.render(CancelModalTemplate { subscription })
 }
@@ -234,8 +236,7 @@ pub async fn cancel(
     State(app): State<AppState>,
     user: AuthUser,
 ) -> impl IntoResponse {
-    let mut subscription =
-        imkitchen_web_shared::try_response!(anyhow: app.billing.subscription.load(&user.id), template);
+    let mut subscription = imkitchen_web_shared::try_response!(anyhow: app.billing.subscription.load(&user.id), template);
 
     imkitchen_web_shared::try_response!(app.billing.subscription.cancel(&user.id), template);
 

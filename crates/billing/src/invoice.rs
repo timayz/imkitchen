@@ -1,12 +1,12 @@
+use crate::types::{
+    invoice::{Created, InvoiceAddress},
+    subscription::{Address, StripePaymentIntentSucceeded},
+};
 use evento::{
     Aggregator, AggregatorEvent, Executor, ReadAggregator,
     cursor::Args,
     metadata::Event,
     subscription::{Context, SubscriptionBuilder},
-};
-use crate::types::{
-    invoice::{Created, InvoiceAddress},
-    subscription::{Address, StripePaymentIntentSucceeded},
 };
 use sqlx::SqlitePool;
 use time::OffsetDateTime;

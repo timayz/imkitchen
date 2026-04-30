@@ -1,4 +1,3 @@
-
 use bitcode::{Decode, Encode};
 use serde::Deserialize;
 use strum::{AsRefStr, Display, EnumString, VariantArray};

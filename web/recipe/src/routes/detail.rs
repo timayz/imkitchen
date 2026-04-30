@@ -97,20 +97,28 @@ pub async fn page(
         return template.render(NotFoundTemplate).into_response();
     }
 
-    let stat =
-        imkitchen_web_shared::try_page_response!(app.core.recipe.find_user_stat(&recipe.owner_id), template)
-            .unwrap_or_default();
+    let stat = imkitchen_web_shared::try_page_response!(
+        app.core.recipe.find_user_stat(&recipe.owner_id),
+        template
+    )
+    .unwrap_or_default();
 
-    let rating =
-        imkitchen_web_shared::try_page_response!(app.core.recipe.rating.load(&recipe.id, &user.id), template)
-            .to_owned();
+    let rating = imkitchen_web_shared::try_page_response!(
+        app.core.recipe.rating.load(&recipe.id, &user.id),
+        template
+    )
+    .to_owned();
 
-    let favorite =
-        imkitchen_web_shared::try_page_response!(app.core.recipe.favorite.load(&recipe.id, &user.id), template)
-            .to_owned();
+    let favorite = imkitchen_web_shared::try_page_response!(
+        app.core.recipe.favorite.load(&recipe.id, &user.id),
+        template
+    )
+    .to_owned();
 
-    let comment =
-        imkitchen_web_shared::try_page_response!(app.core.recipe.comment(&recipe.id, &user.id), template);
+    let comment = imkitchen_web_shared::try_page_response!(
+        app.core.recipe.comment(&recipe.id, &user.id),
+        template
+    );
 
     let comment_rating = match comment {
         Some(ref comment) => Some(
@@ -420,7 +428,8 @@ pub async fn check_in(
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    let recipe = imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&id), template);
+    let recipe =
+        imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&id), template);
     if recipe.owner_id == user.id {
         return "<div></div>".into_response();
     }
@@ -451,7 +460,8 @@ pub async fn check_like(
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    let recipe = imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&id), template);
+    let recipe =
+        imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&id), template);
 
     if !recipe.is_shared {
         imkitchen_web_shared::try_response!(sync:
@@ -479,7 +489,8 @@ pub async fn uncheck_like(
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    let recipe = imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&id), template);
+    let recipe =
+        imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&id), template);
 
     if !recipe.is_shared {
         imkitchen_web_shared::try_response!(sync:
@@ -487,7 +498,10 @@ pub async fn uncheck_like(
         ), template);
     }
 
-    imkitchen_web_shared::try_response!(app.core.recipe.rating.uncheck_like(&id, &user.id), template);
+    imkitchen_web_shared::try_response!(
+        app.core.recipe.rating.uncheck_like(&id, &user.id),
+        template
+    );
 
     (
         [("ts-swap", "skip")],
@@ -507,7 +521,8 @@ pub async fn check_unlike(
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    let recipe = imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&id), template);
+    let recipe =
+        imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&id), template);
 
     if !recipe.is_shared {
         imkitchen_web_shared::try_response!(sync:
@@ -515,7 +530,10 @@ pub async fn check_unlike(
         ), template);
     }
 
-    imkitchen_web_shared::try_response!(app.core.recipe.rating.check_unlike(&id, &user.id), template);
+    imkitchen_web_shared::try_response!(
+        app.core.recipe.rating.check_unlike(&id, &user.id),
+        template
+    );
 
     (
         [("ts-swap", "skip")],
@@ -535,7 +553,8 @@ pub async fn uncheck_unlike(
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    let recipe = imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&id), template);
+    let recipe =
+        imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&id), template);
 
     if !recipe.is_shared {
         imkitchen_web_shared::try_response!(sync:
@@ -573,7 +592,8 @@ pub async fn save(
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    let recipe = imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&id),template);
+    let recipe =
+        imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&id),template);
 
     if !recipe.is_shared {
         imkitchen_web_shared::try_response!(sync:
@@ -582,7 +602,10 @@ pub async fn save(
     }
 
     imkitchen_web_shared::try_response!(
-        app.core.recipe.favorite.save(&id, recipe.owner_id, &user.id),
+        app.core
+            .recipe
+            .favorite
+            .save(&id, recipe.owner_id, &user.id),
         template
     );
 
@@ -908,7 +931,8 @@ pub async fn comment_check_like(
         return StatusCode::METHOD_NOT_ALLOWED.into_response();
     }
 
-    let recipe = imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&recipe_id), template);
+    let recipe =
+        imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&recipe_id), template);
 
     if !recipe.is_shared {
         imkitchen_web_shared::try_response!(sync:
@@ -917,7 +941,8 @@ pub async fn comment_check_like(
     }
 
     imkitchen_web_shared::try_response!(
-        app.core.recipe
+        app.core
+            .recipe
             .comment_rating
             .check_like(&comment_id, &user.id),
         template
@@ -946,7 +971,8 @@ pub async fn comment_uncheck_like(
         return StatusCode::METHOD_NOT_ALLOWED.into_response();
     }
 
-    let recipe = imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&recipe_id), template);
+    let recipe =
+        imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&recipe_id), template);
 
     if !recipe.is_shared {
         imkitchen_web_shared::try_response!(sync:
@@ -955,7 +981,8 @@ pub async fn comment_uncheck_like(
     }
 
     imkitchen_web_shared::try_response!(
-        app.core.recipe
+        app.core
+            .recipe
             .comment_rating
             .uncheck_like(&comment_id, &user.id),
         template
@@ -984,7 +1011,8 @@ pub async fn comment_check_unlike(
         return StatusCode::METHOD_NOT_ALLOWED.into_response();
     }
 
-    let recipe = imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&recipe_id), template);
+    let recipe =
+        imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&recipe_id), template);
 
     if !recipe.is_shared {
         imkitchen_web_shared::try_response!(sync:
@@ -993,7 +1021,8 @@ pub async fn comment_check_unlike(
     }
 
     imkitchen_web_shared::try_response!(
-        app.core.recipe
+        app.core
+            .recipe
             .comment_rating
             .check_unlike(&comment_id, &user.id),
         template
@@ -1022,7 +1051,8 @@ pub async fn comment_uncheck_unlike(
         return StatusCode::METHOD_NOT_ALLOWED.into_response();
     }
 
-    let recipe = imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&recipe_id), template);
+    let recipe =
+        imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&recipe_id), template);
 
     if !recipe.is_shared {
         imkitchen_web_shared::try_response!(sync:
@@ -1031,7 +1061,8 @@ pub async fn comment_uncheck_unlike(
     }
 
     imkitchen_web_shared::try_response!(
-        app.core.recipe
+        app.core
+            .recipe
             .comment_rating
             .uncheck_unlike(&comment_id, &user.id),
         template

@@ -1,5 +1,5 @@
-use evento::{Executor, ProjectionAggregator};
 use crate::types::user::{MadeAdmin, Role};
+use evento::{Executor, ProjectionAggregator};
 
 impl<E: Executor> super::Module<E> {
     pub async fn made_admin(&self, id: impl Into<String>) -> imkitchen_core::Result<()> {

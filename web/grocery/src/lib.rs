@@ -3,8 +3,8 @@ use axum::{
     response::{IntoResponse, Redirect},
 };
 use axum_extra::extract::Form;
-use imkitchen_types::recipe::{Ingredient, IngredientUnitFormat};
 use imkitchen_core::shopping::{Generate, ToggleInput};
+use imkitchen_types::recipe::{Ingredient, IngredientUnitFormat};
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 
@@ -19,7 +19,10 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
     axum::Router::new()
         .route("/groceries", get(page))
         .route("/groceries/toggle", post(toggle_action))
-        .route("/groceries/generate", get(generate_modal).post(generate_action))
+        .route(
+            "/groceries/generate",
+            get(generate_modal).post(generate_action),
+        )
         .route("/groceries/generate/status", get(generate_status))
 }
 
@@ -55,9 +58,10 @@ pub async fn page(
         .map(|r| to_categories(&r.ingredients.0))
         .unwrap_or_default();
 
-    let checked = imkitchen_web_shared::try_page_response!(app.core.shopping.load(&user.id), template)
-        .map(|loaded| loaded.checked)
-        .unwrap_or_default();
+    let checked =
+        imkitchen_web_shared::try_page_response!(app.core.shopping.load(&user.id), template)
+            .map(|loaded| loaded.checked)
+            .unwrap_or_default();
 
     template
         .render(GroceriesTemplate {
@@ -82,7 +86,8 @@ pub async fn toggle_action(
     Json(input): Json<ToggleJson>,
 ) -> impl IntoResponse {
     imkitchen_web_shared::try_response!(
-        app.core.shopping
+        app.core
+            .shopping
             .toggle(ToggleInput { name: input.name }, &user.id),
         template
     );
@@ -175,17 +180,19 @@ pub async fn generate_status(
     State(app): State<AppState>,
     user: AuthUser,
 ) -> impl IntoResponse {
-    let q_generated_at = imkitchen_web_shared::try_response!(anyhow: app.core.shopping.find(&user.id),
-        template,
-        Some(GenerateButtonTemplate{status: TemplateStatus::Idle})
-    )
-    .map(|s| s.generated_at);
+    let q_generated_at =
+        imkitchen_web_shared::try_response!(anyhow: app.core.shopping.find(&user.id),
+            template,
+            Some(GenerateButtonTemplate{status: TemplateStatus::Idle})
+        )
+        .map(|s| s.generated_at);
 
-    let c_generated_at = imkitchen_web_shared::try_response!(anyhow: app.core.shopping.load(&user.id),
-        template,
-        Some(GenerateButtonTemplate{status: TemplateStatus::Idle})
-    )
-    .map(|s| s.generated_at);
+    let c_generated_at =
+        imkitchen_web_shared::try_response!(anyhow: app.core.shopping.load(&user.id),
+            template,
+            Some(GenerateButtonTemplate{status: TemplateStatus::Idle})
+        )
+        .map(|s| s.generated_at);
 
     if q_generated_at == c_generated_at {
         return Redirect::to("/groceries").into_response();

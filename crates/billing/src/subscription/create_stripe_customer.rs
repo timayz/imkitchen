@@ -1,5 +1,5 @@
-use evento::{Executor, ProjectionAggregator};
 use crate::types::subscription::StripeCustomerCreated;
+use evento::{Executor, ProjectionAggregator};
 
 impl<E: Executor> super::Module<E> {
     pub async fn create_stripe_customer(

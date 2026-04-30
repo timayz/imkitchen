@@ -14,8 +14,8 @@ use serde::Deserialize;
 use strum::VariantArray;
 
 use imkitchen_web_shared::{
-    auth::AuthAdmin,
     AppState,
+    auth::AuthAdmin,
     template::{Template, filters},
 };
 
@@ -60,12 +60,16 @@ pub async fn page(
     State(app): State<AppState>,
     user: AuthAdmin,
 ) -> impl IntoResponse {
-    let stat = imkitchen_web_shared::try_page_response!(app.core.contact.find_global_stat_global(), template)
-        .unwrap_or_default();
+    let stat = imkitchen_web_shared::try_page_response!(
+        app.core.contact.find_global_stat_global(),
+        template
+    )
+    .unwrap_or_default();
 
     let now = time::UtcDateTime::now().unix_timestamp() as u64;
-    let today_stat = imkitchen_web_shared::try_page_response!(app.core.contact.find_global_stat(now), template)
-        .unwrap_or_default();
+    let today_stat =
+        imkitchen_web_shared::try_page_response!(app.core.contact.find_global_stat(now), template)
+            .unwrap_or_default();
 
     let r_query = query.clone();
     let subject = Subject::from_str(&query.subject.unwrap_or("".to_owned())).ok();
@@ -114,7 +118,10 @@ pub async fn mark_read_and_reply(
     State(app): State<AppState>,
     user: AuthAdmin,
 ) -> impl IntoResponse {
-    imkitchen_web_shared::try_response!(app.core.contact.mark_read_and_reply(&id, &user.id), template);
+    imkitchen_web_shared::try_response!(
+        app.core.contact.mark_read_and_reply(&id, &user.id),
+        template
+    );
 
     let contact = imkitchen_web_shared::try_response!(anyhow_opt:
         app.core.contact.admin(&id),

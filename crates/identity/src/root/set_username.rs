@@ -1,5 +1,5 @@
-use evento::{Executor, ProjectionAggregator};
 use crate::types::user::UsernameChanged;
+use evento::{Executor, ProjectionAggregator};
 use regex::Regex;
 use std::sync::LazyLock;
 use validator::Validate;

@@ -1,5 +1,5 @@
-use evento::{Executor, ProjectionAggregator};
 use crate::types::user::{Activated, State};
+use evento::{Executor, ProjectionAggregator};
 
 impl<E: Executor> super::Module<E> {
     pub async fn activate(

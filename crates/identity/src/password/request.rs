@@ -1,5 +1,5 @@
-use evento::Executor;
 use crate::types::password::ResetRequested;
+use evento::Executor;
 use validator::Validate;
 
 use crate::repository::FindType;

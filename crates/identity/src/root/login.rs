@@ -1,6 +1,6 @@
+use crate::types::user::{LoggedIn, Logout, State};
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use evento::{Executor, ProjectionAggregator};
-use crate::types::user::{LoggedIn, Logout, State};
 use ulid::Ulid;
 use validator::Validate;
 

@@ -7,8 +7,8 @@ use bitcode::{Decode, Encode};
 pub use request::*;
 pub use reset::*;
 
-use evento::{Executor, Projection, metadata::Event};
 use crate::types::password::{self, ResetCompleted, ResetRequested};
+use evento::{Executor, Projection, metadata::Event};
 use time::OffsetDateTime;
 
 #[derive(Clone)]

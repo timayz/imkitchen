@@ -7,8 +7,8 @@ use axum_extra::headers::UserAgent;
 use imkitchen_identity::LoginInput;
 use serde::Deserialize;
 
-use imkitchen_web_shared::auth::{self, AuthToken, AuthUser, build_cookie};
 use imkitchen_web_shared::AppState;
+use imkitchen_web_shared::auth::{self, AuthToken, AuthUser, build_cookie};
 use imkitchen_web_shared::template::{SERVER_ERROR_MESSAGE, Template};
 use imkitchen_web_shared::template::{ToastErrorTemplate, filters};
 

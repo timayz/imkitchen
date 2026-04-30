@@ -2,8 +2,8 @@ use anyhow::Result;
 use axum::response::IntoResponse;
 use axum::routing::get;
 use imkitchen_notification::EmailService;
-use imkitchen_web_shared::template::{NotFoundTemplate, Template};
 use imkitchen_web_shared::AppState;
+use imkitchen_web_shared::template::{NotFoundTemplate, Template};
 use tower_http::compression::CompressionLayer;
 use tower_http::trace::TraceLayer;
 
@@ -156,7 +156,10 @@ pub async fn serve(
 
     let app = axum::Router::new()
         .route("/health", get(imkitchen_web_public::routes::health::health))
-        .route("/_test-error", get(imkitchen_web_public::routes::health::test_error))
+        .route(
+            "/_test-error",
+            get(imkitchen_web_public::routes::health::test_error),
+        )
         .route("/ready", get(imkitchen_web_public::routes::health::ready))
         .with_state(app_state.read_db.clone())
         .merge(imkitchen_web_kitchen::routes())
@@ -167,7 +170,10 @@ pub async fn serve(
         .merge(imkitchen_web_public::routes())
         .merge(imkitchen_web_admin::routes())
         .fallback(fallback)
-        .nest_service("/static", imkitchen_web_shared::assets::AssetsService::new())
+        .nest_service(
+            "/static",
+            imkitchen_web_shared::assets::AssetsService::new(),
+        )
         .with_state(app_state)
         .layer(axum::middleware::from_fn(
             imkitchen_web_shared::middleware::cache_control_middleware,

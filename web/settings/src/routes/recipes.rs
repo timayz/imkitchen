@@ -10,8 +10,8 @@ use std::str::FromStr;
 use strum::VariantArray;
 
 use imkitchen_web_shared::{
-    auth::AuthUser,
     AppState,
+    auth::AuthUser,
     template::{Template, filters},
 };
 

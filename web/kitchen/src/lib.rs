@@ -7,8 +7,8 @@ use imkitchen_types::mealplan::DaySlotStatus;
 use imkitchen_types::recipe::{IngredientUnitFormat, Instruction};
 use imkitchen_types::{mealplan::DaySlotRecipe, recipe::RecipeType};
 
-use imkitchen_web_shared::auth::{AuthToken, AuthUser};
 use imkitchen_web_shared::AppState;
+use imkitchen_web_shared::auth::{AuthToken, AuthUser};
 use imkitchen_web_shared::template::{NotFoundTemplate, Template, filters};
 
 #[derive(askama::Template)]
@@ -96,7 +96,8 @@ pub async fn page(
 
     if slot.is_none() {
         let main_courses = imkitchen_web_shared::try_page_response!(
-            app.core.mealplan
+            app.core
+                .mealplan
                 .first_week_recipes(&user.id, RecipeType::MainCourse),
             template
         );
@@ -170,7 +171,8 @@ pub async fn page(
         }
 
         slot_recipe = imkitchen_web_shared::try_page_response!(
-            app.core.recipe
+            app.core
+                .recipe
                 .find_user(slot_recipe_id.unwrap_or(&slot.main_course.id)),
             template
         );
@@ -231,7 +233,8 @@ pub async fn page(
 
     let prep_remiders = if let Some(ref slot) = slot {
         imkitchen_web_shared::try_page_response!(
-            app.core.mealplan
+            app.core
+                .mealplan
                 .next_prep_remiders_from(slot.day, &user.id),
             template
         )
@@ -337,8 +340,7 @@ pub async fn update_slot_step_action(
         return template.render(NotFoundTemplate);
     };
 
-    let slot_recipe =
-        imkitchen_web_shared::try_page_response!(opt: app.core.recipe.find_user(&recipe_id), template);
+    let slot_recipe = imkitchen_web_shared::try_page_response!(opt: app.core.recipe.find_user(&recipe_id), template);
 
     let slot_recipe_status = match (direction.as_str(), slot_recipe_status) {
         ("prev", DaySlotStatus::Idle) => DaySlotStatus::Idle,
@@ -406,7 +408,8 @@ pub async fn update_slot_step_action(
     let bounds_date = imkitchen_core::mealplan::date_to_u64(bounds.date);
 
     imkitchen_web_shared::try_response!(
-        app.core.mealplan
+        app.core
+            .mealplan
             .change_slot_recipe_status(ChangeSlotRecipeStatus {
                 user_id: user.id.to_owned(),
                 date: bounds_date,
@@ -537,8 +540,7 @@ pub async fn select_dish(
         return template.render(NotFoundTemplate);
     };
 
-    let mut slot_recipe =
-        imkitchen_web_shared::try_page_response!(opt: app.core.recipe.find_user(&recipe_id), template);
+    let mut slot_recipe = imkitchen_web_shared::try_page_response!(opt: app.core.recipe.find_user(&recipe_id), template);
 
     for ingredient in slot_recipe.ingredients.iter_mut() {
         ingredient.quantity += ((slot_recipe.household_size as u32 * ingredient.quantity
@@ -615,7 +617,10 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
     use axum::routing::{get, post};
     axum::Router::new()
         .route("/", get(page))
-        .route("/kitchen/{date}/{recipe_id}/step/{direction}", post(update_slot_step_action))
+        .route(
+            "/kitchen/{date}/{recipe_id}/step/{direction}",
+            post(update_slot_step_action),
+        )
         .route("/kitchen/{date}/{recipe_id}/select-dish", get(select_dish))
         .route("/kitchen/{date}", get(page))
 }

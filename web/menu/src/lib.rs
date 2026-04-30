@@ -6,8 +6,8 @@ use imkitchen_core::mealplan::{Generate, Randomize, slot::SlotRow};
 use time::OffsetDateTime;
 
 use imkitchen_web_shared::{
-    auth::AuthUser,
     AppState,
+    auth::AuthUser,
     template::{Status as TemplateStatus, Template, filters},
 };
 
@@ -70,8 +70,7 @@ pub async fn page(
     let bounds = imkitchen_web_shared::try_page_response!(sync: bounds, template);
     let (prev_month, next_month) = imkitchen_web_shared::try_page_response!(sync: imkitchen_core::mealplan::prev_next_month(bounds.first), template);
     let slots = imkitchen_web_shared::try_page_response!(
-        app.core.mealplan
-            .range(&user.id, bounds.first, bounds.last),
+        app.core.mealplan.range(&user.id, bounds.first, bounds.last),
         template
     );
 
@@ -207,11 +206,12 @@ pub async fn generate_status(
     )
     .map(|m| m.generated_at);
 
-    let c_generated_at = imkitchen_web_shared::try_response!(anyhow: app.core.mealplan.load(&user.id),
-        template,
-        Some(GenerateButtonTemplate{date, status: TemplateStatus::Idle})
-    )
-    .map(|m| m.generated_at);
+    let c_generated_at =
+        imkitchen_web_shared::try_response!(anyhow: app.core.mealplan.load(&user.id),
+            template,
+            Some(GenerateButtonTemplate{date, status: TemplateStatus::Idle})
+        )
+        .map(|m| m.generated_at);
 
     if s_generated_at == c_generated_at {
         return Redirect::to(&format!("/menu/{date}")).into_response();
@@ -237,6 +237,9 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
     axum::Router::new()
         .route("/menu", get(page))
         .route("/menu/{date}", get(page))
-        .route("/menu/{date}/generate", get(generate_modal).post(generate_action))
+        .route(
+            "/menu/{date}/generate",
+            get(generate_modal).post(generate_action),
+        )
         .route("/menu/{date}/generate/status", get(generate_status))
 }

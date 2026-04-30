@@ -1,5 +1,5 @@
-use evento::{Executor, ProjectionAggregator};
 use crate::types::subscription::StripePaymentIntentSucceeded;
+use evento::{Executor, ProjectionAggregator};
 use stripe_shared::{PaymentIntent, PaymentIntentStatus};
 use stripe_types::Expandable;
 

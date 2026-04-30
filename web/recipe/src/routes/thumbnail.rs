@@ -1,10 +1,10 @@
-use imkitchen_web_shared::{AppState, auth::AuthUser, template::Template};
 use axum::{
     extract::{Multipart, Path, State},
     http::{StatusCode, header},
     response::IntoResponse,
 };
 use base64::{Engine, engine::general_purpose::STANDARD};
+use imkitchen_web_shared::{AppState, auth::AuthUser, template::Template};
 
 #[tracing::instrument(skip_all)]
 pub async fn get(
@@ -45,7 +45,8 @@ pub async fn upload(
     Path((id,)): Path<(String,)>,
     mut multipart: Multipart,
 ) -> impl IntoResponse {
-    let Some(field) = imkitchen_web_shared::try_response!(anyhow: multipart.next_field(), template) else {
+    let Some(field) = imkitchen_web_shared::try_response!(anyhow: multipart.next_field(), template)
+    else {
         imkitchen_web_shared::try_response!(sync:
             Err(imkitchen_core::Error::User("No file provided".into()))
         , template)
@@ -63,7 +64,8 @@ pub async fn upload(
 
     let data = imkitchen_web_shared::try_response!(anyhow: field.bytes(), template);
     imkitchen_web_shared::try_response!(
-        app.core.recipe
+        app.core
+            .recipe
             .upload_thunmnail(&id, data.to_vec(), &user.id),
         template
     );

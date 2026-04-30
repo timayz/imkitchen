@@ -84,7 +84,8 @@ pub async fn action(
 
     for recipe in recipes {
         match app
-            .core.recipe
+            .core
+            .recipe
             .import(
                 imkitchen_core::recipe::ImportInput {
                     recipe_type: recipe.recipe_type,

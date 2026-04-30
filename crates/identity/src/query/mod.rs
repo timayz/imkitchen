@@ -1,9 +1,9 @@
+use crate::types::user::Registered;
 use evento::{
     Executor,
     metadata::RawEvent,
     subscription::{Context, SubscriptionBuilder},
 };
-use crate::types::user::Registered;
 use sqlx::SqlitePool;
 
 pub mod admin;

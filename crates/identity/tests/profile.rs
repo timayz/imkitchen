@@ -1,5 +1,5 @@
-use imkitchen_types::recipe::DietaryRestriction;
 use imkitchen_identity::meal_preferences::UpdateInput;
+use imkitchen_types::recipe::DietaryRestriction;
 use temp_dir::TempDir;
 
 mod helpers;

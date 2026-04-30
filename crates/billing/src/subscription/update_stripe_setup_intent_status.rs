@@ -1,5 +1,5 @@
-use evento::{Executor, ProjectionAggregator};
 use crate::types::subscription::StripeSetupIntentSucceeded;
+use evento::{Executor, ProjectionAggregator};
 use stripe_shared::{SetupIntent, SetupIntentStatus};
 use stripe_types::Expandable;
 

@@ -1,9 +1,9 @@
+use crate::types::user::Registered;
 use argon2::{
     Argon2, PasswordHasher,
     password_hash::{SaltString, rand_core::OsRng},
 };
 use evento::Executor;
-use crate::types::user::Registered;
 use validator::Validate;
 
 use crate::repository;

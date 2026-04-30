@@ -6,9 +6,9 @@ mod toogle_life_premium;
 mod update_stripe_payment_intent_status;
 mod update_stripe_setup_intent_status;
 
+use crate::types::subscription::{self, Address, PaymentDetails};
 use bitcode::{Decode, Encode};
 use evento::{Executor, Projection, metadata::Event};
-use crate::types::subscription::{self, Address, PaymentDetails};
 use std::ops::Deref;
 use time::{Month, OffsetDateTime};
 

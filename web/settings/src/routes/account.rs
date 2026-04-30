@@ -3,8 +3,8 @@ use axum::extract::State;
 use axum::response::IntoResponse;
 // use serde::Deserialize;
 
-use imkitchen_web_shared::auth::AuthUser;
 use imkitchen_web_shared::AppState;
+use imkitchen_web_shared::auth::AuthUser;
 use imkitchen_web_shared::template::Template;
 use imkitchen_web_shared::template::filters;
 
