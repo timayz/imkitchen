@@ -1,4 +1,5 @@
 use anyhow::Result;
+use axum::extract::DefaultBodyLimit;
 use axum::response::IntoResponse;
 use axum::routing::get;
 use imkitchen_notification::EmailService;
@@ -175,6 +176,8 @@ pub async fn serve(
             imkitchen_web_shared::assets::AssetsService::new(),
         )
         .with_state(app_state)
+        .layer(DefaultBodyLimit::disable())
+        .layer(tower_http::limit::RequestBodyLimitLayer::new(1024 * 1024)) // 1MB
         .layer(axum::middleware::from_fn(
             imkitchen_web_shared::middleware::cache_control_middleware,
         ))
