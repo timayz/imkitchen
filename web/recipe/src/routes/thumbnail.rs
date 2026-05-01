@@ -45,6 +45,10 @@ pub async fn upload(
     Path((id,)): Path<(String,)>,
     mut multipart: Multipart,
 ) -> impl IntoResponse {
+    if !app.config.feature.community && !user.is_admin() {
+        return StatusCode::METHOD_NOT_ALLOWED.into_response();
+    }
+
     let Some(field) = imkitchen_web_shared::try_response!(anyhow: multipart.next_field(), template)
     else {
         imkitchen_web_shared::try_response!(sync:

@@ -12,7 +12,7 @@ use imkitchen_types::recipe::{
 pub struct UpdateInput {
     pub id: String,
     pub recipe_type: RecipeType,
-    #[validate(length(min = 3, max = 50))]
+    #[validate(length(min = 3, max = 100))]
     pub name: String,
     #[validate(url, length(min = 10, max = 255))]
     pub origin: Option<String>,
