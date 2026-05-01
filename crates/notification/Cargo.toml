@@ -1,6 +1,6 @@
 [package]
 name = "imkitchen-notification"
-version = "0.15.10"
+version = "0.15.11"
 edition.workspace = true
 authors.workspace = true
 
@@ -13,5 +13,5 @@ serde = { workspace = true }
 rust-i18n = { workspace = true }
 time = { workspace = true }
 evento.workspace = true
-imkitchen-types = { path = "../types", version = "0.15.10" }
-imkitchen-identity = { path = "../identity", version = "0.15.10" }
+imkitchen-types = { path = "../types", version = "0.15.11" }
+imkitchen-identity = { path = "../identity", version = "0.15.11" }
