@@ -33,12 +33,7 @@ pub(crate) mod m0001 {
                     .not_null()
                     .string_len(10),
             )
-            .col(
-                ColumnDef::new(RecipeThumbnail::Data)
-                    .blob()
-                    .not_null()
-                    .string_len(30),
-            )
+            .col(ColumnDef::new(RecipeThumbnail::Data).blob().not_null())
             .primary_key(
                 Index::create()
                     .col(RecipeThumbnail::Id)

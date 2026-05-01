@@ -87,7 +87,7 @@ pub(crate) mod m0001 {
                 ColumnDef::new(RecipeUser::Name)
                     .string()
                     .not_null()
-                    .string_len(30),
+                    .string_len(100),
             )
             .col(ColumnDef::new(RecipeUser::Origin).string().string_len(255))
             .col(
