@@ -136,10 +136,8 @@ impl<E: Executor> Module<E> {
             .to_owned();
 
         if let Some(search) = &input.search {
-            statement.and_where(
-                Expr::col(UserInvoiceUser::InvoiceNumber)
-                    .like(format!("%{search}%")),
-            );
+            statement
+                .and_where(Expr::col(UserInvoiceUser::InvoiceNumber).like(format!("%{search}%")));
         }
 
         if let Some(date_from) = input.date_from {
