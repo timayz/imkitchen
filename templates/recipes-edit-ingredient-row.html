@@ -1,24 +1,24 @@
 <div class="flex flex-col sm:flex-row gap-3 ingredient-item">
   <div class="flex gap-2 sm:gap-3 flex-1 sm:contents">
     <input type="number" name="ingredients_quantity" min="1" max="65535" value="1"
-      class="w-16 sm:w-24 px-2 sm:px-4 py-2 border border-gray-300 rounded-lg text-sm sm:text-base" required />
-    <select name="ingredients_unit" class="w-16 sm:w-16 px-1 sm:px-4 py-2 border border-gray-300 rounded-lg text-sm sm:text-base">
+      class="w-16 sm:w-24 px-2 sm:px-4 py-2 border border-line rounded-xl text-sm sm:text-base" required />
+    <select name="ingredients_unit" class="w-16 sm:w-16 px-1 sm:px-4 py-2 border border-line rounded-xl text-sm sm:text-base">
       <option value=""></option>
       {% for unit in IngredientUnit::VARIANTS %}
       <option value="{{ unit }}">{{ unit.to_string().to_lowercase() }}</option>
       {% endfor %}
     </select>
     <input type="text" name="ingredients_name" minlength="1" maxlength="30"
-      class="flex-1 min-w-0 px-2 sm:px-4 py-2 border border-gray-300 rounded-lg text-sm sm:text-base" required />
+      class="flex-1 min-w-0 px-2 sm:px-4 py-2 border border-line rounded-xl text-sm sm:text-base" required />
   </div>
   <div class="flex gap-2 sm:gap-3 flex-1 sm:contents">
-    <select name="ingredients_category" class="w-52 px-1 sm:px-4 py-2 border border-gray-300 rounded-lg text-sm sm:text-base">
+    <select name="ingredients_category" class="w-52 px-1 sm:px-4 py-2 border border-line rounded-xl text-sm sm:text-base">
       <option value=""></option>
       {% for category in IngredientCategory::VARIANTS %}
       <option value="{{ category }}">{{ category.as_ref()|t }}</option>
       {% endfor %}
     </select>
     <button ts-trigger="click" ts-action="remove 'parent .ingredient-item'" type="button"
-      class="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200">✕</button>
+      class="px-4 py-2 bg-red-100 text-red-600 rounded-xl hover:bg-red-200">✕</button>
   </div>
 </div>

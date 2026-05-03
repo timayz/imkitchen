@@ -5,22 +5,22 @@
   </div>
 
   <!-- Modal Content -->
-  <div class="relative bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 p-6">
+  <div class="relative bg-paper rounded-xl shadow-md max-w-md w-full mx-4 p-6">
     <div class="text-center mb-6">
       <div class="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-        <svg class="w-7 h-7 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-7 h-7 text-[#c3321a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z">
           </path>
         </svg>
       </div>
-      <h3 class="text-lg font-bold text-gray-900 mb-2">{{ "Cancel Subscription?"|t }}</h3>
-      <p class="text-sm text-gray-600">{{ "Your Premium Annual plan will remain active until"|t }} <strong>{{
+      <h3 class="text-lg font-bold text-ink mb-2">{{ "Cancel Subscription?"|t }}</h3>
+      <p class="text-sm text-ink-2">{{ "Your Premium Annual plan will remain active until"|t }} <strong>{{
           subscription.expire_at|date_year }}</strong>.
         {{ "After that, you'll lose access to:"|t }}</p>
     </div>
 
-    <ul class="text-sm text-gray-600 space-y-2 mb-6">
+    <ul class="text-sm text-ink-2 space-y-2 mb-6">
       <li class="flex items-center gap-2">
         <svg class="w-4 h-4 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -61,11 +61,11 @@
 
     <div class="flex flex-col gap-3">
       <button ts-req="/settings/billing/cancel" ts-req-method="post" ts-swap="skip"
-        class="w-full px-4 py-2.5 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 text-sm">
+        class="w-full px-4 py-2.5 bg-[#c3321a] text-white font-semibold rounded-xl hover:bg-[#a82a16] text-sm">
         {{ "Yes, Cancel Subscription"|t }}
       </button>
       <button ts-trigger="click" ts-target="parent #cancel-modal" ts-action="remove"
-        class="w-full px-4 py-2.5 bg-white border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 text-sm">
+        class="w-full px-4 py-2.5 bg-paper border border-line text-ink-2 font-semibold rounded-xl hover:bg-cream text-sm">
         {{ "Keep My Subscription"|t }}
       </button>
     </div>

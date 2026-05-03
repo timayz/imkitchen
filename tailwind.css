@@ -1,12 +1,73 @@
 @import "tailwindcss";
 
-/* Tailwind v4.1 CSS-based configuration */
-@theme {}
+/* Tailwind v4.1 CSS-based configuration — imkitchen warm editorial design */
+@theme {
+  /* Primary — Tangerine */
+  --color-primary-50: #fff7ed;
+  --color-primary-100: #fde3cf;
+  --color-primary-200: #fbc89f;
+  --color-primary-300: #f9a86a;
+  --color-primary-400: #f68838;
+  --color-primary-500: #ef6c1e;
+  --color-primary-600: #d5541a;
+  --color-primary-700: #b03d14;
+  --color-primary-800: #7a2d05;
+  --color-primary-900: #5a1f03;
+
+  /* Herb — Green accent */
+  --color-herb-50: #f0faf2;
+  --color-herb-100: #d8ebdb;
+  --color-herb-200: #b0d6b8;
+  --color-herb-300: #6bb581;
+  --color-herb-400: #4a9c63;
+  --color-herb-500: #2f7d4f;
+  --color-herb-600: #256840;
+  --color-herb-700: #1b4d2e;
+  --color-herb-800: #133820;
+  --color-herb-900: #0a2314;
+
+  /* Ink — Warm text */
+  --color-ink: #1b140c;
+  --color-ink-2: #4a3f33;
+  --color-ink-3: #8a7e70;
+
+  /* Surfaces */
+  --color-cream: #fbf5e9;
+  --color-cream-2: #f3ead6;
+  --color-paper: #ffffff;
+
+  /* Lines / borders */
+  --color-line: #e8dfc8;
+  --color-line-2: #ebe3d1;
+
+  /* Meal type colors */
+  --color-meal-main: #ef6c1e;
+  --color-meal-entree: #3b6fb0;
+  --color-meal-dessert: #c4428d;
+  --color-meal-side: #2f7d4f;
+
+  /* Fonts */
+  --font-serif: 'Fraunces', 'Georgia', serif;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Shadows (warm) */
+  --shadow-sm: 0 1px 2px rgba(62, 40, 10, 0.06), 0 1px 0 rgba(62, 40, 10, 0.04);
+  --shadow-md: 0 2px 4px rgba(62, 40, 10, 0.05), 0 8px 24px rgba(62, 40, 10, 0.06);
+  --shadow-lg: 0 8px 24px rgba(62, 40, 10, 0.08), 0 24px 48px rgba(62, 40, 10, 0.08);
+
+  /* Radii */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.875rem;
+  --radius-lg: 1.25rem;
+  --radius-xl: 1.75rem;
+}
 
 /* Custom component layer */
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply bg-cream text-ink font-sans;
+    -webkit-font-smoothing: antialiased;
   }
 
   *,
@@ -15,7 +76,7 @@
     box-sizing: border-box;
     border-width: 0;
     border-style: solid;
-    border-color: #e5e7eb;
+    border-color: var(--color-line-2);
   }
 
   form.ts-active button,
@@ -26,10 +87,15 @@
   button:not(:disabled) {
     cursor: pointer;
   }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-serif);
+    letter-spacing: -0.02em;
+  }
 }
 
 @layer utilities {
   .shadow-sm {
-    --tw-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --tw-shadow: 0 1px 2px rgba(62, 40, 10, 0.06), 0 1px 0 rgba(62, 40, 10, 0.04);
   }
 }

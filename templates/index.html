@@ -6,21 +6,21 @@
 {% block body %}
 <body>
     <main>
-    <!-- Hero Section -->
-    <div class="bg-linear-to-br from-green-500 to-green-700 text-white">
-        <nav class="container mx-auto px-4 py-6">
-            <div class="flex items-center justify-between">
-              <a href="/"><div class="text-2xl font-bold">🍳 imkitchen</div></a>
+    <!-- Nav -->
+    <div class="bg-cream border-b border-line-2 h-16">
+        <nav class="container mx-auto px-4 h-full">
+            <div class="flex items-center justify-between h-full">
+              <a href="/"><div class="text-2xl font-serif font-bold text-ink">🍳 imkitchen</div></a>
 
                 {% if show_nav %}
                 <!-- Desktop Navigation -->
                 <div class="hidden md:flex gap-4">
-                    <a href="/login" class="px-4 py-2 hover:bg-white/10 rounded-lg transition">{{ "Login"|t }}</a>
-                    <a href="/register" class="px-6 py-2 bg-white text-green-600 font-semibold rounded-lg hover:bg-gray-100 transition">{{ "Get Started"|t }}</a>
+                    <a href="/login" class="px-4 py-2 text-ink hover:bg-ink/5 rounded-xl transition">{{ "Login"|t }}</a>
+                    <a href="/register" class="px-6 py-2 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-600 transition">{{ "Get Started"|t }}</a>
                 </div>
 
                 <!-- Mobile Menu Button -->
-                <label for="mobile-menu-button" class="md:hidden p-2 hover:bg-white/10 rounded-lg transition cursor-pointer" role="button" aria-label="{{ "Toggle navigation menu"|t }}">
+                <label for="mobile-menu-button" class="md:hidden p-2 text-ink hover:bg-ink/5 rounded-xl transition cursor-pointer" role="button" aria-label="{{ "Toggle navigation menu"|t }}">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                     </svg>
@@ -33,105 +33,108 @@
             <!-- Mobile Navigation -->
             <div id="mobile-menu" class="hidden md:hidden mt-4 pb-4">
                 <div class="flex flex-col gap-2">
-                    <a href="/login" class="px-4 py-3 hover:bg-white/10 rounded-lg transition text-center">{{ "Login"|t }}</a>
-                    <a href="/register" class="px-4 py-3 bg-white text-green-600 font-semibold rounded-lg hover:bg-gray-100 transition text-center">{{ "Get Started"|t }}</a>
+                    <a href="/login" class="px-4 py-3 text-ink hover:bg-ink/5 rounded-xl transition text-center">{{ "Login"|t }}</a>
+                    <a href="/register" class="px-4 py-3 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-600 transition text-center">{{ "Get Started"|t }}</a>
                 </div>
             </div>
         </nav>
+    </div>
 
+    <!-- Hero Section -->
+    <div class="bg-gradient-to-br from-primary-100 to-cream" style="background: radial-gradient(ellipse at 80% 20%, #fde3cf 0%, #fbf5e9 55%);">
         <div class="container mx-auto px-4 py-20 text-center">
-            <h1 class="text-5xl md:text-6xl font-bold mb-6">{{ "Cook More. Plan Less."|t }}</h1>
-            <p class="text-xl md:text-2xl mb-8 text-green-50 max-w-3xl mx-auto">
+            <h1 class="text-5xl md:text-7xl font-serif font-bold tracking-tight text-ink mb-6">{{ "Cook More."|t }} <em class="text-primary-500">{{ "Plan Less."|t }}</em></h1>
+            <p class="text-xl md:text-2xl mb-8 text-ink-2 max-w-3xl mx-auto">
                 {{ "Intelligent meal planning that unlocks your entire recipe collection. Generate weeks of meals in seconds with automatic accompaniment pairing."|t }}
             </p>
             <div class="flex gap-4 justify-center flex-wrap">
-                <a href="/register" class="px-8 py-4 bg-white text-green-600 font-bold text-lg rounded-lg hover:bg-gray-100 transition">
+                <a href="/register" class="px-8 py-4 bg-primary-500 text-white font-bold text-lg rounded-xl hover:bg-primary-600 transition">
                     {{ "Start Planning Free"|t }}
                 </a>
-                <a href="/#features" class="px-8 py-4 bg-green-600 text-white font-bold text-lg rounded-lg hover:bg-green-800 transition">
+                <a href="/#features" class="px-8 py-4 bg-paper text-ink font-bold text-lg rounded-xl border border-line-2 hover:bg-cream transition">
                     {{ "See How It Works"|t }}
                 </a>
             </div>
-            <p class="mt-4 text-green-100 text-sm">{{ "No credit card required • Free tier includes 1 week visibility"|t }}</p>
+            <p class="mt-4 text-ink-3 text-sm">{{ "No credit card required • Free tier includes 1 week visibility"|t }}</p>
         </div>
     </div>
 
     <!-- Problem Statement -->
-    <div class="bg-white py-16">
+    <div class="bg-paper py-16">
         <div class="container mx-auto px-4 max-w-4xl text-center">
-            <h2 class="text-3xl md:text-4xl font-bold mb-6">{{ "You Have 100 Saved Recipes. You Cook the Same 10."|t }}</h2>
-            <p class="text-xl text-gray-600 mb-8">
+            <h2 class="text-3xl md:text-4xl font-serif font-bold tracking-tight text-ink mb-6">{{ "You Have 100 Saved Recipes."|t }} <em class="text-primary-500">{{ "You Cook the Same 10."|t }}</em></h2>
+            <p class="text-xl text-ink-2 mb-8">
                 {{ "Sound familiar? You're avoiding complex recipes not because you can't cook them, but because planning accompaniments, timing prep work, and coordinating multiple dishes is exhausting."|t }}
             </p>
             <div class="grid md:grid-cols-3 gap-8 text-left">
-                <div class="p-6 bg-red-50 rounded-lg">
+                <div class="p-6 bg-cream rounded-2xl border border-line-2">
                     <div class="text-4xl mb-3" aria-hidden="true">😰</div>
-                    <h3 class="font-bold text-lg mb-2">{{ "Decision Fatigue"|t }}</h3>
-                    <p class="text-gray-600">{{ "Spending 30 minutes every week deciding what to cook"|t }}</p>
+                    <h3 class="font-serif font-bold text-lg mb-2 text-ink">{{ "Decision Fatigue"|t }}</h3>
+                    <p class="text-ink-2">{{ "Spending 30 minutes every week deciding what to cook"|t }}</p>
                 </div>
-                <div class="p-6 bg-red-50 rounded-lg">
+                <div class="p-6 bg-cream rounded-2xl border border-line-2">
                     <div class="text-4xl mb-3" aria-hidden="true">🍝</div>
-                    <h3 class="font-bold text-lg mb-2">{{ "Incomplete Meals"|t }}</h3>
-                    <p class="text-gray-600">{{ "Forgetting to plan rice with curry or pasta with sauce"|t }}</p>
+                    <h3 class="font-serif font-bold text-lg mb-2 text-ink">{{ "Incomplete Meals"|t }}</h3>
+                    <p class="text-ink-2">{{ "Forgetting to plan rice with curry or pasta with sauce"|t }}</p>
                 </div>
-                <div class="p-6 bg-red-50 rounded-lg">
+                <div class="p-6 bg-cream rounded-2xl border border-line-2">
                     <div class="text-4xl mb-3" aria-hidden="true">📅</div>
-                    <h3 class="font-bold text-lg mb-2">{{ "Short-Term Planning"|t }}</h3>
-                    <p class="text-gray-600">{{ "Only planning one week ahead, missing bulk shopping savings"|t }}</p>
+                    <h3 class="font-serif font-bold text-lg mb-2 text-ink">{{ "Short-Term Planning"|t }}</h3>
+                    <p class="text-ink-2">{{ "Only planning one week ahead, missing bulk shopping savings"|t }}</p>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- How It Works -->
-    <div id="features" class="bg-gray-50 py-16">
+    <div id="features" class="bg-cream py-16">
         <div class="container mx-auto px-4 max-w-6xl">
-            <h2 class="text-3xl md:text-4xl font-bold text-center mb-12">{{ "Meal Planning on Autopilot"|t }}</h2>
+            <h2 class="text-3xl md:text-4xl font-serif font-bold tracking-tight text-ink text-center mb-12">{{ "Meal Planning on"|t }} <em class="text-primary-500">{{ "Autopilot"|t }}</em></h2>
 
             <div class="grid md:grid-cols-2 gap-12 items-center mb-16">
                 <div>
-                    <div class="text-green-600 font-bold mb-2">{{ "STEP 1"|t }}</div>
-                    <h3 class="text-2xl font-bold mb-4">{{ "Import or Create Your Recipes"|t }}</h3>
-                    <p class="text-gray-600 mb-4">
+                    <div class="text-primary-500 font-bold mb-2">{{ "STEP 1"|t }}</div>
+                    <h3 class="text-2xl font-serif font-bold tracking-tight text-ink mb-4">{{ "Import or Create Your Recipes"|t }}</h3>
+                    <p class="text-ink-2 mb-4">
                         {{ "Add your favorite recipes (appetizers, main courses, desserts, and accompaniments). Bulk import from JSON or create them one by one. Mark dietary restrictions, cuisine types, and whether mains need sides."|t }}
                     </p>
-                    <ul class="space-y-2 text-gray-600">
+                    <ul class="space-y-2 text-ink-2">
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "4 recipe types: appetizer, main, dessert, accompaniment"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Bulk JSON import (up to 20 files)"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Community recipe sharing"|t }}</span>
                         </li>
                     </ul>
                 </div>
-                <div class="bg-white rounded-lg shadow-lg p-8 border-2 border-gray-200">
-                    <div class="text-sm text-gray-500 mb-4">{{ "Recipe Library Preview"|t }}</div>
+                <div class="bg-paper rounded-2xl shadow-md p-8 border border-line-2">
+                    <div class="text-sm text-ink-3 mb-4">{{ "Recipe Library Preview"|t }}</div>
                     <div class="space-y-3">
-                        <div class="flex items-center gap-3 p-3 bg-blue-50 rounded border border-blue-200">
+                        <div class="flex items-center gap-3 p-3 bg-primary-50 rounded-xl border border-primary-200">
                             <span class="text-2xl">🥗</span>
                             <div>
-                                <div class="font-semibold">{{ "Caesar Salad"|t }}</div>
-                                <div class="text-sm text-gray-600">{{ "Appetizer • 15 min"|t }}</div>
+                                <div class="font-semibold text-ink">{{ "Caesar Salad"|t }}</div>
+                                <div class="text-sm text-ink-2">{{ "Appetizer • 15 min"|t }}</div>
                             </div>
                         </div>
-                        <div class="flex items-center gap-3 p-3 bg-orange-50 rounded border border-orange-200">
+                        <div class="flex items-center gap-3 p-3 bg-primary-50 rounded-xl border border-primary-200">
                             <span class="text-2xl">🍛</span>
                             <div>
-                                <div class="font-semibold">{{ "Thai Red Curry"|t }}</div>
-                                <div class="text-sm text-gray-600">{{ "Main Course • 45 min"|t }}</div>
+                                <div class="font-semibold text-ink">{{ "Thai Red Curry"|t }}</div>
+                                <div class="text-sm text-ink-2">{{ "Main Course • 45 min"|t }}</div>
                             </div>
                         </div>
-                        <div class="flex items-center gap-3 p-3 bg-purple-50 rounded border border-purple-200">
+                        <div class="flex items-center gap-3 p-3 bg-primary-50 rounded-xl border border-primary-200">
                             <span class="text-2xl">🍚</span>
                             <div>
-                                <div class="font-semibold">{{ "Jasmine Rice"|t }}</div>
-                                <div class="text-sm text-gray-600">{{ "Accompaniment • 20 min"|t }}</div>
+                                <div class="font-semibold text-ink">{{ "Jasmine Rice"|t }}</div>
+                                <div class="text-sm text-ink-2">{{ "Accompaniment • 20 min"|t }}</div>
                             </div>
                         </div>
                     </div>
@@ -139,50 +142,50 @@
             </div>
 
             <div class="grid md:grid-cols-2 gap-12 items-center mb-16">
-                <div class="order-2 md:order-1 bg-white rounded-lg shadow-lg p-8 border-2 border-gray-200">
-                    <div class="text-sm text-gray-500 mb-4">{{ "Generated Meal Plan"|t }}</div>
+                <div class="order-2 md:order-1 bg-paper rounded-2xl shadow-md p-8 border border-line-2">
+                    <div class="text-sm text-ink-3 mb-4">{{ "Generated Meal Plan"|t }}</div>
                     <div class="space-y-4">
-                        <div class="border-l-4 border-green-500 pl-4">
-                            <div class="font-bold">{{ "Monday, Nov 4"|t }}</div>
-                            <div class="text-sm text-gray-600 mt-1">🥗 {{ "Caesar Salad"|t }}</div>
-                            <div class="text-sm text-gray-600">🍛 {{ "Thai Red Curry"|t }} + 🍚 {{ "Jasmine Rice"|t }}</div>
-                            <div class="text-sm text-gray-600">🍰 {{ "Chocolate Mousse"|t }}</div>
+                        <div class="border-l-4 border-primary-500 pl-4">
+                            <div class="font-bold text-ink">{{ "Monday, Nov 4"|t }}</div>
+                            <div class="text-sm text-ink-2 mt-1">🥗 {{ "Caesar Salad"|t }}</div>
+                            <div class="text-sm text-ink-2">🍛 {{ "Thai Red Curry"|t }} + 🍚 {{ "Jasmine Rice"|t }}</div>
+                            <div class="text-sm text-ink-2">🍰 {{ "Chocolate Mousse"|t }}</div>
                         </div>
-                        <div class="border-l-4 border-gray-300 pl-4">
-                            <div class="font-bold">{{ "Tuesday, Nov 5"|t }}</div>
-                            <div class="text-sm text-gray-600 mt-1">🍝 {{ "Pasta Carbonara"|t }} + 🥖 {{ "Garlic Bread"|t }}</div>
-                            <div class="text-sm text-gray-600">🍨 {{ "Tiramisu"|t }}</div>
+                        <div class="border-l-4 border-line-2 pl-4">
+                            <div class="font-bold text-ink">{{ "Tuesday, Nov 5"|t }}</div>
+                            <div class="text-sm text-ink-2 mt-1">🍝 {{ "Pasta Carbonara"|t }} + 🥖 {{ "Garlic Bread"|t }}</div>
+                            <div class="text-sm text-ink-2">🍨 {{ "Tiramisu"|t }}</div>
                         </div>
-                        <div class="border-l-4 border-gray-300 pl-4 opacity-50">
-                            <div class="font-bold flex items-center gap-2">
+                        <div class="border-l-4 border-line-2 pl-4 opacity-50">
+                            <div class="font-bold flex items-center gap-2 text-ink">
                                 {{ "Wednesday, Nov 6"|t }}
-                                <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">{{ "Premium"|t }}</span>
+                                <span class="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full">{{ "Premium"|t }}</span>
                             </div>
-                            <div class="text-sm text-gray-400 mt-1">{{ "Upgrade to view all weeks →"|t }}</div>
+                            <div class="text-sm text-ink-3 mt-1">{{ "Upgrade to view all weeks →"|t }}</div>
                         </div>
                     </div>
                 </div>
                 <div class="order-1 md:order-2">
-                    <div class="text-green-600 font-bold mb-2">{{ "STEP 2"|t }}</div>
-                    <h3 class="text-2xl font-bold mb-4">{{ "One-Click Month Generation"|t }}</h3>
-                    <p class="text-gray-600 mb-4">
+                    <div class="text-primary-500 font-bold mb-2">{{ "STEP 2"|t }}</div>
+                    <h3 class="text-2xl font-serif font-bold tracking-tight text-ink mb-4">{{ "One-Click Month Generation"|t }}</h3>
+                    <p class="text-ink-2 mb-4">
                         {{ "Click \"Generate\" and watch weeks of meals appear instantly. The algorithm considers your dietary restrictions, pairs main courses with appropriate sides, and ensures variety across weeks."|t }}
                     </p>
-                    <ul class="space-y-2 text-gray-600">
+                    <ul class="space-y-2 text-ink-2">
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Generates all remaining weeks of current month"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Automatic accompaniment pairing (rice with curry, pasta with sauce)"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Respects dietary restrictions and preferences"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "No duplicate main courses across weeks"|t }}</span>
                         </li>
                     </ul>
@@ -191,47 +194,47 @@
 
             <div class="grid md:grid-cols-2 gap-12 items-center">
                 <div>
-                    <div class="text-green-600 font-bold mb-2">{{ "STEP 3"|t }}</div>
-                    <h3 class="text-2xl font-bold mb-4">{{ "Shop, Prep, Cook"|t }}</h3>
-                    <p class="text-gray-600 mb-4">
+                    <div class="text-primary-500 font-bold mb-2">{{ "STEP 3"|t }}</div>
+                    <h3 class="text-2xl font-serif font-bold tracking-tight text-ink mb-4">{{ "Shop, Prep, Cook"|t }}</h3>
+                    <p class="text-ink-2 mb-4">
                         {{ "Get weekly shopping lists with all ingredients (including accompaniments). Receive morning reminders for advance prep. Adjust or regenerate anytime."|t }}
                     </p>
-                    <ul class="space-y-2 text-gray-600">
+                    <ul class="space-y-2 text-ink-2">
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Separate shopping lists per week"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Morning prep reminders (8 AM daily)"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Unlimited regenerations to find perfect plan"|t }}</span>
                         </li>
                     </ul>
                 </div>
-                <div class="bg-white rounded-lg shadow-lg p-8 border-2 border-gray-200">
-                    <div class="text-sm text-gray-500 mb-4">{{ "Shopping List - Week 1"|t }}</div>
+                <div class="bg-paper rounded-2xl shadow-md p-8 border border-line-2">
+                    <div class="text-sm text-ink-3 mb-4">{{ "Shopping List - Week 1"|t }}</div>
                     <div class="space-y-3">
                         <div>
-                            <div class="font-bold text-sm text-gray-700 mb-2">{{ "Proteins"|t }}</div>
-                            <ul class="text-sm text-gray-600 space-y-1 ml-4">
+                            <div class="font-bold text-sm text-ink mb-2">{{ "Proteins"|t }}</div>
+                            <ul class="text-sm text-ink-2 space-y-1 ml-4">
                                 <li>• {{ "Chicken breast (500g)"|t }}</li>
                                 <li>• {{ "Salmon fillet (300g)"|t }}</li>
                             </ul>
                         </div>
                         <div>
-                            <div class="font-bold text-sm text-gray-700 mb-2">{{ "Vegetables"|t }}</div>
-                            <ul class="text-sm text-gray-600 space-y-1 ml-4">
+                            <div class="font-bold text-sm text-ink mb-2">{{ "Vegetables"|t }}</div>
+                            <ul class="text-sm text-ink-2 space-y-1 ml-4">
                                 <li>• {{ "Bell peppers (3)"|t }}</li>
                                 <li>• {{ "Tomatoes (6)"|t }}</li>
                                 <li>• {{ "Lettuce (1 head)"|t }}</li>
                             </ul>
                         </div>
                         <div>
-                            <div class="font-bold text-sm text-gray-700 mb-2">{{ "Pantry"|t }}</div>
-                            <ul class="text-sm text-gray-600 space-y-1 ml-4">
+                            <div class="font-bold text-sm text-ink mb-2">{{ "Pantry"|t }}</div>
+                            <ul class="text-sm text-ink-2 space-y-1 ml-4">
                                 <li>• {{ "Jasmine rice (1kg)"|t }}</li>
                                 <li>• {{ "Pasta (500g)"|t }}</li>
                                 <li>• {{ "Coconut milk (2 cans)"|t }}</li>
@@ -244,121 +247,121 @@
     </div>
 
     <!-- Key Features -->
-    <div class="bg-white py-16">
+    <div class="bg-paper py-16">
         <div class="container mx-auto px-4 max-w-6xl">
-            <h2 class="text-3xl md:text-4xl font-bold text-center mb-12">{{ "Everything You Need"|t }}</h2>
+            <h2 class="text-3xl md:text-4xl font-serif font-bold tracking-tight text-ink text-center mb-12">{{ "Everything You"|t }} <em class="text-primary-500">{{ "Need"|t }}</em></h2>
             <div class="grid md:grid-cols-3 gap-8">
-                <div class="text-center p-6">
+                <div class="text-center p-6 bg-cream rounded-2xl border border-line-2">
                     <div class="text-5xl mb-4" aria-hidden="true">🗓️</div>
-                    <h3 class="font-bold text-xl mb-2">{{ "Month-Based Planning"|t }}</h3>
-                    <p class="text-gray-600">{{ "Generate all future weeks of current month in seconds. See the whole picture."|t }}</p>
+                    <h3 class="font-serif font-bold text-xl mb-2 text-ink">{{ "Month-Based Planning"|t }}</h3>
+                    <p class="text-ink-2">{{ "Generate all future weeks of current month in seconds. See the whole picture."|t }}</p>
                 </div>
-                <div class="text-center p-6">
+                <div class="text-center p-6 bg-cream rounded-2xl border border-line-2">
                     <div class="text-5xl mb-4" aria-hidden="true">🍚</div>
-                    <h3 class="font-bold text-xl mb-2">{{ "Smart Pairing"|t }}</h3>
-                    <p class="text-gray-600">{{ "Automatically pair mains with sides. Curry gets rice, pasta gets bread."|t }}</p>
+                    <h3 class="font-serif font-bold text-xl mb-2 text-ink">{{ "Smart Pairing"|t }}</h3>
+                    <p class="text-ink-2">{{ "Automatically pair mains with sides. Curry gets rice, pasta gets bread."|t }}</p>
                 </div>
-                <div class="text-center p-6">
+                <div class="text-center p-6 bg-cream rounded-2xl border border-line-2">
                     <div class="text-5xl mb-4" aria-hidden="true">🎯</div>
-                    <h3 class="font-bold text-xl mb-2">{{ "Preference-Aware"|t }}</h3>
-                    <p class="text-gray-600">{{ "Respects dietary restrictions and cuisine variety preferences."|t }}</p>
+                    <h3 class="font-serif font-bold text-xl mb-2 text-ink">{{ "Preference-Aware"|t }}</h3>
+                    <p class="text-ink-2">{{ "Respects dietary restrictions and cuisine variety preferences."|t }}</p>
                 </div>
-                <div class="text-center p-6">
+                <div class="text-center p-6 bg-cream rounded-2xl border border-line-2">
                     <div class="text-5xl mb-4" aria-hidden="true">🔄</div>
-                    <h3 class="font-bold text-xl mb-2">{{ "Smart Rotation"|t }}</h3>
-                    <p class="text-gray-600">{{ "No duplicate main courses across weeks. Maximum variety guaranteed."|t }}</p>
+                    <h3 class="font-serif font-bold text-xl mb-2 text-ink">{{ "Smart Rotation"|t }}</h3>
+                    <p class="text-ink-2">{{ "No duplicate main courses across weeks. Maximum variety guaranteed."|t }}</p>
                 </div>
-                <div class="text-center p-6">
+                <div class="text-center p-6 bg-cream rounded-2xl border border-line-2">
                     <div class="text-5xl mb-4" aria-hidden="true">🛒</div>
-                    <h3 class="font-bold text-xl mb-2">{{ "Shopping Lists"|t }}</h3>
-                    <p class="text-gray-600">{{ "Separate lists per week with ingredient grouping and quantity optimization."|t }}</p>
+                    <h3 class="font-serif font-bold text-xl mb-2 text-ink">{{ "Shopping Lists"|t }}</h3>
+                    <p class="text-ink-2">{{ "Separate lists per week with ingredient grouping and quantity optimization."|t }}</p>
                 </div>
-                <div class="text-center p-6">
+                <div class="text-center p-6 bg-cream rounded-2xl border border-line-2">
                     <div class="text-5xl mb-4" aria-hidden="true">👥</div>
-                    <h3 class="font-bold text-xl mb-2">{{ "Community Sharing"|t }}</h3>
-                    <p class="text-gray-600">{{ "Share and discover recipes with ratings and reviews."|t }}</p>
+                    <h3 class="font-serif font-bold text-xl mb-2 text-ink">{{ "Community Sharing"|t }}</h3>
+                    <p class="text-ink-2">{{ "Share and discover recipes with ratings and reviews."|t }}</p>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Pricing -->
-    <div id="pricing" class="bg-gray-50 py-16">
+    <div id="pricing" class="bg-cream py-16">
         <div class="container mx-auto px-4 max-w-5xl">
-            <h2 class="text-3xl md:text-4xl font-bold text-center mb-4">{{ "Simple, Transparent Pricing"|t }}</h2>
-            <p class="text-center text-gray-600 mb-12">{{ "Start free. Upgrade when you're ready to see the full month."|t }}</p>
+            <h2 class="text-3xl md:text-4xl font-serif font-bold tracking-tight text-ink text-center mb-4">{{ "Simple, Transparent"|t }} <em class="text-primary-500">{{ "Pricing"|t }}</em></h2>
+            <p class="text-center text-ink-2 mb-12">{{ "Start free. Upgrade when you're ready to see the full month."|t }}</p>
 
             <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
                 <!-- Free Tier -->
-                <div class="bg-white rounded-lg shadow-lg p-8 border-2 border-gray-200">
-                    <h3 class="text-2xl font-bold mb-2">{{ "Free"|t }}</h3>
-                    <div class="text-4xl font-bold mb-6">$0<span class="text-lg text-gray-600 font-normal">{{ "/month"|t }}</span></div>
+                <div class="bg-paper rounded-2xl shadow-md p-8 border border-line-2">
+                    <h3 class="text-2xl font-serif font-bold text-ink mb-2">{{ "Free"|t }}</h3>
+                    <div class="text-4xl font-serif font-bold text-ink mb-6">$0<span class="text-lg text-ink-3 font-normal">{{ "/month"|t }}</span></div>
                     <ul class="space-y-3 mb-8">
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
-                            <span>{{ "Generate all future weeks"|t }}</span>
+                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-ink-2">{{ "Generate all future weeks"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
-                            <span>{{ "Up to 7 recipes in plan (by creation date)"|t }}</span>
+                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-ink-2">{{ "Up to 7 recipes in plan (by creation date)"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
-                            <span>{{ "Main courses only (no accompaniments/appetizers/desserts)"|t }}</span>
+                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-ink-2">{{ "Main courses only (no accompaniments/appetizers/desserts)"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
-                            <span>{{ "Unlimited regenerations"|t }}</span>
+                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-ink-2">{{ "Unlimited regenerations"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
-                            <span>{{ "Recipe management & sharing"|t }}</span>
+                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-ink-2">{{ "Recipe management & sharing"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-500 mt-1" aria-hidden="true">✓</span>
-                            <span>{{ "Community access"|t }}</span>
+                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-ink-2">{{ "Community access"|t }}</span>
                         </li>
                     </ul>
-                    <a href="/register" class="block text-center px-6 py-3 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition">
+                    <a href="/register" class="block text-center px-6 py-3 bg-cream text-ink font-semibold rounded-xl border border-line-2 hover:bg-primary-50 transition">
                         {{ "Get Started Free"|t }}
                     </a>
                 </div>
 
                 <!-- Premium Tier -->
-                <div class="bg-linear-to-br from-green-500 to-green-700 text-white rounded-lg shadow-xl p-8 border-2 border-green-600 relative">
-                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-400 text-gray-900 px-4 py-1 rounded-full text-sm font-bold">
+                <div class="bg-gradient-to-br from-herb-500 to-herb-700 text-white rounded-2xl shadow-md p-8 relative">
+                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary-400 text-white px-4 py-1 rounded-full text-sm font-bold">
                         {{ "MOST POPULAR"|t }}
                     </div>
-                    <h3 class="text-2xl font-bold mb-2">{{ "Premium"|t }}</h3>
-                    <div class="text-4xl font-bold mb-2">$4.99<span class="text-lg font-normal">{{ "/month"|t }}</span></div>
-                    <div class="text-sm mb-6 text-green-100">{{ "or $47.90/year (save 20%)"|t }}</div>
+                    <h3 class="text-2xl font-serif font-bold mb-2">{{ "Premium"|t }}</h3>
+                    <div class="text-4xl font-serif font-bold mb-2">$4.99<span class="text-lg font-normal">{{ "/month"|t }}</span></div>
+                    <div class="text-sm mb-6 text-white/80">{{ "or $47.90/year"|t }} <span class="bg-primary-400 text-white px-2 py-0.5 rounded-full text-xs font-bold">{{ "save 20%"|t }}</span></div>
                     <ul class="space-y-3 mb-8">
                         <li class="flex items-start gap-2">
-                            <span class="text-green-200 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-white/80 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Unlimited recipes in meal plan"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-200 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-white/80 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "All recipe types (appetizers, accompaniments, desserts)"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-200 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-white/80 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Meal preferences applied"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-200 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-white/80 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Batch recipe import"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-200 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-white/80 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Priority support"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-green-200 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-white/80 mt-1" aria-hidden="true">✓</span>
                             <span>{{ "Early access to new features"|t }}</span>
                         </li>
                     </ul>
-                    <a href="/register" class="block text-center px-6 py-3 bg-white text-green-600 font-bold rounded-lg hover:bg-gray-100 transition">
+                    <a href="/register" class="block text-center px-6 py-3 bg-primary-500 text-white font-bold rounded-xl hover:bg-primary-600 transition">
                         {{ "Start Free Trial"|t }}
                     </a>
                 </div>
@@ -367,49 +370,49 @@
     </div>
 
     <!-- Social Proof / Testimonials -->
-    <div class="bg-white py-16">
+    <div class="bg-paper py-16">
         <div class="container mx-auto px-4 max-w-6xl">
-            <h2 class="text-3xl font-bold text-center mb-12">{{ "What Home Cooks Say"|t }}</h2>
+            <h2 class="text-3xl font-serif font-bold tracking-tight text-ink text-center mb-12">{{ "What Home Cooks"|t }} <em class="text-primary-500">{{ "Say"|t }}</em></h2>
             <div class="grid md:grid-cols-3 gap-8">
-                <div class="bg-gray-50 p-6 rounded-lg">
+                <div class="bg-cream p-6 rounded-2xl border border-line-2">
                     <div class="flex gap-1 mb-3" role="img" aria-label="{{ "5 out of 5 stars"|t }}">
-                        <span class="text-yellow-400" aria-hidden="true">★★★★★</span>
+                        <span class="text-primary-400" aria-hidden="true">★★★★★</span>
                     </div>
-                    <p class="text-gray-600 mb-4">{{ "\"Finally using recipes I saved years ago! The accompaniment pairing is genius - no more forgetting to make rice.\""|t }}</p>
-                    <div class="font-semibold">{{ "Sarah M."|t }}</div>
-                    <div class="text-sm text-gray-500">{{ "Busy mom of 3"|t }}</div>
+                    <p class="text-ink-2 mb-4 font-serif">{{ "\"Finally using recipes I saved years ago! The accompaniment pairing is genius - no more forgetting to make rice.\""|t }}</p>
+                    <div class="font-semibold text-ink">{{ "Sarah M."|t }}</div>
+                    <div class="text-sm text-ink-3">{{ "Busy mom of 3"|t }}</div>
                 </div>
-                <div class="bg-gray-50 p-6 rounded-lg">
+                <div class="bg-cream p-6 rounded-2xl border border-line-2">
                     <div class="flex gap-1 mb-3" role="img" aria-label="{{ "5 out of 5 stars"|t }}">
-                        <span class="text-yellow-400" aria-hidden="true">★★★★★</span>
+                        <span class="text-primary-400" aria-hidden="true">★★★★★</span>
                     </div>
-                    <p class="text-gray-600 mb-4">{{ "\"Planning a whole month at once saves SO much time. I can bulk shop and actually stick to my meal plan.\""|t }}</p>
-                    <div class="font-semibold">{{ "Michael T."|t }}</div>
-                    <div class="text-sm text-gray-500">{{ "Home cooking enthusiast"|t }}</div>
+                    <p class="text-ink-2 mb-4 font-serif">{{ "\"Planning a whole month at once saves SO much time. I can bulk shop and actually stick to my meal plan.\""|t }}</p>
+                    <div class="font-semibold text-ink">{{ "Michael T."|t }}</div>
+                    <div class="text-sm text-ink-3">{{ "Home cooking enthusiast"|t }}</div>
                 </div>
-                <div class="bg-gray-50 p-6 rounded-lg">
+                <div class="bg-cream p-6 rounded-2xl border border-line-2">
                     <div class="flex gap-1 mb-3" role="img" aria-label="{{ "5 out of 5 stars"|t }}">
-                        <span class="text-yellow-400" aria-hidden="true">★★★★★</span>
+                        <span class="text-primary-400" aria-hidden="true">★★★★★</span>
                     </div>
-                    <p class="text-gray-600 mb-4">{{ "\"The dietary restriction filtering is perfect. Every meal fits my preferences without me having to check manually.\""|t }}</p>
-                    <div class="font-semibold">{{ "Jessica L."|t }}</div>
-                    <div class="text-sm text-gray-500">{{ "Gluten-free household"|t }}</div>
+                    <p class="text-ink-2 mb-4 font-serif">{{ "\"The dietary restriction filtering is perfect. Every meal fits my preferences without me having to check manually.\""|t }}</p>
+                    <div class="font-semibold text-ink">{{ "Jessica L."|t }}</div>
+                    <div class="text-sm text-ink-3">{{ "Gluten-free household"|t }}</div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Final CTA -->
-    <div class="bg-linear-to-br from-green-500 to-green-700 text-white py-16">
+    <div class="bg-gradient-to-br from-primary-500 to-primary-700 text-white py-16">
         <div class="container mx-auto px-4 text-center max-w-3xl">
-            <h2 class="text-4xl font-bold mb-6">{{ "Ready to Cook More and Plan Less?"|t }}</h2>
-            <p class="text-xl mb-8 text-green-50">
+            <h2 class="text-4xl font-serif font-bold tracking-tight mb-6">{{ "Ready to Cook More and Plan Less?"|t }}</h2>
+            <p class="text-xl mb-8 text-white/80">
                 {{ "Join thousands of home cooks who've unlocked their recipe collections. Start free, upgrade anytime."|t }}
             </p>
-            <a href="/register" class="inline-block px-8 py-4 bg-white text-green-600 font-bold text-lg rounded-lg hover:bg-gray-100 transition">
+            <a href="/register" class="inline-block px-8 py-4 bg-white text-primary-600 font-bold text-lg rounded-xl hover:bg-cream transition">
                 {{ "Get Started Free"|t }}
             </a>
-            <p class="mt-4 text-green-100 text-sm">{{ "No credit card required • Cancel anytime"|t }}</p>
+            <p class="mt-4 text-white/70 text-sm">{{ "No credit card required • Cancel anytime"|t }}</p>
         </div>
     </div>
 

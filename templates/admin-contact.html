@@ -8,11 +8,11 @@
   <div class="mb-8">
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
       <div>
-        <h1 class="text-2xl md:text-3xl font-bold mb-2">Contact Inbox</h1>
-        <p class="text-gray-600">Manage and respond to user contact messages</p>
+        <h1 class="text-2xl md:text-3xl font-bold font-serif mb-2">Contact Inbox</h1>
+        <p class="text-ink-2">Manage and respond to user contact messages</p>
       </div>
       <div>
-        <button class="w-full md:w-auto px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">
+        <button class="w-full md:w-auto px-6 py-3 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-600">
           ✓ Mark All Read
         </button>
       </div>
@@ -21,49 +21,49 @@
 
   <!-- Stats Cards -->
   <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
-    <div class="bg-white rounded-lg shadow-lg p-4 md:p-6">
-      <div class="text-gray-600 text-xs md:text-sm mb-1">Total Messages</div>
+    <div class="bg-paper rounded-xl shadow-md p-4 md:p-6">
+      <div class="text-ink-2 text-xs md:text-sm mb-1">Total Messages</div>
       <div class="text-2xl md:text-3xl font-bold">{{ stat.total }}</div>
-      <div class="text-xs md:text-sm text-gray-500 mt-2">All time</div>
+      <div class="text-xs md:text-sm text-ink-3 mt-2">All time</div>
     </div>
-    <div class="bg-white rounded-lg shadow-lg p-4 md:p-6">
-      <div class="text-gray-600 text-xs md:text-sm mb-1">Unread</div>
+    <div class="bg-paper rounded-xl shadow-md p-4 md:p-6">
+      <div class="text-ink-2 text-xs md:text-sm mb-1">Unread</div>
       <div class="text-2xl md:text-3xl font-bold text-orange-600">{{ stat.unread }}</div>
       <div class="text-xs md:text-sm text-orange-600 mt-2">Needs attention</div>
     </div>
-    <div class="bg-white rounded-lg shadow-lg p-4 md:p-6">
-      <div class="text-gray-600 text-xs md:text-sm mb-1">Today</div>
+    <div class="bg-paper rounded-xl shadow-md p-4 md:p-6">
+      <div class="text-ink-2 text-xs md:text-sm mb-1">Today</div>
       <div class="text-2xl md:text-3xl font-bold text-blue-600">{{ today }}</div>
-      <div class="text-xs md:text-sm text-gray-500 mt-2">New messages</div>
+      <div class="text-xs md:text-sm text-ink-3 mt-2">New messages</div>
     </div>
-    <div class="bg-white rounded-lg shadow-lg p-4 md:p-6">
-      <div class="text-gray-600 text-xs md:text-sm mb-1">Avg Response Time</div>
-      <div class="text-2xl md:text-3xl font-bold text-green-600">{{ stat.avg_response_time }}h</div>
-      <div class="text-xs md:text-sm text-green-600 mt-2">↓ 0h from last week</div>
+    <div class="bg-paper rounded-xl shadow-md p-4 md:p-6">
+      <div class="text-ink-2 text-xs md:text-sm mb-1">Avg Response Time</div>
+      <div class="text-2xl md:text-3xl font-bold text-primary-500">{{ stat.avg_response_time }}h</div>
+      <div class="text-xs md:text-sm text-primary-500 mt-2">↓ 0h from last week</div>
     </div>
   </div>
 
   <!-- Filters -->
-  <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+  <div class="bg-paper rounded-xl shadow-md p-6 mb-6">
     <form ts-trigger="change,input" ts-req="/admin/contact" ts-req-selector="#contacts-list" ts-req-method="GET" ts-req-strategy="last" ts-target="#contacts-list"
       class="grid md:grid-cols-4 gap-4" autocomplete="off">
       <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-2">Search</label>
+        <label class="block text-sm font-semibold text-ink-2 mb-2">Search</label>
         <input name="search" type="text" placeholder="Name, email, mesaage..."
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" />
+          class="w-full px-4 py-2 border border-line rounded-xl focus:ring-2 focus:ring-primary-500" />
       </div>
       <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-2">Status</label>
-        <select name="status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+        <label class="block text-sm font-semibold text-ink-2 mb-2">Status</label>
+        <select name="status" class="w-full px-4 py-2 border border-line rounded-xl focus:ring-2 focus:ring-primary-500">
           <option value="">All Messages</option>
           {% for status in Status::VARIANTS %}
           <option value="{{ status }}">{{ status.as_ref()|t }}</option>
-          {% endfor %} 
+          {% endfor %}
         </select>
       </div>
       <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-2">Subject</label>
-        <select name="subject" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+        <label class="block text-sm font-semibold text-ink-2 mb-2">Subject</label>
+        <select name="subject" class="w-full px-4 py-2 border border-line rounded-xl focus:ring-2 focus:ring-primary-500">
           <option value="">All Subjects</option>
           {% for subject in Subject::VARIANTS %}
           <option value="{{ subject }}">{{ subject.as_ref()|t }}</option>
@@ -71,8 +71,8 @@
         </select>
       </div>
       <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-2">Sort By</label>
-        <select name="sort_by" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+        <label class="block text-sm font-semibold text-ink-2 mb-2">Sort By</label>
+        <select name="sort_by" class="w-full px-4 py-2 border border-line rounded-xl focus:ring-2 focus:ring-primary-500">
           {% for sort_by in SortBy::VARIANTS %}
           <option value="{{ sort_by }}">{{ sort_by.as_ref()|t }}</option>
           {% endfor %}
@@ -82,10 +82,10 @@
   </div>
 
   <!-- Messages List -->
-  <div id="contacts-list" class="bg-white rounded-lg shadow-lg overflow-hidden">
+  <div id="contacts-list" class="bg-paper rounded-xl shadow-md overflow-hidden">
     <!-- Message 1 - Unread -->
     {% for contact in contacts.edges %}
-    <div id="contact-{{ contact.node.id }}" class="border-b hover:bg-gray-50 cursor-pointer"{% if let (true, true, Some(cursor)) = (loop.last, contacts.page_info.has_next_page, contacts.page_info.end_cursor.to_owned()) %}
+    <div id="contact-{{ contact.node.id }}" class="border-b hover:bg-cream cursor-pointer"{% if let (true, true, Some(cursor)) = (loop.last, contacts.page_info.has_next_page, contacts.page_info.end_cursor.to_owned()) %}
             ts-req="/admin/contact?after={{ cursor.to_string() }}{% if let Some(sort_by) = query.sort_by %}&sort_by={{ sort_by }}{% endif %}{% if let Some(subject) = query.subject %}&subject={{ subject }}{% endif %}{% if let Some(status) = query.status %}&status={{ status }}{% endif %}"
             ts-req-method="GET"
             ts-req-selector="children #contacts-list"
@@ -93,7 +93,7 @@
             ts-trigger="visible once"{% endif %}>
 
       <div class="px-6 py-4 flex items-start gap-4">
-        <input type="checkbox" class="mt-1 rounded border-gray-300" />
+        <input type="checkbox" class="mt-1 rounded border-line" />
         <div class="flex-1">
           <div class="flex items-start justify-between mb-2">
             <div class="flex items-center gap-3">
@@ -102,7 +102,7 @@
               </div>
               <div>
                 <div class="font-bold">{{ contact.node.name }}</div>
-                <div class="text-sm text-gray-600">{{ contact.node.email }}</div>
+                <div class="text-sm text-ink-2">{{ contact.node.email }}</div>
               </div>
             </div>
             <div class="flex items-center gap-2">
@@ -112,16 +112,16 @@
               </span>
             {% endif %}
             {% if contact.node.is_resolved() %}
-              <span class="px-3 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">
+              <span class="px-3 py-1 bg-primary-100 text-primary-800 text-xs font-semibold rounded-full">
                 RESOLVED
               </span>
             {% endif %}
             {% if contact.node.is_read() %}
-              <span class="px-3 py-1 bg-gray-100 text-gray-800 text-xs font-semibold rounded-full">
+              <span class="px-3 py-1 bg-cream-2 text-ink text-xs font-semibold rounded-full">
                 READ
               </span>
             {% endif %}
-            <span class="text-sm text-gray-500">{{ contact.node.created_at|relative_time }}</span>
+            <span class="text-sm text-ink-3">{{ contact.node.created_at|relative_time }}</span>
             </div>
           </div>
           <div class="mb-2">
@@ -136,7 +136,7 @@
             </span>
             {% endif %}
             {% if contact.node.subject.0 == Subject::BillingQuestion %}
-            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded">
+            <span class="px-2 py-1 bg-primary-100 text-primary-800 text-xs font-semibold rounded">
               Billing Question
             </span>
             {% endif %}
@@ -156,12 +156,12 @@
             </span>
             {% endif %}
             {% if contact.node.subject.0 == Subject::Other %}
-            <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs font-semibold rounded">
+            <span class="px-2 py-1 bg-cream-2 text-ink text-xs font-semibold rounded">
               Other
             </span>
             {% endif %}
           </div>
-          <div class="text-gray-600 line-clamp-2">
+          <div class="text-ink-2 line-clamp-2">
             {{ contact.node.message }}
           </div>
           <div class="mt-3 flex flex-col md:flex-row gap-2">
@@ -170,7 +170,7 @@
               ts-req-method="POST"
               ts-req-selector="#contact-{{ contact.node.id }}"
               ts-target="#contact-{{ contact.node.id }}"
-              class="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700">
+              class="px-4 py-2 bg-primary-500 text-white text-sm font-semibold rounded-xl hover:bg-primary-600">
               Mark Read & Reply
             </button>
             {% endif %}
@@ -179,7 +179,7 @@
               ts-req-method="POST"
               ts-req-selector="#contact-{{ contact.node.id }}"
               ts-target="#contact-{{ contact.node.id }}"
-              class="px-4 py-2 bg-blue-100 text-blue-700 text-sm font-semibold rounded-lg hover:bg-blue-200">
+              class="px-4 py-2 bg-blue-100 text-blue-700 text-sm font-semibold rounded-xl hover:bg-blue-200">
               Resolve
             </button>
             {% endif %}
@@ -188,7 +188,7 @@
               ts-req-method="POST"
               ts-req-selector="#contact-{{ contact.node.id }}"
               ts-target="#contact-{{ contact.node.id }}"
-              class="px-4 py-2 bg-orange-100 text-orange-700 text-sm font-semibold rounded-lg hover:bg-orange-200">
+              class="px-4 py-2 bg-orange-100 text-orange-700 text-sm font-semibold rounded-xl hover:bg-orange-200">
               Reopen
             </button>
             {% endif %}

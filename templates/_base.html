@@ -28,7 +28,7 @@
 
   <!-- PWA Manifest -->
   <link rel="manifest" href={{ "/manifest.json?v=" ~ env!("CARGO_PKG_VERSION") }}>
-  <meta name="theme-color" content="#2563eb">
+  <meta name="theme-color" content="#ef6c1e">
 
   <!-- iOS PWA Support -->
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -38,6 +38,11 @@
 
   <!-- DNS prefetch for external origins -->
   {% block dns_prefetch %}{% endblock %}
+
+  <!-- Google Fonts: Fraunces (serif headings) + Inter (body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <!-- Main CSS - loaded synchronously to prevent visual breaking -->
   <link rel="stylesheet" href={{ "/static/css/main.css?v=" ~ env!("CARGO_PKG_VERSION") }}>

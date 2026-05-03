@@ -1,7 +1,7 @@
 {% match status %}
 {% when Status::Pending %}
-<button id="delete-button" disabled class="flex-1 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg">
-  <div class="animate-spin rounded-full h-5 w-5 border-2 border-red-200 border-t-red-600 shrink-0 m-auto"></div>
+<button id="delete-button" disabled class="flex-1 px-4 py-2 bg-[#c3321a] text-white font-semibold rounded-xl">
+  <div class="animate-spin rounded-full h-5 w-5 border-2 border-[#c3321a]/20 border-t-[#c3321a] shrink-0 m-auto"></div>
 </button>
 <div ts-swap="append" ts-swap-push="body" ts-trigger="load delay 300ms" ts-req="/recipes/{{ id }}/delete/status"></div>
 {% when Status::Checking %}
@@ -9,7 +9,7 @@
 {% when Status::Idle %}
 <div ts-trigger="load" ts-action="remove"></div>
 <button id="delete-button" ts-swap-push="#delete-button" ts-trigger="click" ts-req="/recipes/{{ id }}/delete"
-  ts-req-method="POST" class="flex-1 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700">
+  ts-req-method="POST" class="flex-1 px-4 py-2 bg-[#c3321a] text-white font-semibold rounded-xl hover:bg-[#a82a16]">
   {{ "Delete"|t }}
 </button>
 {% endmatch %}

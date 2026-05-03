@@ -6,19 +6,19 @@
 <div class="container mx-auto px-4 py-8 max-w-4xl">
   <!-- Header -->
   <div class="mb-8">
-    <h1 class="text-3xl font-bold mb-2">{{ "Import Recipes"|t }}</h1>
-    <p class="text-gray-600">{{ "Bulk import recipes from JSON files"|t }}</p>
+    <h1 class="text-3xl font-bold font-serif mb-2">{{ "Import Recipes"|t }}</h1>
+    <p class="text-ink-2">{{ "Bulk import recipes from JSON files"|t }}</p>
   </div>
 
   <!-- Upload Area -->
-  <div class="bg-white rounded-lg shadow-lg p-8 mb-6">
+  <div class="bg-paper rounded-xl shadow-md p-8 mb-6">
       <label for="recipes">
     <div id="recipes-drop"
-      class="border-4 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-green-500 transition cursor-pointer">
+      class="border-4 border-dashed border-line rounded-xl p-12 text-center hover:border-primary-500 transition cursor-pointer">
         <div class="text-6xl mb-4">📥</div>
-        <h3 class="text-xl font-bold mb-2">{{ "Drag & Drop JSON Files"|t }}</h3>
-        <p class="text-gray-600 mb-4">{{ "or click to browse"|t }}</p>
-        <p class="text-sm text-gray-500 mt-4">{{ "Max 1MB • Up to 20 files • JSON format only"|t }}</p>
+        <h3 class="text-xl font-bold font-serif mb-2">{{ "Drag & Drop JSON Files"|t }}</h3>
+        <p class="text-ink-2 mb-4">{{ "or click to browse"|t }}</p>
+        <p class="text-sm text-ink-3 mt-4">{{ "Max 1MB • Up to 20 files • JSON format only"|t }}</p>
         <input type="file" id="recipes" class="hidden" multiple accept="application/json" />
     </div>
       </label>
@@ -27,14 +27,14 @@
   <div id="recipes-area" ts-trigger="importRecipes" ts-req="/recipes/import" ts-req-method="post" ts-swap="inner"></div>
 
   <!-- Schema Documentation -->
-  <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-    <h2 class="font-bold text-xl mb-4">{{ "JSON Schema Documentation"|t }}</h2>
-    <p class="text-gray-600 mb-4">
-      {{ "Download our"|t }} <a href="#" class="text-green-600 hover:text-green-700 font-semibold">{{ "official JSON schema (v1.0)"|t }}</a>
+  <div class="bg-paper rounded-xl shadow-md p-6 mb-6">
+    <h2 class="font-bold font-serif text-xl mb-4">{{ "JSON Schema Documentation"|t }}</h2>
+    <p class="text-ink-2 mb-4">
+      {{ "Download our"|t }} <a href="#" class="text-primary-500 hover:text-primary-600 font-semibold">{{ "official JSON schema (v1.0)"|t }}</a>
       {{ "for third-party tools"|t }}
     </p>
 
-    <div class="bg-gray-50 rounded p-4 mb-4 overflow-x-auto">
+    <div class="bg-cream rounded p-4 mb-4 overflow-x-auto">
       <pre class="text-sm">
         <code>
 {

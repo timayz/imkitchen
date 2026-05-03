@@ -3,13 +3,13 @@
 
 {% block body %}
 
-<body class="bg-gray-50">
+<body class="bg-cream">
   <!-- Top Navigation -->
-  <nav class="bg-white shadow-sm">
+  <nav class="bg-paper shadow-sm">
     <div class="container mx-auto px-4 py-4">
       <div class="flex items-center justify-between">
-        <a href="/" class="text-2xl font-bold text-green-600">🍳 imkitchen</a>
-        <a href="/" class="text-gray-600 hover:text-gray-900">{{ "Back to Home"|t }}</a>
+        <a href="/" class="text-2xl font-bold font-serif text-primary-500">🍳 imkitchen</a>
+        <a href="/" class="text-ink-2 hover:text-ink">{{ "Back to Home"|t }}</a>
       </div>
     </div>
   </nav>
@@ -29,36 +29,36 @@
       </div>
 
       <!-- Main Message -->
-      <h1 class="text-4xl md:text-6xl font-bold text-gray-900 mb-4">{{ "Coming Soon!"|t }}</h1>
-      <h2 class="text-xl md:text-2xl font-bold text-gray-800 mb-4">{{ "We're Cooking Up Something Special"|t }}</h2>
-      <p class="text-lg text-gray-600 mb-8">
+      <h1 class="text-4xl md:text-6xl font-bold font-serif text-ink mb-4">{{ "Coming Soon!"|t }}</h1>
+      <h2 class="text-xl md:text-2xl font-bold font-serif text-ink mb-4">{{ "We're Cooking Up Something Special"|t }}</h2>
+      <p class="text-lg text-ink-2 mb-8">
         {{ "This feature is currently in development. Our team is hard at work preparing a delicious experience for
         you!"|t }}
       </p>
 
       <!-- Progress Indicator -->
-      <div class="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-6 mb-8">
+      <div class="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-6 mb-8">
         <div class="flex items-start gap-3 mb-4">
           <svg class="w-6 h-6 text-purple-600 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
           </svg>
           <div class="flex-1 text-left">
-            <h3 class="font-bold text-purple-800 mb-2">{{ "What's Being Prepared"|t }}</h3>
+            <h3 class="font-bold font-serif text-purple-800 mb-2">{{ "What's Being Prepared"|t }}</h3>
             <ul class="text-sm text-purple-700 space-y-2">
               <li class="flex items-center gap-2">
-                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                 </svg>
                 {{ "Enhanced user experience"|t }}
               </li>
               <li class="flex items-center gap-2">
-                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                 </svg>
                 {{ "New powerful features"|t }}
               </li>
               <li class="flex items-center gap-2">
-                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                 </svg>
                 {{ "Mobile-friendly design"|t }}
@@ -83,10 +83,10 @@
       </div>
 
       <!-- Estimated Launch -->
-      <div class="mt-8 text-sm text-gray-500">
-        <p>{{ "Estimated launch:"|t }} <span class="font-semibold text-gray-700">{{ "Q1 2026"|t }}</span></p>
+      <div class="mt-8 text-sm text-ink-3">
+        <p>{{ "Estimated launch:"|t }} <span class="font-semibold text-ink-2">{{ "Q1 2026"|t }}</span></p>
         <p class="mt-2">{{ "Have questions?"|t }} <a href="/contact"
-            class="text-green-600 hover:text-green-700 font-semibold">{{ "Contact Support"|t }}</a></p>
+            class="text-primary-500 hover:text-primary-600 font-semibold">{{ "Contact Support"|t }}</a></p>
       </div>
     </div>
   </div>

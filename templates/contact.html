@@ -6,32 +6,32 @@
 <div class="container mx-auto px-4 py-16 max-w-4xl">
   <!-- Header -->
   <div class="text-center mb-12">
-    <h1 class="text-4xl font-bold mb-4">{{ "Contact Us"|t }}</h1>
-    <p class="text-xl text-gray-600">{{ "We'd love to hear from you. Send us a message and we'll respond as soon as possible."|t }}</p>
+    <h1 class="text-4xl font-bold font-serif tracking-tight mb-4">{{ "Contact Us"|t }}</h1>
+    <p class="text-xl text-ink-2">{{ "We'd love to hear from you. Send us a message and we'll respond as soon as possible."|t }}</p>
   </div>
 
   <div class="grid md:grid-cols-3 gap-8">
     <!-- Contact Form -->
-    <div class="md:col-span-2 bg-white rounded-lg shadow-lg p-8">
+    <div class="md:col-span-2 bg-paper rounded-xl shadow-md p-8">
       <form action="/contact" method="post" ts-req="" ts-swap="skip">
         <div class="mb-6">
-          <label for="name" class="block text-sm font-semibold text-gray-700 mb-2">{{ "Your Name"|t }} *</label>
+          <label for="name" class="block text-sm font-semibold text-ink-2 mb-2">{{ "Your Name"|t }} *</label>
           <input type="text" id="name" name="name" maxlength="25" placeholder="{{ "John Doe"|t }}"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            class="w-full px-4 py-3 border border-line rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             required />
         </div>
 
         <div class="mb-6">
-          <label for="email" class="block text-sm font-semibold text-gray-700 mb-2">{{ "Email Address"|t }} *</label>
+          <label for="email" class="block text-sm font-semibold text-ink-2 mb-2">{{ "Email Address"|t }} *</label>
           <input type="email" id="email" name="email" placeholder="{{ "you@example.com"|t }}"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            class="w-full px-4 py-3 border border-line rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             required />
         </div>
 
         <div class="mb-6">
-          <label for="subject" class="block text-sm font-semibold text-gray-700 mb-2">{{ "Subject"|t }} *</label>
+          <label for="subject" class="block text-sm font-semibold text-ink-2 mb-2">{{ "Subject"|t }} *</label>
           <select id="subject" name="subject"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            class="w-full px-4 py-3 border border-line rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             required>
             <option value="">{{ "Select a subject..."|t }}</option>
             {% for subject in Subject::VARIANTS %}
@@ -41,18 +41,18 @@
         </div>
 
         <div class="mb-6">
-          <label for="message" class="block text-sm font-semibold text-gray-700 mb-2">{{ "Message"|t }} *</label>
+          <label for="message" class="block text-sm font-semibold text-ink-2 mb-2">{{ "Message"|t }} *</label>
           <textarea id="message" name="message" maxlength="2000" rows="8" placeholder="{{ "Tell us how we can help you..."|t }}"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            class="w-full px-4 py-3 border border-line rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             required></textarea>
         </div>
 
         <button type="submit"
-          class="w-full bg-green-600 text-white font-semibold py-3 rounded-lg hover:bg-green-700 transition">
+          class="w-full bg-primary-500 text-white font-semibold py-3 rounded-xl hover:bg-primary-600 transition">
           {{ "Send Message"|t }}
         </button>
 
-        <p class="text-sm text-gray-500 mt-4 text-center">
+        <p class="text-sm text-ink-3 mt-4 text-center">
           {{ "We typically respond within 24-48 hours"|t }}
         </p>
       </form>
@@ -61,37 +61,37 @@
     <!-- Contact Info & FAQ -->
     <div class="space-y-6">
       <!-- Contact Information -->
-      <div class="bg-white rounded-lg shadow-lg p-6">
+      <div class="bg-paper rounded-xl shadow-md p-6">
         <h3 class="font-bold text-lg mb-4">{{ "Contact Information"|t }}</h3>
         <div class="space-y-4 text-sm">
           <div>
-            <div class="text-gray-600 mb-1">{{ "Email"|t }}</div>
-            <a href="mailto:support@imkitchen.app" class="font-semibold text-green-600 hover:text-green-700">
+            <div class="text-ink-2 mb-1">{{ "Email"|t }}</div>
+            <a href="mailto:support@imkitchen.app" class="font-semibold text-primary-500 hover:text-primary-600">
               support@imkitchen.app
             </a>
           </div>
           <div>
-            <div class="text-gray-600 mb-1">{{ "Response Time"|t }}</div>
+            <div class="text-ink-2 mb-1">{{ "Response Time"|t }}</div>
             <div class="font-semibold">{{ "24-48 hours"|t }}</div>
           </div>
           <div>
-            <div class="text-gray-600 mb-1">{{ "Support Hours"|t }}</div>
+            <div class="text-ink-2 mb-1">{{ "Support Hours"|t }}</div>
             <div class="font-semibold">{{ "Mon-Fri, 9am-5pm EST"|t }}</div>
           </div>
         </div>
       </div>
 
       <!-- Quick Help -->
-      <div class="bg-white rounded-lg shadow-lg p-6">
+      <div class="bg-paper rounded-xl shadow-md p-6">
         <h3 class="font-bold text-lg mb-4">{{ "Quick Help"|t }}</h3>
         <div class="space-y-3 text-sm">
-          <a href="/help" class="block text-green-600 hover:text-green-700 font-semibold">
+          <a href="/help" class="block text-primary-500 hover:text-primary-600 font-semibold">
             📚 {{ "Help Center"|t }}
           </a>
-          <a href="/help" class="block text-green-600 hover:text-green-700 font-semibold">
+          <a href="/help" class="block text-primary-500 hover:text-primary-600 font-semibold">
             💬 {{ "FAQs"|t }}
           </a>
-          <!-- <a href="#" class="block text-green-600 hover:text-green-700 font-semibold"> -->
+          <!-- <a href="#" class="block text-primary-500 hover:text-primary-600 font-semibold"> -->
           <!--   📖 API Documentation -->
           <!-- </a> -->
         </div>
@@ -120,36 +120,36 @@
 
   <!-- Common Questions -->
   <div class="mt-16">
-    <h2 class="text-3xl font-bold text-center mb-8">{{ "Frequently Asked Questions"|t }}</h2>
+    <h2 class="text-3xl font-bold font-serif tracking-tight text-center mb-8">{{ "Frequently Asked Questions"|t }}</h2>
     <div class="grid md:grid-cols-2 gap-6">
       <!-- FAQ 1 -->
-      <div class="bg-white rounded-lg shadow p-6">
+      <div class="bg-paper rounded-xl shadow-md p-6">
         <h3 class="font-bold mb-2">{{ "How do I upgrade to Premium?"|t }}</h3>
-        <p class="text-gray-600 text-sm">
+        <p class="text-ink-2 text-sm">
           {{ "You can upgrade to Premium from your profile settings or dashboard. Choose between monthly ($4.99/mo) or annual ($47.90/yr) plans."|t }}
         </p>
       </div>
 
       <!-- FAQ 2 -->
-      <div class="bg-white rounded-lg shadow p-6">
+      <div class="bg-paper rounded-xl shadow-md p-6">
         <h3 class="font-bold mb-2">{{ "Can I import my existing recipes?"|t }}</h3>
-        <p class="text-gray-600 text-sm">
+        <p class="text-ink-2 text-sm">
           {{ "Yes! Use our bulk import feature with JSON files. Download our schema documentation for the correct format."|t }}
         </p>
       </div>
 
       <!-- FAQ 3 -->
-      <div class="bg-white rounded-lg shadow p-6">
+      <div class="bg-paper rounded-xl shadow-md p-6">
         <h3 class="font-bold mb-2">{{ "How does meal plan generation work?"|t }}</h3>
-        <p class="text-gray-600 text-sm">
+        <p class="text-ink-2 text-sm">
           {{ "Our algorithm generates meal plans for all remaining weeks of the current month, considering your dietary restrictions, cuisine preferences, and available recipes."|t }}
         </p>
       </div>
 
       <!-- FAQ 4 -->
-      <div class="bg-white rounded-lg shadow p-6">
+      <div class="bg-paper rounded-xl shadow-md p-6">
         <h3 class="font-bold mb-2">{{ "Can I cancel my subscription anytime?"|t }}</h3>
-        <p class="text-gray-600 text-sm">
+        <p class="text-ink-2 text-sm">
           {{ "Yes, you can cancel anytime from your profile settings. You'll retain Premium access until the end of your billing period."|t }}
         </p>
       </div>

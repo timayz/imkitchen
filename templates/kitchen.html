@@ -4,7 +4,7 @@
 
 {% block before_mobile_nav_items %}
 <!-- Mobile Bottom Navigation (Kitchen Mode Specific) -->
-<button ts-action="toggle-meals-panel" class="flex flex-col items-center py-2 px-3 text-gray-600">
+<button ts-action="toggle-meals-panel" class="flex flex-col items-center py-2 px-3 text-ink-2">
   <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
       d="M6 18h12v3a1 1 0 01-1 1H7a1 1 0 01-1-1v-3z" />
@@ -27,43 +27,43 @@
   <!-- Empty State -->
   {% if slot.is_none() %}
   <div class="max-w-2xl mx-auto">
-    <div class="bg-white rounded-lg shadow-lg p-12 text-center">
+    <div class="bg-paper rounded-xl shadow-md p-12 text-center">
       <div class="text-6xl mb-6">👨‍🍳</div>
-      <h2 class="text-2xl font-bold mb-4">{{ "Welcome to imkitchen!"|t }}</h2>
-      <p class="text-gray-600 mb-8">
+      <h2 class="text-2xl font-bold font-serif mb-4">{{ "Welcome to imkitchen!"|t }}</h2>
+      <p class="text-ink-2 mb-8">
         {{ "Your kitchen is empty. Let's start by importing some delicious recipes and planning your meals for the
         week."|t }}
       </p>
 
       <!-- Getting Started Steps -->
       <div class="space-y-4 mb-8 text-left">
-        <div class="flex items-start gap-4 p-4 bg-blue-50 rounded-lg">
+        <div class="flex items-start gap-4 p-4 bg-blue-50 rounded-xl">
           <div class="shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">1
           </div>
           <div>
-            <h3 class="font-semibold mb-1">{{ "Create Your First Recipe"|t }}</h3>
-            <p class="text-sm text-gray-600">{{ "Add recipes from the web or create your own custom recipes"|t }}</p>
+            <h3 class="font-semibold font-serif mb-1">{{ "Create Your First Recipe"|t }}</h3>
+            <p class="text-sm text-ink-2">{{ "Add recipes from the web or create your own custom recipes"|t }}</p>
           </div>
         </div>
 
-        <div class="flex items-start gap-4 p-4 bg-green-50 rounded-lg">
-          <div class="shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">
+        <div class="flex items-start gap-4 p-4 bg-primary-50 rounded-xl">
+          <div class="shrink-0 w-8 h-8 bg-primary-500 text-white rounded-full flex items-center justify-center font-bold">
             2
           </div>
           <div>
-            <h3 class="font-semibold mb-1">{{ "Plan Your Week"|t }}</h3>
-            <p class="text-sm text-gray-600">{{ "Organize your meals on the calendar and let us generate your shopping
+            <h3 class="font-semibold font-serif mb-1">{{ "Plan Your Week"|t }}</h3>
+            <p class="text-sm text-ink-2">{{ "Organize your meals on the calendar and let us generate your shopping
               list"|t }}</p>
           </div>
         </div>
 
-        <div class="flex items-start gap-4 p-4 bg-purple-50 rounded-lg">
+        <div class="flex items-start gap-4 p-4 bg-purple-50 rounded-xl">
           <div
             class="shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold">
             3</div>
           <div>
-            <h3 class="font-semibold mb-1">{{ "Cook & Enjoy"|t }}</h3>
-            <p class="text-sm text-gray-600">{{ "Follow your meal plan and enjoy home-cooked meals every day"|t }}</p>
+            <h3 class="font-semibold font-serif mb-1">{{ "Cook & Enjoy"|t }}</h3>
+            <p class="text-sm text-ink-2">{{ "Follow your meal plan and enjoy home-cooked meals every day"|t }}</p>
           </div>
         </div>
       </div>
@@ -71,11 +71,11 @@
       <!-- Call to Action -->
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
         <a href="/recipes"
-          class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition">
+          class="px-6 py-3 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-600 transition">
           ➕ {{ "Create Recipe"|t }}
         </a>
         <a href="/menu"
-          class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition">
+          class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition">
           📅 {{ "View Menu"|t }}
         </a>
       </div>
@@ -87,12 +87,12 @@
   <div class="mb-6">
     <div class="flex items-center justify-between mb-2">
       <div>
-        <h1 class="text-2xl font-bold">{{ slot.day|date_year }}</h1>
-        <p class="text-gray-600">{{ "Today's Meal Plan"|t }}</p>
+        <h1 class="text-2xl font-bold font-serif">{{ slot.day|date_year }}</h1>
+        <p class="text-ink-2">{{ "Today's Meal Plan"|t }}</p>
       </div>
       <div class="text-right">
-        <div class="text-sm text-gray-500">{{ "Session Progress"|t }}</div>
-        <div id="session-progress-info" class="text-lg font-bold text-green-600">{{ slot_completed_count }} {{ "of"|t }}
+        <div class="text-sm text-ink-3">{{ "Session Progress"|t }}</div>
+        <div id="session-progress-info" class="text-lg font-bold text-primary-500">{{ slot_completed_count }} {{ "of"|t }}
           {{
           slot_total_count }} {{ "dishes"|t }}</div>
       </div>
@@ -101,19 +101,19 @@
     <div id="session-progress-bar" class="flex gap-1">
       {% if let Some(appetizer) = slot.appetizer %}
       <div
-        class="flex-1 h-2 {% if appetizer.is_completed() %}bg-green-500{% else %}bg-gray-200{% endif %} rounded-full">
+        class="flex-1 h-2 {% if appetizer.is_completed() %}bg-primary-500{% else %}bg-cream-2{% endif %} rounded-full">
       </div>
       {% endif %}
       <div
-        class="flex-1 h-2 {% if slot.main_course.is_completed() %}bg-green-500{% else %}bg-gray-200{% endif %} rounded-full">
+        class="flex-1 h-2 {% if slot.main_course.is_completed() %}bg-primary-500{% else %}bg-cream-2{% endif %} rounded-full">
       </div>
       {% if let Some(accompaniment) = slot.accompaniment %}
       <div
-        class="flex-1 h-2 {% if accompaniment.is_completed() %}bg-green-500{% else %}bg-gray-200{% endif %} rounded-full">
+        class="flex-1 h-2 {% if accompaniment.is_completed() %}bg-primary-500{% else %}bg-cream-2{% endif %} rounded-full">
       </div>
       {% endif %}
       {% if let Some(dessert) = slot.dessert %}
-      <div class="flex-1 h-2 {% if dessert.is_completed() %}bg-green-500{% else %}bg-gray-200{% endif %} rounded-full">
+      <div class="flex-1 h-2 {% if dessert.is_completed() %}bg-primary-500{% else %}bg-cream-2{% endif %} rounded-full">
       </div>
       {% endif %}
     </div>
@@ -123,7 +123,7 @@
     <!-- Main Content Area -->
     <div class="lg:col-span-2 space-y-6">
       <!-- Current Recipe Card -->
-      <div id="current-recipe-card" class="bg-white rounded-xl shadow-lg overflow-hidden">
+      <div id="current-recipe-card" class="bg-paper rounded-xl shadow-md overflow-hidden">
         <!-- Recipe Header with Color Banner -->
         {% if let Some(slot_recipe) = slot_recipe %}
         {% decl slot_recipe_bg -%}
@@ -139,7 +139,7 @@
         {% let slot_recipe_bg = "from-pink-400 to-pink-500" -%}
         {% let slot_recipe_icon = "🍰" -%}
         {% when RecipeType::Accompaniment %}
-        {% let slot_recipe_bg = "from-purple-400 to-purple-500" -%}
+        {% let slot_recipe_bg = "from-herb-400 to-herb-500" -%}
         {% let slot_recipe_icon = "🍚" -%}
         {% endmatch %}
         <div class="bg-linear-to-r {{ slot_recipe_bg }} p-4 flex items-center justify-between">
@@ -147,7 +147,7 @@
             <span class="text-4xl">{{ slot_recipe_icon }}</span>
             <div class="text-white">
               <div class="text-xs font-semibold uppercase opacity-90">{{ "Now Cooking"|t }}</div>
-              <h2 class="text-xl font-bold">{{ slot_recipe.name }}</h2>
+              <h2 class="text-xl font-bold font-serif">{{ slot_recipe.name }}</h2>
             </div>
           </div>
           <span class="px-3 py-1 bg-white/20 text-white text-sm font-semibold rounded-full">
@@ -156,18 +156,18 @@
         </div>
 
         <!-- View Tabs -->
-        <div class="border-b border-gray-200">
+        <div class="border-b border-line-2">
           <div class="flex">
             <button id="tab-steps" onclick="switchView('steps')"
-              class="flex-1 px-4 py-3 text-center font-semibold text-green-600 border-b-2 border-green-600">
+              class="flex-1 px-4 py-3 text-center font-semibold text-primary-500 border-b-2 border-primary-500">
               {{ "Steps"|t }}
             </button>
             <button id="tab-ingredients" onclick="switchView('ingredients')"
-              class="flex-1 px-4 py-3 text-center font-semibold text-gray-500 hover:text-gray-700 border-b-2 border-transparent">
+              class="flex-1 px-4 py-3 text-center font-semibold text-ink-3 hover:text-ink-2 border-b-2 border-transparent">
               {{ "Ingredients"|t }}
             </button>
             <button id="tab-overview" onclick="switchView('overview')"
-              class="flex-1 px-4 py-3 text-center font-semibold text-gray-500 hover:text-gray-700 border-b-2 border-transparent">
+              class="flex-1 px-4 py-3 text-center font-semibold text-ink-3 hover:text-ink-2 border-b-2 border-transparent">
               {{ "Overview"|t }}
             </button>
           </div>
@@ -178,21 +178,21 @@
           {% if let Some((pos,instruction)) = current_instruction %}
           <!-- Step Progress -->
           <div class="flex items-center justify-between mb-4">
-            <span class="text-sm text-gray-500">{{ "Step"|t }} {{ pos + 1 }} {{ "of"|t }} {{
+            <span class="text-sm text-ink-3">{{ "Step"|t }} {{ pos + 1 }} {{ "of"|t }} {{
               slot_recipe.instructions.len() }}</span>
             <div class="flex gap-1">
               {% for _ in completed_instructions %}
-              <div class="w-8 h-1 bg-green-500 rounded-full"></div>
+              <div class="w-8 h-1 bg-primary-500 rounded-full"></div>
               {% endfor %}
               <div class="w-8 h-1 bg-orange-500 rounded-full"></div>
               {% for _ in coming_instructions %}
-              <div class="w-8 h-1 bg-gray-200 rounded-full"></div>
+              <div class="w-8 h-1 bg-cream-2 rounded-full"></div>
               {% endfor %}
             </div>
           </div>
 
           <!-- Current Step -->
-          <div class="bg-orange-50 border-l-4 border-orange-500 rounded-r-lg p-6 mb-6">
+          <div class="bg-orange-50 border-l-4 border-orange-500 rounded-r-xl p-6 mb-6">
             <div class="flex items-start gap-4">
               <div
                 class="w-10 h-10 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold text-lg shrink-0">
@@ -206,7 +206,7 @@
           </div>
 
           <!-- Pro Tip -->
-          <!-- <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6"> -->
+          <!-- <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6"> -->
           <!--   <div class="flex items-start gap-3"> -->
           <!--     <span class="text-xl">💡</span> -->
           <!--     <div> -->
@@ -222,7 +222,7 @@
             {% if !completed_instructions.is_empty() %}
             <button ts-req="/kitchen/{{ date }}/{{slot_recipe.id}}/step/prev" ts-req-method="post" ts-target="#view-steps"
               ts-swap="inner" ts-req-selector="children #view-steps"
-              class="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-lg font-semibold flex items-center justify-center gap-2 transition">
+              class="flex-1 px-4 py-3 bg-cream-2 hover:bg-cream-2 rounded-xl font-semibold flex items-center justify-center gap-2 transition">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
               </svg>
@@ -232,7 +232,7 @@
             {% if !coming_instructions.is_empty() %}
             <button ts-req="/kitchen/{{ date }}/{{ slot_recipe.id }}/step/next" ts-req-method="post" ts-target="#view-steps"
               ts-swap="inner" ts-req-selector="children #view-steps"
-              class="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold flex items-center justify-center gap-2 transition">
+              class="flex-1 px-4 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 transition">
               {% if instruction.time_next > 0 %}
               <span id="next-step-label">⏱️ {{ "Wait"|t }} {{ instruction.time_next|minutes }}, {{ "then Next"|t
                 }}</span>
@@ -247,11 +247,11 @@
           </div>
 
           <!-- Previous & Upcoming Steps -->
-          <div class="mt-6 pt-6 border-t border-gray-200">
+          <div class="mt-6 pt-6 border-t border-line-2">
             <!-- Completed Steps (Collapsed) -->
             {% if !completed_instructions.is_empty() %}
             <button onclick="togglePreviousSteps()"
-              class="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-4">
+              class="flex items-center gap-2 text-sm text-ink-3 hover:text-ink-2 mb-4">
               <svg id="chevron-previous" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor"
                 viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -261,15 +261,15 @@
 
             <div id="previous-steps" class="hidden space-y-2 mb-4">
               {% for (_, instruction) in completed_instructions %}
-              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg opacity-60">
-                <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+              <div class="flex items-center gap-3 p-3 bg-cream rounded-xl opacity-60">
+                <div class="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center">
                   <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd"
                       d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
                       clip-rule="evenodd"></path>
                   </svg>
                 </div>
-                <span class="text-sm line-through text-gray-500">{{ instruction }}</span>
+                <span class="text-sm line-through text-ink-3">{{ instruction }}</span>
               </div>
               {% endfor %}
             </div>
@@ -277,14 +277,14 @@
 
             <!-- Upcoming Steps -->
             {% if !coming_instructions.is_empty() %}
-            <div class="text-sm text-gray-500 mb-2">{{ "Coming up next"|t }}</div>
+            <div class="text-sm text-ink-3 mb-2">{{ "Coming up next"|t }}</div>
             <div class="space-y-2">
               {% for (pos,instruction) in coming_instructions %}
-              <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+              <div class="flex items-center gap-3 p-3 bg-cream rounded-xl">
                 <div
-                  class="w-6 h-6 p-2 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-sm font-semibold">
+                  class="w-6 h-6 p-2 bg-line text-ink-2 rounded-full flex items-center justify-center text-sm font-semibold">
                   {{ pos + 1 }}</div>
-                <span class="text-sm text-gray-700">{{ instruction }}</span>
+                <span class="text-sm text-ink-2">{{ instruction }}</span>
               </div>
               {% endfor %}
             </div>
@@ -298,22 +298,22 @@
         <!-- Ingredients View (Hidden by default) -->
         <div id="view-ingredients" class="p-6 hidden">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-bold">{{ "Ingredients Checklist"|t }}</h3>
-            <!-- <span class="text-sm text-gray-500">5 of 10 ready</span> -->
+            <h3 class="text-lg font-bold font-serif">{{ "Ingredients Checklist"|t }}</h3>
+            <!-- <span class="text-sm text-ink-3">5 of 10 ready</span> -->
           </div>
 
           <div class="space-y-2">
             <!-- <label -->
-            <!--   class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition"> -->
+            <!--   class="flex items-center gap-3 p-3 bg-cream rounded-xl cursor-pointer hover:bg-cream-2 transition"> -->
             <!--   <input type="checkbox" checked -->
-            <!--     class="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500"> -->
-            <!--   <span class="flex-1 line-through text-gray-500">500g Chicken breast, diced</span> -->
-            <!--   <span class="text-xs text-green-600 font-semibold">Ready</span> -->
+            <!--     class="w-5 h-5 rounded border-line text-primary-500 focus:ring-primary-500"> -->
+            <!--   <span class="flex-1 line-through text-ink-3">500g Chicken breast, diced</span> -->
+            <!--   <span class="text-xs text-primary-500 font-semibold">Ready</span> -->
             <!-- </label> -->
             {% for ingredient in slot_recipe.ingredients.iter() %}
             <label
-              class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition">
-              <input type="checkbox" class="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500">
+              class="flex items-center gap-3 p-3 bg-cream rounded-xl cursor-pointer hover:bg-cream-2 transition">
+              <input type="checkbox" class="w-5 h-5 rounded border-line text-primary-500 focus:ring-primary-500">
               <span class="flex-1">
                 {{ ingredient.unit.format(ingredient.quantity.to_owned()) }}
                 {{ ingredient.name }}
@@ -326,49 +326,49 @@
         <!-- Overview View (Hidden by default) -->
         <div id="view-overview" class="p-6 hidden">
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div class="bg-gray-50 rounded-lg p-4 text-center">
+            <div class="bg-cream rounded-xl p-4 text-center">
               <div class="text-2xl mb-1">⏱️</div>
-              <div class="text-xs text-gray-500">{{ "Prep Time"|t }}</div>
+              <div class="text-xs text-ink-3">{{ "Prep Time"|t }}</div>
               <div class="font-bold">{{ slot_recipe.prep_time|minutes }}</div>
             </div>
-            <div class="bg-gray-50 rounded-lg p-4 text-center">
+            <div class="bg-cream rounded-xl p-4 text-center">
               <div class="text-2xl mb-1">🍳</div>
-              <div class="text-xs text-gray-500">{{ "Cook Time"|t }}</div>
+              <div class="text-xs text-ink-3">{{ "Cook Time"|t }}</div>
               <div class="font-bold">{{ slot_recipe.cook_time|minutes }}</div>
             </div>
-            <div class="bg-gray-50 rounded-lg p-4 text-center">
+            <div class="bg-cream rounded-xl p-4 text-center">
               <div class="text-2xl mb-1">👥</div>
-              <div class="text-xs text-gray-500">{{ "Servings"|t }}</div>
+              <div class="text-xs text-ink-3">{{ "Servings"|t }}</div>
               <div class="font-bold">{{ slot_recipe.household_size }} {{ "people"|t }}</div>
             </div>
-            <div class="bg-gray-50 rounded-lg p-4 text-center">
+            <div class="bg-cream rounded-xl p-4 text-center">
               <div class="text-2xl mb-1">📊</div>
-              <div class="text-xs text-gray-500">{{ "Difficulty"|t }}</div>
+              <div class="text-xs text-ink-3">{{ "Difficulty"|t }}</div>
               <div class="font-bold">{{ "Medium"|t }}</div>
             </div>
           </div>
 
           <div class="flex gap-2 flex-wrap mb-6">
             {% for dietary_restriction in slot_recipe.dietary_restrictions.iter() %}
-            <span class="px-3 py-1 bg-green-100 text-green-800 text-sm font-semibold rounded-full">{{
+            <span class="px-3 py-1 bg-primary-100 text-primary-800 text-sm font-semibold rounded-full">{{
               dietary_restriction.as_ref()|t }}</span>
             {% endfor %}
             <span class="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-semibold rounded-full">{{
               slot_recipe.cuisine_type.as_ref()|t }}</span>
           </div>
 
-          <h3 class="font-bold mb-4">{{ "All Steps"|t }}</h3>
+          <h3 class="font-bold font-serif mb-4">{{ "All Steps"|t }}</h3>
           <div id="overview-all-steps" class="space-y-3">
             {% for (p, instruction) in completed_instructions %}
-            <div class="flex items-start gap-3 p-3 bg-green-50 border-l-4 border-green-500 rounded-r-lg">
+            <div class="flex items-start gap-3 p-3 bg-primary-50 border-l-4 border-primary-500 rounded-r-xl">
               <div
-                class="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0">
+                class="w-6 h-6 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0">
                 {{ p + 1 }}</div>
               <p class="text-sm">{{ instruction }}</p>
             </div>
             {% endfor %}
             {% if let Some((p, current_instruction)) = current_instruction %}
-            <div class="flex items-start gap-3 p-3 bg-orange-50 border-l-4 border-orange-500 rounded-r-lg">
+            <div class="flex items-start gap-3 p-3 bg-orange-50 border-l-4 border-orange-500 rounded-r-xl">
               <div
                 class="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0">
                 {{ p + 1 }}</div>
@@ -376,9 +376,9 @@
             </div>
             {% endif %}
             {% for (p, instruction) in coming_instructions %}
-            <div class="flex items-start gap-3 p-3 bg-gray-50 border-l-4 border-gray-300 rounded-r-lg">
+            <div class="flex items-start gap-3 p-3 bg-cream border-l-4 border-line rounded-r-xl">
               <div
-                class="w-6 h-6 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-sm font-bold shrink-0">
+                class="w-6 h-6 bg-line text-ink-2 rounded-full flex items-center justify-center text-sm font-bold shrink-0">
                 {{ p + 1 }}</div>
               <p class="text-sm">{{ instruction }}</p>
             </div>
@@ -393,36 +393,36 @@
     <div class="space-y-6">
       {% if !user.is_premium() %}
       <!-- Premium Upgrade Banner -->
-      <div class="bg-linear-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4">
+      <div class="bg-linear-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
         <div class="flex flex-col gap-4">
           <div class="flex-1">
             <div class="flex items-center gap-2 mb-2">
               <span class="text-2xl">✨</span>
-              <h3 class="font-bold text-lg text-amber-900">{{ "Unlock the Full Experience"|t }}</h3>
+              <h3 class="font-bold font-serif text-lg text-amber-900">{{ "Unlock the Full Experience"|t }}</h3>
             </div>
             <p class="text-amber-800 text-sm mb-3">{{ "You're on the free plan. Upgrade to Premium to get:"|t }}</p>
             <div class="grid grid-cols-1 gap-2 text-sm">
               <div class="flex items-center gap-2 text-amber-700">
-                <span class="text-green-600">✓</span>
+                <span class="text-primary-500">✓</span>
                 <span>{{ "Unlimited recipes in plan"|t }}</span>
               </div>
               <div class="flex items-center gap-2 text-amber-700">
-                <span class="text-green-600">✓</span>
+                <span class="text-primary-500">✓</span>
                 <span>{{ "Appetizers, desserts & sides"|t }}</span>
               </div>
               <div class="flex items-center gap-2 text-amber-700">
-                <span class="text-green-600">✓</span>
+                <span class="text-primary-500">✓</span>
                 <span>{{ "Meal preferences applied"|t }}</span>
               </div>
               <div class="flex items-center gap-2 text-amber-700">
-                <span class="text-green-600">✓</span>
+                <span class="text-primary-500">✓</span>
                 <span>{{ "Batch recipe import"|t }}</span>
               </div>
             </div>
           </div>
           <div>
             <a href="/upgrade"
-              class="block w-full px-6 py-3 bg-linear-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-lg hover:from-amber-600 hover:to-orange-600 transition shadow-md text-center">
+              class="block w-full px-6 py-3 bg-linear-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-xl hover:from-amber-600 hover:to-orange-600 transition shadow-md text-center">
               {{ "Upgrade to Premium"|t }}
             </a>
           </div>
@@ -431,23 +431,23 @@
       {% endif %}
 
       <!-- Today's Dishes -->
-      <div class="hidden md:block bg-white rounded-xl shadow-lg p-6">
-        <h3 class="font-bold text-lg mb-4">{{ "Today's Dishes"|t }}</h3>
+      <div class="hidden md:block bg-paper rounded-xl shadow-md p-6">
+        <h3 class="font-bold font-serif text-lg mb-4">{{ "Today's Dishes"|t }}</h3>
         <div id="today-dishes-desktop" class="space-y-3">
           {% if let Some(slot) = slot %}
           <!-- Appetizer (Completed) -->
           {% if let Some(appetizer) = slot.appetizer %}
           <button ts-req="/kitchen/{{ date }}/{{ appetizer.id }}/select-dish" ts-target="#current-recipe-card"
-            class="w-full p-3 bg-blue-50 border border-blue-200 rounded-lg text-left hover:border-blue-400 transition">
+            class="w-full p-3 bg-blue-50 border border-blue-200 rounded-xl text-left hover:border-blue-400 transition">
             <div class="flex items-center gap-3">
               <span class="text-2xl">🥗</span>
               <div class="flex-1 min-w-0">
                 <div class="text-xs text-blue-600 font-semibold uppercase">{{ "Appetizer"|t }}</div>
                 <div class="font-semibold truncate">{{ appetizer.name }}</div>
-                <div class="text-xs text-gray-500">⏱️ {{ &appetizer.total_prep_time()|minutes }}</div>
+                <div class="text-xs text-ink-3">⏱️ {{ &appetizer.total_prep_time()|minutes }}</div>
               </div>
               {% if appetizer.is_completed() %}
-              <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shrink-0">
+              <div class="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center shrink-0">
                 <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd"
                     d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -459,7 +459,7 @@
                 {{ "Cooking"|t }}
               </div>
               {% else %}
-              <div class="w-6 h-6 border-2 border-gray-300 rounded-full shrink-0"></div>
+              <div class="w-6 h-6 border-2 border-line rounded-full shrink-0"></div>
               {% endif %}
             </div>
           </button>
@@ -467,16 +467,16 @@
 
           <!-- Main Course (Active) -->
           <button ts-req="/kitchen/{{ date }}/{{ slot.main_course.id }}/select-dish" ts-target="#current-recipe-card"
-            class="w-full p-3 bg-orange-50 border border-orange-200 rounded-lg text-left hover:border-orange-400">
+            class="w-full p-3 bg-orange-50 border border-orange-200 rounded-xl text-left hover:border-orange-400">
             <div class="flex items-center gap-3">
               <span class="text-2xl">🍛</span>
               <div class="flex-1 min-w-0">
                 <div class="text-xs text-orange-600 font-semibold uppercase">{{ "Main Course"|t }}</div>
                 <div class="font-semibold truncate">{{ slot.main_course.name }}</div>
-                <div class="text-xs text-gray-500">⏱️ {{ &slot.main_course.total_prep_time()|minutes }}</div>
+                <div class="text-xs text-ink-3">⏱️ {{ &slot.main_course.total_prep_time()|minutes }}</div>
               </div>
               {% if slot.main_course.is_completed() %}
-              <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shrink-0">
+              <div class="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center shrink-0">
                 <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd"
                     d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -488,7 +488,7 @@
                 {{ "Cooking"|t }}
               </div>
               {% else %}
-              <div class="w-6 h-6 border-2 border-gray-300 rounded-full shrink-0"></div>
+              <div class="w-6 h-6 border-2 border-line rounded-full shrink-0"></div>
               {% endif %}
             </div>
           </button>
@@ -496,16 +496,16 @@
           <!-- Accompaniment -->
           {% if let Some(accompaniment) = slot.accompaniment %}
           <button ts-req="/kitchen/{{ date }}/{{ accompaniment.id }}/select-dish" ts-target="#current-recipe-card"
-            class="w-full p-3 bg-purple-50 border border-purple-200 rounded-lg text-left hover:border-purple-400 transition ml-4">
+            class="w-full p-3 bg-purple-50 border border-purple-200 rounded-xl text-left hover:border-purple-400 transition ml-4">
             <div class="flex items-center gap-3">
               <span class="text-xl">🍚</span>
               <div class="flex-1 min-w-0">
                 <div class="text-xs text-purple-600 font-semibold uppercase">{{ "Accompaniment"|t }}</div>
                 <div class="font-semibold truncate">{{ accompaniment.name }}</div>
-                <div class="text-xs text-gray-500">⏱️ {{ &accompaniment.total_prep_time()|minutes }}</div>
+                <div class="text-xs text-ink-3">⏱️ {{ &accompaniment.total_prep_time()|minutes }}</div>
               </div>
               {% if accompaniment.is_completed() %}
-              <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shrink-0">
+              <div class="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center shrink-0">
                 <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd"
                     d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -517,7 +517,7 @@
                 {{ "Cooking"|t }}
               </div>
               {% else %}
-              <div class="w-6 h-6 border-2 border-gray-300 rounded-full shrink-0"></div>
+              <div class="w-6 h-6 border-2 border-line rounded-full shrink-0"></div>
               {% endif %}
             </div>
           </button>
@@ -526,16 +526,16 @@
           <!-- Dessert -->
           {% if let Some(dessert) = slot.dessert %}
           <button ts-req="/kitchen/{{ date }}/{{ dessert.id }}/select-dish" ts-target="#current-recipe-card"
-            class="w-full p-3 bg-pink-50 border border-pink-200 rounded-lg text-left hover:border-pink-400 transition">
+            class="w-full p-3 bg-pink-50 border border-pink-200 rounded-xl text-left hover:border-pink-400 transition">
             <div class="flex items-center gap-3">
               <span class="text-2xl">🍰</span>
               <div class="flex-1 min-w-0">
                 <div class="text-xs text-pink-600 font-semibold uppercase">{{ "Dessert"|t }}</div>
                 <div class="font-semibold truncate">{{ dessert.name }}</div>
-                <div class="text-xs text-gray-500">⏱️ {{ &dessert.total_prep_time()|minutes }}</div>
+                <div class="text-xs text-ink-3">⏱️ {{ &dessert.total_prep_time()|minutes }}</div>
               </div>
               {% if dessert.is_completed() %}
-              <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shrink-0">
+              <div class="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center shrink-0">
                 <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd"
                     d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -547,7 +547,7 @@
                 {{ "Cooking"|t }}
               </div>
               {% else %}
-              <div class="w-6 h-6 border-2 border-gray-300 rounded-full shrink-0"></div>
+              <div class="w-6 h-6 border-2 border-line rounded-full shrink-0"></div>
               {% endif %}
             </div>
           </button>
@@ -558,8 +558,8 @@
 
 
       {% if let (Some(remiders), true) = (prep_remiders.as_ref(), user.is_premium()) %}
-      <div class="bg-white rounded-lg shadow-lg p-6">
-        <h3 class="font-bold text-lg mb-4">{{ "Tomorrow's Prep Reminder"|t }}</h3>
+      <div class="bg-paper rounded-xl shadow-md p-6">
+        <h3 class="font-bold font-serif text-lg mb-4">{{ "Tomorrow's Prep Reminder"|t }}</h3>
         {% for recipe in remiders %}
         <a href="/recipes/{{ recipe.id }}">
           <div class="mt-3 p-2 bg-yellow-100 border border-yellow-300 rounded text-sm text-yellow-800">
@@ -574,26 +574,26 @@
   </div>
 
   <!-- Recipe Suggestions -->
-  <div class="bg-white rounded-lg shadow-lg p-6">
-    <h2 class="text-xl font-bold mb-4">{{ "Add More Variety"|t }}</h2>
+  <div class="bg-paper rounded-xl shadow-md p-6">
+    <h2 class="text-xl font-bold font-serif mb-4">{{ "Add More Variety"|t }}</h2>
     <div class="grid md:grid-cols-3 gap-4">
       <a href="/recipes"
-        class="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition text-center">
+        class="p-4 border-2 border-dashed border-line rounded-xl hover:border-primary-500 hover:bg-primary-50 transition text-center">
         <div class="text-3xl mb-2">🔍</div>
         <div class="font-semibold">{{ "Browse Community"|t }}</div>
-        <div class="text-sm text-gray-600">{{ "Discover shared recipes"|t }}</div>
+        <div class="text-sm text-ink-2">{{ "Discover shared recipes"|t }}</div>
       </a>
       <button ts-req="/settings/recipes/create" ts-req-method="post"
-        class="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition text-center">
+        class="p-4 border-2 border-dashed border-line rounded-xl hover:border-primary-500 hover:bg-primary-50 transition text-center">
         <div class="text-3xl mb-2">✏️</div>
         <div class="font-semibold">{{ "Create Recipe"|t }}</div>
-        <div class="text-sm text-gray-600">{{ "Add your own recipe"|t }}</div>
+        <div class="text-sm text-ink-2">{{ "Add your own recipe"|t }}</div>
       </button>
       <a href="/recipes/import"
-        class="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition text-center">
+        class="p-4 border-2 border-dashed border-line rounded-xl hover:border-primary-500 hover:bg-primary-50 transition text-center">
         <div class="text-3xl mb-2">📥</div>
         <div class="font-semibold">{{ "Import Recipes"|t }}</div>
-        <div class="text-sm text-gray-600">{{ "Bulk JSON import"|t }}</div>
+        <div class="text-sm text-ink-2">{{ "Bulk JSON import"|t }}</div>
       </a>
     </div>
   </div>
@@ -601,16 +601,16 @@
 
 <!-- Mobile Meals Panel (Slide-up) -->
 <div id="meals-panel"
-  class="fixed inset-x-0 bottom-0 bg-white rounded-t-2xl shadow-2xl z-55 transform translate-y-full transition-transform duration-300 md:hidden">
+  class="fixed inset-x-0 bottom-0 bg-paper rounded-t-2xl shadow-md z-55 transform translate-y-full transition-transform duration-300 md:hidden">
   <div class="p-4">
-    <div class="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4"></div>
-    <h3 class="font-bold text-lg mb-4">{{ "Today's Dishes"|t }}</h3>
+    <div class="w-12 h-1 bg-line rounded-full mx-auto mb-4"></div>
+    <h3 class="font-bold font-serif text-lg mb-4">{{ "Today's Dishes"|t }}</h3>
     <div id="today-dishes-mobile" class="space-y-3 max-h-[60vh] overflow-y-auto pb-4">
       {% if let Some(slot) = slot %}
       <!-- Same dish cards as sidebar -->
       {% if let Some(appetizer) = slot.appetizer %}
       <button ts-req="/kitchen/{{ date }}/{{ appetizer.id }}/select-dish" ts-target="#current-recipe-card"
-        ts-req-after="toggle-meals-panel" class="w-full p-3 bg-blue-50 border border-blue-200 rounded-lg text-left">
+        ts-req-after="toggle-meals-panel" class="w-full p-3 bg-blue-50 border border-blue-200 rounded-xl text-left">
         <div class="flex items-center gap-3">
           <span class="text-2xl">🥗</span>
           <div class="flex-1">
@@ -618,7 +618,7 @@
             <div class="font-semibold">{{ appetizer.name }}</div>
           </div>
           {% if appetizer.is_completed() %}
-          <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+          <div class="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center">
             <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd"
                 d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -628,13 +628,13 @@
           {% else if appetizer.is_cooking() %}
           <span class="px-2 py-1 bg-blue-500 text-white text-xs font-semibold rounded">{{ "Cooking"|t }}</span>
           {% else %}
-          <div class="w-6 h-6 border-2 border-gray-300 rounded-full"></div>
+          <div class="w-6 h-6 border-2 border-line rounded-full"></div>
           {% endif %}
         </div>
       </button>
       {% endif %}
       <button ts-req="/kitchen/{{ date }}/{{ slot.main_course.id }}/select-dish" ts-target="#current-recipe-card"
-        ts-req-after="toggle-meals-panel" class="w-full p-3 bg-orange-50 border border-orange-200 rounded-lg text-left">
+        ts-req-after="toggle-meals-panel" class="w-full p-3 bg-orange-50 border border-orange-200 rounded-xl text-left">
         <div class="flex items-center gap-3">
           <span class="text-2xl">🍛</span>
           <div class="flex-1">
@@ -642,7 +642,7 @@
             <div class="font-semibold">{{ slot.main_course.name }}</div>
           </div>
           {% if slot.main_course.is_completed() %}
-          <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+          <div class="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center">
             <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd"
                 d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -652,13 +652,13 @@
           {% else if slot.main_course.is_cooking() %}
           <span class="px-2 py-1 bg-orange-500 text-white text-xs font-semibold rounded">{{ "Cooking"|t }}</span>
           {% else %}
-          <div class="w-6 h-6 border-2 border-gray-300 rounded-full"></div>
+          <div class="w-6 h-6 border-2 border-line rounded-full"></div>
           {% endif %}
         </div>
       </button>
       {% if let Some(accompaniment) = slot.accompaniment %}
       <button ts-req="/kitchen/{{ date }}/{{ accompaniment.id }}/select-dish" ts-target="#current-recipe-card"
-        ts-req-after="toggle-meals-panel" class="w-full p-3 bg-purple-50 border border-purple-200 rounded-lg text-left">
+        ts-req-after="toggle-meals-panel" class="w-full p-3 bg-purple-50 border border-purple-200 rounded-xl text-left">
         <div class="flex items-center gap-3">
           <span class="text-2xl">🍚</span>
           <div class="flex-1">
@@ -666,7 +666,7 @@
             <div class="font-semibold">{{ accompaniment.name }}</div>
           </div>
           {% if accompaniment.is_completed() %}
-          <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+          <div class="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center">
             <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd"
                 d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -676,14 +676,14 @@
           {% else if accompaniment.is_cooking() %}
           <span class="px-2 py-1 bg-purple-500 text-white text-xs font-semibold rounded">{{ "Cooking"|t }}</span>
           {% else %}
-          <div class="w-6 h-6 border-2 border-gray-300 rounded-full"></div>
+          <div class="w-6 h-6 border-2 border-line rounded-full"></div>
           {% endif %}
         </div>
       </button>
       {% endif %}
       {% if let Some(dessert) = slot.dessert %}
       <button ts-req="/kitchen/{{ date }}/{{ dessert.id }}/select-dish" ts-target="#current-recipe-card"
-        ts-req-after="toggle-meals-panel" class="w-full p-3 bg-pink-50 border border-pink-200 rounded-lg text-left">
+        ts-req-after="toggle-meals-panel" class="w-full p-3 bg-pink-50 border border-pink-200 rounded-xl text-left">
         <div class="flex items-center gap-3">
           <span class="text-2xl">🍰</span>
           <div class="flex-1">
@@ -691,7 +691,7 @@
             <div class="font-semibold">{{ dessert.name }}</div>
           </div>
           {% if dessert.is_completed() %}
-          <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+          <div class="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center">
             <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd"
                 d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -701,7 +701,7 @@
           {% else if dessert.is_cooking() %}
           <span class="px-2 py-1 bg-pink-500 text-white text-xs font-semibold rounded">{{ "Cooking"|t }}</span>
           {% else %}
-          <div class="w-6 h-6 border-2 border-gray-300 rounded-full"></div>
+          <div class="w-6 h-6 border-2 border-line rounded-full"></div>
           {% endif %}
         </div>
       </button>
@@ -735,12 +735,12 @@
       const tabEl = document.getElementById(`tab-${v}`);
       if (v === view) {
         viewEl.classList.remove('hidden');
-        tabEl.classList.add('text-green-600', 'border-green-600');
-        tabEl.classList.remove('text-gray-500', 'border-transparent');
+        tabEl.classList.add('text-primary-500', 'border-primary-500');
+        tabEl.classList.remove('text-ink-3', 'border-transparent');
       } else {
         viewEl.classList.add('hidden');
-        tabEl.classList.remove('text-green-600', 'border-green-600');
-        tabEl.classList.add('text-gray-500', 'border-transparent');
+        tabEl.classList.remove('text-primary-500', 'border-primary-500');
+        tabEl.classList.add('text-ink-3', 'border-transparent');
       }
     });
   }

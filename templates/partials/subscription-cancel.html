@@ -1,6 +1,6 @@
 <div ts-trigger="load" ts-action="remove" ts-target="#cancel-modal" ts-swap-push="body" ts-swap="append"></div>
 <div id="payment-method-panel" ts-swap-push="#payment-method-panel" ts-trigger="load" ts-action="remove"></div>
-<div id="current-plan" ts-swap-push="#current-plan" class="bg-white rounded-lg shadow-lg p-6">
+<div id="current-plan" ts-swap-push="#current-plan" class="bg-paper rounded-xl shadow-md p-6">
   <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
     <div>
       <div class="flex items-center gap-2 mb-1">
@@ -14,14 +14,14 @@
     {% if let Ok(config) = "config"|value::<crate::config::Config> %}
       {% if let (Some(premium), Some(payment_details)) = (&config.premium, &subscription.payment_details) %}
       <div class="text-right">
-        <div class="text-2xl font-bold text-gray-600">
+        <div class="text-2xl font-bold text-ink-2">
           {% match payment_details.plan.as_str() %}
           {% when "monthly" %}
-          ${{ *premium.monthly_price|amount }}<span class="text-sm text-gray-500 font-normal">{{ "/month"|t }}</span>
+          ${{ *premium.monthly_price|amount }}<span class="text-sm text-ink-3 font-normal">{{ "/month"|t }}</span>
           {% when "annual" %}
-          ${{ premium.annual_price()|amount }}<span class="text-sm text-gray-500 font-normal">{{ "/yr"|t }}</span>
+          ${{ premium.annual_price()|amount }}<span class="text-sm text-ink-3 font-normal">{{ "/yr"|t }}</span>
           {% when _ %}
-          $0<span class="text-sm text-gray-500 font-normal">{{ "/month"|t }}</span>
+          $0<span class="text-sm text-ink-3 font-normal">{{ "/month"|t }}</span>
           {% endmatch %}
         </div>
       </div>
@@ -29,7 +29,7 @@
       {% endif %}
   </div>
   <!-- Cancelled Banner (hidden by default) -->
-  <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+  <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-xl">
     <div class="flex items-center gap-2 text-sm text-yellow-800">
       <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

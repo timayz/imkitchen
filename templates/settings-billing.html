@@ -28,34 +28,34 @@
 
 {% if user.is_premium() %}
 <!-- Current Plan -->
-<div id="current-plan" class="bg-white rounded-lg shadow-lg p-6">
+<div id="current-plan" class="bg-paper rounded-xl shadow-md p-6">
   <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
     <div>
       <div class="flex items-center gap-2 mb-1">
         {% if let Some(payment_details) = subscription.payment_details %}
-        <span class="text-lg font-bold capitalize">{{ payment_details.plan }} {{ "Plan"|t }}</span>
+        <span class="text-lg font-bold font-serif capitalize">{{ payment_details.plan }} {{ "Plan"|t }}</span>
         {% else %}
-        <span class="text-lg font-bold">{{ "Life Plan"|t }}</span>
+        <span class="text-lg font-bold font-serif">{{ "Life Plan"|t }}</span>
         {% endif %}
         {% if subscription.is_active %}
-        <span class="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-semibold rounded-full">{{ "Active"|t }}</span>
+        <span class="px-2 py-0.5 bg-primary-100 text-primary-800 text-xs font-semibold rounded-full">{{ "Active"|t }}</span>
         {% endif %}
       </div>
       {% if subscription.is_active %}
-      <div class="text-sm text-gray-600">{{ "Next billing date:"|t }} {{ subscription.expire_at|date_year }}</div>
+      <div class="text-sm text-ink-2">{{ "Next billing date:"|t }} {{ subscription.expire_at|date_year }}</div>
       {% endif %}
     </div>
     {% if let Ok(config) = "config"|value::<crate::config::Config> %}
       {% if let (Some(premium), Some(payment_details)) = (&config.premium, &subscription.payment_details) %}
       <div class="text-right">
-        <div class="text-2xl font-bold text-gray-600">
+        <div class="text-2xl font-bold text-ink-2">
           {% match payment_details.plan.as_str() %}
           {% when "monthly" %}
-          ${{ *premium.monthly_price|amount }}<span class="text-sm text-gray-500 font-normal">{{ "/month"|t }}</span>
+          ${{ *premium.monthly_price|amount }}<span class="text-sm text-ink-3 font-normal">{{ "/month"|t }}</span>
           {% when "annual" %}
-          ${{ premium.annual_price()|amount }}<span class="text-sm text-gray-500 font-normal">{{ "/yr"|t }}</span>
+          ${{ premium.annual_price()|amount }}<span class="text-sm text-ink-3 font-normal">{{ "/yr"|t }}</span>
           {% when _ %}
-          $0<span class="text-sm text-gray-500 font-normal">{{ "/month"|t }}</span>
+          $0<span class="text-sm text-ink-3 font-normal">{{ "/month"|t }}</span>
           {% endmatch %}
         </div>
       </div>
@@ -64,7 +64,7 @@
   </div>
   <!-- Cancelled Banner (hidden by default) -->
   {% if !subscription.is_active %}
-  <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+  <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-xl">
     <div class="flex items-center gap-2 text-sm text-yellow-800">
       <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -76,9 +76,9 @@
     </div>
   </div>
   {% else %}
-  <div class="mt-4 pt-4 border-t border-gray-200">
+  <div class="mt-4 pt-4 border-t border-line-2">
     <button ts-req="/settings/billing/cancel" ts-target="body" ts-swap="append"
-      class="text-sm text-red-600 hover:text-red-700 font-semibold">
+      class="text-sm text-[#c3321a] hover:text-[#a82a16] font-semibold">
       {{ "Cancel Subscription"|t }}
     </button>
   </div>
@@ -86,8 +86,8 @@
 </div>
 
 {% if subscription.is_active %}
-<div id="payment-method-panel" class="bg-white rounded-lg shadow-lg p-6">
-  <h3 class="font-bold mb-4">{{ "Payment"|t }}</h3>
+<div id="payment-method-panel" class="bg-paper rounded-xl shadow-md p-6">
+  <h3 class="font-bold font-serif mb-4">{{ "Payment"|t }}</h3>
   <div ts-trigger="load" ts-req="/settings/billing/payment-method" ts-req-method="post"
     class="flex items-center justify-between px-4 py-3">
     <div class="flex items-center gap-3">
@@ -103,72 +103,72 @@
 {% endif %}
 {% else %}
 <!-- Current Plan -->
-<div class="bg-white rounded-lg shadow-lg p-6">
+<div class="bg-paper rounded-xl shadow-md p-6">
   <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
     <div>
       <div class="flex items-center gap-2 mb-1">
-        <span class="text-lg font-bold">{{ "Free Plan"|t }}</span>
-        <span class="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-semibold rounded-full">{{ "Active"|t }}</span>
+        <span class="text-lg font-bold font-serif">{{ "Free Plan"|t }}</span>
+        <span class="px-2 py-0.5 bg-cream-2 text-ink-2 text-xs font-semibold rounded-full">{{ "Active"|t }}</span>
       </div>
-      <div class="text-sm text-gray-600">{{ "No billing cycle"|t }}</div>
+      <div class="text-sm text-ink-2">{{ "No billing cycle"|t }}</div>
     </div>
     <div class="text-right">
-      <div class="text-2xl font-bold text-gray-600">$0<span class="text-sm text-gray-500 font-normal">{{ "/month"|t }}</span>
+      <div class="text-2xl font-bold text-ink-2">$0<span class="text-sm text-ink-3 font-normal">{{ "/month"|t }}</span>
       </div>
     </div>
   </div>
 </div>
 
 <!-- AIDA: ATTENTION - Eye-catching upgrade banner -->
-<div class="relative bg-linear-to-br from-green-500 to-green-700 text-white rounded-lg shadow-xl p-6 overflow-hidden">
+<div class="relative bg-linear-to-br from-primary-500 to-primary-600 text-white rounded-xl shadow-lg p-6 overflow-hidden">
   <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
   <div class="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2"></div>
   <div class="relative">
     <div class="flex items-center gap-2 mb-2">
-      <span class="bg-yellow-400 text-gray-900 px-3 py-0.5 rounded-full text-xs font-bold">{{ "UPGRADE"|t }}</span>
-      <span class="text-green-100 text-sm">{{ "You're missing out on the full experience"|t }}</span>
+      <span class="bg-yellow-400 text-ink px-3 py-0.5 rounded-full text-xs font-bold">{{ "UPGRADE"|t }}</span>
+      <span class="text-primary-100 text-sm">{{ "You're missing out on the full experience"|t }}</span>
     </div>
-    <h3 class="text-2xl font-bold mb-3">{{ "Unlock the Full Power of imkitchen"|t }}</h3>
+    <h3 class="text-2xl font-bold font-serif mb-3">{{ "Unlock the Full Power of imkitchen"|t }}</h3>
 
     <!-- AIDA: INTEREST - Show what they're missing with concrete examples -->
-    <p class="text-green-50 mb-4">
+    <p class="text-primary-50 mb-4">
       {{ "You have"|t }} <strong>{{ "7 recipes"|t }}</strong> {{ "in your plan right now. Premium users plan with"|t }} <strong>{{ "all their recipes"|t }}</strong> {{ "and get complete meals with appetizers, sides, and desserts automatically paired."|t }}
     </p>
 
     <!-- AIDA: DESIRE - Tangible benefits grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
       <div class="flex items-start gap-2">
-        <svg class="w-5 h-5 text-green-200 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-5 h-5 text-primary-200 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
         </svg>
         <span class="text-sm"><strong>{{ "Unlimited recipes"|t }}</strong> {{ "in your meal plan"|t }}</span>
       </div>
       <div class="flex items-start gap-2">
-        <svg class="w-5 h-5 text-green-200 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-5 h-5 text-primary-200 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
         </svg>
         <span class="text-sm"><strong>{{ "All recipe types"|t }}</strong> {{ "(appetizers, sides, desserts)"|t }}</span>
       </div>
       <div class="flex items-start gap-2">
-        <svg class="w-5 h-5 text-green-200 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-5 h-5 text-primary-200 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
         </svg>
         <span class="text-sm"><strong>{{ "Meal preferences"|t }}</strong> {{ "applied automatically"|t }}</span>
       </div>
       <div class="flex items-start gap-2">
-        <svg class="w-5 h-5 text-green-200 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-5 h-5 text-primary-200 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
         </svg>
         <span class="text-sm"><strong>{{ "Batch import"|t }}</strong> {{ "recipes in bulk"|t }}</span>
       </div>
       <div class="flex items-start gap-2">
-        <svg class="w-5 h-5 text-green-200 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-5 h-5 text-primary-200 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
         </svg>
         <span class="text-sm"><strong>{{ "Priority support"|t }}</strong> {{ "when you need help"|t }}</span>
       </div>
       <div class="flex items-start gap-2">
-        <svg class="w-5 h-5 text-green-200 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-5 h-5 text-primary-200 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
         </svg>
         <span class="text-sm"><strong>{{ "Early access"|t }}</strong> {{ "to new features"|t }}</span>
@@ -180,10 +180,10 @@
       <!-- AIDA: ACTION - Clear CTA with pricing -->
       <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
         <a href="/upgrade"
-          class="px-6 py-3 bg-white text-green-600 font-bold rounded-lg hover:bg-gray-100 transition text-center">
+          class="px-6 py-3 bg-white text-primary-500 font-bold rounded-xl hover:bg-cream-2 transition text-center">
           {{ "Upgrade to Premium"|t }} - ${{ *premium.monthly_price|amount }}{{ "/mo"|t }}
         </a>
-        <span class="text-green-100 text-sm">{{ "or"|t }} ${{ premium.annual_price()|amount }}{{ "/year"|t }} ({{ "save"|t }} {{ premium.annual_rate
+        <span class="text-primary-100 text-sm">{{ "or"|t }} ${{ premium.annual_price()|amount }}{{ "/year"|t }} ({{ "save"|t }} {{ premium.annual_rate
           }}%)</span>
       </div>
       {% endif %}
@@ -192,64 +192,64 @@
 </div>
 
 <!-- What you're currently limited to -->
-<div class="bg-white rounded-lg shadow-lg p-6">
-  <h3 class="font-bold mb-4">{{ "Your Free Plan Includes"|t }}</h3>
+<div class="bg-paper rounded-xl shadow-md p-6">
+  <h3 class="font-bold font-serif mb-4">{{ "Your Free Plan Includes"|t }}</h3>
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-    <div class="flex items-center gap-2 text-sm text-gray-600">
-      <span class="text-green-500">✓</span>
+    <div class="flex items-center gap-2 text-sm text-ink-2">
+      <span class="text-primary-500">✓</span>
       <span>{{ "Generate all future weeks"|t }}</span>
     </div>
-    <div class="flex items-center gap-2 text-sm text-gray-600">
-      <span class="text-green-500">✓</span>
+    <div class="flex items-center gap-2 text-sm text-ink-2">
+      <span class="text-primary-500">✓</span>
       <span>{{ "Up to 7 recipes in plan"|t }}</span>
     </div>
-    <div class="flex items-center gap-2 text-sm text-gray-600">
-      <span class="text-green-500">✓</span>
+    <div class="flex items-center gap-2 text-sm text-ink-2">
+      <span class="text-primary-500">✓</span>
       <span>{{ "Main courses only"|t }}</span>
     </div>
-    <div class="flex items-center gap-2 text-sm text-gray-600">
-      <span class="text-green-500">✓</span>
+    <div class="flex items-center gap-2 text-sm text-ink-2">
+      <span class="text-primary-500">✓</span>
       <span>{{ "Unlimited regenerations"|t }}</span>
     </div>
-    <div class="flex items-center gap-2 text-sm text-gray-600">
-      <span class="text-green-500">✓</span>
+    <div class="flex items-center gap-2 text-sm text-ink-2">
+      <span class="text-primary-500">✓</span>
       <span>{{ "Recipe management & sharing"|t }}</span>
     </div>
-    <div class="flex items-center gap-2 text-sm text-gray-600">
-      <span class="text-green-500">✓</span>
+    <div class="flex items-center gap-2 text-sm text-ink-2">
+      <span class="text-primary-500">✓</span>
       <span>{{ "Community access"|t }}</span>
     </div>
   </div>
 
   <!-- Subtle limitations reminder -->
-  <div class="mt-4 pt-4 border-t border-gray-100">
+  <div class="mt-4 pt-4 border-t border-line-2">
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      <div class="flex items-center gap-2 text-sm text-gray-400">
-        <svg class="w-4 h-4 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="flex items-center gap-2 text-sm text-ink-3">
+        <svg class="w-4 h-4 text-ink-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
           </path>
         </svg>
         <span>{{ "No appetizers, sides, or desserts"|t }}</span>
       </div>
-      <div class="flex items-center gap-2 text-sm text-gray-400">
-        <svg class="w-4 h-4 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="flex items-center gap-2 text-sm text-ink-3">
+        <svg class="w-4 h-4 text-ink-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
           </path>
         </svg>
         <span>{{ "No meal preference filtering"|t }}</span>
       </div>
-      <div class="flex items-center gap-2 text-sm text-gray-400">
-        <svg class="w-4 h-4 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="flex items-center gap-2 text-sm text-ink-3">
+        <svg class="w-4 h-4 text-ink-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
           </path>
         </svg>
         <span>{{ "No batch recipe import"|t }}</span>
       </div>
-      <div class="flex items-center gap-2 text-sm text-gray-400">
-        <svg class="w-4 h-4 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="flex items-center gap-2 text-sm text-ink-3">
+        <svg class="w-4 h-4 text-ink-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
           </path>
@@ -263,8 +263,8 @@
 
 {% if !invoices.edges.is_empty() %}
 <!-- Invoice List -->
-<div class="bg-white rounded-lg shadow-lg p-6">
-  <h3 class="font-bold mb-4">{{ "Invoices"|t }}</h3>
+<div class="bg-paper rounded-xl shadow-md p-6">
+  <h3 class="font-bold font-serif mb-4">{{ "Invoices"|t }}</h3>
 
   <div id="invoices-items" class="space-y-4">
     <!-- Invoice 1 -->
@@ -276,14 +276,14 @@
             ts-swap="afterend"
             ts-trigger="visible once"
             {% endif %}
-            class="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-gray-50 gap-3">
+            class="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-xl hover:bg-cream gap-3">
       <div class="flex-1">
         <div class="font-semibold">{{ invoice.node.issued_at|day_month_year }}</div>
       </div>
       <div class="flex items-center gap-4">
         <span class="font-semibold">${{ *invoice.node.total_inc_tax|amount }}</span>
-        <span class="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-semibold rounded-full">{{ "Paid"|t }}</span>
-        <a href="/invoices/{{ invoice.node.id }}" class="text-green-600 hover:text-green-700 font-semibold text-sm">{{ "View"|t }}</a>
+        <span class="px-2 py-0.5 bg-primary-100 text-primary-800 text-xs font-semibold rounded-full">{{ "Paid"|t }}</span>
+        <a href="/invoices/{{ invoice.node.id }}" class="text-primary-500 hover:text-primary-600 font-semibold text-sm">{{ "View"|t }}</a>
       </div>
     </div>
     {% endfor %}
