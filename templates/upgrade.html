@@ -253,6 +253,12 @@
 
       document.addEventListener('DOMContentLoaded', () => {
         twinspark.func({
+          "stripe-update-amount": (o) => {
+            if (stripeElements) {
+              var amountEl = document.getElementById('subscription-form-amount');
+              stripeElements.update({ amount: parseInt(amountEl.value, 10) });
+            }
+          },
           "stripe-confirm-form": (o) => {
             if (!stripeElements) {
               o.event.preventDefault();
