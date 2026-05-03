@@ -17,6 +17,10 @@ impl<E: Executor + Clone> super::Module<E> {
             crate::forbidden!("not owner of recipe");
         }
 
+        if let Err(err) = image::load_from_memory(&data) {
+            crate::user!("{err}");
+        };
+
         recipe
             .aggregator()?
             .event(&ThumbnailUploaded { data })
