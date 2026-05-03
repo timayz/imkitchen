@@ -68,7 +68,7 @@ tokio-cron-scheduler = "0.15"
 
 [package]
 name = "imkitchen"
-version = "0.16.1"
+version = "0.16.2"
 edition.workspace = true
 
 [package.metadata.cargo-machete]
@@ -88,19 +88,19 @@ clap = { workspace = true }
 futures = { workspace = true }
 tower-http = { workspace = true }
 async-stripe = { workspace = true }
-imkitchen-core = { path = "crates/core", version = "0.16.1" }
-imkitchen-identity = { path = "crates/identity", version = "0.16.1" }
-imkitchen-billing = { path = "crates/billing", version = "0.16.1" }
-imkitchen-db = { path = "crates/db", version = "0.16.1" }
-imkitchen-notification = { path = "crates/notification", version = "0.16.1" }
-imkitchen-web-shared = { path = "web/shared", version = "0.16.1" }
-imkitchen-web-kitchen = { path = "web/kitchen", version = "0.16.1" }
-imkitchen-web-menu = { path = "web/menu", version = "0.16.1" }
-imkitchen-web-recipe = { path = "web/recipe", version = "0.16.1" }
-imkitchen-web-grocery = { path = "web/grocery", version = "0.16.1" }
-imkitchen-web-settings = { path = "web/settings", version = "0.16.1" }
-imkitchen-web-public = { path = "web/public", version = "0.16.1" }
-imkitchen-web-admin = { path = "web/admin", version = "0.16.1" }
+imkitchen-core = { path = "crates/core", version = "0.16.2" }
+imkitchen-identity = { path = "crates/identity", version = "0.16.2" }
+imkitchen-billing = { path = "crates/billing", version = "0.16.2" }
+imkitchen-db = { path = "crates/db", version = "0.16.2" }
+imkitchen-notification = { path = "crates/notification", version = "0.16.2" }
+imkitchen-web-shared = { path = "web/shared", version = "0.16.2" }
+imkitchen-web-kitchen = { path = "web/kitchen", version = "0.16.2" }
+imkitchen-web-menu = { path = "web/menu", version = "0.16.2" }
+imkitchen-web-recipe = { path = "web/recipe", version = "0.16.2" }
+imkitchen-web-grocery = { path = "web/grocery", version = "0.16.2" }
+imkitchen-web-settings = { path = "web/settings", version = "0.16.2" }
+imkitchen-web-public = { path = "web/public", version = "0.16.2" }
+imkitchen-web-admin = { path = "web/admin", version = "0.16.2" }
 
 [[bin]]
 name = "imkitchen"

@@ -1,6 +1,6 @@
 [package]
 name = "imkitchen-web-recipe"
-version = "0.16.1"
+version = "0.16.2"
 edition.workspace = true
 
 [dependencies]
@@ -13,6 +13,6 @@ time = { workspace = true }
 base64 = { workspace = true }
 strum = { workspace = true }
 evento = { workspace = true }
-imkitchen-core = { path = "../../crates/core", version = "0.16.1" }
-imkitchen-types = { path = "../../crates/types", version = "0.16.1" }
-imkitchen-web-shared = { path = "../shared", version = "0.16.1" }
+imkitchen-core = { path = "../../crates/core", version = "0.16.2" }
+imkitchen-types = { path = "../../crates/types", version = "0.16.2" }
+imkitchen-web-shared = { path = "../shared", version = "0.16.2" }
