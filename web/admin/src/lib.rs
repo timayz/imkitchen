@@ -11,6 +11,7 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
             post(routes::users::toggle_premium),
         )
         .route("/admin/invoices", get(routes::invoices::page))
+        .route("/admin/invoices/{id}", get(routes::invoices::detail))
         .route("/admin/contact", get(routes::contact::page))
         .route(
             "/admin/contact/{id}/mark-read-and-reply",

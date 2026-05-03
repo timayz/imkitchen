@@ -68,7 +68,7 @@
             ts-swap="afterend"
             ts-trigger="visible once"{% endif %}>
             <td class="px-6 py-4">
-              <div class="font-semibold font-mono text-sm">{{ invoice.node.invoice_number }}</div>
+              <a href="/admin/invoices/{{ invoice.node.id }}" class="font-semibold font-mono text-sm text-primary-500 hover:text-primary-600 transition">{{ invoice.node.invoice_number }}</a>
               <div class="text-xs text-ink-3">{{ invoice.node.id }}</div>
             </td>
             <td class="px-6 py-4">
