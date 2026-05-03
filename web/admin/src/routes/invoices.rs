@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Query, State},
+    extract::{Path, Query, State},
     response::IntoResponse,
 };
 use evento::cursor::{Args, ReadResult, Value};
@@ -18,6 +18,14 @@ pub struct InvoicesTemplate {
     pub current_path: String,
     pub invoices: ReadResult<InvoiceUserView>,
     pub query: PageQuery,
+}
+
+#[derive(askama::Template)]
+#[template(path = "admin-invoices-detail.html")]
+pub struct InvoiceDetailTemplate {
+    pub current_path: String,
+    pub invoice: InvoiceUserView,
+    pub tax_label: String,
 }
 
 impl Default for InvoicesTemplate {
@@ -105,6 +113,33 @@ pub async fn page(
             invoices,
             query: r_query,
             ..Default::default()
+        })
+        .into_response()
+}
+
+#[tracing::instrument(skip_all, fields(admin = admin.id))]
+pub async fn detail(
+    template: Template,
+    Path((id,)): Path<(String,)>,
+    State(app): State<AppState>,
+    admin: AuthAdmin,
+) -> impl IntoResponse {
+    let invoice = imkitchen_web_shared::try_page_response!(opt:
+        app.billing.invoice.invoice(id),
+        template
+    );
+
+    let tax_label = if invoice.tax > 0 {
+        format!("VAT ({}%)", invoice.tax_rate * 100.0)
+    } else {
+        "Tax".to_owned()
+    };
+
+    template
+        .render(InvoiceDetailTemplate {
+            current_path: "invoices".to_owned(),
+            invoice,
+            tax_label,
         })
         .into_response()
 }
