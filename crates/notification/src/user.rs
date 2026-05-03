@@ -62,7 +62,9 @@ async fn handle_reset_requested<E: Executor>(
     });
 
     let subject = rust_i18n::t!("Reset Your Pasuword", locales = event.data.lang).to_string();
-    service.send(event.data.email, subject, html, plain).await?;
+    if let Err(err) = service.send(event.data.email, subject, html, plain).await {
+        tracing::warn!(error = ?err, "handle_reset_requested.send");
+    }
 
     Ok(())
 }
