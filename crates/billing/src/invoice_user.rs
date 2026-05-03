@@ -71,6 +71,13 @@ pub struct FilterQuery {
     pub args: Args,
 }
 
+pub struct AdminFilterQuery {
+    pub search: Option<String>,
+    pub date_from: Option<u64>,
+    pub date_to: Option<u64>,
+    pub args: Args,
+}
+
 impl<E: Executor> Module<E> {
     pub async fn filter_invoice(
         &self,
@@ -96,6 +103,52 @@ impl<E: Executor> Module<E> {
             .from(UserInvoiceUser::Table)
             .and_where(Expr::col(UserInvoiceUser::UserId).eq(&input.user_id))
             .to_owned();
+
+        Reader::new(statement)
+            .desc()
+            .args(input.args)
+            .execute::<_, InvoiceUserView, _>(&self.read_db)
+            .await
+    }
+
+    pub async fn filter_invoice_admin(
+        &self,
+        input: AdminFilterQuery,
+    ) -> anyhow::Result<ReadResult<InvoiceUserView>> {
+        let mut statement = sea_query::Query::select()
+            .columns([
+                UserInvoiceUser::Id,
+                UserInvoiceUser::InvoiceNumber,
+                UserInvoiceUser::Cursor,
+                UserInvoiceUser::UserId,
+                UserInvoiceUser::IssuedAt,
+                UserInvoiceUser::DueAt,
+                UserInvoiceUser::ExpireAt,
+                UserInvoiceUser::From,
+                UserInvoiceUser::To,
+                UserInvoiceUser::Plan,
+                UserInvoiceUser::Price,
+                UserInvoiceUser::Tax,
+                UserInvoiceUser::TaxRate,
+                UserInvoiceUser::TotalIncTax,
+            ])
+            .from(UserInvoiceUser::Table)
+            .to_owned();
+
+        if let Some(search) = &input.search {
+            statement.and_where(
+                Expr::col(UserInvoiceUser::InvoiceNumber)
+                    .like(format!("%{search}%")),
+            );
+        }
+
+        if let Some(date_from) = input.date_from {
+            statement.and_where(Expr::col(UserInvoiceUser::IssuedAt).gte(date_from));
+        }
+
+        if let Some(date_to) = input.date_to {
+            statement.and_where(Expr::col(UserInvoiceUser::IssuedAt).lte(date_to));
+        }
 
         Reader::new(statement)
             .desc()

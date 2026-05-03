@@ -2681,6 +2681,7 @@ dependencies = [
  "askama",
  "axum",
  "evento",
+ "imkitchen-billing",
  "imkitchen-core",
  "imkitchen-identity",
  "imkitchen-types",

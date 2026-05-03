@@ -1,0 +1,113 @@
+{% extends "_admin.html" %}
+
+{% block title %}Admin - Invoices - imkitchen{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+  <!-- Header -->
+  <div class="mb-8">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div>
+        <h1 class="text-2xl md:text-3xl font-bold font-serif mb-2">Invoices</h1>
+        <p class="text-ink-2">Browse and manage all customer invoices</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters & Search -->
+  <div class="bg-paper rounded-xl shadow-md p-6 mb-6">
+    <form ts-trigger="change,input" ts-req="/admin/invoices" ts-req-selector="#invoices-list" ts-req-method="GET" ts-req-strategy="last" ts-target="#invoices-list"
+      class="grid md:grid-cols-4 gap-4" autocomplete="off">
+      <div>
+        <label class="block text-sm font-semibold text-ink-2 mb-2">Search</label>
+        <input name="search" type="text" placeholder="Invoice number..."
+          {% if let Some(search) = query.search %}value="{{ search }}"{% endif %}
+          class="w-full px-4 py-2 border border-line rounded-xl focus:ring-2 focus:ring-primary-500" />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-ink-2 mb-2">Date From</label>
+        <input name="date_from" type="date"
+          {% if let Some(date_from) = query.date_from %}value="{{ date_from }}"{% endif %}
+          class="w-full px-4 py-2 border border-line rounded-xl focus:ring-2 focus:ring-primary-500" />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-ink-2 mb-2">Date To</label>
+        <input name="date_to" type="date"
+          {% if let Some(date_to) = query.date_to %}value="{{ date_to }}"{% endif %}
+          class="w-full px-4 py-2 border border-line rounded-xl focus:ring-2 focus:ring-primary-500" />
+      </div>
+      <div class="flex items-end">
+        <button type="reset" onclick="this.form.reset(); this.form.dispatchEvent(new Event('change'))"
+          class="w-full px-4 py-2 bg-cream-2 text-ink-2 font-semibold rounded-xl hover:bg-cream transition text-sm">
+          Clear Filters
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Invoices Table -->
+  <div id="invoices-list" class="bg-paper rounded-xl shadow-md overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[800px]">
+        <thead class="bg-cream border-b">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-semibold text-ink-2 uppercase">Invoice</th>
+            <th class="px-6 py-3 text-left text-xs font-semibold text-ink-2 uppercase">Customer</th>
+            <th class="px-6 py-3 text-left text-xs font-semibold text-ink-2 uppercase">Plan</th>
+            <th class="px-6 py-3 text-left text-xs font-semibold text-ink-2 uppercase">Date</th>
+            <th class="px-6 py-3 text-right text-xs font-semibold text-ink-2 uppercase">Amount</th>
+            <th class="px-6 py-3 text-left text-xs font-semibold text-ink-2 uppercase">Status</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-line-2">
+          {% for invoice in invoices.edges %}
+          <tr class="hover:bg-cream"{% if let (true, true, Some(cursor)) = (loop.last, invoices.page_info.has_next_page, invoices.page_info.end_cursor.to_owned()) %}
+            ts-req="/admin/invoices?after={{ cursor.to_string() }}{% if let Some(search) = query.search %}&search={{ search }}{% endif %}{% if let Some(date_from) = query.date_from %}&date_from={{ date_from }}{% endif %}{% if let Some(date_to) = query.date_to %}&date_to={{ date_to }}{% endif %}"
+            ts-req-method="GET"
+            ts-req-selector="children tbody"
+            ts-swap="afterend"
+            ts-trigger="visible once"{% endif %}>
+            <td class="px-6 py-4">
+              <div class="font-semibold font-mono text-sm">{{ invoice.node.invoice_number }}</div>
+              <div class="text-xs text-ink-3">{{ invoice.node.id }}</div>
+            </td>
+            <td class="px-6 py-4">
+              <div class="font-semibold">{{ invoice.node.to.name }}</div>
+              <div class="text-sm text-ink-2">{{ invoice.node.to.email }}</div>
+            </td>
+            <td class="px-6 py-4">
+              <span class="px-3 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded-full capitalize">
+                {{ invoice.node.plan }}
+              </span>
+            </td>
+            <td class="px-6 py-4 text-sm text-ink-2">
+              {{ invoice.node.issued_at|day_month_year }}
+            </td>
+            <td class="px-6 py-4 text-right">
+              <div class="font-semibold">${{ *invoice.node.total_inc_tax|amount }}</div>
+              {% if invoice.node.tax > 0 %}
+              <div class="text-xs text-ink-3">${{ *invoice.node.price|amount }} + ${{ *invoice.node.tax|amount }} tax</div>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4">
+              <span class="px-3 py-1 bg-primary-100 text-primary-800 text-xs font-semibold rounded-full">
+                Paid
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+          {% if invoices.edges.is_empty() %}
+          <tr>
+            <td colspan="6" class="px-6 py-12 text-center text-ink-3">
+              <div class="text-4xl mb-3">📄</div>
+              <div class="font-semibold text-ink-2 mb-1">No invoices found</div>
+              <div class="text-sm">Try adjusting your filters</div>
+            </td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
