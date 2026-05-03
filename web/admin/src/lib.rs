@@ -10,6 +10,7 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
             "/admin/users/{id}/toggle-premium",
             post(routes::users::toggle_premium),
         )
+        .route("/admin/invoices", get(routes::invoices::page))
         .route("/admin/contact", get(routes::contact::page))
         .route(
             "/admin/contact/{id}/mark-read-and-reply",
