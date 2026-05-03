@@ -334,7 +334,14 @@ async fn handle_thumbnail_uploaded<E: Executor>(
         .original_version::<ThumbnailResized>(&event.aggregator_id)
         .await?
         .expect("aggregator exist");
-    let img = image::load_from_memory(&event.data.data)?;
+    let img = match image::load_from_memory(&event.data.data) {
+        Ok(img) => img,
+        Err(err) => {
+            tracing::warn!(error = ?err, "recipe-command.handle_thumbnail_uploaded.load_from_memory");
+
+            return Ok(());
+        }
+    };
     let mut builder = evento::aggregator(&event.aggregator_id)
         .original_version(original_version)
         .metadata_from(&event.metadata)
