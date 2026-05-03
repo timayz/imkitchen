@@ -20,23 +20,23 @@
 <div>
   <!-- Header -->
   <div class="mb-6">
-    <h1 class="text-2xl font-bold mb-1">{{ "Community Recipes"|t }}</h1>
-    <p class="text-gray-600">{{ "Discover recipes shared by other home cooks"|t }}</p>
+    <h1 class="text-2xl font-bold font-serif mb-1">{{ "Community Recipes"|t }}</h1>
+    <p class="text-ink-2">{{ "Discover recipes shared by other home cooks"|t }}</p>
   </div>
 
   <!-- Search & Filters -->
   <form ts-trigger="change,input" ts-req="/recipes" ts-req-selector="#recipes-list" ts-req-method="GET"
-    ts-req-strategy="last" ts-target="#recipes-list" autocomplete="off" class="bg-white rounded-lg shadow-lg p-4 mb-6">
+    ts-req-strategy="last" ts-target="#recipes-list" autocomplete="off" class="bg-paper rounded-xl shadow-md p-4 mb-6">
     <div class="grid md:grid-cols-5 gap-4">
       <div class="md:col-span-2">
-        <label class="block text-sm font-semibold text-gray-700 mb-2">{{ "Search"|t }}</label>
+        <label class="block text-sm font-semibold text-ink-2 mb-2">{{ "Search"|t }}</label>
         <input name="search" type="text" placeholder="{{ "Search by name, description or ingredient..."|t }}"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" />
+          class="w-full px-4 py-2 border border-line rounded-xl focus:ring-2 focus:ring-primary-500" />
       </div>
       <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-2">{{ "Recipe Type"|t }}</label>
+        <label class="block text-sm font-semibold text-ink-2 mb-2">{{ "Recipe Type"|t }}</label>
         <select name="recipe_type"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+          class="w-full px-4 py-2 border border-line rounded-xl focus:ring-2 focus:ring-primary-500">
           <option value="">{{ "All Types"|t }}</option>
           {% for variant in RecipeType::VARIANTS %}
           <option value="{{ variant }}">{{ variant.as_ref()|t }}</option>
@@ -44,9 +44,9 @@
         </select>
       </div>
       <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-2">{{ "Cuisine"|t }}</label>
+        <label class="block text-sm font-semibold text-ink-2 mb-2">{{ "Cuisine"|t }}</label>
         <select name="cuisine_type"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+          class="w-full px-4 py-2 border border-line rounded-xl focus:ring-2 focus:ring-primary-500">
           <option value="">{{ "All Cuisines"|t }}</option>
           {% for variant in CuisineType::VARIANTS %}
           <option value="{{ variant }}">{{ variant.as_ref()|t }}</option>
@@ -54,9 +54,9 @@
         </select>
       </div>
       <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-2">{{ "Sort By"|t }}</label>
+        <label class="block text-sm font-semibold text-ink-2 mb-2">{{ "Sort By"|t }}</label>
         <select name="sort_by"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+          class="w-full px-4 py-2 border border-line rounded-xl focus:ring-2 focus:ring-primary-500">
           <option value="{{ SortBy::RecentlyAdded }}">{{ "Recently Added"|t }}</option>
           <!-- <option value="name">Name (A-Z)</option> -->
           <!-- <option value="time">Cook Time</option> -->
@@ -71,12 +71,12 @@
 
     <!-- Dietary Filters -->
     <div class="mt-4 pt-4 border-t">
-      <label class="block text-sm font-semibold text-gray-700 mb-3">{{ "Dietary Restrictions"|t }}</label>
+      <label class="block text-sm font-semibold text-ink-2 mb-3">{{ "Dietary Restrictions"|t }}</label>
       <div class="flex flex-wrap gap-3">
         {% for restriction in DietaryRestriction::VARIANTS %}
         <label class="flex items-center">
           <input type="checkbox" name="dietary_restrictions" value="{{ restriction }}"
-            class="rounded border-gray-300 text-green-600" />
+            class="rounded border-line text-primary-500" />
           <span class="ml-2 text-sm">{{ restriction.as_ref()|t }}</span>
         </label>
         {% endfor %}
@@ -87,10 +87,10 @@
   <div id="recipes-list" class="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
     {% if recipes.edges.is_empty() %}
     <div class="col-span-full">
-      <div class="bg-white rounded-lg shadow-lg p-12 flex flex-col items-center justify-center text-center">
+      <div class="bg-paper rounded-xl shadow-md p-12 flex flex-col items-center justify-center text-center">
         <span class="text-6xl mb-4">🍽️</span>
-        <h3 class="text-xl font-semibold text-gray-700 mb-2">{{ "No recipes found"|t }}</h3>
-        <p class="text-gray-500">{{ "Try adjusting your filters or share recipe to community"|t }}</p>
+        <h3 class="text-xl font-semibold font-serif text-ink-2 mb-2">{{ "No recipes found"|t }}</h3>
+        <p class="text-ink-3">{{ "Try adjusting your filters or share recipe to community"|t }}</p>
       </div>
     </div>
     {% else %}
@@ -99,7 +99,7 @@
       Some(cursor))=(loop.last, recipes.page_info.has_next_page, recipes.page_info.end_cursor.to_owned()) %}
       ts-req="/recipes?after={{ cursor.to_string() }}{% if let Some(recipe_type) = query.recipe_type %}&recipe_type={{ recipe_type }}{% endif %}{% if let Some(cuisine_type) = query.cuisine_type %}&cuisine_type={{ cuisine_type }}{% endif %}{% for restriction in query.dietary_restrictions %}&dietary_restrictions={{ restriction }}{% endfor %}"
       ts-req-method="GET" ts-req-selector="children #recipes-list" ts-swap="afterend" ts-trigger="visible once" {% endif
-      %} class="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition">
+      %} class="bg-paper rounded-xl shadow-md overflow-hidden hover:shadow-lg transition">
       <div class="relative">
         {% match recipe.node.recipe_type.0 %}
         {% when RecipeType::MainCourse %}
@@ -167,17 +167,17 @@
       <div class="p-4">
         <h3 class="font-bold mb-2">{{ recipe.node.name }}</h3>
         <div class="flex items-center gap-2 text-xs mb-2">
-          <span class="text-gray-600">{{ recipe.node.total_views|views }} {{ "views"|t }}</span>
-          <span class="text-gray-400">•</span>
-          <p class="text-xs text-gray-500">{{ recipe.node.created_at|relative_time }}</p>
+          <span class="text-ink-2">{{ recipe.node.total_views|views }} {{ "views"|t }}</span>
+          <span class="text-ink-3">•</span>
+          <p class="text-xs text-ink-3">{{ recipe.node.created_at|relative_time }}</p>
         </div>
         <div class="flex gap-2 text-xs mb-2">
           {% for restriction in recipe.node.dietary_restrictions.iter() %}
-          <span class="px-2 py-0.5 bg-green-100 text-green-800 rounded">{{ restriction.as_ref()|t }}</span>
+          <span class="px-2 py-0.5 bg-primary-100 text-primary-800 rounded">{{ restriction.as_ref()|t }}</span>
           {% endfor %}
           <span class="px-2 py-0.5 bg-blue-100 text-blue-800 rounded">{{ recipe.node.cuisine_type.as_ref()|t }}</span>
         </div>
-        <div class="flex items-center justify-between text-sm text-gray-600 mb-3">
+        <div class="flex items-center justify-between text-sm text-ink-2 mb-3">
           <span>⏱️ {{ (recipe.node.cook_time + recipe.node.prep_time)|minutes }}</span>
           {% if let Some(username) = recipe.node.owner_name %}
           <span class="text-purple-600">@{{ username }}</span>

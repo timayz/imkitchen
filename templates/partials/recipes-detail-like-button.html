@@ -1,6 +1,6 @@
 <!-- Like Button -->
 <button id="like-btn" ts-swap-push="#like-btn" ts-req="/recipes/{{ id }}/{% if liked %}un{% endif %}check-like"
-  ts-req-method="post" class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition">
+  ts-req-method="post" class="flex items-center gap-2 px-4 py-2 bg-cream-2 hover:bg-cream-2 rounded-full transition">
   {% if liked %}
   <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
     <path
@@ -19,7 +19,7 @@
 
 <!-- Dislike Button -->
 <button id="unlike-btn" ts-swap-push="#unlike-btn" ts-req="/recipes/{{ id }}/{% if unliked %}un{% endif %}check-unlike"
-  ts-req-method="post" class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full transition">
+  ts-req-method="post" class="flex items-center gap-2 px-4 py-2 bg-cream-2 hover:bg-cream-2 rounded-full transition">
   {% if unliked %}
   <svg class="w-5 h-5 transform rotate-180" fill="currentColor" viewBox="0 0 24 24">
     <path

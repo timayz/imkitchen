@@ -1,13 +1,13 @@
 {% extends "_user.html" %}
 
 {% macro nav_item(current, key, content) %}
-<a href="/settings/{{ key }}" class="block w-full text-left px-4 py-3 bg-white{% if current != key %} text-gray-700 hover:bg-gray-50{% else %} text-green-600{% endif %} rounded-lg">
+<a href="/settings/{{ key }}" class="block w-full text-left px-4 py-3 rounded-xl transition{% if current != key %} text-ink-2 hover:bg-cream-2{% else %} bg-paper text-primary-500 font-semibold border border-line-2 shadow-sm{% endif %}">
   {{ content|t }}
 </a>
 {% endmacro %}
 
 {% macro mobile_nav_item(current, key, content) %}
-<a href="/settings/{{ key }}" class="px-4 py-2 bg-white rounded-lg whitespace-nowrap text-sm{% if current != key %} text-gray-600{% else %} text-green-600{% endif %}">
+<a href="/settings/{{ key }}" class="px-4 py-2 rounded-xl whitespace-nowrap text-sm transition{% if current != key %} text-ink-2 bg-cream-2{% else %} bg-paper text-primary-500 font-semibold border border-line-2 shadow-sm{% endif %}">
   {{ content|t }}
 </a>
 {% endmacro %}
@@ -18,8 +18,8 @@
 <div class="container mx-auto px-4 py-8 max-w-6xl">
   <!-- Header -->
   <div class="mb-8">
-    <h1 class="text-3xl font-bold mb-2">{{ "Settings"|t }}</h1>
-    <p class="text-gray-600">{{ "Manage your account and preferences"|t }}</p>
+    <h1 class="text-3xl font-serif mb-2">{{ "Settings"|t }}</h1>
+    <p class="text-ink-2">{{ "Manage your account and preferences"|t }}</p>
   </div>
 
   <div class="lg:grid lg:grid-cols-3 gap-8">

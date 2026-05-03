@@ -1,7 +1,7 @@
 {% match status %}
 {% when TemplateStatus::Pending %}
-<button id="generate-button" disabled class="flex-1 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg">
-  <div class="animate-spin rounded-full h-5 w-5 border-2 border-red-200 border-t-red-600 shrink-0 m-auto"></div>
+<button id="generate-button" disabled class="flex-1 px-4 py-2 bg-[#c3321a] text-white font-semibold rounded-xl">
+  <div class="animate-spin rounded-full h-5 w-5 border-2 border-[#c3321a]/20 border-t-[#c3321a] shrink-0 m-auto"></div>
 </button>
 <div ts-swap="append" ts-swap-push="body" ts-trigger="load delay 300ms" ts-req="/menu/{{ date }}/generate/status"></div>
 {% when TemplateStatus::Checking %}
@@ -10,7 +10,7 @@
 <div ts-trigger="load" ts-action="remove"></div>
 <button id="generate-button" ts-swap-push="#generate-button" ts-trigger="click" ts-req="/menu/{{ date }}/generate"
   ts-req-method="POST"
-  class="flex-1 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 cursor-pointer">
+  class="flex-1 px-4 py-2 bg-[#c3321a] text-white font-semibold rounded-xl hover:bg-[#a82a16] cursor-pointer">
   {{ "Generate"|t }}
 </button>
 {% endmatch %}
