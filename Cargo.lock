@@ -2035,9 +2035,9 @@ dependencies = [
 
 [[package]]
 name = "h2"
-version = "0.4.13"
+version = "0.4.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f44da3a8150a6703ed5d34e164b875fd14c2cdab9af1252a9a1020bde2bdc54"
+checksum = "171fefbc92fe4a4de27e0698d6a5b392d6a0e333506bc49133760b3bcf948733"
 dependencies = [
  "atomic-waker",
  "bytes",
@@ -2533,7 +2533,7 @@ checksum = "40fac9d56ed6437b198fddba683305e8e2d651aa42647f00f5ae542e7f5c94a2"
 
 [[package]]
 name = "imkitchen"
-version = "0.16.2"
+version = "0.17.0"
 dependencies = [
  "anyhow",
  "async-stripe",
@@ -2563,7 +2563,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-billing"
-version = "0.16.2"
+version = "0.17.0"
 dependencies = [
  "anyhow",
  "async-stripe",
@@ -2585,7 +2585,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-core"
-version = "0.16.2"
+version = "0.17.0"
 dependencies = [
  "anyhow",
  "argon2",
@@ -2612,7 +2612,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-db"
-version = "0.16.2"
+version = "0.17.0"
 dependencies = [
  "async-trait",
  "evento",
@@ -2623,7 +2623,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-identity"
-version = "0.16.2"
+version = "0.17.0"
 dependencies = [
  "anyhow",
  "argon2",
@@ -2648,7 +2648,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-notification"
-version = "0.16.2"
+version = "0.17.0"
 dependencies = [
  "anyhow",
  "askama",
@@ -2664,7 +2664,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-types"
-version = "0.16.2"
+version = "0.17.0"
 dependencies = [
  "bitcode",
  "evento",
@@ -2676,7 +2676,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-admin"
-version = "0.16.2"
+version = "0.17.0"
 dependencies = [
  "askama",
  "axum",
@@ -2694,7 +2694,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-grocery"
-version = "0.16.2"
+version = "0.17.0"
 dependencies = [
  "askama",
  "axum",
@@ -2708,7 +2708,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-kitchen"
-version = "0.16.2"
+version = "0.17.0"
 dependencies = [
  "askama",
  "axum",
@@ -2722,7 +2722,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-menu"
-version = "0.16.2"
+version = "0.17.0"
 dependencies = [
  "askama",
  "axum",
@@ -2734,7 +2734,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-public"
-version = "0.16.2"
+version = "0.17.0"
 dependencies = [
  "anyhow",
  "askama",
@@ -2756,7 +2756,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-recipe"
-version = "0.16.2"
+version = "0.17.0"
 dependencies = [
  "askama",
  "axum",
@@ -2774,7 +2774,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-settings"
-version = "0.16.2"
+version = "0.17.0"
 dependencies = [
  "askama",
  "async-stripe-core",
@@ -2795,7 +2795,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-shared"
-version = "0.16.2"
+version = "0.17.0"
 dependencies = [
  "anyhow",
  "askama",
@@ -3510,15 +3510,14 @@ checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 
 [[package]]
 name = "openssl"
-version = "0.10.78"
+version = "0.10.79"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f38c4372413cdaaf3cc79dd92d29d7d9f5ab09b51b10dded508fb90bb70b9222"
+checksum = "bf0b434746ee2832f4f0baf10137e1cabb18cbe6912c69e2e33263c45250f542"
 dependencies = [
  "bitflags 2.11.1",
  "cfg-if",
  "foreign-types",
  "libc",
- "once_cell",
  "openssl-macros",
  "openssl-sys",
 ]
@@ -3542,9 +3541,9 @@ checksum = "7c87def4c32ab89d880effc9e097653c8da5d6ef28e6b539d313baaacfbafcbe"
 
 [[package]]
 name = "openssl-sys"
-version = "0.9.114"
+version = "0.9.115"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "13ce1245cd07fcc4cfdb438f7507b0c7e4f3849a69fd84d52374c66d83741bb6"
+checksum = "158fe5b292746440aa6e7a7e690e55aeb72d41505e2804c23c6973ad0e9c9781"
 dependencies = [
  "cc",
  "libc",
@@ -4705,18 +4704,18 @@ dependencies = [
 
 [[package]]
 name = "profiling"
-version = "1.0.17"
+version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3eb8486b569e12e2c32ad3e204dbaba5e4b5b216e9367044f25f1dba42341773"
+checksum = "3d595e54a326bc53c1c197b32d295e14b169e3cfeaa8dc82b529f947fba6bcf5"
 dependencies = [
  "profiling-procmacros",
 ]
 
 [[package]]
 name = "profiling-procmacros"
-version = "1.0.17"
+version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "52717f9a02b6965224f95ca2a81e2e0c5c43baacd28ca057577988930b6c3d5b"
+checksum = "4488a4a36b9a4ba6b9334a32a39971f77c1436ec82c38707bce707699cc3bbcb"
 dependencies = [
  "quote",
  "syn 2.0.117",
@@ -5666,9 +5665,9 @@ dependencies = [
 
 [[package]]
 name = "siphasher"
-version = "1.0.2"
+version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b2aa850e253778c88a04c3d7323b043aeda9d3e30d5971937c1855769763678e"
+checksum = "8ee5873ec9cce0195efcb7a4e9507a04cd49aec9c83d0389df45b1ef7ba2e649"
 
 [[package]]
 name = "slab"
@@ -6242,9 +6241,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokio"
-version = "1.52.1"
+version = "1.52.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b67dee974fe86fd92cc45b7a95fdd2f99a36a6d7b0d431a231178d3d670bbcc6"
+checksum = "110a78583f19d5cdb2c5ccf321d1290344e71313c6c37d43520d386027d18386"
 dependencies = [
  "bytes",
  "libc",
