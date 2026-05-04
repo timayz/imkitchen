@@ -1,5 +1,6 @@
 use axum::{
     extract::{Query, State},
+    http::StatusCode,
     response::{IntoResponse, Redirect},
 };
 use evento::cursor::{Args, ReadResult, Value};
@@ -23,6 +24,7 @@ pub struct RecipesTemplate {
     pub user: AuthUser,
     pub recipes: ReadResult<UserViewList>,
     pub query: PageQuery,
+    pub has_shared: bool,
 }
 
 impl Default for RecipesTemplate {
@@ -33,6 +35,7 @@ impl Default for RecipesTemplate {
             user: AuthUser::default(),
             recipes: ReadResult::default(),
             query: Default::default(),
+            has_shared: false,
         }
     }
 }
@@ -89,13 +92,71 @@ pub async fn page(
         template
     );
 
+    let has_shared = recipes.edges.iter().any(|r| r.node.is_shared);
+
     template
         .render(RecipesTemplate {
             user,
             recipes,
             query,
+            has_shared,
             ..Default::default()
         })
+        .into_response()
+}
+
+#[derive(askama::Template)]
+#[template(path = "partials/set-username-modal.html")]
+pub struct SetUsernameModalTemplate;
+
+#[derive(askama::Template)]
+#[template(path = "partials/settings-recipes-share-button.html")]
+pub struct ShareButtonTemplate {
+    pub has_shared: bool,
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn share_all(
+    template: Template,
+    State(app): State<AppState>,
+    user: AuthUser,
+) -> impl IntoResponse {
+    if !app.config.feature.community && !user.is_admin() {
+        return StatusCode::METHOD_NOT_ALLOWED.into_response();
+    }
+
+    let Some(ref username) = user.username else {
+        return (
+            [("ts-swap", "skip")],
+            template.render(SetUsernameModalTemplate),
+        )
+            .into_response();
+    };
+
+    imkitchen_web_shared::try_response!(
+        app.core.recipe.share_all_to_community(&user.id, username),
+        template
+    );
+
+    template
+        .render(ShareButtonTemplate { has_shared: true })
+        .into_response()
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn make_all_private(
+    template: Template,
+    State(app): State<AppState>,
+    user: AuthUser,
+) -> impl IntoResponse {
+    if !app.config.feature.community && !user.is_admin() {
+        return StatusCode::METHOD_NOT_ALLOWED.into_response();
+    }
+
+    imkitchen_web_shared::try_response!(app.core.recipe.make_all_private(&user.id), template);
+
+    template
+        .render(ShareButtonTemplate { has_shared: false })
         .into_response()
 }
 

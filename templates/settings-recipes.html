@@ -24,6 +24,23 @@
     <a href="/recipes/import" class="block w-full px-4 py-2 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 text-center text-sm">
       {{ "Import"|t }}
     </a>
+    {% if let Ok(config) = "config"|value::<crate::config::Config> %}
+    {% if config.feature.community || user.is_admin() %}
+    <div id="share-all-button">
+      {% if has_shared %}
+      <button ts-req="/settings/recipes/make-all-private"
+        class="block w-full px-4 py-2 bg-amber-600 text-white font-semibold rounded-xl hover:bg-amber-700 text-center text-sm">
+        {{ "Make All Private"|t }}
+      </button>
+      {% else %}
+      <button ts-req="/settings/recipes/share-all"
+        class="block w-full px-4 py-2 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 text-center text-sm">
+        {{ "Share All"|t }}
+      </button>
+      {% endif %}
+    </div>
+    {% endif %}
+    {% endif %}
   </div>
 </div>
 
@@ -41,6 +58,23 @@
       class="flex-1 px-4 py-2 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 text-center text-sm">
       📥 {{ "Import"|t }}
     </a>
+    {% if let Ok(config) = "config"|value::<crate::config::Config> %}
+    {% if config.feature.community || user.is_admin() %}
+    <div id="share-all-button-mobile">
+      {% if has_shared %}
+      <button ts-req="/settings/recipes/make-all-private"
+        class="flex-1 px-4 py-2 bg-amber-600 text-white font-semibold rounded-xl hover:bg-amber-700 text-center text-sm">
+        🔒 {{ "Make All Private"|t }}
+      </button>
+      {% else %}
+      <button ts-req="/settings/recipes/share-all"
+        class="flex-1 px-4 py-2 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 text-center text-sm">
+        🌍 {{ "Share All"|t }}
+      </button>
+      {% endif %}
+    </div>
+    {% endif %}
+    {% endif %}
   </div>
 
   <!-- Filters -->
