@@ -167,6 +167,14 @@ async fn handle_imported(event: Event<Imported>, data: &mut Recipe) -> anyhow::R
 
     data.advance_prep_hash = hasher.finalize()[..].to_vec();
 
+    let mut hasher = Sha3_224::default();
+
+    for restriction in event.data.dietary_restrictions {
+        hasher.update(restriction.to_string());
+    }
+
+    data.dietary_restrictions_hash = hasher.finalize()[..].to_vec();
+
     Ok(())
 }
 

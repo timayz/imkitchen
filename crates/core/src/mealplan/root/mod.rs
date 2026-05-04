@@ -119,6 +119,12 @@ async fn handle_recipe_imported<E: Executor>(
     event: Event<imkitchen_types::recipe::Imported>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
+    let dietary_restrictions = event
+        .data
+        .dietary_restrictions
+        .iter()
+        .map(|d| serde_json::Value::String(d.to_string()))
+        .collect::<Vec<_>>();
 
     let statement = Query::insert()
         .into_table(MealPlanRecipe::Table)
@@ -131,16 +137,18 @@ async fn handle_recipe_imported<E: Executor>(
             MealPlanRecipe::AdvancePrep,
             MealPlanRecipe::CookTime,
             MealPlanRecipe::PrepTime,
+            MealPlanRecipe::AcceptsAccompaniment,
         ])
         .values_panic([
             event.aggregator_id.to_owned().into(),
             event.metadata.requested_by()?.into(),
             event.data.recipe_type.to_string().into(),
             event.data.name.into(),
-            serde_json::Value::Array(vec![]).into(),
+            serde_json::Value::Array(dietary_restrictions).into(),
             event.data.advance_prep.into(),
             event.data.cook_time.into(),
             event.data.prep_time.into(),
+            event.data.accepts_accompaniment.into(),
         ])
         .to_owned();
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);

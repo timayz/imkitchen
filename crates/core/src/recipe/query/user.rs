@@ -458,6 +458,8 @@ async fn handle_imported(event: Event<Imported>, data: &mut UserView) -> anyhow:
     data.ingredients.0 = event.data.ingredients;
     data.instructions.0 = event.data.instructions;
     data.household_size = event.data.household_size;
+    data.accepts_accompaniment = event.data.accepts_accompaniment;
+    data.dietary_restrictions.0 = event.data.dietary_restrictions;
 
     Ok(())
 }

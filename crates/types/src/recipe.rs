@@ -218,6 +218,8 @@ pub enum Recipe {
         ingredients: Vec<Ingredient>,
         instructions: Vec<Instruction>,
         advance_prep: String,
+        dietary_restrictions: Vec<DietaryRestriction>,
+        accepts_accompaniment: bool,
     },
 
     RecipeTypeChanged {
