@@ -2533,7 +2533,7 @@ checksum = "40fac9d56ed6437b198fddba683305e8e2d651aa42647f00f5ae542e7f5c94a2"
 
 [[package]]
 name = "imkitchen"
-version = "0.17.0"
+version = "0.17.1"
 dependencies = [
  "anyhow",
  "async-stripe",
@@ -2563,7 +2563,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-billing"
-version = "0.17.0"
+version = "0.17.1"
 dependencies = [
  "anyhow",
  "async-stripe",
@@ -2585,7 +2585,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-core"
-version = "0.17.0"
+version = "0.17.1"
 dependencies = [
  "anyhow",
  "argon2",
@@ -2612,7 +2612,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-db"
-version = "0.17.0"
+version = "0.17.1"
 dependencies = [
  "async-trait",
  "evento",
@@ -2623,7 +2623,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-identity"
-version = "0.17.0"
+version = "0.17.1"
 dependencies = [
  "anyhow",
  "argon2",
@@ -2648,7 +2648,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-notification"
-version = "0.17.0"
+version = "0.17.1"
 dependencies = [
  "anyhow",
  "askama",
@@ -2664,7 +2664,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-types"
-version = "0.17.0"
+version = "0.17.1"
 dependencies = [
  "bitcode",
  "evento",
@@ -2676,7 +2676,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-admin"
-version = "0.17.0"
+version = "0.17.1"
 dependencies = [
  "askama",
  "axum",
@@ -2694,7 +2694,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-grocery"
-version = "0.17.0"
+version = "0.17.1"
 dependencies = [
  "askama",
  "axum",
@@ -2708,7 +2708,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-kitchen"
-version = "0.17.0"
+version = "0.17.1"
 dependencies = [
  "askama",
  "axum",
@@ -2722,7 +2722,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-menu"
-version = "0.17.0"
+version = "0.17.1"
 dependencies = [
  "askama",
  "axum",
@@ -2734,7 +2734,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-public"
-version = "0.17.0"
+version = "0.17.1"
 dependencies = [
  "anyhow",
  "askama",
@@ -2756,7 +2756,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-recipe"
-version = "0.17.0"
+version = "0.17.1"
 dependencies = [
  "askama",
  "axum",
@@ -2774,7 +2774,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-settings"
-version = "0.17.0"
+version = "0.17.1"
 dependencies = [
  "askama",
  "async-stripe-core",
@@ -2795,7 +2795,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-shared"
-version = "0.17.0"
+version = "0.17.1"
 dependencies = [
  "anyhow",
  "askama",
@@ -3074,7 +3074,7 @@ dependencies = [
  "bitflags 2.11.1",
  "libc",
  "plain",
- "redox_syscall 0.7.4",
+ "redox_syscall 0.7.5",
 ]
 
 [[package]]
@@ -4952,9 +4952,9 @@ dependencies = [
 
 [[package]]
 name = "redox_syscall"
-version = "0.7.4"
+version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f450ad9c3b1da563fb6948a8e0fb0fb9269711c9c73d9ea1de5058c79c8d643a"
+checksum = "4666a1a60d8412eab19d94f6d13dcc9cea0a5ef4fdf6a5db306537413c661b1b"
 dependencies = [
  "bitflags 2.11.1",
 ]

@@ -1,6 +1,6 @@
 [package]
 name = "imkitchen-web-settings"
-version = "0.17.0"
+version = "0.17.1"
 edition.workspace = true
 
 [dependencies]
@@ -14,8 +14,8 @@ evento = { workspace = true }
 async-stripe-core = { workspace = true }
 async-stripe-payment = { workspace = true }
 async-stripe-shared = { workspace = true }
-imkitchen-core = { path = "../../crates/core", version = "0.17.0" }
-imkitchen-types = { path = "../../crates/types", version = "0.17.0" }
-imkitchen-identity = { path = "../../crates/identity", version = "0.17.0" }
-imkitchen-billing = { path = "../../crates/billing", version = "0.17.0" }
-imkitchen-web-shared = { path = "../shared", version = "0.17.0" }
+imkitchen-core = { path = "../../crates/core", version = "0.17.1" }
+imkitchen-types = { path = "../../crates/types", version = "0.17.1" }
+imkitchen-identity = { path = "../../crates/identity", version = "0.17.1" }
+imkitchen-billing = { path = "../../crates/billing", version = "0.17.1" }
+imkitchen-web-shared = { path = "../shared", version = "0.17.1" }
