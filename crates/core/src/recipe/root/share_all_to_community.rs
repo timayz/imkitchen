@@ -14,9 +14,7 @@ impl<E: Executor + Clone> super::Module<E> {
 
         share
             .aggregator()?
-            .event(&AllSharedToCommunity {
-                owner_name,
-            })
+            .event(&AllSharedToCommunity { owner_name })
             .requested_by(&request_by)
             .commit(&self.executor)
             .await?;

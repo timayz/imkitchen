@@ -209,10 +209,7 @@ async fn handle_all_shared_to_community<E: Executor>(
 
     let (sql, values) = Query::update()
         .table(RecipeUserStat::Table)
-        .value(
-            RecipeUserStat::Shared,
-            Expr::col(RecipeUserStat::Total),
-        )
+        .value(RecipeUserStat::Shared, Expr::col(RecipeUserStat::Total))
         .and_where(Expr::col(RecipeUserStat::UserId).eq(&user_id))
         .build_sqlx(SqliteQueryBuilder);
 

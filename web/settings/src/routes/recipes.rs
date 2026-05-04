@@ -134,9 +134,7 @@ pub async fn share_all(
     };
 
     imkitchen_web_shared::try_response!(
-        app.core
-            .recipe
-            .share_all_to_community(&user.id, username),
+        app.core.recipe.share_all_to_community(&user.id, username),
         template
     );
 
