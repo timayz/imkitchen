@@ -6,4 +6,5 @@ pub mod meal_preferences;
 pub mod mealplan;
 pub mod rating;
 pub mod recipe;
+pub mod recipe_share;
 pub mod shopping;

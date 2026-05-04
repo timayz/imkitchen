@@ -11,6 +11,7 @@ use imkitchen_types::recipe::{
     MadePrivate, MainCourseOptionsChanged, RecipeType, RecipeTypeChanged, SharedToCommunity,
     ThumbnailResized, ThumbnailUploaded,
 };
+use imkitchen_types::recipe_share::{self, AllMadePrivate, AllSharedToCommunity};
 use sha3::{Digest, Sha3_224};
 use std::ops::Deref;
 use webp::Encoder;
@@ -18,7 +19,9 @@ use webp::Encoder;
 mod create;
 mod delete;
 mod import;
+mod make_all_private;
 mod make_private;
+mod share_all_to_community;
 mod share_to_community;
 mod update;
 mod upload_thumbnail;
@@ -67,6 +70,18 @@ impl<E: Executor> Module<E> {
 
         Ok(Some(recipe))
     }
+
+    pub async fn load_share(&self, user_id: impl Into<String>) -> anyhow::Result<RecipeShareState> {
+        let user_id = user_id.into();
+
+        Ok(create_share_projection(&user_id)
+            .execute(&self.executor)
+            .await?
+            .unwrap_or_else(|| RecipeShareState {
+                id: user_id,
+                cursor: Default::default(),
+            }))
+    }
 }
 
 #[evento::projection(Encode, Decode)]
@@ -83,6 +98,44 @@ pub struct Recipe {
     pub accepts_accompaniment: bool,
     pub is_shared: bool,
     pub is_deleted: bool,
+}
+
+#[evento::projection(Encode, Decode)]
+pub struct RecipeShareState {
+    pub id: String,
+}
+
+pub fn create_share_projection<E: Executor>(
+    user_id: impl Into<String>,
+) -> Projection<E, RecipeShareState> {
+    Projection::new::<recipe_share::RecipeShare>(user_id)
+        .handler(handle_all_shared_to_community())
+        .handler(handle_all_made_private())
+        .safety_check()
+}
+
+impl ProjectionAggregator for RecipeShareState {
+    fn aggregator_id(&self) -> String {
+        self.id.to_owned()
+    }
+}
+
+#[evento::handler]
+async fn handle_all_shared_to_community(
+    event: Event<AllSharedToCommunity>,
+    data: &mut RecipeShareState,
+) -> anyhow::Result<()> {
+    data.id = event.aggregator_id.to_owned();
+    Ok(())
+}
+
+#[evento::handler]
+async fn handle_all_made_private(
+    event: Event<AllMadePrivate>,
+    data: &mut RecipeShareState,
+) -> anyhow::Result<()> {
+    data.id = event.aggregator_id.to_owned();
+    Ok(())
 }
 
 pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Recipe> {

@@ -5,6 +5,7 @@ use evento::{
 };
 use imkitchen_db::recipe_user_stat::RecipeUserStat;
 use imkitchen_types::recipe::{Created, Deleted, Imported, MadePrivate, SharedToCommunity};
+use imkitchen_types::recipe_share::{AllMadePrivate, AllSharedToCommunity};
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::prelude::FromRow;
@@ -49,6 +50,8 @@ pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
         .handler(handle_deleted())
         .handler(handle_shared_to_community())
         .handler(handle_made_private())
+        .handler(handle_all_shared_to_community())
+        .handler(handle_all_made_private())
 }
 
 #[evento::subscription]
@@ -190,6 +193,47 @@ async fn handle_made_private<E: Executor>(
         .to_owned();
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
+}
+
+#[evento::subscription]
+async fn handle_all_shared_to_community<E: Executor>(
+    context: &Context<'_, E>,
+    event: Event<AllSharedToCommunity>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let user_id = event.metadata.requested_by()?;
+
+    let (sql, values) = Query::update()
+        .table(RecipeUserStat::Table)
+        .value(
+            RecipeUserStat::Shared,
+            Expr::col(RecipeUserStat::Total),
+        )
+        .and_where(Expr::col(RecipeUserStat::UserId).eq(&user_id))
+        .build_sqlx(SqliteQueryBuilder);
+
+    sqlx::query_with(&sql, values).execute(&pool).await?;
+
+    Ok(())
+}
+
+#[evento::subscription]
+async fn handle_all_made_private<E: Executor>(
+    context: &Context<'_, E>,
+    event: Event<AllMadePrivate>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+    let user_id = event.metadata.requested_by()?;
+
+    let (sql, values) = Query::update()
+        .table(RecipeUserStat::Table)
+        .value(RecipeUserStat::Shared, 0)
+        .and_where(Expr::col(RecipeUserStat::UserId).eq(&user_id))
+        .build_sqlx(SqliteQueryBuilder);
 
     sqlx::query_with(&sql, values).execute(&pool).await?;
 
