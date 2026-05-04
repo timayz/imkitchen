@@ -1,5 +1,7 @@
 use evento::Executor;
-use imkitchen_types::recipe::{CuisineType, Imported, Ingredient, Instruction, RecipeType};
+use imkitchen_types::recipe::{
+    CuisineType, DietaryRestriction, Imported, Ingredient, Instruction, RecipeType,
+};
 use validator::Validate;
 
 #[derive(Validate, Clone)]
@@ -20,6 +22,8 @@ pub struct ImportInput {
     pub cuisine_type: CuisineType,
     #[validate(length(max = 2000))]
     pub advance_prep: String,
+    pub accepts_accompaniment: bool,
+    pub dietary_restrictions: Vec<DietaryRestriction>,
 }
 
 impl<E: Executor + Clone> super::Module<E> {
@@ -46,6 +50,8 @@ impl<E: Executor + Clone> super::Module<E> {
                 advance_prep: input.advance_prep,
                 ingredients: input.ingredients,
                 instructions: input.instructions,
+                accepts_accompaniment: input.accepts_accompaniment,
+                dietary_restrictions: input.dietary_restrictions,
             })
             .requested_by(request_by)
             .commit(&self.executor)

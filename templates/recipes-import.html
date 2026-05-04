@@ -6,6 +6,15 @@
 <div class="container mx-auto px-4 py-8 max-w-4xl">
   <!-- Header -->
   <div class="mb-8">
+    <div class="mb-4">
+      <a href="/settings/recipes"
+        class="text-primary-500 hover:text-primary-600 font-semibold inline-flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+        {{ "Back to My Recipes"|t }}
+      </a>
+    </div>
     <h1 class="text-3xl font-bold font-serif mb-2">{{ "Import Recipes"|t }}</h1>
     <p class="text-ink-2">{{ "Bulk import recipes from JSON files"|t }}</p>
   </div>
@@ -53,7 +62,9 @@
   "instructions": [
     { "description": "Heat oil in wok", "time_next": 12 ({{ "time to wait before next instruction, minutes >= 0"|t }}) }
   ],
-  "advance_prep": "Marinate chicken 2 hours before" ({{ "optional"|t }})
+  "advance_prep": "Marinate chicken 2 hours before", ({{ "optional"|t }})
+  "dietary_restrictions": ["Vegetarian|Vegan|GlutenFree|DairyFree|NutFree"],
+  "accepts_accompaniment": false
 }
         </code>
       </pre>
