@@ -6,10 +6,10 @@ on:
     - cron: 0 9 * * 1
 
 jobs:
-  audit:
-    uses: timayz/.github/.github/workflows/rust-audit.yml@v3
-    with:
-      name: imkitchen
+  # audit:
+  #   uses: timayz/.github/.github/workflows/rust-audit.yml@v3
+  #   with:
+  #     name: imkitchen
 
   renovate:
     uses: timayz/.github/.github/workflows/renovate.yml@v3
