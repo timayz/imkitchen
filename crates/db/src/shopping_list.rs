@@ -5,6 +5,8 @@ pub enum ShoppingList {
     Table,
     UserId,
     Ingredients,
+    FromDate,
+    Days,
     GeneratedAt,
 }
 
@@ -26,6 +28,18 @@ pub(crate) mod m0001 {
                     .string_len(26),
             )
             .col(ColumnDef::new(ShoppingList::Ingredients).blob().not_null())
+            .col(
+                ColumnDef::new(ShoppingList::FromDate)
+                    .big_integer()
+                    .not_null()
+                    .default(0),
+            )
+            .col(
+                ColumnDef::new(ShoppingList::Days)
+                    .tiny_integer()
+                    .not_null()
+                    .default(0),
+            )
             .col(
                 ColumnDef::new(ShoppingList::GeneratedAt)
                     .big_integer()

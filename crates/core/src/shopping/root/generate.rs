@@ -31,6 +31,8 @@ impl<E: Executor> super::Module<E> {
                 checked: Default::default(),
                 ingredients: Default::default(),
                 cursor: Default::default(),
+                from_date: 0,
+                days: 0,
                 generated_at: 0,
             });
 
@@ -62,6 +64,8 @@ impl<E: Executor> super::Module<E> {
             .aggregator()?
             .event(&Generated {
                 ingredients: ingredients.values().cloned().collect(),
+                from_date: input.date,
+                days: input.days,
             })
             .requested_by(request_by)
             .commit(&self.executor)

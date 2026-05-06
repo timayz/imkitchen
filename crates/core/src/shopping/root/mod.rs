@@ -40,6 +40,8 @@ pub struct Shopping {
     pub user_id: String,
     pub checked: HashSet<String>,
     pub ingredients: HashSet<String>,
+    pub from_date: u64,
+    pub days: u8,
     pub generated_at: u64,
 }
 
@@ -62,6 +64,8 @@ async fn handle_generated(event: Event<Generated>, data: &mut Shopping) -> anyho
     data.user_id = event.metadata.requested_by()?;
     data.ingredients = event.data.ingredients.iter().map(|i| i.key()).collect();
     data.checked = HashSet::new();
+    data.from_date = event.data.from_date;
+    data.days = event.data.days;
     data.generated_at = event.timestamp;
 
     Ok(())

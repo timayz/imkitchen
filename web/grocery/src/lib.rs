@@ -33,6 +33,8 @@ pub struct GroceriesTemplate {
     pub user: AuthUser,
     pub checked: HashSet<String>,
     pub ingredients: Vec<(String, Vec<Ingredient>)>,
+    pub from_date: String,
+    pub to_date: String,
 }
 
 impl Default for GroceriesTemplate {
@@ -42,6 +44,8 @@ impl Default for GroceriesTemplate {
             user: AuthUser::default(),
             checked: HashSet::default(),
             ingredients: vec![],
+            from_date: String::new(),
+            to_date: String::new(),
         }
     }
 }
@@ -58,6 +62,20 @@ pub async fn page(
         .map(|r| to_categories(&r.ingredients.0))
         .unwrap_or_default();
 
+    let (from_date, to_date) = list
+        .as_ref()
+        .filter(|r| r.from_date > 0 && r.days > 0)
+        .map(|r| {
+            let from = format_u64_date(r.from_date);
+            let to_date =
+                u64_to_date(r.from_date).map(|d| d + time::Duration::days(r.days as i64 - 1));
+            let to = to_date
+                .map(|d| format!("{}-{:02}-{:02}", d.year(), d.month() as u8, d.day()))
+                .unwrap_or_default();
+            (from, to)
+        })
+        .unwrap_or_default();
+
     let checked =
         imkitchen_web_shared::try_page_response!(app.core.shopping.load(&user.id), template)
             .map(|loaded| loaded.checked)
@@ -68,6 +86,8 @@ pub async fn page(
             user,
             checked,
             ingredients,
+            from_date,
+            to_date,
             ..Default::default()
         })
         .into_response()
@@ -93,6 +113,22 @@ pub async fn toggle_action(
     );
 
     "<div></div>".into_response()
+}
+
+fn format_u64_date(date: u64) -> String {
+    let year = date / 10000;
+    let month = (date % 10000) / 100;
+    let day = date % 100;
+    format!("{year}-{month:02}-{day:02}")
+}
+
+fn u64_to_date(date: u64) -> Option<time::OffsetDateTime> {
+    let year = (date / 10000) as i32;
+    let month = ((date % 10000) / 100) as u8;
+    let day = (date % 100) as u8;
+    let month = time::Month::try_from(month).ok()?;
+    let d = time::Date::from_calendar_date(year, month, day).ok()?;
+    Some(time::PrimitiveDateTime::new(d, time::Time::MIDNIGHT).assume_utc())
 }
 
 fn to_categories(ingredients: &[Ingredient]) -> Vec<(String, Vec<Ingredient>)> {
@@ -126,10 +162,19 @@ fn to_categories(ingredients: &[Ingredient]) -> Vec<(String, Vec<Ingredient>)> {
 
 #[derive(askama::Template)]
 #[template(path = "partials/groceries-generate-modal.html")]
-pub struct GenerateModalTemplate;
+pub struct GenerateModalTemplate {
+    pub from: String,
+}
 
-pub async fn generate_modal(template: Template) -> impl IntoResponse {
-    template.render(GenerateModalTemplate)
+pub async fn generate_modal(template: Template, user: AuthUser) -> impl IntoResponse {
+    let tomorrow = imkitchen_core::mealplan::now(&user.tz) + time::Duration::days(1);
+    let from = format!(
+        "{}-{:02}-{:02}",
+        tomorrow.year(),
+        tomorrow.month() as u8,
+        tomorrow.day()
+    );
+    template.render(GenerateModalTemplate { from })
 }
 
 #[derive(askama::Template)]
@@ -140,6 +185,7 @@ pub struct GenerateButtonTemplate {
 
 #[derive(Deserialize, Debug)]
 pub struct GenerateAction {
+    pub from: String,
     pub days: u8,
 }
 
@@ -154,7 +200,10 @@ pub async fn generate_action(
         app.identity.meal_preferences.load(&user.id),
         template
     );
-    let date = imkitchen_core::mealplan::date_to_u64(imkitchen_core::mealplan::now(&user.tz));
+    let date: u64 = imkitchen_web_shared::try_response!(sync anyhow:
+        input.from.replace('-', "").parse().map_err(|e| anyhow::anyhow!("invalid from date: {e}")),
+        template
+    );
     imkitchen_web_shared::try_response!(
         app.core.shopping.generate(
             Generate {

@@ -13,6 +13,10 @@
     </button>
   </div>
 
+  {% if !from_date.is_empty() && !to_date.is_empty() %}
+  <p class="text-sm text-ink-3 mb-4">{{ from_date }} — {{ to_date }}</p>
+  {% endif %}
+
   {% if ingredients.is_empty() %}
   <!-- Empty State: No shopping list generated yet -->
   <div id="empty-state">

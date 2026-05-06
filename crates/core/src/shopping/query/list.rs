@@ -12,6 +12,8 @@ use sqlx::prelude::FromRow;
 #[derive(Default, FromRow)]
 pub struct ShoppingListRow {
     pub ingredients: evento::sql_types::Bitcode<Vec<Ingredient>>,
+    pub from_date: u64,
+    pub days: u8,
     pub generated_at: u64,
 }
 
@@ -22,7 +24,12 @@ impl<E: Executor> crate::shopping::Module<E> {
     ) -> anyhow::Result<Option<ShoppingListRow>> {
         let user_id = user_id.into();
         let statement = sea_query::Query::select()
-            .columns([ShoppingList::Ingredients, ShoppingList::GeneratedAt])
+            .columns([
+                ShoppingList::Ingredients,
+                ShoppingList::FromDate,
+                ShoppingList::Days,
+                ShoppingList::GeneratedAt,
+            ])
             .from(ShoppingList::Table)
             .and_where(Expr::col(ShoppingList::UserId).eq(&user_id))
             .limit(1)
@@ -53,16 +60,25 @@ async fn handle_generated<E: Executor>(
         .columns([
             ShoppingList::UserId,
             ShoppingList::Ingredients,
+            ShoppingList::FromDate,
+            ShoppingList::Days,
             ShoppingList::GeneratedAt,
         ])
         .values_panic([
             event.aggregator_id.to_owned().into(),
             ingredients.into(),
+            event.data.from_date.into(),
+            (event.data.days as i32).into(),
             event.timestamp.into(),
         ])
         .on_conflict(
             OnConflict::column(ShoppingList::UserId)
-                .update_columns([ShoppingList::Ingredients, ShoppingList::GeneratedAt])
+                .update_columns([
+                    ShoppingList::Ingredients,
+                    ShoppingList::FromDate,
+                    ShoppingList::Days,
+                    ShoppingList::GeneratedAt,
+                ])
                 .to_owned(),
         )
         .to_owned();
