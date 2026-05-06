@@ -1,0 +1,137 @@
+{% extends "_public.html" %}
+
+{% block title %} {{ "Legal Notice - imkitchen"|t }} {% endblock %}
+
+<!-- Main Content -->
+{% block content %}
+<div class="container mx-auto px-4 py-12 max-w-4xl">
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-4xl font-bold font-serif tracking-tight mb-4">{{ "Legal Notice"|t }}</h1>
+    <p class="text-ink-2">{{ "Last updated: May 5, 2026"|t }}</p>
+  </div>
+
+  <!-- Content -->
+  <div class="bg-paper rounded-xl shadow-md p-8">
+    <div class="prose max-w-none">
+      <!-- Site Publisher -->
+      <section class="mb-8">
+        <h2 class="text-2xl font-bold font-serif tracking-tight mb-4">{{ "1. Site Publisher"|t }}</h2>
+        <div class="bg-cream p-6 rounded-xl">
+          <p class="text-ink-2 mb-2"><strong>{{ "Name"|t }} :</strong> Timada</p>
+          <p class="text-ink-2 mb-2"><strong>{{ "Legal form"|t }} :</strong> {{ "Micro-enterprise (Entreprise individuelle)"|t }}</p>
+          <p class="text-ink-2 mb-2"><strong>{{ "Owner"|t }} :</strong> Jonathan LAPIQUONNE</p>
+          <p class="text-ink-2 mb-2"><strong>{{ "Address"|t }} :</strong> timada, 60 Rue François ier, chez LegalPlace, 75008 Paris, France</p>
+          <p class="text-ink-2 mb-2"><strong>{{ "SIRET"|t }} :</strong> 989 261 383 00016</p>
+          <p class="text-ink-2 mb-2"><strong>{{ "Email"|t }} :</strong> legal@imkitchen.app</p>
+          <!-- <p class="text-ink-2 mb-2"><strong>{{ "Phone"|t }} :</strong> [À compléter]</p> -->
+          <p class="text-ink-2"><strong>{{ "Website"|t }} :</strong> https://imkitchen.app</p>
+        </div>
+      </section>
+
+      <!-- Hosting -->
+      <section class="mb-8">
+        <h2 class="text-2xl font-bold font-serif tracking-tight mb-4">{{ "2. Hosting Provider"|t }}</h2>
+        <div class="bg-cream p-6 rounded-xl">
+          <p class="text-ink-2 mb-2"><strong>{{ "Company name"|t }} :</strong> OVHcloud</p>
+          <p class="text-ink-2 mb-2"><strong>{{ "Legal form"|t }} :</strong> {{ "SAS (Société par Actions Simplifiée)"|t }}</p>
+          <p class="text-ink-2 mb-2"><strong>{{ "Address"|t }} :</strong> 2 rue Kellermann, 59100 Roubaix, France</p>
+          <!-- <p class="text-ink-2 mb-2"><strong>{{ "Phone"|t }} :</strong> 1007</p> -->
+          <p class="text-ink-2"><strong>{{ "Website"|t }} :</strong> <a href="https://www.ovhcloud.com/fr/" class="text-primary-500 hover:underline">https://www.ovhcloud.com/fr/</a></p>
+        </div>
+      </section>
+
+      <!-- Intellectual Property -->
+      <section class="mb-8">
+        <h2 class="text-2xl font-bold font-serif tracking-tight mb-4">{{ "3. Intellectual Property"|t }}</h2>
+        <p class="text-ink-2 mb-4">
+          {{ "The entire content of this website (texts, images, graphics, logo, icons, sounds, software, etc.) is the exclusive property of imkitchen or its partners and is protected by French and international intellectual property laws."|t }}
+        </p>
+        <p class="text-ink-2 mb-4">
+          {{ "Any reproduction, representation, modification, publication, or adaptation of all or part of the elements of the site, by any means whatsoever, is prohibited without prior written authorization from imkitchen."|t }}
+        </p>
+        <p class="text-ink-2 mb-4">
+          {{ "Any unauthorized use of the site or any of its elements will be considered as constituting an infringement and prosecuted in accordance with the provisions of Articles L.335-2 and following of the French Intellectual Property Code."|t }}
+        </p>
+      </section>
+
+      <!-- Limitation of Liability -->
+      <section class="mb-8">
+        <h2 class="text-2xl font-bold font-serif tracking-tight mb-4">{{ "4. Limitation of Liability"|t }}</h2>
+        <p class="text-ink-2 mb-4">
+          {{ "imkitchen strives to provide accurate and up-to-date information on this website. However, imkitchen cannot guarantee the accuracy, completeness, or timeliness of the information published on this site."|t }}
+        </p>
+        <p class="text-ink-2 mb-4">
+          {{ "imkitchen shall not be held liable for:"|t }}
+        </p>
+        <ul class="list-disc list-inside text-ink-2 mb-4 space-y-2">
+          <li>{{ "Any inaccuracy, error, or omission in the information available on this site"|t }}</li>
+          <li>{{ "Any damage resulting from a fraudulent intrusion by a third party"|t }}</li>
+          <li>{{ "Any damage resulting from the unavailability of the site"|t }}</li>
+          <li>{{ "Any damage, direct or indirect, regardless of the cause, origin, nature, or consequence, arising from access to or use of the site"|t }}</li>
+        </ul>
+      </section>
+
+      <!-- Hyperlinks -->
+      <section class="mb-8">
+        <h2 class="text-2xl font-bold font-serif tracking-tight mb-4">{{ "5. Hyperlinks"|t }}</h2>
+        <p class="text-ink-2 mb-4">
+          {{ "This website may contain hyperlinks to other websites. imkitchen has no control over the content of these external sites and therefore assumes no responsibility for their content."|t }}
+        </p>
+        <p class="text-ink-2 mb-4">
+          {{ "The creation of hyperlinks to this site is subject to prior authorization from imkitchen."|t }}
+        </p>
+      </section>
+
+      <!-- Cookies -->
+      <section class="mb-8">
+        <h2 class="text-2xl font-bold font-serif tracking-tight mb-4">{{ "6. Cookies"|t }}</h2>
+        <p class="text-ink-2 mb-4">
+          {{ "This website uses cookies to ensure the proper functioning of the site and to improve the user experience. By continuing to browse this site, you agree to the use of cookies."|t }}
+        </p>
+        <p class="text-ink-2 mb-4">
+          {{ "For more information about how we use cookies and how to manage your preferences, please refer to our"|t }}
+          <a href="/policy" class="text-primary-500 hover:underline">{{ "Privacy Policy"|t }}</a>.
+        </p>
+      </section>
+
+      <!-- Personal Data -->
+      <section class="mb-8">
+        <h2 class="text-2xl font-bold font-serif tracking-tight mb-4">{{ "7. Personal Data Protection"|t }}</h2>
+        <p class="text-ink-2 mb-4">
+          {{ "In accordance with the French Data Protection Act (Loi Informatique et Libertés) of January 6, 1978, as amended, and the General Data Protection Regulation (GDPR), you have the right to access, rectify, delete, and port your personal data, as well as the right to restrict and object to the processing of your data."|t }}
+        </p>
+        <p class="text-ink-2 mb-4">
+          {{ "You may exercise these rights by contacting us at:"|t }}
+          <a href="mailto:legal@imkitchen.app" class="text-primary-500 hover:underline">legal@imkitchen.app</a>
+        </p>
+        <p class="text-ink-2 mb-4">
+          {{ "For more information, please refer to our"|t }}
+          <a href="/policy" class="text-primary-500 hover:underline">{{ "Privacy Policy"|t }}</a>.
+        </p>
+      </section>
+
+      <!-- Applicable Law -->
+      <section class="mb-8">
+        <h2 class="text-2xl font-bold font-serif tracking-tight mb-4">{{ "8. Applicable Law and Jurisdiction"|t }}</h2>
+        <p class="text-ink-2 mb-4">
+          {{ "This legal notice is governed by French law. In the event of a dispute arising from the use of this website, the French courts shall have exclusive jurisdiction."|t }}
+        </p>
+      </section>
+
+      <!-- Contact -->
+      <section class="mb-8">
+        <h2 class="text-2xl font-bold font-serif tracking-tight mb-4">{{ "9. Contact"|t }}</h2>
+        <p class="text-ink-2 mb-4">
+          {{ "For any questions regarding this legal notice, you may contact us:"|t }}
+        </p>
+        <div class="bg-cream p-6 rounded-xl">
+          <p class="text-ink-2 mb-2"><strong>{{ "Email"|t }} :</strong> contact@imkitchen.app</p>
+          <p class="text-ink-2"><strong>{{ "Contact Form"|t }} :</strong> <a href="/contact"
+              class="text-primary-500 hover:underline">https://imkitchen.app/contact</a></p>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+{% endblock %}

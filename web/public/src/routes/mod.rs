@@ -3,6 +3,7 @@ pub mod assets;
 pub mod contact;
 pub mod health;
 pub mod help;
+pub mod legal;
 pub mod login;
 pub mod policy;
 pub mod register;
