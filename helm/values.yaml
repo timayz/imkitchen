@@ -57,7 +57,7 @@ config:
     annual_rate: 20
 
 persistence:
-  size: 5Gi
+  size: 15Gi
 
 certificate:
   annotations: {}

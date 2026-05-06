@@ -2,7 +2,7 @@ apiVersion: v2
 name: imkitchen
 description: Helm chart for the imkitchen server
 type: application
-version: 0.1.10
+version: 0.1.11
 appVersion: "0.17.3"
 home: https://imkitchen.app
 sources:
