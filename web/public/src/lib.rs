@@ -17,6 +17,7 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
         .route("/help", get(routes::help::page))
         .route("/terms", get(routes::terms::page))
         .route("/policy", get(routes::policy::page))
+        .route("/legal", get(routes::legal::page))
         .route(
             "/contact",
             get(routes::contact::page).post(routes::contact::action),
