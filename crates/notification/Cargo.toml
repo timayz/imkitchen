@@ -1,6 +1,6 @@
 [package]
 name = "imkitchen-notification"
-version = "0.18.3"
+version = "1.0.0"
 edition.workspace = true
 authors.workspace = true
 
@@ -16,8 +16,8 @@ evento.workspace = true
 sea-query = { workspace = true }
 sea-query-sqlx = { workspace = true }
 sqlx = { workspace = true }
-imkitchen-billing = { path = "../billing", version = "0.18.3" }
-imkitchen-core = { path = "../core", version = "0.18.3" }
-imkitchen-db = { path = "../db", version = "0.18.3" }
-imkitchen-types = { path = "../types", version = "0.18.3" }
-imkitchen-identity = { path = "../identity", version = "0.18.3" }
+imkitchen-billing = { path = "../billing", version = "1.0.0" }
+imkitchen-core = { path = "../core", version = "1.0.0" }
+imkitchen-db = { path = "../db", version = "1.0.0" }
+imkitchen-types = { path = "../types", version = "1.0.0" }
+imkitchen-identity = { path = "../identity", version = "1.0.0" }
