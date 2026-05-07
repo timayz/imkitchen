@@ -5,8 +5,8 @@ COPY . .
 
 RUN cargo build --release --bin imkitchen
 
-RUN mkdir -p /out/tmp /out/var/lib/imkitchen \
- && chown -R 10001:10001 /out/tmp /out/var/lib/imkitchen \
+RUN mkdir -p /out/tmp \
+ && chown 10001:10001 /out/tmp \
  && chmod 1777 /out/tmp
 
 FROM scratch
@@ -16,7 +16,6 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certifi
 COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder /etc/group /etc/group
 COPY --from=builder /out/tmp /tmp
-COPY --from=builder /out/var/lib/imkitchen /var/lib/imkitchen
 COPY --from=builder /app/target/release/imkitchen /usr/bin/imkitchen
 
 USER 10001:10001
