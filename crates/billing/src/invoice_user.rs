@@ -281,10 +281,10 @@ async fn handle_created(event: Event<Created>, data: &mut InvoiceUserView) -> an
     data.to.0 = event.data.to;
     data.plan = event.data.details.plan.to_owned();
     data.expire_at = event.data.expire_at;
-    data.price = event.data.details.price;
+    data.price = event.data.details.price - event.data.details.tax;
     data.tax = event.data.details.tax;
     data.tax_rate = event.data.details.tax_rate.unwrap_or_default();
-    data.total_inc_tax = event.data.details.price + event.data.details.tax;
+    data.total_inc_tax = event.data.details.price;
     data.is_vat = event.data.details.is_vat;
 
     Ok(())
