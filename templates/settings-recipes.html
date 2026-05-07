@@ -16,16 +16,10 @@
 
 {% block sidebar_bottom %}
 
+{% if let Ok(config) = "config"|value::<crate::config::Config> %}
+{% if config.feature.community || user.is_admin() %}
 <div class="hidden lg:block bg-paper rounded-xl shadow-md p-4">
   <div class="space-y-2">
-    <button ts-req="/settings/recipes/create" ts-req-method="post" class="block w-full px-4 py-2 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-600 text-center text-sm">
-      {{ "Create Recipe"|t }}
-    </button>
-    <a href="/recipes/import" class="block w-full px-4 py-2 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 text-center text-sm">
-      {{ "Import"|t }}
-    </a>
-    {% if let Ok(config) = "config"|value::<crate::config::Config> %}
-    {% if config.feature.community || user.is_admin() %}
     <div id="share-all-button">
       {% if has_shared %}
       <button ts-req="/settings/recipes/make-all-private"
@@ -39,43 +33,35 @@
       </button>
       {% endif %}
     </div>
-    {% endif %}
-    {% endif %}
   </div>
 </div>
+{% endif %}
+{% endif %}
 
 {% endblock %}
 
 {% block settings_content %}
 <div>
   <!-- Mobile Quick Actions -->
+  {% if let Ok(config) = "config"|value::<crate::config::Config> %}
+  {% if config.feature.community || user.is_admin() %}
   <div class="lg:hidden flex gap-2 mb-4">
-    <button ts-req="/settings/recipes/create" ts-req-method="post"
-      class="flex-1 px-4 py-2 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-600 text-center text-sm">
-      ✏️ {{ "Create"|t }}
-    </button>
-    <a href="/recipes/import"
-      class="flex-1 px-4 py-2 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 text-center text-sm">
-      📥 {{ "Import"|t }}
-    </a>
-    {% if let Ok(config) = "config"|value::<crate::config::Config> %}
-    {% if config.feature.community || user.is_admin() %}
     <div id="share-all-button-mobile">
       {% if has_shared %}
       <button ts-req="/settings/recipes/make-all-private"
         class="flex-1 px-4 py-2 bg-amber-600 text-white font-semibold rounded-xl hover:bg-amber-700 text-center text-sm">
-        🔒 {{ "Make All Private"|t }}
+        {{ "Make All Private"|t }}
       </button>
       {% else %}
       <button ts-req="/settings/recipes/share-all"
         class="flex-1 px-4 py-2 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 text-center text-sm">
-        🌍 {{ "Share All"|t }}
+        {{ "Share All"|t }}
       </button>
       {% endif %}
     </div>
-    {% endif %}
-    {% endif %}
   </div>
+  {% endif %}
+  {% endif %}
 
   <!-- Filters -->
   <div class="bg-paper rounded-xl shadow-md p-4 mb-6">
