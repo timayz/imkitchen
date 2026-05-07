@@ -24,9 +24,25 @@
           <a href="/groceries" class="text-ink-2 text-sm font-medium{% if current_path == "groceries"%} text-primary-500 font-semibold{% else %} hover:text-ink{% endif %}">{{ "Groceries"|t }}</a>
         </div>
 
-        <div class="hidden md:flex items-center gap-4">
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-1 pl-4">
+            <button ts-req="/settings/recipes/create" ts-req-method="post"
+              class="flex items-center justify-center w-9 h-9 rounded-lg text-ink-2 hover:text-ink hover:bg-cream transition"
+              title="{{ "Create Recipe"|t }}">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+              </svg>
+            </button>
+            <a href="/recipes/import"
+              class="flex items-center justify-center w-9 h-9 rounded-lg text-ink-2 hover:text-ink hover:bg-cream transition"
+              title="{{ "Import"|t }}">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+              </svg>
+            </a>
+          </div>
           <a href="/settings/general"
-            class="flex items-center justify-center w-10 h-10 rounded-full bg-primary-500 text-white font-semibold hover:bg-primary-600 transition">
+            class="hidden md:flex items-center justify-center w-10 h-10 rounded-full bg-primary-500 text-white font-semibold hover:bg-primary-600 transition">
             <span class="text-sm">ME</span>
           </a>
         </div>
