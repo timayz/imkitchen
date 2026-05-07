@@ -48,6 +48,7 @@ sqlx_migrator::sqlite_migration!(
         crate::shopping_list::m0001::CreateTable,
         crate::shopping_recipe::m0001::CreateTable,
         crate::shopping_recipe::m0001::CreateIdx1,
-        crate::shopping_slot::m0001::CreateTable
+        crate::shopping_slot::m0001::CreateTable,
+        crate::notification_recipient::m0001::CreateTable
     ]
 );

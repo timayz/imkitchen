@@ -48,6 +48,7 @@ pub async fn serve(
 
     let sub_notification_billing = imkitchen_notification::billing::subscription()
         .data(email_service)
+        .data((read_pool.clone(), write_pool.clone()))
         .start(&executor)
         .await?;
 

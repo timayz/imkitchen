@@ -5,11 +5,11 @@ use evento::{
 };
 use imkitchen_billing::types::invoice::Created;
 use imkitchen_billing::types::subscription::Cancelled;
+use sqlx::SqlitePool;
 use time::OffsetDateTime;
 
 use crate::{
-    EmailService,
-    recipient,
+    EmailService, recipient,
     template::{Template, filters},
 };
 
@@ -69,10 +69,8 @@ async fn handle_invoice_created<E: Executor>(
     let year = OffsetDateTime::from_unix_timestamp(event.timestamp.try_into()?)?.year();
 
     let user_id = event.metadata.requested_by()?;
-    let lang = match recipient::create_projection(&user_id)
-        .execute(context.executor)
-        .await?
-    {
+    let (read_db, write_db) = context.extract::<(SqlitePool, SqlitePool)>();
+    let lang = match recipient::load(context.executor, &read_db, &write_db, &user_id).await? {
         Some(r) => r.lang,
         None => "en".to_owned(),
     };
@@ -94,6 +92,8 @@ async fn handle_invoice_created<E: Executor>(
         year,
     });
 
+    let subject = rust_i18n::t!("Your Invoice Is Ready", locale = lang).to_string();
+
     let plain = template.to_string(InvoiceCreatedPlainTemplate {
         email: email.to_owned(),
         lang,
@@ -103,8 +103,6 @@ async fn handle_invoice_created<E: Executor>(
         invoice_url,
         year,
     });
-
-    let subject = rust_i18n::t!("Your Invoice Is Ready").to_string();
     if let Err(err) = service.send(&email, subject, html, plain).await {
         tracing::warn!(error = ?err, "handle_invoice_created.send");
     }
@@ -121,10 +119,8 @@ async fn handle_subscription_cancelled<E: Executor>(
     let year = OffsetDateTime::from_unix_timestamp(event.timestamp.try_into()?)?.year();
 
     let user_id = event.aggregator_id.to_owned();
-    let recipient = match recipient::create_projection(&user_id)
-        .execute(context.executor)
-        .await?
-    {
+    let (read_db, write_db) = context.extract::<(SqlitePool, SqlitePool)>();
+    let recipient = match recipient::load(context.executor, &read_db, &write_db, &user_id).await? {
         Some(r) => r,
         None => {
             tracing::warn!(user_id = %user_id, "handle_subscription_cancelled: recipient not found");
@@ -146,7 +142,7 @@ async fn handle_subscription_cancelled<E: Executor>(
         year,
     });
 
-    let subject = rust_i18n::t!("Subscription Cancelled").to_string();
+    let subject = rust_i18n::t!("Subscription Cancelled", locale = &recipient.lang).to_string();
     if let Err(err) = service.send(&recipient.email, subject, html, plain).await {
         tracing::warn!(error = ?err, "handle_subscription_cancelled.send");
     }
