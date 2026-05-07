@@ -85,6 +85,7 @@ pub struct RecipesQuery {
     pub recipe_type: Option<RecipeType>,
     pub cuisine_type: Option<CuisineType>,
     pub is_shared: Option<bool>,
+    pub has_thumbnail: Option<bool>,
     pub dietary_restrictions: Vec<DietaryRestriction>,
     pub dietary_where_any: bool,
     pub sort_by: SortBy,
@@ -125,6 +126,16 @@ impl<E: Executor> crate::recipe::Module<E> {
 
         if let Some(is_shared) = query.is_shared {
             statement.and_where(Expr::col(RecipeUser::IsShared).eq(is_shared));
+        }
+
+        match query.has_thumbnail {
+            Some(true) => {
+                statement.and_where(Expr::col(RecipeUser::ThumbnailVersion).is_not_null());
+            }
+            Some(false) => {
+                statement.and_where(Expr::col(RecipeUser::ThumbnailVersion).is_null());
+            }
+            None => {}
         }
 
         let search = if let Some("") = query.search.as_deref() {

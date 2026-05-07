@@ -50,6 +50,7 @@ pub struct PageQuery {
     pub cuisine_type: Option<String>,
     pub search: Option<String>,
     pub sort_by: Option<SortBy>,
+    pub no_image: Option<bool>,
 }
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
@@ -83,6 +84,11 @@ pub async fn page(
             recipe_type,
             cuisine_type,
             is_shared: None,
+            has_thumbnail: if input.no_image.unwrap_or(false) {
+                Some(false)
+            } else {
+                None
+            },
             dietary_restrictions: vec![],
             dietary_where_any: false,
             sort_by: input.sort_by.unwrap_or_default(),

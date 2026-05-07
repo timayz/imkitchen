@@ -78,6 +78,7 @@ pub async fn page(
             recipe_type,
             cuisine_type,
             is_shared: Some(true),
+            has_thumbnail: None,
             dietary_restrictions: input.dietary_restrictions,
             dietary_where_any: false,
             sort_by: input.sort_by.unwrap_or_default(),
