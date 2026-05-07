@@ -129,7 +129,7 @@ pub async fn detail(
         template
     );
 
-    let tax_label = if invoice.tax > 0 {
+    let tax_label = if invoice.is_vat {
         format!("VAT ({}%)", invoice.tax_rate * 100.0)
     } else {
         "Tax".to_owned()

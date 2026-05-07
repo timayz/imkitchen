@@ -7,6 +7,7 @@ pub struct PaymentDetails {
     pub price: u32,
     pub tax: u32,
     pub tax_rate: Option<f64>,
+    pub is_vat: bool,
 }
 
 #[derive(Default, Encode, Decode, Clone, Deserialize, Debug, PartialEq)]

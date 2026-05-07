@@ -50,11 +50,12 @@ config:
     contact_address: "contact@imkitchen.app"
 
   feature:
-    community: false
+    community: true
 
   premium:
     monthly_price: 499
     annual_rate: 20
+    tax: true
 
 persistence:
   size: 15Gi

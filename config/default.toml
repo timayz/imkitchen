@@ -20,6 +20,7 @@ expiration_days = 14
 [premium]
 monthly_price = 499
 annual_rate = 20
+tax = true
 
 [monitoring]
 log_level = "debug,sqlx=info,tower_http=info"

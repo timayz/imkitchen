@@ -64,6 +64,7 @@ pub struct InvoiceUserView {
     pub tax: u32,
     pub tax_rate: f64,
     pub total_inc_tax: u32,
+    pub is_vat: bool,
 }
 
 pub struct FilterQuery {
@@ -99,6 +100,7 @@ impl<E: Executor> Module<E> {
                 UserInvoiceUser::Tax,
                 UserInvoiceUser::TaxRate,
                 UserInvoiceUser::TotalIncTax,
+                UserInvoiceUser::IsVat,
             ])
             .from(UserInvoiceUser::Table)
             .and_where(Expr::col(UserInvoiceUser::UserId).eq(&input.user_id))
@@ -131,6 +133,7 @@ impl<E: Executor> Module<E> {
                 UserInvoiceUser::Tax,
                 UserInvoiceUser::TaxRate,
                 UserInvoiceUser::TotalIncTax,
+                UserInvoiceUser::IsVat,
             ])
             .from(UserInvoiceUser::Table)
             .to_owned();
@@ -179,6 +182,7 @@ impl<E: Executor> Snapshot<E> for InvoiceUserView {
                 UserInvoiceUser::Tax,
                 UserInvoiceUser::TaxRate,
                 UserInvoiceUser::TotalIncTax,
+                UserInvoiceUser::IsVat,
             ])
             .from(UserInvoiceUser::Table)
             .and_where(Expr::col(UserInvoiceUser::InvoiceNumber).eq(&context.id))
@@ -218,6 +222,7 @@ impl<E: Executor> Snapshot<E> for InvoiceUserView {
                 UserInvoiceUser::Tax,
                 UserInvoiceUser::TaxRate,
                 UserInvoiceUser::TotalIncTax,
+                UserInvoiceUser::IsVat,
             ])
             .values([
                 self.id.to_owned().into(),
@@ -234,6 +239,7 @@ impl<E: Executor> Snapshot<E> for InvoiceUserView {
                 self.tax.into(),
                 self.tax_rate.into(),
                 self.total_inc_tax.into(),
+                self.is_vat.into(),
             ])?
             .on_conflict(
                 OnConflict::column(UserInvoiceUser::Id)
@@ -251,6 +257,7 @@ impl<E: Executor> Snapshot<E> for InvoiceUserView {
                         UserInvoiceUser::Tax,
                         UserInvoiceUser::TaxRate,
                         UserInvoiceUser::TotalIncTax,
+                        UserInvoiceUser::IsVat,
                     ])
                     .to_owned(),
             )
@@ -278,6 +285,7 @@ async fn handle_created(event: Event<Created>, data: &mut InvoiceUserView) -> an
     data.tax = event.data.details.tax;
     data.tax_rate = event.data.details.tax_rate.unwrap_or_default();
     data.total_inc_tax = event.data.details.price + event.data.details.tax;
+    data.is_vat = event.data.details.is_vat;
 
     Ok(())
 }

@@ -35,7 +35,7 @@ pub async fn page(
         return template.render(NotFoundTemplate);
     }
 
-    let tax_label = if invoice.tax > 0 {
+    let tax_label = if invoice.is_vat {
         format!("VAT ({}%)", invoice.tax_rate * 100.0)
     } else {
         "Tax".to_owned()
