@@ -17,6 +17,7 @@ pub enum UserInvoiceUser {
     Tax,
     TaxRate,
     TotalIncTax,
+    IsVat,
 }
 
 pub(crate) mod m0001 {
@@ -68,6 +69,12 @@ pub(crate) mod m0001 {
                 ColumnDef::new(UserInvoiceUser::TotalIncTax)
                     .integer()
                     .not_null(),
+            )
+            .col(
+                ColumnDef::new(UserInvoiceUser::IsVat)
+                    .boolean()
+                    .not_null()
+                    .default(false),
             )
             .col(
                 ColumnDef::new(UserInvoiceUser::DueAt)

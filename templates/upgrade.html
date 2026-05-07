@@ -221,6 +221,10 @@
           return;
         }
 
+        if (countryEl.value === event.value.address.country && stateEl.value === event.value.address.state) {
+          return;
+        }
+
         countryEl.value = event.value.address.country;
         stateEl.value = event.value.address.state;
         subCountryEl.value = event.value.address.country;

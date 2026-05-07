@@ -117,6 +117,11 @@ pub async fn action(
         plan: input.plan.to_owned(),
         price: price_tax.price,
         tax: price_tax.tax,
+        is_vat: price_tax
+            .tax_type
+            .as_ref()
+            .map(|(_, tax_type)| matches!(tax_type, TaxType::VAT(_)))
+            .unwrap_or_default(),
         tax_rate: price_tax.tax_type.map(|(rate, _)| rate),
     };
 
@@ -240,13 +245,18 @@ fn get_price_with_tax(
     };
 
     let rates = scenario.get_rates(price.into(), db).unwrap_or_default();
+    let tax = if config.tax {
+        (scenario
+            .calculate_tax(price as f64 / 100.0, db)
+            .unwrap_or(0.0)
+            * 100.0) as u32
+    } else {
+        0
+    };
 
     Ok(PriceTax {
         price,
-        tax: (scenario
-            .calculate_tax(price as f64 / 100.0, db)
-            .unwrap_or(0.0)
-            * 100.0) as u32,
+        tax,
         tax_type: rates.first().map(|r| (r.rate, r.tax_type.clone())),
     })
 }
