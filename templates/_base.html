@@ -42,7 +42,24 @@
   <!-- Google Fonts: Fraunces (serif headings) + Inter (body) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Preload font files to flatten critical chain (avoid HTML → CSS → font waterfall) -->
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="https://fonts.gstatic.com/s/fraunces/v38/6NU78FyLNQOQZAnv9bYEvDiIdE9Ea92uemAk_WBq8U_9v0c2Wa0KxC9TeP2Xz5c.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="https://fonts.gstatic.com/s/fraunces/v38/6NU58FyLNQOQZAnv9ZwNjucMHVn85Ni7emAe9lKqZTnbB-gzTK0K1ChjeveQ7ZXk8g.woff2">
+
+  <!-- Load Google Fonts CSS asynchronously to avoid render-blocking -->
+  <link rel="preload" as="style"
+    href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet">
+  </noscript>
 
   <!-- Main CSS - loaded synchronously to prevent visual breaking -->
   <link rel="stylesheet" href={{ "/static/css/main.css?v=" ~ env!("CARGO_PKG_VERSION") }}>
@@ -89,6 +106,25 @@
   {% block extra_head %}{% endblock %}
 
   <style>
+    /* Fallback font metrics to reduce CLS during font swap */
+    @font-face {
+      font-family: 'Inter fallback';
+      src: local('Arial');
+      size-adjust: 107%;
+      ascent-override: 90%;
+      descent-override: 22%;
+      line-gap-override: 0%;
+    }
+
+    @font-face {
+      font-family: 'Fraunces fallback';
+      src: local('Georgia');
+      size-adjust: 105%;
+      ascent-override: 98%;
+      descent-override: 27%;
+      line-gap-override: 0%;
+    }
+
     #mobile-menu-button {
       appearance: none;
       opacity: 0;
