@@ -22,11 +22,13 @@ pub struct EmailConfig {
 pub struct EmailService {
     mailer: SmtpTransport,
     from: String,
+    pub app_url: String,
 }
 
 impl EmailService {
     /// Create a new email service from configuration
-    pub fn new(config: &EmailConfig) -> anyhow::Result<Self> {
+    pub fn new(app_url: impl Into<String>, config: &EmailConfig) -> anyhow::Result<Self> {
+        let app_url = app_url.into();
         let mailer = if config.smtp_username.is_empty() || config.smtp_password.is_empty() {
             tracing::info!(
                 smtp_host = %config.smtp_host,
@@ -58,6 +60,7 @@ impl EmailService {
         Ok(Self {
             mailer,
             from: config.from_address.clone(),
+            app_url,
         })
     }
 

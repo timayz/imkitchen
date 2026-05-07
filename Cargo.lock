@@ -2652,7 +2652,10 @@ version = "0.18.2"
 dependencies = [
  "anyhow",
  "askama",
+ "bitcode",
  "evento",
+ "imkitchen-billing",
+ "imkitchen-core",
  "imkitchen-identity",
  "imkitchen-types",
  "lettre",
