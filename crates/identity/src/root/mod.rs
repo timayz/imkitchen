@@ -24,6 +24,7 @@ pub struct Module<E: Executor> {
     state: imkitchen_core::State<E>,
     pub meal_preferences: crate::meal_preferences::Module<E>,
     pub password: crate::password::Module<E>,
+    pub user_profile: crate::user_profile::Module<E>,
 }
 
 impl<E: Executor> Deref for Module<E> {
@@ -42,11 +43,23 @@ impl<E: Executor> Module<E> {
         Self {
             meal_preferences: crate::meal_preferences::Module(state.clone()),
             password: crate::password::Module(state.clone()),
+            user_profile: crate::user_profile::Module(state.clone()),
             state,
         }
     }
     pub async fn load(&self, id: impl Into<String>) -> anyhow::Result<Option<User>> {
         create_projection(id).execute(&self.executor).await
+    }
+
+    pub async fn find_email(
+        &self,
+        id: impl Into<String>,
+    ) -> imkitchen_core::Result<Option<String>> {
+        Ok(
+            repository::find(&self.read_db, repository::FindType::Id(id.into()))
+                .await?
+                .map(|row| row.email),
+        )
     }
 }
 

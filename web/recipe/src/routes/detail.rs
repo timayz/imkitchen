@@ -64,6 +64,7 @@ pub struct DetailTemplate<'a> {
     pub comment_rating: Option<comment_rating::CommentRating>,
     pub cook_recipes: ReadResult<UserViewList>,
     pub similar_recipes: ReadResult<UserViewList>,
+    pub owner_description: String,
 }
 
 impl<'a> Default for DetailTemplate<'a> {
@@ -80,6 +81,7 @@ impl<'a> Default for DetailTemplate<'a> {
             comment: Default::default(),
             comment_rating: Default::default(),
             username: "john_doe",
+            owner_description: String::new(),
         }
     }
 }
@@ -308,6 +310,11 @@ pub async fn page(
         similar_recipes.edges.extend(more_recipes.edges);
     }
 
+    let owner_profile = imkitchen_web_shared::try_page_response!(
+        app.identity.user_profile.load(&recipe.owner_id),
+        template
+    );
+
     let username = user.username();
 
     template
@@ -322,6 +329,7 @@ pub async fn page(
             comment,
             comment_rating,
             username: username.as_str(),
+            owner_description: owner_profile.description,
             ..Default::default()
         })
         .into_response()

@@ -10,6 +10,10 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
             post(routes::general::set_username_action),
         )
         .route(
+            "/settings/general/profile",
+            post(routes::general::update_profile_action),
+        )
+        .route(
             "/settings/general",
             get(routes::general::page).post(routes::general::action),
         )

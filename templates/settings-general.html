@@ -3,6 +3,32 @@
 
 {% block settings_content %}
 
+<!-- Profile -->
+<div class="bg-paper rounded-xl shadow-md p-6 mb-6">
+  <h2 class="text-xl font-bold font-serif mb-6">{{ "Profile"|t }}</h2>
+
+  <form method="post" action="/settings/general/profile" ts-req="" ts-swap="skip" class="space-y-6" autocomplete="off">
+    <div>
+      <label class="block text-sm font-semibold text-ink-2 mb-2">{{ "Email"|t }}</label>
+      <input type="email" value="{{ email }}" disabled
+        class="w-full px-4 py-3 border border-line rounded-xl bg-gray-100 text-ink-3 cursor-not-allowed" />
+      <p class="text-sm text-ink-3 mt-1">{{ "Your email address cannot be changed"|t }}</p>
+    </div>
+
+    <div>
+      <label class="block text-sm font-semibold text-ink-2 mb-2">{{ "Description"|t }}</label>
+      <textarea name="description" rows="3" maxlength="500"
+        class="w-full px-4 py-3 border border-line rounded-xl focus:ring-2 focus:ring-primary-500"
+        placeholder="{{ "Tell us a bit about yourself..."|t }}">{{ description }}</textarea>
+      <p class="text-sm text-ink-3 mt-1">{{ "A short description about yourself (max 500 characters)"|t }}</p>
+    </div>
+
+    <button type="submit" class="px-6 py-3 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-600">
+      {{ "Save Profile"|t }}
+    </button>
+  </form>
+</div>
+
 <!-- Meal Preferences -->
 <div class="bg-paper rounded-xl shadow-md p-6">
   <h2 class="text-xl font-bold font-serif mb-6">{{ "Preferences"|t }}</h2>

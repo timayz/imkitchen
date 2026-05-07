@@ -8,3 +8,4 @@ pub mod rating;
 pub mod recipe;
 pub mod recipe_share;
 pub mod shopping;
+pub mod user_profile;

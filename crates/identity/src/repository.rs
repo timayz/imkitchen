@@ -9,6 +9,7 @@ use crate::types::user::{Role, State};
 #[derive(FromRow)]
 pub struct UserRow {
     pub id: String,
+    pub email: String,
     pub password: String,
     pub username: Option<String>,
     // pub role: sqlx::types::Text<Role>,
@@ -27,6 +28,7 @@ pub(crate) async fn find(
     let mut statement = Query::select()
         .columns([
             User::Id,
+            User::Email,
             User::Password,
             User::Username,
             User::Role,
