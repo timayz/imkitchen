@@ -113,7 +113,7 @@
                         </li>
                     </ul>
                 </div>
-                <div class="bg-paper rounded-2xl shadow-md p-8 border border-line-2">
+                <div class="bg-paper rounded-2xl shadow-md p-5 sm:p-8 border border-line-2">
                     <div class="text-sm text-ink-3 mb-4">{{ "Recipe Library Preview"|t }}</div>
                     <div class="space-y-3">
                         <div class="flex items-center gap-3 p-3 bg-primary-50 rounded-xl border border-primary-200">
@@ -142,7 +142,7 @@
             </div>
 
             <div class="grid md:grid-cols-2 gap-12 items-center mb-16">
-                <div class="order-2 md:order-1 bg-paper rounded-2xl shadow-md p-8 border border-line-2">
+                <div class="order-2 md:order-1 bg-paper rounded-2xl shadow-md p-5 sm:p-8 border border-line-2">
                     <div class="text-sm text-ink-3 mb-4">{{ "Generated Meal Plan"|t }}</div>
                     <div class="space-y-4">
                         <div class="border-l-4 border-primary-500 pl-4">
@@ -214,7 +214,7 @@
                         </li>
                     </ul>
                 </div>
-                <div class="bg-paper rounded-2xl shadow-md p-8 border border-line-2">
+                <div class="bg-paper rounded-2xl shadow-md p-5 sm:p-8 border border-line-2">
                     <div class="text-sm text-ink-3 mb-4">{{ "Shopping List - Week 1"|t }}</div>
                     <div class="space-y-3">
                         <div>
@@ -291,34 +291,34 @@
             <h2 class="text-3xl md:text-4xl font-serif font-bold tracking-tight text-ink text-center mb-4">{{ "Simple, Transparent"|t }} <em class="text-primary-500">{{ "Pricing"|t }}</em></h2>
             <p class="text-center text-ink-2 mb-12">{{ "Start free. Upgrade when you're ready to see the full month."|t }}</p>
 
-            <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto pt-3">
                 <!-- Free Tier -->
-                <div class="bg-paper rounded-2xl shadow-md p-8 border border-line-2">
+                <div class="bg-paper rounded-2xl shadow-md p-5 sm:p-8 border border-line-2">
                     <h3 class="text-2xl font-serif font-bold text-ink mb-2">{{ "Free"|t }}</h3>
-                    <div class="text-4xl font-serif font-bold text-ink mb-6">$0<span class="text-lg text-ink-3 font-normal">{{ "/month"|t }}</span></div>
-                    <ul class="space-y-3 mb-8">
+                    <div class="text-3xl sm:text-4xl font-serif font-bold text-ink mb-6">$0<span class="text-lg text-ink-3 font-normal">{{ "/month"|t }}</span></div>
+                    <ul class="space-y-3 mb-8 min-w-0">
                         <li class="flex items-start gap-2">
-                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-primary-500 mt-1 shrink-0" aria-hidden="true">✓</span>
                             <span class="text-ink-2">{{ "Generate all future weeks"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-primary-500 mt-1 shrink-0" aria-hidden="true">✓</span>
                             <span class="text-ink-2">{{ "Up to 7 recipes in plan (by creation date)"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-primary-500 mt-1 shrink-0" aria-hidden="true">✓</span>
                             <span class="text-ink-2">{{ "Main courses only (no accompaniments/appetizers/desserts)"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-primary-500 mt-1 shrink-0" aria-hidden="true">✓</span>
                             <span class="text-ink-2">{{ "Unlimited regenerations"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-primary-500 mt-1 shrink-0" aria-hidden="true">✓</span>
                             <span class="text-ink-2">{{ "Recipe management & sharing"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-primary-500 mt-1 shrink-0" aria-hidden="true">✓</span>
                             <span class="text-ink-2">{{ "Community access"|t }}</span>
                         </li>
                     </ul>
@@ -328,36 +328,36 @@
                 </div>
 
                 <!-- Premium Tier -->
-                <div class="bg-gradient-to-br from-herb-500 to-herb-700 text-white rounded-2xl shadow-md p-8 relative">
-                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary-400 text-white px-4 py-1 rounded-full text-sm font-bold">
+                <div class="bg-gradient-to-br from-herb-500 to-herb-700 text-white rounded-2xl shadow-md p-5 sm:p-8 relative overflow-visible">
+                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary-400 text-white px-4 py-1 rounded-full text-sm font-bold whitespace-nowrap">
                         {{ "MOST POPULAR"|t }}
                     </div>
                     <h3 class="text-2xl font-serif font-bold mb-2">{{ "Premium"|t }}</h3>
-                    <div class="text-4xl font-serif font-bold mb-2">$4.99<span class="text-lg font-normal">{{ "/month"|t }}</span></div>
+                    <div class="text-3xl sm:text-4xl font-serif font-bold mb-2">$4.99<span class="text-lg font-normal">{{ "/month"|t }}</span></div>
                     <div class="text-sm mb-6 text-white/80">{{ "or $47.90/year"|t }} <span class="bg-primary-400 text-white px-2 py-0.5 rounded-full text-xs font-bold">{{ "save 20%"|t }}</span></div>
-                    <ul class="space-y-3 mb-8">
+                    <ul class="space-y-3 mb-8 min-w-0">
                         <li class="flex items-start gap-2">
-                            <span class="text-white/80 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-white/80 mt-1 shrink-0" aria-hidden="true">✓</span>
                             <span>{{ "Unlimited recipes in meal plan"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-white/80 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-white/80 mt-1 shrink-0" aria-hidden="true">✓</span>
                             <span>{{ "All recipe types (appetizers, accompaniments, desserts)"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-white/80 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-white/80 mt-1 shrink-0" aria-hidden="true">✓</span>
                             <span>{{ "Meal preferences applied"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-white/80 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-white/80 mt-1 shrink-0" aria-hidden="true">✓</span>
                             <span>{{ "Batch recipe import"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-white/80 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-white/80 mt-1 shrink-0" aria-hidden="true">✓</span>
                             <span>{{ "Priority support"|t }}</span>
                         </li>
                         <li class="flex items-start gap-2">
-                            <span class="text-white/80 mt-1" aria-hidden="true">✓</span>
+                            <span class="text-white/80 mt-1 shrink-0" aria-hidden="true">✓</span>
                             <span>{{ "Early access to new features"|t }}</span>
                         </li>
                     </ul>
