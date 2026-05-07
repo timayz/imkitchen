@@ -75,6 +75,18 @@ pub mod filters {
     }
 
     #[askama::filter_fn]
+    pub fn nl2br(value: &str, _values: &dyn askama::Values) -> askama::Result<String> {
+        let escaped = value
+            .replace('&', "&amp;")
+            .replace('<', "&lt;")
+            .replace('>', "&gt;")
+            .replace('"', "&quot;")
+            .replace('\'', "&#x27;")
+            .replace('\n', "<br>");
+        Ok(escaped)
+    }
+
+    #[askama::filter_fn]
     pub fn yyyymmdd(value: &u64, _values: &dyn askama::Values) -> askama::Result<String> {
         let date = OffsetDateTime::from_unix_timestamp(*value as i64)
             .map_err(|e| askama::Error::Custom(Box::new(e)))?;

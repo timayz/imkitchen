@@ -13,8 +13,8 @@
     </button>
   </div>
 
-  {% if !from_date.is_empty() && !to_date.is_empty() %}
-  <p class="text-sm text-ink-3 mb-4">{{ from_date }} — {{ to_date }}</p>
+  {% if from_date > 0 && to_date > 0 %}
+  <p class="text-sm text-ink-3 mb-4">{{ from_date|day_month_year }} — {{ to_date|day_month_year }}</p>
   {% endif %}
 
   {% if ingredients.is_empty() %}

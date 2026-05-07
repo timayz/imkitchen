@@ -33,8 +33,8 @@ pub struct GroceriesTemplate {
     pub user: AuthUser,
     pub checked: HashSet<String>,
     pub ingredients: Vec<(String, Vec<Ingredient>)>,
-    pub from_date: String,
-    pub to_date: String,
+    pub from_date: u64,
+    pub to_date: u64,
 }
 
 impl Default for GroceriesTemplate {
@@ -44,8 +44,8 @@ impl Default for GroceriesTemplate {
             user: AuthUser::default(),
             checked: HashSet::default(),
             ingredients: vec![],
-            from_date: String::new(),
-            to_date: String::new(),
+            from_date: 0,
+            to_date: 0,
         }
     }
 }
@@ -65,14 +65,10 @@ pub async fn page(
     let (from_date, to_date) = list
         .as_ref()
         .filter(|r| r.from_date > 0 && r.days > 0)
-        .map(|r| {
-            let from = format_u64_date(r.from_date);
-            let to_date =
-                u64_to_date(r.from_date).map(|d| d + time::Duration::days(r.days as i64 - 1));
-            let to = to_date
-                .map(|d| format!("{}-{:02}-{:02}", d.year(), d.month() as u8, d.day()))
-                .unwrap_or_default();
-            (from, to)
+        .and_then(|r| {
+            let from = u64_to_date(r.from_date)?;
+            let to = from + time::Duration::days(r.days as i64 - 1);
+            Some((from.unix_timestamp() as u64, to.unix_timestamp() as u64))
         })
         .unwrap_or_default();
 
@@ -113,13 +109,6 @@ pub async fn toggle_action(
     );
 
     "<div></div>".into_response()
-}
-
-fn format_u64_date(date: u64) -> String {
-    let year = date / 10000;
-    let month = (date % 10000) / 100;
-    let day = date % 100;
-    format!("{year}-{month:02}-{day:02}")
 }
 
 fn u64_to_date(date: u64) -> Option<time::OffsetDateTime> {

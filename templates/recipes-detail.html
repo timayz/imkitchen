@@ -273,14 +273,17 @@
         <!-- Author Info -->
         {% if let Some(owner_name)= recipe.owner_name %}
         <div class="flex items-center justify-between mb-4 pb-4 border-b">
-          <div class="flex items-center gap-3">
+          <div class="flex items-start gap-3">
             <div
-              class="w-12 h-12 {{ owner_name|bg_color }} rounded-full flex items-center justify-center text-white font-bold text-lg">
+              class="w-12 h-12 shrink-0 {{ owner_name|bg_color }} rounded-full flex items-center justify-center text-white font-bold text-lg">
               {{ owner_name|initials }}
             </div>
             <div>
               <div class="font-semibold">@{{ owner_name }}</div>
               <div class="text-sm text-ink-2">{{ stat.shared }} {{ "recipes shared"|t }}</div>
+              {% if !owner_description.is_empty() %}
+              <p class="text-sm text-ink-3 mt-3">{{ owner_description|nl2br|safe }}</p>
+              {% endif %}
             </div>
           </div>
           <!-- <button class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-full transition"> -->

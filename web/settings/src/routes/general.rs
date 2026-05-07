@@ -2,6 +2,7 @@ use axum::extract::State;
 use axum::response::IntoResponse;
 use axum_extra::extract::Form;
 use imkitchen_identity::meal_preferences::UpdateInput;
+use imkitchen_identity::user_profile;
 use imkitchen_types::recipe::DietaryRestriction;
 use serde::Deserialize;
 use strum::VariantArray;
@@ -18,6 +19,8 @@ pub struct MealPreferencesTemplate {
     pub household_size: u16,
     pub dietary_restrictions: Vec<DietaryRestriction>,
     pub cuisine_variety_weight: f32,
+    pub email: String,
+    pub description: String,
     pub user: AuthUser,
 }
 
@@ -29,6 +32,8 @@ impl Default for MealPreferencesTemplate {
             household_size: 4,
             dietary_restrictions: Vec::default(),
             cuisine_variety_weight: 1.0,
+            email: String::new(),
+            description: String::new(),
             user: AuthUser::default(),
         }
     }
@@ -45,10 +50,20 @@ pub async fn page(
         template
     );
 
+    let profile = imkitchen_web_shared::try_page_response!(
+        app.identity.user_profile.load(&user.id),
+        template
+    );
+
+    let email =
+        imkitchen_web_shared::try_page_response!(app.identity.find_email(&user.id), template);
+
     template.render(MealPreferencesTemplate {
         household_size: preferences.household_size,
         dietary_restrictions: preferences.dietary_restrictions.to_vec(),
         cuisine_variety_weight: preferences.cuisine_variety_weight,
+        email: email.unwrap_or_default(),
+        description: profile.description,
         user,
         ..Default::default()
     })
@@ -119,4 +134,35 @@ pub async fn set_username_action(
     );
 
     "<div ts-trigger=\"load\" ts-action=\"remove\"></div>".into_response()
+}
+
+#[derive(Deserialize)]
+pub struct UpdateProfileActionInput {
+    pub description: String,
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn update_profile_action(
+    template: Template,
+    State(app): State<AppState>,
+    user: AuthUser,
+    Form(input): Form<UpdateProfileActionInput>,
+) -> impl IntoResponse {
+    imkitchen_web_shared::try_response!(
+        app.identity.user_profile.update(
+            &user.id,
+            user_profile::UpdateInput {
+                description: input.description,
+            }
+        ),
+        template
+    );
+
+    template
+        .render(ToastSuccessTemplate {
+            original: None,
+            message: "Profile updated successfully",
+            description: None,
+        })
+        .into_response()
 }
