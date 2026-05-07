@@ -81,9 +81,7 @@ pub async fn action(
         template
     );
 
-    let amount = price_tax.price + price_tax.tax;
-
-    if amount != input.amount {
+    if price_tax.price != input.amount {
         return template.render(template::ServerTemplate).into_response();
     }
 
@@ -125,7 +123,7 @@ pub async fn action(
         tax_rate: price_tax.tax_type.map(|(rate, _)| rate),
     };
 
-    let payment_intent = imkitchen_web_shared::try_response!(anyhow: CreatePaymentIntent::new(amount, Currency::USD)
+    let payment_intent = imkitchen_web_shared::try_response!(anyhow: CreatePaymentIntent::new(price_tax.price, Currency::USD)
         .customer(customer_id)
         .automatic_payment_methods(CreatePaymentIntentAutomaticPaymentMethods::new(true))
         .setup_future_usage(PaymentIntentSetupFutureUsage::OffSession)
@@ -201,7 +199,7 @@ pub async fn order_summary(
         .render(UpgradeOrderSummaryTemplate {
             plan,
             price: price_tax.price as f64 / 100.0,
-            amount: price_tax.price + price_tax.tax,
+            amount: price_tax.price,
             tax: price_tax.tax as f64 / 100.0,
             tax_label,
         })
