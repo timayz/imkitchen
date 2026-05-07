@@ -22,7 +22,7 @@ pub async fn serve(
     let host = host_override.unwrap_or(config.server.host.to_owned());
     let port = port_override.unwrap_or(config.server.port);
 
-    let email_service = EmailService::new(&config.email)?;
+    let email_service = EmailService::new(&config.server.url, &config.email)?;
 
     let write_pool = imkitchen::create_write_pool(&config.database.url).await?;
     let read_pool_size = config.database.max_connections;
@@ -42,7 +42,13 @@ pub async fn serve(
         .await?;
 
     let sub_notification_user = imkitchen_notification::user::subscription()
+        .data(email_service.clone())
+        .start(&executor)
+        .await?;
+
+    let sub_notification_billing = imkitchen_notification::billing::subscription()
         .data(email_service)
+        .data((read_pool.clone(), write_pool.clone()))
         .start(&executor)
         .await?;
 
@@ -230,6 +236,7 @@ pub async fn serve(
     let results = futures::future::join_all(vec![
         sub_notification_contact.shutdown(),
         sub_notification_user.shutdown(),
+        sub_notification_billing.shutdown(),
         sub_user_query.shutdown(),
         sub_user_shed.shutdown(),
         sub_user_global_stat.shutdown(),

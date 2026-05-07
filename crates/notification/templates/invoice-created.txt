@@ -1,0 +1,19 @@
+{{ "Your Invoice Is Ready"|t }} - imkitchen
+
+{{ "Hello,"|t }}
+
+{{ "Thank you for your subscription! Your invoice has been generated."|t }}
+
+{{ "Invoice"|t }} #{{ invoice_number }}
+{{ "Plan:"|t }} {{ plan }}
+{{ "Amount:"|t }} {{ amount }}
+
+{{ "View your invoice:"|t }}
+
+{{ invoice_url }}
+
+---
+
+{{ "This email was sent to"|t }} {{ email }}
+
+© {{ year }} imkitchen. {{ "All rights reserved."|t }}

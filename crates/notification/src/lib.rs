@@ -1,4 +1,6 @@
+pub mod billing;
 pub mod contact;
+pub mod recipient;
 mod service;
 pub(crate) mod template;
 pub mod user;

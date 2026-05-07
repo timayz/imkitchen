@@ -9,5 +9,16 @@
   "All rights reserved.": "Tous droits réservés.",
   "Hello,": "Bonjour,",
   "We received a request to reset your password for your imkitchen account.": "Nous avons reçu une demande de réinitialisation de votre mot de passe pour votre compte imkitchen.",
-  "To create a new password, visit the following link:": "Pour créer un nouveau mot de passe, visitez le lien suivant :"
+  "To create a new password, visit the following link:": "Pour créer un nouveau mot de passe, visitez le lien suivant :",
+  "Your Invoice Is Ready": "Votre facture est prête",
+  "Thank you for your subscription! Your invoice has been generated.": "Merci pour votre abonnement ! Votre facture a été générée.",
+  "Invoice": "Facture",
+  "Plan:": "Forfait :",
+  "Amount:": "Montant :",
+  "View Invoice": "Voir la facture",
+  "View your invoice:": "Voir votre facture :",
+  "Subscription Cancelled": "Abonnement annulé",
+  "Your imkitchen subscription has been cancelled.": "Votre abonnement imkitchen a été annulé.",
+  "You will continue to have access to premium features until the end of your current billing period.": "Vous continuerez à avoir accès aux fonctionnalités premium jusqu'à la fin de votre période de facturation en cours.",
+  "We're sorry to see you go. You can resubscribe at any time from your account settings.": "Nous sommes désolés de vous voir partir. Vous pouvez vous réabonner à tout moment depuis les paramètres de votre compte."
 }
