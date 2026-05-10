@@ -5,6 +5,7 @@ use evento::{
     sql::Reader,
     subscription::{Context, SubscriptionBuilder},
 };
+use imkitchen_db::mealplan_recipe::MealPlanRecipe;
 use imkitchen_db::recipe_user::{RecipeUser, RecipeUserFts};
 use imkitchen_types::comment;
 use imkitchen_types::rating::{LikeChecked, LikeUnchecked, UnlikeChecked, UnlikeUnchecked, Viewed};
@@ -88,6 +89,7 @@ pub struct RecipesQuery {
     pub has_thumbnail: Option<bool>,
     pub dietary_restrictions: Vec<DietaryRestriction>,
     pub dietary_where_any: bool,
+    pub in_meal_plan: Option<(String, bool)>,
     pub sort_by: SortBy,
     pub search: Option<String>,
     pub args: Args,
@@ -106,7 +108,6 @@ impl<E: Executor> crate::recipe::Module<E> {
                 RecipeUser::RecipeType,
                 RecipeUser::CuisineType,
                 RecipeUser::Name,
-                RecipeUser::Origin,
                 RecipeUser::Description,
                 RecipeUser::PrepTime,
                 RecipeUser::CookTime,
@@ -138,19 +139,16 @@ impl<E: Executor> crate::recipe::Module<E> {
             None => {}
         }
 
-        let search = if let Some("") = query.search.as_deref() {
-            None
-        } else {
-            query.search
-        };
-
-        if let Some(search) = search {
+        if let Some(search) = query.search.filter(|s| !s.is_empty()) {
             statement.and_where(
                 Expr::col(RecipeUser::Id).in_subquery(
                     Query::select()
                         .column(RecipeUserFts::Id)
                         .from(RecipeUserFts::Table)
-                        .and_where(Expr::cust(format!("recipe_user_fts MATCH '{search}*'")))
+                        .and_where(Expr::cust_with_values(
+                            "recipe_user_fts MATCH ?",
+                            [format!("{search}*")],
+                        ))
                         .order_by(RecipeUserFts::Rank, sea_query::Order::Asc)
                         .limit(20)
                         .take(),
@@ -170,7 +168,7 @@ impl<E: Executor> crate::recipe::Module<E> {
             statement.and_where(Expr::col(RecipeUser::CuisineType).eq(cuisine_type.to_string()));
         }
 
-        if !query.dietary_restrictions.is_empty() && !query.dietary_where_any {
+        if !query.dietary_restrictions.is_empty() {
             let in_clause = query
                 .dietary_restrictions
                 .iter()
@@ -178,41 +176,49 @@ impl<E: Executor> crate::recipe::Module<E> {
                 .collect::<Vec<_>>()
                 .join(", ");
 
-            statement.and_where(Expr::cust_with_values(
-            format!(
-                "(SELECT COUNT(*) FROM json_each(dietary_restrictions) WHERE value IN ({})) = ?",
-                in_clause
-            ),
-            query
+            let mut values: Vec<sea_query::Value> = query
                 .dietary_restrictions
                 .iter()
-                .map(|t| sea_query::Value::String(Some(*Box::new(t.to_string()))))
-                .chain(std::iter::once(sea_query::Value::Int(Some(
+                .map(|t| sea_query::Value::String(Some(t.to_string())))
+                .collect();
+
+            let sql = if query.dietary_where_any {
+                format!(
+                    "(SELECT COUNT(*) FROM json_each(dietary_restrictions) WHERE value IN ({})) > 0",
+                    in_clause
+                )
+            } else {
+                values.push(sea_query::Value::Int(Some(
                     query.dietary_restrictions.len() as i32,
-                ))))
-                .collect::<Vec<_>>(),
-        ));
+                )));
+                format!(
+                    "(SELECT COUNT(*) FROM json_each(dietary_restrictions) WHERE value IN ({})) = ?",
+                    in_clause
+                )
+            };
+
+            statement.and_where(Expr::cust_with_values(sql, values));
         }
 
-        if !query.dietary_restrictions.is_empty() && query.dietary_where_any {
-            let in_clause = query
-                .dietary_restrictions
-                .iter()
-                .map(|_| "?")
-                .collect::<Vec<_>>()
-                .join(", ");
+        if let Some((meal_plan_user_id, in_plan)) = query.in_meal_plan {
+            let subquery = Query::select()
+                .expr(Expr::val(1))
+                .from(MealPlanRecipe::Table)
+                .and_where(
+                    Expr::col((MealPlanRecipe::Table, MealPlanRecipe::Id))
+                        .equals((RecipeUser::Table, RecipeUser::Id)),
+                )
+                .and_where(
+                    Expr::col((MealPlanRecipe::Table, MealPlanRecipe::UserId))
+                        .eq(meal_plan_user_id),
+                )
+                .take();
 
-            statement.and_where(Expr::cust_with_values(
-                format!(
-                    "(SELECT COUNT(*) FROM json_each(dietary_restrictions) WHERE value IN ({}))",
-                    in_clause
-                ),
-                query
-                    .dietary_restrictions
-                    .iter()
-                    .map(|t| sea_query::Value::String(Some(*Box::new(t.to_string()))))
-                    .collect::<Vec<_>>(),
-            ));
+            if in_plan {
+                statement.and_where(Expr::exists(subquery));
+            } else {
+                statement.and_where(Expr::exists(subquery).not());
+            }
         }
 
         statement.and_where(Expr::col(RecipeUser::Name).not_equals(""));
