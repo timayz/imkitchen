@@ -25,6 +25,8 @@ use strum::{Display, EnumString};
 pub enum SortBy {
     #[default]
     RecentlyAdded,
+    Easiest,
+    Hardest,
 }
 
 #[evento::projection(FromRow)]
@@ -49,6 +51,7 @@ pub struct UserView {
     pub total_views: u64,
     pub total_likes: i64,
     pub total_comments: u64,
+    pub difficulty_score: u16,
     pub created_at: u64,
     pub thumbnail_version: Option<String>,
 }
@@ -59,9 +62,10 @@ impl UserView {
     }
 }
 
-#[derive(Debug, Default, FromRow, Cursor)]
+#[derive(Debug, Default, Clone, FromRow, Cursor)]
 pub struct UserViewList {
     #[cursor(RecipeUser::Id, 1)]
+    #[cursor(by_difficulty, RecipeUser::Id, 1)]
     pub id: String,
     pub owner_id: String,
     pub owner_name: Option<String>,
@@ -75,6 +79,8 @@ pub struct UserViewList {
     pub accepts_accompaniment: bool,
     pub is_shared: bool,
     pub total_views: u64,
+    #[cursor(by_difficulty, RecipeUser::DifficultyScore, 2)]
+    pub difficulty_score: u16,
     #[cursor(RecipeUser::CreatedAt, 2)]
     pub created_at: u64,
     pub thumbnail_version: Option<String>,
@@ -115,6 +121,7 @@ impl<E: Executor> crate::recipe::Module<E> {
                 RecipeUser::AcceptsAccompaniment,
                 RecipeUser::IsShared,
                 RecipeUser::TotalViews,
+                RecipeUser::DifficultyScore,
                 RecipeUser::CreatedAt,
                 RecipeUser::ThumbnailVersion,
             ])
@@ -223,13 +230,32 @@ impl<E: Executor> crate::recipe::Module<E> {
 
         statement.and_where(Expr::col(RecipeUser::Name).not_equals(""));
 
-        let mut reader = Reader::new(statement);
+        match query.sort_by {
+            SortBy::RecentlyAdded => {
+                Reader::new(statement)
+                    .desc()
+                    .args(query.args)
+                    .execute(&self.read_db)
+                    .await
+            }
+            SortBy::Easiest => {
+                let result = Reader::new(statement)
+                    .args(query.args)
+                    .execute::<_, UserViewListByDifficulty, _>(&self.read_db)
+                    .await?;
 
-        if matches!(query.sort_by, SortBy::RecentlyAdded) {
-            reader.desc();
+                Ok(result.map(|item| item.0))
+            }
+            SortBy::Hardest => {
+                let result = Reader::new(statement)
+                    .desc()
+                    .args(query.args)
+                    .execute::<_, UserViewListByDifficulty, _>(&self.read_db)
+                    .await?;
+
+                Ok(result.map(|item| item.0))
+            }
         }
-
-        reader.args(query.args).execute(&self.read_db).await
     }
 
     pub async fn find_user(&self, id: impl Into<String>) -> anyhow::Result<Option<UserView>> {
@@ -281,6 +307,7 @@ async fn find_user(pool: &SqlitePool, id: impl Into<String>) -> anyhow::Result<O
             RecipeUser::TotalViews,
             RecipeUser::TotalLikes,
             RecipeUser::TotalComments,
+            RecipeUser::DifficultyScore,
             RecipeUser::CreatedAt,
             RecipeUser::ThumbnailVersion,
         ])
@@ -351,6 +378,8 @@ impl<E: Executor> Snapshot<E> for UserView {
 
         let ingredients = bitcode::encode(&self.ingredients.0);
         let instructions = bitcode::encode(&self.instructions.0);
+        let difficulty_score: u16 =
+            self.prep_time + self.cook_time + (self.instructions.0.len() as u16) * 3;
         let dietary_restrictions = self
             .dietary_restrictions
             .iter()
@@ -381,6 +410,7 @@ impl<E: Executor> Snapshot<E> for UserView {
                 RecipeUser::TotalViews,
                 RecipeUser::TotalLikes,
                 RecipeUser::TotalComments,
+                RecipeUser::DifficultyScore,
                 RecipeUser::CreatedAt,
                 RecipeUser::ThumbnailVersion,
             ])
@@ -406,6 +436,7 @@ impl<E: Executor> Snapshot<E> for UserView {
                 self.total_views.into(),
                 self.total_likes.into(),
                 self.total_comments.into(),
+                difficulty_score.into(),
                 self.created_at.into(),
                 self.thumbnail_version.to_owned().into(),
             ])?
@@ -432,6 +463,7 @@ impl<E: Executor> Snapshot<E> for UserView {
                         RecipeUser::TotalViews,
                         RecipeUser::TotalLikes,
                         RecipeUser::TotalComments,
+                        RecipeUser::DifficultyScore,
                         RecipeUser::CreatedAt,
                         RecipeUser::ThumbnailVersion,
                     ])
