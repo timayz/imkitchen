@@ -81,6 +81,7 @@ pub async fn page(
             has_thumbnail: None,
             dietary_restrictions: input.dietary_restrictions,
             dietary_where_any: false,
+            in_meal_plan: Some((user.id.to_owned(), false)),
             sort_by: input.sort_by.unwrap_or_default(),
             args: args.limit(20),
             search: input.search,
