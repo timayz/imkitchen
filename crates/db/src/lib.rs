@@ -1,6 +1,7 @@
 use sqlx_migrator::{Info, Migrator};
 
 pub(crate) mod m0001;
+pub(crate) mod m0002;
 
 pub mod contact_admin;
 pub mod contact_global_stat;
@@ -27,9 +28,10 @@ where
     evento::sql_migrator::M0002: sqlx_migrator::Migration<DB>,
     evento::sql_migrator::M0003: sqlx_migrator::Migration<DB>,
     m0001::Migration: sqlx_migrator::Migration<DB>,
+    m0002::Migration: sqlx_migrator::Migration<DB>,
 {
     let mut migrator = evento::sql_migrator::new::<DB>()?;
-    migrator.add_migrations(vec![Box::new(m0001::Migration)])?;
+    migrator.add_migrations(vec![Box::new(m0001::Migration), Box::new(m0002::Migration)])?;
 
     Ok(migrator)
 }

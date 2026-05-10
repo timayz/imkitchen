@@ -27,6 +27,7 @@ pub enum RecipeUser {
     CreatedAt,
     UpdatedAt,
     ThumbnailVersion,
+    DifficultyScore,
 }
 
 #[derive(Iden, Clone)]
@@ -474,6 +475,45 @@ DROP TABLE recipe_user_fts;
             )
             .execute(connection)
             .await?;
+
+            Ok(())
+        }
+    }
+}
+
+pub(crate) mod m0002 {
+    pub struct AddDifficultyScore;
+
+    #[async_trait::async_trait]
+    impl sqlx_migrator::Operation<sqlx::Sqlite> for AddDifficultyScore {
+        async fn up(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            sqlx::query(
+                "ALTER TABLE recipe_user ADD COLUMN difficulty_score INTEGER NOT NULL DEFAULT 0",
+            )
+            .execute(&mut *connection)
+            .await?;
+
+            sqlx::query("UPDATE recipe_user SET difficulty_score = prep_time + cook_time")
+                .execute(&mut *connection)
+                .await?;
+
+            sqlx::query("UPDATE subscriber SET cursor = NULL WHERE key = 'recipe-query'")
+                .execute(connection)
+                .await?;
+
+            Ok(())
+        }
+
+        async fn down(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            sqlx::query("ALTER TABLE recipe_user DROP COLUMN difficulty_score")
+                .execute(connection)
+                .await?;
 
             Ok(())
         }
