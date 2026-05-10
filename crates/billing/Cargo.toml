@@ -1,6 +1,6 @@
 [package]
 name = "imkitchen-billing"
-version = "1.0.1"
+version = "1.0.2"
 edition.workspace = true
 authors.workspace = true
 
@@ -22,7 +22,7 @@ async-stripe-types.workspace = true
 serde.workspace = true
 tracing.workspace = true
 tokio-cron-scheduler.workspace = true
-imkitchen-core = { path = "../core", version = "1.0.1" }
-imkitchen-db = { path = "../db", version = "1.0.1" }
+imkitchen-core = { path = "../core", version = "1.0.2" }
+imkitchen-db = { path = "../db", version = "1.0.2" }
 
 [dev-dependencies]
