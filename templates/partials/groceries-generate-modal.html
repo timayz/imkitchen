@@ -13,17 +13,16 @@
     </div>
     <!-- Body -->
     <div class="p-6">
-      <p class="text-ink-2 text-sm mb-4">{{ "Generate a shopping list from your meal plan. Choose how many days ahead to include."|t }}</p>
+      <p class="text-ink-2 text-sm mb-4">{{ "Generate a shopping list from your meal plan. Choose a date range to include."|t }}</p>
       <div class="mb-4">
         <label class="block text-sm font-semibold text-ink-2 mb-2">{{ "From date"|t }}</label>
         <input type="date" id="generate-from" name="from" value="{{ from }}"
           class="w-full px-4 py-2 border border-line rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
       </div>
       <div>
-        <label class="block text-sm font-semibold text-ink-2 mb-2">{{ "Days"|t }}</label>
-        <input type="number" id="generate-days" name="days" value="7" min="1" max="30"
+        <label class="block text-sm font-semibold text-ink-2 mb-2">{{ "To date"|t }}</label>
+        <input type="date" id="generate-to" name="to" value="{{ to }}"
           class="w-full px-4 py-2 border border-line rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
-        <p class="text-xs text-ink-3 mt-1">{{ "Include meals planned for the next 1-30 days"|t }}</p>
       </div>
     </div>
     <!-- Footer -->
