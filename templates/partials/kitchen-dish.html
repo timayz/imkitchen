@@ -49,7 +49,9 @@
 
   <!-- Steps View -->
   <div id="view-steps" class="p-6">
-    {% if let Some((pos,instruction)) = current_instruction %}
+    {% if let Some(origin) = slot_recipe.origin %}
+    <iframe class="w-full h-[80vh]" src="{{ origin }}"></iframe>
+    {% else if let Some((pos,instruction)) = current_instruction %}
     <!-- Step Progress -->
     <div class="flex items-center justify-between mb-4">
       <span class="text-sm text-ink-3">{{ "Step"|t }} {{ pos + 1 }} {{ "of"|t }} {{ slot_recipe.instructions.len()
@@ -163,8 +165,6 @@
       </div>
       {% endif %}
     </div>
-    {% else if let Some(origin) = slot_recipe.origin %}
-    <iframe class="w-full h-[80vh]" src="{{ origin }}"></iframe>
     {% endif %}
   </div>
 
