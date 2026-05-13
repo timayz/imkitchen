@@ -331,6 +331,26 @@
         </div>
       </div>
 
+      {% if let Some(origin) = recipe.origin %}
+      <!-- Open Original Recipe Button -->
+      <div class="bg-paper rounded-xl shadow-md p-4 md:p-6 mb-4">
+        <div class="flex flex-col items-center gap-4 py-6">
+          <svg class="w-12 h-12 text-ink-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+          </svg>
+          <p class="text-ink-2 text-center">{{ "This recipe was imported from an external source."|t }}</p>
+          <a href="{{ origin }}" target="_blank" rel="noopener noreferrer"
+            class="inline-flex items-center gap-2 px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-full transition">
+            <span>{{ "Open Original Recipe"|t }}</span>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+            </svg>
+          </a>
+        </div>
+      </div>
+      {% else %}
       <!-- Ingredients Section -->
       <div class="bg-paper rounded-xl shadow-md p-4 md:p-6 mb-4">
         <h2 class="text-xl font-bold font-serif mb-4 flex items-center gap-2">
@@ -364,8 +384,9 @@
         </div>
       </div>
       {% endif %}
+      {% endif %}
       <!-- Comments Section (YouTube Style) -->
-      {% if config.feature.community %}
+      {% if config.feature.community && recipe.origin.is_none() %}
       <div ts-trigger="visible once" ts-req="/recipes/{{ recipe.id }}/comments"
         ts-req-selector="children #comments-list" ts-swap="append" ts-target="#comments-list"
         class="bg-paper rounded-xl shadow-md p-4 md:p-6">
