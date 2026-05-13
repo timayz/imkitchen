@@ -153,17 +153,20 @@ fn to_categories(ingredients: &[Ingredient]) -> Vec<(String, Vec<Ingredient>)> {
 #[template(path = "partials/groceries-generate-modal.html")]
 pub struct GenerateModalTemplate {
     pub from: String,
+    pub to: String,
 }
 
 pub async fn generate_modal(template: Template, user: AuthUser) -> impl IntoResponse {
     let tomorrow = imkitchen_core::mealplan::now(&user.tz) + time::Duration::days(1);
+    let to = tomorrow + time::Duration::days(6);
     let from = format!(
         "{}-{:02}-{:02}",
         tomorrow.year(),
         tomorrow.month() as u8,
         tomorrow.day()
     );
-    template.render(GenerateModalTemplate { from })
+    let to = format!("{}-{:02}-{:02}", to.year(), to.month() as u8, to.day());
+    template.render(GenerateModalTemplate { from, to })
 }
 
 #[derive(askama::Template)]
@@ -175,7 +178,7 @@ pub struct GenerateButtonTemplate {
 #[derive(Deserialize, Debug)]
 pub struct GenerateAction {
     pub from: String,
-    pub days: u8,
+    pub to: String,
 }
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
@@ -189,16 +192,29 @@ pub async fn generate_action(
         app.identity.meal_preferences.load(&user.id),
         template
     );
-    let date: u64 = imkitchen_web_shared::try_response!(sync anyhow:
+    let from_date: u64 = imkitchen_web_shared::try_response!(sync anyhow:
         input.from.replace('-', "").parse().map_err(|e| anyhow::anyhow!("invalid from date: {e}")),
         template
     );
+    let to_date: u64 = imkitchen_web_shared::try_response!(sync anyhow:
+        input.to.replace('-', "").parse().map_err(|e| anyhow::anyhow!("invalid to date: {e}")),
+        template
+    );
+    let from_dt = imkitchen_web_shared::try_response!(sync anyhow:
+        u64_to_date(from_date).ok_or_else(|| anyhow::anyhow!("invalid from date")),
+        template
+    );
+    let to_dt = imkitchen_web_shared::try_response!(sync anyhow:
+        u64_to_date(to_date).ok_or_else(|| anyhow::anyhow!("invalid to date")),
+        template
+    );
+    let days = ((to_dt - from_dt).whole_days() + 1).max(1) as u8;
     imkitchen_web_shared::try_response!(
         app.core.shopping.generate(
             Generate {
                 household_size: preferences.household_size,
-                date,
-                days: input.days
+                date: from_date,
+                days
             },
             &user.id
         ),
