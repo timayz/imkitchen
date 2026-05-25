@@ -4,7 +4,7 @@ use axum::{
     response::IntoResponse,
 };
 use base64::{Engine, engine::general_purpose::STANDARD};
-use imkitchen_web_shared::{AppState, auth::AuthUser, template::Template};
+use imkitchen_web_shared::{AppState, auth::RequirePremium, template::Template};
 
 #[tracing::instrument(skip_all)]
 pub async fn get(
@@ -40,7 +40,7 @@ pub struct ThumbnailTemplate {
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn upload(
     template: Template,
-    user: AuthUser,
+    RequirePremium(user): RequirePremium,
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
     mut multipart: Multipart,

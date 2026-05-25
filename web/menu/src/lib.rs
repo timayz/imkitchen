@@ -7,7 +7,7 @@ use time::OffsetDateTime;
 
 use imkitchen_web_shared::{
     AppState,
-    auth::AuthUser,
+    auth::{AuthUser, RequirePremium},
     template::{Status as TemplateStatus, Template, filters},
 };
 
@@ -137,7 +137,7 @@ pub async fn page(
 pub async fn generate_action(
     template: Template,
     State(app): State<AppState>,
-    user: AuthUser,
+    RequirePremium(user): RequirePremium,
     Path((date,)): Path<(String,)>,
 ) -> impl IntoResponse {
     let preferences = imkitchen_web_shared::try_response!(anyhow:
@@ -145,14 +145,10 @@ pub async fn generate_action(
         template
     );
 
-    let randomize = if user.is_premium() {
-        Some(Randomize {
-            cuisine_variety_weight: preferences.cuisine_variety_weight,
-            dietary_restrictions: preferences.dietary_restrictions.to_vec(),
-        })
-    } else {
-        None
-    };
+    let randomize = Some(Randomize {
+        cuisine_variety_weight: preferences.cuisine_variety_weight,
+        dietary_restrictions: preferences.dietary_restrictions.to_vec(),
+    });
 
     let bounds = imkitchen_web_shared::try_response!(sync anyhow: imkitchen_core::mealplan::month_bounds_from_date(&date, &user.tz), template);
     let now_bounds = imkitchen_web_shared::try_response!(sync anyhow: imkitchen_core::mealplan::month_bounds_from_now(&user.tz), template);
@@ -167,8 +163,6 @@ pub async fn generate_action(
             bounds.last.day() - bounds.date.day() + 1,
         )
     };
-
-    println!("{start} {days}");
 
     imkitchen_web_shared::try_response!(
         app.core.mealplan.generate(Generate {

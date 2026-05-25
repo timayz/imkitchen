@@ -8,7 +8,7 @@ use imkitchen_types::recipe::{IngredientUnitFormat, Instruction};
 use imkitchen_types::{mealplan::DaySlotRecipe, recipe::RecipeType};
 
 use imkitchen_web_shared::AppState;
-use imkitchen_web_shared::auth::{AuthToken, AuthUser};
+use imkitchen_web_shared::auth::{AuthToken, AuthUser, RequirePremium};
 use imkitchen_web_shared::template::{NotFoundTemplate, Template, filters};
 
 #[derive(askama::Template)]
@@ -296,7 +296,7 @@ pub struct KitchenStepsTemplate {
 #[tracing::instrument(skip_all, fields(user = tracing::field::Empty))]
 pub async fn update_slot_step_action(
     template: Template,
-    user: AuthUser,
+    RequirePremium(user): RequirePremium,
     State(app): State<AppState>,
     Path((date, recipe_id, direction)): Path<(String, String, String)>,
 ) -> impl IntoResponse {
@@ -498,7 +498,7 @@ pub struct KitchenDishTemplate {
 #[tracing::instrument(skip_all, fields(user = tracing::field::Empty))]
 pub async fn select_dish(
     template: Template,
-    user: AuthUser,
+    RequirePremium(user): RequirePremium,
     State(app): State<AppState>,
     Path((date, recipe_id)): Path<(String, String)>,
 ) -> impl IntoResponse {
@@ -621,6 +621,6 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
             "/kitchen/{date}/{recipe_id}/step/{direction}",
             post(update_slot_step_action),
         )
-        .route("/kitchen/{date}/{recipe_id}/select-dish", get(select_dish))
+        .route("/kitchen/{date}/{recipe_id}/select-dish", post(select_dish))
         .route("/kitchen/{date}", get(page))
 }

@@ -14,7 +14,7 @@ use strum::VariantArray;
 
 use imkitchen_web_shared::{
     AppState,
-    auth::AuthUser,
+    auth::{AuthUser, RequirePremium},
     template::{ForbiddenTemplate, Template, ToastSuccessTemplate, filters},
 };
 
@@ -132,7 +132,7 @@ pub async fn page(
 pub async fn action(
     template: Template,
     State(app): State<AppState>,
-    user: AuthUser,
+    RequirePremium(user): RequirePremium,
     Path((id,)): Path<(String,)>,
     Form(input): Form<EditForm>,
 ) -> impl IntoResponse {
