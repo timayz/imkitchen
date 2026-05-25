@@ -6,6 +6,7 @@ use axum::{
 use base64::{Engine, engine::general_purpose::STANDARD};
 use imkitchen_web_shared::{AppState, auth::AuthUser, template::Template};
 
+
 #[tracing::instrument(skip_all)]
 pub async fn get(
     State(app): State<AppState>,
@@ -45,10 +46,6 @@ pub async fn upload(
     Path((id,)): Path<(String,)>,
     mut multipart: Multipart,
 ) -> impl IntoResponse {
-    if !app.config.feature.community && !user.is_admin() {
-        return StatusCode::METHOD_NOT_ALLOWED.into_response();
-    }
-
     let Some(field) = imkitchen_web_shared::try_response!(anyhow: multipart.next_field(), template)
     else {
         imkitchen_web_shared::try_response!(sync:

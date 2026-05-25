@@ -1,10 +1,7 @@
-pub mod comment;
-pub mod comment_rating;
 pub mod contact;
 pub mod favorite;
 pub mod meal_preferences;
 pub mod mealplan;
-pub mod rating;
 pub mod recipe;
 pub mod recipe_share;
 pub mod shopping;

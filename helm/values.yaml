@@ -49,9 +49,6 @@ config:
     from_address: "no-reply@imkitchen.app"
     contact_address: "contact@imkitchen.app"
 
-  feature:
-    community: true
-
   premium:
     monthly_price: 499
     annual_rate: 20

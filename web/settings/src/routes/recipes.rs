@@ -1,6 +1,5 @@
 use axum::{
     extract::{Query, State},
-    http::StatusCode,
     response::{IntoResponse, Redirect},
 };
 use evento::cursor::{Args, ReadResult, Value};
@@ -137,10 +136,6 @@ pub async fn share_all(
     State(app): State<AppState>,
     user: AuthUser,
 ) -> impl IntoResponse {
-    if !app.config.feature.community && !user.is_admin() {
-        return StatusCode::METHOD_NOT_ALLOWED.into_response();
-    }
-
     let Some(ref username) = user.username else {
         return (
             [("ts-swap", "skip")],
@@ -165,10 +160,6 @@ pub async fn make_all_private(
     State(app): State<AppState>,
     user: AuthUser,
 ) -> impl IntoResponse {
-    if !app.config.feature.community && !user.is_admin() {
-        return StatusCode::METHOD_NOT_ALLOWED.into_response();
-    }
-
     imkitchen_web_shared::try_response!(app.core.recipe.make_all_private(&user.id), template);
 
     template

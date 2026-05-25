@@ -299,39 +299,6 @@ pub mod filters {
     }
 
     #[askama::filter_fn]
-    pub fn views(count: &u64, _values: &dyn askama::Values) -> askama::Result<String> {
-        let value = match *count {
-            n if n >= 1_000_000_000 => {
-                let billions = n as f64 / 1_000_000_000.0;
-                if billions >= 10.0 {
-                    format!("{}B", (billions.round()) as u64)
-                } else {
-                    format!("{:.1}B", billions).replace(".0B", "B")
-                }
-            }
-            n if n >= 1_000_000 => {
-                let millions = n as f64 / 1_000_000.0;
-                if millions >= 10.0 {
-                    format!("{}M", (millions.round()) as u64)
-                } else {
-                    format!("{:.1}M", millions).replace(".0M", "M")
-                }
-            }
-            n if n >= 1_000 => {
-                let thousands = n as f64 / 1_000.0;
-                if thousands >= 10.0 {
-                    format!("{}K", (thousands.round()) as u64)
-                } else {
-                    format!("{:.1}K", thousands).replace(".0K", "K")
-                }
-            }
-            n => n.to_string(),
-        };
-
-        Ok(value)
-    }
-
-    #[askama::filter_fn]
     pub fn price(value: &f64, _values: &dyn askama::Values) -> askama::Result<String> {
         Ok(format!("{:.2}", value))
     }

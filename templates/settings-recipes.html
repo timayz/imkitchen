@@ -26,8 +26,6 @@
 
 {% block sidebar_bottom %}
 
-{% if let Ok(config) = "config"|value::<crate::config::Config> %}
-{% if config.feature.community || user.is_admin() %}
 <div class="hidden lg:block bg-paper rounded-xl shadow-md p-4">
   <div class="space-y-2">
     <div id="share-all-button">
@@ -45,16 +43,12 @@
     </div>
   </div>
 </div>
-{% endif %}
-{% endif %}
 
 {% endblock %}
 
 {% block settings_content %}
 <div>
   <!-- Mobile Quick Actions -->
-  {% if let Ok(config) = "config"|value::<crate::config::Config> %}
-  {% if config.feature.community || user.is_admin() %}
   <div class="lg:hidden flex gap-2 mb-4">
     <div id="share-all-button-mobile">
       {% if has_shared %}
@@ -70,8 +64,6 @@
       {% endif %}
     </div>
   </div>
-  {% endif %}
-  {% endif %}
 
   <!-- Filters -->
   <div class="bg-paper rounded-xl shadow-md p-4 mb-6">
