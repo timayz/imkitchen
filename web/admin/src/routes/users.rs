@@ -261,10 +261,7 @@ pub async fn update_role(
         template
     );
 
-    imkitchen_web_shared::try_response!(
-        app.identity.change_role(&id, role, &admin.id),
-        template
-    );
+    imkitchen_web_shared::try_response!(app.identity.change_role(&id, role, &admin.id), template);
 
     let user = imkitchen_web_shared::try_response!(anyhow_opt:
         app.identity.admin(&id),
