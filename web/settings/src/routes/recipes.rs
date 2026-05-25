@@ -50,7 +50,6 @@ pub struct PageQuery {
     pub search: Option<String>,
     pub sort_by: Option<SortBy>,
     pub no_image: Option<bool>,
-    pub in_meal_plan: Option<bool>,
 }
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
@@ -80,11 +79,7 @@ pub async fn page(
     let recipes = imkitchen_web_shared::try_page_response!(
         app.core.recipe.filter_user(RecipesQuery {
             exclude_ids: None,
-            user_id: if input.in_meal_plan.unwrap_or(false) {
-                None
-            } else {
-                Some(user.id.to_owned())
-            },
+            user_id: Some(user.id.to_owned()),
             recipe_type,
             cuisine_type,
             is_shared: None,
@@ -95,11 +90,7 @@ pub async fn page(
             },
             dietary_restrictions: vec![],
             dietary_where_any: false,
-            in_meal_plan: if input.in_meal_plan.unwrap_or(false) {
-                Some((user.id.to_owned(), true))
-            } else {
-                None
-            },
+            in_meal_plan: None,
             sort_by: input.sort_by.unwrap_or_default(),
             args: args.limit(20),
             search: input.search,
