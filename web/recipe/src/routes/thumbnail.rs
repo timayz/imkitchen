@@ -6,7 +6,6 @@ use axum::{
 use base64::{Engine, engine::general_purpose::STANDARD};
 use imkitchen_web_shared::{AppState, auth::AuthUser, template::Template};
 
-
 #[tracing::instrument(skip_all)]
 pub async fn get(
     State(app): State<AppState>,

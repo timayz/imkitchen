@@ -3,6 +3,7 @@ pub mod user;
 pub mod user_fts;
 pub mod user_stat;
 
+use evento::metadata::Event;
 use evento::{
     AggregatorEvent, Executor,
     metadata::RawEvent,
@@ -14,7 +15,6 @@ use imkitchen_types::recipe_share::{AllMadePrivate, AllSharedToCommunity};
 use sea_query::{Expr, ExprTrait, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::SqlitePool;
-use evento::metadata::Event;
 
 pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
     SubscriptionBuilder::new("recipe-query")
