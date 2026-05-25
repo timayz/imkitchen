@@ -132,7 +132,7 @@
 
     <!-- AIDA: INTEREST - Show what they're missing with concrete examples -->
     <p class="text-primary-50 mb-4">
-      {{ "You have"|t }} <strong>{{ "7 recipes"|t }}</strong> {{ "in your plan right now. Premium users plan with"|t }} <strong>{{ "all their recipes"|t }}</strong> {{ "and get complete meals with appetizers, sides, and desserts automatically paired."|t }}
+      {{ "You're currently in read-only mode. Premium unlocks the ability to create, edit, plan, and cook with the full kitchen experience."|t }}
     </p>
 
     <!-- AIDA: DESIRE - Tangible benefits grid -->
@@ -141,25 +141,25 @@
         <svg class="w-5 h-5 text-primary-200 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
         </svg>
-        <span class="text-sm"><strong>{{ "Unlimited recipes"|t }}</strong> {{ "in your meal plan"|t }}</span>
+        <span class="text-sm"><strong>{{ "Create and edit"|t }}</strong> {{ "your own recipes"|t }}</span>
       </div>
       <div class="flex items-start gap-2">
         <svg class="w-5 h-5 text-primary-200 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
         </svg>
-        <span class="text-sm"><strong>{{ "All recipe types"|t }}</strong> {{ "(appetizers, sides, desserts)"|t }}</span>
+        <span class="text-sm"><strong>{{ "Generate"|t }}</strong> {{ "personalized meal plans"|t }}</span>
       </div>
       <div class="flex items-start gap-2">
         <svg class="w-5 h-5 text-primary-200 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
         </svg>
-        <span class="text-sm"><strong>{{ "Meal preferences"|t }}</strong> {{ "applied automatically"|t }}</span>
+        <span class="text-sm"><strong>{{ "Cook"|t }}</strong> {{ "with step-by-step kitchen tools"|t }}</span>
       </div>
       <div class="flex items-start gap-2">
         <svg class="w-5 h-5 text-primary-200 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
         </svg>
-        <span class="text-sm"><strong>{{ "Batch import"|t }}</strong> {{ "recipes in bulk"|t }}</span>
+        <span class="text-sm"><strong>{{ "Bulk import"|t }}</strong> {{ "recipes from the web"|t }}</span>
       </div>
       <div class="flex items-start gap-2">
         <svg class="w-5 h-5 text-primary-200 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -191,33 +191,25 @@
   </div>
 </div>
 
-<!-- What you're currently limited to -->
+<!-- What you can do in read-only mode -->
 <div class="bg-paper rounded-xl shadow-md p-6">
   <h3 class="font-bold font-serif mb-4">{{ "Your Free Plan Includes"|t }}</h3>
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
     <div class="flex items-center gap-2 text-sm text-ink-2">
       <span class="text-primary-500">✓</span>
-      <span>{{ "Generate all future weeks"|t }}</span>
+      <span>{{ "Browse community recipes"|t }}</span>
     </div>
     <div class="flex items-center gap-2 text-sm text-ink-2">
       <span class="text-primary-500">✓</span>
-      <span>{{ "Up to 7 recipes in plan"|t }}</span>
+      <span>{{ "Preview meal plans and kitchen tools"|t }}</span>
     </div>
     <div class="flex items-center gap-2 text-sm text-ink-2">
       <span class="text-primary-500">✓</span>
-      <span>{{ "Main courses only"|t }}</span>
+      <span>{{ "Read-only access to all features"|t }}</span>
     </div>
     <div class="flex items-center gap-2 text-sm text-ink-2">
       <span class="text-primary-500">✓</span>
-      <span>{{ "Unlimited regenerations"|t }}</span>
-    </div>
-    <div class="flex items-center gap-2 text-sm text-ink-2">
-      <span class="text-primary-500">✓</span>
-      <span>{{ "Recipe management & sharing"|t }}</span>
-    </div>
-    <div class="flex items-center gap-2 text-sm text-ink-2">
-      <span class="text-primary-500">✓</span>
-      <span>{{ "Community access"|t }}</span>
+      <span>{{ "Upgrade anytime to create and edit"|t }}</span>
     </div>
   </div>
 
@@ -230,7 +222,7 @@
             d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
           </path>
         </svg>
-        <span>{{ "No appetizers, sides, or desserts"|t }}</span>
+        <span>{{ "Cannot create or edit recipes"|t }}</span>
       </div>
       <div class="flex items-center gap-2 text-sm text-ink-3">
         <svg class="w-4 h-4 text-ink-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -238,7 +230,7 @@
             d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
           </path>
         </svg>
-        <span>{{ "No meal preference filtering"|t }}</span>
+        <span>{{ "Cannot generate meal plans"|t }}</span>
       </div>
       <div class="flex items-center gap-2 text-sm text-ink-3">
         <svg class="w-4 h-4 text-ink-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -246,7 +238,7 @@
             d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
           </path>
         </svg>
-        <span>{{ "No batch recipe import"|t }}</span>
+        <span>{{ "Cannot use step-by-step kitchen tools"|t }}</span>
       </div>
       <div class="flex items-center gap-2 text-sm text-ink-3">
         <svg class="w-4 h-4 text-ink-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -254,7 +246,7 @@
             d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
           </path>
         </svg>
-        <span>{{ "No priority support"|t }}</span>
+        <span>{{ "Cannot bulk import recipes"|t }}</span>
       </div>
     </div>
   </div>

@@ -400,23 +400,23 @@
               <span class="text-2xl">✨</span>
               <h3 class="font-bold font-serif text-lg text-amber-900">{{ "Unlock the Full Experience"|t }}</h3>
             </div>
-            <p class="text-amber-800 text-sm mb-3">{{ "You're on the free plan. Upgrade to Premium to get:"|t }}</p>
+            <p class="text-amber-800 text-sm mb-3">{{ "You're viewing in read-only mode. Upgrade to Premium to:"|t }}</p>
             <div class="grid grid-cols-1 gap-2 text-sm">
               <div class="flex items-center gap-2 text-amber-700">
                 <span class="text-primary-500">✓</span>
-                <span>{{ "Unlimited recipes in plan"|t }}</span>
+                <span>{{ "Create and edit your own recipes"|t }}</span>
               </div>
               <div class="flex items-center gap-2 text-amber-700">
                 <span class="text-primary-500">✓</span>
-                <span>{{ "Appetizers, desserts & sides"|t }}</span>
+                <span>{{ "Generate personalized meal plans"|t }}</span>
               </div>
               <div class="flex items-center gap-2 text-amber-700">
                 <span class="text-primary-500">✓</span>
-                <span>{{ "Meal preferences applied"|t }}</span>
+                <span>{{ "Cook with step-by-step kitchen tools"|t }}</span>
               </div>
               <div class="flex items-center gap-2 text-amber-700">
                 <span class="text-primary-500">✓</span>
-                <span>{{ "Batch recipe import"|t }}</span>
+                <span>{{ "Bulk import recipes from the web"|t }}</span>
               </div>
             </div>
           </div>
@@ -437,7 +437,7 @@
           {% if let Some(slot) = slot %}
           <!-- Appetizer (Completed) -->
           {% if let Some(appetizer) = slot.appetizer %}
-          <button ts-req="/kitchen/{{ date }}/{{ appetizer.id }}/select-dish" ts-target="#current-recipe-card"
+          <button ts-req="/kitchen/{{ date }}/{{ appetizer.id }}/select-dish" ts-req-method="post" ts-target="#current-recipe-card"
             class="w-full p-3 bg-blue-50 border border-blue-200 rounded-xl text-left hover:border-blue-400 transition">
             <div class="flex items-center gap-3">
               <span class="text-2xl">🥗</span>
@@ -466,7 +466,7 @@
           {% endif %}
 
           <!-- Main Course (Active) -->
-          <button ts-req="/kitchen/{{ date }}/{{ slot.main_course.id }}/select-dish" ts-target="#current-recipe-card"
+          <button ts-req="/kitchen/{{ date }}/{{ slot.main_course.id }}/select-dish" ts-req-method="post" ts-target="#current-recipe-card"
             class="w-full p-3 bg-orange-50 border border-orange-200 rounded-xl text-left hover:border-orange-400">
             <div class="flex items-center gap-3">
               <span class="text-2xl">🍛</span>
@@ -495,7 +495,7 @@
 
           <!-- Accompaniment -->
           {% if let Some(accompaniment) = slot.accompaniment %}
-          <button ts-req="/kitchen/{{ date }}/{{ accompaniment.id }}/select-dish" ts-target="#current-recipe-card"
+          <button ts-req="/kitchen/{{ date }}/{{ accompaniment.id }}/select-dish" ts-req-method="post" ts-target="#current-recipe-card"
             class="w-full p-3 bg-purple-50 border border-purple-200 rounded-xl text-left hover:border-purple-400 transition ml-4">
             <div class="flex items-center gap-3">
               <span class="text-xl">🍚</span>
@@ -525,7 +525,7 @@
 
           <!-- Dessert -->
           {% if let Some(dessert) = slot.dessert %}
-          <button ts-req="/kitchen/{{ date }}/{{ dessert.id }}/select-dish" ts-target="#current-recipe-card"
+          <button ts-req="/kitchen/{{ date }}/{{ dessert.id }}/select-dish" ts-req-method="post" ts-target="#current-recipe-card"
             class="w-full p-3 bg-pink-50 border border-pink-200 rounded-xl text-left hover:border-pink-400 transition">
             <div class="flex items-center gap-3">
               <span class="text-2xl">🍰</span>
@@ -609,7 +609,7 @@
       {% if let Some(slot) = slot %}
       <!-- Same dish cards as sidebar -->
       {% if let Some(appetizer) = slot.appetizer %}
-      <button ts-req="/kitchen/{{ date }}/{{ appetizer.id }}/select-dish" ts-target="#current-recipe-card"
+      <button ts-req="/kitchen/{{ date }}/{{ appetizer.id }}/select-dish" ts-req-method="post" ts-target="#current-recipe-card"
         ts-req-after="toggle-meals-panel" class="w-full p-3 bg-blue-50 border border-blue-200 rounded-xl text-left">
         <div class="flex items-center gap-3">
           <span class="text-2xl">🥗</span>
@@ -633,7 +633,7 @@
         </div>
       </button>
       {% endif %}
-      <button ts-req="/kitchen/{{ date }}/{{ slot.main_course.id }}/select-dish" ts-target="#current-recipe-card"
+      <button ts-req="/kitchen/{{ date }}/{{ slot.main_course.id }}/select-dish" ts-req-method="post" ts-target="#current-recipe-card"
         ts-req-after="toggle-meals-panel" class="w-full p-3 bg-orange-50 border border-orange-200 rounded-xl text-left">
         <div class="flex items-center gap-3">
           <span class="text-2xl">🍛</span>
@@ -657,7 +657,7 @@
         </div>
       </button>
       {% if let Some(accompaniment) = slot.accompaniment %}
-      <button ts-req="/kitchen/{{ date }}/{{ accompaniment.id }}/select-dish" ts-target="#current-recipe-card"
+      <button ts-req="/kitchen/{{ date }}/{{ accompaniment.id }}/select-dish" ts-req-method="post" ts-target="#current-recipe-card"
         ts-req-after="toggle-meals-panel" class="w-full p-3 bg-purple-50 border border-purple-200 rounded-xl text-left">
         <div class="flex items-center gap-3">
           <span class="text-2xl">🍚</span>
@@ -682,7 +682,7 @@
       </button>
       {% endif %}
       {% if let Some(dessert) = slot.dessert %}
-      <button ts-req="/kitchen/{{ date }}/{{ dessert.id }}/select-dish" ts-target="#current-recipe-card"
+      <button ts-req="/kitchen/{{ date }}/{{ dessert.id }}/select-dish" ts-req-method="post" ts-target="#current-recipe-card"
         ts-req-after="toggle-meals-panel" class="w-full p-3 bg-pink-50 border border-pink-200 rounded-xl text-left">
         <div class="flex items-center gap-3">
           <span class="text-2xl">🍰</span>

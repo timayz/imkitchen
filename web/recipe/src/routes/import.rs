@@ -11,8 +11,8 @@ use serde::Deserialize;
 
 use imkitchen_web_shared::{
     AppState,
-    auth::AuthUser,
-    template::{SERVER_ERROR_MESSAGE, Template, UpgradeModalTemplate, filters},
+    auth::{AuthUser, RequirePremium},
+    template::{SERVER_ERROR_MESSAGE, Template, filters},
 };
 
 #[derive(Deserialize, Default, Clone)]
@@ -77,13 +77,9 @@ pub async fn page(template: Template, user: AuthUser) -> impl IntoResponse {
 pub async fn action(
     template: Template,
     State(app): State<AppState>,
-    user: AuthUser,
+    RequirePremium(user): RequirePremium,
     Json(recipes): Json<Vec<ImportJson>>,
 ) -> impl IntoResponse {
-    if !user.is_premium() {
-        return ([("ts-swap", "skip")], template.render(UpgradeModalTemplate)).into_response();
-    }
-
     let mut id = None;
     let mut error_recipes = vec![];
 

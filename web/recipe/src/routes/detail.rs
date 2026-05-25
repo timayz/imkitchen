@@ -14,7 +14,7 @@ use imkitchen_types::recipe::{IngredientUnitFormat, RecipeType};
 
 use imkitchen_web_shared::{
     AppState,
-    auth::AuthUser,
+    auth::{AuthUser, RequirePremium},
     template::{NotFoundTemplate, Status, Template, filters},
 };
 
@@ -314,7 +314,7 @@ pub async fn page(
 pub async fn share_to_community_action(
     template: Template,
     State(app): State<AppState>,
-    user: AuthUser,
+    RequirePremium(user): RequirePremium,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
     let Some(ref username) = user.username else {
@@ -342,7 +342,7 @@ pub async fn share_to_community_action(
 pub async fn make_private_action(
     template: Template,
     State(app): State<AppState>,
-    user: AuthUser,
+    RequirePremium(user): RequirePremium,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
     imkitchen_web_shared::try_response!(app.core.recipe.make_private(&id, &user.id), template);
@@ -359,7 +359,7 @@ pub async fn make_private_action(
 pub async fn delete_action(
     template: Template,
     State(app): State<AppState>,
-    user: AuthUser,
+    RequirePremium(user): RequirePremium,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
     imkitchen_web_shared::try_response!(app.core.recipe.delete(&id, &user.id), template);
@@ -410,7 +410,7 @@ pub struct SaveButtonTemplate {
 
 pub async fn save(
     template: Template,
-    user: AuthUser,
+    RequirePremium(user): RequirePremium,
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
@@ -440,7 +440,7 @@ pub async fn save(
 
 pub async fn unsave(
     template: Template,
-    user: AuthUser,
+    RequirePremium(user): RequirePremium,
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {

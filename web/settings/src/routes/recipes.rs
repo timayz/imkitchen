@@ -11,7 +11,7 @@ use strum::VariantArray;
 
 use imkitchen_web_shared::{
     AppState,
-    auth::AuthUser,
+    auth::{AuthUser, RequirePremium},
     template::{Template, filters},
 };
 
@@ -134,7 +134,7 @@ pub struct ShareButtonTemplate {
 pub async fn share_all(
     template: Template,
     State(app): State<AppState>,
-    user: AuthUser,
+    RequirePremium(user): RequirePremium,
 ) -> impl IntoResponse {
     let Some(ref username) = user.username else {
         return (
@@ -158,7 +158,7 @@ pub async fn share_all(
 pub async fn make_all_private(
     template: Template,
     State(app): State<AppState>,
-    user: AuthUser,
+    RequirePremium(user): RequirePremium,
 ) -> impl IntoResponse {
     imkitchen_web_shared::try_response!(app.core.recipe.make_all_private(&user.id), template);
 
@@ -170,7 +170,7 @@ pub async fn make_all_private(
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn create(
     template: Template,
-    user: AuthUser,
+    RequirePremium(user): RequirePremium,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
     let id = match imkitchen_web_shared::try_response!(anyhow: app.core.recipe.find_user_draft(&user.id), template)
