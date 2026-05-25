@@ -1,6 +1,6 @@
 # Container image.
 image:
-  tag: "0.18.2"
+  tag: "1.0.5"
 
 # Extra environment variables injected into the container, for
 # store credentials that live in plain text.
