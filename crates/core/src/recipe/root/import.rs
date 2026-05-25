@@ -41,33 +41,31 @@ impl<E: Executor + Clone> super::Module<E> {
         if let Some(existing_id) = self
             .find_user_to_upsert(&request_by, input.origin.as_deref(), &input.name)
             .await?
+            && let Some(existing) = self.load(&existing_id).await?
+            && existing.owner_id == request_by
         {
-            if let Some(existing) = self.load(&existing_id).await? {
-                if existing.owner_id == request_by {
-                    self.update(
-                        UpdateInput {
-                            id: existing_id.clone(),
-                            recipe_type: input.recipe_type,
-                            name: input.name,
-                            origin: input.origin,
-                            description: input.description,
-                            household_size: input.household_size,
-                            prep_time: input.prep_time,
-                            cook_time: input.cook_time,
-                            ingredients: input.ingredients,
-                            instructions: input.instructions,
-                            dietary_restrictions: input.dietary_restrictions,
-                            cuisine_type: input.cuisine_type,
-                            accepts_accompaniment: input.accepts_accompaniment,
-                            advance_prep: input.advance_prep,
-                        },
-                        &request_by,
-                    )
-                    .await?;
+            self.update(
+                UpdateInput {
+                    id: existing_id.clone(),
+                    recipe_type: input.recipe_type,
+                    name: input.name,
+                    origin: input.origin,
+                    description: input.description,
+                    household_size: input.household_size,
+                    prep_time: input.prep_time,
+                    cook_time: input.cook_time,
+                    ingredients: input.ingredients,
+                    instructions: input.instructions,
+                    dietary_restrictions: input.dietary_restrictions,
+                    cuisine_type: input.cuisine_type,
+                    accepts_accompaniment: input.accepts_accompaniment,
+                    advance_prep: input.advance_prep,
+                },
+                &request_by,
+            )
+            .await?;
 
-                    return Ok(existing_id);
-                }
-            }
+            return Ok(existing_id);
         }
 
         Ok(evento::create()
