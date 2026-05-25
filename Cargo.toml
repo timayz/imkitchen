@@ -52,7 +52,7 @@ urlencoding = "2.1"
 base64 = "0.22"
 url = "2.5"
 minify-html = "0.18"
-oxc = { version = "0.129.0", features = ["minifier", "codegen"] }
+oxc = { version = "0.132.0", features = ["minifier", "codegen"] }
 lightningcss = { version = "1.0.0-alpha.71", default-features = false }
 ulid = "1.2"
 sea-query = { version = "1.0.0-rc.33", default-features = false, features = ["derive", "audit", "backend-sqlite"] }
@@ -61,7 +61,7 @@ async-trait = "0.1"
 futures = "0.3"
 time = { version = "0.3", features = ["formatting", "parsing", "macros"] }
 strum = { version = "0.28", features = ["derive"] }
-sha3 = "0.11"
+sha3 = "0.12"
 temp-dir = "0.2"
 rand = "0.10"
 tokio-cron-scheduler = "0.15"
