@@ -4,6 +4,7 @@ version = "1.0.4"
 edition.workspace = true
 
 [dependencies]
+anyhow = { workspace = true }
 axum = { workspace = true }
 askama = { workspace = true }
 serde = { workspace = true }

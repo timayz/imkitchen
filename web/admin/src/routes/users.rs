@@ -219,3 +219,67 @@ pub async fn toggle_premium(
         })
         .into_response()
 }
+
+#[derive(askama::Template)]
+#[template(path = "partials/admin-user-edit-modal.html")]
+pub struct EditModalTemplate {
+    pub user: AdminView,
+}
+
+#[tracing::instrument(skip_all, fields(admin = admin.id))]
+pub async fn edit_modal(
+    template: Template,
+    Path((id,)): Path<(String,)>,
+    State(app): State<AppState>,
+    admin: AuthAdmin,
+) -> impl IntoResponse {
+    tracing::debug!("opening edit modal for {id} by {}", admin.id);
+
+    let user = imkitchen_web_shared::try_response!(anyhow_opt:
+        app.identity.admin(&id),
+        template
+    );
+
+    template.render(EditModalTemplate { user }).into_response()
+}
+
+#[derive(Deserialize)]
+pub struct UpdateRoleForm {
+    pub role: String,
+}
+
+#[tracing::instrument(skip_all, fields(admin = admin.id))]
+pub async fn update_role(
+    template: Template,
+    Path((id,)): Path<(String,)>,
+    State(app): State<AppState>,
+    admin: AuthAdmin,
+    axum::Form(form): axum::Form<UpdateRoleForm>,
+) -> impl IntoResponse {
+    let role = imkitchen_web_shared::try_response!(sync anyhow:
+        Role::from_str(&form.role).map_err(|_| anyhow::anyhow!("invalid role")),
+        template
+    );
+
+    imkitchen_web_shared::try_response!(app.identity.change_role(&id, role, &admin.id), template);
+
+    let user = imkitchen_web_shared::try_response!(anyhow_opt:
+        app.identity.admin(&id),
+        template
+    );
+
+    let users = ReadResult {
+        page_info: Default::default(),
+        edges: vec![Edge {
+            cursor: "".to_owned().into(),
+            node: user,
+        }],
+    };
+
+    template
+        .render(UsersTemplate {
+            users,
+            ..Default::default()
+        })
+        .into_response()
+}

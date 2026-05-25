@@ -7,7 +7,8 @@ use sqlx::{SqlitePool, prelude::FromRow};
 
 use crate::types::password::ResetCompleted;
 use crate::types::user::{
-    Activated, LoggedIn, Logout, MadeAdmin, Role, State, Suspended, User, UsernameChanged,
+    Activated, LoggedIn, Logout, MadeAdmin, Role, RoleChanged, State, Suspended, User,
+    UsernameChanged,
 };
 use imkitchen_billing::types::subscription::{
     LifePremiumToggled, StripePaymentIntentSucceeded, Subscription,
@@ -53,6 +54,10 @@ impl Login {
         self.role == Role::Admin
     }
 
+    pub fn is_chef(&self) -> bool {
+        self.role == Role::Chef || self.role == Role::Admin
+    }
+
     pub fn is_premium(&self) -> bool {
         let Ok(now): Result<u64, _> = time::UtcDateTime::now().unix_timestamp().try_into() else {
             return false;
@@ -76,6 +81,7 @@ pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Lo
         .handler(handle_actived())
         .handler(handle_susended())
         .handler(handle_made_admin())
+        .handler(handle_role_changed())
         .handler(handle_reset_completed())
         .handler(handle_username_changed())
         .handler(handle_life_premium_toggled())
@@ -211,6 +217,19 @@ async fn handle_made_admin(_event: Event<MadeAdmin>, data: &mut LoginView) -> an
     data.role.0 = Role::Admin;
     for login in data.logins.iter_mut() {
         login.role = Role::Admin;
+    }
+
+    Ok(())
+}
+
+#[evento::handler]
+async fn handle_role_changed(
+    event: Event<RoleChanged>,
+    data: &mut LoginView,
+) -> anyhow::Result<()> {
+    data.role.0 = event.data.role.to_owned();
+    for login in data.logins.iter_mut() {
+        login.role = event.data.role.to_owned();
     }
 
     Ok(())

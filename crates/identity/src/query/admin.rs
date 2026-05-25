@@ -13,7 +13,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use strum::{AsRefStr, Display, EnumString, VariantArray};
 
 use crate::types::user::{
-    Activated, MadeAdmin, Registered, Role, State, Suspended, User, UsernameChanged,
+    Activated, MadeAdmin, Registered, Role, RoleChanged, State, Suspended, User, UsernameChanged,
 };
 use imkitchen_billing::types::subscription::{
     LifePremiumToggled, StripePaymentIntentSucceeded, Subscription,
@@ -66,6 +66,10 @@ pub struct AdminView {
 impl AdminView {
     pub fn is_admin(&self) -> bool {
         self.role.0 == Role::Admin
+    }
+
+    pub fn is_chef(&self) -> bool {
+        self.role.0 == Role::Chef || self.role.0 == Role::Admin
     }
 
     pub fn is_premium(&self) -> bool {
@@ -212,6 +216,7 @@ pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Ad
         .handler(handle_actived())
         .handler(handle_susended())
         .handler(handle_made_admin())
+        .handler(handle_role_changed())
         .handler(handle_registered())
         .handler(handle_life_premium_toggled())
         .handler(handle_payment_intent_succeeded())
@@ -323,6 +328,16 @@ async fn handle_registered(event: Event<Registered>, data: &mut AdminView) -> an
 #[evento::handler]
 async fn handle_made_admin(_event: Event<MadeAdmin>, data: &mut AdminView) -> anyhow::Result<()> {
     data.role.0 = Role::Admin;
+
+    Ok(())
+}
+
+#[evento::handler]
+async fn handle_role_changed(
+    event: Event<RoleChanged>,
+    data: &mut AdminView,
+) -> anyhow::Result<()> {
+    data.role.0 = event.data.role.to_owned();
 
     Ok(())
 }

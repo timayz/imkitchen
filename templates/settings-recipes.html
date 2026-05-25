@@ -26,6 +26,7 @@
 
 {% block sidebar_bottom %}
 
+{% if user.is_chef() %}
 <div class="hidden lg:block bg-paper rounded-xl shadow-md p-4">
   <div class="space-y-2">
     <div id="share-all-button">
@@ -43,11 +44,13 @@
     </div>
   </div>
 </div>
+{% endif %}
 
 {% endblock %}
 
 {% block settings_content %}
 <div>
+  {% if user.is_chef() %}
   <!-- Mobile Quick Actions -->
   <div class="lg:hidden flex gap-2 mb-4">
     <div id="share-all-button-mobile">
@@ -64,6 +67,7 @@
       {% endif %}
     </div>
   </div>
+  {% endif %}
 
   <!-- Filters -->
   <div class="bg-paper rounded-xl shadow-md p-4 mb-6">
