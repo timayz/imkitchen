@@ -45,6 +45,7 @@ pub struct PageQuery {
     pub sort_by: Option<SortBy>,
     #[serde(default)]
     pub dietary_restrictions: Vec<DietaryRestriction>,
+    pub in_meal_plan: Option<bool>,
 }
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
@@ -81,7 +82,7 @@ pub async fn page(
             has_thumbnail: None,
             dietary_restrictions: input.dietary_restrictions,
             dietary_where_any: false,
-            in_meal_plan: Some((user.id.to_owned(), false)),
+            in_meal_plan: Some((user.id.to_owned(), input.in_meal_plan.unwrap_or(false))),
             sort_by: input.sort_by.unwrap_or_default(),
             args: args.limit(20),
             search: input.search,
