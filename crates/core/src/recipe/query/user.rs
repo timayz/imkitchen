@@ -3,12 +3,9 @@ use evento::{
     cursor::{Args, ReadResult},
     metadata::Event,
     sql::Reader,
-    subscription::{Context, SubscriptionBuilder},
 };
 use imkitchen_db::mealplan_recipe::MealPlanRecipe;
 use imkitchen_db::recipe_user::{RecipeUser, RecipeUserFts};
-use imkitchen_types::comment;
-use imkitchen_types::rating::{LikeChecked, LikeUnchecked, UnlikeChecked, UnlikeUnchecked, Viewed};
 use imkitchen_types::recipe::{
     AdvancePrepChanged, BasicInformationChanged, Created, CuisineType, CuisineTypeChanged, Deleted,
     DietaryRestriction, DietaryRestrictionsChanged, Imported, Ingredient, IngredientsChanged,
@@ -48,18 +45,9 @@ pub struct UserView {
     pub accepts_accompaniment: bool,
     pub advance_prep: String,
     pub is_shared: bool,
-    pub total_views: u64,
-    pub total_likes: i64,
-    pub total_comments: u64,
     pub difficulty_score: u16,
     pub created_at: u64,
     pub thumbnail_version: Option<String>,
-}
-
-impl UserView {
-    pub fn total_ulikes(&self) -> u64 {
-        self.total_likes.try_into().unwrap_or(0)
-    }
 }
 
 #[derive(Debug, Default, Clone, FromRow, Cursor)]
@@ -78,7 +66,6 @@ pub struct UserViewList {
     pub dietary_restrictions: sqlx::types::Json<Vec<DietaryRestriction>>,
     pub accepts_accompaniment: bool,
     pub is_shared: bool,
-    pub total_views: u64,
     #[cursor(by_difficulty, RecipeUser::DifficultyScore, 2)]
     pub difficulty_score: u16,
     #[cursor(RecipeUser::CreatedAt, 2)]
@@ -120,7 +107,6 @@ impl<E: Executor> crate::recipe::Module<E> {
                 RecipeUser::DietaryRestrictions,
                 RecipeUser::AcceptsAccompaniment,
                 RecipeUser::IsShared,
-                RecipeUser::TotalViews,
                 RecipeUser::DifficultyScore,
                 RecipeUser::CreatedAt,
                 RecipeUser::ThumbnailVersion,
@@ -304,9 +290,6 @@ async fn find_user(pool: &SqlitePool, id: impl Into<String>) -> anyhow::Result<O
             RecipeUser::AcceptsAccompaniment,
             RecipeUser::AdvancePrep,
             RecipeUser::IsShared,
-            RecipeUser::TotalViews,
-            RecipeUser::TotalLikes,
-            RecipeUser::TotalComments,
             RecipeUser::DifficultyScore,
             RecipeUser::CreatedAt,
             RecipeUser::ThumbnailVersion,
@@ -407,9 +390,6 @@ impl<E: Executor> Snapshot<E> for UserView {
                 RecipeUser::AcceptsAccompaniment,
                 RecipeUser::AdvancePrep,
                 RecipeUser::IsShared,
-                RecipeUser::TotalViews,
-                RecipeUser::TotalLikes,
-                RecipeUser::TotalComments,
                 RecipeUser::DifficultyScore,
                 RecipeUser::CreatedAt,
                 RecipeUser::ThumbnailVersion,
@@ -433,9 +413,6 @@ impl<E: Executor> Snapshot<E> for UserView {
                 self.accepts_accompaniment.into(),
                 self.advance_prep.to_owned().into(),
                 self.is_shared.into(),
-                self.total_views.into(),
-                self.total_likes.into(),
-                self.total_comments.into(),
                 difficulty_score.into(),
                 self.created_at.into(),
                 self.thumbnail_version.to_owned().into(),
@@ -460,9 +437,6 @@ impl<E: Executor> Snapshot<E> for UserView {
                         RecipeUser::AcceptsAccompaniment,
                         RecipeUser::AdvancePrep,
                         RecipeUser::IsShared,
-                        RecipeUser::TotalViews,
-                        RecipeUser::TotalLikes,
-                        RecipeUser::TotalComments,
                         RecipeUser::DifficultyScore,
                         RecipeUser::CreatedAt,
                         RecipeUser::ThumbnailVersion,
@@ -625,100 +599,6 @@ async fn handle_thumbnail_resized(
     data: &mut UserView,
 ) -> anyhow::Result<()> {
     data.thumbnail_version = Some(event.id.to_string());
-
-    Ok(())
-}
-
-pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
-    SubscriptionBuilder::new("recipe-user-query")
-        .handler(handle_viewed())
-        .handler(handle_like_checked())
-        .handler(handle_like_unchecked())
-        .handler(handle_unlike_checked())
-        .handler(handle_unlike_unchecked())
-        .handler(handle_comment_added())
-}
-
-#[evento::subscription]
-async fn handle_viewed<E: Executor>(
-    context: &Context<'_, E>,
-    event: Event<Viewed>,
-) -> anyhow::Result<()> {
-    let pool = context.extract::<sqlx::SqlitePool>();
-    update(&pool, RecipeUser::TotalViews, true, event.data.recipe_id).await?;
-
-    Ok(())
-}
-
-#[evento::subscription]
-async fn handle_like_checked<E: Executor>(
-    context: &Context<'_, E>,
-    event: Event<LikeChecked>,
-) -> anyhow::Result<()> {
-    let pool = context.extract::<sqlx::SqlitePool>();
-    update(&pool, RecipeUser::TotalLikes, true, event.data.recipe_id).await?;
-
-    Ok(())
-}
-
-#[evento::subscription]
-async fn handle_like_unchecked<E: Executor>(
-    context: &Context<'_, E>,
-    event: Event<LikeUnchecked>,
-) -> anyhow::Result<()> {
-    let pool = context.extract::<sqlx::SqlitePool>();
-    update(&pool, RecipeUser::TotalLikes, false, event.data.recipe_id).await?;
-
-    Ok(())
-}
-
-#[evento::subscription]
-async fn handle_unlike_checked<E: Executor>(
-    context: &Context<'_, E>,
-    event: Event<UnlikeChecked>,
-) -> anyhow::Result<()> {
-    let pool = context.extract::<sqlx::SqlitePool>();
-    update(&pool, RecipeUser::TotalLikes, false, event.data.recipe_id).await?;
-
-    Ok(())
-}
-
-#[evento::subscription]
-async fn handle_unlike_unchecked<E: Executor>(
-    context: &Context<'_, E>,
-    event: Event<UnlikeUnchecked>,
-) -> anyhow::Result<()> {
-    let pool = context.extract::<sqlx::SqlitePool>();
-    update(&pool, RecipeUser::TotalLikes, true, event.data.recipe_id).await?;
-
-    Ok(())
-}
-
-#[evento::subscription]
-async fn handle_comment_added<E: Executor>(
-    context: &Context<'_, E>,
-    event: Event<comment::Added>,
-) -> anyhow::Result<()> {
-    let pool = context.extract::<sqlx::SqlitePool>();
-    update(&pool, RecipeUser::TotalComments, true, event.data.recipe_id).await?;
-
-    Ok(())
-}
-
-async fn update(pool: &SqlitePool, col: RecipeUser, add: bool, id: String) -> anyhow::Result<()> {
-    let expr = if add {
-        Expr::col(col.clone()).add(1)
-    } else {
-        Expr::col(col.clone()).sub(1)
-    };
-    let statement = sea_query::Query::update()
-        .table(RecipeUser::Table)
-        .value(col, expr)
-        .and_where(Expr::col(RecipeUser::Id).eq(id))
-        .to_owned();
-
-    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    sqlx::query_with(&sql, values).execute(pool).await?;
 
     Ok(())
 }

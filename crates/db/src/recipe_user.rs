@@ -21,9 +21,6 @@ pub enum RecipeUser {
     AcceptsAccompaniment,
     AdvancePrep,
     IsShared,
-    TotalViews,
-    TotalLikes,
-    TotalComments,
     CreatedAt,
     UpdatedAt,
     ThumbnailVersion,
@@ -141,24 +138,6 @@ pub(crate) mod m0001 {
                     .boolean()
                     .not_null()
                     .default(false),
-            )
-            .col(
-                ColumnDef::new(RecipeUser::TotalViews)
-                    .integer()
-                    .not_null()
-                    .default(0),
-            )
-            .col(
-                ColumnDef::new(RecipeUser::TotalLikes)
-                    .integer()
-                    .not_null()
-                    .default(0),
-            )
-            .col(
-                ColumnDef::new(RecipeUser::TotalComments)
-                    .integer()
-                    .not_null()
-                    .default(0),
             )
             .col(
                 ColumnDef::new(RecipeUser::ThumbnailVersion)
@@ -515,6 +494,43 @@ pub(crate) mod m0002 {
                 .execute(connection)
                 .await?;
 
+            Ok(())
+        }
+    }
+}
+
+pub(crate) mod m0003 {
+    pub struct DropRatingColumns;
+
+    #[async_trait::async_trait]
+    impl sqlx_migrator::Operation<sqlx::Sqlite> for DropRatingColumns {
+        async fn up(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            sqlx::query("ALTER TABLE recipe_user DROP COLUMN total_views")
+                .execute(&mut *connection)
+                .await
+                .ok();
+            sqlx::query("ALTER TABLE recipe_user DROP COLUMN total_likes")
+                .execute(&mut *connection)
+                .await
+                .ok();
+            sqlx::query("ALTER TABLE recipe_user DROP COLUMN total_comments")
+                .execute(&mut *connection)
+                .await
+                .ok();
+            sqlx::query("DROP TABLE IF EXISTS recipe_comment")
+                .execute(connection)
+                .await?;
+
+            Ok(())
+        }
+
+        async fn down(
+            &self,
+            _connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
             Ok(())
         }
     }

@@ -1,24 +1,16 @@
 use axum::{
-    Form,
-    extract::{Path, Query, State},
-    http::StatusCode,
+    extract::{Path, State},
     response::{IntoResponse, Redirect},
 };
-use evento::cursor::{self, Args, ReadResult};
+use evento::cursor::{Args, ReadResult};
 use imkitchen_core::recipe::{
-    comment::{AddCommentInput, ReplyCommentInput},
-    comment_rating, favorite,
+    favorite,
     query::{
-        self,
-        comment::{self, CommentView, CommentsQuery},
         user::{RecipesQuery, SortBy, UserView, UserViewList},
         user_stat::UserStatView,
     },
-    rating,
 };
 use imkitchen_types::recipe::{IngredientUnitFormat, RecipeType};
-use serde::Deserialize;
-use std::str::FromStr;
 
 use imkitchen_web_shared::{
     AppState,
@@ -58,10 +50,7 @@ pub struct DetailTemplate<'a> {
     pub username: &'a str,
     pub recipe: UserView,
     pub stat: UserStatView,
-    pub rating: rating::Rating,
     pub favorite: favorite::Favorite,
-    pub comment: Option<query::comment::CommentView>,
-    pub comment_rating: Option<comment_rating::CommentRating>,
     pub cook_recipes: ReadResult<UserViewList>,
     pub similar_recipes: ReadResult<UserViewList>,
     pub owner_description: String,
@@ -76,10 +65,7 @@ impl<'a> Default for DetailTemplate<'a> {
             stat: UserStatView::default(),
             cook_recipes: Default::default(),
             similar_recipes: Default::default(),
-            rating: Default::default(),
             favorite: Default::default(),
-            comment: Default::default(),
-            comment_rating: Default::default(),
             username: "john_doe",
             owner_description: String::new(),
         }
@@ -105,33 +91,11 @@ pub async fn page(
     )
     .unwrap_or_default();
 
-    let rating = imkitchen_web_shared::try_page_response!(
-        app.core.recipe.rating.load(&recipe.id, &user.id),
-        template
-    )
-    .to_owned();
-
     let favorite = imkitchen_web_shared::try_page_response!(
         app.core.recipe.favorite.load(&recipe.id, &user.id),
         template
     )
     .to_owned();
-
-    let comment = imkitchen_web_shared::try_page_response!(
-        app.core.recipe.comment(&recipe.id, &user.id),
-        template
-    );
-
-    let comment_rating = match comment {
-        Some(ref comment) => Some(
-            imkitchen_web_shared::try_page_response!(
-                app.core.recipe.comment_rating.load(&comment.id, &user.id),
-                template
-            )
-            .to_owned(),
-        ),
-        _ => None,
-    };
 
     let exclude_ids = vec![recipe.id.to_owned()];
 
@@ -338,10 +302,7 @@ pub async fn page(
             stat,
             cook_recipes,
             similar_recipes,
-            rating,
             favorite,
-            comment,
-            comment_rating,
             username: username.as_str(),
             owner_description: owner_profile.description,
             ..Default::default()
@@ -356,10 +317,6 @@ pub async fn share_to_community_action(
     user: AuthUser,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    if !app.config.feature.community && !user.is_admin() {
-        return StatusCode::METHOD_NOT_ALLOWED.into_response();
-    }
-
     let Some(ref username) = user.username else {
         return (
             [("ts-swap", "skip")],
@@ -444,163 +401,6 @@ pub async fn delete_modal(template: Template, Path((id,)): Path<(String,)>) -> i
     template.render(DeleteModalTemplate { id })
 }
 
-pub async fn check_in(
-    template: Template,
-    user: AuthUser,
-    State(app): State<AppState>,
-    Path((id,)): Path<(String,)>,
-) -> impl IntoResponse {
-    let recipe =
-        imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&id), template);
-    if recipe.owner_id == user.id {
-        return "<div></div>".into_response();
-    }
-
-    if !recipe.is_shared {
-        imkitchen_web_shared::try_response!(sync:
-            Err(imkitchen_core::Error::NotFound("recipe".to_owned())
-        ), template);
-    }
-
-    imkitchen_web_shared::try_response!(app.core.recipe.rating.view(&id, &user.id), template);
-
-    "<div></div>".into_response()
-}
-
-#[derive(askama::Template)]
-#[template(path = "partials/recipes-detail-like-button.html")]
-pub struct LikeButtonTemplate {
-    pub id: String,
-    pub total: u64,
-    pub liked: bool,
-    pub unliked: bool,
-}
-
-pub async fn check_like(
-    template: Template,
-    user: AuthUser,
-    State(app): State<AppState>,
-    Path((id,)): Path<(String,)>,
-) -> impl IntoResponse {
-    let recipe =
-        imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&id), template);
-
-    if !recipe.is_shared {
-        imkitchen_web_shared::try_response!(sync:
-            Err(imkitchen_core::Error::NotFound("recipe".to_owned())
-        ), template);
-    }
-
-    imkitchen_web_shared::try_response!(app.core.recipe.rating.check_like(&id, &user.id), template);
-
-    (
-        [("ts-swap", "skip")],
-        template.render(LikeButtonTemplate {
-            id,
-            total: recipe.total_ulikes(),
-            liked: true,
-            unliked: false,
-        }),
-    )
-        .into_response()
-}
-
-pub async fn uncheck_like(
-    template: Template,
-    user: AuthUser,
-    State(app): State<AppState>,
-    Path((id,)): Path<(String,)>,
-) -> impl IntoResponse {
-    let recipe =
-        imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&id), template);
-
-    if !recipe.is_shared {
-        imkitchen_web_shared::try_response!(sync:
-            Err(imkitchen_core::Error::NotFound("recipe".to_owned())
-        ), template);
-    }
-
-    imkitchen_web_shared::try_response!(
-        app.core.recipe.rating.uncheck_like(&id, &user.id),
-        template
-    );
-
-    (
-        [("ts-swap", "skip")],
-        template.render(LikeButtonTemplate {
-            id,
-            total: recipe.total_ulikes(),
-            liked: false,
-            unliked: false,
-        }),
-    )
-        .into_response()
-}
-
-pub async fn check_unlike(
-    template: Template,
-    user: AuthUser,
-    State(app): State<AppState>,
-    Path((id,)): Path<(String,)>,
-) -> impl IntoResponse {
-    let recipe =
-        imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&id), template);
-
-    if !recipe.is_shared {
-        imkitchen_web_shared::try_response!(sync:
-            Err(imkitchen_core::Error::NotFound("recipe".to_owned())
-        ), template);
-    }
-
-    imkitchen_web_shared::try_response!(
-        app.core.recipe.rating.check_unlike(&id, &user.id),
-        template
-    );
-
-    (
-        [("ts-swap", "skip")],
-        template.render(LikeButtonTemplate {
-            id,
-            total: recipe.total_ulikes(),
-            liked: false,
-            unliked: true,
-        }),
-    )
-        .into_response()
-}
-
-pub async fn uncheck_unlike(
-    template: Template,
-    user: AuthUser,
-    State(app): State<AppState>,
-    Path((id,)): Path<(String,)>,
-) -> impl IntoResponse {
-    let recipe =
-        imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&id), template);
-
-    if !recipe.is_shared {
-        imkitchen_web_shared::try_response!(sync:
-            Err(imkitchen_core::Error::NotFound("recipe".to_owned())
-        ), template);
-    }
-
-    imkitchen_web_shared::try_response!(
-        app.core.recipe.rating.uncheck_unlike(&id, &user.id),
-        template
-    );
-
-    (
-        [("ts-swap", "skip")],
-        template.render(LikeButtonTemplate {
-            id,
-            total: recipe.total_ulikes(),
-            liked: false,
-            unliked: false,
-        }),
-    )
-        .into_response()
-}
-
 #[derive(askama::Template)]
 #[template(path = "partials/recipes-detail-save-button.html")]
 pub struct SaveButtonTemplate {
@@ -649,456 +449,6 @@ pub async fn unsave(
     (
         [("ts-swap", "skip")],
         template.render(SaveButtonTemplate { id, saved: false }),
-    )
-        .into_response()
-}
-
-#[derive(askama::Template)]
-#[template(path = "partials/recipes-add-comment-btn.html")]
-pub struct AddCommentBtnTemplate<'a> {
-    pub id: &'a str,
-}
-
-#[tracing::instrument(skip_all, fields(user = user.id))]
-pub async fn add_comment_btn(
-    template: Template,
-    user: AuthUser,
-    Path((id,)): Path<(String,)>,
-) -> impl IntoResponse {
-    template
-        .render(AddCommentBtnTemplate { id: &id })
-        .into_response()
-}
-
-#[derive(askama::Template)]
-#[template(path = "partials/recipes-add-comment-form.html")]
-pub struct AddCommentFormTemplate<'a> {
-    pub id: &'a str,
-}
-
-#[tracing::instrument(skip_all, fields(user = user.id))]
-pub async fn add_comment_form(
-    template: Template,
-    user: AuthUser,
-    Path((id,)): Path<(String,)>,
-) -> impl IntoResponse {
-    template
-        .render(AddCommentFormTemplate { id: &id })
-        .into_response()
-}
-
-#[derive(askama::Template)]
-#[template(path = "partials/recipes-add-comment.html")]
-pub struct AddCommentTemplate<'a> {
-    pub username: &'a str,
-    pub body: &'a str,
-    pub created_at: &'a u64,
-}
-
-#[derive(Deserialize, Default, Clone)]
-pub struct AddCommentForm {
-    pub body: String,
-}
-
-#[tracing::instrument(skip_all, fields(user = user.id))]
-pub async fn add_comment_action(
-    template: Template,
-    State(app): State<AppState>,
-    user: AuthUser,
-    Path((id,)): Path<(String,)>,
-    Form(input): Form<AddCommentForm>,
-) -> impl IntoResponse {
-    if !app.config.feature.community {
-        return StatusCode::METHOD_NOT_ALLOWED.into_response();
-    }
-
-    let Some(ref username) = user.username else {
-        return (
-            [("ts-swap", "skip")],
-            template.render(SetUsernameModalTemplate),
-        )
-            .into_response();
-    };
-
-    imkitchen_web_shared::try_response!(
-        app.core.recipe.comment.add(
-            &id,
-            &user.id,
-            AddCommentInput {
-                body: input.body.to_owned(),
-                owner_name: username.to_owned(),
-            }
-        ),
-        template
-    );
-
-    let created_at = time::UtcDateTime::now().unix_timestamp() as u64;
-
-    template
-        .render(AddCommentTemplate {
-            username,
-            body: input.body.as_str(),
-            created_at: &created_at,
-        })
-        .into_response()
-}
-
-#[derive(askama::Template)]
-#[template(path = "partials/recipes-reply-btn.html")]
-pub struct ReplyBtnTemplate<'a> {
-    pub comment_id: &'a str,
-}
-
-#[tracing::instrument(skip_all, fields(user = user.id))]
-pub async fn cancel_reply(
-    template: Template,
-    user: AuthUser,
-    Path((_, comment_id)): Path<(String, String)>,
-) -> impl IntoResponse {
-    template
-        .render(ReplyBtnTemplate {
-            comment_id: &comment_id,
-        })
-        .into_response()
-}
-
-#[derive(askama::Template)]
-#[template(path = "partials/recipes-reply-form.html")]
-pub struct ReplyFormTemplate<'a> {
-    pub recipe_id: &'a str,
-    pub comment_id: &'a str,
-    pub owner_name: Option<&'a str>,
-}
-
-#[derive(Deserialize, Default, Clone)]
-pub struct ReplyFormQuery {
-    pub owner_name: Option<String>,
-}
-
-#[tracing::instrument(skip_all, fields(user = user.id))]
-pub async fn reply_form(
-    template: Template,
-    user: AuthUser,
-    Query(query): Query<ReplyFormQuery>,
-    Path((recipe_id, comment_id)): Path<(String, String)>,
-) -> impl IntoResponse {
-    template
-        .render(ReplyFormTemplate {
-            recipe_id: &recipe_id,
-            comment_id: &comment_id,
-            owner_name: query.owner_name.as_deref(),
-        })
-        .into_response()
-}
-
-#[derive(askama::Template)]
-#[template(path = "partials/recipes-reply.html")]
-pub struct ReplyTemplate<'a> {
-    pub username: &'a str,
-    pub body: &'a str,
-    pub created_at: &'a u64,
-    pub comment_id: &'a str,
-}
-
-#[derive(Deserialize, Default, Clone)]
-pub struct ReplyForm {
-    pub body: String,
-}
-
-#[tracing::instrument(skip_all, fields(user = user.id))]
-pub async fn reply_action(
-    template: Template,
-    State(app): State<AppState>,
-    user: AuthUser,
-    Path((recipe_id, comment_id)): Path<(String, String)>,
-    Form(input): Form<ReplyForm>,
-) -> impl IntoResponse {
-    if !app.config.feature.community {
-        return StatusCode::METHOD_NOT_ALLOWED.into_response();
-    }
-
-    let Some(ref username) = user.username else {
-        return (
-            [("ts-swap", "skip")],
-            template.render(SetUsernameModalTemplate),
-        )
-            .into_response();
-    };
-
-    imkitchen_web_shared::try_response!(
-        app.core.recipe.comment.reply(
-            &recipe_id,
-            &user.id,
-            ReplyCommentInput {
-                body: input.body.to_owned(),
-                owner_name: username.to_owned(),
-                comment_id: comment_id.to_owned(),
-            }
-        ),
-        template
-    );
-
-    let created_at = time::UtcDateTime::now().unix_timestamp() as u64;
-
-    template
-        .render(ReplyTemplate {
-            username,
-            body: input.body.as_str(),
-            created_at: &created_at,
-            comment_id: &comment_id,
-        })
-        .into_response()
-}
-
-#[derive(Deserialize, Default, Clone)]
-pub struct PageQuery {
-    pub first: Option<u16>,
-    pub after: Option<cursor::Value>,
-    pub last: Option<u16>,
-    pub before: Option<cursor::Value>,
-    pub reply_to: Option<String>,
-    #[serde(default)]
-    pub include_current_user: bool,
-    pub sort_by: Option<String>,
-}
-
-#[derive(askama::Template)]
-#[template(path = "partials/recipes-comments.html")]
-pub struct CommentsTemplate {
-    pub recipe_id: String,
-    pub comments: ReadResult<CommentView>,
-    pub ratings: Vec<comment_rating::CommentRating>,
-    pub reply_to: Option<String>,
-    pub include_current_user: bool,
-    pub sort_by: Option<String>,
-}
-
-#[tracing::instrument(skip_all, fields(user = user.id))]
-pub async fn comments(
-    template: Template,
-    user: AuthUser,
-    Query(query): Query<PageQuery>,
-    State(app): State<AppState>,
-    Path((id,)): Path<(String,)>,
-) -> impl IntoResponse {
-    if !app.config.feature.community {
-        return StatusCode::METHOD_NOT_ALLOWED.into_response();
-    }
-
-    let args = Args {
-        first: query.first,
-        after: query.after,
-        last: query.last,
-        before: query.before,
-    };
-
-    let exclude_owner = if !query.include_current_user {
-        Some(user.id.to_owned())
-    } else {
-        None
-    };
-
-    let sort_by = comment::SortBy::from_str(&query.sort_by.to_owned().unwrap_or("".to_owned()))
-        .unwrap_or(comment::SortBy::RecentlyAdded);
-
-    let comments = imkitchen_web_shared::try_page_response!(
-        app.core.recipe.filter_comment(CommentsQuery {
-            recipe_id: id.to_owned(),
-            reply_to: query.reply_to.to_owned(),
-            exclude_owner,
-            sort_by,
-            args: args.limit(5),
-        }),
-        template
-    );
-
-    let mut ratings = vec![];
-    for comment in comments.edges.iter() {
-        let rating = imkitchen_web_shared::try_response!(anyhow:
-            app.core.recipe.comment_rating.load(&comment.node.id, &user.id),
-            template
-        );
-        ratings.push(rating);
-    }
-
-    template
-        .render(CommentsTemplate {
-            recipe_id: id,
-            comments,
-            ratings,
-            reply_to: query.reply_to,
-            include_current_user: query.include_current_user,
-            sort_by: query.sort_by,
-        })
-        .into_response()
-}
-
-#[derive(askama::Template)]
-#[template(path = "partials/recipes-detail-comment-like-button.html")]
-pub struct CommentLikeButtonTemplate {
-    pub recipe_id: String,
-    pub comment_id: String,
-    pub total: u64,
-    pub liked: bool,
-    pub unliked: bool,
-}
-
-pub async fn comment_check_like(
-    template: Template,
-    user: AuthUser,
-    State(app): State<AppState>,
-    Path((recipe_id, comment_id)): Path<(String, String)>,
-) -> impl IntoResponse {
-    if !app.config.feature.community {
-        return StatusCode::METHOD_NOT_ALLOWED.into_response();
-    }
-
-    let recipe =
-        imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&recipe_id), template);
-
-    if !recipe.is_shared {
-        imkitchen_web_shared::try_response!(sync:
-            Err(imkitchen_core::Error::NotFound("recipe".to_owned())
-        ), template);
-    }
-
-    imkitchen_web_shared::try_response!(
-        app.core
-            .recipe
-            .comment_rating
-            .check_like(&comment_id, &user.id),
-        template
-    );
-
-    (
-        [("ts-swap", "skip")],
-        template.render(CommentLikeButtonTemplate {
-            recipe_id,
-            comment_id,
-            total: recipe.total_ulikes(),
-            liked: true,
-            unliked: false,
-        }),
-    )
-        .into_response()
-}
-
-pub async fn comment_uncheck_like(
-    template: Template,
-    user: AuthUser,
-    State(app): State<AppState>,
-    Path((recipe_id, comment_id)): Path<(String, String)>,
-) -> impl IntoResponse {
-    if !app.config.feature.community {
-        return StatusCode::METHOD_NOT_ALLOWED.into_response();
-    }
-
-    let recipe =
-        imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&recipe_id), template);
-
-    if !recipe.is_shared {
-        imkitchen_web_shared::try_response!(sync:
-            Err(imkitchen_core::Error::NotFound("recipe".to_owned())
-        ), template);
-    }
-
-    imkitchen_web_shared::try_response!(
-        app.core
-            .recipe
-            .comment_rating
-            .uncheck_like(&comment_id, &user.id),
-        template
-    );
-
-    (
-        [("ts-swap", "skip")],
-        template.render(CommentLikeButtonTemplate {
-            recipe_id,
-            comment_id,
-            total: recipe.total_ulikes(),
-            liked: false,
-            unliked: false,
-        }),
-    )
-        .into_response()
-}
-
-pub async fn comment_check_unlike(
-    template: Template,
-    user: AuthUser,
-    State(app): State<AppState>,
-    Path((recipe_id, comment_id)): Path<(String, String)>,
-) -> impl IntoResponse {
-    if !app.config.feature.community {
-        return StatusCode::METHOD_NOT_ALLOWED.into_response();
-    }
-
-    let recipe =
-        imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&recipe_id), template);
-
-    if !recipe.is_shared {
-        imkitchen_web_shared::try_response!(sync:
-            Err(imkitchen_core::Error::NotFound("recipe".to_owned())
-        ), template);
-    }
-
-    imkitchen_web_shared::try_response!(
-        app.core
-            .recipe
-            .comment_rating
-            .check_unlike(&comment_id, &user.id),
-        template
-    );
-
-    (
-        [("ts-swap", "skip")],
-        template.render(CommentLikeButtonTemplate {
-            recipe_id,
-            comment_id,
-            total: recipe.total_ulikes(),
-            liked: false,
-            unliked: true,
-        }),
-    )
-        .into_response()
-}
-
-pub async fn comment_uncheck_unlike(
-    template: Template,
-    user: AuthUser,
-    State(app): State<AppState>,
-    Path((recipe_id, comment_id)): Path<(String, String)>,
-) -> impl IntoResponse {
-    if !app.config.feature.community {
-        return StatusCode::METHOD_NOT_ALLOWED.into_response();
-    }
-
-    let recipe =
-        imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&recipe_id), template);
-
-    if !recipe.is_shared {
-        imkitchen_web_shared::try_response!(sync:
-            Err(imkitchen_core::Error::NotFound("recipe".to_owned())
-        ), template);
-    }
-
-    imkitchen_web_shared::try_response!(
-        app.core
-            .recipe
-            .comment_rating
-            .uncheck_unlike(&comment_id, &user.id),
-        template
-    );
-
-    (
-        [("ts-swap", "skip")],
-        template.render(CommentLikeButtonTemplate {
-            recipe_id,
-            comment_id,
-            total: recipe.total_ulikes(),
-            liked: false,
-            unliked: false,
-        }),
     )
         .into_response()
 }

@@ -2,13 +2,13 @@ use sqlx_migrator::{Info, Migrator};
 
 pub(crate) mod m0001;
 pub(crate) mod m0002;
+pub(crate) mod m0003;
 
 pub mod contact_admin;
 pub mod contact_global_stat;
 pub mod mealplan_recipe;
 pub mod mealplan_slot;
 pub mod notification_recipient;
-pub mod recipe_comment;
 pub mod recipe_thumbnail;
 pub mod recipe_user;
 pub mod recipe_user_stat;
@@ -29,9 +29,14 @@ where
     evento::sql_migrator::M0003: sqlx_migrator::Migration<DB>,
     m0001::Migration: sqlx_migrator::Migration<DB>,
     m0002::Migration: sqlx_migrator::Migration<DB>,
+    m0003::Migration: sqlx_migrator::Migration<DB>,
 {
     let mut migrator = evento::sql_migrator::new::<DB>()?;
-    migrator.add_migrations(vec![Box::new(m0001::Migration), Box::new(m0002::Migration)])?;
+    migrator.add_migrations(vec![
+        Box::new(m0001::Migration),
+        Box::new(m0002::Migration),
+        Box::new(m0003::Migration),
+    ])?;
 
     Ok(migrator)
 }

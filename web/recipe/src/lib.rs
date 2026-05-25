@@ -27,20 +27,6 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
             "/recipes/{id}/delete",
             get(routes::detail::delete_modal).post(routes::detail::delete_action),
         )
-        .route("/recipes/{id}/check-in", post(routes::detail::check_in))
-        .route("/recipes/{id}/check-like", post(routes::detail::check_like))
-        .route(
-            "/recipes/{id}/uncheck-like",
-            post(routes::detail::uncheck_like),
-        )
-        .route(
-            "/recipes/{id}/check-unlike",
-            post(routes::detail::check_unlike),
-        )
-        .route(
-            "/recipes/{id}/uncheck-unlike",
-            post(routes::detail::uncheck_unlike),
-        )
         .route("/recipes/{id}/save", post(routes::detail::save))
         .route("/recipes/{id}/unsave", post(routes::detail::unsave))
         .route(
@@ -52,39 +38,6 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
             get(routes::thumbnail::get),
         )
         .route("/recipes/{id}/thumbnail", post(routes::thumbnail::upload))
-        .route(
-            "/recipes/{id}/add-comment",
-            get(routes::detail::add_comment_form).post(routes::detail::add_comment_action),
-        )
-        .route(
-            "/recipes/{id}/add-comment-btn",
-            get(routes::detail::add_comment_btn),
-        )
-        .route(
-            "/recipes/{recipe_id}/reply/{comment_id}",
-            get(routes::detail::reply_form).post(routes::detail::reply_action),
-        )
-        .route(
-            "/recipes/{recipe_id}/cancel-reply/{comment_id}",
-            get(routes::detail::cancel_reply),
-        )
-        .route("/recipes/{id}/comments", get(routes::detail::comments))
-        .route(
-            "/recipes/{recipe_id}/comments/{comment_id}/check-like",
-            post(routes::detail::comment_check_like),
-        )
-        .route(
-            "/recipes/{recipe_id}/comments/{comment_id}/uncheck-like",
-            post(routes::detail::comment_uncheck_like),
-        )
-        .route(
-            "/recipes/{recipe_id}/comments/{comment_id}/check-unlike",
-            post(routes::detail::comment_check_unlike),
-        )
-        .route(
-            "/recipes/{recipe_id}/comments/{comment_id}/uncheck-unlike",
-            post(routes::detail::comment_uncheck_unlike),
-        )
         .route("/recipes/{id}", get(routes::detail::page))
         .route(
             "/recipes/_edit/ingredient-row",

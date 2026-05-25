@@ -93,16 +93,6 @@ pub async fn serve(
         .start(&executor)
         .await?;
 
-    let sub_recipe_comment = imkitchen_core::recipe::query::comment::subscription()
-        .data(write_pool.clone())
-        .start(&executor)
-        .await?;
-
-    let sub_recipe_user = imkitchen_core::recipe::query::user::subscription()
-        .data(write_pool.clone())
-        .start(&executor)
-        .await?;
-
     let sub_recipe_user_fts = imkitchen_core::recipe::query::user_fts::subscription()
         .data(write_pool.clone())
         .start(&executor)
@@ -245,8 +235,6 @@ pub async fn serve(
         sub_contact_global_stat.shutdown(),
         sub_recipe_command.shutdown(),
         sub_recipe_query.shutdown(),
-        sub_recipe_comment.shutdown(),
-        sub_recipe_user.shutdown(),
         sub_recipe_user_fts.shutdown(),
         sub_recipe_user_stat.shutdown(),
         sub_recipe_thumbnail.shutdown(),

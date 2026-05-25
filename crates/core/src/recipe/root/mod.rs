@@ -32,10 +32,7 @@ pub use update::UpdateInput;
 #[derive(Clone)]
 pub struct Module<E: Executor> {
     state: crate::State<E>,
-    pub rating: crate::recipe::rating::Module<E>,
     pub favorite: crate::recipe::favorite::Module<E>,
-    pub comment: crate::recipe::comment::Module<E>,
-    pub comment_rating: crate::recipe::comment_rating::Module<E>,
 }
 
 impl<E: Executor> Deref for Module<E> {
@@ -52,10 +49,7 @@ impl<E: Executor> Module<E> {
         crate::State<E>: Clone,
     {
         Self {
-            rating: crate::recipe::rating::Module(state.clone()),
             favorite: crate::recipe::favorite::Module(state.clone()),
-            comment_rating: crate::recipe::comment_rating::Module(state.clone()),
-            comment: crate::recipe::comment::Module(state.clone()),
             state,
         }
     }
