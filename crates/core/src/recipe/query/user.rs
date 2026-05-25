@@ -267,6 +267,41 @@ impl<E: Executor> crate::recipe::Module<E> {
             .await?
             .map(|(id,)| id))
     }
+
+    pub async fn find_user_to_upsert(
+        &self,
+        user_id: impl Into<String>,
+        origin: Option<&str>,
+        name: &str,
+    ) -> anyhow::Result<Option<String>> {
+        let mut statement = sea_query::Query::select()
+            .columns([RecipeUser::Id])
+            .from(RecipeUser::Table)
+            .and_where(Expr::col(RecipeUser::OwnerId).eq(user_id.into()))
+            .to_owned();
+
+        match origin {
+            Some(origin) if !origin.is_empty() => {
+                statement.and_where(Expr::col(RecipeUser::Origin).eq(origin));
+            }
+            _ => {
+                statement
+                    .and_where(Expr::col(RecipeUser::Name).eq(name))
+                    .and_where(Expr::col(RecipeUser::Origin).is_null());
+            }
+        }
+
+        statement
+            .order_by(RecipeUser::CreatedAt, sea_query::Order::Desc)
+            .limit(1);
+
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+        Ok(sqlx::query_as_with::<_, (String,), _>(&sql, values)
+            .fetch_optional(&self.read_db)
+            .await?
+            .map(|(id,)| id))
+    }
 }
 
 async fn find_user(pool: &SqlitePool, id: impl Into<String>) -> anyhow::Result<Option<UserView>> {
