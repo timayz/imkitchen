@@ -232,6 +232,39 @@ impl FromRequestParts<crate::AppState> for RequirePremium {
     }
 }
 
+pub struct RequireChef(pub imkitchen_identity::login::Login);
+
+impl Deref for RequireChef {
+    type Target = imkitchen_identity::login::Login;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl FromRequestParts<crate::AppState> for RequireChef {
+    type Rejection = Response;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &crate::AppState,
+    ) -> Result<Self, Self::Rejection> {
+        let AuthUser(user) = AuthUser::from_request_parts(parts, state)
+            .await
+            .map_err(|err| err.into_response())?;
+
+        if user.is_chef() {
+            return Ok(RequireChef(user));
+        }
+
+        let template = Template::from_request_parts(parts, state)
+            .await
+            .expect("Infallible");
+
+        Err(template.render(ForbiddenTemplate).into_response())
+    }
+}
+
 pub struct AuthAdmin(imkitchen_identity::login::Login);
 
 impl Deref for AuthAdmin {

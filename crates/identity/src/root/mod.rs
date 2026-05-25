@@ -1,5 +1,5 @@
 use crate::types::user::{
-    self, Activated, LoggedIn, Logout, MadeAdmin, Registered, Role, State, Suspended,
+    self, Activated, LoggedIn, Logout, MadeAdmin, Registered, Role, RoleChanged, State, Suspended,
     UsernameChanged,
 };
 use bitcode::{Decode, Encode};
@@ -9,6 +9,7 @@ use std::ops::Deref;
 use crate::repository::{self};
 
 mod activate;
+mod change_role;
 mod login;
 mod made_admin;
 mod register;
@@ -76,6 +77,7 @@ pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Us
         .handler(handle_actived())
         .handler(handle_susended())
         .handler(handle_made_admin())
+        .handler(handle_role_changed())
         .skip::<LoggedIn>()
         .skip::<Logout>()
         .skip::<UsernameChanged>()
@@ -100,6 +102,13 @@ async fn handle_registered(event: Event<Registered>, data: &mut User) -> anyhow:
 #[evento::handler]
 async fn handle_made_admin(_event: Event<MadeAdmin>, data: &mut User) -> anyhow::Result<()> {
     data.role = Role::Admin;
+
+    Ok(())
+}
+
+#[evento::handler]
+async fn handle_role_changed(event: Event<RoleChanged>, data: &mut User) -> anyhow::Result<()> {
+    data.role = event.data.role.to_owned();
 
     Ok(())
 }

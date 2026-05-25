@@ -142,13 +142,17 @@
                 <span class="px-3 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full">
                   👑 Admin
                 </span>
+              {% else if user.node.is_chef() %}
+                <span class="px-3 py-1 bg-orange-100 text-orange-800 text-xs font-semibold rounded-full">
+                  🍳 Chef
+                </span>
               {% else if user.node.is_premium() %}
                 <span class="px-3 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded-full">
                   ✨ Premium
                 </span>
               {% else %}
                 <span class="px-3 py-1 bg-cream-2 text-ink text-xs font-semibold rounded-full">
-                  Free
+                  User
                 </span>
               {% endif %}
             </td>
@@ -161,6 +165,13 @@
             </td>
             <td class="px-6 py-4">
               <div class="flex gap-2">
+                  <button class="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded hover:bg-blue-200"
+                          ts-req="/admin/users/{{ user.node.id }}/edit"
+                          ts-req-method="GET"
+                          ts-swap="append"
+                          ts-target="body">
+                    Edit
+                  </button>
               {% if user.node.is_suspended() %}
                   <button class="px-3 py-1 bg-primary-100 text-primary-700 text-xs font-semibold rounded hover:bg-primary-200"
                           ts-req="/admin/users/{{ user.node.id }}/activate"

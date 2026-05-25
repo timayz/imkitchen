@@ -18,6 +18,7 @@ use strum::{AsRefStr, Display, EnumString, VariantArray};
 pub enum Role {
     #[default]
     User,
+    Chef,
     Admin,
 }
 
@@ -60,6 +61,9 @@ pub enum User {
         access_id: String,
     },
     MadeAdmin,
+    RoleChanged {
+        role: Role,
+    },
     Suspended,
     Activated,
 }

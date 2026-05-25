@@ -14,7 +14,7 @@ use imkitchen_types::recipe::{IngredientUnitFormat, RecipeType};
 
 use imkitchen_web_shared::{
     AppState,
-    auth::{AuthUser, RequirePremium},
+    auth::{AuthUser, RequireChef, RequirePremium},
     template::{NotFoundTemplate, Status, Template, filters},
 };
 
@@ -314,7 +314,7 @@ pub async fn page(
 pub async fn share_to_community_action(
     template: Template,
     State(app): State<AppState>,
-    RequirePremium(user): RequirePremium,
+    RequireChef(user): RequireChef,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
     let Some(ref username) = user.username else {
@@ -342,7 +342,7 @@ pub async fn share_to_community_action(
 pub async fn make_private_action(
     template: Template,
     State(app): State<AppState>,
-    RequirePremium(user): RequirePremium,
+    RequireChef(user): RequireChef,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
     imkitchen_web_shared::try_response!(app.core.recipe.make_private(&id, &user.id), template);
