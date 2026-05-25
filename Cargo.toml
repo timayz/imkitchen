@@ -20,7 +20,7 @@ rust-i18n = "4.0"
 time-tz = "3.0.0-rc.5.0.0"
 askama = "0.16"
 world-tax = "0.5"
-sqlx = { version = "0.9", default-features = false, features = ["migrate", "json", "derive", "runtime-tokio", "sqlite"] }
+sqlx = { version = "0.8", default-features = false, features = ["migrate", "json", "derive", "runtime-tokio", "sqlite"] }
 sqlx_migrator = { version = "0.18", features = ["sqlite"] }
 evento = { version = "2.0.0-alpha.15", features = ["sqlite", "rw"] }
 argon2 = { version = "0.5", features = ["std"] }
