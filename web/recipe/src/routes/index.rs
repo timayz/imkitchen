@@ -65,10 +65,17 @@ pub async fn page(
         .recipe_type
         .and_then(|v| RecipeType::from_str(v.as_str()).ok());
 
-    let preferences = imkitchen_web_shared::try_page_response!(
-        app.identity.meal_preferences.load(&user.id),
-        template
-    );
+    let in_meal_plan = input.in_meal_plan.unwrap_or(false);
+
+    let dietary_restrictions = if in_meal_plan {
+        vec![]
+    } else {
+        let preferences = imkitchen_web_shared::try_page_response!(
+            app.identity.meal_preferences.load(&user.id),
+            template
+        );
+        preferences.dietary_restrictions
+    };
 
     let recipes = imkitchen_web_shared::try_page_response!(
         app.core.recipe.filter_user(RecipesQuery {
@@ -77,9 +84,9 @@ pub async fn page(
             recipe_type,
             is_shared: Some(true),
             has_thumbnail: None,
-            dietary_restrictions: preferences.dietary_restrictions,
+            dietary_restrictions,
             dietary_where_any: false,
-            in_meal_plan: Some((user.id.to_owned(), input.in_meal_plan.unwrap_or(false))),
+            in_meal_plan: Some((user.id.to_owned(), in_meal_plan)),
             sort_by: input.sort_by.unwrap_or_default(),
             args: args.limit(20),
             search: input.search,
