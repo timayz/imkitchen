@@ -271,9 +271,9 @@ dependencies = [
 
 [[package]]
 name = "async-stripe"
-version = "1.0.0-rc.5"
+version = "1.0.0-rc.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "03ec8493f89fb9d9ac1848988955ec192df8e0ebf4d4bbd85fd93df9f681e890"
+checksum = "fbbfb37a60928c837f3d1db41ed9561a69e86052e5ea11451bfc8406fd22d99e"
 dependencies = [
  "async-stripe-client-core",
  "async-stripe-shared",
@@ -291,9 +291,9 @@ dependencies = [
 
 [[package]]
 name = "async-stripe-client-core"
-version = "1.0.0-rc.5"
+version = "1.0.0-rc.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "10f095837711eb1c3ee02604b4e1d44b117014fb74da99ad4f2d70e907dbdc41"
+checksum = "fb102f82be32b4be0af662746ecc1b632371903eb096e8d840505431277e090c"
 dependencies = [
  "async-stripe-shared",
  "async-stripe-types",
@@ -310,9 +310,9 @@ dependencies = [
 
 [[package]]
 name = "async-stripe-core"
-version = "1.0.0-rc.5"
+version = "1.0.0-rc.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ee9710c3d64db48dda1ec0b4976d091b7f40cabc8ed7bcab9e93b608b70b405c"
+checksum = "d0a62f29770d512604b6b85e977ec692f7fe31449a6af1c2ad39a4a3559992b3"
 dependencies = [
  "async-stripe-client-core",
  "async-stripe-shared",
@@ -325,9 +325,9 @@ dependencies = [
 
 [[package]]
 name = "async-stripe-payment"
-version = "1.0.0-rc.5"
+version = "1.0.0-rc.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f57b37183dd9fcb700af54acc49e0dbd738b3f4596b0feb486c5d2dab0d22bac"
+checksum = "9063ec5de6b3c6ea14141911fd55eb2e54051acc9c0223b4ce7f938295f587fb"
 dependencies = [
  "async-stripe-client-core",
  "async-stripe-shared",
@@ -340,9 +340,9 @@ dependencies = [
 
 [[package]]
 name = "async-stripe-shared"
-version = "1.0.0-rc.5"
+version = "1.0.0-rc.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a352c5e36a92aa8bdd4326c8211b9a26e822e6cb4b7516a47282396a4938a231"
+checksum = "80a31d49bf137889e1ece81c2aca94d144c041815388df5b8616a787e7beb611"
 dependencies = [
  "async-stripe-types",
  "miniserde",
@@ -353,9 +353,9 @@ dependencies = [
 
 [[package]]
 name = "async-stripe-types"
-version = "1.0.0-rc.5"
+version = "1.0.0-rc.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e1ec9960b89b1f556bf885403dd208d173a8c42d028fcd7baeca9ad2bfb13f6"
+checksum = "b461a9cc3cd14d56843aa9eced46b3d0e8c1937a2c735e224be5c6e529258c22"
 dependencies = [
  "miniserde",
  "serde",
@@ -1647,9 +1647,9 @@ dependencies = [
 
 [[package]]
 name = "evento"
-version = "2.0.0-alpha.15"
+version = "2.0.0-alpha.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "329b1a456c30711a3807b1d58c81814e880c40093ef5f3d6aab888b495cc02a6"
+checksum = "278c6516649c01cd826b5589f5281536138f3179b147088d3ce5f359bd81e2be"
 dependencies = [
  "evento-core",
  "evento-sql",
@@ -1659,9 +1659,9 @@ dependencies = [
 
 [[package]]
 name = "evento-core"
-version = "2.0.0-alpha.15"
+version = "2.0.0-alpha.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c1605ebc46d91c9ff4c4612a3644c090339220f9f2acfce6b8232b5bdad2f6d"
+checksum = "c4ac205be09876c67bded102c61b76fbdcaff96f7e141257e7654b19d6fd4fe9"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1680,9 +1680,9 @@ dependencies = [
 
 [[package]]
 name = "evento-macro"
-version = "2.0.0-alpha.15"
+version = "2.0.0-alpha.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9267c7b679f215ee11fae3ed9e953f4836fd49f66e1511c3832c3c4f3441a256"
+checksum = "5a2e60700ab142b673188811a4230303533ebac10adc36c4791489dd4cda017d"
 dependencies = [
  "convert_case 0.11.0",
  "quote",
@@ -1691,9 +1691,9 @@ dependencies = [
 
 [[package]]
 name = "evento-sql"
-version = "2.0.0-alpha.15"
+version = "2.0.0-alpha.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c59dff009d7c4c700351b31f558a67de7286e506d98f981b27d0d0124d3e431c"
+checksum = "46a036ff92c1922a48dc0806b94f3246766d00ac654329ba74df92f83e94d1ac"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1707,9 +1707,9 @@ dependencies = [
 
 [[package]]
 name = "evento-sql-migrator"
-version = "2.0.0-alpha.15"
+version = "2.0.0-alpha.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "edc8fd47212e66633d05c3d73ccf4548b6ae2d96c7cf6cd14ebdb1b0cee63b66"
+checksum = "bc7d3a626f6492cad852a88c96f8d108b55355c63e2a632ae7854977f2e76400"
 dependencies = [
  "async-trait",
  "evento-sql",
@@ -2856,17 +2856,6 @@ dependencies = [
  "hashbrown 0.17.1",
  "serde",
  "serde_core",
-]
-
-[[package]]
-name = "inherent"
-version = "1.0.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c727f80bfa4a6c6e2508d2f05b6f4bfce242030bd88ed15ae5331c5b5d30fba7"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.117",
 ]
 
 [[package]]
@@ -5164,9 +5153,9 @@ dependencies = [
 
 [[package]]
 name = "rust-i18n"
-version = "4.0.0"
+version = "4.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21031bf5e6f2c0ae745d831791c403608e99a8bd3776c7e5e5535acd70c3b7ba"
+checksum = "55691a65892c33ee2de49c15ea5600c6f4a70e8eeb8e6c3cd96d2a231d230c40"
 dependencies = [
  "globwalk",
  "regex",
@@ -5177,9 +5166,9 @@ dependencies = [
 
 [[package]]
 name = "rust-i18n-macro"
-version = "4.0.0"
+version = "4.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "51fe5295763b358606f7ca26a564e20f4469775a57ec1f09431249a33849ff52"
+checksum = "30de488acadcf767d97cd48518a8da8ea9777b1c9a5beca4eab78bbf77d07309"
 dependencies = [
  "glob",
  "proc-macro2",
@@ -5193,18 +5182,15 @@ dependencies = [
 
 [[package]]
 name = "rust-i18n-support"
-version = "4.0.0"
+version = "4.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69bcc115c8eea2803aa3d85362e339776f4988a0349f2f475af572e497443f6f"
+checksum = "aea0fef8a93c06326b66392c95a115120e609674cb2132d37d276a6b05b545b4"
 dependencies = [
  "arc-swap",
  "base62",
  "globwalk",
  "itertools 0.11.0",
- "lazy_static",
  "normpath",
- "proc-macro2",
- "regex",
  "serde",
  "serde_json",
  "serde_yaml",
@@ -5356,20 +5342,19 @@ checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
 name = "sea-query"
-version = "1.0.0-rc.34"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7e01d76c67146262612a9db50cbc4b4b3236a96a1f04f1744ef2582234187e2"
+checksum = "8d190cfb3bcceb8a8d7d04dee5a0c77f60c7627979cdcb47fdcb8934f009badf"
 dependencies = [
- "inherent",
  "sea-query-derive",
  "serde_json",
 ]
 
 [[package]]
 name = "sea-query-derive"
-version = "1.0.0-rc.12"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d88ad44b6ad9788c8b9476b6b91f94c7461d1e19d39cd8ea37838b1e6ff5aa8"
+checksum = "a0b0f466921cdd3cf4b89d5c3ac2173dba89a873ab395b123a645de181ec7537"
 dependencies = [
  "darling",
  "heck 0.4.1",
@@ -5381,9 +5366,9 @@ dependencies = [
 
 [[package]]
 name = "sea-query-sqlx"
-version = "0.8.0-rc.16"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce6094cb75079a34c4701aaae6d2c7ac57cff5f96ebc266a935935cd62aed0dc"
+checksum = "c5fec1459e5c033d0602853834cee904e8fcb16a121c8b614de17bea478a756c"
 dependencies = [
  "jiff-sqlx",
  "sea-query",
@@ -6121,7 +6106,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.4.2",
+ "getrandom 0.3.4",
  "once_cell",
  "rustix",
  "windows-sys 0.61.2",
