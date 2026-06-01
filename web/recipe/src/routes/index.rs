@@ -2,7 +2,7 @@ use axum::{extract::State, response::IntoResponse};
 use axum_extra::extract::Query;
 use evento::cursor::{Args, ReadResult, Value};
 use imkitchen_core::recipe::query::user::{RecipesQuery, SortBy, UserViewList};
-use imkitchen_types::recipe::{DietaryRestriction, RecipeType};
+use imkitchen_types::recipe::RecipeType;
 use serde::Deserialize;
 use std::str::FromStr;
 use strum::VariantArray;
@@ -42,8 +42,6 @@ pub struct PageQuery {
     pub recipe_type: Option<String>,
     pub search: Option<String>,
     pub sort_by: Option<SortBy>,
-    #[serde(default)]
-    pub dietary_restrictions: Vec<DietaryRestriction>,
     pub in_meal_plan: Option<bool>,
 }
 
@@ -67,6 +65,18 @@ pub async fn page(
         .recipe_type
         .and_then(|v| RecipeType::from_str(v.as_str()).ok());
 
+    let in_meal_plan = input.in_meal_plan.unwrap_or(false);
+
+    let dietary_restrictions = if in_meal_plan {
+        vec![]
+    } else {
+        let preferences = imkitchen_web_shared::try_page_response!(
+            app.identity.meal_preferences.load(&user.id),
+            template
+        );
+        preferences.dietary_restrictions
+    };
+
     let recipes = imkitchen_web_shared::try_page_response!(
         app.core.recipe.filter_user(RecipesQuery {
             exclude_ids: None,
@@ -74,9 +84,9 @@ pub async fn page(
             recipe_type,
             is_shared: Some(true),
             has_thumbnail: None,
-            dietary_restrictions: input.dietary_restrictions,
+            dietary_restrictions,
             dietary_where_any: false,
-            in_meal_plan: Some((user.id.to_owned(), input.in_meal_plan.unwrap_or(false))),
+            in_meal_plan: Some((user.id.to_owned(), in_meal_plan)),
             sort_by: input.sort_by.unwrap_or_default(),
             args: args.limit(20),
             search: input.search,

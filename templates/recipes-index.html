@@ -53,20 +53,6 @@
       </div>
     </div>
 
-    <!-- Dietary Filters -->
-    <div class="mt-4 pt-4 border-t">
-      <label class="block text-sm font-semibold text-ink-2 mb-3">{{ "Dietary Restrictions"|t }}</label>
-      <div class="flex flex-wrap gap-3">
-        {% for restriction in DietaryRestriction::VARIANTS %}
-        <label class="flex items-center">
-          <input type="checkbox" name="dietary_restrictions" value="{{ restriction }}"
-            class="rounded border-line text-primary-500" />
-          <span class="ml-2 text-sm">{{ restriction.as_ref()|t }}</span>
-        </label>
-        {% endfor %}
-      </div>
-    </div>
-
     <div class="mt-4 pt-4 border-t flex flex-wrap items-center gap-4">
       <label class="flex items-center gap-2 cursor-pointer">
         <input name="in_meal_plan" type="checkbox" value="true"
@@ -89,7 +75,7 @@
     {% for recipe in recipes.edges %}
     <a id="recipe-{{ recipe.node.id }}" href="/recipes/{{ recipe.node.id }}" {% if let (true, true,
       Some(cursor))=(loop.last, recipes.page_info.has_next_page, recipes.page_info.end_cursor.to_owned()) %}
-      ts-req="/recipes?after={{ cursor.to_string() }}{% if let Some(sort_by) = query.sort_by %}&sort_by={{ sort_by }}{% endif %}{% if let Some(recipe_type) = query.recipe_type %}&recipe_type={{ recipe_type }}{% endif %}{% for restriction in query.dietary_restrictions %}&dietary_restrictions={{ restriction }}{% endfor %}{% if let Some(true) = query.in_meal_plan %}&in_meal_plan=true{% endif %}"
+      ts-req="/recipes?after={{ cursor.to_string() }}{% if let Some(sort_by) = query.sort_by %}&sort_by={{ sort_by }}{% endif %}{% if let Some(recipe_type) = query.recipe_type %}&recipe_type={{ recipe_type }}{% endif %}{% if let Some(true) = query.in_meal_plan %}&in_meal_plan=true{% endif %}"
       ts-req-method="GET" ts-req-selector="children #recipes-list" ts-swap="afterend" ts-trigger="visible once" {% endif
       %} class="bg-paper rounded-xl shadow-md overflow-hidden hover:shadow-lg transition">
       <div class="relative">
