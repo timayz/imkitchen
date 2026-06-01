@@ -6,10 +6,10 @@ use evento::{
 };
 use image::imageops::FilterType;
 use imkitchen_types::recipe::{
-    self, AdvancePrepChanged, BasicInformationChanged, Created, CuisineType, CuisineTypeChanged,
-    Deleted, DietaryRestrictionsChanged, Imported, IngredientsChanged, InstructionsChanged,
-    MadePrivate, MainCourseOptionsChanged, RecipeType, RecipeTypeChanged, SharedToCommunity,
-    ThumbnailResized, ThumbnailUploaded,
+    self, AdvancePrepChanged, BasicInformationChanged, Created, CuisineTypeChanged, Deleted,
+    DietaryRestrictionsChanged, Imported, IngredientsChanged, InstructionsChanged, MadePrivate,
+    MainCourseOptionsChanged, RecipeType, RecipeTypeChanged, SharedToCommunity, ThumbnailResized,
+    ThumbnailUploaded,
 };
 use imkitchen_types::recipe_share::{self, AllMadePrivate, AllSharedToCommunity};
 use sha3::{Digest, Sha3_224};
@@ -83,7 +83,6 @@ pub struct Recipe {
     pub id: String,
     pub owner_id: String,
     pub recipe_type: RecipeType,
-    pub cuisine_type: CuisineType,
     pub basic_information_hash: Vec<u8>,
     pub ingredients_hash: Vec<u8>,
     pub instructions_hash: Vec<u8>,
@@ -142,13 +141,13 @@ pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Re
         .handler(handle_recipe_type_changed())
         .handler(handle_shared_to_community())
         .handler(handle_advance_prep_changed())
-        .handler(handle_cuinine_type_changed())
         .handler(handle_instructions_changed())
         .handler(handle_basic_information_changed())
         .handler(handle_main_course_options_changed())
         .handler(handle_dietary_restrictions_changed())
         .skip::<ThumbnailUploaded>()
         .skip::<ThumbnailResized>()
+        .skip::<CuisineTypeChanged>()
         .safety_check()
 }
 
@@ -171,7 +170,6 @@ async fn handle_imported(event: Event<Imported>, data: &mut Recipe) -> anyhow::R
     data.id = event.aggregator_id.to_owned();
     data.owner_id = event.metadata.requested_by()?;
     data.recipe_type = event.data.recipe_type;
-    data.cuisine_type = event.data.cuisine_type;
 
     let mut hasher = Sha3_224::default();
     hasher.update(event.data.name);
@@ -307,16 +305,6 @@ async fn handle_dietary_restrictions_changed(
     }
 
     data.dietary_restrictions_hash = hasher.finalize()[..].to_vec();
-
-    Ok(())
-}
-
-#[evento::handler]
-async fn handle_cuinine_type_changed(
-    event: Event<CuisineTypeChanged>,
-    data: &mut Recipe,
-) -> anyhow::Result<()> {
-    data.cuisine_type = event.data.cuisine_type;
 
     Ok(())
 }

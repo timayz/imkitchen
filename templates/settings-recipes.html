@@ -88,16 +88,6 @@
           {% endfor %}
         </select>
       </div>
-      <div>
-        <label class="block text-sm font-semibold text-ink-2 mb-2">{{ "Cuisine"|t }}</label>
-        <select name="cuisine_type"
-          class="w-full px-4 py-2 border border-line rounded-xl focus:ring-2 focus:ring-primary-500">
-          <option value="">{{ "All Cuisines"|t }}</option>
-          {% for variant in CuisineType::VARIANTS %}
-          <option value="{{ variant }}">{{ variant.as_ref()|t }}</option>
-          {% endfor %}
-        </select>
-      </div>
       <div class="md:col-span-3 flex flex-wrap items-center gap-4">
         <label class="flex items-center gap-2 cursor-pointer">
           <input name="no_image" type="checkbox" value="true"
@@ -120,7 +110,7 @@
     {% for recipe in recipes.edges %}
     <a id="recipe-{{ recipe.node.id }}" href="/recipes/{{ recipe.node.id }}" {% if let (true, true,
       Some(cursor))=(loop.last, recipes.page_info.has_next_page, recipes.page_info.end_cursor.to_owned()) %}
-      ts-req="/settings/recipes?after={{ cursor.to_string() }}{% if let Some(recipe_type) = query.recipe_type %}&recipe_type={{ recipe_type }}{% endif %}{% if let Some(cuisine_type) = query.cuisine_type %}&cuisine_type={{ cuisine_type }}{% endif %}{% if let Some(true) = query.no_image %}&no_image=true{% endif %}"
+      ts-req="/settings/recipes?after={{ cursor.to_string() }}{% if let Some(recipe_type) = query.recipe_type %}&recipe_type={{ recipe_type }}{% endif %}{% if let Some(true) = query.no_image %}&no_image=true{% endif %}"
       ts-req-method="GET" ts-req-selector="children #recipes-list" ts-swap="afterend" ts-trigger="visible once" {% endif
       %} class="group flex items-center gap-4 bg-paper rounded-xl shadow-sm hover:shadow-md p-3 transition-all">
       {% match recipe.node.recipe_type.0 %}
@@ -141,7 +131,6 @@
         <h3 class="font-semibold text-ink truncate group-hover:text-primary-600 transition-colors">{{ recipe.node.name }}</h3>
         <div class="flex items-center gap-3 text-xs text-ink-3 mt-1">
           <span>{{ recipe.node.recipe_type.as_ref()|t }}</span>
-          <span>{{ recipe.node.cuisine_type.as_ref()|t }}</span>
           <span>⏱️ {{ (recipe.node.cook_time + recipe.node.prep_time)|minutes }}</span>
           {% if recipe.node.is_shared %}
           <span class="text-green-600 font-medium">{{ "Shared"|t }}</span>

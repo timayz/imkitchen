@@ -7,5 +7,8 @@ sqlx_migrator::sqlite_migration!(
     "imkitchen",
     "m0004",
     vec_box![super::m0003::Migration],
-    vec_box![crate::mealplan_slot::m0004::AddBeverageAndCondiment]
+    vec_box![
+        crate::mealplan_slot::m0004::AddBeverageAndCondiment,
+        crate::recipe_user::m0004::DropCuisineType,
+    ]
 );

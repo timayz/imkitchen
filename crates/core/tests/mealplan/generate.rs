@@ -1,6 +1,6 @@
 use evento::Sqlite;
 use imkitchen_core::recipe::ImportInput;
-use imkitchen_types::recipe::{CuisineType, RecipeType};
+use imkitchen_types::recipe::RecipeType;
 use temp_dir::TempDir;
 use time::OffsetDateTime;
 
@@ -62,7 +62,6 @@ async fn import_recipe(
         household_size: 4,
         cook_time: 25,
         prep_time: 10,
-        cuisine_type: CuisineType::Caribbean,
         recipe_type,
     };
 

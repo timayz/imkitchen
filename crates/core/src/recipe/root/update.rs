@@ -3,9 +3,9 @@ use sha3::{Digest, Sha3_224};
 use validator::Validate;
 
 use imkitchen_types::recipe::{
-    AdvancePrepChanged, BasicInformationChanged, CuisineType, CuisineTypeChanged,
-    DietaryRestriction, DietaryRestrictionsChanged, Ingredient, IngredientsChanged, Instruction,
-    InstructionsChanged, MainCourseOptionsChanged, RecipeType, RecipeTypeChanged,
+    AdvancePrepChanged, BasicInformationChanged, DietaryRestriction, DietaryRestrictionsChanged,
+    Ingredient, IngredientsChanged, Instruction, InstructionsChanged, MainCourseOptionsChanged,
+    RecipeType, RecipeTypeChanged,
 };
 
 #[derive(Validate, Clone)]
@@ -25,7 +25,6 @@ pub struct UpdateInput {
     pub ingredients: Vec<Ingredient>,
     pub instructions: Vec<Instruction>,
     pub dietary_restrictions: Vec<DietaryRestriction>,
-    pub cuisine_type: CuisineType,
     pub accepts_accompaniment: bool,
     #[validate(length(max = 2000))]
     pub advance_prep: String,
@@ -55,13 +54,6 @@ impl<E: Executor + Clone> super::Module<E> {
             has_data = true;
             builder.event(&RecipeTypeChanged {
                 recipe_type: input.recipe_type,
-            });
-        }
-
-        if recipe.cuisine_type != input.cuisine_type {
-            has_data = true;
-            builder.event(&CuisineTypeChanged {
-                cuisine_type: input.cuisine_type,
             });
         }
 

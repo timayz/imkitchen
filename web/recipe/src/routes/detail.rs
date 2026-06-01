@@ -104,7 +104,6 @@ pub async fn page(
             exclude_ids: Some(exclude_ids),
             user_id: Some(recipe.owner_id.to_owned()),
             recipe_type: None,
-            cuisine_type: None,
             is_shared: Some(true),
             has_thumbnail: None,
             dietary_restrictions: vec![],
@@ -130,7 +129,6 @@ pub async fn page(
             exclude_ids: Some(exclude_ids.to_vec()),
             user_id: None,
             recipe_type: Some(recipe.recipe_type.0.to_owned()),
-            cuisine_type: Some(recipe.cuisine_type.0.to_owned()),
             is_shared: Some(true),
             has_thumbnail: None,
             dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
@@ -156,98 +154,10 @@ pub async fn page(
                 exclude_ids: Some(similar_ids),
                 user_id: None,
                 recipe_type: Some(recipe.recipe_type.0.to_owned()),
-                cuisine_type: Some(recipe.cuisine_type.0.to_owned()),
                 is_shared: Some(true),
                 has_thumbnail: None,
                 dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
                 dietary_where_any: true,
-                in_meal_plan: None,
-                sort_by: SortBy::RecentlyAdded,
-                args: Args::forward(6, None),
-                search: None,
-            }),
-            template
-        );
-
-        similar_recipes.edges.extend(more_recipes.edges);
-    }
-
-    if similar_recipes.edges.len() < 6 {
-        let mut similar_ids = similar_recipes
-            .edges
-            .iter()
-            .map(|n| n.node.id.to_owned())
-            .collect::<Vec<_>>();
-        similar_ids.extend(exclude_ids.to_vec());
-
-        let more_recipes = imkitchen_web_shared::try_page_response!(
-            app.core.recipe.filter_user(RecipesQuery {
-                exclude_ids: Some(similar_ids),
-                user_id: None,
-                recipe_type: Some(recipe.recipe_type.0.to_owned()),
-                cuisine_type: None,
-                is_shared: Some(true),
-                has_thumbnail: None,
-                dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
-                dietary_where_any: false,
-                in_meal_plan: None,
-                sort_by: SortBy::RecentlyAdded,
-                args: Args::forward(6, None),
-                search: None,
-            }),
-            template
-        );
-
-        similar_recipes.edges.extend(more_recipes.edges);
-    }
-
-    if similar_recipes.edges.len() < 6 {
-        let mut similar_ids = similar_recipes
-            .edges
-            .iter()
-            .map(|n| n.node.id.to_owned())
-            .collect::<Vec<_>>();
-        similar_ids.extend(exclude_ids.to_vec());
-
-        let more_recipes = imkitchen_web_shared::try_page_response!(
-            app.core.recipe.filter_user(RecipesQuery {
-                exclude_ids: Some(similar_ids),
-                user_id: None,
-                recipe_type: Some(recipe.recipe_type.0.to_owned()),
-                cuisine_type: None,
-                is_shared: Some(true),
-                has_thumbnail: None,
-                dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
-                dietary_where_any: true,
-                in_meal_plan: None,
-                sort_by: SortBy::RecentlyAdded,
-                args: Args::forward(6, None),
-                search: None,
-            }),
-            template
-        );
-
-        similar_recipes.edges.extend(more_recipes.edges);
-    }
-
-    if similar_recipes.edges.len() < 6 {
-        let mut similar_ids = similar_recipes
-            .edges
-            .iter()
-            .map(|n| n.node.id.to_owned())
-            .collect::<Vec<_>>();
-        similar_ids.extend(exclude_ids.to_vec());
-
-        let more_recipes = imkitchen_web_shared::try_page_response!(
-            app.core.recipe.filter_user(RecipesQuery {
-                exclude_ids: Some(similar_ids),
-                user_id: None,
-                recipe_type: Some(recipe.recipe_type.0.to_owned()),
-                cuisine_type: None,
-                is_shared: Some(true),
-                has_thumbnail: None,
-                dietary_restrictions: vec![],
-                dietary_where_any: false,
                 in_meal_plan: None,
                 sort_by: SortBy::RecentlyAdded,
                 args: Args::forward(6, None),
@@ -271,8 +181,7 @@ pub async fn page(
             app.core.recipe.filter_user(RecipesQuery {
                 exclude_ids: Some(similar_ids),
                 user_id: None,
-                cuisine_type: Some(recipe.cuisine_type.0.to_owned()),
-                recipe_type: None,
+                recipe_type: Some(recipe.recipe_type.0.to_owned()),
                 is_shared: Some(true),
                 has_thumbnail: None,
                 dietary_restrictions: vec![],

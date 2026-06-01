@@ -234,16 +234,6 @@
         </div>
       </div>
 
-      <div class="mb-4">
-        <label for="cuisine" class="block text-sm font-semibold text-ink-2 mb-2">{{ "Cuisine Type"|t }} *</label>
-        <select id="cuisine" name="cuisine_type"
-          class="w-full px-4 py-3 border border-line rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          required>
-          {% for variant in CuisineType::VARIANTS %}
-          <option{% if &form.cuisine_type == variant %} selected{% endif %} value="{{ variant }}">{{ variant.as_ref()|t }}</option>
-          {% endfor %}
-        </select>
-      </div>
     </div>
 
     <!-- Main Course Specific Options -->

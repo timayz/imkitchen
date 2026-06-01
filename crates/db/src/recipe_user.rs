@@ -535,3 +535,38 @@ pub(crate) mod m0003 {
         }
     }
 }
+
+pub(crate) mod m0004 {
+    pub struct DropCuisineType;
+
+    #[async_trait::async_trait]
+    impl sqlx_migrator::Operation<sqlx::Sqlite> for DropCuisineType {
+        async fn up(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            sqlx::query("DROP INDEX IF EXISTS idx_recipe_user_6jagKS")
+                .execute(&mut *connection)
+                .await?;
+            sqlx::query("DROP INDEX IF EXISTS idx_recipe_user_QJBhvl")
+                .execute(&mut *connection)
+                .await?;
+            sqlx::query("ALTER TABLE recipe_user DROP COLUMN cuisine_type")
+                .execute(&mut *connection)
+                .await
+                .ok();
+            sqlx::query("UPDATE subscriber SET cursor = NULL WHERE key = 'recipe-query'")
+                .execute(connection)
+                .await?;
+
+            Ok(())
+        }
+
+        async fn down(
+            &self,
+            _connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            Ok(())
+        }
+    }
+}
