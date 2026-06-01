@@ -1,6 +1,6 @@
 use imkitchen_core::recipe::UpdateInput;
 use imkitchen_types::recipe::{
-    CuisineType, DietaryRestriction, Ingredient, IngredientUnit, Instruction, RecipeType,
+    DietaryRestriction, Ingredient, IngredientUnit, Instruction, RecipeType,
 };
 use temp_dir::TempDir;
 
@@ -38,7 +38,6 @@ async fn test_update_no_fields() -> anyhow::Result<()> {
         household_size: 4,
         cook_time: 25,
         prep_time: 10,
-        cuisine_type: CuisineType::Caribbean,
         recipe_type: RecipeType::MainCourse,
         id: recipe_id.to_owned(),
     };
@@ -48,7 +47,6 @@ async fn test_update_no_fields() -> anyhow::Result<()> {
     let recipe = cmd.load(&recipe_id).await?.unwrap();
 
     assert_eq!(recipe.recipe_type, RecipeType::MainCourse);
-    assert_eq!(recipe.cuisine_type, CuisineType::Caribbean);
 
     // Update with same values should not change anything
     cmd.update(input.clone(), "john").await?;
@@ -56,7 +54,6 @@ async fn test_update_no_fields() -> anyhow::Result<()> {
     let recipe = cmd.load(&recipe_id).await?.unwrap();
 
     assert_eq!(recipe.recipe_type, RecipeType::MainCourse);
-    assert_eq!(recipe.cuisine_type, CuisineType::Caribbean);
 
     Ok(())
 }
@@ -93,7 +90,6 @@ async fn test_update_only_recipe_type() -> anyhow::Result<()> {
         household_size: 4,
         cook_time: 25,
         prep_time: 10,
-        cuisine_type: CuisineType::Caribbean,
         recipe_type: RecipeType::MainCourse,
         id: recipe_id.to_owned(),
     };
@@ -107,56 +103,6 @@ async fn test_update_only_recipe_type() -> anyhow::Result<()> {
     let recipe = cmd.load(&recipe_id).await?.unwrap();
 
     assert_eq!(recipe.recipe_type, RecipeType::Dessert);
-
-    Ok(())
-}
-
-#[tokio::test]
-async fn test_update_only_cuisine_type() -> anyhow::Result<()> {
-    let dir = TempDir::new()?;
-    let path = dir.child("db.sqlite3");
-    let state = helpers::setup_test_state(path).await?;
-    let cmd = imkitchen_core::recipe::Module::new(state);
-
-    let recipe_id = cmd.create("john", "john_doe".to_owned()).await?;
-
-    let mut input = UpdateInput {
-        name: "My first Recipe".to_owned(),
-        origin: None,
-        description: "My first description".to_owned(),
-        advance_prep: "My first advance prep".to_owned(),
-        dietary_restrictions: vec![
-            DietaryRestriction::DairyFree,
-            DietaryRestriction::GlutenFree,
-        ],
-        accepts_accompaniment: false,
-        ingredients: vec![Ingredient {
-            name: "ingredient 1".to_owned(),
-            quantity: 1,
-            unit: Some(IngredientUnit::G),
-            category: None,
-        }],
-        instructions: vec![Instruction {
-            time_next: 15,
-            description: "My first instruction".to_owned(),
-        }],
-        household_size: 4,
-        cook_time: 25,
-        prep_time: 10,
-        cuisine_type: CuisineType::Caribbean,
-        recipe_type: RecipeType::MainCourse,
-        id: recipe_id.to_owned(),
-    };
-
-    cmd.update(input.clone(), "john").await?;
-
-    input.cuisine_type = CuisineType::Italian;
-
-    cmd.update(input.clone(), "john").await?;
-
-    let recipe = cmd.load(&recipe_id).await?.unwrap();
-
-    assert_eq!(recipe.cuisine_type, CuisineType::Italian);
 
     Ok(())
 }
@@ -193,7 +139,6 @@ async fn test_update_only_accepts_accompaniment() -> anyhow::Result<()> {
         household_size: 4,
         cook_time: 25,
         prep_time: 10,
-        cuisine_type: CuisineType::Caribbean,
         recipe_type: RecipeType::MainCourse,
         id: recipe_id.to_owned(),
     };

@@ -43,16 +43,6 @@
         </select>
       </div>
       <div>
-        <label class="block text-sm font-semibold text-ink-2 mb-2">{{ "Cuisine"|t }}</label>
-        <select name="cuisine_type"
-          class="w-full px-4 py-2 border border-line rounded-xl focus:ring-2 focus:ring-primary-500">
-          <option value="">{{ "All Cuisines"|t }}</option>
-          {% for variant in CuisineType::VARIANTS %}
-          <option value="{{ variant }}">{{ variant.as_ref()|t }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div>
         <label class="block text-sm font-semibold text-ink-2 mb-2">{{ "Sort By"|t }}</label>
         <select name="sort_by"
           class="w-full px-4 py-2 border border-line rounded-xl focus:ring-2 focus:ring-primary-500">
@@ -99,7 +89,7 @@
     {% for recipe in recipes.edges %}
     <a id="recipe-{{ recipe.node.id }}" href="/recipes/{{ recipe.node.id }}" {% if let (true, true,
       Some(cursor))=(loop.last, recipes.page_info.has_next_page, recipes.page_info.end_cursor.to_owned()) %}
-      ts-req="/recipes?after={{ cursor.to_string() }}{% if let Some(sort_by) = query.sort_by %}&sort_by={{ sort_by }}{% endif %}{% if let Some(recipe_type) = query.recipe_type %}&recipe_type={{ recipe_type }}{% endif %}{% if let Some(cuisine_type) = query.cuisine_type %}&cuisine_type={{ cuisine_type }}{% endif %}{% for restriction in query.dietary_restrictions %}&dietary_restrictions={{ restriction }}{% endfor %}{% if let Some(true) = query.in_meal_plan %}&in_meal_plan=true{% endif %}"
+      ts-req="/recipes?after={{ cursor.to_string() }}{% if let Some(sort_by) = query.sort_by %}&sort_by={{ sort_by }}{% endif %}{% if let Some(recipe_type) = query.recipe_type %}&recipe_type={{ recipe_type }}{% endif %}{% for restriction in query.dietary_restrictions %}&dietary_restrictions={{ restriction }}{% endfor %}{% if let Some(true) = query.in_meal_plan %}&in_meal_plan=true{% endif %}"
       ts-req-method="GET" ts-req-selector="children #recipes-list" ts-swap="afterend" ts-trigger="visible once" {% endif
       %} class="bg-paper rounded-xl shadow-md overflow-hidden hover:shadow-lg transition">
       <div class="relative">
@@ -193,7 +183,6 @@
           {% for restriction in recipe.node.dietary_restrictions.iter() %}
           <span class="px-2 py-0.5 bg-primary-100 text-primary-800 rounded">{{ restriction.as_ref()|t }}</span>
           {% endfor %}
-          <span class="px-2 py-0.5 bg-blue-100 text-blue-800 rounded">{{ recipe.node.cuisine_type.as_ref()|t }}</span>
         </div>
         <div class="flex items-center justify-between text-sm text-ink-2 mb-3">
           <span>⏱️ {{ (recipe.node.cook_time + recipe.node.prep_time)|minutes }}</span>

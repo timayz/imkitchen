@@ -5,8 +5,7 @@ use axum::{
 use axum_extra::extract::Form;
 use imkitchen_core::recipe::UpdateInput;
 use imkitchen_types::recipe::{
-    CuisineType, DietaryRestriction, Ingredient, IngredientCategory, IngredientUnit, Instruction,
-    RecipeType,
+    DietaryRestriction, Ingredient, IngredientCategory, IngredientUnit, Instruction, RecipeType,
 };
 use serde::Deserialize;
 use std::str::FromStr;
@@ -45,7 +44,6 @@ pub struct EditForm {
     pub instructions_time_next: Vec<u16>,
     #[serde(default)]
     pub dietary_restrictions: Vec<DietaryRestriction>,
-    pub cuisine_type: CuisineType,
     #[serde(default)]
     pub accepts_accompaniment: String,
     pub advance_prep: String,
@@ -112,7 +110,6 @@ pub async fn page(
                 ingredients: recipe.ingredients.0,
                 instructions: recipe.instructions.0,
                 dietary_restrictions: recipe.dietary_restrictions.0,
-                cuisine_type: recipe.cuisine_type.0,
                 accepts_accompaniment: accepts_accompaniment.to_owned(),
                 advance_prep: recipe.advance_prep,
                 ingredients_unit: vec![],
@@ -197,7 +194,6 @@ pub async fn action(
                 ingredients,
                 instructions,
                 dietary_restrictions: input.dietary_restrictions,
-                cuisine_type: input.cuisine_type,
                 accepts_accompaniment: input.accepts_accompaniment == "on",
                 advance_prep: input.advance_prep,
             },

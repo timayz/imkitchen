@@ -7,9 +7,9 @@ use evento::{
 use imkitchen_db::mealplan_recipe::MealPlanRecipe;
 use imkitchen_db::recipe_user::{RecipeUser, RecipeUserFts};
 use imkitchen_types::recipe::{
-    AdvancePrepChanged, BasicInformationChanged, Created, CuisineType, CuisineTypeChanged, Deleted,
-    DietaryRestriction, DietaryRestrictionsChanged, Imported, Ingredient, IngredientsChanged,
-    Instruction, InstructionsChanged, MadePrivate, MainCourseOptionsChanged, Recipe, RecipeType,
+    AdvancePrepChanged, BasicInformationChanged, Created, Deleted, DietaryRestriction,
+    DietaryRestrictionsChanged, Imported, Ingredient, IngredientsChanged, Instruction,
+    InstructionsChanged, MadePrivate, MainCourseOptionsChanged, Recipe, RecipeType,
     RecipeTypeChanged, SharedToCommunity, ThumbnailResized,
 };
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
@@ -32,7 +32,6 @@ pub struct UserView {
     pub owner_id: String,
     pub owner_name: Option<String>,
     pub recipe_type: sqlx::types::Text<RecipeType>,
-    pub cuisine_type: sqlx::types::Text<CuisineType>,
     pub name: String,
     pub origin: Option<String>,
     pub description: String,
@@ -58,7 +57,6 @@ pub struct UserViewList {
     pub owner_id: String,
     pub owner_name: Option<String>,
     pub recipe_type: sqlx::types::Text<RecipeType>,
-    pub cuisine_type: sqlx::types::Text<CuisineType>,
     pub name: String,
     pub description: String,
     pub prep_time: u16,
@@ -77,7 +75,6 @@ pub struct RecipesQuery {
     pub exclude_ids: Option<Vec<String>>,
     pub user_id: Option<String>,
     pub recipe_type: Option<RecipeType>,
-    pub cuisine_type: Option<CuisineType>,
     pub is_shared: Option<bool>,
     pub has_thumbnail: Option<bool>,
     pub dietary_restrictions: Vec<DietaryRestriction>,
@@ -99,7 +96,6 @@ impl<E: Executor> crate::recipe::Module<E> {
                 RecipeUser::OwnerId,
                 RecipeUser::OwnerName,
                 RecipeUser::RecipeType,
-                RecipeUser::CuisineType,
                 RecipeUser::Name,
                 RecipeUser::Description,
                 RecipeUser::PrepTime,
@@ -155,10 +151,6 @@ impl<E: Executor> crate::recipe::Module<E> {
 
         if let Some(recipe_type) = query.recipe_type {
             statement.and_where(Expr::col(RecipeUser::RecipeType).eq(recipe_type.to_string()));
-        }
-
-        if let Some(cuisine_type) = query.cuisine_type {
-            statement.and_where(Expr::col(RecipeUser::CuisineType).eq(cuisine_type.to_string()));
         }
 
         if !query.dietary_restrictions.is_empty() {
@@ -312,7 +304,6 @@ async fn find_user(pool: &SqlitePool, id: impl Into<String>) -> anyhow::Result<O
             RecipeUser::OwnerId,
             RecipeUser::OwnerName,
             RecipeUser::RecipeType,
-            RecipeUser::CuisineType,
             RecipeUser::Name,
             RecipeUser::Origin,
             RecipeUser::Description,
@@ -350,7 +341,6 @@ pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Us
         .handler(handle_ingredients_changed())
         .handler(handle_instructions_changed())
         .handler(handle_dietary_restrictions_changed())
-        .handler(handle_cuisine_type_changed())
         .handler(handle_main_course_options_changed())
         .handler(handle_advance_prep_changed())
         .handler(handle_shared_to_community())
@@ -412,7 +402,6 @@ impl<E: Executor> Snapshot<E> for UserView {
                 RecipeUser::OwnerId,
                 RecipeUser::OwnerName,
                 RecipeUser::RecipeType,
-                RecipeUser::CuisineType,
                 RecipeUser::Name,
                 RecipeUser::Origin,
                 RecipeUser::Description,
@@ -435,7 +424,6 @@ impl<E: Executor> Snapshot<E> for UserView {
                 self.owner_id.to_owned().into(),
                 self.owner_name.to_owned().into(),
                 self.recipe_type.to_string().into(),
-                self.cuisine_type.to_string().into(),
                 self.name.to_owned().into(),
                 self.origin.to_owned().into(),
                 self.description.to_owned().into(),
@@ -459,7 +447,6 @@ impl<E: Executor> Snapshot<E> for UserView {
                         RecipeUser::OwnerId,
                         RecipeUser::OwnerName,
                         RecipeUser::RecipeType,
-                        RecipeUser::CuisineType,
                         RecipeUser::Name,
                         RecipeUser::Origin,
                         RecipeUser::Description,
@@ -509,7 +496,6 @@ async fn handle_imported(event: Event<Imported>, data: &mut UserView) -> anyhow:
     data.origin = event.data.origin;
     data.description = event.data.description;
     data.recipe_type.0 = event.data.recipe_type;
-    data.cuisine_type.0 = event.data.cuisine_type;
     data.prep_time = event.data.prep_time;
     data.cook_time = event.data.cook_time;
     data.advance_prep = event.data.advance_prep;
@@ -573,16 +559,6 @@ async fn handle_dietary_restrictions_changed(
     data: &mut UserView,
 ) -> anyhow::Result<()> {
     data.dietary_restrictions.0 = event.data.dietary_restrictions;
-
-    Ok(())
-}
-
-#[evento::handler]
-async fn handle_cuisine_type_changed(
-    event: Event<CuisineTypeChanged>,
-    data: &mut UserView,
-) -> anyhow::Result<()> {
-    data.cuisine_type.0 = event.data.cuisine_type;
 
     Ok(())
 }

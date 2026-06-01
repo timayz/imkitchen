@@ -4,9 +4,7 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
-use imkitchen_types::recipe::{
-    CuisineType, DietaryRestriction, Ingredient, Instruction, RecipeType,
-};
+use imkitchen_types::recipe::{DietaryRestriction, Ingredient, Instruction, RecipeType};
 use serde::Deserialize;
 
 use imkitchen_web_shared::{
@@ -32,7 +30,6 @@ pub struct ImportJson {
     pub cook_time: u16,
     pub ingredients: Vec<Ingredient>,
     pub instructions: Vec<Instruction>,
-    pub cuisine_type: CuisineType,
     pub advance_prep: Option<String>,
     pub dietary_restrictions: Vec<DietaryRestriction>,
     pub accepts_accompaniment: bool,
@@ -98,7 +95,6 @@ pub async fn action(
                     cook_time: recipe.cook_time,
                     ingredients: recipe.ingredients,
                     instructions: recipe.instructions,
-                    cuisine_type: recipe.cuisine_type,
                     advance_prep: recipe.advance_prep.unwrap_or_default(),
                     accepts_accompaniment: recipe.accepts_accompaniment,
                     dietary_restrictions: recipe.dietary_restrictions,

@@ -4,7 +4,7 @@ use axum::{
 };
 use evento::cursor::{Args, ReadResult, Value};
 use imkitchen_core::recipe::query::user::{RecipesQuery, SortBy, UserViewList};
-use imkitchen_types::recipe::{CuisineType, RecipeType};
+use imkitchen_types::recipe::RecipeType;
 use serde::Deserialize;
 use std::str::FromStr;
 use strum::VariantArray;
@@ -46,7 +46,6 @@ pub struct PageQuery {
     pub last: Option<u16>,
     pub before: Option<Value>,
     pub recipe_type: Option<String>,
-    pub cuisine_type: Option<String>,
     pub search: Option<String>,
     pub sort_by: Option<SortBy>,
     pub no_image: Option<bool>,
@@ -72,16 +71,11 @@ pub async fn page(
         .recipe_type
         .and_then(|v| RecipeType::from_str(v.as_str()).ok());
 
-    let cuisine_type = input
-        .cuisine_type
-        .and_then(|v| CuisineType::from_str(v.as_str()).ok());
-
     let recipes = imkitchen_web_shared::try_page_response!(
         app.core.recipe.filter_user(RecipesQuery {
             exclude_ids: None,
             user_id: Some(user.id.to_owned()),
             recipe_type,
-            cuisine_type,
             is_shared: None,
             has_thumbnail: if input.no_image.unwrap_or(false) {
                 Some(false)
