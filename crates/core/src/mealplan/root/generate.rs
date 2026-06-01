@@ -149,6 +149,34 @@ impl<E: Executor> super::Module<E> {
             };
             let mut dessert_recipes = dessert_recipes.iter();
 
+            let beverage_recipes = match input.randomize.as_ref() {
+                Some(opts) => {
+                    self.random(
+                        &input.user_id,
+                        RecipeType::Beverage,
+                        1.0,
+                        opts.dietary_restrictions.to_vec(),
+                    )
+                    .await?
+                }
+                _ => vec![],
+            };
+            let mut beverage_recipes = beverage_recipes.iter();
+
+            let condiment_recipes = match input.randomize.as_ref() {
+                Some(opts) => {
+                    self.random(
+                        &input.user_id,
+                        RecipeType::Condiment,
+                        1.0,
+                        opts.dietary_restrictions.to_vec(),
+                    )
+                    .await?
+                }
+                _ => vec![],
+            };
+            let mut condiment_recipes = condiment_recipes.iter();
+
             let accompaniment = if recipe.accepts_accompaniment && input.randomize.is_some() {
                 accompaniment_recipes.next().map(|r| r.into())
             } else {
@@ -163,6 +191,8 @@ impl<E: Executor> super::Module<E> {
                 main_course: recipe.into(),
                 dessert: dessert_recipes.next().map(|r| r.into()),
                 accompaniment,
+                beverage: beverage_recipes.next().map(|r| r.into()),
+                condiment: condiment_recipes.next().map(|r| r.into()),
             });
         }
 

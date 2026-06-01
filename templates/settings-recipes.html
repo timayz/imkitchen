@@ -132,6 +132,10 @@
       {% call recipe_thumb(recipe.node, "from-pink-400 to-pink-500", "from-pink-400 via-pink-200 to-pink-400", "🍰") %}{% endcall %}
       {% when RecipeType::Accompaniment %}
       {% call recipe_thumb(recipe.node, "from-purple-400 to-purple-500", "from-purple-400 via-purple-200 to-purple-400", "🍚") %}{% endcall %}
+      {% when RecipeType::Beverage %}
+      {% call recipe_thumb(recipe.node, "from-cyan-400 to-cyan-500", "from-cyan-400 via-cyan-200 to-cyan-400", "🥤") %}{% endcall %}
+      {% when RecipeType::Condiment %}
+      {% call recipe_thumb(recipe.node, "from-amber-400 to-amber-500", "from-amber-400 via-amber-200 to-amber-400", "🥫") %}{% endcall %}
       {% endmatch %}
       <div class="min-w-0 flex-1">
         <h3 class="font-semibold text-ink truncate group-hover:text-primary-600 transition-colors">{{ recipe.node.name }}</h3>

@@ -41,6 +41,8 @@ pub struct SlotRow {
     pub appetizer: Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
     pub accompaniment: Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
     pub dessert: Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
+    pub beverage: Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
+    pub condiment: Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
     pub generated_at: u64,
 }
 
@@ -57,6 +59,14 @@ impl SlotRow {
         }
 
         if let Some(ref recipe) = self.dessert {
+            t += recipe.total_prep_time();
+        }
+
+        if let Some(ref recipe) = self.beverage {
+            t += recipe.total_prep_time();
+        }
+
+        if let Some(ref recipe) = self.condiment {
             t += recipe.total_prep_time();
         }
 
@@ -82,6 +92,8 @@ impl<E: Executor> crate::mealplan::Module<E> {
                 MealPlanSlot::Appetizer,
                 MealPlanSlot::Accompaniment,
                 MealPlanSlot::Dessert,
+                MealPlanSlot::Beverage,
+                MealPlanSlot::Condiment,
                 MealPlanSlot::GeneratedAt,
             ])
             .from(MealPlanSlot::Table)
@@ -113,6 +125,8 @@ impl<E: Executor> crate::mealplan::Module<E> {
                 MealPlanSlot::Appetizer,
                 MealPlanSlot::Accompaniment,
                 MealPlanSlot::Dessert,
+                MealPlanSlot::Beverage,
+                MealPlanSlot::Condiment,
                 MealPlanSlot::GeneratedAt,
             ])
             .from(MealPlanSlot::Table)
@@ -182,6 +196,30 @@ impl<E: Executor> crate::mealplan::Module<E> {
             remiders.push(recipe);
         }
 
+        let recipe = slot.beverage.and_then(|r| {
+            if !r.advance_prep.is_empty() {
+                Some(r.0)
+            } else {
+                None
+            }
+        });
+
+        if let Some(recipe) = recipe {
+            remiders.push(recipe);
+        }
+
+        let recipe = slot.condiment.and_then(|r| {
+            if !r.advance_prep.is_empty() {
+                Some(r.0)
+            } else {
+                None
+            }
+        });
+
+        if let Some(recipe) = recipe {
+            remiders.push(recipe);
+        }
+
         if remiders.is_empty() {
             return Ok(None);
         }
@@ -221,6 +259,14 @@ async fn handle_days_generated<E: Executor>(
                 ids.push(r.id.to_owned());
             }
 
+            if let Some(ref r) = slot.beverage {
+                ids.push(r.id.to_owned());
+            }
+
+            if let Some(ref r) = slot.condiment {
+                ids.push(r.id.to_owned());
+            }
+
             ids
         })
         .collect::<Vec<_>>();
@@ -254,6 +300,8 @@ async fn handle_days_generated<E: Executor>(
             MealPlanSlot::Appetizer,
             MealPlanSlot::Accompaniment,
             MealPlanSlot::Dessert,
+            MealPlanSlot::Beverage,
+            MealPlanSlot::Condiment,
             MealPlanSlot::GeneratedAt,
         ])
         .to_owned();
@@ -292,6 +340,20 @@ async fn handle_days_generated<E: Executor>(
 
         let dessert = dessert.map(|r| bitcode::encode(&r));
 
+        let beverage: Option<DaySlotRecipe> = slot
+            .beverage
+            .and_then(|a| recipes.iter().find(|r| r.id == a.id))
+            .map(|r| r.into());
+
+        let beverage = beverage.map(|r| bitcode::encode(&r));
+
+        let condiment: Option<DaySlotRecipe> = slot
+            .condiment
+            .and_then(|a| recipes.iter().find(|r| r.id == a.id))
+            .map(|r| r.into());
+
+        let condiment = condiment.map(|r| bitcode::encode(&r));
+
         statement.values_panic([
             user_id.to_owned().into(),
             slot.day.into(),
@@ -301,6 +363,8 @@ async fn handle_days_generated<E: Executor>(
             appetizer.into(),
             accompaniment.into(),
             dessert.into(),
+            beverage.into(),
+            condiment.into(),
             timestamp.into(),
         ]);
 
@@ -319,6 +383,8 @@ async fn handle_days_generated<E: Executor>(
                 MealPlanSlot::MainCourse,
                 MealPlanSlot::Accompaniment,
                 MealPlanSlot::Dessert,
+                MealPlanSlot::Beverage,
+                MealPlanSlot::Condiment,
                 MealPlanSlot::GeneratedAt,
             ])
             .to_owned(),
@@ -344,6 +410,8 @@ async fn handle_slot_recipe_status_changed<E: Executor>(
             MealPlanSlot::Appetizer,
             MealPlanSlot::Accompaniment,
             MealPlanSlot::Dessert,
+            MealPlanSlot::Beverage,
+            MealPlanSlot::Condiment,
         ])
         .from(MealPlanSlot::Table)
         .and_where(Expr::col(MealPlanSlot::UserId).eq(&user_id))
@@ -351,10 +419,12 @@ async fn handle_slot_recipe_status_changed<E: Executor>(
         .limit(1)
         .build_sqlx(SqliteQueryBuilder);
 
-    let (mut main, appetizer, accompaniment, dessert) = sqlx::query_as_with::<
+    let (mut main, appetizer, accompaniment, dessert, beverage, condiment) = sqlx::query_as_with::<
         _,
         (
             evento::sql_types::Bitcode<DaySlotRecipe>,
+            Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
+            Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
             Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
             Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
             Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
@@ -389,6 +459,16 @@ async fn handle_slot_recipe_status_changed<E: Executor>(
     {
         r.status = event.data.status;
         statement.value(MealPlanSlot::Dessert, bitcode::encode(&r.0));
+    } else if let Some(mut r) = beverage
+        && r.id == event.data.recipe_id
+    {
+        r.status = event.data.status;
+        statement.value(MealPlanSlot::Beverage, bitcode::encode(&r.0));
+    } else if let Some(mut r) = condiment
+        && r.id == event.data.recipe_id
+    {
+        r.status = event.data.status;
+        statement.value(MealPlanSlot::Condiment, bitcode::encode(&r.0));
     }
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);

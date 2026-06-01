@@ -11,6 +11,8 @@ pub enum MealPlanSlot {
     MainCourse,
     Accompaniment,
     Dessert,
+    Beverage,
+    Condiment,
     GeneratedAt,
 }
 
@@ -77,6 +79,45 @@ pub(crate) mod m0001 {
         ) -> Result<(), sqlx_migrator::Error> {
             let statement = drop_table().to_string(sea_query::SqliteQueryBuilder);
             sqlx::query(&statement).execute(connection).await?;
+
+            Ok(())
+        }
+    }
+}
+
+pub(crate) mod m0004 {
+    pub struct AddBeverageAndCondiment;
+
+    #[async_trait::async_trait]
+    impl sqlx_migrator::Operation<sqlx::Sqlite> for AddBeverageAndCondiment {
+        async fn up(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            sqlx::query("ALTER TABLE meal_plan_slot ADD COLUMN beverage BLOB NULL")
+                .execute(&mut *connection)
+                .await?;
+            sqlx::query("ALTER TABLE meal_plan_slot ADD COLUMN condiment BLOB NULL")
+                .execute(&mut *connection)
+                .await?;
+
+            sqlx::query("UPDATE subscriber SET cursor = NULL WHERE key = 'mealplan-slot'")
+                .execute(connection)
+                .await?;
+
+            Ok(())
+        }
+
+        async fn down(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            sqlx::query("ALTER TABLE meal_plan_slot DROP COLUMN beverage")
+                .execute(&mut *connection)
+                .await?;
+            sqlx::query("ALTER TABLE meal_plan_slot DROP COLUMN condiment")
+                .execute(connection)
+                .await?;
 
             Ok(())
         }

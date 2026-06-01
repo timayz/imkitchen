@@ -15,6 +15,12 @@
   {% when RecipeType::Accompaniment %}
   {% let slot_recipe_bg = "from-purple-400 to-purple-500" -%}
   {% let slot_recipe_icon = "🍚" -%}
+  {% when RecipeType::Beverage %}
+  {% let slot_recipe_bg = "from-cyan-400 to-cyan-500" -%}
+  {% let slot_recipe_icon = "🥤" -%}
+  {% when RecipeType::Condiment %}
+  {% let slot_recipe_bg = "from-amber-400 to-amber-500" -%}
+  {% let slot_recipe_icon = "🥫" -%}
   {% endmatch %}
   <div class="bg-linear-to-r {{ slot_recipe_bg }} p-4 flex items-center justify-between">
     <div class="flex items-center gap-3">
