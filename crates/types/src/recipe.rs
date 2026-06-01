@@ -22,6 +22,8 @@ pub enum RecipeType {
     MainCourse,
     Dessert,
     Accompaniment,
+    Beverage,
+    Condiment,
 }
 
 #[derive(

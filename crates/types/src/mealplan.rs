@@ -17,6 +17,8 @@ pub struct Slot {
     pub main_course: SlotRecipe,
     pub accompaniment: Option<SlotRecipe>,
     pub dessert: Option<SlotRecipe>,
+    pub beverage: Option<SlotRecipe>,
+    pub condiment: Option<SlotRecipe>,
 }
 
 #[derive(

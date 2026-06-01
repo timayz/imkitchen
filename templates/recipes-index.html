@@ -157,11 +157,29 @@
           <span class="text-5xl">🍚</span>
           {% endif %}
         </div>
-        <!-- <button class="absolute top-3 right-3 p-2 bg-white rounded-full shadow-lg"> -->
-        <!--   <span class="text-xl">❤️</span> -->
-        <!-- <span class="text-xl">🤍</span> -->
-        <!-- </button> -->
         <span class="absolute top-3 left-3 px-3 py-1 bg-purple-600 text-white text-xs font-semibold rounded-full">
+          {{ recipe.node.recipe_type.as_ref()|t }}
+        </span>
+        {% when RecipeType::Beverage %}
+        <div class="h-40 bg-linear-to-br from-cyan-400 to-cyan-500 flex items-center justify-center">
+          {% if let Some(version) = recipe.node.thumbnail_version %}
+          {{ lazy_thumbnail(recipe.node, version, "from-cyan-400 via-cyan-200 to-cyan-400") }}
+          {% else %}
+          <span class="text-5xl">🥤</span>
+          {% endif %}
+        </div>
+        <span class="absolute top-3 left-3 px-3 py-1 bg-cyan-600 text-white text-xs font-semibold rounded-full">
+          {{ recipe.node.recipe_type.as_ref()|t }}
+        </span>
+        {% when RecipeType::Condiment %}
+        <div class="h-40 bg-linear-to-br from-amber-400 to-amber-500 flex items-center justify-center">
+          {% if let Some(version) = recipe.node.thumbnail_version %}
+          {{ lazy_thumbnail(recipe.node, version, "from-amber-400 via-amber-200 to-amber-400") }}
+          {% else %}
+          <span class="text-5xl">🥫</span>
+          {% endif %}
+        </div>
+        <span class="absolute top-3 left-3 px-3 py-1 bg-amber-600 text-white text-xs font-semibold rounded-full">
           {{ recipe.node.recipe_type.as_ref()|t }}
         </span>
         {% endmatch %}

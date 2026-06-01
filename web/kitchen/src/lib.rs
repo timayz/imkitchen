@@ -170,6 +170,28 @@ pub async fn page(
             }
         }
 
+        if let Some(ref beverage) = slot.beverage {
+            slot_total_count += 1;
+
+            if beverage.is_completed() {
+                slot_completed_count += 1;
+            } else if slot_recipe_id.is_none() {
+                slot_recipe_id = Some(&beverage.id);
+                slot_recipe_status = &beverage.status;
+            }
+        }
+
+        if let Some(ref condiment) = slot.condiment {
+            slot_total_count += 1;
+
+            if condiment.is_completed() {
+                slot_completed_count += 1;
+            } else if slot_recipe_id.is_none() {
+                slot_recipe_id = Some(&condiment.id);
+                slot_recipe_status = &condiment.status;
+            }
+        }
+
         slot_recipe = imkitchen_web_shared::try_page_response!(
             app.core
                 .recipe
@@ -336,6 +358,20 @@ pub async fn update_slot_step_action(
         slot_recipe_status = Some(&dessert.status);
     }
 
+    if let Some(ref beverage) = slot.beverage
+        && slot_recipe_status.is_none()
+        && beverage.id == recipe_id
+    {
+        slot_recipe_status = Some(&beverage.status);
+    }
+
+    if let Some(ref condiment) = slot.condiment
+        && slot_recipe_status.is_none()
+        && condiment.id == recipe_id
+    {
+        slot_recipe_status = Some(&condiment.status);
+    }
+
     let Some(slot_recipe_status) = slot_recipe_status else {
         return template.render(NotFoundTemplate);
     };
@@ -401,6 +437,26 @@ pub async fn update_slot_step_action(
             dessert.status = slot_recipe_status.clone();
         }
         if dessert.is_completed() {
+            slot_completed_count += 1;
+        }
+    }
+
+    if let Some(beverage) = slot.beverage.as_mut() {
+        slot_total_count += 1;
+        if beverage.id == recipe_id {
+            beverage.status = slot_recipe_status.clone();
+        }
+        if beverage.is_completed() {
+            slot_completed_count += 1;
+        }
+    }
+
+    if let Some(condiment) = slot.condiment.as_mut() {
+        slot_total_count += 1;
+        if condiment.id == recipe_id {
+            condiment.status = slot_recipe_status.clone();
+        }
+        if condiment.is_completed() {
             slot_completed_count += 1;
         }
     }
@@ -534,6 +590,20 @@ pub async fn select_dish(
         && dessert.id == recipe_id
     {
         slot_recipe_status = Some(&dessert.status);
+    }
+
+    if let Some(ref beverage) = slot.beverage
+        && slot_recipe_status.is_none()
+        && beverage.id == recipe_id
+    {
+        slot_recipe_status = Some(&beverage.status);
+    }
+
+    if let Some(ref condiment) = slot.condiment
+        && slot_recipe_status.is_none()
+        && condiment.id == recipe_id
+    {
+        slot_recipe_status = Some(&condiment.status);
     }
 
     let Some(slot_recipe_status) = slot_recipe_status else {

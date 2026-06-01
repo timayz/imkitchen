@@ -16,7 +16,7 @@
     <!-- Recipe Type -->
     <div class="mb-8">
       <label class="block text-sm font-semibold text-ink-2 mb-3">{{ "Recipe Type"|t }} *</label>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
         <label
           class="flex items-center justify-center p-4 border-2 border-line rounded-xl hover:border-blue-500 cursor-pointer has-checked:border-blue-500 has-checked:bg-blue-50">
           <input type="radio" name="recipe_type" value="{{ RecipeType::Appetizer }}" class="mr-3 appearance-none"{% if form.recipe_type == RecipeType::Appetizer %} checked{% endif %} required />
@@ -47,6 +47,22 @@
           <div class="text-center">
             <div class="text-3xl mb-1">🍚</div>
             <div class="font-semibold">{{ "Accompaniment"|t }}</div>
+          </div>
+        </label>
+        <label
+          class="flex items-center justify-center p-4 border-2 border-line rounded-xl hover:border-cyan-500 cursor-pointer has-checked:border-cyan-500 has-checked:bg-cyan-50">
+          <input type="radio" name="recipe_type" value="{{ RecipeType::Beverage }}" class="mr-3 appearance-none"{% if form.recipe_type == RecipeType::Beverage %} checked{% endif %} required />
+          <div class="text-center">
+            <div class="text-3xl mb-1">🥤</div>
+            <div class="font-semibold">{{ "Beverage"|t }}</div>
+          </div>
+        </label>
+        <label
+          class="flex items-center justify-center p-4 border-2 border-line rounded-xl hover:border-amber-500 cursor-pointer has-checked:border-amber-500 has-checked:bg-amber-50">
+          <input type="radio" name="recipe_type" value="{{ RecipeType::Condiment }}" class="mr-3 appearance-none"{% if form.recipe_type == RecipeType::Condiment %} checked{% endif %} required />
+          <div class="text-center">
+            <div class="text-3xl mb-1">🥫</div>
+            <div class="font-semibold">{{ "Condiment"|t }}</div>
           </div>
         </label>
       </div>
