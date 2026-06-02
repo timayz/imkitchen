@@ -1,11 +1,11 @@
 use anyhow::Result;
-use sqlx::ConnectOptions;
+// use sqlx::ConnectOptions;
 use sqlx::sqlite::{
     SqliteConnectOptions, SqliteJournalMode, SqlitePool, SqlitePoolOptions, SqliteSynchronous,
 };
 use std::str::FromStr;
 use std::time::Duration;
-use tracing::log::LevelFilter;
+// use tracing::log::LevelFilter;
 
 /// Base connect options shared by every pool.
 ///
@@ -13,12 +13,13 @@ use tracing::log::LevelFilter;
 /// these every time it opens a new connection, including replacement connections
 /// after idle timeout — which is the behavior you want.
 fn base_options(database_url: &str) -> Result<SqliteConnectOptions> {
-    Ok(SqliteConnectOptions::from_str(database_url)?
-        .busy_timeout(Duration::from_millis(5000))
-        .foreign_keys(true)
-        .pragma("cache_size", "-20000")
-        .pragma("temp_store", "memory")
-        .log_statements(LevelFilter::Debug))
+    Ok(
+        SqliteConnectOptions::from_str(database_url)?
+            .busy_timeout(Duration::from_millis(5000))
+            .foreign_keys(true)
+            .pragma("cache_size", "-20000")
+            .pragma("temp_store", "memory"), // .log_statements(LevelFilter::Debug)
+    )
 }
 
 /// Read-only pool, optimized for concurrent reads.
