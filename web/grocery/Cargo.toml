@@ -1,6 +1,6 @@
 [package]
 name = "imkitchen-web-grocery"
-version = "1.0.7"
+version = "1.0.8"
 edition.workspace = true
 
 [dependencies]
@@ -11,6 +11,6 @@ serde = { workspace = true }
 anyhow = { workspace = true }
 time = { workspace = true }
 tracing = { workspace = true }
-imkitchen-core = { path = "../../crates/core", version = "1.0.7" }
-imkitchen-types = { path = "../../crates/types", version = "1.0.7" }
-imkitchen-web-shared = { path = "../shared", version = "1.0.7" }
+imkitchen-core = { path = "../../crates/core", version = "1.0.8" }
+imkitchen-types = { path = "../../crates/types", version = "1.0.8" }
+imkitchen-web-shared = { path = "../shared", version = "1.0.8" }
