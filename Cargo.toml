@@ -68,7 +68,7 @@ tokio-cron-scheduler = "0.15"
 
 [package]
 name = "imkitchen"
-version = "1.0.5"
+version = "1.0.6"
 edition.workspace = true
 
 [package.metadata.cargo-machete]
@@ -88,19 +88,19 @@ clap = { workspace = true }
 futures = { workspace = true }
 tower-http = { workspace = true }
 async-stripe = { workspace = true }
-imkitchen-core = { path = "crates/core", version = "1.0.5" }
-imkitchen-identity = { path = "crates/identity", version = "1.0.5" }
-imkitchen-billing = { path = "crates/billing", version = "1.0.5" }
-imkitchen-db = { path = "crates/db", version = "1.0.5" }
-imkitchen-notification = { path = "crates/notification", version = "1.0.5" }
-imkitchen-web-shared = { path = "web/shared", version = "1.0.5" }
-imkitchen-web-kitchen = { path = "web/kitchen", version = "1.0.5" }
-imkitchen-web-menu = { path = "web/menu", version = "1.0.5" }
-imkitchen-web-recipe = { path = "web/recipe", version = "1.0.5" }
-imkitchen-web-grocery = { path = "web/grocery", version = "1.0.5" }
-imkitchen-web-settings = { path = "web/settings", version = "1.0.5" }
-imkitchen-web-public = { path = "web/public", version = "1.0.5" }
-imkitchen-web-admin = { path = "web/admin", version = "1.0.5" }
+imkitchen-core = { path = "crates/core", version = "1.0.6" }
+imkitchen-identity = { path = "crates/identity", version = "1.0.6" }
+imkitchen-billing = { path = "crates/billing", version = "1.0.6" }
+imkitchen-db = { path = "crates/db", version = "1.0.6" }
+imkitchen-notification = { path = "crates/notification", version = "1.0.6" }
+imkitchen-web-shared = { path = "web/shared", version = "1.0.6" }
+imkitchen-web-kitchen = { path = "web/kitchen", version = "1.0.6" }
+imkitchen-web-menu = { path = "web/menu", version = "1.0.6" }
+imkitchen-web-recipe = { path = "web/recipe", version = "1.0.6" }
+imkitchen-web-grocery = { path = "web/grocery", version = "1.0.6" }
+imkitchen-web-settings = { path = "web/settings", version = "1.0.6" }
+imkitchen-web-public = { path = "web/public", version = "1.0.6" }
+imkitchen-web-admin = { path = "web/admin", version = "1.0.6" }
 
 [[bin]]
 name = "imkitchen"
