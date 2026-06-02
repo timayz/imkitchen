@@ -46,7 +46,7 @@
           <input type="radio" name="recipe_type" value="{{ RecipeType::Accompaniment }}" class="mr-3 appearance-none"{% if form.recipe_type == RecipeType::Accompaniment %} checked{% endif %} required />
           <div class="text-center">
             <div class="text-3xl mb-1">🍚</div>
-            <div class="font-semibold">{{ "Accompaniment"|t }}</div>
+            <div class="font-semibold"><span class="md:hidden">{{ "Side"|t }}</span><span class="hidden md:inline">{{ "Accompaniment"|t }}</span></div>
           </div>
         </label>
         <label
