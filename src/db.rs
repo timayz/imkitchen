@@ -17,6 +17,8 @@ fn base_options(database_url: &str) -> Result<SqliteConnectOptions> {
         SqliteConnectOptions::from_str(database_url)?
             .busy_timeout(Duration::from_millis(5000))
             .foreign_keys(true)
+            .pragma("wal_autocheckpoint", "1000") // explicit
+            .pragma("journal_size_limit", "67108864")
             .pragma("cache_size", "-20000")
             .pragma("temp_store", "memory"), // .log_statements(LevelFilter::Debug)
     )
