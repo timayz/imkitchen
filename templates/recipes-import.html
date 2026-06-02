@@ -33,7 +33,7 @@
       </label>
   </div>
 
-  <div id="recipes-area" ts-trigger="importRecipes" ts-req="/recipes/import" ts-req-method="post" ts-swap="inner"></div>
+  <div id="recipes-area"></div>
 
   <!-- Schema Documentation -->
   <div class="bg-paper rounded-xl shadow-md p-6 mb-6">
@@ -72,37 +72,87 @@
 
 <script>
   (() => {
+    const MAX_CHUNK_BYTES = 900 * 1024;
+    const encoder = new TextEncoder();
     const area = document.getElementById("recipes-area");
 
-    function updateAreaData(recipes){
-      area.setAttribute("ts-json", JSON.stringify(recipes));
-      area.dispatchEvent(new Event("importRecipes"));
-    } 
-
-    function importRecipes(files) {
-      let reader = new FileReader();
-      let recipes = [];
-
-      function read(index) {
-        if (index >= files.length) {
-          updateAreaData(recipes);
-          return;
-        }
-
+    function readFile(file) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
         reader.onload = (e) => {
           try {
-            recipes.push(JSON.parse(e.target.result));
-          } catch (error){
+            resolve(JSON.parse(e.target.result));
+          } catch (error) {
             console.error(error);
+            resolve(null);
           }
-
-          read(index + 1);
         };
+        reader.onerror = () => resolve(null);
+        reader.readAsText(file);
+      });
+    }
 
-        reader.readAsText(files[index]);
+    function chunkRecipes(recipes) {
+      const chunks = [];
+      let current = [];
+      let currentBytes = 2;
+      for (const r of recipes) {
+        const size = encoder.encode(JSON.stringify(r)).length;
+        const added = size + (current.length ? 1 : 0);
+        if (current.length && currentBytes + added > MAX_CHUNK_BYTES) {
+          chunks.push(current);
+          current = [r];
+          currentBytes = 2 + size;
+        } else {
+          current.push(r);
+          currentBytes += added;
+        }
       }
-      
-      read(0);
+      if (current.length) chunks.push(current);
+      return chunks;
+    }
+
+    async function importRecipes(fileList) {
+      const files = Array.from(fileList);
+      const parsed = await Promise.all(files.map(readFile));
+      const recipes = parsed.filter((r) => r !== null);
+      if (recipes.length === 0) return;
+
+      const chunks = chunkRecipes(recipes);
+      const errorHtml = [];
+      let lastContainer = null;
+
+      for (const chunk of chunks) {
+        try {
+          const resp = await fetch("/recipes/import", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(chunk),
+          });
+          if (!resp.ok) {
+            console.error("import chunk failed:", resp.status);
+            continue;
+          }
+          const doc = new DOMParser().parseFromString(await resp.text(), "text/html");
+          const container = doc.body.firstElementChild;
+          if (!container) continue;
+          container.querySelectorAll(".bg-red-50").forEach((n) => errorHtml.push(n.outerHTML));
+          lastContainer = container;
+        } catch (err) {
+          console.error("import chunk error:", err);
+        }
+      }
+
+      let tail = "";
+      if (lastContainer) {
+        lastContainer.querySelectorAll(".bg-red-50").forEach((n) => n.remove());
+        tail = lastContainer.innerHTML;
+      }
+      area.innerHTML = `<div>${errorHtml.join("")}${tail}</div>`;
+
+      if (window.twinspark) {
+        window.twinspark.activate(area);
+      }
     }
 
     const drop = document.getElementById("recipes-drop");
