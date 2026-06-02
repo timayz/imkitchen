@@ -264,7 +264,9 @@ impl<E: Executor> Snapshot<E> for InvoiceUserView {
             .to_owned();
 
         let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-        sqlx::query_with(sqlx::AssertSqlSafe(sql), values).execute(&write_db).await?;
+        sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+            .execute(&write_db)
+            .await?;
 
         Ok(())
     }

@@ -78,7 +78,9 @@ async fn handle_created<E: Executor>(
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-    sqlx::query_with(sqlx::AssertSqlSafe(sql), values).execute(&pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+        .execute(&pool)
+        .await?;
 
     Ok(())
 }
@@ -107,7 +109,9 @@ async fn handle_imported<E: Executor>(
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-    sqlx::query_with(sqlx::AssertSqlSafe(sql), values).execute(&pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+        .execute(&pool)
+        .await?;
 
     Ok(())
 }
@@ -136,7 +140,9 @@ async fn handle_deleted<E: Executor>(
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-    sqlx::query_with(sqlx::AssertSqlSafe(sql), values).execute(&pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+        .execute(&pool)
+        .await?;
 
     Ok(())
 }
@@ -165,7 +171,9 @@ async fn handle_shared_to_community<E: Executor>(
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-    sqlx::query_with(sqlx::AssertSqlSafe(sql), values).execute(&pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+        .execute(&pool)
+        .await?;
 
     Ok(())
 }
@@ -194,7 +202,9 @@ async fn handle_made_private<E: Executor>(
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-    sqlx::query_with(sqlx::AssertSqlSafe(sql), values).execute(&pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+        .execute(&pool)
+        .await?;
 
     Ok(())
 }
@@ -213,7 +223,9 @@ async fn handle_all_shared_to_community<E: Executor>(
         .and_where(Expr::col(RecipeUserStat::UserId).eq(&user_id))
         .build_sqlx(SqliteQueryBuilder);
 
-    sqlx::query_with(sqlx::AssertSqlSafe(sql), values).execute(&pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+        .execute(&pool)
+        .await?;
 
     Ok(())
 }
@@ -232,7 +244,9 @@ async fn handle_all_made_private<E: Executor>(
         .and_where(Expr::col(RecipeUserStat::UserId).eq(&user_id))
         .build_sqlx(SqliteQueryBuilder);
 
-    sqlx::query_with(sqlx::AssertSqlSafe(sql), values).execute(&pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+        .execute(&pool)
+        .await?;
 
     Ok(())
 }

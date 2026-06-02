@@ -77,7 +77,9 @@ async fn handle_resized<E: Executor>(
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-    sqlx::query_with(sqlx::AssertSqlSafe(sql), values).execute(&pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+        .execute(&pool)
+        .await?;
 
     Ok(())
 }
@@ -96,7 +98,9 @@ async fn handle_deleted<E: Executor>(
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-    sqlx::query_with(sqlx::AssertSqlSafe(sql), values).execute(&pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+        .execute(&pool)
+        .await?;
 
     Ok(())
 }

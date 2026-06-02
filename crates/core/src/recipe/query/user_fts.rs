@@ -42,7 +42,9 @@ async fn handle_created<E: Executor>(
         ])?
         .build_sqlx(SqliteQueryBuilder);
 
-    sqlx::query_with(sqlx::AssertSqlSafe(sql), values).execute(&pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+        .execute(&pool)
+        .await?;
 
     Ok(())
 }
@@ -77,7 +79,9 @@ async fn handle_imported<E: Executor>(
         ])?
         .build_sqlx(SqliteQueryBuilder);
 
-    sqlx::query_with(sqlx::AssertSqlSafe(sql), values).execute(&pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+        .execute(&pool)
+        .await?;
 
     Ok(())
 }
@@ -100,7 +104,9 @@ async fn handle_basic_information_changed<E: Executor>(
         ])
         .build_sqlx(SqliteQueryBuilder);
 
-    sqlx::query_with(sqlx::AssertSqlSafe(sql), values).execute(&pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+        .execute(&pool)
+        .await?;
 
     Ok(())
 }
@@ -129,7 +135,9 @@ async fn handle_ingredients_changed<E: Executor>(
         .value(RecipeUserFts::Name, ingredients)
         .build_sqlx(SqliteQueryBuilder);
 
-    sqlx::query_with(sqlx::AssertSqlSafe(sql), values).execute(&pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+        .execute(&pool)
+        .await?;
     Ok(())
 }
 
@@ -147,7 +155,9 @@ async fn handle_deleted<E: Executor>(
         ))
         .build_sqlx(SqliteQueryBuilder);
 
-    sqlx::query_with(sqlx::AssertSqlSafe(sql), values).execute(&pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+        .execute(&pool)
+        .await?;
 
     Ok(())
 }

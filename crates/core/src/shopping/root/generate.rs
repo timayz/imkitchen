@@ -116,14 +116,17 @@ impl<E: Executor> super::Module<E> {
         let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
         Ok(
-            sqlx::query_as_with::<_, (evento::sql_types::Bitcode<Vec<String>>,), _>(sqlx::AssertSqlSafe(sql), values)
-                .fetch_all(&self.read_db)
-                .await?
-                .into_iter()
-                .flat_map(|ids| ids.0.0)
-                .collect::<HashSet<_>>()
-                .into_iter()
-                .collect(),
+            sqlx::query_as_with::<_, (evento::sql_types::Bitcode<Vec<String>>,), _>(
+                sqlx::AssertSqlSafe(sql),
+                values,
+            )
+            .fetch_all(&self.read_db)
+            .await?
+            .into_iter()
+            .flat_map(|ids| ids.0.0)
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .collect(),
         )
     }
 }

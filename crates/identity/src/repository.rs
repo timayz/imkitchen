@@ -45,9 +45,11 @@ pub(crate) async fn find(
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-    Ok(sqlx::query_as_with::<_, UserRow, _>(sqlx::AssertSqlSafe(sql), values)
-        .fetch_optional(pool)
-        .await?)
+    Ok(
+        sqlx::query_as_with::<_, UserRow, _>(sqlx::AssertSqlSafe(sql), values)
+            .fetch_optional(pool)
+            .await?,
+    )
 }
 
 pub(super) async fn create(
@@ -79,7 +81,9 @@ pub(super) async fn create(
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-    sqlx::query_with(sqlx::AssertSqlSafe(sql), values).execute(pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+        .execute(pool)
+        .await?;
 
     Ok(())
 }
@@ -115,7 +119,9 @@ pub async fn update(pool: &SqlitePool, input: UpdateInput) -> imkitchen_core::Re
     }
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    sqlx::query_with(sqlx::AssertSqlSafe(sql), values).execute(pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+        .execute(pool)
+        .await?;
 
     Ok(())
 }
