@@ -1,6 +1,6 @@
 [package]
 name = "imkitchen-identity"
-version = "1.0.10"
+version = "1.0.11"
 edition.workspace = true
 authors.workspace = true
 
@@ -21,10 +21,10 @@ ulid = { workspace = true }
 sea-query.workspace = true
 sea-query-sqlx.workspace = true
 serde.workspace = true
-imkitchen-types = { path = "../types", version = "1.0.10" }
-imkitchen-core = { path = "../core", version = "1.0.10" }
-imkitchen-billing = { path = "../billing", version = "1.0.10" }
-imkitchen-db = { path = "../db", version = "1.0.10" }
+imkitchen-types = { path = "../types", version = "1.0.11" }
+imkitchen-core = { path = "../core", version = "1.0.11" }
+imkitchen-billing = { path = "../billing", version = "1.0.11" }
+imkitchen-db = { path = "../db", version = "1.0.11" }
 
 [dev-dependencies]
 tokio.workspace = true
