@@ -28,6 +28,7 @@ where
     evento::sql_migrator::InitMigration: sqlx_migrator::Migration<DB>,
     evento::sql_migrator::M0002: sqlx_migrator::Migration<DB>,
     evento::sql_migrator::M0003: sqlx_migrator::Migration<DB>,
+    evento::sql_migrator::M0004: sqlx_migrator::Migration<DB>,
     m0001::Migration: sqlx_migrator::Migration<DB>,
     m0002::Migration: sqlx_migrator::Migration<DB>,
     m0003::Migration: sqlx_migrator::Migration<DB>,
