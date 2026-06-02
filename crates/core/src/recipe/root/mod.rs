@@ -133,6 +133,7 @@ async fn handle_all_made_private(
 
 pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Recipe> {
     Projection::new::<recipe::Recipe>(id)
+        .revision(1)
         .handler(handle_created())
         .handler(handle_deleted())
         .handler(handle_imported())
