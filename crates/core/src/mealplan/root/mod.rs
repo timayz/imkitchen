@@ -8,7 +8,10 @@ use evento::{
     subscription::{Context, SubscriptionBuilder},
 };
 use imkitchen_db::mealplan_recipe::MealPlanRecipe;
-use imkitchen_types::{mealplan, recipe::RecipeType};
+use imkitchen_types::{
+    mealplan::{self, SlotRecipeStatusChanged},
+    recipe::RecipeType,
+};
 use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::SqlitePool;
@@ -55,6 +58,7 @@ impl ProjectionAggregator for MealPlan {
 pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, MealPlan> {
     Projection::new::<mealplan::MealPlan>(id)
         .handler(handle_generated())
+        .skip::<SlotRecipeStatusChanged>()
         .safety_check()
 }
 
