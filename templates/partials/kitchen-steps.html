@@ -16,7 +16,7 @@
   </div>
 
   <!-- Current Step -->
-  <div class="bg-orange-50 border-l-4 border-orange-500 rounded-r-lg p-6 mb-6">
+  <div class="bg-orange-50 border-l-4 border-orange-500 rounded-r-xl p-6 mb-6">
     <div class="flex items-start gap-4">
       <div
         class="w-10 h-10 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold text-lg shrink-0">
@@ -97,7 +97,6 @@
       {% endfor %}
     </div>
     {% endif %}
-    {% endif %}
 
     <!-- Upcoming Steps -->
     {% if !coming_instructions.is_empty() %}
@@ -106,7 +105,7 @@
       {% for (pos,instruction) in coming_instructions %}
       <div class="flex items-center gap-3 p-3 bg-cream rounded-xl">
         <div
-          class="w-6 h-6 p-2 bg-ink-3 text-ink-2 rounded-full flex items-center justify-center text-sm font-semibold">
+          class="w-6 h-6 p-2 bg-line text-ink-2 rounded-full flex items-center justify-center text-sm font-semibold">
           {{ pos + 1 }}</div>
         <span class="text-sm text-ink-2">{{ instruction|nl2br|safe }}</span>
       </div>
@@ -114,6 +113,9 @@
     </div>
     {% endif %}
   </div>
+  {% else if let Some(origin) = slot_recipe.origin %}
+    <iframe class="w-full h-[80vh]" src="{{ origin }}"></iframe>
+  {% endif %}
 </div>
 <div id="today-dishes-desktop" ts-swap-push="#today-dishes-desktop" class="space-y-3">
   <!-- Appetizer (Completed) -->
@@ -476,7 +478,7 @@
 </div>
 <div id="overview-all-steps" ts-swap-push="#overview-all-steps" class="space-y-3">
   {% for (p, instruction) in completed_instructions %}
-  <div class="flex items-start gap-3 p-3 bg-primary-50 border-l-4 border-primary-500 rounded-r-lg">
+  <div class="flex items-start gap-3 p-3 bg-primary-50 border-l-4 border-primary-500 rounded-r-xl">
     <div
       class="w-6 h-6 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0">
       {{ p + 1 }}</div>
@@ -484,7 +486,7 @@
   </div>
   {% endfor %}
   {% if let Some((p, current_instruction)) = current_instruction %}
-  <div class="flex items-start gap-3 p-3 bg-orange-50 border-l-4 border-orange-500 rounded-r-lg">
+  <div class="flex items-start gap-3 p-3 bg-orange-50 border-l-4 border-orange-500 rounded-r-xl">
     <div
       class="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0">
       {{ p + 1 }}</div>
@@ -492,9 +494,9 @@
   </div>
   {% endif %}
   {% for (p, instruction) in coming_instructions %}
-  <div class="flex items-start gap-3 p-3 bg-cream border-l-4 border-line rounded-r-lg">
+  <div class="flex items-start gap-3 p-3 bg-cream border-l-4 border-line rounded-r-xl">
     <div
-      class="w-6 h-6 bg-ink-3 text-ink-2 rounded-full flex items-center justify-center text-sm font-bold shrink-0">
+      class="w-6 h-6 bg-line text-ink-2 rounded-full flex items-center justify-center text-sm font-bold shrink-0">
       {{ p + 1 }}</div>
     <p class="text-sm">{{ instruction|nl2br|safe }}</p>
   </div>
