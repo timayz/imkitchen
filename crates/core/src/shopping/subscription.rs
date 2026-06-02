@@ -66,7 +66,7 @@ async fn handle_mealplan_days_generated<E: Executor>(
     );
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    sqlx::query_with(&sql, values).execute(&pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values).execute(&pool).await?;
 
     Ok(())
 }
@@ -93,7 +93,7 @@ async fn handle_recipe_created<E: Executor>(
         ])?
         .to_owned();
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    sqlx::query_with(&sql, values).execute(&pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values).execute(&pool).await?;
 
     Ok(())
 }
@@ -120,7 +120,7 @@ async fn handle_recipe_imported<E: Executor>(
         ])?
         .to_owned();
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    sqlx::query_with(&sql, values).execute(&pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values).execute(&pool).await?;
 
     Ok(())
 }
@@ -137,7 +137,7 @@ async fn handle_recipe_deleted<E: Executor>(
         .to_owned();
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    sqlx::query_with(&sql, values).execute(&pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values).execute(&pool).await?;
 
     Ok(())
 }
@@ -174,7 +174,7 @@ async fn update_col(
         .to_owned();
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    sqlx::query_with(&sql, values).execute(pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values).execute(pool).await?;
 
     Ok(())
 }

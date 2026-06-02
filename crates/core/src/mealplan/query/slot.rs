@@ -105,7 +105,7 @@ impl<E: Executor> crate::mealplan::Module<E> {
 
         let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-        Ok(sqlx::query_as_with::<_, SlotRow, _>(&sql, values)
+        Ok(sqlx::query_as_with::<_, SlotRow, _>(sqlx::AssertSqlSafe(sql), values)
             .fetch_all(&self.read_db)
             .await?)
     }
@@ -138,7 +138,7 @@ impl<E: Executor> crate::mealplan::Module<E> {
 
         let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-        Ok(sqlx::query_as_with::<_, SlotRow, _>(&sql, values)
+        Ok(sqlx::query_as_with::<_, SlotRow, _>(sqlx::AssertSqlSafe(sql), values)
             .fetch_optional(&self.read_db)
             .await?)
     }
@@ -285,7 +285,7 @@ async fn handle_days_generated<E: Executor>(
         .to_owned();
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    let recipes = sqlx::query_as_with::<_, MealPlanRecipeRow, _>(&sql, values)
+    let recipes = sqlx::query_as_with::<_, MealPlanRecipeRow, _>(sqlx::AssertSqlSafe(sql), values)
         .fetch_all(&pool)
         .await?;
 
@@ -391,7 +391,7 @@ async fn handle_days_generated<E: Executor>(
     );
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    sqlx::query_with(&sql, values).execute(&pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values).execute(&pool).await?;
 
     Ok(())
 }
@@ -430,7 +430,7 @@ async fn handle_slot_recipe_status_changed<E: Executor>(
             Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
         ),
         _,
-    >(&sql, values)
+    >(sqlx::AssertSqlSafe(sql), values)
     .fetch_one(&pool)
     .await?;
 
@@ -472,7 +472,7 @@ async fn handle_slot_recipe_status_changed<E: Executor>(
     }
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    sqlx::query_with(&sql, values).execute(&pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values).execute(&pool).await?;
 
     Ok(())
 }

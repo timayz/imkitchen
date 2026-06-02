@@ -87,7 +87,8 @@ impl<E: Executor> super::Module<E> {
         let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
         Ok(
             sqlx::query_as_with::<_, (evento::sql_types::Bitcode<Vec<Ingredient>>,), _>(
-                &sql, values,
+                sqlx::AssertSqlSafe(sql),
+                values,
             )
             .fetch_all(&self.read_db)
             .await?
@@ -115,7 +116,7 @@ impl<E: Executor> super::Module<E> {
         let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
         Ok(
-            sqlx::query_as_with::<_, (evento::sql_types::Bitcode<Vec<String>>,), _>(&sql, values)
+            sqlx::query_as_with::<_, (evento::sql_types::Bitcode<Vec<String>>,), _>(sqlx::AssertSqlSafe(sql), values)
                 .fetch_all(&self.read_db)
                 .await?
                 .into_iter()

@@ -45,7 +45,7 @@ pub(crate) async fn find(
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-    Ok(sqlx::query_as_with::<_, UserRow, _>(&sql, values)
+    Ok(sqlx::query_as_with::<_, UserRow, _>(sqlx::AssertSqlSafe(sql), values)
         .fetch_optional(pool)
         .await?)
 }
@@ -79,7 +79,7 @@ pub(super) async fn create(
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-    sqlx::query_with(&sql, values).execute(pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values).execute(pool).await?;
 
     Ok(())
 }
@@ -115,7 +115,7 @@ pub async fn update(pool: &SqlitePool, input: UpdateInput) -> imkitchen_core::Re
     }
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    sqlx::query_with(&sql, values).execute(pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values).execute(pool).await?;
 
     Ok(())
 }
@@ -131,7 +131,7 @@ pub async fn is_username_exists(
         .to_owned();
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    let row = sqlx::query_as_with::<_, (String,), _>(&sql, values)
+    let row = sqlx::query_as_with::<_, (String,), _>(sqlx::AssertSqlSafe(sql), values)
         .fetch_optional(pool)
         .await?;
 

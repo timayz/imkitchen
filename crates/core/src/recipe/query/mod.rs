@@ -39,7 +39,7 @@ async fn handle_recipe_all<E: Executor>(
         .and_where(Expr::col(RecipeUser::Id).eq(&event.aggregator_id))
         .build_sqlx(SqliteQueryBuilder);
 
-    sqlx::query_with(&sql, values).execute(&w).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values).execute(&w).await?;
     Ok(())
 }
 
@@ -60,7 +60,7 @@ async fn handle_all_shared_to_community<E: Executor>(
         .and_where(Expr::col(RecipeUser::Name).not_equals(""))
         .build_sqlx(SqliteQueryBuilder);
 
-    sqlx::query_with(&sql, values).execute(&w).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values).execute(&w).await?;
 
     Ok(())
 }
@@ -80,7 +80,7 @@ async fn handle_all_made_private<E: Executor>(
         .and_where(Expr::col(RecipeUser::IsShared).eq(true))
         .build_sqlx(SqliteQueryBuilder);
 
-    sqlx::query_with(&sql, values).execute(&w).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values).execute(&w).await?;
 
     Ok(())
 }

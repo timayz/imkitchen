@@ -53,7 +53,7 @@ pub(crate) mod m0001 {
             connection: &mut sqlx::SqliteConnection,
         ) -> Result<(), sqlx_migrator::Error> {
             let statement = create_table().to_string(sea_query::SqliteQueryBuilder);
-            sqlx::query(&statement).execute(connection).await?;
+            sqlx::query(sqlx::AssertSqlSafe(statement)).execute(connection).await?;
 
             Ok(())
         }
@@ -63,7 +63,7 @@ pub(crate) mod m0001 {
             connection: &mut sqlx::SqliteConnection,
         ) -> Result<(), sqlx_migrator::Error> {
             let statement = drop_table().to_string(sea_query::SqliteQueryBuilder);
-            sqlx::query(&statement).execute(connection).await?;
+            sqlx::query(sqlx::AssertSqlSafe(statement)).execute(connection).await?;
 
             Ok(())
         }
@@ -93,7 +93,7 @@ pub(crate) mod m0001 {
             connection: &mut sqlx::SqliteConnection,
         ) -> Result<(), sqlx_migrator::Error> {
             let statement = create_idx_1().to_string(sea_query::SqliteQueryBuilder);
-            sqlx::query(&statement).execute(connection).await?;
+            sqlx::query(sqlx::AssertSqlSafe(statement)).execute(connection).await?;
 
             Ok(())
         }
@@ -103,7 +103,7 @@ pub(crate) mod m0001 {
             connection: &mut sqlx::SqliteConnection,
         ) -> Result<(), sqlx_migrator::Error> {
             let statement = drop_idx_1().to_string(sea_query::SqliteQueryBuilder);
-            sqlx::query(&statement).execute(connection).await?;
+            sqlx::query(sqlx::AssertSqlSafe(statement)).execute(connection).await?;
 
             Ok(())
         }

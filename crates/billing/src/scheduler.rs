@@ -66,7 +66,7 @@ async fn renew_subscriptions<E: Executor + Clone>(
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-    let subscriptions = sqlx::query_as_with::<_, (String, u64), _>(&sql, values)
+    let subscriptions = sqlx::query_as_with::<_, (String, u64), _>(sqlx::AssertSqlSafe(sql), values)
         .fetch_all(&state.read_db)
         .await?;
 
@@ -80,7 +80,7 @@ async fn renew_subscriptions<E: Executor + Clone>(
             .to_owned();
 
         let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-        sqlx::query_with(&sql, values)
+        sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
             .execute(&state.write_db)
             .await?;
 
@@ -165,7 +165,7 @@ async fn handle_stripe_payment_intent_succeeded<E: Executor>(
         .to_owned();
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    sqlx::query_with(&sql, values).execute(&pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values).execute(&pool).await?;
 
     Ok(())
 }
@@ -182,7 +182,7 @@ async fn handle_cancelled<E: Executor>(
         .to_owned();
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    sqlx::query_with(&sql, values).execute(&pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values).execute(&pool).await?;
 
     Ok(())
 }
