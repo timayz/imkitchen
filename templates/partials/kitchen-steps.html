@@ -24,7 +24,7 @@
       </div>
       <div class="flex-1">
         <span class="text-xs text-orange-600 font-semibold uppercase">{{ "Current Step"|t }}</span>
-        <p class="text-lg leading-relaxed mt-1">{{ instruction.description }}</p>
+        <p class="text-lg leading-relaxed mt-1">{{ instruction.description|nl2br|safe }}</p>
       </div>
     </div>
   </div>
@@ -92,7 +92,7 @@
               clip-rule="evenodd"></path>
           </svg>
         </div>
-        <span class="text-sm line-through text-ink-3">{{ instruction }}</span>
+        <span class="text-sm line-through text-ink-3">{{ instruction|nl2br|safe }}</span>
       </div>
       {% endfor %}
     </div>
@@ -108,7 +108,7 @@
         <div
           class="w-6 h-6 p-2 bg-ink-3 text-ink-2 rounded-full flex items-center justify-center text-sm font-semibold">
           {{ pos + 1 }}</div>
-        <span class="text-sm text-ink-2">{{ instruction }}</span>
+        <span class="text-sm text-ink-2">{{ instruction|nl2br|safe }}</span>
       </div>
       {% endfor %}
     </div>
@@ -480,7 +480,7 @@
     <div
       class="w-6 h-6 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0">
       {{ p + 1 }}</div>
-    <p class="text-sm">{{ instruction }}</p>
+    <p class="text-sm">{{ instruction|nl2br|safe }}</p>
   </div>
   {% endfor %}
   {% if let Some((p, current_instruction)) = current_instruction %}
@@ -488,7 +488,7 @@
     <div
       class="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0">
       {{ p + 1 }}</div>
-    <p class="text-sm">{{ current_instruction.description }}</p>
+    <p class="text-sm">{{ current_instruction.description|nl2br|safe }}</p>
   </div>
   {% endif %}
   {% for (p, instruction) in coming_instructions %}
@@ -496,7 +496,7 @@
     <div
       class="w-6 h-6 bg-ink-3 text-ink-2 rounded-full flex items-center justify-center text-sm font-bold shrink-0">
       {{ p + 1 }}</div>
-    <p class="text-sm">{{ instruction }}</p>
+    <p class="text-sm">{{ instruction|nl2br|safe }}</p>
   </div>
   {% endfor %}
 </div>
