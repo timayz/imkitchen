@@ -1,6 +1,6 @@
 [package]
 name = "imkitchen-web-public"
-version = "1.0.9"
+version = "1.0.10"
 edition.workspace = true
 
 [dependencies]
@@ -15,8 +15,8 @@ anyhow = { workspace = true }
 world-tax = { workspace = true }
 async-stripe-core = { workspace = true }
 async-stripe-types = { workspace = true }
-imkitchen-core = { path = "../../crates/core", version = "1.0.9" }
-imkitchen-types = { path = "../../crates/types", version = "1.0.9" }
-imkitchen-identity = { path = "../../crates/identity", version = "1.0.9" }
-imkitchen-billing = { path = "../../crates/billing", version = "1.0.9" }
-imkitchen-web-shared = { path = "../shared", version = "1.0.9" }
+imkitchen-core = { path = "../../crates/core", version = "1.0.10" }
+imkitchen-types = { path = "../../crates/types", version = "1.0.10" }
+imkitchen-identity = { path = "../../crates/identity", version = "1.0.10" }
+imkitchen-billing = { path = "../../crates/billing", version = "1.0.10" }
+imkitchen-web-shared = { path = "../shared", version = "1.0.10" }
