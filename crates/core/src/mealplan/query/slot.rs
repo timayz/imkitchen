@@ -105,9 +105,11 @@ impl<E: Executor> crate::mealplan::Module<E> {
 
         let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-        Ok(sqlx::query_as_with::<_, SlotRow, _>(&sql, values)
-            .fetch_all(&self.read_db)
-            .await?)
+        Ok(
+            sqlx::query_as_with::<_, SlotRow, _>(sqlx::AssertSqlSafe(sql), values)
+                .fetch_all(&self.read_db)
+                .await?,
+        )
     }
 
     pub async fn next_slot_from(
@@ -138,9 +140,11 @@ impl<E: Executor> crate::mealplan::Module<E> {
 
         let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-        Ok(sqlx::query_as_with::<_, SlotRow, _>(&sql, values)
-            .fetch_optional(&self.read_db)
-            .await?)
+        Ok(
+            sqlx::query_as_with::<_, SlotRow, _>(sqlx::AssertSqlSafe(sql), values)
+                .fetch_optional(&self.read_db)
+                .await?,
+        )
     }
 
     pub async fn next_prep_remiders_from(
@@ -285,7 +289,7 @@ async fn handle_days_generated<E: Executor>(
         .to_owned();
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    let recipes = sqlx::query_as_with::<_, MealPlanRecipeRow, _>(&sql, values)
+    let recipes = sqlx::query_as_with::<_, MealPlanRecipeRow, _>(sqlx::AssertSqlSafe(sql), values)
         .fetch_all(&pool)
         .await?;
 
@@ -391,7 +395,9 @@ async fn handle_days_generated<E: Executor>(
     );
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    sqlx::query_with(&sql, values).execute(&pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+        .execute(&pool)
+        .await?;
 
     Ok(())
 }
@@ -419,20 +425,21 @@ async fn handle_slot_recipe_status_changed<E: Executor>(
         .limit(1)
         .build_sqlx(SqliteQueryBuilder);
 
-    let (mut main, appetizer, accompaniment, dessert, beverage, condiment) = sqlx::query_as_with::<
-        _,
-        (
-            evento::sql_types::Bitcode<DaySlotRecipe>,
-            Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
-            Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
-            Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
-            Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
-            Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
-        ),
-        _,
-    >(&sql, values)
-    .fetch_one(&pool)
-    .await?;
+    let (mut main, appetizer, accompaniment, dessert, beverage, condiment) =
+        sqlx::query_as_with::<
+            _,
+            (
+                evento::sql_types::Bitcode<DaySlotRecipe>,
+                Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
+                Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
+                Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
+                Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
+                Option<evento::sql_types::Bitcode<DaySlotRecipe>>,
+            ),
+            _,
+        >(sqlx::AssertSqlSafe(sql), values)
+        .fetch_one(&pool)
+        .await?;
 
     let mut statement = Query::update()
         .table(MealPlanSlot::Table)
@@ -472,7 +479,9 @@ async fn handle_slot_recipe_status_changed<E: Executor>(
     }
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    sqlx::query_with(&sql, values).execute(&pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+        .execute(&pool)
+        .await?;
 
     Ok(())
 }

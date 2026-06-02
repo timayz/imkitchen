@@ -112,7 +112,9 @@ async fn handle_recipe_created<E: Executor>(
         ])
         .to_owned();
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    sqlx::query_with(&sql, values).execute(&pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+        .execute(&pool)
+        .await?;
 
     Ok(())
 }
@@ -156,7 +158,9 @@ async fn handle_recipe_imported<E: Executor>(
         ])
         .to_owned();
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    sqlx::query_with(&sql, values).execute(&pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+        .execute(&pool)
+        .await?;
 
     Ok(())
 }
@@ -190,7 +194,9 @@ async fn handle_recipe_deleted<E: Executor>(
         .to_owned();
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    sqlx::query_with(&sql, values).execute(&pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+        .execute(&pool)
+        .await?;
 
     Ok(())
 }
@@ -210,7 +216,9 @@ async fn handle_recipe_basic_information_changed<E: Executor>(
         .to_owned();
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    sqlx::query_with(&sql, values).execute(&pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+        .execute(&pool)
+        .await?;
 
     Ok(())
 }
@@ -313,7 +321,9 @@ async fn handle_favorite_saved<E: Executor>(
         .to_owned();
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    sqlx::query_with(&sql, values).execute(&pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+        .execute(&pool)
+        .await?;
 
     Ok(())
 }
@@ -331,7 +341,9 @@ async fn handle_favorite_unsaved<E: Executor>(
         .to_owned();
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    sqlx::query_with(&sql, values).execute(&pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+        .execute(&pool)
+        .await?;
 
     Ok(())
 }
@@ -349,7 +361,9 @@ async fn update_col(
         .to_owned();
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    sqlx::query_with(&sql, values).execute(pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+        .execute(pool)
+        .await?;
 
     Ok(())
 }

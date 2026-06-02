@@ -248,7 +248,7 @@ impl<E: Executor> Snapshot<E> for AdminView {
 
         let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-        Ok(sqlx::query_as_with(&sql, values)
+        Ok(sqlx::query_as_with(sqlx::AssertSqlSafe(sql), values)
             .fetch_optional(&read_db)
             .await?)
     }
@@ -308,7 +308,9 @@ impl<E: Executor> Snapshot<E> for AdminView {
             .to_owned();
 
         let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-        sqlx::query_with(&sql, values).execute(&write_db).await?;
+        sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+            .execute(&write_db)
+            .await?;
 
         Ok(())
     }

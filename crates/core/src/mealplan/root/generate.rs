@@ -233,7 +233,7 @@ impl<E: Executor> super::Module<E> {
 
         let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-        let mut recipes = sqlx::query_as_with::<_, Recipe, _>(&sql, values)
+        let mut recipes = sqlx::query_as_with::<_, Recipe, _>(sqlx::AssertSqlSafe(sql), values)
             .fetch_all(&self.read_db)
             .await?;
 
@@ -308,7 +308,7 @@ impl<E: Executor> super::Module<E> {
 
         let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-        let mut recipes = sqlx::query_as_with::<_, Recipe, _>(&sql, values)
+        let mut recipes = sqlx::query_as_with::<_, Recipe, _>(sqlx::AssertSqlSafe(sql), values)
             .fetch_all(&self.read_db)
             .await?;
 

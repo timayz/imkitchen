@@ -254,10 +254,12 @@ impl<E: Executor> crate::recipe::Module<E> {
 
         let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-        Ok(sqlx::query_as_with::<_, (String,), _>(&sql, values)
-            .fetch_optional(&self.read_db)
-            .await?
-            .map(|(id,)| id))
+        Ok(
+            sqlx::query_as_with::<_, (String,), _>(sqlx::AssertSqlSafe(sql), values)
+                .fetch_optional(&self.read_db)
+                .await?
+                .map(|(id,)| id),
+        )
     }
 
     pub async fn find_user_to_upsert(
@@ -289,10 +291,12 @@ impl<E: Executor> crate::recipe::Module<E> {
 
         let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-        Ok(sqlx::query_as_with::<_, (String,), _>(&sql, values)
-            .fetch_optional(&self.read_db)
-            .await?
-            .map(|(id,)| id))
+        Ok(
+            sqlx::query_as_with::<_, (String,), _>(sqlx::AssertSqlSafe(sql), values)
+                .fetch_optional(&self.read_db)
+                .await?
+                .map(|(id,)| id),
+        )
     }
 }
 
@@ -327,7 +331,7 @@ async fn find_user(pool: &SqlitePool, id: impl Into<String>) -> anyhow::Result<O
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-    Ok(sqlx::query_as_with(&sql, values)
+    Ok(sqlx::query_as_with(sqlx::AssertSqlSafe(sql), values)
         .fetch_optional(pool)
         .await?)
 }
@@ -468,7 +472,9 @@ impl<E: Executor> Snapshot<E> for UserView {
             .to_owned();
 
         let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-        sqlx::query_with(&sql, values).execute(&write_db).await?;
+        sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+            .execute(&write_db)
+            .await?;
 
         Ok(())
     }

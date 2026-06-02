@@ -37,9 +37,11 @@ impl<E: Executor> crate::shopping::Module<E> {
 
         let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-        Ok(sqlx::query_as_with::<_, ShoppingListRow, _>(&sql, values)
-            .fetch_optional(&self.read_db)
-            .await?)
+        Ok(
+            sqlx::query_as_with::<_, ShoppingListRow, _>(sqlx::AssertSqlSafe(sql), values)
+                .fetch_optional(&self.read_db)
+                .await?,
+        )
     }
 }
 
@@ -84,7 +86,9 @@ async fn handle_generated<E: Executor>(
         .to_owned();
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    sqlx::query_with(&sql, values).execute(&pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+        .execute(&pool)
+        .await?;
 
     Ok(())
 }

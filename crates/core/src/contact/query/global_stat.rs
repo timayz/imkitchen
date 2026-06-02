@@ -41,7 +41,7 @@ impl<E: Executor> crate::contact::Module<E> {
             .to_owned();
 
         let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-        Ok(sqlx::query_as_with(&sql, values)
+        Ok(sqlx::query_as_with(sqlx::AssertSqlSafe(sql), values)
             .fetch_optional(&self.read_db)
             .await?)
     }
@@ -130,7 +130,9 @@ async fn update(
         .to_owned();
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    sqlx::query_with(&sql, values).execute(pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+        .execute(pool)
+        .await?;
 
     Ok(())
 }
@@ -167,6 +169,8 @@ async fn update_submitted(pool: &SqlitePool, timestamp: u64) -> anyhow::Result<(
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
 
-    sqlx::query_with(&sql, values).execute(pool).await?;
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+        .execute(pool)
+        .await?;
     Ok(())
 }
