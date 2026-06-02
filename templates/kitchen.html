@@ -183,16 +183,16 @@
         <div id="view-steps" class="p-6">
           {% if let Some((pos,instruction)) = current_instruction %}
           <!-- Step Progress -->
-          <div class="flex items-center justify-between mb-4">
-            <span class="text-sm text-ink-3">{{ "Step"|t }} {{ pos + 1 }} {{ "of"|t }} {{
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+            <span class="text-sm text-ink-3 shrink-0">{{ "Step"|t }} {{ pos + 1 }} {{ "of"|t }} {{
               slot_recipe.instructions.len() }}</span>
-            <div class="flex gap-1">
+            <div class="flex gap-1 w-full sm:w-auto sm:flex-1 sm:max-w-xs">
               {% for _ in completed_instructions %}
-              <div class="w-8 h-1 bg-primary-500 rounded-full"></div>
+              <div class="flex-1 min-w-0 h-1 bg-primary-500 rounded-full"></div>
               {% endfor %}
-              <div class="w-8 h-1 bg-orange-500 rounded-full"></div>
+              <div class="flex-1 min-w-0 h-1 bg-orange-500 rounded-full"></div>
               {% for _ in coming_instructions %}
-              <div class="w-8 h-1 bg-cream-2 rounded-full"></div>
+              <div class="flex-1 min-w-0 h-1 bg-cream-2 rounded-full"></div>
               {% endfor %}
             </div>
           </div>
