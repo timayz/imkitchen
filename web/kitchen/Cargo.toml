@@ -1,6 +1,6 @@
 [package]
 name = "imkitchen-web-kitchen"
-version = "1.0.6"
+version = "1.0.7"
 edition.workspace = true
 
 [dependencies]
@@ -9,6 +9,6 @@ axum-extra = { workspace = true }
 askama = { workspace = true }
 tracing = { workspace = true }
 time = { workspace = true }
-imkitchen-core = { path = "../../crates/core", version = "1.0.6" }
-imkitchen-types = { path = "../../crates/types", version = "1.0.6" }
-imkitchen-web-shared = { path = "../shared", version = "1.0.6" }
+imkitchen-core = { path = "../../crates/core", version = "1.0.7" }
+imkitchen-types = { path = "../../crates/types", version = "1.0.7" }
+imkitchen-web-shared = { path = "../shared", version = "1.0.7" }
