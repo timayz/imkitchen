@@ -73,6 +73,7 @@
 <script>
   (() => {
     const MAX_CHUNK_BYTES = 900 * 1024;
+    const MAX_CHUNK_COUNT = 50;
     const encoder = new TextEncoder();
     const area = document.getElementById("recipes-area");
 
@@ -99,7 +100,7 @@
       for (const r of recipes) {
         const size = encoder.encode(JSON.stringify(r)).length;
         const added = size + (current.length ? 1 : 0);
-        if (current.length && currentBytes + added > MAX_CHUNK_BYTES) {
+        if (current.length && (currentBytes + added > MAX_CHUNK_BYTES || current.length >= MAX_CHUNK_COUNT)) {
           chunks.push(current);
           current = [r];
           currentBytes = 2 + size;
