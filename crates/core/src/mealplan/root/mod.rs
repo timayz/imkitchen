@@ -39,7 +39,7 @@ impl<E: Executor> Module<E> {
     }
 
     pub async fn load(&self, id: impl Into<String>) -> anyhow::Result<Option<MealPlan>> {
-        create_projection(id).execute(&self.executor).await
+        create_projection().load(id).execute(&self.executor).await
     }
 }
 
@@ -55,8 +55,8 @@ impl ProjectionAggregator for MealPlan {
     }
 }
 
-pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, MealPlan> {
-    Projection::new::<mealplan::MealPlan>(id)
+pub fn create_projection<E: Executor>() -> Projection<E, MealPlan> {
+    Projection::new::<mealplan::MealPlan>()
         .handler(handle_generated())
         .skip::<SlotRecipeStatusChanged>()
         .safety_check()

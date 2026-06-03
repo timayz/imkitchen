@@ -38,11 +38,9 @@ pub(crate) async fn load<E: Executor>(
     write_db: &SqlitePool,
     id: impl Into<String>,
 ) -> Result<Option<InvoiceUserView>, anyhow::Error> {
-    let id = id.into();
-
-    create_projection(&id)
-        .aggregator::<invoice::Invoice>(id)
+    create_projection()
         .data((read_db.clone(), write_db.clone()))
+        .load(id)
         .execute(executor)
         .await
 }
@@ -159,8 +157,8 @@ impl<E: Executor> Module<E> {
     }
 }
 
-pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, InvoiceUserView> {
-    Projection::new::<invoice::Invoice>(id).handler(handle_created())
+pub fn create_projection<E: Executor>() -> Projection<E, InvoiceUserView> {
+    Projection::new::<invoice::Invoice>().handler(handle_created())
 }
 
 impl<E: Executor> Snapshot<E> for InvoiceUserView {

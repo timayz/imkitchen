@@ -1666,7 +1666,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -1693,8 +1693,7 @@ dependencies = [
 [[package]]
 name = "evento"
 version = "2.0.0-alpha.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f9bdc476aba45210e993d120a6109d465acd668ec6e73abf83d3a2c7204391e7"
+source = "git+https://github.com/timayz/evento.git?branch=feat%2Fprojection%2Fall-in-subscription#a9eb139ded7f779c263932dc9c2754205c506ed2"
 dependencies = [
  "evento-core",
  "evento-sql",
@@ -1705,8 +1704,7 @@ dependencies = [
 [[package]]
 name = "evento-core"
 version = "2.0.0-alpha.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f8dd700e5faced3c303e887a5f1ecaaebbcc2fec32baa31ab6f65e654077b3a"
+source = "git+https://github.com/timayz/evento.git?branch=feat%2Fprojection%2Fall-in-subscription#a9eb139ded7f779c263932dc9c2754205c506ed2"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1726,8 +1724,7 @@ dependencies = [
 [[package]]
 name = "evento-macro"
 version = "2.0.0-alpha.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "058b67b925b8d70e8f95cb427cb38b52487ffb33dccd805ceec608342af68f0e"
+source = "git+https://github.com/timayz/evento.git?branch=feat%2Fprojection%2Fall-in-subscription#a9eb139ded7f779c263932dc9c2754205c506ed2"
 dependencies = [
  "convert_case 0.11.0",
  "quote",
@@ -1737,8 +1734,7 @@ dependencies = [
 [[package]]
 name = "evento-sql"
 version = "2.0.0-alpha.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9eec2096c45afe17ad105c6a707f6fd0d207a91f6d85084b48a103f5d672916c"
+source = "git+https://github.com/timayz/evento.git?branch=feat%2Fprojection%2Fall-in-subscription#a9eb139ded7f779c263932dc9c2754205c506ed2"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1753,8 +1749,7 @@ dependencies = [
 [[package]]
 name = "evento-sql-migrator"
 version = "2.0.0-alpha.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fdb11cf005ca94747b60df639766f0db545f152be97c0636c212ad42e53ca07f"
+source = "git+https://github.com/timayz/evento.git?branch=feat%2Fprojection%2Fall-in-subscription#a9eb139ded7f779c263932dc9c2754205c506ed2"
 dependencies = [
  "async-trait",
  "evento-sql",
@@ -2903,7 +2898,7 @@ checksum = "3640c1c38b8e4e43584d8df18be5fc6b0aa314ce6ebf51b53313d4306cca8e46"
 dependencies = [
  "hermit-abi",
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -5240,7 +5235,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -6100,7 +6095,7 @@ dependencies = [
  "getrandom 0.4.2",
  "once_cell",
  "rustix",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -7019,7 +7014,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]

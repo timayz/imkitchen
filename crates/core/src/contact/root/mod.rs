@@ -29,7 +29,7 @@ impl<E: Executor> Module<E> {
     }
 
     pub async fn load(&self, id: impl Into<String>) -> anyhow::Result<Option<Contact>> {
-        create_projection(id).execute(&self.executor).await
+        create_projection().load(id).execute(&self.executor).await
     }
 }
 
@@ -45,8 +45,8 @@ impl ProjectionAggregator for Contact {
     }
 }
 
-pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Contact> {
-    Projection::new::<contact::Contact>(id)
+pub fn create_projection<E: Executor>() -> Projection<E, Contact> {
+    Projection::new::<contact::Contact>()
         .handler(handle_form_submitted())
         .handler(handle_reopened())
         .handler(handle_resolved())

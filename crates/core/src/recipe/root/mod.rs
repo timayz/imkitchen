@@ -54,7 +54,7 @@ impl<E: Executor> Module<E> {
         }
     }
     pub async fn load(&self, id: impl Into<String>) -> anyhow::Result<Option<Recipe>> {
-        let Some(recipe) = create_projection(id).execute(&self.executor).await? else {
+        let Some(recipe) = create_projection().load(id).execute(&self.executor).await? else {
             return Ok(None);
         };
 
@@ -68,7 +68,8 @@ impl<E: Executor> Module<E> {
     pub async fn load_share(&self, user_id: impl Into<String>) -> anyhow::Result<RecipeShareState> {
         let user_id = user_id.into();
 
-        Ok(create_share_projection(&user_id)
+        Ok(create_share_projection()
+            .load(&user_id)
             .execute(&self.executor)
             .await?
             .unwrap_or_else(|| RecipeShareState {
@@ -98,10 +99,8 @@ pub struct RecipeShareState {
     pub id: String,
 }
 
-pub fn create_share_projection<E: Executor>(
-    user_id: impl Into<String>,
-) -> Projection<E, RecipeShareState> {
-    Projection::new::<recipe_share::RecipeShare>(user_id)
+pub fn create_share_projection<E: Executor>() -> Projection<E, RecipeShareState> {
+    Projection::new::<recipe_share::RecipeShare>()
         .handler(handle_all_shared_to_community())
         .handler(handle_all_made_private())
         .safety_check()
@@ -131,8 +130,8 @@ async fn handle_all_made_private(
     Ok(())
 }
 
-pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Recipe> {
-    Projection::new::<recipe::Recipe>(id)
+pub fn create_projection<E: Executor>() -> Projection<E, Recipe> {
+    Projection::new::<recipe::Recipe>()
         .revision(1)
         .handler(handle_created())
         .handler(handle_deleted())

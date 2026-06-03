@@ -33,9 +33,10 @@ pub(crate) async fn load<E: Executor>(
 ) -> Result<Option<AdminView>, anyhow::Error> {
     let id = id.into();
 
-    create_projection(&id)
-        .aggregator::<Subscription>(id)
+    create_projection()
         .data((read_db.clone(), write_db.clone()))
+        .load(&id)
+        .aggregator::<Subscription>(id)
         .execute(executor)
         .await
 }
@@ -211,8 +212,8 @@ impl<E: Executor> crate::Module<E> {
     }
 }
 
-pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, AdminView> {
-    Projection::new::<User>(id)
+pub fn create_projection<E: Executor>() -> Projection<E, AdminView> {
+    Projection::new::<User>()
         .handler(handle_actived())
         .handler(handle_susended())
         .handler(handle_made_admin())

@@ -33,8 +33,8 @@ pub struct Recipient {
     pub timezone: String,
 }
 
-pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Recipient> {
-    Projection::new::<user::User>(id)
+pub fn create_projection<E: Executor>() -> Projection<E, Recipient> {
+    Projection::new::<user::User>()
         .handler(handle_registered())
         .handler(handle_logged_in())
 }
@@ -51,8 +51,9 @@ pub(crate) async fn load<E: Executor>(
     write_db: &SqlitePool,
     id: impl Into<String>,
 ) -> anyhow::Result<Option<Recipient>> {
-    create_projection(id)
+    create_projection()
         .data((read_db.clone(), write_db.clone()))
+        .load(id)
         .execute(executor)
         .await
 }

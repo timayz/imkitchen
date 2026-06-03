@@ -126,8 +126,9 @@ pub(crate) async fn load<E: Executor>(
     write_db: &SqlitePool,
     id: impl Into<String>,
 ) -> Result<Option<AdminView>, anyhow::Error> {
-    create_projection(id)
+    create_projection()
         .data((read_db.clone(), write_db.clone()))
+        .load(id)
         .execute(executor)
         .await
 }
@@ -161,8 +162,8 @@ pub(crate) async fn find(
     )
 }
 
-pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, AdminView> {
-    Projection::new::<Contact>(id)
+pub fn create_projection<E: Executor>() -> Projection<E, AdminView> {
+    Projection::new::<Contact>()
         .handler(handle_form_submmited())
         .handler(handle_reopened())
         .handler(handle_marked_read_and_reply())
