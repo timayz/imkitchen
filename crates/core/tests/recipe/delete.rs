@@ -10,8 +10,7 @@ async fn test_delete() -> anyhow::Result<()> {
     let cmd = imkitchen_core::recipe::Module::new(state);
 
     let recipe_id = cmd.create("john", "john_doe".to_owned()).await?;
-    let recipe = cmd.load(&recipe_id).await?.unwrap();
-    assert!(!recipe.is_deleted);
+    assert!(cmd.load(&recipe_id).await?.is_some());
 
     cmd.delete(&recipe_id, "john").await?;
 

@@ -54,15 +54,7 @@ impl<E: Executor> Module<E> {
         }
     }
     pub async fn load(&self, id: impl Into<String>) -> anyhow::Result<Option<Recipe>> {
-        let Some(recipe) = create_projection().load(id).execute(&self.executor).await? else {
-            return Ok(None);
-        };
-
-        if recipe.is_deleted {
-            return Ok(None);
-        }
-
-        Ok(Some(recipe))
+        create_projection().load(id).execute(&self.executor).await
     }
 
     pub async fn load_share(&self, user_id: impl Into<String>) -> anyhow::Result<RecipeShareState> {
@@ -91,7 +83,6 @@ pub struct Recipe {
     pub advance_prep_hash: Vec<u8>,
     pub accepts_accompaniment: bool,
     pub is_shared: bool,
-    pub is_deleted: bool,
 }
 
 #[evento::projection(Encode, Decode)]
@@ -133,8 +124,8 @@ async fn handle_all_made_private(
 pub fn create_projection<E: Executor>() -> Projection<E, Recipe> {
     Projection::new::<recipe::Recipe>()
         .revision(1)
+        .tombstone::<Deleted>()
         .handler(handle_created())
-        .handler(handle_deleted())
         .handler(handle_imported())
         .handler(handle_made_private())
         .handler(handle_ingredients_changed())
@@ -345,13 +336,6 @@ async fn handle_shared_to_community(
 #[evento::handler]
 async fn handle_made_private(_event: Event<MadePrivate>, data: &mut Recipe) -> anyhow::Result<()> {
     data.is_shared = false;
-
-    Ok(())
-}
-
-#[evento::handler]
-async fn handle_deleted(_event: Event<Deleted>, data: &mut Recipe) -> anyhow::Result<()> {
-    data.is_deleted = true;
 
     Ok(())
 }
