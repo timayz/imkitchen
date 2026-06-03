@@ -44,6 +44,8 @@ pub struct ServerConfig {
     pub url: String,
     pub host: String,
     pub port: u16,
+    #[serde(default)]
+    pub region: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
