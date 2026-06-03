@@ -52,8 +52,9 @@ pub async fn serve(
         .start(&executor)
         .await?;
 
-    let sub_user_query = imkitchen_identity::query_subscription()
+    let sub_user_query = imkitchen_identity::admin::create_projection()
         .data((read_pool.clone(), write_pool.clone()))
+        .subscription("user-query")
         .start(&executor)
         .await?;
 
@@ -73,8 +74,9 @@ pub async fn serve(
         .start(&executor)
         .await?;
 
-    let sub_contact_query = imkitchen_core::contact::query_subscription()
+    let sub_contact_query = imkitchen_core::contact::admin::create_projection()
         .data((read_pool.clone(), write_pool.clone()))
+        .subscription("contact-query")
         .start(&executor)
         .await?;
 
@@ -88,7 +90,13 @@ pub async fn serve(
         .start(&executor)
         .await?;
 
-    let sub_recipe_query = imkitchen_core::recipe::query::subscription()
+    let sub_recipe_query = imkitchen_core::recipe::query::user::create_projection()
+        .data((read_pool.clone(), write_pool.clone()))
+        .subscription("recipe-query")
+        .start(&executor)
+        .await?;
+
+    let sub_recipe_query_share = imkitchen_core::recipe::query::subscription()
         .data((read_pool.clone(), write_pool.clone()))
         .start(&executor)
         .await?;
@@ -235,6 +243,7 @@ pub async fn serve(
         sub_contact_global_stat.shutdown(),
         sub_recipe_command.shutdown(),
         sub_recipe_query.shutdown(),
+        sub_recipe_query_share.shutdown(),
         sub_recipe_user_fts.shutdown(),
         sub_recipe_user_stat.shutdown(),
         sub_recipe_thumbnail.shutdown(),

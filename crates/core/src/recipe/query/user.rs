@@ -474,6 +474,20 @@ impl<E: Executor> Snapshot<E> for UserView {
 
         Ok(())
     }
+
+    async fn drop_snapshot(
+        context: &evento::projection::Context<'_, E>,
+    ) -> anyhow::Result<()> {
+        let (_, write_db) = context.extract::<(SqlitePool, SqlitePool)>();
+        let (sql, values) = Query::delete()
+            .from_table(RecipeUser::Table)
+            .and_where(Expr::col(RecipeUser::Id).eq(&context.id))
+            .build_sqlx(SqliteQueryBuilder);
+        sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+            .execute(&write_db)
+            .await?;
+        Ok(())
+    }
 }
 
 #[evento::handler]
