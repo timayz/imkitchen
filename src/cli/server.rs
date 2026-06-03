@@ -90,11 +90,6 @@ pub async fn serve(
         .start(&executor)
         .await?;
 
-    let sub_recipe_root = imkitchen_core::recipe::create_projection()
-        .subscription("recipe-root")
-        .start(&executor)
-        .await?;
-
     let sub_recipe_query = imkitchen_core::recipe::query::user::create_projection()
         .data((read_pool.clone(), write_pool.clone()))
         .subscription("recipe-query")
@@ -247,7 +242,6 @@ pub async fn serve(
         sub_contact_query.shutdown(),
         sub_contact_global_stat.shutdown(),
         sub_recipe_command.shutdown(),
-        sub_recipe_root.shutdown(),
         sub_recipe_query.shutdown(),
         sub_recipe_query_share.shutdown(),
         sub_recipe_user_fts.shutdown(),
