@@ -12,8 +12,6 @@ pub struct Config {
     pub stripe: StripeConfig,
     pub premium: Option<PremiumConfig>,
     pub monitoring: MonitoringConfig,
-    #[serde(default)]
-    pub region: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -46,6 +44,8 @@ pub struct ServerConfig {
     pub url: String,
     pub host: String,
     pub port: u16,
+    #[serde(default)]
+    pub region: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Clone)]

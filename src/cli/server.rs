@@ -35,7 +35,7 @@ pub async fn serve(
         .into();
 
     let mut executor = evento::Evento::new(rw);
-    if let Some(region) = config.region.as_deref() {
+    if let Some(region) = config.server.region.as_deref() {
         executor = executor.default_routing_key(region);
     }
 
