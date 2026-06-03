@@ -123,7 +123,7 @@ async fn handle_all_made_private(
 
 pub fn create_projection<E: Executor>() -> Projection<E, Recipe> {
     Projection::new::<recipe::Recipe>()
-        .revision(1)
+        .revision(2)
         .tombstone::<Deleted>()
         .handler(handle_created())
         .handler(handle_imported())
