@@ -12,6 +12,8 @@ pub struct Config {
     pub stripe: StripeConfig,
     pub premium: Option<PremiumConfig>,
     pub monitoring: MonitoringConfig,
+    #[serde(default)]
+    pub region: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
