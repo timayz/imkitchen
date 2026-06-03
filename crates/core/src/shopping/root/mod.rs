@@ -31,7 +31,7 @@ impl<E: Executor> Module<E> {
     }
 
     pub async fn load(&self, id: impl Into<String>) -> anyhow::Result<Option<Shopping>> {
-        create_projection(id).execute(&self.executor).await
+        create_projection().load(id).execute(&self.executor).await
     }
 }
 
@@ -51,8 +51,8 @@ impl ProjectionAggregator for Shopping {
     }
 }
 
-pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Shopping> {
-    Projection::new::<shopping::Shopping>(id)
+pub fn create_projection<E: Executor>() -> Projection<E, Shopping> {
+    Projection::new::<shopping::Shopping>()
         .handler(handle_checked())
         .handler(handle_generated())
         .handler(handle_unchecked())

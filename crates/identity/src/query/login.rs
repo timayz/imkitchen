@@ -21,8 +21,10 @@ impl<E: Executor> crate::Module<E> {
     ) -> Result<Option<LoginView>, anyhow::Error> {
         let id = id.into();
 
-        create_projection(&id)
+        create_projection()
             .data((self.read_db.clone(), self.write_db.clone()))
+            .load(&id)
+            .aggregator::<Subscription>(id)
             .execute(&self.executor)
             .await
     }
@@ -71,11 +73,8 @@ impl Login {
     }
 }
 
-pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, LoginView> {
-    let id = id.into();
-
-    Projection::new::<User>(&id)
-        .aggregator::<Subscription>(id)
+pub fn create_projection<E: Executor>() -> Projection<E, LoginView> {
+    Projection::new::<User>()
         .handler(handle_logged_in())
         .handler(handle_logout())
         .handler(handle_actived())

@@ -26,7 +26,8 @@ impl<E: Executor> Module<E> {
         let id = id.into();
         let user_id = user_id.into();
 
-        create_projection::<E>(&id, &user_id)
+        create_projection::<E>()
+            .load_ids(vec![id.clone(), user_id.clone()])
             .execute(&self.executor)
             .await
             .map(|r| {
@@ -45,11 +46,8 @@ pub struct Favorite {
     pub saved: bool,
 }
 
-pub fn create_projection<E: Executor>(
-    id: impl Into<String>,
-    user_id: impl Into<String>,
-) -> Projection<E, Favorite> {
-    Projection::ids::<favorite::Favorite>(vec![id.into(), user_id.into()])
+pub fn create_projection<E: Executor>() -> Projection<E, Favorite> {
+    Projection::new::<favorite::Favorite>()
         .handler(handle_saved())
         .handler(handle_unsaved())
         .safety_check()

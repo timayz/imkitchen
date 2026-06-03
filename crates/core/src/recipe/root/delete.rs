@@ -1,5 +1,5 @@
-use evento::{Executor, ProjectionAggregator};
-use imkitchen_types::recipe::Deleted;
+use evento::{Aggregator, Executor, ProjectionAggregator};
+use imkitchen_types::recipe::{self, Deleted};
 
 impl<E: Executor> super::Module<E> {
     pub async fn delete(
@@ -7,7 +7,8 @@ impl<E: Executor> super::Module<E> {
         id: impl Into<String>,
         request_by: impl Into<String>,
     ) -> crate::Result<()> {
-        let Some(recipe) = self.load(id).await? else {
+        let id = id.into();
+        let Some(recipe) = self.load(&id).await? else {
             crate::not_found!("recipe");
         };
 
@@ -21,6 +22,10 @@ impl<E: Executor> super::Module<E> {
             .event(&Deleted)
             .requested_by(request_by)
             .commit(&self.executor)
+            .await?;
+
+        self.executor
+            .delete_snapshot(recipe::Recipe::aggregator_type().to_owned(), id)
             .await?;
 
         Ok(())

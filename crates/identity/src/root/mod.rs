@@ -49,7 +49,7 @@ impl<E: Executor> Module<E> {
         }
     }
     pub async fn load(&self, id: impl Into<String>) -> anyhow::Result<Option<User>> {
-        create_projection(id).execute(&self.executor).await
+        create_projection().load(id).execute(&self.executor).await
     }
 
     pub async fn find_email(
@@ -71,8 +71,8 @@ pub struct User {
     pub state: State,
 }
 
-pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, User> {
-    Projection::new::<user::User>(id)
+pub fn create_projection<E: Executor>() -> Projection<E, User> {
+    Projection::new::<user::User>()
         .handler(handle_registered())
         .handler(handle_actived())
         .handler(handle_susended())

@@ -24,7 +24,7 @@ impl<E: Executor> Deref for Module<E> {
 
 impl<E: Executor> Module<E> {
     pub async fn load(&self, id: impl Into<String>) -> anyhow::Result<Option<Password>> {
-        create_projection(id).execute(&self.executor).await
+        create_projection().load(id).execute(&self.executor).await
     }
 }
 
@@ -36,8 +36,8 @@ pub struct Password {
     pub expire_at: u64,
 }
 
-fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Password> {
-    Projection::new::<password::Password>(id)
+fn create_projection<E: Executor>() -> Projection<E, Password> {
+    Projection::new::<password::Password>()
         .handler(handle_reset_requested())
         .handler(handle_reset_completed())
         .safety_check()

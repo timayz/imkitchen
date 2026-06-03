@@ -23,7 +23,8 @@ impl<E: Executor> Module<E> {
     pub async fn load(&self, id: impl Into<String>) -> anyhow::Result<MealPreferences> {
         let id = id.into();
 
-        create_projection::<E>(&id)
+        create_projection::<E>()
+            .load(&id)
             .execute(&self.executor)
             .await
             .map(|r| {
@@ -46,8 +47,8 @@ pub struct MealPreferences {
     pub cuisine_variety_weight: f32,
 }
 
-fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, MealPreferences> {
-    Projection::new::<meal_preferences::MealPreferences>(id)
+fn create_projection<E: Executor>() -> Projection<E, MealPreferences> {
+    Projection::new::<meal_preferences::MealPreferences>()
         .handler(handle_updated())
         .safety_check()
 }

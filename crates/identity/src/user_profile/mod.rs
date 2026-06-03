@@ -21,7 +21,8 @@ impl<E: Executor> Module<E> {
     pub async fn load(&self, id: impl Into<String>) -> anyhow::Result<UserProfile> {
         let id = id.into();
 
-        create_projection::<E>(&id)
+        create_projection::<E>()
+            .load(&id)
             .execute(&self.executor)
             .await
             .map(|r| {
@@ -40,8 +41,8 @@ pub struct UserProfile {
     pub description: String,
 }
 
-fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, UserProfile> {
-    Projection::new::<user_profile::UserProfile>(id)
+fn create_projection<E: Executor>() -> Projection<E, UserProfile> {
+    Projection::new::<user_profile::UserProfile>()
         .handler(handle_changed())
         .safety_check()
 }

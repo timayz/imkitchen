@@ -7,5 +7,5 @@ pub(crate) mod query;
 pub(crate) mod repository;
 mod root;
 
-pub use query::{admin, global_stat, login, query_subscription};
+pub use query::{admin, global_stat, login};
 pub use root::*;

@@ -26,7 +26,8 @@ impl<E: Executor> Deref for Module<E> {
 impl<E: Executor> Module<E> {
     pub async fn load(&self, id: impl Into<String>) -> anyhow::Result<Subscription> {
         let id = id.into();
-        create_projection::<E>(&id)
+        create_projection::<E>()
+            .load(&id)
             .execute(&self.executor)
             .await
             .map(|r| {
@@ -63,8 +64,8 @@ pub struct Subscription {
     pub is_active: bool,
 }
 
-fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, Subscription> {
-    Projection::new::<subscription::Subscription>(id)
+fn create_projection<E: Executor>() -> Projection<E, Subscription> {
+    Projection::new::<subscription::Subscription>()
         .handler(handle_life_premium_toggled())
         .handler(handle_stripe_customer_created())
         .handler(handle_stripe_payment_intent_created())

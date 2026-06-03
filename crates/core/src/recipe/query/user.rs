@@ -1,5 +1,5 @@
 use evento::{
-    AggregatorExecutor, Cursor, Executor, Projection, Snapshot,
+    Cursor, Executor, Projection, Snapshot,
     cursor::{Args, ReadResult},
     metadata::Event,
     sql::Reader,
@@ -336,8 +336,9 @@ async fn find_user(pool: &SqlitePool, id: impl Into<String>) -> anyhow::Result<O
         .await?)
 }
 
-pub fn create_projection<E: Executor>(id: impl Into<String>) -> Projection<E, UserView> {
-    Projection::new::<Recipe>(id)
+pub fn create_projection<E: Executor>() -> Projection<E, UserView> {
+    Projection::new::<Recipe>()
+        .tombstone::<Deleted>()
         .handler(handle_created())
         .handler(handle_imported())
         .handler(handle_recipe_type_changed())
@@ -364,14 +365,9 @@ pub(crate) async fn load<E: Executor>(
     write_db: &SqlitePool,
     id: impl Into<String>,
 ) -> Result<Option<UserView>, anyhow::Error> {
-    let id = id.into();
-
-    if executor.has_event::<Deleted>(&id).await? {
-        return Ok(None);
-    }
-
-    create_projection(id)
+    create_projection()
         .data((read_db.clone(), write_db.clone()))
+        .load(id)
         .execute(executor)
         .await
 }
@@ -476,6 +472,18 @@ impl<E: Executor> Snapshot<E> for UserView {
             .execute(&write_db)
             .await?;
 
+        Ok(())
+    }
+
+    async fn drop_snapshot(context: &evento::projection::Context<'_, E>) -> anyhow::Result<()> {
+        let (_, write_db) = context.extract::<(SqlitePool, SqlitePool)>();
+        let (sql, values) = Query::delete()
+            .from_table(RecipeUser::Table)
+            .and_where(Expr::col(RecipeUser::Id).eq(&context.id))
+            .build_sqlx(SqliteQueryBuilder);
+        sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+            .execute(&write_db)
+            .await?;
         Ok(())
     }
 }
