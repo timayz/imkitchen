@@ -1,515 +1,413 @@
 {% extends "_user.html" %}
 {% block title %}{{ recipe.name }} - imkitchen{% endblock %}
-{% macro lazy_thumbnail(recipe, version, gradient) %}
-<div class="relative w-full h-full overflow-hidden">
-  <div class="absolute inset-0 bg-linear-to-r {{ gradient }} animate-pulse"></div>
-  <picture>
-    <source data-media="(max-width: 480px)"
-      data-srcset="/recipes/{{ recipe.id }}/thumbnail/mobile/image.webp?v={{ version }}" />
-    <source data-media="(max-width: 768px)"
-      data-srcset="/recipes/{{ recipe.id }}/thumbnail/tablet/image.webp?v={{ version }}" />
-    <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
-      data-src="/recipes/{{ recipe.id }}/thumbnail/desktop/image.webp?v={{ version }}" alt="{{ recipe.name }}"
-      class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 [&.loaded]:opacity-100"
-      ts-trigger="closeby once" ts-action="lazy" />
-  </picture>
-</div>
-{% endmacro %}
-{% macro lazy_mobile_thumbnail(recipe, version, gradient) %}
-<div class="relative w-full h-full overflow-hidden">
-  <div class="absolute inset-0 bg-linear-to-r {{ gradient }} animate-pulse"></div>
+
+{# ── Recipe-type → emoji + color tokens (mirrors partials/kitchen-dish.html) ── #}
+{% macro type_emoji(rt) -%}
+{%- match rt -%}
+{%- when RecipeType::Appetizer -%}🥗
+{%- when RecipeType::MainCourse -%}🍛
+{%- when RecipeType::Accompaniment -%}🥖
+{%- when RecipeType::Dessert -%}🍰
+{%- when RecipeType::Beverage -%}🥤
+{%- when RecipeType::Condiment -%}🥫
+{%- endmatch -%}
+{%- endmacro %}
+
+{% macro type_hero_classes(rt) -%}
+{%- match rt -%}
+{%- when RecipeType::Appetizer -%}from-meal-entree-soft to-blue-100
+{%- when RecipeType::MainCourse -%}from-meal-main-soft to-orange-100
+{%- when RecipeType::Accompaniment -%}from-meal-side-soft to-herb-100
+{%- when RecipeType::Dessert -%}from-meal-dessert-soft to-pink-100
+{%- when RecipeType::Beverage -%}from-cyan-100 to-cyan-200
+{%- when RecipeType::Condiment -%}from-amber-100 to-amber-200
+{%- endmatch -%}
+{%- endmacro %}
+
+{% macro type_ink_class(rt) -%}
+{%- match rt -%}
+{%- when RecipeType::Appetizer -%}text-meal-entree-ink
+{%- when RecipeType::MainCourse -%}text-meal-main-ink
+{%- when RecipeType::Accompaniment -%}text-meal-side-ink
+{%- when RecipeType::Dessert -%}text-meal-dessert-ink
+{%- when RecipeType::Beverage -%}text-cyan-900
+{%- when RecipeType::Condiment -%}text-amber-900
+{%- endmatch -%}
+{%- endmacro %}
+
+{# ── Lazy thumbnail macros (preserved from previous template) ── #}
+{% macro lazy_thumbnail(recipe, version) %}
+<picture>
+  <source data-media="(max-width: 480px)"
+    data-srcset="/recipes/{{ recipe.id }}/thumbnail/mobile/image.webp?v={{ version }}" />
+  <source data-media="(max-width: 768px)"
+    data-srcset="/recipes/{{ recipe.id }}/thumbnail/tablet/image.webp?v={{ version }}" />
   <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
-    data-src="/recipes/{{ recipe.id }}/thumbnail/mobile/image.webp?v={{ version }}" alt="{{ recipe.name }}"
+    data-src="/recipes/{{ recipe.id }}/thumbnail/desktop/image.webp?v={{ version }}" alt="{{ recipe.name }}"
     class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 [&.loaded]:opacity-100"
     ts-trigger="closeby once" ts-action="lazy" />
-</div>
+</picture>
 {% endmacro %}
-{% block content %}
-<div class="hidden">
-  <div class="bg-red-500 text-white"></div>
-  <div class="bg-orange-500 text-white"></div>
-  <div class="bg-amber-500 text-black"></div>
-  <div class="bg-yellow-500 text-black"></div>
-  <div class="bg-lime-500 text-black"></div>
-  <div class="bg-green-500 text-white"></div>
-  <div class="bg-emerald-500 text-white"></div>
-  <div class="bg-teal-500 text-white"></div>
-  <div class="bg-cyan-500 text-black"></div>
-  <div class="bg-sky-500 text-white"></div>
-  <div class="bg-blue-500 text-white"></div>
-  <div class="bg-indigo-500 text-white"></div>
-  <div class="bg-violet-500 text-white"></div>
-  <div class="bg-purple-500 text-white"></div>
-  <div class="bg-fuchsia-500 text-white"></div>
-  <div class="bg-pink-500 text-white"></div>
-  <div class="bg-rose-500 text-white"></div>
-</div>
 
-<!-- Main Content -->
-<div class="container mx-auto px-4 py-6 max-w-7xl">
-  <!-- Back Button -->
-  <div class="mb-4">
-    <a href="{% if recipe.owner_id == user.id %}/settings{% endif %}/recipes"
-      class="text-primary-500 hover:text-primary-600 font-semibold inline-flex items-center gap-2">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-      </svg>
-      {% if recipe.owner_id == user.id %}
-      {{ "Back to My Recipes"|t }}
-      {% else %}
-      {{ "Back to Recipes"|t }}
-      {% endif %}
-    </a>
+{% macro lazy_card_thumbnail(recipe, version) %}
+<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+  data-src="/recipes/{{ recipe.id }}/thumbnail/mobile/image.webp?v={{ version }}" alt="{{ recipe.name }}"
+  class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 [&.loaded]:opacity-100"
+  ts-trigger="closeby once" ts-action="lazy" />
+{% endmacro %}
+
+{# ── Compact suggestion card used in the right rail ── #}
+{% macro suggestion_card(node) %}
+{% let srt = node.recipe_type.0 %}
+<a href="/recipes/{{ node.id }}" class="flex gap-3 group">
+  <div class="relative w-32 h-20 rounded-xl overflow-hidden bg-linear-to-br {% call type_hero_classes(srt) %}{% endcall %}
+    flex items-center justify-center shrink-0">
+    {% if let Some(version) = node.thumbnail_version %}
+      {% call lazy_card_thumbnail(node, version) %}{% endcall %}
+    {% else %}
+      <span class="text-3xl">{% call type_emoji(srt) %}{% endcall %}</span>
+    {% endif %}
   </div>
+  <div class="flex-1 min-w-0">
+    <h4 class="font-semibold text-sm text-ink leading-snug line-clamp-2 group-hover:text-primary-500">
+      {{ node.name }}
+    </h4>
+    {% if let Some(username) = node.owner_name %}
+    <p class="text-[11px] text-ink-3 mt-1">@{{ username }}</p>
+    {% endif %}
+    <p class="text-[11px] text-ink-3 mt-0.5">{{ node.created_at|relative_time }}</p>
+  </div>
+</a>
+{% endmacro %}
 
-  <div class="flex flex-col xl:flex-row gap-6">
-    <!-- Main Content Area -->
-    <div class="flex-1 min-w-0">
-      <!-- Recipe Hero/Image -->
-      <div class="bg-paper rounded-xl shadow-md overflow-hidden mb-4">
-        {% if recipe.owner_id == user.id %}
-        <form ts-trigger="change" ts-req="/recipes/{{ recipe.id }}/thumbnail" method="post"
-          enctype="multipart/form-data" ts-target="[data-drop-target]">
-          <label for="thumbnail-upload">
-            {% endif %}
-            {% match recipe.recipe_type.0 %}
-            {% when RecipeType::Appetizer %}
-            <div data-drop-target="thumbnail-upload"
-              class="h-64 md:h-80 lg:h-96 bg-linear-to-br from-blue-400 to-blue-500 flex items-center justify-center relative{% if recipe.owner_id == user.id %} cursor-pointer{% endif %}">
-              {% if let Some(version) = recipe.thumbnail_version %}
-              {{ lazy_thumbnail(recipe, version, "from-blue-400 via-blue-200 to-blue-400") }}
-              {% else %}
-              <span class="text-8xl md:text-9xl">🥗</span>
-              {% endif %}
-              <span class="absolute top-4 left-4 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-full">
-                {{ RecipeType::Appetizer.as_ref()|t }}
-              </span>
-            </div>
-            {% when RecipeType::MainCourse %}
-            <div data-drop-target="thumbnail-upload"
-              class="h-64 md:h-80 lg:h-96 bg-linear-to-br from-orange-400 to-red-500 flex items-center justify-center relative{% if recipe.owner_id == user.id %} cursor-pointer{% endif %}">
-              {% if let Some(version) = recipe.thumbnail_version %}
-              {{ lazy_thumbnail(recipe, version, "from-orange-400 via-orange-200 to-red-400") }}
-              {% else %}
-              <span class="text-8xl md:text-9xl">🍛</span>
-              {% endif %}
-              <span class="absolute top-4 left-4 px-4 py-2 bg-orange-600 text-white text-sm font-semibold rounded-full">
-                {{ RecipeType::MainCourse.as_ref()|t }}
-              </span>
-            </div>
-            {% when RecipeType::Dessert %}
-            <div data-drop-target="thumbnail-upload"
-              class="h-64 md:h-80 lg:h-96 bg-linear-to-br from-pink-400 to-pink-500 flex items-center justify-center relative{% if recipe.owner_id == user.id %} cursor-pointer{% endif %}">
-              {% if let Some(version) = recipe.thumbnail_version %}
-              {{ lazy_thumbnail(recipe, version, "from-pink-400 via-pink-200 to-pink-400") }}
-              {% else %}
-              <span class="text-8xl md:text-9xl">🍰</span>
-              {% endif %}
-              <span class="absolute top-4 left-4 px-4 py-2 bg-pink-600 text-white text-sm font-semibold rounded-full">
-                {{ RecipeType::Dessert.as_ref()|t }}
-              </span>
-            </div>
-            {% when RecipeType::Accompaniment %}
-            <div data-drop-target="thumbnail-upload"
-              class="h-64 md:h-80 lg:h-96 bg-linear-to-br from-purple-400 to-purple-500 flex items-center justify-center relative{% if recipe.owner_id == user.id %} cursor-pointer{% endif %}">
-              {% if let Some(version) = recipe.thumbnail_version %}
-              {{ lazy_thumbnail(recipe, version, "from-purple-400 via-purple-200 to-purple-400") }}
-              {% else %}
-              <span class="text-8xl md:text-9xl">🍚</span>
-              {% endif %}
-              <span class="absolute top-4 left-4 px-4 py-2 bg-purple-600 text-white text-sm font-semibold rounded-full">
-                {{ RecipeType::Accompaniment.as_ref()|t }}
-              </span>
-            </div>
-            {% when RecipeType::Beverage %}
-            <div data-drop-target="thumbnail-upload"
-              class="h-64 md:h-80 lg:h-96 bg-linear-to-br from-cyan-400 to-cyan-500 flex items-center justify-center relative{% if recipe.owner_id == user.id %} cursor-pointer{% endif %}">
-              {% if let Some(version) = recipe.thumbnail_version %}
-              {{ lazy_thumbnail(recipe, version, "from-cyan-400 via-cyan-200 to-cyan-400") }}
-              {% else %}
-              <span class="text-8xl md:text-9xl">🥤</span>
-              {% endif %}
-              <span class="absolute top-4 left-4 px-4 py-2 bg-cyan-600 text-white text-sm font-semibold rounded-full">
-                {{ RecipeType::Beverage.as_ref()|t }}
-              </span>
-            </div>
-            {% when RecipeType::Condiment %}
-            <div data-drop-target="thumbnail-upload"
-              class="h-64 md:h-80 lg:h-96 bg-linear-to-br from-amber-400 to-amber-500 flex items-center justify-center relative{% if recipe.owner_id == user.id %} cursor-pointer{% endif %}">
-              {% if let Some(version) = recipe.thumbnail_version %}
-              {{ lazy_thumbnail(recipe, version, "from-amber-400 via-amber-200 to-amber-400") }}
-              {% else %}
-              <span class="text-8xl md:text-9xl">🥫</span>
-              {% endif %}
-              <span class="absolute top-4 left-4 px-4 py-2 bg-amber-600 text-white text-sm font-semibold rounded-full">
-                {{ RecipeType::Condiment.as_ref()|t }}
-              </span>
-            </div>
-            {% endmatch %}
-            {% if recipe.owner_id == user.id %}
-            <input type="file" id="thumbnail-upload" name="file" class="hidden"
-              accept="image/jpeg, image/png, image/webp" />
-          </label>
-        </form>
-        {% endif %}
-      </div>
+{% block content %}
+{% let rt = recipe.recipe_type.0 %}
+{% let is_owner = recipe.owner_id == user.id %}
 
-      <!-- Title & Action Bar (YouTube Style) -->
-      <div class="bg-paper rounded-xl shadow-md p-4 md:p-6 mb-4">
-        <h1 class="text-xl md:text-2xl font-bold font-serif mb-3">{{ recipe.name }}</h1>
+<div class="container mx-auto px-4 py-4 md:py-6 max-w-7xl">
 
-        <!-- Stats Row -->
-        <div class="flex flex-wrap items-center gap-3 text-sm text-ink-2 mb-4 pb-4 border-b">
-          <span>{{ recipe.created_at|relative_time }}</span>
-        </div>
+  {# ── Top utility bar ──────────────────────────────────────── #}
+  <div class="flex items-center gap-2 mb-4 md:mb-5">
+    <a href="/recipes{% if is_owner %}?mine=true{% endif %}"
+      class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-paper border border-line-2 text-ink hover:bg-cream transition shrink-0"
+      title="{% if is_owner %}{{ "Back to My Recipes"|t }}{% else %}{{ "Back to Recipes"|t }}{% endif %}">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+      </svg>
+    </a>
+    <div class="text-[10px] font-semibold tracking-widest uppercase font-mono text-ink-3 hidden sm:block">
+      {{ "Recipes"|t }} <span class="mx-1">/</span> {{ rt.as_ref()|t }}
+    </div>
+    <div class="flex-1"></div>
 
-        <!-- Action Buttons (YouTube Style) -->
-        <div class="flex flex-wrap items-center gap-2 md:gap-3">
+    <div class="flex items-center gap-1.5 md:gap-2">
+      {% if is_owner %}
+        {# Edit #}
+        <a href="/recipes/{{ recipe.id }}/edit"
+          class="inline-flex items-center gap-1.5 h-10 px-3 rounded-xl bg-paper border border-line-2 text-ink hover:bg-cream transition text-sm font-semibold">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+          </svg>
+          <span class="hidden md:inline">{{ "Edit"|t }}</span>
+        </a>
 
-          {% if recipe.owner_id == user.id %}
-          <!-- Owner Actions (YouTube Style - right aligned) -->
-          <div class="flex items-center gap-2 ml-auto">
-            <!-- Edit Button -->
-            <a href="/recipes/{{ recipe.id }}/edit"
-              class="flex items-center gap-2 px-4 py-2 bg-cream-2 hover:bg-cream-2 rounded-full transition">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
-                </path>
-              </svg>
-              <span class="hidden sm:inline font-semibold">{{ "Edit"|t }}</span>
-            </a>
-
-            {% if user.is_chef() %}
-            <!-- Make Private/Public Button -->
-            <div id="share-button">
-              {% if recipe.is_shared %}
-              <button ts-req="/recipes/{{ recipe.id }}/make-private"
-                class="flex items-center gap-2 px-4 py-2 bg-cream-2 hover:bg-cream-2 rounded-full transition">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
-                  </path>
-                </svg>
-                <span class="hidden sm:inline font-semibold">{{ "Make Private"|t }}</span>
-              </button>
-              {% else %}
-              <button ts-req="/recipes/{{ recipe.id }}/share-to-community"
-                class="flex items-center gap-2 px-4 py-2 bg-cream-2 hover:bg-cream-2 rounded-full transition">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
-                  </path>
-                </svg>
-                <span class="hidden sm:inline font-semibold">{{ "Make Public"|t }}</span>
-              </button>
-              {% endif %}
-            </div>
-            {% endif %}
-
-            <!-- Delete Button -->
-            <button ts-req="/recipes/{{ recipe.id }}/delete" ts-swap="append" ts-target="body"
-              class="flex items-center gap-2 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-full transition">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
-                </path>
-              </svg>
-              <span class="hidden sm:inline font-semibold">{{ "Delete"|t }}</span>
-            </button>
-          </div>
+        {% if user.is_chef() %}
+        <div id="share-button">
+          {% if recipe.is_shared %}
+          <button ts-req="/recipes/{{ recipe.id }}/make-private"
+            class="inline-flex items-center gap-1.5 h-10 px-3 rounded-xl bg-paper border border-line-2 text-ink hover:bg-cream transition text-sm font-semibold">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+            </svg>
+            <span class="hidden md:inline">{{ "Make Private"|t }}</span>
+          </button>
           {% else %}
-          <!-- Save Button (for non-owners) -->
-          <button id="save-btn" ts-req="/recipes/{{ recipe.id }}/{% if favorite.saved %}un{% endif %}save"
-            ts-req-method="post"
-            class="flex items-center gap-2 px-4 py-2 bg-cream-2 hover:bg-cream-2 rounded-full transition ml-auto">
-            {% if favorite.saved %}
-            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
+          <button ts-req="/recipes/{{ recipe.id }}/share-to-community"
+            class="inline-flex items-center gap-1.5 h-10 px-3 rounded-xl bg-paper border border-line-2 text-ink hover:bg-cream transition text-sm font-semibold">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
-            <span class="hidden sm:inline font-semibold">{{ "Saved"|t }}</span>
-            {% else %}
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
-            </svg>
-            <span class="hidden sm:inline font-semibold">{{ "Save"|t }}</span>
-            {% endif %}
+            <span class="hidden md:inline">{{ "Make Public"|t }}</span>
           </button>
           {% endif %}
         </div>
+        {% endif %}
+
+        {# Delete #}
+        <button ts-req="/recipes/{{ recipe.id }}/delete" ts-swap="append" ts-target="body"
+          class="inline-flex items-center gap-1.5 h-10 px-3 rounded-xl bg-red-50 border border-red-200 text-red-700 hover:bg-red-100 transition text-sm font-semibold">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+          <span class="hidden md:inline">{{ "Delete"|t }}</span>
+        </button>
+      {% else %}
+        {# Save (non-owner) #}
+        <button id="save-btn" ts-swap-push="#save-btn"
+          ts-req="/recipes/{{ recipe.id }}/{% if favorite.saved %}un{% endif %}save" ts-req-method="post"
+          class="inline-flex items-center gap-1.5 h-10 px-3 rounded-xl text-sm font-semibold transition
+            {% if favorite.saved %}bg-ink text-cream border border-ink{% else %}bg-paper text-ink border border-line-2 hover:bg-cream{% endif %}">
+          {% if favorite.saved %}
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+          </svg>
+          <span class="hidden md:inline">{{ "Saved"|t }}</span>
+          {% else %}
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+          </svg>
+          <span class="hidden md:inline">{{ "Save"|t }}</span>
+          {% endif %}
+        </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="flex flex-col xl:flex-row gap-6">
+
+    {# ───────────────────── LEFT column ───────────────────── #}
+    <div class="flex-1 min-w-0">
+
+      {# ── Hero ── #}
+      {% if is_owner %}
+      <form ts-trigger="change" ts-req="/recipes/{{ recipe.id }}/thumbnail" method="post"
+        enctype="multipart/form-data" ts-target="[data-drop-target]">
+        <label for="thumbnail-upload" class="block cursor-pointer">
+      {% endif %}
+        <div data-drop-target="thumbnail-upload"
+          class="relative h-56 md:h-72 lg:h-80 rounded-3xl overflow-hidden flex items-center justify-center
+            bg-linear-to-br {% call type_hero_classes(rt) %}{% endcall %}">
+          {% if let Some(version) = recipe.thumbnail_version %}
+            {% call lazy_thumbnail(recipe, version) %}{% endcall %}
+          {% else %}
+            <span class="text-[7rem] md:text-[10rem] drop-shadow-md leading-none select-none">
+              {% call type_emoji(rt) %}{% endcall %}
+            </span>
+          {% endif %}
+          <div class="absolute top-3 left-3 flex flex-wrap gap-1.5">
+            <span class="px-2.5 py-1 rounded-full text-[11px] font-semibold backdrop-blur-sm bg-paper/90
+              {% call type_ink_class(rt) %}{% endcall %}">
+              {{ rt.as_ref()|t }}
+            </span>
+            {% if recipe.is_shared && !is_owner %}
+            <span class="px-2.5 py-1 rounded-full text-[11px] font-semibold backdrop-blur-sm bg-paper/90 text-ink-2">
+              {{ "Shared"|t }}
+            </span>
+            {% endif %}
+          </div>
+        </div>
+      {% if is_owner %}
+        </label>
+        <input type="file" id="thumbnail-upload" name="file" class="hidden"
+          accept="image/jpeg, image/png, image/webp"/>
+      </form>
+      {% endif %}
+
+      {# ── Title + description ── #}
+      <header class="mt-5 md:mt-7">
+        <div class="text-[10px] font-semibold tracking-widest uppercase font-mono {% call type_ink_class(rt) %}{% endcall %}">
+          {{ rt.as_ref()|t }}
+        </div>
+        <h1 class="font-serif text-3xl md:text-5xl leading-none tracking-tight text-ink mt-2">{{ recipe.name }}</h1>
+        {% if !recipe.description.is_empty() %}
+        <p class="text-ink-2 mt-4 text-[15px] leading-relaxed max-w-2xl">{{ recipe.description }}</p>
+        {% endif %}
+
+        {# Tags #}
+        {% if !recipe.dietary_restrictions.is_empty() || recipe.accepts_accompaniment %}
+        <div class="flex flex-wrap gap-1.5 mt-4">
+          {% for restriction in recipe.dietary_restrictions.iter() %}
+          <span class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-cream-2 text-ink-2">
+            {{ restriction.as_ref()|t }}
+          </span>
+          {% endfor %}
+          {% if recipe.accepts_accompaniment %}
+          <span class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-meal-side-soft text-meal-side-ink">
+            {{ "Accepts Accompaniments"|t }}
+          </span>
+          {% endif %}
+        </div>
+        {% endif %}
+      </header>
+
+      {# ── Meta strip ── #}
+      <div class="mt-5 md:mt-6 grid grid-cols-4 bg-paper border border-line-2 rounded-2xl overflow-hidden">
+        <div class="p-3 md:p-4 text-center">
+          <svg class="w-4 h-4 mx-auto text-ink-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 8v4l3 3"/>
+          </svg>
+          <div class="text-[10px] font-mono uppercase tracking-wider text-ink-3 mt-1.5">{{ "Time"|t }}</div>
+          <div class="font-serif text-base md:text-lg text-ink mt-0.5">{{ (recipe.cook_time + recipe.prep_time)|minutes }}</div>
+        </div>
+        <div class="p-3 md:p-4 text-center border-l border-line-2">
+          <svg class="w-4 h-4 mx-auto text-ink-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-3-3v6M5 7h14M5 7l1 13a2 2 0 002 2h8a2 2 0 002-2l1-13M5 7V5a2 2 0 012-2h10a2 2 0 012 2v2"/>
+          </svg>
+          <div class="text-[10px] font-mono uppercase tracking-wider text-ink-3 mt-1.5">{{ "Prep"|t }}</div>
+          <div class="font-serif text-base md:text-lg text-ink mt-0.5">{{ recipe.prep_time|minutes }}</div>
+        </div>
+        <div class="p-3 md:p-4 text-center border-l border-line-2">
+          <svg class="w-4 h-4 mx-auto text-ink-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17.66 11.2c-.23-.3-.51-.56-.77-.82a8 8 0 01-2-2.5C14 6.8 13.5 5.4 13.5 4c0-.6-1-1.5-1.5-1.5S10.5 3.4 10.5 4c0 1.4-.5 2.8-1.39 3.88a8 8 0 01-2 2.5c-.26.26-.54.52-.77.82a6 6 0 1011.32 0z"/>
+          </svg>
+          <div class="text-[10px] font-mono uppercase tracking-wider text-ink-3 mt-1.5">{{ "Cook"|t }}</div>
+          <div class="font-serif text-base md:text-lg text-ink mt-0.5">{{ recipe.cook_time|minutes }}</div>
+        </div>
+        <div class="p-3 md:p-4 text-center border-l border-line-2">
+          <svg class="w-4 h-4 mx-auto text-ink-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+          </svg>
+          <div class="text-[10px] font-mono uppercase tracking-wider text-ink-3 mt-1.5">{{ "Serves"|t }}</div>
+          <div class="font-serif text-base md:text-lg text-ink mt-0.5">{{ recipe.household_size }}</div>
+        </div>
       </div>
 
-      <!-- Author & Description Card (YouTube Style) -->
-      <div class="bg-paper rounded-xl shadow-md p-4 md:p-6 mb-4">
-        <!-- Author Info -->
-        {% if let Some(owner_name)= recipe.owner_name %}
-        <div class="flex items-center justify-between mb-4 pb-4 border-b">
-          <div class="flex items-start gap-3">
-            <div
-              class="w-12 h-12 shrink-0 {{ owner_name|bg_color }} rounded-full flex items-center justify-center text-white font-bold text-lg">
-              {{ owner_name|initials }}
+      {# ── Author card ── #}
+      {% if let Some(owner_name) = recipe.owner_name %}
+      <div class="mt-5 md:mt-6 bg-paper border border-line-2 rounded-2xl p-4 md:p-5 flex items-start gap-3">
+        <div class="w-11 h-11 shrink-0 {{ owner_name|bg_color }} rounded-full flex items-center justify-center text-white font-bold text-sm">
+          {{ owner_name|initials }}
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="font-semibold text-ink">@{{ owner_name }}</div>
+          <div class="text-xs text-ink-3 mt-0.5">{{ stat.shared }} {{ "recipes shared"|t }}</div>
+          {% if !owner_description.is_empty() %}
+          <p class="text-sm text-ink-2 mt-2 leading-relaxed">{{ owner_description|nl2br|safe }}</p>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if let Some(origin) = recipe.origin %}
+      {# ── Imported recipe — link to original ── #}
+      <div class="mt-5 md:mt-6 bg-paper border border-line-2 rounded-2xl p-8 md:p-10 flex flex-col items-center text-center gap-4">
+        <svg class="w-10 h-10 text-ink-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+        </svg>
+        <div class="text-[10px] font-semibold tracking-widest uppercase font-mono text-ink-3">{{ "Imported"|t }}</div>
+        <p class="text-ink-2 max-w-md">{{ "This recipe was imported from an external source."|t }}</p>
+        <a href="{{ origin }}" target="_blank" rel="noopener noreferrer"
+          class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold rounded-2xl shadow-sm transition">
+          {{ "Open Original Recipe"|t }}
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+          </svg>
+        </a>
+      </div>
+      {% else %}
+
+      {# ── Ingredients ── #}
+      <section class="mt-7 md:mt-9">
+        <header class="flex items-baseline gap-2 mb-3">
+          <h2 class="font-serif text-2xl md:text-3xl tracking-tight text-ink">{{ "Ingredients"|t }}</h2>
+          <span class="text-xs text-ink-3">·
+            {{ recipe.ingredients.len() }} {{ "items"|t }} ·
+            {{ "For"|t }} {{ recipe.household_size }}
+          </span>
+          <div class="flex-1"></div>
+          {% if is_owner %}
+          <a href="/recipes/{{ recipe.id }}/edit" class="text-xs font-semibold text-primary-500 hover:text-primary-600">
+            {{ "Adjust"|t }}
+          </a>
+          {% endif %}
+        </header>
+        <div class="bg-paper border border-line-2 rounded-2xl divide-y divide-line-2">
+          {% for ingredient in recipe.ingredients.iter() %}
+          <div class="flex items-center gap-3 px-3 md:px-4 py-2.5">
+            <div class="w-5 h-5 rounded-md border-[1.5px] border-line bg-cream shrink-0"></div>
+            <div class="flex-1 text-sm text-ink min-w-0">{{ ingredient.name }}</div>
+            <div class="text-xs text-ink-3 font-mono shrink-0">
+              {{ ingredient.unit.format(ingredient.quantity.to_owned()) }}
             </div>
-            <div>
-              <div class="font-semibold">@{{ owner_name }}</div>
-              <div class="text-sm text-ink-2">{{ stat.shared }} {{ "recipes shared"|t }}</div>
-              {% if !owner_description.is_empty() %}
-              <p class="text-sm text-ink-3 mt-3">{{ owner_description|nl2br|safe }}</p>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+
+      {# ── Method ── #}
+      {% if !recipe.instructions.is_empty() %}
+      <section class="mt-7 md:mt-9">
+        <header class="flex items-baseline gap-2 mb-3">
+          <h2 class="font-serif text-2xl md:text-3xl tracking-tight text-ink">{{ "Method"|t }}</h2>
+          <span class="text-xs text-ink-3">· {{ recipe.instructions.len() }} {{ "steps"|t }}</span>
+        </header>
+        <div class="space-y-2">
+          {% for instruction in recipe.instructions.iter() %}
+          <div class="bg-paper border border-line-2 rounded-2xl p-3 md:p-4 flex gap-3 md:gap-4">
+            <div class="w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center font-serif font-semibold text-base shrink-0
+              {% if loop.first %}bg-primary-500 text-white{% else %}bg-cream-2 text-ink{% endif %}">
+              {{ loop.index }}
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-[15px] text-ink leading-relaxed">{{ instruction.description }}</p>
+              {% if instruction.time_next > 0 %}
+              <div class="mt-2 text-[10px] text-ink-3 font-mono uppercase tracking-wider inline-flex items-center gap-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 8v4l3 3"/>
+                </svg>
+                {{ instruction.time_next|minutes }}
+              </div>
               {% endif %}
             </div>
           </div>
-          <!-- <button class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-full transition"> -->
-          <!--   Follow -->
-          <!-- </button> -->
-        </div>
-        {% endif %}
-
-        <!-- Description (Expandable) -->
-        <div class="bg-cream rounded-xl p-4">
-          <div class="flex flex-wrap gap-3 mb-3">
-            {% for restriction in recipe.dietary_restrictions.iter() %}
-            <span class="px-3 py-1 bg-primary-100 text-primary-800 text-sm font-semibold rounded-full">{{
-              restriction.as_ref()|t }}</span>
-            {% endfor %}
-            {% if recipe.accepts_accompaniment %}
-            <span class="px-3 py-1 bg-orange-100 text-orange-800 text-sm font-semibold rounded-full">{{ "Accepts
-              Accompaniments"|t }}</span>
-            {% endif %}
-          </div>
-
-          <div class="flex flex-wrap gap-4 text-sm text-ink-2 mb-3">
-            <span class="flex items-center gap-1">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-              {{ (recipe.cook_time + recipe.prep_time)|minutes }}
-            </span>
-            <span>{{ "Prep:"|t }} {{ recipe.prep_time|minutes }}</span>
-            <span>{{ "Cook:"|t }} {{ recipe.cook_time|minutes }}</span>
-            <span class="flex items-center gap-1">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
-                </path>
-              </svg>
-              {{ recipe.household_size }}
-            </span>
-          </div>
-
-          <p class="text-ink-2 mb-3">{{ recipe.description }}</p>
-        </div>
-      </div>
-
-      {% if let Some(origin) = recipe.origin %}
-      <!-- Open Original Recipe Button -->
-      <div class="bg-paper rounded-xl shadow-md p-4 md:p-6 mb-4">
-        <div class="flex flex-col items-center gap-4 py-6">
-          <svg class="w-12 h-12 text-ink-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-          </svg>
-          <p class="text-ink-2 text-center">{{ "This recipe was imported from an external source."|t }}</p>
-          <a href="{{ origin }}" target="_blank" rel="noopener noreferrer"
-            class="inline-flex items-center gap-2 px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-full transition">
-            <span>{{ "Open Original Recipe"|t }}</span>
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-            </svg>
-          </a>
-        </div>
-      </div>
-      {% else %}
-      <!-- Ingredients Section -->
-      <div class="bg-paper rounded-xl shadow-md p-4 md:p-6 mb-4">
-        <h2 class="text-xl font-bold font-serif mb-4 flex items-center gap-2">
-          <span>{{ "Ingredients"|t }}</span>
-          <span class="text-sm font-normal text-ink-3">({{ recipe.ingredients.len() }} {{ "items"|t }})</span>
-        </h2>
-        <div class="grid md:grid-cols-2 gap-3">
-          {% for ingredient in recipe.ingredients.iter() %}
-          <div class="flex items-start gap-3 p-2 hover:bg-cream rounded-xl">
-            <div class="w-5 h-5 rounded-full border-2 border-line shrink-0 mt-0.5"></div>
-            <span>{{ ingredient.unit.format(ingredient.quantity.to_owned()) }} {{ ingredient.name }}</span>
-          </div>
           {% endfor %}
         </div>
-      </div>
+      </section>
+      {% endif %}
+      {% endif %}
 
-      {% if !recipe.instructions.is_empty() %}
-      <!-- Instructions Section -->
-      <div class="bg-paper rounded-xl shadow-md p-4 md:p-6 mb-4">
-        <h2 class="text-xl font-bold font-serif mb-4">{{ "Instructions"|t }}</h2>
-        <div class="space-y-4">
-          {% for instruction in recipe.instructions.iter() %}
-          <div class="flex gap-4">
-            <div
-              class="shrink-0 w-8 h-8 bg-primary-500 text-white rounded-full flex items-center justify-center font-bold">
-              {{ loop.index }}
-            </div>
-            <p class="pt-1">{{ instruction.description }}</p>
-          </div>
-          {% endfor %}
+      {# ── Advance prep notice ── #}
+      {% if !recipe.advance_prep.is_empty() %}
+      <div class="mt-5 md:mt-6 bg-amber-50 border border-amber-200 rounded-2xl p-4 flex gap-3">
+        <span class="text-xl shrink-0">⏰</span>
+        <div>
+          <div class="text-[10px] font-mono uppercase tracking-wider text-amber-700 font-semibold">{{ "Advance prep"|t }}</div>
+          <p class="text-sm text-amber-900 mt-1 leading-relaxed">{{ recipe.advance_prep }}</p>
         </div>
       </div>
       {% endif %}
-      {% endif %}
+
     </div>
 
-    <!-- Right Sidebar - Suggestions (YouTube Style) -->
-    <div class="xl:w-96 shrink-0">
-      <div class="sticky top-4 space-y-4">
+    {# ───────────────────── RIGHT rail ───────────────────── #}
+    <aside class="xl:w-90 shrink-0 min-w-0">
+      <div class="xl:sticky xl:top-4 space-y-5">
         {% if !cook_recipes.edges.is_empty() %}
-        <h3 class="font-bold font-serif text-ink mb-3">{{ "More from this cook"|t }}</h3>
-
-        {% for cook_recipe in cook_recipes.edges.iter() %}
-        <a href="/recipes/{{ cook_recipe.node.id }}" class="flex gap-3 group">
-          {% match cook_recipe.node.recipe_type.0 %}
-          {% when RecipeType::Appetizer %}
-          <div
-            class="w-40 h-24 bg-linear-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center shrink-0">
-            {% if let Some(version) = cook_recipe.node.thumbnail_version %}
-            {{ lazy_mobile_thumbnail(cook_recipe.node, version, "from-blue-400 via-blue-200 to-blue-400") }}
-            {% else %}
-            <span class="text-4xl">🥗</span>
-            {% endif %}
+        <section>
+          <h3 class="text-[10px] font-semibold tracking-widest uppercase font-mono text-ink-3 mb-3">
+            {{ "More from this cook"|t }}
+          </h3>
+          <div class="space-y-3">
+            {% for cook_recipe in cook_recipes.edges.iter() %}
+              {% call suggestion_card(cook_recipe.node) %}{% endcall %}
+            {% endfor %}
           </div>
-          {% when RecipeType::MainCourse %}
-          <div
-            class="w-40 h-24 bg-linear-to-br from-orange-400 to-red-600 rounded-xl flex items-center justify-center shrink-0">
-            {% if let Some(version) = cook_recipe.node.thumbnail_version %}
-            {{ lazy_mobile_thumbnail(cook_recipe.node, version, "from-orange-400 via-orange-200 to-red-400") }}
-            {% else %}
-            <span class="text-4xl">🍛</span>
-            {% endif %}
-          </div>
-          {% when RecipeType::Dessert %}
-          <div
-            class="w-40 h-24 bg-linear-to-br from-pink-400 to-pink-600 rounded-xl flex items-center justify-center shrink-0">
-            {% if let Some(version) = cook_recipe.node.thumbnail_version %}
-            {{ lazy_mobile_thumbnail(cook_recipe.node, version, "from-pink-400 via-pink-200 to-pink-400") }}
-            {% else %}
-            <span class="text-4xl">🍰</span>
-            {% endif %}
-          </div>
-          {% when RecipeType::Accompaniment %}
-          <div
-            class="w-40 h-24 bg-linear-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center shrink-0">
-            {% if let Some(version) = cook_recipe.node.thumbnail_version %}
-            {{ lazy_mobile_thumbnail(cook_recipe.node, version, "from-purple-400 via-purple-200 to-purple-400") }}
-            {% else %}
-            <span class="text-4xl">🍚</span>
-            {% endif %}
-          </div>
-          {% when RecipeType::Beverage %}
-          <div
-            class="w-40 h-24 bg-linear-to-br from-cyan-400 to-cyan-600 rounded-xl flex items-center justify-center shrink-0">
-            {% if let Some(version) = cook_recipe.node.thumbnail_version %}
-            {{ lazy_mobile_thumbnail(cook_recipe.node, version, "from-cyan-400 via-cyan-200 to-cyan-400") }}
-            {% else %}
-            <span class="text-4xl">🥤</span>
-            {% endif %}
-          </div>
-          {% when RecipeType::Condiment %}
-          <div
-            class="w-40 h-24 bg-linear-to-br from-amber-400 to-amber-600 rounded-xl flex items-center justify-center shrink-0">
-            {% if let Some(version) = cook_recipe.node.thumbnail_version %}
-            {{ lazy_mobile_thumbnail(cook_recipe.node, version, "from-amber-400 via-amber-200 to-amber-400") }}
-            {% else %}
-            <span class="text-4xl">🥫</span>
-            {% endif %}
-          </div>
-          {% endmatch %}
-          <div class="flex-1 min-w-0">
-            <h4 class="font-semibold text-sm group-hover:text-primary-500 line-clamp-2 mb-1">{{ cook_recipe.node.name }}
-            </h4>
-            {% if let Some(username)= cook_recipe.node.owner_name %}
-            <p class="text-xs text-ink-2 mb-1">@{{ username }}</p>
-            {% endif %}
-            <p class="text-xs text-ink-3">{{ cook_recipe.node.created_at|relative_time }}</p>
-          </div>
-        </a>
-        {% endfor %}
-
-        <h3 class="font-bold font-serif text-ink mb-3 mt-6 pt-4 border-t">{{ "Similar recipes"|t }}</h3>
-        {% else %}
-        <h3 class="font-bold font-serif text-ink mb-3">{{ "Similar recipes"|t }}</h3>
+        </section>
         {% endif %}
 
-        {% for similar_recipe in similar_recipes.edges.iter() %}
-        <a href="/recipes/{{ similar_recipe.node.id }}" class="flex gap-3 group">
-          {% match similar_recipe.node.recipe_type.0 %}
-          {% when RecipeType::Appetizer %}
-          <div
-            class="w-40 h-24 bg-linear-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center shrink-0">
-            {% if let Some(version) = similar_recipe.node.thumbnail_version %}
-            {{ lazy_mobile_thumbnail(similar_recipe.node, version, "from-orange-400 via-orange-200 to-red-400") }}
-            {% else %}
-            <span class="text-4xl">🥗</span>
-            {% endif %}
+        {% if !similar_recipes.edges.is_empty() %}
+        <section>
+          <h3 class="text-[10px] font-semibold tracking-widest uppercase font-mono text-ink-3 mb-3">
+            {{ "Similar recipes"|t }}
+          </h3>
+          <div class="space-y-3">
+            {% for similar_recipe in similar_recipes.edges.iter() %}
+              {% call suggestion_card(similar_recipe.node) %}{% endcall %}
+            {% endfor %}
           </div>
-          {% when RecipeType::MainCourse %}
-          <div
-            class="w-40 h-24 bg-linear-to-br from-orange-400 to-red-600 rounded-xl flex items-center justify-center shrink-0">
-            {% if let Some(version) = similar_recipe.node.thumbnail_version %}
-            {{ lazy_mobile_thumbnail(similar_recipe.node, version, "from-orange-400 via-orange-200 to-red-400") }}
-            {% else %}
-            <span class="text-4xl">🍛</span>
-            {% endif %}
-          </div>
-          {% when RecipeType::Dessert %}
-          <div
-            class="w-40 h-24 bg-linear-to-br from-pink-400 to-pink-600 rounded-xl flex items-center justify-center shrink-0">
-            {% if let Some(version) = similar_recipe.node.thumbnail_version %}
-            {{ lazy_mobile_thumbnail(similar_recipe.node, version, "from-orange-400 via-orange-200 to-red-400") }}
-            {% else %}
-            <span class="text-4xl">🍰</span>
-            {% endif %}
-          </div>
-          {% when RecipeType::Accompaniment %}
-          <div
-            class="w-40 h-24 bg-linear-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center shrink-0">
-            {% if let Some(version) = similar_recipe.node.thumbnail_version %}
-            {{ lazy_mobile_thumbnail(similar_recipe.node, version, "from-orange-400 via-orange-200 to-red-400") }}
-            {% else %}
-            <span class="text-4xl">🍚</span>
-            {% endif %}
-          </div>
-          {% when RecipeType::Beverage %}
-          <div
-            class="w-40 h-24 bg-linear-to-br from-cyan-400 to-cyan-600 rounded-xl flex items-center justify-center shrink-0">
-            {% if let Some(version) = similar_recipe.node.thumbnail_version %}
-            {{ lazy_mobile_thumbnail(similar_recipe.node, version, "from-cyan-400 via-cyan-200 to-cyan-400") }}
-            {% else %}
-            <span class="text-4xl">🥤</span>
-            {% endif %}
-          </div>
-          {% when RecipeType::Condiment %}
-          <div
-            class="w-40 h-24 bg-linear-to-br from-amber-400 to-amber-600 rounded-xl flex items-center justify-center shrink-0">
-            {% if let Some(version) = similar_recipe.node.thumbnail_version %}
-            {{ lazy_mobile_thumbnail(similar_recipe.node, version, "from-amber-400 via-amber-200 to-amber-400") }}
-            {% else %}
-            <span class="text-4xl">🥫</span>
-            {% endif %}
-          </div>
-          {% endmatch %}
-          <div class="flex-1 min-w-0">
-            <h4 class="font-semibold text-sm group-hover:text-primary-500 line-clamp-2 mb-1">{{ similar_recipe.node.name
-              }}
-            </h4>
-            {% if let Some(username)= similar_recipe.node.owner_name %}
-            <p class="text-xs text-ink-2 mb-1">@{{ username }}</p>
-            {% endif %}
-            <p class="text-xs text-ink-3">{{ similar_recipe.node.created_at|relative_time }}</p>
-          </div>
-        </a>
-        {% endfor %}
+        </section>
+        {% endif %}
       </div>
-    </div>
+    </aside>
+
   </div>
 </div>
+
 <script>
   (() => {
     document.addEventListener("dragover", (e) => {
@@ -534,7 +432,7 @@
       const dt = new DataTransfer();
       dt.items.add(file);
       input.files = dt.files;
-      input.dispatchEvent(new Event("change", {bubbles: true}));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
     });
   })();
 </script>

@@ -1,62 +1,90 @@
 {% extends "_user.html" %}
 {% block title %}{{ "Import Recipes - imkitchen"|t }}{% endblock %}
+
 {% block content %}
-<!-- Main Content -->
+<div class="container mx-auto px-4 py-4 md:py-6 max-w-3xl pb-16">
 
-<div class="container mx-auto px-4 py-8 max-w-4xl">
-  <!-- Header -->
-  <div class="mb-8">
-    <div class="mb-4">
-      <a href="/settings/recipes"
-        class="text-primary-500 hover:text-primary-600 font-semibold inline-flex items-center gap-2">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-        </svg>
-        {{ "Back to My Recipes"|t }}
-      </a>
+  {# ── Top bar ── #}
+  <header class="flex items-center gap-3 mb-5 md:mb-6">
+    <a href="/recipes?mine=true"
+      class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-paper border border-line-2 text-ink hover:bg-cream transition shrink-0"
+      title="{{ "Back to My Recipes"|t }}">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+      </svg>
+    </a>
+    <div class="flex-1 min-w-0">
+      <div class="text-[10px] font-semibold tracking-widest uppercase font-mono text-ink-3">
+        {{ "Recipes"|t }} <span class="mx-1">/</span> {{ "Import"|t }}
+      </div>
+      <h1 class="font-serif text-2xl md:text-3xl leading-tight tracking-tight text-ink mt-0.5">
+        {{ "Add recipes"|t }}
+      </h1>
     </div>
-    <h1 class="text-3xl font-bold font-serif mb-2">{{ "Import Recipes"|t }}</h1>
-    <p class="text-ink-2">{{ "Bulk import recipes from JSON files"|t }}</p>
-  </div>
+  </header>
 
-  <!-- Upload Area -->
-  <div class="bg-paper rounded-xl shadow-md p-8 mb-6">
-      <label for="recipes">
+  {# ── Drop zone ── #}
+  <label for="recipes" class="block">
     <div id="recipes-drop"
-      class="border-4 border-dashed border-line rounded-xl p-12 text-center hover:border-primary-500 transition cursor-pointer">
-        <div class="text-6xl mb-4">📥</div>
-        <h3 class="text-xl font-bold font-serif mb-2">{{ "Drag & Drop JSON Files"|t }}</h3>
-        <p class="text-ink-2 mb-4">{{ "or click to browse"|t }}</p>
-        <p class="text-sm text-ink-3 mt-4">{{ "Max 1MB • Up to 20 files • JSON format only"|t }}</p>
-        <input type="file" id="recipes" class="hidden" multiple accept="application/json" />
+      class="border-2 border-dashed border-primary-300 bg-primary-50/60 rounded-3xl p-8 md:p-12 text-center cursor-pointer
+        hover:border-primary-500 hover:bg-primary-50 transition">
+      <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-primary-500 text-white flex items-center justify-center shadow-md">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+        </svg>
+      </div>
+      <div class="font-serif text-xl md:text-2xl text-ink tracking-tight leading-tight">
+        {{ "Drop a .json file"|t }}
+      </div>
+      <p class="text-sm text-ink-2 mt-2 max-w-xs mx-auto leading-relaxed">
+        {{ "or click to browse"|t }}
+      </p>
+      <div class="inline-flex items-center gap-1.5 mt-5 h-10 px-4 bg-ink hover:bg-ink-2 text-cream text-sm font-semibold rounded-2xl shadow-sm transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+        </svg>
+        {{ "Choose file"|t }}
+      </div>
+      <p class="text-[11px] font-mono uppercase tracking-wider text-ink-3 mt-5">
+        {{ "Max 1MB · Up to 20 files · JSON only"|t }}
+      </p>
+      <input type="file" id="recipes" class="hidden" multiple accept="application/json"/>
     </div>
-      </label>
-  </div>
+  </label>
 
-  <div id="recipes-area"></div>
+  {# ── Status / errors area (filled in by JS after POST) ── #}
+  <div id="recipes-area" class="mt-4"></div>
 
-  <!-- Schema Documentation -->
-  <div class="bg-paper rounded-xl shadow-md p-6 mb-6">
-    <h2 class="font-bold font-serif text-xl mb-4">{{ "JSON Schema Documentation"|t }}</h2>
-    <p class="text-ink-2 mb-4">
-      {{ "Download our"|t }} <a href="#" class="text-primary-500 hover:text-primary-600 font-semibold">{{ "official JSON schema (v1.0)"|t }}</a>
-      {{ "for third-party tools"|t }}
-    </p>
-
-    <div class="bg-cream rounded p-4 mb-4 overflow-x-auto">
-      <pre class="text-sm">
-        <code>
-{
-  "name": "Thai Red Curry", (min 3,max 50 length)
-  "origin": "https://example.com/my-recipe-origin-url", (url, min 10,max 255 length)
-  "description": "Spicy coconut curry", (min 3, max 2000 length)
+  {# ── JSON schema doc ── #}
+  <section class="mt-6">
+    <div class="text-[10px] font-semibold tracking-widest uppercase font-mono text-ink-3 mb-2 flex items-baseline gap-2">
+      <span>{{ "JSON schema"|t }}</span>
+      <span class="font-sans normal-case tracking-normal text-ink-3 font-normal text-[11px]">· v1.0</span>
+    </div>
+    <div class="bg-paper border border-line-2 rounded-2xl p-4 md:p-5">
+      <div class="flex items-start gap-3 mb-3">
+        <svg class="w-4 h-4 text-herb-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 8h.01M11 12h1v4h1"/>
+        </svg>
+        <p class="text-sm text-ink-2 leading-relaxed">
+          {{ "Download our"|t }}
+          <a href="#" class="text-primary-500 hover:text-primary-600 font-semibold underline underline-offset-2">{{ "official JSON schema (v1.0)"|t }}</a>
+          {{ "for third-party tools"|t }}
+        </p>
+      </div>
+      <div class="bg-cream border border-line-2 rounded-xl p-3 md:p-4 overflow-x-auto">
+        <pre class="text-[11px] md:text-xs font-mono text-ink-2 leading-relaxed"><code>{
+  "name": "Thai Red Curry", (min 3, max 50)
+  "origin": "https://example.com/recipe", (url, min 10, max 255)
+  "description": "Spicy coconut curry", (min 3, max 2000)
   "recipe_type": "Appetizer|MainCourse|Dessert|Accompaniment|Beverage|Condiment",
-  "household_size": 2, (u16 > 0)
+  "household_size": 2, (u16 &gt; 0)
   "prep_time": 15, ({{ "minutes > 0"|t }})
   "cook_time": 30, ({{ "minutes > 0"|t }})
   "ingredients": [
-    { "quantity": 500, "unit": "G|ML", "name": "Chicken breast", category: null }, (quantity as u16)
-    { "quantity": 1, "unit": null, "name": "Lemon", category: "Frozen|Refrigerated|Grocery|FruitsAndVegetables|Butcher|Seafood|DairyAndEggs|Bakery|SnacksAndConfectionery" }
+    { "quantity": 500, "unit": "G|ML", "name": "Chicken breast", "category": null },
+    { "quantity": 1, "unit": null, "name": "Lemon",
+      "category": "Frozen|Refrigerated|Grocery|FruitsAndVegetables|Butcher|Seafood|DairyAndEggs|Bakery|SnacksAndConfectionery" }
   ],
   "instructions": [
     { "description": "Heat oil in wok", "time_next": 12 ({{ "time to wait before next instruction, minutes >= 0"|t }}) }
@@ -64,10 +92,10 @@
   "advance_prep": "Marinate chicken 2 hours before", ({{ "optional"|t }})
   "dietary_restrictions": ["Vegetarian|Vegan|GlutenFree|DairyFree|NutFree"],
   "accepts_accompaniment": false
-}
-        </code>
-      </pre>
+}</code></pre>
+      </div>
     </div>
+  </section>
 </div>
 
 <script>
@@ -137,7 +165,7 @@
           const doc = new DOMParser().parseFromString(await resp.text(), "text/html");
           const container = doc.body.firstElementChild;
           if (!container) continue;
-          container.querySelectorAll(".bg-red-50").forEach((n) => errorHtml.push(n.outerHTML));
+          container.querySelectorAll("[data-import-error]").forEach((n) => errorHtml.push(n.outerHTML));
           lastContainer = container;
         } catch (err) {
           console.error("import chunk error:", err);
@@ -146,7 +174,7 @@
 
       let tail = "";
       if (lastContainer) {
-        lastContainer.querySelectorAll(".bg-red-50").forEach((n) => n.remove());
+        lastContainer.querySelectorAll("[data-import-error]").forEach((n) => n.remove());
         tail = lastContainer.innerHTML;
       }
       area.innerHTML = `<div>${errorHtml.join("")}${tail}</div>`;
@@ -157,19 +185,14 @@
     }
 
     const drop = document.getElementById("recipes-drop");
-    drop.addEventListener("dragover", (e) => {
-      e.preventDefault();
-    }, false);
-
+    drop.addEventListener("dragover", (e) => { e.preventDefault(); }, false);
     drop.addEventListener("drop", (e) => {
       e.preventDefault();
       importRecipes(e.dataTransfer.files);
     });
 
     const input = document.getElementById("recipes");
-    input.addEventListener("change", (e) => {
-      importRecipes(e.target.files);
-    });
+    input.addEventListener("change", (e) => importRecipes(e.target.files));
   })();
 </script>
 {% endblock %}

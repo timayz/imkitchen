@@ -35,15 +35,5 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
             "/settings/account",
             get(routes::account::page).post(routes::account::action),
         )
-        .route("/settings/recipes", get(routes::recipes::page))
-        .route("/settings/recipes/create", post(routes::recipes::create))
-        .route(
-            "/settings/recipes/share-all",
-            post(routes::recipes::share_all),
-        )
-        .route(
-            "/settings/recipes/make-all-private",
-            post(routes::recipes::make_all_private),
-        )
         .route("/invoices/{id}", get(routes::invoices::detail::page))
 }
