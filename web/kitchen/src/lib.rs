@@ -4,7 +4,7 @@ use axum_extra::extract::CookieJar;
 use imkitchen_core::mealplan::slot::SlotRow;
 use imkitchen_core::mealplan::{ChangeSlotRecipeStatus, Recipe};
 use imkitchen_types::mealplan::DaySlotStatus;
-use imkitchen_types::recipe::{IngredientUnitFormat, Instruction};
+use imkitchen_types::recipe::Instruction;
 use imkitchen_types::{mealplan::DaySlotRecipe, recipe::RecipeType};
 
 use imkitchen_web_shared::AppState;
@@ -22,6 +22,7 @@ pub struct IndexTemplate {
 pub struct OnboardingRecipeTemplate {
     pub current_path: String,
     pub user: AuthUser,
+    pub today_unix: u64,
 }
 
 #[derive(askama::Template)]
@@ -30,6 +31,19 @@ pub struct OnboardingMenuTemplate {
     pub current_path: String,
     pub user: AuthUser,
     pub recipes: Vec<Recipe>,
+    pub main_count: usize,
+    pub appetizer_count: usize,
+    pub accompaniment_count: usize,
+    pub dessert_count: usize,
+}
+
+#[derive(Default, Clone)]
+pub struct KitchenWeekDay {
+    pub date: String,
+    pub day_num: u8,
+    pub weekday: String,
+    pub is_today: bool,
+    pub meal_types: Vec<RecipeType>,
 }
 
 #[derive(askama::Template)]
@@ -46,6 +60,7 @@ pub struct KitchenTemplate {
     pub coming_instructions: Vec<(usize, String)>,
     pub current_instruction: Option<(usize, Instruction)>,
     pub date: String,
+    pub week_days: Vec<KitchenWeekDay>,
 }
 
 impl Default for KitchenTemplate {
@@ -62,6 +77,7 @@ impl Default for KitchenTemplate {
             completed_instructions: vec![],
             current_instruction: None,
             date: "".to_owned(),
+            week_days: vec![],
         }
     }
 }
@@ -103,18 +119,43 @@ pub async fn page(
         );
 
         if main_courses.is_empty() {
+            let today_unix = imkitchen_core::mealplan::now(&user.tz).unix_timestamp() as u64;
             return template
                 .render(OnboardingRecipeTemplate {
                     current_path: "kitchen".to_owned(),
                     user,
+                    today_unix,
                 })
                 .into_response();
         }
+
+        let appetizers = imkitchen_web_shared::try_page_response!(
+            app.core
+                .mealplan
+                .first_week_recipes(&user.id, RecipeType::Appetizer),
+            template
+        );
+        let accompaniments = imkitchen_web_shared::try_page_response!(
+            app.core
+                .mealplan
+                .first_week_recipes(&user.id, RecipeType::Accompaniment),
+            template
+        );
+        let desserts = imkitchen_web_shared::try_page_response!(
+            app.core
+                .mealplan
+                .first_week_recipes(&user.id, RecipeType::Dessert),
+            template
+        );
 
         return template
             .render(OnboardingMenuTemplate {
                 current_path: "kitchen".to_owned(),
                 user,
+                main_count: main_courses.len(),
+                appetizer_count: appetizers.len(),
+                accompaniment_count: accompaniments.len(),
+                dessert_count: desserts.len(),
                 recipes: main_courses,
             })
             .into_response();
@@ -276,6 +317,62 @@ pub async fn page(
     let fmt = time::macros::format_description!("[year]-[month]-[day]");
     let date = imkitchen_web_shared::try_page_response!(sync: bounds.date.format(&fmt), template);
 
+    // ── Week strip — 7 days Mon-Sun anchored on today (user tz) ──────
+    let today = imkitchen_core::mealplan::now(&user.tz);
+    let today_u64 = imkitchen_core::mealplan::date_to_u64(today);
+    let mut week_dates: Vec<time::OffsetDateTime> =
+        imkitchen_core::mealplan::week_days_before(today);
+    week_dates.push(today);
+    week_dates.extend(imkitchen_core::mealplan::week_days_after(today));
+
+    let (week_start, week_end) = (
+        week_dates.first().copied().unwrap_or(today),
+        week_dates.last().copied().unwrap_or(today),
+    );
+
+    let week_slots = imkitchen_web_shared::try_page_response!(
+        app.core.mealplan.range(&user.id, week_start, week_end),
+        template
+    );
+
+    let week_days: Vec<KitchenWeekDay> = week_dates
+        .iter()
+        .map(|d| {
+            let d_u64 = imkitchen_core::mealplan::date_to_u64(*d);
+            let matching = week_slots.iter().find(|s| {
+                time::OffsetDateTime::from_unix_timestamp(s.day as i64)
+                    .map(|sd| imkitchen_core::mealplan::date_to_u64(sd) == d_u64)
+                    .unwrap_or(false)
+            });
+            let mut meal_types = vec![];
+            if let Some(s) = matching {
+                if s.appetizer.is_some() {
+                    meal_types.push(RecipeType::Appetizer);
+                }
+                meal_types.push(RecipeType::MainCourse);
+                if s.accompaniment.is_some() {
+                    meal_types.push(RecipeType::Accompaniment);
+                }
+                if s.dessert.is_some() {
+                    meal_types.push(RecipeType::Dessert);
+                }
+                if s.beverage.is_some() {
+                    meal_types.push(RecipeType::Beverage);
+                }
+                if s.condiment.is_some() {
+                    meal_types.push(RecipeType::Condiment);
+                }
+            }
+            KitchenWeekDay {
+                date: d.format(&fmt).unwrap_or_default(),
+                day_num: d.day(),
+                weekday: d.weekday().to_string().chars().take(3).collect(),
+                is_today: d_u64 == today_u64,
+                meal_types,
+            }
+        })
+        .collect();
+
     let auth_cookie = imkitchen_web_shared::try_page_response!(sync:
         imkitchen_web_shared::auth::build_cookie(app.config.jwt, token.sub.to_owned(), token.acc.to_owned()),
         template
@@ -296,6 +393,7 @@ pub async fn page(
             coming_instructions,
             current_instruction,
             date,
+            week_days,
             ..Default::default()
         }),
     )
@@ -303,15 +401,24 @@ pub async fn page(
 }
 
 #[derive(askama::Template)]
-#[template(path = "partials/kitchen-steps.html")]
-pub struct KitchenStepsTemplate {
+#[template(path = "cooking.html")]
+pub struct CookingTemplate {
     pub slot_recipe: imkitchen_core::recipe::query::user::UserView,
     pub completed_instructions: Vec<(usize, String)>,
     pub coming_instructions: Vec<(usize, String)>,
     pub current_instruction: Option<(usize, Instruction)>,
-    pub slot: SlotRow,
-    pub slot_completed_count: u8,
-    pub slot_total_count: u8,
+    pub date: String,
+}
+
+// Fragment version of CookingTemplate — same fields, but renders only the
+// #cooking-screen partial so it can be swapped in place by TwinSpark.
+#[derive(askama::Template)]
+#[template(path = "partials/cooking-screen.html")]
+pub struct CookingScreenTemplate {
+    pub slot_recipe: imkitchen_core::recipe::query::user::UserView,
+    pub completed_instructions: Vec<(usize, String)>,
+    pub coming_instructions: Vec<(usize, String)>,
+    pub current_instruction: Option<(usize, Instruction)>,
     pub date: String,
 }
 
@@ -325,12 +432,8 @@ pub async fn update_slot_step_action(
     tracing::Span::current().record("user", &user.id);
 
     let bounds = imkitchen_web_shared::try_page_response!(sync: imkitchen_core::mealplan::month_bounds_from_date(&date, &user.tz), template);
-    let mut slot = imkitchen_web_shared::try_page_response!(opt: app.core.mealplan.next_slot_from(bounds.date, &user.id), template);
+    let slot = imkitchen_web_shared::try_page_response!(opt: app.core.mealplan.next_slot_from(bounds.date, &user.id), template);
 
-    let mut completed_instructions = vec![];
-    let mut coming_instructions = vec![];
-    let mut slot_completed_count = 0;
-    let mut slot_total_count = 1;
     let mut slot_recipe_status = None;
 
     if slot.main_course.id == recipe_id {
@@ -373,7 +476,7 @@ pub async fn update_slot_step_action(
     }
 
     let Some(slot_recipe_status) = slot_recipe_status else {
-        return template.render(NotFoundTemplate);
+        return template.render(NotFoundTemplate).into_response();
     };
 
     let slot_recipe = imkitchen_web_shared::try_page_response!(opt: app.core.recipe.find_user(&recipe_id), template);
@@ -392,7 +495,6 @@ pub async fn update_slot_step_action(
         }
         ("next", DaySlotStatus::Idle) => DaySlotStatus::Cooking(1),
         ("next", DaySlotStatus::Cooking(pos)) => {
-            println!("{pos}");
             if ((*pos + 1) as usize) < slot_recipe.instructions.len() - 1 {
                 DaySlotStatus::Cooking(pos + 1)
             } else {
@@ -403,64 +505,6 @@ pub async fn update_slot_step_action(
         _ => slot_recipe_status.clone(),
     };
 
-    if slot.main_course.id == recipe_id {
-        slot.main_course.status = slot_recipe_status.clone();
-    }
-
-    if slot.main_course.is_completed() {
-        slot_completed_count += 1;
-    }
-
-    if let Some(appetizer) = slot.appetizer.as_mut() {
-        slot_total_count += 1;
-        if appetizer.id == recipe_id {
-            appetizer.status = slot_recipe_status.clone();
-        }
-        if appetizer.is_completed() {
-            slot_completed_count += 1;
-        }
-    }
-
-    if let Some(accompaniment) = slot.accompaniment.as_mut() {
-        slot_total_count += 1;
-        if accompaniment.id == recipe_id {
-            accompaniment.status = slot_recipe_status.clone();
-        }
-        if accompaniment.is_completed() {
-            slot_completed_count += 1;
-        }
-    }
-
-    if let Some(dessert) = slot.dessert.as_mut() {
-        slot_total_count += 1;
-        if dessert.id == recipe_id {
-            dessert.status = slot_recipe_status.clone();
-        }
-        if dessert.is_completed() {
-            slot_completed_count += 1;
-        }
-    }
-
-    if let Some(beverage) = slot.beverage.as_mut() {
-        slot_total_count += 1;
-        if beverage.id == recipe_id {
-            beverage.status = slot_recipe_status.clone();
-        }
-        if beverage.is_completed() {
-            slot_completed_count += 1;
-        }
-    }
-
-    if let Some(condiment) = slot.condiment.as_mut() {
-        slot_total_count += 1;
-        if condiment.id == recipe_id {
-            condiment.status = slot_recipe_status.clone();
-        }
-        if condiment.is_completed() {
-            slot_completed_count += 1;
-        }
-    }
-
     let bounds_date = imkitchen_core::mealplan::date_to_u64(bounds.date);
 
     imkitchen_web_shared::try_response!(
@@ -469,12 +513,17 @@ pub async fn update_slot_step_action(
             .change_slot_recipe_status(ChangeSlotRecipeStatus {
                 user_id: user.id.to_owned(),
                 date: bounds_date,
-                recipe_id,
+                recipe_id: recipe_id.clone(),
                 status: slot_recipe_status.clone()
             }),
         template
     );
 
+    // Compute view state from the NEW status in-memory — re-reading the projection
+    // here would race with evento's async projection update and show stale state
+    // (each Next would appear to leave the user on the same step).
+    let mut completed_instructions = vec![];
+    let mut coming_instructions = vec![];
     let current_instruction = match (&slot_recipe_status, &slot_recipe) {
         (DaySlotStatus::Idle, recipe) => {
             coming_instructions = recipe
@@ -484,7 +533,6 @@ pub async fn update_slot_step_action(
                 .skip(1)
                 .map(|(p, i)| (p, i.description.to_owned()))
                 .collect();
-
             recipe.instructions.first().map(|i| (0, i.clone()))
         }
         (DaySlotStatus::Cooking(pos), recipe) => {
@@ -495,7 +543,6 @@ pub async fn update_slot_step_action(
                 .take(*pos as usize)
                 .map(|(p, i)| (p, i.description.to_owned()))
                 .collect();
-
             coming_instructions = recipe
                 .instructions
                 .iter()
@@ -503,7 +550,6 @@ pub async fn update_slot_step_action(
                 .skip((*pos + 1) as usize)
                 .map(|(p, i)| (p, i.description.to_owned()))
                 .collect();
-
             recipe.instructions.iter().enumerate().find_map(|(p, i)| {
                 if p == *pos as usize {
                     Some((p, i.clone()))
@@ -528,11 +574,8 @@ pub async fn update_slot_step_action(
     };
 
     template
-        .render(KitchenStepsTemplate {
-            slot,
+        .render(CookingScreenTemplate {
             slot_recipe,
-            slot_total_count,
-            slot_completed_count,
             completed_instructions,
             coming_instructions,
             current_instruction,
@@ -545,6 +588,7 @@ pub async fn update_slot_step_action(
 #[template(path = "partials/kitchen-dish.html")]
 pub struct KitchenDishTemplate {
     pub date: String,
+    pub slot: SlotRow,
     pub slot_recipe: imkitchen_core::recipe::query::user::UserView,
     pub completed_instructions: Vec<(usize, String)>,
     pub coming_instructions: Vec<(usize, String)>,
@@ -674,6 +718,123 @@ pub async fn select_dish(
 
     template
         .render(KitchenDishTemplate {
+            slot,
+            slot_recipe,
+            completed_instructions,
+            coming_instructions,
+            current_instruction,
+            date,
+        })
+        .into_response()
+}
+
+#[tracing::instrument(skip_all, fields(user = tracing::field::Empty))]
+pub async fn cook_page(
+    template: Template,
+    RequirePremium(user): RequirePremium,
+    State(app): State<AppState>,
+    Path((date, recipe_id)): Path<(String, String)>,
+) -> impl IntoResponse {
+    tracing::Span::current().record("user", &user.id);
+
+    let bounds = imkitchen_web_shared::try_page_response!(sync: imkitchen_core::mealplan::month_bounds_from_date(&date, &user.tz), template);
+    let slot = imkitchen_web_shared::try_page_response!(opt: app.core.mealplan.next_slot_from(bounds.date, &user.id), template);
+
+    let mut completed_instructions = vec![];
+    let mut coming_instructions = vec![];
+    let mut slot_recipe_status = None;
+
+    if slot.main_course.id == recipe_id {
+        slot_recipe_status = Some(&slot.main_course.status);
+    }
+    if let Some(ref appetizer) = slot.appetizer
+        && slot_recipe_status.is_none()
+        && appetizer.id == recipe_id
+    {
+        slot_recipe_status = Some(&appetizer.status);
+    }
+    if let Some(ref accompaniment) = slot.accompaniment
+        && slot_recipe_status.is_none()
+        && accompaniment.id == recipe_id
+    {
+        slot_recipe_status = Some(&accompaniment.status);
+    }
+    if let Some(ref dessert) = slot.dessert
+        && slot_recipe_status.is_none()
+        && dessert.id == recipe_id
+    {
+        slot_recipe_status = Some(&dessert.status);
+    }
+    if let Some(ref beverage) = slot.beverage
+        && slot_recipe_status.is_none()
+        && beverage.id == recipe_id
+    {
+        slot_recipe_status = Some(&beverage.status);
+    }
+    if let Some(ref condiment) = slot.condiment
+        && slot_recipe_status.is_none()
+        && condiment.id == recipe_id
+    {
+        slot_recipe_status = Some(&condiment.status);
+    }
+
+    let Some(slot_recipe_status) = slot_recipe_status else {
+        return template.render(NotFoundTemplate).into_response();
+    };
+
+    let slot_recipe = imkitchen_web_shared::try_page_response!(opt: app.core.recipe.find_user(&recipe_id), template);
+
+    let current_instruction = match (&slot_recipe_status, &slot_recipe) {
+        (DaySlotStatus::Idle, recipe) => {
+            coming_instructions = recipe
+                .instructions
+                .iter()
+                .enumerate()
+                .skip(1)
+                .map(|(p, i)| (p, i.description.to_owned()))
+                .collect();
+            recipe.instructions.first().map(|i| (0, i.clone()))
+        }
+        (DaySlotStatus::Cooking(pos), recipe) => {
+            completed_instructions = recipe
+                .instructions
+                .iter()
+                .enumerate()
+                .take(*pos as usize)
+                .map(|(p, i)| (p, i.description.to_owned()))
+                .collect();
+            coming_instructions = recipe
+                .instructions
+                .iter()
+                .enumerate()
+                .skip((*pos + 1) as usize)
+                .map(|(p, i)| (p, i.description.to_owned()))
+                .collect();
+            recipe.instructions.iter().enumerate().find_map(|(p, i)| {
+                if p == *pos as usize {
+                    Some((p, i.clone()))
+                } else {
+                    None
+                }
+            })
+        }
+        (DaySlotStatus::Completed, recipe) => {
+            completed_instructions = recipe
+                .instructions
+                .iter()
+                .enumerate()
+                .take(recipe.instructions.len() - 1)
+                .map(|(p, i)| (p, i.description.to_owned()))
+                .collect();
+            recipe
+                .instructions
+                .last()
+                .map(|i| (recipe.instructions.len() - 1, i.clone()))
+        }
+    };
+
+    template
+        .render(CookingTemplate {
             slot_recipe,
             completed_instructions,
             coming_instructions,
@@ -692,5 +853,6 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
             post(update_slot_step_action),
         )
         .route("/kitchen/{date}/{recipe_id}/select-dish", post(select_dish))
+        .route("/kitchen/{date}/{recipe_id}/cook", get(cook_page))
         .route("/kitchen/{date}", get(page))
 }

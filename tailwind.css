@@ -40,11 +40,19 @@
   --color-line: #e8dfc8;
   --color-line-2: #ebe3d1;
 
-  /* Meal type colors */
+  /* Meal type colors — base, soft (tinted bg), ink (dark text on soft) */
   --color-meal-main: #ef6c1e;
+  --color-meal-main-soft: #fde3cf;
+  --color-meal-main-ink: #7a2d05;
   --color-meal-entree: #3b6fb0;
+  --color-meal-entree-soft: #dde9f5;
+  --color-meal-entree-ink: #1e3a5f;
   --color-meal-dessert: #c4428d;
+  --color-meal-dessert-soft: #f6dbeb;
+  --color-meal-dessert-ink: #6b1f49;
   --color-meal-side: #2f7d4f;
+  --color-meal-side-soft: #d8ebdb;
+  --color-meal-side-ink: #1b4d2e;
 
   /* Fonts */
   --font-serif: 'Fraunces', 'Fraunces fallback', 'Georgia', serif;
@@ -61,6 +69,13 @@
   --radius-md: 0.875rem;
   --radius-lg: 1.25rem;
   --radius-xl: 1.75rem;
+}
+
+/* Custom keyframes */
+@keyframes ikspin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Custom component layer */

@@ -41,7 +41,7 @@ if (workbox) {
   workbox.core.clientsClaim();
 
   // Precache static assets (manifest injected by Workbox CLI)
-  workbox.precaching.precacheAndRoute([{"revision":"2a34dda335212ca4d3780a6072c1bbd0","url":"/static/css/main.css"},{"revision":"9c0bf863e65d6c208a57bd2b63896df7","url":"/static/icons/apple-touch-icon.png"},{"revision":"92b24651b31dd4e8c233330512d4fdf3","url":"/static/icons/icon-192-maskable.png"},{"revision":"14aae3946b6c97d6b80693c6edef76a6","url":"/static/icons/icon-192.png"},{"revision":"e7e8f5a5500290d14ac25e8ae14c4e1b","url":"/static/icons/icon-512-maskable.png"},{"revision":"da087846670ad8ca9784a40e7febfd69","url":"/static/icons/icon-512.png"},{"revision":"2c0121d0b07c2d3c9a3a22b207441dcd","url":"/static/icons/icon-maskable.svg"},{"revision":"18e1cf596913c6fcced548f0ee5852b6","url":"/static/icons/icon.svg"},{"revision":"9faae8de3ae27a94a5aae5d090fc8cc0","url":"/static/js/pwa-install.js"},{"revision":"1519d7f19a16fb25284f76f1ce2dc167","url":"/static/js/sw-register.js"},{"revision":"c1092a95a7ec58bb78ae7cc752b3e0b3","url":"/static/js/twinspark.js"},{"revision":"f93e9568ea93bb5ab454eceef25f434a","url":"/static/screenshots/dashboard-mobile-1.png"},{"revision":"359bb6fcd18745e4150f6a1f307464e6","url":"/static/screenshots/dashboard-mobile-fr-1.png"},{"revision":"a49088d775e07650014683b7e405f4c0","url":"/static/screenshots/dashboard-mobile-fr.png"},{"revision":"3ccb7d803be80dd72904b9537e029603","url":"/static/screenshots/dashboard-mobile.png"},{"revision":"a6cc18851d4d4b75a780fc98678e810b","url":"/static/screenshots/meal-calendar-mobile-fr.png"},{"revision":"a0202fa3c85876b7719a83bd292e6c83","url":"/static/screenshots/meal-calendar-mobile.png"},{"revision":"85a49f6c3850bd88c2bda34013939619","url":"/static/screenshots/recipe-detail-mobile-1.png"},{"revision":"a21cd819d15485355af49c915aca1aa2","url":"/static/screenshots/recipe-detail-mobile-fr-1.png"},{"revision":"1dd1eded4a1e27f114e9334544350682","url":"/static/screenshots/recipe-detail-mobile-fr.png"},{"revision":"b3a9ec7ab99723ef7d69b15590c130ef","url":"/static/screenshots/recipe-detail-mobile.png"}] || []);
+  workbox.precaching.precacheAndRoute([{"revision":"01203222ba9be5a6815a289971ccbfb3","url":"/static/css/main.css"},{"revision":"9c0bf863e65d6c208a57bd2b63896df7","url":"/static/icons/apple-touch-icon.png"},{"revision":"92b24651b31dd4e8c233330512d4fdf3","url":"/static/icons/icon-192-maskable.png"},{"revision":"14aae3946b6c97d6b80693c6edef76a6","url":"/static/icons/icon-192.png"},{"revision":"e7e8f5a5500290d14ac25e8ae14c4e1b","url":"/static/icons/icon-512-maskable.png"},{"revision":"da087846670ad8ca9784a40e7febfd69","url":"/static/icons/icon-512.png"},{"revision":"2c0121d0b07c2d3c9a3a22b207441dcd","url":"/static/icons/icon-maskable.svg"},{"revision":"18e1cf596913c6fcced548f0ee5852b6","url":"/static/icons/icon.svg"},{"revision":"9faae8de3ae27a94a5aae5d090fc8cc0","url":"/static/js/pwa-install.js"},{"revision":"1519d7f19a16fb25284f76f1ce2dc167","url":"/static/js/sw-register.js"},{"revision":"5aba45c6ab47fa28f1a94a206cbd45ef","url":"/static/js/twinspark.js"},{"revision":"f93e9568ea93bb5ab454eceef25f434a","url":"/static/screenshots/dashboard-mobile-1.png"},{"revision":"359bb6fcd18745e4150f6a1f307464e6","url":"/static/screenshots/dashboard-mobile-fr-1.png"},{"revision":"a49088d775e07650014683b7e405f4c0","url":"/static/screenshots/dashboard-mobile-fr.png"},{"revision":"3ccb7d803be80dd72904b9537e029603","url":"/static/screenshots/dashboard-mobile.png"},{"revision":"a6cc18851d4d4b75a780fc98678e810b","url":"/static/screenshots/meal-calendar-mobile-fr.png"},{"revision":"a0202fa3c85876b7719a83bd292e6c83","url":"/static/screenshots/meal-calendar-mobile.png"},{"revision":"85a49f6c3850bd88c2bda34013939619","url":"/static/screenshots/recipe-detail-mobile-1.png"},{"revision":"a21cd819d15485355af49c915aca1aa2","url":"/static/screenshots/recipe-detail-mobile-fr-1.png"},{"revision":"1dd1eded4a1e27f114e9334544350682","url":"/static/screenshots/recipe-detail-mobile-fr.png"},{"revision":"b3a9ec7ab99723ef7d69b15590c130ef","url":"/static/screenshots/recipe-detail-mobile.png"}] || []);
 
   // HTML pages: Network-first with cache fallback
   workbox.routing.registerRoute(
@@ -102,12 +102,15 @@ if (workbox) {
     })
   );
 
-  // Static assets: Cache-first with long expiration
+  // Static assets: Cache-first with long expiration. Same-origin only —
+  // cross-origin CDN assets (e.g. fonts.gstatic.com) are left to the browser,
+  // since the SW's CacheFirst can fail on opaque/CORS responses.
   workbox.routing.registerRoute(
-    ({ request }) =>
-      request.destination === 'style' ||
-      request.destination === 'script' ||
-      request.destination === 'font',
+    ({ request, url }) =>
+      (request.destination === 'style' ||
+        request.destination === 'script' ||
+        request.destination === 'font') &&
+      url.origin === self.location.origin,
     new workbox.strategies.CacheFirst({
       cacheName: CACHE.static,
       plugins: [
