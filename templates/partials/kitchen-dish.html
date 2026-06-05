@@ -1,263 +1,189 @@
-<div id="current-recipe-card" class="bg-paper rounded-xl shadow-md overflow-hidden">
-  <!-- Recipe Header with Color Banner -->
-  {% decl slot_recipe_bg -%}
-  {% decl slot_recipe_icon -%}
-  {% match slot_recipe.recipe_type.0 %}
-  {% when RecipeType::Appetizer %}
-  {% let slot_recipe_bg = "from-blue-400 to-blue-500" -%}
-  {% let slot_recipe_icon = "🥗" -%}
-  {% when RecipeType::MainCourse %}
-  {% let slot_recipe_bg = "from-orange-400 to-red-500" -%}
-  {% let slot_recipe_icon = "🍛" -%}
-  {% when RecipeType::Dessert %}
-  {% let slot_recipe_bg = "from-pink-400 to-pink-500" -%}
-  {% let slot_recipe_icon = "🍰" -%}
-  {% when RecipeType::Accompaniment %}
-  {% let slot_recipe_bg = "from-herb-400 to-herb-500" -%}
-  {% let slot_recipe_icon = "🍚" -%}
-  {% when RecipeType::Beverage %}
-  {% let slot_recipe_bg = "from-cyan-400 to-cyan-500" -%}
-  {% let slot_recipe_icon = "🥤" -%}
-  {% when RecipeType::Condiment %}
-  {% let slot_recipe_bg = "from-amber-400 to-amber-500" -%}
-  {% let slot_recipe_icon = "🥫" -%}
-  {% endmatch %}
-  <div class="bg-linear-to-r {{ slot_recipe_bg }} p-4 flex items-center justify-between">
-    <div class="flex items-center gap-3">
-      <!-- <span class="text-4xl">{{ slot_recipe_icon }}</span> -->
-      <div class="text-white">
-        <!-- <div class="text-xs font-semibold uppercase opacity-90">{{ "Now Cooking"|t }}</div> -->
-        <h2 class="text-xl font-bold font-serif">{{ slot_recipe.name }}</h2>
-      </div>
+{# Active course tint — drives hero gradient + accent classes #}
+{% decl hero_bg_class -%}
+{% decl hero_icon -%}
+{% decl hero_pill_soft -%}
+{% decl hero_pill_ink -%}
+{% decl hero_blob_class -%}
+{% match slot_recipe.recipe_type.0 %}
+{% when RecipeType::Appetizer %}
+  {% let hero_bg_class = "from-meal-entree-soft to-blue-100" -%}
+  {% let hero_icon = "🥗" -%}
+  {% let hero_pill_soft = "bg-meal-entree-soft" -%}
+  {% let hero_pill_ink = "text-meal-entree-ink" -%}
+  {% let hero_blob_class = "bg-meal-entree" -%}
+{% when RecipeType::MainCourse %}
+  {% let hero_bg_class = "from-meal-main-soft to-orange-100" -%}
+  {% let hero_icon = "🍛" -%}
+  {% let hero_pill_soft = "bg-meal-main-soft" -%}
+  {% let hero_pill_ink = "text-meal-main-ink" -%}
+  {% let hero_blob_class = "bg-meal-main" -%}
+{% when RecipeType::Accompaniment %}
+  {% let hero_bg_class = "from-meal-side-soft to-herb-100" -%}
+  {% let hero_icon = "🥖" -%}
+  {% let hero_pill_soft = "bg-meal-side-soft" -%}
+  {% let hero_pill_ink = "text-meal-side-ink" -%}
+  {% let hero_blob_class = "bg-meal-side" -%}
+{% when RecipeType::Dessert %}
+  {% let hero_bg_class = "from-meal-dessert-soft to-pink-100" -%}
+  {% let hero_icon = "🍰" -%}
+  {% let hero_pill_soft = "bg-meal-dessert-soft" -%}
+  {% let hero_pill_ink = "text-meal-dessert-ink" -%}
+  {% let hero_blob_class = "bg-meal-dessert" -%}
+{% when RecipeType::Beverage %}
+  {% let hero_bg_class = "from-cyan-100 to-cyan-200" -%}
+  {% let hero_icon = "🥤" -%}
+  {% let hero_pill_soft = "bg-cyan-100" -%}
+  {% let hero_pill_ink = "text-cyan-900" -%}
+  {% let hero_blob_class = "bg-cyan-500" -%}
+{% when RecipeType::Condiment %}
+  {% let hero_bg_class = "from-amber-100 to-amber-200" -%}
+  {% let hero_icon = "🥫" -%}
+  {% let hero_pill_soft = "bg-amber-100" -%}
+  {% let hero_pill_ink = "text-amber-900" -%}
+  {% let hero_blob_class = "bg-amber-500" -%}
+{% endmatch %}
+
+{# Course-switcher pill macro — one per present course #}
+{% macro pill(date, recipe_id, emoji, label_full, label_short, active_bg, active_ink, dot_bg, active) %}
+<button ts-req="/kitchen/{{ date }}/{{ recipe_id }}/select-dish" ts-req-method="post"
+  ts-target="#current-recipe-card"
+  class="flex-1 min-w-0 overflow-hidden px-0.5 sm:px-1 py-2 rounded-lg flex flex-col items-center gap-1 relative transition {% if active %}{{ active_bg }}{% else %}bg-transparent hover:bg-cream{% endif %}">
+  <span class="text-base leading-none">{{ emoji }}</span>
+  <span class="block w-full text-center truncate text-[9px] sm:text-[10px] font-semibold tracking-normal sm:tracking-wide uppercase font-mono {% if active %}{{ active_ink }}{% else %}text-ink-3{% endif %}">
+    <span class="sm:hidden">{{ label_short|t }}</span><span class="hidden sm:inline">{{ label_full|t }}</span>
+  </span>
+  {% if active %}
+  <span class="absolute left-1/2 -bottom-1 -translate-x-1/2 w-1 h-1 rounded-full {{ dot_bg }}"></span>
+  {% endif %}
+</button>
+{% endmacro %}
+
+{# "Also today" mini-card macro — non-active courses #}
+{% macro mini(date, dish, emoji, label_key, soft_bg, fg_ink, dot_bg) %}
+<button ts-req="/kitchen/{{ date }}/{{ dish.id }}/select-dish" ts-req-method="post"
+  ts-target="#current-recipe-card"
+  class="w-full max-w-full p-3 bg-paper rounded-xl border border-line-2 hover:border-line shadow-sm text-left transition overflow-hidden">
+  <div class="flex items-center gap-3 w-full min-w-0">
+    <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0 {{ soft_bg }}">
+      {{ emoji }}
     </div>
-    <!-- <span class="px-3 py-1 bg-white/20 text-white text-sm font-semibold rounded-full"> -->
-    <!--   {{ slot_recipe.recipe_type.as_ref()|t }} -->
-    <!-- </span> -->
+    <div class="flex-1 min-w-0">
+      <div class="text-[10px] font-semibold tracking-wide uppercase font-mono {{ fg_ink }}">{{ label_key|t }}</div>
+      <div class="text-sm font-semibold text-ink truncate">{{ dish.name }}</div>
+      <div class="text-xs text-ink-3 mt-0.5">⏱ {{ &dish.total_prep_time()|minutes }}</div>
+    </div>
+    <div class="flex items-center gap-1 text-xs font-semibold shrink-0 {{ fg_ink }}">
+      {% if dish.is_completed() %}
+      <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-8 8a1 1 0 01-1.4 0l-4-4a1 1 0 011.4-1.4L8 12.6l7.3-7.3a1 1 0 011.4 0z" clip-rule="evenodd"/>
+      </svg>
+      {{ "Done"|t }}
+      {% else if dish.is_cooking() %}
+      <span class="px-1.5 py-0.5 rounded text-[10px] font-bold text-white {{ dot_bg }}">{{ "Cooking"|t }}</span>
+      {% else %}
+      {{ "Focus"|t }}
+      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      {% endif %}
+    </div>
   </div>
+</button>
+{% endmacro %}
 
-  <!-- View Tabs -->
-  <div class="border-b border-line-2">
-    <div class="flex">
-      <button id="tab-steps" onclick="switchView('steps')"
-        class="flex-1 px-4 py-3 text-center font-semibold text-primary-500 border-b-2 border-primary-500">
-        {{ "Steps"|t }}
-      </button>
-      <button id="tab-ingredients" onclick="switchView('ingredients')"
-        class="flex-1 px-4 py-3 text-center font-semibold text-ink-3 hover:text-ink-2 border-b-2 border-transparent">
-        {{ "Ingredients"|t }}
-      </button>
-      <button id="tab-overview" onclick="switchView('overview')"
-        class="flex-1 px-4 py-3 text-center font-semibold text-ink-3 hover:text-ink-2 border-b-2 border-transparent">
-        {{ "Overview"|t }}
-      </button>
-    </div>
-  </div>
+<div id="current-recipe-card" class="space-y-4">
 
-  <!-- Steps View -->
-  <div id="view-steps" class="p-6">
-    {% if let Some((pos,instruction)) = current_instruction %}
-    <!-- Step Progress -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
-      <span class="text-sm text-ink-3 shrink-0">{{ "Step"|t }} {{ pos + 1 }} {{ "of"|t }} {{
-        slot_recipe.instructions.len() }}</span>
-      <div class="flex gap-1 w-full sm:w-auto sm:flex-1 sm:max-w-xs">
-        {% for _ in completed_instructions %}
-        <div class="flex-1 min-w-0 h-1 bg-primary-500 rounded-full"></div>
-        {% endfor %}
-        <div class="flex-1 min-w-0 h-1 bg-orange-500 rounded-full"></div>
-        {% for _ in coming_instructions %}
-        <div class="flex-1 min-w-0 h-1 bg-cream-2 rounded-full"></div>
-        {% endfor %}
-      </div>
-    </div>
-
-    <!-- Current Step -->
-    <div class="bg-orange-50 border-l-4 border-orange-500 rounded-r-xl p-6 mb-6">
-      <div class="flex items-start gap-4">
-        <div
-          class="w-10 h-10 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold text-lg shrink-0">
-          {{ pos + 1 }}
-        </div>
-        <div class="flex-1">
-          <span class="text-xs text-orange-600 font-semibold uppercase">{{ "Current Step"|t }}</span>
-          <p class="text-lg leading-relaxed mt-1">{{ instruction.description|nl2br|safe }}</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Pro Tip -->
-    <!-- <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6"> -->
-    <!--   <div class="flex items-start gap-3"> -->
-    <!--     <span class="text-xl">💡</span> -->
-    <!--     <div> -->
-    <!--       <div class="font-semibold text-yellow-800 text-sm mb-1">Pro Tip</div> -->
-    <!--       <p class="text-sm text-yellow-700">Don't let the coconut milk boil vigorously - a gentle simmer -->
-    <!--         prevents it from separating and keeps the curry creamy.</p> -->
-    <!--     </div> -->
-    <!--   </div> -->
-    <!-- </div> -->
-
-    <!-- Step Navigation -->
-    <div class="flex flex-col-reverse md:flex-row gap-3">
-      {% if !completed_instructions.is_empty() %}
-      <button ts-req="/kitchen/{{ date }}/{{slot_recipe.id}}/step/prev" ts-req-method="post" ts-target="#view-steps"
-        ts-swap="inner" ts-req-selector="children #view-steps"
-        class="flex-1 px-4 py-3 bg-cream-2 hover:bg-cream-2 rounded-xl font-semibold flex items-center justify-center gap-2 transition">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-        </svg>
-        {{ "Previous"|t }}
-      </button>
-      {% endif %}
-      {% if !coming_instructions.is_empty() %}
-      <button ts-req="/kitchen/{{ date }}/{{ slot_recipe.id }}/step/next" ts-req-method="post" ts-target="#view-steps"
-        ts-swap="inner" ts-req-selector="children #view-steps"
-        class="flex-1 px-4 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 transition">
-        {% if instruction.time_next > 0 %}
-        <span id="next-step-label">⏱️ {{ "Wait"|t }} {{ instruction.time_next|minutes }}, {{ "then Next"|t }}</span>
-        {% else %}
-        <span id="next-step-label">{{ "Done, Next"|t }}</span>
-        {% endif %}
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-        </svg>
-      </button>
-      {% endif %}
-    </div>
-
-    <!-- Previous & Upcoming Steps -->
-    <div class="mt-6 pt-6 border-t border-line-2">
-      <!-- Completed Steps (Collapsed) -->
-      {% if !completed_instructions.is_empty() %}
-      <button onclick="togglePreviousSteps()" class="flex items-center gap-2 text-sm text-ink-3 hover:text-ink-2 mb-4">
-        <svg id="chevron-previous" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor"
-          viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-        </svg>
-        {{ "Show completed steps"|t }} ({{ completed_instructions.len() }})
-      </button>
-
-      <div id="previous-steps" class="hidden space-y-2 mb-4">
-        {% for (_, instruction) in completed_instructions %}
-        <div class="flex items-center gap-3 p-3 bg-cream rounded-xl opacity-60">
-          <div class="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center">
-            <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd"
-                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                clip-rule="evenodd"></path>
-            </svg>
-          </div>
-          <span class="text-sm line-through text-ink-3">{{ instruction|nl2br|safe }}</span>
-        </div>
-        {% endfor %}
-      </div>
-      {% endif %}
-
-      <!-- Upcoming Steps -->
-      {% if !coming_instructions.is_empty() %}
-      <div class="text-sm text-ink-3 mb-2">{{ "Coming up next"|t }}</div>
-      <div class="space-y-2">
-        {% for (pos,instruction) in coming_instructions %}
-        <div class="flex items-center gap-3 p-3 bg-cream rounded-xl">
-          <div
-            class="w-6 h-6 p-2 bg-line text-ink-2 rounded-full flex items-center justify-center text-sm font-semibold">
-            {{ pos + 1 }}</div>
-          <span class="text-sm text-ink-2">{{ instruction|nl2br|safe }}</span>
-        </div>
-        {% endfor %}
-      </div>
-      {% endif %}
-    </div>
-    {% else if let Some(origin) = slot_recipe.origin %}
-    <iframe class="w-full h-[80vh]" src="{{ origin }}"></iframe>
+  {# ── Course-Switcher Pill Strip ───────────────────────────── #}
+  <div class="flex gap-0.5 sm:gap-1 p-1 bg-paper rounded-2xl border border-line-2 shadow-sm">
+    {% if let Some(appetizer) = slot.appetizer %}
+      {% call pill(date, appetizer.id, "🥗", "Appetizer", "Starter", "bg-meal-entree-soft", "text-meal-entree-ink", "bg-meal-entree", appetizer.id == slot_recipe.id) %}{% endcall %}
+    {% endif %}
+    {% call pill(date, slot.main_course.id, "🍛", "Main Course", "Main", "bg-meal-main-soft", "text-meal-main-ink", "bg-meal-main", slot.main_course.id == slot_recipe.id) %}{% endcall %}
+    {% if let Some(accompaniment) = slot.accompaniment %}
+      {% call pill(date, accompaniment.id, "🥖", "Accompaniment", "Side", "bg-meal-side-soft", "text-meal-side-ink", "bg-meal-side", accompaniment.id == slot_recipe.id) %}{% endcall %}
+    {% endif %}
+    {% if let Some(dessert) = slot.dessert %}
+      {% call pill(date, dessert.id, "🍰", "Dessert", "Dessert", "bg-meal-dessert-soft", "text-meal-dessert-ink", "bg-meal-dessert", dessert.id == slot_recipe.id) %}{% endcall %}
+    {% endif %}
+    {% if let Some(beverage) = slot.beverage %}
+      {% call pill(date, beverage.id, "🥤", "Beverage", "Drink", "bg-cyan-100", "text-cyan-900", "bg-cyan-500", beverage.id == slot_recipe.id) %}{% endcall %}
+    {% endif %}
+    {% if let Some(condiment) = slot.condiment %}
+      {% call pill(date, condiment.id, "🥫", "Condiment", "Sauce", "bg-amber-100", "text-amber-900", "bg-amber-500", condiment.id == slot_recipe.id) %}{% endcall %}
     {% endif %}
   </div>
 
-  <!-- Ingredients View (Hidden by default) -->
-  <div id="view-ingredients" class="p-6 hidden">
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="text-lg font-bold font-serif">{{ "Ingredients Checklist"|t }}</h3>
-      <!-- <span class="text-sm text-ink-3">5 of 10 ready</span> -->
-    </div>
-
-    <div class="space-y-2">
-      <!-- <label -->
-      <!--   class="flex items-center gap-3 p-3 bg-cream rounded-xl cursor-pointer hover:bg-cream-2 transition"> -->
-      <!--   <input type="checkbox" checked -->
-      <!--     class="w-5 h-5 rounded border-line text-primary-500 focus:ring-primary-500"> -->
-      <!--   <span class="flex-1 line-through text-ink-3">500g Chicken breast, diced</span> -->
-      <!--   <span class="text-xs text-primary-500 font-semibold">Ready</span> -->
-      <!-- </label> -->
-      {% for ingredient in slot_recipe.ingredients.iter() %}
-      <label class="flex items-center gap-3 p-3 bg-cream rounded-xl cursor-pointer hover:bg-cream-2 transition">
-        <input type="checkbox" class="w-5 h-5 rounded border-line text-primary-500 focus:ring-primary-500">
-        <span class="flex-1">
-          {{ ingredient.unit.format(ingredient.quantity.to_owned()) }}
-          {{ ingredient.name }}
+  {# ── Hero Card — the focused course ───────────────────────── #}
+  {% let total_time = slot_recipe.prep_time + slot_recipe.cook_time %}
+  <div class="relative overflow-hidden rounded-3xl border border-line-2 bg-linear-to-br {{ hero_bg_class }} p-5">
+    <div class="absolute -right-10 -bottom-10 w-44 h-44 rounded-full opacity-20 {{ hero_blob_class }}"></div>
+    <div class="relative">
+      <div class="flex flex-wrap items-center gap-2 mb-3">
+        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold {{ hero_pill_soft }} {{ hero_pill_ink }}">
+          {{ hero_icon }} {{ slot_recipe.recipe_type.as_ref()|t }}
         </span>
-      </label>
-      {% endfor %}
+        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-paper/70 {{ hero_pill_ink }}">
+          ⏱ {{ total_time|minutes }}
+        </span>
+        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-paper/70 {{ hero_pill_ink }}">
+          👥 {{ slot_recipe.household_size }}
+        </span>
+      </div>
+      <h2 class="font-serif text-3xl leading-tight tracking-tight text-ink">{{ slot_recipe.name }}</h2>
+      {% if !slot_recipe.description.is_empty() %}
+      <p class="text-sm text-ink-2 mt-2 leading-relaxed max-w-prose">{{ slot_recipe.description }}</p>
+      {% endif %}
+      <div class="flex gap-2 mt-4">
+        <a href="/kitchen/{{ date }}/{{ slot_recipe.id }}/cook"
+          class="inline-flex items-center gap-2 px-4 py-2.5 bg-ink text-cream rounded-xl text-sm font-semibold shadow-sm hover:opacity-90 transition">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4l14 8-14 8V4z"/></svg>
+          {{ "Start cooking"|t }}
+        </a>
+        <a href="/recipes/{{ slot_recipe.id }}"
+          class="inline-flex items-center gap-2 px-4 py-2.5 border border-line bg-paper/80 text-ink rounded-xl text-sm font-semibold hover:bg-paper transition">
+          {{ "See recipe"|t }}
+        </a>
+      </div>
     </div>
   </div>
 
-  <!-- Overview View (Hidden by default) -->
-  <div id="view-overview" class="p-6 hidden">
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-      <div class="bg-cream rounded-xl p-4 text-center">
-        <div class="text-2xl mb-1">⏱️</div>
-        <div class="text-xs text-ink-3">{{ "Prep Time"|t }}</div>
-        <div class="font-bold">{{ slot_recipe.prep_time|minutes }}</div>
-      </div>
-      <div class="bg-cream rounded-xl p-4 text-center">
-        <div class="text-2xl mb-1">🍳</div>
-        <div class="text-xs text-ink-3">{{ "Cook Time"|t }}</div>
-        <div class="font-bold">{{ slot_recipe.cook_time|minutes }}</div>
-      </div>
-      <div class="bg-cream rounded-xl p-4 text-center">
-        <div class="text-2xl mb-1">👥</div>
-        <div class="text-xs text-ink-3">{{ "Servings"|t }}</div>
-        <div class="font-bold">{{ slot_recipe.household_size }} {{ "people"|t }}</div>
-      </div>
-      <div class="bg-cream rounded-xl p-4 text-center">
-        <div class="text-2xl mb-1">📊</div>
-        <div class="text-xs text-ink-3">{{ "Difficulty"|t }}</div>
-        <div class="font-bold">{{ "Medium"|t }}</div>
-      </div>
-    </div>
-
-    <div class="flex gap-2 flex-wrap mb-6">
-      {% for dietary_restriction in slot_recipe.dietary_restrictions.iter() %}
-      <span class="px-3 py-1 bg-primary-100 text-primary-800 text-sm font-semibold rounded-full">{{
-        dietary_restriction.as_ref()|t }}</span>
-      {% endfor %}
-    </div>
-
-    <h3 class="font-bold font-serif mb-4">{{ "All Steps"|t }}</h3>
-    <div id="overview-all-steps" class="space-y-3">
-      {% for (p, instruction) in completed_instructions %}
-      <div class="flex items-start gap-3 p-3 bg-primary-50 border-l-4 border-primary-500 rounded-r-xl">
-        <div
-          class="w-6 h-6 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0">
-          {{ p + 1 }}</div>
-        <p class="text-sm">{{ instruction|nl2br|safe }}</p>
-      </div>
-      {% endfor %}
-      {% if let Some((p, current_instruction)) = current_instruction %}
-      <div class="flex items-start gap-3 p-3 bg-orange-50 border-l-4 border-orange-500 rounded-r-xl">
-        <div
-          class="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0">
-          {{ p + 1 }}</div>
-        <p class="text-sm">{{ current_instruction.description|nl2br|safe }}</p>
+  {# ── Also Today — non-active courses ──────────────────────── #}
+  {# Skip the section if every present course IS the active one (i.e. only one course planned). #}
+  <div class="space-y-2">
+    {% if let Some(appetizer) = slot.appetizer %}
+      {% if appetizer.id != slot_recipe.id %}
+      <div class="flex items-center gap-2 pt-2 first:pt-0">
+        <div class="text-[10px] font-semibold tracking-widest uppercase font-mono text-ink-3">{{ "Also today"|t }}</div>
+        <div class="flex-1 h-px bg-line"></div>
       </div>
       {% endif %}
-      {% for (p, instruction) in coming_instructions %}
-      <div class="flex items-start gap-3 p-3 bg-cream border-l-4 border-line rounded-r-xl">
-        <div
-          class="w-6 h-6 bg-line text-ink-2 rounded-full flex items-center justify-center text-sm font-bold shrink-0">
-          {{ p + 1 }}</div>
-        <p class="text-sm">{{ instruction|nl2br|safe }}</p>
-      </div>
-      {% endfor %}
-    </div>
+    {% endif %}
+
+    {% if let Some(appetizer) = slot.appetizer %}
+      {% if appetizer.id != slot_recipe.id %}
+        {% call mini(date, appetizer, "🥗", "Appetizer", "bg-meal-entree-soft", "text-meal-entree-ink", "bg-meal-entree") %}{% endcall %}
+      {% endif %}
+    {% endif %}
+    {% if slot.main_course.id != slot_recipe.id %}
+      {% call mini(date, slot.main_course, "🍛", "Main Course", "bg-meal-main-soft", "text-meal-main-ink", "bg-meal-main") %}{% endcall %}
+    {% endif %}
+    {% if let Some(accompaniment) = slot.accompaniment %}
+      {% if accompaniment.id != slot_recipe.id %}
+        {% call mini(date, accompaniment, "🥖", "Accompaniment", "bg-meal-side-soft", "text-meal-side-ink", "bg-meal-side") %}{% endcall %}
+      {% endif %}
+    {% endif %}
+    {% if let Some(dessert) = slot.dessert %}
+      {% if dessert.id != slot_recipe.id %}
+        {% call mini(date, dessert, "🍰", "Dessert", "bg-meal-dessert-soft", "text-meal-dessert-ink", "bg-meal-dessert") %}{% endcall %}
+      {% endif %}
+    {% endif %}
+    {% if let Some(beverage) = slot.beverage %}
+      {% if beverage.id != slot_recipe.id %}
+        {% call mini(date, beverage, "🥤", "Beverage", "bg-cyan-100", "text-cyan-800", "bg-cyan-500") %}{% endcall %}
+      {% endif %}
+    {% endif %}
+    {% if let Some(condiment) = slot.condiment %}
+      {% if condiment.id != slot_recipe.id %}
+        {% call mini(date, condiment, "🥫", "Condiment", "bg-amber-100", "text-amber-800", "bg-amber-500") %}{% endcall %}
+      {% endif %}
+    {% endif %}
   </div>
 </div>

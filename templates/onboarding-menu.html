@@ -1,322 +1,207 @@
 {% extends "_user.html" %}
 
 {% block title %}{{ "Kitchen"|t }} - imkitchen{% endblock %}
-{% block extra_head %}
-<style>
-  @keyframes float {
-
-    0%,
-    100% {
-      transform: translateY(0);
-    }
-
-    50% {
-      transform: translateY(-10px);
-    }
-  }
-
-  .float-anim {
-    animation: float 3s ease-in-out infinite;
-  }
-
-  .float-anim-delay {
-    animation: float 3s ease-in-out 0.5s infinite;
-  }
-
-  .float-anim-delay-2 {
-    animation: float 3s ease-in-out 1s infinite;
-  }
-
-  @keyframes fade-in-up {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .fade-in-up {
-    animation: fade-in-up 0.6s ease-out forwards;
-  }
-
-  .fade-in-up-delay {
-    animation: fade-in-up 0.6s ease-out 0.2s forwards;
-    opacity: 0;
-  }
-
-  .fade-in-up-delay-2 {
-    animation: fade-in-up 0.6s ease-out 0.4s forwards;
-    opacity: 0;
-  }
-
-  @keyframes pulse-glow {
-
-    0%,
-    100% {
-      box-shadow: 0 0 0 0 rgba(239, 108, 30, 0.4);
-    }
-
-    50% {
-      box-shadow: 0 0 0 12px rgba(239, 108, 30, 0);
-    }
-  }
-
-  .pulse-glow {
-    animation: pulse-glow 2s ease-in-out infinite;
-  }
-</style>
-{% endblock %}
 
 {% block content %}
 {% if !user.is_premium() %}
 <div ts-trigger="load" ts-req="/settings/billing/check" ts-req-method="POST" ts-swap="skip"></div>
 {% endif %}
 
-<!-- Onboarding Content -->
-<div class="container mx-auto px-4 py-8 max-w-3xl">
+<div class="container mx-auto px-4 py-6 max-w-2xl">
 
-  <!-- Hero -->
-  <div class="text-center mb-8 fade-in-up">
-    <div class="flex items-center justify-center gap-4 mb-6">
-      <span class="text-5xl float-anim">📅</span>
-      <span class="text-6xl float-anim-delay">🍽️</span>
-      <span class="text-5xl float-anim-delay-2">👨‍🍳</span>
-    </div>
-    <h1 class="text-2xl sm:text-3xl font-bold font-serif mb-3">{{ "Almost Ready to Cook!"|t }}</h1>
-    <p class="text-ink-2 text-base sm:text-lg max-w-md mx-auto">
-      {{ "You have recipes in your collection - great! Now generate a"|t }} <strong class="text-primary-500">{{ "meal plan"|t }}</strong> {{ "so Kitchen Mode knows what to cook each day."|t }}
-    </p>
+  {# ── Emoji meal-flow header ──────────────────────────────────────── #}
+  <div class="flex items-center justify-center gap-2.5 pt-2 pb-1">
+    <span class="w-11 h-11 rounded-xl bg-meal-main-soft flex items-center justify-center text-xl -rotate-6 shadow-sm">📅</span>
+    <svg class="w-3.5 h-3.5 text-ink-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+    <span class="w-11 h-11 rounded-xl bg-meal-side-soft flex items-center justify-center text-xl shadow-sm">🍽️</span>
+    <svg class="w-3.5 h-3.5 text-ink-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+    <span class="w-11 h-11 rounded-xl bg-meal-dessert-soft flex items-center justify-center text-xl rotate-6 shadow-sm">😋</span>
   </div>
 
-  <!-- Progress indicator -->
-  <div class="bg-paper rounded-xl shadow-md p-4 sm:p-6 mb-8 fade-in-up-delay">
-    <div class="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6">
-      <div class="flex items-center gap-2">
-        <div class="w-8 h-8 bg-primary-500 text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0">
-          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd"
-              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-              clip-rule="evenodd"></path>
-          </svg>
+  <h1 class="font-serif text-3xl sm:text-4xl leading-tight tracking-tight text-ink text-center my-4">
+    {{ "Almost ready"|t }}<br>{{ "to"|t }} <span class="italic text-primary-500">{{ "cook"|t }}</span>
+  </h1>
+  <p class="text-sm text-ink-2 text-center max-w-md mx-auto leading-relaxed mb-5">
+    {{ "You've saved recipes — great! Now generate a"|t }} <strong class="text-ink">{{ "meal plan"|t }}</strong> {{ "so Cooking Mode knows what to prepare each day."|t }}
+  </p>
+
+  {# ── Progress card: 3-step strip + collection status ───────────── #}
+  <section class="bg-paper rounded-2xl border border-line-2 shadow-sm overflow-hidden mb-5">
+    <div class="grid grid-cols-3">
+      {# Step 1 — Done #}
+      <div class="py-3 px-2 flex flex-col items-center gap-1.5">
+        <div class="w-7 h-7 rounded-full bg-herb-500 flex items-center justify-center">
+          <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
         </div>
-        <span class="text-sm font-semibold text-primary-500">{{ "Add a recipe"|t }}</span>
+        <div class="text-[10.5px] font-semibold text-herb-700 text-center leading-tight">{{ "Add recipes"|t }}</div>
       </div>
-      <div class="hidden sm:block w-8 h-0.5 bg-primary-500"></div>
-      <div class="flex items-center gap-2">
-        <div class="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-sm font-bold shrink-0">2
+      {# Step 2 — Active #}
+      <div class="py-3 px-2 flex flex-col items-center gap-1.5">
+        <div class="w-7 h-7 rounded-full bg-primary-500 flex items-center justify-center font-serif text-sm text-white" style="box-shadow: 0 4px 12px rgba(239,108,30,.3);">
+          <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3l1.9 4.5L18.5 9l-4.6 1.5L12 15l-1.9-4.5L5.5 9l4.6-1.5z"/></svg>
         </div>
-        <span class="text-sm font-semibold text-orange-600">{{ "Generate meal plan"|t }}</span>
+        <div class="text-[10.5px] font-semibold text-primary-800 text-center leading-tight">{{ "Generate plan"|t }}</div>
       </div>
-      <div class="hidden sm:block w-8 h-0.5 bg-line"></div>
-      <div class="flex items-center gap-2">
-        <div class="w-8 h-8 bg-cream-2 text-ink-3 rounded-full flex items-center justify-center text-sm font-bold shrink-0">3
-        </div>
-        <span class="text-sm text-ink-3">{{ "Start cooking!"|t }}</span>
+      {# Step 3 — Pending #}
+      <div class="py-3 px-2 flex flex-col items-center gap-1.5">
+        <div class="w-7 h-7 rounded-full bg-cream-2 text-ink-3 flex items-center justify-center font-serif text-sm">3</div>
+        <div class="text-[10.5px] font-semibold text-ink-3 text-center leading-tight">{{ "Start cooking"|t }}</div>
       </div>
     </div>
 
-    <!-- Recipe collection summary -->
-    <div class="bg-primary-50 border border-primary-200 rounded-xl p-4 mb-4">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 bg-primary-500 text-white rounded-full flex items-center justify-center shrink-0">
-          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd"
-              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-              clip-rule="evenodd"></path>
-          </svg>
+    <div class="h-px bg-line-2"></div>
+
+    {# Collection ready banner #}
+    <div class="p-3.5 flex items-center gap-2.5 bg-herb-100">
+      <div class="w-6.5 h-6.5 w-7 h-7 rounded-full bg-herb-500 flex items-center justify-center shrink-0">
+        <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="text-[13px] font-semibold text-ink">{{ "Your collection is ready"|t }}</div>
+        <div class="text-xs text-herb-700 mt-0.5">
+          {{ main_count }} {% if main_count == 1 %}{{ "main course"|t }}{% else %}{{ "main courses"|t }}{% endif %}
+          {% if accompaniment_count > 0 %} · {{ accompaniment_count }} {{ "sides"|t }}{% endif %}
+          {% if dessert_count > 0 %} · {{ dessert_count }} {{ "desserts"|t }}{% endif %}
+          {% if appetizer_count > 0 %} · {{ appetizer_count }} {{ "starters"|t }}{% endif %}
+        </div>
+      </div>
+      <a href="/recipes" class="border border-transparent bg-paper text-herb-700 px-2.5 py-1.5 rounded-lg text-[11.5px] font-semibold hover:bg-cream transition">
+        {{ "Manage"|t }}
+      </a>
+    </div>
+
+    {# Avatar stack — preview of saved mains #}
+    <div class="px-3.5 py-2.5 flex items-center gap-2 bg-cream-2">
+      <div class="flex items-center">
+        {% for recipe in recipes %}
+          {% if loop.index <= 5 %}
+          <div class="w-6.5 h-6.5 w-7 h-7 rounded-full bg-paper flex items-center justify-center text-sm shrink-0 {% if !loop.first %}-ml-2{% endif %}" style="border: 2px solid var(--color-cream-2);">
+            🍛
+          </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+      <div class="flex-1 text-[11.5px] text-ink-3 font-mono">
+        {{ "Waiting to be arranged into a week…"|t }}
+      </div>
+    </div>
+  </section>
+
+  {# ── What happens when you generate ───────────────────────────── #}
+  <div class="text-[10.5px] font-semibold tracking-widest uppercase font-mono text-ink-3 mb-2.5">
+    {{ "What happens when you generate"|t }}
+  </div>
+  <div class="space-y-2 mb-5">
+    <div class="bg-paper rounded-2xl border border-line-2 shadow-sm p-3.5">
+      <div class="flex items-start gap-3">
+        <div class="w-9 h-9 rounded-xl bg-meal-main-soft flex items-center justify-center shrink-0">
+          <svg class="w-4 h-4 text-meal-main-ink" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.9 4.5L18.5 9l-4.6 1.5L12 15l-1.9-4.5L5.5 9l4.6-1.5z"/></svg>
         </div>
         <div class="flex-1">
-          <h3 class="font-semibold font-serif text-primary-800">{{ "Your Recipe Collection"|t }}</h3>
-          <p class="text-sm text-primary-700">{{ "You have"|t }} <strong>{{ recipes.len() }} {{ "main course recipes"|t
-              }}</strong> {{ "ready to use"|t }}</p>
+          <div class="text-sm font-semibold text-ink">{{ "Balanced across the week"|t }}</div>
+          <div class="text-[12.5px] text-ink-2 mt-0.5 leading-snug">{{ "We shuffle your recipes so each day gets a complete, varied meal."|t }}</div>
         </div>
       </div>
     </div>
+    <div class="bg-paper rounded-2xl border border-line-2 shadow-sm p-3.5">
+      <div class="flex items-start gap-3">
+        <div class="w-9 h-9 rounded-xl bg-herb-100 flex items-center justify-center shrink-0">
+          <svg class="w-4 h-4 text-herb-700" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-15.6 6.2L3 16M3 12a9 9 0 0115.6-6.2L21 8M3 20v-4h4M21 4v4h-4"/></svg>
+        </div>
+        <div class="flex-1">
+          <div class="text-sm font-semibold text-ink">{{ "Regenerate any time"|t }}</div>
+          <div class="text-[12.5px] text-ink-2 mt-0.5 leading-snug">{{ "Don't like the shuffle? Tap again — or swap any single meal individually."|t }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="bg-paper rounded-2xl border border-line-2 shadow-sm p-3.5">
+      <div class="flex items-start gap-3">
+        <div class="w-9 h-9 rounded-xl bg-meal-main-soft flex items-center justify-center shrink-0">
+          <svg class="w-4 h-4 text-meal-main-ink" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4l14 8-14 8V4z"/></svg>
+        </div>
+        <div class="flex-1">
+          <div class="text-sm font-semibold text-ink">{{ "Cooking Mode wakes up"|t }}</div>
+          <div class="text-[12.5px] text-ink-2 mt-0.5 leading-snug">{{ "Step-by-step walkthroughs, timers, and ingredient checklists every day."|t }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    <!-- Mini recipe preview -->
-    <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-4">
-      {% for recipe in recipes %}
-      <div class="bg-orange-50 border border-orange-200 rounded-xl p-2 text-center">
-        <span class="text-2xl block mb-1">🍛</span>
-        <span class="text-xs text-ink-2 truncate block">{{ recipe.name }}</span>
+  {# ── Plan preview ─────────────────────────────────────────────── #}
+  <section class="bg-paper rounded-2xl border border-line-2 shadow-sm overflow-hidden mb-5">
+    <div class="p-3.5 flex items-center gap-2.5 bg-linear-to-br from-herb-500 to-herb-700 text-white">
+      <div class="flex-1">
+        <div class="text-[9.5px] font-mono tracking-widest uppercase opacity-80">{{ "Preview · a day from your plan"|t }}</div>
+        <div class="text-sm font-semibold mt-0.5">{{ "Your week, roughly arranged"|t }}</div>
+      </div>
+      <div class="w-9 h-9 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path stroke-linecap="round" d="M3 9h18M8 3v4M16 3v4"/></svg>
+      </div>
+    </div>
+
+    <div class="px-2.5 pt-2.5 pb-1 grid grid-cols-7 gap-1">
+      {% for d in ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] %}
+      <div class="text-center py-1.5 rounded-lg {% if loop.first %}bg-herb-100{% endif %}">
+        <div class="text-[9px] font-mono uppercase text-ink-3">{{ d|t }}</div>
+        <div class="font-serif text-base text-ink leading-none mt-0.5">{% if loop.first %}🍛{% else %}·{% endif %}</div>
       </div>
       {% endfor %}
     </div>
-  </div>
 
-  <!-- How it works -->
-  <div class="bg-paper rounded-xl shadow-md p-4 sm:p-6 mb-8 fade-in-up-delay">
-    <h3 class="font-bold font-serif text-lg mb-4">{{ "What happens when you generate a meal plan?"|t }}</h3>
-    <div class="space-y-4">
-      <div class="flex items-start gap-4">
-        <div class="w-10 h-10 bg-primary-100 text-primary-500 rounded-full flex items-center justify-center shrink-0">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-          </svg>
-        </div>
-        <div>
-          <h4 class="font-semibold mb-1">{{ "Meals are assigned to each day"|t }}</h4>
-          <p class="text-sm text-ink-3">{{ "Your recipes are distributed across the week to create a varied, balanced meal plan with a main course each day."|t }}</p>
-        </div>
+    <div class="px-3.5 pt-2 pb-3.5">
+      <div class="text-[9.5px] font-mono tracking-widest uppercase text-ink-3 py-1.5">
+        ☀️ {{ "Example · Monday"|t }}
       </div>
-      <div class="flex items-start gap-4">
-        <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center shrink-0">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
-            </path>
-          </svg>
+      <div class="space-y-1.5">
+        <div class="flex items-center gap-2.5 px-2.5 py-2 rounded-xl bg-meal-entree-soft">
+          <div class="w-5.5 h-5.5 w-6 h-6 rounded-lg bg-paper/70 flex items-center justify-center text-sm">🥗</div>
+          <div class="flex-1 min-w-0">
+            <div class="text-[10px] font-mono uppercase tracking-wide text-meal-entree-ink">{{ "Appetizer"|t }}</div>
+            <div class="text-[13px] font-semibold text-ink truncate">{{ "Caesar Salad"|t }}</div>
+          </div>
+          <div class="text-[11px] font-mono text-meal-entree-ink">15m</div>
         </div>
-        <div>
-          <h4 class="font-semibold mb-1">{{ "You can regenerate anytime"|t }}</h4>
-          <p class="text-sm text-ink-3">{{ "Don't like the plan? Regenerate individual days or the entire week from the Calendar page."|t }}</p>
+        <div class="flex items-center gap-2.5 px-2.5 py-2 rounded-xl bg-meal-main-soft">
+          <div class="w-5.5 h-5.5 w-6 h-6 rounded-lg bg-paper/70 flex items-center justify-center text-sm">🍛</div>
+          <div class="flex-1 min-w-0">
+            <div class="text-[10px] font-mono uppercase tracking-wide text-meal-main-ink">{{ "Main Course"|t }}</div>
+            <div class="text-[13px] font-semibold text-ink truncate">{{ "Thai Red Curry & Rice"|t }}</div>
+          </div>
+          <div class="text-[11px] font-mono text-meal-main-ink">45m</div>
         </div>
-      </div>
-      <div class="flex items-start gap-4">
-        <div class="w-10 h-10 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center shrink-0">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-          </svg>
-        </div>
-        <div>
-          <h4 class="font-semibold mb-1">{{ "Kitchen Mode activates"|t }}</h4>
-          <p class="text-sm text-ink-3">{{ "Once a plan exists, Kitchen Mode guides you step-by-step through each day's recipes with timers and checklists."|t }}</p>
+        <div class="flex items-center gap-2.5 px-2.5 py-2 rounded-xl bg-meal-dessert-soft">
+          <div class="w-5.5 h-5.5 w-6 h-6 rounded-lg bg-paper/70 flex items-center justify-center text-sm">🍰</div>
+          <div class="flex-1 min-w-0">
+            <div class="text-[10px] font-mono uppercase tracking-wide text-meal-dessert-ink">{{ "Dessert"|t }}</div>
+            <div class="text-[13px] font-semibold text-ink truncate">{{ "Chocolate Mousse"|t }}</div>
+          </div>
+          <div class="text-[11px] font-mono text-meal-dessert-ink">30m</div>
         </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- Calendar preview mock -->
-  <div class="bg-paper rounded-xl shadow-md overflow-hidden mb-8 fade-in-up-delay-2">
-    <div class="bg-linear-to-r from-primary-400 to-emerald-600 p-4 text-white">
-      <div class="flex items-center justify-between">
-        <div>
-          <div class="text-xs font-semibold uppercase opacity-90">{{ "Calendar Preview"|t }}</div>
-          <h2 class="text-lg sm:text-xl font-bold font-serif">{{ "Your week after generating"|t }}</h2>
-        </div>
-        <span class="text-3xl">📅</span>
-      </div>
-    </div>
-    <div class="p-4">
-      <!-- Mini calendar week preview -->
-      <div class="grid grid-cols-7 gap-1 sm:gap-2 mb-4">
-        <div class="text-center">
-          <div class="text-xs text-ink-3 mb-1">{{ "Mon"|t }}</div>
-          <div class="bg-orange-50 border border-orange-200 rounded-xl p-1.5 sm:p-2">
-            <span class="text-lg sm:text-xl block">🍛</span>
-            <span class="text-[10px] sm:text-xs text-ink-2 hidden sm:block">{{ "Thai Curry"|t }}</span>
-          </div>
-        </div>
-        <div class="text-center">
-          <div class="text-xs text-ink-3 mb-1">{{ "Tue"|t }}</div>
-          <div class="bg-orange-50 border border-orange-200 rounded-xl p-1.5 sm:p-2">
-            <span class="text-lg sm:text-xl block">🍝</span>
-            <span class="text-[10px] sm:text-xs text-ink-2 hidden sm:block">{{ "Carbonara"|t }}</span>
-          </div>
-        </div>
-        <div class="text-center">
-          <div class="text-xs text-ink-3 mb-1">{{ "Wed"|t }}</div>
-          <div class="bg-orange-50 border border-orange-200 rounded-xl p-1.5 sm:p-2">
-            <span class="text-lg sm:text-xl block">🌮</span>
-            <span class="text-[10px] sm:text-xs text-ink-2 hidden sm:block">{{ "Beef Tacos"|t }}</span>
-          </div>
-        </div>
-        <div class="text-center">
-          <div class="text-xs text-ink-3 mb-1">{{ "Thu"|t }}</div>
-          <div class="bg-orange-50 border border-orange-200 rounded-xl p-1.5 sm:p-2">
-            <span class="text-lg sm:text-xl block">🍕</span>
-            <span class="text-[10px] sm:text-xs text-ink-2 hidden sm:block">{{ "Pizza"|t }}</span>
-          </div>
-        </div>
-        <div class="text-center">
-          <div class="text-xs text-ink-3 mb-1">{{ "Fri"|t }}</div>
-          <div class="bg-orange-50 border border-orange-200 rounded-xl p-1.5 sm:p-2">
-            <span class="text-lg sm:text-xl block">🍜</span>
-            <span class="text-[10px] sm:text-xs text-ink-2 hidden sm:block">{{ "Ramen"|t }}</span>
-          </div>
-        </div>
-        <div class="text-center">
-          <div class="text-xs text-ink-3 mb-1">{{ "Sat"|t }}</div>
-          <div class="bg-orange-50 border border-orange-200 rounded-xl p-1.5 sm:p-2">
-            <span class="text-lg sm:text-xl block">🍛</span>
-            <span class="text-[10px] sm:text-xs text-ink-2 hidden sm:block">{{ "Thai Curry"|t }}</span>
-          </div>
-        </div>
-        <div class="text-center">
-          <div class="text-xs text-ink-3 mb-1">{{ "Sun"|t }}</div>
-          <div class="bg-orange-50 border border-orange-200 rounded-xl p-1.5 sm:p-2">
-            <span class="text-lg sm:text-xl block">🍝</span>
-            <span class="text-[10px] sm:text-xs text-ink-2 hidden sm:block">{{ "Carbonara"|t }}</span>
-          </div>
-        </div>
-      </div>
+  {# ── Primary CTA ──────────────────────────────────────────────── #}
+  <a href="/menu"
+    class="flex items-center justify-center gap-2 w-full px-5 py-3.5 bg-ink text-cream rounded-xl text-sm font-semibold shadow-sm hover:opacity-90 transition">
+    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3l1.9 4.5L18.5 9l-4.6 1.5L12 15l-1.9-4.5L5.5 9l4.6-1.5z"/></svg>
+    {{ "Generate your meal plan"|t }}
+  </a>
+  <p class="text-[11.5px] text-ink-3 text-center mt-2">
+    {{ "Takes about 2 seconds · Edit or regenerate any time"|t }}
+  </p>
 
-      <!-- Example day detail -->
-      <div class="bg-cream rounded-xl p-4 border border-line-2">
-        <div class="flex items-center gap-2 mb-3">
-          <span class="text-xs font-semibold uppercase tracking-wide text-primary-500">{{ "Example - Monday"|t }}</span>
-        </div>
-        <div class="space-y-2">
-          <div class="flex items-center gap-3 p-2 bg-blue-50 rounded border border-blue-100">
-            <span>🥗</span>
-            <div class="flex-1">
-              <span class="text-xs text-blue-600 font-semibold">{{ "APPETIZER"|t }}</span>
-              <div class="text-sm font-semibold">{{ "Caesar Salad"|t }}</div>
-            </div>
-            <span class="text-xs text-ink-3">{{ "15 min"|t }}</span>
-          </div>
-          <div class="flex items-center gap-3 p-2 bg-orange-50 rounded border border-orange-100">
-            <span>🍛</span>
-            <div class="flex-1">
-              <span class="text-xs text-orange-600 font-semibold">{{ "MAIN COURSE"|t }}</span>
-              <div class="text-sm font-semibold">{{ "Thai Red Curry + Jasmine Rice"|t }}</div>
-            </div>
-            <span class="text-xs text-ink-3">{{ "45 min"|t }}</span>
-          </div>
-          <div class="flex items-center gap-3 p-2 bg-pink-50 rounded border border-pink-100">
-            <span>🍰</span>
-            <div class="flex-1">
-              <span class="text-xs text-pink-600 font-semibold">{{ "DESSERT"|t }}</span>
-              <div class="text-sm font-semibold">{{ "Chocolate Mousse"|t }}</div>
-            </div>
-            <span class="text-xs text-ink-3">{{ "30 min"|t }}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- CTA -->
-  <div class="text-center fade-in-up-delay-2">
-    <a href="/menu"
-      class="block sm:inline-block px-8 py-4 bg-primary-500 text-white font-bold text-base sm:text-lg rounded-xl hover:bg-primary-600 transition shadow-md shadow-primary-200 pulse-glow text-center">
-      <svg class="w-6 h-6 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-      </svg>
-      {{ "Go to Calendar & Generate Meal Plan"|t }}
-    </a>
-    <p class="text-sm text-ink-3 mt-3">{{ "You'll be redirected to the Calendar page to generate your first meal plan"|t }}</p>
-  </div>
-
-  <!-- Tip -->
-  <div class="mt-8 bg-yellow-50 border border-yellow-200 rounded-xl p-4 sm:p-5 fade-in-up-delay-2">
-    <div class="flex items-start gap-3">
-      <span class="text-2xl shrink-0">💡</span>
-      <div>
-        <h4 class="font-semibold font-serif text-yellow-800 mb-1">{{ "Tip: Add more recipes for better variety"|t }}</h4>
-        <p class="text-sm text-yellow-700">{{ "The more recipes in your collection, the more diverse your meal plans will be. You can always"|t }} <a href="/settings/recipes"
-            class="underline font-semibold hover:text-yellow-900">{{ "add more recipes"|t }}</a> {{ "or"|t }} <a
-            href="/recipes" class="underline font-semibold hover:text-yellow-900">{{ "browse the community"|t }}</a> {{
-          "later."|t }}</p>
+  {# ── Tip card ─────────────────────────────────────────────────── #}
+  <div class="mt-5 p-3.5 rounded-2xl bg-yellow-50 border border-yellow-100 flex gap-3">
+    <div class="w-8 h-8 rounded-xl bg-yellow-200/60 flex items-center justify-center shrink-0 text-base">💡</div>
+    <div class="flex-1">
+      <div class="text-[13px] font-semibold text-yellow-900">{{ "Add more recipes for better variety"|t }}</div>
+      <div class="text-xs text-yellow-800/90 mt-0.5 leading-snug">
+        {{ "The larger your collection, the less a plan repeats. You can always"|t }}
+        <a href="/recipes" class="underline font-semibold hover:text-yellow-900">{{ "add more"|t }}</a>
+        {{ "or browse the community."|t }}
       </div>
     </div>
   </div>
 </div>
-
 {% endblock %}

@@ -1,0 +1,41 @@
+{% extends "_cooking.html" %}
+
+{% block title %}{{ "Cooking"|t }} - {{ slot_recipe.name }} - imkitchen{% endblock %}
+
+{% block content %}
+<style>
+  /* Tint vars are set per-render via inline `style="--tint:...; --tint-soft:..."`
+     on the #cooking-screen element below. These static rules just read them. */
+  .cooking-screen {
+    background: radial-gradient(ellipse at 50% 0%, var(--tint-soft), var(--color-cream) 70%);
+    min-height: 100dvh;
+  }
+  .cooking-plate {
+    background:
+      radial-gradient(circle, #fff 0 30%, var(--tint-soft) 60%, color-mix(in srgb, var(--tint) 27%, transparent) 80%, color-mix(in srgb, var(--tint) 53%, transparent));
+    box-shadow:
+      0 20px 40px color-mix(in srgb, var(--tint) 25%, transparent),
+      inset 0 0 0 8px rgba(255, 255, 255, .5);
+  }
+  .cooking-ring.running { animation: ikspin 6s linear infinite; }
+  .cooking-timer-card.running {
+    background: var(--tint);
+    color: #fff;
+    border-color: var(--tint);
+  }
+  .cooking-timer-card.running .cooking-timer-icon,
+  .cooking-timer-card.running .cooking-timer-toggle {
+    background: rgba(255, 255, 255, .18);
+    color: #fff;
+  }
+  .cooking-timer-card.running .timer-label-idle,
+  .cooking-timer-card .timer-label-running { display: none; }
+  .cooking-timer-card.running .timer-label-running,
+  .cooking-timer-card .timer-label-idle { display: inline; }
+  .cooking-timer-card.running .icon-play { display: none; }
+  .cooking-timer-card.running .icon-pause { display: inline-block; }
+  .cooking-timer-card .icon-pause { display: none; }
+</style>
+
+{% include "partials/cooking-screen.html" %}
+{% endblock %}

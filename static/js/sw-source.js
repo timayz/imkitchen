@@ -102,12 +102,15 @@ if (workbox) {
     })
   );
 
-  // Static assets: Cache-first with long expiration
+  // Static assets: Cache-first with long expiration. Same-origin only —
+  // cross-origin CDN assets (e.g. fonts.gstatic.com) are left to the browser,
+  // since the SW's CacheFirst can fail on opaque/CORS responses.
   workbox.routing.registerRoute(
-    ({ request }) =>
-      request.destination === 'style' ||
-      request.destination === 'script' ||
-      request.destination === 'font',
+    ({ request, url }) =>
+      (request.destination === 'style' ||
+        request.destination === 'script' ||
+        request.destination === 'font') &&
+      url.origin === self.location.origin,
     new workbox.strategies.CacheFirst({
       cacheName: CACHE.static,
       plugins: [

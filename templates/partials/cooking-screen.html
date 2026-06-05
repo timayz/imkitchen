@@ -1,0 +1,211 @@
+{# ── Meal-type tint resolution (sets inline --tint vars used by the static <style> block) ── #}
+{% decl tint_hex -%}
+{% decl tint_soft_hex -%}
+{% decl tint_emoji -%}
+{% decl tint_dot_class -%}
+{% match slot_recipe.recipe_type.0 %}
+{% when RecipeType::Appetizer %}
+  {% let tint_hex = "#3b6fb0" -%}
+  {% let tint_soft_hex = "#dde9f5" -%}
+  {% let tint_emoji = "🥗" -%}
+  {% let tint_dot_class = "bg-meal-entree" -%}
+{% when RecipeType::MainCourse %}
+  {% let tint_hex = "#ef6c1e" -%}
+  {% let tint_soft_hex = "#fde3cf" -%}
+  {% let tint_emoji = "🍛" -%}
+  {% let tint_dot_class = "bg-meal-main" -%}
+{% when RecipeType::Accompaniment %}
+  {% let tint_hex = "#2f7d4f" -%}
+  {% let tint_soft_hex = "#d8ebdb" -%}
+  {% let tint_emoji = "🥖" -%}
+  {% let tint_dot_class = "bg-meal-side" -%}
+{% when RecipeType::Dessert %}
+  {% let tint_hex = "#c4428d" -%}
+  {% let tint_soft_hex = "#f6dbeb" -%}
+  {% let tint_emoji = "🍰" -%}
+  {% let tint_dot_class = "bg-meal-dessert" -%}
+{% when RecipeType::Beverage %}
+  {% let tint_hex = "#2596be" -%}
+  {% let tint_soft_hex = "#d4eef5" -%}
+  {% let tint_emoji = "🥤" -%}
+  {% let tint_dot_class = "bg-cyan-500" -%}
+{% when RecipeType::Condiment %}
+  {% let tint_hex = "#c6951d" -%}
+  {% let tint_soft_hex = "#fbeacb" -%}
+  {% let tint_emoji = "🥫" -%}
+  {% let tint_dot_class = "bg-amber-500" -%}
+{% endmatch %}
+
+<div id="cooking-screen" class="cooking-screen flex flex-col"
+  style="--tint: {{ tint_hex }}; --tint-soft: {{ tint_soft_hex }};">
+
+  {# ── Top bar ──────────────────────────────────────────────────── #}
+  <header class="px-4 pt-7 pb-2 flex items-center gap-2.5">
+    <a href="/kitchen/{{ date }}"
+      class="w-9 h-9 rounded-xl border border-line bg-paper/70 backdrop-blur-sm flex items-center justify-center hover:bg-paper transition"
+      aria-label="{{ "Back"|t }}">
+      <svg class="w-4 h-4 text-ink" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18"/>
+      </svg>
+    </a>
+    <div class="flex-1 text-center min-w-0">
+      <div class="text-[10px] font-mono tracking-widest uppercase text-ink-3">
+        {% if let Some((pos, _)) = current_instruction %}
+          {% if coming_instructions.is_empty() %}
+            {{ "Cooking · final step"|t }}
+          {% else %}
+            {{ "Cooking · step"|t }} {{ pos + 1 }} {{ "of"|t }} {{ slot_recipe.instructions.len() }}
+          {% endif %}
+        {% endif %}
+      </div>
+      <div class="font-serif text-base leading-none mt-0.5 tracking-tight text-ink truncate">{{ slot_recipe.name }}</div>
+    </div>
+    <div class="w-9 shrink-0"></div>
+  </header>
+
+  {% if let Some((pos, ins)) = current_instruction %}
+  {# ── Progress dots ────────────────────────────────────────────── #}
+  <div class="px-4 pb-1 flex gap-0.5">
+    {% for _ in completed_instructions %}
+    <div class="flex-1 h-1 rounded-full {{ tint_dot_class }}"></div>
+    {% endfor %}
+    <div class="flex-1 h-1 rounded-full {{ tint_dot_class }}"></div>
+    {% for _ in coming_instructions %}
+    <div class="flex-1 h-1 rounded-full bg-line"></div>
+    {% endfor %}
+  </div>
+
+  {# ── Plate ────────────────────────────────────────────────────── #}
+  <div class="relative h-[260px] mt-2.5 flex items-center justify-center">
+    <div class="cooking-plate w-[220px] h-[220px] rounded-full relative flex items-center justify-center">
+      <div id="cooking-ring" class="cooking-ring absolute inset-[-4px] rounded-full">
+        <div class="absolute left-1/2 top-1/2 text-lg" style="transform: rotate(0deg) translateY(-116px) rotate(0deg);">🌿</div>
+        <div class="absolute left-1/2 top-1/2 text-lg" style="transform: rotate(45deg) translateY(-116px) rotate(-45deg);">🌶️</div>
+        <div class="absolute left-1/2 top-1/2 text-lg" style="transform: rotate(90deg) translateY(-116px) rotate(-90deg);">🧄</div>
+        <div class="absolute left-1/2 top-1/2 text-lg" style="transform: rotate(135deg) translateY(-116px) rotate(-135deg);">🌿</div>
+        <div class="absolute left-1/2 top-1/2 text-lg" style="transform: rotate(180deg) translateY(-116px) rotate(-180deg);">🍋</div>
+        <div class="absolute left-1/2 top-1/2 text-lg" style="transform: rotate(225deg) translateY(-116px) rotate(-225deg);">🌶️</div>
+        <div class="absolute left-1/2 top-1/2 text-lg" style="transform: rotate(270deg) translateY(-116px) rotate(-270deg);">🧄</div>
+        <div class="absolute left-1/2 top-1/2 text-lg" style="transform: rotate(315deg) translateY(-116px) rotate(-315deg);">🍋</div>
+      </div>
+      <span class="text-[110px] leading-none" style="filter: drop-shadow(0 6px 12px rgba(0,0,0,.1));">{{ tint_emoji }}</span>
+    </div>
+    <div class="absolute top-2 right-8 bg-paper rounded-full px-3.5 py-1.5 font-serif text-sm shadow-md"
+      style="color: var(--tint); transform: rotate(8deg);">
+      {{ "step"|t }} {{ pos + 1 }}
+    </div>
+  </div>
+
+  {# ── Step instruction ─────────────────────────────────────────── #}
+  <main class="px-5 py-4 flex-1 overflow-y-auto">
+    <p class="font-serif text-[22px] leading-tight tracking-tight text-ink" style="text-wrap: pretty;">
+      {{ ins.description|nl2br|safe }}
+    </p>
+  </main>
+
+  {# ── Timer card (only when current step has time_next) + nav buttons ── #}
+  <footer class="px-4 pt-2 pb-7">
+    {% if ins.time_next > 0 %}
+    {% let timer_seconds = ins.time_next as u32 * 60 %}
+    <div id="cooking-timer-card"
+      class="cooking-timer-card mb-2.5 rounded-2xl border border-line-2 bg-paper p-3.5 transition-colors"
+      data-seconds="{{ timer_seconds }}">
+      <div class="flex items-center gap-3">
+        <div class="cooking-timer-icon w-11 h-11 rounded-2xl bg-cream-2 flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+            <circle cx="12" cy="13" r="8"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v5l3 2M9 2h6M19 5l-2 2"/>
+          </svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-[10.5px] font-mono uppercase tracking-widest opacity-70">
+            <span class="timer-label-idle">{{ "Timer ready"|t }}</span><span class="timer-label-running">{{ "Cooking…"|t }}</span>
+          </div>
+          <div id="cooking-timer-display" class="font-serif text-2xl leading-none mt-1 tracking-tight">{{ ins.time_next }}:00</div>
+        </div>
+        <button id="cooking-timer-toggle" type="button"
+          class="cooking-timer-toggle w-11 h-11 rounded-2xl bg-ink text-cream flex items-center justify-center shrink-0"
+          aria-label="{{ "Start timer"|t }}">
+          <svg class="icon-play w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4l14 8-14 8V4z"/></svg>
+          <svg class="icon-pause w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+        </button>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="flex gap-2">
+      {% if !completed_instructions.is_empty() %}
+      <button type="button"
+        ts-req="/kitchen/{{ date }}/{{ slot_recipe.id }}/step/prev" ts-req-method="post"
+        ts-target="#cooking-screen"
+        class="flex-1 h-13 rounded-xl bg-paper border border-line text-ink font-semibold text-sm flex items-center justify-center gap-2 hover:bg-paper/80 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 12H5M11 6l-6 6 6 6"/>
+        </svg>
+        {{ "Back"|t }}
+      </button>
+      {% endif %}
+
+      {% if coming_instructions.is_empty() %}
+        {# Final / Completed state — Done is a link, no state change needed #}
+        <a href="/kitchen/{{ date }}"
+          class="{% if completed_instructions.is_empty() %}flex-1{% else %}flex-[2]{% endif %} h-13 rounded-xl bg-primary-500 text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-sm hover:bg-primary-600 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+          </svg>
+          {{ "Done! Serve it up"|t }}
+        </a>
+      {% else %}
+        <button type="button"
+          ts-req="/kitchen/{{ date }}/{{ slot_recipe.id }}/step/next" ts-req-method="post"
+          ts-target="#cooking-screen"
+          class="{% if completed_instructions.is_empty() %}flex-1{% else %}flex-[2]{% endif %} h-13 rounded-xl bg-ink text-cream font-semibold text-sm flex items-center justify-center gap-2 shadow-sm hover:opacity-90 transition">
+          {{ "Next step"|t }}
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 6l6 6-6 6"/>
+          </svg>
+        </button>
+      {% endif %}
+    </div>
+  </footer>
+  {% else if let Some(origin) = slot_recipe.origin %}
+  {# ── Fallback for recipes imported from a URL but with no parsed steps ── #}
+  <iframe class="w-full flex-1 border-0" src="{{ origin }}" loading="lazy"></iframe>
+  {% endif %}
+
+  <script>
+    (function () {
+      const card = document.getElementById('cooking-timer-card');
+      if (!card) return;
+
+      const display = document.getElementById('cooking-timer-display');
+      const toggle = document.getElementById('cooking-timer-toggle');
+      const ring = document.getElementById('cooking-ring');
+
+      let seconds = parseInt(card.dataset.seconds, 10) || 0;
+      let running = false;
+      let interval = null;
+
+      function render() {
+        const mm = String(Math.floor(seconds / 60)).padStart(2, '0');
+        const ss = String(seconds % 60).padStart(2, '0');
+        display.textContent = mm + ':' + ss;
+      }
+
+      function setRunning(r) {
+        running = r;
+        card.classList.toggle('running', r);
+        ring.classList.toggle('running', r);
+        if (r) {
+          interval = setInterval(function () {
+            if (seconds > 0) { seconds--; render(); } else { setRunning(false); }
+          }, 1000);
+        } else if (interval) {
+          clearInterval(interval); interval = null;
+        }
+      }
+
+      toggle.addEventListener('click', function () { setRunning(!running); });
+      render();
+    })();
+  </script>
+</div>
