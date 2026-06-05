@@ -3,6 +3,11 @@ name = "imkitchen-web-settings"
 version = "1.0.12"
 edition.workspace = true
 
+# imkitchen-core is consumed only through `try_response!` macro expansion from
+# imkitchen-web-shared, which cargo-machete can't see — keep it ignored.
+[package.metadata.cargo-machete]
+ignored = ["imkitchen-core"]
+
 [dependencies]
 axum = { workspace = true }
 axum-extra = { workspace = true }
