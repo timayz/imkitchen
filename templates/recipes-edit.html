@@ -1,278 +1,448 @@
 {% extends "_user.html" %}
 {% block title %}{{ "Edit Recipe"|t }} - imkitchen{% endblock %}
+
+{# ── Recipe-type → emoji macro (matches the rest of the redesign) ── #}
+{% macro type_emoji(rt) -%}
+{%- match rt -%}
+{%- when RecipeType::Appetizer -%}🥗
+{%- when RecipeType::MainCourse -%}🍛
+{%- when RecipeType::Accompaniment -%}🥖
+{%- when RecipeType::Dessert -%}🍰
+{%- when RecipeType::Beverage -%}🥤
+{%- when RecipeType::Condiment -%}🥫
+{%- endmatch -%}
+{%- endmacro %}
+
+{# Section header — mono kicker + optional sans-secondary on the right #}
+{% macro section_header(label) %}
+<div class="text-[10px] font-semibold tracking-widest uppercase font-mono text-ink-3 mb-2 mt-1 flex items-baseline gap-2">
+  <span>{{ label|t }}</span>
+</div>
+{% endmacro %}
+
 {% block content %}
-<!-- Main Content -->
-<div class="container mx-auto px-4 py-8 max-w-4xl">
-  <!-- Header -->
-  <div class="mb-8">
-    <h1 class="text-3xl font-bold font-serif mb-2">{{ "Edit Recipe"|t }}</h1>
-    <p class="text-ink-2">{{ "Update your recipe from your collection"|t }}</p>
-  </div>
+{% let is_new = form.name.is_empty() %}
 
-  <!-- Form -->
-  <form action="/recipes/{{ id }}/edit" method="post" autocomplete="off"
-    ts-req="" ts-swap="skip"
-    class="bg-paper rounded-xl shadow-md p-8">
-    <!-- Recipe Type -->
-    <div class="mb-8">
-      <label class="block text-sm font-semibold text-ink-2 mb-3">{{ "Recipe Type"|t }} *</label>
-      <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <label
-          class="flex items-center justify-center p-4 border-2 border-line rounded-xl hover:border-blue-500 cursor-pointer has-checked:border-blue-500 has-checked:bg-blue-50">
-          <input type="radio" name="recipe_type" value="{{ RecipeType::Appetizer }}" class="mr-3 appearance-none"{% if form.recipe_type == RecipeType::Appetizer %} checked{% endif %} required />
-          <div class="text-center">
-            <div class="text-3xl mb-1">🥗</div>
-            <div class="font-semibold">{{ "Appetizer"|t }}</div>
-          </div>
-        </label>
-        <label
-          class="flex items-center justify-center p-4 border-2 border-line rounded-xl hover:border-orange-500 cursor-pointer has-checked:border-orange-500 has-checked:bg-orange-50">
-          <input type="radio" name="recipe_type" value="{{ RecipeType::MainCourse }}" class="mr-3 appearance-none"{% if form.recipe_type == RecipeType::MainCourse %} checked{% endif %} required />
-          <div class="text-center">
-            <div class="text-3xl mb-1">🍛</div>
-            <div class="font-semibold">{{ "Main Course"|t }}</div>
-          </div>
-        </label>
-        <label
-          class="flex items-center justify-center p-4 border-2 border-line rounded-xl hover:border-pink-500 cursor-pointer has-checked:border-pink-500 has-checked:bg-pink-50">
-          <input type="radio" name="recipe_type" value="{{ RecipeType::Dessert }}" class="mr-3 appearance-none"{% if form.recipe_type == RecipeType::Dessert %} checked{% endif %} required />
-          <div class="text-center">
-            <div class="text-3xl mb-1">🍰</div>
-            <div class="font-semibold">{{ "Dessert"|t }}</div>
-          </div>
-        </label>
-        <label
-          class="flex items-center justify-center p-4 border-2 border-line rounded-xl hover:border-purple-500 cursor-pointer has-checked:border-purple-500 has-checked:bg-purple-50">
-          <input type="radio" name="recipe_type" value="{{ RecipeType::Accompaniment }}" class="mr-3 appearance-none"{% if form.recipe_type == RecipeType::Accompaniment %} checked{% endif %} required />
-          <div class="text-center">
-            <div class="text-3xl mb-1">🍚</div>
-            <div class="font-semibold"><span class="md:hidden">{{ "Side"|t }}</span><span class="hidden md:inline">{{ "Accompaniment"|t }}</span></div>
-          </div>
-        </label>
-        <label
-          class="flex items-center justify-center p-4 border-2 border-line rounded-xl hover:border-cyan-500 cursor-pointer has-checked:border-cyan-500 has-checked:bg-cyan-50">
-          <input type="radio" name="recipe_type" value="{{ RecipeType::Beverage }}" class="mr-3 appearance-none"{% if form.recipe_type == RecipeType::Beverage %} checked{% endif %} required />
-          <div class="text-center">
-            <div class="text-3xl mb-1">🥤</div>
-            <div class="font-semibold">{{ "Beverage"|t }}</div>
-          </div>
-        </label>
-        <label
-          class="flex items-center justify-center p-4 border-2 border-line rounded-xl hover:border-amber-500 cursor-pointer has-checked:border-amber-500 has-checked:bg-amber-50">
-          <input type="radio" name="recipe_type" value="{{ RecipeType::Condiment }}" class="mr-3 appearance-none"{% if form.recipe_type == RecipeType::Condiment %} checked{% endif %} required />
-          <div class="text-center">
-            <div class="text-3xl mb-1">🥫</div>
-            <div class="font-semibold">{{ "Condiment"|t }}</div>
-          </div>
-        </label>
+<div class="container mx-auto px-4 py-4 md:py-6 max-w-3xl pb-32">
+
+  {# ── Top bar ── #}
+  <header class="flex items-center gap-3 mb-5 md:mb-6">
+    <a href="/recipes?mine=true"
+      class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-paper border border-line-2 text-ink hover:bg-cream transition shrink-0"
+      title="{{ "Cancel"|t }}">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </a>
+    <div class="flex-1 min-w-0">
+      <div class="text-[10px] font-semibold tracking-widest uppercase font-mono text-ink-3">
+        {{ "Recipes"|t }} <span class="mx-1">/</span>
+        {% if is_new %}{{ "New"|t }}{% else %}{{ "Edit"|t }}{% endif %}
       </div>
+      <h1 class="font-serif text-2xl md:text-3xl leading-tight tracking-tight text-ink mt-0.5">
+        {% if is_new %}{{ "Create a recipe"|t }}{% else %}{{ "Edit recipe"|t }}{% endif %}
+      </h1>
     </div>
+    <button form="recipe-form" type="submit"
+      class="inline-flex items-center gap-1.5 h-10 px-4 bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold rounded-2xl shadow-sm transition">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+      </svg>
+      <span class="hidden sm:inline">{{ "Save"|t }}</span>
+    </button>
+  </header>
 
-    <!-- Basic Information -->
-    <div class="mb-8">
-      <h2 class="text-xl font-bold font-serif mb-4">{{ "Basic Information"|t }}</h2>
+  <form id="recipe-form" action="/recipes/{{ id }}/edit" method="post" autocomplete="off"
+    ts-req="" ts-swap="skip" class="space-y-5 md:space-y-6">
 
-      <div class="mb-4">
-        <label for="name" class="block text-sm font-semibold text-ink-2 mb-2">{{ "Recipe Name"|t }} *</label>
-        <input type="text" id="name" name="name" minlength="3" maxlength="100" value="{{ form.name }}" placeholder="{{ "e.g., Thai Red Curry with Chicken"|t }}"
-          class="w-full px-4 py-3 border border-line rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          required />
-      </div>
-
-      <div class="mb-4">
-        <label for="origin" class="block text-sm font-semibold text-ink-2 mb-2">{{ "Origin"|t }}</label>
-        <input type="url" id="origin" name="origin" minlength="10" maxlength="255" value="{{ form.origin }}" placeholder="https://www.example.com/my-recipe-path"
-          class="w-full px-4 py-3 border border-line rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
-      </div>
-
-      <div class="mb-4">
-        <label for="description" class="block text-sm font-semibold text-ink-2 mb-2">{{ "Description"|t }} *</label>
-        <textarea id="description" name="description" minlength="3" maxlength="2000" rows="3" placeholder="{{ "Brief description of the dish"|t }}"
-          class="w-full px-4 py-3 border border-line rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          required>{{ form.description }}</textarea>
-      </div>
-
-      <div class="grid md:grid-cols-3 gap-4">
+    {# ── Basics ────────────────────────────────────── #}
+    <section>
+      {% call section_header("Basics") %}{% endcall %}
+      <div class="bg-paper border border-line-2 rounded-2xl p-4 md:p-5 space-y-4">
         <div>
-          <label for="household_size" class="block text-sm font-semibold text-ink-2 mb-2">{{ "Household Size"|t }}
-            *</label>
-          <input type="number" id="household_size" name="household_size" min="1" value={{ form.household_size }} placeholder="4"
-            class="w-full px-4 py-3 border border-line rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            required />
+          <label for="name" class="block text-xs font-semibold text-ink-2 mb-1.5">
+            {{ "Recipe name"|t }} <span class="text-primary-500">*</span>
+          </label>
+          <input id="name" name="name" type="text" minlength="3" maxlength="100"
+            value="{{ form.name }}" placeholder="{{ "e.g., Thai Red Curry with Chicken"|t }}"
+            class="w-full px-3.5 py-2.5 bg-cream border border-line rounded-xl text-[15px] text-ink
+              focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition" required/>
         </div>
         <div>
-          <label for="prep_time" class="block text-sm font-semibold text-ink-2 mb-2">{{ "Prep Time (minutes)"|t }}
-            *</label>
-          <input type="number" id="prep_time" name="prep_time" min="0" value={{ form.prep_time }} placeholder="30"
-            class="w-full px-4 py-3 border border-line rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            required />
+          <label for="origin" class="block text-xs font-semibold text-ink-2 mb-1.5">{{ "Origin"|t }}</label>
+          <input id="origin" name="origin" type="url" minlength="10" maxlength="255"
+            value="{{ form.origin }}" placeholder="https://example.com/my-recipe"
+            class="w-full px-3.5 py-2.5 bg-cream border border-line rounded-xl text-[15px] text-ink
+              focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition"/>
         </div>
         <div>
-          <label for="cook_time" class="block text-sm font-semibold text-ink-2 mb-2">{{ "Cook Time (minutes)"|t }}
-            *</label>
-          <input type="number" id="cook_time" name="cook_time" min="0" value="{{ form.cook_time }}" placeholder="45"
-            class="w-full px-4 py-3 border border-line rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            required />
+          <label for="description" class="block text-xs font-semibold text-ink-2 mb-1.5">
+            {{ "Description"|t }} <span class="text-primary-500">*</span>
+          </label>
+          <textarea id="description" name="description" minlength="3" maxlength="2000" rows="3"
+            placeholder="{{ "Brief description of the dish"|t }}"
+            class="w-full px-3.5 py-2.5 bg-cream border border-line rounded-xl text-[15px] text-ink leading-relaxed
+              focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition resize-none" required>{{ form.description }}</textarea>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- Ingredients -->
-    <div class="mb-8">
-      <h2 class="text-xl font-bold font-serif mb-4">{{ "Ingredients"|t }}</h2>
-      <div id="ingredients" class="space-y-3">
-        <input type="hidden" name="ingredients_quantity" value="0" />
-        <input type="hidden" name="ingredients_unit" />
-        <input type="hidden" name="ingredients_category" />
-        <input type="hidden" name="ingredients_name" />
-        <input type="hidden" name="ingredients_quantity" value="0" />
-        <input type="hidden" name="ingredients_unit" />
-        <input type="hidden" name="ingredients_category" />
-        <input type="hidden" name="ingredients_name" />
-        {% if form.ingredients.is_empty() %}
-        <div class="flex flex-col sm:flex-row gap-3 ingredient-item">
-          <div class="flex gap-2 sm:gap-3 flex-1 sm:contents">
-            <input type="number" name="ingredients_quantity" value="1" min="1" max="65535" placeholder="2" class="w-16 sm:w-24 px-2 sm:px-4 py-2 border border-line rounded-xl text-sm sm:text-base" required />
-            <select name="ingredients_unit" class="w-16 sm:w-16 px-1 sm:px-4 py-2 border border-line rounded-xl text-sm sm:text-base">
-              <option value=""></option>
-              {% for unit in IngredientUnit::VARIANTS %}
-              <option value="{{ unit }}">{{ unit.to_string().to_lowercase() }}</option>
-              {% endfor %}
-            </select>
-            <input type="text" name="ingredients_name" minlength="1" maxlength="30" placeholder="Jasmine rice" class="flex-1 min-w-0 px-2 sm:px-4 py-2 border border-line rounded-xl text-sm sm:text-base" required />
+    {# ── Meal type chips ──────────────────────────── #}
+    <section>
+      {% call section_header("Meal type") %}{% endcall %}
+      <div class="grid grid-cols-3 md:grid-cols-6 gap-2">
+        <label class="block cursor-pointer">
+          <input type="radio" name="recipe_type" value="{{ RecipeType::Appetizer }}" class="peer sr-only"
+            {% if form.recipe_type == RecipeType::Appetizer %}checked{% endif %} required/>
+          <div class="flex flex-col items-center gap-1 py-3 px-2 bg-paper border-2 border-line-2 rounded-xl transition
+            peer-checked:bg-meal-entree-soft peer-checked:border-meal-entree peer-checked:text-meal-entree-ink">
+            <span class="text-2xl leading-none">🥗</span>
+            <span class="text-[11px] font-semibold leading-tight text-center">{{ "Appetizer"|t }}</span>
           </div>
-          <div class="flex gap-2 sm:gap-3 flex-1 sm:contents">
-            <select name="ingredients_category" class="w-52 px-1 sm:px-4 py-2 border border-line rounded-xl text-sm sm:text-base">
-              <option value=""></option>
-              {% for category in IngredientCategory::VARIANTS %}
-              <option value="{{ category }}">{{ category.as_ref()|t }}</option>
-              {% endfor %}
-            </select>
-            <button ts-trigger="click" ts-action="remove 'parent .ingredient-item'" type="button" class="px-4 py-2 bg-red-100 text-red-600 rounded-xl hover:bg-red-200">✕</button>
+        </label>
+        <label class="block cursor-pointer">
+          <input type="radio" name="recipe_type" value="{{ RecipeType::MainCourse }}" class="peer sr-only"
+            {% if form.recipe_type == RecipeType::MainCourse %}checked{% endif %} required/>
+          <div class="flex flex-col items-center gap-1 py-3 px-2 bg-paper border-2 border-line-2 rounded-xl transition
+            peer-checked:bg-meal-main-soft peer-checked:border-meal-main peer-checked:text-meal-main-ink">
+            <span class="text-2xl leading-none">🍛</span>
+            <span class="text-[11px] font-semibold leading-tight text-center">{{ "Main Course"|t }}</span>
+          </div>
+        </label>
+        <label class="block cursor-pointer">
+          <input type="radio" name="recipe_type" value="{{ RecipeType::Accompaniment }}" class="peer sr-only"
+            {% if form.recipe_type == RecipeType::Accompaniment %}checked{% endif %} required/>
+          <div class="flex flex-col items-center gap-1 py-3 px-2 bg-paper border-2 border-line-2 rounded-xl transition
+            peer-checked:bg-meal-side-soft peer-checked:border-meal-side peer-checked:text-meal-side-ink">
+            <span class="text-2xl leading-none">🥖</span>
+            <span class="text-[11px] font-semibold leading-tight text-center">
+              <span class="md:hidden">{{ "Side"|t }}</span>
+              <span class="hidden md:inline">{{ "Accompaniment"|t }}</span>
+            </span>
+          </div>
+        </label>
+        <label class="block cursor-pointer">
+          <input type="radio" name="recipe_type" value="{{ RecipeType::Dessert }}" class="peer sr-only"
+            {% if form.recipe_type == RecipeType::Dessert %}checked{% endif %} required/>
+          <div class="flex flex-col items-center gap-1 py-3 px-2 bg-paper border-2 border-line-2 rounded-xl transition
+            peer-checked:bg-meal-dessert-soft peer-checked:border-meal-dessert peer-checked:text-meal-dessert-ink">
+            <span class="text-2xl leading-none">🍰</span>
+            <span class="text-[11px] font-semibold leading-tight text-center">{{ "Dessert"|t }}</span>
+          </div>
+        </label>
+        <label class="block cursor-pointer">
+          <input type="radio" name="recipe_type" value="{{ RecipeType::Beverage }}" class="peer sr-only"
+            {% if form.recipe_type == RecipeType::Beverage %}checked{% endif %} required/>
+          <div class="flex flex-col items-center gap-1 py-3 px-2 bg-paper border-2 border-line-2 rounded-xl transition
+            peer-checked:bg-cyan-100 peer-checked:border-cyan-500 peer-checked:text-cyan-900">
+            <span class="text-2xl leading-none">🥤</span>
+            <span class="text-[11px] font-semibold leading-tight text-center">{{ "Beverage"|t }}</span>
+          </div>
+        </label>
+        <label class="block cursor-pointer">
+          <input type="radio" name="recipe_type" value="{{ RecipeType::Condiment }}" class="peer sr-only"
+            {% if form.recipe_type == RecipeType::Condiment %}checked{% endif %} required/>
+          <div class="flex flex-col items-center gap-1 py-3 px-2 bg-paper border-2 border-line-2 rounded-xl transition
+            peer-checked:bg-amber-100 peer-checked:border-amber-500 peer-checked:text-amber-900">
+            <span class="text-2xl leading-none">🥫</span>
+            <span class="text-[11px] font-semibold leading-tight text-center">{{ "Condiment"|t }}</span>
+          </div>
+        </label>
+      </div>
+    </section>
+
+    {# ── Time & servings ──────────────────────────── #}
+    <section>
+      {% call section_header("Time & servings") %}{% endcall %}
+      <div class="bg-paper border border-line-2 rounded-2xl p-4 md:p-5 grid grid-cols-3 gap-3 md:gap-4">
+        <div>
+          <label for="prep_time" class="block text-xs font-semibold text-ink-2 mb-1.5">{{ "Prep"|t }}</label>
+          <div class="flex items-center gap-1.5">
+            <input id="prep_time" name="prep_time" type="number" min="0" value="{{ form.prep_time }}" placeholder="30"
+              class="w-full px-3 py-2.5 bg-cream border border-line rounded-xl text-[15px] text-ink text-center
+                focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition" required/>
+            <span class="text-xs font-mono uppercase tracking-wider text-ink-3 shrink-0">{{ "min"|t }}</span>
           </div>
         </div>
-        {% endif %}
-        {% for ingredient in form.ingredients %}
-        <div class="flex flex-col sm:flex-row gap-3 ingredient-item">
-          <div class="flex gap-2 sm:gap-3 flex-1 sm:contents">
-            <input type="number" name="ingredients_quantity" value="{{ ingredient.quantity }}" min="1" max="65535" class="w-16 sm:w-24 px-2 sm:px-4 py-2 border border-line rounded-xl text-sm sm:text-base" required />
-            <select name="ingredients_unit" class="w-16 sm:w-16 px-1 sm:px-4 py-2 border border-line rounded-xl text-sm sm:text-base">
-              <option value=""{% if ingredient.unit.is_none() %} selected{% endif %}></option>
-              {% for unit in IngredientUnit::VARIANTS %}
-              <option value="{{ unit }}"{% if ingredient.unit.as_ref().as_ref() == Some(unit) %} selected{% endif %}>{{ unit.to_string().to_lowercase() }}</option>
-              {% endfor %}
-            </select>
-            <input type="text" name="ingredients_name" value="{{ ingredient.name }}" minlength="1" maxlength="30" class="flex-1 min-w-0 px-2 sm:px-4 py-2 border border-line rounded-xl text-sm sm:text-base" required />
-          </div>
-          <div class="flex gap-2 sm:gap-3 flex-1 sm:contents">
-            <select name="ingredients_category" class="w-52 px-1 sm:px-4 py-2 border border-line rounded-xl text-sm sm:text-base">
-              <option value=""{% if ingredient.category.is_none() %} selected{% endif %}></option>
-              {% for category in IngredientCategory::VARIANTS %}
-              <option value="{{ category }}"{% if ingredient.category.as_ref().as_ref() == Some(category) %} selected{% endif %}>{{ category.as_ref()|t }}</option>
-              {% endfor %}
-            </select>
-            <button ts-trigger="click" ts-action="remove 'parent .ingredient-item'" type="button" class="px-4 py-2 bg-red-100 text-red-600 rounded-xl hover:bg-red-200">✕</button>
+        <div>
+          <label for="cook_time" class="block text-xs font-semibold text-ink-2 mb-1.5">{{ "Cook"|t }}</label>
+          <div class="flex items-center gap-1.5">
+            <input id="cook_time" name="cook_time" type="number" min="0" value="{{ form.cook_time }}" placeholder="45"
+              class="w-full px-3 py-2.5 bg-cream border border-line rounded-xl text-[15px] text-ink text-center
+                focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition" required/>
+            <span class="text-xs font-mono uppercase tracking-wider text-ink-3 shrink-0">{{ "min"|t }}</span>
           </div>
         </div>
+        <div>
+          <label for="household_size" class="block text-xs font-semibold text-ink-2 mb-1.5">{{ "Serves"|t }}</label>
+          <input id="household_size" name="household_size" type="number" min="1" value="{{ form.household_size }}" placeholder="4"
+            class="w-full px-3 py-2.5 bg-cream border border-line rounded-xl text-[15px] text-ink text-center
+              focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition" required/>
+        </div>
+      </div>
+    </section>
+
+    {# ── Dietary tags ──────────────────────────── #}
+    <section>
+      {% call section_header("Dietary tags") %}{% endcall %}
+      <div class="flex flex-wrap gap-1.5">
+        {% for variant in DietaryRestriction::VARIANTS %}
+        {% let is_active = variant.exists_in(form.dietary_restrictions) %}
+        <label class="cursor-pointer">
+          <input type="checkbox" name="dietary_restrictions" value="{{ variant }}" class="peer sr-only"
+            {% if is_active %}checked{% endif %}/>
+          <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition
+            bg-paper border-line-2 text-ink hover:bg-cream
+            peer-checked:bg-herb-500 peer-checked:border-herb-500 peer-checked:text-white">
+            {{ variant.as_ref()|t }}
+          </span>
+        </label>
         {% endfor %}
       </div>
-      <button ts-req="/recipes/_edit/ingredient-row" ts-target="#ingredients" ts-swap="append" type="button"
-        class="mt-3 px-4 py-2 bg-primary-100 text-primary-600 font-semibold rounded-xl hover:bg-primary-100">
-        + {{ "Add Ingredient"|t }}
-      </button>
-    </div>
+    </section>
 
-    <!-- Instructions -->
-    <div class="mb-8">
-      <h2 class="text-xl font-bold font-serif mb-4">{{ "Instructions"|t }}</h2>
-      <div id="instructions" class="space-y-3">
-        <input type="hidden" name="instructions_description"></textarea>
-        <input type="hidden" name="instructions_time_next" value="0"></textarea>
-        <input type="hidden" name="instructions_description"></textarea>
-        <input type="hidden" name="instructions_time_next" value="0"></textarea>
+    {# ── Ingredients ──────────────────────────── #}
+    <section>
+      <div class="text-[10px] font-semibold tracking-widest uppercase font-mono text-ink-3 mb-2 mt-1 flex items-baseline gap-2">
+        <span>{{ "Ingredients"|t }}</span>
+        <span class="font-sans normal-case tracking-normal text-ink-3 font-normal text-[11px]">
+          · {{ form.ingredients.len() }} {{ "items"|t }}
+        </span>
+      </div>
+      <div class="bg-paper border border-line-2 rounded-2xl p-3 md:p-4">
+        <div id="ingredients" class="space-y-2.5">
+          {# Two dummy hidden inputs — handler does .skip(2) to align parallel arrays #}
+          <input type="hidden" name="ingredients_quantity" value="0"/>
+          <input type="hidden" name="ingredients_unit"/>
+          <input type="hidden" name="ingredients_category"/>
+          <input type="hidden" name="ingredients_name"/>
+          <input type="hidden" name="ingredients_quantity" value="0"/>
+          <input type="hidden" name="ingredients_unit"/>
+          <input type="hidden" name="ingredients_category"/>
+          <input type="hidden" name="ingredients_name"/>
+          {% if form.ingredients.is_empty() %}
+          <div class="flex flex-col sm:flex-row gap-2 sm:gap-2.5 ingredient-item">
+            <div class="flex gap-2 flex-1 min-w-0">
+              <input type="number" name="ingredients_quantity" value="1" min="1" max="65535" placeholder="2"
+                class="w-16 px-2 py-2 bg-cream border border-line rounded-lg text-sm text-ink text-center font-mono
+                  focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition" required/>
+              <select name="ingredients_unit"
+                class="w-20 px-2 py-2 bg-cream border border-line rounded-lg text-sm text-ink
+                  focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition">
+                <option value=""></option>
+                {% for unit in IngredientUnit::VARIANTS %}
+                <option value="{{ unit }}">{{ unit.to_string().to_lowercase() }}</option>
+                {% endfor %}
+              </select>
+              <input type="text" name="ingredients_name" minlength="1" maxlength="30" placeholder="{{ "Jasmine rice"|t }}"
+                class="flex-1 min-w-0 px-3 py-2 bg-cream border border-line rounded-lg text-sm text-ink
+                  focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition" required/>
+            </div>
+            <div class="flex gap-2">
+              <select name="ingredients_category"
+                class="flex-1 sm:w-44 px-2 py-2 bg-cream border border-line rounded-lg text-sm text-ink
+                  focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition">
+                <option value=""></option>
+                {% for category in IngredientCategory::VARIANTS %}
+                <option value="{{ category }}">{{ category.as_ref()|t }}</option>
+                {% endfor %}
+              </select>
+              <button ts-trigger="click" ts-action="remove 'parent .ingredient-item'" type="button" title="{{ "Remove"|t }}"
+                class="shrink-0 w-9 h-9 flex items-center justify-center rounded-lg text-ink-3 hover:bg-red-50 hover:text-red-600 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          {% endif %}
+          {% for ingredient in form.ingredients %}
+          <div class="flex flex-col sm:flex-row gap-2 sm:gap-2.5 ingredient-item">
+            <div class="flex gap-2 flex-1 min-w-0">
+              <input type="number" name="ingredients_quantity" value="{{ ingredient.quantity }}" min="1" max="65535"
+                class="w-16 px-2 py-2 bg-cream border border-line rounded-lg text-sm text-ink text-center font-mono
+                  focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition" required/>
+              <select name="ingredients_unit"
+                class="w-20 px-2 py-2 bg-cream border border-line rounded-lg text-sm text-ink
+                  focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition">
+                <option value=""{% if ingredient.unit.is_none() %} selected{% endif %}></option>
+                {% for unit in IngredientUnit::VARIANTS %}
+                <option value="{{ unit }}"{% if ingredient.unit.as_ref().as_ref() == Some(unit) %} selected{% endif %}>{{ unit.to_string().to_lowercase() }}</option>
+                {% endfor %}
+              </select>
+              <input type="text" name="ingredients_name" value="{{ ingredient.name }}" minlength="1" maxlength="30"
+                class="flex-1 min-w-0 px-3 py-2 bg-cream border border-line rounded-lg text-sm text-ink
+                  focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition" required/>
+            </div>
+            <div class="flex gap-2">
+              <select name="ingredients_category"
+                class="flex-1 sm:w-44 px-2 py-2 bg-cream border border-line rounded-lg text-sm text-ink
+                  focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition">
+                <option value=""{% if ingredient.category.is_none() %} selected{% endif %}></option>
+                {% for category in IngredientCategory::VARIANTS %}
+                <option value="{{ category }}"{% if ingredient.category.as_ref().as_ref() == Some(category) %} selected{% endif %}>{{ category.as_ref()|t }}</option>
+                {% endfor %}
+              </select>
+              <button ts-trigger="click" ts-action="remove 'parent .ingredient-item'" type="button" title="{{ "Remove"|t }}"
+                class="shrink-0 w-9 h-9 flex items-center justify-center rounded-lg text-ink-3 hover:bg-red-50 hover:text-red-600 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        <button ts-req="/recipes/_edit/ingredient-row" ts-target="#ingredients" ts-swap="append" type="button"
+          class="w-full mt-3 px-3 py-2.5 rounded-xl border border-dashed border-line text-sm font-semibold text-ink-2 hover:bg-cream hover:border-line transition inline-flex items-center justify-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14m-7-7h14"/>
+          </svg>
+          {{ "Add Ingredient"|t }}
+        </button>
+      </div>
+    </section>
+
+    {# ── Steps ──────────────────────────── #}
+    <section>
+      <div class="text-[10px] font-semibold tracking-widest uppercase font-mono text-ink-3 mb-2 mt-1 flex items-baseline gap-2">
+        <span>{{ "Steps"|t }}</span>
+        <span class="font-sans normal-case tracking-normal text-ink-3 font-normal text-[11px]">
+          · {{ form.instructions.len() }} {{ "steps"|t }}
+        </span>
+      </div>
+      <div id="instructions" class="space-y-2">
+        {# Two dummy hidden inputs — handler does .skip(2) to align parallel arrays #}
+        <input type="hidden" name="instructions_description"/>
+        <input type="hidden" name="instructions_time_next" value="0"/>
+        <input type="hidden" name="instructions_description"/>
+        <input type="hidden" name="instructions_time_next" value="0"/>
         {% if form.instructions.is_empty() %}
-        <div class="flex flex-col sm:flex-row gap-3 instruction-item">
-          <textarea name="instructions_description" rows="2" placeholder="{{ "First step..."|t }}"
-            class="flex-1 min-w-0 px-2 sm:px-4 py-2 border border-line rounded-xl text-sm sm:text-base" minlength="1" required></textarea>
-          <div class="flex gap-3">
-            <input type="number" name="instructions_time_next" min="0" value="0" class="w-24 px-2 sm:px-4 py-2 border border-line rounded-xl text-sm sm:text-base" required />
-            <button ts-trigger="click" ts-action="remove 'parent .instruction-item'" type="button" class="shrink-0 px-4 py-2 bg-red-100 text-red-600 rounded-xl hover:bg-red-200">✕</button>
+        <div class="bg-paper border border-line-2 rounded-2xl p-3 md:p-4 flex gap-3 instruction-item">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center font-serif font-semibold bg-cream-2 text-ink shrink-0">
+            1
+          </div>
+          <div class="flex-1 min-w-0 space-y-2">
+            <textarea name="instructions_description" rows="2" placeholder="{{ "First step..."|t }}" minlength="1"
+              class="w-full px-3 py-2 bg-cream border border-line rounded-lg text-sm text-ink leading-relaxed
+                focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition resize-none" required></textarea>
+            <div class="flex items-center gap-2">
+              <svg class="w-3.5 h-3.5 text-ink-3 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 8v4l3 3"/>
+              </svg>
+              <input type="number" name="instructions_time_next" min="0" value="0"
+                class="w-16 px-2 py-1.5 bg-cream border border-line rounded-lg text-sm text-ink text-center font-mono
+                  focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition" required/>
+              <span class="text-xs font-mono uppercase tracking-wider text-ink-3">{{ "min"|t }}</span>
+              <div class="flex-1"></div>
+              <button ts-trigger="click" ts-action="remove 'parent .instruction-item'" type="button" title="{{ "Remove"|t }}"
+                class="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-ink-3 hover:bg-red-50 hover:text-red-600 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
         {% endif %}
         {% for instruction in form.instructions %}
-        <div class="flex flex-col sm:flex-row gap-3 instruction-item">
-          <textarea name="instructions_description" rows="2"
-              class="flex-1 min-w-0 px-2 sm:px-4 py-2 border border-line rounded-xl text-sm sm:text-base" minlength="1" required>{{ instruction.description }}</textarea>
-          <div class="flex gap-3">
-            <input type="number" name="instructions_time_next" min="0" value="{{ instruction.time_next }}" class="w-24 px-2 sm:px-4 py-2 border border-line rounded-xl text-sm sm:text-base" required />
-            <button ts-trigger="click" ts-action="remove 'parent .instruction-item'" type="button" class="shrink-0 px-4 py-2 bg-red-100 text-red-600 rounded-xl hover:bg-red-200">✕</button>
+        <div class="bg-paper border border-line-2 rounded-2xl p-3 md:p-4 flex gap-3 instruction-item">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center font-serif font-semibold shrink-0
+            {% if loop.first %}bg-primary-500 text-white{% else %}bg-cream-2 text-ink{% endif %}">
+            {{ loop.index }}
+          </div>
+          <div class="flex-1 min-w-0 space-y-2">
+            <textarea name="instructions_description" rows="2" minlength="1"
+              class="w-full px-3 py-2 bg-cream border border-line rounded-lg text-sm text-ink leading-relaxed
+                focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition resize-none" required>{{ instruction.description }}</textarea>
+            <div class="flex items-center gap-2">
+              <svg class="w-3.5 h-3.5 text-ink-3 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 8v4l3 3"/>
+              </svg>
+              <input type="number" name="instructions_time_next" min="0" value="{{ instruction.time_next }}"
+                class="w-16 px-2 py-1.5 bg-cream border border-line rounded-lg text-sm text-ink text-center font-mono
+                  focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition" required/>
+              <span class="text-xs font-mono uppercase tracking-wider text-ink-3">{{ "min"|t }}</span>
+              <div class="flex-1"></div>
+              <button ts-trigger="click" ts-action="remove 'parent .instruction-item'" type="button" title="{{ "Remove"|t }}"
+                class="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-ink-3 hover:bg-red-50 hover:text-red-600 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
         {% endfor %}
       </div>
       <button ts-req="/recipes/_edit/instruction-row" ts-target="#instructions" ts-swap="append" type="button"
-        class="mt-3 px-4 py-2 bg-primary-100 text-primary-600 font-semibold rounded-xl hover:bg-primary-100">
-        + {{ "Add Step"|t }}
+        class="w-full mt-2 px-3 py-3 rounded-2xl border border-dashed border-line text-sm font-semibold text-ink-2 hover:bg-cream hover:border-line transition inline-flex items-center justify-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14m-7-7h14"/>
+        </svg>
+        {{ "Add Step"|t }}
       </button>
-    </div>
+    </section>
 
-    <!-- Dietary & Preferences -->
-    <div class="mb-8">
-      <h2 class="text-xl font-bold font-serif mb-4">{{ "Dietary Restrictions & Preferences"|t }}</h2>
-
-      <div class="mb-4">
-        <label class="block text-sm font-semibold text-ink-2 mb-3">{{ "Dietary Restrictions"|t }}</label>
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {% for variant in DietaryRestriction::VARIANTS %}
-          <label class="flex items-center">
-            <input type="checkbox" name="dietary_restrictions" value="{{ variant }}"{% if variant.exists_in(form.dietary_restrictions) %}checked{% endif %}
-              class="rounded border-line text-primary-500 focus:ring-primary-500" />
-            <span class="ml-2">{{ variant.as_ref()|t }}</span>
-          </label>
-          {% endfor %}
+    {# ── Main course options ──────────────────────────── #}
+    <section>
+      {% call section_header("Main course options") %}{% endcall %}
+      <label class="block bg-meal-main-soft/40 border border-meal-main-soft rounded-2xl p-4 md:p-5 cursor-pointer">
+        <div class="flex items-start gap-3">
+          <input type="checkbox" name="accepts_accompaniment"
+            class="mt-0.5 w-4 h-4 rounded border-line text-meal-main focus:ring-meal-main"
+            {% if form.accepts_accompaniment == "on" %}checked{% endif %}/>
+          <div class="flex-1">
+            <div class="font-semibold text-sm text-meal-main-ink">
+              {{ "This main course accepts accompaniments"|t }}
+            </div>
+            <p class="text-xs text-ink-2 mt-1 leading-relaxed">
+              {{ "If checked, the algorithm may pair this main course with sides like rice, pasta, bread, or vegetables."|t }}
+            </p>
+          </div>
         </div>
-      </div>
+      </label>
+    </section>
 
-    </div>
-
-    <!-- Main Course Specific Options -->
-    <div id="main-course-options" class="mb-8 p-6 bg-orange-50 border border-orange-200 rounded-xl">
-      <h2 class="text-xl font-bold font-serif mb-4">{{ "Main Course Options"|t }}</h2>
-
-      <div class="mb-4">
-        <label class="flex items-center">
-          <input type="checkbox" name="accepts_accompaniment"{% if form.accepts_accompaniment == "on" %} checked{% endif %}
-            class="rounded border-line text-orange-600 focus:ring-orange-500" />
-          <span class="ml-2 font-semibold">{{ "This main course accepts accompaniments"|t }}</span>
+    {# ── Advance preparation ──────────────────────────── #}
+    <section>
+      {% call section_header("Advance preparation") %}{% endcall %}
+      <div class="bg-paper border border-line-2 rounded-2xl p-4 md:p-5">
+        <label for="advance_prep" class="block text-xs font-semibold text-ink-2 mb-1.5">
+          {{ "Advance Prep Instructions (optional)"|t }}
         </label>
-        <p class="text-sm text-ink-2 mt-2">{{ "If checked, the algorithm may pair this main course with sides like rice, pasta, bread, or vegetables."|t }}</p>
+        <textarea id="advance_prep" name="advance_prep" rows="3"
+          placeholder="{{ "e.g., Marinate chicken overnight, or prepare dough 2 hours before cooking"|t }}"
+          class="w-full px-3.5 py-2.5 bg-cream border border-line rounded-xl text-[15px] text-ink leading-relaxed
+            focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition resize-none">{{ form.advance_prep }}</textarea>
+        <p class="text-xs text-ink-3 mt-2 leading-relaxed">
+          {{ "If specified, users will receive morning reminders (8 AM) to prepare"|t }}
+        </p>
       </div>
-    </div>
+    </section>
 
-    <!-- Advance Preparation -->
-    <div class="mb-8">
-      <h2 class="text-xl font-bold font-serif mb-4">{{ "Advance Preparation"|t }}</h2>
-      <div class="mb-4">
-        <label for="advance_prep" class="block text-sm font-semibold text-ink-2 mb-2">{{ "Advance Prep Instructions (optional)"|t }}</label>
-        <textarea id="advance_prep" name="advance_prep" rows="3" placeholder="{{ "e.g., Marinate chicken overnight, or prepare dough 2 hours before cooking"|t }}"
-            class="w-full px-4 py-3 border border-line rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent">{{ form.advance_prep }}</textarea>
-        <p class="text-sm text-ink-3 mt-1">{{ "If specified, users will receive morning reminders (8 AM) to prepare"|t }}</p>
-      </div>
-    </div>
-
-    <!-- Submit -->
-    <div class="flex flex-col md:flex-row gap-4">
-      <button type="submit"
-        class="flex-1 bg-primary-500 text-white font-semibold py-3 rounded-xl hover:bg-primary-600 transition">
-        {{ "Save Recipe"|t }}
-      </button>
-      <a href="/settings/recipes"
-        class="flex-1 bg-cream-2 text-ink-2 font-semibold py-3 rounded-xl hover:bg-cream-2 transition text-center">
-
-        {{ "Back to My Recipes"|t }}
-      </a>
-    </div>
   </form>
+</div>
+
+{# ── Floating save bar ── #}
+<div class="fixed left-0 right-0 bottom-16 md:bottom-0 z-40 px-4 pb-3 pt-4
+  bg-linear-to-t from-cream via-cream/95 to-transparent pointer-events-none">
+  <div class="max-w-3xl mx-auto flex gap-2 pointer-events-auto">
+    <a href="/recipes?mine=true"
+      class="h-12 px-5 inline-flex items-center justify-center rounded-2xl bg-paper border border-line-2 text-ink text-sm font-semibold hover:bg-cream transition">
+      {{ "Cancel"|t }}
+    </a>
+    <button form="recipe-form" type="submit"
+      class="flex-1 h-12 inline-flex items-center justify-center gap-1.5 rounded-2xl bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold shadow-md transition">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+      </svg>
+      {{ "Save Recipe"|t }}
+    </button>
+  </div>
 </div>
 {% endblock %}

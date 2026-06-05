@@ -1,24 +1,35 @@
-<div class="flex flex-col sm:flex-row gap-3 ingredient-item">
-  <div class="flex gap-2 sm:gap-3 flex-1 sm:contents">
-    <input type="number" name="ingredients_quantity" min="1" max="65535" value="1"
-      class="w-16 sm:w-24 px-2 sm:px-4 py-2 border border-line rounded-xl text-sm sm:text-base" required />
-    <select name="ingredients_unit" class="w-16 sm:w-16 px-1 sm:px-4 py-2 border border-line rounded-xl text-sm sm:text-base">
+<div class="flex flex-col sm:flex-row gap-2 sm:gap-2.5 ingredient-item">
+  <div class="flex gap-2 flex-1 min-w-0">
+    <input type="number" name="ingredients_quantity" min="1" max="65535" value="1" placeholder="2"
+      class="w-16 px-2 py-2 bg-cream border border-line rounded-lg text-sm text-ink text-center font-mono
+        focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition" required/>
+    <select name="ingredients_unit"
+      class="w-20 px-2 py-2 bg-cream border border-line rounded-lg text-sm text-ink
+        focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition">
       <option value=""></option>
       {% for unit in IngredientUnit::VARIANTS %}
       <option value="{{ unit }}">{{ unit.to_string().to_lowercase() }}</option>
       {% endfor %}
     </select>
-    <input type="text" name="ingredients_name" minlength="1" maxlength="30"
-      class="flex-1 min-w-0 px-2 sm:px-4 py-2 border border-line rounded-xl text-sm sm:text-base" required />
+    <input type="text" name="ingredients_name" minlength="1" maxlength="30" placeholder="{{ "Jasmine rice"|t }}"
+      class="flex-1 min-w-0 px-3 py-2 bg-cream border border-line rounded-lg text-sm text-ink
+        focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition" required/>
   </div>
-  <div class="flex gap-2 sm:gap-3 flex-1 sm:contents">
-    <select name="ingredients_category" class="w-52 px-1 sm:px-4 py-2 border border-line rounded-xl text-sm sm:text-base">
+  <div class="flex gap-2">
+    <select name="ingredients_category"
+      class="flex-1 sm:w-44 px-2 py-2 bg-cream border border-line rounded-lg text-sm text-ink
+        focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition">
       <option value=""></option>
       {% for category in IngredientCategory::VARIANTS %}
       <option value="{{ category }}">{{ category.as_ref()|t }}</option>
       {% endfor %}
     </select>
-    <button ts-trigger="click" ts-action="remove 'parent .ingredient-item'" type="button"
-      class="px-4 py-2 bg-red-100 text-red-600 rounded-xl hover:bg-red-200">✕</button>
+    <button ts-trigger="click" ts-action="remove 'parent .ingredient-item'" type="button" title="{{ "Remove"|t }}"
+      class="shrink-0 w-9 h-9 flex items-center justify-center rounded-lg text-ink-3 hover:bg-red-50 hover:text-red-600 transition">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+      </svg>
+    </button>
   </div>
 </div>

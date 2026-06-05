@@ -6,6 +6,12 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
     use axum::routing::{get, post};
     axum::Router::new()
         .route("/recipes", get(routes::index::page))
+        .route("/recipes/create", post(routes::index::create))
+        .route("/recipes/share-all", post(routes::index::share_all))
+        .route(
+            "/recipes/make-all-private",
+            post(routes::index::make_all_private),
+        )
         .route(
             "/recipes/import",
             get(routes::import::page).post(routes::import::action),
