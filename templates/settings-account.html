@@ -9,18 +9,20 @@
     {{ "Sessions"|t }}
   </div>
   <div class="bg-paper rounded-2xl border border-line-2 shadow-sm overflow-hidden">
-    <div class="flex items-center gap-4 px-5 py-4">
-      <div class="w-10 h-10 rounded-xl bg-cream-2 text-ink-2 flex items-center justify-center shrink-0">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 20H5a2 2 0 01-2-2V6a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
-        </svg>
-      </div>
-      <div class="flex-1 min-w-0">
-        <div class="text-sm font-semibold text-ink">{{ "Log out of all devices"|t }}</div>
-        <div class="text-[12px] text-ink-3 mt-0.5">{{ "End every session signed in to this account"|t }}</div>
+    <div class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 px-4 py-4 sm:px-5">
+      <div class="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+        <div class="w-10 h-10 rounded-xl bg-cream-2 text-ink-2 flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 20H5a2 2 0 01-2-2V6a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
+          </svg>
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="text-sm font-semibold text-ink">{{ "Log out of all devices"|t }}</div>
+          <div class="text-[12px] text-ink-3 mt-0.5">{{ "End every session signed in to this account"|t }}</div>
+        </div>
       </div>
       <a href="/logout"
-        class="inline-flex items-center justify-center px-4 h-10 bg-ink text-cream font-semibold rounded-xl text-sm hover:opacity-90 shadow-sm transition shrink-0">
+        class="inline-flex items-center justify-center w-full sm:w-auto px-4 h-10 bg-ink text-cream font-semibold rounded-xl text-sm hover:opacity-90 shadow-sm transition shrink-0">
         {{ "Log out"|t }}
       </a>
     </div>
