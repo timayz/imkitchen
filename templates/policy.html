@@ -1,262 +1,283 @@
 {% extends "_public.html" %}
 
-{% block title %} {{ "Privacy Policy - imkitchen"|t }} {% endblock %}
+{% block title %} {{ "Privacy policy — imkitchen"|t }} {% endblock %}
 
-<!-- Main Content -->
 {% block content %}
-<!-- Main Content -->
-<div class="container mx-auto px-4 py-12 max-w-4xl">
-  <!-- Header -->
-  <div class="mb-8">
-    <h1 class="text-4xl font-bold font-serif tracking-tight mb-4">{{ "Privacy Policy"|t }}</h1>
-    <p class="text-ink-2">{{ "Last updated: November 2, 2025"|t }}</p>
-  </div>
+<div class="bg-cream text-ink">
 
-  <!-- Content -->
-  <div class="bg-paper rounded-xl shadow-md p-8">
-    <div class="prose max-w-none">
-      <!-- Introduction -->
-      <section class="mb-8">
-        <h2 class="text-2xl font-bold font-serif tracking-tight mb-4">{{ "1. Introduction"|t }}</h2>
-        <p class="text-ink-2 mb-4">
-          {{ "Welcome to imkitchen (\"we,\" \"our,\" or \"us\"). We are committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our meal planning platform and services."|t }}
-        </p>
-        <p class="text-ink-2 mb-4">
-          {{ "By using imkitchen, you agree to the collection and use of information in accordance with this Privacy Policy. If you do not agree with our policies and practices, please do not use our services."|t }}
-        </p>
-      </section>
+  {# ── Header band ─────────────────────────────────────────────── #}
+  <section class="border-b border-line-2" style="background: linear-gradient(160deg, #f3ead6, #fbf5e9);">
+    <div class="container mx-auto px-5 md:px-12 max-w-6xl py-10 md:py-14">
 
-      <!-- Information We Collect -->
-      <section class="mb-8">
-        <h2 class="text-2xl font-bold font-serif tracking-tight mb-4">{{ "2. Information We Collect"|t }}</h2>
+      {# Breadcrumb #}
+      <div class="flex items-center gap-2 text-xs text-ink-3 mb-3.5 font-mono">
+        <a href="/" class="hover:text-ink transition">imkitchen</a>
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+        <span>{{ "Legal"|t }}</span>
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+        <span class="text-ink">{{ "Privacy"|t }}</span>
+      </div>
 
-        <h3 class="text-xl font-semibold mb-3">{{ "2.1 Information You Provide"|t }}</h3>
-        <p class="text-ink-2 mb-4">{{ "We collect information that you voluntarily provide when using our services:"|t }}</p>
-        <ul class="list-disc list-inside text-ink-2 mb-4 space-y-2">
-          <li><strong>{{ "Account Information:"|t }}</strong> {{ "Name, email address, username, and password"|t }}</li>
-          <li><strong>{{ "Profile Information:"|t }}</strong> {{ "Dietary restrictions, household size, cuisine preferences"|t }}</li>
-          <li><strong>{{ "Recipe Information:"|t }}</strong> {{ "Recipes you create, import, share, or favorite"|t }}</li>
-          <li><strong>{{ "Meal Plans:"|t }}</strong> {{ "Generated meal plans and shopping lists"|t }}</li>
-          <li><strong>{{ "Payment Information:"|t }}</strong> {{ "Credit card details processed through secure third-party payment processors (we do not store full card numbers)"|t }}</li>
-          <li><strong>{{ "Communications:"|t }}</strong> {{ "Messages sent through contact forms, support requests, and feedback"|t }}</li>
-          <li><strong>{{ "Community Content:"|t }}</strong> {{ "Recipe ratings, reviews, and comments"|t }}</li>
-        </ul>
-
-        <h3 class="text-xl font-semibold mb-3">{{ "2.2 Automatically Collected Information"|t }}</h3>
-        <p class="text-ink-2 mb-4">{{ "We automatically collect certain information when you use our services:"|t }}</p>
-        <ul class="list-disc list-inside text-ink-2 mb-4 space-y-2">
-          <li><strong>{{ "Usage Data:"|t }}</strong> {{ "Features accessed, meal plans generated, recipes viewed (aggregate and anonymized)"|t }}</li>
-          <li><strong>{{ "Device Information:"|t }}</strong> {{ "Browser type, operating system, device type"|t }}</li>
-          <li><strong>{{ "Log Data:"|t }}</strong> {{ "IP address, access times, error logs"|t }}</li>
-        </ul>
-
-        <h3 class="text-xl font-semibold mb-3">{{ "2.3 Information We Do NOT Collect"|t }}</h3>
-        <ul class="list-disc list-inside text-ink-2 mb-4 space-y-2">
-          <li>{{ "We do <strong>not</strong> use cookies for individual user tracking"|t|safe }}</li>
-          <li>{{ "We do <strong>not</strong> collect behavioral analytics beyond aggregate usage metrics"|t|safe }}</li>
-          <li>{{ "We do <strong>not</strong> sell your personal information to third parties"|t|safe }}</li>
-          <li>{{ "We do <strong>not</strong> use advertising or marketing trackers"|t|safe }}</li>
-        </ul>
-      </section>
-
-      <!-- How We Use Your Information -->
-      <section class="mb-8">
-        <h2 class="text-2xl font-bold font-serif tracking-tight mb-4">{{ "3. How We Use Your Information"|t }}</h2>
-        <p class="text-ink-2 mb-4">{{ "We use your information for the following purposes:"|t }}</p>
-        <ul class="list-disc list-inside text-ink-2 mb-4 space-y-2">
-          <li><strong>{{ "Service Delivery:"|t }}</strong> {{ "Generate meal plans, create shopping lists, pair accompaniments with main courses"|t }}</li>
-          <li><strong>{{ "Account Management:"|t }}</strong> {{ "Maintain your account, manage subscriptions, process payments"|t }}</li>
-          <li><strong>{{ "Personalization:"|t }}</strong> {{ "Apply dietary restrictions, respect cuisine preferences, customize meal suggestions"|t }}</li>
-          <li><strong>{{ "Community Features:"|t }}</strong> {{ "Enable recipe sharing, display ratings and reviews"|t }}</li>
-          <li><strong>{{ "Communication:"|t }}</strong> {{ "Send notifications, respond to support requests, provide service updates"|t }}</li>
-          <li><strong>{{ "Platform Improvement:"|t }}</strong> {{ "Analyze aggregate usage patterns to improve features and performance"|t }}</li>
-          <li><strong>{{ "Security:"|t }}</strong> {{ "Protect against fraud, abuse, and security threats"|t }}</li>
-          <li><strong>{{ "Legal Compliance:"|t }}</strong> {{ "Comply with legal obligations and enforce our terms"|t }}</li>
-        </ul>
-      </section>
-
-      <!-- Data Sharing and Disclosure -->
-      <section class="mb-8">
-        <h2 class="text-2xl font-bold font-serif tracking-tight mb-4">{{ "4. Data Sharing and Disclosure"|t }}</h2>
-
-        <h3 class="text-xl font-semibold mb-3">{{ "4.1 Public Information"|t }}</h3>
-        <p class="text-ink-2 mb-4">
-          {{ "When you share recipes with the community, the following information becomes publicly visible: recipe name, description, ingredients, instructions, dietary tags, your username, and user ratings/reviews. You control what you share through recipe sharing settings."|t }}
-        </p>
-
-        <h3 class="text-xl font-semibold mb-3">{{ "4.2 Service Providers"|t }}</h3>
-        <p class="text-ink-2 mb-4">{{ "We share information with trusted third-party service providers who assist in operating our platform:"|t }}</p>
-        <ul class="list-disc list-inside text-ink-2 mb-4 space-y-2">
-          <li><strong>{{ "Payment Processors:"|t }}</strong> {{ "For subscription billing and payment processing"|t }}</li>
-          <li><strong>{{ "Cloud Hosting:"|t }}</strong> {{ "For data storage and application hosting"|t }}</li>
-          <li><strong>{{ "Email Services:"|t }}</strong> {{ "For transactional emails and notifications"|t }}</li>
-        </ul>
-        <p class="text-ink-2 mb-4">
-          {{ "These providers are contractually obligated to protect your information and use it only for the specified purposes."|t }}
-        </p>
-
-        <h3 class="text-xl font-semibold mb-3">{{ "4.3 Legal Requirements"|t }}</h3>
-        <p class="text-ink-2 mb-4">
-          {{ "We may disclose your information if required by law, court order, or government request, or to protect our rights, safety, or property."|t }}
-        </p>
-
-        <h3 class="text-xl font-semibold mb-3">{{ "4.4 Business Transfers"|t }}</h3>
-        <p class="text-ink-2 mb-4">
-          {{ "In the event of a merger, acquisition, or sale of assets, your information may be transferred to the acquiring entity."|t }}
-        </p>
-      </section>
-
-      <!-- Recipe and Meal Plan Data -->
-      <section class="mb-8">
-        <h2 class="text-2xl font-bold font-serif tracking-tight mb-4">{{ "5. Recipe and Meal Plan Data"|t }}</h2>
-
-        <h3 class="text-xl font-semibold mb-3">{{ "5.1 Recipe Snapshots"|t }}</h3>
-        <p class="text-ink-2 mb-4">
-          {{ "When meal plans are generated, we create snapshots/copies of all referenced recipes (including community recipes). This ensures your historical meal plans remain intact even if the original recipe creator deletes or modifies their recipe."|t }}
-        </p>
-
-        <h3 class="text-xl font-semibold mb-3">{{ "5.2 Recipe Deletion"|t }}</h3>
-        <p class="text-ink-2 mb-4">
-          {{ "When you delete a shared recipe, it is removed from community search and other users' favorites. However, recipe snapshots in previously generated meal plans are preserved for those users."|t }}
-        </p>
-
-        <h3 class="text-xl font-semibold mb-3">{{ "5.3 Imported Recipes"|t }}</h3>
-        <p class="text-ink-2 mb-4">
-          {{ "Recipes imported via JSON are stored as private by default. You control whether to share them with the community. We do not claim ownership of your imported recipes."|t }}
-        </p>
-      </section>
-
-      <!-- Data Retention -->
-      <section class="mb-8">
-        <h2 class="text-2xl font-bold font-serif tracking-tight mb-4">{{ "6. Data Retention"|t }}</h2>
-        <p class="text-ink-2 mb-4">{{ "We retain your information for as long as necessary to provide our services:"|t }}</p>
-        <ul class="list-disc list-inside text-ink-2 mb-4 space-y-2">
-          <li><strong>{{ "Account Data:"|t }}</strong> {{ "Retained while your account is active"|t }}</li>
-          <li><strong>{{ "Meal Plans:"|t }}</strong> {{ "Retained while your account is active"|t }}</li>
-          <li><strong>{{ "Payment Records:"|t }}</strong> {{ "Retained for 7 years for tax and accounting purposes"|t }}</li>
-          <li><strong>{{ "Support Communications:"|t }}</strong> {{ "Retained for 2 years"|t }}</li>
-          <li><strong>{{ "Aggregate Analytics:"|t }}</strong> {{ "Retained indefinitely in anonymized form"|t }}</li>
-        </ul>
-        <p class="text-ink-2 mb-4">
-          {{ "When you delete your account, we delete or anonymize your personal information within 30 days, except where retention is required by law."|t }}
-        </p>
-      </section>
-
-      <!-- Your Rights (GDPR) -->
-      <section class="mb-8">
-        <h2 class="text-2xl font-bold font-serif tracking-tight mb-4">{{ "7. Your Rights and Choices"|t }}</h2>
-        <p class="text-ink-2 mb-4">{{ "You have the following rights regarding your personal information:"|t }}</p>
-
-        <h3 class="text-xl font-semibold mb-3">{{ "7.1 Access and Portability"|t }}</h3>
-        <p class="text-ink-2 mb-4">
-          {{ "You can access and download your data (recipes, meal plans, preferences) through your account settings."|t }}
-        </p>
-
-        <h3 class="text-xl font-semibold mb-3">{{ "7.2 Correction"|t }}</h3>
-        <p class="text-ink-2 mb-4">
-          {{ "You can update your account information, profile settings, and recipes at any time."|t }}
-        </p>
-
-        <h3 class="text-xl font-semibold mb-3">{{ "7.3 Deletion"|t }}</h3>
-        <p class="text-ink-2 mb-4">
-          {{ "You can delete your account through account settings. This will permanently delete your personal information, recipes (except snapshots in other users' meal plans), and meal plans."|t }}
-        </p>
-
-        <h3 class="text-xl font-semibold mb-3">{{ "7.4 Opt-Out of Communications"|t }}</h3>
-        <p class="text-ink-2 mb-4">
-          {{ "You can manage notification preferences in your account settings. You may opt out of promotional emails but will continue to receive essential transactional emails (password resets, subscription changes)."|t }}
-        </p>
-
-        <h3 class="text-xl font-semibold mb-3">{{ "7.5 GDPR Rights (EU Users)"|t }}</h3>
-        <p class="text-ink-2 mb-4">{{ "If you are located in the European Union, you have additional rights under GDPR:"|t }}
-        </p>
-        <ul class="list-disc list-inside text-ink-2 mb-4 space-y-2">
-          <li>{{ "Right to object to processing"|t }}</li>
-          <li>{{ "Right to restriction of processing"|t }}</li>
-          <li>{{ "Right to lodge a complaint with a supervisory authority"|t }}</li>
-        </ul>
-      </section>
-
-      <!-- Data Security -->
-      <section class="mb-8">
-        <h2 class="text-2xl font-bold font-serif tracking-tight mb-4">{{ "8. Data Security"|t }}</h2>
-        <p class="text-ink-2 mb-4">{{ "We implement industry-standard security measures to protect your information:"|t }}
-        </p>
-        <ul class="list-disc list-inside text-ink-2 mb-4 space-y-2">
-          <li><strong>{{ "Encryption:"|t }}</strong> {{ "Data in transit is encrypted using TLS/SSL; sensitive data at rest is encrypted"|t }}</li>
-          <li><strong>{{ "Authentication:"|t }}</strong> {{ "Secure JWT-based cookie authentication"|t }}</li>
-          <li><strong>{{ "Access Controls:"|t }}</strong> {{ "Strict role-based access controls for admin and user data"|t }}</li>
-          <li><strong>{{ "Security Standards:"|t }}</strong> {{ "OWASP security best practices for all implementations"|t }}</li>
-          <li><strong>{{ "Payment Security:"|t }}</strong> {{ "PCI-DSS compliant payment processing (we do not store full card numbers)"|t }}</li>
-        </ul>
-        <p class="text-ink-2 mb-4">
-          {{ "However, no method of transmission over the internet is 100% secure. We cannot guarantee absolute security."|t }}
-        </p>
-      </section>
-
-      <!-- Children's Privacy -->
-      <section class="mb-8">
-        <h2 class="text-2xl font-bold font-serif tracking-tight mb-4">{{ "9. Children's Privacy"|t }}</h2>
-        <p class="text-ink-2 mb-4">
-          {{ "Our services are not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13. If you become aware that a child has provided us with personal information, please contact us, and we will delete such information promptly."|t }}
-        </p>
-      </section>
-
-      <!-- International Data Transfers -->
-      <section class="mb-8">
-        <h2 class="text-2xl font-bold font-serif tracking-tight mb-4">{{ "10. International Data Transfers"|t }}</h2>
-        <p class="text-ink-2 mb-4">
-          {{ "Your information may be transferred to and processed in countries other than your country of residence. These countries may have different data protection laws. By using our services, you consent to such transfers. We ensure appropriate safeguards are in place for international transfers."|t }}
-        </p>
-      </section>
-
-      <!-- Third-Party Links -->
-      <section class="mb-8">
-        <h2 class="text-2xl font-bold font-serif tracking-tight mb-4">{{ "11. Third-Party Links"|t }}</h2>
-        <p class="text-ink-2 mb-4">
-          {{ "Our services may contain links to third-party websites or services. We are not responsible for the privacy practices of these third parties. We encourage you to review their privacy policies."|t }}
-        </p>
-      </section>
-
-      <!-- Changes to This Policy -->
-      <section class="mb-8">
-        <h2 class="text-2xl font-bold font-serif tracking-tight mb-4">{{ "12. Changes to This Privacy Policy"|t }}</h2>
-        <p class="text-ink-2 mb-4">
-          {{ "We may update this Privacy Policy from time to time. We will notify you of material changes by:"|t }}
-        </p>
-        <ul class="list-disc list-inside text-ink-2 mb-4 space-y-2">
-          <li>{{ "Posting the updated policy on this page"|t }}</li>
-          <li>{{ "Updating the \"Last updated\" date"|t }}</li>
-          <li>{{ "Sending an email notification for significant changes"|t }}</li>
-        </ul>
-        <p class="text-ink-2 mb-4">
-          {{ "Your continued use of our services after changes become effective constitutes acceptance of the updated policy."|t }}
-        </p>
-      </section>
-
-      <!-- Contact Information -->
-      <section class="mb-8">
-        <h2 class="text-2xl font-bold font-serif tracking-tight mb-4">{{ "13. Contact Us"|t }}</h2>
-        <p class="text-ink-2 mb-4">
-          {{ "If you have questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us:"|t }}
-        </p>
-        <div class="bg-cream p-6 rounded-xl">
-          <p class="text-ink-2 mb-2"><strong>{{ "Email:"|t }}</strong> privacy@imkitchen.app</p>
-          <p class="text-ink-2 mb-2"><strong>{{ "Contact Form:"|t }}</strong> <a href="/contact"
-              class="text-primary-500 hover:underline">https://imkitchen.app/contact</a></p>
-          <p class="text-ink-2"><strong>{{ "Response Time:"|t }}</strong> {{ "We aim to respond within 48 hours"|t }}</p>
-        </div>
-      </section>
-
-      <!-- Consent -->
-      <section class="mb-8">
-        <div class="bg-primary-50 border-l-4 border-primary-500 p-6 rounded">
-          <p class="text-ink-2">
-            <strong>{{ "By using imkitchen, you acknowledge that you have read and understood this Privacy Policy and agree to its terms."|t }}</strong>
+      <div class="flex flex-col md:flex-row md:items-end gap-6 md:gap-8">
+        <div class="flex-1 min-w-0">
+          <span class="inline-flex items-center gap-1.5 bg-herb-100 text-herb-700 text-[11px] font-medium px-2.5 py-1 rounded-full">
+            <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path stroke-linecap="round" stroke-linejoin="round" d="M8 10V7a4 4 0 118 0v3"/></svg>
+            {{ "Privacy"|t }}
+          </span>
+          <h1 class="font-serif text-4xl md:text-6xl text-ink leading-none tracking-tighter mt-4 mb-3.5">
+            {{ "Privacy"|t }} <span class="italic text-primary-500">{{ "policy"|t }}</span>
+          </h1>
+          <p class="text-base text-ink-2 leading-relaxed max-w-2xl">
+            {{ "The straightforward version: we store your recipes, meal plans and shopping lists so the app works. We don't sell your data. We don't run ads. The long version is below."|t }}
           </p>
         </div>
-      </section>
+
+        {# Last updated card #}
+        <div class="md:min-w-[220px] bg-paper rounded-2xl border border-line-2 p-4">
+          <div class="font-mono text-[10px] text-ink-3 uppercase tracking-widest">{{ "Last updated"|t }}</div>
+          <div class="font-serif text-xl text-ink tracking-tight mt-0.5">{{ "May 1, 2026"|t }}</div>
+          <div class="text-xs text-ink-3 mt-0.5">{{ "Effective May 1, 2026"|t }}</div>
+        </div>
+      </div>
     </div>
-  </div>
+  </section>
+
+  {# ── Main 2-col grid ─────────────────────────────────────────── #}
+  <section class="container mx-auto px-5 md:px-12 max-w-6xl py-8 md:py-12">
+    <div class="grid md:grid-cols-[220px_1fr] gap-6 md:gap-10">
+
+      {# Sticky TOC sidebar #}
+      <aside class="hidden md:block">
+        <div class="sticky top-6">
+          <div class="font-mono text-[10px] text-ink-3 uppercase tracking-widest pl-3 mb-2.5">{{ "On this page"|t }}</div>
+          <nav class="grid gap-0.5 text-sm">
+            {% for s in [("intro","1","Introduction"),("data","2","Data we collect"),("use","3","How we use your data"),("sharing","4","Sharing your data"),("storage","5","Storage & retention"),("rights","6","Your rights"),("cookies","7","Cookies & tracking"),("security","8","Security"),("children","9","Children"),("intl","10","International transfers"),("changes","11","Changes to this policy"),("contact","12","Contact")] %}
+            <a href="#{{ s.0 }}" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-ink-2 hover:text-ink hover:bg-paper border-l-2 border-transparent transition">
+              <span class="font-mono text-[10px] text-ink-3 min-w-[18px]">{{ s.1 }}</span>
+              <span class="flex-1">{{ s.2|t }}</span>
+            </a>
+            {% endfor %}
+          </nav>
+          <div class="mt-5 p-3.5 rounded-2xl bg-herb-100 border border-herb-500/15">
+            <div class="font-mono text-[10px] text-herb-700 uppercase tracking-widest">{{ "Questions?"|t }}</div>
+            <div class="text-xs text-ink-2 mt-1 leading-relaxed">{{ "Email"|t }} <a href="mailto:privacy@imkitchen.app" class="text-herb-700 font-medium hover:underline">privacy@imkitchen.app</a> — {{ "we reply within 2 business days."|t }}</div>
+          </div>
+        </div>
+      </aside>
+
+      {# Article body #}
+      <article class="bg-paper rounded-3xl border border-line-2 p-5 md:p-10 text-[15px] leading-relaxed text-ink-2">
+
+        {# § 1 — Introduction #}
+        <section id="intro" class="mb-9">
+          <div class="flex items-baseline gap-3 mb-2.5">
+            <span class="font-mono text-[12px] text-primary-800 bg-primary-100 px-2 py-0.5 rounded-md tracking-wide">§1</span>
+            <h2 class="font-serif text-2xl text-ink tracking-tight m-0 leading-tight">{{ "Introduction"|t }}</h2>
+          </div>
+          <p class="mb-3">{{ "This Privacy Policy describes how imkitchen (\"imkitchen,\" \"we,\" or \"us\") collects, uses, and shares information when you use our mobile app and website (together, the \"Service\")."|t }}</p>
+          <p>{{ "We've tried to write this in plain English. Where we use a legal term, we explain what it means in practice. If anything is unclear, tell us — we'll simplify it."|t }}</p>
+        </section>
+
+        {# § 2 — Data we collect #}
+        <section id="data" class="mb-9">
+          <div class="flex items-baseline gap-3 mb-2.5">
+            <span class="font-mono text-[12px] text-primary-800 bg-primary-100 px-2 py-0.5 rounded-md tracking-wide">§2</span>
+            <h2 class="font-serif text-2xl text-ink tracking-tight m-0 leading-tight">{{ "Data we collect"|t }}</h2>
+          </div>
+          <p class="mb-3">{{ "We collect the minimum amount of data needed to make the Service work."|t }}</p>
+          <ul class="grid gap-2 mt-3">
+            <li class="flex gap-2.5 text-[14.5px]"><span class="w-1.5 h-1.5 mt-2.5 rounded-full bg-primary-500 shrink-0"></span><span><strong class="text-ink">{{ "Account info."|t }}</strong> {{ "Email address, chosen display name, and password hash."|t }}</span></li>
+            <li class="flex gap-2.5 text-[14.5px]"><span class="w-1.5 h-1.5 mt-2.5 rounded-full bg-primary-500 shrink-0"></span><span><strong class="text-ink">{{ "Your content."|t }}</strong> {{ "Recipes, meal plans, shopping lists, notes. You own this. You can export or delete it at any time."|t }}</span></li>
+            <li class="flex gap-2.5 text-[14.5px]"><span class="w-1.5 h-1.5 mt-2.5 rounded-full bg-primary-500 shrink-0"></span><span><strong class="text-ink">{{ "Usage data."|t }}</strong> {{ "Anonymised events (feature used, crash logs, page timings) so we can fix bugs and improve the app."|t }}</span></li>
+            <li class="flex gap-2.5 text-[14.5px]"><span class="w-1.5 h-1.5 mt-2.5 rounded-full bg-primary-500 shrink-0"></span><span><strong class="text-ink">{{ "Device info."|t }}</strong> {{ "Operating system, app version, and a device identifier needed for push notifications."|t }}</span></li>
+            <li class="flex gap-2.5 text-[14.5px]"><span class="w-1.5 h-1.5 mt-2.5 rounded-full bg-primary-500 shrink-0"></span><span><strong class="text-ink">{{ "Payment info."|t }}</strong> {{ "If you subscribe to Premium, Stripe handles the card details — we only see the last 4 digits and billing country."|t }}</span></li>
+          </ul>
+        </section>
+
+        {# § 3 — Use #}
+        <section id="use" class="mb-9">
+          <div class="flex items-baseline gap-3 mb-2.5">
+            <span class="font-mono text-[12px] text-primary-800 bg-primary-100 px-2 py-0.5 rounded-md tracking-wide">§3</span>
+            <h2 class="font-serif text-2xl text-ink tracking-tight m-0 leading-tight">{{ "How we use your data"|t }}</h2>
+          </div>
+          <p class="mb-3">{{ "We use your data to:"|t }}</p>
+          <ul class="grid gap-2">
+            <li class="flex gap-2.5 text-[14.5px]"><span class="w-1.5 h-1.5 mt-2.5 rounded-full bg-primary-500 shrink-0"></span><span>{{ "Provide the Service (generate plans, sync devices, render lists)."|t }}</span></li>
+            <li class="flex gap-2.5 text-[14.5px]"><span class="w-1.5 h-1.5 mt-2.5 rounded-full bg-primary-500 shrink-0"></span><span>{{ "Send transactional email — password resets, receipts, important security notices."|t }}</span></li>
+            <li class="flex gap-2.5 text-[14.5px]"><span class="w-1.5 h-1.5 mt-2.5 rounded-full bg-primary-500 shrink-0"></span><span>{{ "Show aggregate product insights to ourselves. Never tied to an individual."|t }}</span></li>
+            <li class="flex gap-2.5 text-[14.5px]"><span class="w-1.5 h-1.5 mt-2.5 rounded-full bg-primary-500 shrink-0"></span><span>{{ "Detect fraud and enforce our Terms of Service."|t }}</span></li>
+            <li class="flex gap-2.5 text-[14.5px]"><span class="w-1.5 h-1.5 mt-2.5 rounded-full bg-primary-500 shrink-0"></span><span>{{ "Comply with legal obligations."|t }}</span></li>
+          </ul>
+
+          <div class="flex gap-2.5 items-start mt-4 p-3.5 rounded-2xl bg-herb-100 border border-herb-500/15">
+            <div class="w-6 h-6 rounded-lg bg-paper flex items-center justify-center shrink-0">
+              <svg class="w-3.5 h-3.5 text-herb-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
+            </div>
+            <div class="flex-1 text-[13.5px] leading-relaxed">
+              <strong class="text-ink">{{ "What we do not do:"|t }}</strong> {{ "sell your data, share it with advertisers, profile you for ad targeting, or train public AI models on your content. Ever."|t }}
+            </div>
+          </div>
+        </section>
+
+        {# § 4 — Sharing #}
+        <section id="sharing" class="mb-9">
+          <div class="flex items-baseline gap-3 mb-2.5">
+            <span class="font-mono text-[12px] text-primary-800 bg-primary-100 px-2 py-0.5 rounded-md tracking-wide">§4</span>
+            <h2 class="font-serif text-2xl text-ink tracking-tight m-0 leading-tight">{{ "Sharing your data"|t }}</h2>
+          </div>
+          <p class="mb-3">{{ "We share data with:"|t }}</p>
+          <ul class="grid gap-2 mb-3">
+            <li class="flex gap-2.5 text-[14.5px]"><span class="w-1.5 h-1.5 mt-2.5 rounded-full bg-primary-500 shrink-0"></span><span><strong class="text-ink">{{ "Service providers"|t }}</strong> {{ "that run our infrastructure — hosting, email delivery, error monitoring. Contractually bound to only use data as we instruct."|t }}</span></li>
+            <li class="flex gap-2.5 text-[14.5px]"><span class="w-1.5 h-1.5 mt-2.5 rounded-full bg-primary-500 shrink-0"></span><span><strong class="text-ink">{{ "Other community members"|t }}</strong> {{ "see only the recipes you choose to share publicly."|t }}</span></li>
+            <li class="flex gap-2.5 text-[14.5px]"><span class="w-1.5 h-1.5 mt-2.5 rounded-full bg-primary-500 shrink-0"></span><span><strong class="text-ink">{{ "Legal authorities"|t }}</strong> {{ "when required by valid legal process. We challenge overbroad requests."|t }}</span></li>
+          </ul>
+          <p>{{ "We never share your recipes, messages, or identity with third parties for marketing."|t }}</p>
+        </section>
+
+        {# § 5 — Storage #}
+        <section id="storage" class="mb-9">
+          <div class="flex items-baseline gap-3 mb-2.5">
+            <span class="font-mono text-[12px] text-primary-800 bg-primary-100 px-2 py-0.5 rounded-md tracking-wide">§5</span>
+            <h2 class="font-serif text-2xl text-ink tracking-tight m-0 leading-tight">{{ "Storage & retention"|t }}</h2>
+          </div>
+          <p class="mb-3">{{ "Your data is hosted on encrypted servers operated by OVHcloud in France. Backups are encrypted at rest and retained for 30 days."|t }}</p>
+          <ul class="grid gap-2">
+            <li class="flex gap-2.5 text-[14.5px]"><span class="w-1.5 h-1.5 mt-2.5 rounded-full bg-primary-500 shrink-0"></span><span>{{ "Account data is kept while your account exists."|t }}</span></li>
+            <li class="flex gap-2.5 text-[14.5px]"><span class="w-1.5 h-1.5 mt-2.5 rounded-full bg-primary-500 shrink-0"></span><span>{{ "Deleted recipes / plans are purged within 30 days."|t }}</span></li>
+            <li class="flex gap-2.5 text-[14.5px]"><span class="w-1.5 h-1.5 mt-2.5 rounded-full bg-primary-500 shrink-0"></span><span>{{ "A deleted account is fully erased after a 30-day grace period."|t }}</span></li>
+            <li class="flex gap-2.5 text-[14.5px]"><span class="w-1.5 h-1.5 mt-2.5 rounded-full bg-primary-500 shrink-0"></span><span>{{ "Anonymised usage analytics are kept for up to 24 months."|t }}</span></li>
+          </ul>
+        </section>
+
+        {# § 6 — Your rights #}
+        <section id="rights" class="mb-9">
+          <div class="flex items-baseline gap-3 mb-2.5">
+            <span class="font-mono text-[12px] text-primary-800 bg-primary-100 px-2 py-0.5 rounded-md tracking-wide">§6</span>
+            <h2 class="font-serif text-2xl text-ink tracking-tight m-0 leading-tight">{{ "Your rights"|t }}</h2>
+          </div>
+          <p class="mb-4">{{ "Depending on where you live, you may have rights to access, correct, delete, or export your data. Regardless of jurisdiction, we offer the following to everyone:"|t }}</p>
+          <div class="grid md:grid-cols-2 gap-2.5">
+            <div class="p-3.5 rounded-2xl border border-line-2 bg-cream flex gap-2.5 items-start">
+              <div class="w-8 h-8 rounded-xl bg-paper flex items-center justify-center shrink-0">
+                <svg class="w-3.5 h-3.5 text-ink-2" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v13M6 11l6 6 6-6M4 21h16"/></svg>
+              </div>
+              <div>
+                <div class="text-sm font-semibold text-ink">{{ "Export all data"|t }}</div>
+                <div class="text-xs text-ink-3 mt-0.5">{{ "Settings → Account → Export"|t }}</div>
+              </div>
+            </div>
+            <div class="p-3.5 rounded-2xl border border-line-2 bg-cream flex gap-2.5 items-start">
+              <div class="w-8 h-8 rounded-xl bg-paper flex items-center justify-center shrink-0">
+                <svg class="w-3.5 h-3.5 text-ink-2" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 3l5 5-12 12H4v-5z"/></svg>
+              </div>
+              <div>
+                <div class="text-sm font-semibold text-ink">{{ "Correct inaccuracies"|t }}</div>
+                <div class="text-xs text-ink-3 mt-0.5">{{ "In-app or by email"|t }}</div>
+              </div>
+            </div>
+            <div class="p-3.5 rounded-2xl border border-line-2 bg-cream flex gap-2.5 items-start">
+              <div class="w-8 h-8 rounded-xl bg-paper flex items-center justify-center shrink-0">
+                <svg class="w-3.5 h-3.5 text-ink-2" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M10 11v6M14 11v6M6 7l1 13a1 1 0 001 1h8a1 1 0 001-1l1-13M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>
+              </div>
+              <div>
+                <div class="text-sm font-semibold text-ink">{{ "Delete your account"|t }}</div>
+                <div class="text-xs text-ink-3 mt-0.5">{{ "30-day grace period"|t }}</div>
+              </div>
+            </div>
+            <div class="p-3.5 rounded-2xl border border-line-2 bg-cream flex gap-2.5 items-start">
+              <div class="w-8 h-8 rounded-xl bg-paper flex items-center justify-center shrink-0">
+                <svg class="w-3.5 h-3.5 text-ink-2" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 16a6 6 0 01-12 0V10a6 6 0 0112 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M10 20a2 2 0 004 0"/></svg>
+              </div>
+              <div>
+                <div class="text-sm font-semibold text-ink">{{ "Opt out of email"|t }}</div>
+                <div class="text-xs text-ink-3 mt-0.5">{{ "Footer link on any email"|t }}</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {# § 7 — Cookies #}
+        <section id="cookies" class="mb-9">
+          <div class="flex items-baseline gap-3 mb-2.5">
+            <span class="font-mono text-[12px] text-primary-800 bg-primary-100 px-2 py-0.5 rounded-md tracking-wide">§7</span>
+            <h2 class="font-serif text-2xl text-ink tracking-tight m-0 leading-tight">{{ "Cookies & tracking"|t }}</h2>
+          </div>
+          <p>{{ "We use first-party cookies to keep you logged in. We use"|t }} <strong class="text-ink">{{ "no third-party advertising cookies, pixels, or SDKs"|t }}</strong>. {{ "Our analytics provider is self-hosted and stores no cross-site identifiers."|t }}</p>
+        </section>
+
+        {# § 8 — Security #}
+        <section id="security" class="mb-9">
+          <div class="flex items-baseline gap-3 mb-2.5">
+            <span class="font-mono text-[12px] text-primary-800 bg-primary-100 px-2 py-0.5 rounded-md tracking-wide">§8</span>
+            <h2 class="font-serif text-2xl text-ink tracking-tight m-0 leading-tight">{{ "Security"|t }}</h2>
+          </div>
+          <p class="mb-3">{{ "All traffic uses TLS 1.3. Passwords are hashed with Argon2id. Backups are encrypted with AES-256."|t }}</p>
+          <p>{{ "If you discover a vulnerability, please email"|t }} <strong class="text-ink">security@imkitchen.app</strong>.</p>
+        </section>
+
+        {# § 9 — Children #}
+        <section id="children" class="mb-9">
+          <div class="flex items-baseline gap-3 mb-2.5">
+            <span class="font-mono text-[12px] text-primary-800 bg-primary-100 px-2 py-0.5 rounded-md tracking-wide">§9</span>
+            <h2 class="font-serif text-2xl text-ink tracking-tight m-0 leading-tight">{{ "Children"|t }}</h2>
+          </div>
+          <p>{{ "The Service is not intended for children under 13, and we do not knowingly collect data from them. If you believe a child has signed up, email us and we'll delete the account promptly."|t }}</p>
+        </section>
+
+        {# § 10 — International #}
+        <section id="intl" class="mb-9">
+          <div class="flex items-baseline gap-3 mb-2.5">
+            <span class="font-mono text-[12px] text-primary-800 bg-primary-100 px-2 py-0.5 rounded-md tracking-wide">§10</span>
+            <h2 class="font-serif text-2xl text-ink tracking-tight m-0 leading-tight">{{ "International transfers"|t }}</h2>
+          </div>
+          <p>{{ "If you are in the European Economic Area, UK, or Switzerland, your data is processed under the"|t }} <span class="font-mono text-[13.5px]">{{ "Standard Contractual Clauses"|t }}</span> {{ "when transferred outside your region."|t }}</p>
+        </section>
+
+        {# § 11 — Changes #}
+        <section id="changes" class="mb-9">
+          <div class="flex items-baseline gap-3 mb-2.5">
+            <span class="font-mono text-[12px] text-primary-800 bg-primary-100 px-2 py-0.5 rounded-md tracking-wide">§11</span>
+            <h2 class="font-serif text-2xl text-ink tracking-tight m-0 leading-tight">{{ "Changes to this policy"|t }}</h2>
+          </div>
+          <p class="mb-3">{{ "We may update this policy. Material changes will be announced in-app and by email at least 30 days before taking effect."|t }}</p>
+          <div class="grid gap-1 font-mono text-[12.5px] mt-3">
+            <div class="flex gap-2.5 py-1.5 border-b border-dashed border-line-2">
+              <span class="text-ink-3 min-w-[90px]">2026-05-01</span>
+              <span class="text-ink-2 font-sans text-[13.5px]">{{ "Clarified analytics retention; added DPA link."|t }}</span>
+            </div>
+            <div class="flex gap-2.5 py-1.5 border-b border-dashed border-line-2">
+              <span class="text-ink-3 min-w-[90px]">2025-11-12</span>
+              <span class="text-ink-2 font-sans text-[13.5px]">{{ "Added community sharing section."|t }}</span>
+            </div>
+            <div class="flex gap-2.5 py-1.5 border-b border-dashed border-line-2">
+              <span class="text-ink-3 min-w-[90px]">2025-06-01</span>
+              <span class="text-ink-2 font-sans text-[13.5px]">{{ "Initial version."|t }}</span>
+            </div>
+          </div>
+        </section>
+
+        {# § 12 — Contact #}
+        <section id="contact" class="mb-2">
+          <div class="flex items-baseline gap-3 mb-2.5">
+            <span class="font-mono text-[12px] text-primary-800 bg-primary-100 px-2 py-0.5 rounded-md tracking-wide">§12</span>
+            <h2 class="font-serif text-2xl text-ink tracking-tight m-0 leading-tight">{{ "Contact"|t }}</h2>
+          </div>
+          <p class="mb-3">{{ "Questions, concerns, or just want to chat about privacy?"|t }}</p>
+          <div class="flex gap-2.5 items-start p-3.5 rounded-2xl bg-herb-100 border border-herb-500/15">
+            <div class="w-6 h-6 rounded-lg bg-paper flex items-center justify-center shrink-0">
+              <svg class="w-3.5 h-3.5 text-herb-700" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 16v-4M12 8h.01"/></svg>
+            </div>
+            <div class="grid gap-1 text-[13.5px] text-ink-2 leading-relaxed">
+              <div><strong class="text-ink">{{ "Email:"|t }}</strong> privacy@imkitchen.app</div>
+              <div><strong class="text-ink">{{ "Contact form:"|t }}</strong> <a href="/contact" class="text-herb-700 hover:underline">imkitchen.app/contact</a></div>
+            </div>
+          </div>
+        </section>
+
+        <div class="h-px bg-line-2 my-7"></div>
+        <div class="text-xs text-ink-3 text-center">{{ "By using imkitchen, you agree to this Privacy Policy and our"|t }} <a href="/terms" class="underline text-ink-2 hover:text-ink">{{ "Terms of Service"|t }}</a>.</div>
+      </article>
+    </div>
+  </section>
 </div>
 {% endblock %}

@@ -4,56 +4,72 @@
 {% block body %}
 
 <body class="bg-cream">
-  <!-- Navigation -->
-  <nav class="bg-cream border-b border-line-2 h-16">
 
-  <div class="container mx-auto px-4 h-full">
-    <div class="flex items-center justify-between h-full">
-      <a href="/" class="text-2xl font-serif text-ink">🍳 imkitchen</a>
+  {# ── Public top nav ─────────────────────────────────────────── #}
+  <nav class="bg-cream border-b border-line-2 relative z-30">
+    <div class="container mx-auto px-5 md:px-12">
+      <div class="flex items-center h-16 md:h-20 gap-4">
 
-      <!-- Desktop Navigation -->
-      <div class="hidden md:flex gap-4 items-center">
-        <a href="/login" class="px-4 py-2 text-ink-2 font-medium text-sm hover:text-ink rounded-xl transition">{{ "Login"|t }}</a>
-        <a href="/register"
-          class="px-5 py-2 bg-ink text-cream font-semibold text-sm rounded-xl hover:bg-ink-2 transition">{{ "Get Started"|t }}</a>
+        {# Brand mark #}
+        <a href="/" class="flex items-center gap-2.5 shrink-0" aria-label="imkitchen">
+          <span class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-linear-to-br from-primary-500 to-primary-300 text-white font-serif text-lg shadow-sm">
+            k
+          </span>
+          <span class="font-serif text-xl md:text-2xl text-ink tracking-tight leading-none">imkitchen</span>
+        </a>
+
+        {# Section links — desktop only #}
+        <div class="hidden md:flex items-center gap-7 ml-8">
+          <a href="/#features" class="text-sm font-medium text-ink-2 hover:text-ink transition">{{ "Features"|t }}</a>
+          <a href="/#pricing" class="text-sm font-medium text-ink-2 hover:text-ink transition">{{ "Pricing"|t }}</a>
+          <a href="/help" class="text-sm font-medium text-ink-2 hover:text-ink transition">{{ "Help"|t }}</a>
+          <a href="/contact" class="text-sm font-medium text-ink-2 hover:text-ink transition">{{ "Contact"|t }}</a>
+        </div>
+
+        <div class="flex-1"></div>
+
+        {# CTAs #}
+        <div class="hidden md:flex items-center gap-2.5">
+          <a href="/login" class="px-4 py-2 text-sm font-semibold text-ink rounded-xl border border-line hover:bg-cream-2 transition">{{ "Log in"|t }}</a>
+          <a href="/register" class="px-4 py-2 text-sm font-semibold text-cream bg-ink rounded-xl border border-ink hover:bg-ink-2 transition shadow-sm">{{ "Get started"|t }}</a>
+        </div>
+
+        {# Mobile-only get started + menu toggle #}
+        <a href="/register" class="md:hidden px-3.5 py-2 text-sm font-semibold text-cream bg-ink rounded-xl border border-ink shadow-sm">{{ "Get started"|t }}</a>
+        <label for="mobile-menu-button" class="md:hidden p-2 text-ink hover:bg-cream-2 rounded-xl transition cursor-pointer" role="button" aria-label="{{ "Toggle navigation menu"|t }}">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M3 12h18M3 18h18" />
+          </svg>
+        </label>
       </div>
 
-      <!-- Mobile Menu Button -->
-      <label for="mobile-menu-button" class="md:hidden p-2 hover:bg-cream-2 rounded-xl transition">
-        <svg class="w-6 h-6 text-ink" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-        </svg>
-      </label>
-    </div>
+      <input id="mobile-menu-button" type="checkbox" aria-label="{{ "Toggle navigation menu"|t }}">
 
-    <input id="mobile-menu-button" type="checkbox">
-
-    <!-- Mobile Navigation -->
-    <div id="mobile-menu" class="hidden md:hidden mt-4 pb-4">
-      <div class="flex flex-col gap-2">
-        <a href="/login" class="px-4 py-3 text-ink-2 hover:bg-cream-2 rounded-xl transition text-center">{{ "Login"|t }}</a>
-        <a href="/register"
-          class="px-4 py-3 bg-ink text-cream font-semibold rounded-xl hover:bg-ink-2 transition text-center">
-          {{ "Get Started"|t }}</a>
+      {# Mobile menu sheet #}
+      <div id="mobile-menu" class="hidden md:hidden pb-4">
+        <div class="flex flex-col gap-1 pt-2">
+          <a href="/#features" class="px-3 py-2.5 rounded-xl text-ink-2 hover:bg-cream-2 transition text-sm font-medium">{{ "Features"|t }}</a>
+          <a href="/#pricing" class="px-3 py-2.5 rounded-xl text-ink-2 hover:bg-cream-2 transition text-sm font-medium">{{ "Pricing"|t }}</a>
+          <a href="/help" class="px-3 py-2.5 rounded-xl text-ink-2 hover:bg-cream-2 transition text-sm font-medium">{{ "Help"|t }}</a>
+          <a href="/contact" class="px-3 py-2.5 rounded-xl text-ink-2 hover:bg-cream-2 transition text-sm font-medium">{{ "Contact"|t }}</a>
+          <a href="/login" class="mt-2 px-3 py-2.5 rounded-xl text-ink border border-line hover:bg-cream-2 transition text-sm font-semibold text-center">{{ "Log in"|t }}</a>
+        </div>
       </div>
     </div>
-  </div>
-
   </nav>
 
-  <!-- Hero Section -->
+  {# Hero (optional) #}
   {% block hero %}{% endblock %}
 
-  <!-- Main Content -->
+  {# Main content #}
   {% block content %}{% endblock %}
 
-  <!-- Footer -->
+  {# Footer #}
   {% call scope::footer() %}
   {% endcall %}
 
-  <!-- Toast Container (Fixed Position) -->
+  {# Toast container #}
   <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2 max-w-md">
-      <!-- Toasts will be dynamically added here -->
   </div>
 </body>
 {% endblock %}
