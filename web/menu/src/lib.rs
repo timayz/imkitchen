@@ -143,8 +143,7 @@ pub async fn page(
 
     let today = imkitchen_core::mealplan::now(&user.tz);
     let today_u64 = imkitchen_core::mealplan::date_to_u64(today);
-    let is_past =
-        imkitchen_core::mealplan::date_to_u64(bounds.date) < today_u64;
+    let is_past = imkitchen_core::mealplan::date_to_u64(bounds.date) < today_u64;
 
     let fmt = time::macros::format_description!("[year]-[month]-[day]");
     let current_date = bounds.date.format(&fmt).unwrap_or_default();
@@ -186,10 +185,7 @@ pub async fn page(
         })
         .collect();
 
-    let board_weeks: Vec<Vec<MenuBoardDay>> = board_days
-        .chunks(7)
-        .map(|c| c.to_vec())
-        .collect();
+    let board_weeks: Vec<Vec<MenuBoardDay>> = board_days.chunks(7).map(|c| c.to_vec()).collect();
 
     template
         .render(MenuTemplate {
