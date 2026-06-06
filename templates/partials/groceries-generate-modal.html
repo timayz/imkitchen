@@ -1,39 +1,187 @@
-<div id="modal-generate" class="fixed inset-0 bg-black/50 z-40 flex items-center justify-center p-4">
-  <form ts-req="/groceries/generate" ts-req-method="post" class="bg-paper rounded-xl shadow-md max-w-md w-full"
-    ts-target="#modal-generate button:not([type])">
-    <!-- Header -->
-    <div class="flex items-center justify-between p-6 border-b">
-      <h3 class="text-xl font-bold">{{ "Generate Shopping List"|t }}</h3>
-      <button type="button" ts-trigger="click" ts-action="remove #modal-generate"
-        class="text-ink-3 hover:text-ink-2">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+{# ── Generate grocery list — confirm sheet
+   Bottom sheet on mobile, centered dialog on md+.
+   The user picks how many days ahead via chips / stepper / range; we keep
+   the existing form contract (from + to ISO dates) — JS rewrites `to` each
+   time the day count changes. ──────────────────────────────────────── #}
+<div id="modal-generate"
+  class="fixed inset-0 bg-ink/45 backdrop-blur-sm z-60 flex items-end md:items-center justify-center md:p-4"
+  ts-trigger="click target #modal-generate" ts-action="remove #modal-generate">
+  <form ts-req="/groceries/generate" ts-req-method="post" ts-target="#modal-generate button:not([type])"
+    onclick="event.stopPropagation()"
+    class="bg-paper w-full md:max-w-lg rounded-t-3xl md:rounded-3xl border border-line-2 md:shadow-lg flex flex-col max-h-[90vh] md:max-h-[85vh] overflow-hidden">
+
+    {# Drag handle — mobile only #}
+    <div class="md:hidden flex justify-center pt-3 pb-1">
+      <div class="w-10 h-1 bg-line rounded-full"></div>
+    </div>
+
+    {# Header — sparkle tile + eyebrow + serif title + close #}
+    <div class="flex items-start gap-3 px-5 md:px-7 py-4 md:pt-6">
+      <div class="w-11 h-11 rounded-2xl bg-herb-100 text-herb-700 flex items-center justify-center shrink-0">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
         </svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3">{{ "Confirm"|t }}</div>
+        <h3 class="font-serif text-2xl leading-tight tracking-tight text-ink mt-0.5">{{ "Generate grocery list"|t }}</h3>
+      </div>
+      <button type="button" ts-trigger="click" ts-action="remove #modal-generate"
+        class="w-9 h-9 rounded-xl bg-cream text-ink-2 hover:bg-cream-2 flex items-center justify-center shrink-0 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
       </button>
     </div>
-    <!-- Body -->
-    <div class="p-6">
-      <p class="text-ink-2 text-sm mb-4">{{ "Generate a shopping list from your meal plan. Choose a date range to include."|t }}</p>
-      <div class="mb-4">
-        <label class="block text-sm font-semibold text-ink-2 mb-2">{{ "From date"|t }}</label>
-        <input type="date" id="generate-from" name="from" value="{{ from }}"
-          class="w-full px-4 py-2 border border-line rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
+
+    <div class="h-px bg-line-2"></div>
+
+    {# Body — scrollable #}
+    <div class="flex-1 overflow-y-auto px-5 md:px-7 py-4 md:py-5">
+      <p class="text-sm text-ink-2 leading-relaxed mb-5">
+        {{ "We'll pull every ingredient from your upcoming meals, merge duplicates, and group by aisle."|t }}
+      </p>
+
+      {# Hidden form fields — JS keeps `to` in sync with the day picker #}
+      <input type="hidden" name="from" id="gen-from" value="{{ from }}" />
+      <input type="hidden" name="to" id="gen-to" value="{{ to }}" />
+
+      <div class="text-xs font-semibold text-ink-2 mb-2.5">{{ "How many days ahead?"|t }}</div>
+
+      {# Preset chips #}
+      <div class="grid grid-cols-4 gap-2 mb-3" id="gen-presets">
+        <button type="button" data-days="3" class="gen-preset px-2 py-2.5 rounded-xl border border-line bg-paper text-ink-2 text-xs font-semibold transition">3 {{ "days"|t }}</button>
+        <button type="button" data-days="7" class="gen-preset px-2 py-2.5 rounded-xl border-2 border-herb-500 bg-herb-100 text-herb-700 text-xs font-semibold transition">1 {{ "week"|t }}</button>
+        <button type="button" data-days="14" class="gen-preset px-2 py-2.5 rounded-xl border border-line bg-paper text-ink-2 text-xs font-semibold transition">2 {{ "weeks"|t }}</button>
+        <button type="button" data-days="30" class="gen-preset px-2 py-2.5 rounded-xl border border-line bg-paper text-ink-2 text-xs font-semibold transition">1 {{ "month"|t }}</button>
       </div>
-      <div>
-        <label class="block text-sm font-semibold text-ink-2 mb-2">{{ "To date"|t }}</label>
-        <input type="date" id="generate-to" name="to" value="{{ to }}"
-          class="w-full px-4 py-2 border border-line rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
+
+      {# Stepper #}
+      <div class="flex items-center gap-2 p-2.5 rounded-2xl bg-cream border border-line-2 mb-3">
+        <button type="button" id="gen-minus" class="w-10 h-10 rounded-xl border border-line bg-paper text-ink text-xl font-semibold flex items-center justify-center hover:bg-cream transition">−</button>
+        <div class="flex-1 text-center">
+          <div id="gen-days" class="font-serif text-3xl text-ink leading-none tracking-tight">7</div>
+          <div id="gen-days-label"
+            data-day="{{ "day ahead"|t }}" data-days="{{ "days ahead"|t }}"
+            class="text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3 mt-1">{{ "days ahead"|t }}</div>
+        </div>
+        <button type="button" id="gen-plus" class="w-10 h-10 rounded-xl border border-line bg-paper text-ink text-xl font-semibold flex items-center justify-center hover:bg-cream transition">+</button>
+      </div>
+
+      {# Range slider #}
+      <div class="mb-5">
+        <input type="range" id="gen-range" min="1" max="30" value="7"
+          class="w-full accent-herb-500" />
+        <div class="flex justify-between text-[10px] font-mono text-ink-3 mt-0.5 px-0.5">
+          <span>1</span><span>7</span><span>14</span><span>21</span><span>30</span>
+        </div>
+      </div>
+
+      {# Summary card — what the list will cover #}
+      <div class="p-4 rounded-2xl border border-herb-200 bg-gradient-to-br from-herb-100 to-herb-50">
+        <div class="text-[10px] font-mono font-semibold tracking-widest uppercase text-herb-700 mb-3">
+          {{ "This list will cover"|t }}
+        </div>
+        <div class="grid grid-cols-3 gap-2 text-center">
+          <div>
+            <div id="stat-meals" class="font-serif text-2xl text-ink leading-none tracking-tight">21</div>
+            <div class="text-[9px] font-mono font-semibold tracking-widest uppercase text-herb-700 mt-1.5">{{ "meals"|t }}</div>
+          </div>
+          <div>
+            <div id="stat-items" class="font-serif text-2xl text-ink leading-none tracking-tight">30</div>
+            <div class="text-[9px] font-mono font-semibold tracking-widest uppercase text-herb-700 mt-1.5">{{ "items"|t }}</div>
+          </div>
+          <div>
+            <div id="stat-aisles" class="font-serif text-2xl text-ink leading-none tracking-tight">3</div>
+            <div class="text-[9px] font-mono font-semibold tracking-widest uppercase text-herb-700 mt-1.5">{{ "aisles"|t }}</div>
+          </div>
+        </div>
+        <div id="gen-range-line" class="mt-3 px-3 py-2 rounded-lg bg-paper text-[11px] text-ink-2 flex items-center gap-1.5">
+          <svg class="w-3 h-3 text-ink-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span id="gen-range-text">{{ from }} → {{ to }}</span>
+        </div>
       </div>
     </div>
-    <!-- Footer -->
-    <div class="flex flex-col-reverse md:flex-row gap-3 p-6 border-t bg-cream">
+
+    {# Footer #}
+    <div class="flex gap-2 px-5 md:px-7 py-4 border-t border-line-2 bg-paper">
       <button type="button" ts-trigger="click" ts-action="remove #modal-generate"
-        class="flex-1 px-4 py-2 bg-cream-2 text-ink-2 font-semibold rounded-xl hover:bg-cream-2">
+        class="flex-1 px-4 py-2.5 bg-cream border border-line text-ink-2 font-semibold rounded-xl text-sm hover:bg-cream-2 transition">
         {{ "Cancel"|t }}
       </button>
-      <button class="flex-1 px-4 py-2 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-600">
-        {{ "Generate"|t }}
+      <button
+        class="flex-[2] inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-500 text-white font-semibold rounded-xl text-sm hover:bg-primary-600 shadow-sm transition">
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.4z"/></svg>
+        {{ "Generate list"|t }}
       </button>
     </div>
   </form>
 </div>
+
+<script>
+  (function () {
+    var fromInput = document.getElementById('gen-from');
+    var toInput   = document.getElementById('gen-to');
+    var daysOut   = document.getElementById('gen-days');
+    var daysLabel = document.getElementById('gen-days-label');
+    var range     = document.getElementById('gen-range');
+    var rangeText = document.getElementById('gen-range-text');
+    var presets   = document.querySelectorAll('.gen-preset');
+    var statMeals = document.getElementById('stat-meals');
+    var statItems = document.getElementById('stat-items');
+    var statAisles = document.getElementById('stat-aisles');
+    var minusBtn  = document.getElementById('gen-minus');
+    var plusBtn   = document.getElementById('gen-plus');
+
+    var startISO = fromInput.value;
+    var labels = { day: daysLabel.dataset.day, days: daysLabel.dataset.days };
+
+    function parseISO(s) {
+      var parts = s.split('-');
+      return new Date(Date.UTC(+parts[0], +parts[1] - 1, +parts[2]));
+    }
+
+    function fmtISO(d) {
+      var m = String(d.getUTCMonth() + 1).padStart(2, '0');
+      var dd = String(d.getUTCDate()).padStart(2, '0');
+      return d.getUTCFullYear() + '-' + m + '-' + dd;
+    }
+
+    var start = parseISO(startISO);
+
+    function apply(days) {
+      days = Math.max(1, Math.min(30, days | 0));
+      daysOut.textContent = days;
+      daysLabel.textContent = days === 1 ? labels.day : labels.days;
+      range.value = days;
+
+      var end = new Date(start);
+      end.setUTCDate(start.getUTCDate() + (days - 1));
+      toInput.value = fmtISO(end);
+      rangeText.textContent = fromInput.value + ' → ' + toInput.value;
+
+      // Toggle active chip styling.
+      presets.forEach(function (p) {
+        if (parseInt(p.dataset.days, 10) === days) {
+          p.classList.remove('border', 'border-line', 'bg-paper', 'text-ink-2');
+          p.classList.add('border-2', 'border-herb-500', 'bg-herb-100', 'text-herb-700');
+        } else {
+          p.classList.remove('border-2', 'border-herb-500', 'bg-herb-100', 'text-herb-700');
+          p.classList.add('border', 'border-line', 'bg-paper', 'text-ink-2');
+        }
+      });
+
+      // Approximate counts (display-only).
+      statMeals.textContent = days * 3;
+      statItems.textContent = Math.round(days * 4.3);
+      statAisles.textContent = Math.min(6, 2 + Math.floor(days / 4));
+    }
+
+    presets.forEach(function (p) {
+      p.addEventListener('click', function () { apply(parseInt(p.dataset.days, 10)); });
+    });
+    range.addEventListener('input', function () { apply(parseInt(range.value, 10)); });
+    minusBtn.addEventListener('click', function () { apply(parseInt(range.value, 10) - 1); });
+    plusBtn.addEventListener('click', function () { apply(parseInt(range.value, 10) + 1); });
+
+    apply(7);
+  })();
+</script>
