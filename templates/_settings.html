@@ -1,50 +1,141 @@
 {% extends "_user.html" %}
 
-{% macro nav_item(current, key, content) %}
-<a href="/settings/{{ key }}" class="block w-full text-left px-4 py-3 rounded-xl transition{% if current != key %} text-ink-2 hover:bg-cream-2{% else %} bg-paper text-primary-500 font-semibold border border-line-2 shadow-sm{% endif %}">
-  {{ content|t }}
+{# ── Section meta lookup ─────────────────────────────────────────── #}
+{% macro section_label(key) -%}
+{%- match key -%}
+{%- when "general" -%}{{ "Preferences"|t }}
+{%- when "account" -%}{{ "Account"|t }}
+{%- when "billing" -%}{{ "Billing"|t }}
+{%- when _ -%}{{ "Settings"|t }}
+{%- endmatch -%}
+{%- endmacro %}
+
+{% macro section_hint(key) -%}
+{%- match key -%}
+{%- when "general" -%}{{ "Diet, household, variety"|t }}
+{%- when "account" -%}{{ "Login & sessions"|t }}
+{%- when "billing" -%}{{ "Plan & invoices"|t }}
+{%- when _ -%}{{ ""|t }}
+{%- endmatch -%}
+{%- endmacro %}
+
+{% macro section_icon(key) %}
+{%- match key -%}
+{%- when "general" -%}
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M21 3c-9 0-16 5-16 13 0 2 1 4 3 5 8 0 13-7 13-18z"/>
+  <path d="M5 21c2-6 7-11 14-14"/>
+</svg>
+{%- when "account" -%}
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="12" cy="8" r="4"/>
+  <path d="M4 21c0-4 4-7 8-7s8 3 8 7"/>
+</svg>
+{%- when "billing" -%}
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M3 7l4 4 5-7 5 7 4-4-2 12H5z"/>
+</svg>
+{%- when _ -%}
+{%- endmatch -%}
+{% endmacro %}
+
+{# ── Sidebar nav item (desktop, ≥lg) ─────────────────────────────── #}
+{% macro nav_item(current, key) %}
+{% let active = current == key %}
+<a href="/settings/{{ key }}"
+  class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition border {% if active %}bg-paper border-line-2 shadow-sm{% else %}border-transparent hover:bg-cream-2{% endif %}">
+  <div class="w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0 {% if active %}bg-primary-100 text-primary-800{% else %}bg-cream-2 text-ink-2{% endif %}">
+    {% call section_icon(key) %}{% endcall %}
+  </div>
+  <div class="flex-1 min-w-0">
+    <div class="text-sm font-semibold {% if active %}text-ink{% else %}text-ink-2{% endif %}">{% call section_label(key) %}{% endcall %}</div>
+    <div class="text-[11px] text-ink-3 mt-0.5 truncate">{% call section_hint(key) %}{% endcall %}</div>
+  </div>
+  {% if active %}
+  <svg class="w-4 h-4 text-ink-3 shrink-0" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+  {% endif %}
 </a>
 {% endmacro %}
 
-{% macro mobile_nav_item(current, key, content) %}
-<a href="/settings/{{ key }}" class="px-4 py-2 rounded-xl whitespace-nowrap text-sm transition{% if current != key %} text-ink-2 bg-cream-2{% else %} bg-paper text-primary-500 font-semibold border border-line-2 shadow-sm{% endif %}">
-  {{ content|t }}
+{# ── Mobile pill tab ─────────────────────────────────────────────── #}
+{% macro mobile_nav_item(current, key) %}
+<a href="/settings/{{ key }}"
+  class="px-4 py-2 rounded-xl whitespace-nowrap text-sm transition{% if current != key %} text-ink-2 bg-cream-2{% else %} bg-paper text-ink font-semibold border border-line-2 shadow-sm{% endif %}">
+  {% call section_label(key) %}{% endcall %}
 </a>
 {% endmacro %}
 
 {% block content %}
 
-<!-- Main Content -->
-<div class="container mx-auto px-4 py-8 max-w-6xl">
-  <!-- Header -->
-  <div class="mb-8">
-    <h1 class="text-3xl font-serif mb-2">{{ "Settings"|t }}</h1>
-    <p class="text-ink-2">{{ "Manage your account and preferences"|t }}</p>
+<div class="container mx-auto px-4 py-6 md:py-8 max-w-6xl">
+
+  {# ── Page header — eyebrow + serif title ────────────────────── #}
+  <header class="flex items-end justify-between gap-3 mb-5 md:mb-7">
+    <div class="min-w-0">
+      <div class="text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3">
+        {{ "Settings"|t }} / {% call section_label(settings_path.as_str()) %}{% endcall %}
+      </div>
+      <h1 class="font-serif text-3xl md:text-4xl leading-none tracking-tight text-ink mt-1">
+        {% call section_label(settings_path.as_str()) %}{% endcall %}
+      </h1>
+    </div>
+    {% if user.is_premium() %}
+    <div class="hidden md:inline-flex items-center gap-2 px-3 py-1.5 bg-paper border border-line-2 rounded-full shadow-sm">
+      <svg class="w-3.5 h-3.5 text-primary-500" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l4 4 5-7 5 7 4-4-2 12H5z"/></svg>
+      <span class="text-xs font-semibold text-primary-800">{{ "Premium"|t }}</span>
+    </div>
+    {% endif %}
+  </header>
+
+  {# ── Profile banner ─────────────────────────────────────────── #}
+  <div class="bg-paper rounded-2xl border border-line-2 shadow-sm p-4 md:p-5 mb-5 md:mb-7">
+    <div class="flex items-center gap-3 md:gap-4">
+      <div class="w-12 h-12 md:w-16 md:h-16 rounded-2xl shrink-0 flex items-center justify-center text-white font-serif text-xl md:text-2xl shadow-md bg-linear-to-br from-primary-500 to-primary-300">
+        {{ user.initial() }}
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 flex-wrap">
+          <div class="text-base md:text-lg font-semibold text-ink truncate">{{ user.username() }}</div>
+          {% if user.is_premium() %}
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-primary-100 text-primary-800 text-[11px] font-semibold rounded-full">
+            <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l4 4 5-7 5 7 4-4-2 12H5z"/></svg>
+            {{ "Premium"|t }}
+          </span>
+          {% else %}
+          <span class="px-2 py-0.5 bg-cream-2 text-ink-2 text-[11px] font-semibold rounded-full">{{ "Free"|t }}</span>
+          {% endif %}
+        </div>
+        <div class="text-[12px] md:text-sm text-ink-3 mt-0.5 truncate">{{ user.id }}</div>
+      </div>
+    </div>
   </div>
 
-  <div class="lg:grid lg:grid-cols-3 gap-8">
-    <!-- Sidebar Navigation - Desktop -->
-    <div class="hidden lg:block space-y-2">
-      {% call nav_item(settings_path, "general", "General") %}{% endcall %}
-      {% call nav_item(settings_path, "account", "Account") %}{% endcall %}
-      {% call nav_item(settings_path, "billing", "Billing") %}{% endcall %}
+  <div class="lg:grid lg:grid-cols-[230px_minmax(0,1fr)] gap-8 md:gap-10 items-start">
+    {# ── Sidebar nav (desktop ≥lg) ────────────────────────────── #}
+    <nav class="hidden lg:block sticky top-6">
+      <div class="text-[11px] font-mono font-semibold tracking-widest uppercase text-ink-3 mb-3 px-2">
+        {{ "Settings"|t }}
+      </div>
+      <div class="grid gap-1">
+        {% call nav_item(settings_path.as_str(),"general") %}{% endcall %}
+        {% call nav_item(settings_path.as_str(),"account") %}{% endcall %}
+        {% call nav_item(settings_path.as_str(),"billing") %}{% endcall %}
+        {% block sidebar_bottom %}{% endblock %}
+      </div>
+    </nav>
 
-      {% block sidebar_bottom %}{% endblock %}
-    </div>
-
-    <!-- Mobile Navigation Tabs -->
-    <div class="lg:hidden mb-6 overflow-x-auto">
+    {# ── Mobile nav (horizontal pills) ────────────────────────── #}
+    <div class="lg:hidden mb-5 overflow-x-auto -mx-4 px-4">
       <div class="flex gap-2 min-w-max">
-      {% call mobile_nav_item(settings_path, "general", "General") %}{% endcall %}
-      {% call mobile_nav_item(settings_path, "account", "Account") %}{% endcall %}
-      {% call mobile_nav_item(settings_path, "billing", "Billing") %}{% endcall %}
+        {% call mobile_nav_item(settings_path.as_str(),"general") %}{% endcall %}
+        {% call mobile_nav_item(settings_path.as_str(),"account") %}{% endcall %}
+        {% call mobile_nav_item(settings_path.as_str(),"billing") %}{% endcall %}
       </div>
     </div>
 
-
-    <!-- Main Content Area -->
-    <div class="lg:col-span-2 space-y-6">
-    {% block settings_content %}{% endblock %}
+    {# ── Main content area ───────────────────────────────────── #}
+    <div class="space-y-5 md:space-y-6 min-w-0">
+      {% block settings_content %}{% endblock %}
     </div>
   </div>
 </div>

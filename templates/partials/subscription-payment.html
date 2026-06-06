@@ -1,49 +1,74 @@
-<div class="flex items-center justify-between">
-  {% if let Some(card) = payment_method.card %}
-  <div class="flex items-center gap-4">
-    <svg xmlns="http://www.w3.org/2000/svg" width="58" height="38" viewBox="0 0 58 38">
-      <defs>
-        <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#1a1a2e" />
-          <stop offset="50%" stop-color="#16213e" />
-          <stop offset="100%" stop-color="#0f3460" />
-        </linearGradient>
-        <linearGradient id="chipGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#f5d06e" />
-          <stop offset="50%" stop-color="#c9a227" />
-          <stop offset="100%" stop-color="#f5d06e" />
-        </linearGradient>
-        <linearGradient id="sheen" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stop-color="#c9a227" stop-opacity="0" />
-          <stop offset="50%" stop-color="#f5d06e" stop-opacity="0.08" />
-          <stop offset="100%" stop-color="#c9a227" stop-opacity="0" />
-        </linearGradient>
-      </defs>
-      <rect width="56" height="36" x="1" y="1" rx="4" fill="url(#cardGrad)" />
-      <rect width="56" height="36" x="1" y="1" rx="4" fill="url(#sheen)" />
-      <rect width="56" height="1" x="1" y="1" rx="1" fill="white" opacity="0.08" />
-      <rect width="56" height="6" x="1" y="7" fill="#0a0a0a" opacity="0.55" />
-      <rect x="6" y="17" width="11" height="8" rx="1.5" fill="url(#chipGrad)" />
-      <line x1="11.5" y1="17" x2="11.5" y2="25" stroke="#a07810" stroke-width="0.5" />
-      <line x1="6" y1="21" x2="17" y2="21" stroke="#a07810" stroke-width="0.5" />
-      <rect x="8" y="19" width="3" height="2" rx="0.5" fill="#a07810" opacity="0.4" />
-      <rect x="12" y="19" width="3" height="2" rx="0.5" fill="#a07810" opacity="0.4" />
-      <path d="M20 19 Q22.5 21 20 23" stroke="#c9a227" stroke-width="1" fill="none" opacity="0.7"
-        stroke-linecap="round" />
-      <path d="M22 17.5 Q26 21 22 24.5" stroke="#c9a227" stroke-width="0.9" fill="none" opacity="0.5"
-        stroke-linecap="round" />
-      <circle cx="21" cy="28" r="1.2" fill="#c9a227" opacity="0.6" />
-      <circle cx="24.5" cy="28" r="1.2" fill="#c9a227" opacity="0.6" />
-      <circle cx="28" cy="28" r="1.2" fill="#c9a227" opacity="0.6" />
-      <circle cx="31.5" cy="28" r="1.2" fill="#c9a227" opacity="0.6" />
-      <circle cx="46" cy="27" r="5" fill="#c9a227" opacity="0.9" />
-      <circle cx="51" cy="27" r="5" fill="#f5d06e" opacity="0.7" />
-    </svg>
-    <div>
-      <div class="font-semibold first-letter:uppercase">{{ card.brand }} {{ "ending in"|t }} {{ card.last4 }}</div>
-      <div class="text-sm text-ink-3">{{ "Expires"|t }} {{ card.exp_month }}/{{ card.exp_year }}</div>
+{% if let Some(card) = payment_method.card %}
+<div class="flex items-center gap-3 md:gap-4 px-4 md:px-5 py-4">
+  <svg xmlns="http://www.w3.org/2000/svg" width="58" height="38" viewBox="0 0 58 38" class="shrink-0">
+    <defs>
+      <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#1a1a2e" />
+        <stop offset="50%" stop-color="#16213e" />
+        <stop offset="100%" stop-color="#0f3460" />
+      </linearGradient>
+      <linearGradient id="chipGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#f5d06e" />
+        <stop offset="50%" stop-color="#c9a227" />
+        <stop offset="100%" stop-color="#f5d06e" />
+      </linearGradient>
+      <linearGradient id="sheen" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#c9a227" stop-opacity="0" />
+        <stop offset="50%" stop-color="#f5d06e" stop-opacity="0.08" />
+        <stop offset="100%" stop-color="#c9a227" stop-opacity="0" />
+      </linearGradient>
+    </defs>
+    <rect width="56" height="36" x="1" y="1" rx="4" fill="url(#cardGrad)" />
+    <rect width="56" height="36" x="1" y="1" rx="4" fill="url(#sheen)" />
+    <rect width="56" height="1" x="1" y="1" rx="1" fill="white" opacity="0.08" />
+    <rect width="56" height="6" x="1" y="7" fill="#0a0a0a" opacity="0.55" />
+    <rect x="6" y="17" width="11" height="8" rx="1.5" fill="url(#chipGrad)" />
+    <line x1="11.5" y1="17" x2="11.5" y2="25" stroke="#a07810" stroke-width="0.5" />
+    <line x1="6" y1="21" x2="17" y2="21" stroke="#a07810" stroke-width="0.5" />
+    <rect x="8" y="19" width="3" height="2" rx="0.5" fill="#a07810" opacity="0.4" />
+    <rect x="12" y="19" width="3" height="2" rx="0.5" fill="#a07810" opacity="0.4" />
+    <path d="M20 19 Q22.5 21 20 23" stroke="#c9a227" stroke-width="1" fill="none" opacity="0.7"
+      stroke-linecap="round" />
+    <path d="M22 17.5 Q26 21 22 24.5" stroke="#c9a227" stroke-width="0.9" fill="none" opacity="0.5"
+      stroke-linecap="round" />
+    <circle cx="21" cy="28" r="1.2" fill="#c9a227" opacity="0.6" />
+    <circle cx="24.5" cy="28" r="1.2" fill="#c9a227" opacity="0.6" />
+    <circle cx="28" cy="28" r="1.2" fill="#c9a227" opacity="0.6" />
+    <circle cx="31.5" cy="28" r="1.2" fill="#c9a227" opacity="0.6" />
+    <circle cx="46" cy="27" r="5" fill="#c9a227" opacity="0.9" />
+    <circle cx="51" cy="27" r="5" fill="#f5d06e" opacity="0.7" />
+  </svg>
+  <div class="flex-1 min-w-0">
+    <div class="text-sm font-semibold text-ink first-letter:uppercase truncate">
+      {{ card.brand }} {{ "ending in"|t }} {{ card.last4 }}
+    </div>
+    <div class="text-[12px] text-ink-3 mt-0.5">
+      {{ "Expires"|t }} {{ card.exp_month }}/{{ card.exp_year }}
     </div>
   </div>
-  {% endif %}
-  <button ts-req="/settings/billing/update-payment" ts-target="body" ts-swap="append" class="text-primary-500 hover:text-primary-600 font-semibold text-sm">{{ "Update"|t }}</button>
+  <span class="hidden sm:inline-flex px-2 py-0.5 bg-herb-100 text-herb-700 text-[11px] font-semibold rounded-full shrink-0">
+    {{ "Default"|t }}
+  </span>
+  <button id="payment-update-btn" ts-req="/settings/billing/update-payment" ts-target="body" ts-swap="append"
+    class="inline-flex items-center justify-center px-3 md:px-4 h-9 bg-paper border border-line text-ink font-semibold rounded-xl text-[13px] hover:bg-cream shadow-sm transition shrink-0">
+    {{ "Update"|t }}
+  </button>
 </div>
+{% else %}
+<div class="flex items-center gap-3 md:gap-4 px-4 md:px-5 py-4">
+  <div class="w-10 h-10 rounded-xl bg-cream-2 text-ink-2 flex items-center justify-center shrink-0">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="6" width="20" height="12" rx="2"/>
+      <path d="M2 10h20"/>
+    </svg>
+  </div>
+  <div class="flex-1 min-w-0">
+    <div class="text-sm font-semibold text-ink">{{ "Payment method on file"|t }}</div>
+    <div class="text-[12px] text-ink-3 mt-0.5">{{ "Card details unavailable"|t }}</div>
+  </div>
+  <button id="payment-update-btn" ts-req="/settings/billing/update-payment" ts-target="body" ts-swap="append"
+    class="inline-flex items-center justify-center px-3 md:px-4 h-9 bg-paper border border-line text-ink font-semibold rounded-xl text-[13px] hover:bg-cream shadow-sm transition shrink-0">
+    {{ "Update"|t }}
+  </button>
+</div>
+{% endif %}
