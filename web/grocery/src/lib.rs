@@ -26,15 +26,27 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
         .route("/groceries/generate/status", get(generate_status))
 }
 
+pub struct AisleSection {
+    pub name: String,
+    pub items: Vec<Ingredient>,
+    pub checked: usize,
+    pub total: usize,
+    pub done: bool,
+    pub pct: usize,
+}
+
 #[derive(askama::Template)]
 #[template(path = "groceries.html")]
 pub struct GroceriesTemplate {
     pub current_path: String,
     pub user: AuthUser,
     pub checked: HashSet<String>,
-    pub ingredients: Vec<(String, Vec<Ingredient>)>,
+    pub aisles: Vec<AisleSection>,
     pub from_date: u64,
     pub to_date: u64,
+    pub total_items: usize,
+    pub checked_items: usize,
+    pub progress_pct: usize,
 }
 
 impl Default for GroceriesTemplate {
@@ -43,9 +55,12 @@ impl Default for GroceriesTemplate {
             current_path: "groceries".to_owned(),
             user: AuthUser::default(),
             checked: HashSet::default(),
-            ingredients: vec![],
+            aisles: vec![],
             from_date: 0,
             to_date: 0,
+            total_items: 0,
+            checked_items: 0,
+            progress_pct: 0,
         }
     }
 }
@@ -57,7 +72,7 @@ pub async fn page(
     State(app): State<AppState>,
 ) -> impl IntoResponse {
     let list = imkitchen_web_shared::try_page_response!(app.core.shopping.find(&user.id), template);
-    let ingredients = list
+    let ingredients: Vec<(String, Vec<Ingredient>)> = list
         .as_ref()
         .map(|r| to_categories(&r.ingredients.0))
         .unwrap_or_default();
@@ -72,18 +87,50 @@ pub async fn page(
         })
         .unwrap_or_default();
 
-    let checked =
+    let checked: HashSet<String> =
         imkitchen_web_shared::try_page_response!(app.core.shopping.load(&user.id), template)
             .map(|loaded| loaded.checked)
             .unwrap_or_default();
+
+    let total_items: usize = ingredients.iter().map(|(_, items)| items.len()).sum();
+    let checked_items = checked.len();
+    let progress_pct = if total_items > 0 {
+        checked_items * 100 / total_items
+    } else {
+        0
+    };
+
+    let aisles: Vec<AisleSection> = ingredients
+        .into_iter()
+        .map(|(name, items)| {
+            let total = items.len();
+            let checked_count = items.iter().filter(|i| checked.contains(&i.key())).count();
+            let pct = if total > 0 {
+                checked_count * 100 / total
+            } else {
+                0
+            };
+            AisleSection {
+                name,
+                items,
+                checked: checked_count,
+                total,
+                done: total > 0 && checked_count == total,
+                pct,
+            }
+        })
+        .collect();
 
     template
         .render(GroceriesTemplate {
             user,
             checked,
-            ingredients,
+            aisles,
             from_date,
             to_date,
+            total_items,
+            checked_items,
+            progress_pct,
             ..Default::default()
         })
         .into_response()
